@@ -172,6 +172,7 @@ export default function Log() {
 
                <div className="flex flex-col md:flex-row justify-center items-center">
                   <ConnectButton />
+                  {showWallet ? <span className="text-rose-600 text-sm">Wallet already exists.</span> : null}
                </div>
 
                <GoogleAuthButton onSuccess={handleGoogleAuth} onError={handleOAuthError} text="signup_with" />
@@ -181,7 +182,15 @@ export default function Log() {
                <TextWithLine text="OR CONTINUE WITH EMAIL" textColour="text-gray-400" lineColour="bg-gray-400" />
 
                <form onSubmit={handleRegister} className="space-y-4">
-                  {showWallet ? <span className="text-rose-600 text-sm">Wallet already exists.</span> : null}
+                  <input
+                     required
+                     type="text"
+                     placeholder="@username"
+                     className={`w-full border px-3 py-2 rounded-md ${showUser ? 'border-rose-500' : 'border-gray-400'}`}
+                     value={username}
+                     onChange={(e) => setUsername(e.target.value)}
+                  />
+                  {showUser ? <span className="text-rose-600 text-sm">User already exists.</span> : null}
 
                   <div className="flex">
                      <input
@@ -192,7 +201,6 @@ export default function Log() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                      />
-                     <button className="bg-white text-blue-600 border border-l-0 px-4 rounded-r-md font-semibold">VERIFY</button>
                   </div>
                   {showEmail ? <span className="text-rose-600 text-sm">Email already exists.</span> : null}
 
@@ -220,16 +228,6 @@ export default function Log() {
                      onChange={(e) => setConfirm(e.target.value)}
                   />
                   {showConfirm ? <span className="text-rose-600 text-sm">Passwords do not match.</span> : null}
-
-                  <input
-                     required
-                     type="text"
-                     placeholder="@username"
-                     className={`w-full border px-3 py-2 rounded-md ${showUser ? 'border-rose-500' : 'border-gray-400'}`}
-                     value={username}
-                     onChange={(e) => setUsername(e.target.value)}
-                  />
-                  {showUser ? <span className="text-rose-600 text-sm">User already exists.</span> : null}
 
                   <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
                      Register
