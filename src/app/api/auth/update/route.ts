@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 
 import User from '@/lib/models/User';
-import { updateUserSchema } from '@/lib/schemas/auth';
+import { transformUserToResponse, updateUserSchema } from '@/lib/schemas/auth';
 import { sendMail } from '@/lib/services/email';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { generateToken, hashPassword, setAuthCookie, validatePasswordStrength } from '@/lib/utils/auth';
@@ -36,6 +36,9 @@ export async function POST(request: NextRequest) {
          if (data.email) {
             user.email = data.email;
          }
+         if (data.walletAddress) {
+            user.walletAddress = data.walletAddress;
+         }
          user.updatedAt = new Date();
 
          await user.save();
@@ -53,20 +56,7 @@ export async function POST(request: NextRequest) {
          }
 
          return {
-            user: {
-               _id: user._id,
-               username: user.username,
-               email: user.email,
-               walletAddress: user.walletAddress,
-               isWorldId: user.isWorldId,
-               telegramUsername: user.telegramUsername,
-               chatId: user.chatId,
-               mal: user.mal,
-               nal: user.nal,
-               cs: user.cs,
-               createdAt: user.createdAt,
-               updatedAt: user.updatedAt
-            }
+            user: transformUserToResponse(user)
          };
       },
       {

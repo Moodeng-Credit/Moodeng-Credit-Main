@@ -2,6 +2,7 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
    serverExternalPackages: ['mongoose'],
+   allowedDevOrigins: ['127.0.0.1', 'localhost'],
    async headers() {
       return [
          {
@@ -17,7 +18,7 @@ const nextConfig: NextConfig = {
                },
                {
                   key: 'X-Frame-Options',
-                  value: 'DENY'
+                  value: 'SAMEORIGIN'
                },
                {
                   key: 'X-Content-Type-Options',

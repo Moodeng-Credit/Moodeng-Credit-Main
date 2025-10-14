@@ -9,6 +9,8 @@ const UserSchema = new Schema<IUser>({
    nullifierHash: { type: String, index: { unique: true, sparse: true } },
    password: { type: String, required: true },
    email: { type: String, unique: true, required: true },
+   googleId: { type: String, unique: true, sparse: true },
+   telegramId: { type: Number, index: { unique: true, sparse: true } },
    telegramUsername: { type: String, index: { unique: true, sparse: true } },
    chatId: { type: Number, index: { unique: true, sparse: true } },
    mal: { type: Number, max: 3, default: 1 },

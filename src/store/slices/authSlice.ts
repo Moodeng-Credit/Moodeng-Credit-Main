@@ -12,7 +12,9 @@ const defaultUser: User = {
    email: '',
    walletAddress: '',
    isWorldId: WorldId.INACTIVE,
+   googleId: undefined,
    telegramUsername: undefined,
+   telegramId: undefined,
    chatId: undefined,
    mal: 0,
    nal: 0,
@@ -38,6 +40,26 @@ export const loginUser = createAsyncThunk('auth/login', async ({ username, passw
    };
 });
 
+export const loginWithGoogle = createAsyncThunk('auth/loginWithGoogle', async ({ googleCredential }: { googleCredential: string }) => {
+   await apiHandler.post(API_ENDPOINTS.AUTH.LOGIN, { googleCredential });
+   const userData = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
+
+   return {
+      username: userData.username,
+      user: userData
+   };
+});
+
+export const loginWithTelegram = createAsyncThunk('auth/loginWithTelegram', async ({ telegramAuthData }: { telegramAuthData: string }) => {
+   await apiHandler.post(API_ENDPOINTS.AUTH.LOGIN, { telegramAuthData });
+   const userData = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
+
+   return {
+      username: userData.username,
+      user: userData
+   };
+});
+
 export const registerUser = createAsyncThunk(
    'auth/register',
    async (userData: { username: string; walletAddress: string; isWorldId: string; password: string; email: string }) => {
@@ -45,6 +67,30 @@ export const registerUser = createAsyncThunk(
       const userResponse = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
       return {
          username: userData.username,
+         user: userResponse
+      };
+   }
+);
+
+export const registerWithGoogle = createAsyncThunk(
+   'auth/registerWithGoogle',
+   async ({ googleCredential, walletAddress }: { googleCredential: string; walletAddress?: string }) => {
+      await apiHandler.post(API_ENDPOINTS.AUTH.REGISTER, { googleCredential, walletAddress });
+      const userResponse = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
+      return {
+         username: userResponse.username,
+         user: userResponse
+      };
+   }
+);
+
+export const registerWithTelegram = createAsyncThunk(
+   'auth/registerWithTelegram',
+   async ({ telegramAuthData, walletAddress }: { telegramAuthData: string; walletAddress?: string }) => {
+      await apiHandler.post(API_ENDPOINTS.AUTH.REGISTER, { telegramAuthData, walletAddress });
+      const userResponse = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
+      return {
+         username: userResponse.username,
          user: userResponse
       };
    }
@@ -100,6 +146,34 @@ const authSlice = createSlice({
             state.isLoading = false;
             state.error = action.payload as string;
          })
+         // Login with Google
+         .addCase(loginWithGoogle.pending, (state) => {
+            state.isLoading = true;
+            state.error = null;
+         })
+         .addCase(loginWithGoogle.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.username = action.payload.username;
+            state.user = action.payload.user;
+         })
+         .addCase(loginWithGoogle.rejected, (state, action) => {
+            state.isLoading = false;
+            state.error = action.payload as string;
+         })
+         // Login with Telegram
+         .addCase(loginWithTelegram.pending, (state) => {
+            state.isLoading = true;
+            state.error = null;
+         })
+         .addCase(loginWithTelegram.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.username = action.payload.username;
+            state.user = action.payload.user;
+         })
+         .addCase(loginWithTelegram.rejected, (state, action) => {
+            state.isLoading = false;
+            state.error = action.payload as string;
+         })
          // Register
          .addCase(registerUser.pending, (state) => {
             state.isLoading = true;
@@ -111,6 +185,34 @@ const authSlice = createSlice({
             state.user = action.payload.user;
          })
          .addCase(registerUser.rejected, (state, action) => {
+            state.isLoading = false;
+            state.error = action.payload as string;
+         })
+         // Register with Google
+         .addCase(registerWithGoogle.pending, (state) => {
+            state.isLoading = true;
+            state.error = null;
+         })
+         .addCase(registerWithGoogle.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.username = action.payload.username;
+            state.user = action.payload.user;
+         })
+         .addCase(registerWithGoogle.rejected, (state, action) => {
+            state.isLoading = false;
+            state.error = action.payload as string;
+         })
+         // Register with Telegram
+         .addCase(registerWithTelegram.pending, (state) => {
+            state.isLoading = true;
+            state.error = null;
+         })
+         .addCase(registerWithTelegram.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.username = action.payload.username;
+            state.user = action.payload.user;
+         })
+         .addCase(registerWithTelegram.rejected, (state, action) => {
             state.isLoading = false;
             state.error = action.payload as string;
          })

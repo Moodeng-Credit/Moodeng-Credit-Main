@@ -137,6 +137,35 @@ export const telegramUsernameSchema = z
    .transform((val) => val.trim());
 
 /**
+ * Google ID validation schema
+ * - String format
+ * - Max 255 characters
+ * - Automatically trims
+ */
+export const googleIdSchema = z
+   .string({ message: 'Google ID is required' })
+   .max(255, { message: 'Google ID is too long' })
+   .transform((val) => val.trim());
+
+/**
+ * Telegram ID validation schema
+ * - Positive integer
+ * - Max 64-bit integer value
+ */
+export const telegramIdSchema = z
+   .union([z.number(), z.string()])
+   .refine(
+      (val) => {
+         const num = typeof val === 'string' ? parseInt(val, 10) : val;
+         return !isNaN(num) && Number.isInteger(num) && num > 0 && num <= Number.MAX_SAFE_INTEGER;
+      },
+      {
+         message: 'Telegram ID must be a positive integer'
+      }
+   )
+   .transform((val) => (typeof val === 'string' ? parseInt(val, 10) : val));
+
+/**
  * Boolean validation schema
  */
 export const booleanSchema = (fieldName = 'Value') =>
@@ -152,3 +181,5 @@ export const optionalEmail = emailSchema.optional();
 export const optionalWalletAddress = walletAddressSchema.optional();
 export const optionalTelegramUsername = telegramUsernameSchema.optional();
 export const optionalObjectId = objectIdSchema.optional();
+export const optionalGoogleId = googleIdSchema.optional();
+export const optionalTelegramId = telegramIdSchema.optional();

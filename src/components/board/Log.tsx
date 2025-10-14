@@ -8,9 +8,19 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useDispatch } from 'react-redux';
 import { useAccount } from 'wagmi';
 
+import GoogleAuthButton from '@/components/board/GoogleAuthButton';
+import TelegramAuthButton from '@/components/board/TelegramAuthButton';
 import Loading from '@/components/Loading';
+import TextWithLine from '@/components/ui/TextWithLine';
 
-import { loginUser, registerUser } from '@/store/slices/authSlice';
+import {
+   loginUser,
+   loginWithGoogle,
+   loginWithTelegram,
+   registerUser,
+   registerWithGoogle,
+   registerWithTelegram
+} from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 
 export default function Log() {
@@ -21,8 +31,6 @@ export default function Log() {
    const [password, setPassword] = useState('');
    const [confirm, setConfirm] = useState('');
    const [username, setUsername] = useState('');
-   const [network, setNetwork] = useState('');
-   const [startOption, setStartOption] = useState('');
    const [isLoading, setIsLoading] = useState(false);
    const [showUser, setShowUser] = useState(false);
    const [showPass, setShowPass] = useState(false);
@@ -39,8 +47,6 @@ export default function Log() {
       setPassword('');
       setConfirm('');
       setUsername('');
-      setNetwork('');
-      setStartOption('');
    };
 
    const clearShow = () => {
@@ -96,103 +102,139 @@ export default function Log() {
       }
    };
 
+   const handleGoogleAuth = async (credential: string) => {
+      setIsLoading(true);
+      clearShow();
+
+      const action = showLog ? registerWithGoogle : loginWithGoogle;
+      const resultAction = await dispatch(
+         action({
+            googleCredential: credential,
+            walletAddress: account.address
+         })
+      );
+
+      if (action.fulfilled.match(resultAction)) {
+         clear();
+         router.push('/dashboard');
+      } else {
+         const errorMsg = (resultAction.payload as Record<string, string>)?.message || 'Authentication failed';
+         console.error('Google auth failed:', errorMsg);
+         if (errorMsg.includes('not registered')) {
+            setShowLog(true); // Switch to register mode
+         } else {
+            setShowAccount(true);
+         }
+      }
+      setIsLoading(false);
+   };
+
+   const handleTelegramAuth = async (authData: Record<string, string>) => {
+      setIsLoading(true);
+      clearShow();
+
+      const telegramAuthData = JSON.stringify(authData);
+      const action = showLog ? registerWithTelegram : loginWithTelegram;
+      const resultAction = await dispatch(
+         action({
+            telegramAuthData,
+            walletAddress: account.address
+         })
+      );
+
+      if (action.fulfilled.match(resultAction)) {
+         clear();
+         router.push('/dashboard');
+      } else {
+         const errorMsg = (resultAction.payload as Record<string, string>)?.message || 'Authentication failed';
+         console.error('Telegram auth failed:', errorMsg);
+         if (errorMsg.includes('not registered')) {
+            setShowLog(true); // Switch to register mode
+         } else {
+            setShowAccount(true);
+         }
+      }
+      setIsLoading(false);
+   };
+
+   const handleOAuthError = () => {
+      console.error('OAuth authentication failed');
+      setShowAccount(true);
+   };
+
    return (
       <div className="min-h-screen bg-zinc-100 flex flex-col md:flex-row justify-center items-center px-6 py-12 gap-8">
          {isLoading ? (
             <Loading />
          ) : showLog ? (
-            <form onSubmit={handleRegister} className="w-full bg-white max-w-md border rounded-2xl shadow p-6 space-y-4">
+            <div className="w-full bg-white max-w-md border rounded-2xl shadow p-6 space-y-4">
                <h2 className="text-xl font-semibold text-center text-blue-600">Welcome to Moodeng Credit</h2>
 
                <div className="flex flex-col md:flex-row justify-center items-center">
                   <ConnectButton />
                </div>
-               {showWallet ? <span className="text-rose-600 text-sm">Wallet already exists.</span> : null}
 
-               <div className="flex items-center gap-2 text-gray-400 text-sm justify-center">
-                  <hr className="w-1/4 border" />
-                  <span>AND</span>
-                  <hr className="w-1/4 border" />
-               </div>
+               <GoogleAuthButton onSuccess={handleGoogleAuth} onError={handleOAuthError} text="signup_with" />
 
-               <div className="flex">
+               <TelegramAuthButton onAuth={handleTelegramAuth} buttonSize="large" />
+
+               <TextWithLine text="OR CONTINUE WITH EMAIL" textColour="text-gray-400" lineColour="bg-gray-400" />
+
+               <form onSubmit={handleRegister} className="space-y-4">
+                  {showWallet ? <span className="text-rose-600 text-sm">Wallet already exists.</span> : null}
+
+                  <div className="flex">
+                     <input
+                        required
+                        type="email"
+                        placeholder="your_email@moodeng.com"
+                        className={`w-full border px-3 py-2 rounded-md ${showEmail ? 'border-rose-500' : 'border-gray-400'}`}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                     />
+                     <button className="bg-white text-blue-600 border border-l-0 px-4 rounded-r-md font-semibold">VERIFY</button>
+                  </div>
+                  {showEmail ? <span className="text-rose-600 text-sm">Email already exists.</span> : null}
+
                   <input
                      required
-                     type="email"
-                     placeholder="your_email@moodeng.com"
-                     className={`w-full border px-3 py-2 rounded-md ${showEmail ? 'border-rose-500' : ''}`}
-                     value={email}
-                     onChange={(e) => setEmail(e.target.value)}
+                     type="password"
+                     placeholder="Password"
+                     className={`w-full border px-3 py-2 rounded-md ${showPass ? 'border-rose-500' : 'border-gray-400'}`}
+                     value={password}
+                     onChange={(e) => setPassword(e.target.value)}
                   />
-                  <button className="bg-white text-blue-600 border border-l-0 px-4 rounded-r-md font-semibold">VERIFY</button>
-               </div>
-               {showEmail ? <span className="text-rose-600 text-sm">Email already exists.</span> : null}
+                  {showPass ? (
+                     <span className="text-rose-600 text-sm">
+                        Password is weak, Password must be at least 6 characters long and can only include letters, numbers, and the symbols
+                        !@#$%^&*()+=._-
+                     </span>
+                  ) : null}
 
-               <input
-                  required
-                  type="password"
-                  placeholder="Password"
-                  className={`w-full border px-3 py-2 rounded-md ${showPass ? 'border-rose-500' : ''}`}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-               />
-               {showPass ? (
-                  <span className="text-rose-600 text-sm">
-                     Password is weak, Password must be at least 6 characters long and can only include letters, numbers, and the symbols
-                     !@#$%^&*()+=._-
-                  </span>
-               ) : null}
+                  <input
+                     required
+                     type="password"
+                     placeholder="Confirm Password"
+                     className={`w-full border px-3 py-2 rounded-md ${showConfirm ? 'border-rose-500' : 'border-gray-400'}`}
+                     value={confirm}
+                     onChange={(e) => setConfirm(e.target.value)}
+                  />
+                  {showConfirm ? <span className="text-rose-600 text-sm">Passwords do not match.</span> : null}
 
-               <input
-                  required
-                  type="password"
-                  placeholder="Confirm Password"
-                  className={`w-full border px-3 py-2 rounded-md ${showConfirm ? 'border-rose-500' : ''}`}
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-               />
-               {showConfirm ? <span className="text-rose-600 text-sm">Passwords do not match.</span> : null}
+                  <input
+                     required
+                     type="text"
+                     placeholder="@username"
+                     className={`w-full border px-3 py-2 rounded-md ${showUser ? 'border-rose-500' : 'border-gray-400'}`}
+                     value={username}
+                     onChange={(e) => setUsername(e.target.value)}
+                  />
+                  {showUser ? <span className="text-rose-600 text-sm">User already exists.</span> : null}
 
-               <input
-                  required
-                  type="text"
-                  placeholder="@username"
-                  className={`w-full border px-3 py-2 rounded-md ${showUser ? 'border-rose-500' : ''}`}
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-               />
-               {showUser ? <span className="text-rose-600 text-sm">User already exists.</span> : null}
-
-               <div>
-                  <label className="block text-sm text-gray-600 mb-1">Set Default Network</label>
-                  <select className="w-full border px-3 py-2 rounded-md" value={network} onChange={(e) => setNetwork(e.target.value)}>
-                     <option>Choose Default Network</option>
-                     <option>arbitrum</option>
-                     <option>optimism</option>
-                     <option>polygon</option>
-                     <option>bsc</option>
-                     <option>sepolia</option>
-                     <option>base</option>
-                     <option>base sepolia</option>
-                  </select>
-               </div>
-
-               <div>
-                  <label className="block text-sm text-gray-600 mb-1">Where do you want to start?</label>
-                  <select
-                     className="w-full border px-3 py-2 rounded-md"
-                     value={startOption}
-                     onChange={(e) => setStartOption(e.target.value)}
-                  >
-                     <option>Lending or Borrowing</option>
-                     <option>Lending</option>
-                     <option>Borrowing</option>
-                  </select>
-               </div>
-
-               <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-                  Register
-               </button>
+                  <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                     Register
+                  </button>
+               </form>
 
                <p className="text-center text-sm text-gray-400">
                   Already have an account?{' '}
@@ -202,44 +244,48 @@ export default function Log() {
                </p>
 
                <p className="text-center text-sm text-gray-400">Terms × Privacy × Docs</p>
-            </form>
+            </div>
          ) : (
-            <form onSubmit={handleLogin} className="w-full bg-white max-w-md border rounded-2xl shadow p-6 space-y-5">
-               <h2 className="text-xl font-semibold text-center text-blue-600">Welcome to Moodeng Credit</h2>
+            <div className="w-full bg-white max-w-md border rounded-2xl shadow p-6 space-y-5">
+               <h2 className="text-xl font-semibold text-center text-blue-600">Welcome back! We're glad to see you again.</h2>
 
-               <div className="flex flex-col md:flex-row justify-center items-center">
-                  <ConnectButton />
-               </div>
+               <GoogleAuthButton onSuccess={handleGoogleAuth} onError={handleOAuthError} text="signin_with" />
 
-               <div className="flex items-center gap-2 text-gray-400 text-sm justify-center">
-                  <hr className="w-1/4 border" />
-                  <span>OR</span>
-                  <hr className="w-1/4 border" />
-               </div>
+               <TelegramAuthButton onAuth={handleTelegramAuth} buttonSize="large" />
 
-               <input
-                  required
-                  type="text"
-                  placeholder="@username"
-                  className={`w-full border px-3 py-2 rounded-md ${showAccount ? 'border-rose-500' : ''}`}
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-               />
-               {showAccount ? <span className="text-rose-600 text-sm">Invalid credentials.</span> : null}
+               <form onSubmit={handleLogin} className="space-y-5">
+                  <div className="flex items-center gap-2 text-gray-400 text-sm justify-center">
+                     <hr className="w-1/4 border" />
+                     <span>OR</span>
+                     <hr className="w-1/4 border" />
+                  </div>
 
-               <input
-                  required
-                  type="password"
-                  placeholder="Password"
-                  className={`w-full border px-3 py-2 rounded-md ${showAccount ? 'border-rose-500' : ''}`}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-               />
-               {showAccount ? <span className="text-rose-600 text-sm">Invalid credentials.</span> : null}
+                  <TextWithLine text="OR CONTINUE WITH EMAIL" textColour="text-gray-400" lineColour="bg-gray-400" />
 
-               <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-                  Login
-               </button>
+                  <input
+                     required
+                     type="text"
+                     placeholder="@username"
+                     className={`w-full border px-3 py-2 rounded-md ${showAccount ? 'border-rose-500' : 'border-gray-400'}`}
+                     value={username}
+                     onChange={(e) => setUsername(e.target.value)}
+                  />
+                  {showAccount ? <span className="text-rose-600 text-sm">Invalid credentials.</span> : null}
+
+                  <input
+                     required
+                     type="password"
+                     placeholder="Password"
+                     className={`w-full border px-3 py-2 rounded-md ${showAccount ? 'border-rose-500' : 'border-gray-400'}`}
+                     value={password}
+                     onChange={(e) => setPassword(e.target.value)}
+                  />
+                  {showAccount ? <span className="text-rose-600 text-sm">Invalid credentials.</span> : null}
+
+                  <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                     Login
+                  </button>
+               </form>
 
                <p className="text-center text-sm text-gray-400">
                   Dont have an account?{' '}
@@ -249,7 +295,7 @@ export default function Log() {
                </p>
 
                <p className="text-center text-sm text-gray-400">Terms × Privacy × Docs</p>
-            </form>
+            </div>
          )}
       </div>
    );
