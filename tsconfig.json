@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+     "target": "ES2020",
+     "lib": ["dom", "dom.iterable", "esnext"],
+     "allowJs": true,
+     "skipLibCheck": true,
+     "strict": true,
+     "forceConsistentCasingInFileNames": true,
+     "noEmit": true,
+     "esModuleInterop": true,
+     "module": "esnext",
+     "moduleResolution": "node",
+     "resolveJsonModule": true,
+     "isolatedModules": true,
+     "jsx": "preserve",
+     "incremental": true,
+     "baseUrl": "src",
+     "downlevelIteration": true,
+     "allowSyntheticDefaultImports": true,
+     "noUnusedLocals": true,
+     "noImplicitAny": true,
+     "noImplicitThis": true,
+     "strictNullChecks": true,
+     "typeRoots": ["../node_modules/@types", "../@types", "./types"],
+     "paths": {
+        // add base path for project
+        "@/*": ["./*"],
+        "ui-component": ["components/ui-component"],
+        "ui-component/*": ["components/ui-component/*"]
+     },
+     "plugins": [
+        {
+           "name": "next"
+        }
+     ]
+  },
+  "include": ["next-env.d.ts", "app-types.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "loadTest.js", ".eslintrc.js", "*.config.js"],
+  "exclude": ["node_modules"]
+}

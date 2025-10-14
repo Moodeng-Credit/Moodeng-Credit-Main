@@ -1,0 +1,147 @@
+'use client';
+
+import { type ChangeEvent, type MouseEvent, useState } from 'react';
+
+import Image from 'next/image';
+
+import { useDispatch, useSelector } from 'react-redux';
+
+import useWallet from '@/hooks/useWallet';
+
+import { editLoan, getUserLoans } from '@/store/slices/loanSlice';
+import type { AppDispatch, RootState } from '@/store/store';
+import type { Loan } from '@/types/loanTypes';
+
+function UserPay({ loan }: { loan: Loan }) {
+   const username = useSelector((state: RootState) => state.auth.username);
+   const [repaymentAmount, setRepaymentAmount] = useState('');
+   const time = new Date(loan.createdAt).toISOString();
+   const { Transfer } = useWallet();
+   const dispatch = useDispatch<AppDispatch>();
+
+   const handleBorrow = async (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      const loanData = {
+         _id: loan._id,
+         repaymentAmount: loan.repaymentAmount + parseInt(repaymentAmount),
+         repaymentStatus: loan.repaymentAmount + parseInt(repaymentAmount) < loan.repayedAmount ? 'Partial' : 'Paid',
+         loanStatus: loan.loanStatus
+      };
+      if (
+         loan.repaymentAmount + parseInt(repaymentAmount) <= loan.repayedAmount &&
+         loan.loanStatus === 'Lent' &&
+         loan.repaymentStatus !== 'Paid' &&
+         parseInt(repaymentAmount) > 0
+      ) {
+         const cdt = await Transfer(e, loan.lenderWallet || '', repaymentAmount.toString(), loan._id, loan.block, loan.coin);
+         try {
+            cdt &&
+               (await dispatch(editLoan(loanData as Loan))
+                  .unwrap()
+                  .then(async () => {
+                     await dispatch(getUserLoans(username || ''));
+                  })
+                  .catch((error: Error) => {
+                     console.error('Error editing loan:', error.message || error);
+                  }));
+         } catch (editLoanError: unknown) {
+            const errorMessage = editLoanError instanceof Error ? editLoanError.message : 'Unknown error';
+            console.error('Error editing loan:', errorMessage);
+            cdt &&
+               (await dispatch(editLoan(loanData as Loan))
+                  .unwrap()
+                  .then(async () => {
+                     await dispatch(getUserLoans(username || ''));
+                  })
+                  .catch((error: Error) => {
+                     console.error('Error editing loan:', error.message || error);
+                  }));
+         }
+      }
+      setRepaymentAmount('');
+   };
+
+   return (
+      <main className="flex flex-col py-7 w-full bg-white rounded-3xl border border-solid border-neutral-200 shadow-[0px_2px_8px_rgba(0,0,0,0.25)] flex overflow-hidden flex-col py-5 bg-white rounded-2xl max-w-[473px]">
+         <section className="flex flex-col px-5 w-full">
+            <h1 className="self-start text-2xl font-medium leading-none text-black">Loan Repayment</h1>
+            <div className="flex gap-10 items-center mt-8">
+               <div className="flex flex-col self-stretch my-auto">
+                  <div className="text-sm leading-loose text-black text-opacity-60">Loan Amount</div>
+                  <div className="mt-1.5 text-base font-medium leading-loose text-black">${loan.repayedAmount}</div>
+               </div>
+               <div className="flex flex-col self-stretch my-auto">
+                  <div className="text-sm leading-loose text-black text-opacity-60">Amount Paid</div>
+                  <div className="mt-1.5 text-base font-medium leading-loose text-black">
+                     ${loan.repaymentAmount}
+                     <span className="text-sm leading-6 text-black">
+                        {' ($' + (loan.repayedAmount - loan.repaymentAmount) + ' Remaining)'}
+                     </span>
+                  </div>
+               </div>
+               <div className="flex flex-col self-stretch my-auto">
+                  <div className="text-sm leading-loose text-black text-opacity-60">Due Date</div>
+                  <div className="mt-1.5 text-base font-medium leading-loose text-black">{time.split('T')[0]}</div>
+               </div>
+            </div>
+         </section>
+         <hr className="mt-5 w-full border border-solid border-zinc-300 min-h-[1px]" />
+         <section className="flex flex-col px-5 mt-5 w-full">
+            <h2 className="self-start text-lg font-medium leading-loose text-black">Repayment Information</h2>
+            <div className="flex overflow-hidden gap-10 p-4 mt-2.5 w-full whitespace-nowrap rounded-lg bg-neutral-100">
+               <div className="flex flex-1 gap-4 items-center">
+                  <div className="self-stretch my-auto text-sm leading-loose text-black text-opacity-60">Stablecoin</div>
+                  <div className="flex gap-1.5 items-center self-stretch my-auto text-base font-medium leading-loose text-black">
+                     <Image
+                        loading="lazy"
+                        src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/36b2768ece14cc8c27f15df886baeb4d8561b26fdb09d2a7fd36f57790e94282?apiKey=e485b3dc4b924975b4554885e21242bb"
+                        alt=""
+                        className="object-contain shrink-0 self-stretch my-auto w-7 aspect-square"
+                        width={100}
+                        height={100}
+                     />
+                     <div className="self-stretch my-auto">{loan.coin}</div>
+                  </div>
+               </div>
+               <div className="flex flex-1 gap-1.5 items-center self-start">
+                  <div className="self-stretch my-auto text-sm leading-loose text-black text-opacity-60">Network</div>
+                  <Image
+                     loading="lazy"
+                     src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/4ba089761d655b916ff23874ab3595e64d2f358d02957d03b3aaa8c77195070b?apiKey=e485b3dc4b924975b4554885e21242bb"
+                     alt=""
+                     className="object-contain shrink-0 self-stretch my-auto w-6 aspect-square"
+                     width={100}
+                     height={100}
+                  />
+                  <div className="self-stretch my-auto text-base font-medium leading-loose text-black">{loan.block}</div>
+               </div>
+            </div>
+            <label htmlFor="repayment" className="block text-sm font-medium text-gray-700">
+               Repayment Amount
+            </label>
+            <input
+               type="number"
+               min="0"
+               id="repayment"
+               name="repayment"
+               placeholder="Enter custom amount"
+               value={repaymentAmount}
+               onChange={(e: ChangeEvent<HTMLInputElement>) => setRepaymentAmount(e.target.value)}
+               className="mt-1 p-2 w-full border rounded-md focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-colors duration-300"
+            />
+            <button
+               onClick={handleBorrow}
+               className="overflow-hidden gap-5 self-stretch p-5 mt-8 text-base font-medium leading-none text-center text-white bg-blue-600 rounded-lg"
+            >
+               Repay Now
+            </button>
+            <p className="mt-5 text-sm leading-6 text-black text-opacity-60">
+               You can repay any amount at any time before the due date. Ensure full repayment by the due date to maintain your credit
+               score.
+            </p>
+         </section>
+      </main>
+   );
+}
+
+export default UserPay;

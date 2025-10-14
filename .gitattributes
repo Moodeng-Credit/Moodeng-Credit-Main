@@ -1,0 +1,3 @@
+# Set default to LF for all text files
+* text=auto eol=lf
+*.{js,jsx,ts,tsx,css,json,md,sh,py} text eol=lf
