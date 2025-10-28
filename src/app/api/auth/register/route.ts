@@ -82,9 +82,11 @@ export async function POST(request: NextRequest) {
                throw { code: ERROR_CODES.USER_ALREADY_EXISTS, message: 'Email already exists' };
             }
 
-            const existingWallet = await User.findOne({ walletAddress: data.walletAddress });
-            if (existingWallet) {
-               throw { code: ERROR_CODES.USER_ALREADY_EXISTS, message: 'Wallet already exists' };
+            if (data.walletAddress) {
+               const existingWallet = await User.findOne({ walletAddress: data.walletAddress });
+               if (existingWallet) {
+                  throw { code: ERROR_CODES.USER_ALREADY_EXISTS, message: 'Wallet already exists' };
+               }
             }
 
             email = data.email;

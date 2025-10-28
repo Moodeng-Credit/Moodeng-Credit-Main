@@ -178,7 +178,7 @@ export const booleanSchema = (fieldName = 'Value') =>
  */
 export const optionalUsername = usernameSchema.optional();
 export const optionalEmail = emailSchema.optional();
-export const optionalWalletAddress = walletAddressSchema.optional();
+export const optionalWalletAddress = z.union([walletAddressSchema, z.null(), z.undefined()]).optional();
 export const optionalTelegramUsername = telegramUsernameSchema.optional();
 export const optionalObjectId = objectIdSchema.optional();
 export const optionalGoogleId = googleIdSchema.optional();

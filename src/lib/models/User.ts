@@ -13,7 +13,7 @@ const UserSchema = new Schema<IUser>({
    telegramId: { type: Number, index: { unique: true, sparse: true } },
    telegramUsername: { type: String, index: { unique: true, sparse: true } },
    chatId: { type: Number, index: { unique: true, sparse: true } },
-   mal: { type: Number, max: 3, default: 1 },
+   mal: { type: Number, max: 3, default: 3 },
    nal: { type: Number, max: 3, default: 0 },
    cs: { type: Number, default: 15 },
    createdAt: { type: Date, default: Date.now },
