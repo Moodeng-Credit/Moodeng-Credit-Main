@@ -44,6 +44,15 @@ export async function POST(request: NextRequest) {
                throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, status: 401 };
             }
 
+            // Check if user has a password (not an OAuth user)
+            if (!user.password) {
+               throw {
+                  code: ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+                  status: 401,
+                  message: 'This account uses OAuth authentication. Please use Google or Telegram login instead.'
+               };
+            }
+
             const isMatch = await comparePassword(data.password, user.password);
             if (!isMatch) {
                throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, status: 401 };

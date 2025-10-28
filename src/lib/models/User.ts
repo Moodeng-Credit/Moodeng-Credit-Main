@@ -3,11 +3,11 @@ import mongoose, { Schema } from 'mongoose';
 import { type IUser, WorldId } from '@/types/authTypes';
 
 const UserSchema = new Schema<IUser>({
-   walletAddress: { type: String, unique: true, required: true },
+   walletAddress: { type: String, unique: true, sparse: true },
    username: { type: String, unique: true, required: true },
    isWorldId: { type: String, enum: Object.values(WorldId), required: true },
    nullifierHash: { type: String, index: { unique: true, sparse: true } },
-   password: { type: String, required: true },
+   password: { type: String, sparse: true },
    email: { type: String, unique: true, required: true },
    googleId: { type: String, unique: true, sparse: true },
    telegramId: { type: Number, index: { unique: true, sparse: true } },

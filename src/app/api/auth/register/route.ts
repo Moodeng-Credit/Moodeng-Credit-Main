@@ -6,13 +6,7 @@ import { sendMail } from '@/lib/services/email';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { generateToken, hashPassword, setAuthCookie, validatePasswordStrength } from '@/lib/utils/auth';
 import { handleCors } from '@/lib/utils/cors';
-import {
-   generateRandomPassword,
-   generateTempWalletAddress,
-   generateUsername,
-   verifyGoogleToken,
-   verifyTelegramAuth
-} from '@/lib/utils/oauth';
+import { generateUsername, verifyGoogleToken, verifyTelegramAuth } from '@/lib/utils/oauth';
 import { WorldId } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { SUCCESS_CODES } from '@/types/successCodes';
@@ -23,8 +17,8 @@ export async function POST(request: NextRequest) {
       async (data) => {
          let email: string;
          let username: string;
-         let walletAddress: string;
-         let password: string;
+         let walletAddress: string | null;
+         let password: string | null;
          let googleId: string | undefined;
          let telegramId: number | undefined;
          let telegramUsername: string | undefined;
@@ -48,8 +42,8 @@ export async function POST(request: NextRequest) {
             email = googleData.email!;
             googleId = googleData.googleId;
             username = data.username || generateUsername(googleData.email, googleData.name);
-            walletAddress = data.walletAddress || generateTempWalletAddress();
-            password = generateRandomPassword();
+            walletAddress = data.walletAddress || null;
+            password = null;
          }
          // Handle Telegram registration
          else if (data.telegramAuthData) {
@@ -65,8 +59,8 @@ export async function POST(request: NextRequest) {
             telegramUsername = telegramData.username;
             username = data.username || telegramData.username || `user_${telegramData.telegramId}`;
             email = data.email || `telegram_${telegramData.telegramId}@moodeng.placeholder`;
-            walletAddress = data.walletAddress || generateTempWalletAddress();
-            password = generateRandomPassword();
+            walletAddress = data.walletAddress || null;
+            password = null;
          }
          // Handle traditional email/password registration
          else {
@@ -109,8 +103,8 @@ export async function POST(request: NextRequest) {
             counter++;
          }
 
-         // Hash password
-         const hashedPassword = await hashPassword(password);
+         // Hash password (only for traditional registration)
+         const hashedPassword = password ? await hashPassword(password) : null;
 
          // Create user
          const user = new User({

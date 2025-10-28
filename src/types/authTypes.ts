@@ -15,7 +15,7 @@ export interface User {
    username: string;
    email: string;
    googleId?: string;
-   walletAddress: string;
+   walletAddress?: string;
    isWorldId: WorldIdStatus;
    nullifierHash?: string;
    telegramUsername?: string;
@@ -36,11 +36,11 @@ export const WorldId = {
 export type WorldIdStatus = (typeof WorldId)[keyof typeof WorldId];
 
 export interface IUser extends Document {
-   walletAddress: string;
+   walletAddress?: string;
    username: string;
    isWorldId: WorldIdStatus;
    nullifierHash?: string;
-   password: string;
+   password?: string;
    email: string;
    googleId?: string;
    telegramUsername?: string;

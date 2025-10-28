@@ -97,22 +97,3 @@ export function generateUsername(email?: string, name?: string): string {
    // Remove invalid characters
    return base.replace(/[^a-z0-9_-]/g, '');
 }
-
-/**
- * Generate a temporary wallet address placeholder
- * User can update this later with their real wallet
- */
-export function generateTempWalletAddress(): string {
-   const random1 = Math.random().toString(16).substring(2, 15).padEnd(13, '0');
-   const random2 = Math.random().toString(16).substring(2, 15).padEnd(13, '0');
-   const random3 = Math.random().toString(16).substring(2, 15).padEnd(14, '0');
-   return `0x${random1}${random2}${random3}`;
-}
-
-/**
- * Generate a random password for OAuth users
- * These users won't use password login, but we need it for the schema
- */
-export function generateRandomPassword(): string {
-   return crypto.randomBytes(32).toString('hex');
-}

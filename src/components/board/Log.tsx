@@ -110,7 +110,7 @@ export default function Log() {
       const resultAction = await dispatch(
          action({
             googleCredential: credential,
-            walletAddress: account.address
+            walletAddress: account.address || undefined
          })
       );
 
@@ -138,7 +138,7 @@ export default function Log() {
       const resultAction = await dispatch(
          action({
             telegramAuthData,
-            walletAddress: account.address
+            walletAddress: account.address || undefined
          })
       );
 

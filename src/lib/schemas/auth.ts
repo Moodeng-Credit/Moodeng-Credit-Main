@@ -121,7 +121,7 @@ export const userResponseSchema = z.object({
    _id: z.string(),
    username: z.string(),
    email: z.string(),
-   walletAddress: z.string(),
+   walletAddress: z.string().optional(),
    isWorldId: z.string(),
    telegramUsername: z.string().optional(),
    googleId: z.string().optional(),
