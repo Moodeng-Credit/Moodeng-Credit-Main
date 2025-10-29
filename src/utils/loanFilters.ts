@@ -112,8 +112,7 @@ export const filterBySearch = (loans: Loan[], search: string): Loan[] => {
 
    const searchLower = search.toLowerCase();
    return loans.filter(
-      (loan) =>
-         loan.reason?.toLowerCase().includes(searchLower) || loan.borrowerUser?.toLowerCase().includes(searchLower)
+      (loan) => loan.reason?.toLowerCase().includes(searchLower) || loan.borrowerUser?.toLowerCase().includes(searchLower)
    );
 };
 

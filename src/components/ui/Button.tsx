@@ -48,7 +48,7 @@ export default function Button({
 
    return (
       <button className={combinedClassName} disabled={disabled} {...props}>
-         {icon && <span>{icon}</span>}
+         {icon ? <span>{icon}</span> : null}
          {children}
       </button>
    );

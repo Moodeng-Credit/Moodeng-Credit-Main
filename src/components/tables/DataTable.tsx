@@ -1,5 +1,7 @@
 import { type ReactNode } from 'react';
 
+import { useStableKeys } from '@/hooks/useStableKeys';
+
 export interface Column<T> {
    header: string;
    accessor: keyof T | ((row: T) => ReactNode);
@@ -10,12 +12,19 @@ export interface Column<T> {
 interface DataTableProps<T> {
    columns: Column<T>[];
    data: T[];
-   keyExtractor: (row: T, index: number) => string;
+   keyExtractor: (row: T) => string;
    emptyMessage?: string;
    className?: string;
 }
 
-export default function DataTable<T>({ columns, data, keyExtractor, emptyMessage = 'No data available', className = '' }: DataTableProps<T>) {
+export default function DataTable<T>({
+   columns,
+   data,
+   keyExtractor,
+   emptyMessage = 'No data available',
+   className = ''
+}: DataTableProps<T>) {
+   const stableData = useStableKeys(data, keyExtractor);
    const getCellValue = (row: T, column: Column<T>): ReactNode => {
       if (typeof column.accessor === 'function') {
          return column.accessor(row);
@@ -38,18 +47,21 @@ export default function DataTable<T>({ columns, data, keyExtractor, emptyMessage
             <table className={`w-full border-collapse ${className}`}>
                <thead>
                   <tr className="bg-gray-100 border-b">
-                     {columns.map((column, idx) => (
-                        <th key={idx} className={`px-4 py-3 text-left text-xs font-semibold text-gray-700 ${column.className || ''}`}>
+                     {columns.map((column) => (
+                        <th
+                           key={column.header}
+                           className={`px-4 py-3 text-left text-xs font-semibold text-gray-700 ${column.className || ''}`}
+                        >
                            {column.header}
                         </th>
                      ))}
                   </tr>
                </thead>
                <tbody>
-                  {data.map((row, rowIndex) => (
-                     <tr key={keyExtractor(row, rowIndex)} className="border-b hover:bg-gray-50 transition-colors">
-                        {columns.map((column, colIndex) => (
-                           <td key={colIndex} className={`px-4 py-3 text-sm ${column.className || ''}`}>
+                  {stableData.map(({ id, content: row }) => (
+                     <tr key={id} className="border-b hover:bg-gray-50 transition-colors">
+                        {columns.map((column) => (
+                           <td key={`${id}-${column.header}`} className={`px-4 py-3 text-sm ${column.className || ''}`}>
                               {getCellValue(row, column)}
                            </td>
                         ))}
@@ -61,10 +73,10 @@ export default function DataTable<T>({ columns, data, keyExtractor, emptyMessage
 
          {/* Mobile Card View */}
          <div className="md:hidden space-y-4">
-            {data.map((row, rowIndex) => (
-               <div key={keyExtractor(row, rowIndex)} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                  {columns.map((column, colIndex) => (
-                     <div key={colIndex} className="flex justify-between py-2 border-b last:border-b-0">
+            {stableData.map(({ id, content: row }) => (
+               <div key={id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  {columns.map((column) => (
+                     <div key={`${id}-${column.header}`} className="flex justify-between py-2 border-b last:border-b-0">
                         <span className="text-xs font-semibold text-gray-600">{column.mobileLabel || column.header}:</span>
                         <span className={`text-sm ${column.className || ''}`}>{getCellValue(row, column)}</span>
                      </div>

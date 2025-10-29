@@ -28,9 +28,7 @@ export default function SortButtons({ activeSort, onSortChange }: SortButtonsPro
                onClick={handleClick}
                value={value}
                className={`text-[10px] md:text-xs border rounded px-3 py-1 flex items-center space-x-1 transition ${
-                  activeSort === value
-                     ? 'border-blue-600 bg-blue-50 text-blue-700'
-                     : 'border-gray-300 hover:bg-gray-100 text-gray-700'
+                  activeSort === value ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-100 text-gray-700'
                }`}
             >
                <span>{label}</span>

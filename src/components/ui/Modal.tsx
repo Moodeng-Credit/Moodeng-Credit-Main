@@ -21,17 +21,17 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', s
 
    return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-         {showCloseButton && (
+         {showCloseButton ? (
             <button onClick={onClose} className="text-gray-600 hover:text-gray-800 fixed top-4 right-4 z-50">
                ✖
             </button>
-         )}
+         ) : null}
          <div className={`bg-white rounded-2xl shadow-md mx-auto flex flex-col ${sizeStyles[size]}`}>
-            {title && (
+            {title ? (
                <header className="bg-[#1E56FF] rounded-t-2xl px-6 py-4">
                   <h2 className="text-white font-extrabold text-lg">{title}</h2>
                </header>
-            )}
+            ) : null}
             <div className="p-6">{children}</div>
          </div>
       </div>

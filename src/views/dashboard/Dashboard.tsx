@@ -9,8 +9,6 @@ import { usePathname } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAccount } from 'wagmi';
 
-import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
-import UserCard from '@/views/dashboard/components/UserCard';
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import SearchBar from '@/components/filters/SearchBar';
 import SortButtons, { type SortOption } from '@/components/filters/SortButtons';
@@ -21,6 +19,8 @@ import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { fetchUser } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
+import UserCard from '@/views/dashboard/components/UserCard';
 
 const CREDIT_LEVELLING_VIDEO_ID = 'gaRjXOd2s2U';
 

@@ -35,14 +35,11 @@ export const calculateLenderDiversity = (
    }
 
    // Count loans by lender
-   const countMap = loans.reduce(
-      (acc: Record<string, number>, loan: Loan) => {
-         const lenderName = loan.lenderUser || 'Unknown';
-         acc[lenderName] = (acc[lenderName] || 0) + 1;
-         return acc;
-      },
-      {}
-   );
+   const countMap = loans.reduce((acc: Record<string, number>, loan: Loan) => {
+      const lenderName = loan.lenderUser || 'Unknown';
+      acc[lenderName] = (acc[lenderName] || 0) + 1;
+      return acc;
+   }, {});
 
    // Calculate unique lenders (those who lent only once)
    const uniqueLendersCount = Object.values(countMap).filter((count) => count === 1).length;

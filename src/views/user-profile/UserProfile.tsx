@@ -11,13 +11,14 @@ import { useParams } from 'react-router-dom';
 import Loading from '@/components/Loading';
 import CollapsibleSection from '@/components/ui/CollapsibleSection';
 
+import { formatDate, getMemberSinceText } from '@/utils/dateFormatters';
+import { calculateLenderDiversity, getDiversityColor, getDiversityStatus } from '@/utils/diversityScore';
+import { getNetworkColor } from '@/utils/networkColors';
+
 import { getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type Loan } from '@/types/loanTypes';
-import { formatDate, getMemberSinceText } from '@/utils/dateFormatters';
-import { calculateLenderDiversity, getDiversityColor, getDiversityStatus } from '@/utils/diversityScore';
-import { getNetworkColor } from '@/utils/networkColors';
 
 const LevelBadge = ({ status }: { status: string }) => (
    <svg viewBox="0 0 40 40" className="w-10 h-10">
@@ -309,127 +310,127 @@ const UserProfile = () => {
                   onToggle={() => setShowAllTiers(!showAllTiers)}
                   buttonText={showAllTiers ? 'Hide Progress History' : 'View Progress History'}
                >
-                     <div className="mt-6 space-y-4">
-                        <h3 className="text-lg font-medium text-gray-100">Credit Growth Timeline</h3>
-                        {uniqueLoans.map((tier: Loan) => (
-                           <div
-                              key={tier._id}
-                              className={`p-4 rounded-lg ${
-                                 tier.loanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
-                                    ? 'bg-green-900/20 border border-green-800'
-                                    : tier.loanAmount === user.cs
-                                      ? 'bg-blue-800/50 border border-blue-800'
-                                      : 'bg-gray-800/50 border border-gray-800'
-                              }`}
-                           >
-                              <div className="flex justify-between items-start">
-                                 <div className="flex items-center gap-4">
-                                    <LevelBadge
-                                       status={
-                                          tier.loanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
-                                             ? 'current'
-                                             : tier.loanAmount === user.cs
-                                               ? 'next'
-                                               : 'completed'
-                                       }
-                                    />
-                                    <div className="flex flex-col gap-1">
-                                       <div className="flex items-center gap-2">
-                                          <span
-                                             className={`text-lg font-medium ${
-                                                tier.loanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
-                                                   ? 'text-green-400'
-                                                   : tier.loanAmount === user.cs
-                                                     ? 'text-blue-100'
-                                                     : 'text-gray-100'
-                                             }`}
-                                          >
-                                             ${tier.loanAmount} Credit Limit
-                                          </span>
-                                          <span className="text-sm text-gray-400">{formatDate(tier.updatedAt)}</span>
-                                       </div>
-                                       <span className="text-xs text-gray-400">
-                                          ${tier.loanAmount} loan repaid ${tier.repaymentAmount} unlocked ${tier.loanAmount + 20} limit
+                  <div className="mt-6 space-y-4">
+                     <h3 className="text-lg font-medium text-gray-100">Credit Growth Timeline</h3>
+                     {uniqueLoans.map((tier: Loan) => (
+                        <div
+                           key={tier._id}
+                           className={`p-4 rounded-lg ${
+                              tier.loanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
+                                 ? 'bg-green-900/20 border border-green-800'
+                                 : tier.loanAmount === user.cs
+                                   ? 'bg-blue-800/50 border border-blue-800'
+                                   : 'bg-gray-800/50 border border-gray-800'
+                           }`}
+                        >
+                           <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-4">
+                                 <LevelBadge
+                                    status={
+                                       tier.loanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
+                                          ? 'current'
+                                          : tier.loanAmount === user.cs
+                                            ? 'next'
+                                            : 'completed'
+                                    }
+                                 />
+                                 <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2">
+                                       <span
+                                          className={`text-lg font-medium ${
+                                             tier.loanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
+                                                ? 'text-green-400'
+                                                : tier.loanAmount === user.cs
+                                                  ? 'text-blue-100'
+                                                  : 'text-gray-100'
+                                          }`}
+                                       >
+                                          ${tier.loanAmount} Credit Limit
                                        </span>
+                                       <span className="text-sm text-gray-400">{formatDate(tier.updatedAt)}</span>
                                     </div>
+                                    <span className="text-xs text-gray-400">
+                                       ${tier.loanAmount} loan repaid ${tier.repaymentAmount} unlocked ${tier.loanAmount + 20} limit
+                                    </span>
                                  </div>
+                              </div>
 
-                                 {TierList[tier.loanAmount]?.length > 0 ? (
-                                    <div className="flex items-start gap-2">
-                                       <div className="contents text-xs text-gray-400">Trust-Building Loans</div>
-                                       <div className="relative group">
-                                          <div className="flex items-center gap-1 cursor-help">
-                                             <span className="text-gray-400">+</span>
-                                             <div className="px-2 py-1 rounded-full bg-gray-700/40 border border-gray-600 text-sm text-gray-300">
-                                                {TierList[tier.loanAmount]?.length}
-                                             </div>
+                              {TierList[tier.loanAmount]?.length > 0 ? (
+                                 <div className="flex items-start gap-2">
+                                    <div className="contents text-xs text-gray-400">Trust-Building Loans</div>
+                                    <div className="relative group">
+                                       <div className="flex items-center gap-1 cursor-help">
+                                          <span className="text-gray-400">+</span>
+                                          <div className="px-2 py-1 rounded-full bg-gray-700/40 border border-gray-600 text-sm text-gray-300">
+                                             {TierList[tier.loanAmount]?.length}
                                           </div>
-                                          <div className="absolute invisible group-hover:visible bg-gray-700 text-gray-100 p-3 rounded-lg text-sm w-64 right-0 top-full mt-2 z-10 shadow-xl border border-gray-600">
-                                             <div className="space-y-2">
-                                                <p className="font-medium">Trust-Building Loans at ${tier.loanAmount} credit limit:</p>
-                                                <ul className="list-disc pl-4 space-y-1">
-                                                   {TierList[tier.loanAmount]?.map((loan: Loan) => (
-                                                      <li key={loan._id}>
-                                                         ${loan.loanAmount} loan - {formatDate(loan.updatedAt)}
-                                                      </li>
-                                                   ))}
-                                                </ul>
-                                             </div>
+                                       </div>
+                                       <div className="absolute invisible group-hover:visible bg-gray-700 text-gray-100 p-3 rounded-lg text-sm w-64 right-0 top-full mt-2 z-10 shadow-xl border border-gray-600">
+                                          <div className="space-y-2">
+                                             <p className="font-medium">Trust-Building Loans at ${tier.loanAmount} credit limit:</p>
+                                             <ul className="list-disc pl-4 space-y-1">
+                                                {TierList[tier.loanAmount]?.map((loan: Loan) => (
+                                                   <li key={loan._id}>
+                                                      ${loan.loanAmount} loan - {formatDate(loan.updatedAt)}
+                                                   </li>
+                                                ))}
+                                             </ul>
                                           </div>
                                        </div>
                                     </div>
-                                 ) : null}
+                                 </div>
+                              ) : null}
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+
+                  <div className="mt-6 space-y-4">
+                     <div className="p-4 rounded-lg bg-green-900/20 border border-green-800">
+                        <div className="flex items-center gap-2">
+                           <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                           <h3 className="font-medium text-green-400">Credit Unlocking Loans</h3>
+                           <div className="relative group">
+                              <HelpCircle className="w-4 h-4 text-green-400 cursor-help" />
+                              <div className="absolute invisible group-hover:visible w-64 p-3 bg-[#1F2937] rounded-lg shadow-xl text-sm text-gray-100 -translate-x-1/2 left-1/2 bottom-full mb-2 z-10 border border-gray-700">
+                                 <p>
+                                    Loans that match exact credit tier amounts ($20, $40, etc.). Successfully repaying these loans unlocks
+                                    the next credit tier.
+                                 </p>
+                                 <ul className="mt-2 list-disc pl-4 space-y-1 text-gray-400">
+                                    <li>Must match exact tier amount</li>
+                                    <li>Unlocks next credit level on repayment</li>
+                                    <li>Shows strong borrowing responsibility</li>
+                                 </ul>
                               </div>
                            </div>
-                        ))}
+                        </div>
+                        <p className="mt-2 text-sm text-green-400">Example: $20 loan unlocks $40 credit limit when repaid</p>
                      </div>
 
-                     <div className="mt-6 space-y-4">
-                        <div className="p-4 rounded-lg bg-green-900/20 border border-green-800">
-                           <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                              <h3 className="font-medium text-green-400">Credit Unlocking Loans</h3>
-                              <div className="relative group">
-                                 <HelpCircle className="w-4 h-4 text-green-400 cursor-help" />
-                                 <div className="absolute invisible group-hover:visible w-64 p-3 bg-[#1F2937] rounded-lg shadow-xl text-sm text-gray-100 -translate-x-1/2 left-1/2 bottom-full mb-2 z-10 border border-gray-700">
-                                    <p>
-                                       Loans that match exact credit tier amounts ($20, $40, etc.). Successfully repaying these loans
-                                       unlocks the next credit tier.
-                                    </p>
-                                    <ul className="mt-2 list-disc pl-4 space-y-1 text-gray-400">
-                                       <li>Must match exact tier amount</li>
-                                       <li>Unlocks next credit level on repayment</li>
-                                       <li>Shows strong borrowing responsibility</li>
-                                    </ul>
-                                 </div>
+                     <div className="p-4 rounded-lg bg-blue-900/20 border border-blue-800">
+                        <div className="flex items-center gap-2">
+                           <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                           <h3 className="font-medium text-blue-400">Trust Building Loans</h3>
+                           <div className="relative group">
+                              <HelpCircle className="w-4 h-4 text-blue-400 cursor-help" />
+                              <div className="absolute invisible group-hover:visible w-64 p-3 bg-[#1F2937] rounded-lg shadow-xl text-sm text-gray-100 -translate-x-1/2 left-1/2 bottom-full mb-2 z-10 border border-gray-700">
+                                 <p>
+                                    Smaller loans below your current credit tier. These help build trust with lenders but don't unlock
+                                    higher credit limits.
+                                 </p>
+                                 <ul className="mt-2 list-disc pl-4 space-y-1 text-gray-400">
+                                    <li>Must be at least $20</li>
+                                    <li>Shows active platform usage</li>
+                                    <li>Builds lender confidence</li>
+                                    <li>Doesn't affect credit limit</li>
+                                 </ul>
                               </div>
                            </div>
-                           <p className="mt-2 text-sm text-green-400">Example: $20 loan unlocks $40 credit limit when repaid</p>
                         </div>
-
-                        <div className="p-4 rounded-lg bg-blue-900/20 border border-blue-800">
-                           <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                              <h3 className="font-medium text-blue-400">Trust Building Loans</h3>
-                              <div className="relative group">
-                                 <HelpCircle className="w-4 h-4 text-blue-400 cursor-help" />
-                                 <div className="absolute invisible group-hover:visible w-64 p-3 bg-[#1F2937] rounded-lg shadow-xl text-sm text-gray-100 -translate-x-1/2 left-1/2 bottom-full mb-2 z-10 border border-gray-700">
-                                    <p>
-                                       Smaller loans below your current credit tier. These help build trust with lenders but don't unlock
-                                       higher credit limits.
-                                    </p>
-                                    <ul className="mt-2 list-disc pl-4 space-y-1 text-gray-400">
-                                       <li>Must be at least $20</li>
-                                       <li>Shows active platform usage</li>
-                                       <li>Builds lender confidence</li>
-                                       <li>Doesn't affect credit limit</li>
-                                    </ul>
-                                 </div>
-                              </div>
-                           </div>
-                           <p className="mt-2 text-sm text-blue-400">Example: $20 loan while at $40 credit limit</p>
-                        </div>
+                        <p className="mt-2 text-sm text-blue-400">Example: $20 loan while at $40 credit limit</p>
                      </div>
+                  </div>
                </CollapsibleSection>
             </div>
 

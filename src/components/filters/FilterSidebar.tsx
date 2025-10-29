@@ -1,6 +1,6 @@
 import { type ChangeEvent } from 'react';
 
-import { LOAN_AMOUNTS, NETWORKS, REPAYMENT_RATES, LOAN_TIME_PERIODS } from '@/constants/loanOptions';
+import { LOAN_AMOUNTS, LOAN_TIME_PERIODS, NETWORKS, REPAYMENT_RATES } from '@/constants/loanOptions';
 
 interface FilterSidebarProps {
    // Amount filters

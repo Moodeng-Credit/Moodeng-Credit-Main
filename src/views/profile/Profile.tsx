@@ -24,11 +24,7 @@ import Card from '@/views/profile/components/Card';
 const renderLoanStatus = (loan: Loan) => (
    <span
       className={`font-bold ${
-         loan.repaymentStatus === 'Paid'
-            ? 'text-[#166534]'
-            : loan.repaymentStatus === 'Unpaid'
-              ? 'text-[#b91c1c]'
-              : 'text-gray-700'
+         loan.repaymentStatus === 'Paid' ? 'text-[#166534]' : loan.repaymentStatus === 'Unpaid' ? 'text-[#b91c1c]' : 'text-gray-700'
       }`}
    >
       {loan.loanStatus}, {loan.repaymentStatus}
