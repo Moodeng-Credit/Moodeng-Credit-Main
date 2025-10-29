@@ -1,6 +1,6 @@
 'use client';
 
-import { type ChangeEvent, type FormEvent, type MouseEvent, useEffect, useMemo, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -11,16 +11,16 @@ import { useAccount } from 'wagmi';
 
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import UserCard from '@/views/dashboard/components/UserCard';
-import Button from '@/components/ui/Button';
+import FilterSidebar from '@/components/filters/FilterSidebar';
+import SearchBar from '@/components/filters/SearchBar';
+import SortButtons, { type SortOption } from '@/components/filters/SortButtons';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import YouTubeVideoLightbox from '@/components/ui/YouTubeVideoLightbox';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
-import { LOAN_AMOUNTS, NETWORKS } from '@/constants/loanOptions';
 import { fetchUser } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-import { filterLoans } from '@/utils/loanFilters';
 
 const CREDIT_LEVELLING_VIDEO_ID = 'gaRjXOd2s2U';
 
@@ -49,10 +49,11 @@ export default function Dashboard() {
    const [days, setDays] = useState('');
    const [currentNetwork, setCurrentNetwork] = useState('');
    const [amount, setAmount] = useState('');
+   const [customAmount, setCustomAmount] = useState('');
    const [rate, setRate] = useState('');
    const [sd, setSD] = useState<Date | null>(null);
    const [loanTime, setLoanTime] = useState('');
-   const [avg, setAvg] = useState('');
+   const [avg, setAvg] = useState<SortOption | ''>('');
    const [searchLoan, setSearchLoan] = useState('');
 
    const clear = () => {
@@ -64,28 +65,22 @@ export default function Dashboard() {
       setDays('');
    };
 
-   const handleDateChange = (e: ChangeEvent<HTMLInputElement>) => {
-      const selectedDate = e.target.value;
-      if (selectedDate) {
-         setSD(new Date(selectedDate));
-         setLoanTime(''); // Clear loanTime when a specific date is selected
-      } else {
-         setSD(null);
-         setLoanTime(''); // Also clear loanTime when date is cleared
-      }
+   // Wrapper functions for FilterSidebar that maintain date/loanTime interaction logic
+   const handleFilterDateChange = (date: Date | null) => {
+      setSD(date);
+      setLoanTime(''); // Clear loanTime when date is manually selected
    };
 
-   const handleLoanTimeChange = (e: ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      if (value === loanTime) {
+   const handleFilterLoanTimeChange = (time: string) => {
+      if (time === '') {
          setLoanTime('');
          setSD(null);
       } else {
-         setLoanTime(value);
+         setLoanTime(time);
+         // Calculate and set the date based on the loan time
          const currentDate = new Date();
-         let targetDate: Date | null = new Date(currentDate);
-         targetDate.setDate(currentDate.getDate() + Number(value));
-
+         const targetDate = new Date(currentDate);
+         targetDate.setDate(currentDate.getDate() + Number(time));
          setSD(targetDate);
       }
    };
@@ -312,358 +307,24 @@ export default function Dashboard() {
                   </div>
                ) : null}
                <div className="flex flex-col md:flex-row md:space-x-10">
-                  <aside className="w-full md:w-64 flex-shrink-0">
-                     <h2 className="font-semibold text-gray-900 text-sm mb-4">Filters</h2>
-                     <form className="space-y-6 text-xs md:text-sm text-gray-700">
-                        <fieldset>
-                           <legend className="font-semibold mb-2">Set Lending Limit</legend>
-                           <input
-                              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                                 e.target.value.toString() === amount ? setAmount('') : setAmount(e.target.value.toString())
-                              }
-                              className="w-full border border-gray-300 rounded px-2 py-1 mb-3 text-xs md:text-sm"
-                              placeholder="Custom amount"
-                              type="number"
-                           />
-                           <div className="space-y-1">
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="lending-limit"
-                                    type="checkbox"
-                                    checked={amount === '150'}
-                                    value="150"
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                       e.target.value === amount ? setAmount('') : setAmount(e.target.value);
-                                    }}
-                                 />
-                                 <span>$150</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="lending-limit"
-                                    type="checkbox"
-                                    checked={amount === '80'}
-                                    value="80"
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                       e.target.value === amount ? setAmount('') : setAmount(e.target.value);
-                                    }}
-                                 />
-                                 <span>$80</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="lending-limit"
-                                    type="checkbox"
-                                    checked={amount === '40'}
-                                    value="40"
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                       e.target.value === amount ? setAmount('') : setAmount(e.target.value);
-                                    }}
-                                 />
-                                 <span>$40</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="lending-limit"
-                                    type="checkbox"
-                                    checked={amount === '15'}
-                                    value="15"
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                       e.target.value === amount ? setAmount('') : setAmount(e.target.value);
-                                    }}
-                                 />
-                                 <span>$15</span>
-                              </label>
-                           </div>
-                        </fieldset>
-                        <fieldset>
-                           <legend className="font-semibold mb-2">Repayment amount</legend>
-                           <input
-                              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                                 e.target.value.toString() === rate ? setRate('') : setRate(e.target.value.toString())
-                              }
-                              className="w-full border border-gray-300 rounded px-2 py-1 mb-3 text-xs md:text-sm"
-                              placeholder="Custom amount"
-                              type="number"
-                           />
-                           <div className="space-y-1">
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="repayment-amount"
-                                    type="checkbox"
-                                    checked={rate === '2.5'}
-                                    value="2.5"
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                       e.target.value === rate ? setRate('') : setRate(e.target.value);
-                                    }}
-                                 />
-                                 <span>0% to 5%</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="repayment-amount"
-                                    type="checkbox"
-                                    checked={rate === '7.5'}
-                                    value="7.5"
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                       e.target.value === rate ? setRate('') : setRate(e.target.value);
-                                    }}
-                                 />
-                                 <span>5% to 10%</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="repayment-amount"
-                                    type="checkbox"
-                                    checked={rate === '12.5'}
-                                    value="12.5"
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                       e.target.value === rate ? setRate('') : setRate(e.target.value);
-                                    }}
-                                 />
-                                 <span>10% to 15%</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="repayment-amount"
-                                    type="checkbox"
-                                    checked={rate === '+'}
-                                    value="+"
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                       e.target.value === rate ? setRate('') : setRate(e.target.value);
-                                    }}
-                                 />
-                                 <span>20%+</span>
-                              </label>
-                           </div>
-                        </fieldset>
-                        <fieldset>
-                           <legend className="font-semibold mb-2">Repayment Date</legend>
-                           <input
-                              onChange={handleDateChange}
-                              className="w-full border border-gray-300 rounded px-2 py-1 mb-3 text-xs md:text-sm"
-                              placeholder="Pick a date..."
-                              type="date"
-                              min={today}
-                              value={sd ? sd?.toISOString().split('T')[0] : ''}
-                           />
-                           <div className="space-y-1">
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="repayment-date"
-                                    type="checkbox"
-                                    checked={loanTime === '7'}
-                                    value="7"
-                                    onChange={handleLoanTimeChange}
-                                 />
-                                 <span>Next Week</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="repayment-date"
-                                    type="checkbox"
-                                    checked={loanTime === '30'}
-                                    value="30"
-                                    onChange={handleLoanTimeChange}
-                                 />
-                                 <span>Next 30 Days</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="repayment-date"
-                                    type="checkbox"
-                                    checked={loanTime === '90'}
-                                    value="90"
-                                    onChange={handleLoanTimeChange}
-                                 />
-                                 <span>Next 90 Days</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="repayment-date"
-                                    type="checkbox"
-                                    checked={loanTime === '120'}
-                                    value="120"
-                                    onChange={handleLoanTimeChange}
-                                 />
-                                 <span>Next 120 Days+</span>
-                              </label>
-                           </div>
-                        </fieldset>
-                        <fieldset>
-                           <legend className="font-semibold mb-2">Borrow Type</legend>
-                           <div className="space-y-1 text-xs md:text-sm text-gray-700">
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input className="form-checkbox text-blue-600" name="borrow-type" type="checkbox" value="good-standing" />
-                                 <span>Good Standing</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input className="form-checkbox text-blue-600" name="borrow-type" type="checkbox" value="beginner" />
-                                 <span>Beginner Borrower</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input className="form-checkbox text-blue-600" name="borrow-type" type="checkbox" value="no-active" />
-                                 <span>No Active Loans</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input className="form-checkbox text-blue-600" name="borrow-type" type="checkbox" value="long-term" />
-                                 <span>Long Term Loans</span>
-                              </label>
-                           </div>
-                        </fieldset>
-                        <fieldset>
-                           <legend className="font-semibold mb-2">currentNetwork</legend>
-                           <div className="space-y-1 text-xs md:text-sm text-gray-700">
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="network"
-                                    type="checkbox"
-                                    checked={currentNetwork === 'optimism'}
-                                    value="optimism"
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                       e.target.value === currentNetwork ? setCurrentNetwork('') : setCurrentNetwork(e.target.value);
-                                    }}
-                                 />
-                                 <span>Optimism</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="network"
-                                    type="checkbox"
-                                    checked={currentNetwork === 'arbitrum'}
-                                    value="arbitrum"
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                       e.target.value === currentNetwork ? setCurrentNetwork('') : setCurrentNetwork(e.target.value);
-                                    }}
-                                 />
-                                 <span>Arbitrum</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="network"
-                                    type="checkbox"
-                                    checked={currentNetwork === 'polygon'}
-                                    value="polygon"
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                       e.target.value === currentNetwork ? setCurrentNetwork('') : setCurrentNetwork(e.target.value);
-                                    }}
-                                 />
-                                 <span>Polygon</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="network"
-                                    type="checkbox"
-                                    checked={currentNetwork === 'base'}
-                                    value="base"
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                       e.target.value === currentNetwork ? setCurrentNetwork('') : setCurrentNetwork(e.target.value);
-                                    }}
-                                 />
-                                 <span>Base</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="network"
-                                    type="checkbox"
-                                    checked={currentNetwork === 'binance'}
-                                    value="binance"
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                       e.target.value === currentNetwork ? setCurrentNetwork('') : setCurrentNetwork(e.target.value);
-                                    }}
-                                 />
-                                 <span>Binance</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="network"
-                                    type="checkbox"
-                                    checked={currentNetwork === 'sepolia'}
-                                    value="sepolia"
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                       e.target.value === currentNetwork ? setCurrentNetwork('') : setCurrentNetwork(e.target.value);
-                                    }}
-                                 />
-                                 <span>Sepolia</span>
-                              </label>
-                              <label className="flex items-center space-x-2 cursor-pointer">
-                                 <input
-                                    className="form-checkbox text-blue-600"
-                                    name="network"
-                                    type="checkbox"
-                                    checked={currentNetwork === 'baseSepolia'}
-                                    value="baseSepolia"
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                       e.target.value === currentNetwork ? setCurrentNetwork('') : setCurrentNetwork(e.target.value);
-                                    }}
-                                 />
-                                 <span>Base Sepolia</span>
-                              </label>
-                           </div>
-                           <p className="text-gray-400 text-[9px] mt-1">More Networks...</p>
-                        </fieldset>
-                     </form>
-                  </aside>
+                  <FilterSidebar
+                     amount={amount}
+                     onAmountChange={setAmount}
+                     customAmount={customAmount}
+                     onCustomAmountChange={setCustomAmount}
+                     rate={rate}
+                     onRateChange={setRate}
+                     selectedDate={sd}
+                     onDateChange={handleFilterDateChange}
+                     loanTime={loanTime}
+                     onLoanTimeChange={handleFilterLoanTimeChange}
+                     currentNetwork={currentNetwork}
+                     onNetworkChange={setCurrentNetwork}
+                  />
                   <section className="flex-1 flex flex-col items-center mt-10 md:mt-0">
                      <div className="flex flex-wrap justify-start md:justify-end gap-3 mb-6 w-full max-w-xl">
-                        <button
-                           onClick={(e: MouseEvent<HTMLButtonElement>) => setAvg((e.target as HTMLButtonElement).value)}
-                           value="lowest"
-                           className="text-[10px] md:text-xs border border-gray-300 rounded px-3 py-1 flex items-center space-x-1 hover:bg-gray-100"
-                        >
-                           <span>Lowest</span>
-                           <i className="fas fa-filter text-gray-600 text-xs"></i>
-                        </button>
-                        <button
-                           onClick={(e: MouseEvent<HTMLButtonElement>) => setAvg((e.target as HTMLButtonElement).value)}
-                           value="highest"
-                           className="text-[10px] md:text-xs border border-gray-300 rounded px-3 py-1 flex items-center space-x-1 hover:bg-gray-100"
-                        >
-                           <span>Highest</span>
-                           <i className="fas fa-filter text-gray-600 text-xs"></i>
-                        </button>
-                        <button
-                           onClick={(e: MouseEvent<HTMLButtonElement>) => setAvg((e.target as HTMLButtonElement).value)}
-                           value="oldest"
-                           className="text-[10px] md:text-xs border border-gray-300 rounded px-3 py-1 flex items-center space-x-1 hover:bg-gray-100"
-                        >
-                           <span>Oldest</span>
-                           <i className="fas fa-filter text-gray-600 text-xs"></i>
-                        </button>
-                        <button
-                           onClick={(e: MouseEvent<HTMLButtonElement>) => setAvg((e.target as HTMLButtonElement).value)}
-                           value="newest"
-                           className="text-[10px] md:text-xs border border-gray-300 rounded px-3 py-1 flex items-center space-x-1 hover:bg-gray-100"
-                        >
-                           <span>Newest</span>
-                           <i className="fas fa-filter text-gray-600 text-xs"></i>
-                        </button>
-                        <div className="flex-1 min-w-[180px] max-w-xs">
-                           <input
-                              onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchLoan(e.target.value)}
-                              className="w-full border border-gray-300 rounded-full px-4 py-1 text-xs md:text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                              placeholder="Search Request..."
-                              type="search"
-                           />
-                        </div>
+                        <SortButtons activeSort={avg} onSortChange={setAvg} />
+                        <SearchBar value={searchLoan} onChange={setSearchLoan} placeholder="Search Request..." />
                      </div>
                      <div className="flex flex-wrap justify-center gap-6">
                         {sortedLoans && Array.isArray(sortedLoans)

@@ -17,7 +17,23 @@ import { formatDate } from '@/utils/dateFormatters';
 import { fetchUser, updateUser } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import type { Loan } from '@/types/loanTypes';
 import Card from '@/views/profile/components/Card';
+
+// Helper function to render loan status with appropriate styling
+const renderLoanStatus = (loan: Loan) => (
+   <span
+      className={`font-bold ${
+         loan.repaymentStatus === 'Paid'
+            ? 'text-[#166534]'
+            : loan.repaymentStatus === 'Unpaid'
+              ? 'text-[#b91c1c]'
+              : 'text-gray-700'
+      }`}
+   >
+      {loan.loanStatus}, {loan.repaymentStatus}
+   </span>
+);
 
 export default function Profile() {
    const dispatch = useDispatch<AppDispatch>();
@@ -272,19 +288,7 @@ export default function Profile() {
                            },
                            {
                               header: 'Status',
-                              accessor: (loan) => (
-                                 <span
-                                    className={`font-bold ${
-                                       loan.repaymentStatus === 'Paid'
-                                          ? 'text-[#166534]'
-                                          : loan.repaymentStatus === 'Unpaid'
-                                            ? 'text-[#b91c1c]'
-                                            : 'text-gray-700'
-                                    }`}
-                                 >
-                                    {loan.loanStatus}, {loan.repaymentStatus}
-                                 </span>
-                              ),
+                              accessor: renderLoanStatus,
                               mobileLabel: 'Status'
                            }
                         ]}

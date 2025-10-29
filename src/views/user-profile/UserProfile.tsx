@@ -11,7 +11,6 @@ import { useParams } from 'react-router-dom';
 import Loading from '@/components/Loading';
 import CollapsibleSection from '@/components/ui/CollapsibleSection';
 
-import { MONTHS } from '@/constants/dates';
 import { getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
