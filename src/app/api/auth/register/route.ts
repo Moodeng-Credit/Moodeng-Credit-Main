@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
       async (data) => {
          let email: string;
          let username: string;
-         let walletAddress: string | null;
          let password: string | null;
          let googleId: string | undefined;
          let telegramId: number | undefined;
@@ -42,7 +41,6 @@ export async function POST(request: NextRequest) {
             email = googleData.email!;
             googleId = googleData.googleId;
             username = data.username || generateUsername(googleData.email, googleData.name);
-            walletAddress = data.walletAddress || null;
             password = null;
          }
          // Handle Telegram registration
@@ -59,12 +57,11 @@ export async function POST(request: NextRequest) {
             telegramUsername = telegramData.username;
             username = data.username || telegramData.username || `user_${telegramData.telegramId}`;
             email = data.email || `telegram_${telegramData.telegramId}@moodeng.placeholder`;
-            walletAddress = data.walletAddress || null;
             password = null;
          }
          // Handle traditional email/password registration
          else {
-            if (!data.email || !data.password || !data.username || !data.walletAddress) {
+            if (!data.email || !data.password || !data.username) {
                throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, message: 'Missing required fields' };
             }
 
@@ -82,16 +79,8 @@ export async function POST(request: NextRequest) {
                throw { code: ERROR_CODES.USER_ALREADY_EXISTS, message: 'Email already exists' };
             }
 
-            if (data.walletAddress) {
-               const existingWallet = await User.findOne({ walletAddress: data.walletAddress });
-               if (existingWallet) {
-                  throw { code: ERROR_CODES.USER_ALREADY_EXISTS, message: 'Wallet already exists' };
-               }
-            }
-
             email = data.email;
             username = data.username;
-            walletAddress = data.walletAddress;
             password = data.password;
          }
 
@@ -111,7 +100,7 @@ export async function POST(request: NextRequest) {
          // Create user
          const user = new User({
             username: finalUsername,
-            walletAddress,
+            walletAddress: null,
             isWorldId: WorldId.INACTIVE,
             password: hashedPassword,
             email,

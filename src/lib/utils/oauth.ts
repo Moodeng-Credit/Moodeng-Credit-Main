@@ -43,9 +43,9 @@ export async function verifyGoogleToken(credential: string) {
 export function verifyTelegramAuth(authData: Record<string, string>) {
    console.log('Telegram auth data received:', authData);
 
-   const botToken = process.env.TELEGRAM_BOT_TOKEN;
+   const botToken = process.env.TELEGRAM_API_TOKEN;
    if (!botToken) {
-      console.error('TELEGRAM_BOT_TOKEN not found');
+      console.error('TELEGRAM_API_TOKEN not found');
       throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, status: 500 };
    }
 

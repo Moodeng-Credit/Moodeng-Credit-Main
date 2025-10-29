@@ -4,9 +4,7 @@ import { type FormEvent, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useDispatch } from 'react-redux';
-import { useAccount } from 'wagmi';
 
 import GoogleAuthButton from '@/components/board/GoogleAuthButton';
 import TelegramAuthButton from '@/components/board/TelegramAuthButton';
@@ -26,7 +24,6 @@ import type { AppDispatch } from '@/store/store';
 export default function Log() {
    const router = useRouter();
    const dispatch = useDispatch<AppDispatch>();
-   const account = useAccount();
    const [email, setEmail] = useState('');
    const [password, setPassword] = useState('');
    const [confirm, setConfirm] = useState('');
@@ -35,11 +32,9 @@ export default function Log() {
    const [showUser, setShowUser] = useState(false);
    const [showPass, setShowPass] = useState(false);
    const [showEmail, setShowEmail] = useState(false);
-   const [showWallet, setShowWallet] = useState(false);
    const [showConfirm, setShowConfirm] = useState(false);
    const [showAccount, setShowAccount] = useState(false);
    const [showLog, setShowLog] = useState(true);
-   const walletAddress = account.isConnected && account.address;
    const isWorldId = 'INACTIVE';
 
    const clear = () => {
@@ -55,7 +50,6 @@ export default function Log() {
       setShowEmail(false);
       setShowConfirm(false);
       setShowAccount(false);
-      setShowWallet(false);
    };
 
    const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
@@ -65,9 +59,9 @@ export default function Log() {
       if (password !== confirm) {
          setShowConfirm(true);
       }
-      if (username && walletAddress && isWorldId && password && email && password === confirm) {
+      if (username && isWorldId && password && email && password === confirm) {
          setIsLoading(true);
-         const resultAction = await dispatch(registerUser({ username, walletAddress, isWorldId, password, email }));
+         const resultAction = await dispatch(registerUser({ username, isWorldId, password, email }));
          console.log(resultAction);
          if (registerUser.fulfilled.match(resultAction)) {
             clear();
@@ -77,7 +71,6 @@ export default function Log() {
             console.log(cdt);
             if (cdt.includes('User')) setShowUser(true);
             if (cdt.includes('Email')) setShowEmail(true);
-            if (cdt.includes('Wallet')) setShowWallet(true);
             if (cdt.includes('Password')) setShowPass(true);
             /* alert(resultAction.payload.message); */
          }
@@ -109,8 +102,7 @@ export default function Log() {
       const action = showLog ? registerWithGoogle : loginWithGoogle;
       const resultAction = await dispatch(
          action({
-            googleCredential: credential,
-            walletAddress: account.address || undefined
+            googleCredential: credential
          })
       );
 
@@ -137,8 +129,7 @@ export default function Log() {
       const action = showLog ? registerWithTelegram : loginWithTelegram;
       const resultAction = await dispatch(
          action({
-            telegramAuthData,
-            walletAddress: account.address || undefined
+            telegramAuthData
          })
       );
 
@@ -169,11 +160,6 @@ export default function Log() {
          ) : showLog ? (
             <div className="w-full bg-white max-w-md border rounded-2xl shadow p-6 space-y-4">
                <h2 className="text-xl font-semibold text-center text-blue-600">Welcome to Moodeng Credit</h2>
-
-               <div className="flex flex-col md:flex-row justify-center items-center">
-                  <ConnectButton />
-                  {showWallet ? <span className="text-rose-600 text-sm">Wallet already exists.</span> : null}
-               </div>
 
                <GoogleAuthButton onSuccess={handleGoogleAuth} onError={handleOAuthError} text="signup_with" />
 

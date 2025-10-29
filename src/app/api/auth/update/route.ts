@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
          if (data.email) {
             user.email = data.email;
          }
-         if (data.walletAddress) {
+         if (data.walletAddress !== undefined) {
             user.walletAddress = data.walletAddress;
          }
          user.updatedAt = new Date();

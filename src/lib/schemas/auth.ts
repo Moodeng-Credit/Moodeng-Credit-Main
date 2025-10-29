@@ -10,9 +10,9 @@ import {
    optionalGoogleId,
    optionalTelegramId,
    optionalTelegramUsername,
+   optionalWalletAddress,
    passwordSchema,
-   usernameSchema,
-   walletAddressSchema
+   usernameSchema
 } from '@/lib/schemas/fields';
 import type { IUser } from '@/types/authTypes';
 import { WorldId } from '@/types/authTypes';
@@ -27,7 +27,6 @@ export const registerSchema = z.object({
    username: usernameSchema.optional(),
    email: emailSchema.optional(),
    password: passwordSchema.optional(),
-   walletAddress: walletAddressSchema.optional(),
 
    // OAuth credentials
    googleCredential: z.string().optional(),
@@ -71,7 +70,7 @@ export const updateUserSchema = z.object({
    username: usernameSchema.optional(),
    email: emailSchema.optional(),
    password: passwordSchema.optional(),
-   walletAddress: walletAddressSchema.optional(),
+   walletAddress: optionalWalletAddress,
    telegramUsername: optionalTelegramUsername,
    isWorldId: z.enum([WorldId.INACTIVE, WorldId.ACTIVE]).optional(),
    googleId: optionalGoogleId,

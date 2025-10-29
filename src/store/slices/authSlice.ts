@@ -10,7 +10,7 @@ const defaultUser: User = {
    _id: '',
    username: '',
    email: '',
-   walletAddress: '',
+   walletAddress: undefined,
    isWorldId: WorldId.INACTIVE,
    googleId: undefined,
    telegramUsername: undefined,
@@ -62,7 +62,7 @@ export const loginWithTelegram = createAsyncThunk('auth/loginWithTelegram', asyn
 
 export const registerUser = createAsyncThunk(
    'auth/register',
-   async (userData: { username: string; walletAddress: string; isWorldId: string; password: string; email: string }) => {
+   async (userData: { username: string; isWorldId: string; password: string; email: string }) => {
       await apiHandler.post(API_ENDPOINTS.AUTH.REGISTER, userData);
       const userResponse = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
       return {
@@ -74,8 +74,8 @@ export const registerUser = createAsyncThunk(
 
 export const registerWithGoogle = createAsyncThunk(
    'auth/registerWithGoogle',
-   async ({ googleCredential, walletAddress }: { googleCredential: string; walletAddress?: string }) => {
-      await apiHandler.post(API_ENDPOINTS.AUTH.REGISTER, { googleCredential, walletAddress });
+   async ({ googleCredential }: { googleCredential: string }) => {
+      await apiHandler.post(API_ENDPOINTS.AUTH.REGISTER, { googleCredential });
       const userResponse = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
       return {
          username: userResponse.username,
@@ -86,8 +86,8 @@ export const registerWithGoogle = createAsyncThunk(
 
 export const registerWithTelegram = createAsyncThunk(
    'auth/registerWithTelegram',
-   async ({ telegramAuthData, walletAddress }: { telegramAuthData: string; walletAddress?: string }) => {
-      await apiHandler.post(API_ENDPOINTS.AUTH.REGISTER, { telegramAuthData, walletAddress });
+   async ({ telegramAuthData }: { telegramAuthData: string }) => {
+      await apiHandler.post(API_ENDPOINTS.AUTH.REGISTER, { telegramAuthData });
       const userResponse = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
       return {
          username: userResponse.username,
