@@ -18,7 +18,7 @@ export default function GoogleAuthButton({ onSuccess, onError, text = 'continue_
 
    return (
       <GoogleOAuthProvider clientId={clientId}>
-         <div className="w-full">
+         <div className="w-full flex justify-center">
             <GoogleLogin
                onSuccess={(credentialResponse) => {
                   if (credentialResponse.credential) {

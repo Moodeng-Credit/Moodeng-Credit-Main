@@ -1,10 +1,10 @@
-import { type JSX } from 'react';
+import { type ChangeEvent, type JSX } from 'react';
 
 interface FormInputProps {
    type: 'text' | 'email' | 'password';
    placeholder: string;
    value: string;
-   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
    error?: boolean;
    icon: JSX.Element;
    focusColor?: string;

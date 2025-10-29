@@ -1,4 +1,4 @@
-import { type JSX } from 'react';
+import { type JSX, type ReactNode } from 'react';
 
 import Image from 'next/image';
 
@@ -7,7 +7,7 @@ interface AuthCardProps {
    isSignUp: boolean;
    headerColor: string;
    mascotPosition: 'left' | 'right';
-   children: React.ReactNode;
+   children: ReactNode;
 }
 
 export default function AuthCard({ title, isSignUp, headerColor, mascotPosition, children }: AuthCardProps): JSX.Element {

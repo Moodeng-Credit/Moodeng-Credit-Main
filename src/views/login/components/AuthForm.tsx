@@ -1,4 +1,4 @@
-import { type FormEvent, type JSX } from 'react';
+import { type ChangeEvent, type FormEvent, type JSX } from 'react';
 
 import FormInput from '@/views/login/components/FormInput';
 import { Icons } from '@/views/login/components/Icons';
@@ -14,10 +14,10 @@ interface AuthFormProps {
    showPass: boolean;
    showConfirm: boolean;
    showAccount: boolean;
-   onUsernameChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-   onEmailChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-   onPasswordChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-   onConfirmChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+   onUsernameChange: (e: ChangeEvent<HTMLInputElement>) => void;
+   onEmailChange: (e: ChangeEvent<HTMLInputElement>) => void;
+   onPasswordChange: (e: ChangeEvent<HTMLInputElement>) => void;
+   onConfirmChange: (e: ChangeEvent<HTMLInputElement>) => void;
    onSubmit: (e: FormEvent<HTMLFormElement>) => void;
 }
 
