@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { useDispatch, useSelector } from 'react-redux';
 
-import UserPay from '@/components/board/UserPay';
+import UserPay from '@/components/UserPay';
 
 import { deleteLoan, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';

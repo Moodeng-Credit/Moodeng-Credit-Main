@@ -1,5 +1,5 @@
-import BorrowerDashboard from '@/components/board/BorrowerDashboard';
+import UserProfile from '@/views/user-profile/UserProfile';
 
 export default function UserPage() {
-   return <BorrowerDashboard />;
+   return <UserProfile />;
 }

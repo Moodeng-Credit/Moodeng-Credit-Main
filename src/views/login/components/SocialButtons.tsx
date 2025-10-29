@@ -1,7 +1,7 @@
 import { type JSX } from 'react';
 
-import GoogleAuthButton from '@/components/board/GoogleAuthButton';
-import TelegramAuthButton from '@/components/board/TelegramAuthButton';
+import GoogleAuthButton from '@/components/GoogleAuthButton';
+import TelegramAuthButton from '@/components/TelegramAuthButton';
 
 interface SocialButtonsProps {
    onGoogleAuth: (credential: string) => void;

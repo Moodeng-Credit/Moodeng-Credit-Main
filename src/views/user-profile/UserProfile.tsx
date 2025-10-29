@@ -9,11 +9,16 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
+import CollapsibleSection from '@/components/ui/CollapsibleSection';
 
+import { MONTHS } from '@/constants/dates';
 import { getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type Loan } from '@/types/loanTypes';
+import { formatDate, getMemberSinceText } from '@/utils/dateFormatters';
+import { calculateLenderDiversity, getDiversityColor, getDiversityStatus } from '@/utils/diversityScore';
+import { getNetworkColor } from '@/utils/networkColors';
 
 const LevelBadge = ({ status }: { status: string }) => (
    <svg viewBox="0 0 40 40" className="w-10 h-10">
@@ -29,36 +34,9 @@ const LevelBadge = ({ status }: { status: string }) => (
    </svg>
 );
 
-const getNetworkColor = (network: string) => {
-   const colors = {
-      optimism: 'bg-red-900/20 text-red-300',
-      solana: 'bg-orange-900/20 text-orange-300',
-      base: 'bg-blue-900/20 text-blue-300',
-      arbitrum: 'bg-yellow-900/20 text-yellow-300',
-      polygon: 'bg-purple-900/20 text-purple-300'
-   };
-   return colors[network as keyof typeof colors] || 'bg-gray-900/20 text-gray-300';
-};
+// Utility functions moved to @/utils
 
-const getDiversityColor = (Diversity: number) => {
-   if (Diversity >= 80) return 'green';
-   else if (Diversity >= 60 && Diversity < 80) return 'blue';
-   else if (Diversity >= 40 && Diversity < 60) return 'yellow';
-   else if (Diversity >= 20 && Diversity < 40) return 'orange';
-   else if (Diversity < 20) return 'red';
-   else return 'white';
-};
-
-const getDiversityStatus = (Diversity: number) => {
-   if (Diversity >= 80) return 'Excellent';
-   else if (Diversity >= 60 && Diversity < 80) return 'Good';
-   else if (Diversity >= 40 && Diversity < 60) return 'Fair';
-   else if (Diversity >= 20 && Diversity < 40) return 'Low';
-   else if (Diversity < 20) return 'Very Low';
-   else return 'How Knows';
-};
-
-const BorrowerDashboard = () => {
+const UserProfile = () => {
    const dispatch = useDispatch<AppDispatch>();
    const { username } = useParams();
 
@@ -97,26 +75,8 @@ const BorrowerDashboard = () => {
       return <Loading />;
    }
 
-   const months = [
-      '',
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December'
-   ];
-   const today = new Date();
-   today.setHours(0, 0, 0, 0);
-   const date = new Date(user.createdAt);
-   const timeDifference = today.getTime() - date.getTime();
-   const differenceInDays = Math.round(timeDifference / (1000 * 60 * 60 * 24));
+   // Date calculations using utilities
+   const memberSince = getMemberSinceText(user.createdAt);
 
    const ignoredTier = new Set();
    const TierLists = loans.reduce((acc: Loan[], loan: Loan) => {
@@ -189,55 +149,33 @@ const BorrowerDashboard = () => {
    });
    const avgPaymentTime = Math.round(totalPaymentTime / paidLoans.length);
 
+   // Calculate lender diversity using utility
+   const lenderDiversity = calculateLenderDiversity(loans);
+
    const borrowerData = {
       username: username,
-      memberSince:
-         months[parseInt(user.createdAt.split('T')[0].split('-')[1])] +
-         ' ' +
-         user.createdAt.split('T')[0].split('-')[2] +
-         ', ' +
-         user.createdAt.split('T')[0].split('-')[0] +
-         ' (' +
-         differenceInDays +
-         ' days)',
+      memberSince: memberSince,
       stats: {
          totalLoans: loans.length,
          defaults: 0,
          totalBorrowed: loans.reduce((sum, loan) => (loan.loanStatus === 'Lent' ? sum + loan.loanAmount : sum), 0),
          totalRepaid: loans.reduce((sum, loan) => (loan.repaymentStatus === 'Paid' ? sum + loan.loanAmount : sum), 0),
-         uniqueLenders: Object.values(countMap).filter((count) => count === 1).length,
+         uniqueLenders: lenderDiversity.uniqueLenders,
          unlocking: uniqueLoans.length,
          building: TierLists.length
       },
       creditGrowth: {
          currentLimit: user.cs > 20 ? user.cs - 20 : user.cs,
          nextLimit: user.cs,
-         currentDate:
-            user.cs > 20
-               ? months[parseInt(user.updatedAt?.split('T')[0].split('-')[1] || '1')] +
-                 ' ' +
-                 user.updatedAt?.split('T')[0].split('-')[2] +
-                 ', ' +
-                 user.updatedAt?.split('T')[0].split('-')[0]
-               : months[parseInt(user.createdAt.split('T')[0].split('-')[1])] +
-                 ' ' +
-                 user.createdAt.split('T')[0].split('-')[2] +
-                 ', ' +
-                 user.createdAt.split('T')[0].split('-')[0]
+         currentDate: user.cs > 20 && user.updatedAt ? formatDate(user.updatedAt) : formatDate(user.createdAt)
       },
-      lenderDiversity: {
-         score: Math.round((Object.values(countMap).filter((count) => count === 1).length / loans.length) * 100),
-         distribution: Object.keys(countMap).map((name) => ({
-            name,
-            percent: `${Math.round((countMap[name] / loans.length) * 100)}%`
-         }))
-      }
+      lenderDiversity: lenderDiversity
    };
 
    return (
       <div className="min-h-screen bg-[#0B1120] text-white">
-         <div className="max-w-7xl mx-auto p-6 space-y-6">
-            <div className="flex items-center gap-6 mb-8">
+         <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 mb-8">
                <Image
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Chiaroscuro_lighting_illuminates_a_Chibi-style_SVG_logo_a_gray_and_light_pink_hippo__joyfully_jumping__thumbs_up__holding_a_gold_Japanese_Mon_coin.__Hayao_Miyazaki_inspired__deep_teal_hues__warm_candl-uvt0ZI3fogcgqDR4Y2gCSRZfq8QmtX.png"
                   alt="Friendly hippo mascot"
@@ -245,15 +183,15 @@ const BorrowerDashboard = () => {
                   width={96}
                   height={96}
                />
-               <div className="space-y-1">
-                  <h1 className="text-2xl font-semibold">Dashboard Summary</h1>
-                  <p className="text-gray-400">
+               <div className="space-y-1 text-center md:text-left">
+                  <h1 className="text-xl md:text-2xl font-semibold">Dashboard Summary</h1>
+                  <p className="text-sm md:text-base text-gray-400">
                      {borrowerData.username} • Member since {borrowerData.memberSince}
                   </p>
                </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <div className="bg-[#1F2937] rounded-xl p-6">
                   <div className="flex justify-between items-start mb-4">
                      <div>
@@ -327,9 +265,9 @@ const BorrowerDashboard = () => {
             </div>
 
             <div className="bg-[#1F2937] rounded-xl p-6">
-               <h2 className="text-xl font-semibold mb-6">Credit Growth</h2>
+               <h2 className="text-lg md:text-xl font-semibold mb-6">Credit Growth</h2>
 
-               <div className="grid grid-cols-2 gap-6 mb-6">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
                   <div className="bg-gray-800 rounded-xl p-6 text-center">
                      <div className="text-gray-400 mb-4">Previous Credit Level</div>
                      <div className="inline-block bg-gray-700 rounded-full p-4 mb-4">
@@ -367,16 +305,11 @@ const BorrowerDashboard = () => {
                   </div>
                </div>
 
-               <button
-                  onClick={() => setShowAllTiers(!showAllTiers)}
-                  className="w-full mt-6 py-2 px-4 rounded-lg border border-blue-800 text-blue-400 hover:bg-blue-900/20 transition-colors flex items-center justify-center gap-2"
+               <CollapsibleSection
+                  isOpen={showAllTiers}
+                  onToggle={() => setShowAllTiers(!showAllTiers)}
+                  buttonText={showAllTiers ? 'Hide Progress History' : 'View Progress History'}
                >
-                  {showAllTiers ? 'Hide Progress History' : 'View Progress History'}
-                  <ChevronDown className={`w-4 h-4 transform transition-transform ${showAllTiers ? 'rotate-180' : ''}`} />
-               </button>
-
-               {showAllTiers ? (
-                  <>
                      <div className="mt-6 space-y-4">
                         <h3 className="text-lg font-medium text-gray-100">Credit Growth Timeline</h3>
                         {uniqueLoans.map((tier: Loan) => (
@@ -414,13 +347,7 @@ const BorrowerDashboard = () => {
                                           >
                                              ${tier.loanAmount} Credit Limit
                                           </span>
-                                          <span className="text-sm text-gray-400">
-                                             {months[parseInt(tier.updatedAt.split('T')[0].split('-')[1])] +
-                                                ' ' +
-                                                tier.updatedAt.split('T')[0].split('-')[2] +
-                                                ', ' +
-                                                tier.updatedAt.split('T')[0].split('-')[0]}
-                                          </span>
+                                          <span className="text-sm text-gray-400">{formatDate(tier.updatedAt)}</span>
                                        </div>
                                        <span className="text-xs text-gray-400">
                                           ${tier.loanAmount} loan repaid ${tier.repaymentAmount} unlocked ${tier.loanAmount + 20} limit
@@ -444,12 +371,7 @@ const BorrowerDashboard = () => {
                                                 <ul className="list-disc pl-4 space-y-1">
                                                    {TierList[tier.loanAmount]?.map((loan: Loan) => (
                                                       <li key={loan._id}>
-                                                         ${loan.loanAmount} loan -{' '}
-                                                         {months[parseInt(loan.updatedAt.split('T')[0].split('-')[1])] +
-                                                            ' ' +
-                                                            loan.updatedAt.split('T')[0].split('-')[2] +
-                                                            ', ' +
-                                                            loan.updatedAt.split('T')[0].split('-')[0]}
+                                                         ${loan.loanAmount} loan - {formatDate(loan.updatedAt)}
                                                       </li>
                                                    ))}
                                                 </ul>
@@ -509,8 +431,7 @@ const BorrowerDashboard = () => {
                            <p className="mt-2 text-sm text-blue-400">Example: $20 loan while at $40 credit limit</p>
                         </div>
                      </div>
-                  </>
-               ) : null}
+               </CollapsibleSection>
             </div>
 
             <div className="bg-[#1F2937] rounded-xl p-6">
@@ -785,4 +706,4 @@ const BorrowerDashboard = () => {
    );
 };
 
-export default BorrowerDashboard;
+export default UserProfile;

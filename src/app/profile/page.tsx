@@ -1,6 +1,6 @@
 'use client';
 
-import Dash from '@/components/board/Dash';
+import Profile from '@/views/profile/Profile';
 
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
@@ -11,5 +11,5 @@ export default function ProfilePage() {
       return null;
    }
 
-   return <Dash />;
+   return <Profile />;
 }

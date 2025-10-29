@@ -9,19 +9,22 @@ import { usePathname } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAccount } from 'wagmi';
 
-import LoanRequestModal from '@/components/board/LoanRequestModal';
-import UserCard from '@/components/board/UserCard';
+import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
+import UserCard from '@/views/dashboard/components/UserCard';
+import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import YouTubeVideoLightbox from '@/components/ui/YouTubeVideoLightbox';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
+import { LOAN_AMOUNTS, NETWORKS } from '@/constants/loanOptions';
 import { fetchUser } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import { filterLoans } from '@/utils/loanFilters';
 
 const CREDIT_LEVELLING_VIDEO_ID = 'gaRjXOd2s2U';
 
-export default function Board() {
+export default function Dashboard() {
    const pathname = usePathname();
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
