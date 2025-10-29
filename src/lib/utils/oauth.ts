@@ -41,29 +41,40 @@ export async function verifyGoogleToken(credential: string) {
  * Based on Telegram Login Widget documentation
  */
 export function verifyTelegramAuth(authData: Record<string, string>) {
+   console.log('Telegram auth data received:', authData);
+
    const botToken = process.env.TELEGRAM_BOT_TOKEN;
    if (!botToken) {
+      console.error('TELEGRAM_BOT_TOKEN not found');
       throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, status: 500 };
    }
 
    const { hash, ...data } = authData;
+   console.log('Data after hash extraction:', data);
+   console.log('Hash to verify:', hash);
 
    // Create data check string
    const dataCheckArr = Object.keys(data)
       .sort()
       .map((key) => `${key}=${data[key]}`);
    const dataCheckString = dataCheckArr.join('\n');
+   console.log('Data check string:', dataCheckString);
 
    // Create secret key from bot token
    const secretKey = crypto.createHash('sha256').update(botToken).digest();
+   console.log('Secret key created');
 
    // Create hash
    const hmac = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+   console.log('Generated HMAC:', hmac);
+   console.log('Expected hash:', hash);
 
    if (hmac !== hash) {
+      console.error('Hash verification failed');
       throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, status: 401, message: 'Invalid Telegram auth data' };
    }
 
+   console.log('Telegram auth verification successful');
    return {
       telegramId: parseInt(data.id),
       username: data.username,
