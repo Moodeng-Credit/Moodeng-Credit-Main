@@ -48,13 +48,6 @@ export function verifyTelegramAuth(authData: Record<string, string>) {
 
    const { hash, ...data } = authData;
 
-   // Check auth_date is recent (within 24 hours)
-   const authDate = parseInt(data.auth_date || '0');
-   const currentTime = Math.floor(Date.now() / 1000);
-   if (currentTime - authDate > 86400) {
-      throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, status: 401, message: 'Telegram auth data expired' };
-   }
-
    // Create data check string
    const dataCheckArr = Object.keys(data)
       .sort()
