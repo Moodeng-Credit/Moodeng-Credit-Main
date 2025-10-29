@@ -1,3 +1,7 @@
+/**
+ * Network color classes for badges and text
+ * Used for displaying network information with background and text colors
+ */
 export const NETWORK_COLORS = {
    optimism: 'bg-red-900/20 text-red-300',
    solana: 'bg-orange-900/20 text-orange-300',
@@ -9,8 +13,25 @@ export const NETWORK_COLORS = {
    baseSepolia: 'bg-blue-900/20 text-blue-300'
 } as const;
 
+/**
+ * Network solid background colors for icon buttons
+ * Used in network icon components
+ */
+export const NETWORK_BG_COLORS = {
+   optimism: 'bg-[#FF0420]',
+   solana: 'bg-[#1f1f1f]',
+   base: 'bg-[#0051ff]',
+   arbitrum: 'bg-[#213147]',
+   polygon: 'bg-[#6a00f5]',
+   binance: 'bg-[#f3bc30]'
+} as const;
+
 export const getNetworkColor = (network: string): string => {
    return NETWORK_COLORS[network as keyof typeof NETWORK_COLORS] || 'bg-gray-900/20 text-gray-300';
+};
+
+export const getNetworkBgColor = (network: string): string => {
+   return NETWORK_BG_COLORS[network as keyof typeof NETWORK_BG_COLORS] || 'bg-black';
 };
 
 export type NetworkType = keyof typeof NETWORK_COLORS;
