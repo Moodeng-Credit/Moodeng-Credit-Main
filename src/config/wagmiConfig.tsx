@@ -115,33 +115,33 @@ export const getNetworkSvg = (networkId: number) => {
 };
 
 export const chainConfig: Record<number, CustomChainConfig> = {
-   [sepolia.id]: {
-      ...sepolia,
-      iconBackground: '#627EEA',
-      displayName: 'Sepolia',
-      shortName: 'SEP',
-      color: 'bg-gray-600',
-      bgColor: 'bg-gray-600',
-      textColor: 'text-gray-600',
-      tokens: {
-         Link: '0x779877A7B0D9E8603169DdbD7836e478b4624789',
-         USDC: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
-         USDT: '0x94b008aa00579c1307b0ef2c499ad98a8ce58e58'
-      }
-   },
-   [polygon.id]: {
-      ...polygon,
-      iconBackground: '#8247E5',
-      displayName: 'Polygon',
-      shortName: 'POL',
-      color: 'bg-[#6a00f5]',
-      bgColor: 'bg-[#6a00f5]',
-      textColor: 'text-[#6a00f5]',
-      tokens: {
-         USDC: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
-         USDT: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F'
-      }
-   },
+   // [sepolia.id]: {
+   //    ...sepolia,
+   //    iconBackground: '#627EEA',
+   //    displayName: 'Sepolia',
+   //    shortName: 'SEP',
+   //    color: 'bg-gray-600',
+   //    bgColor: 'bg-gray-600',
+   //    textColor: 'text-gray-600',
+   //    tokens: {
+   //       Link: '0x779877A7B0D9E8603169DdbD7836e478b4624789',
+   //       USDC: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
+   //       USDT: '0x94b008aa00579c1307b0ef2c499ad98a8ce58e58'
+   //    }
+   // },
+   // [polygon.id]: {
+   //    ...polygon,
+   //    iconBackground: '#8247E5',
+   //    displayName: 'Polygon',
+   //    shortName: 'POL',
+   //    color: 'bg-[#6a00f5]',
+   //    bgColor: 'bg-[#6a00f5]',
+   //    textColor: 'text-[#6a00f5]',
+   //    tokens: {
+   //       USDC: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
+   //       USDT: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F'
+   //    }
+   // },
    [base.id]: {
       ...base,
       iconBackground: '#0052FF',
@@ -154,45 +154,45 @@ export const chainConfig: Record<number, CustomChainConfig> = {
          USDC: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'
       }
    },
-   [arbitrum.id]: {
-      ...arbitrum,
-      iconBackground: '#2D374B',
-      displayName: 'Arbitrum',
-      shortName: 'ARB',
-      color: 'bg-[#213147]',
-      bgColor: 'bg-[#213147]',
-      textColor: 'text-[#213147]',
-      tokens: {
-         USDC: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
-         USDT: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9'
-      }
-   },
-   [optimism.id]: {
-      ...optimism,
-      iconBackground: '#FF0420',
-      displayName: 'Optimism',
-      shortName: 'OP',
-      color: 'bg-[#FF0420]',
-      bgColor: 'bg-[#FF0420]',
-      textColor: 'text-[#FF0420]',
-      tokens: {
-         USDC: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
-         USDT: '0x94b008aa00579c1307b0ef2c499ad98a8ce58e58'
-      }
-   },
-   [bsc.id]: {
-      ...bsc,
-      iconBackground: '#F3BA2F',
-      displayName: 'BSC',
-      shortName: 'BSC',
-      color: 'bg-[#f3bc30]',
-      bgColor: 'bg-[#f3bc30]',
-      textColor: 'text-[#f3bc30]',
-      tokens: {
-         BUSD: '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56',
-         USDT: '0x55d398326f99059fF775485246999027B3197955'
-      }
-   },
+   // [arbitrum.id]: {
+   //    ...arbitrum,
+   //    iconBackground: '#2D374B',
+   //    displayName: 'Arbitrum',
+   //    shortName: 'ARB',
+   //    color: 'bg-[#213147]',
+   //    bgColor: 'bg-[#213147]',
+   //    textColor: 'text-[#213147]',
+   //    tokens: {
+   //       USDC: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+   //       USDT: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9'
+   //    }
+   // },
+   // [optimism.id]: {
+   //    ...optimism,
+   //    iconBackground: '#FF0420',
+   //    displayName: 'Optimism',
+   //    shortName: 'OP',
+   //    color: 'bg-[#FF0420]',
+   //    bgColor: 'bg-[#FF0420]',
+   //    textColor: 'text-[#FF0420]',
+   //    tokens: {
+   //       USDC: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
+   //       USDT: '0x94b008aa00579c1307b0ef2c499ad98a8ce58e58'
+   //    }
+   // },
+   // [bsc.id]: {
+   //    ...bsc,
+   //    iconBackground: '#F3BA2F',
+   //    displayName: 'BSC',
+   //    shortName: 'BSC',
+   //    color: 'bg-[#f3bc30]',
+   //    bgColor: 'bg-[#f3bc30]',
+   //    textColor: 'text-[#f3bc30]',
+   //    tokens: {
+   //       BUSD: '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56',
+   //       USDT: '0x55d398326f99059fF775485246999027B3197955'
+   //    }
+   // },
    [baseSepolia.id]: {
       ...baseSepolia,
       iconBackground: '#0052FF',

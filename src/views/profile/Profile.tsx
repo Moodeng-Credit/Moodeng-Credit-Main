@@ -8,32 +8,33 @@ import Image from 'next/image';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
 
-import Card from '@/components/board/Card';
+import FormField from '@/components/forms/FormField';
+import DataTable from '@/components/tables/DataTable';
 import WorldIDVerificationStatus from '@/components/worldId/WorldIDVerificationStatus';
+
+import { formatDate } from '@/utils/dateFormatters';
 
 import { fetchUser, updateUser } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import type { Loan } from '@/types/loanTypes';
+import Card from '@/views/profile/components/Card';
 
-export default function Dash() {
+// Helper function to render loan status with appropriate styling
+const renderLoanStatus = (loan: Loan) => (
+   <span
+      className={`font-bold ${
+         loan.repaymentStatus === 'Paid' ? 'text-[#166534]' : loan.repaymentStatus === 'Unpaid' ? 'text-[#b91c1c]' : 'text-gray-700'
+      }`}
+   >
+      {loan.loanStatus}, {loan.repaymentStatus}
+   </span>
+);
+
+export default function Profile() {
    const dispatch = useDispatch<AppDispatch>();
    const user = useSelector((state: RootState) => state.auth);
    const gloanRequests = useSelector((state: RootState) => state.loans.loans.gloans);
-   const months = [
-      '',
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December'
-   ];
    const [telegramUsername, setTelegramUsername] = useState('');
    const [password, setPassword] = useState('');
    const [username, setUsername] = useState('');
@@ -116,8 +117,8 @@ export default function Dash() {
 
    return (
       <div className="bg-[#c9d5f9] min-h-screen flex flex-col" style={{ fontFamily: 'Inter, sans-serif' }}>
-         <main className="flex flex-1 overflow-hidden">
-            <aside className="bg-[#b9c8f9] w-56 flex flex-col justify-between select-none">
+         <main className="flex flex-col md:flex-row flex-1 overflow-hidden">
+            <aside className="hidden md:flex bg-[#b9c8f9] w-56 flex-col justify-between select-none">
                <nav className="pt-10 px-6 space-y-6">
                   <ul className="space-y-4">
                      {navItems.map((item) => (
@@ -174,19 +175,39 @@ export default function Dash() {
                   />
                </div>
             </aside>
-            <section className="flex-1 p-8 overflow-auto">
+
+            {/* Mobile Navigation */}
+            <nav className="md:hidden bg-white border-b border-gray-200 sticky top-0 z-10">
+               <div className="flex overflow-x-auto">
+                  {navItems.map((item) => (
+                     <button
+                        key={item.label}
+                        onClick={() => handleSort(item.label)}
+                        className={`flex-1 min-w-max px-4 py-3 text-xs font-semibold border-b-2 transition-colors ${
+                           item.active
+                              ? 'border-blue-600 text-blue-600 bg-blue-50'
+                              : 'border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                        }`}
+                     >
+                        {item.label}
+                     </button>
+                  ))}
+               </div>
+            </nav>
+
+            <section className="flex-1 p-4 md:p-8 overflow-auto">
                {!navItems[3].active ? (
                   <div className="flex justify-end space-x-2 mb-6">
                      <button
                         onClick={() => setVip(false)}
-                        className={(!vip ? 'bg-white text-[#2a56f4]' : 'bg-[#a7b9f9] text-white') + ' font-semibold rounded-md px-6 py-2'}
+                        className={`${!vip ? 'bg-white text-[#2a56f4]' : 'bg-[#a7b9f9] text-white'} font-semibold rounded-md px-3 md:px-6 py-2 text-xs md:text-sm`}
                         type="button"
                      >
                         Borrower
                      </button>
                      <button
                         onClick={() => setVip(true)}
-                        className={(vip ? 'bg-white text-[#2a56f4]' : 'bg-[#a7b9f9] text-white') + ' font-semibold rounded-md px-6 py-2'}
+                        className={`${vip ? 'bg-white text-[#2a56f4]' : 'bg-[#a7b9f9] text-white'} font-semibold rounded-md px-3 md:px-6 py-2 text-xs md:text-sm`}
                         type="button"
                      >
                         Lender
@@ -223,57 +244,56 @@ export default function Dash() {
                      </div>
                   ) : null}
                   {navItems[2].active ? (
-                     <table className="w-full border-collapse rounded-lg overflow-hidden">
-                        <tbody className="Table">
-                           <tr className="text-[10px] text-[#1f2937] font-semibold">
-                              <td className="px-4 py-3 font-bold text-left">All Transaction</td>
-                              <td className="px-4 py-3 font-bold text-left">{vip ? 'Funded' : 'Borrowed'} Amount</td>
-                              <td className="px-4 py-3 font-bold text-left">Date {vip ? 'Funded' : 'Borrowed'}</td>
-                              <td className="px-4 py-3 font-bold text-left">Returned Amount</td>
-                              <td className="px-4 py-3 font-bold text-left">Date Returned</td>
-                              <td className="px-4 py-3 font-bold text-left">{vip ? "Borrower's" : "Lender's"} Name</td>
-                              <td className="px-4 py-3 font-bold text-left">Status</td>
-                           </tr>
-                           {gloanRequests
-                              .filter((loan) => (vip ? loan.lenderUser === user.username : loan.borrowerUser === user.username))
-                              .map((loan) => (
-                                 <tr className="text-[10px] text-[#2a56f4] font-semibold" key={loan._id}>
-                                    <td className="px-4 py-3 font-bold text-left text-[#2a56f4]">{loan.reason}</td>
-                                    <td className="px-4 py-3 font-bold text-left text-[#166534]">${loan.loanAmount}.00</td>
-                                    <td className="px-4 py-3 font-bold text-left text-[#2a56f4]">
-                                       {months[parseInt(loan.createdAt.split('T')[0].split('-')[1])] +
-                                          ' ' +
-                                          loan.createdAt.split('T')[0].split('-')[2] +
-                                          ', ' +
-                                          loan.createdAt.split('T')[0].split('-')[0]}
-                                    </td>
-                                    <td className="px-4 py-3 font-bold text-left text-[#b91c1c]">${loan.repaymentAmount}.00</td>
-                                    <td className="px-4 py-3 font-bold text-left text-[#2a56f4]">
-                                       {months[parseInt(loan.updatedAt.split('T')[0].split('-')[1])] +
-                                          ' ' +
-                                          loan.updatedAt.split('T')[0].split('-')[2] +
-                                          ', ' +
-                                          loan.updatedAt.split('T')[0].split('-')[0]}
-                                    </td>
-                                    <td className="px-4 py-3 font-bold text-left text-[#2a56f4]">
-                                       {vip ? loan.borrowerUser : loan.lenderUser}
-                                    </td>
-                                    <td
-                                       className={
-                                          'px-4 py-3 font-bold text-left' +
-                                          (loan.repaymentStatus === 'Paid'
-                                             ? ' text-[#166534]'
-                                             : loan.repaymentStatus === 'Unpaid'
-                                               ? ' text-[#b91c1c]'
-                                               : '')
-                                       }
-                                    >
-                                       {loan.loanStatus + ', ' + loan.repaymentStatus}
-                                    </td>
-                                 </tr>
-                              ))}
-                        </tbody>
-                     </table>
+                     <DataTable
+                        columns={[
+                           {
+                              header: 'All Transaction',
+                              accessor: 'reason',
+                              className: 'font-bold text-[#2a56f4]',
+                              mobileLabel: 'Transaction'
+                           },
+                           {
+                              header: `${vip ? 'Funded' : 'Borrowed'} Amount`,
+                              accessor: (loan) => `$${loan.loanAmount}.00`,
+                              className: 'font-bold text-[#166534]',
+                              mobileLabel: 'Amount'
+                           },
+                           {
+                              header: `Date ${vip ? 'Funded' : 'Borrowed'}`,
+                              accessor: (loan) => formatDate(loan.createdAt),
+                              className: 'font-bold text-[#2a56f4]',
+                              mobileLabel: 'Date'
+                           },
+                           {
+                              header: 'Returned Amount',
+                              accessor: (loan) => `$${loan.repaymentAmount}.00`,
+                              className: 'font-bold text-[#b91c1c]',
+                              mobileLabel: 'Returned'
+                           },
+                           {
+                              header: 'Date Returned',
+                              accessor: (loan) => formatDate(loan.updatedAt),
+                              className: 'font-bold text-[#2a56f4]',
+                              mobileLabel: 'Date Returned'
+                           },
+                           {
+                              header: `${vip ? "Borrower's" : "Lender's"} Name`,
+                              accessor: (loan) => (vip ? loan.borrowerUser : loan.lenderUser),
+                              className: 'font-bold text-[#2a56f4]',
+                              mobileLabel: 'Name'
+                           },
+                           {
+                              header: 'Status',
+                              accessor: renderLoanStatus,
+                              mobileLabel: 'Status'
+                           }
+                        ]}
+                        data={gloanRequests.filter((loan) =>
+                           vip ? loan.lenderUser === user.username : loan.borrowerUser === user.username
+                        )}
+                        keyExtractor={(loan) => loan._id}
+                        emptyMessage="No transactions found"
+                     />
                   ) : null}
                   {navItems[3].active ? (
                      <div className="flex items-center justify-center p-6">
@@ -312,52 +332,29 @@ export default function Dash() {
                                  </section>
                               </div>
                               <div className="flex flex-col w-full md:w-2/3 space-y-6 text-[10px] text-[#4a4a4a] font-normal leading-[12px]">
-                                 <div className="grid grid-cols-12 items-center gap-3">
-                                    <label
-                                       htmlFor="username"
-                                       className="col-span-3 text-[#0a1a5f] font-semibold text-[10px] leading-[12px] select-none"
-                                    >
-                                       Username
-                                    </label>
-                                    <input
-                                       id="username"
-                                       type="text"
-                                       placeholder={user.username || ''}
-                                       value={username}
-                                       onChange={(e: ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
-                                       className="col-span-6 bg-[#e0e7ff] rounded px-2 py-1 text-[#3b82f6] text-[10px] font-normal leading-[12px] outline-none"
-                                    />
-                                    <button
-                                       type="button"
-                                       onClick={handleUpdate}
-                                       className="col-span-3 bg-[#1e40af] text-white rounded px-3 py-1 text-[10px] font-semibold leading-[12px] hover:bg-[#1e3a8a] transition"
-                                    >
-                                       Change Username
-                                    </button>
-                                 </div>
-                                 <div className="grid grid-cols-12 items-center gap-3">
-                                    <label
-                                       htmlFor="email"
-                                       className="col-span-3 text-[#0a1a5f] font-semibold text-[10px] leading-[12px] select-none"
-                                    >
-                                       Email
-                                    </label>
-                                    <input
-                                       id="email"
-                                       type="email"
-                                       placeholder={user.user?.email || ''}
-                                       value={email}
-                                       onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                                       className="col-span-6 bg-[#e0e7ff] rounded px-2 py-1 text-[#3b82f6] text-[10px] font-normal leading-[12px] outline-none"
-                                    />
-                                    <button
-                                       type="button"
-                                       onClick={handleUpdate}
-                                       className="col-span-3 bg-[#1e40af] text-white rounded px-3 py-1 text-[10px] font-semibold leading-[12px] hover:bg-[#1e3a8a] transition"
-                                    >
-                                       Change Email
-                                    </button>
-                                 </div>
+                                 <FormField
+                                    id="username"
+                                    label="Username"
+                                    value={username}
+                                    onChange={setUsername}
+                                    placeholder={user.username || ''}
+                                    actionButton={{
+                                       label: 'Change Username',
+                                       onClick: handleUpdate
+                                    }}
+                                 />
+                                 <FormField
+                                    id="email"
+                                    label="Email"
+                                    type="email"
+                                    value={email}
+                                    onChange={setEmail}
+                                    placeholder={user.user?.email || ''}
+                                    actionButton={{
+                                       label: 'Change Email',
+                                       onClick: handleUpdate
+                                    }}
+                                 />
                                  <div className="grid grid-cols-12 items-center gap-3">
                                     <div className="col-span-3">
                                        <label className="text-[#0a1a5f] font-semibold text-[10px] leading-[12px] select-none block">
@@ -411,26 +408,18 @@ export default function Dash() {
                                  </section>
                               </div>
                               <div className="flex flex-col w-full md:w-2/3 space-y-6 text-[10px] text-[#4a4a4a] font-normal leading-[12px]">
-                                 <div className="grid grid-cols-12 items-center gap-3">
-                                    <label className="col-span-3 text-[#0a1a5f] font-semibold text-[10px] leading-[12px] select-none">
-                                       Password
-                                    </label>
-                                    <input
-                                       id="password"
-                                       type="password"
-                                       placeholder="New Password"
-                                       value={password}
-                                       onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                                       className="col-span-6 bg-[#e0e7ff] rounded px-2 py-1 text-[#3b82f6] text-[10px] font-normal leading-[12px] outline-none"
-                                    />
-                                    <button
-                                       type="button"
-                                       onClick={handleUpdate}
-                                       className="col-span-3 bg-[#1e40af] text-white rounded px-3 py-1 text-[10px] font-semibold leading-[12px] hover:bg-[#1e3a8a] transition"
-                                    >
-                                       Change Password
-                                    </button>
-                                 </div>
+                                 <FormField
+                                    id="password"
+                                    label="Password"
+                                    type="password"
+                                    value={password}
+                                    onChange={setPassword}
+                                    placeholder="New Password"
+                                    actionButton={{
+                                       label: 'Change Password',
+                                       onClick: handleUpdate
+                                    }}
+                                 />
                                  <div className="grid grid-cols-12 items-center gap-3">
                                     <label
                                        htmlFor="wallet"
@@ -446,10 +435,8 @@ export default function Dash() {
                                        disabled
                                        className="col-span-6 bg-[#e0e7ff] rounded px-2 py-1 text-[#4a4a4a] text-[10px] font-normal leading-[12px] outline-none"
                                     />
-                                    <div className="col-span-3">
-                                       <ConnectButton />
-                                    </div>
                                  </div>
+                                 <ConnectButton />
                                  <WorldIDVerificationStatus />
                               </div>
                            </form>

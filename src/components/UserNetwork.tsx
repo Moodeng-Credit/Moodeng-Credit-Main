@@ -224,22 +224,6 @@ export default function UserNetwork() {
                         View Lending History <i className="fas fa-chevron-right"></i>
                      </Link>
                   </nav>
-                  <div className="border-t border-gray-200 border-solid mt-4 px-4 py-3 flex flex-col gap-3 text-sm font-normal text-black">
-                     <label className="flex justify-between items-center cursor-pointer">
-                        Push notifications
-                        <input aria-label="Push notifications toggle" className="toggle toggle-primary hidden" type="checkbox" />
-                        <span className="w-11 h-6 bg-gray-300 rounded-full relative inline-block transition-colors duration-300">
-                           <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-300"></span>
-                        </span>
-                     </label>
-                     <label className="flex justify-between items-center cursor-pointer">
-                        Dark mode
-                        <input aria-label="Dark mode toggle" className="toggle toggle-primary hidden" type="checkbox" />
-                        <span className="w-11 h-6 bg-gray-300 rounded-full relative inline-block transition-colors duration-300">
-                           <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-300"></span>
-                        </span>
-                     </label>
-                  </div>
                   <div className="border-t border-gray-200 border-solid px-4 py-3 text-xs font-normal text-gray-400">Information</div>
                   <nav className="flex flex-col gap-3 px-4 text-sm font-normal text-black mb-4">
                      <a

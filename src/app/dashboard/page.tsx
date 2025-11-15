@@ -1,8 +1,8 @@
 'use client';
 
-import Board from '@/components/board/Board';
-
 import { useAuthGuard } from '@/hooks/useAuthGuard';
+
+import Dashboard from '@/views/dashboard/Dashboard';
 
 export default function DashboardPage() {
    const { isAuthenticated } = useAuthGuard();
@@ -11,5 +11,5 @@ export default function DashboardPage() {
       return null;
    }
 
-   return <Board />;
+   return <Dashboard />;
 }

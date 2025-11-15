@@ -1,4 +1,4 @@
-import UserNot from '@/components/board/UserNot';
+import UserNot from '@/components/UserNot';
 
 export default function UtPage() {
    return <UserNot />;
