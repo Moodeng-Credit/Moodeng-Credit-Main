@@ -16,6 +16,8 @@ const UserSchema = new Schema<IUser>({
    mal: { type: Number, max: 3, default: 3 },
    nal: { type: Number, max: 3, default: 0 },
    cs: { type: Number, default: 15 },
+   resetToken: { type: String, sparse: true },
+   resetTokenExpiry: { type: Date, sparse: true },
    createdAt: { type: Date, default: Date.now },
    updatedAt: { type: Date, default: Date.now }
 });

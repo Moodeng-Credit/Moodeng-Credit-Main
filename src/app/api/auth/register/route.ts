@@ -4,7 +4,7 @@ import User from '@/lib/models/User';
 import { registerSchema, transformUserToResponse } from '@/lib/schemas/auth';
 import { sendMail } from '@/lib/services/email';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
-import { generateToken, hashPassword, setAuthCookie, validatePasswordStrength } from '@/lib/utils/auth';
+import { generateToken, hashPassword, setAuthCookie } from '@/lib/utils/auth';
 import { handleCors } from '@/lib/utils/cors';
 import { generateUsername, verifyGoogleToken, verifyTelegramAuth } from '@/lib/utils/oauth';
 import { WorldId } from '@/types/authTypes';
@@ -63,10 +63,6 @@ export async function POST(request: NextRequest) {
          else {
             if (!data.email || !data.password || !data.username) {
                throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, message: 'Missing required fields' };
-            }
-
-            if (!validatePasswordStrength(data.password)) {
-               throw { code: ERROR_CODES.AUTH_PASSWORD_WEAK };
             }
 
             const existingUser = await User.findOne({ username: data.username });

@@ -12,6 +12,7 @@ import {
    optionalTelegramUsername,
    optionalWalletAddress,
    passwordSchema,
+   strongPasswordSchema,
    usernameSchema
 } from '@/lib/schemas/fields';
 import type { IUser } from '@/types/authTypes';
@@ -26,7 +27,7 @@ export const registerSchema = z.object({
    // Traditional registration
    username: usernameSchema.optional(),
    email: emailSchema.optional(),
-   password: passwordSchema.optional(),
+   password: strongPasswordSchema.optional(),
 
    // OAuth credentials
    googleCredential: z.string().optional(),
@@ -69,7 +70,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export const updateUserSchema = z.object({
    username: usernameSchema.optional(),
    email: emailSchema.optional(),
-   password: passwordSchema.optional(),
+   password: strongPasswordSchema.optional(),
    walletAddress: optionalWalletAddress,
    telegramUsername: optionalTelegramUsername,
    isWorldId: z.enum([WorldId.INACTIVE, WorldId.ACTIVE]).optional(),
@@ -91,6 +92,27 @@ export const worldIdVerificationSchema = z.object({
 });
 
 export type WorldIdVerificationInput = z.infer<typeof worldIdVerificationSchema>;
+
+/**
+ * Forgot password schema
+ * Used for /api/auth/forgot-password
+ */
+export const forgotPasswordSchema = z.object({
+   email: emailSchema
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+/**
+ * Reset password schema
+ * Used for /api/auth/reset-password
+ */
+export const resetPasswordSchema = z.object({
+   token: z.string().min(1, { message: 'Reset token is required' }),
+   password: strongPasswordSchema
+});
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 /**
  * Test unverify schema (for development/testing)

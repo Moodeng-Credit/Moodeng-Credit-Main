@@ -1,5 +1,7 @@
 import { type ChangeEvent, type FormEvent, type JSX } from 'react';
 
+import Link from 'next/link';
+
 import FormInput from '@/views/login/components/FormInput';
 import { Icons } from '@/views/login/components/Icons';
 
@@ -111,9 +113,9 @@ export default function AuthForm({
                      <input type="checkbox" className="mr-2" />
                      <span className="text-sm text-gray-600">Remember me</span>
                   </label>
-                  <a href="#" className="text-sm text-blue-600 hover:underline">
+                  <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
                      Forgot password?
-                  </a>
+                  </Link>
                </div>
             ) : null}
          </div>
