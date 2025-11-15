@@ -14,10 +14,12 @@ export interface User {
    _id: string;
    username: string;
    email: string;
-   walletAddress: string;
+   googleId?: string;
+   walletAddress?: string;
    isWorldId: WorldIdStatus;
    nullifierHash?: string;
    telegramUsername?: string;
+   telegramId?: number;
    chatId?: number;
    mal: number;
    nal: number;
@@ -34,13 +36,15 @@ export const WorldId = {
 export type WorldIdStatus = (typeof WorldId)[keyof typeof WorldId];
 
 export interface IUser extends Document {
-   walletAddress: string;
+   walletAddress?: string;
    username: string;
    isWorldId: WorldIdStatus;
    nullifierHash?: string;
-   password: string;
+   password?: string;
    email: string;
+   googleId?: string;
    telegramUsername?: string;
+   telegramId?: number;
    chatId?: number;
    mal: number; // max active loans
    nal: number; // number of active loans

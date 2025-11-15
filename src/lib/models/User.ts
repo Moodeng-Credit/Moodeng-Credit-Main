@@ -3,15 +3,17 @@ import mongoose, { Schema } from 'mongoose';
 import { type IUser, WorldId } from '@/types/authTypes';
 
 const UserSchema = new Schema<IUser>({
-   walletAddress: { type: String, unique: true, required: true },
+   walletAddress: { type: String, unique: true, sparse: true },
    username: { type: String, unique: true, required: true },
    isWorldId: { type: String, enum: Object.values(WorldId), required: true },
    nullifierHash: { type: String, index: { unique: true, sparse: true } },
-   password: { type: String, required: true },
+   password: { type: String, sparse: true },
    email: { type: String, unique: true, required: true },
+   googleId: { type: String, unique: true, sparse: true },
+   telegramId: { type: Number, index: { unique: true, sparse: true } },
    telegramUsername: { type: String, index: { unique: true, sparse: true } },
    chatId: { type: Number, index: { unique: true, sparse: true } },
-   mal: { type: Number, max: 3, default: 1 },
+   mal: { type: Number, max: 3, default: 3 },
    nal: { type: Number, max: 3, default: 0 },
    cs: { type: Number, default: 15 },
    createdAt: { type: Date, default: Date.now },

@@ -1,8 +1,8 @@
 'use client';
 
-import Dash from '@/components/board/Dash';
-
 import { useAuthGuard } from '@/hooks/useAuthGuard';
+
+import Profile from '@/views/profile/Profile';
 
 export default function ProfilePage() {
    const { isAuthenticated } = useAuthGuard();
@@ -11,5 +11,5 @@ export default function ProfilePage() {
       return null;
    }
 
-   return <Dash />;
+   return <Profile />;
 }

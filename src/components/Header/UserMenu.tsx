@@ -1,4 +1,4 @@
-import UserNetwork from '@/components/board/UserNetwork';
+import UserNetwork from '@/components/UserNetwork';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 

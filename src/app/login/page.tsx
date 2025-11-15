@@ -1,5 +1,5 @@
-import Log from '@/components/board/Log';
+import Login from '@/views/login/Login';
 
 export default function LoginPage() {
-   return <Log />;
+   return <Login />;
 }

@@ -1,8 +1,10 @@
+import { type ReactNode } from 'react';
+
 export interface VerificationStep {
    stepNumber: number;
    title: string;
    description: string;
-   icon: React.ReactNode;
+   icon: ReactNode;
    iconColor: string;
    bgColor: string;
 }
@@ -11,8 +13,8 @@ export interface VerificationButton {
    id: string;
    variant: 'primary' | 'secondary' | 'outline';
    label: string;
-   icon: React.ReactNode;
+   icon: ReactNode;
    action: 'externalLink' | 'verify' | 'checkStatus';
-   externalIcon?: React.ReactNode;
+   externalIcon?: ReactNode;
    url?: string;
 }
