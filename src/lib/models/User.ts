@@ -86,6 +86,17 @@ UserSchema.statics.ensureIndexes = async function () {
                }
             }
 
+            // Before creating sparse unique index, clean up null/undefined values
+            // This prevents E11000 duplicate key errors for null values
+            try {
+               const updateResult = await this.collection.updateMany({ [field]: null }, { $unset: { [field]: '' } });
+               if (updateResult.modifiedCount > 0) {
+                  console.log(`Cleaned ${updateResult.modifiedCount} null values from ${field}`);
+               }
+            } catch (cleanupError) {
+               console.log(`Could not clean null values from ${field}:`, cleanupError);
+            }
+
             // Create/recreate sparse index with the desired name
             try {
                await this.collection.createIndex({ [field]: 1 }, { unique: true, sparse: true, name });

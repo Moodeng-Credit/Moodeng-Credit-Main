@@ -17,7 +17,7 @@ const getAccessToken = async () => {
       });
 
       const tokenPromise = oauth2Client.getAccessToken();
-      const { token } = await Promise.race([tokenPromise, timeoutPromise]) as { token: string | null | undefined };
+      const { token } = (await Promise.race([tokenPromise, timeoutPromise])) as { token: string | null | undefined };
       return token;
    } catch (error) {
       console.error('Error getting access token:', error);
@@ -30,8 +30,11 @@ const createTransporter = async () => {
 
    return nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
+      port: 465,
+      secure: true, // Use SSL
+      connectionTimeout: 10000, // 10 second connection timeout
+      greetingTimeout: 10000, // 10 second greeting timeout
+      socketTimeout: 15000, // 15 second socket timeout
       auth: {
          type: 'OAuth2',
          user: process.env.EMAIL_USER,
