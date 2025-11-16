@@ -5,6 +5,8 @@ export const SUCCESS_CODES = {
    AUTH_REGISTER_SUCCESS: 'AUTH_REGISTER_SUCCESS',
    AUTH_UPDATE_SUCCESS: 'AUTH_UPDATE_SUCCESS',
    AUTH_VERIFY_SUCCESS: 'AUTH_VERIFY_SUCCESS',
+   PASSWORD_RESET_EMAIL_SENT: 'PASSWORD_RESET_EMAIL_SENT',
+   PASSWORD_RESET_SUCCESS: 'PASSWORD_RESET_SUCCESS',
 
    // User Success (2100-2199)
    USER_FETCHED: 'USER_FETCHED',
@@ -35,6 +37,8 @@ export const SUCCESS_MESSAGES: Record<SuccessCode, string> = {
    [SUCCESS_CODES.AUTH_REGISTER_SUCCESS]: 'Registration successful',
    [SUCCESS_CODES.AUTH_UPDATE_SUCCESS]: 'Account updated successfully',
    [SUCCESS_CODES.AUTH_VERIFY_SUCCESS]: 'Verification successful',
+   [SUCCESS_CODES.PASSWORD_RESET_EMAIL_SENT]: 'Password reset email sent',
+   [SUCCESS_CODES.PASSWORD_RESET_SUCCESS]: 'Password reset successful',
 
    // User
    [SUCCESS_CODES.USER_FETCHED]: 'User retrieved successfully',

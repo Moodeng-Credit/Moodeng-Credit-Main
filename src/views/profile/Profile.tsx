@@ -41,6 +41,9 @@ export default function Profile() {
    const [email, setEmail] = useState('');
    const [vip, setVip] = useState(true);
    const [pop, setPop] = useState(false);
+   const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
+
+   const isDevMode = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
    const [navItems, setNavItems] = useState([
       { label: 'Dashboard', active: true },
       { label: 'Loan Summary', active: false },
@@ -104,6 +107,30 @@ export default function Profile() {
       setPassword('');
       setUsername('');
       setEmail('');
+   };
+
+   const handleTestEmail = async () => {
+      setIsSendingTestEmail(true);
+      try {
+         const response = await fetch('/api/auth/test-email', {
+            method: 'POST',
+            headers: {
+               'Content-Type': 'application/json'
+            }
+         });
+
+         if (!response.ok) {
+            throw new Error('Failed to send test email');
+         }
+
+         const data = await response.json();
+         window.alert(data.message || 'Test email sent! Check your inbox.');
+      } catch (error) {
+         console.error('Error sending test email:', error);
+         window.alert('Failed to send test email. Please try again.');
+      } finally {
+         setIsSendingTestEmail(false);
+      }
    };
 
    const handleSort = (label: string) => {
@@ -355,6 +382,33 @@ export default function Profile() {
                                        onClick: handleUpdate
                                     }}
                                  />
+                                 {isDevMode ? (
+                                    <div className="grid grid-cols-12 gap-3">
+                                       <div className="col-span-3">
+                                          <label className="text-[#0a1a5f] font-semibold text-[10px] leading-[12px] select-none block">
+                                             Test Email
+                                          </label>
+                                          <p className="text-[8px] text-[#4a4a4a] font-normal leading-[10px] mt-1">
+                                             Send a test email to verify your email configuration
+                                          </p>
+                                       </div>
+                                       <div className="col-span-6 flex items-center">
+                                          <p className="text-[8px] text-[#4a4a4a] font-normal leading-[10px]">
+                                             Development mode only: Send a test email to {user.user?.email}
+                                          </p>
+                                       </div>
+                                       <div className="col-span-3">
+                                          <button
+                                             type="button"
+                                             onClick={handleTestEmail}
+                                             disabled={isSendingTestEmail}
+                                             className="bg-[#4caf50] text-white rounded px-3 py-1 text-[10px] font-semibold leading-[12px] w-full hover:bg-[#3a9d3a] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                          >
+                                             {isSendingTestEmail ? 'Sending...' : 'Send Test Email'}
+                                          </button>
+                                       </div>
+                                    </div>
+                                 ) : null}
                                  <div className="grid grid-cols-12 items-center gap-3">
                                     <div className="col-span-3">
                                        <label className="text-[#0a1a5f] font-semibold text-[10px] leading-[12px] select-none block">

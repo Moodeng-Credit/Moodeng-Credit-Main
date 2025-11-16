@@ -29,7 +29,7 @@ export const emailSchema = z
    .transform((val) => val.toLowerCase().trim());
 
 /**
- * Password validation schema
+ * Password validation schema (for login)
  * - 1-128 characters
  * - No transformation (passwords should not be sanitized)
  */
@@ -37,6 +37,20 @@ export const passwordSchema = z
    .string({ message: 'Password is required' })
    .min(1, { message: 'Invalid password' })
    .max(128, { message: 'Invalid password' });
+
+/**
+ * Strong password validation schema (for registration and password changes)
+ * - Minimum 6 characters
+ * - Max 128 characters
+ * - Only alphanumeric and allowed special characters: !@#$%^&*()+=._-
+ */
+export const strongPasswordSchema = z
+   .string({ message: 'Password is required' })
+   .min(6, { message: 'Password must be at least 6 characters' })
+   .max(128, { message: 'Password is too long' })
+   .regex(/^[a-zA-Z0-9!@#$%^&*()+=._-]+$/, {
+      message: 'Password can only contain letters, numbers, and special characters: !@#$%^&*()+=._-'
+   });
 
 /**
  * Ethereum wallet address validation schema
