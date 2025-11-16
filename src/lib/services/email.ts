@@ -30,11 +30,15 @@ const createTransporter = async () => {
 
    return nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 465,
-      secure: true, // Use SSL
-      connectionTimeout: 10000, // 10 second connection timeout
-      greetingTimeout: 10000, // 10 second greeting timeout
-      socketTimeout: 15000, // 15 second socket timeout
+      port: 587, // Use port 587 with STARTTLS instead of 465
+      secure: false, // Use STARTTLS instead of SSL
+      requireTLS: true,
+      connectionTimeout: 30000, // Increased to 30 seconds
+      greetingTimeout: 30000, // Increased to 30 seconds
+      socketTimeout: 30000, // Increased to 30 seconds
+      pool: true, // Use connection pooling
+      maxConnections: 5,
+      maxMessages: 10,
       auth: {
          type: 'OAuth2',
          user: process.env.EMAIL_USER,
@@ -42,7 +46,9 @@ const createTransporter = async () => {
          clientSecret: process.env.CLIENT_SECRET,
          refreshToken: process.env.REFRESH_TOKEN,
          accessToken: accessToken
-      }
+      },
+      logger: true,
+      debug: process.env.NODE_ENV === 'development' // Enable debug in development
    } as nodemailer.TransportOptions);
 };
 
@@ -58,7 +64,7 @@ export const verifyTransporter = async () => {
    }
 };
 
-export const sendMail = async (recipientEmail: string, subject: string, message: string) => {
+export const sendMail = async (recipientEmail: string, subject: string, message: string, retries = 3) => {
    const mailOptions = {
       from: process.env.EMAIL_USER,
       to: recipientEmail,
@@ -66,13 +72,38 @@ export const sendMail = async (recipientEmail: string, subject: string, message:
       text: message
    };
 
-   try {
-      const transporter = await createTransporter();
-      const info = await transporter.sendMail(mailOptions);
-      console.log('Email sent:', info.response);
-      return { success: true, message: 'Email sent successfully!' };
-   } catch (error) {
-      console.error('Error sending email:', error);
-      return { success: false, message: 'Error sending email', error };
+   let lastError: unknown;
+
+   for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+         console.log(`Email send attempt ${attempt}/${retries} to ${recipientEmail}`);
+         const transporter = await createTransporter();
+         const info = await transporter.sendMail(mailOptions);
+         console.log('Email sent successfully:', info.response);
+         return { success: true, message: 'Email sent successfully!' };
+      } catch (error) {
+         lastError = error;
+         console.error(`Email send attempt ${attempt}/${retries} failed:`, error);
+
+         // Don't retry on authentication errors
+         const errorObj = error as { code?: string; responseCode?: number };
+         if (errorObj.code === 'EAUTH' || errorObj.responseCode === 535) {
+            console.error('Authentication error - not retrying');
+            break;
+         }
+
+         // Wait before retrying (exponential backoff)
+         if (attempt < retries) {
+            const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+            console.log(`Waiting ${waitTime}ms before retry...`);
+            await new Promise((resolve) => setTimeout(resolve, waitTime));
+         }
+      }
    }
+
+   return {
+      success: false,
+      message: `Failed to send email after ${retries} attempts`,
+      error: lastError
+   };
 };
