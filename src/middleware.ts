@@ -6,8 +6,14 @@ import { getTokenFromRequest, verifyToken } from '@/lib/utils/auth';
 import { clearAuthCookie } from '@/lib/utils/cookieConfig';
 import { ERROR_CODES, ERROR_MESSAGES } from '@/types/errorCodes';
 
-const PUBLIC_API_ROUTES = ['/api/auth/login', '/api/auth/register', '/api/webhook'];
-const PUBLIC_PAGE_ROUTES = ['/', '/login', '/register', '/guide', '/whylend', '/benefits'];
+const PUBLIC_API_ROUTES = [
+   '/api/auth/login',
+   '/api/auth/register',
+   '/api/auth/forgot-password',
+   '/api/auth/reset-password',
+   '/api/webhook'
+];
+const PUBLIC_PAGE_ROUTES = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/guide', '/whylend', '/benefits'];
 
 // Request size limit: 1MB
 const MAX_REQUEST_SIZE = 1024 * 1024;

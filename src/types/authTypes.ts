@@ -49,6 +49,8 @@ export interface IUser extends Document {
    mal: number; // max active loans
    nal: number; // number of active loans
    cs: number; // credit score
+   resetToken?: string;
+   resetTokenExpiry?: Date;
    createdAt: Date;
    updatedAt: Date;
 }

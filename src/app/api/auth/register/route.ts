@@ -4,7 +4,7 @@ import User from '@/lib/models/User';
 import { registerSchema, transformUserToResponse } from '@/lib/schemas/auth';
 import { sendMail } from '@/lib/services/email';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
-import { generateToken, hashPassword, setAuthCookie, validatePasswordStrength } from '@/lib/utils/auth';
+import { generateToken, hashPassword, setAuthCookie } from '@/lib/utils/auth';
 import { handleCors } from '@/lib/utils/cors';
 import { generateUsername, verifyGoogleToken, verifyTelegramAuth } from '@/lib/utils/oauth';
 import { WorldId } from '@/types/authTypes';
@@ -65,10 +65,6 @@ export async function POST(request: NextRequest) {
                throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, message: 'Missing required fields' };
             }
 
-            if (!validatePasswordStrength(data.password)) {
-               throw { code: ERROR_CODES.AUTH_PASSWORD_WEAK };
-            }
-
             const existingUser = await User.findOne({ username: data.username });
             if (existingUser) {
                throw { code: ERROR_CODES.USER_ALREADY_EXISTS, message: 'Username already exists' };
@@ -97,16 +93,16 @@ export async function POST(request: NextRequest) {
          // Hash password (only for traditional registration)
          const hashedPassword = password ? await hashPassword(password) : null;
 
-         // Create user
+         // Create user - use undefined for optional fields to work with sparse indexes
          const user = new User({
             username: finalUsername,
-            walletAddress: null,
+            walletAddress: undefined,
             isWorldId: WorldId.INACTIVE,
-            password: hashedPassword,
+            password: hashedPassword || undefined,
             email,
-            telegramUsername: data.telegramUsername || telegramUsername,
-            googleId,
-            telegramId,
+            telegramUsername: data.telegramUsername || telegramUsername || undefined,
+            googleId: googleId || undefined,
+            telegramId: telegramId || undefined,
             chatId: undefined,
             mal: 3,
             nal: 0,

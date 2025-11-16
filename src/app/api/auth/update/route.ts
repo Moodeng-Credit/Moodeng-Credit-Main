@@ -4,7 +4,7 @@ import User from '@/lib/models/User';
 import { transformUserToResponse, updateUserSchema } from '@/lib/schemas/auth';
 import { sendMail } from '@/lib/services/email';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
-import { generateToken, hashPassword, setAuthCookie, validatePasswordStrength } from '@/lib/utils/auth';
+import { generateToken, hashPassword, setAuthCookie } from '@/lib/utils/auth';
 import { handleCors } from '@/lib/utils/cors';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { SUCCESS_CODES } from '@/types/successCodes';
@@ -15,10 +15,6 @@ export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data, userId) => {
-         if (data.password && !validatePasswordStrength(data.password)) {
-            throw { code: ERROR_CODES.AUTH_PASSWORD_WEAK };
-         }
-
          const user = await User.findById(userId);
          if (!user) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
