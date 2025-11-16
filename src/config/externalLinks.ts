@@ -5,8 +5,8 @@
 
 export const EXTERNAL_LINKS = {
    telegram: {
-      bot: 'https://t.me/BegfiBot',
-      channel: 'https://t.me/begfi'
+      bot: `https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}`,
+      channel: `https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_CHANNEL_USERNAME}`
    },
    worldcoin: {
       main: 'https://worldcoin.org/',
