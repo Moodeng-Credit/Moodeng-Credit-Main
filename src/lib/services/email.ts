@@ -11,7 +11,13 @@ oauth2Client.setCredentials({
 
 const getAccessToken = async () => {
    try {
-      const { token } = await oauth2Client.getAccessToken();
+      // Add 10 second timeout to OAuth token fetch
+      const timeoutPromise = new Promise((_, reject) => {
+         setTimeout(() => reject(new Error('OAuth token fetch timeout')), 10000);
+      });
+
+      const tokenPromise = oauth2Client.getAccessToken();
+      const { token } = await Promise.race([tokenPromise, timeoutPromise]) as { token: string | null | undefined };
       return token;
    } catch (error) {
       console.error('Error getting access token:', error);

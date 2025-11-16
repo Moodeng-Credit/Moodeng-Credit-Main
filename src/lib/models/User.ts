@@ -62,22 +62,61 @@ UserSchema.statics.ensureIndexes = async function () {
          for (const { field, name } of sparseIndexes) {
             const existingIndex = indexes.find((i) => i.key?.[field] === 1);
 
-            // Drop old index if it exists and isn't sparse
-            if (existingIndex && !existingIndex.sparse) {
-               try {
-                  await this.collection.dropIndex(name);
-                  console.log(`Dropped non-sparse index: ${name}`);
-               } catch (dropError) {
-                  console.log(`Could not drop index ${name}, might not exist:`, dropError);
+            // Drop existing index if it exists and either:
+            // 1. Isn't sparse, or
+            // 2. Has a different name than what we want
+            if (existingIndex) {
+               const needsDrop = !existingIndex.sparse || existingIndex.name !== name;
+
+               if (needsDrop && existingIndex.name) {
+                  try {
+                     // Drop by the actual index name (not the desired name)
+                     await this.collection.dropIndex(existingIndex.name);
+                     console.log(`Dropped index: ${existingIndex.name} (field: ${field})`);
+                  } catch (dropError) {
+                     console.log(`Could not drop index ${existingIndex.name}, trying by field:`, dropError);
+                     // Fallback: try dropping by field name
+                     try {
+                        await this.collection.dropIndex(field);
+                        console.log(`Dropped index by field: ${field}`);
+                     } catch (fallbackError) {
+                        console.log(`Could not drop index for field ${field}:`, fallbackError);
+                     }
+                  }
                }
             }
 
-            // Create/recreate sparse index
+            // Create/recreate sparse index with the desired name
             try {
                await this.collection.createIndex({ [field]: 1 }, { unique: true, sparse: true, name });
                console.log(`Created sparse index: ${name}`);
-            } catch (createError) {
-               console.log(`Index ${name} might already exist:`, createError);
+            } catch (createError: unknown) {
+               // Check if it's a name conflict error
+               if (
+                  createError &&
+                  typeof createError === 'object' &&
+                  'codeName' in createError &&
+                  createError.codeName === 'IndexOptionsConflict'
+               ) {
+                  // Index exists with different name, re-fetch indexes and drop it
+                  try {
+                     const currentIndexes = await this.collection.indexes();
+                     const conflictingIndex = currentIndexes.find((i) => i.key?.[field] === 1);
+                     if (conflictingIndex && conflictingIndex.name && conflictingIndex.name !== name) {
+                        await this.collection.dropIndex(conflictingIndex.name);
+                        console.log(`Dropped conflicting index: ${conflictingIndex.name}`);
+                        // Retry creating the index
+                        await this.collection.createIndex({ [field]: 1 }, { unique: true, sparse: true, name });
+                        console.log(`Created sparse index: ${name}`);
+                     } else {
+                        console.log(`Index conflict for ${field} but couldn't resolve:`, createError);
+                     }
+                  } catch (retryError) {
+                     console.log(`Error resolving index conflict for ${name}:`, retryError);
+                  }
+               } else {
+                  console.log(`Index ${name} might already exist:`, createError);
+               }
             }
          }
 
