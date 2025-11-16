@@ -28,38 +28,62 @@ UserSchema.statics.ensureIndexes = async function () {
       // Get current indexes
       const indexes = await this.collection.indexes();
 
-      // Check if indexes exist and are configured correctly
-      const chatIdIndex = indexes.find((i) => i.key?.chatId === 1);
-      const telegramIndex = indexes.find((i) => i.key?.telegramUsername === 1);
+      // Define all sparse unique indexes that need to be verified
+      const sparseIndexes = [
+         { field: 'walletAddress', name: 'walletAddress_1' },
+         { field: 'googleId', name: 'googleId_1' },
+         { field: 'telegramId', name: 'telegramId_1' },
+         { field: 'telegramUsername', name: 'telegramUsername_1' },
+         { field: 'chatId', name: 'chatId_1' },
+         { field: 'nullifierHash', name: 'nullifierHash_1' }
+      ];
 
-      const needsUpdate =
-         (chatIdIndex && !chatIdIndex.sparse) || (telegramIndex && !telegramIndex.sparse) || !chatIdIndex || !telegramIndex;
+      let needsUpdate = false;
+      const indexStatus: Record<string, { exists: boolean; sparse: boolean }> = {};
+
+      // Check each index
+      for (const { field } of sparseIndexes) {
+         const index = indexes.find((i) => i.key?.[field] === 1);
+         indexStatus[field] = {
+            exists: !!index,
+            sparse: index?.sparse || false
+         };
+
+         // Need update if index doesn't exist or isn't sparse
+         if (!index || !index.sparse) {
+            needsUpdate = true;
+         }
+      }
 
       if (needsUpdate) {
-         console.log('Index update needed:', {
-            chatIdExists: !!chatIdIndex,
-            chatIdSparse: chatIdIndex?.sparse,
-            telegramExists: !!telegramIndex,
-            telegramSparse: telegramIndex?.sparse
-         });
+         console.log('Index update needed:', indexStatus);
 
-         // Drop existing indexes if they exist
-         if (chatIdIndex) await this.collection.dropIndex('chatId_1');
-         if (telegramIndex) await this.collection.dropIndex('telegramUsername_1');
+         // Recreate all sparse indexes
+         for (const { field, name } of sparseIndexes) {
+            const existingIndex = indexes.find((i) => i.key?.[field] === 1);
 
-         // Create new indexes with correct settings
-         const chatIdResult = await this.collection.createIndex({ chatId: 1 }, { unique: true, sparse: true, name: 'chatId_2' });
-         const telegramResult = await this.collection.createIndex(
-            { telegramUsername: 1 },
-            { unique: true, sparse: true, name: 'telegramUsername_2' }
-         );
+            // Drop old index if it exists and isn't sparse
+            if (existingIndex && !existingIndex.sparse) {
+               try {
+                  await this.collection.dropIndex(name);
+                  console.log(`Dropped non-sparse index: ${name}`);
+               } catch (dropError) {
+                  console.log(`Could not drop index ${name}, might not exist:`, dropError);
+               }
+            }
 
-         console.log('Indexes updated successfully:', {
-            chatIdIndex: chatIdResult,
-            telegramIndex: telegramResult
-         });
+            // Create/recreate sparse index
+            try {
+               await this.collection.createIndex({ [field]: 1 }, { unique: true, sparse: true, name });
+               console.log(`Created sparse index: ${name}`);
+            } catch (createError) {
+               console.log(`Index ${name} might already exist:`, createError);
+            }
+         }
+
+         console.log('All sparse indexes updated successfully');
       } else {
-         console.log('Indexes are already correctly configured');
+         console.log('All indexes are already correctly configured');
       }
    } catch (error: unknown) {
       console.error('Error managing indexes:', error);

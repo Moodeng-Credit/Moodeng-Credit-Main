@@ -93,16 +93,16 @@ export async function POST(request: NextRequest) {
          // Hash password (only for traditional registration)
          const hashedPassword = password ? await hashPassword(password) : null;
 
-         // Create user
+         // Create user - use undefined for optional fields to work with sparse indexes
          const user = new User({
             username: finalUsername,
-            walletAddress: null,
+            walletAddress: undefined,
             isWorldId: WorldId.INACTIVE,
-            password: hashedPassword,
+            password: hashedPassword || undefined,
             email,
-            telegramUsername: data.telegramUsername || telegramUsername,
-            googleId,
-            telegramId,
+            telegramUsername: data.telegramUsername || telegramUsername || undefined,
+            googleId: googleId || undefined,
+            telegramId: telegramId || undefined,
             chatId: undefined,
             mal: 3,
             nal: 0,
