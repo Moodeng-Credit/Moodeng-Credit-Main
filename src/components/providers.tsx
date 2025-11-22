@@ -18,7 +18,6 @@ import { persistor, store } from '@/store/store';
 
 const queryClient = new QueryClient();
 
-// Component to initialize store ref for axios
 function StoreInitializer() {
    useEffect(() => {
       setStoreRef(store);

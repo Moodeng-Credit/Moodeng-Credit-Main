@@ -3,25 +3,16 @@ import { type ChangeEvent } from 'react';
 import { LOAN_AMOUNTS, LOAN_TIME_PERIODS, NETWORKS, REPAYMENT_RATES } from '@/constants/loanOptions';
 
 interface FilterSidebarProps {
-   // Amount filters
    amount: string;
    onAmountChange: (amount: string) => void;
    customAmount: string;
    onCustomAmountChange: (value: string) => void;
-
-   // Rate filters
    rate: string;
    onRateChange: (rate: string) => void;
-
-   // Date filters
    selectedDate: Date | null;
    onDateChange: (date: Date | null) => void;
-
-   // Loan time filters
    loanTime: string;
    onLoanTimeChange: (time: string) => void;
-
-   // Network filters
    currentNetwork: string;
    onNetworkChange: (network: string) => void;
 }

@@ -77,7 +77,6 @@ export default function Dashboard() {
          setSD(null);
       } else {
          setLoanTime(time);
-         // Calculate and set the date based on the loan time
          const currentDate = new Date();
          const targetDate = new Date(currentDate);
          targetDate.setDate(currentDate.getDate() + Number(time));
@@ -97,14 +96,12 @@ export default function Dashboard() {
    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
 
-      // Check if user has reached maximum loan limit
       if ((user.nal || 0) >= (user.mal || 0)) {
          console.log('Loan limit reached');
          showToastByConfig('loan_limit_reached');
          return;
       }
 
-      // Check each condition separately
       if (user.isWorldId !== 'ACTIVE') {
          console.log('WorldId status not active');
          showToastByConfig('worldid_required');

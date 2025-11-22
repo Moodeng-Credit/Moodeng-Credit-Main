@@ -19,7 +19,6 @@ const sizeStyles = {
 };
 
 export default function Modal({ isOpen, onClose, title, children, size = 'md', showCloseButton = true, className = '' }: ModalProps) {
-   // Prevent body scroll when modal is open
    useEffect(() => {
       if (isOpen) {
          document.body.style.overflow = 'hidden';
@@ -32,7 +31,6 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', s
       };
    }, [isOpen]);
 
-   // Close on Escape key
    useEffect(() => {
       const handleEscape = (e: KeyboardEvent) => {
          if (e.key === 'Escape' && isOpen) {

@@ -51,7 +51,6 @@ const Toast: FC<ToastProps> = ({
       }, 300);
    }, [onClose, id]);
 
-   // Auto-close functionality
    useEffect(() => {
       if (autoClose && duration > 0) {
          const timer = setTimeout(() => {

@@ -1,7 +1,5 @@
 'use client';
 
-import React from 'react';
-
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -111,9 +109,9 @@ export default function Footer() {
                         <a href="mailto:support@moodeng.app" className="hover:text-blue-300 transition-colors">
                            Contact Support
                         </a>
-                        <a href="#" className="mt-3 hover:text-blue-300 transition-colors">
+                        <Link href="/faq" className="mt-3 hover:text-blue-300 transition-colors">
                            FAQ
-                        </a>
+                        </Link>
                         <a href="#" className="mt-3 hover:text-blue-300 transition-colors">
                            Documentation
                         </a>

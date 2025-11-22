@@ -10,13 +10,11 @@ export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data, userId) => {
-         // Get the user's email
          const user = await User.findById(userId);
          if (!user) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
          }
 
-         // Send test email
          const emailSubject = 'Test Email from Moodeng Credit';
          const emailMessage = `Hello ${user.username},
 

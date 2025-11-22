@@ -24,16 +24,11 @@ import { WorldId } from '@/types/authTypes';
  * Supports email/password, Google OAuth, and Telegram auth
  */
 export const registerSchema = z.object({
-   // Traditional registration
    username: usernameSchema.optional(),
    email: emailSchema.optional(),
    password: strongPasswordSchema.optional(),
-
-   // OAuth credentials
    googleCredential: z.string().optional(),
    telegramAuthData: z.string().optional(),
-
-   // Optional metadata
    telegramUsername: optionalTelegramUsername,
    googleId: optionalGoogleId,
    telegramId: optionalTelegramId
@@ -47,15 +42,10 @@ export type RegisterInput = z.infer<typeof registerSchema>;
  * Supports username/password, Google OAuth, and Telegram auth
  */
 export const loginSchema = z.object({
-   // Traditional login
    username: usernameSchema.optional(),
    password: passwordSchema.optional(),
-
-   // OAuth credentials
    googleCredential: z.string().optional(),
    telegramAuthData: z.string().optional(),
-
-   // Optional metadata
    googleId: optionalGoogleId,
    telegramId: optionalTelegramId,
    telegramUsername: optionalTelegramUsername

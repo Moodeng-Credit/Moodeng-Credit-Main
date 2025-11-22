@@ -96,7 +96,6 @@ export default function AuthFormSection(): JSX.Element {
       [dispatch, router]
    );
 
-   // Error handlers for different auth types
    const handleRegisterError = (errorMsg: string) => {
       console.log(errorMsg);
       if (errorMsg.includes('User')) setShowUser(true);

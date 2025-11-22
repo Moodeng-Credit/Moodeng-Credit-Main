@@ -34,8 +34,6 @@ const LevelBadge = ({ status }: { status: string }) => (
    </svg>
 );
 
-// Utility functions moved to @/utils
-
 const UserProfile = () => {
    const dispatch = useDispatch<AppDispatch>();
    const { username } = useParams();
@@ -75,7 +73,6 @@ const UserProfile = () => {
       return <Loading />;
    }
 
-   // Date calculations using utilities
    const memberSince = getMemberSinceText(user.createdAt);
 
    const ignoredTier = new Set();
@@ -149,7 +146,6 @@ const UserProfile = () => {
    });
    const avgPaymentTime = Math.round(totalPaymentTime / paidLoans.length);
 
-   // Calculate lender diversity using utility
    const lenderDiversity = calculateLenderDiversity(loans);
 
    const borrowerData = {
