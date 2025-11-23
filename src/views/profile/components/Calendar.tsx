@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import type { Loan } from '@/types/loanTypes';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
+
+import type { Loan } from '@/types/loanTypes';
 
 interface CalendarProps {
    activeLoans?: Loan[];
@@ -12,12 +13,20 @@ interface CalendarProps {
 
 const EMPTY_LOANS: Loan[] = [];
 
-export default function Calendar({
-   activeLoans = EMPTY_LOANS,
-   defaultedLoans = EMPTY_LOANS,
-   pendingLoans = EMPTY_LOANS
-}: CalendarProps) {
+export default function Calendar({ activeLoans = EMPTY_LOANS, defaultedLoans = EMPTY_LOANS, pendingLoans = EMPTY_LOANS }: CalendarProps) {
    const [month, setMonth] = useState(new Date());
+   const [isMobile, setIsMobile] = useState(false);
+
+   useEffect(() => {
+      const checkMobile = () => {
+         setIsMobile(window.innerWidth < 768);
+      };
+
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+
+      return () => window.removeEventListener('resize', checkMobile);
+   }, []);
 
    const modifiers = useMemo(() => {
       const activeDates = activeLoans
@@ -52,7 +61,7 @@ export default function Calendar({
 
    return (
       <div className="p-6 bg-white rounded-3xl shadow-lg mx-auto" style={{ maxWidth: '750px' }}>
-         <div className="flex items-center justify-between mb-6">
+         <div className="flex items-center justify-between mb-6 flex-col sm:flex-row gap-4">
             <h2 className="text-xl font-bold text-gray-900">Loan Insights</h2>
 
             <div className="flex items-center gap-4">
@@ -77,13 +86,13 @@ export default function Calendar({
             <DayPicker
                month={month}
                onMonthChange={setMonth}
-               numberOfMonths={2}
+               numberOfMonths={isMobile ? 1 : 2}
                showOutsideDays
                modifiers={modifiers}
                modifiersClassNames={modifiersClassNames}
                classNames={{
                   root: 'rdp-root',
-                  months: 'flex gap-8 px-12',
+                  months: isMobile ? 'flex gap-0' : 'flex gap-8 px-12',
                   month: 'flex-1',
                   month_caption: 'flex justify-center items-center mb-4',
                   caption_label: 'text-lg font-semibold text-gray-900',
