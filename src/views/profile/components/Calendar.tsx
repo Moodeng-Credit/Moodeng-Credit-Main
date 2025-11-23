@@ -1,16 +1,49 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
+import type { Loan } from '@/types/loanTypes';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 
-export default function Calendar() {
-   const [month, setMonth] = useState(new Date(2025, 1));
+interface CalendarProps {
+   activeLoans?: Loan[];
+   defaultedLoans?: Loan[];
+   pendingLoans?: Loan[];
+}
 
-   const active = new Date(2025, 1, 17);
-   const defaulted = new Date(2025, 1, 14);
-   const pending = new Date(2025, 1, 8);
+const EMPTY_LOANS: Loan[] = [];
 
-   const modifiers = { active, defaulted, pending };
+export default function Calendar({
+   activeLoans = EMPTY_LOANS,
+   defaultedLoans = EMPTY_LOANS,
+   pendingLoans = EMPTY_LOANS
+}: CalendarProps) {
+   const [month, setMonth] = useState(new Date());
+
+   const modifiers = useMemo(() => {
+      const activeDates = activeLoans
+         .map((loan) => {
+            const dueDate = new Date(loan.createdAt);
+            dueDate.setDate(dueDate.getDate() + loan.days);
+            return dueDate;
+         })
+         .filter((date) => !isNaN(date.getTime()));
+
+      const defaultedDates = defaultedLoans
+         .map((loan) => {
+            const overdueDate = new Date(loan.createdAt);
+            overdueDate.setDate(overdueDate.getDate() + loan.days);
+            return overdueDate;
+         })
+         .filter((date) => !isNaN(date.getTime()));
+
+      const pendingDates = pendingLoans.map((loan) => new Date(loan.createdAt)).filter((date) => !isNaN(date.getTime()));
+
+      return {
+         active: activeDates,
+         defaulted: defaultedDates,
+         pending: pendingDates
+      };
+   }, [activeLoans, defaultedLoans, pendingLoans]);
    const modifiersClassNames = {
       active: 'bg-orange-500 text-white rounded-full',
       defaulted: 'bg-red-500 text-white rounded-full',

@@ -26,7 +26,7 @@ export const useDashboardData = (activeRole: RoleType) => {
       return gloanRequests.filter((loan) => (activeRole === 'borrower' ? loan.borrowerUser === username : loan.lenderUser === username));
    }, [gloanRequests, activeRole, username]);
 
-   const stats: StatsData = useMemo(() => {
+   const loanArrays = useMemo(() => {
       const repayments = userLoans.filter((loan) => loan.repaymentStatus === 'Paid');
       const activeLoans = userLoans.filter((loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus === 'Unpaid');
       const defaultedLoans = userLoans.filter(
@@ -34,25 +34,29 @@ export const useDashboardData = (activeRole: RoleType) => {
       );
       const pendingLoans = userLoans.filter((loan) => loan.loanStatus === 'Requested');
 
+      return { repayments, activeLoans, defaultedLoans, pendingLoans };
+   }, [userLoans]);
+
+   const stats: StatsData = useMemo(() => {
       return {
          repayments: {
-            count: repayments.length,
-            total: repayments.reduce((sum, loan) => sum + loan.repayedAmount, 0)
+            count: loanArrays.repayments.length,
+            total: loanArrays.repayments.reduce((sum, loan) => sum + loan.repayedAmount, 0)
          },
          active: {
-            count: activeLoans.length,
-            total: activeLoans.reduce((sum, loan) => sum + loan.loanAmount, 0)
+            count: loanArrays.activeLoans.length,
+            total: loanArrays.activeLoans.reduce((sum, loan) => sum + loan.loanAmount, 0)
          },
          defaulted: {
-            count: defaultedLoans.length,
-            total: defaultedLoans.reduce((sum, loan) => sum + loan.loanAmount, 0)
+            count: loanArrays.defaultedLoans.length,
+            total: loanArrays.defaultedLoans.reduce((sum, loan) => sum + loan.loanAmount, 0)
          },
          pending: {
-            count: pendingLoans.length,
-            total: pendingLoans.reduce((sum, loan) => sum + loan.loanAmount, 0)
+            count: loanArrays.pendingLoans.length,
+            total: loanArrays.pendingLoans.reduce((sum, loan) => sum + loan.loanAmount, 0)
          }
       };
-   }, [userLoans]);
+   }, [loanArrays]);
 
    const lenderDiversityScore = useMemo(() => {
       if (activeRole === 'lender') return 0;
@@ -104,5 +108,5 @@ export const useDashboardData = (activeRole: RoleType) => {
       ];
    }, [stats.repayments.count]);
 
-   return { stats, lenderDiversityScore, creditLevels };
+   return { stats, lenderDiversityScore, creditLevels, loanArrays };
 };

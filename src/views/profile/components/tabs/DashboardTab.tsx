@@ -12,12 +12,11 @@ import { useDashboardData } from '@/views/profile/components/tabs/useDashboardDa
 
 const DashboardTab = () => {
    const [activeRole, setActiveRole] = useState<RoleType>('borrower');
-   const { stats, lenderDiversityScore, creditLevels } = useDashboardData(activeRole);
+   const { stats, lenderDiversityScore, creditLevels, loanArrays } = useDashboardData(activeRole);
 
    return (
       <section className="flex-1 overflow-auto p-6 space-y-6">
          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Loan Summary Section */}
             <div className="bg-white rounded-xl p-6 flex-1 max-w-full lg:max-w-[720px] space-y-6">
                <div className="flex justify-between items-center">
                   <h2 className="font-extrabold text-xl select-none">Loan Summary</h2>
@@ -52,7 +51,11 @@ const DashboardTab = () => {
                </div>
             </div>
 
-            <Calendar />
+            <Calendar
+               activeLoans={loanArrays.activeLoans}
+               defaultedLoans={loanArrays.defaultedLoans}
+               pendingLoans={loanArrays.pendingLoans}
+            />
          </div>
 
          {/* Credit Level Section */}
