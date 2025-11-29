@@ -17,8 +17,8 @@ export interface User {
    isWorldId: WorldIdStatus;
    nullifierHash?: string;
    telegramUsername?: string;
-   telegramId?: number;
-   chatId?: number;
+   telegramId?: bigint;
+   chatId?: bigint;
    mal: number;
    nal: number;
    cs: number;
@@ -43,8 +43,8 @@ export interface IUser {
    email: string;
    googleId?: string;
    telegramUsername?: string;
-   telegramId?: number;
-   chatId?: number;
+   telegramId?: bigint;
+   chatId?: bigint;
    mal: number; // max active loans
    nal: number; // number of active loans
    cs: number; // credit score

@@ -35,8 +35,8 @@ export type UserAvgAggregateOutputType = {
 };
 
 export type UserSumAggregateOutputType = {
-   telegramId: number | null;
-   chatId: number | null;
+   telegramId: bigint | null;
+   chatId: bigint | null;
    mal: number | null;
    nal: number | null;
    cs: number | null;
@@ -51,9 +51,9 @@ export type UserMinAggregateOutputType = {
    password: string | null;
    email: string | null;
    googleId: string | null;
-   telegramId: number | null;
+   telegramId: bigint | null;
    telegramUsername: string | null;
-   chatId: number | null;
+   chatId: bigint | null;
    mal: number | null;
    nal: number | null;
    cs: number | null;
@@ -72,9 +72,9 @@ export type UserMaxAggregateOutputType = {
    password: string | null;
    email: string | null;
    googleId: string | null;
-   telegramId: number | null;
+   telegramId: bigint | null;
    telegramUsername: string | null;
-   chatId: number | null;
+   chatId: bigint | null;
    mal: number | null;
    nal: number | null;
    cs: number | null;
@@ -278,9 +278,9 @@ export type UserGroupByOutputType = {
    password: string | null;
    email: string;
    googleId: string | null;
-   telegramId: number | null;
+   telegramId: bigint | null;
    telegramUsername: string | null;
-   chatId: number | null;
+   chatId: bigint | null;
    mal: number;
    nal: number;
    cs: number;
@@ -319,9 +319,9 @@ export type UserWhereInput = {
    password?: Prisma.StringNullableFilter<'User'> | string | null;
    email?: Prisma.StringFilter<'User'> | string;
    googleId?: Prisma.StringNullableFilter<'User'> | string | null;
-   telegramId?: Prisma.IntNullableFilter<'User'> | number | null;
+   telegramId?: Prisma.BigIntNullableFilter<'User'> | bigint | number | null;
    telegramUsername?: Prisma.StringNullableFilter<'User'> | string | null;
-   chatId?: Prisma.IntNullableFilter<'User'> | number | null;
+   chatId?: Prisma.BigIntNullableFilter<'User'> | bigint | number | null;
    mal?: Prisma.IntFilter<'User'> | number;
    nal?: Prisma.IntFilter<'User'> | number;
    cs?: Prisma.IntFilter<'User'> | number;
@@ -329,8 +329,6 @@ export type UserWhereInput = {
    resetTokenExpiry?: Prisma.DateTimeNullableFilter<'User'> | Date | string | null;
    createdAt?: Prisma.DateTimeFilter<'User'> | Date | string;
    updatedAt?: Prisma.DateTimeFilter<'User'> | Date | string;
-   borrowedLoans?: Prisma.LoanListRelationFilter;
-   lentLoans?: Prisma.LoanListRelationFilter;
 };
 
 export type UserOrderByWithRelationInput = {
@@ -352,8 +350,6 @@ export type UserOrderByWithRelationInput = {
    resetTokenExpiry?: Prisma.SortOrderInput | Prisma.SortOrder;
    createdAt?: Prisma.SortOrder;
    updatedAt?: Prisma.SortOrder;
-   borrowedLoans?: Prisma.LoanOrderByRelationAggregateInput;
-   lentLoans?: Prisma.LoanOrderByRelationAggregateInput;
 };
 
 export type UserWhereUniqueInput = Prisma.AtLeast<
@@ -364,9 +360,9 @@ export type UserWhereUniqueInput = Prisma.AtLeast<
       nullifierHash?: string;
       email?: string;
       googleId?: string;
-      telegramId?: number;
+      telegramId?: bigint | number;
       telegramUsername?: string;
-      chatId?: number;
+      chatId?: bigint | number;
       resetToken?: string;
       AND?: Prisma.UserWhereInput | Prisma.UserWhereInput[];
       OR?: Prisma.UserWhereInput[];
@@ -379,8 +375,6 @@ export type UserWhereUniqueInput = Prisma.AtLeast<
       resetTokenExpiry?: Prisma.DateTimeNullableFilter<'User'> | Date | string | null;
       createdAt?: Prisma.DateTimeFilter<'User'> | Date | string;
       updatedAt?: Prisma.DateTimeFilter<'User'> | Date | string;
-      borrowedLoans?: Prisma.LoanListRelationFilter;
-      lentLoans?: Prisma.LoanListRelationFilter;
    },
    | 'id'
    | 'walletAddress'
@@ -432,9 +426,9 @@ export type UserScalarWhereWithAggregatesInput = {
    password?: Prisma.StringNullableWithAggregatesFilter<'User'> | string | null;
    email?: Prisma.StringWithAggregatesFilter<'User'> | string;
    googleId?: Prisma.StringNullableWithAggregatesFilter<'User'> | string | null;
-   telegramId?: Prisma.IntNullableWithAggregatesFilter<'User'> | number | null;
+   telegramId?: Prisma.BigIntNullableWithAggregatesFilter<'User'> | bigint | number | null;
    telegramUsername?: Prisma.StringNullableWithAggregatesFilter<'User'> | string | null;
-   chatId?: Prisma.IntNullableWithAggregatesFilter<'User'> | number | null;
+   chatId?: Prisma.BigIntNullableWithAggregatesFilter<'User'> | bigint | number | null;
    mal?: Prisma.IntWithAggregatesFilter<'User'> | number;
    nal?: Prisma.IntWithAggregatesFilter<'User'> | number;
    cs?: Prisma.IntWithAggregatesFilter<'User'> | number;
@@ -453,9 +447,9 @@ export type UserCreateInput = {
    password?: string | null;
    email: string;
    googleId?: string | null;
-   telegramId?: number | null;
+   telegramId?: bigint | number | null;
    telegramUsername?: string | null;
-   chatId?: number | null;
+   chatId?: bigint | number | null;
    mal?: number;
    nal?: number;
    cs?: number;
@@ -463,8 +457,6 @@ export type UserCreateInput = {
    resetTokenExpiry?: Date | string | null;
    createdAt?: Date | string;
    updatedAt?: Date | string;
-   borrowedLoans?: Prisma.LoanCreateNestedManyWithoutBorrowerInput;
-   lentLoans?: Prisma.LoanCreateNestedManyWithoutLenderInput;
 };
 
 export type UserUncheckedCreateInput = {
@@ -476,9 +468,9 @@ export type UserUncheckedCreateInput = {
    password?: string | null;
    email: string;
    googleId?: string | null;
-   telegramId?: number | null;
+   telegramId?: bigint | number | null;
    telegramUsername?: string | null;
-   chatId?: number | null;
+   chatId?: bigint | number | null;
    mal?: number;
    nal?: number;
    cs?: number;
@@ -486,8 +478,6 @@ export type UserUncheckedCreateInput = {
    resetTokenExpiry?: Date | string | null;
    createdAt?: Date | string;
    updatedAt?: Date | string;
-   borrowedLoans?: Prisma.LoanUncheckedCreateNestedManyWithoutBorrowerInput;
-   lentLoans?: Prisma.LoanUncheckedCreateNestedManyWithoutLenderInput;
 };
 
 export type UserUpdateInput = {
@@ -499,9 +489,9 @@ export type UserUpdateInput = {
    password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
    email?: Prisma.StringFieldUpdateOperationsInput | string;
    googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   telegramId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+   telegramId?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null;
    telegramUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   chatId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+   chatId?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null;
    mal?: Prisma.IntFieldUpdateOperationsInput | number;
    nal?: Prisma.IntFieldUpdateOperationsInput | number;
    cs?: Prisma.IntFieldUpdateOperationsInput | number;
@@ -509,8 +499,6 @@ export type UserUpdateInput = {
    resetTokenExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
    createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
    updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-   borrowedLoans?: Prisma.LoanUpdateManyWithoutBorrowerNestedInput;
-   lentLoans?: Prisma.LoanUpdateManyWithoutLenderNestedInput;
 };
 
 export type UserUncheckedUpdateInput = {
@@ -522,9 +510,9 @@ export type UserUncheckedUpdateInput = {
    password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
    email?: Prisma.StringFieldUpdateOperationsInput | string;
    googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   telegramId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+   telegramId?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null;
    telegramUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   chatId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+   chatId?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null;
    mal?: Prisma.IntFieldUpdateOperationsInput | number;
    nal?: Prisma.IntFieldUpdateOperationsInput | number;
    cs?: Prisma.IntFieldUpdateOperationsInput | number;
@@ -532,8 +520,6 @@ export type UserUncheckedUpdateInput = {
    resetTokenExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
    createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
    updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-   borrowedLoans?: Prisma.LoanUncheckedUpdateManyWithoutBorrowerNestedInput;
-   lentLoans?: Prisma.LoanUncheckedUpdateManyWithoutLenderNestedInput;
 };
 
 export type UserCreateManyInput = {
@@ -545,9 +531,9 @@ export type UserCreateManyInput = {
    password?: string | null;
    email: string;
    googleId?: string | null;
-   telegramId?: number | null;
+   telegramId?: bigint | number | null;
    telegramUsername?: string | null;
-   chatId?: number | null;
+   chatId?: bigint | number | null;
    mal?: number;
    nal?: number;
    cs?: number;
@@ -566,9 +552,9 @@ export type UserUpdateManyMutationInput = {
    password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
    email?: Prisma.StringFieldUpdateOperationsInput | string;
    googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   telegramId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+   telegramId?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null;
    telegramUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   chatId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+   chatId?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null;
    mal?: Prisma.IntFieldUpdateOperationsInput | number;
    nal?: Prisma.IntFieldUpdateOperationsInput | number;
    cs?: Prisma.IntFieldUpdateOperationsInput | number;
@@ -587,9 +573,9 @@ export type UserUncheckedUpdateManyInput = {
    password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
    email?: Prisma.StringFieldUpdateOperationsInput | string;
    googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   telegramId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+   telegramId?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null;
    telegramUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   chatId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+   chatId?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null;
    mal?: Prisma.IntFieldUpdateOperationsInput | number;
    nal?: Prisma.IntFieldUpdateOperationsInput | number;
    cs?: Prisma.IntFieldUpdateOperationsInput | number;
@@ -678,11 +664,6 @@ export type UserSumOrderByAggregateInput = {
    cs?: Prisma.SortOrder;
 };
 
-export type UserNullableScalarRelationFilter = {
-   is?: Prisma.UserWhereInput | null;
-   isNot?: Prisma.UserWhereInput | null;
-};
-
 export type StringFieldUpdateOperationsInput = {
    set?: string;
 };
@@ -695,12 +676,12 @@ export type EnumWorldIdStatusFieldUpdateOperationsInput = {
    set?: $Enums.WorldIdStatus;
 };
 
-export type NullableIntFieldUpdateOperationsInput = {
-   set?: number | null;
-   increment?: number;
-   decrement?: number;
-   multiply?: number;
-   divide?: number;
+export type NullableBigIntFieldUpdateOperationsInput = {
+   set?: bigint | number | null;
+   increment?: bigint | number;
+   decrement?: bigint | number;
+   multiply?: bigint | number;
+   divide?: bigint | number;
 };
 
 export type IntFieldUpdateOperationsInput = {
@@ -717,294 +698,6 @@ export type NullableDateTimeFieldUpdateOperationsInput = {
 
 export type DateTimeFieldUpdateOperationsInput = {
    set?: Date | string;
-};
-
-export type UserCreateNestedOneWithoutBorrowedLoansInput = {
-   create?: Prisma.XOR<Prisma.UserCreateWithoutBorrowedLoansInput, Prisma.UserUncheckedCreateWithoutBorrowedLoansInput>;
-   connectOrCreate?: Prisma.UserCreateOrConnectWithoutBorrowedLoansInput;
-   connect?: Prisma.UserWhereUniqueInput;
-};
-
-export type UserCreateNestedOneWithoutLentLoansInput = {
-   create?: Prisma.XOR<Prisma.UserCreateWithoutLentLoansInput, Prisma.UserUncheckedCreateWithoutLentLoansInput>;
-   connectOrCreate?: Prisma.UserCreateOrConnectWithoutLentLoansInput;
-   connect?: Prisma.UserWhereUniqueInput;
-};
-
-export type UserUpdateOneWithoutBorrowedLoansNestedInput = {
-   create?: Prisma.XOR<Prisma.UserCreateWithoutBorrowedLoansInput, Prisma.UserUncheckedCreateWithoutBorrowedLoansInput>;
-   connectOrCreate?: Prisma.UserCreateOrConnectWithoutBorrowedLoansInput;
-   upsert?: Prisma.UserUpsertWithoutBorrowedLoansInput;
-   disconnect?: Prisma.UserWhereInput | boolean;
-   delete?: Prisma.UserWhereInput | boolean;
-   connect?: Prisma.UserWhereUniqueInput;
-   update?: Prisma.XOR<
-      Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutBorrowedLoansInput, Prisma.UserUpdateWithoutBorrowedLoansInput>,
-      Prisma.UserUncheckedUpdateWithoutBorrowedLoansInput
-   >;
-};
-
-export type UserUpdateOneWithoutLentLoansNestedInput = {
-   create?: Prisma.XOR<Prisma.UserCreateWithoutLentLoansInput, Prisma.UserUncheckedCreateWithoutLentLoansInput>;
-   connectOrCreate?: Prisma.UserCreateOrConnectWithoutLentLoansInput;
-   upsert?: Prisma.UserUpsertWithoutLentLoansInput;
-   disconnect?: Prisma.UserWhereInput | boolean;
-   delete?: Prisma.UserWhereInput | boolean;
-   connect?: Prisma.UserWhereUniqueInput;
-   update?: Prisma.XOR<
-      Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutLentLoansInput, Prisma.UserUpdateWithoutLentLoansInput>,
-      Prisma.UserUncheckedUpdateWithoutLentLoansInput
-   >;
-};
-
-export type UserCreateWithoutBorrowedLoansInput = {
-   id?: string;
-   walletAddress?: string | null;
-   username: string;
-   isWorldId: $Enums.WorldIdStatus;
-   nullifierHash?: string | null;
-   password?: string | null;
-   email: string;
-   googleId?: string | null;
-   telegramId?: number | null;
-   telegramUsername?: string | null;
-   chatId?: number | null;
-   mal?: number;
-   nal?: number;
-   cs?: number;
-   resetToken?: string | null;
-   resetTokenExpiry?: Date | string | null;
-   createdAt?: Date | string;
-   updatedAt?: Date | string;
-   lentLoans?: Prisma.LoanCreateNestedManyWithoutLenderInput;
-};
-
-export type UserUncheckedCreateWithoutBorrowedLoansInput = {
-   id?: string;
-   walletAddress?: string | null;
-   username: string;
-   isWorldId: $Enums.WorldIdStatus;
-   nullifierHash?: string | null;
-   password?: string | null;
-   email: string;
-   googleId?: string | null;
-   telegramId?: number | null;
-   telegramUsername?: string | null;
-   chatId?: number | null;
-   mal?: number;
-   nal?: number;
-   cs?: number;
-   resetToken?: string | null;
-   resetTokenExpiry?: Date | string | null;
-   createdAt?: Date | string;
-   updatedAt?: Date | string;
-   lentLoans?: Prisma.LoanUncheckedCreateNestedManyWithoutLenderInput;
-};
-
-export type UserCreateOrConnectWithoutBorrowedLoansInput = {
-   where: Prisma.UserWhereUniqueInput;
-   create: Prisma.XOR<Prisma.UserCreateWithoutBorrowedLoansInput, Prisma.UserUncheckedCreateWithoutBorrowedLoansInput>;
-};
-
-export type UserCreateWithoutLentLoansInput = {
-   id?: string;
-   walletAddress?: string | null;
-   username: string;
-   isWorldId: $Enums.WorldIdStatus;
-   nullifierHash?: string | null;
-   password?: string | null;
-   email: string;
-   googleId?: string | null;
-   telegramId?: number | null;
-   telegramUsername?: string | null;
-   chatId?: number | null;
-   mal?: number;
-   nal?: number;
-   cs?: number;
-   resetToken?: string | null;
-   resetTokenExpiry?: Date | string | null;
-   createdAt?: Date | string;
-   updatedAt?: Date | string;
-   borrowedLoans?: Prisma.LoanCreateNestedManyWithoutBorrowerInput;
-};
-
-export type UserUncheckedCreateWithoutLentLoansInput = {
-   id?: string;
-   walletAddress?: string | null;
-   username: string;
-   isWorldId: $Enums.WorldIdStatus;
-   nullifierHash?: string | null;
-   password?: string | null;
-   email: string;
-   googleId?: string | null;
-   telegramId?: number | null;
-   telegramUsername?: string | null;
-   chatId?: number | null;
-   mal?: number;
-   nal?: number;
-   cs?: number;
-   resetToken?: string | null;
-   resetTokenExpiry?: Date | string | null;
-   createdAt?: Date | string;
-   updatedAt?: Date | string;
-   borrowedLoans?: Prisma.LoanUncheckedCreateNestedManyWithoutBorrowerInput;
-};
-
-export type UserCreateOrConnectWithoutLentLoansInput = {
-   where: Prisma.UserWhereUniqueInput;
-   create: Prisma.XOR<Prisma.UserCreateWithoutLentLoansInput, Prisma.UserUncheckedCreateWithoutLentLoansInput>;
-};
-
-export type UserUpsertWithoutBorrowedLoansInput = {
-   update: Prisma.XOR<Prisma.UserUpdateWithoutBorrowedLoansInput, Prisma.UserUncheckedUpdateWithoutBorrowedLoansInput>;
-   create: Prisma.XOR<Prisma.UserCreateWithoutBorrowedLoansInput, Prisma.UserUncheckedCreateWithoutBorrowedLoansInput>;
-   where?: Prisma.UserWhereInput;
-};
-
-export type UserUpdateToOneWithWhereWithoutBorrowedLoansInput = {
-   where?: Prisma.UserWhereInput;
-   data: Prisma.XOR<Prisma.UserUpdateWithoutBorrowedLoansInput, Prisma.UserUncheckedUpdateWithoutBorrowedLoansInput>;
-};
-
-export type UserUpdateWithoutBorrowedLoansInput = {
-   id?: Prisma.StringFieldUpdateOperationsInput | string;
-   walletAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   username?: Prisma.StringFieldUpdateOperationsInput | string;
-   isWorldId?: Prisma.EnumWorldIdStatusFieldUpdateOperationsInput | $Enums.WorldIdStatus;
-   nullifierHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   email?: Prisma.StringFieldUpdateOperationsInput | string;
-   googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   telegramId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-   telegramUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   chatId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-   mal?: Prisma.IntFieldUpdateOperationsInput | number;
-   nal?: Prisma.IntFieldUpdateOperationsInput | number;
-   cs?: Prisma.IntFieldUpdateOperationsInput | number;
-   resetToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   resetTokenExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-   lentLoans?: Prisma.LoanUpdateManyWithoutLenderNestedInput;
-};
-
-export type UserUncheckedUpdateWithoutBorrowedLoansInput = {
-   id?: Prisma.StringFieldUpdateOperationsInput | string;
-   walletAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   username?: Prisma.StringFieldUpdateOperationsInput | string;
-   isWorldId?: Prisma.EnumWorldIdStatusFieldUpdateOperationsInput | $Enums.WorldIdStatus;
-   nullifierHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   email?: Prisma.StringFieldUpdateOperationsInput | string;
-   googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   telegramId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-   telegramUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   chatId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-   mal?: Prisma.IntFieldUpdateOperationsInput | number;
-   nal?: Prisma.IntFieldUpdateOperationsInput | number;
-   cs?: Prisma.IntFieldUpdateOperationsInput | number;
-   resetToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   resetTokenExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-   lentLoans?: Prisma.LoanUncheckedUpdateManyWithoutLenderNestedInput;
-};
-
-export type UserUpsertWithoutLentLoansInput = {
-   update: Prisma.XOR<Prisma.UserUpdateWithoutLentLoansInput, Prisma.UserUncheckedUpdateWithoutLentLoansInput>;
-   create: Prisma.XOR<Prisma.UserCreateWithoutLentLoansInput, Prisma.UserUncheckedCreateWithoutLentLoansInput>;
-   where?: Prisma.UserWhereInput;
-};
-
-export type UserUpdateToOneWithWhereWithoutLentLoansInput = {
-   where?: Prisma.UserWhereInput;
-   data: Prisma.XOR<Prisma.UserUpdateWithoutLentLoansInput, Prisma.UserUncheckedUpdateWithoutLentLoansInput>;
-};
-
-export type UserUpdateWithoutLentLoansInput = {
-   id?: Prisma.StringFieldUpdateOperationsInput | string;
-   walletAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   username?: Prisma.StringFieldUpdateOperationsInput | string;
-   isWorldId?: Prisma.EnumWorldIdStatusFieldUpdateOperationsInput | $Enums.WorldIdStatus;
-   nullifierHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   email?: Prisma.StringFieldUpdateOperationsInput | string;
-   googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   telegramId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-   telegramUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   chatId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-   mal?: Prisma.IntFieldUpdateOperationsInput | number;
-   nal?: Prisma.IntFieldUpdateOperationsInput | number;
-   cs?: Prisma.IntFieldUpdateOperationsInput | number;
-   resetToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   resetTokenExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-   borrowedLoans?: Prisma.LoanUpdateManyWithoutBorrowerNestedInput;
-};
-
-export type UserUncheckedUpdateWithoutLentLoansInput = {
-   id?: Prisma.StringFieldUpdateOperationsInput | string;
-   walletAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   username?: Prisma.StringFieldUpdateOperationsInput | string;
-   isWorldId?: Prisma.EnumWorldIdStatusFieldUpdateOperationsInput | $Enums.WorldIdStatus;
-   nullifierHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   email?: Prisma.StringFieldUpdateOperationsInput | string;
-   googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   telegramId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-   telegramUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   chatId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-   mal?: Prisma.IntFieldUpdateOperationsInput | number;
-   nal?: Prisma.IntFieldUpdateOperationsInput | number;
-   cs?: Prisma.IntFieldUpdateOperationsInput | number;
-   resetToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-   resetTokenExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-   borrowedLoans?: Prisma.LoanUncheckedUpdateManyWithoutBorrowerNestedInput;
-};
-
-/**
- * Count Type UserCountOutputType
- */
-
-export type UserCountOutputType = {
-   borrowedLoans: number;
-   lentLoans: number;
-};
-
-export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-   borrowedLoans?: boolean | UserCountOutputTypeCountBorrowedLoansArgs;
-   lentLoans?: boolean | UserCountOutputTypeCountLentLoansArgs;
-};
-
-/**
- * UserCountOutputType without action
- */
-export type UserCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-   /**
-    * Select specific fields to fetch from the UserCountOutputType
-    */
-   select?: Prisma.UserCountOutputTypeSelect<ExtArgs> | null;
-};
-
-/**
- * UserCountOutputType without action
- */
-export type UserCountOutputTypeCountBorrowedLoansArgs<
-   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs
-> = {
-   where?: Prisma.LoanWhereInput;
-};
-
-/**
- * UserCountOutputType without action
- */
-export type UserCountOutputTypeCountLentLoansArgs<
-   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs
-> = {
-   where?: Prisma.LoanWhereInput;
 };
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> =
@@ -1028,9 +721,6 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
          resetTokenExpiry?: boolean;
          createdAt?: boolean;
          updatedAt?: boolean;
-         borrowedLoans?: boolean | Prisma.User$borrowedLoansArgs<ExtArgs>;
-         lentLoans?: boolean | Prisma.User$lentLoansArgs<ExtArgs>;
-         _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>;
       },
       ExtArgs['result']['user']
    >;
@@ -1128,22 +818,10 @@ export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = run
       | 'updatedAt',
       ExtArgs['result']['user']
    >;
-export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-   borrowedLoans?: boolean | Prisma.User$borrowedLoansArgs<ExtArgs>;
-   lentLoans?: boolean | Prisma.User$lentLoansArgs<ExtArgs>;
-   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>;
-};
-export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> =
-   {};
-export type UserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> =
-   {};
 
 export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
    name: 'User';
-   objects: {
-      borrowedLoans: Prisma.$LoanPayload<ExtArgs>[];
-      lentLoans: Prisma.$LoanPayload<ExtArgs>[];
-   };
+   objects: {};
    scalars: runtime.Types.Extensions.GetPayloadResult<
       {
          id: string;
@@ -1154,9 +832,9 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
          password: string | null;
          email: string;
          googleId: string | null;
-         telegramId: number | null;
+         telegramId: bigint | null;
          telegramUsername: string | null;
-         chatId: number | null;
+         chatId: bigint | null;
          mal: number;
          nal: number;
          cs: number;
@@ -1625,12 +1303,6 @@ export interface Prisma__UserClient<
    GlobalOmitOptions = {}
 > extends Prisma.PrismaPromise<T> {
    readonly [Symbol.toStringTag]: 'PrismaPromise';
-   borrowedLoans<T extends Prisma.User$borrowedLoansArgs<ExtArgs> = {}>(
-      args?: Prisma.Subset<T, Prisma.User$borrowedLoansArgs<ExtArgs>>
-   ): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LoanPayload<ExtArgs>, T, 'findMany', GlobalOmitOptions> | Null>;
-   lentLoans<T extends Prisma.User$lentLoansArgs<ExtArgs> = {}>(
-      args?: Prisma.Subset<T, Prisma.User$lentLoansArgs<ExtArgs>>
-   ): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LoanPayload<ExtArgs>, T, 'findMany', GlobalOmitOptions> | Null>;
    /**
     * Attaches callbacks for the resolution and/or rejection of the Promise.
     * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1670,9 +1342,9 @@ export interface UserFieldRefs {
    readonly password: Prisma.FieldRef<'User', 'String'>;
    readonly email: Prisma.FieldRef<'User', 'String'>;
    readonly googleId: Prisma.FieldRef<'User', 'String'>;
-   readonly telegramId: Prisma.FieldRef<'User', 'Int'>;
+   readonly telegramId: Prisma.FieldRef<'User', 'BigInt'>;
    readonly telegramUsername: Prisma.FieldRef<'User', 'String'>;
-   readonly chatId: Prisma.FieldRef<'User', 'Int'>;
+   readonly chatId: Prisma.FieldRef<'User', 'BigInt'>;
    readonly mal: Prisma.FieldRef<'User', 'Int'>;
    readonly nal: Prisma.FieldRef<'User', 'Int'>;
    readonly cs: Prisma.FieldRef<'User', 'Int'>;
@@ -1696,10 +1368,6 @@ export type UserFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.Internal
     */
    omit?: Prisma.UserOmit<ExtArgs> | null;
    /**
-    * Choose, which related nodes to fetch as well
-    */
-   include?: Prisma.UserInclude<ExtArgs> | null;
-   /**
     * Filter, which User to fetch.
     */
    where: Prisma.UserWhereUniqueInput;
@@ -1718,10 +1386,6 @@ export type UserFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Extensions.I
     */
    omit?: Prisma.UserOmit<ExtArgs> | null;
    /**
-    * Choose, which related nodes to fetch as well
-    */
-   include?: Prisma.UserInclude<ExtArgs> | null;
-   /**
     * Filter, which User to fetch.
     */
    where: Prisma.UserWhereUniqueInput;
@@ -1739,10 +1403,6 @@ export type UserFindFirstArgs<ExtArgs extends runtime.Types.Extensions.InternalA
     * Omit specific fields from the User
     */
    omit?: Prisma.UserOmit<ExtArgs> | null;
-   /**
-    * Choose, which related nodes to fetch as well
-    */
-   include?: Prisma.UserInclude<ExtArgs> | null;
    /**
     * Filter, which User to fetch.
     */
@@ -1792,10 +1452,6 @@ export type UserFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Extensions.In
     */
    omit?: Prisma.UserOmit<ExtArgs> | null;
    /**
-    * Choose, which related nodes to fetch as well
-    */
-   include?: Prisma.UserInclude<ExtArgs> | null;
-   /**
     * Filter, which User to fetch.
     */
    where?: Prisma.UserWhereInput;
@@ -1844,10 +1500,6 @@ export type UserFindManyArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
     */
    omit?: Prisma.UserOmit<ExtArgs> | null;
    /**
-    * Choose, which related nodes to fetch as well
-    */
-   include?: Prisma.UserInclude<ExtArgs> | null;
-   /**
     * Filter, which Users to fetch.
     */
    where?: Prisma.UserWhereInput;
@@ -1890,10 +1542,6 @@ export type UserCreateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs
     * Omit specific fields from the User
     */
    omit?: Prisma.UserOmit<ExtArgs> | null;
-   /**
-    * Choose, which related nodes to fetch as well
-    */
-   include?: Prisma.UserInclude<ExtArgs> | null;
    /**
     * The data needed to create a User.
     */
@@ -1942,10 +1590,6 @@ export type UserUpdateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs
     * Omit specific fields from the User
     */
    omit?: Prisma.UserOmit<ExtArgs> | null;
-   /**
-    * Choose, which related nodes to fetch as well
-    */
-   include?: Prisma.UserInclude<ExtArgs> | null;
    /**
     * The data needed to update a User.
     */
@@ -2013,10 +1657,6 @@ export type UserUpsertArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs
     */
    omit?: Prisma.UserOmit<ExtArgs> | null;
    /**
-    * Choose, which related nodes to fetch as well
-    */
-   include?: Prisma.UserInclude<ExtArgs> | null;
-   /**
     * The filter to search for the User to update in case it exists.
     */
    where: Prisma.UserWhereUniqueInput;
@@ -2043,10 +1683,6 @@ export type UserDeleteArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs
     */
    omit?: Prisma.UserOmit<ExtArgs> | null;
    /**
-    * Choose, which related nodes to fetch as well
-    */
-   include?: Prisma.UserInclude<ExtArgs> | null;
-   /**
     * Filter which User to delete.
     */
    where: Prisma.UserWhereUniqueInput;
@@ -2067,54 +1703,6 @@ export type UserDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
 };
 
 /**
- * User.borrowedLoans
- */
-export type User$borrowedLoansArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-   /**
-    * Select specific fields to fetch from the Loan
-    */
-   select?: Prisma.LoanSelect<ExtArgs> | null;
-   /**
-    * Omit specific fields from the Loan
-    */
-   omit?: Prisma.LoanOmit<ExtArgs> | null;
-   /**
-    * Choose, which related nodes to fetch as well
-    */
-   include?: Prisma.LoanInclude<ExtArgs> | null;
-   where?: Prisma.LoanWhereInput;
-   orderBy?: Prisma.LoanOrderByWithRelationInput | Prisma.LoanOrderByWithRelationInput[];
-   cursor?: Prisma.LoanWhereUniqueInput;
-   take?: number;
-   skip?: number;
-   distinct?: Prisma.LoanScalarFieldEnum | Prisma.LoanScalarFieldEnum[];
-};
-
-/**
- * User.lentLoans
- */
-export type User$lentLoansArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-   /**
-    * Select specific fields to fetch from the Loan
-    */
-   select?: Prisma.LoanSelect<ExtArgs> | null;
-   /**
-    * Omit specific fields from the Loan
-    */
-   omit?: Prisma.LoanOmit<ExtArgs> | null;
-   /**
-    * Choose, which related nodes to fetch as well
-    */
-   include?: Prisma.LoanInclude<ExtArgs> | null;
-   where?: Prisma.LoanWhereInput;
-   orderBy?: Prisma.LoanOrderByWithRelationInput | Prisma.LoanOrderByWithRelationInput[];
-   cursor?: Prisma.LoanWhereUniqueInput;
-   take?: number;
-   skip?: number;
-   distinct?: Prisma.LoanScalarFieldEnum | Prisma.LoanScalarFieldEnum[];
-};
-
-/**
  * User without action
  */
 export type UserDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2126,8 +1714,4 @@ export type UserDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
     * Omit specific fields from the User
     */
    omit?: Prisma.UserOmit<ExtArgs> | null;
-   /**
-    * Choose, which related nodes to fetch as well
-    */
-   include?: Prisma.UserInclude<ExtArgs> | null;
 };

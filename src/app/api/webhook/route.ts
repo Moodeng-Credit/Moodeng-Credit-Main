@@ -21,10 +21,10 @@ export async function POST(request: NextRequest) {
 
             const user = await prisma.user.findUnique({ where: { telegramUsername: username } });
 
-            if (user && user.chatId !== chatId) {
+            if (user && user.chatId !== BigInt(chatId)) {
                await prisma.user.update({
                   where: { id: user.id },
-                  data: { chatId }
+                  data: { chatId: BigInt(chatId) }
                });
 
                await axios.post(process.env.TELEGRAM_API_URL!, {

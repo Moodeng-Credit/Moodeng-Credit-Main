@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 
+import { Prisma } from '@/generated/prisma/client/client';
 import { prisma } from '@/lib/database';
 import { updateLoanSchema } from '@/lib/schemas/loans';
 import { sendMail } from '@/lib/services/email';
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
                throw { code: ERROR_CODES.LOAN_UNAUTHORIZED, status: 403 };
             }
 
-            if (data.totalRepaymentAmount !== undefined && data.totalRepaymentAmount > loan.repaidAmount) {
+            if (data.totalRepaymentAmount !== undefined && new Prisma.Decimal(data.totalRepaymentAmount).greaterThan(loan.repaidAmount)) {
                throw { code: ERROR_CODES.LOAN_INVALID_AMOUNT, status: 400 };
             }
          }
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
          const lender = loan.lenderUser ? await prisma.user.findUnique({ where: { username: loan.lenderUser } }) : null;
 
          // Build update object
-         const updateData: any = {};
+         const updateData: Prisma.LoanUpdateInput = {};
 
          if (data.totalRepaymentAmount !== undefined) updateData.totalRepaymentAmount = data.totalRepaymentAmount;
          if (data.repaymentStatus) updateData.repaymentStatus = data.repaymentStatus;
@@ -56,11 +57,11 @@ export async function POST(request: NextRequest) {
          // Use transaction if we need to update borrower
          if (data.repaymentStatus === RepaymentStatus.PAID && borrower) {
             await prisma.$transaction(async (tx) => {
-               const borrowerUpdateData: any = {
+               const borrowerUpdateData: Prisma.UserUpdateInput = {
                   nal: { decrement: 1 }
                };
 
-               if (loan.loanAmount === borrower.cs) {
+               if (loan.loanAmount.equals(borrower.cs)) {
                   if (borrower.cs === 15) {
                      borrowerUpdateData.cs = { increment: 5 };
                   } else {

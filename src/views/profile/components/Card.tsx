@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 
 import { useDispatch, useSelector } from 'react-redux';
 
+import { Prisma } from '@/generated/prisma/client/client';
+
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import Modal from '@/components/ui/Modal';
 import UserPay from '@/components/UserPay';
@@ -47,7 +49,7 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
             <div>
                <h3 className="font-extrabold text-[15px] leading-[18px] text-[#0B1033]">{loan.reason}</h3>
                <p className="text-[13px] leading-[16px] text-[#6B7280] mt-2">
-                  You Funded <span className="font-extrabold">${loan.loanAmount}</span> to{' '}
+                  You Funded <span className="font-extrabold">${loan.loanAmount.toString()}</span> to{' '}
                   <em>
                      <a onClick={() => router.push('/user/' + loan.borrowerUser)} className="text-[#2563EB] underline">
                         {loan.borrowerUser}
@@ -67,16 +69,16 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
          <div className="p-5 pt-4">
             <p className="text-[13px] leading-[16px] font-normal text-[#6B7280] mb-1">Repayment Progress</p>
             <p className="text-[36px] font-extrabold text-[#2563EB] leading-[44px]">
-               ${loan.totalRepaymentAmount}
-               <span className="text-[#6B7280] font-normal text-[24px]">/${loan.repaidAmount}</span>
+               ${loan.totalRepaymentAmount.toString()}
+               <span className="text-[#6B7280] font-normal text-[24px]">/${loan.repaidAmount.toString()}</span>
             </p>
             <p className="text-[12px] leading-[15px] font-semibold text-[#6B7280] mt-1">
-               <span className="font-extrabold">${loan.totalRepaymentAmount - loan.repaidAmount}.00</span> Remaining for Complete Payback
+               <span className="font-extrabold">${new Prisma.Decimal(loan.totalRepaymentAmount).minus(loan.repaidAmount).toString()}.00</span> Remaining for Complete Payback
             </p>
             <div className="w-full h-4 rounded-full bg-[#D9D9D9] mt-3 overflow-hidden">
                <div
                   className="h-4 rounded-l-full bg-[#15803D]"
-                  style={{ width: `${(loan.totalRepaymentAmount * 100) / loan.repaidAmount}%` }}
+                  style={{ width: `${new Prisma.Decimal(loan.totalRepaymentAmount).times(100).div(loan.repaidAmount).toNumber()}%` }}
                ></div>
             </div>
          </div>
@@ -114,14 +116,14 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
          <div className="p-5 pt-4 border-b border-[#E5E7EB] grid grid-cols-3 text-center text-[13px] leading-[16px] font-normal text-[#6B7280]">
             <div>
                <p>Asking</p>
-               <p className="mt-1 text-[18px] font-normal text-[#0B1033]">${loan.loanAmount}</p>
+               <p className="mt-1 text-[18px] font-normal text-[#0B1033]">${loan.loanAmount.toString()}</p>
             </div>
             <div className="flex items-center justify-center space-x-1 text-[#6B7280]">
                <span>→</span>
             </div>
             <div>
                <p>Payback</p>
-               <p className="mt-1 text-[16px] font-normal text-[#166534]">${loan.repaidAmount}</p>
+               <p className="mt-1 text-[16px] font-normal text-[#166534]">${loan.repaidAmount.toString()}</p>
             </div>
             <div></div>
             <div>

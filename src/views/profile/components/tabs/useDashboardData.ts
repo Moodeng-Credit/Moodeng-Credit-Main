@@ -2,6 +2,8 @@ import { useEffect, useMemo } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 
+import { Prisma } from '@/generated/prisma/client/client';
+
 import { parseDateSafely } from '@/utils/dateFormatters';
 
 import { fetchUser } from '@/store/slices/authSlice';
@@ -43,19 +45,19 @@ export const useDashboardData = (activeRole: RoleType) => {
       return {
          repayments: {
             count: loanArrays.repayments.length,
-            total: loanArrays.repayments.reduce((sum, loan) => sum + loan.repaidAmount, 0)
+            total: loanArrays.repayments.reduce((sum, loan) => sum + new Prisma.Decimal(loan.repaidAmount).toNumber(), 0)
          },
          active: {
             count: loanArrays.activeLoans.length,
-            total: loanArrays.activeLoans.reduce((sum, loan) => sum + loan.loanAmount, 0)
+            total: loanArrays.activeLoans.reduce((sum, loan) => sum + new Prisma.Decimal(loan.loanAmount).toNumber(), 0)
          },
          defaulted: {
             count: loanArrays.defaultedLoans.length,
-            total: loanArrays.defaultedLoans.reduce((sum, loan) => sum + loan.loanAmount, 0)
+            total: loanArrays.defaultedLoans.reduce((sum, loan) => sum + new Prisma.Decimal(loan.loanAmount).toNumber(), 0)
          },
          pending: {
             count: loanArrays.pendingLoans.length,
-            total: loanArrays.pendingLoans.reduce((sum, loan) => sum + loan.loanAmount, 0)
+            total: loanArrays.pendingLoans.reduce((sum, loan) => sum + new Prisma.Decimal(loan.loanAmount).toNumber(), 0)
          }
       };
    }, [loanArrays]);

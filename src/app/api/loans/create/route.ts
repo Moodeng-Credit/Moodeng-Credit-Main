@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
          try {
             if (borrower.chatId) {
-               sendBorrowerReminder(borrower.chatId, borrower.username, data.loanAmount, data.days.toString(), 168);
+               sendBorrowerReminder(Number(borrower.chatId), borrower.username, data.loanAmount, data.days.toString(), 168);
             }
 
             await sendMail(

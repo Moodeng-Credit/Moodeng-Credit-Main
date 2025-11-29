@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 
+import type { Prisma } from '@/generated/prisma/client/client';
 import { prisma } from '@/lib/database';
 import { updateUserSchema } from '@/lib/schemas/auth';
 import { sendMail } from '@/lib/services/email';
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
          let requiresNewToken = false;
 
          // Build update object
-         const updateData: any = {};
+         const updateData: Prisma.UserUpdateInput = {};
 
          if (data.password) {
             updateData.password = await hashPassword(data.password);

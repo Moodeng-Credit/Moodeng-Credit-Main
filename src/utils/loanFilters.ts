@@ -1,5 +1,6 @@
 import { parseDateSafely } from '@/utils/dateFormatters';
 
+import { Prisma } from '@/generated/prisma/client/client';
 import type { Loan } from '@/types/loanTypes';
 
 export type SortOption = 'highest' | 'lowest' | 'newest' | 'oldest';
@@ -21,8 +22,8 @@ export const sortLoans = (loans: Loan[], sortBy: SortOption): Loan[] => {
    const sorted = [...loans];
 
    const sortFunctions = {
-      highest: (a: Loan, b: Loan) => b.loanAmount - a.loanAmount,
-      lowest: (a: Loan, b: Loan) => a.loanAmount - b.loanAmount,
+      highest: (a: Loan, b: Loan) => new Prisma.Decimal(b.loanAmount).minus(a.loanAmount).toNumber(),
+      lowest: (a: Loan, b: Loan) => new Prisma.Decimal(a.loanAmount).minus(b.loanAmount).toNumber(),
       newest: (a: Loan, b: Loan) => parseDateSafely(b.createdAt).getTime() - parseDateSafely(a.createdAt).getTime(),
       oldest: (a: Loan, b: Loan) => parseDateSafely(a.createdAt).getTime() - parseDateSafely(b.createdAt).getTime()
    };
@@ -37,10 +38,10 @@ export const sortLoans = (loans: Loan[], sortBy: SortOption): Loan[] => {
  */
 export const filterByAmount = (loans: Loan[], amount: string, customAmount?: string): Loan[] => {
    if (customAmount && Number(customAmount) > 0) {
-      return loans.filter((loan) => loan.loanAmount <= Number(customAmount));
+      return loans.filter((loan) => new Prisma.Decimal(loan.loanAmount).lessThanOrEqualTo(customAmount));
    }
    if (!amount || Number(amount) === 0) return loans;
-   return loans.filter((loan) => loan.loanAmount === Number(amount));
+   return loans.filter((loan) => new Prisma.Decimal(loan.loanAmount).equals(amount));
 };
 
 /**
@@ -50,7 +51,9 @@ export const filterByRate = (loans: Loan[], rate: string): Loan[] => {
    if (!rate) return loans;
 
    return loans.filter((loan) => {
-      const repayRate = ((loan.repaidAmount - loan.loanAmount) / loan.loanAmount) * 100;
+      const repaidDec = new Prisma.Decimal(loan.repaidAmount);
+      const loanDec = new Prisma.Decimal(loan.loanAmount);
+      const repayRate = repaidDec.minus(loanDec).div(loanDec).times(100).toNumber();
 
       if (rate === '2.5') return repayRate >= 0 && repayRate <= 5;
       if (rate === '7.5') return repayRate > 5 && repayRate <= 10;

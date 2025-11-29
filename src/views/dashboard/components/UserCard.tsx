@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 
 import { useDispatch, useSelector } from 'react-redux';
 
+import { Prisma } from '@/generated/prisma/client/client';
+
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import useWallet from '@/hooks/useWallet';
@@ -57,7 +59,7 @@ export default function UserCard(loan: Loan) {
             const loansArray = loansRes?.gloans || loansRes?.loans || loansRes || [];
             if (mounted) {
                const repaid = (loansArray || []).reduce(
-                  (sum: number, ln: Loan) => (ln.repaymentStatus === 'Paid' ? sum + ln.loanAmount : sum),
+                  (sum: number, ln: Loan) => (ln.repaymentStatus === 'Paid' ? sum + new Prisma.Decimal(ln.loanAmount).toNumber() : sum),
                   0
                );
                setLocalTotalRepaid(repaid);
@@ -186,12 +188,12 @@ export default function UserCard(loan: Loan) {
                <div className="flex items-center justify-center gap-3 text-left">
                   <div className="">
                      <p className="text-[13px] font-normal text-[#6B6B7B]">Asking</p>
-                     <p className="text-[20px] font-normal text-[#0B1033] mt-1">${loanData.loanAmount}</p>
+                     <p className="text-[20px] font-normal text-[#0B1033] mt-1">${loanData.loanAmount.toString()}</p>
                   </div>
                   <div className="text-[#6B6B7B] text-[30px] font-light select-none">/</div>
                   <div className="">
                      <p className="text-[13px] font-normal text-[#6B6B7B]">Payback</p>
-                     <p className="text-[20px] font-normal text-[#2F7A3E] mt-1">${loanData.repaidAmount}</p>
+                     <p className="text-[20px] font-normal text-[#2F7A3E] mt-1">${loanData.repaidAmount.toString()}</p>
                   </div>
                   <div className="pl-8">
                      <p className="text-[13px] font-normal text-[#6B6B7B]">Due Date</p>
@@ -310,9 +312,9 @@ export default function UserCard(loan: Loan) {
                         <dt className="text-gray-900">Network:</dt>
                         <dd className="text-gray-900 text-right font-extrabold">{loan.block}</dd>
                         <dt className="text-gray-900">Amount Funded:</dt>
-                        <dd className="text-gray-900 text-right font-extrabold">${loan.loanAmount}.00</dd>
+                        <dd className="text-gray-900 text-right font-extrabold">${loan.loanAmount.toString()}.00</dd>
                         <dt className="text-gray-900">Expected Return:</dt>
-                        <dd className="text-green-700 text-right font-extrabold">${loanData.repaidAmount}.00</dd>
+                        <dd className="text-green-700 text-right font-extrabold">${loanData.repaidAmount.toString()}.00</dd>
                         <dt className="text-gray-900">Return Date:</dt>
                         <dd className="text-gray-900 text-right font-extrabold">{formattedDate}</dd>
                      </dl>

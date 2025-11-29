@@ -12,6 +12,7 @@ import useWallet from '@/hooks/useWallet';
 
 import { parseDateSafely } from '@/utils/dateFormatters';
 
+import { Prisma } from '@/generated/prisma/client/client';
 import { editLoan, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -34,16 +35,15 @@ function UserPay({ loan }: { loan: Loan }) {
          return;
       }
 
-      const newtotalRepaymentAmount = loan.totalRepaymentAmount + parseInt(totalRepaymentAmount);
+      const newtotalRepaymentAmount = new Prisma.Decimal(loan.totalRepaymentAmount).plus(totalRepaymentAmount);
       const loanData = {
-         id: loan.id,
+         ...loan,
          totalRepaymentAmount: newtotalRepaymentAmount,
-         repaymentStatus: newtotalRepaymentAmount < loan.repaidAmount ? 'Partial' : 'Paid',
-         loanStatus: loan.loanStatus
+         repaymentStatus: newtotalRepaymentAmount.lessThan(loan.repaidAmount) ? 'Partial' : 'Paid'
       };
 
       if (
-         loan.totalRepaymentAmount + parseInt(totalRepaymentAmount) <= loan.repaidAmount &&
+         new Prisma.Decimal(loan.totalRepaymentAmount).plus(totalRepaymentAmount).lessThanOrEqualTo(loan.repaidAmount) &&
          loan.loanStatus === 'Lent' &&
          loan.repaymentStatus !== 'Paid' &&
          parseInt(totalRepaymentAmount) > 0
@@ -60,7 +60,7 @@ function UserPay({ loan }: { loan: Loan }) {
 
          if (transferSuccess) {
             try {
-               await dispatch(editLoan(loanData as Loan)).unwrap();
+               await dispatch(editLoan(loanData)).unwrap();
                await dispatch(getUserLoans(username || ''));
                showToastByConfig('repayment_success');
                setTotalRepaymentAmount('');
@@ -73,7 +73,7 @@ function UserPay({ loan }: { loan: Loan }) {
                   '| Amount:',
                   totalRepaymentAmount,
                   '| New Total:',
-                  newtotalRepaymentAmount
+                  newtotalRepaymentAmount.toString()
                );
                showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
             } finally {
@@ -94,14 +94,14 @@ function UserPay({ loan }: { loan: Loan }) {
             <div className="flex gap-10 items-center mt-8">
                <div className="flex flex-col self-stretch my-auto">
                   <div className="text-sm leading-loose text-black text-opacity-60">Loan Amount</div>
-                  <div className="mt-1.5 text-base font-medium leading-loose text-black">${loan.repaidAmount}</div>
+                  <div className="mt-1.5 text-base font-medium leading-loose text-black">${loan.repaidAmount.toString()}</div>
                </div>
                <div className="flex flex-col self-stretch my-auto">
                   <div className="text-sm leading-loose text-black text-opacity-60">Amount Paid</div>
                   <div className="mt-1.5 text-base font-medium leading-loose text-black">
-                     ${loan.totalRepaymentAmount}
+                     ${loan.totalRepaymentAmount.toString()}
                      <span className="text-sm leading-6 text-black">
-                        {' ($' + (loan.repaidAmount - loan.totalRepaymentAmount) + ' Remaining)'}
+                        {' ($' + new Prisma.Decimal(loan.repaidAmount).minus(loan.totalRepaymentAmount).toString() + ' Remaining)'}
                      </span>
                   </div>
                </div>

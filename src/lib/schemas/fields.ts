@@ -183,21 +183,26 @@ export const googleIdSchema = z
 
 /**
  * Telegram ID validation schema
- * - Positive integer
- * - Max 64-bit integer value
+ * - Positive integer (supports BigInt for large Telegram IDs)
+ * - Accepts number, string, or bigint
+ * - Transforms to bigint for database storage
  */
 export const telegramIdSchema = z
-   .union([z.number(), z.string()])
+   .union([z.number(), z.string(), z.bigint()])
    .refine(
       (val) => {
-         const num = typeof val === 'string' ? parseInt(val, 10) : val;
-         return !isNaN(num) && Number.isInteger(num) && num > 0 && num <= Number.MAX_SAFE_INTEGER;
+         try {
+            const bigIntVal = typeof val === 'bigint' ? val : BigInt(val);
+            return bigIntVal > 0n;
+         } catch {
+            return false;
+         }
       },
       {
          message: 'Telegram ID must be a positive integer'
       }
    )
-   .transform((val) => (typeof val === 'string' ? parseInt(val, 10) : val));
+   .transform((val) => (typeof val === 'bigint' ? val : BigInt(val)));
 
 /**
  * Boolean validation schema

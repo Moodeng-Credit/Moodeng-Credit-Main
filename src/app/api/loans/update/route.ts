@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { z } from 'zod';
 
+import type { Prisma } from '@/generated/prisma/client/client';
 import { prisma } from '@/lib/database';
 import { objectIdSchema, usernameSchema, walletAddressSchema } from '@/lib/schemas/fields';
 import { sendMail } from '@/lib/services/email';
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
             throw { code: ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED, status: 403 };
          }
 
-         const updateData: any = {};
+         const updateData: Prisma.LoanUpdateInput = {};
 
          if (!loan.lenderUser) {
             updateData.lenderWallet = data.wallet;
@@ -56,13 +57,13 @@ export async function POST(request: NextRequest) {
 
             try {
                if (user.chatId) {
-                  await sendNewLoanNotification(user.chatId, user.username, loan.loanAmount, loan.reason);
+                  await sendNewLoanNotification(Number(user.chatId), user.username, loan.loanAmount.toNumber(), loan.reason);
                }
 
                await sendMail(
                   user.email,
                   'Your Support is Making a Difference!',
-                  `Dear ${user.username},\nGreat news! The microloan you provided is now helping someone build a better future.\nLoan Details:\nAmount: ${loan.loanAmount}\nPurpose: ${loan.reason}\nThank you for being part of the global financial inclusion movement. We'll keep you updated on the repayment progress.\nBest regards, The Moodeng Team`
+                  `Dear ${user.username},\nGreat news! The microloan you provided is now helping someone build a better future.\nLoan Details:\nAmount: ${loan.loanAmount.toString()}\nPurpose: ${loan.reason}\nThank you for being part of the global financial inclusion movement. We'll keep you updated on the repayment progress.\nBest regards, The Moodeng Team`
                );
             } catch (error) {
                console.error('Error occurred while sending lender notifications:', error);
@@ -79,13 +80,13 @@ export async function POST(request: NextRequest) {
 
             try {
                if (user.chatId) {
-                  sendBorrowerReminder(user.chatId, user.username, loan.loanAmount, loan.days.toString(), 168);
+                  sendBorrowerReminder(Number(user.chatId), user.username, loan.loanAmount.toNumber(), loan.days.toString(), 168);
                }
 
                await sendMail(
                   user.email,
                   'Friendly Reminder: Your Loan Repayment is Due Soon',
-                  `Dear ${user.username},\nThis is a friendly reminder that your loan repayment is due in ${loan.days} days.\nRepayment Details:\nAmount: ${loan.loanAmount}\nDays: ${loan.days} days\nTimely repayment helps build your credit score, opening doors to more financial opportunities in the future.\nBest regards, The Moodeng Team`
+                  `Dear ${user.username},\nThis is a friendly reminder that your loan repayment is due in ${loan.days} days.\nRepayment Details:\nAmount: ${loan.loanAmount.toString()}\nDays: ${loan.days} days\nTimely repayment helps build your credit score, opening doors to more financial opportunities in the future.\nBest regards, The Moodeng Team`
                );
             } catch (error) {
                console.error('Error occurred while sending borrower notifications:', error);

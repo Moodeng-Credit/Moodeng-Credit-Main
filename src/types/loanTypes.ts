@@ -1,3 +1,5 @@
+import type { Prisma } from '@/generated/prisma/client/client';
+
 export interface Loan {
    id: string;
    trackingId: string;
@@ -5,9 +7,9 @@ export interface Loan {
    lenderWallet?: string;
    borrowerUser?: string;
    lenderUser?: string;
-   loanAmount: number; // Original amount borrowed (principal)
-   repaidAmount: number; // Amount already repaid by borrower (cumulative sum of all payments)
-   totalRepaymentAmount: number; // Total amount that must be repaid (principal + interest/fees)
+   loanAmount: Prisma.Decimal; // Original amount borrowed (principal)
+   repaidAmount: Prisma.Decimal; // Amount already repaid by borrower (cumulative sum of all payments)
+   totalRepaymentAmount: Prisma.Decimal; // Total amount that must be repaid (principal + interest/fees)
    reason: string;
    loanStatus: string;
    repaymentStatus: string;
@@ -57,9 +59,9 @@ export interface ILoan {
    lenderWallet?: string;
    borrowerUser?: string;
    lenderUser?: string;
-   loanAmount: number;
-   repaidAmount: number;
-   totalRepaymentAmount: number;
+   loanAmount: Prisma.Decimal;
+   repaidAmount: Prisma.Decimal;
+   totalRepaymentAmount: Prisma.Decimal;
    reason: string;
    loanStatus: LoanStatusType;
    repaymentStatus: RepaymentStatusType;

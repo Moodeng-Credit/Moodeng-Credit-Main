@@ -35,9 +35,9 @@ model User {
   password          String?
   email             String         @unique
   googleId          String?        @unique
-  telegramId        Int?           @unique
+  telegramId        BigInt?        @unique
   telegramUsername  String?        @unique
-  chatId            Int?           @unique
+  chatId            BigInt?        @unique
   mal               Int            @default(3)
   nal               Int            @default(0)
   cs                Int            @default(15)
@@ -45,16 +45,6 @@ model User {
   resetTokenExpiry  DateTime?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
-
-  borrowedLoans     Loan[]         @relation("BorrowerLoans")
-  lentLoans         Loan[]         @relation("LenderLoans")
-
-  @@index([username])
-  @@index([email])
-  @@index([walletAddress])
-  @@index([telegramId])
-  @@index([telegramUsername])
-  @@index([nullifierHash])
 }
 
 model Loan {
@@ -64,9 +54,9 @@ model Loan {
   lenderWallet          String?
   borrowerUser          String?
   lenderUser            String?
-  loanAmount            Float
-  repaidAmount          Float            @default(0)
-  totalRepaymentAmount  Float
+  loanAmount            Decimal          @db.Decimal(18, 6)
+  repaidAmount          Decimal          @default(0) @db.Decimal(18, 6)
+  totalRepaymentAmount  Decimal          @db.Decimal(18, 6)
   reason                String
   loanStatus            LoanStatus
   repaymentStatus       RepaymentStatus
@@ -77,12 +67,14 @@ model Loan {
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
 
-  borrower              User?            @relation("BorrowerLoans", fields: [borrowerUser], references: [username], onDelete: SetNull)
-  lender                User?            @relation("LenderLoans", fields: [lenderUser], references: [username], onDelete: SetNull)
 
-  @@index([trackingId])
   @@index([borrowerUser])
   @@index([lenderUser])
+  @@index([borrowerWallet])
   @@index([lenderWallet])
+  @@index([loanStatus])
+  @@index([repaymentStatus])
+  @@index([createdAt])
+  @@index([lenderWallet, loanStatus])
+  @@index([createdAt, loanStatus])
 }
-

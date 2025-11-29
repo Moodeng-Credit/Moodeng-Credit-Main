@@ -8,6 +8,8 @@ import { ChevronDown, HelpCircle, TrendingUp, Users, XCircle } from 'lucide-reac
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
+import { Prisma } from '@/generated/prisma/client/client';
+
 import Loading from '@/components/Loading';
 import CollapsibleSection from '@/components/ui/CollapsibleSection';
 
@@ -77,8 +79,9 @@ const UserProfile = () => {
 
    const ignoredTier = new Set();
    const TierLists = loans.reduce((acc: Loan[], loan: Loan) => {
-      const remainder = loan.loanAmount % 20;
-      const key = Math.floor(loan.loanAmount / 20) * 20;
+      const loanAmountNum = new Prisma.Decimal(loan.loanAmount).toNumber();
+      const remainder = loanAmountNum % 20;
+      const key = Math.floor(loanAmountNum / 20) * 20;
       if (remainder === 0) {
          if (ignoredTier.has(key)) {
             acc.push(loan);
@@ -93,9 +96,10 @@ const UserProfile = () => {
 
    const ignoredTiers = new Set();
    const TierList = loans.reduce((acc: Record<number, Loan[]>, loan: Loan) => {
-      const remainder = loan.loanAmount % 20;
+      const loanAmountNum = new Prisma.Decimal(loan.loanAmount).toNumber();
+      const remainder = loanAmountNum % 20;
       if (remainder === 0) {
-         const key = Math.floor(loan.loanAmount / 20) * 20;
+         const key = Math.floor(loanAmountNum / 20) * 20;
          if (ignoredTiers.has(key)) {
             if (!acc[key]) acc[key] = [];
             acc[key].push(loan);
@@ -104,7 +108,7 @@ const UserProfile = () => {
          }
          return acc;
       }
-      const key = Math.floor(loan.loanAmount / 20) * 20;
+      const key = Math.floor(loanAmountNum / 20) * 20;
       if (!acc[key]) acc[key] = [];
       acc[key].push(loan);
       return acc;
@@ -113,9 +117,10 @@ const UserProfile = () => {
    const uniqueLoans: Loan[] = [];
    const seenAmounts = new Set();
    for (const loan of loans) {
-      if (loan.loanAmount % 20 === 0 && !seenAmounts.has(loan.loanAmount)) {
+      const loanAmountNum = new Prisma.Decimal(loan.loanAmount).toNumber();
+      if (loanAmountNum % 20 === 0 && !seenAmounts.has(loanAmountNum)) {
          uniqueLoans.push(loan);
-         seenAmounts.add(loan.loanAmount);
+         seenAmounts.add(loanAmountNum);
       }
    }
 
@@ -154,8 +159,8 @@ const UserProfile = () => {
       stats: {
          totalLoans: loans.length,
          defaults: 0,
-         totalBorrowed: loans.reduce((sum, loan) => (loan.loanStatus === 'Lent' ? sum + loan.loanAmount : sum), 0),
-         totalRepaid: loans.reduce((sum, loan) => (loan.repaymentStatus === 'Paid' ? sum + loan.loanAmount : sum), 0),
+         totalBorrowed: loans.reduce((sum, loan) => (loan.loanStatus === 'Lent' ? sum + new Prisma.Decimal(loan.loanAmount).toNumber() : sum), 0),
+         totalRepaid: loans.reduce((sum, loan) => (loan.repaymentStatus === 'Paid' ? sum + new Prisma.Decimal(loan.loanAmount).toNumber() : sum), 0),
          uniqueLenders: lenderDiversity.uniqueLenders,
          unlocking: uniqueLoans.length,
          building: TierLists.length
@@ -308,13 +313,15 @@ const UserProfile = () => {
                >
                   <div className="mt-6 space-y-4">
                      <h3 className="text-lg font-medium text-gray-100">Credit Growth Timeline</h3>
-                     {uniqueLoans.map((tier: Loan) => (
+                     {uniqueLoans.map((tier: Loan) => {
+                        const tierLoanAmount = new Prisma.Decimal(tier.loanAmount).toNumber();
+                        return (
                         <div
                            key={tier.id}
                            className={`p-4 rounded-lg ${
-                              tier.loanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
+                              tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
                                  ? 'bg-green-900/20 border border-green-800'
-                                 : tier.loanAmount === user.cs
+                                 : tierLoanAmount === user.cs
                                    ? 'bg-blue-800/50 border border-blue-800'
                                    : 'bg-gray-800/50 border border-gray-800'
                            }`}
@@ -323,9 +330,9 @@ const UserProfile = () => {
                               <div className="flex items-center gap-4">
                                  <LevelBadge
                                     status={
-                                       tier.loanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
+                                       tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
                                           ? 'current'
-                                          : tier.loanAmount === user.cs
+                                          : tierLoanAmount === user.cs
                                             ? 'next'
                                             : 'completed'
                                     }
@@ -334,40 +341,40 @@ const UserProfile = () => {
                                     <div className="flex items-center gap-2">
                                        <span
                                           className={`text-lg font-medium ${
-                                             tier.loanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
+                                             tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
                                                 ? 'text-green-400'
-                                                : tier.loanAmount === user.cs
+                                                : tierLoanAmount === user.cs
                                                   ? 'text-blue-100'
                                                   : 'text-gray-100'
                                           }`}
                                        >
-                                          ${tier.loanAmount} Credit Limit
+                                          ${tier.loanAmount.toString()} Credit Limit
                                        </span>
                                        <span className="text-sm text-gray-400">{formatDate(tier.updatedAt)}</span>
                                     </div>
                                     <span className="text-xs text-gray-400">
-                                       ${tier.loanAmount} loan repaid ${tier.totalRepaymentAmount} unlocked ${tier.loanAmount + 20} limit
+                                       ${tier.loanAmount.toString()} loan repaid ${tier.totalRepaymentAmount.toString()} unlocked ${tierLoanAmount + 20} limit
                                     </span>
                                  </div>
                               </div>
 
-                              {TierList[tier.loanAmount]?.length > 0 ? (
+                              {TierList[tierLoanAmount]?.length > 0 ? (
                                  <div className="flex items-start gap-2">
                                     <div className="contents text-xs text-gray-400">Trust-Building Loans</div>
                                     <div className="relative group">
                                        <div className="flex items-center gap-1 cursor-help">
                                           <span className="text-gray-400">+</span>
                                           <div className="px-2 py-1 rounded-full bg-gray-700/40 border border-gray-600 text-sm text-gray-300">
-                                             {TierList[tier.loanAmount]?.length}
+                                             {TierList[tierLoanAmount]?.length}
                                           </div>
                                        </div>
                                        <div className="absolute invisible group-hover:visible bg-gray-700 text-gray-100 p-3 rounded-lg text-sm w-64 right-0 top-full mt-2 z-10 shadow-xl border border-gray-600">
                                           <div className="space-y-2">
-                                             <p className="font-medium">Trust-Building Loans at ${tier.loanAmount} credit limit:</p>
+                                             <p className="font-medium">Trust-Building Loans at ${tier.loanAmount.toString()} credit limit:</p>
                                              <ul className="list-disc pl-4 space-y-1">
-                                                {TierList[tier.loanAmount]?.map((loan: Loan) => (
+                                                {TierList[tierLoanAmount]?.map((loan: Loan) => (
                                                    <li key={loan.id}>
-                                                      ${loan.loanAmount} loan - {formatDate(loan.updatedAt)}
+                                                      ${loan.loanAmount.toString()} loan - {formatDate(loan.updatedAt)}
                                                    </li>
                                                 ))}
                                              </ul>
@@ -378,7 +385,8 @@ const UserProfile = () => {
                               ) : null}
                            </div>
                         </div>
-                     ))}
+                     )})}
+
                   </div>
 
                   <div className="mt-6 space-y-4">
@@ -464,7 +472,7 @@ const UserProfile = () => {
                      <span className="text-gray-400">Usual loan size:</span>
                      <div className="flex items-center gap-2">
                         <span className="text-yellow-400">
-                           ${loans.length > 0 ? Math.round(loans.reduce((sum, loan) => sum + loan.loanAmount, 0) / loans.length) : '0'}
+                           ${loans.length > 0 ? Math.round(loans.reduce((sum, loan) => sum + new Prisma.Decimal(loan.loanAmount).toNumber(), 0) / loans.length) : '0'}
                         </span>
                         <div className="relative group">
                            <HelpCircle className="w-4 h-4 text-gray-500 cursor-help" />
@@ -573,8 +581,8 @@ const UserProfile = () => {
                               <div className="flex justify-between items-start">
                                  <div>
                                     <div className="flex items-center gap-2">
-                                       <span className="text-lg font-semibold text-gray-100">${loan.loanAmount}</span>
-                                       <span className="text-sm text-gray-400">→ ${loan.repaidAmount} repaid</span>
+                                       <span className="text-lg font-semibold text-gray-100">${loan.loanAmount.toString()}</span>
+                                       <span className="text-sm text-gray-400">→ ${loan.repaidAmount.toString()} repaid</span>
                                     </div>
                                     <div className="text-sm text-gray-400">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</div>
                                  </div>
@@ -639,7 +647,7 @@ const UserProfile = () => {
                            return (
                               <tr key={loan.id} className="hover:bg-[#111827]">
                                  <td className="py-3 px-4 text-gray-300">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
-                                 <td className="py-3 px-4 font-medium text-white">${loan.loanAmount}</td>
+                                 <td className="py-3 px-4 font-medium text-white">${loan.loanAmount.toString()}</td>
                                  <td className="py-3 px-4">
                                     <span className={`px-2.5 py-1 ${getNetworkColor(loan.block)} rounded-lg text-xs font-medium`}>
                                        {loan.block}
@@ -665,7 +673,7 @@ const UserProfile = () => {
                            return (
                               <tr key={loan.id} className="hover:bg-[#111827]">
                                  <td className="py-3 px-4 text-gray-300">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
-                                 <td className="py-3 px-4 font-medium text-white">${loan.loanAmount}</td>
+                                 <td className="py-3 px-4 font-medium text-white">${loan.loanAmount.toString()}</td>
                                  <td className="py-3 px-4">
                                     <span className={`px-2.5 py-1 ${getNetworkColor(loan.block)} rounded-lg text-xs font-medium`}>
                                        {loan.block}
