@@ -103,6 +103,11 @@ export default function UserCard(loan: Loan) {
          return;
       }
 
+      if (loanData.borrowerUser === username) {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED));
+         return;
+      }
+
       if (!wallet || wallet.trim() === '') {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
          return;
@@ -230,16 +235,24 @@ export default function UserCard(loan: Loan) {
                <span>GOOD STANDING</span>
             </div>
 
-            <div className="p-5 bg-white">
-               <button
-                  onClick={handleLend}
-                  disabled={isProcessing}
-                  type="button"
-                  className="w-full bg-[#2563EB] text-white font-semibold text-[15px] py-3 rounded-lg hover:bg-[#1e4bb8] transition disabled:opacity-50 disabled:cursor-not-allowed"
-               >
-                  {isProcessing ? 'Processing...' : 'Send Your Help'}
-               </button>
-            </div>
+            {loanData.borrowerUser === username ? (
+               <div className="p-5 bg-gray-100">
+                  <div className="w-full bg-gray-300 text-gray-600 font-semibold text-[15px] py-3 rounded-lg text-center cursor-not-allowed">
+                     Your Loan Request
+                  </div>
+               </div>
+            ) : (
+               <div className="p-5 bg-white">
+                  <button
+                     onClick={handleLend}
+                     disabled={isProcessing}
+                     type="button"
+                     className="w-full bg-[#2563EB] text-white font-semibold text-[15px] py-3 rounded-lg hover:bg-[#1e4bb8] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                     {isProcessing ? 'Processing...' : 'Send Your Help'}
+                  </button>
+               </div>
+            )}
          </div>
 
          {showModal ? (

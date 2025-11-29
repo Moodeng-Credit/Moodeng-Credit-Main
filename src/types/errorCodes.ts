@@ -32,6 +32,7 @@ export const ERROR_CODES = {
    LOAN_AMOUNT_EXCEEDS_LIMIT: 'LOAN_AMOUNT_EXCEEDS_LIMIT',
    LOAN_INVALID_AMOUNT: 'LOAN_INVALID_AMOUNT',
    LOAN_UNAUTHORIZED: 'LOAN_UNAUTHORIZED',
+   LOAN_SELF_LENDING_NOT_ALLOWED: 'LOAN_SELF_LENDING_NOT_ALLOWED',
 
    // Validation Errors (1400-1499)
    VALIDATION_FAILED: 'VALIDATION_FAILED',
@@ -92,6 +93,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
    [ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT]: 'The loan amount exceeds your credit score limit.',
    [ERROR_CODES.LOAN_INVALID_AMOUNT]: 'Please enter a valid loan amount greater than 0.',
    [ERROR_CODES.LOAN_UNAUTHORIZED]: 'You are not authorized to perform this action on this loan.',
+   [ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED]: 'You cannot lend to yourself. Please lend to other users.',
 
    // Validation
    [ERROR_CODES.VALIDATION_FAILED]: 'Validation failed.',

@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
          }
 
          if (loan.borrowerUser === data.username) {
-            throw { code: ERROR_CODES.LOAN_UNAUTHORIZED, status: 403 };
+            throw { code: ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED, status: 403 };
          }
 
          const updateFields: Partial<LoanType> = {

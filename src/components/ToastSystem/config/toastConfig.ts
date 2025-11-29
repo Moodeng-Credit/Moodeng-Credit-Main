@@ -337,5 +337,14 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       message: 'Please connect your wallet to continue.',
       buttonText: 'OK',
       buttonAction: 'acknowledge'
+   },
+
+   self_lending_not_allowed: {
+      toastType: TOAST_TYPES.ERROR,
+      title: 'Cannot Lend to Yourself',
+      message: 'You cannot lend to your own loan request. Please lend to other users.',
+      buttonText: 'View Other Loans',
+      buttonAction: 'view_other_loans',
+      route: '/dashboard'
    }
 } as const;

@@ -38,6 +38,7 @@ export type ToastErrorType =
    | 'session_expired'
    | 'unauthorized'
    | 'password_weak'
+   | 'self_lending_not_allowed'
    | 'wallet_missing';
 
 export interface ToastConfig {
