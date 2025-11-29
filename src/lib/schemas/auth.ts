@@ -4,6 +4,8 @@
  */
 import { z } from 'zod';
 
+import { parseDateSafely } from '@/utils/dateFormatters';
+
 import {
    emailSchema,
    objectIdSchema,
@@ -154,9 +156,20 @@ export type UserResponse = z.infer<typeof userResponseSchema>;
 export function transformUserToResponse(user: IUser): UserResponse {
    const EXCLUDED_FIELDS = ['password', '__v'];
    const STRING_FIELDS = ['_id', 'chatId'];
+   const DATE_FIELDS = ['createdAt', 'updatedAt', 'resetTokenExpiry'];
+
    return Object.fromEntries(
       Object.entries(user.toObject ? user.toObject() : user)
          .filter(([key]) => !EXCLUDED_FIELDS.includes(key))
-         .map(([key, value]) => [key, STRING_FIELDS.includes(key) ? value?.toString() : value])
+         .map(([key, value]) => {
+            if (STRING_FIELDS.includes(key)) {
+               return [key, value?.toString()];
+            }
+            // Convert MongoDB extended JSON dates to proper Date objects using utility
+            if (DATE_FIELDS.includes(key) && value) {
+               return [key, parseDateSafely(value as string | { $date: string } | Date)];
+            }
+            return [key, value];
+         })
    ) as UserResponse;
 }

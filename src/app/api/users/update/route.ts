@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import User from '@/lib/models/User';
+import { transformUserToResponse } from '@/lib/schemas/auth';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { handleCors } from '@/lib/utils/cors';
 import { WorldId } from '@/types/authTypes';
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
          user.isWorldId = data.isWorldId;
          await user.save();
 
-         return user;
+         return transformUserToResponse(user);
       },
       {
          schema: updateUserWorldIdSchema,
