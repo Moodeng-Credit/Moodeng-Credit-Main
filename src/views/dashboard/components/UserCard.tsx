@@ -9,8 +9,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import useWallet from '@/hooks/useWallet';
-import { ERROR_CODES } from '@/types/errorCodes';
-import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 
 import { calculateDaysRemaining, calculateDueDate } from '@/utils/dateFormatters';
 
@@ -19,6 +17,8 @@ import { getUserProfile } from '@/store/slices/authSlice';
 import { editLoan, fetchLoans, getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type User } from '@/types/authTypes';
+import { ERROR_CODES } from '@/types/errorCodes';
+import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
 
 export default function UserCard(loan: Loan) {
@@ -142,7 +142,7 @@ export default function UserCard(loan: Loan) {
       } catch (transferError: unknown) {
          const errorMessage = transferError instanceof Error ? transferError.message : 'Unknown error';
          console.error('Transfer failed:', errorMessage);
-         showToastByConfig(TOAST_KEYS.TRANSACTION_ERROR);
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
       } finally {
          setIsProcessing(false);
       }
