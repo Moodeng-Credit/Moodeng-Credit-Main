@@ -8,12 +8,11 @@ import { ChevronDown, HelpCircle, TrendingUp, Users, XCircle } from 'lucide-reac
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
-import { Prisma } from '@/generated/prisma/client/client';
-
 import Loading from '@/components/Loading';
 import CollapsibleSection from '@/components/ui/CollapsibleSection';
 
 import { formatDate, getMemberSinceText, parseDateSafely } from '@/utils/dateFormatters';
+import { toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity, getDiversityColor, getDiversityStatus } from '@/utils/diversityScore';
 import { getNetworkColor } from '@/utils/networkColors';
 
@@ -79,7 +78,7 @@ const UserProfile = () => {
 
    const ignoredTier = new Set();
    const TierLists = loans.reduce((acc: Loan[], loan: Loan) => {
-      const loanAmountNum = new Prisma.Decimal(loan.loanAmount).toNumber();
+      const loanAmountNum = toNumber(loan.loanAmount);
       const remainder = loanAmountNum % 20;
       const key = Math.floor(loanAmountNum / 20) * 20;
       if (remainder === 0) {
@@ -96,7 +95,7 @@ const UserProfile = () => {
 
    const ignoredTiers = new Set();
    const TierList = loans.reduce((acc: Record<number, Loan[]>, loan: Loan) => {
-      const loanAmountNum = new Prisma.Decimal(loan.loanAmount).toNumber();
+      const loanAmountNum = toNumber(loan.loanAmount);
       const remainder = loanAmountNum % 20;
       if (remainder === 0) {
          const key = Math.floor(loanAmountNum / 20) * 20;
@@ -117,7 +116,7 @@ const UserProfile = () => {
    const uniqueLoans: Loan[] = [];
    const seenAmounts = new Set();
    for (const loan of loans) {
-      const loanAmountNum = new Prisma.Decimal(loan.loanAmount).toNumber();
+      const loanAmountNum = toNumber(loan.loanAmount);
       if (loanAmountNum % 20 === 0 && !seenAmounts.has(loanAmountNum)) {
          uniqueLoans.push(loan);
          seenAmounts.add(loanAmountNum);
@@ -159,8 +158,8 @@ const UserProfile = () => {
       stats: {
          totalLoans: loans.length,
          defaults: 0,
-         totalBorrowed: loans.reduce((sum, loan) => (loan.loanStatus === 'Lent' ? sum + new Prisma.Decimal(loan.loanAmount).toNumber() : sum), 0),
-         totalRepaid: loans.reduce((sum, loan) => (loan.repaymentStatus === 'Paid' ? sum + new Prisma.Decimal(loan.loanAmount).toNumber() : sum), 0),
+         totalBorrowed: loans.reduce((sum, loan) => (loan.loanStatus === 'Lent' ? sum + toNumber(loan.loanAmount) : sum), 0),
+         totalRepaid: loans.reduce((sum, loan) => (loan.repaymentStatus === 'Paid' ? sum + toNumber(loan.loanAmount) : sum), 0),
          uniqueLenders: lenderDiversity.uniqueLenders,
          unlocking: uniqueLoans.length,
          building: TierLists.length
@@ -314,79 +313,82 @@ const UserProfile = () => {
                   <div className="mt-6 space-y-4">
                      <h3 className="text-lg font-medium text-gray-100">Credit Growth Timeline</h3>
                      {uniqueLoans.map((tier: Loan) => {
-                        const tierLoanAmount = new Prisma.Decimal(tier.loanAmount).toNumber();
+                        const tierLoanAmount = toNumber(tier.loanAmount);
                         return (
-                        <div
-                           key={tier.id}
-                           className={`p-4 rounded-lg ${
-                              tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
-                                 ? 'bg-green-900/20 border border-green-800'
-                                 : tierLoanAmount === user.cs
-                                   ? 'bg-blue-800/50 border border-blue-800'
-                                   : 'bg-gray-800/50 border border-gray-800'
-                           }`}
-                        >
-                           <div className="flex justify-between items-start">
-                              <div className="flex items-center gap-4">
-                                 <LevelBadge
-                                    status={
-                                       tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
-                                          ? 'current'
-                                          : tierLoanAmount === user.cs
-                                            ? 'next'
-                                            : 'completed'
-                                    }
-                                 />
-                                 <div className="flex flex-col gap-1">
-                                    <div className="flex items-center gap-2">
-                                       <span
-                                          className={`text-lg font-medium ${
-                                             tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
-                                                ? 'text-green-400'
-                                                : tierLoanAmount === user.cs
-                                                  ? 'text-blue-100'
-                                                  : 'text-gray-100'
-                                          }`}
-                                       >
-                                          ${tier.loanAmount.toString()} Credit Limit
+                           <div
+                              key={tier.id}
+                              className={`p-4 rounded-lg ${
+                                 tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
+                                    ? 'bg-green-900/20 border border-green-800'
+                                    : tierLoanAmount === user.cs
+                                      ? 'bg-blue-800/50 border border-blue-800'
+                                      : 'bg-gray-800/50 border border-gray-800'
+                              }`}
+                           >
+                              <div className="flex justify-between items-start">
+                                 <div className="flex items-center gap-4">
+                                    <LevelBadge
+                                       status={
+                                          tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
+                                             ? 'current'
+                                             : tierLoanAmount === user.cs
+                                               ? 'next'
+                                               : 'completed'
+                                       }
+                                    />
+                                    <div className="flex flex-col gap-1">
+                                       <div className="flex items-center gap-2">
+                                          <span
+                                             className={`text-lg font-medium ${
+                                                tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
+                                                   ? 'text-green-400'
+                                                   : tierLoanAmount === user.cs
+                                                     ? 'text-blue-100'
+                                                     : 'text-gray-100'
+                                             }`}
+                                          >
+                                             ${tier.loanAmount.toString()} Credit Limit
+                                          </span>
+                                          <span className="text-sm text-gray-400">{formatDate(tier.updatedAt)}</span>
+                                       </div>
+                                       <span className="text-xs text-gray-400">
+                                          ${tier.loanAmount.toString()} loan repaid ${tier.totalRepaymentAmount.toString()} unlocked $
+                                          {tierLoanAmount + 20} limit
                                        </span>
-                                       <span className="text-sm text-gray-400">{formatDate(tier.updatedAt)}</span>
                                     </div>
-                                    <span className="text-xs text-gray-400">
-                                       ${tier.loanAmount.toString()} loan repaid ${tier.totalRepaymentAmount.toString()} unlocked ${tierLoanAmount + 20} limit
-                                    </span>
                                  </div>
+
+                                 {TierList[tierLoanAmount]?.length > 0 ? (
+                                    <div className="flex items-start gap-2">
+                                       <div className="contents text-xs text-gray-400">Trust-Building Loans</div>
+                                       <div className="relative group">
+                                          <div className="flex items-center gap-1 cursor-help">
+                                             <span className="text-gray-400">+</span>
+                                             <div className="px-2 py-1 rounded-full bg-gray-700/40 border border-gray-600 text-sm text-gray-300">
+                                                {TierList[tierLoanAmount]?.length}
+                                             </div>
+                                          </div>
+                                          <div className="absolute invisible group-hover:visible bg-gray-700 text-gray-100 p-3 rounded-lg text-sm w-64 right-0 top-full mt-2 z-10 shadow-xl border border-gray-600">
+                                             <div className="space-y-2">
+                                                <p className="font-medium">
+                                                   Trust-Building Loans at ${tier.loanAmount.toString()} credit limit:
+                                                </p>
+                                                <ul className="list-disc pl-4 space-y-1">
+                                                   {TierList[tierLoanAmount]?.map((loan: Loan) => (
+                                                      <li key={loan.id}>
+                                                         ${loan.loanAmount.toString()} loan - {formatDate(loan.updatedAt)}
+                                                      </li>
+                                                   ))}
+                                                </ul>
+                                             </div>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 ) : null}
                               </div>
-
-                              {TierList[tierLoanAmount]?.length > 0 ? (
-                                 <div className="flex items-start gap-2">
-                                    <div className="contents text-xs text-gray-400">Trust-Building Loans</div>
-                                    <div className="relative group">
-                                       <div className="flex items-center gap-1 cursor-help">
-                                          <span className="text-gray-400">+</span>
-                                          <div className="px-2 py-1 rounded-full bg-gray-700/40 border border-gray-600 text-sm text-gray-300">
-                                             {TierList[tierLoanAmount]?.length}
-                                          </div>
-                                       </div>
-                                       <div className="absolute invisible group-hover:visible bg-gray-700 text-gray-100 p-3 rounded-lg text-sm w-64 right-0 top-full mt-2 z-10 shadow-xl border border-gray-600">
-                                          <div className="space-y-2">
-                                             <p className="font-medium">Trust-Building Loans at ${tier.loanAmount.toString()} credit limit:</p>
-                                             <ul className="list-disc pl-4 space-y-1">
-                                                {TierList[tierLoanAmount]?.map((loan: Loan) => (
-                                                   <li key={loan.id}>
-                                                      ${loan.loanAmount.toString()} loan - {formatDate(loan.updatedAt)}
-                                                   </li>
-                                                ))}
-                                             </ul>
-                                          </div>
-                                       </div>
-                                    </div>
-                                 </div>
-                              ) : null}
                            </div>
-                        </div>
-                     )})}
-
+                        );
+                     })}
                   </div>
 
                   <div className="mt-6 space-y-4">
@@ -472,7 +474,10 @@ const UserProfile = () => {
                      <span className="text-gray-400">Usual loan size:</span>
                      <div className="flex items-center gap-2">
                         <span className="text-yellow-400">
-                           ${loans.length > 0 ? Math.round(loans.reduce((sum, loan) => sum + new Prisma.Decimal(loan.loanAmount).toNumber(), 0) / loans.length) : '0'}
+                           $
+                           {loans.length > 0
+                              ? Math.round(loans.reduce((sum, loan) => sum + toNumber(loan.loanAmount), 0) / loans.length)
+                              : '0'}
                         </span>
                         <div className="relative group">
                            <HelpCircle className="w-4 h-4 text-gray-500 cursor-help" />

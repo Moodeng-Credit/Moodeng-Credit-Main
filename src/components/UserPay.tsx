@@ -11,8 +11,8 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import useWallet from '@/hooks/useWallet';
 
 import { parseDateSafely } from '@/utils/dateFormatters';
+import { toNumber } from '@/utils/decimalHelpers';
 
-import { Prisma } from '@/generated/prisma/client/client';
 import { editLoan, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -35,15 +35,15 @@ function UserPay({ loan }: { loan: Loan }) {
          return;
       }
 
-      const newtotalRepaymentAmount = new Prisma.Decimal(loan.totalRepaymentAmount).plus(totalRepaymentAmount);
+      const newtotalRepaymentAmount = toNumber(loan.totalRepaymentAmount) + Number(totalRepaymentAmount);
       const loanData = {
          ...loan,
-         totalRepaymentAmount: newtotalRepaymentAmount,
-         repaymentStatus: newtotalRepaymentAmount.lessThan(loan.repaidAmount) ? 'Partial' : 'Paid'
+         totalRepaymentAmount: newtotalRepaymentAmount as unknown,
+         repaymentStatus: newtotalRepaymentAmount < toNumber(loan.repaidAmount) ? 'Partial' : 'Paid'
       };
 
       if (
-         new Prisma.Decimal(loan.totalRepaymentAmount).plus(totalRepaymentAmount).lessThanOrEqualTo(loan.repaidAmount) &&
+         toNumber(loan.totalRepaymentAmount) + Number(totalRepaymentAmount) <= toNumber(loan.repaidAmount) &&
          loan.loanStatus === 'Lent' &&
          loan.repaymentStatus !== 'Paid' &&
          parseInt(totalRepaymentAmount) > 0
@@ -60,7 +60,7 @@ function UserPay({ loan }: { loan: Loan }) {
 
          if (transferSuccess) {
             try {
-               await dispatch(editLoan(loanData)).unwrap();
+               await dispatch(editLoan(loanData as Loan)).unwrap();
                await dispatch(getUserLoans(username || ''));
                showToastByConfig('repayment_success');
                setTotalRepaymentAmount('');
@@ -101,7 +101,7 @@ function UserPay({ loan }: { loan: Loan }) {
                   <div className="mt-1.5 text-base font-medium leading-loose text-black">
                      ${loan.totalRepaymentAmount.toString()}
                      <span className="text-sm leading-6 text-black">
-                        {' ($' + new Prisma.Decimal(loan.repaidAmount).minus(loan.totalRepaymentAmount).toString() + ' Remaining)'}
+                        {' ($' + (toNumber(loan.repaidAmount) - toNumber(loan.totalRepaymentAmount)).toString() + ' Remaining)'}
                      </span>
                   </div>
                </div>

@@ -6,13 +6,12 @@ import { useRouter } from 'next/navigation';
 
 import { useDispatch, useSelector } from 'react-redux';
 
-import { Prisma } from '@/generated/prisma/client/client';
-
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import useWallet from '@/hooks/useWallet';
 
 import { calculateDaysRemaining, calculateDueDate, parseDateSafely } from '@/utils/dateFormatters';
+import { toNumber } from '@/utils/decimalHelpers';
 
 import { MONTHS } from '@/constants/dates';
 import { getUserProfile } from '@/store/slices/authSlice';
@@ -59,7 +58,7 @@ export default function UserCard(loan: Loan) {
             const loansArray = loansRes?.gloans || loansRes?.loans || loansRes || [];
             if (mounted) {
                const repaid = (loansArray || []).reduce(
-                  (sum: number, ln: Loan) => (ln.repaymentStatus === 'Paid' ? sum + new Prisma.Decimal(ln.loanAmount).toNumber() : sum),
+                  (sum: number, ln: Loan) => (ln.repaymentStatus === 'Paid' ? sum + toNumber(ln.loanAmount) : sum),
                   0
                );
                setLocalTotalRepaid(repaid);

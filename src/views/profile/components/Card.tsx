@@ -6,13 +6,12 @@ import { useRouter } from 'next/navigation';
 
 import { useDispatch, useSelector } from 'react-redux';
 
-import { Prisma } from '@/generated/prisma/client/client';
-
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import Modal from '@/components/ui/Modal';
 import UserPay from '@/components/UserPay';
 
 import { calculateDaysRemaining, calculateDueDate, formatDate } from '@/utils/dateFormatters';
+import { toNumber } from '@/utils/decimalHelpers';
 import { getLoanBadgeStyles } from '@/utils/loanStatusFormatters';
 
 import { deleteLoan, getUserLoans } from '@/store/slices/loanSlice';
@@ -73,12 +72,13 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
                <span className="text-[#6B7280] font-normal text-[24px]">/${loan.repaidAmount.toString()}</span>
             </p>
             <p className="text-[12px] leading-[15px] font-semibold text-[#6B7280] mt-1">
-               <span className="font-extrabold">${new Prisma.Decimal(loan.totalRepaymentAmount).minus(loan.repaidAmount).toString()}.00</span> Remaining for Complete Payback
+               <span className="font-extrabold">${(toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount)).toString()}.00</span>{' '}
+               Remaining for Complete Payback
             </p>
             <div className="w-full h-4 rounded-full bg-[#D9D9D9] mt-3 overflow-hidden">
                <div
                   className="h-4 rounded-l-full bg-[#15803D]"
-                  style={{ width: `${new Prisma.Decimal(loan.totalRepaymentAmount).times(100).div(loan.repaidAmount).toNumber()}%` }}
+                  style={{ width: `${(toNumber(loan.totalRepaymentAmount) * 100) / toNumber(loan.repaidAmount)}%` }}
                ></div>
             </div>
          </div>
