@@ -5,8 +5,13 @@
    "scripts": {
       "dev": "next dev",
       "dev:local": "NODE_ENV=development NEXT_SKIP_TYPESCRIPT_CHECK=true NODE_OPTIONS='--max-old-space-size=8192' NODE_TLS_REJECT_UNAUTHORIZED=0  next dev --experimental-https",
-      "build": "NODE_ENV=production next build",
+      "build": "prisma generate && NODE_ENV=production next build",
       "start": "next start ",
+      "postinstall": "prisma generate",
+      "prisma:generate": "prisma generate",
+      "prisma:migrate": "prisma migrate deploy",
+      "prisma:migrate:dev": "prisma migrate dev",
+      "prisma:studio": "prisma studio",
       "reup": "rm -rf node_modules && rm -rf .next && npm install",
       "=== Build / Format Helpers ===": "",
       "format_build": "bash ./scripts/formatInstallBuild.sh",
@@ -30,6 +35,8 @@
    },
    "dependencies": {
       "@fortawesome/fontawesome-free": "^7.1.0",
+      "@prisma/adapter-pg": "^7.0.1",
+      "@prisma/client": "^7.0.1",
       "@rainbow-me/rainbowkit": "2.2.9",
       "@react-oauth/google": "^0.12.2",
       "@reduxjs/toolkit": "^2.11.0",
@@ -47,7 +54,9 @@
       "lucide-react": "^0.555.0",
       "next": "15.5.5",
       "nodemailer": "^7.0.11",
+      "pg": "^8.16.3",
       "postcss": "^8.5.6",
+      "prisma": "^7.0.1",
       "react": "19.2.0",
       "react-day-picker": "^9.11.3",
       "react-dom": "19.2.0",
@@ -64,8 +73,6 @@
    "devDependencies": {
       "@eslint/eslintrc": "^3.3.3",
       "@next/eslint-plugin-next": "^15.5.5",
-      "@prisma/adapter-pg": "^7.0.1",
-      "@prisma/client": "^7.0.1",
       "@tanstack/eslint-plugin-query": "^5.91.2",
       "@trivago/prettier-plugin-sort-imports": "^5.2.2",
       "@types/js-cookie": "^3.0.6",
@@ -82,9 +89,7 @@
       "eslint-plugin-import": "^2.32.0",
       "eslint-plugin-react-refresh": "^0.4.24",
       "eslint-plugin-unused-imports": "^4.3.0",
-      "pg": "^8.16.3",
       "prettier": "^3.7.2",
-      "prisma": "^7.0.1",
       "typescript": "^5.9.3"
    },
    "engines": {
