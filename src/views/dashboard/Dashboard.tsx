@@ -11,12 +11,14 @@ import { useAccount } from 'wagmi';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import SearchBar from '@/components/filters/SearchBar';
-import SortButtons, { type SortOption } from '@/components/filters/SortButtons';
+import SortButtons from '@/components/filters/SortButtons';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import YouTubeVideoLightbox from '@/components/ui/YouTubeVideoLightbox';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 import { usePagination } from '@/hooks/usePagination';
+
+import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { fetchUser } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getUserLoans } from '@/store/slices/loanSlice';
@@ -50,14 +52,18 @@ export default function Dashboard() {
    const [coin, setCoin] = useState(block === 'sepolia' ? 'Link' : block === 'base' || block === 'baseSepolia' ? 'USDC' : 'USDT');
    const [reason, setReason] = useState('');
    const [days, setDays] = useState('');
-   const [currentNetwork, setCurrentNetwork] = useState('');
-   const [amount, setAmount] = useState('');
    const [customAmount, setCustomAmount] = useState('');
-   const [rate, setRate] = useState('');
-   const [sd, setSD] = useState<Date | null>(null);
-   const [loanTime, setLoanTime] = useState('');
-   const [avg, setAvg] = useState<SortOption | ''>('');
    const [searchLoan, setSearchLoan] = useState('');
+
+   const [filters, setFilters] = useState<LoanFilters>({
+      amount: '',
+      rate: '',
+      date: null,
+      loanTime: '',
+      network: '',
+      search: '',
+      sortBy: undefined
+   });
 
    const clear = () => {
       setRepayedAmount('');
@@ -68,23 +74,27 @@ export default function Dashboard() {
       setDays('');
    };
 
-   // Wrapper functions for FilterSidebar that maintain date/loanTime interaction logic
-   const handleFilterDateChange = (date: Date | null) => {
-      setSD(date);
-      setLoanTime(''); // Clear loanTime when date is manually selected
-   };
+   const handleFiltersChange = (newFilters: Partial<LoanFilters>) => {
+      setFilters((prev) => {
+         const updated = { ...prev, ...newFilters };
 
-   const handleFilterLoanTimeChange = (time: string) => {
-      if (time === '') {
-         setLoanTime('');
-         setSD(null);
-      } else {
-         setLoanTime(time);
-         const currentDate = new Date();
-         const targetDate = new Date(currentDate);
-         targetDate.setDate(currentDate.getDate() + Number(time));
-         setSD(targetDate);
-      }
+         if ('date' in newFilters) {
+            updated.loanTime = '';
+         }
+
+         if ('loanTime' in newFilters) {
+            if (newFilters.loanTime === '') {
+               updated.date = null;
+            } else if (newFilters.loanTime) {
+               const currentDate = new Date();
+               const targetDate = new Date(currentDate);
+               targetDate.setDate(currentDate.getDate() + Number(newFilters.loanTime));
+               updated.date = targetDate;
+            }
+         }
+
+         return updated;
+      });
    };
 
    const handleApplyLoanClick = () => {
@@ -214,59 +224,15 @@ export default function Dashboard() {
    }, [dispatch, username]);
 
    useEffect(() => {
-      const originalLoanRequests = [...floanRequests];
-      let sortedLoan = originalLoanRequests;
-      const newDate = new Date(sd || '');
-      if (isNaN(newDate.getTime())) {
-         setSD(null);
-         setLoanTime('');
-      }
-      if (amount && Number(amount) > 0) sortedLoan = sortedLoan.filter((loan) => loan.loanAmount === Number(amount));
-      if (rate && Number(rate) > 0)
-         sortedLoan = sortedLoan.filter(
-            (loan) =>
-               Number((loan.repayedAmount * 100) / loan.loanAmount) >= Number(rate) - 2.5 &&
-               Number((loan.repayedAmount * 100) / loan.loanAmount) <= Number(rate) + 2.5
-         );
-      else if (rate === '+') sortedLoan = sortedLoan.filter((loan) => Number((loan.repayedAmount * 100) / loan.loanAmount) > 15);
-      if (sd) {
-         sortedLoan = sortedLoan.filter((loan) => {
-            const createdAt = new Date(loan.createdAt);
-            const created = new Date(sd);
-            const newToday = new Date();
-            createdAt.setHours(0, 0, 0, 0);
-            created.setHours(0, 0, 0, 0);
-            newToday.setHours(0, 0, 0, 0);
-            const timeDifference = newToday.getTime() - createdAt.getTime();
-            const Difference = created.getTime() - newToday.getTime();
-            const InDays = Math.round(Difference / (1000 * 60 * 60 * 24));
-            const differenceInDays = Math.round(loan.days - timeDifference / (1000 * 60 * 60 * 24));
-            return Number(differenceInDays) <= Number(InDays);
-         });
-      } else if (loanTime && Number(loanTime) > 0) {
-         sortedLoan = sortedLoan.filter((loan) => {
-            const createdAt = new Date(loan.createdAt);
-            const newToday = new Date();
-            createdAt.setHours(0, 0, 0, 0);
-            newToday.setHours(0, 0, 0, 0);
-            const timeDifference = newToday.getTime() - createdAt.getTime();
-            const differenceInDays = Math.round(loan.days - timeDifference / (1000 * 60 * 60 * 24));
-            return Number(differenceInDays) <= Number(loanTime);
-         });
-      } else if (loanTime === '+') sortedLoan = sortedLoan.filter((loan) => loan.days >= Number(loanTime));
-      if (currentNetwork) sortedLoan = sortedLoan.filter((loan) => loan.block === currentNetwork);
-      if (searchLoan) sortedLoan = sortedLoan.filter((loan) => loan.borrowerUser?.includes(searchLoan));
-      if (avg) {
-         sortedLoan = sortedLoan.sort((a, b) => {
-            if (avg === 'highest') return b.loanAmount - a.loanAmount;
-            if (avg === 'lowest') return a.loanAmount - b.loanAmount;
-            if (avg === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-            if (avg === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-            return 0;
-         });
-      }
-      setSortedLoans(sortedLoan);
-   }, [amount, rate, sd, loanTime, currentNetwork, avg, searchLoan, floanRequests]);
+      const allFilters: LoanFilters = {
+         ...filters,
+         search: searchLoan,
+         sortBy: filters.sortBy
+      };
+
+      const filtered = filterLoans(floanRequests, allFilters);
+      setSortedLoans(filtered);
+   }, [filters, searchLoan, floanRequests]);
 
    const {
       displayedItems: displayedLoans,
@@ -275,7 +241,7 @@ export default function Dashboard() {
       handleLoadMore
    } = usePagination({
       items: sortedLoans,
-      resetDependencies: [amount, rate, sd, loanTime, currentNetwork, avg, searchLoan]
+      resetDependencies: [filters, searchLoan]
    });
 
    return (
@@ -318,22 +284,17 @@ export default function Dashboard() {
                ) : null}
                <div className="flex flex-col md:flex-row md:space-x-10">
                   <FilterSidebar
-                     amount={amount}
-                     onAmountChange={setAmount}
+                     filters={filters}
+                     onFiltersChange={handleFiltersChange}
                      customAmount={customAmount}
                      onCustomAmountChange={setCustomAmount}
-                     rate={rate}
-                     onRateChange={setRate}
-                     selectedDate={sd}
-                     onDateChange={handleFilterDateChange}
-                     loanTime={loanTime}
-                     onLoanTimeChange={handleFilterLoanTimeChange}
-                     currentNetwork={currentNetwork}
-                     onNetworkChange={setCurrentNetwork}
                   />
                   <section className="flex-1 flex flex-col items-center mt-10 md:mt-0">
                      <div className="flex flex-wrap justify-start md:justify-end gap-3 mb-6 w-full max-w-xl">
-                        <SortButtons activeSort={avg} onSortChange={setAvg} />
+                        <SortButtons
+                           activeSort={filters.sortBy || ''}
+                           onSortChange={(sort) => handleFiltersChange({ sortBy: sort || undefined })}
+                        />
                         <SearchBar value={searchLoan} onChange={setSearchLoan} placeholder="Search Request..." />
                      </div>
                      <div className="flex flex-wrap justify-center gap-6">

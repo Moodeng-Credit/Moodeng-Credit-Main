@@ -1,10 +1,10 @@
 import { type MouseEvent } from 'react';
 
-export type SortOption = 'lowest' | 'highest' | 'oldest' | 'newest';
+import type { SortOption } from '@/utils/loanFilters';
 
 interface SortButtonsProps {
-   activeSort: string;
-   onSortChange: (sortOption: SortOption) => void;
+   activeSort: SortOption | '';
+   onSortChange: (sortOption: SortOption | '') => void;
 }
 
 const sortOptions: Array<{ value: SortOption; label: string }> = [
