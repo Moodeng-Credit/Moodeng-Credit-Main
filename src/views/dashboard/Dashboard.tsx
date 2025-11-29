@@ -14,9 +14,6 @@ import SearchBar from '@/components/filters/SearchBar';
 import SortButtons from '@/components/filters/SortButtons';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import YouTubeVideoLightbox from '@/components/ui/YouTubeVideoLightbox';
-
-import { ERROR_CODES } from '@/types/errorCodes';
-import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 import { usePagination } from '@/hooks/usePagination';
@@ -26,6 +23,8 @@ import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 import { fetchUser } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import { ERROR_CODES } from '@/types/errorCodes';
+import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import UserCard from '@/views/dashboard/components/UserCard';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
@@ -73,8 +72,6 @@ export default function Dashboard() {
       setRepayedAmount('');
       setLoanAmount('');
       setReason('');
-      setBlock('');
-      setCoin('');
       setDays('');
    };
 
@@ -133,7 +130,7 @@ export default function Dashboard() {
       }
 
       if (!block || !coin) {
-         console.log('currentNetwork or coin not selected');
+         console.log('Network validation failed:', { block, coin, chainName: account?.chain?.name });
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
          return;
       }
@@ -205,6 +202,13 @@ export default function Dashboard() {
       setShowPurple(true);
       setShowModal(false);
    };
+
+   useEffect(() => {
+      if (account?.chain?.name) {
+         setBlock(account.chain.name);
+         setCoin('USDC');
+      }
+   }, [account?.chain?.name]);
 
    useEffect(() => {
       if (typeof window !== 'undefined' && window.location.hash) {
