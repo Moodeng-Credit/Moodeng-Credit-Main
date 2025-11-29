@@ -64,7 +64,8 @@ export async function POST(request: NextRequest) {
             console.error('Error occurred while sending borrower notifications:', error);
          }
 
-         return loan;
+         // Return lean object for consistent date serialization
+         return loan.toObject();
       },
       {
          schema: createLoanSchema,

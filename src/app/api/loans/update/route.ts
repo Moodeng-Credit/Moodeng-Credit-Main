@@ -10,6 +10,7 @@ import { sendBorrowerReminder, sendNewLoanNotification } from '@/lib/services/te
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { handleCors } from '@/lib/utils/cors';
 import { ERROR_CODES } from '@/types/errorCodes';
+import type { Loan as LoanType } from '@/types/loanTypes';
 import { SUCCESS_CODES } from '@/types/successCodes';
 
 const assignLoanUserSchema = z.object({
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data, userId) => {
-         const loan = await Loan.findById(data.loanId);
+         const loan = (await Loan.findById(data.loanId).lean()) as LoanType | null;
          if (!loan) {
             throw { code: ERROR_CODES.LOAN_NOT_FOUND, status: 404 };
          }
@@ -49,9 +50,13 @@ export async function POST(request: NextRequest) {
             throw { code: ERROR_CODES.LOAN_UNAUTHORIZED, status: 403 };
          }
 
+         const updateFields: Partial<LoanType> = {
+            updatedAt: new Date().toISOString()
+         };
+
          if (!loan.lenderUser) {
-            loan.lenderWallet = data.wallet;
-            loan.lenderUser = data.username;
+            updateFields.lenderWallet = data.wallet;
+            updateFields.lenderUser = data.username;
 
             try {
                if (user.chatId) {
@@ -67,8 +72,8 @@ export async function POST(request: NextRequest) {
                console.error('Error occurred while sending lender notifications:', error);
             }
          } else if (!loan.borrowerUser) {
-            loan.borrowerWallet = data.wallet;
-            loan.borrowerUser = data.username;
+            updateFields.borrowerWallet = data.wallet;
+            updateFields.borrowerUser = data.username;
             user.nal = user.nal + 1;
             await user.save();
 
@@ -87,11 +92,8 @@ export async function POST(request: NextRequest) {
             }
          }
 
-         loan.updatedAt = new Date();
-         await loan.save();
-
-         // Return plain object to avoid date serialization issues
-         return await Loan.findById(loan._id).lean();
+         // Use findByIdAndUpdate to avoid touching existing corrupted date fields
+         return await Loan.findByIdAndUpdate(data.loanId, { $set: updateFields }, { new: true, runValidators: false }).lean();
       },
       {
          schema: assignLoanUserSchema,

@@ -7,6 +7,7 @@ import { sendMail } from '@/lib/services/email';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { handleCors } from '@/lib/utils/cors';
 import { ERROR_CODES } from '@/types/errorCodes';
+import type { Loan as LoanType } from '@/types/loanTypes';
 import { RepaymentStatus } from '@/types/loanTypes';
 import { SUCCESS_CODES } from '@/types/successCodes';
 
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data, userId) => {
-         const loan = await Loan.findById(data.loanId);
+         const loan = (await Loan.findById(data.loanId).lean()) as LoanType | null;
          if (!loan) {
             throw { code: ERROR_CODES.LOAN_NOT_FOUND, status: 404 };
          }
@@ -47,10 +48,14 @@ export async function POST(request: NextRequest) {
          const borrower = await User.findOne({ username: loan.borrowerUser });
          const lender = await User.findOne({ username: loan.lenderUser });
 
-         if (data.repaymentAmount !== undefined) loan.repaymentAmount = data.repaymentAmount;
-         if (data.repaymentStatus) loan.repaymentStatus = data.repaymentStatus;
-         if (data.loanStatus) loan.loanStatus = data.loanStatus;
-         loan.updatedAt = new Date();
+         // Build update object with only the fields we want to update
+         const updateFields: Partial<LoanType> = {
+            updatedAt: new Date().toISOString()
+         };
+
+         if (data.repaymentAmount !== undefined) updateFields.repaymentAmount = data.repaymentAmount;
+         if (data.repaymentStatus) updateFields.repaymentStatus = data.repaymentStatus;
+         if (data.loanStatus) updateFields.loanStatus = data.loanStatus;
 
          if (data.repaymentStatus === RepaymentStatus.PAID && borrower) {
             borrower.nal = borrower.nal - 1;
@@ -62,10 +67,12 @@ export async function POST(request: NextRequest) {
             await borrower.save();
          }
 
-         await loan.save();
+         // Use findByIdAndUpdate to avoid touching existing date fields
+         const updatedLoan = await Loan.findByIdAndUpdate(data.loanId, { $set: updateFields }, { new: true, runValidators: false }).lean();
 
-         // Fetch the updated loan with lean() to return plain object
-         const updatedLoan = await Loan.findById(loan._id).lean();
+         if (!updatedLoan) {
+            throw { code: ERROR_CODES.LOAN_NOT_FOUND, status: 404 };
+         }
 
          if (lender) {
             try {
