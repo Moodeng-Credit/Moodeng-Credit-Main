@@ -102,7 +102,7 @@ export const fetchUser = createAsyncThunk('auth/fetchUser', async () => {
 
 export const updateUser = createAsyncThunk(
    'auth/updateUser',
-   async (userData: { username?: string; password?: string; email?: string; telegramUsername?: string }) => {
+   async (userData: { username?: string; password?: string; email?: string; telegramUsername?: string; walletAddress?: string }) => {
       return await apiHandler.post(API_ENDPOINTS.AUTH.UPDATE, userData);
    }
 );
