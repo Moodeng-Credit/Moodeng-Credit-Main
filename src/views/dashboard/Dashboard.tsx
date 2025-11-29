@@ -123,6 +123,12 @@ export default function Dashboard() {
          return;
       }
 
+      if (!user.walletAddress || user.walletAddress.trim() === '') {
+         console.log('Wallet address not connected');
+         showToastByConfig('wallet_missing');
+         return;
+      }
+
       if (!block || !coin) {
          console.log('currentNetwork or coin not selected');
          showToastByConfig('network_required');

@@ -100,6 +100,11 @@ export default function UserCard(loan: Loan) {
          return;
       }
 
+      if (!wallet || wallet.trim() === '') {
+         showToastByConfig('wallet_missing');
+         return;
+      }
+
       const loanPayload = {
          _id: loanData._id,
          repaymentAmount: loanData.repaymentAmount,
@@ -112,7 +117,7 @@ export default function UserCard(loan: Loan) {
       try {
          const transferSuccess = await Transfer(
             e,
-            loanData?.borrowerWallet || '',
+            loanData.borrowerWallet || '',
             loanData.loanAmount.toString(),
             loanData._id,
             loanData.block,
@@ -131,6 +136,10 @@ export default function UserCard(loan: Loan) {
                showToastByConfig('transaction_error');
             }
          }
+      } catch (transferError: unknown) {
+         const errorMessage = transferError instanceof Error ? transferError.message : 'Unknown error';
+         console.error('Transfer failed:', errorMessage);
+         showToastByConfig('transaction_error');
       } finally {
          setIsProcessing(false);
       }

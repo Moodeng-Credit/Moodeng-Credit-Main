@@ -44,6 +44,7 @@ export const ERROR_CODES = {
    NETWORK_REQUIRED: 'NETWORK_REQUIRED',
    TRANSACTION_FAILED: 'TRANSACTION_FAILED',
    INSUFFICIENT_FUNDS: 'INSUFFICIENT_FUNDS',
+   WALLET_MISSING: 'WALLET_MISSING',
 
    // Server Errors (1600-1699)
    SERVER_ERROR: 'SERVER_ERROR',
@@ -103,6 +104,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
    [ERROR_CODES.NETWORK_REQUIRED]: 'Please select a network and coin type.',
    [ERROR_CODES.TRANSACTION_FAILED]: 'Transaction failed. Please try again.',
    [ERROR_CODES.INSUFFICIENT_FUNDS]: 'Insufficient funds for this transaction.',
+   [ERROR_CODES.WALLET_MISSING]: 'Wallet address is missing. Please connect your wallet.',
 
    // Server
    [ERROR_CODES.SERVER_ERROR]: 'Internal server error. Please try again later.',

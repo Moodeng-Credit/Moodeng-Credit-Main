@@ -48,6 +48,7 @@ export const ERROR_CODE_TO_TOAST: Record<ErrorCode, ToastConfigKey> = {
    [ERROR_CODES.NETWORK_REQUIRED]: 'network_required',
    [ERROR_CODES.TRANSACTION_FAILED]: 'transaction_error',
    [ERROR_CODES.INSUFFICIENT_FUNDS]: 'insufficient_funds',
+   [ERROR_CODES.WALLET_MISSING]: 'wallet_missing',
 
    // Server Errors
    [ERROR_CODES.SERVER_ERROR]: 'server_error',
