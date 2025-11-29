@@ -12,14 +12,12 @@ const CORS_ORIGINS = process.env.CORS_ORIGINS?.split(',') || [
 export function setCorsHeaders(response: NextResponse, request: NextRequest): NextResponse {
    const origin = request.headers.get('origin');
 
-   // Check if origin is allowed
    if (origin && CORS_ORIGINS.includes(origin)) {
       response.headers.set('Access-Control-Allow-Origin', origin);
    } else if (CORS_ORIGINS.includes('*')) {
       response.headers.set('Access-Control-Allow-Origin', '*');
    }
 
-   // Set other CORS headers
    response.headers.set('Access-Control-Allow-Credentials', 'true');
    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, user-id');
@@ -35,7 +33,6 @@ export function handleCors(request: NextRequest): NextResponse {
       return setCorsHeaders(response, request);
    }
 
-   // For non-OPTIONS requests, return a basic response
    return new NextResponse(null, { status: 200 });
 }
 

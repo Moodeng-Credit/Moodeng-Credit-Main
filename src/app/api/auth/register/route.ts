@@ -26,13 +26,11 @@ export async function POST(request: NextRequest) {
          if (data.googleCredential) {
             const googleData = await verifyGoogleToken(data.googleCredential);
 
-            // Check if user already exists with this Google ID
             const existingGoogleUser = await User.findOne({ googleId: googleData.googleId });
             if (existingGoogleUser) {
                throw { code: ERROR_CODES.USER_ALREADY_EXISTS, message: 'Google account already registered' };
             }
 
-            // Check if email already exists
             const existingEmail = await User.findOne({ email: googleData.email });
             if (existingEmail) {
                throw { code: ERROR_CODES.USER_ALREADY_EXISTS, message: 'Email already registered' };
@@ -47,7 +45,6 @@ export async function POST(request: NextRequest) {
          else if (data.telegramAuthData) {
             const telegramData = verifyTelegramAuth(JSON.parse(data.telegramAuthData));
 
-            // Check if user already exists with this Telegram ID
             const existingTelegramUser = await User.findOne({ telegramId: telegramData.telegramId });
             if (existingTelegramUser) {
                throw { code: ERROR_CODES.USER_ALREADY_EXISTS, message: 'Telegram account already registered' };
@@ -80,7 +77,6 @@ export async function POST(request: NextRequest) {
             password = data.password;
          }
 
-         // Ensure username is unique
          let finalUsername = username;
          let usernameExists = await User.findOne({ username: finalUsername });
          let counter = 1;

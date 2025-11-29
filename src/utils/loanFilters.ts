@@ -18,24 +18,25 @@ export interface LoanFilters {
 export const sortLoans = (loans: Loan[], sortBy: SortOption): Loan[] => {
    const sorted = [...loans];
 
-   switch (sortBy) {
-      case 'highest':
-         return sorted.sort((a, b) => b.loanAmount - a.loanAmount);
-      case 'lowest':
-         return sorted.sort((a, b) => a.loanAmount - b.loanAmount);
-      case 'newest':
-         return sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      case 'oldest':
-         return sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-      default:
-         return sorted;
-   }
+   const sortFunctions = {
+      highest: (a: Loan, b: Loan) => b.loanAmount - a.loanAmount,
+      lowest: (a: Loan, b: Loan) => a.loanAmount - b.loanAmount,
+      newest: (a: Loan, b: Loan) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      oldest: (a: Loan, b: Loan) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+   };
+
+   const sortFn = sortFunctions[sortBy];
+   return sortFn ? sorted.sort(sortFn) : sorted;
 };
 
 /**
  * Filter loans by amount
+ * Supports both exact amounts and custom maximum amounts
  */
-export const filterByAmount = (loans: Loan[], amount: string): Loan[] => {
+export const filterByAmount = (loans: Loan[], amount: string, customAmount?: string): Loan[] => {
+   if (customAmount && Number(customAmount) > 0) {
+      return loans.filter((loan) => loan.loanAmount <= Number(customAmount));
+   }
    if (!amount || Number(amount) === 0) return loans;
    return loans.filter((loan) => loan.loanAmount === Number(amount));
 };
@@ -59,14 +60,16 @@ export const filterByRate = (loans: Loan[], rate: string): Loan[] => {
 };
 
 /**
- * Filter loans by date
+ * Filter loans by repayment due date
  */
 export const filterByDate = (loans: Loan[], date: Date | null): Loan[] => {
    if (!date) return loans;
 
    return loans.filter((loan) => {
-      const loanDate = new Date(loan.createdAt);
-      return loanDate >= date;
+      const createdDate = new Date(loan.createdAt);
+      const dueDate = new Date(createdDate);
+      dueDate.setDate(createdDate.getDate() + loan.days);
+      return dueDate <= date;
    });
 };
 
@@ -87,21 +90,13 @@ export const filterByTimePeriod = (loans: Loan[], loanTime: string): Loan[] => {
 
       const daysRemaining = Math.round((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-      if (loanTime === '7') return daysRemaining <= 7;
-      if (loanTime === '30') return daysRemaining <= 30;
-      if (loanTime === '90') return daysRemaining <= 90;
-      if (loanTime === '120') return daysRemaining >= 120;
+      if (loanTime === '7') return daysRemaining > 0 && daysRemaining <= 7;
+      if (loanTime === '30') return daysRemaining > 0 && daysRemaining <= 30;
+      if (loanTime === '90') return daysRemaining > 0 && daysRemaining <= 90;
+      if (loanTime === '120') return daysRemaining > 120;
 
       return true;
    });
-};
-
-/**
- * Filter loans by network
- */
-export const filterByNetwork = (loans: Loan[], network: string): Loan[] => {
-   if (!network) return loans;
-   return loans.filter((loan) => loan.block?.toLowerCase() === network.toLowerCase());
 };
 
 /**
@@ -119,11 +114,11 @@ export const filterBySearch = (loans: Loan[], search: string): Loan[] => {
 /**
  * Apply all filters to a list of loans
  */
-export const filterLoans = (loans: Loan[], filters: LoanFilters): Loan[] => {
+export const filterLoans = (loans: Loan[], filters: LoanFilters, customAmount?: string): Loan[] => {
    let filtered = [...loans];
 
-   if (filters.amount) {
-      filtered = filterByAmount(filtered, filters.amount);
+   if (filters.amount || customAmount) {
+      filtered = filterByAmount(filtered, filters.amount || '', customAmount);
    }
 
    if (filters.rate) {
@@ -136,10 +131,6 @@ export const filterLoans = (loans: Loan[], filters: LoanFilters): Loan[] => {
 
    if (filters.loanTime) {
       filtered = filterByTimePeriod(filtered, filters.loanTime);
-   }
-
-   if (filters.network) {
-      filtered = filterByNetwork(filtered, filters.network);
    }
 
    if (filters.search) {

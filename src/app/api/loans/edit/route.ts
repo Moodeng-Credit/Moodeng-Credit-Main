@@ -22,13 +22,11 @@ export async function POST(request: NextRequest) {
          const borrower = await User.findOne({ username: loan.borrowerUser });
          const lender = await User.findOne({ username: loan.lenderUser });
 
-         // Update loan fields
          if (data.repaymentAmount !== undefined) loan.repaymentAmount = data.repaymentAmount;
          if (data.repaymentStatus) loan.repaymentStatus = data.repaymentStatus;
          if (data.loanStatus) loan.loanStatus = data.loanStatus;
          loan.updatedAt = new Date();
 
-         // Update borrower credit score if loan is paid
          if (data.repaymentStatus === RepaymentStatus.PAID && borrower) {
             borrower.nal = borrower.nal - 1;
             if (loan.loanAmount === borrower.cs) {
@@ -41,7 +39,6 @@ export async function POST(request: NextRequest) {
 
          await loan.save();
 
-         // Send notifications
          if (lender) {
             try {
                await sendMail(

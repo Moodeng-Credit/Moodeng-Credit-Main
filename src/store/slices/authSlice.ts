@@ -132,7 +132,6 @@ const authSlice = createSlice({
    },
    extraReducers: (builder) => {
       builder
-         // Login
          .addCase(loginUser.pending, (state) => {
             state.isLoading = true;
             state.error = null;
@@ -146,7 +145,6 @@ const authSlice = createSlice({
             state.isLoading = false;
             state.error = action.payload as string;
          })
-         // Login with Google
          .addCase(loginWithGoogle.pending, (state) => {
             state.isLoading = true;
             state.error = null;
@@ -160,7 +158,6 @@ const authSlice = createSlice({
             state.isLoading = false;
             state.error = action.payload as string;
          })
-         // Login with Telegram
          .addCase(loginWithTelegram.pending, (state) => {
             state.isLoading = true;
             state.error = null;
@@ -174,7 +171,6 @@ const authSlice = createSlice({
             state.isLoading = false;
             state.error = action.payload as string;
          })
-         // Register
          .addCase(registerUser.pending, (state) => {
             state.isLoading = true;
             state.error = null;
@@ -188,7 +184,6 @@ const authSlice = createSlice({
             state.isLoading = false;
             state.error = action.payload as string;
          })
-         // Register with Google
          .addCase(registerWithGoogle.pending, (state) => {
             state.isLoading = true;
             state.error = null;
@@ -202,7 +197,6 @@ const authSlice = createSlice({
             state.isLoading = false;
             state.error = action.payload as string;
          })
-         // Register with Telegram
          .addCase(registerWithTelegram.pending, (state) => {
             state.isLoading = true;
             state.error = null;
@@ -216,7 +210,6 @@ const authSlice = createSlice({
             state.isLoading = false;
             state.error = action.payload as string;
          })
-         // Fetch user
          .addCase(fetchUser.pending, (state) => {
             state.isLoading = true;
          })
@@ -229,14 +222,12 @@ const authSlice = createSlice({
             state.isLoading = false;
             state.error = action.payload as string;
          })
-         // Update user
          .addCase(updateUser.fulfilled, (state, action) => {
             state.user = action.payload;
             if (action.payload.username) {
                state.username = action.payload.username;
             }
          })
-         // Logout
          .addCase(logoutUser.fulfilled, (state) => {
             state.user = defaultUser;
             state.username = null;

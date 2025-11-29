@@ -15,7 +15,6 @@ export async function POST(request: NextRequest) {
       async (data) => {
          const { email } = data;
 
-         // Find user by email
          const user = await User.findOne({ email });
 
          // Always return success even if user doesn't exist (security best practice)
@@ -36,15 +35,12 @@ export async function POST(request: NextRequest) {
          const resetToken = crypto.randomBytes(32).toString('hex');
          const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
 
-         // Save token to user
          user.resetToken = resetToken;
          user.resetTokenExpiry = resetTokenExpiry;
          await user.save();
 
-         // Create reset URL
          const resetUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/reset-password?token=${resetToken}`;
 
-         // Send email
          const emailSubject = 'Password Reset Request - Moodeng Credit';
          const emailMessage = `Hello ${user.username},
 

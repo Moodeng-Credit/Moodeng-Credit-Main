@@ -51,7 +51,6 @@ const loanSlice = createSlice({
    },
    extraReducers: (builder) => {
       builder
-         // Create loan
          .addCase(createLoan.pending, (state) => {
             state.isLoading = true;
             state.error = null;
@@ -64,7 +63,6 @@ const loanSlice = createSlice({
             state.isLoading = false;
             state.error = action.payload as string;
          })
-         // Fetch loans
          .addCase(fetchLoans.pending, (state) => {
             state.isLoading = true;
             state.error = null;
@@ -77,7 +75,6 @@ const loanSlice = createSlice({
             state.isLoading = false;
             state.error = action.payload as string;
          })
-         // Get user loans
          .addCase(getUserLoans.fulfilled, (state, action) => {
             state.loans.gloans = action.payload;
          });

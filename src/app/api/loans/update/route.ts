@@ -32,7 +32,6 @@ export async function POST(request: NextRequest) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
          }
 
-         // Update loan with lender info
          if (!loan.lenderUser) {
             loan.lenderWallet = data.wallet;
             loan.lenderUser = data.username;
@@ -50,9 +49,7 @@ export async function POST(request: NextRequest) {
             } catch (error) {
                console.error('Error occurred while sending lender notifications:', error);
             }
-         }
-         // Update loan with borrower info
-         else if (!loan.borrowerUser) {
+         } else if (!loan.borrowerUser) {
             loan.borrowerWallet = data.wallet;
             loan.borrowerUser = data.username;
             user.nal = user.nal + 1;

@@ -1,6 +1,11 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { mongo, Schema } from 'mongoose';
 
 import { type IUser, WorldId } from '@/types/authTypes';
+
+// MongoDB error codes - https://www.mongodb.com/docs/manual/reference/error-codes/
+const MONGO_ERROR_CODES = {
+   NAMESPACE_NOT_FOUND: 26
+} as const;
 
 const UserSchema = new Schema<IUser>({
    walletAddress: { type: String, unique: true, sparse: true },
@@ -25,7 +30,6 @@ const UserSchema = new Schema<IUser>({
 // Handle index recreation on model initialization
 UserSchema.statics.ensureIndexes = async function () {
    try {
-      // Get current indexes
       const indexes = await this.collection.indexes();
 
       // Define all sparse unique indexes that need to be verified
@@ -136,7 +140,14 @@ UserSchema.statics.ensureIndexes = async function () {
          console.log('All indexes are already correctly configured');
       }
    } catch (error: unknown) {
-      console.error('Error managing indexes:', error);
+      // Collection doesn't exist yet (NamespaceNotFound)
+      if (error instanceof mongo.MongoServerError && error.code === MONGO_ERROR_CODES.NAMESPACE_NOT_FOUND) {
+         console.log(`Collection does not exist yet, creating indexes from schema...`);
+         await this.syncIndexes();
+         console.log('Indexes created from schema definitions');
+      } else {
+         console.error('Error managing indexes:', error);
+      }
    }
 };
 

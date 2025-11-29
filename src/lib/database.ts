@@ -56,12 +56,8 @@ async function initializeDatabase() {
 
       // Ensure indexes after models are loaded and connection is established
       console.log('🔧 Setting up database indexes...');
-      try {
-         await User.ensureIndexes();
-         console.log('✅ User indexes configured');
-      } catch (error) {
-         console.error('⚠️ User index setup failed:', error);
-      }
+      await User.ensureIndexes();
+      console.log('✅ User indexes configured');
 
       console.log('✅ Database and collections initialized successfully');
    } catch (error) {

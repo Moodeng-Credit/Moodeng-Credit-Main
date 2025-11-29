@@ -27,7 +27,6 @@ export async function POST(request: NextRequest) {
             };
          }
 
-         // Update password and clear reset token
          user.password = await hashPassword(password);
          user.resetToken = undefined;
          user.resetTokenExpiry = undefined;

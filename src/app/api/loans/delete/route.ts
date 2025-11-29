@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
             throw { code: ERROR_CODES.LOAN_NOT_FOUND, status: 404 };
          }
 
-         // Update user loan counts
          if (loan.lenderUser) {
             const lender = await User.findOne({ username: loan.lenderUser });
             if (lender) {

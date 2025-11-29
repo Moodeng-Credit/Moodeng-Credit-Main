@@ -11,16 +11,21 @@ import { useAccount } from 'wagmi';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import SearchBar from '@/components/filters/SearchBar';
-import SortButtons, { type SortOption } from '@/components/filters/SortButtons';
+import SortButtons from '@/components/filters/SortButtons';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import YouTubeVideoLightbox from '@/components/ui/YouTubeVideoLightbox';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+
+import { usePagination } from '@/hooks/usePagination';
+
+import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { fetchUser } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import UserCard from '@/views/dashboard/components/UserCard';
+import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 
 const CREDIT_LEVELLING_VIDEO_ID = 'gaRjXOd2s2U';
 
@@ -47,14 +52,18 @@ export default function Dashboard() {
    const [coin, setCoin] = useState(block === 'sepolia' ? 'Link' : block === 'base' || block === 'baseSepolia' ? 'USDC' : 'USDT');
    const [reason, setReason] = useState('');
    const [days, setDays] = useState('');
-   const [currentNetwork, setCurrentNetwork] = useState('');
-   const [amount, setAmount] = useState('');
    const [customAmount, setCustomAmount] = useState('');
-   const [rate, setRate] = useState('');
-   const [sd, setSD] = useState<Date | null>(null);
-   const [loanTime, setLoanTime] = useState('');
-   const [avg, setAvg] = useState<SortOption | ''>('');
    const [searchLoan, setSearchLoan] = useState('');
+
+   const [filters, setFilters] = useState<LoanFilters>({
+      amount: '',
+      rate: '',
+      date: null,
+      loanTime: '',
+      network: '',
+      search: '',
+      sortBy: undefined
+   });
 
    const clear = () => {
       setRepayedAmount('');
@@ -65,24 +74,24 @@ export default function Dashboard() {
       setDays('');
    };
 
-   // Wrapper functions for FilterSidebar that maintain date/loanTime interaction logic
-   const handleFilterDateChange = (date: Date | null) => {
-      setSD(date);
-      setLoanTime(''); // Clear loanTime when date is manually selected
-   };
+   const handleFiltersChange = (newFilters: Partial<LoanFilters>) => {
+      setFilters((prev) => {
+         const updated = { ...prev, ...newFilters };
 
-   const handleFilterLoanTimeChange = (time: string) => {
-      if (time === '') {
-         setLoanTime('');
-         setSD(null);
-      } else {
-         setLoanTime(time);
-         // Calculate and set the date based on the loan time
-         const currentDate = new Date();
-         const targetDate = new Date(currentDate);
-         targetDate.setDate(currentDate.getDate() + Number(time));
-         setSD(targetDate);
-      }
+         // When a manual date is selected, clear the loanTime filter
+         // This prevents conflicts between date-based and time-period filters
+         if ('date' in newFilters && newFilters.date !== null) {
+            updated.loanTime = '';
+         }
+
+         // When a loanTime filter is selected, clear the manual date
+         // Both filters affect the same time-based criteria, so they're mutually exclusive
+         if ('loanTime' in newFilters && newFilters.loanTime !== '') {
+            updated.date = null;
+         }
+
+         return updated;
+      });
    };
 
    const handleApplyLoanClick = () => {
@@ -97,14 +106,12 @@ export default function Dashboard() {
    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
 
-      // Check if user has reached maximum loan limit
       if ((user.nal || 0) >= (user.mal || 0)) {
          console.log('Loan limit reached');
          showToastByConfig('loan_limit_reached');
          return;
       }
 
-      // Check each condition separately
       if (user.isWorldId !== 'ACTIVE') {
          console.log('WorldId status not active');
          showToastByConfig('worldid_required');
@@ -214,59 +221,25 @@ export default function Dashboard() {
    }, [dispatch, username]);
 
    useEffect(() => {
-      const originalLoanRequests = [...floanRequests];
-      let sortedLoan = originalLoanRequests;
-      const newDate = new Date(sd || '');
-      if (isNaN(newDate.getTime())) {
-         setSD(null);
-         setLoanTime('');
-      }
-      if (amount && Number(amount) > 0) sortedLoan = sortedLoan.filter((loan) => loan.loanAmount === Number(amount));
-      if (rate && Number(rate) > 0)
-         sortedLoan = sortedLoan.filter(
-            (loan) =>
-               Number((loan.repayedAmount * 100) / loan.loanAmount) >= Number(rate) - 2.5 &&
-               Number((loan.repayedAmount * 100) / loan.loanAmount) <= Number(rate) + 2.5
-         );
-      else if (rate === '+') sortedLoan = sortedLoan.filter((loan) => Number((loan.repayedAmount * 100) / loan.loanAmount) > 15);
-      if (sd) {
-         sortedLoan = sortedLoan.filter((loan) => {
-            const createdAt = new Date(loan.createdAt);
-            const created = new Date(sd);
-            const newToday = new Date();
-            createdAt.setHours(0, 0, 0, 0);
-            created.setHours(0, 0, 0, 0);
-            newToday.setHours(0, 0, 0, 0);
-            const timeDifference = newToday.getTime() - createdAt.getTime();
-            const Difference = created.getTime() - newToday.getTime();
-            const InDays = Math.round(Difference / (1000 * 60 * 60 * 24));
-            const differenceInDays = Math.round(loan.days - timeDifference / (1000 * 60 * 60 * 24));
-            return Number(differenceInDays) <= Number(InDays);
-         });
-      } else if (loanTime && Number(loanTime) > 0) {
-         sortedLoan = sortedLoan.filter((loan) => {
-            const createdAt = new Date(loan.createdAt);
-            const newToday = new Date();
-            createdAt.setHours(0, 0, 0, 0);
-            newToday.setHours(0, 0, 0, 0);
-            const timeDifference = newToday.getTime() - createdAt.getTime();
-            const differenceInDays = Math.round(loan.days - timeDifference / (1000 * 60 * 60 * 24));
-            return Number(differenceInDays) <= Number(loanTime);
-         });
-      } else if (loanTime === '+') sortedLoan = sortedLoan.filter((loan) => loan.days >= Number(loanTime));
-      if (currentNetwork) sortedLoan = sortedLoan.filter((loan) => loan.block === currentNetwork);
-      if (searchLoan) sortedLoan = sortedLoan.filter((loan) => loan.borrowerUser?.includes(searchLoan));
-      if (avg) {
-         sortedLoan = sortedLoan.sort((a, b) => {
-            if (avg === 'highest') return b.loanAmount - a.loanAmount;
-            if (avg === 'lowest') return a.loanAmount - b.loanAmount;
-            if (avg === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-            if (avg === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-            return 0;
-         });
-      }
-      setSortedLoans(sortedLoan);
-   }, [amount, rate, sd, loanTime, currentNetwork, avg, searchLoan, floanRequests]);
+      const allFilters: LoanFilters = {
+         ...filters,
+         search: searchLoan,
+         sortBy: filters.sortBy
+      };
+
+      const filtered = filterLoans(floanRequests, allFilters, customAmount);
+      setSortedLoans(filtered);
+   }, [filters, searchLoan, floanRequests, customAmount]);
+
+   const {
+      displayedItems: displayedLoans,
+      displayedCount,
+      totalCount,
+      handleLoadMore
+   } = usePagination({
+      items: sortedLoans,
+      resetDependencies: [filters, searchLoan]
+   });
 
    return (
       <>
@@ -308,32 +281,25 @@ export default function Dashboard() {
                ) : null}
                <div className="flex flex-col md:flex-row md:space-x-10">
                   <FilterSidebar
-                     amount={amount}
-                     onAmountChange={setAmount}
+                     filters={filters}
+                     onFiltersChange={handleFiltersChange}
                      customAmount={customAmount}
                      onCustomAmountChange={setCustomAmount}
-                     rate={rate}
-                     onRateChange={setRate}
-                     selectedDate={sd}
-                     onDateChange={handleFilterDateChange}
-                     loanTime={loanTime}
-                     onLoanTimeChange={handleFilterLoanTimeChange}
-                     currentNetwork={currentNetwork}
-                     onNetworkChange={setCurrentNetwork}
                   />
                   <section className="flex-1 flex flex-col items-center mt-10 md:mt-0">
                      <div className="flex flex-wrap justify-start md:justify-end gap-3 mb-6 w-full max-w-xl">
-                        <SortButtons activeSort={avg} onSortChange={setAvg} />
+                        <SortButtons
+                           activeSort={filters.sortBy || ''}
+                           onSortChange={(sort) => handleFiltersChange({ sortBy: sort || undefined })}
+                        />
                         <SearchBar value={searchLoan} onChange={setSearchLoan} placeholder="Search Request..." />
                      </div>
                      <div className="flex flex-wrap justify-center gap-6">
-                        {sortedLoans && Array.isArray(sortedLoans)
-                           ? sortedLoans.map((loan) => <UserCard key={loan._id} {...loan} />)
+                        {displayedLoans && Array.isArray(displayedLoans)
+                           ? displayedLoans.map((loan) => <UserCard key={loan._id} {...loan} />)
                            : null}
                      </div>
-                     <button className="bg-blue-600 text-white text-xs md:text-sm font-semibold px-10 py-2 mt-6 rounded-md hover:bg-blue-700 transition">
-                        Load More...
-                     </button>
+                     <LoadMoreButton currentCount={displayedCount} totalCount={totalCount} onLoadMore={handleLoadMore} />
                   </section>
                </div>
                <Link href="/dashboard#top" className="float-right">

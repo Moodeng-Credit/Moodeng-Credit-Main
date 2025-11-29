@@ -8,7 +8,6 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import Modal from '@/components/ui/Modal';
-import { NetworkIcon } from '@/components/ui/NetworkIcon';
 import UserPay from '@/components/UserPay';
 
 import { calculateDaysRemaining, calculateDueDate, formatDate } from '@/utils/dateFormatters';
@@ -56,7 +55,6 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
                   </em>
                </p>
             </div>
-            <NetworkIcon network={loan.block} />
          </div>
          <div className="bg-[#DBEAFE] text-[#2563EB] text-center text-[14px] leading-[18px] font-normal py-2 border-t border-b border-[#BFDBFE]">
             <i className="fas fa-info-circle mr-1"></i>
@@ -102,7 +100,6 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
                </h3>
                <p className="text-[12px] leading-[15px] text-[#6B7280] mt-1">posted on {postedDate}</p>
             </div>
-            <NetworkIcon network={loan.block} />
          </div>
          <div
             className={`text-center text-[14px] leading-[18px] font-normal py-2 border-t border-b ${badgeStyles.bgClass} ${badgeStyles.textClass} ${badgeStyles.borderClass}`}
