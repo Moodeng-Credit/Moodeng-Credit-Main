@@ -1,6 +1,6 @@
 import { type ChangeEvent } from 'react';
 
-import { LOAN_AMOUNTS, LOAN_TIME_PERIODS, NETWORKS, REPAYMENT_RATES } from '@/constants/loanOptions';
+import { LOAN_AMOUNTS, LOAN_TIME_PERIODS, REPAYMENT_RATES } from '@/constants/loanOptions';
 
 interface FilterSidebarProps {
    amount: string;
@@ -129,26 +129,6 @@ export default function FilterSidebar({
                      </label>
                   ))}
                </div>
-            </fieldset>
-
-            {/* Network */}
-            <fieldset>
-               <legend className="font-semibold mb-2">Network</legend>
-               <div className="space-y-1">
-                  {NETWORKS.map((network) => (
-                     <label key={network.value} className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                           className="form-checkbox text-blue-600"
-                           type="checkbox"
-                           checked={currentNetwork === network.value}
-                           value={network.value}
-                           onChange={() => handleNetworkCheckbox(network.value)}
-                        />
-                        <span>{network.label}</span>
-                     </label>
-                  ))}
-               </div>
-               <p className="text-gray-400 text-[9px] mt-1">More Networks...</p>
             </fieldset>
          </form>
       </aside>
