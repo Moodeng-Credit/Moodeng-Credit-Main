@@ -7,6 +7,8 @@ import { useSwitchChain, useWriteContract } from 'wagmi';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { chainIdFromNetwork, tokenAddresses } from '@/config/wagmiConfig';
+import { ERROR_CODES } from '@/types/errorCodes';
+import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import { addHash } from '@/store/slices/loanSlice';
 import type { AppDispatch } from '@/store/store';
 
@@ -73,7 +75,7 @@ const useWallet = () => {
          return true;
       } catch (err) {
          console.error('Tx failed:', err);
-         showToastByConfig('transaction_error');
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
          return false;
       }
    };

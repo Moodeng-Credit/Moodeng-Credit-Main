@@ -10,6 +10,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { type ToastConfigKey, type ToastErrorType, type ToastSuccessType } from '@/components/ToastSystem/types';
 
 import { type ApiData, type ApiResponse } from '@/types/apiTypes';
+import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import { type SuccessCode } from '@/types/successCodes';
 import { getToastKeyFromSuccessCode } from '@/types/successToastMapping';
@@ -39,7 +40,7 @@ const handleError = (error: AxiosError, customConfig: ApiConfig = {}) => {
          toastInstance?.showToastByConfig(toastKey);
       }
    } else {
-      toastInstance?.showToastByConfig('network_error');
+      toastInstance?.showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_ERROR));
    }
 
    return Promise.reject(error);

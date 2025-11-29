@@ -8,6 +8,9 @@ import { useDispatch } from 'react-redux';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { VerificationModal } from '@/components/worldId/VerificationModal';
 
+import { SUCCESS_CODES } from '@/types/successCodes';
+import { getToastKeyFromSuccessCode } from '@/types/successToastMapping';
+
 import { handleApiError } from '@/lib/apiHandler';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
@@ -63,7 +66,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
    const handleSuccess = () => {
       console.log('World ID verification completed successfully');
-      showToastByConfig('verification_success');
+      showToastByConfig(getToastKeyFromSuccessCode(SUCCESS_CODES.AUTH_VERIFY_SUCCESS)!);
       onSuccess?.();
    };
 

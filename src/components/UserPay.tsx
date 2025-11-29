@@ -9,6 +9,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import useWallet from '@/hooks/useWallet';
+import { ERROR_CODES } from '@/types/errorCodes';
+import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 
 import { editLoan, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -57,7 +59,7 @@ function UserPay({ loan }: { loan: Loan }) {
                const errorMessage = editLoanError instanceof Error ? editLoanError.message : 'Unknown error';
                console.error('[CRITICAL] Transaction succeeded but database update failed:', errorMessage);
                console.error('[RECONCILIATION REQUIRED] Loan ID:', loan._id, '| Amount:', repaymentAmount, '| New Total:', newRepaymentAmount);
-               showToastByConfig('transaction_error');
+               showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
             } finally {
                setIsProcessing(false);
             }

@@ -14,6 +14,9 @@ import SearchBar from '@/components/filters/SearchBar';
 import SortButtons from '@/components/filters/SortButtons';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import YouTubeVideoLightbox from '@/components/ui/YouTubeVideoLightbox';
+
+import { ERROR_CODES } from '@/types/errorCodes';
+import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 import { usePagination } from '@/hooks/usePagination';
@@ -97,7 +100,7 @@ export default function Dashboard() {
 
    const handleApplyLoanClick = () => {
       if ((user.nal || 0) >= (user.mal || 0)) {
-         showToastByConfig('loan_limit_reached');
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
       setShowModal(true);
@@ -113,37 +116,37 @@ export default function Dashboard() {
 
       if ((user.nal || 0) >= (user.mal || 0)) {
          console.log('Loan limit reached');
-         showToastByConfig('loan_limit_reached');
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
 
       if (user.isWorldId !== 'ACTIVE') {
          console.log('WorldId status not active');
-         showToastByConfig('worldid_required');
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WORLDID_REQUIRED));
          return;
       }
 
       if (!user.walletAddress || user.walletAddress.trim() === '') {
          console.log('Wallet address not connected');
-         showToastByConfig('wallet_missing');
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
          return;
       }
 
       if (!block || !coin) {
          console.log('currentNetwork or coin not selected');
-         showToastByConfig('network_required');
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
          return;
       }
 
       if (!loanAmount || parseFloat(loanAmount) <= 0) {
          console.log('Invalid loan amount');
-         showToastByConfig('invalid_amount');
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_INVALID_AMOUNT));
          return;
       }
 
       if (parseFloat(loanAmount) > (user.cs || 0)) {
          console.log('Loan amount exceeds credit score');
-         showToastByConfig('amount_exceeds_limit');
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
          return;
       }
 

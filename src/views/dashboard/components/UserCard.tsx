@@ -9,12 +9,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import useWallet from '@/hooks/useWallet';
+import { ERROR_CODES } from '@/types/errorCodes';
+import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 
 import { calculateDaysRemaining, calculateDueDate } from '@/utils/dateFormatters';
 
 import { MONTHS } from '@/constants/dates';
 import { getUserProfile } from '@/store/slices/authSlice';
-import { editLoan, fetchLoans, getUserLoans, updateLoan } from '@/store/slices/loanSlice';
+import { editLoan, fetchLoans, getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
@@ -78,7 +80,8 @@ export default function UserCard(loan: Loan) {
          wallet,
          username
       };
-      dispatch(updateLoan(loanPayload as unknown as Loan));
+      // Await the API call to ensure lenderWallet is set in database before proceeding
+      await dispatch(updateLoanStatus(loanPayload as unknown as Loan)).unwrap();
    };
 
    const handleFetch = async () => {
@@ -101,7 +104,7 @@ export default function UserCard(loan: Loan) {
       }
 
       if (!wallet || wallet.trim() === '') {
-         showToastByConfig('wallet_missing');
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
          return;
       }
 
@@ -133,13 +136,13 @@ export default function UserCard(loan: Loan) {
                const errorMessage = editLoanError instanceof Error ? editLoanError.message : 'Unknown error';
                console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
                console.error('[RECONCILIATION REQUIRED] Loan ID:', loanData._id, '| Amount:', loanData.loanAmount, '| Lender:', username);
-               showToastByConfig('transaction_error');
+               showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
             }
          }
       } catch (transferError: unknown) {
          const errorMessage = transferError instanceof Error ? transferError.message : 'Unknown error';
          console.error('Transfer failed:', errorMessage);
-         showToastByConfig('transaction_error');
+         showToastByConfig(TOAST_KEYS.TRANSACTION_ERROR);
       } finally {
          setIsProcessing(false);
       }

@@ -23,6 +23,10 @@ export async function POST(request: NextRequest) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
          }
 
+         if (!borrower.walletAddress) {
+            throw { code: ERROR_CODES.WALLET_MISSING, status: 400 };
+         }
+
          borrower.nal = borrower.nal + 1;
          await borrower.save();
 
@@ -30,8 +34,8 @@ export async function POST(request: NextRequest) {
 
          const loan = new Loan({
             trackingId,
-            borrowerWallet: borrower?.walletAddress,
-            lenderWallet: '',
+            borrowerWallet: borrower.walletAddress,
+            lenderWallet: null,
             borrowerUser: data.borrowerUserId,
             lenderUser: '',
             loanAmount: data.loanAmount,
