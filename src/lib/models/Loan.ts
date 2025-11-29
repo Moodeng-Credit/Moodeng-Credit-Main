@@ -3,6 +3,7 @@ import mongoose, { Schema } from 'mongoose';
 import { type ILoan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 
 const LoanSchema = new Schema<ILoan>({
+   trackingId: { type: String, required: true, unique: true },
    borrowerWallet: { type: String, ref: 'User', default: null },
    lenderWallet: { type: String, ref: 'User', default: null },
    borrowerUser: { type: String, ref: 'User', default: null },

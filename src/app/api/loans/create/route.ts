@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server';
 
+import { randomUUID } from 'crypto';
+
 import Loan from '@/lib/models/Loan';
 import User from '@/lib/models/User';
 import { createLoanSchema } from '@/lib/schemas/loans';
@@ -24,7 +26,10 @@ export async function POST(request: NextRequest) {
          borrower.nal = borrower.nal + 1;
          await borrower.save();
 
+         const trackingId = randomUUID();
+
          const loan = new Loan({
+            trackingId,
             borrowerWallet: borrower?.walletAddress,
             lenderWallet: '',
             borrowerUser: data.borrowerUserId,
