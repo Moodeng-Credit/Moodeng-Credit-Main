@@ -84,19 +84,31 @@ const loanSlice = createSlice({
 export const { clearError, addLoan, updateLoan } = loanSlice.actions;
 
 export const editLoan = createAsyncThunk('loans/edit', async (loanData: Loan) => {
-   return await apiHandler.post(API_ENDPOINTS.LOANS.EDIT, loanData as unknown as ApiData);
+   // Map frontend Loan fields to API schema fields
+   const { _id, repaymentAmount, repaymentStatus, loanStatus } = loanData;
+   return await apiHandler.post(API_ENDPOINTS.LOANS.EDIT, {
+      loanId: _id,
+      repaymentAmount,
+      repaymentStatus,
+      loanStatus
+   } as unknown as ApiData);
 });
 
 export const deleteLoan = createAsyncThunk('loans/delete', async (loanId: string) => {
-   return await apiHandler.post(API_ENDPOINTS.LOANS.DELETE, { _id: loanId });
+   return await apiHandler.post(API_ENDPOINTS.LOANS.DELETE, { loanId });
 });
 
-export const updateLoanStatus = createAsyncThunk('loans/updateStatus', async (loanData: Loan) => {
-   return await apiHandler.post(API_ENDPOINTS.LOANS.UPDATE, loanData as unknown as ApiData);
-});
+export const updateLoanStatus = createAsyncThunk(
+   'loans/updateStatus',
+   async (loanData: Partial<Loan> & { _id: string; username?: string; wallet?: string }) => {
+      // Map _id to loanId for API consistency
+      const { _id, username, wallet } = loanData;
+      return await apiHandler.post(API_ENDPOINTS.LOANS.UPDATE, { loanId: _id, username, wallet } as unknown as ApiData);
+   }
+);
 
 export const addHash = createAsyncThunk('loans/addHash', async (hashData: { _id: string; hash: string }) => {
-   return await apiHandler.post(API_ENDPOINTS.LOANS.HASH, hashData);
+   return await apiHandler.post(API_ENDPOINTS.LOANS.HASH, { loanId: hashData._id, hash: hashData.hash });
 });
 
 export const getLoans = getUserLoans;

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       async (data) => {
          return await Loan.find({
             $or: [{ borrowerUser: data.username }, { lenderUser: data.username }]
-         });
+         }).lean();
       },
       {
          schema: getLoansByUsernameSchema,

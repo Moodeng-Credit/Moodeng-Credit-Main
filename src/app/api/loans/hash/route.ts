@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data) => {
-         const loan = await Loan.findByIdAndUpdate(data.loanId, { $push: { hash: data.hash } }, { new: true });
+         const loan = await Loan.findByIdAndUpdate(data.loanId, { $push: { hash: data.hash } }, { new: true }).lean();
 
          if (!loan) {
             throw { code: ERROR_CODES.LOAN_NOT_FOUND, status: 404 };

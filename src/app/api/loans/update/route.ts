@@ -13,7 +13,7 @@ import { ERROR_CODES } from '@/types/errorCodes';
 import { SUCCESS_CODES } from '@/types/successCodes';
 
 const assignLoanUserSchema = z.object({
-   _id: objectIdSchema,
+   loanId: objectIdSchema,
    username: usernameSchema,
    wallet: walletAddressSchema
 });
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data, userId) => {
-         const loan = await Loan.findById(data._id);
+         const loan = await Loan.findById(data.loanId);
          if (!loan) {
             throw { code: ERROR_CODES.LOAN_NOT_FOUND, status: 404 };
          }
@@ -90,7 +90,8 @@ export async function POST(request: NextRequest) {
          loan.updatedAt = new Date();
          await loan.save();
 
-         return loan;
+         // Return plain object to avoid date serialization issues
+         return await Loan.findById(loan._id).lean();
       },
       {
          schema: assignLoanUserSchema,

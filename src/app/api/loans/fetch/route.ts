@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       async () => {
          return await Loan.find({
             lenderWallet: null
-         });
+         }).lean();
       },
       {
          requireAuth: true,
