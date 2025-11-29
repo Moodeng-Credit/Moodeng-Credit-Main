@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import { MobileNav, Sidebar } from '@/views/profile/components/navigation';
-import { FilterButtons, LoadMoreButton, RoleSwitcher, TelegramModal } from '@/views/profile/components/shared';
+import { FilterButtons, RoleSwitcher, TelegramModal } from '@/views/profile/components/shared';
 import { DashboardTab, FAQTab, LoanSummaryTab, SettingsTab, SupportTab, TransactionHistoryTab } from '@/views/profile/components/tabs';
 import { INFO_NAV_ITEMS, INITIAL_NAV_ITEMS } from '@/views/profile/constants';
 import { useLoanData, useProfileData, useProfileUpdate } from '@/views/profile/hooks';
@@ -84,7 +84,6 @@ export default function Profile() {
 
    const showRoleSwitcher = activeTab !== ProfileTab.SETTINGS;
    const showFilterButtons = activeTab === ProfileTab.LOAN_SUMMARY || activeTab === ProfileTab.TRANSACTION_HISTORY;
-   const showLoadMore = activeTab === ProfileTab.LOAN_SUMMARY || activeTab === ProfileTab.TRANSACTION_HISTORY;
 
    return (
       <div className="bg-[#c9d5f9] min-h-screen flex flex-col" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -97,8 +96,6 @@ export default function Profile() {
                {showFilterButtons ? <FilterButtons userRole={userRole} /> : null}
 
                <div className="overflow-x-auto">{renderTabContent()}</div>
-
-               {showLoadMore ? <LoadMoreButton /> : null}
             </section>
          </main>
 

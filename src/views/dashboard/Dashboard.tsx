@@ -16,11 +16,14 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import YouTubeVideoLightbox from '@/components/ui/YouTubeVideoLightbox';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
+import { usePagination } from '@/hooks/usePagination';
+
 import { fetchUser } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import UserCard from '@/views/dashboard/components/UserCard';
+import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 
 const CREDIT_LEVELLING_VIDEO_ID = 'gaRjXOd2s2U';
 
@@ -265,6 +268,16 @@ export default function Dashboard() {
       setSortedLoans(sortedLoan);
    }, [amount, rate, sd, loanTime, currentNetwork, avg, searchLoan, floanRequests]);
 
+   const {
+      displayedItems: displayedLoans,
+      displayedCount,
+      totalCount,
+      handleLoadMore
+   } = usePagination({
+      items: sortedLoans,
+      resetDependencies: [amount, rate, sd, loanTime, currentNetwork, avg, searchLoan]
+   });
+
    return (
       <>
          <div id="top" className="bg-white text-gray-900" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -324,13 +337,11 @@ export default function Dashboard() {
                         <SearchBar value={searchLoan} onChange={setSearchLoan} placeholder="Search Request..." />
                      </div>
                      <div className="flex flex-wrap justify-center gap-6">
-                        {sortedLoans && Array.isArray(sortedLoans)
-                           ? sortedLoans.map((loan) => <UserCard key={loan._id} {...loan} />)
+                        {displayedLoans && Array.isArray(displayedLoans)
+                           ? displayedLoans.map((loan) => <UserCard key={loan._id} {...loan} />)
                            : null}
                      </div>
-                     <button className="bg-blue-600 text-white text-xs md:text-sm font-semibold px-10 py-2 mt-6 rounded-md hover:bg-blue-700 transition">
-                        Load More...
-                     </button>
+                     <LoadMoreButton currentCount={displayedCount} totalCount={totalCount} onLoadMore={handleLoadMore} />
                   </section>
                </div>
                <Link href="/dashboard#top" className="float-right">
