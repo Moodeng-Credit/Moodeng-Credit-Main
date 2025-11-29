@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 
 import { prisma } from '@/lib/database';
-import { registerSchema, transformUserToResponse } from '@/lib/schemas/auth';
+import { registerSchema } from '@/lib/schemas/auth';
 import { sendMail } from '@/lib/services/email';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { generateToken, hashPassword, setAuthCookie } from '@/lib/utils/auth';
@@ -102,7 +102,8 @@ export async function POST(request: NextRequest) {
                mal: 3,
                nal: 0,
                cs: 15
-            }
+            },
+            omit: { password: true, resetToken: true, resetTokenExpiry: true, nullifierHash: true }
          });
 
          const token = generateToken(user.id);
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
 
          return {
             token,
-            user: transformUserToResponse(user)
+            user
          };
       },
       {

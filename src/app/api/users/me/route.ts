@@ -1,7 +1,6 @@
 import type { NextRequest } from 'next/server';
 
 import { prisma } from '@/lib/database';
-import { transformUserToResponse } from '@/lib/schemas/auth';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { handleCors } from '@/lib/utils/cors';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -13,12 +12,12 @@ export async function GET(request: NextRequest) {
       async (data, userId) => {
          const user = await prisma.user.findUnique({
             where: { id: userId },
-            omit: { password: true }
+            omit: { password: true, resetToken: true, resetTokenExpiry: true, nullifierHash: true }
          });
          if (!user) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
          }
-         return transformUserToResponse(user);
+         return user;
       },
       {
          requireAuth: true,

@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 
 import { prisma } from '@/lib/database';
-import { getUserProfileSchema, transformUserToResponse } from '@/lib/schemas/auth';
+import { getUserProfileSchema } from '@/lib/schemas/auth';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { handleCors } from '@/lib/utils/cors';
 import { ERROR_CODES } from '@/types/errorCodes';

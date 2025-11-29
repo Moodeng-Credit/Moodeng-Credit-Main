@@ -15,7 +15,6 @@ import {
    strongPasswordSchema,
    usernameSchema
 } from '@/lib/schemas/fields';
-import type { IUser } from '@/types/authTypes';
 import { WorldId } from '@/types/authTypes';
 
 /**
@@ -146,24 +145,3 @@ export const userResponseSchema = z.object({
 });
 
 export type UserResponse = z.infer<typeof userResponseSchema>;
-
-/**
- * Utility function to transform a User document to response format
- * Automatically excludes sensitive fields like password
- * Simplified for Prisma - no need for .toObject() or date sanitization
- */
-export function transformUserToResponse(user: any): UserResponse {
-   const EXCLUDED_FIELDS = ['password', 'resetToken', 'resetTokenExpiry', 'nullifierHash'];
-
-   return Object.fromEntries(
-      Object.entries(user)
-         .filter(([key]) => !EXCLUDED_FIELDS.includes(key))
-         .map(([key, value]) => {
-            // Convert chatId to number if it exists
-            if (key === 'chatId' && value !== null && value !== undefined) {
-               return [key, typeof value === 'number' ? value : parseInt(value as string, 10)];
-            }
-            return [key, value];
-         })
-   ) as UserResponse;
-}

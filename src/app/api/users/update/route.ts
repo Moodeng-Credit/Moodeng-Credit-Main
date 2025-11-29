@@ -3,7 +3,6 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { prisma } from '@/lib/database';
-import { transformUserToResponse } from '@/lib/schemas/auth';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { handleCors } from '@/lib/utils/cors';
 import { WorldId } from '@/types/authTypes';
@@ -20,7 +19,7 @@ export async function POST(request: NextRequest) {
       async (data, userId) => {
          const user = await prisma.user.findUnique({
             where: { id: userId },
-            omit: { password: true }
+            omit: { password: true, resetToken: true, resetTokenExpiry: true, nullifierHash: true }
          });
          if (!user) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
@@ -29,10 +28,10 @@ export async function POST(request: NextRequest) {
          const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: { isWorldId: data.isWorldId },
-            omit: { password: true }
+            omit: { password: true, resetToken: true, resetTokenExpiry: true, nullifierHash: true }
          });
 
-         return transformUserToResponse(updatedUser);
+         return updatedUser;
       },
       {
          schema: updateUserWorldIdSchema,

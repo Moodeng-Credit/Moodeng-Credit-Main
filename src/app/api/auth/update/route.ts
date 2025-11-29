@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 
 import { prisma } from '@/lib/database';
-import { transformUserToResponse, updateUserSchema } from '@/lib/schemas/auth';
+import { updateUserSchema } from '@/lib/schemas/auth';
 import { sendMail } from '@/lib/services/email';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { generateToken, hashPassword, setAuthCookie } from '@/lib/utils/auth';
@@ -48,7 +48,8 @@ export async function POST(request: NextRequest) {
          // Update user with Prisma (updatedAt handled automatically)
          const updatedUser = await prisma.user.update({
             where: { id: userId },
-            data: updateData
+            data: updateData,
+            omit: { password: true, resetToken: true, resetTokenExpiry: true, nullifierHash: true }
          });
 
          // Only regenerate token for security-sensitive changes
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
          }
 
          return {
-            user: transformUserToResponse(updatedUser)
+            user: updatedUser
          };
       },
       {
