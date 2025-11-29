@@ -2,8 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { randomUUID } from 'crypto';
 
-import Loan from '@/lib/models/Loan';
-import User from '@/lib/models/User';
+import { prisma } from '@/lib/database';
 import { createLoanSchema } from '@/lib/schemas/loans';
 import { sendMail } from '@/lib/services/email';
 import { sendBorrowerReminder } from '@/lib/services/telegram';
@@ -17,7 +16,7 @@ export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data) => {
-         const borrower = await User.findOne({ username: data.borrowerUserId });
+         const borrower = await prisma.user.findUnique({ where: { username: data.borrowerUserId } });
 
          if (!borrower) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
@@ -27,29 +26,34 @@ export async function POST(request: NextRequest) {
             throw { code: ERROR_CODES.WALLET_MISSING, status: 400 };
          }
 
-         borrower.nal = borrower.nal + 1;
-         await borrower.save();
-
          const trackingId = randomUUID();
 
-         const loan = new Loan({
-            trackingId,
-            borrowerWallet: borrower.walletAddress,
-            lenderWallet: null,
-            borrowerUser: data.borrowerUserId,
-            lenderUser: '',
-            loanAmount: data.loanAmount,
-            repaidAmount: 0,
-            totalRepaymentAmount: data.totalRepaymentAmount,
-            reason: data.reason,
-            loanStatus: LoanStatus.REQUESTED,
-            repaymentStatus: RepaymentStatus.UNPAID,
-            block: data.block,
-            coin: data.coin,
-            days: data.days
-         });
+         // Use transaction to increment user nal and create loan atomically
+         const loan = await prisma.$transaction(async (tx) => {
+            await tx.user.update({
+               where: { id: borrower.id },
+               data: { nal: { increment: 1 } }
+            });
 
-         await loan.save();
+            return await tx.loan.create({
+               data: {
+                  trackingId,
+                  borrowerWallet: borrower.walletAddress!,
+                  lenderWallet: null,
+                  borrowerUser: data.borrowerUserId,
+                  lenderUser: '',
+                  loanAmount: data.loanAmount,
+                  repaidAmount: 0,
+                  totalRepaymentAmount: data.totalRepaymentAmount,
+                  reason: data.reason,
+                  loanStatus: LoanStatus.REQUESTED,
+                  repaymentStatus: RepaymentStatus.UNPAID,
+                  block: data.block,
+                  coin: data.coin,
+                  days: data.days
+               }
+            });
+         });
 
          try {
             if (borrower.chatId) {
@@ -65,8 +69,7 @@ export async function POST(request: NextRequest) {
             console.error('Error occurred while sending borrower notifications:', error);
          }
 
-         // Return lean object for consistent date serialization
-         return loan.toObject();
+         return loan;
       },
       {
          schema: createLoanSchema,

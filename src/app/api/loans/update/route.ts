@@ -2,15 +2,13 @@ import type { NextRequest } from 'next/server';
 
 import { z } from 'zod';
 
-import Loan from '@/lib/models/Loan';
-import User from '@/lib/models/User';
+import { prisma } from '@/lib/database';
 import { objectIdSchema, usernameSchema, walletAddressSchema } from '@/lib/schemas/fields';
 import { sendMail } from '@/lib/services/email';
 import { sendBorrowerReminder, sendNewLoanNotification } from '@/lib/services/telegram';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { handleCors } from '@/lib/utils/cors';
 import { ERROR_CODES } from '@/types/errorCodes';
-import type { Loan as LoanType } from '@/types/loanTypes';
 import { SUCCESS_CODES } from '@/types/successCodes';
 
 const assignLoanUserSchema = z.object({
@@ -23,7 +21,7 @@ export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data, userId) => {
-         const loan = (await Loan.findById(data.loanId).lean()) as LoanType | null;
+         const loan = await prisma.loan.findUnique({ where: { id: data.loanId } });
          if (!loan) {
             throw { code: ERROR_CODES.LOAN_NOT_FOUND, status: 404 };
          }
@@ -32,7 +30,7 @@ export async function POST(request: NextRequest) {
             throw { code: ERROR_CODES.AUTH_UNAUTHORIZED, status: 401 };
          }
 
-         const authenticatedUser = await User.findById(userId);
+         const authenticatedUser = await prisma.user.findUnique({ where: { id: userId } });
          if (!authenticatedUser) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
          }
@@ -41,7 +39,7 @@ export async function POST(request: NextRequest) {
             throw { code: ERROR_CODES.LOAN_UNAUTHORIZED, status: 403 };
          }
 
-         const user = await User.findOne({ username: data.username });
+         const user = await prisma.user.findUnique({ where: { username: data.username } });
          if (!user) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
          }
@@ -50,13 +48,11 @@ export async function POST(request: NextRequest) {
             throw { code: ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED, status: 403 };
          }
 
-         const updateFields: Partial<LoanType> = {
-            updatedAt: new Date().toISOString()
-         };
+         const updateData: any = {};
 
          if (!loan.lenderUser) {
-            updateFields.lenderWallet = data.wallet;
-            updateFields.lenderUser = data.username;
+            updateData.lenderWallet = data.wallet;
+            updateData.lenderUser = data.username;
 
             try {
                if (user.chatId) {
@@ -72,10 +68,14 @@ export async function POST(request: NextRequest) {
                console.error('Error occurred while sending lender notifications:', error);
             }
          } else if (!loan.borrowerUser) {
-            updateFields.borrowerWallet = data.wallet;
-            updateFields.borrowerUser = data.username;
-            user.nal = user.nal + 1;
-            await user.save();
+            updateData.borrowerWallet = data.wallet;
+            updateData.borrowerUser = data.username;
+
+            // Use transaction for user nal increment
+            await prisma.user.update({
+               where: { id: user.id },
+               data: { nal: { increment: 1 } }
+            });
 
             try {
                if (user.chatId) {
@@ -92,8 +92,10 @@ export async function POST(request: NextRequest) {
             }
          }
 
-         // Use findByIdAndUpdate to avoid touching existing corrupted date fields
-         return await Loan.findByIdAndUpdate(data.loanId, { $set: updateFields }, { new: true, runValidators: false }).lean();
+         return await prisma.loan.update({
+            where: { id: data.loanId },
+            data: updateData
+         });
       },
       {
          schema: assignLoanUserSchema,

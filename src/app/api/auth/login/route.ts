@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 
-import User from '@/lib/models/User';
+import { prisma } from '@/lib/database';
 import { loginSchema, transformUserToResponse } from '@/lib/schemas/auth';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { comparePassword, generateToken, setAuthCookie } from '@/lib/utils/auth';
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
          if (data.googleCredential) {
             const googleData = await verifyGoogleToken(data.googleCredential);
 
-            user = await User.findOne({ googleId: googleData.googleId });
+            user = await prisma.user.findUnique({ where: { googleId: googleData.googleId } });
             if (!user) {
                throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, status: 401, message: 'Google account not registered' };
             }
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
          else if (data.telegramAuthData) {
             const telegramData = verifyTelegramAuth(JSON.parse(data.telegramAuthData));
 
-            user = await User.findOne({ telegramId: telegramData.telegramId });
+            user = await prisma.user.findUnique({ where: { telegramId: telegramData.telegramId } });
             if (!user) {
                throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, status: 401, message: 'Telegram account not registered' };
             }
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
                throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, status: 400, message: 'Missing credentials' };
             }
 
-            user = await User.findOne({ username: data.username });
+            user = await prisma.user.findUnique({ where: { username: data.username } });
             if (!user) {
                throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, status: 401 };
             }
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
             }
          }
 
-         const token = generateToken(user._id.toString());
+         const token = generateToken(user.id);
 
          return {
             token, // Used by beforeResponse to set cookie

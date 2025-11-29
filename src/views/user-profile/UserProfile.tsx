@@ -366,7 +366,7 @@ const UserProfile = () => {
                                              <p className="font-medium">Trust-Building Loans at ${tier.loanAmount} credit limit:</p>
                                              <ul className="list-disc pl-4 space-y-1">
                                                 {TierList[tier.loanAmount]?.map((loan: Loan) => (
-                                                   <li key={loan._id}>
+                                                   <li key={loan.id}>
                                                       ${loan.loanAmount} loan - {formatDate(loan.updatedAt)}
                                                    </li>
                                                 ))}
@@ -566,10 +566,10 @@ const UserProfile = () => {
                      .filter((loan) => loan.repaymentStatus === 'Paid')
                      .slice(0, 5)
                      .map((loan: Loan) => {
-                        const unlock = uniqueLoans.some((item) => item._id === loan._id);
-                        const build = TierLists.some((item) => item._id === loan._id);
+                        const unlock = uniqueLoans.some((item) => item._id === loan.id);
+                        const build = TierLists.some((item) => item._id === loan.id);
                         return (
-                           <div key={loan._id} className="bg-[#111827] rounded-lg p-4 space-y-3">
+                           <div key={loan.id} className="bg-[#111827] rounded-lg p-4 space-y-3">
                               <div className="flex justify-between items-start">
                                  <div>
                                     <div className="flex items-center gap-2">
@@ -637,7 +637,7 @@ const UserProfile = () => {
                      <tbody className="divide-y divide-gray-700">
                         {uniqueLoans.map((loan: Loan) => {
                            return (
-                              <tr key={loan._id} className="hover:bg-[#111827]">
+                              <tr key={loan.id} className="hover:bg-[#111827]">
                                  <td className="py-3 px-4 text-gray-300">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
                                  <td className="py-3 px-4 font-medium text-white">${loan.loanAmount}</td>
                                  <td className="py-3 px-4">
@@ -663,7 +663,7 @@ const UserProfile = () => {
                         })}
                         {TierLists.map((loan: Loan) => {
                            return (
-                              <tr key={loan._id} className="hover:bg-[#111827]">
+                              <tr key={loan.id} className="hover:bg-[#111827]">
                                  <td className="py-3 px-4 text-gray-300">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
                                  <td className="py-3 px-4 font-medium text-white">${loan.loanAmount}</td>
                                  <td className="py-3 px-4">

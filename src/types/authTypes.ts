@@ -1,5 +1,3 @@
-import type { Document } from 'mongoose';
-
 export interface AuthState {
    user: User;
    username: string | null;
@@ -11,7 +9,7 @@ export interface AuthState {
    mal?: number;
 }
 export interface User {
-   _id: string;
+   id: string;
    username: string;
    email: string;
    googleId?: string;
@@ -35,7 +33,8 @@ export const WorldId = {
 
 export type WorldIdStatus = (typeof WorldId)[keyof typeof WorldId];
 
-export interface IUser extends Document {
+export interface IUser {
+   id: string;
    walletAddress?: string;
    username: string;
    isWorldId: WorldIdStatus;

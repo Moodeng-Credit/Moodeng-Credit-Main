@@ -1,7 +1,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-   serverExternalPackages: ['mongoose'],
+   // Prisma 7 adapter packages should be external
+   serverExternalPackages: ['@prisma/adapter-pg', 'pg'],
    allowedDevOrigins: ['127.0.0.1', 'localhost'],
    async headers() {
       return [
@@ -60,7 +61,7 @@ const nextConfig: NextConfig = {
       contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;"
    },
    webpack: (config, { isServer }) => {
-      // Enable top-level await for Mongoose
+      // Enable top-level await
       config.experiments = {
          ...config.experiments,
          topLevelAwait: true
@@ -81,7 +82,7 @@ const nextConfig: NextConfig = {
          tls: false
       };
 
-      // Ignore React Native specific modules that @metamask/sdk might try to import
+      // Ignore React Native specific modules
       config.resolve.alias = {
          ...config.resolve.alias,
          '@react-native-async-storage/async-storage': false,

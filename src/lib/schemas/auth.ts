@@ -4,8 +4,6 @@
  */
 import { z } from 'zod';
 
-import { parseDateSafely } from '@/utils/dateFormatters';
-
 import {
    emailSchema,
    objectIdSchema,
@@ -131,7 +129,7 @@ export type GetUserProfileInput = z.infer<typeof getUserProfileSchema>;
  * Excludes sensitive fields like password
  */
 export const userResponseSchema = z.object({
-   _id: z.string(),
+   id: z.string(),
    username: z.string(),
    email: z.string(),
    walletAddress: z.string().optional(),
@@ -139,7 +137,7 @@ export const userResponseSchema = z.object({
    telegramUsername: z.string().optional(),
    googleId: z.string().optional(),
    telegramId: z.number().optional(),
-   chatId: z.string().optional(),
+   chatId: z.number().optional(),
    mal: z.number(),
    nal: z.number(),
    cs: z.number(),
@@ -152,22 +150,18 @@ export type UserResponse = z.infer<typeof userResponseSchema>;
 /**
  * Utility function to transform a User document to response format
  * Automatically excludes sensitive fields like password
+ * Simplified for Prisma - no need for .toObject() or date sanitization
  */
-export function transformUserToResponse(user: IUser): UserResponse {
-   const EXCLUDED_FIELDS = ['password', '__v'];
-   const STRING_FIELDS = ['_id', 'chatId'];
-   const DATE_FIELDS = ['createdAt', 'updatedAt', 'resetTokenExpiry'];
+export function transformUserToResponse(user: any): UserResponse {
+   const EXCLUDED_FIELDS = ['password', 'resetToken', 'resetTokenExpiry', 'nullifierHash'];
 
    return Object.fromEntries(
-      Object.entries(user.toObject ? user.toObject() : user)
+      Object.entries(user)
          .filter(([key]) => !EXCLUDED_FIELDS.includes(key))
          .map(([key, value]) => {
-            if (STRING_FIELDS.includes(key)) {
-               return [key, value?.toString()];
-            }
-            // Convert MongoDB extended JSON dates to proper Date objects using utility
-            if (DATE_FIELDS.includes(key) && value) {
-               return [key, parseDateSafely(value as string | { $date: string } | Date)];
+            // Convert chatId to number if it exists
+            if (key === 'chatId' && value !== null && value !== undefined) {
+               return [key, typeof value === 'number' ? value : parseInt(value as string, 10)];
             }
             return [key, value];
          })

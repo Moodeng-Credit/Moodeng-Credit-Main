@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 
-import User from '@/lib/models/User';
+import { prisma } from '@/lib/database';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { WorldId } from '@/types/authTypes';
 import { SUCCESS_CODES } from '@/types/successCodes';
@@ -10,7 +10,10 @@ export async function POST(request: NextRequest) {
       request,
       async (data, userId) => {
          // Update the user as worldId = INACTIVE (for testing purposes)
-         await User.findByIdAndUpdate(userId, { isWorldId: WorldId.INACTIVE });
+         await prisma.user.update({
+            where: { id: userId },
+            data: { isWorldId: WorldId.INACTIVE }
+         });
 
          return { isWorldId: WorldId.INACTIVE };
       },

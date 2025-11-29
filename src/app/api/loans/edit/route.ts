@@ -1,13 +1,11 @@
 import type { NextRequest } from 'next/server';
 
-import Loan from '@/lib/models/Loan';
-import User from '@/lib/models/User';
+import { prisma } from '@/lib/database';
 import { updateLoanSchema } from '@/lib/schemas/loans';
 import { sendMail } from '@/lib/services/email';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { handleCors } from '@/lib/utils/cors';
 import { ERROR_CODES } from '@/types/errorCodes';
-import type { Loan as LoanType } from '@/types/loanTypes';
 import { RepaymentStatus } from '@/types/loanTypes';
 import { SUCCESS_CODES } from '@/types/successCodes';
 
@@ -15,7 +13,7 @@ export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data, userId) => {
-         const loan = (await Loan.findById(data.loanId).lean()) as LoanType | null;
+         const loan = await prisma.loan.findUnique({ where: { id: data.loanId } });
          if (!loan) {
             throw { code: ERROR_CODES.LOAN_NOT_FOUND, status: 404 };
          }
@@ -24,7 +22,7 @@ export async function POST(request: NextRequest) {
             throw { code: ERROR_CODES.AUTH_UNAUTHORIZED, status: 401 };
          }
 
-         const authenticatedUser = await User.findById(userId);
+         const authenticatedUser = await prisma.user.findUnique({ where: { id: userId } });
          if (!authenticatedUser) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
          }
@@ -45,30 +43,52 @@ export async function POST(request: NextRequest) {
             }
          }
 
-         const borrower = await User.findOne({ username: loan.borrowerUser });
-         const lender = await User.findOne({ username: loan.lenderUser });
+         const borrower = loan.borrowerUser ? await prisma.user.findUnique({ where: { username: loan.borrowerUser } }) : null;
+         const lender = loan.lenderUser ? await prisma.user.findUnique({ where: { username: loan.lenderUser } }) : null;
 
-         // Build update object with only the fields we want to update
-         const updateFields: Partial<LoanType> = {
-            updatedAt: new Date().toISOString()
-         };
+         // Build update object
+         const updateData: any = {};
 
-         if (data.totalRepaymentAmount !== undefined) updateFields.totalRepaymentAmount = data.totalRepaymentAmount;
-         if (data.repaymentStatus) updateFields.repaymentStatus = data.repaymentStatus;
-         if (data.loanStatus) updateFields.loanStatus = data.loanStatus;
+         if (data.totalRepaymentAmount !== undefined) updateData.totalRepaymentAmount = data.totalRepaymentAmount;
+         if (data.repaymentStatus) updateData.repaymentStatus = data.repaymentStatus;
+         if (data.loanStatus) updateData.loanStatus = data.loanStatus;
 
+         // Use transaction if we need to update borrower
          if (data.repaymentStatus === RepaymentStatus.PAID && borrower) {
-            borrower.nal = borrower.nal - 1;
-            if (loan.loanAmount === borrower.cs) {
-               if (borrower.cs === 15) borrower.cs = borrower.cs + 5;
-               else borrower.cs = borrower.cs + 20;
-               if (borrower.mal < 3) borrower.mal = borrower.mal + 1;
-            }
-            await borrower.save();
+            await prisma.$transaction(async (tx) => {
+               const borrowerUpdateData: any = {
+                  nal: { decrement: 1 }
+               };
+
+               if (loan.loanAmount === borrower.cs) {
+                  if (borrower.cs === 15) {
+                     borrowerUpdateData.cs = { increment: 5 };
+                  } else {
+                     borrowerUpdateData.cs = { increment: 20 };
+                  }
+                  if (borrower.mal < 3) {
+                     borrowerUpdateData.mal = { increment: 1 };
+                  }
+               }
+
+               await tx.user.update({
+                  where: { id: borrower.id },
+                  data: borrowerUpdateData
+               });
+
+               await tx.loan.update({
+                  where: { id: data.loanId },
+                  data: updateData
+               });
+            });
+         } else {
+            await prisma.loan.update({
+               where: { id: data.loanId },
+               data: updateData
+            });
          }
 
-         // Use findByIdAndUpdate to avoid touching existing date fields
-         const updatedLoan = await Loan.findByIdAndUpdate(data.loanId, { $set: updateFields }, { new: true, runValidators: false }).lean();
+         const updatedLoan = await prisma.loan.findUnique({ where: { id: data.loanId } });
 
          if (!updatedLoan) {
             throw { code: ERROR_CODES.LOAN_NOT_FOUND, status: 404 };

@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum WorldIdStatus {
+  INACTIVE
+  ACTIVE
+}
+
+enum LoanStatus {
+  Requested
+  Lent
+}
+
+enum RepaymentStatus {
+  Unpaid
+  Partial
+  Paid
+}
+
+model User {
+  id                String         @id @default(cuid())
+  walletAddress     String?        @unique
+  username          String         @unique
+  isWorldId         WorldIdStatus
+  nullifierHash     String?        @unique
+  password          String?
+  email             String         @unique
+  googleId          String?        @unique
+  telegramId        Int?           @unique
+  telegramUsername  String?        @unique
+  chatId            Int?           @unique
+  mal               Int            @default(3)
+  nal               Int            @default(0)
+  cs                Int            @default(15)
+  resetToken        String?        @unique
+  resetTokenExpiry  DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  borrowedLoans     Loan[]         @relation("BorrowerLoans")
+  lentLoans         Loan[]         @relation("LenderLoans")
+
+  @@index([username])
+  @@index([email])
+  @@index([walletAddress])
+  @@index([telegramId])
+  @@index([telegramUsername])
+  @@index([nullifierHash])
+}
+
+model Loan {
+  id                    String           @id @default(cuid())
+  trackingId            String           @unique
+  borrowerWallet        String?
+  lenderWallet          String?
+  borrowerUser          String?
+  lenderUser            String?
+  loanAmount            Float
+  repaidAmount          Float            @default(0)
+  totalRepaymentAmount  Float
+  reason                String
+  loanStatus            LoanStatus
+  repaymentStatus       RepaymentStatus
+  days                  Int
+  block                 String
+  coin                  String
+  hash                  String[]         @default([])
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  borrower              User?            @relation("BorrowerLoans", fields: [borrowerUser], references: [username], onDelete: SetNull)
+  lender                User?            @relation("LenderLoans", fields: [lenderUser], references: [username], onDelete: SetNull)
+
+  @@index([trackingId])
+  @@index([borrowerUser])
+  @@index([lenderUser])
+  @@index([lenderWallet])
+}
+

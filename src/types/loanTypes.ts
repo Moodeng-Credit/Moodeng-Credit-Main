@@ -1,7 +1,5 @@
-import type { Document } from 'mongoose';
-
 export interface Loan {
-   _id: string;
+   id: string;
    trackingId: string;
    borrowerWallet?: string;
    lenderWallet?: string;
@@ -52,7 +50,8 @@ export const RepaymentStatus = {
 export type LoanStatusType = (typeof LoanStatus)[keyof typeof LoanStatus];
 export type RepaymentStatusType = (typeof RepaymentStatus)[keyof typeof RepaymentStatus];
 
-export interface ILoan extends Document {
+export interface ILoan {
+   id: string;
    trackingId: string;
    borrowerWallet?: string;
    lenderWallet?: string;

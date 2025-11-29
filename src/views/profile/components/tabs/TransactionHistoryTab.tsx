@@ -34,7 +34,7 @@ export default function TransactionHistoryTab({ loans, currentUsername, userRole
 
    return (
       <>
-         <DataTable columns={columns} data={displayedLoans} keyExtractor={(loan) => loan._id} emptyMessage="No transactions found" />
+         <DataTable columns={columns} data={displayedLoans} keyExtractor={(loan) => loan.id} emptyMessage="No transactions found" />
          <LoadMoreButton currentCount={displayedCount} totalCount={totalCount} onLoadMore={handleLoadMore} />
       </>
    );

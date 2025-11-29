@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 
-import Loan from '@/lib/models/Loan';
+import { prisma } from '@/lib/database';
 import { hashLoanSchema } from '@/lib/schemas/loans';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { handleCors } from '@/lib/utils/cors';
@@ -11,7 +11,12 @@ export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data) => {
-         const loan = await Loan.findByIdAndUpdate(data.loanId, { $push: { hash: data.hash } }, { new: true }).lean();
+         const loan = await prisma.loan.update({
+            where: { id: data.loanId },
+            data: {
+               hash: { push: data.hash }
+            }
+         });
 
          if (!loan) {
             throw { code: ERROR_CODES.LOAN_NOT_FOUND, status: 404 };

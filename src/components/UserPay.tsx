@@ -36,7 +36,7 @@ function UserPay({ loan }: { loan: Loan }) {
 
       const newtotalRepaymentAmount = loan.totalRepaymentAmount + parseInt(totalRepaymentAmount);
       const loanData = {
-         _id: loan._id,
+         _id: loan.id,
          totalRepaymentAmount: newtotalRepaymentAmount,
          repaymentStatus: newtotalRepaymentAmount < loan.repaidAmount ? 'Partial' : 'Paid',
          loanStatus: loan.loanStatus
@@ -53,7 +53,7 @@ function UserPay({ loan }: { loan: Loan }) {
             e,
             loan.lenderWallet || '',
             totalRepaymentAmount.toString(),
-            loan._id,
+            loan.id,
             loan.block,
             loan.coin
          );
@@ -69,7 +69,7 @@ function UserPay({ loan }: { loan: Loan }) {
                console.error('[CRITICAL] Transaction succeeded but database update failed:', errorMessage);
                console.error(
                   '[RECONCILIATION REQUIRED] Loan ID:',
-                  loan._id,
+                  loan.id,
                   '| Amount:',
                   totalRepaymentAmount,
                   '| New Total:',

@@ -317,7 +317,7 @@ export default function Dashboard() {
                      </div>
                      <div className="flex flex-wrap justify-center gap-6">
                         {displayedLoans && Array.isArray(displayedLoans)
-                           ? displayedLoans.map((loan) => <UserCard key={loan._id} {...loan} />)
+                           ? displayedLoans.map((loan) => <UserCard key={loan.id} {...loan} />)
                            : null}
                      </div>
                      <LoadMoreButton currentCount={displayedCount} totalCount={totalCount} onLoadMore={handleLoadMore} />

@@ -76,7 +76,7 @@ export default function UserCard(loan: Loan) {
    const handleAccept = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       const loanPayload = {
-         _id: loanData._id,
+         _id: loanData.id,
          wallet,
          username
       };
@@ -114,7 +114,7 @@ export default function UserCard(loan: Loan) {
       }
 
       const loanPayload = {
-         _id: loanData._id,
+         _id: loanData.id,
          totalRepaymentAmount: loanData.totalRepaymentAmount,
          repaymentStatus: loanData.repaymentStatus,
          loanStatus: 'Lent'
@@ -127,7 +127,7 @@ export default function UserCard(loan: Loan) {
             e,
             loanData.borrowerWallet || '',
             loanData.loanAmount.toString(),
-            loanData._id,
+            loanData.id,
             loanData.block,
             loanData.coin
          );
@@ -140,7 +140,7 @@ export default function UserCard(loan: Loan) {
             } catch (editLoanError: unknown) {
                const errorMessage = editLoanError instanceof Error ? editLoanError.message : 'Unknown error';
                console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
-               console.error('[RECONCILIATION REQUIRED] Loan ID:', loanData._id, '| Amount:', loanData.loanAmount, '| Lender:', username);
+               console.error('[RECONCILIATION REQUIRED] Loan ID:', loanData.id, '| Amount:', loanData.loanAmount, '| Lender:', username);
                showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
             }
          }
