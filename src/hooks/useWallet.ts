@@ -58,7 +58,7 @@ const useWallet = () => {
 
          await dispatch(
             addHash({
-               _id: id,
+               id: id,
                hash: hash
             })
          )

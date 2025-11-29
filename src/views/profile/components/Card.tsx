@@ -30,8 +30,8 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
    const badgeStyles = getLoanBadgeStyles(loan.loanStatus, loan.repaymentStatus, differenceInDays);
 
    const handleDelete = async () => {
-      const _id = loan.id;
-      await dispatch(deleteLoan(_id))
+      const id = loan.id;
+      await dispatch(deleteLoan(id))
          .unwrap()
          .then(async () => {
             await dispatch(getUserLoans(username || ''));

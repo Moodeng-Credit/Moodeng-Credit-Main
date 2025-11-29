@@ -76,7 +76,7 @@ export default function UserCard(loan: Loan) {
    const handleAccept = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       const loanPayload = {
-         _id: loanData.id,
+         id: loanData.id,
          wallet,
          username
       };
@@ -114,7 +114,7 @@ export default function UserCard(loan: Loan) {
       }
 
       const loanPayload = {
-         _id: loanData.id,
+         id: loanData.id,
          totalRepaymentAmount: loanData.totalRepaymentAmount,
          repaymentStatus: loanData.repaymentStatus,
          loanStatus: 'Lent'

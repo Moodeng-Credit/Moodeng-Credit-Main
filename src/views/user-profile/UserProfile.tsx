@@ -310,7 +310,7 @@ const UserProfile = () => {
                      <h3 className="text-lg font-medium text-gray-100">Credit Growth Timeline</h3>
                      {uniqueLoans.map((tier: Loan) => (
                         <div
-                           key={tier._id}
+                           key={tier.id}
                            className={`p-4 rounded-lg ${
                               tier.loanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
                                  ? 'bg-green-900/20 border border-green-800'
@@ -566,8 +566,8 @@ const UserProfile = () => {
                      .filter((loan) => loan.repaymentStatus === 'Paid')
                      .slice(0, 5)
                      .map((loan: Loan) => {
-                        const unlock = uniqueLoans.some((item) => item._id === loan.id);
-                        const build = TierLists.some((item) => item._id === loan.id);
+                        const unlock = uniqueLoans.some((item) => item.id === loan.id);
+                        const build = TierLists.some((item) => item.id === loan.id);
                         return (
                            <div key={loan.id} className="bg-[#111827] rounded-lg p-4 space-y-3">
                               <div className="flex justify-between items-start">

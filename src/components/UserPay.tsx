@@ -36,7 +36,7 @@ function UserPay({ loan }: { loan: Loan }) {
 
       const newtotalRepaymentAmount = loan.totalRepaymentAmount + parseInt(totalRepaymentAmount);
       const loanData = {
-         _id: loan.id,
+         id: loan.id,
          totalRepaymentAmount: newtotalRepaymentAmount,
          repaymentStatus: newtotalRepaymentAmount < loan.repaidAmount ? 'Partial' : 'Paid',
          loanStatus: loan.loanStatus
