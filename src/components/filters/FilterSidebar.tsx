@@ -1,55 +1,63 @@
-import { type ChangeEvent } from 'react';
+import { type ChangeEvent, useMemo } from 'react';
+
+import CheckboxFilterGroup, { type FilterOption } from '@/components/filters/CheckboxFilterGroup';
+
+import type { LoanFilters } from '@/utils/loanFilters';
 
 import { LOAN_AMOUNTS, LOAN_TIME_PERIODS, REPAYMENT_RATES } from '@/constants/loanOptions';
 
 interface FilterSidebarProps {
-   amount: string;
-   onAmountChange: (amount: string) => void;
+   filters: LoanFilters;
+   onFiltersChange: (filters: Partial<LoanFilters>) => void;
    customAmount: string;
    onCustomAmountChange: (value: string) => void;
-   rate: string;
-   onRateChange: (rate: string) => void;
-   selectedDate: Date | null;
-   onDateChange: (date: Date | null) => void;
-   loanTime: string;
-   onLoanTimeChange: (time: string) => void;
-   currentNetwork: string;
-   onNetworkChange: (network: string) => void;
 }
 
-export default function FilterSidebar({
-   amount,
-   onAmountChange,
-   customAmount,
-   onCustomAmountChange,
-   rate,
-   onRateChange,
-   selectedDate,
-   onDateChange,
-   loanTime,
-   onLoanTimeChange,
-   currentNetwork,
-   onNetworkChange
-}: FilterSidebarProps) {
-   const handleAmountCheckbox = (value: string) => {
-      onAmountChange(value === amount ? '' : value);
-   };
+export default function FilterSidebar({ filters, onFiltersChange, customAmount, onCustomAmountChange }: FilterSidebarProps) {
+   // Convert LOAN_AMOUNTS to FilterOption[]
+   const amountOptions: FilterOption[] = useMemo(
+      () =>
+         LOAN_AMOUNTS.map((amount) => ({
+            value: String(amount),
+            label: `$${amount}`,
+            checked: filters.amount === String(amount)
+         })),
+      [filters.amount]
+   );
 
-   const handleRateCheckbox = (value: string) => {
-      onRateChange(value === rate ? '' : value);
-   };
+   // Convert REPAYMENT_RATES to FilterOption[]
+   const rateOptions: FilterOption[] = useMemo(
+      () =>
+         REPAYMENT_RATES.map((rate) => ({
+            value: rate.value,
+            label: rate.label,
+            checked: filters.rate === rate.value
+         })),
+      [filters.rate]
+   );
 
-   const handleLoanTimeCheckbox = (value: string) => {
-      onLoanTimeChange(value === loanTime ? '' : value);
-   };
+   // Convert LOAN_TIME_PERIODS to FilterOption[]
+   const loanTimeOptions: FilterOption[] = useMemo(
+      () =>
+         LOAN_TIME_PERIODS.map((period) => ({
+            value: period.value,
+            label: period.label,
+            checked: filters.loanTime === period.value
+         })),
+      [filters.loanTime]
+   );
 
-   const handleNetworkCheckbox = (value: string) => {
-      onNetworkChange(value === currentNetwork ? '' : value);
+   const handleFilterChange = (filterKey: keyof LoanFilters) => (value: string) => {
+      onFiltersChange({
+         [filterKey]: filters[filterKey] === value ? '' : value
+      });
    };
 
    const handleDateChange = (e: ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
-      onDateChange(value ? new Date(value) : null);
+      onFiltersChange({
+         date: value ? new Date(value) : null
+      });
    };
 
    return (
@@ -67,45 +75,29 @@ export default function FilterSidebar({
                   type="number"
                />
                <div className="space-y-1">
-                  {LOAN_AMOUNTS.map((loanAmount) => (
-                     <label key={loanAmount} className="flex items-center space-x-2 cursor-pointer">
+                  {amountOptions.map((option) => (
+                     <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
                         <input
                            className="form-checkbox text-blue-600"
                            type="checkbox"
-                           checked={amount === String(loanAmount)}
-                           value={loanAmount}
-                           onChange={() => handleAmountCheckbox(String(loanAmount))}
+                           checked={option.checked}
+                           value={option.value}
+                           onChange={() => handleFilterChange('amount')(option.value)}
                         />
-                        <span>${loanAmount}</span>
+                        <span>{option.label}</span>
                      </label>
                   ))}
                </div>
             </fieldset>
 
             {/* Repayment Amount */}
-            <fieldset>
-               <legend className="font-semibold mb-2">Repayment amount</legend>
-               <div className="space-y-1">
-                  {REPAYMENT_RATES.map((repaymentRate) => (
-                     <label key={repaymentRate.value} className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                           className="form-checkbox text-blue-600"
-                           type="checkbox"
-                           checked={rate === repaymentRate.value}
-                           value={repaymentRate.value}
-                           onChange={() => handleRateCheckbox(repaymentRate.value)}
-                        />
-                        <span>{repaymentRate.label}</span>
-                     </label>
-                  ))}
-               </div>
-            </fieldset>
+            <CheckboxFilterGroup legend="Repayment amount" options={rateOptions} onChange={handleFilterChange('rate')} />
 
             {/* Repayment Date */}
             <fieldset>
                <legend className="font-semibold mb-2">Repayment Date</legend>
                <input
-                  value={selectedDate ? selectedDate.toISOString().split('T')[0] : ''}
+                  value={filters.date ? filters.date.toISOString().split('T')[0] : ''}
                   onChange={handleDateChange}
                   className="w-full border border-gray-300 rounded px-2 py-1 text-xs md:text-sm"
                   type="date"
@@ -113,23 +105,7 @@ export default function FilterSidebar({
             </fieldset>
 
             {/* Borrow Type / Loan Time */}
-            <fieldset>
-               <legend className="font-semibold mb-2">Borrow Type</legend>
-               <div className="space-y-1">
-                  {LOAN_TIME_PERIODS.map((period) => (
-                     <label key={period.value} className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                           className="form-checkbox text-blue-600"
-                           type="checkbox"
-                           checked={loanTime === period.value}
-                           value={period.value}
-                           onChange={() => handleLoanTimeCheckbox(period.value)}
-                        />
-                        <span>{period.label}</span>
-                     </label>
-                  ))}
-               </div>
-            </fieldset>
+            <CheckboxFilterGroup legend="Borrow Type" options={loanTimeOptions} onChange={handleFilterChange('loanTime')} />
          </form>
       </aside>
    );
