@@ -21,6 +21,7 @@ interface LoanRequestModalProps {
    today: string;
    handleDays: (e: ChangeEvent<HTMLInputElement>) => void;
    handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
+   isSubmitting: boolean;
 }
 
 export default function LoanRequestModal({
@@ -37,7 +38,8 @@ export default function LoanRequestModal({
    days,
    today,
    handleDays,
-   handleSubmit
+   handleSubmit,
+   isSubmitting
 }: LoanRequestModalProps) {
    if (!isOpen) return null;
 
@@ -161,11 +163,11 @@ export default function LoanRequestModal({
                ></textarea>
                <div className="text-right text-xs text-gray-400 font-normal select-none">{reason.length} / 40</div>
                <button
-                  className={`${isVerified ? 'bg-[#1E56FF]' : 'bg-gray-400 cursor-not-allowed'} text-white font-extrabold text-sm rounded-md py-3 mt-2 w-full`}
+                  className={`${isVerified && !isSubmitting ? 'bg-[#1E56FF]' : 'bg-gray-400 cursor-not-allowed'} text-white font-extrabold text-sm rounded-md py-3 mt-2 w-full`}
                   type="submit"
-                  disabled={!isVerified}
+                  disabled={!isVerified || isSubmitting}
                >
-                  Make Your Request
+                  {isSubmitting ? 'Submitting...' : 'Make Your Request'}
                </button>
             </form>
          </section>

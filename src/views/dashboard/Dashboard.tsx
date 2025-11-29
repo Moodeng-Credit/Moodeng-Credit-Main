@@ -37,6 +37,7 @@ export default function Dashboard() {
 
    const [showModal, setShowModal] = useState(false);
    const [showPurple, setShowPurple] = useState(false);
+   const [isSubmitting, setIsSubmitting] = useState(false);
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
    const showVerify = user?.isWorldId !== 'ACTIVE';
@@ -106,6 +107,10 @@ export default function Dashboard() {
    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
 
+      if (isSubmitting) {
+         return;
+      }
+
       if ((user.nal || 0) >= (user.mal || 0)) {
          console.log('Loan limit reached');
          showToastByConfig('loan_limit_reached');
@@ -146,29 +151,32 @@ export default function Dashboard() {
          reason,
          days: parseInt(days)
       };
-      user.isWorldId === 'ACTIVE' &&
+
+      if (
+         user.isWorldId === 'ACTIVE' &&
          block &&
          coin &&
          (user.nal || 0) < (user.mal || 0) &&
          parseFloat(loanAmount) <= (user.cs || 0) &&
-         parseFloat(loanAmount) > 0 &&
-         (await dispatch(createLoan(loanData))
-            .unwrap()
-            .then(async () => {
-               clear();
-               handlePurple();
-               await dispatch(fetchUser())
-                  .unwrap()
-                  .then(() => {
-                     console.log('User fetched successfully');
-                  })
-                  .catch((error: Error) => {
-                     console.error('Error fetching user:', error.message || error);
-                  });
-            })
-            .catch((error: Error) => {
-               console.error('Error creating loan:', error.message || error);
-            }));
+         parseFloat(loanAmount) > 0
+      ) {
+         setIsSubmitting(true);
+         try {
+            await dispatch(createLoan(loanData)).unwrap();
+            clear();
+            handlePurple();
+            try {
+               await dispatch(fetchUser()).unwrap();
+               console.log('User fetched successfully');
+            } catch (error) {
+               console.error('Error fetching user:', (error as Error).message || error);
+            }
+         } catch (error) {
+            console.error('Error creating loan:', (error as Error).message || error);
+         } finally {
+            setIsSubmitting(false);
+         }
+      }
    };
 
    const handleDays = (e: ChangeEvent<HTMLInputElement>) => {
@@ -328,6 +336,7 @@ export default function Dashboard() {
             today={today}
             handleDays={handleDays}
             handleSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
          />
          {showPurple ? (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
