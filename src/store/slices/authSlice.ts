@@ -223,9 +223,9 @@ const authSlice = createSlice({
             state.error = action.payload as string;
          })
          .addCase(updateUser.fulfilled, (state, action) => {
-            state.user = action.payload;
-            if (action.payload.username) {
-               state.username = action.payload.username;
+            state.user = action.payload.user || action.payload;
+            if (action.payload.user?.username || action.payload.username) {
+               state.username = action.payload.user?.username || action.payload.username;
             }
          })
          .addCase(logoutUser.fulfilled, (state) => {
