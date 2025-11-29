@@ -202,8 +202,8 @@ export const chainConfig: Record<number, CustomChainConfig> = {
       bgColor: 'bg-[#0051ff]',
       textColor: 'text-[#0051ff]',
       tokens: {
-         USDC: '0x0000000000000000000000000000000000000000',
-         USDT: '0x0000000000000000000000000000000000000000'
+         USDC: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+         USDT: '0x73b4a58138cccbda822df9449feda5eac6669ebd'
       }
    }
 };
