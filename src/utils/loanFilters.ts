@@ -97,14 +97,6 @@ export const filterByTimePeriod = (loans: Loan[], loanTime: string): Loan[] => {
 };
 
 /**
- * Filter loans by network
- */
-export const filterByNetwork = (loans: Loan[], network: string): Loan[] => {
-   if (!network) return loans;
-   return loans.filter((loan) => loan.block?.toLowerCase() === network.toLowerCase());
-};
-
-/**
  * Filter loans by search query (searches reason and borrower username)
  */
 export const filterBySearch = (loans: Loan[], search: string): Loan[] => {
@@ -136,10 +128,6 @@ export const filterLoans = (loans: Loan[], filters: LoanFilters): Loan[] => {
 
    if (filters.loanTime) {
       filtered = filterByTimePeriod(filtered, filters.loanTime);
-   }
-
-   if (filters.network) {
-      filtered = filterByNetwork(filtered, filters.network);
    }
 
    if (filters.search) {
