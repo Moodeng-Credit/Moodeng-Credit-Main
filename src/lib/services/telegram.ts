@@ -42,12 +42,12 @@ We'll keep you posted on repayments. You're amazing for making a difference! �
 export const sendRepaymentNotification = (
    chatId: number,
    lenderName: string,
-   repaymentAmount: number,
+   totalRepaymentAmount: number,
    borrowerName: string,
    remainingBalance: number
 ) => {
    const message = `💰 Repayment Alert! 💰 Great news, ${lenderName}! The person you helped has made a repayment! 🙌
-✅ Received: ${repaymentAmount}
+✅ Received: ${totalRepaymentAmount}
 👤 From: ${borrowerName}
 🔄 Remaining: ${remainingBalance}
 
@@ -74,7 +74,13 @@ You've made a real impact! Ready to help someone else? 💪🌍
    sendTelegramMessage(chatId, message);
 };
 
-export const sendBorrowerReminder = (chatId: number, borrowerName: string, repaymentAmount: number, dueDate: string, hoursLeft: number) => {
+export const sendBorrowerReminder = (
+   chatId: number,
+   borrowerName: string,
+   totalRepaymentAmount: number,
+   dueDate: string,
+   hoursLeft: number
+) => {
    let urgency: string;
    switch (hoursLeft) {
       case 168:
@@ -97,7 +103,7 @@ export const sendBorrowerReminder = (chatId: number, borrowerName: string, repay
    }
 
    const message = `${urgency}
-💰 Amount: ${repaymentAmount}
+💰 Amount: ${totalRepaymentAmount}
 📆 Due: ${dueDate}
 
 Don't risk your credit score! 📉 Pay on time to keep your financial future bright! ✨

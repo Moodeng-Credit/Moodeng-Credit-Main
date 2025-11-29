@@ -20,7 +20,7 @@ import type { Loan } from '@/types/loanTypes';
 
 function UserPay({ loan }: { loan: Loan }) {
    const username = useSelector((state: RootState) => state.auth.username);
-   const [repaymentAmount, setRepaymentAmount] = useState('');
+   const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');
    const [isProcessing, setIsProcessing] = useState(false);
    const time = parseDateSafely(loan.createdAt).toISOString();
    const { Transfer } = useWallet();
@@ -34,29 +34,36 @@ function UserPay({ loan }: { loan: Loan }) {
          return;
       }
 
-      const newRepaymentAmount = loan.repaymentAmount + parseInt(repaymentAmount);
+      const newtotalRepaymentAmount = loan.totalRepaymentAmount + parseInt(totalRepaymentAmount);
       const loanData = {
          _id: loan._id,
-         repaymentAmount: newRepaymentAmount,
-         repaymentStatus: newRepaymentAmount < loan.repayedAmount ? 'Partial' : 'Paid',
+         totalRepaymentAmount: newtotalRepaymentAmount,
+         repaymentStatus: newtotalRepaymentAmount < loan.repaidAmount ? 'Partial' : 'Paid',
          loanStatus: loan.loanStatus
       };
 
       if (
-         loan.repaymentAmount + parseInt(repaymentAmount) <= loan.repayedAmount &&
+         loan.totalRepaymentAmount + parseInt(totalRepaymentAmount) <= loan.repaidAmount &&
          loan.loanStatus === 'Lent' &&
          loan.repaymentStatus !== 'Paid' &&
-         parseInt(repaymentAmount) > 0
+         parseInt(totalRepaymentAmount) > 0
       ) {
          setIsProcessing(true);
-         const transferSuccess = await Transfer(e, loan.lenderWallet || '', repaymentAmount.toString(), loan._id, loan.block, loan.coin);
+         const transferSuccess = await Transfer(
+            e,
+            loan.lenderWallet || '',
+            totalRepaymentAmount.toString(),
+            loan._id,
+            loan.block,
+            loan.coin
+         );
 
          if (transferSuccess) {
             try {
                await dispatch(editLoan(loanData as Loan)).unwrap();
                await dispatch(getUserLoans(username || ''));
                showToastByConfig('repayment_success');
-               setRepaymentAmount('');
+               setTotalRepaymentAmount('');
             } catch (editLoanError: unknown) {
                const errorMessage = editLoanError instanceof Error ? editLoanError.message : 'Unknown error';
                console.error('[CRITICAL] Transaction succeeded but database update failed:', errorMessage);
@@ -64,9 +71,9 @@ function UserPay({ loan }: { loan: Loan }) {
                   '[RECONCILIATION REQUIRED] Loan ID:',
                   loan._id,
                   '| Amount:',
-                  repaymentAmount,
+                  totalRepaymentAmount,
                   '| New Total:',
-                  newRepaymentAmount
+                  newtotalRepaymentAmount
                );
                showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
             } finally {
@@ -87,14 +94,14 @@ function UserPay({ loan }: { loan: Loan }) {
             <div className="flex gap-10 items-center mt-8">
                <div className="flex flex-col self-stretch my-auto">
                   <div className="text-sm leading-loose text-black text-opacity-60">Loan Amount</div>
-                  <div className="mt-1.5 text-base font-medium leading-loose text-black">${loan.repayedAmount}</div>
+                  <div className="mt-1.5 text-base font-medium leading-loose text-black">${loan.repaidAmount}</div>
                </div>
                <div className="flex flex-col self-stretch my-auto">
                   <div className="text-sm leading-loose text-black text-opacity-60">Amount Paid</div>
                   <div className="mt-1.5 text-base font-medium leading-loose text-black">
-                     ${loan.repaymentAmount}
+                     ${loan.totalRepaymentAmount}
                      <span className="text-sm leading-6 text-black">
-                        {' ($' + (loan.repayedAmount - loan.repaymentAmount) + ' Remaining)'}
+                        {' ($' + (loan.repaidAmount - loan.totalRepaymentAmount) + ' Remaining)'}
                      </span>
                   </div>
                </div>
@@ -141,16 +148,16 @@ function UserPay({ loan }: { loan: Loan }) {
             <input
                type="number"
                min="0"
-               id="repayment"
-               name="repayment"
+               id="totalRepaymentAmount"
+               name="totalRepaymentAmount"
                placeholder="Enter custom amount"
-               value={repaymentAmount}
-               onChange={(e: ChangeEvent<HTMLInputElement>) => setRepaymentAmount(e.target.value)}
+               value={totalRepaymentAmount}
+               onChange={(e: ChangeEvent<HTMLInputElement>) => setTotalRepaymentAmount(e.target.value)}
                className="mt-1 p-2 w-full border rounded-md focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-colors duration-300"
             />
             <button
                onClick={handleBorrow}
-               disabled={isProcessing || !repaymentAmount || parseInt(repaymentAmount) <= 0}
+               disabled={isProcessing || !totalRepaymentAmount || parseInt(totalRepaymentAmount) <= 0}
                className="overflow-hidden gap-5 self-stretch p-5 mt-8 text-base font-medium leading-none text-center text-white bg-blue-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
                {isProcessing ? 'Processing...' : 'Repay Now'}

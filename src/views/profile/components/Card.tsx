@@ -67,16 +67,16 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
          <div className="p-5 pt-4">
             <p className="text-[13px] leading-[16px] font-normal text-[#6B7280] mb-1">Repayment Progress</p>
             <p className="text-[36px] font-extrabold text-[#2563EB] leading-[44px]">
-               ${loan.repaymentAmount}
-               <span className="text-[#6B7280] font-normal text-[24px]">/${loan.repayedAmount}</span>
+               ${loan.totalRepaymentAmount}
+               <span className="text-[#6B7280] font-normal text-[24px]">/${loan.repaidAmount}</span>
             </p>
             <p className="text-[12px] leading-[15px] font-semibold text-[#6B7280] mt-1">
-               <span className="font-extrabold">${loan.repayedAmount - loan.repaymentAmount}.00</span> Remaining for Complete Payback
+               <span className="font-extrabold">${loan.totalRepaymentAmount - loan.repaidAmount}.00</span> Remaining for Complete Payback
             </p>
             <div className="w-full h-4 rounded-full bg-[#D9D9D9] mt-3 overflow-hidden">
                <div
                   className="h-4 rounded-l-full bg-[#15803D]"
-                  style={{ width: `${(loan.repaymentAmount * 100) / loan.repayedAmount}%` }}
+                  style={{ width: `${(loan.totalRepaymentAmount * 100) / loan.repaidAmount}%` }}
                ></div>
             </div>
          </div>
@@ -121,7 +121,7 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
             </div>
             <div>
                <p>Payback</p>
-               <p className="mt-1 text-[16px] font-normal text-[#166534]">${loan.repayedAmount}</p>
+               <p className="mt-1 text-[16px] font-normal text-[#166534]">${loan.repaidAmount}</p>
             </div>
             <div></div>
             <div>

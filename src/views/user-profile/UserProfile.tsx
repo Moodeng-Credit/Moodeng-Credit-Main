@@ -346,7 +346,7 @@ const UserProfile = () => {
                                        <span className="text-sm text-gray-400">{formatDate(tier.updatedAt)}</span>
                                     </div>
                                     <span className="text-xs text-gray-400">
-                                       ${tier.loanAmount} loan repaid ${tier.repaymentAmount} unlocked ${tier.loanAmount + 20} limit
+                                       ${tier.loanAmount} loan repaid ${tier.totalRepaymentAmount} unlocked ${tier.loanAmount + 20} limit
                                     </span>
                                  </div>
                               </div>
@@ -574,7 +574,7 @@ const UserProfile = () => {
                                  <div>
                                     <div className="flex items-center gap-2">
                                        <span className="text-lg font-semibold text-gray-100">${loan.loanAmount}</span>
-                                       <span className="text-sm text-gray-400">→ ${loan.repayedAmount} repaid</span>
+                                       <span className="text-sm text-gray-400">→ ${loan.repaidAmount} repaid</span>
                                     </div>
                                     <div className="text-sm text-gray-400">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</div>
                                  </div>

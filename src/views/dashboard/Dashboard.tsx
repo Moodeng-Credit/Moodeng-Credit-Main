@@ -50,7 +50,7 @@ export default function Dashboard() {
    const borrowerUserId = user?.username || '';
    const lenderUserId = '';
    const [loanAmount, setLoanAmount] = useState('');
-   const [repayedAmount, setRepayedAmount] = useState('');
+   const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');
    const [block, setBlock] = useState(account?.chain?.name);
    const [coin, setCoin] = useState('USDC');
    const [reason, setReason] = useState('');
@@ -69,7 +69,7 @@ export default function Dashboard() {
    });
 
    const clear = () => {
-      setRepayedAmount('');
+      setTotalRepaymentAmount('');
       setLoanAmount('');
       setReason('');
       setDays('');
@@ -151,7 +151,7 @@ export default function Dashboard() {
          borrowerUserId: borrowerUserId || '',
          lenderUserId,
          loanAmount: parseFloat(loanAmount),
-         repayedAmount: parseFloat(repayedAmount),
+         totalRepaymentAmount: parseFloat(totalRepaymentAmount),
          block,
          coin,
          reason,
@@ -341,8 +341,8 @@ export default function Dashboard() {
             user={user}
             loanAmount={loanAmount}
             setLoanAmount={setLoanAmount}
-            repayedAmount={repayedAmount}
-            setRepayedAmount={setRepayedAmount}
+            totalRepaymentAmount={totalRepaymentAmount}
+            setTotalRepaymentAmount={setTotalRepaymentAmount}
             reason={reason}
             setReason={setReason}
             days={days}

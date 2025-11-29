@@ -85,10 +85,10 @@ export const { clearError, addLoan, updateLoan } = loanSlice.actions;
 
 export const editLoan = createAsyncThunk('loans/edit', async (loanData: Loan) => {
    // Map frontend Loan fields to API schema fields
-   const { _id, repaymentAmount, repaymentStatus, loanStatus } = loanData;
+   const { _id, totalRepaymentAmount, repaymentStatus, loanStatus } = loanData;
    return await apiHandler.post(API_ENDPOINTS.LOANS.EDIT, {
       loanId: _id,
-      repaymentAmount,
+      totalRepaymentAmount,
       repaymentStatus,
       loanStatus
    } as unknown as ApiData);

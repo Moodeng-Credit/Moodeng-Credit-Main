@@ -50,7 +50,7 @@ export const filterByRate = (loans: Loan[], rate: string): Loan[] => {
    if (!rate) return loans;
 
    return loans.filter((loan) => {
-      const repayRate = ((loan.repayedAmount - loan.loanAmount) / loan.loanAmount) * 100;
+      const repayRate = ((loan.repaidAmount - loan.loanAmount) / loan.loanAmount) * 100;
 
       if (rate === '2.5') return repayRate >= 0 && repayRate <= 5;
       if (rate === '7.5') return repayRate > 5 && repayRate <= 10;

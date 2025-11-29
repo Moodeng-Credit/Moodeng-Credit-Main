@@ -9,8 +9,8 @@ const LoanSchema = new Schema<ILoan>({
    borrowerUser: { type: String, ref: 'User', default: null },
    lenderUser: { type: String, ref: 'User', default: null },
    loanAmount: { type: Number, required: true }, // Original amount borrowed (principal)
-   repayedAmount: { type: Number, required: true }, // Total amount that must be repaid (principal + interest/fees)
-   repaymentAmount: { type: Number, default: 0 }, // Amount already repaid by borrower (cumulative sum of all payments)
+   repaidAmount: { type: Number, default: 0 }, // Amount already repaid by borrower (cumulative sum of all payments)
+   totalRepaymentAmount: { type: Number, required: true }, // Total amount that must be repaid (principal + interest/fees)
    reason: { type: String, required: true },
    loanStatus: { type: String, enum: Object.values(LoanStatus), required: true },
    repaymentStatus: { type: String, enum: Object.values(RepaymentStatus), required: true },

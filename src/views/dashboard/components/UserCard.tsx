@@ -115,7 +115,7 @@ export default function UserCard(loan: Loan) {
 
       const loanPayload = {
          _id: loanData._id,
-         repaymentAmount: loanData.repaymentAmount,
+         totalRepaymentAmount: loanData.totalRepaymentAmount,
          repaymentStatus: loanData.repaymentStatus,
          loanStatus: 'Lent'
       };
@@ -191,7 +191,7 @@ export default function UserCard(loan: Loan) {
                   <div className="text-[#6B6B7B] text-[30px] font-light select-none">/</div>
                   <div className="">
                      <p className="text-[13px] font-normal text-[#6B6B7B]">Payback</p>
-                     <p className="text-[20px] font-normal text-[#2F7A3E] mt-1">${loanData.repayedAmount}</p>
+                     <p className="text-[20px] font-normal text-[#2F7A3E] mt-1">${loanData.repaidAmount}</p>
                   </div>
                   <div className="pl-8">
                      <p className="text-[13px] font-normal text-[#6B6B7B]">Due Date</p>
@@ -312,7 +312,7 @@ export default function UserCard(loan: Loan) {
                         <dt className="text-gray-900">Amount Funded:</dt>
                         <dd className="text-gray-900 text-right font-extrabold">${loan.loanAmount}.00</dd>
                         <dt className="text-gray-900">Expected Return:</dt>
-                        <dd className="text-green-700 text-right font-extrabold">${loanData.repayedAmount}.00</dd>
+                        <dd className="text-green-700 text-right font-extrabold">${loanData.repaidAmount}.00</dd>
                         <dt className="text-gray-900">Return Date:</dt>
                         <dd className="text-gray-900 text-right font-extrabold">{formattedDate}</dd>
                      </dl>

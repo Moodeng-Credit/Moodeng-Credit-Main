@@ -13,8 +13,8 @@ interface LoanRequestModalProps {
    user: User;
    loanAmount: string;
    setLoanAmount: (value: string) => void;
-   repayedAmount: string;
-   setRepayedAmount: (value: string) => void;
+   totalRepaymentAmount: string;
+   setTotalRepaymentAmount: (value: string) => void;
    reason: string;
    setReason: (value: string) => void;
    days: string;
@@ -31,8 +31,8 @@ export default function LoanRequestModal({
    user,
    loanAmount,
    setLoanAmount,
-   repayedAmount,
-   setRepayedAmount,
+   totalRepaymentAmount,
+   setTotalRepaymentAmount,
    reason,
    setReason,
    days,
@@ -110,13 +110,13 @@ export default function LoanRequestModal({
                   Set Repayment amount
                </label>
                <input
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setRepayedAmount(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setTotalRepaymentAmount(e.target.value)}
                   className="border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
                   id="repayment-amount"
                   placeholder="Must be more than Borrowed amount..."
                   type={isVerified ? 'number' : 'text'}
                   min={isVerified ? '0' : undefined}
-                  value={repayedAmount}
+                  value={totalRepaymentAmount}
                />
                <label className="font-semibold text-gray-800 text-sm">Repayment Date</label>
                <div className="flex gap-3">

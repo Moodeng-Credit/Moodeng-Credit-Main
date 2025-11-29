@@ -87,8 +87,9 @@ export const positiveNumberSchema = (fieldName = 'Value') =>
 
 /**
  * Loan amount validation schema
- * - Must be positive
+ * - Must be positive (greater than 0)
  * - Max 1 billion
+ * Use this for loanAmount and totalRepaymentAmount (total to be repaid)
  */
 export const loanAmountSchema = z
    .union([z.number(), z.string()])
@@ -99,6 +100,25 @@ export const loanAmountSchema = z
       },
       {
          message: 'Loan amount must be positive and not exceed 1 billion'
+      }
+   )
+   .transform((val) => (typeof val === 'string' ? parseFloat(val) : val));
+
+/**
+ * Repaid amount validation schema
+ * - Can be 0 or positive (for cumulative repayments that have been made)
+ * - Max 1 billion
+ * Use this for repaidAmount (cumulative amount already repaid)
+ */
+export const repaidAmountSchema = z
+   .union([z.number(), z.string()])
+   .refine(
+      (val) => {
+         const num = typeof val === 'string' ? parseFloat(val) : val;
+         return !isNaN(num) && num >= 0 && num <= 1_000_000_000;
+      },
+      {
+         message: 'Repaid amount must be non-negative and not exceed 1 billion'
       }
    )
    .transform((val) => (typeof val === 'string' ? parseFloat(val) : val));

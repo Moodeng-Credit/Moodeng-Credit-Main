@@ -8,8 +8,8 @@ export interface Loan {
    borrowerUser?: string;
    lenderUser?: string;
    loanAmount: number; // Original amount borrowed (principal)
-   repayedAmount: number; // Total amount that must be repaid (principal + interest/fees) - NOTE: confusing name, consider renaming to 'totalOwed' or 'amountDue'
-   repaymentAmount: number; // Amount already repaid by borrower (cumulative sum of all payments) - NOTE: confusing name, consider renaming to 'amountPaid' or 'paidToDate'
+   repaidAmount: number; // Amount already repaid by borrower (cumulative sum of all payments)
+   totalRepaymentAmount: number; // Total amount that must be repaid (principal + interest/fees)
    reason: string;
    loanStatus: string;
    repaymentStatus: string;
@@ -25,7 +25,7 @@ export interface CreateLoanData {
    borrowerUserId: string;
    lenderUserId: string;
    loanAmount: number;
-   repayedAmount: number;
+   totalRepaymentAmount: number;
    reason: string;
 }
 
@@ -58,9 +58,9 @@ export interface ILoan extends Document {
    lenderWallet?: string;
    borrowerUser?: string;
    lenderUser?: string;
-   loanAmount: number; // Original amount borrowed (principal)
-   repayedAmount: number; // Total amount that must be repaid (principal + interest/fees)
-   repaymentAmount: number; // Amount already repaid by borrower (cumulative sum of all payments)
+   loanAmount: number;
+   repaidAmount: number;
+   totalRepaymentAmount: number;
    reason: string;
    loanStatus: LoanStatusType;
    repaymentStatus: RepaymentStatusType;

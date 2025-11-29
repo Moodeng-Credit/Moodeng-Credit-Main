@@ -43,7 +43,7 @@ export const useDashboardData = (activeRole: RoleType) => {
       return {
          repayments: {
             count: loanArrays.repayments.length,
-            total: loanArrays.repayments.reduce((sum, loan) => sum + loan.repayedAmount, 0)
+            total: loanArrays.repayments.reduce((sum, loan) => sum + loan.repaidAmount, 0)
          },
          active: {
             count: loanArrays.activeLoans.length,

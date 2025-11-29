@@ -29,12 +29,12 @@ export async function POST(request: NextRequest) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
          }
 
-         if (data.repaymentAmount !== undefined || data.repaymentStatus) {
+         if (data.totalRepaymentAmount !== undefined || data.repaymentStatus) {
             if (loan.borrowerUser !== authenticatedUser.username) {
                throw { code: ERROR_CODES.LOAN_UNAUTHORIZED, status: 403 };
             }
 
-            if (data.repaymentAmount !== undefined && data.repaymentAmount > loan.repayedAmount) {
+            if (data.totalRepaymentAmount !== undefined && data.totalRepaymentAmount > loan.repaidAmount) {
                throw { code: ERROR_CODES.LOAN_INVALID_AMOUNT, status: 400 };
             }
          }
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
             updatedAt: new Date().toISOString()
          };
 
-         if (data.repaymentAmount !== undefined) updateFields.repaymentAmount = data.repaymentAmount;
+         if (data.totalRepaymentAmount !== undefined) updateFields.totalRepaymentAmount = data.totalRepaymentAmount;
          if (data.repaymentStatus) updateFields.repaymentStatus = data.repaymentStatus;
          if (data.loanStatus) updateFields.loanStatus = data.loanStatus;
 
