@@ -8,16 +8,16 @@ const LoanSchema = new Schema<ILoan>({
    lenderWallet: { type: String, ref: 'User', default: null },
    borrowerUser: { type: String, ref: 'User', default: null },
    lenderUser: { type: String, ref: 'User', default: null },
-   loanAmount: { type: Number, required: true },
-   repayedAmount: { type: Number, required: true },
-   repaymentAmount: { type: Number, default: 0 },
+   loanAmount: { type: Number, required: true }, // Original amount borrowed (principal)
+   repayedAmount: { type: Number, required: true }, // Total amount that must be repaid (principal + interest/fees)
+   repaymentAmount: { type: Number, default: 0 }, // Amount already repaid by borrower (cumulative sum of all payments)
    reason: { type: String, required: true },
    loanStatus: { type: String, enum: Object.values(LoanStatus), required: true },
    repaymentStatus: { type: String, enum: Object.values(RepaymentStatus), required: true },
    days: { type: Number, required: true },
    block: { type: String, required: true, default: null },
    coin: { type: String, required: true, default: null },
-   hash: { type: [String], default: [] },
+   hash: { type: [String], default: [] }, // Array of transaction hashes - includes lending transaction + all repayment transactions
    createdAt: { type: Date, default: Date.now },
    updatedAt: { type: Date, default: Date.now }
 });

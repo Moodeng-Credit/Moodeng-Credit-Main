@@ -21,15 +21,32 @@ const assignLoanUserSchema = z.object({
 export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
-      async (data) => {
+      async (data, userId) => {
          const loan = await Loan.findById(data._id);
          if (!loan) {
             throw { code: ERROR_CODES.LOAN_NOT_FOUND, status: 404 };
          }
 
+         if (!userId) {
+            throw { code: ERROR_CODES.AUTH_UNAUTHORIZED, status: 401 };
+         }
+
+         const authenticatedUser = await User.findById(userId);
+         if (!authenticatedUser) {
+            throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
+         }
+
+         if (data.username !== authenticatedUser.username) {
+            throw { code: ERROR_CODES.LOAN_UNAUTHORIZED, status: 403 };
+         }
+
          const user = await User.findOne({ username: data.username });
          if (!user) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
+         }
+
+         if (loan.borrowerUser === data.username) {
+            throw { code: ERROR_CODES.LOAN_UNAUTHORIZED, status: 403 };
          }
 
          if (!loan.lenderUser) {

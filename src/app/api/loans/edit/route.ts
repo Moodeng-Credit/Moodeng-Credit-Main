@@ -13,10 +13,35 @@ import { SUCCESS_CODES } from '@/types/successCodes';
 export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
-      async (data) => {
+      async (data, userId) => {
          const loan = await Loan.findById(data.loanId);
          if (!loan) {
             throw { code: ERROR_CODES.LOAN_NOT_FOUND, status: 404 };
+         }
+
+         if (!userId) {
+            throw { code: ERROR_CODES.AUTH_UNAUTHORIZED, status: 401 };
+         }
+
+         const authenticatedUser = await User.findById(userId);
+         if (!authenticatedUser) {
+            throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
+         }
+
+         if (data.repaymentAmount !== undefined || data.repaymentStatus) {
+            if (loan.borrowerUser !== authenticatedUser.username) {
+               throw { code: ERROR_CODES.LOAN_UNAUTHORIZED, status: 403 };
+            }
+
+            if (data.repaymentAmount !== undefined && data.repaymentAmount > loan.repayedAmount) {
+               throw { code: ERROR_CODES.LOAN_INVALID_AMOUNT, status: 400 };
+            }
+         }
+
+         if (data.loanStatus && data.loanStatus === 'Lent') {
+            if (loan.lenderUser !== authenticatedUser.username) {
+               throw { code: ERROR_CODES.LOAN_UNAUTHORIZED, status: 403 };
+            }
          }
 
          const borrower = await User.findOne({ username: loan.borrowerUser });

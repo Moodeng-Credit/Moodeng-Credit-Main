@@ -26,12 +26,10 @@ export default function UserCard(loan: Loan) {
    const dispatch = useDispatch<AppDispatch>();
    const { Transfer } = useWallet();
    const [showModal, setShowModal] = useState(false);
+   const [isProcessing, setIsProcessing] = useState(false);
    const { showToastByConfig } = useToast();
    const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const username = useSelector((state: RootState) => state.auth.username);
-   const mal = useSelector((state: RootState) => state.auth.mal);
-   const nal = useSelector((state: RootState) => state.auth.nal);
-   const cs = useSelector((state: RootState) => state.auth.cs);
 
    const [localProfile, setLocalProfile] = useState<User | null>(null);
    const [localTotalRepaid, setLocalTotalRepaid] = useState(0);
@@ -98,6 +96,10 @@ export default function UserCard(loan: Loan) {
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
 
+      if (isProcessing) {
+         return;
+      }
+
       const loanPayload = {
          _id: loanData._id,
          repaymentAmount: loanData.repaymentAmount,
@@ -105,12 +107,10 @@ export default function UserCard(loan: Loan) {
          loanStatus: 'Lent'
       };
 
-      const notLender = loanData.lenderUser !== username;
-      const notBorrower = loanData.borrowerUser !== username;
-      const loanCondition = loanData.borrowerUser || (loanData.lenderUser && (nal || 0) < (mal || 0) && loanData.loanAmount <= (cs || 0));
+      setIsProcessing(true);
 
-      if (notLender && notBorrower && loanCondition) {
-         const cdt = await Transfer(
+      try {
+         const transferSuccess = await Transfer(
             e,
             loanData?.borrowerWallet || '',
             loanData.loanAmount.toString(),
@@ -118,30 +118,21 @@ export default function UserCard(loan: Loan) {
             loanData.block,
             loanData.coin
          );
-         cdt && (await handleAccept(e));
-         try {
-            cdt &&
-               (await dispatch(editLoan(loanPayload as Loan))
-                  .unwrap()
-                  .then(async () => {
-                     setShowModal(true);
-                  })
-                  .catch((error: Error) => {
-                     console.error('Error editing loan:', error.message || error);
-                  }));
-         } catch {
-            cdt &&
-               (await dispatch(editLoan(loanPayload as Loan))
-                  .unwrap()
-                  .then(async () => {
-                     setShowModal(true);
-                  })
-                  .catch((error: Error) => {
-                     console.error('Error editing loan:', error.message || error);
-                  }));
+
+         if (transferSuccess) {
+            await handleAccept(e);
+            try {
+               await dispatch(editLoan(loanPayload as Loan)).unwrap();
+               setShowModal(true);
+            } catch (editLoanError: unknown) {
+               const errorMessage = editLoanError instanceof Error ? editLoanError.message : 'Unknown error';
+               console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
+               console.error('[RECONCILIATION REQUIRED] Loan ID:', loanData._id, '| Amount:', loanData.loanAmount, '| Lender:', username);
+               showToastByConfig('transaction_error');
+            }
          }
-      } else {
-         showToastByConfig('loan_error');
+      } finally {
+         setIsProcessing(false);
       }
    };
 
@@ -230,10 +221,11 @@ export default function UserCard(loan: Loan) {
             <div className="p-5 bg-white">
                <button
                   onClick={handleLend}
+                  disabled={isProcessing}
                   type="button"
-                  className="w-full bg-[#2563EB] text-white font-semibold text-[15px] py-3 rounded-lg hover:bg-[#1e4bb8] transition"
+                  className="w-full bg-[#2563EB] text-white font-semibold text-[15px] py-3 rounded-lg hover:bg-[#1e4bb8] transition disabled:opacity-50 disabled:cursor-not-allowed"
                >
-                  Send Your Help
+                  {isProcessing ? 'Processing...' : 'Send Your Help'}
                </button>
             </div>
          </div>
