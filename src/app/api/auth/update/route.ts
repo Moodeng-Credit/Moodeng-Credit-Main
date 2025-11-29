@@ -10,7 +10,7 @@ import { ERROR_CODES } from '@/types/errorCodes';
 import { SUCCESS_CODES } from '@/types/successCodes';
 
 export async function POST(request: NextRequest) {
-   let authToken: string;
+   let authToken: string | undefined;
 
    return handleApiRequest(
       request,
@@ -20,26 +20,36 @@ export async function POST(request: NextRequest) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
          }
 
+         // Track if we need to regenerate token (for security-sensitive changes)
+         let requiresNewToken = false;
+
          if (data.password) {
             user.password = await hashPassword(data.password);
+            requiresNewToken = true;
          }
          if (data.telegramUsername !== undefined) {
             user.telegramUsername = data.telegramUsername || undefined;
          }
          if (data.username) {
             user.username = data.username;
+            requiresNewToken = true;
          }
          if (data.email) {
             user.email = data.email;
+            requiresNewToken = true;
          }
          if (data.walletAddress !== undefined) {
             user.walletAddress = data.walletAddress;
+            // Wallet address update doesn't require new token
          }
          user.updatedAt = new Date();
 
          await user.save();
 
-         authToken = generateToken(user._id.toString());
+         // Only regenerate token for security-sensitive changes
+         if (requiresNewToken) {
+            authToken = generateToken(user._id.toString());
+         }
 
          // Send email if email was updated
          if (data.email) {
@@ -60,7 +70,10 @@ export async function POST(request: NextRequest) {
          requireAuth: true,
          successCode: SUCCESS_CODES.AUTH_UPDATE_SUCCESS,
          beforeResponse: (response) => {
-            setAuthCookie(response, authToken);
+            // Only set new cookie if we generated a new token
+            if (authToken) {
+               setAuthCookie(response, authToken);
+            }
          }
       }
    );
