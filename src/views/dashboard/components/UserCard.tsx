@@ -153,7 +153,7 @@ export default function UserCard(loan: Loan) {
          >
             <div className="bg-white p-5 rounded-t-xl">
                <div className="flex justify-between items-start">
-                  <h2 className="text-navy-900 text-[15px] font-semibold leading-5 text-[#0B1033]">{loanData.reason}</h2>
+                  <h2 className="text-navy-900 text-[15px] font-semibold leading-5 text-[#0B1033] truncate">{loanData.reason}</h2>
                </div>
                <div className="flex justify-between items-center mt-2">
                   <p className="text-[13px] font-normal text-[#0B1033]">

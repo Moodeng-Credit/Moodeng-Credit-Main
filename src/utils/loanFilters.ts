@@ -18,18 +18,15 @@ export interface LoanFilters {
 export const sortLoans = (loans: Loan[], sortBy: SortOption): Loan[] => {
    const sorted = [...loans];
 
-   switch (sortBy) {
-      case 'highest':
-         return sorted.sort((a, b) => b.loanAmount - a.loanAmount);
-      case 'lowest':
-         return sorted.sort((a, b) => a.loanAmount - b.loanAmount);
-      case 'newest':
-         return sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      case 'oldest':
-         return sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-      default:
-         return sorted;
-   }
+   const sortFunctions = {
+      highest: (a: Loan, b: Loan) => b.loanAmount - a.loanAmount,
+      lowest: (a: Loan, b: Loan) => a.loanAmount - b.loanAmount,
+      newest: (a: Loan, b: Loan) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      oldest: (a: Loan, b: Loan) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+   };
+
+   const sortFn = sortFunctions[sortBy];
+   return sortFn ? sorted.sort(sortFn) : sorted;
 };
 
 /**
