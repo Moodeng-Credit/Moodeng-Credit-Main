@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       request,
       async () => {
          return await Loan.find({
-            $or: [{ borrowerWallet: null }, { lenderWallet: null }]
+            lenderWallet: null
          });
       },
       {

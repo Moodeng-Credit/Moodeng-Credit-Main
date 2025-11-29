@@ -50,7 +50,7 @@ export default function Dashboard() {
    const [loanAmount, setLoanAmount] = useState('');
    const [repayedAmount, setRepayedAmount] = useState('');
    const [block, setBlock] = useState(account?.chain?.name);
-   const [coin, setCoin] = useState(block === 'sepolia' ? 'Link' : block === 'base' || block === 'baseSepolia' ? 'USDC' : 'USDT');
+   const [coin, setCoin] = useState('USDC');
    const [reason, setReason] = useState('');
    const [days, setDays] = useState('');
    const [customAmount, setCustomAmount] = useState('');

@@ -43,7 +43,8 @@ const useWallet = () => {
          const tokenAddress = tokenAddresses[targetChainId][coin as keyof (typeof tokenAddresses)[typeof targetChainId]];
          switchChain({ chainId: targetChainId });
 
-         const decimals = coin === 'Link' ? 18 : 6;
+         // USDC uses 6 decimals
+         const decimals = 6;
          const amounts = parseUnits(amount, decimals);
 
          const hash = await writeContractAsync({

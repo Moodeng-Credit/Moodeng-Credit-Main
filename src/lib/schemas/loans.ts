@@ -18,7 +18,7 @@ export const createLoanSchema = z.object({
    reason: textFieldSchema(500, 'Reason'),
    days: loanDaysSchema,
    block: z.string().optional().default('0'),
-   coin: z.string().optional().default('USDC')
+   coin: z.literal('USDC').default('USDC')
 });
 
 export type CreateLoanInput = z.infer<typeof createLoanSchema>;
@@ -37,7 +37,7 @@ export const updateLoanSchema = z.object({
    repaymentStatus: z.enum([RepaymentStatus.UNPAID, RepaymentStatus.PARTIAL, RepaymentStatus.PAID]).optional(),
    days: loanDaysSchema.optional(),
    block: z.string().optional(),
-   coin: z.string().optional(),
+   coin: z.literal('USDC').optional(),
    hash: z.array(z.string()).optional()
 });
 
