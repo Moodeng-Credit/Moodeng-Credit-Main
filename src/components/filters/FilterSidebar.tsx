@@ -51,6 +51,10 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
       onFiltersChange({
          [filterKey]: filters[filterKey] === value ? '' : value
       });
+
+      if (filterKey === 'amount' && filters[filterKey] !== value) {
+         onCustomAmountChange('');
+      }
    };
 
    const handleDateChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -69,7 +73,12 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
                <legend className="font-semibold mb-2">Set Lending Limit</legend>
                <input
                   value={customAmount}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => onCustomAmountChange(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                     onCustomAmountChange(e.target.value);
+                     if (e.target.value && filters.amount) {
+                        onFiltersChange({ amount: '' });
+                     }
+                  }}
                   className="w-full border border-gray-300 rounded px-2 py-1 mb-3 text-xs md:text-sm"
                   placeholder="Custom amount"
                   type="number"

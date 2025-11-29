@@ -78,19 +78,16 @@ export default function Dashboard() {
       setFilters((prev) => {
          const updated = { ...prev, ...newFilters };
 
-         if ('date' in newFilters) {
+         // When a manual date is selected, clear the loanTime filter
+         // This prevents conflicts between date-based and time-period filters
+         if ('date' in newFilters && newFilters.date !== null) {
             updated.loanTime = '';
          }
 
-         if ('loanTime' in newFilters) {
-            if (newFilters.loanTime === '') {
-               updated.date = null;
-            } else if (newFilters.loanTime) {
-               const currentDate = new Date();
-               const targetDate = new Date(currentDate);
-               targetDate.setDate(currentDate.getDate() + Number(newFilters.loanTime));
-               updated.date = targetDate;
-            }
+         // When a loanTime filter is selected, clear the manual date
+         // Both filters affect the same time-based criteria, so they're mutually exclusive
+         if ('loanTime' in newFilters && newFilters.loanTime !== '') {
+            updated.date = null;
          }
 
          return updated;
@@ -230,9 +227,9 @@ export default function Dashboard() {
          sortBy: filters.sortBy
       };
 
-      const filtered = filterLoans(floanRequests, allFilters);
+      const filtered = filterLoans(floanRequests, allFilters, customAmount);
       setSortedLoans(filtered);
-   }, [filters, searchLoan, floanRequests]);
+   }, [filters, searchLoan, floanRequests, customAmount]);
 
    const {
       displayedItems: displayedLoans,

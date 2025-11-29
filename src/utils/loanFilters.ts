@@ -31,8 +31,12 @@ export const sortLoans = (loans: Loan[], sortBy: SortOption): Loan[] => {
 
 /**
  * Filter loans by amount
+ * Supports both exact amounts and custom maximum amounts
  */
-export const filterByAmount = (loans: Loan[], amount: string): Loan[] => {
+export const filterByAmount = (loans: Loan[], amount: string, customAmount?: string): Loan[] => {
+   if (customAmount && Number(customAmount) > 0) {
+      return loans.filter((loan) => loan.loanAmount <= Number(customAmount));
+   }
    if (!amount || Number(amount) === 0) return loans;
    return loans.filter((loan) => loan.loanAmount === Number(amount));
 };
@@ -56,14 +60,16 @@ export const filterByRate = (loans: Loan[], rate: string): Loan[] => {
 };
 
 /**
- * Filter loans by date
+ * Filter loans by repayment due date
  */
 export const filterByDate = (loans: Loan[], date: Date | null): Loan[] => {
    if (!date) return loans;
 
    return loans.filter((loan) => {
-      const loanDate = new Date(loan.createdAt);
-      return loanDate >= date;
+      const createdDate = new Date(loan.createdAt);
+      const dueDate = new Date(createdDate);
+      dueDate.setDate(createdDate.getDate() + loan.days);
+      return dueDate <= date;
    });
 };
 
@@ -84,10 +90,10 @@ export const filterByTimePeriod = (loans: Loan[], loanTime: string): Loan[] => {
 
       const daysRemaining = Math.round((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-      if (loanTime === '7') return daysRemaining <= 7;
-      if (loanTime === '30') return daysRemaining <= 30;
-      if (loanTime === '90') return daysRemaining <= 90;
-      if (loanTime === '120') return daysRemaining >= 120;
+      if (loanTime === '7') return daysRemaining > 0 && daysRemaining <= 7;
+      if (loanTime === '30') return daysRemaining > 0 && daysRemaining <= 30;
+      if (loanTime === '90') return daysRemaining > 0 && daysRemaining <= 90;
+      if (loanTime === '120') return daysRemaining > 120;
 
       return true;
    });
@@ -108,11 +114,11 @@ export const filterBySearch = (loans: Loan[], search: string): Loan[] => {
 /**
  * Apply all filters to a list of loans
  */
-export const filterLoans = (loans: Loan[], filters: LoanFilters): Loan[] => {
+export const filterLoans = (loans: Loan[], filters: LoanFilters, customAmount?: string): Loan[] => {
    let filtered = [...loans];
 
-   if (filters.amount) {
-      filtered = filterByAmount(filtered, filters.amount);
+   if (filters.amount || customAmount) {
+      filtered = filterByAmount(filtered, filters.amount || '', customAmount);
    }
 
    if (filters.rate) {
