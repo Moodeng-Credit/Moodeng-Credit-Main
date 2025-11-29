@@ -2,6 +2,8 @@ import { useEffect, useMemo } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 
+import { parseDateSafely } from '@/utils/dateFormatters';
+
 import { fetchUser } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -30,7 +32,7 @@ export const useDashboardData = (activeRole: RoleType) => {
       const repayments = userLoans.filter((loan) => loan.repaymentStatus === 'Paid');
       const activeLoans = userLoans.filter((loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus === 'Unpaid');
       const defaultedLoans = userLoans.filter(
-         (loan) => loan.repaymentStatus === 'Unpaid' && new Date(loan.createdAt).getTime() + loan.days * 86400000 < Date.now()
+         (loan) => loan.repaymentStatus === 'Unpaid' && parseDateSafely(loan.createdAt).getTime() + loan.days * 86400000 < Date.now()
       );
       const pendingLoans = userLoans.filter((loan) => loan.loanStatus === 'Requested');
 

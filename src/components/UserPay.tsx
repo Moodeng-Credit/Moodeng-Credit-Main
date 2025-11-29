@@ -9,18 +9,20 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import useWallet from '@/hooks/useWallet';
-import { ERROR_CODES } from '@/types/errorCodes';
-import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
+
+import { parseDateSafely } from '@/utils/dateFormatters';
 
 import { editLoan, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import { ERROR_CODES } from '@/types/errorCodes';
+import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
 
 function UserPay({ loan }: { loan: Loan }) {
    const username = useSelector((state: RootState) => state.auth.username);
    const [repaymentAmount, setRepaymentAmount] = useState('');
    const [isProcessing, setIsProcessing] = useState(false);
-   const time = new Date(loan.createdAt).toISOString();
+   const time = parseDateSafely(loan.createdAt).toISOString();
    const { Transfer } = useWallet();
    const dispatch = useDispatch<AppDispatch>();
    const { showToastByConfig } = useToast();
@@ -58,7 +60,14 @@ function UserPay({ loan }: { loan: Loan }) {
             } catch (editLoanError: unknown) {
                const errorMessage = editLoanError instanceof Error ? editLoanError.message : 'Unknown error';
                console.error('[CRITICAL] Transaction succeeded but database update failed:', errorMessage);
-               console.error('[RECONCILIATION REQUIRED] Loan ID:', loan._id, '| Amount:', repaymentAmount, '| New Total:', newRepaymentAmount);
+               console.error(
+                  '[RECONCILIATION REQUIRED] Loan ID:',
+                  loan._id,
+                  '| Amount:',
+                  repaymentAmount,
+                  '| New Total:',
+                  newRepaymentAmount
+               );
                showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
             } finally {
                setIsProcessing(false);

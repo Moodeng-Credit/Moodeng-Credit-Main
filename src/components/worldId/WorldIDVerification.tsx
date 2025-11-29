@@ -8,13 +8,12 @@ import { useDispatch } from 'react-redux';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { VerificationModal } from '@/components/worldId/VerificationModal';
 
-import { SUCCESS_CODES } from '@/types/successCodes';
-import { getToastKeyFromSuccessCode } from '@/types/successToastMapping';
-
 import { handleApiError } from '@/lib/apiHandler';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import type { ApiResponse } from '@/types/apiTypes';
+import { SUCCESS_CODES } from '@/types/successCodes';
+import { getToastKeyFromSuccessCode } from '@/types/successToastMapping';
 
 interface WorldIDVerificationProps {
    children: (props: { open: () => void }) => ReactNode;

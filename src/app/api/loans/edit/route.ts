@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
          }
 
          await loan.save();
-         
+
          // Fetch the updated loan with lean() to return plain object
          const updatedLoan = await Loan.findById(loan._id).lean();
 

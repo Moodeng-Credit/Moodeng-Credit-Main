@@ -10,7 +10,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import useWallet from '@/hooks/useWallet';
 
-import { calculateDaysRemaining, calculateDueDate } from '@/utils/dateFormatters';
+import { calculateDaysRemaining, calculateDueDate, parseDateSafely } from '@/utils/dateFormatters';
 
 import { MONTHS } from '@/constants/dates';
 import { getUserProfile } from '@/store/slices/authSlice';
@@ -36,7 +36,7 @@ export default function UserCard(loan: Loan) {
    const [localProfile, setLocalProfile] = useState<User | null>(null);
    const [localTotalRepaid, setLocalTotalRepaid] = useState(0);
 
-   const time = new Date(loanData.createdAt).toISOString();
+   const time = parseDateSafely(loanData.createdAt).toISOString();
    const differenceInDays = calculateDaysRemaining(loanData.createdAt, loanData.days);
    const splt = time.split('T')[0].split('-');
    const formattedDate = calculateDueDate(loanData.createdAt, loanData.days);

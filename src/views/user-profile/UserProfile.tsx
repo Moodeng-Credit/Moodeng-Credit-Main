@@ -11,7 +11,7 @@ import { useParams } from 'react-router-dom';
 import Loading from '@/components/Loading';
 import CollapsibleSection from '@/components/ui/CollapsibleSection';
 
-import { formatDate, getMemberSinceText } from '@/utils/dateFormatters';
+import { formatDate, getMemberSinceText, parseDateSafely } from '@/utils/dateFormatters';
 import { calculateLenderDiversity, getDiversityColor, getDiversityStatus } from '@/utils/diversityScore';
 import { getNetworkColor } from '@/utils/networkColors';
 
@@ -125,11 +125,11 @@ const UserProfile = () => {
       return acc;
    }, {});
 
-   const sortedLoans = [...loans].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+   const sortedLoans = [...loans].sort((a, b) => parseDateSafely(a.createdAt).getTime() - parseDateSafely(b.createdAt).getTime());
    let totalDays = 0;
    for (let i = 1; i < sortedLoans.length; i++) {
-      const prev = new Date(sortedLoans[i].createdAt);
-      const next = new Date(sortedLoans[i - 1].createdAt);
+      const prev = parseDateSafely(sortedLoans[i].createdAt);
+      const next = parseDateSafely(sortedLoans[i - 1].createdAt);
       const diffInTime = prev.getTime() - next.getTime();
       const diffInDays = diffInTime / (1000 * 3600 * 24);
       totalDays += diffInDays;
@@ -139,8 +139,8 @@ const UserProfile = () => {
    const paidLoans = loans.filter((loan) => loan.repaymentStatus === 'Paid');
    let totalPaymentTime = 0;
    paidLoans.forEach((loan) => {
-      const loanedAt = new Date(loan.createdAt);
-      const paidAt = new Date(loan.updatedAt);
+      const loanedAt = parseDateSafely(loan.createdAt);
+      const paidAt = parseDateSafely(loan.updatedAt);
       const timeDiff = (paidAt.getTime() - loanedAt.getTime()) / (1000 * 60 * 60 * 24);
       totalPaymentTime += timeDiff;
    });

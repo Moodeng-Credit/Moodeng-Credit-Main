@@ -1,3 +1,5 @@
+import { parseDateSafely } from '@/utils/dateFormatters';
+
 import type { Loan } from '@/types/loanTypes';
 
 export type SortOption = 'highest' | 'lowest' | 'newest' | 'oldest';
@@ -21,8 +23,8 @@ export const sortLoans = (loans: Loan[], sortBy: SortOption): Loan[] => {
    const sortFunctions = {
       highest: (a: Loan, b: Loan) => b.loanAmount - a.loanAmount,
       lowest: (a: Loan, b: Loan) => a.loanAmount - b.loanAmount,
-      newest: (a: Loan, b: Loan) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      oldest: (a: Loan, b: Loan) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      newest: (a: Loan, b: Loan) => parseDateSafely(b.createdAt).getTime() - parseDateSafely(a.createdAt).getTime(),
+      oldest: (a: Loan, b: Loan) => parseDateSafely(a.createdAt).getTime() - parseDateSafely(b.createdAt).getTime()
    };
 
    const sortFn = sortFunctions[sortBy];
@@ -66,7 +68,7 @@ export const filterByDate = (loans: Loan[], date: Date | null): Loan[] => {
    if (!date) return loans;
 
    return loans.filter((loan) => {
-      const createdDate = new Date(loan.createdAt);
+      const createdDate = parseDateSafely(loan.createdAt);
       const dueDate = new Date(createdDate);
       dueDate.setDate(createdDate.getDate() + loan.days);
       return dueDate <= date;
@@ -83,7 +85,7 @@ export const filterByTimePeriod = (loans: Loan[], loanTime: string): Loan[] => {
    today.setHours(0, 0, 0, 0);
 
    return loans.filter((loan) => {
-      const created = new Date(loan.createdAt);
+      const created = parseDateSafely(loan.createdAt);
       created.setHours(0, 0, 0, 0);
       const dueDate = new Date(created);
       dueDate.setDate(created.getDate() + loan.days);

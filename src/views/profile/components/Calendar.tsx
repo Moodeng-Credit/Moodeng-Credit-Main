@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 
+import { parseDateSafely } from '@/utils/dateFormatters';
+
 import type { Loan } from '@/types/loanTypes';
 
 interface CalendarProps {
@@ -31,7 +33,7 @@ export default function Calendar({ activeLoans = EMPTY_LOANS, defaultedLoans = E
    const modifiers = useMemo(() => {
       const activeDates = activeLoans
          .map((loan) => {
-            const dueDate = new Date(loan.createdAt);
+            const dueDate = parseDateSafely(loan.createdAt);
             dueDate.setDate(dueDate.getDate() + loan.days);
             return dueDate;
          })
@@ -39,13 +41,13 @@ export default function Calendar({ activeLoans = EMPTY_LOANS, defaultedLoans = E
 
       const defaultedDates = defaultedLoans
          .map((loan) => {
-            const overdueDate = new Date(loan.createdAt);
+            const overdueDate = parseDateSafely(loan.createdAt);
             overdueDate.setDate(overdueDate.getDate() + loan.days);
             return overdueDate;
          })
          .filter((date) => !isNaN(date.getTime()));
 
-      const pendingDates = pendingLoans.map((loan) => new Date(loan.createdAt)).filter((date) => !isNaN(date.getTime()));
+      const pendingDates = pendingLoans.map((loan) => parseDateSafely(loan.createdAt)).filter((date) => !isNaN(date.getTime()));
 
       return {
          active: activeDates,

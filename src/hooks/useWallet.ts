@@ -7,10 +7,10 @@ import { useSwitchChain, useWriteContract } from 'wagmi';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { chainIdFromNetwork, tokenAddresses } from '@/config/wagmiConfig';
-import { ERROR_CODES } from '@/types/errorCodes';
-import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import { addHash } from '@/store/slices/loanSlice';
 import type { AppDispatch } from '@/store/store';
+import { ERROR_CODES } from '@/types/errorCodes';
+import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 
 const ERC20_ABI = [
    {
