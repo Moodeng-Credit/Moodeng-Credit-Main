@@ -1,9 +1,10 @@
 import type { NextRequest } from 'next/server';
 
-import User from '@/lib/models/User';
-import { registerSchema, transformUserToResponse } from '@/lib/schemas/auth';
+import { prisma } from '@/lib/database';
+import { registerSchema } from '@/lib/schemas/auth';
 import { sendMail } from '@/lib/services/email';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
+import { serialiseUser } from '@/lib/utils/apiResponse';
 import { generateToken, hashPassword, setAuthCookie } from '@/lib/utils/auth';
 import { handleCors } from '@/lib/utils/cors';
 import { generateUsername, verifyGoogleToken, verifyTelegramAuth } from '@/lib/utils/oauth';
@@ -19,19 +20,19 @@ export async function POST(request: NextRequest) {
          let username: string;
          let password: string | null;
          let googleId: string | undefined;
-         let telegramId: number | undefined;
+         let telegramId: bigint | undefined;
          let telegramUsername: string | undefined;
 
          // Handle Google OAuth registration
          if (data.googleCredential) {
             const googleData = await verifyGoogleToken(data.googleCredential);
 
-            const existingGoogleUser = await User.findOne({ googleId: googleData.googleId });
+            const existingGoogleUser = await prisma.user.findUnique({ where: { googleId: googleData.googleId } });
             if (existingGoogleUser) {
                throw { code: ERROR_CODES.USER_ALREADY_EXISTS, message: 'Google account already registered' };
             }
 
-            const existingEmail = await User.findOne({ email: googleData.email });
+            const existingEmail = await prisma.user.findUnique({ where: { email: googleData.email! } });
             if (existingEmail) {
                throw { code: ERROR_CODES.USER_ALREADY_EXISTS, message: 'Email already registered' };
             }
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
          else if (data.telegramAuthData) {
             const telegramData = verifyTelegramAuth(JSON.parse(data.telegramAuthData));
 
-            const existingTelegramUser = await User.findOne({ telegramId: telegramData.telegramId });
+            const existingTelegramUser = await prisma.user.findUnique({ where: { telegramId: telegramData.telegramId } });
             if (existingTelegramUser) {
                throw { code: ERROR_CODES.USER_ALREADY_EXISTS, message: 'Telegram account already registered' };
             }
@@ -62,12 +63,12 @@ export async function POST(request: NextRequest) {
                throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, message: 'Missing required fields' };
             }
 
-            const existingUser = await User.findOne({ username: data.username });
+            const existingUser = await prisma.user.findUnique({ where: { username: data.username } });
             if (existingUser) {
                throw { code: ERROR_CODES.USER_ALREADY_EXISTS, message: 'Username already exists' };
             }
 
-            const existingEmail = await User.findOne({ email: data.email });
+            const existingEmail = await prisma.user.findUnique({ where: { email: data.email } });
             if (existingEmail) {
                throw { code: ERROR_CODES.USER_ALREADY_EXISTS, message: 'Email already exists' };
             }
@@ -78,36 +79,35 @@ export async function POST(request: NextRequest) {
          }
 
          let finalUsername = username;
-         let usernameExists = await User.findOne({ username: finalUsername });
+         let usernameExists = await prisma.user.findUnique({ where: { username: finalUsername } });
          let counter = 1;
          while (usernameExists) {
             finalUsername = `${username}_${counter}`;
-            usernameExists = await User.findOne({ username: finalUsername });
+            usernameExists = await prisma.user.findUnique({ where: { username: finalUsername } });
             counter++;
          }
 
          // Hash password (only for traditional registration)
          const hashedPassword = password ? await hashPassword(password) : null;
 
-         // Create user - use undefined for optional fields to work with sparse indexes
-         const user = new User({
-            username: finalUsername,
-            walletAddress: undefined,
-            isWorldId: WorldId.INACTIVE,
-            password: hashedPassword || undefined,
-            email,
-            telegramUsername: data.telegramUsername || telegramUsername || undefined,
-            googleId: googleId || undefined,
-            telegramId: telegramId || undefined,
-            chatId: undefined,
-            mal: 3,
-            nal: 0,
-            cs: 15
+         // Create user
+         const user = await prisma.user.create({
+            data: {
+               username: finalUsername,
+               isWorldId: WorldId.INACTIVE,
+               password: hashedPassword || undefined,
+               email,
+               telegramUsername: data.telegramUsername || telegramUsername || undefined,
+               googleId: googleId || undefined,
+               telegramId: telegramId || undefined,
+               mal: 3,
+               nal: 0,
+               cs: 15
+            },
+            omit: { password: true, resetToken: true, resetTokenExpiry: true, nullifierHash: true }
          });
 
-         await user.save();
-
-         const token = generateToken(user._id.toString());
+         const token = generateToken(user.id);
 
          // Send welcome email (only for non-placeholder emails)
          if (!email.includes('@moodeng.placeholder')) {
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
 
          return {
             token,
-            user: transformUserToResponse(user)
+            user: serialiseUser(user)
          };
       },
       {

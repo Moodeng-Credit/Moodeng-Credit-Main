@@ -4,6 +4,14 @@ import type { ApiErrorResponse, ApiSuccessResponse } from '@/types/apiTypes';
 import { ERROR_MESSAGES, type ErrorCode } from '@/types/errorCodes';
 import { SUCCESS_MESSAGES, type SuccessCode } from '@/types/successCodes';
 
+export function serialiseUser<T extends { telegramId?: bigint | null; chatId?: bigint | null }>(user: T) {
+   return {
+      ...user,
+      telegramId: user.telegramId ? String(user.telegramId) : null,
+      chatId: user.chatId ? String(user.chatId) : null
+   };
+}
+
 export function createSuccessResponse<T = unknown>(successCode?: SuccessCode, data?: T, status = 200): NextResponse<ApiSuccessResponse<T>> {
    const response: ApiSuccessResponse<T> = {
       success: true,

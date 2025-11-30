@@ -19,7 +19,6 @@ export const SUCCESS_CODES = {
    LOAN_DELETED: 'LOAN_DELETED',
    LOAN_FETCHED: 'LOAN_FETCHED',
    LOANS_FETCHED: 'LOANS_FETCHED',
-   LOAN_HASH_ADDED: 'LOAN_HASH_ADDED',
 
    // Webhook Success (2300-2399)
    WEBHOOK_PROCESSED: 'WEBHOOK_PROCESSED',
@@ -51,8 +50,6 @@ export const SUCCESS_MESSAGES: Record<SuccessCode, string> = {
    [SUCCESS_CODES.LOAN_DELETED]: 'Loan deleted successfully',
    [SUCCESS_CODES.LOAN_FETCHED]: 'Loan retrieved successfully',
    [SUCCESS_CODES.LOANS_FETCHED]: 'Loans retrieved successfully',
-   [SUCCESS_CODES.LOAN_HASH_ADDED]: 'Hash added successfully',
-
    // Webhook
    [SUCCESS_CODES.WEBHOOK_PROCESSED]: 'Webhook processed successfully',
 

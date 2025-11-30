@@ -23,7 +23,7 @@ export const useAuthGuard = () => {
    const username = useSelector((state: RootState) => state.auth.username);
 
    useEffect(() => {
-      const isAuthenticated = username && user._id;
+      const isAuthenticated = username && user.id;
 
       if (!isAuthenticated) {
          console.log('🔒 Client-side auth guard: No authentication found');
@@ -31,10 +31,10 @@ export const useAuthGuard = () => {
          dispatch(clearAuth());
          router.push('/login');
       }
-   }, [username, user._id, router, dispatch]);
+   }, [username, user.id, router, dispatch]);
 
    return {
-      isAuthenticated: !!(username && user._id),
+      isAuthenticated: !!(username && user.id),
       user,
       username
    };

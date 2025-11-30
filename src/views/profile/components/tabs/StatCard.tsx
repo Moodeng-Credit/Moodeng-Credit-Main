@@ -1,3 +1,5 @@
+import { formatNumber } from '@/utils/decimalHelpers';
+
 import type { StatCardConfig } from '@/views/profile/components/tabs/types';
 
 interface StatCardProps {
@@ -17,7 +19,7 @@ const StatCard = ({ config, count, total }: StatCardProps) => {
          </div>
          <div className="text-sm font-semibold text-[#111827] mb-1">{config.label}</div>
          <div className={`text-xs font-bold ${config.textColor} mb-1`}>Total</div>
-         <div className="font-extrabold text-lg text-[#111827]">${total.toFixed(2)}</div>
+         <div className="font-extrabold text-lg text-[#111827]">${formatNumber(total)}</div>
       </div>
    );
 };

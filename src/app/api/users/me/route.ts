@@ -1,7 +1,8 @@
 import type { NextRequest } from 'next/server';
 
-import User from '@/lib/models/User';
+import { prisma } from '@/lib/database';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
+import { serialiseUser } from '@/lib/utils/apiResponse';
 import { handleCors } from '@/lib/utils/cors';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { SUCCESS_CODES } from '@/types/successCodes';
@@ -10,11 +11,15 @@ export async function GET(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data, userId) => {
-         const user = await User.findById(userId).select('-password');
+         const user = await prisma.user.findUnique({
+            where: { id: userId },
+            omit: { password: true, resetToken: true, resetTokenExpiry: true, nullifierHash: true }
+         });
          if (!user) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
          }
-         return user;
+
+         return serialiseUser(user);
       },
       {
          requireAuth: true,

@@ -329,5 +329,20 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       buttonText: 'Contact Support',
       buttonAction: 'contact_support',
       customIcon: 'fas fa-exclamation-triangle'
+   },
+
+   wallet_missing: {
+      toastType: TOAST_TYPES.ERROR,
+      title: 'Wallet Not Connected',
+      message: 'Please connect your wallet to continue.'
+   },
+
+   self_lending_not_allowed: {
+      toastType: TOAST_TYPES.ERROR,
+      title: 'Cannot Lend to Yourself',
+      message: 'You cannot lend to your own loan request. Please lend to other users.',
+      buttonText: 'View Other Loans',
+      buttonAction: 'view_other_loans',
+      route: '/dashboard'
    }
 } as const;

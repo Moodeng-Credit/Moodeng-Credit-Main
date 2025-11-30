@@ -63,10 +63,11 @@ export const walletAddressSchema = z
    .transform((val) => val.trim().toLowerCase());
 
 /**
- * MongoDB ObjectId validation schema
- * - 24 hex characters
+ * PostgreSQL CUID validation schema
+ * - 25 alphanumeric characters (lowercase)
+ * - Format used by Prisma's @default(cuid())
  */
-export const objectIdSchema = z.string({ message: 'ID is required' }).regex(/^[a-f0-9]{24}$/, { message: 'Invalid ID format' });
+export const objectIdSchema = z.string({ message: 'ID is required' }).regex(/^[a-z0-9]{25}$/, { message: 'Invalid ID format' });
 
 /**
  * Positive number validation schema
@@ -87,8 +88,9 @@ export const positiveNumberSchema = (fieldName = 'Value') =>
 
 /**
  * Loan amount validation schema
- * - Must be positive
+ * - Must be positive (greater than 0)
  * - Max 1 billion
+ * Use this for loanAmount and totalRepaymentAmount (total to be repaid)
  */
 export const loanAmountSchema = z
    .union([z.number(), z.string()])
@@ -99,6 +101,25 @@ export const loanAmountSchema = z
       },
       {
          message: 'Loan amount must be positive and not exceed 1 billion'
+      }
+   )
+   .transform((val) => (typeof val === 'string' ? parseFloat(val) : val));
+
+/**
+ * Repaid amount validation schema
+ * - Can be 0 or positive (for cumulative repayments that have been made)
+ * - Max 1 billion
+ * Use this for repaidAmount (cumulative amount already repaid)
+ */
+export const repaidAmountSchema = z
+   .union([z.number(), z.string()])
+   .refine(
+      (val) => {
+         const num = typeof val === 'string' ? parseFloat(val) : val;
+         return !isNaN(num) && num >= 0 && num <= 1_000_000_000;
+      },
+      {
+         message: 'Repaid amount must be non-negative and not exceed 1 billion'
       }
    )
    .transform((val) => (typeof val === 'string' ? parseFloat(val) : val));
@@ -163,21 +184,26 @@ export const googleIdSchema = z
 
 /**
  * Telegram ID validation schema
- * - Positive integer
- * - Max 64-bit integer value
+ * - Positive integer (supports BigInt for large Telegram IDs)
+ * - Accepts number, string, or bigint
+ * - Transforms to bigint for database storage
  */
 export const telegramIdSchema = z
-   .union([z.number(), z.string()])
+   .union([z.number(), z.string(), z.bigint()])
    .refine(
       (val) => {
-         const num = typeof val === 'string' ? parseInt(val, 10) : val;
-         return !isNaN(num) && Number.isInteger(num) && num > 0 && num <= Number.MAX_SAFE_INTEGER;
+         try {
+            const bigIntVal = typeof val === 'bigint' ? val : BigInt(val);
+            return bigIntVal > 0n;
+         } catch {
+            return false;
+         }
       },
       {
          message: 'Telegram ID must be a positive integer'
       }
    )
-   .transform((val) => (typeof val === 'string' ? parseInt(val, 10) : val));
+   .transform((val) => (typeof val === 'bigint' ? val : BigInt(val)));
 
 /**
  * Boolean validation schema

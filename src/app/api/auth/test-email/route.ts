@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 
-import User from '@/lib/models/User';
+import { prisma } from '@/lib/database';
 import { sendMail } from '@/lib/services/email';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data, userId) => {
-         const user = await User.findById(userId);
+         const user = await prisma.user.findUnique({ where: { id: userId } });
          if (!user) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
          }

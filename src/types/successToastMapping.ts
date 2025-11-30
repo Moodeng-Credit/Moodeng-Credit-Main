@@ -23,7 +23,6 @@ export const SUCCESS_CODE_TO_TOAST: Record<SuccessCode, ToastConfigKey | null> =
    [SUCCESS_CODES.LOAN_DELETED]: 'loan_delete_success',
    [SUCCESS_CODES.LOAN_FETCHED]: null, // Silent fetch, no toast
    [SUCCESS_CODES.LOANS_FETCHED]: null, // Silent fetch, no toast
-   [SUCCESS_CODES.LOAN_HASH_ADDED]: null, // Silent operation, no toast
 
    // Other Success
    [SUCCESS_CODES.WEBHOOK_PROCESSED]: null, // Backend operation, no toast
