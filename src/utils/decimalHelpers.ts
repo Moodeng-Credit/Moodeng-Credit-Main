@@ -27,5 +27,5 @@ export const formatNumber = (value: Prisma.Decimal | number | string | null | un
 
    if (isNaN(numValue)) return '0';
 
-   return Number(numValue.toFixed(2)).toString();
+   return numValue.toFixed(2).replace(/\.?0+$/, '');
 };

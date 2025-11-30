@@ -7,6 +7,7 @@ import { updateLoanSchema } from '@/lib/schemas/loans';
 import { sendMail } from '@/lib/services/email';
 import { sendNewLoanNotification } from '@/lib/services/telegram';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
+import { formatNumber } from '@/utils/decimalHelpers';
 import { handleCors } from '@/lib/utils/cors';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { RepaymentStatus } from '@/types/loanTypes';
@@ -75,7 +76,7 @@ const handleLenderPayment = async (
    await sendNotificationEmail(
       lender.email,
       'Your Support is Making a Difference!',
-      `Dear ${lender.username},\nGreat news! The microloan you provided is now helping someone build a better future.\nLoan Details:\nAmount: ${loan.loanAmount.toString()}\nPurpose: ${loan.reason}\nThank you for being part of the global financial inclusion movement. We'll keep you updated on the repayment progress.\nBest regards, The Moodeng Team`,
+      `Dear ${lender.username},\nGreat news! The microloan you provided is now helping someone build a better future.\nLoan Details:\nAmount: $${formatNumber(loan.loanAmount)}\nPurpose: ${loan.reason}\nThank you for being part of the global financial inclusion movement. We'll keep you updated on the repayment progress.\nBest regards, The Moodeng Team`,
       'lender'
    );
 

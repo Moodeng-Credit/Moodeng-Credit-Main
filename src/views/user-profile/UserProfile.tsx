@@ -12,7 +12,7 @@ import Loading from '@/components/Loading';
 import CollapsibleSection from '@/components/ui/CollapsibleSection';
 
 import { formatDate, getMemberSinceText, parseDateSafely } from '@/utils/dateFormatters';
-import { toNumber } from '@/utils/decimalHelpers';
+import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity, getDiversityColor, getDiversityStatus } from '@/utils/diversityScore';
 import { getNetworkColor } from '@/utils/networkColors';
 
@@ -347,12 +347,12 @@ const UserProfile = () => {
                                                      : 'text-gray-100'
                                              }`}
                                           >
-                                             ${tier.loanAmount.toString()} Credit Limit
+                                             ${formatNumber(tier.loanAmount)} Credit Limit
                                           </span>
                                           <span className="text-sm text-gray-400">{formatDate(tier.updatedAt)}</span>
                                        </div>
                                        <span className="text-xs text-gray-400">
-                                          ${tier.loanAmount.toString()} loan repaid ${tier.totalRepaymentAmount.toString()} unlocked $
+                                          ${formatNumber(tier.loanAmount)} loan repaid ${formatNumber(tier.totalRepaymentAmount)} unlocked $
                                           {tierLoanAmount + 20} limit
                                        </span>
                                     </div>
@@ -371,12 +371,12 @@ const UserProfile = () => {
                                           <div className="absolute invisible group-hover:visible bg-gray-700 text-gray-100 p-3 rounded-lg text-sm w-64 right-0 top-full mt-2 z-10 shadow-xl border border-gray-600">
                                              <div className="space-y-2">
                                                 <p className="font-medium">
-                                                   Trust-Building Loans at ${tier.loanAmount.toString()} credit limit:
+                                                   Trust-Building Loans at ${formatNumber(tier.loanAmount)} credit limit:
                                                 </p>
                                                 <ul className="list-disc pl-4 space-y-1">
                                                    {TierList[tierLoanAmount]?.map((loan: Loan) => (
                                                       <li key={loan.id}>
-                                                         ${loan.loanAmount.toString()} loan - {formatDate(loan.updatedAt)}
+                                                         ${formatNumber(loan.loanAmount)} loan - {formatDate(loan.updatedAt)}
                                                       </li>
                                                    ))}
                                                 </ul>
@@ -586,8 +586,8 @@ const UserProfile = () => {
                               <div className="flex justify-between items-start">
                                  <div>
                                     <div className="flex items-center gap-2">
-                                       <span className="text-lg font-semibold text-gray-100">${loan.loanAmount.toString()}</span>
-                                       <span className="text-sm text-gray-400">→ ${loan.repaidAmount.toString()} repaid</span>
+                                       <span className="text-lg font-semibold text-gray-100">${formatNumber(loan.loanAmount)}</span>
+                                       <span className="text-sm text-gray-400">→ ${formatNumber(loan.repaidAmount)} repaid</span>
                                     </div>
                                     <div className="text-sm text-gray-400">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</div>
                                  </div>
@@ -652,7 +652,7 @@ const UserProfile = () => {
                            return (
                               <tr key={loan.id} className="hover:bg-[#111827]">
                                  <td className="py-3 px-4 text-gray-300">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
-                                 <td className="py-3 px-4 font-medium text-white">${loan.loanAmount.toString()}</td>
+                                 <td className="py-3 px-4 font-medium text-white">${formatNumber(loan.loanAmount)}</td>
                                  <td className="py-3 px-4">
                                     <span className={`px-2.5 py-1 ${getNetworkColor(loan.block)} rounded-lg text-xs font-medium`}>
                                        {loan.block}
@@ -678,7 +678,7 @@ const UserProfile = () => {
                            return (
                               <tr key={loan.id} className="hover:bg-[#111827]">
                                  <td className="py-3 px-4 text-gray-300">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
-                                 <td className="py-3 px-4 font-medium text-white">${loan.loanAmount.toString()}</td>
+                                 <td className="py-3 px-4 font-medium text-white">${formatNumber(loan.loanAmount)}</td>
                                  <td className="py-3 px-4">
                                     <span className={`px-2.5 py-1 ${getNetworkColor(loan.block)} rounded-lg text-xs font-medium`}>
                                        {loan.block}

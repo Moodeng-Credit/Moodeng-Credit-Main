@@ -201,12 +201,12 @@ export default function UserCard(loan: Loan) {
                <div className="flex items-center justify-center gap-3 text-left">
                   <div className="">
                      <p className="text-[13px] font-normal text-[#6B6B7B]">Asking</p>
-                     <p className="text-[20px] font-normal text-[#0B1033] mt-1">${loanData.loanAmount.toString()}</p>
+                     <p className="text-[20px] font-normal text-[#0B1033] mt-1">${formatNumber(loanData.loanAmount)}</p>
                   </div>
                   <div className="text-[#6B6B7B] text-[30px] font-light select-none">/</div>
                   <div className="">
                      <p className="text-[13px] font-normal text-[#6B6B7B]">Payback</p>
-                     <p className="text-[20px] font-normal text-[#2F7A3E] mt-1">${loanData.repaidAmount.toString()}</p>
+                     <p className="text-[20px] font-normal text-[#2F7A3E] mt-1">${formatNumber(loanData.repaidAmount)}</p>
                   </div>
                   <div className="pl-8">
                      <p className="text-[13px] font-normal text-[#6B6B7B]">Due Date</p>
