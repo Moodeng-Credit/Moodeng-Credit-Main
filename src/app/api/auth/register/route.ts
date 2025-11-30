@@ -4,6 +4,7 @@ import { prisma } from '@/lib/database';
 import { registerSchema } from '@/lib/schemas/auth';
 import { sendMail } from '@/lib/services/email';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
+import { serialiseUser } from '@/lib/utils/apiResponse';
 import { generateToken, hashPassword, setAuthCookie } from '@/lib/utils/auth';
 import { handleCors } from '@/lib/utils/cors';
 import { generateUsername, verifyGoogleToken, verifyTelegramAuth } from '@/lib/utils/oauth';
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
          let username: string;
          let password: string | null;
          let googleId: string | undefined;
-         let telegramId: number | undefined;
+         let telegramId: bigint | undefined;
          let telegramUsername: string | undefined;
 
          // Handle Google OAuth registration
@@ -120,7 +121,7 @@ export async function POST(request: NextRequest) {
 
          return {
             token,
-            user
+            user: serialiseUser(user)
          };
       },
       {

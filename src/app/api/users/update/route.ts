@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { prisma } from '@/lib/database';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
+import { serialiseUser } from '@/lib/utils/apiResponse';
 import { handleCors } from '@/lib/utils/cors';
 import { WorldId } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
             omit: { password: true, resetToken: true, resetTokenExpiry: true, nullifierHash: true }
          });
 
-         return updatedUser;
+         return serialiseUser(updatedUser);
       },
       {
          schema: updateUserWorldIdSchema,
