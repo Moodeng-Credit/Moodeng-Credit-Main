@@ -7,6 +7,7 @@ interface ApiEndpoints {
       LOGOUT: string;
       UPDATE: string;
       VERIFY: string;
+      GOOGLE: string;
       ME: string;
       PROFILE: string;
    };
@@ -36,6 +37,7 @@ export const API_ENDPOINTS: ApiEndpoints = {
       LOGOUT: '/api/auth/logout',
       UPDATE: '/api/auth/update',
       VERIFY: '/api/auth/verify',
+      GOOGLE: '/api/auth/google',
       ME: '/api/users/me',
       PROFILE: '/api/users/profile'
    },

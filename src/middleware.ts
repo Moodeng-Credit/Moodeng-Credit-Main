@@ -9,6 +9,7 @@ import { ERROR_CODES, ERROR_MESSAGES } from '@/types/errorCodes';
 const PUBLIC_API_ROUTES = [
    '/api/auth/login',
    '/api/auth/register',
+   '/api/auth/google',
    '/api/auth/forgot-password',
    '/api/auth/reset-password',
    '/api/webhook'

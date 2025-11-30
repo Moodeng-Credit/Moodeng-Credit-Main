@@ -9,11 +9,10 @@ import Loading from '@/components/Loading';
 import TextWithLine from '@/components/ui/TextWithLine';
 
 import {
+   authWithGoogle,
    loginUser,
-   loginWithGoogle,
    loginWithTelegram,
    registerUser,
-   registerWithGoogle,
    registerWithTelegram
 } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
@@ -27,9 +26,8 @@ import SocialButtons from '@/views/login/components/SocialButtons';
 type AuthActionThunk =
    | typeof loginUser
    | typeof registerUser
-   | typeof loginWithGoogle
+   | typeof authWithGoogle
    | typeof loginWithTelegram
-   | typeof registerWithGoogle
    | typeof registerWithTelegram;
 
 type AuthPayload =
@@ -138,10 +136,9 @@ export default function AuthFormSection(): JSX.Element {
 
    const handleGoogleAuth = useCallback(
       async (credential: string) => {
-         const action = isSignUp ? registerWithGoogle : loginWithGoogle;
-         await handleAuthAction(action, { googleCredential: credential }, (errorMsg) => handleOAuthError(errorMsg, 'Google'));
+         await handleAuthAction(authWithGoogle, { googleCredential: credential }, (errorMsg) => handleOAuthError(errorMsg, 'Google'));
       },
-      [isSignUp, handleAuthAction]
+      [handleAuthAction]
    );
 
    const handleTelegramAuth = useCallback(

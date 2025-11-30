@@ -50,6 +50,16 @@ export const loginWithGoogle = createAsyncThunk('auth/loginWithGoogle', async ({
    };
 });
 
+export const authWithGoogle = createAsyncThunk('auth/authWithGoogle', async ({ googleCredential }: { googleCredential: string }) => {
+   await apiHandler.post(API_ENDPOINTS.AUTH.GOOGLE, { googleCredential });
+   const userData = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
+
+   return {
+      username: userData.username,
+      user: userData
+   };
+});
+
 export const loginWithTelegram = createAsyncThunk('auth/loginWithTelegram', async ({ telegramAuthData }: { telegramAuthData: string }) => {
    await apiHandler.post(API_ENDPOINTS.AUTH.LOGIN, { telegramAuthData });
    const userData = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
@@ -155,6 +165,19 @@ const authSlice = createSlice({
             state.user = action.payload.user;
          })
          .addCase(loginWithGoogle.rejected, (state, action) => {
+            state.isLoading = false;
+            state.error = action.payload as string;
+         })
+         .addCase(authWithGoogle.pending, (state) => {
+            state.isLoading = true;
+            state.error = null;
+         })
+         .addCase(authWithGoogle.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.username = action.payload.username;
+            state.user = action.payload.user;
+         })
+         .addCase(authWithGoogle.rejected, (state, action) => {
             state.isLoading = false;
             state.error = action.payload as string;
          })

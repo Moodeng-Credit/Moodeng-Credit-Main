@@ -8,6 +8,7 @@ export const ERROR_CODES = {
    AUTH_USER_NOT_FOUND: 'AUTH_USER_NOT_FOUND',
    AUTH_SESSION_EXPIRED: 'AUTH_SESSION_EXPIRED',
    AUTH_PASSWORD_WEAK: 'AUTH_PASSWORD_WEAK',
+   AUTH_EMAIL_EXISTS: "AUTH_EMAIL_EXISTS",
 
    // World ID Verification Errors (1100-1199)
    WORLDID_ALREADY_USED: 'WORLDID_ALREADY_USED',
@@ -67,6 +68,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
    [ERROR_CODES.AUTH_USER_NOT_FOUND]: 'User not found.',
    [ERROR_CODES.AUTH_SESSION_EXPIRED]: 'Your session has expired. Please log in again.',
    [ERROR_CODES.AUTH_PASSWORD_WEAK]: 'Password does not meet strength requirements.',
+   [ERROR_CODES.AUTH_EMAIL_EXISTS]: 'Email already in use for different sign-in method.',
 
    // World ID
    [ERROR_CODES.WORLDID_ALREADY_USED]: 'This World ID verification has already been used by another account.',
