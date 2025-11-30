@@ -13,7 +13,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import useWallet from '@/hooks/useWallet';
 
 import { parseDateSafely } from '@/utils/dateFormatters';
-import { toNumber } from '@/utils/decimalHelpers';
+import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
 import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -106,14 +106,14 @@ function UserPay({ loan }: { loan: Loan }) {
             <div className="flex gap-10 items-center mt-8">
                <div className="flex flex-col self-stretch my-auto">
                   <div className="text-sm leading-loose text-black text-opacity-60">Total Due</div>
-                  <div className="mt-1.5 text-base font-medium leading-loose text-black">${loan.totalRepaymentAmount.toString()}</div>
+                  <div className="mt-1.5 text-base font-medium leading-loose text-black">${formatNumber(loan.totalRepaymentAmount)}</div>
                </div>
                <div className="flex flex-col self-stretch my-auto">
                   <div className="text-sm leading-loose text-black text-opacity-60">Amount Paid</div>
                   <div className="mt-1.5 text-base font-medium leading-loose text-black">
-                     ${loan.repaidAmount.toString()}
+                     ${formatNumber(loan.repaidAmount)}
                      <span className="text-sm leading-6 text-black">
-                        {' ($' + (toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount)).toString() + ' Remaining)'}
+                        {' ($' + formatNumber(toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount)) + ' Remaining)'}
                      </span>
                   </div>
                </div>

@@ -94,7 +94,7 @@ export default function LoanRequestModal({
                      <button aria-label="Limit info" className="focus:outline-none" type="button">
                         <i className="fas fa-question-circle"></i>
                      </button>
-                     <span>Limit: ${limitAmount?.toFixed(2) || '0.00'}</span>
+                     <span>Limit: ${limitAmount || '0'}</span>
                   </div>
                </div>
                <div className="flex border-solid border border-gray-300 rounded-md overflow-hidden">

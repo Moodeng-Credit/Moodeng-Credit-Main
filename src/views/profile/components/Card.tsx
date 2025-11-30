@@ -11,7 +11,7 @@ import Modal from '@/components/ui/Modal';
 import UserPay from '@/components/UserPay';
 
 import { calculateDaysRemaining, calculateDueDate, formatDate } from '@/utils/dateFormatters';
-import { toNumber } from '@/utils/decimalHelpers';
+import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { getLoanBadgeStyles } from '@/utils/loanStatusFormatters';
 
 import { deleteLoan, getUserLoans } from '@/store/slices/loanSlice';
@@ -56,7 +56,7 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
             <div>
                <h3 className="font-extrabold text-[15px] leading-[18px] text-[#0B1033]">{loan.reason}</h3>
                <p className="text-[13px] leading-[16px] text-[#6B7280] mt-2">
-                  You Funded <span className="font-extrabold">${loan.loanAmount.toString()}</span> to{' '}
+                  You Funded <span className="font-extrabold">${formatNumber(loan.loanAmount)}</span> to{' '}
                   <em>
                      <a onClick={() => router.push('/user/' + loan.borrowerUser)} className="text-[#2563EB] underline">
                         {loan.borrowerUser}
@@ -76,13 +76,11 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
          <div className="p-5 pt-4">
             <p className="text-[13px] leading-[16px] font-normal text-[#6B7280] mb-1">Repayment Progress</p>
             <p className="text-[36px] font-extrabold text-[#2563EB] leading-[44px]">
-               ${loan.totalRepaymentAmount.toString()}
-               <span className="text-[#6B7280] font-normal text-[24px]">/${loan.repaidAmount.toString()}</span>
+               ${formatNumber(loan.totalRepaymentAmount)}
+               <span className="text-[#6B7280] font-normal text-[24px]">/${formatNumber(loan.repaidAmount)}</span>
             </p>
             <p className="text-[12px] leading-[15px] font-semibold text-[#6B7280] mt-1">
-               <span className="font-extrabold">
-                  ${(toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount))?.toFixed(2) || '0.00'}
-               </span>{' '}
+               <span className="font-extrabold">${formatNumber(toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount))}</span>{' '}
                Remaining for Complete Payback
             </p>
             <div className="w-full h-4 rounded-full bg-[#D9D9D9] mt-3 overflow-hidden">
@@ -124,14 +122,14 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
          <div className="p-5 pt-4 border-b border-[#E5E7EB] grid grid-cols-3 text-center text-[13px] leading-[16px] font-normal text-[#6B7280]">
             <div>
                <p>Asking</p>
-               <p className="mt-1 text-[18px] font-normal text-[#0B1033]">${loan.loanAmount.toString()}</p>
+               <p className="mt-1 text-[18px] font-normal text-[#0B1033]">${formatNumber(loan.loanAmount)}</p>
             </div>
             <div className="flex items-center justify-center space-x-1 text-[#6B7280]">
                <span>→</span>
             </div>
             <div>
                <p>Payback</p>
-               <p className="mt-1 text-[16px] font-normal text-[#166534]">${loan.repaidAmount.toString()}</p>
+               <p className="mt-1 text-[16px] font-normal text-[#166534]">${formatNumber(loan.repaidAmount)}</p>
             </div>
             <div></div>
             <div>

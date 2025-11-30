@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type { Column } from '@/components/tables/DataTable';
 
 import { formatDate } from '@/utils/dateFormatters';
+import { formatNumber } from '@/utils/decimalHelpers';
 
 import type { Loan } from '@/types/loanTypes';
 
@@ -25,7 +26,7 @@ export const getTransactionColumns = (isLender: boolean): Column<Loan>[] => [
    },
    {
       header: `${isLender ? 'Funded' : 'Borrowed'} Amount`,
-      accessor: (loan) => `$${loan.loanAmount ? Number(loan.loanAmount).toFixed(2) : '0.00'}`,
+      accessor: (loan) => `$${formatNumber(loan.loanAmount)}`,
       className: 'font-bold text-[#166534]',
       mobileLabel: 'Amount'
    },
@@ -37,7 +38,7 @@ export const getTransactionColumns = (isLender: boolean): Column<Loan>[] => [
    },
    {
       header: 'Returned Amount',
-      accessor: (loan) => `$${loan.repaidAmount ? Number(loan.repaidAmount).toFixed(2) : '0.00'}`,
+      accessor: (loan) => `$${formatNumber(loan.repaidAmount)}`,
       className: 'font-bold text-[#b91c1c]',
       mobileLabel: 'Returned'
    },
