@@ -4,7 +4,9 @@ import { type ChangeEvent, type MouseEvent, useState } from 'react';
 
 import Image from 'next/image';
 
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
+import { useAccount } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
@@ -27,11 +29,19 @@ function UserPay({ loan }: { loan: Loan }) {
    const { Transfer } = useWallet();
    const dispatch = useDispatch<AppDispatch>();
    const { showToastByConfig } = useToast();
+   const { isConnected } = useAccount();
+   const { openConnectModal } = useConnectModal();
 
    const handleBorrow = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
 
       if (isProcessing) {
+         return;
+      }
+
+      if (!isConnected) {
+         openConnectModal?.();
+         e.stopPropagation();
          return;
       }
 

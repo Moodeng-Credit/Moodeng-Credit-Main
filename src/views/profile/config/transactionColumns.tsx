@@ -37,7 +37,7 @@ export const getTransactionColumns = (isLender: boolean): Column<Loan>[] => [
    },
    {
       header: 'Returned Amount',
-      accessor: (loan) => `$${loan.totalRepaymentAmount}.00`,
+      accessor: (loan) => `$${loan.repaidAmount.toString()}.00`,
       className: 'font-bold text-[#b91c1c]',
       mobileLabel: 'Returned'
    },
