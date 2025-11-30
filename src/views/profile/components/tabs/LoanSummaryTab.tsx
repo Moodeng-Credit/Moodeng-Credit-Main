@@ -30,7 +30,7 @@ export default function LoanSummaryTab({ loans, currentUsername, userRole }: Loa
       <>
          <div className="flex flex-wrap justify-center gap-8 overflow-hidden">
             {displayedLoans.map((loan) => (
-               <Card key={loan._id} type={isLender} loan={loan} />
+               <Card key={loan.id} type={isLender} loan={loan} />
             ))}
          </div>
          <LoadMoreButton currentCount={displayedCount} totalCount={totalCount} onLoadMore={handleLoadMore} />

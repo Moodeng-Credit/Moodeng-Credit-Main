@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useCallback, useState } from 'react';
 
 import { IDKitWidget, type ISuccessResult, VerificationLevel } from '@worldcoin/idkit';
 import { useDispatch } from 'react-redux';
@@ -69,6 +69,10 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       onSuccess?.();
    };
 
+   const handleCloseModal = useCallback(() => {
+      setIsModalOpen(false);
+   }, []);
+
    return (
       <IDKitWidget
          app_id={app_id}
@@ -83,12 +87,12 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
                <VerificationModal
                   isOpen={isModalOpen}
-                  onClose={() => setIsModalOpen(false)}
+                  onClose={handleCloseModal}
                   onVerify={() => {
-                     setIsModalOpen(false);
+                     handleCloseModal();
                      open();
                   }}
-                  onCheckStatus={() => setIsModalOpen(false)}
+                  onCheckStatus={handleCloseModal}
                />
             </>
          )}

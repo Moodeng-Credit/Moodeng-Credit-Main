@@ -40,5 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# prisma - only ignore generated client, keep migrations
+/.prisma
+
 certificates
 CLAUDE.md

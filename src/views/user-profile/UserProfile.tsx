@@ -12,6 +12,7 @@ import Loading from '@/components/Loading';
 import CollapsibleSection from '@/components/ui/CollapsibleSection';
 
 import { formatDate, getMemberSinceText, parseDateSafely } from '@/utils/dateFormatters';
+import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity, getDiversityColor, getDiversityStatus } from '@/utils/diversityScore';
 import { getNetworkColor } from '@/utils/networkColors';
 
@@ -77,8 +78,9 @@ const UserProfile = () => {
 
    const ignoredTier = new Set();
    const TierLists = loans.reduce((acc: Loan[], loan: Loan) => {
-      const remainder = loan.loanAmount % 20;
-      const key = Math.floor(loan.loanAmount / 20) * 20;
+      const loanAmountNum = toNumber(loan.loanAmount);
+      const remainder = loanAmountNum % 20;
+      const key = Math.floor(loanAmountNum / 20) * 20;
       if (remainder === 0) {
          if (ignoredTier.has(key)) {
             acc.push(loan);
@@ -93,9 +95,10 @@ const UserProfile = () => {
 
    const ignoredTiers = new Set();
    const TierList = loans.reduce((acc: Record<number, Loan[]>, loan: Loan) => {
-      const remainder = loan.loanAmount % 20;
+      const loanAmountNum = toNumber(loan.loanAmount);
+      const remainder = loanAmountNum % 20;
       if (remainder === 0) {
-         const key = Math.floor(loan.loanAmount / 20) * 20;
+         const key = Math.floor(loanAmountNum / 20) * 20;
          if (ignoredTiers.has(key)) {
             if (!acc[key]) acc[key] = [];
             acc[key].push(loan);
@@ -104,7 +107,7 @@ const UserProfile = () => {
          }
          return acc;
       }
-      const key = Math.floor(loan.loanAmount / 20) * 20;
+      const key = Math.floor(loanAmountNum / 20) * 20;
       if (!acc[key]) acc[key] = [];
       acc[key].push(loan);
       return acc;
@@ -113,9 +116,10 @@ const UserProfile = () => {
    const uniqueLoans: Loan[] = [];
    const seenAmounts = new Set();
    for (const loan of loans) {
-      if (loan.loanAmount % 20 === 0 && !seenAmounts.has(loan.loanAmount)) {
+      const loanAmountNum = toNumber(loan.loanAmount);
+      if (loanAmountNum % 20 === 0 && !seenAmounts.has(loanAmountNum)) {
          uniqueLoans.push(loan);
-         seenAmounts.add(loan.loanAmount);
+         seenAmounts.add(loanAmountNum);
       }
    }
 
@@ -154,8 +158,8 @@ const UserProfile = () => {
       stats: {
          totalLoans: loans.length,
          defaults: 0,
-         totalBorrowed: loans.reduce((sum, loan) => (loan.loanStatus === 'Lent' ? sum + loan.loanAmount : sum), 0),
-         totalRepaid: loans.reduce((sum, loan) => (loan.repaymentStatus === 'Paid' ? sum + loan.loanAmount : sum), 0),
+         totalBorrowed: loans.reduce((sum, loan) => (loan.loanStatus === 'Lent' ? sum + toNumber(loan.loanAmount) : sum), 0),
+         totalRepaid: loans.reduce((sum, loan) => (loan.repaymentStatus === 'Paid' ? sum + toNumber(loan.loanAmount) : sum), 0),
          uniqueLenders: lenderDiversity.uniqueLenders,
          unlocking: uniqueLoans.length,
          building: TierLists.length
@@ -238,12 +242,12 @@ const UserProfile = () => {
                <div className="bg-[#1F2937] rounded-xl p-6">
                   <div className="flex justify-between items-start mb-4">
                      <div>
-                        <div className="text-5xl font-bold mb-2">${borrowerData.stats.totalBorrowed}</div>
+                        <div className="text-5xl font-bold mb-2">${formatNumber(borrowerData.stats.totalBorrowed)}</div>
                         <div className="text-gray-400">Total Borrowed</div>
                      </div>
                      <div className="text-emerald-500 text-2xl">$</div>
                   </div>
-                  <div className="text-green-400">${borrowerData.stats.totalRepaid} Repaid</div>
+                  <div className="text-green-400">${formatNumber(borrowerData.stats.totalRepaid)} Repaid</div>
                </div>
 
                <div className="bg-[#1F2937] rounded-xl p-6">
@@ -271,7 +275,7 @@ const UserProfile = () => {
                            <LevelBadge status="completed" />
                         </div>
                      </div>
-                     <div className="text-4xl font-bold mb-2">${borrowerData.creditGrowth.currentLimit}</div>
+                     <div className="text-4xl font-bold mb-2">${formatNumber(borrowerData.creditGrowth.currentLimit)}</div>
                      <div className="text-gray-400">{borrowerData.creditGrowth.currentDate}</div>
                   </div>
 
@@ -282,7 +286,7 @@ const UserProfile = () => {
                            <LevelBadge status="current" />
                         </div>
                      </div>
-                     <div className="text-4xl font-bold text-green-400 mb-2">${borrowerData.creditGrowth.nextLimit}</div>
+                     <div className="text-4xl font-bold text-green-400 mb-2">${formatNumber(borrowerData.creditGrowth.nextLimit)}</div>
                      <div className="text-green-400">Available to Borrow Now</div>
                   </div>
                </div>
@@ -290,13 +294,13 @@ const UserProfile = () => {
                <div className="space-y-4">
                   <div className="flex justify-between text-sm text-gray-400">
                      <span>Starting Credit Limit ($20)</span>
-                     <span>Current Credit Limit (${borrowerData.creditGrowth.nextLimit})</span>
+                     <span>Current Credit Limit (${formatNumber(borrowerData.creditGrowth.nextLimit)})</span>
                   </div>
                   <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                      <div className={'h-full bg-blue-500 w-[' + parseInt(((user.cs * 100) / (user.cs + 20)).toString()) + '%]'} />
                   </div>
                   <div className="flex justify-between text-sm text-gray-400">
-                     <span>Total Borrowed: ${borrowerData.stats.totalBorrowed}</span>
+                     <span>Total Borrowed: ${formatNumber(borrowerData.stats.totalBorrowed)}</span>
                      <span>{borrowerData.stats.totalLoans} Total Loans</span>
                   </div>
                </div>
@@ -308,77 +312,83 @@ const UserProfile = () => {
                >
                   <div className="mt-6 space-y-4">
                      <h3 className="text-lg font-medium text-gray-100">Credit Growth Timeline</h3>
-                     {uniqueLoans.map((tier: Loan) => (
-                        <div
-                           key={tier._id}
-                           className={`p-4 rounded-lg ${
-                              tier.loanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
-                                 ? 'bg-green-900/20 border border-green-800'
-                                 : tier.loanAmount === user.cs
-                                   ? 'bg-blue-800/50 border border-blue-800'
-                                   : 'bg-gray-800/50 border border-gray-800'
-                           }`}
-                        >
-                           <div className="flex justify-between items-start">
-                              <div className="flex items-center gap-4">
-                                 <LevelBadge
-                                    status={
-                                       tier.loanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
-                                          ? 'current'
-                                          : tier.loanAmount === user.cs
-                                            ? 'next'
-                                            : 'completed'
-                                    }
-                                 />
-                                 <div className="flex flex-col gap-1">
-                                    <div className="flex items-center gap-2">
-                                       <span
-                                          className={`text-lg font-medium ${
-                                             tier.loanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
-                                                ? 'text-green-400'
-                                                : tier.loanAmount === user.cs
-                                                  ? 'text-blue-100'
-                                                  : 'text-gray-100'
-                                          }`}
-                                       >
-                                          ${tier.loanAmount} Credit Limit
+                     {uniqueLoans.map((tier: Loan) => {
+                        const tierLoanAmount = toNumber(tier.loanAmount);
+                        return (
+                           <div
+                              key={tier.id}
+                              className={`p-4 rounded-lg ${
+                                 tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
+                                    ? 'bg-green-900/20 border border-green-800'
+                                    : tierLoanAmount === user.cs
+                                      ? 'bg-blue-800/50 border border-blue-800'
+                                      : 'bg-gray-800/50 border border-gray-800'
+                              }`}
+                           >
+                              <div className="flex justify-between items-start">
+                                 <div className="flex items-center gap-4">
+                                    <LevelBadge
+                                       status={
+                                          tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
+                                             ? 'current'
+                                             : tierLoanAmount === user.cs
+                                               ? 'next'
+                                               : 'completed'
+                                       }
+                                    />
+                                    <div className="flex flex-col gap-1">
+                                       <div className="flex items-center gap-2">
+                                          <span
+                                             className={`text-lg font-medium ${
+                                                tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
+                                                   ? 'text-green-400'
+                                                   : tierLoanAmount === user.cs
+                                                     ? 'text-blue-100'
+                                                     : 'text-gray-100'
+                                             }`}
+                                          >
+                                             ${formatNumber(tier.loanAmount)} Credit Limit
+                                          </span>
+                                          <span className="text-sm text-gray-400">{formatDate(tier.updatedAt)}</span>
+                                       </div>
+                                       <span className="text-xs text-gray-400">
+                                          ${formatNumber(tier.loanAmount)} loan repaid ${formatNumber(tier.totalRepaymentAmount)} unlocked $
+                                          {tierLoanAmount + 20} limit
                                        </span>
-                                       <span className="text-sm text-gray-400">{formatDate(tier.updatedAt)}</span>
                                     </div>
-                                    <span className="text-xs text-gray-400">
-                                       ${tier.loanAmount} loan repaid ${tier.totalRepaymentAmount} unlocked ${tier.loanAmount + 20} limit
-                                    </span>
                                  </div>
-                              </div>
 
-                              {TierList[tier.loanAmount]?.length > 0 ? (
-                                 <div className="flex items-start gap-2">
-                                    <div className="contents text-xs text-gray-400">Trust-Building Loans</div>
-                                    <div className="relative group">
-                                       <div className="flex items-center gap-1 cursor-help">
-                                          <span className="text-gray-400">+</span>
-                                          <div className="px-2 py-1 rounded-full bg-gray-700/40 border border-gray-600 text-sm text-gray-300">
-                                             {TierList[tier.loanAmount]?.length}
+                                 {TierList[tierLoanAmount]?.length > 0 ? (
+                                    <div className="flex items-start gap-2">
+                                       <div className="contents text-xs text-gray-400">Trust-Building Loans</div>
+                                       <div className="relative group">
+                                          <div className="flex items-center gap-1 cursor-help">
+                                             <span className="text-gray-400">+</span>
+                                             <div className="px-2 py-1 rounded-full bg-gray-700/40 border border-gray-600 text-sm text-gray-300">
+                                                {TierList[tierLoanAmount]?.length}
+                                             </div>
                                           </div>
-                                       </div>
-                                       <div className="absolute invisible group-hover:visible bg-gray-700 text-gray-100 p-3 rounded-lg text-sm w-64 right-0 top-full mt-2 z-10 shadow-xl border border-gray-600">
-                                          <div className="space-y-2">
-                                             <p className="font-medium">Trust-Building Loans at ${tier.loanAmount} credit limit:</p>
-                                             <ul className="list-disc pl-4 space-y-1">
-                                                {TierList[tier.loanAmount]?.map((loan: Loan) => (
-                                                   <li key={loan._id}>
-                                                      ${loan.loanAmount} loan - {formatDate(loan.updatedAt)}
-                                                   </li>
-                                                ))}
-                                             </ul>
+                                          <div className="absolute invisible group-hover:visible bg-gray-700 text-gray-100 p-3 rounded-lg text-sm w-64 right-0 top-full mt-2 z-10 shadow-xl border border-gray-600">
+                                             <div className="space-y-2">
+                                                <p className="font-medium">
+                                                   Trust-Building Loans at ${formatNumber(tier.loanAmount)} credit limit:
+                                                </p>
+                                                <ul className="list-disc pl-4 space-y-1">
+                                                   {TierList[tierLoanAmount]?.map((loan: Loan) => (
+                                                      <li key={loan.id}>
+                                                         ${formatNumber(loan.loanAmount)} loan - {formatDate(loan.updatedAt)}
+                                                      </li>
+                                                   ))}
+                                                </ul>
+                                             </div>
                                           </div>
                                        </div>
                                     </div>
-                                 </div>
-                              ) : null}
+                                 ) : null}
+                              </div>
                            </div>
-                        </div>
-                     ))}
+                        );
+                     })}
                   </div>
 
                   <div className="mt-6 space-y-4">
@@ -464,7 +474,10 @@ const UserProfile = () => {
                      <span className="text-gray-400">Usual loan size:</span>
                      <div className="flex items-center gap-2">
                         <span className="text-yellow-400">
-                           ${loans.length > 0 ? Math.round(loans.reduce((sum, loan) => sum + loan.loanAmount, 0) / loans.length) : '0'}
+                           $
+                           {loans.length > 0
+                              ? Math.round(loans.reduce((sum, loan) => sum + toNumber(loan.loanAmount), 0) / loans.length)
+                              : '0'}
                         </span>
                         <div className="relative group">
                            <HelpCircle className="w-4 h-4 text-gray-500 cursor-help" />
@@ -566,15 +579,15 @@ const UserProfile = () => {
                      .filter((loan) => loan.repaymentStatus === 'Paid')
                      .slice(0, 5)
                      .map((loan: Loan) => {
-                        const unlock = uniqueLoans.some((item) => item._id === loan._id);
-                        const build = TierLists.some((item) => item._id === loan._id);
+                        const unlock = uniqueLoans.some((item) => item.id === loan.id);
+                        const build = TierLists.some((item) => item.id === loan.id);
                         return (
-                           <div key={loan._id} className="bg-[#111827] rounded-lg p-4 space-y-3">
+                           <div key={loan.id} className="bg-[#111827] rounded-lg p-4 space-y-3">
                               <div className="flex justify-between items-start">
                                  <div>
                                     <div className="flex items-center gap-2">
-                                       <span className="text-lg font-semibold text-gray-100">${loan.loanAmount}</span>
-                                       <span className="text-sm text-gray-400">→ ${loan.repaidAmount} repaid</span>
+                                       <span className="text-lg font-semibold text-gray-100">${formatNumber(loan.loanAmount)}</span>
+                                       <span className="text-sm text-gray-400">→ ${formatNumber(loan.repaidAmount)} repaid</span>
                                     </div>
                                     <div className="text-sm text-gray-400">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</div>
                                  </div>
@@ -637,9 +650,9 @@ const UserProfile = () => {
                      <tbody className="divide-y divide-gray-700">
                         {uniqueLoans.map((loan: Loan) => {
                            return (
-                              <tr key={loan._id} className="hover:bg-[#111827]">
+                              <tr key={loan.id} className="hover:bg-[#111827]">
                                  <td className="py-3 px-4 text-gray-300">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
-                                 <td className="py-3 px-4 font-medium text-white">${loan.loanAmount}</td>
+                                 <td className="py-3 px-4 font-medium text-white">${formatNumber(loan.loanAmount)}</td>
                                  <td className="py-3 px-4">
                                     <span className={`px-2.5 py-1 ${getNetworkColor(loan.block)} rounded-lg text-xs font-medium`}>
                                        {loan.block}
@@ -663,9 +676,9 @@ const UserProfile = () => {
                         })}
                         {TierLists.map((loan: Loan) => {
                            return (
-                              <tr key={loan._id} className="hover:bg-[#111827]">
+                              <tr key={loan.id} className="hover:bg-[#111827]">
                                  <td className="py-3 px-4 text-gray-300">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
-                                 <td className="py-3 px-4 font-medium text-white">${loan.loanAmount}</td>
+                                 <td className="py-3 px-4 font-medium text-white">${formatNumber(loan.loanAmount)}</td>
                                  <td className="py-3 px-4">
                                     <span className={`px-2.5 py-1 ${getNetworkColor(loan.block)} rounded-lg text-xs font-medium`}>
                                        {loan.block}

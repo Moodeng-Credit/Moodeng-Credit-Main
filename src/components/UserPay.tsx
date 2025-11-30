@@ -4,15 +4,18 @@ import { type ChangeEvent, type MouseEvent, useState } from 'react';
 
 import Image from 'next/image';
 
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
+import { useAccount } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import useWallet from '@/hooks/useWallet';
 
 import { parseDateSafely } from '@/utils/dateFormatters';
+import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
-import { editLoan, getUserLoans } from '@/store/slices/loanSlice';
+import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
@@ -20,12 +23,14 @@ import type { Loan } from '@/types/loanTypes';
 
 function UserPay({ loan }: { loan: Loan }) {
    const username = useSelector((state: RootState) => state.auth.username);
-   const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');
+   const [repaidAmountToAdd, setRepaidAmountToAdd] = useState('');
    const [isProcessing, setIsProcessing] = useState(false);
    const time = parseDateSafely(loan.createdAt).toISOString();
    const { Transfer } = useWallet();
    const dispatch = useDispatch<AppDispatch>();
    const { showToastByConfig } = useToast();
+   const { isConnected } = useAccount();
+   const { openConnectModal } = useConnectModal();
 
    const handleBorrow = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
@@ -34,46 +39,53 @@ function UserPay({ loan }: { loan: Loan }) {
          return;
       }
 
-      const newtotalRepaymentAmount = loan.totalRepaymentAmount + parseInt(totalRepaymentAmount);
-      const loanData = {
-         _id: loan._id,
-         totalRepaymentAmount: newtotalRepaymentAmount,
-         repaymentStatus: newtotalRepaymentAmount < loan.repaidAmount ? 'Partial' : 'Paid',
-         loanStatus: loan.loanStatus
-      };
+      if (!isConnected) {
+         openConnectModal?.();
+         e.stopPropagation();
+         return;
+      }
+
+      const newRepaidAmount = toNumber(loan.repaidAmount) + Number(repaidAmountToAdd);
+      const totalOwed = toNumber(loan.totalRepaymentAmount);
+
+      const newRepaymentStatus = newRepaidAmount >= totalOwed ? 'Paid' : 'Partial';
 
       if (
-         loan.totalRepaymentAmount + parseInt(totalRepaymentAmount) <= loan.repaidAmount &&
          loan.loanStatus === 'Lent' &&
          loan.repaymentStatus !== 'Paid' &&
-         parseInt(totalRepaymentAmount) > 0
+         parseFloat(repaidAmountToAdd) > 0 &&
+         newRepaidAmount <= totalOwed // Don't allow overpayment
       ) {
          setIsProcessing(true);
-         const transferSuccess = await Transfer(
-            e,
-            loan.lenderWallet || '',
-            totalRepaymentAmount.toString(),
-            loan._id,
-            loan.block,
-            loan.coin
-         );
+         const transactionHash = await Transfer(e, loan.lenderWallet || '', repaidAmountToAdd.toString(), loan.id, loan.block, loan.coin);
 
-         if (transferSuccess) {
+         if (transactionHash) {
             try {
-               await dispatch(editLoan(loanData as Loan)).unwrap();
+               const loanData = {
+                  id: loan.id,
+                  repaidAmount: newRepaidAmount,
+                  repaymentStatus: newRepaymentStatus,
+                  hash: transactionHash
+               };
+
+               await dispatch(updateLoanStatus(loanData)).unwrap();
                await dispatch(getUserLoans(username || ''));
                showToastByConfig('repayment_success');
-               setTotalRepaymentAmount('');
-            } catch (editLoanError: unknown) {
-               const errorMessage = editLoanError instanceof Error ? editLoanError.message : 'Unknown error';
+               setRepaidAmountToAdd('');
+            } catch (updateError: unknown) {
+               const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
                console.error('[CRITICAL] Transaction succeeded but database update failed:', errorMessage);
                console.error(
                   '[RECONCILIATION REQUIRED] Loan ID:',
-                  loan._id,
-                  '| Amount:',
-                  totalRepaymentAmount,
-                  '| New Total:',
-                  newtotalRepaymentAmount
+                  loan.id,
+                  '| Payment Amount:',
+                  repaidAmountToAdd,
+                  '| New Repaid Total:',
+                  newRepaidAmount.toString(),
+                  '| Status:',
+                  newRepaymentStatus,
+                  '| Hash:',
+                  transactionHash
                );
                showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
             } finally {
@@ -93,15 +105,15 @@ function UserPay({ loan }: { loan: Loan }) {
             <h1 className="self-start text-2xl font-medium leading-none text-black">Loan Repayment</h1>
             <div className="flex gap-10 items-center mt-8">
                <div className="flex flex-col self-stretch my-auto">
-                  <div className="text-sm leading-loose text-black text-opacity-60">Loan Amount</div>
-                  <div className="mt-1.5 text-base font-medium leading-loose text-black">${loan.repaidAmount}</div>
+                  <div className="text-sm leading-loose text-black text-opacity-60">Total Due</div>
+                  <div className="mt-1.5 text-base font-medium leading-loose text-black">${formatNumber(loan.totalRepaymentAmount)}</div>
                </div>
                <div className="flex flex-col self-stretch my-auto">
                   <div className="text-sm leading-loose text-black text-opacity-60">Amount Paid</div>
                   <div className="mt-1.5 text-base font-medium leading-loose text-black">
-                     ${loan.totalRepaymentAmount}
+                     ${formatNumber(loan.repaidAmount)}
                      <span className="text-sm leading-6 text-black">
-                        {' ($' + (loan.repaidAmount - loan.totalRepaymentAmount) + ' Remaining)'}
+                        {' ($' + formatNumber(toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount)) + ' Remaining)'}
                      </span>
                   </div>
                </div>
@@ -148,16 +160,16 @@ function UserPay({ loan }: { loan: Loan }) {
             <input
                type="number"
                min="0"
-               id="totalRepaymentAmount"
-               name="totalRepaymentAmount"
+               id="repaidAmountToAdd"
+               name="repaidAmountToAdd"
                placeholder="Enter custom amount"
-               value={totalRepaymentAmount}
-               onChange={(e: ChangeEvent<HTMLInputElement>) => setTotalRepaymentAmount(e.target.value)}
+               value={repaidAmountToAdd}
+               onChange={(e: ChangeEvent<HTMLInputElement>) => setRepaidAmountToAdd(e.target.value)}
                className="mt-1 p-2 w-full border rounded-md focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-colors duration-300"
             />
             <button
                onClick={handleBorrow}
-               disabled={isProcessing || !totalRepaymentAmount || parseInt(totalRepaymentAmount) <= 0}
+               disabled={isProcessing || !repaidAmountToAdd || parseFloat(repaidAmountToAdd) <= 0}
                className="overflow-hidden gap-5 self-stretch p-5 mt-8 text-base font-medium leading-none text-center text-white bg-blue-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
                {isProcessing ? 'Processing...' : 'Repay Now'}

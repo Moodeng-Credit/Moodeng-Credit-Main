@@ -334,9 +334,7 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
    wallet_missing: {
       toastType: TOAST_TYPES.ERROR,
       title: 'Wallet Not Connected',
-      message: 'Please connect your wallet to continue.',
-      buttonText: 'OK',
-      buttonAction: 'acknowledge'
+      message: 'Please connect your wallet to continue.'
    },
 
    self_lending_not_allowed: {

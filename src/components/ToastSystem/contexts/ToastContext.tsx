@@ -29,11 +29,16 @@ type ToastAction =
 
 const toastReducer = (state: ToastState, action: ToastAction): ToastState => {
    switch (action.type) {
-      case 'ADD_TOAST':
+      case 'ADD_TOAST': {
+         let toasts = state.toasts;
+         if (toasts.length >= TOAST_SETTINGS.MAX_TOASTS) {
+            toasts = toasts.slice(1);
+         }
          return {
             ...state,
-            toasts: [...state.toasts, { ...action.payload, id: Date.now() + Math.random() }]
+            toasts: [...toasts, { ...action.payload, id: Date.now() + Math.random() }]
          };
+      }
 
       case 'REMOVE_TOAST':
          return {
@@ -65,16 +70,9 @@ const initialState: ToastState = {
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
    const [state, dispatch] = useReducer(toastReducer, initialState);
 
-   const addToast = useCallback(
-      (toastData: Omit<ToastPropsType, 'id'>) => {
-         if (state.toasts.length >= TOAST_SETTINGS.MAX_TOASTS) {
-            dispatch({ type: 'REMOVE_TOAST', payload: state.toasts[0].id });
-         }
-
-         dispatch({ type: 'ADD_TOAST', payload: toastData });
-      },
-      [state.toasts]
-   );
+   const addToast = useCallback((toastData: Omit<ToastPropsType, 'id'>) => {
+      dispatch({ type: 'ADD_TOAST', payload: toastData });
+   }, []);
 
    const removeToast = useCallback((toastId: number) => {
       dispatch({ type: 'REMOVE_TOAST', payload: toastId });

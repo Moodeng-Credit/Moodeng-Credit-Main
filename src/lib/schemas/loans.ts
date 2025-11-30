@@ -36,16 +36,20 @@ export type CreateLoanInput = z.infer<typeof createLoanSchema>;
  */
 export const updateLoanSchema = z.object({
    loanId: objectIdSchema,
+   username: z.string().min(1).optional(),
+   wallet: z.string().min(1).optional(),
    loanAmount: loanAmountSchema.optional(),
    repaidAmount: repaidAmountSchema.optional(), // Can be 0 (no repayments yet)
-   totalRepaymentAmount: loanAmountSchema.optional(),
    reason: textFieldSchema(500, 'Reason').optional(),
    loanStatus: z.enum([LoanStatus.REQUESTED, LoanStatus.LENT]).optional(),
    repaymentStatus: z.enum([RepaymentStatus.UNPAID, RepaymentStatus.PARTIAL, RepaymentStatus.PAID]).optional(),
    days: loanDaysSchema.optional(),
    block: z.string().optional(),
    coin: z.literal('USDC').optional(),
-   hash: z.array(z.string()).optional()
+   hash: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{64}$/, { message: 'Invalid transaction hash' })
+      .optional() // Transaction hash for lending or repayment
 });
 
 export type UpdateLoanInput = z.infer<typeof updateLoanSchema>;

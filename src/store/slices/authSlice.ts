@@ -7,7 +7,7 @@ import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
 import { type AuthState, type User, WorldId } from '@/types/authTypes';
 
 const defaultUser: User = {
-   _id: '',
+   id: '',
    username: '',
    email: '',
    walletAddress: undefined,

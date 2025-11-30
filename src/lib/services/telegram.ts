@@ -1,3 +1,5 @@
+import { formatNumber } from '@/utils/decimalHelpers';
+
 import axios from '@/lib/axios';
 
 export const sendTelegramMessage = async (chatId: number, message: string) => {
@@ -31,7 +33,7 @@ export const setWebhook = async () => {
 
 export const sendNewLoanNotification = (chatId: number, username: string, loanAmount: number, loanPurpose: string) => {
    const message = `🎉 Great news, ${username}! 🎉 Your microloan is now helping someone build a better future! 💪
-💰 Amount: ${loanAmount}
+💰 Amount: ${formatNumber(loanAmount)}
 🎯 Purpose: ${loanPurpose}
 
 We'll keep you posted on repayments. You're amazing for making a difference! 🌟`;
@@ -47,9 +49,9 @@ export const sendRepaymentNotification = (
    remainingBalance: number
 ) => {
    const message = `💰 Repayment Alert! 💰 Great news, ${lenderName}! The person you helped has made a repayment! 🙌
-✅ Received: ${totalRepaymentAmount}
+✅ Received: ${formatNumber(totalRepaymentAmount)}
 👤 From: ${borrowerName}
-🔄 Remaining: ${remainingBalance}
+🔄 Remaining: ${formatNumber(remainingBalance)}
 
 Your support is changing lives! Keep it up! 🌟`;
 
@@ -64,7 +66,7 @@ export const sendFullRepaymentNotification = (
    originalLoanPurpose: string
 ) => {
    const message = `🎊 Woohoo! Full Repayment Achieved! 🎊 ${lenderName}, the loan you provided is now fully repaid! 🏆
-💰 Total Repaid: ${fullLoanAmount}
+💰 Total Repaid: ${formatNumber(fullLoanAmount)}
 👤 Borrower: ${borrowerName}
 🎯 Purpose: ${originalLoanPurpose}
 
@@ -103,7 +105,7 @@ export const sendBorrowerReminder = (
    }
 
    const message = `${urgency}
-💰 Amount: ${totalRepaymentAmount}
+💰 Amount: ${formatNumber(totalRepaymentAmount)}
 📆 Due: ${dueDate}
 
 Don't risk your credit score! 📉 Pay on time to keep your financial future bright! ✨
@@ -119,7 +121,7 @@ export const sendSuccessfulRepaymentNotification = (
    finalPaymentDate: string
 ) => {
    const message = `🎉🎉 Congratulations, ${borrowerName}! 🎉🎉 You've successfully repaid your loan! 🏆
-💰 Total Repaid: ${fullLoanAmount}
+💰 Total Repaid: ${formatNumber(fullLoanAmount)}
 📅 Final Payment: ${finalPaymentDate}
 
 Your credit score is smiling! 😊`;

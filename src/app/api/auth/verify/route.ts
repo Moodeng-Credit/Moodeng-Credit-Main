@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { type IVerifyResponse, VerificationLevel, verifyCloudProof } from '@worldcoin/idkit';
 
-import User from '@/lib/models/User';
+import { prisma } from '@/lib/database';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { WorldId } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -32,14 +32,22 @@ export async function POST(request: NextRequest) {
             const nullifierHash = proof.nullifier_hash;
 
             // Check if this nullifier hash is already used by a different user to prevent replay attacks
-            const existingUser = await User.findOne({ nullifierHash, _id: { $ne: userId } });
+            const existingUser = await prisma.user.findFirst({
+               where: {
+                  nullifierHash,
+                  id: { not: userId }
+               }
+            });
             if (existingUser) {
                throw { code: ERROR_CODES.WORLDID_ALREADY_USED };
             }
 
-            await User.findByIdAndUpdate(userId, {
-               isWorldId: WorldId.ACTIVE,
-               nullifierHash
+            await prisma.user.update({
+               where: { id: userId },
+               data: {
+                  isWorldId: WorldId.ACTIVE,
+                  nullifierHash
+               }
             });
 
             return verifyRes;

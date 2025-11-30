@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useDispatch } from 'react-redux';
 import { useAccount } from 'wagmi';
@@ -39,8 +39,9 @@ export default function Profile() {
    });
 
    useEffect(() => {
+      const currentWalletAddress = user.user?.walletAddress;
       if (account.isConnected && account.address && user.username) {
-         if (user.user?.walletAddress !== account.address) {
+         if (currentWalletAddress !== account.address) {
             dispatch(updateUser({ walletAddress: account.address }))
                .unwrap()
                .then(() => {
@@ -59,6 +60,10 @@ export default function Profile() {
       setNavItems((prevItems) => prevItems.map((item) => ({ ...item, active: item.label === label })));
       setInfoNavItems((prevItems) => prevItems.map((item) => ({ ...item, active: item.label === label })));
    };
+
+   const handleCloseTelegramModal = useCallback(() => {
+      setShowTelegramModal(false);
+   }, [setShowTelegramModal]);
 
    const renderTabContent = () => {
       switch (activeTab) {
@@ -121,7 +126,7 @@ export default function Profile() {
             </section>
          </main>
 
-         <TelegramModal isOpen={showTelegramModal} onClose={() => setShowTelegramModal(false)} />
+         <TelegramModal isOpen={showTelegramModal} onClose={handleCloseTelegramModal} />
       </div>
    );
 }

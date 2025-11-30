@@ -1,15 +1,15 @@
-import type { Document } from 'mongoose';
+import type { Prisma } from '@/generated/prisma/client/client';
 
 export interface Loan {
-   _id: string;
+   id: string;
    trackingId: string;
    borrowerWallet?: string;
    lenderWallet?: string;
    borrowerUser?: string;
    lenderUser?: string;
-   loanAmount: number; // Original amount borrowed (principal)
-   repaidAmount: number; // Amount already repaid by borrower (cumulative sum of all payments)
-   totalRepaymentAmount: number; // Total amount that must be repaid (principal + interest/fees)
+   loanAmount: Prisma.Decimal; // Original amount borrowed (principal)
+   repaidAmount: Prisma.Decimal; // Amount already repaid by borrower (cumulative sum of all payments)
+   totalRepaymentAmount: Prisma.Decimal; // Total amount that must be repaid (principal + interest/fees)
    reason: string;
    loanStatus: string;
    repaymentStatus: string;
@@ -52,15 +52,16 @@ export const RepaymentStatus = {
 export type LoanStatusType = (typeof LoanStatus)[keyof typeof LoanStatus];
 export type RepaymentStatusType = (typeof RepaymentStatus)[keyof typeof RepaymentStatus];
 
-export interface ILoan extends Document {
+export interface ILoan {
+   id: string;
    trackingId: string;
    borrowerWallet?: string;
    lenderWallet?: string;
    borrowerUser?: string;
    lenderUser?: string;
-   loanAmount: number;
-   repaidAmount: number;
-   totalRepaymentAmount: number;
+   loanAmount: Prisma.Decimal;
+   repaidAmount: Prisma.Decimal;
+   totalRepaymentAmount: Prisma.Decimal;
    reason: string;
    loanStatus: LoanStatusType;
    repaymentStatus: RepaymentStatusType;

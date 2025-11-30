@@ -1,22 +1,17 @@
 import { MONTHS } from '@/constants/dates';
 
 /**
- * Safely parse a date that might be in MongoDB extended JSON format or ISO string
- * Handles both: "2025-11-29T03:00:23.137Z" and { "$date": "2025-11-29T03:00:23.137Z" }
+ * Safely parse a date that might be a Date object, ISO string, or timestamp
+ * Prisma returns proper Date objects, so this is simplified
  */
-export const parseDateSafely = (dateValue: string | { $date: string } | Date): Date => {
+export const parseDateSafely = (dateValue: string | Date): Date => {
    // Already a Date object
    if (dateValue instanceof Date) {
       return dateValue;
    }
 
-   // MongoDB extended JSON format
-   if (typeof dateValue === 'object' && dateValue !== null && '$date' in dateValue) {
-      return new Date(dateValue.$date);
-   }
-
-   // ISO string
-   return new Date(dateValue as string);
+   // ISO string or timestamp
+   return new Date(dateValue);
 };
 
 /**
@@ -38,7 +33,7 @@ export const calculateDaysBetween = (date1: Date, date2: Date): number => {
 /**
  * Get "Member since" text with date and days count
  */
-export const getMemberSinceText = (createdAt: string | { $date: string }): string => {
+export const getMemberSinceText = (createdAt: string | Date): string => {
    const date = parseDateSafely(createdAt);
    const isoString = date.toISOString();
    const formattedDate = formatDate(isoString);
@@ -49,7 +44,7 @@ export const getMemberSinceText = (createdAt: string | { $date: string }): strin
 /**
  * Calculate days remaining from a loan's created date and duration
  */
-export const calculateDaysRemaining = (createdAt: string | { $date: string }, totalDays: number): number => {
+export const calculateDaysRemaining = (createdAt: string | Date, totalDays: number): number => {
    const created = parseDateSafely(createdAt);
    const today = new Date();
    created.setHours(0, 0, 0, 0);
@@ -61,7 +56,7 @@ export const calculateDaysRemaining = (createdAt: string | { $date: string }, to
 /**
  * Get due date from created date and days duration
  */
-export const calculateDueDate = (createdAt: string | { $date: string }, days: number): string => {
+export const calculateDueDate = (createdAt: string | Date, days: number): string => {
    const created = parseDateSafely(createdAt);
    const dueDate = new Date(created);
    dueDate.setDate(created.getDate() + days);
