@@ -1,6 +1,6 @@
 'use client';
 
-import { type ChangeEvent, type FormEvent, type MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ChangeEvent, type FormEvent, type MouseEvent, type RefObject, useCallback, useEffect, useMemo, useState } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -28,6 +28,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
+import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 
@@ -61,7 +62,8 @@ export default function Dashboard() {
    const [customAmount, setCustomAmount] = useState('');
    const [searchLoan, setSearchLoan] = useState('');
 
-   const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal);
+   const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
+   const successModalRef = useClickOutside<HTMLDivElement>(() => setShowPurple(false), showPurple) as RefObject<HTMLDivElement>;
 
    const [filters, setFilters] = useState<LoanFilters>({
       amount: '',
@@ -286,6 +288,10 @@ export default function Dashboard() {
       resetDependencies: [filters, searchLoan]
    });
 
+   const handleSuccessModalClose = useCallback(() => {
+      setShowPurple(false);
+   }, []);
+
    return (
       <>
          <div id="top" className="bg-white text-gray-900" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -376,24 +382,7 @@ export default function Dashboard() {
             isSubmitting={isSubmitting}
             clickOutsideRef={loanRequestModalRef}
          />
-         {showPurple ? (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-               <button onClick={() => setShowPurple(false)} className="text-gray-600 hover:text-gray-800 fixed top-4 right-4 z-50">
-                  ✖
-               </button>
-               <section className="max-w-md mx-auto rounded-lg shadow-md" style={{ minWidth: '320px', aspectRatio: '9 / 16' }}>
-                  <div className="w-full h-full rounded-lg bg-gradient-to-tr from-[#7B5FFF] via-[#C55FFF] to-[#D45FFF] flex items-center justify-center">
-                     <div
-                        aria-hidden="true"
-                        className="bg-white rounded-full p-6 flex items-center justify-center"
-                        style={{ width: '72px', height: '72px' }}
-                     >
-                        <i className="fas fa-check text-[#7B5FFF] text-4xl"></i>
-                     </div>
-                  </div>
-               </section>
-            </div>
-         ) : null}
+         <SuccessModal isOpen={showPurple} onClose={handleSuccessModalClose} clickOutsideRef={successModalRef} />
       </>
    );
 }

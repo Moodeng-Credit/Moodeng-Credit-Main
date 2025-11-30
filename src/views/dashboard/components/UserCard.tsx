@@ -26,6 +26,7 @@ import type { Loan } from '@/types/loanTypes';
 
 export default function UserCard(loan: Loan) {
    const loanData = loan;
+   const borrowerUser = loanData.borrowerUser || '';
 
    const router = useRouter();
    const dispatch = useDispatch<AppDispatch>();
@@ -50,7 +51,7 @@ export default function UserCard(loan: Loan) {
       let mounted = true;
       const fetch = async () => {
          try {
-            const profileRes = await dispatch(getUserProfile(loanData.borrowerUser || '')).unwrap();
+            const profileRes = await dispatch(getUserProfile(borrowerUser)).unwrap();
             const profileObj = profileRes?.user || profileRes;
             if (mounted) setLocalProfile(profileObj);
          } catch (error) {
@@ -58,7 +59,7 @@ export default function UserCard(loan: Loan) {
          }
 
          try {
-            const loansRes = await dispatch(getUserLoans(loanData.borrowerUser || '')).unwrap();
+            const loansRes = await dispatch(getUserLoans(borrowerUser)).unwrap();
             const loansArray = loansRes?.gloans || loansRes?.loans || loansRes || [];
             if (mounted) {
                const repaid = (loansArray || []).reduce(
@@ -76,7 +77,7 @@ export default function UserCard(loan: Loan) {
       return () => {
          mounted = false;
       };
-   }, [dispatch, loanData.borrowerUser]);
+   }, [dispatch, borrowerUser]);
 
    const handleFetch = async () => {
       setShowModal(false);

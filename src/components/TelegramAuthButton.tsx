@@ -18,6 +18,11 @@ declare global {
 export default function TelegramAuthButton({ onAuth, buttonSize = 'large' }: TelegramAuthButtonProps) {
    const containerRef = useRef<HTMLDivElement>(null);
    const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
+   const onAuthRef = useRef(onAuth);
+
+   useEffect(() => {
+      onAuthRef.current = onAuth;
+   });
 
    useEffect(() => {
       if (!botUsername) {
@@ -25,18 +30,15 @@ export default function TelegramAuthButton({ onAuth, buttonSize = 'large' }: Tel
          return;
       }
 
-      // Clean up any existing script
       const existingScript = document.getElementById('telegram-login-script');
       if (existingScript) {
          existingScript.remove();
       }
 
-      // Create callback function
       (window as unknown as Record<string, unknown>).onTelegramAuth = (user: Record<string, string>) => {
-         onAuth(user);
+         onAuthRef.current(user);
       };
 
-      // Create and append the Telegram widget script - matching the exact working pattern
       const script = document.createElement('script');
       script.id = 'telegram-login-script';
       script.async = true;
@@ -57,7 +59,7 @@ export default function TelegramAuthButton({ onAuth, buttonSize = 'large' }: Tel
             delete win.onTelegramAuth;
          }
       };
-   }, [buttonSize, onAuth, botUsername]);
+   }, [buttonSize, botUsername]);
 
    if (!botUsername) {
       return null;

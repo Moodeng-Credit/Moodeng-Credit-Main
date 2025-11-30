@@ -56,7 +56,7 @@ export default function LoanRequestModal({
             className="bg-white rounded-2xl shadow-md max-w-md mx-auto flex flex-col relative"
             style={{ minWidth: modalWidth }}
          >
-            <button onClick={onClose} className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 z-10">
+            <button onClick={onClose} className="absolute top-3 right-4 text-white hover:text-gray-800 z-10 text-2xl">
                ✖
             </button>
             <header className="bg-[#1E56FF] rounded-t-2xl px-6 py-4 flex items-center justify-center gap-2">
