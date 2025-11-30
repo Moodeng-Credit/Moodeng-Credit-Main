@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import crypto from 'crypto';
 
-import User from '@/lib/models/User';
+import { prisma } from '@/lib/database';
 import { forgotPasswordSchema } from '@/lib/schemas/auth';
 import { sendMail } from '@/lib/services/email';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       async (data) => {
          const { email } = data;
 
-         const user = await User.findOne({ email });
+         const user = await prisma.user.findUnique({ where: { email } });
 
          // Always return success even if user doesn't exist (security best practice)
          if (!user) {
@@ -35,9 +35,13 @@ export async function POST(request: NextRequest) {
          const resetToken = crypto.randomBytes(32).toString('hex');
          const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
 
-         user.resetToken = resetToken;
-         user.resetTokenExpiry = resetTokenExpiry;
-         await user.save();
+         await prisma.user.update({
+            where: { id: user.id },
+            data: {
+               resetToken,
+               resetTokenExpiry
+            }
+         });
 
          const resetUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/reset-password?token=${resetToken}`;
 

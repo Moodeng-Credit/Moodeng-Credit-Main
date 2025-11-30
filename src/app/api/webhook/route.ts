@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 
 import axios from '@/lib/axios';
-import User from '@/lib/models/User';
+import { prisma } from '@/lib/database';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { handleCors } from '@/lib/utils/cors';
 import { SUCCESS_CODES } from '@/types/successCodes';
@@ -19,11 +19,13 @@ export async function POST(request: NextRequest) {
             const chatId = message.chat.id;
             const username = message.from.username;
 
-            const user = await User.findOne({ telegramUsername: username });
+            const user = await prisma.user.findUnique({ where: { telegramUsername: username } });
 
-            if (user && user.chatId !== chatId) {
-               user.chatId = chatId;
-               await user.save();
+            if (user && user.chatId !== BigInt(chatId)) {
+               await prisma.user.update({
+                  where: { id: user.id },
+                  data: { chatId: BigInt(chatId) }
+               });
 
                await axios.post(process.env.TELEGRAM_API_URL!, {
                   chat_id: chatId,

@@ -15,7 +15,6 @@ import {
    strongPasswordSchema,
    usernameSchema
 } from '@/lib/schemas/fields';
-import type { IUser } from '@/types/authTypes';
 import { WorldId } from '@/types/authTypes';
 
 /**
@@ -129,15 +128,15 @@ export type GetUserProfileInput = z.infer<typeof getUserProfileSchema>;
  * Excludes sensitive fields like password
  */
 export const userResponseSchema = z.object({
-   _id: z.string(),
+   id: z.string(),
    username: z.string(),
    email: z.string(),
    walletAddress: z.string().optional(),
    isWorldId: z.string(),
    telegramUsername: z.string().optional(),
    googleId: z.string().optional(),
-   telegramId: z.number().optional(),
-   chatId: z.string().optional(),
+   telegramId: z.bigint().optional(),
+   chatId: z.bigint().optional(),
    mal: z.number(),
    nal: z.number(),
    cs: z.number(),
@@ -146,17 +145,3 @@ export const userResponseSchema = z.object({
 });
 
 export type UserResponse = z.infer<typeof userResponseSchema>;
-
-/**
- * Utility function to transform a User document to response format
- * Automatically excludes sensitive fields like password
- */
-export function transformUserToResponse(user: IUser): UserResponse {
-   const EXCLUDED_FIELDS = ['password', '__v'];
-   const STRING_FIELDS = ['_id', 'chatId'];
-   return Object.fromEntries(
-      Object.entries(user.toObject ? user.toObject() : user)
-         .filter(([key]) => !EXCLUDED_FIELDS.includes(key))
-         .map(([key, value]) => [key, STRING_FIELDS.includes(key) ? value?.toString() : value])
-   ) as UserResponse;
-}

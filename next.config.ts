@@ -1,7 +1,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-   serverExternalPackages: ['mongoose'],
+   // Prisma 7 adapter packages should be external
+   serverExternalPackages: ['@prisma/adapter-pg', 'pg'],
    allowedDevOrigins: ['127.0.0.1', 'localhost'],
    async headers() {
       return [
@@ -60,10 +61,16 @@ const nextConfig: NextConfig = {
       contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;"
    },
    webpack: (config, { isServer }) => {
-      // Enable top-level await for Mongoose
+      // Enable top-level await
       config.experiments = {
          ...config.experiments,
          topLevelAwait: true
+      };
+
+      // Fix Prisma 7 generated client .js imports resolving to .ts files
+      // The generated code imports './enums.js' but the file is 'enums.ts'
+      config.resolve.extensionAlias = {
+         '.js': ['.ts', '.tsx', '.js', '.jsx']
       };
 
       // Only externalize these packages on the server-side
@@ -81,7 +88,7 @@ const nextConfig: NextConfig = {
          tls: false
       };
 
-      // Ignore React Native specific modules that @metamask/sdk might try to import
+      // Ignore React Native specific modules
       config.resolve.alias = {
          ...config.resolve.alias,
          '@react-native-async-storage/async-storage': false,

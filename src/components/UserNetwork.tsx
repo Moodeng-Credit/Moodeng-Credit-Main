@@ -12,7 +12,7 @@ import { useAccount, useSwitchChain } from 'wagmi';
 import { useClickOutside } from '@/hooks/useClickOutside';
 
 import { chainConfig, chainsWithIcons, type CustomChainConfig, getNetworkSvg } from '@/config/wagmiConfig';
-import { logoutUser } from '@/store/slices/authSlice';
+import { logoutUser, updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
 export default function UserNetwork() {
@@ -22,6 +22,7 @@ export default function UserNetwork() {
    const { switchChain } = useSwitchChain();
    const [showNetwork, setShowNetwork] = useState(false);
    const username = useSelector((state: RootState) => state.auth.username);
+   const currentWalletAddress = useSelector((state: RootState) => state.auth.user?.walletAddress);
 
    const handleLogout = () => {
       dispatch(logoutUser());
@@ -57,6 +58,21 @@ export default function UserNetwork() {
          });
       });
    }, [username]);
+
+   useEffect(() => {
+      if (account.isConnected && account.address && username) {
+         if (currentWalletAddress !== account.address) {
+            dispatch(updateUser({ walletAddress: account.address }))
+               .unwrap()
+               .then(() => {
+                  console.log('Wallet address saved successfully');
+               })
+               .catch((error) => {
+                  console.error('Failed to save wallet address:', error);
+               });
+         }
+      }
+   }, [account.isConnected, account.address, username, currentWalletAddress, dispatch]);
 
    // Use the click outside hook for the network dropdown
    const networkDropdownRef = useClickOutside<HTMLDivElement>(() => setShowNetwork(false), showNetwork);

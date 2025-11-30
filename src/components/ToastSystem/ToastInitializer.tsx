@@ -8,10 +8,9 @@ export const ToastInitializer = () => {
    const toast = useApiToast();
 
    useEffect(() => {
-      // Toast instance is automatically set in useApiToast hook
-      // This component just ensures the hook is called to initialize the singleton
       console.log('Toast initialized:', !!toast);
-   }, [toast]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
 
    return null;
 };

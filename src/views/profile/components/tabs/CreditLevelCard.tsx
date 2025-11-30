@@ -1,3 +1,5 @@
+import { formatNumber } from '@/utils/decimalHelpers';
+
 import type { CreditLevel } from '@/views/profile/components/tabs/types';
 
 interface CreditLevelCardProps {
@@ -14,7 +16,7 @@ const CreditLevelCard = ({ level }: CreditLevelCardProps) => {
                on {level.date}
             </div>
             <div className="text-3xl font-extrabold my-3">
-               ${level.amount}
+               ${formatNumber(level.amount)}
                <span className="text-lg">+</span>
             </div>
             <div className="flex items-center justify-center gap-1 font-extrabold mb-2">
@@ -35,7 +37,7 @@ const CreditLevelCard = ({ level }: CreditLevelCardProps) => {
             <div className="absolute -top-3 -right-3 text-4xl">🎉</div>
             <div className="mb-2">Unlocked on {level.date}</div>
             <div className="text-5xl font-extrabold my-4">
-               ${level.amount}
+               ${formatNumber(level.amount)}
                <span className="text-2xl">+</span>
             </div>
             <div className="flex items-center justify-center gap-2 font-extrabold mb-2">
@@ -54,7 +56,7 @@ const CreditLevelCard = ({ level }: CreditLevelCardProps) => {
    return (
       <div className="bg-[#e5e7eb] rounded-xl p-6 min-w-[160px] text-center text-[#6b7280] text-lg font-extrabold relative flex-shrink-0">
          <i className="fas fa-lock absolute top-6 left-1/2 -translate-x-1/2 text-4xl text-gray-400" />
-         <div className="mt-16 text-2xl">${level.amount}</div>
+         <div className="mt-16 text-2xl">${formatNumber(level.amount)}</div>
          <div className="text-base font-bold my-2">LOCKED</div>
          <div className="text-xs font-normal text-gray-600 mt-3 whitespace-pre-line">{level.unlockRequirement}</div>
          {level.hasRequestButton === true ? (

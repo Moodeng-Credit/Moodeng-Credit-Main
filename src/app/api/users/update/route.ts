@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { z } from 'zod';
 
-import User from '@/lib/models/User';
+import { prisma } from '@/lib/database';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { handleCors } from '@/lib/utils/cors';
 import { WorldId } from '@/types/authTypes';
@@ -17,15 +17,21 @@ export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data, userId) => {
-         const user = await User.findById(userId).select('-password');
+         const user = await prisma.user.findUnique({
+            where: { id: userId },
+            omit: { password: true, resetToken: true, resetTokenExpiry: true, nullifierHash: true }
+         });
          if (!user) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
          }
 
-         user.isWorldId = data.isWorldId;
-         await user.save();
+         const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: { isWorldId: data.isWorldId },
+            omit: { password: true, resetToken: true, resetTokenExpiry: true, nullifierHash: true }
+         });
 
-         return user;
+         return updatedUser;
       },
       {
          schema: updateUserWorldIdSchema,

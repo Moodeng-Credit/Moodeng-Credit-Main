@@ -38,12 +38,12 @@ const loanSlice = createSlice({
          state.loans.floans.push(action.payload);
       },
       updateLoan: (state, action: PayloadAction<Loan>) => {
-         const { _id } = action.payload;
-         const floanIndex = state.loans.floans.findIndex((loan) => loan._id === _id);
+         const { id } = action.payload;
+         const floanIndex = state.loans.floans.findIndex((loan) => loan.id === id);
          if (floanIndex !== -1) {
             state.loans.floans[floanIndex] = action.payload;
          }
-         const gloanIndex = state.loans.gloans.findIndex((loan) => loan._id === _id);
+         const gloanIndex = state.loans.gloans.findIndex((loan) => loan.id === id);
          if (gloanIndex !== -1) {
             state.loans.gloans[gloanIndex] = action.payload;
          }
@@ -83,20 +83,33 @@ const loanSlice = createSlice({
 
 export const { clearError, addLoan, updateLoan } = loanSlice.actions;
 
-export const editLoan = createAsyncThunk('loans/edit', async (loanData: Loan) => {
-   return await apiHandler.post(API_ENDPOINTS.LOANS.EDIT, loanData as unknown as ApiData);
-});
+export const updateLoanStatus = createAsyncThunk(
+   'loans/updateStatus',
+   async (loanData: {
+      id: string;
+      username?: string | null;
+      wallet?: string;
+      repaymentStatus?: string;
+      loanStatus?: string;
+      repaidAmount?: number;
+      hash?: string;
+   }) => {
+      // Map id to loanId and extract all updatable fields for API consistency
+      const { id, username, wallet, repaymentStatus, loanStatus, repaidAmount, hash } = loanData;
+      return await apiHandler.post(API_ENDPOINTS.LOANS.UPDATE, {
+         loanId: id,
+         username,
+         wallet,
+         repaymentStatus,
+         loanStatus,
+         repaidAmount,
+         hash
+      } as unknown as ApiData);
+   }
+);
 
 export const deleteLoan = createAsyncThunk('loans/delete', async (loanId: string) => {
-   return await apiHandler.post(API_ENDPOINTS.LOANS.DELETE, { _id: loanId });
-});
-
-export const updateLoanStatus = createAsyncThunk('loans/updateStatus', async (loanData: Loan) => {
-   return await apiHandler.post(API_ENDPOINTS.LOANS.UPDATE, loanData as unknown as ApiData);
-});
-
-export const addHash = createAsyncThunk('loans/addHash', async (hashData: { _id: string; hash: string }) => {
-   return await apiHandler.post(API_ENDPOINTS.LOANS.HASH, hashData);
+   return await apiHandler.post(API_ENDPOINTS.LOANS.DELETE, { loanId });
 });
 
 export const getLoans = getUserLoans;

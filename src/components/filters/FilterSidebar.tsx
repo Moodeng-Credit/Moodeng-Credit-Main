@@ -1,4 +1,4 @@
-import { type ChangeEvent, useMemo } from 'react';
+import { type ChangeEvent, useCallback, useMemo } from 'react';
 
 import CheckboxFilterGroup, { type FilterOption } from '@/components/filters/CheckboxFilterGroup';
 
@@ -47,22 +47,28 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
       [filters.loanTime]
    );
 
-   const handleFilterChange = (filterKey: keyof LoanFilters) => (value: string) => {
-      onFiltersChange({
-         [filterKey]: filters[filterKey] === value ? '' : value
-      });
+   const handleFilterChange = useCallback(
+      (filterKey: keyof LoanFilters) => (value: string) => {
+         onFiltersChange({
+            [filterKey]: filters[filterKey] === value ? '' : value
+         });
 
-      if (filterKey === 'amount' && filters[filterKey] !== value) {
-         onCustomAmountChange('');
-      }
-   };
+         if (filterKey === 'amount' && filters[filterKey] !== value) {
+            onCustomAmountChange('');
+         }
+      },
+      [filters, onFiltersChange, onCustomAmountChange]
+   );
 
-   const handleDateChange = (e: ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      onFiltersChange({
-         date: value ? new Date(value) : null
-      });
-   };
+   const handleDateChange = useCallback(
+      (e: ChangeEvent<HTMLInputElement>) => {
+         const value = e.target.value;
+         onFiltersChange({
+            date: value ? new Date(value) : null
+         });
+      },
+      [onFiltersChange]
+   );
 
    return (
       <aside className="w-full md:w-64 flex-shrink-0">

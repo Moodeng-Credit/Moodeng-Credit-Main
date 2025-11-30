@@ -1,43 +1,47 @@
 'use client';
 
-import { type ChangeEvent, type FormEvent } from 'react';
+import { type ChangeEvent, type FormEvent, type RefObject } from 'react';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 import { type User } from '@/types/authTypes';
 
 interface LoanRequestModalProps {
+   clickOutsideRef: RefObject<HTMLDivElement>;
    isOpen: boolean;
    onClose: () => void;
    showVerify: boolean;
    user: User;
    loanAmount: string;
    setLoanAmount: (value: string) => void;
-   repayedAmount: string;
-   setRepayedAmount: (value: string) => void;
+   totalRepaymentAmount: string;
+   setTotalRepaymentAmount: (value: string) => void;
    reason: string;
    setReason: (value: string) => void;
    days: string;
    today: string;
    handleDays: (e: ChangeEvent<HTMLInputElement>) => void;
    handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
+   isSubmitting: boolean;
 }
 
 export default function LoanRequestModal({
+   clickOutsideRef,
    isOpen,
    onClose,
    showVerify,
    user,
    loanAmount,
    setLoanAmount,
-   repayedAmount,
-   setRepayedAmount,
+   totalRepaymentAmount,
+   setTotalRepaymentAmount,
    reason,
    setReason,
    days,
    today,
    handleDays,
-   handleSubmit
+   handleSubmit,
+   isSubmitting
 }: LoanRequestModalProps) {
    if (!isOpen) return null;
 
@@ -47,10 +51,14 @@ export default function LoanRequestModal({
 
    return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-         <button onClick={onClose} className="text-gray-600 hover:text-gray-800 fixed top-4 right-4 z-50">
-            ✖
-         </button>
-         <section className="bg-white rounded-2xl shadow-md max-w-md mx-auto flex flex-col" style={{ minWidth: modalWidth }}>
+         <section
+            ref={clickOutsideRef}
+            className="bg-white rounded-2xl shadow-md max-w-md mx-auto flex flex-col relative"
+            style={{ minWidth: modalWidth }}
+         >
+            <button onClick={onClose} className="absolute top-3 right-4 text-white hover:text-gray-800 z-10 text-2xl">
+               ✖
+            </button>
             <header className="bg-[#1E56FF] rounded-t-2xl px-6 py-4 flex items-center justify-center gap-2">
                <h2 className="text-white font-extrabold text-lg leading-6">Set Your Own Terms</h2>
                <button aria-label="Help info" className="text-white text-sm font-semibold focus:outline-none" type="button">
@@ -86,7 +94,7 @@ export default function LoanRequestModal({
                      <button aria-label="Limit info" className="focus:outline-none" type="button">
                         <i className="fas fa-question-circle"></i>
                      </button>
-                     <span>Limit: ${limitAmount}.00</span>
+                     <span>Limit: ${limitAmount || '0'}</span>
                   </div>
                </div>
                <div className="flex border-solid border border-gray-300 rounded-md overflow-hidden">
@@ -108,13 +116,13 @@ export default function LoanRequestModal({
                   Set Repayment amount
                </label>
                <input
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setRepayedAmount(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setTotalRepaymentAmount(e.target.value)}
                   className="border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
                   id="repayment-amount"
                   placeholder="Must be more than Borrowed amount..."
                   type={isVerified ? 'number' : 'text'}
                   min={isVerified ? '0' : undefined}
-                  value={repayedAmount}
+                  value={totalRepaymentAmount}
                />
                <label className="font-semibold text-gray-800 text-sm">Repayment Date</label>
                <div className="flex gap-3">
@@ -161,11 +169,11 @@ export default function LoanRequestModal({
                ></textarea>
                <div className="text-right text-xs text-gray-400 font-normal select-none">{reason.length} / 40</div>
                <button
-                  className={`${isVerified ? 'bg-[#1E56FF]' : 'bg-gray-400 cursor-not-allowed'} text-white font-extrabold text-sm rounded-md py-3 mt-2 w-full`}
+                  className={`${isVerified && !isSubmitting ? 'bg-[#1E56FF]' : 'bg-gray-400 cursor-not-allowed'} text-white font-extrabold text-sm rounded-md py-3 mt-2 w-full`}
                   type="submit"
-                  disabled={!isVerified}
+                  disabled={!isVerified || isSubmitting}
                >
-                  Make Your Request
+                  {isSubmitting ? 'Submitting...' : 'Make Your Request'}
                </button>
             </form>
          </section>

@@ -15,12 +15,10 @@ interface ApiEndpoints {
    };
    LOANS: {
       CREATE: string;
-      EDIT: string;
       UPDATE: string;
       GET: string;
       FETCH: string;
       DELETE: string;
-      HASH: string;
    };
    EXTERNAL: {
       WORLDID: {
@@ -44,12 +42,10 @@ export const API_ENDPOINTS: ApiEndpoints = {
    },
    LOANS: {
       CREATE: '/api/loans/create',
-      EDIT: '/api/loans/edit',
       UPDATE: '/api/loans/update',
       GET: '/api/loans/get',
       FETCH: '/api/loans/fetch',
-      DELETE: '/api/loans/delete',
-      HASH: '/api/loans/hash'
+      DELETE: '/api/loans/delete'
    },
    EXTERNAL: {
       WORLDID: {
@@ -82,10 +78,6 @@ export const ENDPOINT_TOAST_CONFIG: Record<string, ToastConfig> = {
    [API_ENDPOINTS.LOANS.CREATE]: {
       success: 'loan_created',
       error: 'loan_error'
-   },
-   [API_ENDPOINTS.LOANS.EDIT]: {
-      success: 'loan_edit_success',
-      error: 'loan_edit_error'
    },
    [API_ENDPOINTS.LOANS.UPDATE]: {
       success: 'loan_update_success',

@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 
-import User from '@/lib/models/User';
-import { loginSchema, transformUserToResponse } from '@/lib/schemas/auth';
+import { prisma } from '@/lib/database';
+import { loginSchema } from '@/lib/schemas/auth';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { comparePassword, generateToken, setAuthCookie } from '@/lib/utils/auth';
 import { handleCors } from '@/lib/utils/cors';
@@ -19,7 +19,10 @@ export async function POST(request: NextRequest) {
          if (data.googleCredential) {
             const googleData = await verifyGoogleToken(data.googleCredential);
 
-            user = await User.findOne({ googleId: googleData.googleId });
+            user = await prisma.user.findUnique({
+               where: { googleId: googleData.googleId },
+               omit: { password: true, resetToken: true, resetTokenExpiry: true, nullifierHash: true }
+            });
             if (!user) {
                throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, status: 401, message: 'Google account not registered' };
             }
@@ -28,7 +31,10 @@ export async function POST(request: NextRequest) {
          else if (data.telegramAuthData) {
             const telegramData = verifyTelegramAuth(JSON.parse(data.telegramAuthData));
 
-            user = await User.findOne({ telegramId: telegramData.telegramId });
+            user = await prisma.user.findUnique({
+               where: { telegramId: telegramData.telegramId },
+               omit: { password: true, resetToken: true, resetTokenExpiry: true, nullifierHash: true }
+            });
             if (!user) {
                throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, status: 401, message: 'Telegram account not registered' };
             }
@@ -39,13 +45,13 @@ export async function POST(request: NextRequest) {
                throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, status: 400, message: 'Missing credentials' };
             }
 
-            user = await User.findOne({ username: data.username });
-            if (!user) {
+            const userWithPassword = await prisma.user.findUnique({ where: { username: data.username } });
+            if (!userWithPassword) {
                throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, status: 401 };
             }
 
             // Check if user has a password (not an OAuth user)
-            if (!user.password) {
+            if (!userWithPassword.password) {
                throw {
                   code: ERROR_CODES.AUTH_INVALID_CREDENTIALS,
                   status: 401,
@@ -53,17 +59,23 @@ export async function POST(request: NextRequest) {
                };
             }
 
-            const isMatch = await comparePassword(data.password, user.password);
+            const isMatch = await comparePassword(data.password, userWithPassword.password);
             if (!isMatch) {
                throw { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS, status: 401 };
             }
+
+            // Get user without sensitive fields
+            user = await prisma.user.findUnique({
+               where: { id: userWithPassword.id },
+               omit: { password: true, resetToken: true, resetTokenExpiry: true, nullifierHash: true }
+            });
          }
 
-         const token = generateToken(user._id.toString());
+         const token = generateToken(user!.id);
 
          return {
             token, // Used by beforeResponse to set cookie
-            user: transformUserToResponse(user)
+            user
          };
       },
       {

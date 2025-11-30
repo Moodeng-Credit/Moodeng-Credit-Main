@@ -1,72 +1,62 @@
-import mongoose from 'mongoose';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-declare global {
-   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-   var mongoose: any; // This must be a `var` and not a `let / const`
-}
+import { PrismaClient } from '@/generated/prisma/client/client';
 
-let cached = global.mongoose;
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-if (!cached) {
-   cached = global.mongoose = { conn: null, promise: null };
-}
+// Prisma 7 requires adapter pattern for all databases
+const adapter = new PrismaPg({
+   connectionString: process.env.DATABASE_URL
+});
 
-async function connectDB() {
-   const MONGODB_URI = process.env.MONGO_URI;
+export const prisma = globalForPrisma.prisma || new PrismaClient({ adapter });
 
-   if (!MONGODB_URI) {
-      throw new Error('Please define the MONGO_URI environment variable inside .env.local');
-   }
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-   if (cached.conn) {
-      return cached.conn;
-   }
-
-   if (!cached.promise) {
-      const opts = {
-         bufferCommands: false
-      };
-
-      cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
-         console.log('MongoDB connected successfully...');
-         return mongooseInstance;
-      });
-   }
-
+export default async function connectDB() {
    try {
-      cached.conn = await cached.promise;
-   } catch (e) {
-      cached.promise = null;
-      throw e;
+      await prisma.$connect();
+      console.log('PostgreSQL connected successfully...');
+      return prisma;
+   } catch (error) {
+      console.error('Error connecting to PostgreSQL:', error);
+      throw error;
    }
-
-   return cached.conn;
 }
 
 // Initialize database connection and models on startup
-async function initializeDatabase() {
+export async function initializeDatabase() {
    try {
-      console.log('🚀 Initializing database connection...');
-      await connectDB();
+      console.log('🚀 Connecting to PostgreSQL (database: moodeng)...');
+      await prisma.$connect();
+      console.log('✅ PostgreSQL connected');
 
-      // Import models to ensure they're registered and collections are created
-      console.log('📦 Loading database models...');
-      const User = (await import('./models/User')).default;
-      await import('./models/Loan');
+      // Auto-migrate if DO_MIGRATE is enabled
+      if (process.env.DO_MIGRATE === 'true') {
+         console.log('🔄 Running database migrations...');
 
-      // Ensure indexes after models are loaded and connection is established
-      console.log('🔧 Setting up database indexes...');
-      await User.ensureIndexes();
-      console.log('✅ User indexes configured');
+         const { exec } = await import('child_process');
+         const { promisify } = await import('util');
+         const execAsync = promisify(exec);
 
-      console.log('✅ Database and collections initialized successfully');
+         try {
+            if (process.env.NODE_ENV === 'production') {
+               // Production: use migrate deploy (safer)
+               await execAsync('npx prisma migrate deploy');
+            } else {
+               // Development: use db push (faster, no migration files)
+               await execAsync('npx prisma db push --skip-generate');
+            }
+            console.log('✅ Database schema synchronized');
+         } catch (migrationError) {
+            console.error('⚠️  Migration warning:', migrationError);
+            // Don't throw - allow app to continue even if migration fails
+         }
+      }
+
+      console.log('✅ Database initialized successfully');
    } catch (error) {
       console.error('❌ Failed to initialize database:', error);
       throw error;
    }
 }
-
-// Database initialization is handled by startup.ts
-
-export default connectDB;
-export { initializeDatabase };
