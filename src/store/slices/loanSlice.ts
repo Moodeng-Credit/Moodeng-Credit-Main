@@ -83,32 +83,33 @@ const loanSlice = createSlice({
 
 export const { clearError, addLoan, updateLoan } = loanSlice.actions;
 
-export const editLoan = createAsyncThunk('loans/edit', async (loanData: Loan) => {
-   // Map frontend Loan fields to API schema fields
-   const { id, totalRepaymentAmount, repaymentStatus, loanStatus } = loanData;
-   return await apiHandler.post(API_ENDPOINTS.LOANS.EDIT, {
-      loanId: id,
-      totalRepaymentAmount,
-      repaymentStatus,
-      loanStatus
-   } as unknown as ApiData);
-});
-
-export const deleteLoan = createAsyncThunk('loans/delete', async (loanId: string) => {
-   return await apiHandler.post(API_ENDPOINTS.LOANS.DELETE, { loanId });
-});
-
 export const updateLoanStatus = createAsyncThunk(
    'loans/updateStatus',
-   async (loanData: Partial<Loan> & { id: string; username?: string; wallet?: string }) => {
-      // Map id to loanId for API consistency
-      const { id, username, wallet } = loanData;
-      return await apiHandler.post(API_ENDPOINTS.LOANS.UPDATE, { loanId: id, username, wallet } as unknown as ApiData);
+   async (loanData: {
+      id: string;
+      username?: string | null;
+      wallet?: string;
+      repaymentStatus?: string;
+      loanStatus?: string;
+      repaidAmount?: number;
+      hash?: string;
+   }) => {
+      // Map id to loanId and extract all updatable fields for API consistency
+      const { id, username, wallet, repaymentStatus, loanStatus, repaidAmount, hash } = loanData;
+      return await apiHandler.post(API_ENDPOINTS.LOANS.UPDATE, {
+         loanId: id,
+         username,
+         wallet,
+         repaymentStatus,
+         loanStatus,
+         repaidAmount,
+         hash
+      } as unknown as ApiData);
    }
 );
 
-export const addHash = createAsyncThunk('loans/addHash', async (hashData: { id: string; hash: string }) => {
-   return await apiHandler.post(API_ENDPOINTS.LOANS.HASH, { loanId: hashData.id, hash: hashData.hash });
+export const deleteLoan = createAsyncThunk('loans/delete', async (loanId: string) => {
+   return await apiHandler.post(API_ENDPOINTS.LOANS.DELETE, { loanId });
 });
 
 export const getLoans = getUserLoans;

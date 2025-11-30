@@ -17,7 +17,7 @@ import { toNumber } from '@/utils/decimalHelpers';
 
 import { MONTHS } from '@/constants/dates';
 import { getUserProfile } from '@/store/slices/authSlice';
-import { editLoan, fetchLoans, getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
+import { fetchLoans, getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -78,17 +78,6 @@ export default function UserCard(loan: Loan) {
       };
    }, [dispatch, loanData.borrowerUser]);
 
-   const handleAccept = async (e: MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-      const loanPayload = {
-         id: loanData.id,
-         wallet,
-         username
-      };
-      // Await the API call to ensure lenderWallet is set in database before proceeding
-      await dispatch(updateLoanStatus(loanPayload as unknown as Loan)).unwrap();
-   };
-
    const handleFetch = async () => {
       setShowModal(false);
       await dispatch(fetchLoans())
@@ -129,17 +118,10 @@ export default function UserCard(loan: Loan) {
          return;
       }
 
-      const loanPayload = {
-         id: loanData.id,
-         totalRepaymentAmount: loanData.totalRepaymentAmount,
-         repaymentStatus: loanData.repaymentStatus,
-         loanStatus: 'Lent'
-      };
-
       setIsProcessing(true);
 
       try {
-         const transferSuccess = await Transfer(
+         const transactionHash = await Transfer(
             e,
             loanData.borrowerWallet || '',
             loanData.loanAmount.toString(),
@@ -148,15 +130,31 @@ export default function UserCard(loan: Loan) {
             loanData.coin
          );
 
-         if (transferSuccess) {
-            await handleAccept(e);
+         if (transactionHash) {
             try {
-               await dispatch(editLoan(loanPayload as Loan)).unwrap();
+               const loanPayload = {
+                  id: loanData.id,
+                  wallet,
+                  username,
+                  loanStatus: 'Lent',
+                  hash: transactionHash
+               };
+
+               await dispatch(updateLoanStatus(loanPayload)).unwrap();
                setShowModal(true);
-            } catch (editLoanError: unknown) {
-               const errorMessage = editLoanError instanceof Error ? editLoanError.message : 'Unknown error';
+            } catch (updateError: unknown) {
+               const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
                console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
-               console.error('[RECONCILIATION REQUIRED] Loan ID:', loanData.id, '| Amount:', loanData.loanAmount, '| Lender:', username);
+               console.error(
+                  '[RECONCILIATION REQUIRED] Loan ID:',
+                  loanData.id,
+                  '| Amount:',
+                  loanData.loanAmount,
+                  '| Lender:',
+                  username,
+                  '| Hash:',
+                  transactionHash
+               );
                showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
             }
          }
@@ -328,7 +326,7 @@ export default function UserCard(loan: Loan) {
                         <dt className="text-gray-900">Amount Funded:</dt>
                         <dd className="text-gray-900 text-right font-extrabold">${loan.loanAmount.toString()}.00</dd>
                         <dt className="text-gray-900">Expected Return:</dt>
-                        <dd className="text-green-700 text-right font-extrabold">${loanData.repaidAmount.toString()}.00</dd>
+                        <dd className="text-green-700 text-right font-extrabold">${loanData.totalRepaymentAmount.toString()}.00</dd>
                         <dt className="text-gray-900">Return Date:</dt>
                         <dd className="text-gray-900 text-right font-extrabold">{formattedDate}</dd>
                      </dl>

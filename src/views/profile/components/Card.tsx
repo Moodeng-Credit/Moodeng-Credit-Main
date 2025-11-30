@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -42,6 +42,14 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
          });
    };
 
+   const handleClosePayModal = useCallback(() => {
+      setShowPay(false);
+   }, []);
+
+   const handleCloseDelModal = useCallback(() => {
+      setShowDel(false);
+   }, []);
+
    return type && loan.loanStatus === 'Lent' ? (
       <div className="bg-white rounded-xl max-w-[320px] w-full h-full flex flex-col shadow-md">
          <div className="p-5 pb-3 flex justify-between items-start">
@@ -78,7 +86,7 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
             <div className="w-full h-4 rounded-full bg-[#D9D9D9] mt-3 overflow-hidden">
                <div
                   className="h-4 rounded-l-full bg-[#15803D]"
-                  style={{ width: `${(toNumber(loan.totalRepaymentAmount) * 100) / toNumber(loan.repaidAmount)}%` }}
+                  style={{ width: `${(toNumber(loan.repaidAmount) * 100) / toNumber(loan.totalRepaymentAmount)}%` }}
                ></div>
             </div>
          </div>
@@ -95,11 +103,7 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
       <div className="bg-white rounded-xl max-w-[320px] w-full h-full flex flex-col shadow-md">
          <div className="p-5 pb-3 flex justify-between items-start">
             <div>
-               <h3 className="font-extrabold text-[15px] leading-[18px] text-[#0B1033]">
-                  Unexpected car repair,
-                  <br />
-                  waiting for reimbursement
-               </h3>
+               <h3 className="font-extrabold text-[15px] leading-[18px] text-[#0B1033]">{loan.reason}</h3>
                <p className="text-[12px] leading-[15px] text-[#6B7280] mt-1">posted on {postedDate}</p>
             </div>
          </div>
@@ -111,7 +115,9 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
                ? 'Waiting for Funding'
                : loan.repaymentStatus === 'Paid'
                  ? 'Fully Repaid'
-                 : (differenceInDays > 0 ? differenceInDays : '0') + (differenceInDays > 1 ? ' Days Left' : ' Day Left')}
+                 : loan.repaymentStatus === 'Partial'
+                   ? `Partially Repaid - ${differenceInDays > 0 ? differenceInDays : '0'} ${differenceInDays > 1 ? 'Days' : 'Day'} Left`
+                   : `Due in ${differenceInDays > 0 ? differenceInDays : '0'} ${differenceInDays > 1 ? 'Days' : 'Day'}`}
          </div>
          <div className="p-5 pt-4 border-b border-[#E5E7EB] grid grid-cols-3 text-center text-[13px] leading-[16px] font-normal text-[#6B7280]">
             <div>
@@ -145,12 +151,12 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
          >
             {loan.loanStatus === 'Requested' ? 'Delete' : loan.repaymentStatus !== 'Paid' ? 'Repay' : 'Repaid'} Loan
          </button>
-         <Modal isOpen={Boolean(showPay && loan.repaymentStatus !== 'Paid')} onClose={() => setShowPay(false)} showCloseButton>
+         <Modal isOpen={Boolean(showPay && loan.repaymentStatus !== 'Paid')} onClose={handleClosePayModal} showCloseButton>
             <UserPay loan={loan} />
          </Modal>
          <ConfirmationModal
             isOpen={showDel}
-            onClose={() => setShowDel(false)}
+            onClose={handleCloseDelModal}
             onConfirm={handleDelete}
             title="Delete Loan Request?"
             message="Are you sure you want to delete this loan request? This action cannot be undone."

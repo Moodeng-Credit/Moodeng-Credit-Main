@@ -1,14 +1,11 @@
 'use client';
 
-import { useDispatch } from 'react-redux';
 import { parseUnits } from 'viem';
 import { useSwitchChain, useWriteContract } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { chainIdFromNetwork, tokenAddresses } from '@/config/wagmiConfig';
-import { addHash } from '@/store/slices/loanSlice';
-import type { AppDispatch } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 
@@ -33,12 +30,18 @@ const ERC20_ABI = [
 ];
 
 const useWallet = () => {
-   const dispatch = useDispatch<AppDispatch>();
    const { switchChain } = useSwitchChain();
    const { writeContractAsync } = useWriteContract();
    const { showToastByConfig } = useToast();
 
-   const Transfer = async (e: unknown, recipient: string, amount: string, id: string, block: string, coin: string) => {
+   const Transfer = async (
+      e: unknown,
+      recipient: string,
+      amount: string,
+      id: string,
+      block: string,
+      coin: string
+   ): Promise<string | null> => {
       const blockChain = chainIdFromNetwork(block);
       try {
          const targetChainId = tokenAddresses[blockChain || ''].id;
@@ -56,27 +59,14 @@ const useWallet = () => {
             args: [recipient, amounts]
          });
 
-         await dispatch(
-            addHash({
-               id: id,
-               hash: hash
-            })
-         )
-            .unwrap()
-            .then(() => {
-               console.log('Hash added successfully for loan:', id);
-            })
-            .catch((error) => {
-               console.error('Error adding Hash:', error.message || error);
-            });
-
          console.log('Transaction hash:', hash);
          console.log('Loan ID:', id);
-         return true;
+
+         return hash;
       } catch (err) {
          console.error('Tx failed:', err);
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
-         return false;
+         return null;
       }
    };
 

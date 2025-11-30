@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
                   borrowerWallet: borrower.walletAddress!,
                   lenderWallet: null,
                   borrowerUser: data.borrowerUserId,
-                  lenderUser: '',
+                  lenderUser: null,
                   loanAmount: data.loanAmount,
                   repaidAmount: 0,
                   totalRepaymentAmount: data.totalRepaymentAmount,
