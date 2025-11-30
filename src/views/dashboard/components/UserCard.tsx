@@ -125,7 +125,7 @@ export default function UserCard(loan: Loan) {
          const transactionHash = await Transfer(
             e,
             loanData.borrowerWallet || '',
-            loanData.loanAmount.toString(),
+            loanData.loanAmount?.toFixed(2) || '0.00',
             loanData.id,
             loanData.block,
             loanData.coin
