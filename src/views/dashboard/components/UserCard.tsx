@@ -92,10 +92,15 @@ export default function UserCard(loan: Loan) {
    };
 
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
-      console.log('handleLend');
       e.preventDefault();
 
       if (isProcessing) {
+         return;
+      }
+
+      if (!isConnected) {
+         openConnectModal?.();
+         e.stopPropagation();
          return;
       }
 
@@ -105,16 +110,8 @@ export default function UserCard(loan: Loan) {
          return;
       }
 
-      console.log('wallet', wallet);
-
       if (!wallet || wallet.trim() === '') {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
-         e.stopPropagation();
-         return;
-      }
-
-      if (!isConnected) {
-         openConnectModal?.();
          e.stopPropagation();
          return;
       }
