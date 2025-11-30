@@ -1,12 +1,13 @@
 'use client';
 
-import { type ChangeEvent, type FormEvent } from 'react';
+import { type ChangeEvent, type FormEvent, type RefObject } from 'react';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 import { type User } from '@/types/authTypes';
 
 interface LoanRequestModalProps {
+   clickOutsideRef: RefObject<HTMLDivElement>;
    isOpen: boolean;
    onClose: () => void;
    showVerify: boolean;
@@ -25,6 +26,7 @@ interface LoanRequestModalProps {
 }
 
 export default function LoanRequestModal({
+   clickOutsideRef,
    isOpen,
    onClose,
    showVerify,
@@ -49,10 +51,14 @@ export default function LoanRequestModal({
 
    return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-         <button onClick={onClose} className="text-gray-600 hover:text-gray-800 fixed top-4 right-4 z-50">
-            ✖
-         </button>
-         <section className="bg-white rounded-2xl shadow-md max-w-md mx-auto flex flex-col" style={{ minWidth: modalWidth }}>
+         <section
+            ref={clickOutsideRef}
+            className="bg-white rounded-2xl shadow-md max-w-md mx-auto flex flex-col relative"
+            style={{ minWidth: modalWidth }}
+         >
+            <button onClick={onClose} className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 z-10">
+               ✖
+            </button>
             <header className="bg-[#1E56FF] rounded-t-2xl px-6 py-4 flex items-center justify-center gap-2">
                <h2 className="text-white font-extrabold text-lg leading-6">Set Your Own Terms</h2>
                <button aria-label="Help info" className="text-white text-sm font-semibold focus:outline-none" type="button">

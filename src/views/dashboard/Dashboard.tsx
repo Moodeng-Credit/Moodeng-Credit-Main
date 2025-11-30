@@ -1,11 +1,12 @@
 'use client';
 
-import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type ChangeEvent, type FormEvent, type MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAccount } from 'wagmi';
 
@@ -16,6 +17,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import YouTubeVideoLightbox from '@/components/ui/YouTubeVideoLightbox';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { usePagination } from '@/hooks/usePagination';
 
 import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
@@ -36,7 +38,8 @@ export default function Dashboard() {
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
    const { showToastByConfig } = useToast();
-
+   const { isConnected } = useAccount();
+   const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
    const [showPurple, setShowPurple] = useState(false);
    const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,6 +60,8 @@ export default function Dashboard() {
    const [days, setDays] = useState('');
    const [customAmount, setCustomAmount] = useState('');
    const [searchLoan, setSearchLoan] = useState('');
+
+   const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal);
 
    const [filters, setFilters] = useState<LoanFilters>({
       amount: '',
@@ -95,19 +100,36 @@ export default function Dashboard() {
       });
    };
 
-   const handleApplyLoanClick = () => {
+   const handleApplyLoanClick = (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+
+      if (!isConnected) {
+         openConnectModal?.();
+         e.stopPropagation();
+         return;
+      }
+
       if ((user.nal || 0) >= (user.mal || 0)) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
       setShowModal(true);
-      // showVerify state is already managed by the component state based on user.isWorldId
    };
+
+   const handleCloseModal = useCallback(() => {
+      setShowModal(false);
+   }, []);
 
    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
 
       if (isSubmitting) {
+         return;
+      }
+
+      if (!isConnected) {
+         openConnectModal?.();
+         e.stopPropagation();
          return;
       }
 
@@ -241,16 +263,18 @@ export default function Dashboard() {
       Loan();
    }, [dispatch, username]);
 
-   useEffect(() => {
+   const filteredLoans = useMemo(() => {
       const allFilters: LoanFilters = {
          ...filters,
          search: searchLoan,
          sortBy: filters.sortBy
       };
-
-      const filtered = filterLoans(floanRequests, allFilters, customAmount);
-      setSortedLoans(filtered);
+      return filterLoans(floanRequests, allFilters, customAmount);
    }, [filters, searchLoan, floanRequests, customAmount]);
+
+   useEffect(() => {
+      setSortedLoans(filteredLoans);
+   }, [filteredLoans]);
 
    const {
       displayedItems: displayedLoans,
@@ -336,7 +360,7 @@ export default function Dashboard() {
          </div>
          <LoanRequestModal
             isOpen={showModal}
-            onClose={() => setShowModal(false)}
+            onClose={handleCloseModal}
             showVerify={showVerify}
             user={user}
             loanAmount={loanAmount}
@@ -350,6 +374,7 @@ export default function Dashboard() {
             handleDays={handleDays}
             handleSubmit={handleSubmit}
             isSubmitting={isSubmitting}
+            clickOutsideRef={loanRequestModalRef}
          />
          {showPurple ? (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
