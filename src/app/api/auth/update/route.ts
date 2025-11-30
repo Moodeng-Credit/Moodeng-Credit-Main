@@ -5,6 +5,7 @@ import { prisma } from '@/lib/database';
 import { updateUserSchema } from '@/lib/schemas/auth';
 import { sendMail } from '@/lib/services/email';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
+import { serialiseUser } from '@/lib/utils/apiResponse';
 import { generateToken, hashPassword, setAuthCookie } from '@/lib/utils/auth';
 import { handleCors } from '@/lib/utils/cors';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
          }
 
          return {
-            user: updatedUser
+            user: serialiseUser(updatedUser)
          };
       },
       {

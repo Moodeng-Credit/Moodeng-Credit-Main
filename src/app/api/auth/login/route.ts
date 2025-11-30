@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { prisma } from '@/lib/database';
 import { loginSchema } from '@/lib/schemas/auth';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
+import { serialiseUser } from '@/lib/utils/apiResponse';
 import { comparePassword, generateToken, setAuthCookie } from '@/lib/utils/auth';
 import { handleCors } from '@/lib/utils/cors';
 import { verifyGoogleToken, verifyTelegramAuth } from '@/lib/utils/oauth';
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
 
          return {
             token, // Used by beforeResponse to set cookie
-            user
+            user: serialiseUser(user!)
          };
       },
       {

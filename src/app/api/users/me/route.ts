@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { prisma } from '@/lib/database';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
+import { serialiseUser } from '@/lib/utils/apiResponse';
 import { handleCors } from '@/lib/utils/cors';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { SUCCESS_CODES } from '@/types/successCodes';
@@ -17,7 +18,8 @@ export async function GET(request: NextRequest) {
          if (!user) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
          }
-         return user;
+
+         return serialiseUser(user);
       },
       {
          requireAuth: true,
