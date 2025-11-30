@@ -63,10 +63,11 @@ export const walletAddressSchema = z
    .transform((val) => val.trim().toLowerCase());
 
 /**
- * MongoDB ObjectId validation schema
- * - 24 hex characters
+ * PostgreSQL CUID validation schema
+ * - 25 alphanumeric characters (lowercase)
+ * - Format used by Prisma's @default(cuid())
  */
-export const objectIdSchema = z.string({ message: 'ID is required' }).regex(/^[a-f0-9]{24}$/, { message: 'Invalid ID format' });
+export const objectIdSchema = z.string({ message: 'ID is required' }).regex(/^[a-z0-9]{25}$/, { message: 'Invalid ID format' });
 
 /**
  * Positive number validation schema
