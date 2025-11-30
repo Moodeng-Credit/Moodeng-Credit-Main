@@ -1,4 +1,5 @@
 import { formatNumber } from '@/utils/decimalHelpers';
+
 import type { StatCardConfig } from '@/views/profile/components/tabs/types';
 
 interface StatCardProps {

@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server';
 
 import { randomUUID } from 'crypto';
 
+import { formatNumber } from '@/utils/decimalHelpers';
+
 import { prisma } from '@/lib/database';
 import { createLoanSchema } from '@/lib/schemas/loans';
 import { sendMail } from '@/lib/services/email';
@@ -63,7 +65,7 @@ export async function POST(request: NextRequest) {
             await sendMail(
                borrower.email,
                'Friendly Reminder: Your Loan Repayment is Due Soon',
-               `Dear ${borrower.username},\nThis is a friendly reminder that your loan repayment is due in ${data.days} days.\nRepayment Details:\nAmount: ${data.loanAmount}\nDays: ${data.days} days\nTimely repayment helps build your credit score, opening doors to more financial opportunities in the future.\nBest regards, The Moodeng Team`
+               `Dear ${borrower.username},\nThis is a friendly reminder that your loan repayment is due in ${data.days} days.\nRepayment Details:\nAmount: ${formatNumber(data.loanAmount)}\nDays: ${data.days} days\nTimely repayment helps build your credit score, opening doors to more financial opportunities in the future.\nBest regards, The Moodeng Team`
             );
          } catch (error) {
             console.error('Error occurred while sending borrower notifications:', error);

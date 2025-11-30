@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server';
 
+import { formatNumber } from '@/utils/decimalHelpers';
+
 import type { Loan, Prisma, User } from '@/generated/prisma/client/client';
 import { prisma } from '@/lib/database';
 import type { UpdateLoanInput } from '@/lib/schemas/loans';
@@ -7,7 +9,6 @@ import { updateLoanSchema } from '@/lib/schemas/loans';
 import { sendMail } from '@/lib/services/email';
 import { sendNewLoanNotification } from '@/lib/services/telegram';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
-import { formatNumber } from '@/utils/decimalHelpers';
 import { handleCors } from '@/lib/utils/cors';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { RepaymentStatus } from '@/types/loanTypes';

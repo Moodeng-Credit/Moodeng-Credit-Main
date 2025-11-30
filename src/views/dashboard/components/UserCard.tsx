@@ -233,7 +233,7 @@ export default function UserCard(loan: Loan) {
             <div className="flex text-center text-[15px] font-semibold">
                <div className="flex-1 bg-[#D9EEFF] py-4 border-r border-[#D9D9D9]">
                   <p className="text-[#2563EB] font-normal">Repaid</p>
-                  <p className="text-[#2563EB] text-[28px] font-bold mt-1">{localTotalRepaid}</p>
+                  <p className="text-[#2563EB] text-[28px] font-bold mt-1">{formatNumber(localTotalRepaid)}</p>
                </div>
                <div className="flex-1 bg-[#FFE9C9] py-4 border-r border-[#D9D9D9]">
                   <p className="text-[#FBBF24] font-normal">Active</p>

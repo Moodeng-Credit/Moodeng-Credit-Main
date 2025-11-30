@@ -242,12 +242,12 @@ const UserProfile = () => {
                <div className="bg-[#1F2937] rounded-xl p-6">
                   <div className="flex justify-between items-start mb-4">
                      <div>
-                        <div className="text-5xl font-bold mb-2">${borrowerData.stats.totalBorrowed}</div>
+                        <div className="text-5xl font-bold mb-2">${formatNumber(borrowerData.stats.totalBorrowed)}</div>
                         <div className="text-gray-400">Total Borrowed</div>
                      </div>
                      <div className="text-emerald-500 text-2xl">$</div>
                   </div>
-                  <div className="text-green-400">${borrowerData.stats.totalRepaid} Repaid</div>
+                  <div className="text-green-400">${formatNumber(borrowerData.stats.totalRepaid)} Repaid</div>
                </div>
 
                <div className="bg-[#1F2937] rounded-xl p-6">
@@ -275,7 +275,7 @@ const UserProfile = () => {
                            <LevelBadge status="completed" />
                         </div>
                      </div>
-                     <div className="text-4xl font-bold mb-2">${borrowerData.creditGrowth.currentLimit}</div>
+                     <div className="text-4xl font-bold mb-2">${formatNumber(borrowerData.creditGrowth.currentLimit)}</div>
                      <div className="text-gray-400">{borrowerData.creditGrowth.currentDate}</div>
                   </div>
 
@@ -286,7 +286,7 @@ const UserProfile = () => {
                            <LevelBadge status="current" />
                         </div>
                      </div>
-                     <div className="text-4xl font-bold text-green-400 mb-2">${borrowerData.creditGrowth.nextLimit}</div>
+                     <div className="text-4xl font-bold text-green-400 mb-2">${formatNumber(borrowerData.creditGrowth.nextLimit)}</div>
                      <div className="text-green-400">Available to Borrow Now</div>
                   </div>
                </div>
@@ -294,13 +294,13 @@ const UserProfile = () => {
                <div className="space-y-4">
                   <div className="flex justify-between text-sm text-gray-400">
                      <span>Starting Credit Limit ($20)</span>
-                     <span>Current Credit Limit (${borrowerData.creditGrowth.nextLimit})</span>
+                     <span>Current Credit Limit (${formatNumber(borrowerData.creditGrowth.nextLimit)})</span>
                   </div>
                   <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                      <div className={'h-full bg-blue-500 w-[' + parseInt(((user.cs * 100) / (user.cs + 20)).toString()) + '%]'} />
                   </div>
                   <div className="flex justify-between text-sm text-gray-400">
-                     <span>Total Borrowed: ${borrowerData.stats.totalBorrowed}</span>
+                     <span>Total Borrowed: ${formatNumber(borrowerData.stats.totalBorrowed)}</span>
                      <span>{borrowerData.stats.totalLoans} Total Loans</span>
                   </div>
                </div>

@@ -24,7 +24,6 @@ export async function POST(request: NextRequest) {
          // Track if we need to regenerate token (for security-sensitive changes)
          let requiresNewToken = false;
 
-         // Build update object
          const updateData: Prisma.UserUpdateInput = {};
 
          if (data.password) {
@@ -46,19 +45,16 @@ export async function POST(request: NextRequest) {
             updateData.walletAddress = data.walletAddress || null;
          }
 
-         // Update user with Prisma (updatedAt handled automatically)
          const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: updateData,
             omit: { password: true, resetToken: true, resetTokenExpiry: true, nullifierHash: true }
          });
 
-         // Only regenerate token for security-sensitive changes
          if (requiresNewToken) {
             authToken = generateToken(updatedUser.id);
          }
 
-         // Send email if email was updated
          if (data.email) {
             try {
                await sendMail(updatedUser.email, 'Update successful', 'Account Details Updated Successfully.');
@@ -77,7 +73,6 @@ export async function POST(request: NextRequest) {
          requireAuth: true,
          successCode: SUCCESS_CODES.AUTH_UPDATE_SUCCESS,
          beforeResponse: (response) => {
-            // Only set new cookie if we generated a new token
             if (authToken) {
                setAuthCookie(response, authToken);
             }
