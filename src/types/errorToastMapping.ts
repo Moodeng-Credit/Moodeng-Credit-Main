@@ -12,6 +12,7 @@ export const ERROR_CODE_TO_TOAST: Record<ErrorCode, ToastConfigKey> = {
    [ERROR_CODES.AUTH_USER_NOT_FOUND]: 'login_error',
    [ERROR_CODES.AUTH_SESSION_EXPIRED]: 'session_expired',
    [ERROR_CODES.AUTH_PASSWORD_WEAK]: 'password_weak',
+   [ERROR_CODES.AUTH_EMAIL_EXISTS]: 'register_error',
 
    // World ID Verification Errors
    [ERROR_CODES.WORLDID_ALREADY_USED]: 'worldid_already_used',
