@@ -129,7 +129,7 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
             </div>
             <div>
                <p>Payback</p>
-               <p className="mt-1 text-[16px] font-normal text-[#166534]">${formatNumber(loan.repaidAmount)}</p>
+               <p className="mt-1 text-[16px] font-normal text-[#166534]">${formatNumber(loan.totalRepaymentAmount)}</p>
             </div>
             <div></div>
             <div>
