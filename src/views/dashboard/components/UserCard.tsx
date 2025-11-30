@@ -194,7 +194,7 @@ export default function UserCard(loan: Loan) {
 
             <div className="bg-[#E6F9E9] text-[#2F7A3E] text-[13px] font-normal flex items-center justify-center gap-2 px-5 py-2 border-solid border-b border-[#D9EED9]">
                <i className="fas fa-lock text-[14px]"></i>
-               <span>${localProfile?.cs ?? 0}.00 Maximum Credit</span>
+               <span>${localProfile?.cs?.toFixed(2) || '0.00'} Maximum Credit</span>
             </div>
 
             <div className="bg-white px-8 py-5 border-solid border-b border-[#D9D9D9]">
@@ -325,9 +325,9 @@ export default function UserCard(loan: Loan) {
                         <dt className="text-gray-900">Network:</dt>
                         <dd className="text-gray-900 text-right font-extrabold">{loan.block}</dd>
                         <dt className="text-gray-900">Amount Funded:</dt>
-                        <dd className="text-gray-900 text-right font-extrabold">${loan.loanAmount.toString()}.00</dd>
+                        <dd className="text-gray-900 text-right font-extrabold">${loan.loanAmount?.toFixed(2) || '0.00'}</dd>
                         <dt className="text-gray-900">Expected Return:</dt>
-                        <dd className="text-green-700 text-right font-extrabold">${loanData.totalRepaymentAmount.toString()}.00</dd>
+                        <dd className="text-green-700 text-right font-extrabold">${loanData.totalRepaymentAmount?.toFixed(2) || '0.00'}</dd>
                         <dt className="text-gray-900">Return Date:</dt>
                         <dd className="text-gray-900 text-right font-extrabold">{formattedDate}</dd>
                      </dl>

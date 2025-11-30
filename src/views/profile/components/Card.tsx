@@ -80,7 +80,9 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
                <span className="text-[#6B7280] font-normal text-[24px]">/${loan.repaidAmount.toString()}</span>
             </p>
             <p className="text-[12px] leading-[15px] font-semibold text-[#6B7280] mt-1">
-               <span className="font-extrabold">${(toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount)).toString()}.00</span>{' '}
+               <span className="font-extrabold">
+                  ${(toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount))?.toFixed(2) || '0.00'}
+               </span>{' '}
                Remaining for Complete Payback
             </p>
             <div className="w-full h-4 rounded-full bg-[#D9D9D9] mt-3 overflow-hidden">

@@ -25,7 +25,7 @@ export const getTransactionColumns = (isLender: boolean): Column<Loan>[] => [
    },
    {
       header: `${isLender ? 'Funded' : 'Borrowed'} Amount`,
-      accessor: (loan) => `$${loan.loanAmount}.00`,
+      accessor: (loan) => `$${loan.loanAmount?.toFixed(2) || '0.00'}`,
       className: 'font-bold text-[#166534]',
       mobileLabel: 'Amount'
    },
@@ -37,7 +37,7 @@ export const getTransactionColumns = (isLender: boolean): Column<Loan>[] => [
    },
    {
       header: 'Returned Amount',
-      accessor: (loan) => `$${loan.repaidAmount.toString()}.00`,
+      accessor: (loan) => `$${loan.repaidAmount?.toFixed(2) || '0.00'}`,
       className: 'font-bold text-[#b91c1c]',
       mobileLabel: 'Returned'
    },
