@@ -4,7 +4,9 @@ import { type MouseEvent, useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
+import { useAccount } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
@@ -28,6 +30,8 @@ export default function UserCard(loan: Loan) {
    const router = useRouter();
    const dispatch = useDispatch<AppDispatch>();
    const { Transfer } = useWallet();
+   const { isConnected } = useAccount();
+   const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
    const { showToastByConfig } = useToast();
@@ -98,6 +102,7 @@ export default function UserCard(loan: Loan) {
    };
 
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
+      console.log('handleLend');
       e.preventDefault();
 
       if (isProcessing) {
@@ -106,11 +111,21 @@ export default function UserCard(loan: Loan) {
 
       if (loanData.borrowerUser === username) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED));
+         e.stopPropagation();
          return;
       }
 
+      console.log('wallet', wallet);
+
       if (!wallet || wallet.trim() === '') {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
+         e.stopPropagation();
+         return;
+      }
+
+      if (!isConnected) {
+         openConnectModal?.();
+         e.stopPropagation();
          return;
       }
 
