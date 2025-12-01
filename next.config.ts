@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
    // Prisma 7 adapter packages should be external
    serverExternalPackages: ['@prisma/adapter-pg', 'pg'],
    allowedDevOrigins: ['127.0.0.1', 'localhost'],
+   experimental: {
+      optimizePackageImports: ['lucide-react', '@rainbow-me/rainbowkit', 'wagmi', '@tanstack/react-query', '@reduxjs/toolkit']
+   },
    async headers() {
       return [
          {
@@ -52,6 +55,12 @@ const nextConfig: NextConfig = {
          {
             protocol: 'https',
             hostname: 'cdn.builder.io',
+            port: '',
+            pathname: '/**'
+         },
+         {
+            protocol: 'https',
+            hostname: 'hebbkx1anhila5yf.public.blob.vercel-storage.com',
             port: '',
             pathname: '/**'
          }
