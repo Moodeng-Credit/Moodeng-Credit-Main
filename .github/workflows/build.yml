@@ -6,6 +6,9 @@ on:
    pull_request:
       branches: ['**']
 
+env:
+   DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://user:password@localhost:5432/dbname' }}
+
 jobs:
    build:
       runs-on: ubuntu-latest
