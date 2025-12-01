@@ -33,6 +33,7 @@ export const ERROR_CODES = {
    LOAN_AMOUNT_EXCEEDS_LIMIT: 'LOAN_AMOUNT_EXCEEDS_LIMIT',
    LOAN_INVALID_AMOUNT: 'LOAN_INVALID_AMOUNT',
    LOAN_UNAUTHORIZED: 'LOAN_UNAUTHORIZED',
+   LOAN_SELF_LENDING_NOT_ALLOWED: 'LOAN_SELF_LENDING_NOT_ALLOWED',
 
    // Validation Errors (1400-1499)
    VALIDATION_FAILED: 'VALIDATION_FAILED',
@@ -45,6 +46,7 @@ export const ERROR_CODES = {
    NETWORK_REQUIRED: 'NETWORK_REQUIRED',
    TRANSACTION_FAILED: 'TRANSACTION_FAILED',
    INSUFFICIENT_FUNDS: 'INSUFFICIENT_FUNDS',
+   WALLET_MISSING: 'WALLET_MISSING',
 
    // Server Errors (1600-1699)
    SERVER_ERROR: 'SERVER_ERROR',
@@ -93,6 +95,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
    [ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT]: 'The loan amount exceeds your credit score limit.',
    [ERROR_CODES.LOAN_INVALID_AMOUNT]: 'Please enter a valid loan amount greater than 0.',
    [ERROR_CODES.LOAN_UNAUTHORIZED]: 'You are not authorized to perform this action on this loan.',
+   [ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED]: 'You cannot lend to yourself. Please lend to other users.',
 
    // Validation
    [ERROR_CODES.VALIDATION_FAILED]: 'Validation failed.',
@@ -105,6 +108,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
    [ERROR_CODES.NETWORK_REQUIRED]: 'Please select a network and coin type.',
    [ERROR_CODES.TRANSACTION_FAILED]: 'Transaction failed. Please try again.',
    [ERROR_CODES.INSUFFICIENT_FUNDS]: 'Insufficient funds for this transaction.',
+   [ERROR_CODES.WALLET_MISSING]: 'Wallet address is missing. Please connect your wallet.',
 
    // Server
    [ERROR_CODES.SERVER_ERROR]: 'Internal server error. Please try again later.',

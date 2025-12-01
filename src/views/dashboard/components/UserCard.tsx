@@ -4,39 +4,45 @@ import { type MouseEvent, useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
+import { useAccount } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import useWallet from '@/hooks/useWallet';
 
-import { calculateDaysRemaining, calculateDueDate } from '@/utils/dateFormatters';
+import { calculateDaysRemaining, calculateDueDate, parseDateSafely } from '@/utils/dateFormatters';
+import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
 import { MONTHS } from '@/constants/dates';
 import { getUserProfile } from '@/store/slices/authSlice';
-import { editLoan, fetchLoans, getUserLoans, updateLoan } from '@/store/slices/loanSlice';
+import { fetchLoans, getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type User } from '@/types/authTypes';
+import { ERROR_CODES } from '@/types/errorCodes';
+import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
 
 export default function UserCard(loan: Loan) {
    const loanData = loan;
+   const borrowerUser = loanData.borrowerUser || '';
 
    const router = useRouter();
    const dispatch = useDispatch<AppDispatch>();
    const { Transfer } = useWallet();
+   const { isConnected } = useAccount();
+   const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
+   const [isProcessing, setIsProcessing] = useState(false);
    const { showToastByConfig } = useToast();
    const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const username = useSelector((state: RootState) => state.auth.username);
-   const mal = useSelector((state: RootState) => state.auth.mal);
-   const nal = useSelector((state: RootState) => state.auth.nal);
-   const cs = useSelector((state: RootState) => state.auth.cs);
 
    const [localProfile, setLocalProfile] = useState<User | null>(null);
    const [localTotalRepaid, setLocalTotalRepaid] = useState(0);
 
-   const time = new Date(loanData.createdAt).toISOString();
+   const time = parseDateSafely(loanData.createdAt).toISOString();
    const differenceInDays = calculateDaysRemaining(loanData.createdAt, loanData.days);
    const splt = time.split('T')[0].split('-');
    const formattedDate = calculateDueDate(loanData.createdAt, loanData.days);
@@ -45,7 +51,7 @@ export default function UserCard(loan: Loan) {
       let mounted = true;
       const fetch = async () => {
          try {
-            const profileRes = await dispatch(getUserProfile(loanData.borrowerUser || '')).unwrap();
+            const profileRes = await dispatch(getUserProfile(borrowerUser)).unwrap();
             const profileObj = profileRes?.user || profileRes;
             if (mounted) setLocalProfile(profileObj);
          } catch (error) {
@@ -53,11 +59,11 @@ export default function UserCard(loan: Loan) {
          }
 
          try {
-            const loansRes = await dispatch(getUserLoans(loanData.borrowerUser || '')).unwrap();
+            const loansRes = await dispatch(getUserLoans(borrowerUser)).unwrap();
             const loansArray = loansRes?.gloans || loansRes?.loans || loansRes || [];
             if (mounted) {
                const repaid = (loansArray || []).reduce(
-                  (sum: number, ln: Loan) => (ln.repaymentStatus === 'Paid' ? sum + ln.loanAmount : sum),
+                  (sum: number, ln: Loan) => (ln.repaymentStatus === 'Paid' ? sum + toNumber(ln.loanAmount) : sum),
                   0
                );
                setLocalTotalRepaid(repaid);
@@ -71,17 +77,7 @@ export default function UserCard(loan: Loan) {
       return () => {
          mounted = false;
       };
-   }, [dispatch, loanData.borrowerUser]);
-
-   const handleAccept = async (e: MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-      const loanPayload = {
-         _id: loanData._id,
-         wallet,
-         username
-      };
-      dispatch(updateLoan(loanPayload as unknown as Loan));
-   };
+   }, [dispatch, borrowerUser]);
 
    const handleFetch = async () => {
       setShowModal(false);
@@ -98,50 +94,74 @@ export default function UserCard(loan: Loan) {
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
 
-      const loanPayload = {
-         _id: loanData._id,
-         repaymentAmount: loanData.repaymentAmount,
-         repaymentStatus: loanData.repaymentStatus,
-         loanStatus: 'Lent'
-      };
+      if (isProcessing) {
+         return;
+      }
 
-      const notLender = loanData.lenderUser !== username;
-      const notBorrower = loanData.borrowerUser !== username;
-      const loanCondition = loanData.borrowerUser || (loanData.lenderUser && (nal || 0) < (mal || 0) && loanData.loanAmount <= (cs || 0));
+      if (!isConnected) {
+         openConnectModal?.();
+         e.stopPropagation();
+         return;
+      }
 
-      if (notLender && notBorrower && loanCondition) {
-         const cdt = await Transfer(
+      if (loanData.borrowerUser === username) {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED));
+         e.stopPropagation();
+         return;
+      }
+
+      if (!wallet || wallet.trim() === '') {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
+         e.stopPropagation();
+         return;
+      }
+
+      setIsProcessing(true);
+
+      try {
+         const transactionHash = await Transfer(
             e,
-            loanData?.borrowerWallet || '',
-            loanData.loanAmount.toString(),
-            loanData._id,
+            loanData.borrowerWallet || '',
+            formatNumber(loanData.loanAmount),
+            loanData.id,
             loanData.block,
             loanData.coin
          );
-         cdt && (await handleAccept(e));
-         try {
-            cdt &&
-               (await dispatch(editLoan(loanPayload as Loan))
-                  .unwrap()
-                  .then(async () => {
-                     setShowModal(true);
-                  })
-                  .catch((error: Error) => {
-                     console.error('Error editing loan:', error.message || error);
-                  }));
-         } catch {
-            cdt &&
-               (await dispatch(editLoan(loanPayload as Loan))
-                  .unwrap()
-                  .then(async () => {
-                     setShowModal(true);
-                  })
-                  .catch((error: Error) => {
-                     console.error('Error editing loan:', error.message || error);
-                  }));
+
+         if (transactionHash) {
+            try {
+               const loanPayload = {
+                  id: loanData.id,
+                  wallet,
+                  username,
+                  loanStatus: 'Lent',
+                  hash: transactionHash
+               };
+
+               await dispatch(updateLoanStatus(loanPayload)).unwrap();
+               setShowModal(true);
+            } catch (updateError: unknown) {
+               const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
+               console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
+               console.error(
+                  '[RECONCILIATION REQUIRED] Loan ID:',
+                  loanData.id,
+                  '| Amount:',
+                  loanData.loanAmount,
+                  '| Lender:',
+                  username,
+                  '| Hash:',
+                  transactionHash
+               );
+               showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
+            }
          }
-      } else {
-         showToastByConfig('loan_error');
+      } catch (transferError: unknown) {
+         const errorMessage = transferError instanceof Error ? transferError.message : 'Unknown error';
+         console.error('Transfer failed:', errorMessage);
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
+      } finally {
+         setIsProcessing(false);
       }
    };
 
@@ -171,19 +191,19 @@ export default function UserCard(loan: Loan) {
 
             <div className="bg-[#E6F9E9] text-[#2F7A3E] text-[13px] font-normal flex items-center justify-center gap-2 px-5 py-2 border-solid border-b border-[#D9EED9]">
                <i className="fas fa-lock text-[14px]"></i>
-               <span>${localProfile?.cs ?? 0}.00 Maximum Credit</span>
+               <span>${localProfile?.cs || '0'} Maximum Credit</span>
             </div>
 
             <div className="bg-white px-8 py-5 border-solid border-b border-[#D9D9D9]">
                <div className="flex items-center justify-center gap-3 text-left">
                   <div className="">
                      <p className="text-[13px] font-normal text-[#6B6B7B]">Asking</p>
-                     <p className="text-[20px] font-normal text-[#0B1033] mt-1">${loanData.loanAmount}</p>
+                     <p className="text-[20px] font-normal text-[#0B1033] mt-1">${formatNumber(loanData.loanAmount)}</p>
                   </div>
                   <div className="text-[#6B6B7B] text-[30px] font-light select-none">/</div>
                   <div className="">
                      <p className="text-[13px] font-normal text-[#6B6B7B]">Payback</p>
-                     <p className="text-[20px] font-normal text-[#2F7A3E] mt-1">${loanData.repayedAmount}</p>
+                     <p className="text-[20px] font-normal text-[#2F7A3E] mt-1">${formatNumber(loanData.totalRepaymentAmount)}</p>
                   </div>
                   <div className="pl-8">
                      <p className="text-[13px] font-normal text-[#6B6B7B]">Due Date</p>
@@ -210,7 +230,7 @@ export default function UserCard(loan: Loan) {
             <div className="flex text-center text-[15px] font-semibold">
                <div className="flex-1 bg-[#D9EEFF] py-4 border-r border-[#D9D9D9]">
                   <p className="text-[#2563EB] font-normal">Repaid</p>
-                  <p className="text-[#2563EB] text-[28px] font-bold mt-1">{localTotalRepaid}</p>
+                  <p className="text-[#2563EB] text-[28px] font-bold mt-1">{formatNumber(localTotalRepaid)}</p>
                </div>
                <div className="flex-1 bg-[#FFE9C9] py-4 border-r border-[#D9D9D9]">
                   <p className="text-[#FBBF24] font-normal">Active</p>
@@ -227,15 +247,24 @@ export default function UserCard(loan: Loan) {
                <span>GOOD STANDING</span>
             </div>
 
-            <div className="p-5 bg-white">
-               <button
-                  onClick={handleLend}
-                  type="button"
-                  className="w-full bg-[#2563EB] text-white font-semibold text-[15px] py-3 rounded-lg hover:bg-[#1e4bb8] transition"
-               >
-                  Send Your Help
-               </button>
-            </div>
+            {loanData.borrowerUser === username ? (
+               <div className="p-5 bg-gray-100">
+                  <div className="w-full bg-gray-300 text-gray-600 font-semibold text-[15px] py-3 rounded-lg text-center cursor-not-allowed">
+                     Your Loan Request
+                  </div>
+               </div>
+            ) : (
+               <div className="p-5 bg-white">
+                  <button
+                     onClick={handleLend}
+                     disabled={isProcessing}
+                     type="button"
+                     className="w-full bg-[#2563EB] text-white font-semibold text-[15px] py-3 rounded-lg hover:bg-[#1e4bb8] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                     {isProcessing ? 'Processing...' : 'Send Your Help'}
+                  </button>
+               </div>
+            )}
          </div>
 
          {showModal ? (
@@ -293,9 +322,9 @@ export default function UserCard(loan: Loan) {
                         <dt className="text-gray-900">Network:</dt>
                         <dd className="text-gray-900 text-right font-extrabold">{loan.block}</dd>
                         <dt className="text-gray-900">Amount Funded:</dt>
-                        <dd className="text-gray-900 text-right font-extrabold">${loan.loanAmount}.00</dd>
+                        <dd className="text-gray-900 text-right font-extrabold">${formatNumber(loan.loanAmount)}</dd>
                         <dt className="text-gray-900">Expected Return:</dt>
-                        <dd className="text-green-700 text-right font-extrabold">${loanData.repayedAmount}.00</dd>
+                        <dd className="text-green-700 text-right font-extrabold">${formatNumber(loanData.totalRepaymentAmount)}</dd>
                         <dt className="text-gray-900">Return Date:</dt>
                         <dd className="text-gray-900 text-right font-extrabold">{formattedDate}</dd>
                      </dl>

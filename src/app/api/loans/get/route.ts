@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { z } from 'zod';
 
-import Loan from '@/lib/models/Loan';
+import { prisma } from '@/lib/database';
 import { usernameSchema } from '@/lib/schemas/fields';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { handleCors } from '@/lib/utils/cors';
@@ -16,8 +16,10 @@ export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data) => {
-         return await Loan.find({
-            $or: [{ borrowerUser: data.username }, { lenderUser: data.username }]
+         return await prisma.loan.findMany({
+            where: {
+               OR: [{ borrowerUser: data.username }, { lenderUser: data.username }]
+            }
          });
       },
       {

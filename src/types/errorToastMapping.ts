@@ -37,6 +37,7 @@ export const ERROR_CODE_TO_TOAST: Record<ErrorCode, ToastConfigKey> = {
    [ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT]: 'amount_exceeds_limit',
    [ERROR_CODES.LOAN_INVALID_AMOUNT]: 'invalid_amount',
    [ERROR_CODES.LOAN_UNAUTHORIZED]: 'unauthorized',
+   [ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED]: 'self_lending_not_allowed',
 
    // Validation Errors
    [ERROR_CODES.VALIDATION_FAILED]: 'server_error',
@@ -49,6 +50,7 @@ export const ERROR_CODE_TO_TOAST: Record<ErrorCode, ToastConfigKey> = {
    [ERROR_CODES.NETWORK_REQUIRED]: 'network_required',
    [ERROR_CODES.TRANSACTION_FAILED]: 'transaction_error',
    [ERROR_CODES.INSUFFICIENT_FUNDS]: 'insufficient_funds',
+   [ERROR_CODES.WALLET_MISSING]: 'wallet_missing',
 
    // Server Errors
    [ERROR_CODES.SERVER_ERROR]: 'server_error',

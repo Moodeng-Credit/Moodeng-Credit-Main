@@ -35,5 +35,5 @@
      ]
   },
   "include": ["next-env.d.ts", "app-types.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "loadTest.js", ".eslintrc.js", "*.config.js"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "src/generated"]
 }

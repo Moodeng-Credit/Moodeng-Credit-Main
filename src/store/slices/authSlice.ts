@@ -7,7 +7,7 @@ import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
 import { type AuthState, type User, WorldId } from '@/types/authTypes';
 
 const defaultUser: User = {
-   _id: '',
+   id: '',
    username: '',
    email: '',
    walletAddress: undefined,
@@ -112,7 +112,7 @@ export const fetchUser = createAsyncThunk('auth/fetchUser', async () => {
 
 export const updateUser = createAsyncThunk(
    'auth/updateUser',
-   async (userData: { username?: string; password?: string; email?: string; telegramUsername?: string }) => {
+   async (userData: { username?: string; password?: string; email?: string; telegramUsername?: string; walletAddress?: string }) => {
       return await apiHandler.post(API_ENDPOINTS.AUTH.UPDATE, userData);
    }
 );
@@ -246,9 +246,9 @@ const authSlice = createSlice({
             state.error = action.payload as string;
          })
          .addCase(updateUser.fulfilled, (state, action) => {
-            state.user = action.payload;
-            if (action.payload.username) {
-               state.username = action.payload.username;
+            state.user = action.payload.user || action.payload;
+            if (action.payload.user?.username || action.payload.username) {
+               state.username = action.payload.user?.username || action.payload.username;
             }
          })
          .addCase(logoutUser.fulfilled, (state) => {

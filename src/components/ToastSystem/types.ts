@@ -37,7 +37,9 @@ export type ToastErrorType =
    | 'user_update_error'
    | 'session_expired'
    | 'unauthorized'
-   | 'password_weak';
+   | 'password_weak'
+   | 'self_lending_not_allowed'
+   | 'wallet_missing';
 
 export interface ToastConfig {
    success: ToastSuccessType;

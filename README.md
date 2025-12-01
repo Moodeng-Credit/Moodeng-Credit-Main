@@ -21,7 +21,7 @@ This is a monolithic Next.js TypeScript application that combines the previously
 
 ### Database & Services ( `/src/lib/` )
 
-* **MongoDB** with Mongoose ODM
+* **PostGresSql** with Prisma ORM
 * **Email Service** using Gmail OAuth2
 * **Telegram Bot** integration
 * **Authentication** with JWT tokens
@@ -31,7 +31,7 @@ This is a monolithic Next.js TypeScript application that combines the previously
 ### Prerequisites
 
 * Node.js 22+
-* MongoDB Atlas account or local MongoDB
+* PostGresSQL
 * Gmail account for email services
 * Telegram bot token (optional)
 
@@ -52,7 +52,7 @@ cp env.example .env.local
 ```
 
 Required environment variables:
-* `MONGO_URI` - Your MongoDB connection string
+* `DATABASE_URL` - Your PostGresDql connection string
 * `JWT_SECRET` - Secret for JWT token signing
 * `CLIENT_ID` & `CLIENT_SECRET` - Google OAuth credentials
 * `EMAIL_USER` & `REFRESH_TOKEN` - Gmail API credentials
@@ -217,7 +217,7 @@ src/
 ├── lib/                  # Core libraries
 │   ├── config/          # Library configurations
 │   │   └── wagmi.ts     # Wagmi config export
-│   ├── models/          # MongoDB models
+│   ├── models/          # PostGresSQL models
 │   │   ├── Loan.ts      # Loan model
 │   │   └── User.ts      # User model
 │   ├── services/        # External services

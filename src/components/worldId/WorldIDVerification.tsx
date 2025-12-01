@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useCallback, useState } from 'react';
 
 import { IDKitWidget, type ISuccessResult, VerificationLevel } from '@worldcoin/idkit';
 import { useDispatch } from 'react-redux';
@@ -12,6 +12,8 @@ import { handleApiError } from '@/lib/apiHandler';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import type { ApiResponse } from '@/types/apiTypes';
+import { SUCCESS_CODES } from '@/types/successCodes';
+import { getToastKeyFromSuccessCode } from '@/types/successToastMapping';
 
 interface WorldIDVerificationProps {
    children: (props: { open: () => void }) => ReactNode;
@@ -63,9 +65,13 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
    const handleSuccess = () => {
       console.log('World ID verification completed successfully');
-      showToastByConfig('verification_success');
+      showToastByConfig(getToastKeyFromSuccessCode(SUCCESS_CODES.AUTH_VERIFY_SUCCESS)!);
       onSuccess?.();
    };
+
+   const handleCloseModal = useCallback(() => {
+      setIsModalOpen(false);
+   }, []);
 
    return (
       <IDKitWidget
@@ -81,12 +87,12 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
                <VerificationModal
                   isOpen={isModalOpen}
-                  onClose={() => setIsModalOpen(false)}
+                  onClose={handleCloseModal}
                   onVerify={() => {
-                     setIsModalOpen(false);
+                     handleCloseModal();
                      open();
                   }}
-                  onCheckStatus={() => setIsModalOpen(false)}
+                  onCheckStatus={handleCloseModal}
                />
             </>
          )}

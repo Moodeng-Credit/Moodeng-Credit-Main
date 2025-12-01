@@ -1,6 +1,6 @@
 'use client';
 
-import { type FC } from 'react';
+import { type FC, useCallback } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -13,9 +13,12 @@ const ToastContainer: FC = () => {
    const { toasts, removeToast } = useToastContext();
    const router = useRouter();
 
-   const onToastAction = (action: string, customData?: ToastData) => {
-      handleToastAction(action, customData || {}, router);
-   };
+   const onToastAction = useCallback(
+      (action: string, customData?: ToastData) => {
+         handleToastAction(action, customData || {}, router);
+      },
+      [router]
+   );
 
    if (toasts.length === 0) {
       return null;

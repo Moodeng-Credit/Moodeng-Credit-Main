@@ -1,50 +1,64 @@
 import type { NextRequest } from 'next/server';
 
-import User from '@/lib/models/User';
-import { transformUserToResponse, updateUserSchema } from '@/lib/schemas/auth';
+import type { Prisma } from '@/generated/prisma/client/client';
+import { prisma } from '@/lib/database';
+import { updateUserSchema } from '@/lib/schemas/auth';
 import { sendMail } from '@/lib/services/email';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
+import { serialiseUser } from '@/lib/utils/apiResponse';
 import { generateToken, hashPassword, setAuthCookie } from '@/lib/utils/auth';
 import { handleCors } from '@/lib/utils/cors';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { SUCCESS_CODES } from '@/types/successCodes';
 
 export async function POST(request: NextRequest) {
-   let authToken: string;
+   let authToken: string | undefined;
 
    return handleApiRequest(
       request,
       async (data, userId) => {
-         const user = await User.findById(userId);
+         const user = await prisma.user.findUnique({ where: { id: userId } });
          if (!user) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
          }
 
+         // Track if we need to regenerate token (for security-sensitive changes)
+         let requiresNewToken = false;
+
+         const updateData: Prisma.UserUpdateInput = {};
+
          if (data.password) {
-            user.password = await hashPassword(data.password);
+            updateData.password = await hashPassword(data.password);
+            requiresNewToken = true;
          }
          if (data.telegramUsername !== undefined) {
-            user.telegramUsername = data.telegramUsername || undefined;
+            updateData.telegramUsername = data.telegramUsername || null;
          }
          if (data.username) {
-            user.username = data.username;
+            updateData.username = data.username;
+            requiresNewToken = true;
          }
          if (data.email) {
-            user.email = data.email;
+            updateData.email = data.email;
+            requiresNewToken = true;
          }
          if (data.walletAddress !== undefined) {
-            user.walletAddress = data.walletAddress;
+            updateData.walletAddress = data.walletAddress || null;
          }
-         user.updatedAt = new Date();
 
-         await user.save();
+         const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: updateData,
+            omit: { password: true, resetToken: true, resetTokenExpiry: true, nullifierHash: true }
+         });
 
-         authToken = generateToken(user._id.toString());
+         if (requiresNewToken) {
+            authToken = generateToken(updatedUser.id);
+         }
 
-         // Send email if email was updated
          if (data.email) {
             try {
-               await sendMail(user.email, 'Update successful', 'Account Details Updated Successfully.');
+               await sendMail(updatedUser.email, 'Update successful', 'Account Details Updated Successfully.');
                console.log('Email sent successful');
             } catch (error) {
                console.error('Error occurred while sending email:', error);
@@ -52,7 +66,7 @@ export async function POST(request: NextRequest) {
          }
 
          return {
-            user: transformUserToResponse(user)
+            user: serialiseUser(updatedUser)
          };
       },
       {
@@ -60,7 +74,9 @@ export async function POST(request: NextRequest) {
          requireAuth: true,
          successCode: SUCCESS_CODES.AUTH_UPDATE_SUCCESS,
          beforeResponse: (response) => {
-            setAuthCookie(response, authToken);
+            if (authToken) {
+               setAuthCookie(response, authToken);
+            }
          }
       }
    );

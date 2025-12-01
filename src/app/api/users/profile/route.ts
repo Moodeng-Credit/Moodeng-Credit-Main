@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 
-import User from '@/lib/models/User';
+import { prisma } from '@/lib/database';
 import { getUserProfileSchema } from '@/lib/schemas/auth';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { handleCors } from '@/lib/utils/cors';
@@ -11,7 +11,16 @@ export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data) => {
-         const user = await User.findOne({ username: data.username }).select('username isWorldId createdAt cs nal -_id');
+         const user = await prisma.user.findUnique({
+            where: { username: data.username },
+            select: {
+               username: true,
+               isWorldId: true,
+               createdAt: true,
+               cs: true,
+               nal: true
+            }
+         });
 
          if (!user) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
