@@ -2,6 +2,8 @@ import { useState } from 'react';
 
 import Image from 'next/image';
 
+import { Menu } from 'lucide-react';
+
 import type { NavItem } from '@/views/profile/types';
 
 interface SidebarProps {
@@ -30,7 +32,7 @@ export default function Sidebar({ navItems, infoNavItems, onNavItemClick }: Side
                         title={isCollapsed ? item.label : undefined}
                      >
                         <div className={`p-2 rounded ${item.active ? '' : 'bg-white'}`}>
-                           <i className={`fas ${item.icon} text-sm ${item.active ? 'text-white' : 'text-[#1D4ED8]'}`}></i>
+                           <item.icon className={`text-sm ${item.active ? 'text-white' : 'text-[#1D4ED8]'}`} size={14} />
                         </div>
                         {!isCollapsed ? <span>{item.label}</span> : null}
                      </a>
@@ -51,7 +53,7 @@ export default function Sidebar({ navItems, infoNavItems, onNavItemClick }: Side
                            title={isCollapsed ? item.label : undefined}
                         >
                            <div className={`p-2 rounded ${item.active ? '' : 'bg-white'}`}>
-                              <i className={`fas ${item.icon} text-sm ${item.active ? 'text-white' : 'text-[#1D4ED8]'}`}></i>
+                              <item.icon className={`text-sm ${item.active ? 'text-white' : 'text-[#1D4ED8]'}`} size={14} />
                            </div>
                            {!isCollapsed ? <span>{item.label}</span> : null}
                         </a>
@@ -66,7 +68,7 @@ export default function Sidebar({ navItems, infoNavItems, onNavItemClick }: Side
                title={isCollapsed ? 'Menu' : undefined}
             >
                <div className="bg-white p-2 rounded">
-                  <i className="fas fa-bars text-[#1D4ED8] text-sm"></i>
+                  <Menu className="text-[#1D4ED8] text-sm" size={14} />
                </div>
                {!isCollapsed ? <span>Menu</span> : null}
             </button>

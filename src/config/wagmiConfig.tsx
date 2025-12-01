@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { Gem } from 'lucide-react';
 import { arbitrum, base, baseSepolia, bsc, type Chain, optimism, polygon, sepolia } from 'wagmi/chains';
 
 import { type CustomChainConfig } from '@/types/wagmiTypes';
@@ -111,7 +112,7 @@ export const getNetworkSvg = (networkId: number) => {
          </svg>
       )
    };
-   return colors[networkId] || <i className="fas fa-gem text-white text-lg"></i>;
+   return colors[networkId] || <Gem className="text-white" size={18} />;
 };
 
 export const chainConfig: Record<number, CustomChainConfig> = {

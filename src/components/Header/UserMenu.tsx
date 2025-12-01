@@ -1,3 +1,5 @@
+import { Bell, User } from 'lucide-react';
+
 import UserNetwork from '@/components/UserNetwork';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -24,14 +26,14 @@ export default function UserMenu({ onDashboardClick, showMenu, onToggleMenu, onC
             aria-label="Notifications"
             className="bg-blue-600 text-white px-3 py-2 rounded-full hover:bg-blue-700 transition cursor-pointer"
          >
-            <i className="fas fa-bell"></i>
+            <Bell size={16} />
          </button>
          <button
             aria-label="User profile"
             onClick={onToggleMenu}
             className="bg-blue-600 text-white px-3 py-2 rounded-full hover:bg-blue-700 transition cursor-pointer"
          >
-            <i className="fas fa-user"></i>
+            <User size={16} />
          </button>
          {showMenu ? <UserNetwork /> : null}
       </div>

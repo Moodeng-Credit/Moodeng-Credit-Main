@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { Gem } from 'lucide-react';
+
 export const NETWORK_ICONS: Record<string, ReactNode> = {
    solana: (
       <svg width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -96,5 +98,5 @@ export const NETWORK_ICONS: Record<string, ReactNode> = {
 };
 
 export const getNetworkIcon = (network: string): ReactNode => {
-   return NETWORK_ICONS[network] || <i className="fas fa-gem text-white text-lg"></i>;
+   return NETWORK_ICONS[network] || <Gem className="text-white" size={18} />;
 };

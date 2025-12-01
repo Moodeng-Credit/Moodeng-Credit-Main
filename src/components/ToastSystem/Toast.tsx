@@ -4,8 +4,20 @@ import { type FC, useCallback, useEffect, useState } from 'react';
 
 import Image from 'next/image';
 
+import { CheckCircle, Clock, Coins, Fingerprint, Lock, type LucideIcon, TriangleAlert, Wifi, X } from 'lucide-react';
+
 import { TOAST_VARIANTS } from '@/components/ToastSystem/config/toastConfig';
 import { type ToastData, type ToastPropsType } from '@/components/ToastSystem/types';
+
+const LUCIDE_ICONS: Record<string, LucideIcon> = {
+   Fingerprint,
+   Wifi,
+   Coins,
+   Lock,
+   CheckCircle,
+   Clock,
+   TriangleAlert
+};
 
 interface SvgIconProps {
    src: string;
@@ -43,6 +55,10 @@ const Toast: FC<ToastProps> = ({
 
    const variant = TOAST_VARIANTS[toastType as keyof typeof TOAST_VARIANTS] || TOAST_VARIANTS.info;
    const iconToUse = customIcon || variant.icon;
+
+   // Get the icon component if it's a Lucide icon
+   const isSvgIcon = typeof iconToUse === 'string' && iconToUse.endsWith('.svg');
+   const IconComponent = !isSvgIcon && typeof iconToUse === 'string' ? LUCIDE_ICONS[iconToUse] : null;
 
    const handleClose = useCallback(() => {
       setIsLeaving(true);
@@ -83,12 +99,16 @@ const Toast: FC<ToastProps> = ({
       `}
       >
          <button aria-label="Close" className="absolute top-2 right-2 p-1 text-black hover:text-gray-700 z-10" onClick={handleClose}>
-            <i className="fas fa-times text-xs"></i>
+            <X size={12} />
          </button>
 
          <div className={`flex flex-col justify-center items-center ${variant.iconBg} w-10 relative rounded-l`}>
-            <div className={`${variant.iconColor} text-xs font-bold`}>
-               {iconToUse.endsWith('.svg') ? <SvgIcon src={iconToUse} className="w-4 h-4" /> : <i className={iconToUse}></i>}
+            <div className={variant.iconColor}>
+               {isSvgIcon ? (
+                  <SvgIcon src={iconToUse as string} className="w-4 h-4" />
+               ) : IconComponent ? (
+                  <IconComponent size={16} strokeWidth={2} />
+               ) : null}
             </div>
          </div>
 

@@ -5,6 +5,7 @@ import { type MouseEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { ExternalLink, Info, Lock } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAccount } from 'wagmi';
 
@@ -190,7 +191,7 @@ export default function UserCard(loan: Loan) {
             </div>
 
             <div className="bg-[#E6F9E9] text-[#2F7A3E] text-[13px] font-normal flex items-center justify-center gap-2 px-5 py-2 border-solid border-b border-[#D9EED9]">
-               <i className="fas fa-lock text-[14px]"></i>
+               <Lock size={14} />
                <span>${localProfile?.cs || '0'} Maximum Credit</span>
             </div>
 
@@ -223,7 +224,7 @@ export default function UserCard(loan: Loan) {
                   className="flex items-center gap-1 bg-[#2563EB] text-white text-[13px] font-semibold px-4 py-1 rounded-md hover:bg-[#1e4bb8] transition"
                >
                   Insights
-                  <i className="fas fa-external-link-alt text-[12px]"></i>
+                  <ExternalLink size={12} />
                </button>
             </div>
 
@@ -243,7 +244,7 @@ export default function UserCard(loan: Loan) {
             </div>
 
             <div className="flex items-center justify-center gap-2 text-[#2563EB] text-[12px] font-semibold py-3 bg-[#F0F7FF]">
-               <i className="fas fa-info-circle text-[14px]"></i>
+               <Info size={14} />
                <span>GOOD STANDING</span>
             </div>
 

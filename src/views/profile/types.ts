@@ -1,3 +1,5 @@
+import type { LucideIcon } from 'lucide-react';
+
 export enum ProfileTab {
    DASHBOARD = 'Dashboard',
    LOAN_SUMMARY = 'Loan Summary',
@@ -14,7 +16,7 @@ export enum UserRole {
 
 export interface NavItem {
    label: ProfileTab;
-   icon: string;
+   icon: LucideIcon;
    active: boolean;
 }
 

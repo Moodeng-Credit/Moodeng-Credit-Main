@@ -1,5 +1,7 @@
 import { type MouseEvent } from 'react';
 
+import { Filter } from 'lucide-react';
+
 import type { SortOption } from '@/utils/loanFilters';
 
 interface SortButtonsProps {
@@ -32,7 +34,7 @@ export default function SortButtons({ activeSort, onSortChange }: SortButtonsPro
                }`}
             >
                <span>{label}</span>
-               <i className="fas fa-filter text-xs"></i>
+               <Filter size={12} />
             </button>
          ))}
       </div>

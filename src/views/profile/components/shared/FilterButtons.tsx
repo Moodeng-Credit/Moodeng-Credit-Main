@@ -1,3 +1,5 @@
+import { Filter, Search } from 'lucide-react';
+
 interface FilterButtonsProps {
    userRole: string;
 }
@@ -12,10 +14,10 @@ export default function FilterButtons({ userRole }: FilterButtonsProps) {
             type="button"
          >
             <span>ALL {isLender ? 'FUNDINGS' : 'LOANS'}</span>
-            <i className="fas fa-filter text-xs"></i>
+            <Filter size={12} />
          </button>
          <button className="border border-[#6b7280] text-[#6b7280] text-xs rounded-md px-4 py-2 flex items-center space-x-2" type="button">
-            <i className="fas fa-search"></i>
+            <Search size={12} />
             <span>SEARCH {isLender ? 'FUNDINGS' : 'LOANS'}</span>
          </button>
       </div>

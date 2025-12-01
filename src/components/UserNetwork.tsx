@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { type Chain, ConnectButton } from '@rainbow-me/rainbowkit';
+import { Check, ChevronRight, Coins, LogOut, Plus, Repeat } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAccount, useSwitchChain } from 'wagmi';
 
@@ -116,19 +117,19 @@ export default function UserNetwork() {
                         href="#"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
-                        Moodeng Credit <i className="fas fa-chevron-right"></i>
+                        Moodeng Credit <ChevronRight size={16} />
                      </a>
                      <a
                         href="#"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
-                        Privacy policy <i className="fas fa-chevron-right"></i>
+                        Privacy policy <ChevronRight size={16} />
                      </a>
                      <a
                         href="#"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
-                        Terms and conditions <i className="fas fa-chevron-right"></i>
+                        Terms and conditions <ChevronRight size={16} />
                      </a>
                   </nav>
                </div>
@@ -153,7 +154,7 @@ export default function UserNetwork() {
                         className="bg-purple-600 text-white text-xs font-semibold rounded-md px-3 pb-1 pt-[0.375rem] flex items-center gap-1 hover:bg-purple-700 transition-all duration-200 hover:scale-105 hover:shadow-md"
                         type="button"
                      >
-                        <i className="fas fa-coins"></i> IOU 50000
+                        <Coins size={12} /> IOU 50000
                      </button>
                   </div>
                   {account.isConnected ? (
@@ -164,7 +165,7 @@ export default function UserNetwork() {
                         >
                            <div className="flex items-center gap-2 w-2/3 px-4 py-3 text-sm font-normal">
                               Network
-                              <i className="fas fa-exchange-alt"></i>
+                              <Repeat size={14} />
                            </div>
                            <div
                               className={`
@@ -193,7 +194,7 @@ export default function UserNetwork() {
                                        <span className="text-sm font-medium text-gray-700">
                                           {displayConfig?.displayName || 'Unknown Network'}
                                        </span>
-                                       {account.chainId === chain.id ? <i className="fas fa-check text-green-500 ml-auto"></i> : null}
+                                       {account.chainId === chain.id ? <Check className="text-green-500 ml-auto" size={16} /> : null}
                                     </div>
                                  );
                               })}
@@ -213,31 +214,31 @@ export default function UserNetwork() {
                         href="/profile"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
-                        Profile <i className="fas fa-chevron-right"></i>
+                        Profile <ChevronRight size={16} />
                      </Link>
                      <Link
                         href="/profile"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
-                        Repay Loans <i className="fas fa-chevron-right"></i>
+                        Repay Loans <ChevronRight size={16} />
                      </Link>
                      <Link
                         href="/dashboard"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
-                        Connect Account <i className="fas fa-plus"></i>
+                        Connect Account <Plus size={16} />
                      </Link>
                      <Link
                         href="/profile"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
-                        View Loan History <i className="fas fa-chevron-right"></i>
+                        View Loan History <ChevronRight size={16} />
                      </Link>
                      <Link
                         href="/profile"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
-                        View Lending History <i className="fas fa-chevron-right"></i>
+                        View Lending History <ChevronRight size={16} />
                      </Link>
                   </nav>
                   <div className="border-t border-gray-200 border-solid px-4 py-3 text-xs font-normal text-gray-400">Information</div>
@@ -246,19 +247,19 @@ export default function UserNetwork() {
                         href="#"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
-                        Increase Credit Limit <i className="fas fa-chevron-right"></i>
+                        Increase Credit Limit <ChevronRight size={16} />
                      </a>
                      <a
                         href="#"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
-                        What are IOU Points? <i className="fas fa-chevron-right"></i>
+                        What are IOU Points? <ChevronRight size={16} />
                      </a>
                      <a
                         href="#"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
-                        How to get verified? <i className="fas fa-chevron-right"></i>
+                        How to get verified? <ChevronRight size={16} />
                      </a>
                   </nav>
                </div>
@@ -267,7 +268,7 @@ export default function UserNetwork() {
                   className="bg-pink-500 text-white font-bold text-sm rounded-b-xl w-full py-3 flex justify-center items-center gap-2 hover:bg-pink-600 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
                   type="button"
                >
-                  SIGN OUT <i className="fas fa-sign-out-alt"></i>
+                  SIGN OUT <LogOut size={16} />
                </button>
             </section>
          ) : null}

@@ -1,3 +1,5 @@
+import { BarChart3, FileText, Tag, Users } from 'lucide-react';
+
 import type { StatCardConfig } from '@/views/profile/components/tabs/types';
 
 export const STAT_CARDS_CONFIG: StatCardConfig[] = [
@@ -6,7 +8,7 @@ export const STAT_CARDS_CONFIG: StatCardConfig[] = [
       label: 'Repayments',
       bgColor: 'bg-[#d9f6d9]',
       iconBg: 'bg-[#34c759]',
-      icon: 'fas fa-chart-bar',
+      icon: BarChart3,
       textColor: 'text-[#34c759]'
    },
    {
@@ -14,7 +16,7 @@ export const STAT_CARDS_CONFIG: StatCardConfig[] = [
       label: 'Active Loans',
       bgColor: 'bg-[#fff1d6]',
       iconBg: 'bg-[#ff9b86]',
-      icon: 'fas fa-file-alt',
+      icon: FileText,
       textColor: 'text-[#ff9b86]'
    },
    {
@@ -22,7 +24,7 @@ export const STAT_CARDS_CONFIG: StatCardConfig[] = [
       label: 'Defaulted',
       bgColor: 'bg-[#ffe1e1]',
       iconBg: 'bg-[#ff5a75]',
-      icon: 'fas fa-tag',
+      icon: Tag,
       textColor: 'text-[#ff5a75]'
    },
    {
@@ -30,7 +32,7 @@ export const STAT_CARDS_CONFIG: StatCardConfig[] = [
       label: 'Pending Loans',
       bgColor: 'bg-[#ede0ff]',
       iconBg: 'bg-[#b18aff]',
-      icon: 'fas fa-user-friends',
+      icon: Users,
       textColor: 'text-[#b18aff]'
    }
 ];

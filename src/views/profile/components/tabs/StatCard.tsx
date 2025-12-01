@@ -9,11 +9,12 @@ interface StatCardProps {
 }
 
 const StatCard = ({ config, count, total }: StatCardProps) => {
+   const Icon = config.icon;
    return (
       <div className={`${config.bgColor} rounded-xl p-5 select-none relative`}>
          <div className="flex items-center space-x-3 mb-3">
             <div className={`${config.iconBg} text-white rounded-full p-2.5 text-xs`}>
-               <i className={config.icon} />
+               <Icon size={12} />
             </div>
             <div className="font-extrabold text-2xl text-[#111827]">{count}</div>
          </div>

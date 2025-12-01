@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { AlertCircle, ExternalLink, Info } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
@@ -65,13 +66,15 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
                </p>
             </div>
          </div>
-         <div className="bg-[#DBEAFE] text-[#2563EB] text-center text-[14px] leading-[18px] font-normal py-2 border-t border-b border-[#BFDBFE]">
-            <i className="fas fa-info-circle mr-1"></i>
-            Due on <strong>{dueDate}</strong> (
-            {loan.repaymentStatus === 'Paid'
-               ? 'Fully Repaid'
-               : (differenceInDays > 0 ? differenceInDays : '0') + (differenceInDays > 1 ? ' Days Left' : ' Day Left')}
-            )
+         <div className="bg-[#DBEAFE] text-[#2563EB] text-center text-[14px] leading-[18px] font-normal py-2 border-t border-b border-[#BFDBFE] flex items-center justify-center gap-1">
+            <Info size={14} />
+            <span>
+               Due on <strong>{dueDate}</strong> (
+               {loan.repaymentStatus === 'Paid'
+                  ? 'Fully Repaid'
+                  : (differenceInDays > 0 ? differenceInDays : '0') + (differenceInDays > 1 ? ' Days Left' : ' Day Left')}
+               )
+            </span>
          </div>
          <div className="p-5 pt-4">
             <p className="text-[13px] leading-[16px] font-normal text-[#6B7280] mb-1">Repayment Progress</p>
@@ -96,7 +99,7 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
             type="button"
          >
             Borrow Insight
-            <i className="fas fa-external-link-alt text-white text-sm"></i>
+            <ExternalLink className="text-white" size={14} />
          </button>
       </div>
    ) : (
@@ -108,16 +111,18 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
             </div>
          </div>
          <div
-            className={`text-center text-[14px] leading-[18px] font-normal py-2 border-t border-b ${badgeStyles.bgClass} ${badgeStyles.textClass} ${badgeStyles.borderClass}`}
+            className={`text-center text-[14px] leading-[18px] font-normal py-2 border-t border-b ${badgeStyles.bgClass} ${badgeStyles.textClass} ${badgeStyles.borderClass} flex items-center justify-center gap-1`}
          >
-            <i className="fas fa-exclamation-circle mr-1"></i>
-            {loan.loanStatus === 'Requested'
-               ? 'Waiting for Funding'
-               : loan.repaymentStatus === 'Paid'
-                 ? 'Fully Repaid'
-                 : loan.repaymentStatus === 'Partial'
-                   ? `Partially Repaid - ${differenceInDays > 0 ? differenceInDays : '0'} ${differenceInDays > 1 ? 'Days' : 'Day'} Left`
-                   : `Due in ${differenceInDays > 0 ? differenceInDays : '0'} ${differenceInDays > 1 ? 'Days' : 'Day'}`}
+            <AlertCircle size={14} />
+            <span>
+               {loan.loanStatus === 'Requested'
+                  ? 'Waiting for Funding'
+                  : loan.repaymentStatus === 'Paid'
+                    ? 'Fully Repaid'
+                    : loan.repaymentStatus === 'Partial'
+                      ? `Partially Repaid - ${differenceInDays > 0 ? differenceInDays : '0'} ${differenceInDays > 1 ? 'Days' : 'Day'} Left`
+                      : `Due in ${differenceInDays > 0 ? differenceInDays : '0'} ${differenceInDays > 1 ? 'Days' : 'Day'}`}
+            </span>
          </div>
          <div className="p-5 pt-4 border-b border-[#E5E7EB] grid grid-cols-3 text-center text-[13px] leading-[16px] font-normal text-[#6B7280]">
             <div>

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+import { InfoIcon } from 'lucide-react';
+
 import Calendar from '@/views/profile/components/Calendar';
 import { STAT_CARDS_CONFIG } from '@/views/profile/components/tabs/constants';
 import CreditLevelCard from '@/views/profile/components/tabs/CreditLevelCard';
@@ -67,7 +69,7 @@ const DashboardTab = () => {
                   className="text-[#374151] text-sm rounded-full border border-[#374151] w-6 h-6 flex items-center justify-center hover:bg-gray-50 transition"
                   type="button"
                >
-                  <i className="fa-solid fa-circle-info" />
+                  <InfoIcon size={14} />
                </button>
             </h2>
             <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: 'thin' }}>

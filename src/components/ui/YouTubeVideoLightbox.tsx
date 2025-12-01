@@ -6,6 +6,7 @@ import 'lightgallery/css/lg-video.css';
 import 'lightgallery/css/lightgallery.css';
 import lgVideo from 'lightgallery/plugins/video';
 import LightGallery from 'lightgallery/react';
+import { PlayCircle } from 'lucide-react';
 
 interface YouTubeVideoLightboxProps {
    readonly videoId: string;
@@ -28,7 +29,7 @@ export default function YouTubeVideoLightbox({
             data-sub-html={title}
             data-video='{"autoplay": true, "muted": false, "volume": 1}'
          >
-            <i className="fas fa-play-circle"></i>
+            <PlayCircle size={16} />
             <span>{title}!</span>
          </a>
       </LightGallery>

@@ -28,7 +28,7 @@ export const TOAST_VARIANTS = {
       textColor: 'text-green-700'
    },
    info: {
-      icon: 'fas fa-fingerprint',
+      icon: 'Fingerprint',
       iconBg: 'bg-blue-200',
       iconColor: 'text-blue-600',
       textColor: 'text-blue-700'
@@ -40,7 +40,7 @@ export const TOAST_VARIANTS = {
       textColor: 'text-pink-500'
    },
    warning: {
-      icon: 'fas fa-wifi',
+      icon: 'Wifi',
       iconBg: 'bg-gray-300',
       iconColor: 'text-gray-600',
       textColor: 'text-gray-400'
@@ -106,7 +106,7 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       message: (points: number | string) => `You've received ${points} IOU Points!`,
       buttonText: 'Check IOU Points Balance',
       buttonAction: 'check_points_balance',
-      customIcon: 'fas fa-coins',
+      customIcon: 'Coins',
       route: '/dashboard'
    },
 
@@ -133,7 +133,7 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       message: 'Account verification failed. Please try again.',
       buttonText: 'Try Again?',
       buttonAction: 'retry_verification',
-      customIcon: 'fas fa-lock'
+      customIcon: 'Lock'
    },
 
    server_error: {
@@ -190,7 +190,7 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       message: 'Congratulations! You have successfully verified your World ID.',
       buttonText: 'Continue',
       buttonAction: 'continue',
-      customIcon: 'fas fa-check-circle'
+      customIcon: 'CheckCircle'
    },
 
    network_required: {
@@ -310,7 +310,7 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       buttonText: 'Log In',
       buttonAction: 'go_to_login',
       route: '/login',
-      customIcon: 'fas fa-clock'
+      customIcon: 'Clock'
    },
 
    unauthorized: {
@@ -328,7 +328,7 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       message: 'This World ID verification has failed. Please contact support.',
       buttonText: 'Contact Support',
       buttonAction: 'contact_support',
-      customIcon: 'fas fa-exclamation-triangle'
+      customIcon: 'TriangleAlert'
    },
 
    wallet_missing: {

@@ -3,7 +3,6 @@ import { type ReactNode } from 'react';
 import { type Metadata } from 'next';
 import { Inter } from 'next/font/google';
 
-import '@fortawesome/fontawesome-free/css/all.min.css';
 import '@rainbow-me/rainbowkit/styles.css';
 
 import Footer from '@/components/Footer';

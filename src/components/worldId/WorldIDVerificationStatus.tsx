@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+import { CheckCircle } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
@@ -57,7 +58,7 @@ export default function WorldIDVerificationStatus({ className = '' }: WorldIDVer
             {isVerified ? (
                <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2 text-[12px] text-[#4caf50] font-normal leading-[10px]">
-                     <i className="fas fa-check-circle"></i>
+                     <CheckCircle size={12} />
                      <span>Human Verified with World ID</span>
                   </div>
                   {isDevMode ? (

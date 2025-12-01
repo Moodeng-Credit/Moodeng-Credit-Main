@@ -1,3 +1,5 @@
+import { Crown, Lock, Trophy } from 'lucide-react';
+
 import { formatNumber } from '@/utils/decimalHelpers';
 
 import type { CreditLevel } from '@/views/profile/components/tabs/types';
@@ -20,7 +22,7 @@ const CreditLevelCard = ({ level }: CreditLevelCardProps) => {
                <span className="text-lg">+</span>
             </div>
             <div className="flex items-center justify-center gap-1 font-extrabold mb-2">
-               <i className="fas fa-crown text-yellow-500" />
+               <Crown className="text-yellow-500" size={16} />
                <span>{level.lender}</span>
             </div>
             <div className="text-xs text-black font-normal mb-2">Helped you with</div>
@@ -41,7 +43,7 @@ const CreditLevelCard = ({ level }: CreditLevelCardProps) => {
                <span className="text-2xl">+</span>
             </div>
             <div className="flex items-center justify-center gap-2 font-extrabold mb-2">
-               <i className="fas fa-trophy text-yellow-400 text-3xl" />
+               <Trophy className="text-yellow-400" size={32} />
                <div className="text-2xl text-left">
                   Max Credit
                   <br />
@@ -55,7 +57,7 @@ const CreditLevelCard = ({ level }: CreditLevelCardProps) => {
 
    return (
       <div className="bg-[#e5e7eb] rounded-xl p-6 min-w-[160px] text-center text-[#6b7280] text-lg font-extrabold relative flex-shrink-0">
-         <i className="fas fa-lock absolute top-6 left-1/2 -translate-x-1/2 text-4xl text-gray-400" />
+         <Lock className="absolute top-6 left-1/2 -translate-x-1/2 text-gray-400" size={36} />
          <div className="mt-16 text-2xl">${formatNumber(level.amount)}</div>
          <div className="text-base font-bold my-2">LOCKED</div>
          <div className="text-xs font-normal text-gray-600 mt-3 whitespace-pre-line">{level.unlockRequirement}</div>

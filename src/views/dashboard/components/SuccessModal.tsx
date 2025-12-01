@@ -2,6 +2,8 @@
 
 import { type RefObject } from 'react';
 
+import { Check } from 'lucide-react';
+
 interface SuccessModalProps {
    clickOutsideRef: RefObject<HTMLDivElement> | undefined;
    isOpen: boolean;
@@ -27,7 +29,7 @@ export default function SuccessModal({ clickOutsideRef, isOpen, onClose }: Succe
                   className="bg-white rounded-full p-6 flex items-center justify-center"
                   style={{ width: '72px', height: '72px' }}
                >
-                  <i className="fas fa-check text-[#7B5FFF] text-4xl"></i>
+                  <Check className="text-[#7B5FFF]" size={36} />
                </div>
             </div>
          </section>

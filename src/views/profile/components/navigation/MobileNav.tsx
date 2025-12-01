@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import { Menu, X } from 'lucide-react';
+
 import type { NavItem } from '@/views/profile/types';
 
 interface MobileNavProps {
@@ -24,7 +26,7 @@ export default function MobileNav({ navItems, infoNavItems, onNavItemClick }: Mo
             className="md:hidden fixed bottom-6 right-6 z-50 bg-[#1D4ED8] text-white p-4 rounded-full shadow-lg hover:bg-[#1e40af] transition-colors"
             aria-label="Toggle menu"
          >
-            <i className={`fas ${isOpen ? 'fa-times' : 'fa-bars'} text-lg`}></i>
+            {isOpen ? <X className="text-lg" size={18} /> : <Menu className="text-lg" size={18} />}
          </button>
 
          {/* Overlay */}
@@ -47,7 +49,7 @@ export default function MobileNav({ navItems, infoNavItems, onNavItemClick }: Mo
                            }`}
                         >
                            <div className={`p-2 rounded ${item.active ? '' : 'bg-white'}`}>
-                              <i className={`fas ${item.icon} text-sm ${item.active ? 'text-white' : 'text-[#1D4ED8]'}`}></i>
+                              <item.icon className={`text-sm ${item.active ? 'text-white' : 'text-[#1D4ED8]'}`} size={14} />
                            </div>
                            <span>{item.label}</span>
                         </button>
@@ -66,7 +68,7 @@ export default function MobileNav({ navItems, infoNavItems, onNavItemClick }: Mo
                               }`}
                            >
                               <div className={`p-2 rounded ${item.active ? '' : 'bg-white'}`}>
-                                 <i className={`fas ${item.icon} text-sm ${item.active ? 'text-white' : 'text-[#1D4ED8]'}`}></i>
+                                 <item.icon className={`text-sm ${item.active ? 'text-white' : 'text-[#1D4ED8]'}`} size={14} />
                               </div>
                               <span>{item.label}</span>
                            </button>

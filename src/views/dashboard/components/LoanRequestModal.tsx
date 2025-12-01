@@ -2,6 +2,8 @@
 
 import { type ChangeEvent, type FormEvent, type RefObject } from 'react';
 
+import { Calendar, CreditCard, DollarSign, HelpCircle } from 'lucide-react';
+
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 import { type User } from '@/types/authTypes';
@@ -62,14 +64,14 @@ export default function LoanRequestModal({
             <header className="bg-[#1E56FF] rounded-t-2xl px-6 py-4 flex items-center justify-center gap-2">
                <h2 className="text-white font-extrabold text-lg leading-6">Set Your Own Terms</h2>
                <button aria-label="Help info" className="text-white text-sm font-semibold focus:outline-none" type="button">
-                  <i className="fas fa-question-circle"></i>
+                  <HelpCircle size={14} />
                </button>
             </header>
 
             {showVerify ? (
                <div className="bg-[#FFD7DD] text-[#D94A5B] text-sm font-semibold flex items-center justify-between px-4 py-2 rounded-t-none rounded-b-md select-none">
                   <div className="flex items-center gap-2">
-                     <i className="fas fa-id-card"></i>
+                     <CreditCard size={16} />
                      <span>Verification Required for Borrowers</span>
                   </div>
                   <WorldIDVerification>
@@ -92,14 +94,14 @@ export default function LoanRequestModal({
                   </label>
                   <div className="flex items-center gap-1 bg-[#E6E9FF] text-[#1E56FF] text-xs font-semibold rounded-md px-2 py-1 select-none">
                      <button aria-label="Limit info" className="focus:outline-none" type="button">
-                        <i className="fas fa-question-circle"></i>
+                        <HelpCircle size={12} />
                      </button>
                      <span>Limit: ${limitAmount || '0'}</span>
                   </div>
                </div>
                <div className="flex border-solid border border-gray-300 rounded-md overflow-hidden">
-                  <span aria-hidden="true" className="flex items-center justify-center bg-[#E6E9FF] text-[#1E56FF] px-4 text-base">
-                     <i className="fas fa-dollar-sign"></i>
+                  <span aria-hidden="true" className="flex items-center justify-center bg-[#E6E9FF] text-[#1E56FF] px-4 text-base gap-2">
+                     <DollarSign size={16} />
                      USD
                   </span>
                   <input
@@ -150,7 +152,7 @@ export default function LoanRequestModal({
                            className="flex items-center justify-center border border-gray-300 rounded-md px-3 text-gray-700"
                            type="button"
                         >
-                           <i className="far fa-calendar-alt"></i>
+                           <Calendar size={16} />
                         </button>
                      </>
                   )}

@@ -1,9 +1,11 @@
+import type { LucideIcon } from 'lucide-react';
+
 export interface StatCardConfig {
    key: 'repayments' | 'active' | 'defaulted' | 'pending';
    label: string;
    bgColor: string;
    iconBg: string;
-   icon: string;
+   icon: LucideIcon;
    textColor: string;
 }
 
