@@ -25,7 +25,11 @@ export const sortLoans = (loans: Loan[], sortBy: SortOption): Loan[] => {
       highest: (a: Loan, b: Loan) => toNumber(b.loanAmount) - toNumber(a.loanAmount),
       lowest: (a: Loan, b: Loan) => toNumber(a.loanAmount) - toNumber(b.loanAmount),
       newest: (a: Loan, b: Loan) => parseDateSafely(b.createdAt).getTime() - parseDateSafely(a.createdAt).getTime(),
-      oldest: (a: Loan, b: Loan) => parseDateSafely(a.createdAt).getTime() - parseDateSafely(b.createdAt).getTime()
+      oldest: (a: Loan, b: Loan) => {
+         const dateA = parseDateSafely(a.createdAt).getTime();
+         const dateB = parseDateSafely(b.createdAt).getTime();
+         return dateA - dateB;
+      }
    };
 
    const sortFn = sortFunctions[sortBy];

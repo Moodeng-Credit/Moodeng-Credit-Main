@@ -113,7 +113,7 @@ export default function Profile() {
    const showFilterButtons = activeTab === ProfileTab.LOAN_SUMMARY || activeTab === ProfileTab.TRANSACTION_HISTORY;
 
    return (
-      <div className="bg-[#c9d5f9] min-h-screen flex flex-col" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <div className="bg-[#c9d5f9] min-h-screen flex flex-col">
          <main className="flex flex-col md:flex-row flex-1 overflow-hidden">
             <Sidebar navItems={navItems} infoNavItems={infoNavItems} onNavItemClick={handleNavItemClick} />
             <MobileNav navItems={navItems} infoNavItems={infoNavItems} onNavItemClick={handleNavItemClick} />

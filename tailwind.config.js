@@ -4,7 +4,13 @@ module.exports = {
   ],
   darkMode: 'class',
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        primary: '#4D78FD',
+        secondary: '#2563EB',
+        accent: '#E0E7FF',
+      },
+    },
   },
   plugins: [],
 };
