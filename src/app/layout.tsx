@@ -1,7 +1,7 @@
-import { Poppins } from 'next/font/google';
 import { type ReactNode } from 'react';
 
 import { type Metadata } from 'next';
+import { Poppins } from 'next/font/google';
 
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import '@rainbow-me/rainbowkit/styles.css';
@@ -14,10 +14,10 @@ import '@/app/globals.css';
 import '@/lib/startup';
 
 const poppins = Poppins({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-poppins',
-  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900']
+   subsets: ['latin'],
+   display: 'swap',
+   variable: '--font-poppins',
+   weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900']
 });
 
 // eslint-disable-next-line react-refresh/only-export-components

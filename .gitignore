@@ -10,7 +10,7 @@
 !.yarn/releases
 !.yarn/versions
 
-/generated/**/*
+/**/generated/
 # testing
 /coverage
 

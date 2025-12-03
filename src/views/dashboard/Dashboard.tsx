@@ -1,6 +1,6 @@
 'use client';
 
-import { type ChangeEvent, type FormEvent, type MouseEvent, type RefObject, useCallback, useEffect, useMemo, useState } from 'react';
+import { type MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -13,22 +13,19 @@ import { useAccount } from 'wagmi';
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import SearchBar from '@/components/filters/SearchBar';
 import SortButtons from '@/components/filters/SortButtons';
+import LoanRequestForm from '@/components/loan-request/LoanRequestForm';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import YouTubeVideoLightbox from '@/components/ui/YouTubeVideoLightbox';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
-import { useClickOutside } from '@/hooks/useClickOutside';
 import { usePagination } from '@/hooks/usePagination';
 
 import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
-import { fetchUser } from '@/store/slices/authSlice';
-import { createLoan, fetchLoans, getUserLoans } from '@/store/slices/loanSlice';
+import { fetchLoans, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
-import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
-import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 
@@ -37,33 +34,17 @@ const CREDIT_LEVELLING_VIDEO_ID = 'gaRjXOd2s2U';
 export default function Dashboard() {
    const pathname = usePathname();
    const dispatch = useDispatch<AppDispatch>();
-   const account = useAccount();
    const { showToastByConfig } = useToast();
    const { isConnected } = useAccount();
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
-   const [showPurple, setShowPurple] = useState(false);
-   const [isSubmitting, setIsSubmitting] = useState(false);
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
-   const showVerify = user?.isWorldId !== 'ACTIVE';
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
    const [sortedLoans, setSortedLoans] = useState(floanRequests);
-   const today = new Date().toISOString().split('T')[0];
-   const borrowerUserId = user?.username || '';
-   const lenderUserId = '';
-   const [loanAmount, setLoanAmount] = useState('');
-   const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');
-   const [block, setBlock] = useState(account?.chain?.name);
-   const [coin, setCoin] = useState('USDC');
-   const [reason, setReason] = useState('');
-   const [days, setDays] = useState('');
    const [customAmount, setCustomAmount] = useState('');
    const [searchLoan, setSearchLoan] = useState('');
-
-   const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
-   const successModalRef = useClickOutside<HTMLDivElement>(() => setShowPurple(false), showPurple) as RefObject<HTMLDivElement>;
 
    const [filters, setFilters] = useState<LoanFilters>({
       amount: '',
@@ -74,13 +55,6 @@ export default function Dashboard() {
       search: '',
       sortBy: undefined
    });
-
-   const clear = () => {
-      setTotalRepaymentAmount('');
-      setLoanAmount('');
-      setReason('');
-      setDays('');
-   };
 
    const handleFiltersChange = (newFilters: Partial<LoanFilters>) => {
       setFilters((prev) => {
@@ -121,118 +95,6 @@ export default function Dashboard() {
    const handleCloseModal = useCallback(() => {
       setShowModal(false);
    }, []);
-
-   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-
-      if (isSubmitting) {
-         return;
-      }
-
-      if (!isConnected) {
-         openConnectModal?.();
-         e.stopPropagation();
-         return;
-      }
-
-      if ((user.nal || 0) >= (user.mal || 0)) {
-         console.log('Loan limit reached');
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
-         return;
-      }
-
-      if (user.isWorldId !== 'ACTIVE') {
-         console.log('WorldId status not active');
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WORLDID_REQUIRED));
-         return;
-      }
-
-      if (!user.walletAddress || user.walletAddress.trim() === '') {
-         console.log('Wallet address not connected');
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
-         return;
-      }
-
-      if (!block || !coin) {
-         console.log('Network validation failed:', { block, coin, chainName: account?.chain?.name });
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
-         return;
-      }
-
-      if (!loanAmount || parseFloat(loanAmount) <= 0) {
-         console.log('Invalid loan amount');
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_INVALID_AMOUNT));
-         return;
-      }
-
-      if (parseFloat(loanAmount) > (user.cs || 0)) {
-         console.log('Loan amount exceeds credit score');
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
-         return;
-      }
-
-      const loanData = {
-         borrowerUserId: borrowerUserId || '',
-         lenderUserId,
-         loanAmount: parseFloat(loanAmount),
-         totalRepaymentAmount: parseFloat(totalRepaymentAmount),
-         block,
-         coin,
-         reason,
-         days: parseInt(days)
-      };
-
-      if (
-         user.isWorldId === 'ACTIVE' &&
-         block &&
-         coin &&
-         (user.nal || 0) < (user.mal || 0) &&
-         parseFloat(loanAmount) <= (user.cs || 0) &&
-         parseFloat(loanAmount) > 0
-      ) {
-         setIsSubmitting(true);
-         try {
-            await dispatch(createLoan(loanData)).unwrap();
-            clear();
-            handlePurple();
-            try {
-               await dispatch(fetchUser()).unwrap();
-               console.log('User fetched successfully');
-            } catch (error) {
-               console.error('Error fetching user:', (error as Error).message || error);
-            }
-         } catch (error) {
-            console.error('Error creating loan:', (error as Error).message || error);
-         } finally {
-            setIsSubmitting(false);
-         }
-      }
-   };
-
-   const handleDays = (e: ChangeEvent<HTMLInputElement>) => {
-      const selectedDate = e.target.value;
-
-      const newToday = new Date();
-      newToday.setHours(0, 0, 0, 0);
-
-      const date = new Date(selectedDate);
-      const timeDifference = date.getTime() - newToday.getTime();
-      const differenceInDays = timeDifference / (1000 * 60 * 60 * 24);
-
-      setDays(Math.round(differenceInDays).toString());
-   };
-
-   const handlePurple = () => {
-      setShowPurple(true);
-      setShowModal(false);
-   };
-
-   useEffect(() => {
-      if (account?.chain?.name) {
-         setBlock(account.chain.name);
-         setCoin('USDC');
-      }
-   }, [account?.chain?.name]);
 
    useEffect(() => {
       if (typeof window !== 'undefined' && window.location.hash) {
@@ -287,10 +149,6 @@ export default function Dashboard() {
       items: sortedLoans,
       resetDependencies: [filters, searchLoan]
    });
-
-   const handleSuccessModalClose = useCallback(() => {
-      setShowPurple(false);
-   }, []);
 
    return (
       <>
@@ -364,25 +222,7 @@ export default function Dashboard() {
                </Link>
             </main>
          </div>
-         <LoanRequestModal
-            isOpen={showModal}
-            onClose={handleCloseModal}
-            showVerify={showVerify}
-            user={user}
-            loanAmount={loanAmount}
-            setLoanAmount={setLoanAmount}
-            totalRepaymentAmount={totalRepaymentAmount}
-            setTotalRepaymentAmount={setTotalRepaymentAmount}
-            reason={reason}
-            setReason={setReason}
-            days={days}
-            today={today}
-            handleDays={handleDays}
-            handleSubmit={handleSubmit}
-            isSubmitting={isSubmitting}
-            clickOutsideRef={loanRequestModalRef}
-         />
-         <SuccessModal isOpen={showPurple} onClose={handleSuccessModalClose} clickOutsideRef={successModalRef} />
+         <LoanRequestForm open={showModal} onHide={handleCloseModal} />
       </>
    );
 }

@@ -7,6 +7,7 @@ interface InfoTooltipProps {
    className?: string;
    iconClassName?: string;
    position?: 'top' | 'bottom' | 'left' | 'right';
+   customIcon?: ReactNode;
 }
 
 const positionStyles = {
@@ -16,10 +17,10 @@ const positionStyles = {
    right: 'left-full top-1/2 -translate-y-1/2 ml-2'
 };
 
-export function InfoTooltip({ content, className = '', iconClassName = '', position = 'top' }: InfoTooltipProps) {
+export function InfoTooltip({ content, className = '', iconClassName = '', position = 'top', customIcon }: InfoTooltipProps) {
    return (
       <div className={`relative group ${className}`}>
-         <HelpCircle className={`w-4 h-4 text-gray-400 cursor-help ${iconClassName}`} />
+         {customIcon || <HelpCircle className={`w-4 h-4 text-gray-400 cursor-help ${iconClassName}`} />}
          <div
             className={`absolute invisible group-hover:visible bg-[#111827] text-gray-100 p-3 rounded-lg text-sm w-64 z-10 shadow-xl border border-gray-800 ${positionStyles[position]}`}
          >

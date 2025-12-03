@@ -1,44 +1,44 @@
-import type { EmblaCarouselType } from "embla-carousel"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from 'react';
+
+import type { EmblaCarouselType } from 'embla-carousel';
+
 type UsePrevNextButtonsType = {
-  prevBtnDisabled: boolean
-  nextBtnDisabled: boolean
-  onPrevButtonClick: () => void
-  onNextButtonClick: () => void
-}
+   prevBtnDisabled: boolean;
+   nextBtnDisabled: boolean;
+   onPrevButtonClick: () => void;
+   onNextButtonClick: () => void;
+};
 
-export const useCarouselNav = (
-  emblaApi: EmblaCarouselType | undefined
-): UsePrevNextButtonsType => {
-  const [prevBtnDisabled, setPrevBtnDisabled] = useState(true)
-  const [nextBtnDisabled, setNextBtnDisabled] = useState(true)
+export const useCarouselNav = (emblaApi: EmblaCarouselType | undefined): UsePrevNextButtonsType => {
+   const [prevBtnDisabled, setPrevBtnDisabled] = useState(true);
+   const [nextBtnDisabled, setNextBtnDisabled] = useState(true);
 
-  const onPrevButtonClick = useCallback(() => {
-    if (!emblaApi) return
-    emblaApi.scrollPrev()
-  }, [emblaApi])
+   const onPrevButtonClick = useCallback(() => {
+      if (!emblaApi) return;
+      emblaApi.scrollPrev();
+   }, [emblaApi]);
 
-  const onNextButtonClick = useCallback(() => {
-    if (!emblaApi) return
-    emblaApi.scrollNext()
-  }, [emblaApi])
+   const onNextButtonClick = useCallback(() => {
+      if (!emblaApi) return;
+      emblaApi.scrollNext();
+   }, [emblaApi]);
 
-  const onSelect = useCallback((api: EmblaCarouselType) => {
-    setPrevBtnDisabled(!api.canScrollPrev())
-    setNextBtnDisabled(!api.canScrollNext())
-  }, [])
+   const onSelect = useCallback((api: EmblaCarouselType) => {
+      setPrevBtnDisabled(!api.canScrollPrev());
+      setNextBtnDisabled(!api.canScrollNext());
+   }, []);
 
-  useEffect(() => {
-    if (!emblaApi) return
+   useEffect(() => {
+      if (!emblaApi) return;
 
-    onSelect(emblaApi)
-    emblaApi.on('reInit', onSelect).on('select', onSelect)
-  }, [emblaApi, onSelect])
+      onSelect(emblaApi);
+      emblaApi.on('reInit', onSelect).on('select', onSelect);
+   }, [emblaApi, onSelect]);
 
-  return {
-    prevBtnDisabled,
-    nextBtnDisabled,
-    onPrevButtonClick,
-    onNextButtonClick
-  }
-}
+   return {
+      prevBtnDisabled,
+      nextBtnDisabled,
+      onPrevButtonClick,
+      onNextButtonClick
+   };
+};

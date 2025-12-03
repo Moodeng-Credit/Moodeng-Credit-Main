@@ -72,28 +72,31 @@ export const useDashboardData = (activeRole: RoleType) => {
       const completedLoans = stats.repayments.total;
 
       const levelsList = Array.from({ length: stats.repayments.count + 6 }, (_, i) => {
-         const level = (i + 1) * 20;;
+         const level = (i + 1) * 20;
          return {
             id: `level-${level}`,
             amount: level
-         }
+         };
       });
 
-      const maxLevelIndex = completedLoans >= 20 ? levelsList.findIndex(item => item.amount >= completedLoans) : -1;
+      const maxLevelIndex = completedLoans >= 20 ? levelsList.findIndex((item) => item.amount >= completedLoans) : -1;
 
       return levelsList.map((level, index) => {
          const prev = levelsList[index - 1];
+         const details = getCreditMilestoneDetails(level.amount, completedLoans, loanArrays.repayments);
+         const isMaxCredit = maxLevelIndex === index;
          return {
-            isMaxCredit: maxLevelIndex === index,
+            isMaxCredit,
             ...level,
-            ...getCreditMilestoneDetails(level.amount, completedLoans, loanArrays.repayments),
-             ...(index > maxLevelIndex && {
+            ...details,
+            ...(index > maxLevelIndex && {
                unlockRequirement: `Repay a $${prev?.amount || 20} Loan\nto Unlock this Level`,
-               hasRequestButton: maxLevelIndex + 1 === index,
-            })
-         }
+               hasRequestButton: maxLevelIndex + 1 === index
+            }),
+            unlocked: isMaxCredit || details.unlocked
+         };
       });
-   }, [loanArrays.repayments, stats.repayments.total, stats.repayments.count]);
+   }, [stats.repayments, loanArrays.repayments]);
 
    return { stats, lenderDiversityScore, creditLevels, loanArrays };
 };
