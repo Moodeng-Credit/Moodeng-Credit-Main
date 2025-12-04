@@ -19,6 +19,7 @@ export interface Loan {
    hash: string[]; // Array of transaction hashes - includes lending transaction + all repayment transactions
    createdAt: string;
    updatedAt: string;
+   // repaidDate: string
 }
 
 export interface CreateLoanData {

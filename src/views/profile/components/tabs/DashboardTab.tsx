@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import Calendar from '@/views/profile/components/Calendar';
 import { STAT_CARDS_CONFIG } from '@/views/profile/components/tabs/constants';
-import CreditLevelCard from '@/views/profile/components/tabs/CreditLevelCard';
+import CreditLevelSection from '@/views/profile/components/tabs/CreditLevelSection';
 import RoleToggle from '@/views/profile/components/tabs/RoleToggle';
 import StatCard from '@/views/profile/components/tabs/StatCard';
 import type { RoleType } from '@/views/profile/components/tabs/types';
@@ -59,23 +59,7 @@ const DashboardTab = () => {
          </div>
 
          {/* Credit Level Section */}
-         <div className="bg-white rounded-xl p-6 flex flex-col overflow-x-auto select-none gap-4">
-            <h2 className="font-extrabold text-xl flex items-center gap-2">
-               Credit Level
-               <button
-                  aria-label="Info"
-                  className="text-[#374151] text-sm rounded-full border border-[#374151] w-6 h-6 flex items-center justify-center hover:bg-gray-50 transition"
-                  type="button"
-               >
-                  <i className="fa-solid fa-circle-info" />
-               </button>
-            </h2>
-            <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
-               {creditLevels.map((level) => (
-                  <CreditLevelCard key={level.id} level={level} />
-               ))}
-            </div>
-         </div>
+         <CreditLevelSection creditLevels={creditLevels} />
       </section>
    );
 };
