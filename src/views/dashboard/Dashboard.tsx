@@ -40,7 +40,6 @@ export default function Dashboard() {
 
    const { data: loans = [] } = useLoans();
 
-   const [sortedLoans, setSortedLoans] = useState(loans);
    const [customAmount, setCustomAmount] = useState('');
    const [searchLoan, setSearchLoan] = useState('');
 
@@ -109,17 +108,13 @@ export default function Dashboard() {
       return filterLoans(loans, allFilters, customAmount);
    }, [filters, searchLoan, loans, customAmount]);
 
-   useEffect(() => {
-      setSortedLoans(filteredLoans);
-   }, [filteredLoans]);
-
    const {
       displayedItems: displayedLoans,
       displayedCount,
       totalCount,
       handleLoadMore
    } = usePagination({
-      items: sortedLoans,
+      items: filteredLoans,
       resetDependencies: [filters, searchLoan]
    });
 

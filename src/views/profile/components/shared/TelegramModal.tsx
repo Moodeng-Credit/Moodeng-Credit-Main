@@ -11,7 +11,7 @@ export default function TelegramModal({ isOpen, onClose }: TelegramModalProps) {
          <button onClick={onClose} className="text-gray-600 hover:text-gray-800 fixed top-4 right-4 z-50">
             ✖
          </button>
-         <main className="flex flex-col py-7 w-full bg-white rounded-3xl border border-solid border-neutral-200 shadow-[0px_2px_8px_rgba(0,0,0,0.25)] flex overflow-hidden flex-col py-5 bg-white rounded-2xl max-w-[473px]">
+         <main className="w-full border border-solid border-neutral-200 shadow-[0px_2px_8px_rgba(0,0,0,0.25)] flex overflow-hidden flex-col py-5 bg-white rounded-2xl max-w-[473px]">
             <section className="flex flex-col px-5 w-full">
                <h1 className="self-start text-2xl font-medium leading-none text-black">Telegram</h1>
                <p className="mt-5 text-sm leading-6 text-gray-500 text-opacity-60">Connect Telegram.</p>
