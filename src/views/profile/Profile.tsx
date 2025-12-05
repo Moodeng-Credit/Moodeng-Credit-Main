@@ -2,27 +2,31 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useAccount } from 'wagmi';
 
-import { updateUser } from '@/store/slices/authSlice';
-import type { AppDispatch } from '@/store/store';
+import { useUpdateUser, useUserLoans } from '@/hooks/api';
+
+import type { RootState } from '@/store/store';
 import { MobileNav, Sidebar } from '@/views/profile/components/navigation';
 import { FilterButtons, RoleSwitcher, TelegramModal } from '@/views/profile/components/shared';
 import { DashboardTab, FAQTab, LoanSummaryTab, SettingsTab, SupportTab, TransactionHistoryTab } from '@/views/profile/components/tabs';
 import { INFO_NAV_ITEMS, INITIAL_NAV_ITEMS } from '@/views/profile/constants';
-import { useLoanData, useProfileData, useProfileUpdate } from '@/views/profile/hooks';
+import { useProfileUpdate } from '@/views/profile/hooks';
 import { ProfileTab, UserRole } from '@/views/profile/types';
 
 export default function Profile() {
-   const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
    const [navItems, setNavItems] = useState(INITIAL_NAV_ITEMS);
    const [infoNavItems, setInfoNavItems] = useState(INFO_NAV_ITEMS);
    const [userRole, setUserRole] = useState<UserRole>(UserRole.LENDER);
 
-   const { user } = useProfileData();
-   const { loans } = useLoanData(user.username || '');
+   const user = useSelector((state: RootState) => state.auth.user);
+   const username = useSelector((state: RootState) => state.auth.username);
+   const { data: loansData } = useUserLoans(username || '');
+   const loans = loansData?.gloans || [];
+   const updateUser = useUpdateUser();
+
    const {
       formData,
       updateField,
@@ -33,26 +37,29 @@ export default function Profile() {
       showTelegramModal,
       setShowTelegramModal
    } = useProfileUpdate({
-      username: user.username || '',
-      email: user.user?.email,
-      telegramUsername: user.user?.telegramUsername
+      username: username || '',
+      email: user?.email,
+      telegramUsername: user?.telegramUsername
    });
 
    useEffect(() => {
-      const currentWalletAddress = user.user?.walletAddress;
-      if (account.isConnected && account.address && user.username) {
+      const currentWalletAddress = user?.walletAddress;
+      if (account.isConnected && account.address && username) {
          if (currentWalletAddress !== account.address) {
-            dispatch(updateUser({ walletAddress: account.address }))
-               .unwrap()
-               .then(() => {
-                  console.log('Wallet address saved successfully');
-               })
-               .catch((error) => {
-                  console.error('Failed to save wallet address:', error);
-               });
+            updateUser.mutate(
+               { walletAddress: account.address },
+               {
+                  onSuccess: () => {
+                     console.log('Wallet address saved successfully');
+                  },
+                  onError: (error) => {
+                     console.error('Failed to save wallet address:', error);
+                  }
+               }
+            );
          }
       }
-   }, [account.isConnected, account.address, user.username, user.user?.walletAddress, dispatch]);
+   }, [account.isConnected, account.address, username, user?.walletAddress, updateUser]);
 
    const activeTab = navItems.find((item) => item.active)?.label || infoNavItems.find((item) => item.active)?.label || ProfileTab.DASHBOARD;
 
@@ -71,10 +78,10 @@ export default function Profile() {
             return <DashboardTab />;
 
          case ProfileTab.LOAN_SUMMARY:
-            return <LoanSummaryTab loans={loans} currentUsername={user.username || ''} userRole={userRole} />;
+            return <LoanSummaryTab loans={loans} currentUsername={username || ''} userRole={userRole} />;
 
          case ProfileTab.TRANSACTION_HISTORY:
-            return <TransactionHistoryTab loans={loans} currentUsername={user.username || ''} userRole={userRole} />;
+            return <TransactionHistoryTab loans={loans} currentUsername={username || ''} userRole={userRole} />;
 
          case ProfileTab.SETTINGS:
             return (
@@ -83,10 +90,10 @@ export default function Profile() {
                   email={formData.email || ''}
                   telegramUsername={formData.telegramUsername || ''}
                   password={formData.password || ''}
-                  currentUsername={user.username || ''}
-                  currentEmail={user.user?.email || ''}
-                  currentTelegramUsername={user.user?.telegramUsername || ''}
-                  walletAddress={user.user?.walletAddress || ''}
+                  currentUsername={username || ''}
+                  currentEmail={user?.email || ''}
+                  currentTelegramUsername={user?.telegramUsername || ''}
+                  walletAddress={user?.walletAddress || ''}
                   onUsernameChange={(value) => updateField('username', value)}
                   onEmailChange={(value) => updateField('email', value)}
                   onTelegramChange={(value) => updateField('telegramUsername', value)}

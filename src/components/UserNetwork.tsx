@@ -6,17 +6,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { type Chain, ConnectButton } from '@rainbow-me/rainbowkit';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useAccount, useSwitchChain } from 'wagmi';
 
+import { useLogout, useUpdateUser } from '@/hooks/api';
 import { useClickOutside } from '@/hooks/useClickOutside';
 
 import { chainConfig, chainsWithIcons, type CustomChainConfig, getNetworkSvg } from '@/config/wagmiConfig';
-import { logoutUser, updateUser } from '@/store/slices/authSlice';
-import type { AppDispatch, RootState } from '@/store/store';
+import type { RootState } from '@/store/store';
 
 export default function UserNetwork() {
-   const dispatch = useDispatch<AppDispatch>();
    const router = useRouter();
    const account = useAccount();
    const { switchChain } = useSwitchChain();
@@ -24,9 +23,11 @@ export default function UserNetwork() {
    const username = useSelector((state: RootState) => state.auth.username);
    const currentWalletAddress = useSelector((state: RootState) => state.auth.user?.walletAddress);
 
-   const handleLogout = () => {
-      dispatch(logoutUser());
+   const logoutMutation = useLogout();
+   const updateUserMutation = useUpdateUser();
 
+   const handleLogout = () => {
+      logoutMutation.mutate();
       router.push('/login');
    };
 
@@ -62,17 +63,20 @@ export default function UserNetwork() {
    useEffect(() => {
       if (account.isConnected && account.address && username) {
          if (currentWalletAddress !== account.address) {
-            dispatch(updateUser({ walletAddress: account.address }))
-               .unwrap()
-               .then(() => {
-                  console.log('Wallet address saved successfully');
-               })
-               .catch((error) => {
-                  console.error('Failed to save wallet address:', error);
-               });
+            updateUserMutation.mutate(
+               { walletAddress: account.address },
+               {
+                  onSuccess: () => {
+                     console.log('Wallet address saved successfully');
+                  },
+                  onError: (error) => {
+                     console.error('Failed to save wallet address:', error);
+                  }
+               }
+            );
          }
       }
-   }, [account.isConnected, account.address, username, currentWalletAddress, dispatch]);
+   }, [account.isConnected, account.address, username, currentWalletAddress, updateUserMutation]);
 
    // Use the click outside hook for the network dropdown
    const networkDropdownRef = useClickOutside<HTMLDivElement>(() => setShowNetwork(false), showNetwork);

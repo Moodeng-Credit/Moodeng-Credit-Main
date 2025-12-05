@@ -1,24 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import Image from 'next/image';
 
 import { ChevronDown, HelpCircle, TrendingUp, Users, XCircle } from 'lucide-react';
-import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
 import CollapsibleSection from '@/components/ui/CollapsibleSection';
+
+import { useUserLoans, useUserProfile } from '@/hooks/api';
 
 import { formatDate, getMemberSinceText, parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity, getDiversityColor, getDiversityStatus } from '@/utils/diversityScore';
 import { getNetworkColor } from '@/utils/networkColors';
 
-import { getUserProfile } from '@/store/slices/authSlice';
-import { getUserLoans } from '@/store/slices/loanSlice';
-import type { AppDispatch, RootState } from '@/store/store';
 import { type Loan } from '@/types/loanTypes';
 
 const LevelBadge = ({ status }: { status: string }) => (
@@ -36,41 +34,17 @@ const LevelBadge = ({ status }: { status: string }) => (
 );
 
 const UserProfile = () => {
-   const dispatch = useDispatch<AppDispatch>();
    const { username } = useParams();
 
-   useEffect(() => {
-      const Profile = async () => {
-         await dispatch(getUserProfile(username as string))
-            .unwrap()
-            .then(() => {
-               console.log('Profile fetched successfully');
-            })
-            .catch((error: Error) => {
-               console.error('Error fetching profile:', error.message || error);
-            });
-      };
-      const Loan = async () => {
-         await dispatch(getUserLoans(username || ''))
-            .unwrap()
-            .then(() => {
-               console.log('Loan fetched successfully');
-            })
-            .catch((error: Error) => {
-               console.error('Error fetching loan:', error.message || error);
-            });
-      };
-      Profile();
-      Loan();
-   }, [dispatch, username]);
+   const { data: user, isLoading: isUserLoading } = useUserProfile(username as string);
+   const { data: loansData, isLoading: isLoansLoading } = useUserLoans(username || '');
+   const loans = loansData?.gloans || [];
 
-   const user = useSelector((state: RootState) => state.auth.user);
-   const loans = useSelector((state: RootState) => state.loans.loans.gloans);
    const [showDetailedHistory, setShowDetailedHistory] = useState(false);
    const [showLenderNames, setShowLenderNames] = useState(false);
    const [showAllTiers, setShowAllTiers] = useState(false);
 
-   if (!user || !loans) {
+   if (isUserLoading || isLoansLoading || !user) {
       return <Loading />;
    }
 

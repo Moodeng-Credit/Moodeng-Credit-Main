@@ -16,7 +16,7 @@ export default function UserMenu({ onDashboardClick, showMenu, onToggleMenu, onC
       <div className="flex items-center space-x-4 relative" ref={dropdownRef}>
          <div
             onClick={onDashboardClick}
-            className="bg-[#6d57ff] text-white px-4 py-2 rounded-full cursor-pointer hover:bg-[#5a4ae5] transition-colors hidden sm:block cursor-pointer"
+            className="bg-[#6d57ff] text-white px-4 py-2 rounded-full cursor-pointer hover:bg-[#5a4ae5] transition-colors hidden sm:block"
          >
             <span className="[font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-sm">Dashboard</span>
          </div>

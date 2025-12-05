@@ -5,18 +5,18 @@ import { type ChangeEvent, type MouseEvent, useState } from 'react';
 import Image from 'next/image';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useAccount } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
+import { useUpdateLoanStatus, useUserLoans } from '@/hooks/api';
 import useWallet from '@/hooks/useWallet';
 
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
-import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
-import type { AppDispatch, RootState } from '@/store/store';
+import type { RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
@@ -27,10 +27,12 @@ function UserPay({ loan }: { loan: Loan }) {
    const [isProcessing, setIsProcessing] = useState(false);
    const time = parseDateSafely(loan.createdAt).toISOString();
    const { Transfer } = useWallet();
-   const dispatch = useDispatch<AppDispatch>();
    const { showToastByConfig } = useToast();
    const { isConnected } = useAccount();
    const { openConnectModal } = useConnectModal();
+
+   const updateLoanStatusMutation = useUpdateLoanStatus();
+   const { refetch: refetchUserLoans } = useUserLoans(username || '');
 
    const handleBorrow = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
@@ -60,37 +62,39 @@ function UserPay({ loan }: { loan: Loan }) {
          const transactionHash = await Transfer(e, loan.lenderWallet || '', repaidAmountToAdd.toString(), loan.id, loan.block, loan.coin);
 
          if (transactionHash) {
-            try {
-               const loanData = {
-                  id: loan.id,
-                  repaidAmount: newRepaidAmount,
-                  repaymentStatus: newRepaymentStatus,
-                  hash: transactionHash
-               };
+            const loanData = {
+               id: loan.id,
+               repaidAmount: newRepaidAmount,
+               repaymentStatus: newRepaymentStatus,
+               hash: transactionHash
+            };
 
-               await dispatch(updateLoanStatus(loanData)).unwrap();
-               await dispatch(getUserLoans(username || ''));
-               showToastByConfig('repayment_success');
-               setRepaidAmountToAdd('');
-            } catch (updateError: unknown) {
-               const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
-               console.error('[CRITICAL] Transaction succeeded but database update failed:', errorMessage);
-               console.error(
-                  '[RECONCILIATION REQUIRED] Loan ID:',
-                  loan.id,
-                  '| Payment Amount:',
-                  repaidAmountToAdd,
-                  '| New Repaid Total:',
-                  newRepaidAmount.toString(),
-                  '| Status:',
-                  newRepaymentStatus,
-                  '| Hash:',
-                  transactionHash
-               );
-               showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
-            } finally {
-               setIsProcessing(false);
-            }
+            updateLoanStatusMutation.mutate(loanData, {
+               onSuccess: () => {
+                  refetchUserLoans();
+                  showToastByConfig('repayment_success');
+                  setRepaidAmountToAdd('');
+                  setIsProcessing(false);
+               },
+               onError: (updateError) => {
+                  const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
+                  console.error('[CRITICAL] Transaction succeeded but database update failed:', errorMessage);
+                  console.error(
+                     '[RECONCILIATION REQUIRED] Loan ID:',
+                     loan.id,
+                     '| Payment Amount:',
+                     repaidAmountToAdd,
+                     '| New Repaid Total:',
+                     newRepaidAmount.toString(),
+                     '| Status:',
+                     newRepaymentStatus,
+                     '| Hash:',
+                     transactionHash
+                  );
+                  showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
+                  setIsProcessing(false);
+               }
+            });
          } else {
             setIsProcessing(false);
          }
@@ -100,7 +104,7 @@ function UserPay({ loan }: { loan: Loan }) {
    };
 
    return (
-      <main className="flex flex-col py-7 w-full bg-white rounded-3xl border border-solid border-neutral-200 shadow-[0px_2px_8px_rgba(0,0,0,0.25)] flex overflow-hidden flex-col py-5 bg-white rounded-2xl max-w-[473px]">
+      <main className="flex w-full border border-solid border-neutral-200 shadow-[0px_2px_8px_rgba(0,0,0,0.25)] overflow-hidden flex-col py-5 bg-white rounded-2xl max-w-[473px]">
          <section className="flex flex-col px-5 w-full">
             <h1 className="self-start text-2xl font-medium leading-none text-black">Loan Repayment</h1>
             <div className="flex gap-10 items-center mt-8">

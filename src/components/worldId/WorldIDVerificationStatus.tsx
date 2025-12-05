@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
-import { fetchUser } from '@/store/slices/authSlice';
-import type { AppDispatch, RootState } from '@/store/store';
+import { useCurrentUser } from '@/hooks/api';
+
+import type { RootState } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
 
 interface WorldIDVerificationStatusProps {
@@ -15,10 +16,10 @@ interface WorldIDVerificationStatusProps {
 }
 
 export default function WorldIDVerificationStatus({ className = '' }: WorldIDVerificationStatusProps) {
-   const dispatch = useDispatch<AppDispatch>();
    const user = useSelector((state: RootState) => state.auth.user);
    const [isUnverifying, setIsUnverifying] = useState(false);
    const isVerified = user.isWorldId === WorldId.ACTIVE;
+   const { refetch: refetchCurrentUser } = useCurrentUser();
 
    const isDevMode = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
 
@@ -36,7 +37,7 @@ export default function WorldIDVerificationStatus({ className = '' }: WorldIDVer
             throw new Error('Failed to unverify user');
          }
          // Refresh user data to update verification status
-         await dispatch(fetchUser()).unwrap();
+         refetchCurrentUser();
       } catch (error) {
          console.error('Error unverifying user:', error);
       } finally {

@@ -1,60 +1,156 @@
 'use client';
 
-import { type ChangeEvent, type FormEvent, type RefObject } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
 
+import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { useSelector } from 'react-redux';
+import { useAccount } from 'wagmi';
+
+import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
-import { type User } from '@/types/authTypes';
+import { useCreateLoan, useCurrentUser } from '@/hooks/api';
+
+import type { RootState } from '@/store/store';
+import { ERROR_CODES } from '@/types/errorCodes';
+import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 
 interface LoanRequestModalProps {
-   clickOutsideRef: RefObject<HTMLDivElement>;
    isOpen: boolean;
    onClose: () => void;
-   showVerify: boolean;
-   user: User;
-   loanAmount: string;
-   setLoanAmount: (value: string) => void;
-   totalRepaymentAmount: string;
-   setTotalRepaymentAmount: (value: string) => void;
-   reason: string;
-   setReason: (value: string) => void;
-   days: string;
-   today: string;
-   handleDays: (e: ChangeEvent<HTMLInputElement>) => void;
-   handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
-   isSubmitting: boolean;
+   onSuccess: () => void;
 }
 
-export default function LoanRequestModal({
-   clickOutsideRef,
-   isOpen,
-   onClose,
-   showVerify,
-   user,
-   loanAmount,
-   setLoanAmount,
-   totalRepaymentAmount,
-   setTotalRepaymentAmount,
-   reason,
-   setReason,
-   days,
-   today,
-   handleDays,
-   handleSubmit,
-   isSubmitting
-}: LoanRequestModalProps) {
-   if (!isOpen) return null;
+export default function LoanRequestModal({ isOpen, onClose, onSuccess }: LoanRequestModalProps) {
+   const { showToastByConfig } = useToast();
+   const { isConnected } = useAccount();
+   const { openConnectModal } = useConnectModal();
+   const account = useAccount();
 
+   const user = useSelector((state: RootState) => state.auth.user);
+   const showVerify = user?.isWorldId !== 'ACTIVE';
    const isVerified = !showVerify;
+
+   const createLoan = useCreateLoan();
+   const { refetch: refetchUser } = useCurrentUser();
+
+   const [loanAmount, setLoanAmount] = useState('');
+   const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');
+   const [reason, setReason] = useState('');
+   const [days, setDays] = useState('');
+   const [block, setBlock] = useState(account?.chain?.name);
+   const [coin, setCoin] = useState('USDC');
+
+   const today = new Date().toISOString().split('T')[0];
    const modalWidth = isVerified ? '400px' : '320px';
    const limitAmount = isVerified ? user.cs : 15;
+
+   useEffect(() => {
+      if (account?.chain?.name) {
+         setBlock(account.chain.name);
+         setCoin('USDC');
+      }
+   }, [account?.chain?.name]);
+
+   const clearForm = () => {
+      setTotalRepaymentAmount('');
+      setLoanAmount('');
+      setReason('');
+      setDays('');
+   };
+
+   const handleDays = (e: ChangeEvent<HTMLInputElement>) => {
+      const selectedDate = e.target.value;
+      const newToday = new Date();
+      newToday.setHours(0, 0, 0, 0);
+      const date = new Date(selectedDate);
+      const timeDifference = date.getTime() - newToday.getTime();
+      const differenceInDays = timeDifference / (1000 * 60 * 60 * 24);
+      setDays(Math.round(differenceInDays).toString());
+   };
+
+   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+
+      if (createLoan.isPending) {
+         return;
+      }
+
+      if (!isConnected) {
+         openConnectModal?.();
+         return;
+      }
+
+      if ((user.nal || 0) >= (user.mal || 0)) {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
+         return;
+      }
+
+      if (user.isWorldId !== 'ACTIVE') {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WORLDID_REQUIRED));
+         return;
+      }
+
+      if (!user.walletAddress || user.walletAddress.trim() === '') {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
+         return;
+      }
+
+      if (!block || !coin) {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
+         return;
+      }
+
+      if (!loanAmount || parseFloat(loanAmount) <= 0) {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_INVALID_AMOUNT));
+         return;
+      }
+
+      if (parseFloat(loanAmount) > (user.cs || 0)) {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
+         return;
+      }
+
+      const loanData = {
+         borrowerUserId: user?.username || '',
+         lenderUserId: '',
+         loanAmount: parseFloat(loanAmount),
+         totalRepaymentAmount: parseFloat(totalRepaymentAmount),
+         block,
+         coin,
+         reason,
+         days: parseInt(days)
+      };
+
+      if (
+         user.isWorldId === 'ACTIVE' &&
+         block &&
+         coin &&
+         (user.nal || 0) < (user.mal || 0) &&
+         parseFloat(loanAmount) <= (user.cs || 0) &&
+         parseFloat(loanAmount) > 0
+      ) {
+         createLoan.mutate(loanData, {
+            onSuccess: () => {
+               clearForm();
+               onSuccess();
+               refetchUser();
+            },
+            onError: (error) => {
+               console.error('Error creating loan:', error.message || error);
+            }
+         });
+      }
+   };
+
+   if (!isOpen) return null;
 
    return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
          <section
-            ref={clickOutsideRef}
             className="bg-white rounded-2xl shadow-md max-w-md mx-auto flex flex-col relative"
             style={{ minWidth: modalWidth }}
+            onClick={(e) => e.stopPropagation()}
          >
             <button onClick={onClose} className="absolute top-3 right-4 text-white hover:text-gray-800 z-10 text-2xl">
                ✖
@@ -169,11 +265,11 @@ export default function LoanRequestModal({
                ></textarea>
                <div className="text-right text-xs text-gray-400 font-normal select-none">{reason.length} / 40</div>
                <button
-                  className={`${isVerified && !isSubmitting ? 'bg-[#1E56FF]' : 'bg-gray-400 cursor-not-allowed'} text-white font-extrabold text-sm rounded-md py-3 mt-2 w-full`}
+                  className={`${isVerified && !createLoan.isPending ? 'bg-[#1E56FF]' : 'bg-gray-400 cursor-not-allowed'} text-white font-extrabold text-sm rounded-md py-3 mt-2 w-full`}
                   type="submit"
-                  disabled={!isVerified || isSubmitting}
+                  disabled={createLoan.isPending}
                >
-                  {isSubmitting ? 'Submitting...' : 'Make Your Request'}
+                  {createLoan.isPending ? 'Submitting...' : 'Make Your Request'}
                </button>
             </form>
          </section>

@@ -2,21 +2,18 @@ import { type ChangeEvent, type FormEvent, type JSX, useCallback, useState } fro
 
 import { useRouter } from 'next/navigation';
 
-import type { AsyncThunkAction } from '@reduxjs/toolkit';
-import { useDispatch } from 'react-redux';
-
 import Loading from '@/components/Loading';
 import TextWithLine from '@/components/ui/TextWithLine';
 
 import {
-   loginUser,
-   loginWithGoogle,
-   loginWithTelegram,
-   registerUser,
-   registerWithGoogle,
-   registerWithTelegram
-} from '@/store/slices/authSlice';
-import type { AppDispatch } from '@/store/store';
+   useLogin,
+   useLoginWithGoogle,
+   useLoginWithTelegram,
+   useRegister,
+   useRegisterWithGoogle,
+   useRegisterWithTelegram
+} from '@/hooks/api';
+
 import { WorldId } from '@/types/authTypes';
 import AuthCard from '@/views/login/components/AuthCard';
 import AuthForm from '@/views/login/components/AuthForm';
@@ -24,28 +21,12 @@ import FormFooter from '@/views/login/components/FormFooter';
 import FormToggle from '@/views/login/components/FormToggle';
 import SocialButtons from '@/views/login/components/SocialButtons';
 
-type AuthActionThunk =
-   | typeof loginUser
-   | typeof registerUser
-   | typeof loginWithGoogle
-   | typeof loginWithTelegram
-   | typeof registerWithGoogle
-   | typeof registerWithTelegram;
-
-type AuthPayload =
-   | { username: string; password: string }
-   | { username: string; isWorldId: string; password: string; email: string }
-   | { googleCredential: string }
-   | { telegramAuthData: string };
-
 export default function AuthFormSection(): JSX.Element {
    const router = useRouter();
-   const dispatch = useDispatch<AppDispatch>();
    const [email, setEmail] = useState('');
    const [password, setPassword] = useState('');
    const [confirm, setConfirm] = useState('');
    const [username, setUsername] = useState('');
-   const [isLoading, setIsLoading] = useState(false);
    const [showUser, setShowUser] = useState(false);
    const [showPass, setShowPass] = useState(false);
    const [showEmail, setShowEmail] = useState(false);
@@ -54,63 +35,58 @@ export default function AuthFormSection(): JSX.Element {
    const [isSignUp, setIsSignUp] = useState(true);
    const isWorldId = WorldId.INACTIVE;
 
-   const clear = () => {
+   const login = useLogin();
+   const loginWithGoogle = useLoginWithGoogle();
+   const loginWithTelegram = useLoginWithTelegram();
+   const register = useRegister();
+   const registerWithGoogle = useRegisterWithGoogle();
+   const registerWithTelegram = useRegisterWithTelegram();
+
+   const isLoading =
+      login.isPending ||
+      loginWithGoogle.isPending ||
+      loginWithTelegram.isPending ||
+      register.isPending ||
+      registerWithGoogle.isPending ||
+      registerWithTelegram.isPending;
+
+   const clear = useCallback(() => {
       setEmail('');
       setPassword('');
       setConfirm('');
       setUsername('');
-   };
+   }, []);
 
-   const clearShow = () => {
+   const clearShow = useCallback(() => {
       setShowUser(false);
       setShowPass(false);
       setShowEmail(false);
       setShowConfirm(false);
       setShowAccount(false);
-   };
+   }, []);
 
-   const handleAuthAction = useCallback(
-      async (action: AuthActionThunk, payload: AuthPayload, errorHandler?: (errorMsg: string) => void) => {
-         setIsLoading(true);
-         clearShow();
+   const handleSuccess = useCallback(() => {
+      clear();
+      router.push('/dashboard');
+   }, [clear, router]);
 
-         const resultAction = await dispatch(action(payload as never) as AsyncThunkAction<unknown, unknown, Record<string, unknown>>);
-
-         if (action.fulfilled.match(resultAction)) {
-            clear();
-            router.push('/dashboard');
-         } else {
-            const errorMsg =
-               (resultAction.payload as Record<string, string>)?.message ||
-               (resultAction as { error: { message: string } })?.error?.message ||
-               ('Authentication failed' as string);
-
-            if (errorHandler) {
-               errorHandler(errorMsg);
-            } else {
-               setShowAccount(true);
-            }
-         }
-         setIsLoading(false);
-      },
-      [dispatch, router]
-   );
-
-   const handleRegisterError = (errorMsg: string) => {
+   const handleRegisterError = (error: Error) => {
+      const errorMsg = error.message || 'Registration failed';
       console.log(errorMsg);
       if (errorMsg.includes('User')) setShowUser(true);
       if (errorMsg.includes('Email')) setShowEmail(true);
       if (errorMsg.includes('Password')) setShowPass(true);
    };
 
-   const handleOAuthError = (errorMsg: string, authType: string) => {
+   const handleOAuthError = useCallback((error: Error, authType: string) => {
+      const errorMsg = error.message || 'Authentication failed';
       console.error(`${authType} auth failed:`, errorMsg);
       if (errorMsg.includes('not registered')) {
-         setIsSignUp(true); // Switch to register mode
+         setIsSignUp(true);
       } else {
          setShowAccount(true);
       }
-   };
+   }, []);
 
    const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
       setShowConfirm(false);
@@ -123,7 +99,13 @@ export default function AuthFormSection(): JSX.Element {
       }
 
       if (username && isWorldId && password && email && password === confirm) {
-         await handleAuthAction(registerUser, { username, isWorldId, password, email }, handleRegisterError);
+         register.mutate(
+            { username, isWorldId, password, email },
+            {
+               onSuccess: handleSuccess,
+               onError: handleRegisterError
+            }
+         );
       }
    };
 
@@ -132,25 +114,45 @@ export default function AuthFormSection(): JSX.Element {
       clearShow();
 
       if (username && password) {
-         await handleAuthAction(loginUser, { username, password });
+         login.mutate(
+            { username, password },
+            {
+               onSuccess: handleSuccess,
+               onError: () => setShowAccount(true)
+            }
+         );
       }
    };
 
    const handleGoogleAuth = useCallback(
-      async (credential: string) => {
-         const action = isSignUp ? registerWithGoogle : loginWithGoogle;
-         await handleAuthAction(action, { googleCredential: credential }, (errorMsg) => handleOAuthError(errorMsg, 'Google'));
+      (credential: string) => {
+         clearShow();
+         const mutation = isSignUp ? registerWithGoogle : loginWithGoogle;
+         mutation.mutate(
+            { googleCredential: credential },
+            {
+               onSuccess: handleSuccess,
+               onError: (error) => handleOAuthError(error, 'Google')
+            }
+         );
       },
-      [isSignUp, handleAuthAction]
+      [isSignUp, registerWithGoogle, loginWithGoogle, handleSuccess, clearShow, handleOAuthError]
    );
 
    const handleTelegramAuth = useCallback(
-      async (authData: Record<string, string>) => {
+      (authData: Record<string, string>) => {
+         clearShow();
          const telegramAuthData = JSON.stringify(authData);
-         const action = isSignUp ? registerWithTelegram : loginWithTelegram;
-         await handleAuthAction(action, { telegramAuthData }, (errorMsg) => handleOAuthError(errorMsg, 'Telegram'));
+         const mutation = isSignUp ? registerWithTelegram : loginWithTelegram;
+         mutation.mutate(
+            { telegramAuthData },
+            {
+               onSuccess: handleSuccess,
+               onError: (error) => handleOAuthError(error, 'Telegram')
+            }
+         );
       },
-      [isSignUp, handleAuthAction]
+      [isSignUp, registerWithTelegram, loginWithTelegram, handleSuccess, clearShow, handleOAuthError]
    );
 
    const handleOAuthErrorFallback = () => {

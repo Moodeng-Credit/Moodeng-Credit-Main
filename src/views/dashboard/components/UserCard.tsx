@@ -1,24 +1,23 @@
 'use client';
 
-import { type MouseEvent, useEffect, useState } from 'react';
+import { type MouseEvent, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useAccount } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
+import { useLoans, useUpdateLoanStatus, useUserLoans, useUserProfile } from '@/hooks/api';
 import useWallet from '@/hooks/useWallet';
 
 import { calculateDaysRemaining, calculateDueDate, parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
 import { MONTHS } from '@/constants/dates';
-import { getUserProfile } from '@/store/slices/authSlice';
-import { fetchLoans, getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
-import type { AppDispatch, RootState } from '@/store/store';
+import type { RootState } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
@@ -29,7 +28,6 @@ export default function UserCard(loan: Loan) {
    const borrowerUser = loanData.borrowerUser || '';
 
    const router = useRouter();
-   const dispatch = useDispatch<AppDispatch>();
    const { Transfer } = useWallet();
    const { isConnected } = useAccount();
    const { openConnectModal } = useConnectModal();
@@ -39,56 +37,26 @@ export default function UserCard(loan: Loan) {
    const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const username = useSelector((state: RootState) => state.auth.username);
 
-   const [localProfile, setLocalProfile] = useState<User | null>(null);
-   const [localTotalRepaid, setLocalTotalRepaid] = useState(0);
+   // React Query hooks
+   const { data: profileData } = useUserProfile(borrowerUser);
+   const { data: userLoansData } = useUserLoans(borrowerUser);
+   const { refetch: refetchLoans } = useLoans();
+   const updateLoanStatusMutation = useUpdateLoanStatus();
+
+   const localProfile: User | null = profileData || null;
+   const localTotalRepaid = (userLoansData?.gloans || []).reduce(
+      (sum: number, ln: Loan) => (ln.repaymentStatus === 'Paid' ? sum + toNumber(ln.loanAmount) : sum),
+      0
+   );
 
    const time = parseDateSafely(loanData.createdAt).toISOString();
    const differenceInDays = calculateDaysRemaining(loanData.createdAt, loanData.days);
    const splt = time.split('T')[0].split('-');
    const formattedDate = calculateDueDate(loanData.createdAt, loanData.days);
 
-   useEffect(() => {
-      let mounted = true;
-      const fetch = async () => {
-         try {
-            const profileRes = await dispatch(getUserProfile(borrowerUser)).unwrap();
-            const profileObj = profileRes?.user || profileRes;
-            if (mounted) setLocalProfile(profileObj);
-         } catch (error) {
-            console.error('Error fetching profile:', (error as Error).message || error);
-         }
-
-         try {
-            const loansRes = await dispatch(getUserLoans(borrowerUser)).unwrap();
-            const loansArray = loansRes?.gloans || loansRes?.loans || loansRes || [];
-            if (mounted) {
-               const repaid = (loansArray || []).reduce(
-                  (sum: number, ln: Loan) => (ln.repaymentStatus === 'Paid' ? sum + toNumber(ln.loanAmount) : sum),
-                  0
-               );
-               setLocalTotalRepaid(repaid);
-            }
-         } catch (error: unknown) {
-            console.error('Error fetching loans:', (error as Error).message || error);
-         }
-      };
-
-      fetch();
-      return () => {
-         mounted = false;
-      };
-   }, [dispatch, borrowerUser]);
-
-   const handleFetch = async () => {
+   const handleFetch = () => {
       setShowModal(false);
-      await dispatch(fetchLoans())
-         .unwrap()
-         .then(() => {
-            console.log('Loan fetched successfully');
-         })
-         .catch((error: Error) => {
-            console.error('Error fetching loan:', error.message || error);
-         });
+      refetchLoans();
    };
 
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
@@ -129,32 +97,34 @@ export default function UserCard(loan: Loan) {
          );
 
          if (transactionHash) {
-            try {
-               const loanPayload = {
-                  id: loanData.id,
-                  wallet,
-                  username,
-                  loanStatus: 'Lent',
-                  hash: transactionHash
-               };
+            const loanPayload = {
+               id: loanData.id,
+               wallet,
+               username,
+               loanStatus: 'Lent',
+               hash: transactionHash
+            };
 
-               await dispatch(updateLoanStatus(loanPayload)).unwrap();
-               setShowModal(true);
-            } catch (updateError: unknown) {
-               const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
-               console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
-               console.error(
-                  '[RECONCILIATION REQUIRED] Loan ID:',
-                  loanData.id,
-                  '| Amount:',
-                  loanData.loanAmount,
-                  '| Lender:',
-                  username,
-                  '| Hash:',
-                  transactionHash
-               );
-               showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
-            }
+            updateLoanStatusMutation.mutate(loanPayload, {
+               onSuccess: () => {
+                  setShowModal(true);
+               },
+               onError: (updateError) => {
+                  const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
+                  console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
+                  console.error(
+                     '[RECONCILIATION REQUIRED] Loan ID:',
+                     loanData.id,
+                     '| Amount:',
+                     loanData.loanAmount,
+                     '| Lender:',
+                     username,
+                     '| Hash:',
+                     transactionHash
+                  );
+                  showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
+               }
+            });
          }
       } catch (transferError: unknown) {
          const errorMessage = transferError instanceof Error ? transferError.message : 'Unknown error';

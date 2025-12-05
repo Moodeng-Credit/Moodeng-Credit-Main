@@ -4,42 +4,35 @@ import { useCallback, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { useDispatch, useSelector } from 'react-redux';
-
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import Modal from '@/components/ui/Modal';
 import UserPay from '@/components/UserPay';
+
+import { useDeleteLoan } from '@/hooks/api';
 
 import { calculateDaysRemaining, calculateDueDate, formatDate } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { getLoanBadgeStyles } from '@/utils/loanStatusFormatters';
 
-import { deleteLoan, getUserLoans } from '@/store/slices/loanSlice';
-import type { AppDispatch, RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
 
 export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
-   const username = useSelector((state: RootState) => state.auth.username);
    const [showDel, setShowDel] = useState(false);
    const [showPay, setShowPay] = useState(false);
-   const dispatch = useDispatch<AppDispatch>();
    const router = useRouter();
+   const deleteLoanMutation = useDeleteLoan();
 
    const differenceInDays = calculateDaysRemaining(loan.createdAt, loan.days);
    const dueDate = calculateDueDate(loan.createdAt, loan.days);
    const postedDate = formatDate(loan.createdAt);
    const badgeStyles = getLoanBadgeStyles(loan.loanStatus, loan.repaymentStatus, differenceInDays);
 
-   const handleDelete = async () => {
-      const id = loan.id;
-      await dispatch(deleteLoan(id))
-         .unwrap()
-         .then(async () => {
-            await dispatch(getUserLoans(username || ''));
-         })
-         .catch((error: Error) => {
+   const handleDelete = () => {
+      deleteLoanMutation.mutate(loan.id, {
+         onError: (error) => {
             console.error('Error deleting loan:', error.message || error);
-         });
+         }
+      });
    };
 
    const handleClosePayModal = useCallback(() => {

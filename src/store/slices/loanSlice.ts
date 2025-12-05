@@ -1,38 +1,31 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 
-import { API_ENDPOINTS } from '@/config/apiEndpoints';
-import { apiHandler } from '@/lib/apiHandler';
-import { type ApiData } from '@/types/apiTypes';
-import { type CreateLoanData, type Loan, type LoanState } from '@/types/loanTypes';
+import { type Loan } from '@/types/loanTypes';
+
+interface LoanState {
+   loans: {
+      gloans: Loan[];
+      floans: Loan[];
+   };
+}
 
 const initialState: LoanState = {
    loans: {
       gloans: [],
       floans: []
-   },
-   isLoading: false,
-   error: null
+   }
 };
-
-export const createLoan = createAsyncThunk('loans/create', async (loanData: CreateLoanData) => {
-   return await apiHandler.post(API_ENDPOINTS.LOANS.CREATE, loanData as unknown as ApiData);
-});
-
-export const fetchLoans = createAsyncThunk('loans/fetch', async () => {
-   return await apiHandler.get(API_ENDPOINTS.LOANS.FETCH);
-});
-
-export const getUserLoans = createAsyncThunk('loans/getUserLoans', async (username: string) => {
-   return await apiHandler.post(API_ENDPOINTS.LOANS.GET, { username });
-});
 
 const loanSlice = createSlice({
    name: 'loans',
    initialState,
    reducers: {
-      clearError: (state) => {
-         state.error = null;
+      setLoans: (state, action: PayloadAction<Loan[]>) => {
+         state.loans.floans = action.payload;
+      },
+      setUserLoans: (state, action: PayloadAction<Loan[]>) => {
+         state.loans.gloans = action.payload;
       },
       addLoan: (state, action: PayloadAction<Loan>) => {
          state.loans.floans.push(action.payload);
@@ -47,71 +40,14 @@ const loanSlice = createSlice({
          if (gloanIndex !== -1) {
             state.loans.gloans[gloanIndex] = action.payload;
          }
+      },
+      clearLoans: (state) => {
+         state.loans.gloans = [];
+         state.loans.floans = [];
       }
-   },
-   extraReducers: (builder) => {
-      builder
-         .addCase(createLoan.pending, (state) => {
-            state.isLoading = true;
-            state.error = null;
-         })
-         .addCase(createLoan.fulfilled, (state, action) => {
-            state.isLoading = false;
-            state.loans.floans.push(action.payload);
-         })
-         .addCase(createLoan.rejected, (state, action) => {
-            state.isLoading = false;
-            state.error = action.payload as string;
-         })
-         .addCase(fetchLoans.pending, (state) => {
-            state.isLoading = true;
-            state.error = null;
-         })
-         .addCase(fetchLoans.fulfilled, (state, action) => {
-            state.isLoading = false;
-            state.loans.floans = action.payload;
-         })
-         .addCase(fetchLoans.rejected, (state, action) => {
-            state.isLoading = false;
-            state.error = action.payload as string;
-         })
-         .addCase(getUserLoans.fulfilled, (state, action) => {
-            state.loans.gloans = action.payload;
-         });
    }
 });
 
-export const { clearError, addLoan, updateLoan } = loanSlice.actions;
-
-export const updateLoanStatus = createAsyncThunk(
-   'loans/updateStatus',
-   async (loanData: {
-      id: string;
-      username?: string | null;
-      wallet?: string;
-      repaymentStatus?: string;
-      loanStatus?: string;
-      repaidAmount?: number;
-      hash?: string;
-   }) => {
-      // Map id to loanId and extract all updatable fields for API consistency
-      const { id, username, wallet, repaymentStatus, loanStatus, repaidAmount, hash } = loanData;
-      return await apiHandler.post(API_ENDPOINTS.LOANS.UPDATE, {
-         loanId: id,
-         username,
-         wallet,
-         repaymentStatus,
-         loanStatus,
-         repaidAmount,
-         hash
-      } as unknown as ApiData);
-   }
-);
-
-export const deleteLoan = createAsyncThunk('loans/delete', async (loanId: string) => {
-   return await apiHandler.post(API_ENDPOINTS.LOANS.DELETE, { loanId });
-});
-
-export const getLoans = getUserLoans;
+export const { setLoans, setUserLoans, addLoan, updateLoan, clearLoans } = loanSlice.actions;
 
 export default loanSlice.reducer;

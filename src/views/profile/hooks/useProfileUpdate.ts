@@ -1,13 +1,11 @@
 import { useState } from 'react';
 
-import { useDispatch } from 'react-redux';
+import { useUpdateUser } from '@/hooks/api';
 
-import { updateUser } from '@/store/slices/authSlice';
-import type { AppDispatch } from '@/store/store';
 import type { ProfileFormData } from '@/views/profile/types';
 
 export const useProfileUpdate = (currentUserData: { username?: string; email?: string; telegramUsername?: string }) => {
-   const dispatch = useDispatch<AppDispatch>();
+   const updateUser = useUpdateUser();
    const [formData, setFormData] = useState<ProfileFormData>({
       username: '',
       email: '',
@@ -21,7 +19,7 @@ export const useProfileUpdate = (currentUserData: { username?: string; email?: s
       setFormData((prev) => ({ ...prev, [field]: value }));
    };
 
-   const handleUpdate = async () => {
+   const handleUpdate = () => {
       if (formData.telegramUsername) {
          setShowTelegramModal(true);
       }
@@ -33,16 +31,15 @@ export const useProfileUpdate = (currentUserData: { username?: string; email?: s
          password: formData.password
       };
 
-      await dispatch(updateUser(data))
-         .unwrap()
-         .then(() => {
+      updateUser.mutate(data, {
+         onSuccess: () => {
             console.log('User updated successfully');
-         })
-         .catch((error: Error) => {
+            handleRevert();
+         },
+         onError: (error) => {
             console.error('Error updating user:', error.message || error);
-         });
-
-      handleRevert();
+         }
+      });
    };
 
    const handleRevert = () => {

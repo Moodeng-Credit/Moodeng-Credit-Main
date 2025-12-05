@@ -3,7 +3,7 @@
 import { type ReactNode, useEffect } from 'react';
 
 import { darkTheme, RainbowKitProvider } from '@rainbow-me/rainbowkit';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { WagmiProvider } from 'wagmi';
@@ -14,9 +14,8 @@ import { ToastInitializer } from '@/components/ToastSystem/ToastInitializer';
 
 import { setStoreRef } from '@/lib/axios';
 import { config } from '@/lib/config/wagmi';
+import { queryClient } from '@/lib/queryClient';
 import { persistor, store } from '@/store/store';
-
-const queryClient = new QueryClient();
 
 function StoreInitializer() {
    useEffect(() => {

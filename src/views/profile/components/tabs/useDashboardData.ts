@@ -1,33 +1,25 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+
+import { useUserLoans } from '@/hooks/api';
 
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 
-import { fetchUser } from '@/store/slices/authSlice';
-import { getUserLoans } from '@/store/slices/loanSlice';
-import type { AppDispatch, RootState } from '@/store/store';
+import type { RootState } from '@/store/store';
 import type { CreditLevel, RoleType, StatsData } from '@/views/profile/components/tabs/types';
 
 export const useDashboardData = (activeRole: RoleType) => {
-   const dispatch = useDispatch<AppDispatch>();
    const username = useSelector((state: RootState) => state.auth.username);
-   const gloanRequests = useSelector((state: RootState) => state.loans.loans.gloans || []);
 
-   useEffect(() => {
-      const fetchData = async () => {
-         if (username) {
-            await dispatch(getUserLoans(username));
-            await dispatch(fetchUser());
-         }
-      };
-      fetchData();
-   }, [dispatch, username]);
+   // Use React Query to fetch user loans - data is cached automatically
+   const { data: loansData } = useUserLoans(username || '');
 
    const userLoans = useMemo(() => {
+      const gloanRequests = loansData?.gloans || [];
       return gloanRequests.filter((loan) => (activeRole === 'borrower' ? loan.borrowerUser === username : loan.lenderUser === username));
-   }, [gloanRequests, activeRole, username]);
+   }, [loansData, activeRole, username]);
 
    const loanArrays = useMemo(() => {
       const repayments = userLoans.filter((loan) => loan.repaymentStatus === 'Paid');
