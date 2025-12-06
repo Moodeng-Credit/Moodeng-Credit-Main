@@ -13,7 +13,7 @@ export default function SearchBar({ value, onChange, placeholder = 'Search...', 
          <input
             value={value}
             onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
-            className="w-full border border-gray-300 rounded-full px-4 py-1 text-xs md:text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+            className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
             placeholder={placeholder}
             type="search"
          />
