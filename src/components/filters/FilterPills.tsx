@@ -40,12 +40,17 @@ function Dropdown({ isOpen, onClose, children }: DropdownProps) {
       };
    }, [isOpen, onClose]);
 
-   if (!isOpen) return null;
-
    return (
       <div
          ref={ref}
-         className="absolute top-full left-0 mt-2 bg-[#1e1b2e] border border-[#3d3a50] rounded-lg shadow-lg z-50 min-w-[140px] overflow-hidden"
+         className={`
+            absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px] overflow-hidden
+            transform transition-all duration-200 ease-out origin-top
+            ${isOpen
+               ? 'opacity-100 scale-100 translate-y-0'
+               : 'opacity-0 scale-95 -translate-y-1 pointer-events-none'
+            }
+         `}
       >
          {children}
       </div>
@@ -63,16 +68,24 @@ function PillButton({ label, isActive, onClick }: PillButtonProps) {
       <button
          onClick={onClick}
          className={`
-            flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
-            transition-all duration-200 cursor-pointer
+            flex items-center justify-between min-w-[140px] px-4 py-2.5 rounded-lg text-sm
+            transition-all duration-200 ease-out cursor-pointer
+            bg-white border text-gray-700
+            hover:border-gray-400 hover:shadow-sm
             ${isActive
-               ? 'bg-[#6d57ff] text-white shadow-[0_0_12px_rgba(109,87,255,0.3)]'
-               : 'bg-[#2a2739] text-gray-300 hover:bg-[#3d3a50] border border-[#3d3a50]'
+               ? 'border-blue-500 shadow-sm font-semibold text-gray-900'
+               : 'border-gray-300'
             }
          `}
       >
          <span>{label}</span>
-         <i className="fas fa-filter text-xs opacity-70"></i>
+         <svg
+            className={`w-4 h-4 ml-6 transition-colors duration-200 ${isActive ? 'text-blue-500' : 'text-gray-500'}`}
+            fill="currentColor"
+            viewBox="0 0 20 20"
+         >
+            <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clipRule="evenodd" />
+         </svg>
       </button>
    );
 }
@@ -88,10 +101,11 @@ function DropdownOption({ label, isSelected, onClick }: DropdownOptionProps) {
       <button
          onClick={onClick}
          className={`
-            w-full px-4 py-2.5 text-left text-sm transition-colors cursor-pointer
+            w-full px-4 py-2.5 text-left text-sm cursor-pointer
+            transition-all duration-150 ease-out
             ${isSelected
-               ? 'bg-[#6d57ff] text-white'
-               : 'text-gray-300 hover:bg-[#3d3a50]'
+               ? 'bg-blue-50 text-blue-600 font-medium'
+               : 'text-gray-700 hover:bg-gray-50'
             }
          `}
       >
@@ -197,8 +211,8 @@ export default function FilterPills({
             </Dropdown>
          </div>
 
-         {/* Tags Pill */}
-         <div className="relative">
+         {/* Tags Pill - Commented out for now */}
+         {/* <div className="relative">
             <PillButton
                label={tagsLabel}
                isActive={openDropdown === 'tags' || selectedTags.length > 0}
@@ -211,17 +225,20 @@ export default function FilterPills({
                         key={tag}
                         onClick={() => handleTagToggle(tag)}
                         className={`
-                           w-full px-4 py-2.5 text-left text-sm transition-colors cursor-pointer
+                           w-full px-4 py-2.5 text-left text-sm cursor-pointer
                            flex items-center justify-between
+                           transition-all duration-150 ease-out
                            ${selectedTags.includes(tag)
-                              ? 'bg-[#6d57ff]/20 text-white'
-                              : 'text-gray-300 hover:bg-[#3d3a50]'
+                              ? 'bg-blue-50 text-blue-600 font-medium'
+                              : 'text-gray-700 hover:bg-gray-50'
                            }
                         `}
                      >
                         <span>{tag}</span>
                         {selectedTags.includes(tag) && (
-                           <i className="fas fa-check text-[#6d57ff] text-xs"></i>
+                           <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                           </svg>
                         )}
                      </button>
                   ))
@@ -234,13 +251,13 @@ export default function FilterPills({
                         onTagsChange([]);
                         closeDropdown();
                      }}
-                     className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-[#3d3a50] border-t border-[#3d3a50] cursor-pointer"
+                     className="w-full px-4 py-2.5 text-left text-sm text-red-500 hover:bg-red-50 border-t border-gray-200 cursor-pointer transition-all duration-150 ease-out"
                   >
                      Clear all
                   </button>
                )}
             </Dropdown>
-         </div>
+         </div> */}
       </div>
    );
 }
