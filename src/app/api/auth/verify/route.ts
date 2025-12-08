@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { type IVerifyResponse, VerificationLevel, verifyCloudProof } from '@worldcoin/idkit';
 
-import { prisma } from '@/lib/database';
+import { createSupabaseServerClient } from '@/lib/supabase';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { WorldId } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -30,25 +30,32 @@ export async function POST(request: NextRequest) {
 
          if (verifyRes.success) {
             const nullifierHash = proof.nullifier_hash;
+            const supabase = await createSupabaseServerClient();
 
             // Check if this nullifier hash is already used by a different user to prevent replay attacks
-            const existingUser = await prisma.user.findFirst({
-               where: {
-                  nullifierHash,
-                  id: { not: userId }
-               }
-            });
+            const { data: existingUser } = await supabase
+               .from('users')
+               .select('id')
+               .eq('nullifier_hash', nullifierHash)
+               .neq('id', userId)
+               .single();
+
             if (existingUser) {
                throw { code: ERROR_CODES.WORLDID_ALREADY_USED };
             }
 
-            await prisma.user.update({
-               where: { id: userId },
-               data: {
-                  isWorldId: WorldId.ACTIVE,
-                  nullifierHash
-               }
-            });
+            const { error: updateError } = await supabase
+               .from('users')
+               .update({
+                  is_world_id: WorldId.ACTIVE,
+                  nullifier_hash: nullifierHash
+               })
+               .eq('id', userId);
+
+            if (updateError) {
+               console.error('Error updating user World ID status:', updateError);
+               throw { code: ERROR_CODES.SERVER_ERROR, status: 500 };
+            }
 
             return verifyRes;
          } else {

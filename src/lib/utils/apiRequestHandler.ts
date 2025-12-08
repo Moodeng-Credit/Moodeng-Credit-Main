@@ -2,7 +2,7 @@
  * Server-side API Request Handler (Backend DRY Handler)
  *
  * This is the BACKEND handler used IN API routes to process requests.
- * Handles: authentication, validation (via Zod), and standardized responses.
+ * Handles: authentication via Supabase, validation (via Zod), and standardized responses.
  *
  * DO NOT confuse with /lib/apiHandler.ts (client-side - makes HTTP requests)
  */
@@ -11,6 +11,7 @@ import type { NextRequest, NextResponse } from 'next/server';
 import type { ZodError } from 'zod';
 import { type z, type ZodType } from 'zod';
 
+import { createSupabaseServerClient } from '@/lib/supabase';
 import { createErrorResponse, createSuccessResponse } from '@/lib/utils/apiResponse';
 import { setCorsHeaders } from '@/lib/utils/cors';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -31,6 +32,20 @@ function validateRequestData<TSchema extends ZodType>(schema: TSchema, data: unk
       return schema.parse(data);
    } catch (error) {
       return handleValidationError(error, 'Invalid request data');
+   }
+}
+
+/**
+ * Get authenticated user ID from Supabase session
+ */
+async function getAuthenticatedUserId(): Promise<string | null> {
+   try {
+      const supabase = await createSupabaseServerClient();
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) return null;
+      return user.id;
+   } catch {
+      return null;
    }
 }
 
@@ -56,11 +71,11 @@ export async function handleApiRequest<TSchema extends ZodType = ZodType, TResul
    } = {}
 ): Promise<NextResponse> {
    try {
-      if (options.requireAuth) {
-         const userId = request.headers.get('user-id');
-         if (!userId) {
-            return setCorsHeaders(createErrorResponse(ERROR_CODES.AUTH_UNAUTHORIZED, undefined, 401), request);
-         }
+      // Get user ID from Supabase auth
+      const userId = await getAuthenticatedUserId();
+
+      if (options.requireAuth && !userId) {
+         return setCorsHeaders(createErrorResponse(ERROR_CODES.AUTH_UNAUTHORIZED, undefined, 401), request);
       }
 
       let validatedData: z.infer<TSchema> = {} as z.infer<TSchema>;
@@ -68,17 +83,16 @@ export async function handleApiRequest<TSchema extends ZodType = ZodType, TResul
       if (options.schema) {
          const rawData = request.method === 'GET' ? Object.fromEntries(new URL(request.url).searchParams.entries()) : await request.json();
 
-         const result = validateRequestData(options.schema, rawData);
+         const parseResult = validateRequestData(options.schema, rawData);
 
-         if (result instanceof Response) {
-            return setCorsHeaders(result, request);
+         if (parseResult instanceof Response) {
+            return setCorsHeaders(parseResult, request);
          }
 
-         validatedData = result;
+         validatedData = parseResult;
       }
 
-      const userId = request.headers.get('user-id') || undefined;
-      const result = await handler(validatedData, userId);
+      const result = await handler(validatedData, userId || undefined);
 
       const response = createSuccessResponse(options.successCode, result);
 

@@ -1,4 +1,5 @@
-import type { Prisma } from '@/generated/prisma/client/client';
+// Loan Types for Supabase
+// Amounts are stored as numbers in Supabase
 
 export interface Loan {
    id: string;
@@ -7,9 +8,9 @@ export interface Loan {
    lenderWallet?: string;
    borrowerUser?: string;
    lenderUser?: string;
-   loanAmount: Prisma.Decimal; // Original amount borrowed (principal)
-   repaidAmount: Prisma.Decimal; // Amount already repaid by borrower (cumulative sum of all payments)
-   totalRepaymentAmount: Prisma.Decimal; // Total amount that must be repaid (principal + interest/fees)
+   loanAmount: number; // Original amount borrowed (principal)
+   repaidAmount: number; // Amount already repaid by borrower (cumulative sum of all payments)
+   totalRepaymentAmount: number; // Total amount that must be repaid (principal + interest/fees)
    reason: string;
    loanStatus: string;
    repaymentStatus: string;
@@ -59,9 +60,9 @@ export interface ILoan {
    lenderWallet?: string;
    borrowerUser?: string;
    lenderUser?: string;
-   loanAmount: Prisma.Decimal;
-   repaidAmount: Prisma.Decimal;
-   totalRepaymentAmount: Prisma.Decimal;
+   loanAmount: number;
+   repaidAmount: number;
+   totalRepaymentAmount: number;
    reason: string;
    loanStatus: LoanStatusType;
    repaymentStatus: RepaymentStatusType;
