@@ -34,22 +34,24 @@ export default function SupportPage() {
 
    return (
       <>
-         <div className="bg-[#c9d5f9] flex flex-col px-6 md:px-20 py-16">
-            <div className="flex flex-col lg:flex-row justify-between items-start md:items-center gap-4">
-               <h2 className="text-4xl font-bold text-blue-600">Contact Us</h2>
-               <div className="text-gray-700 max-w-xl">
-                  <p className="font-medium">
-                     Have questions? The quickest way to get in touch with us is using the contact information below.
-                  </p>
+         <div className="bg-[#c9d5f9] flex flex-col px-6 md:px-20 py-16 min-h-64 justify-center">
+            <div className="flex flex-col lg:flex-row justify-between items-start md:items-center gap-4 pe-16">
+               <h2 className="text-6xl font-bold text-blue-600">Contact Us</h2>
+               <div className="max-w-lg text-xl">
+                  <p>Have questions? The quickest way to get in touch with us is using the contact information below.</p>
                </div>
             </div>
          </div>
 
          <Section
-            header="Moodeng Support"
+            header={
+               <span>
+                  Moodeng <br className="hidden lg:block" /> Support
+               </span>
+            }
             content={
                <>
-                  <p className="font-medium">
+                  <p>
                      If you are a learner and need help, please visit our{' '}
                      <Link className="text-blue-600" href="#TODO">
                         Documentation / Guide
@@ -57,9 +59,9 @@ export default function SupportPage() {
                      to find troubleshooting and FAQs or contact our Learner Support team. You can search for your issue or check out our
                      most popular articles:
                   </p>
-                  <ul className="flex flex-col gap-2">
+                  <ul className="flex flex-col gap-4">
                      {articles.map((article) => (
-                        <li key={article.title + article.href} className="text-gray-700 font-medium text-sm">
+                        <li key={article.title + article.href} className="text-gray-700">
                            <Link className="text-blue-600" href={article.href}>
                               {article.title}
                            </Link>
@@ -71,9 +73,14 @@ export default function SupportPage() {
          />
 
          <Section
-            header="Privacy Inquiries"
+            header={
+               <span>
+                  Privacy <br className="hidden lg:block" />
+                  Inquiries
+               </span>
+            }
             content={
-               <p className="font-medium">
+               <p>
                   If you have questions about our{' '}
                   <Link className="text-blue-600" href="#TODO">
                      Privacy Notice
@@ -88,9 +95,13 @@ export default function SupportPage() {
          />
 
          <Section
-            header="Special Concerns"
+            header={
+               <span>
+                  Special <br className="hidden lg:block" /> Concerns
+               </span>
+            }
             content={
-               <p className="font-medium">
+               <p>
                   Security vulnerabilities on the this site may be reported via the{' '}
                   <Link className="text-blue-600 underline" href="#TODO">
                      HackerOne platform
@@ -101,28 +112,32 @@ export default function SupportPage() {
          />
 
          <Section
-            header="Send us a Message!"
+            header=<span>
+               Send us a <br className="hidden lg:block" /> Message!
+            </span>
             content={
-               <>
-                  <div className="grid grid-cols-2 gap-4">
+               <div className=" flex flex-col gap-8 text-base">
+                  <div className="grid grid-cols-2 gap-8">
                      <InputField label="First Name" placeholder="John" />
                      <InputField label="Last Name" placeholder="Doe" />
                      <InputField label="Email" placeholder="john.doe@example.com" />
                      <InputField label="Phone Number" placeholder="(+63) 000 000 0000" />
                   </div>
-                  <div className="text-blue-600 font-medium">Select Subject?</div>
-                  <div className="flex flex-wrap gap-8">
-                     <RadioField label="General Inquiry" name="subject" />
-                     <RadioField label="Account" name="subject" />
-                     <RadioField label="Transaction" name="subject" />
-                     <RadioField label="Others" name="subject" />
+                  <div className="flex flex-col gap-4">
+                     <div className="text-blue-600 font-medium">Select Subject?</div>
+                     <div className="flex flex-wrap gap-y-4 gap-x-8">
+                        <RadioField label="General Inquiry" name="subject" />
+                        <RadioField label="Account" name="subject" />
+                        <RadioField label="Transaction" name="subject" />
+                        <RadioField label="Others" name="subject" />
+                     </div>
                   </div>
 
                   <InputField label="Message" placeholder="Write your message.." />
                   <div className="flex justify-end pt-4">
-                     <button className="bg-blue-600 text-white px-6 py-2 rounded-md">Send Message</button>
+                     <button className="bg-blue-600 text-white px-10 py-3 rounded-md">Send Message</button>
                   </div>
-               </>
+               </div>
             }
             bg
          />
@@ -130,16 +145,16 @@ export default function SupportPage() {
    );
 }
 
-function Section(props: { header: string; content: ReactNode; bg?: boolean }) {
+function Section(props: { header: ReactNode; content: ReactNode; bg?: boolean }) {
    return (
       <div
          className={clsx('flex flex-col px-6 md:px-20 py-16 min-h-[80svh] justify-center', {
             'bg-[#c9d5f9]': props.bg
          })}
       >
-         <div className="flex flex-col lg:flex-row justify-between items-start md:items-center gap-4">
-            <h2 className="text-3xl font-bold text-blue-600">{props.header}</h2>
-            <div className="text-gray-700 max-w-xl flex flex-col gap-4 w-full">{props.content}</div>
+         <div className="flex flex-col lg:flex-row justify-between items-start md:items-center gap-4 pe-16">
+            <h2 className="text-5xl font-bold text-blue-600">{props.header}</h2>
+            <div className="max-w-lg flex flex-col gap-8 w-full text-xl">{props.content}</div>
          </div>
       </div>
    );
@@ -151,7 +166,7 @@ function InputField(props: { label: string; placeholder: string }) {
          <label className="text-sm text-blue-600">{props.label}</label>
          <input
             type="text"
-            className="bg-transparent border-b border-blue-600 py-2 px-1 focus:outline-none"
+            className="bg-transparent border-b border-blue-600 py-2 px-1 focus:outline-none text-sm"
             placeholder={props.placeholder}
          ></input>
       </div>
@@ -174,7 +189,7 @@ function RadioField(props: { label: string; name: string }) {
                'bg-gray-400 border-gray-400': !checked
             })}
          ></input>
-         <label htmlFor={id} className="cursor-pointer">
+         <label htmlFor={id} className="cursor-pointer text-sm">
             {props.label}
          </label>
       </div>
