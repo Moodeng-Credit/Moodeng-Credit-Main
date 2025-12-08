@@ -1,18 +1,17 @@
-import ActionButton from '@/components/ui/ActionButton';
+import Link from 'next/link';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 
-import type { ActionButtonConfig } from '@/types/actionButtonTypes';
+import { type NavLink } from '@/config/navigationConfig';
 
 interface MobileNavProps {
-   buttons: ActionButtonConfig[];
+   links: NavLink[];
    isOpen: boolean;
    onClose: () => void;
    username?: string | null;
-   onDashboardClick?: () => void;
 }
 
-export default function MobileNav({ buttons, isOpen, onClose, username, onDashboardClick }: MobileNavProps) {
+export default function MobileNav({ links, isOpen, onClose, username }: MobileNavProps) {
    const navRef = useClickOutside<HTMLElement>(onClose, isOpen);
 
    if (!isOpen) return null;
@@ -26,15 +25,21 @@ export default function MobileNav({ buttons, isOpen, onClose, username, onDashbo
       >
          <div className="flex flex-col p-4 space-y-4">
             {username ? (
-               <div
-                  onClick={onDashboardClick}
-                  className="text-white text-center text-[22px] cursor-pointer hover:text-gray-300 transition-colors font-normal"
-               >
+               <Link href="/dashboard" className="text-white text-center text-xl hover:text-gray-300 transition-colors">
                   Dashboard
-               </div>
+               </Link>
             ) : null}
-            {buttons.map((button) => (
-               <ActionButton key={button.href} button={button} onClick={onClose} />
+            {links.map((link) => (
+               <Link
+                  onClick={onClose}
+                  key={link.href + link.text}
+                  href={link.href}
+                  className="text-xl text-white text-center hover:text-gray-300 transition-colors"
+                  target={link.isExternal ? '_blank' : undefined}
+                  rel={link.isExternal ? 'noreferrer' : undefined}
+               >
+                  {link.text}
+               </Link>
             ))}
          </div>
       </nav>
