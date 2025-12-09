@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 
 import { type Chain, ConnectButton } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
-import { useAccount, useSwitchChain } from 'wagmi';
+import { useAccount, useDisconnect, useSwitchChain } from 'wagmi';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 
@@ -20,11 +20,13 @@ export default function UserNetwork() {
    const router = useRouter();
    const account = useAccount();
    const { switchChain } = useSwitchChain();
+   const { disconnect } = useDisconnect();
    const [showNetwork, setShowNetwork] = useState(false);
    const username = useSelector((state: RootState) => state.auth.username);
    const currentWalletAddress = useSelector((state: RootState) => state.auth.user?.walletAddress);
 
    const handleLogout = () => {
+      disconnect();
       dispatch(logoutUser());
 
       router.push('/login');
