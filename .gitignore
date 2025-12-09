@@ -45,3 +45,20 @@ next-env.d.ts
 
 certificates
 CLAUDE.md
+
+# Nix
+.devenv*
+devenv.local.nix
+devenv.local.yaml
+devenv.lock
+devenv.yaml
+devenv.nix
+flake.nix
+flake.lock
+.nix-build
+.direnv
+.envrc
+
+# lazyvim / just
+.lazy.lua
+Justfile
