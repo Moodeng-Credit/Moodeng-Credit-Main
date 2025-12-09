@@ -50,8 +50,8 @@ export const createLoan = createAsyncThunk('loans/create', async (loanData: Crea
 
    const loanInsert: LoanInsert = {
       tracking_id: trackingId,
-      borrower_user: loanData.borrowerUserId,
-      lender_user: loanData.lenderUserId,
+      borrower_user: loanData.borrowerUserId || null,
+      lender_user: loanData.lenderUserId || null, // Use null instead of empty string to avoid FK violation
       loan_amount: loanData.loanAmount,
       total_repayment_amount: loanData.totalRepaymentAmount,
       reason: loanData.reason,
