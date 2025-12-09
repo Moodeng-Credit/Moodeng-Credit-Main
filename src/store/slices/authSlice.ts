@@ -57,6 +57,19 @@ const ensureUserProfileRow = async (
       throw new Error('Email is required to seed user profile');
    }
 
+   // First, try to fetch existing profile
+   const { data: existingProfile } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', authUser.id)
+      .maybeSingle();
+
+   // If profile exists, return it (don't update to avoid unique constraint violations)
+   if (existingProfile) {
+      return existingProfile;
+   }
+
+   // Profile doesn't exist, create new one
    const payload: UserInsert = {
       id: authUser.id,
       username: deriveUsername(authUser, overrides?.username),
@@ -66,7 +79,7 @@ const ensureUserProfileRow = async (
 
    const { data, error } = await supabase
       .from('users')
-      .upsert(payload, { onConflict: 'id' })
+      .insert(payload)
       .select('*')
       .single();
 
