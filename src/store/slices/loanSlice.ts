@@ -44,10 +44,10 @@ const initialState: LoanState = {
 
 export const createLoan = createAsyncThunk('loans/create', async (loanData: CreateLoanData) => {
    const supabase = supabaseClient();
-   
+
    // Generate a unique tracking ID
    const trackingId = `LOAN-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-   
+
    const loanInsert: LoanInsert = {
       tracking_id: trackingId,
       borrower_user: loanData.borrowerUserId,
@@ -79,7 +79,7 @@ export const createLoan = createAsyncThunk('loans/create', async (loanData: Crea
 
 export const fetchLoans = createAsyncThunk('loans/fetch', async () => {
    const supabase = supabaseClient();
-   
+
    const { data, error } = await supabase
       .from('loans')
       .select('*')
@@ -94,7 +94,7 @@ export const fetchLoans = createAsyncThunk('loans/fetch', async () => {
 
 export const getUserLoans = createAsyncThunk('loans/getUserLoans', async (username: string) => {
    const supabase = supabaseClient();
-   
+
    const { data, error } = await supabase
       .from('loans')
       .select('*')
@@ -202,9 +202,9 @@ export const updateLoanStatus = createAsyncThunk(
    }) => {
       const supabase = supabaseClient();
       const { id, username, wallet, repaymentStatus, loanStatus, repaidAmount, hash } = loanData;
-      
+
       const updates: LoanUpdate = {};
-      
+
       if (username) {
          updates.lender_user = username;
       }
@@ -227,7 +227,7 @@ export const updateLoanStatus = createAsyncThunk(
             .select('hash')
             .eq('id', id)
             .single();
-         
+
          updates.hash = [...(currentLoan?.hash || []), hash];
       }
 
@@ -252,7 +252,7 @@ export const updateLoanStatus = createAsyncThunk(
 
 export const deleteLoan = createAsyncThunk('loans/delete', async (loanId: string) => {
    const supabase = supabaseClient();
-   
+
    const { error } = await supabase
       .from('loans')
       .delete()
