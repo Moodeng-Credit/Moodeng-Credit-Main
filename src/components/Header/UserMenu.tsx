@@ -18,7 +18,7 @@ export default function UserMenu({ onDashboardClick, showMenu, onToggleMenu, onC
             onClick={onDashboardClick}
             className="bg-[#6d57ff] text-white px-4 py-2 rounded-full cursor-pointer hover:bg-[#5a4ae5] transition-colors hidden sm:block cursor-pointer"
          >
-            <span className="[font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-sm">Dashboard</span>
+            <span className="[font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-sm">App</span>
          </div>
          <button
             aria-label="Notifications"
