@@ -1,8 +1,9 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
 import type { Database } from '@/lib/supabase/types';
+import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
 import { type AuthState, type User, WorldId } from '@/types/authTypes';
 
 type UpdateUserPayload = {
@@ -14,12 +15,69 @@ type UpdateUserPayload = {
 };
 
 const supabaseClient = () => getSupabaseBrowserClient();
+type SupabaseClientType = ReturnType<typeof supabaseClient>;
+type UserRow = Database['public']['Tables']['users']['Row'];
+type UserInsert = Database['public']['Tables']['users']['Insert'];
+type WorldIdStatus = Database['public']['Enums']['world_id_status'];
 
 const toOptionalBigInt = (value: number | null): bigint | undefined => (
    value === null || value === undefined ? undefined : BigInt(value)
 );
 
-const mapSupabaseRowToUser = (row: Database['public']['Tables']['users']['Row']): User => ({
+const normalizeWorldIdStatus = (value?: string | WorldId | null): WorldIdStatus => (
+   (value as WorldIdStatus) ?? WorldId.INACTIVE
+);
+
+const deriveUsername = (authUser: SupabaseAuthUser, explicit?: string): string => {
+   if (explicit) {
+      return explicit;
+   }
+
+   const metadataUsername = authUser.user_metadata?.username;
+   if (typeof metadataUsername === 'string' && metadataUsername.trim().length > 0) {
+      return metadataUsername;
+   }
+
+   if (authUser.email) {
+      const [local] = authUser.email.split('@');
+      return `${local}-${authUser.id.slice(0, 6)}`;
+   }
+
+   return `user-${authUser.id.slice(0, 6)}`;
+};
+
+const ensureUserProfileRow = async (
+   supabase: SupabaseClientType,
+   authUser: SupabaseAuthUser,
+   overrides?: { username?: string; email?: string; isWorldId?: string | WorldId }
+): Promise<UserRow> => {
+   const email = overrides?.email ?? authUser.email;
+
+   if (!email) {
+      throw new Error('Email is required to seed user profile');
+   }
+
+   const payload: UserInsert = {
+      id: authUser.id,
+      username: deriveUsername(authUser, overrides?.username),
+      email,
+      is_world_id: normalizeWorldIdStatus(overrides?.isWorldId ?? authUser.user_metadata?.is_world_id)
+   };
+
+   const { data, error } = await supabase
+      .from('users')
+      .upsert(payload, { onConflict: 'id' })
+      .select('*')
+      .single();
+
+   if (error || !data) {
+      throw error ?? new Error('Failed to ensure user profile');
+   }
+
+   return data;
+};
+
+const mapSupabaseRowToUser = (row: UserRow): User => ({
    id: row.id,
    username: row.username,
    email: row.email,
@@ -54,8 +112,13 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
       .eq('id', user.id)
       .single();
 
-   if (profileError || !profile) {
-      throw profileError ?? new Error('Failed to load user profile');
+   if (profileError?.code === 'PGRST116' || !profile) {
+      const ensuredProfile = await ensureUserProfileRow(supabase, user);
+      return mapSupabaseRowToUser(ensuredProfile);
+   }
+
+   if (profileError) {
+      throw profileError;
    }
 
    return mapSupabaseRowToUser(profile);
@@ -165,7 +228,7 @@ export const registerUser = createAsyncThunk(
    'auth/register',
    async (userData: { username: string; isWorldId: string; password: string; email: string }) => {
       const supabase = supabaseClient();
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
          email: userData.email,
          password: userData.password,
          options: {
@@ -180,7 +243,19 @@ export const registerUser = createAsyncThunk(
          throw error;
       }
 
-      const user = await fetchCurrentUserProfile();
+      const createdUser = data?.user;
+
+      if (!createdUser) {
+         throw new Error('Supabase did not return a user record after sign up');
+      }
+
+      const ensuredProfile = await ensureUserProfileRow(supabase, createdUser, {
+         username: userData.username,
+         email: userData.email,
+         isWorldId: userData.isWorldId
+      });
+
+      const user = mapSupabaseRowToUser(ensuredProfile);
       return {
          username: user.username,
          user
