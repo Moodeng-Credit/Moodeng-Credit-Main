@@ -1,10 +1,109 @@
-import type { PayloadAction } from '@reduxjs/toolkit';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
-import { API_ENDPOINTS } from '@/config/apiEndpoints';
-import { apiHandler } from '@/lib/apiHandler';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
+import type { Database } from '@/lib/supabase/types';
 import { type AuthState, type User, WorldId } from '@/types/authTypes';
+
+type UpdateUserPayload = {
+   username?: string;
+   email?: string | null;
+   password?: string;
+   telegramUsername?: string | null;
+   walletAddress?: string;
+};
+
+const supabaseClient = () => getSupabaseBrowserClient();
+
+const toOptionalBigInt = (value: number | null): bigint | undefined => (
+   value === null || value === undefined ? undefined : BigInt(value)
+);
+
+const mapSupabaseRowToUser = (row: Database['public']['Tables']['users']['Row']): User => ({
+   id: row.id,
+   username: row.username,
+   email: row.email,
+   googleId: row.google_id ?? undefined,
+   walletAddress: row.wallet_address ?? undefined,
+   isWorldId: row.is_world_id,
+   nullifierHash: row.nullifier_hash ?? undefined,
+   telegramUsername: row.telegram_username ?? undefined,
+   telegramId: toOptionalBigInt(row.telegram_id),
+   chatId: toOptionalBigInt(row.chat_id),
+   mal: row.mal,
+   nal: row.nal,
+   cs: row.cs,
+   createdAt: row.created_at,
+   updatedAt: row.updated_at
+});
+
+const fetchCurrentUserProfile = async (): Promise<User> => {
+   const supabase = supabaseClient();
+   const {
+      data: { user },
+      error: sessionError
+   } = await supabase.auth.getUser();
+
+   if (sessionError || !user) {
+      throw sessionError ?? new Error('Unable to resolve authenticated user');
+   }
+
+   const { data: profile, error: profileError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+   if (profileError || !profile) {
+      throw profileError ?? new Error('Failed to load user profile');
+   }
+
+   return mapSupabaseRowToUser(profile);
+};
+
+const fetchUserProfileByUsername = async (username: string): Promise<User> => {
+   const supabase = supabaseClient();
+   const { data: profile, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .maybeSingle();
+
+   if (error || !profile) {
+      throw error ?? new Error('User profile not found');
+   }
+
+   return mapSupabaseRowToUser(profile);
+};
+
+const fetchEmailByUsername = async (username: string): Promise<string> => {
+   const supabase = supabaseClient();
+   const { data, error } = await supabase
+      .from('users')
+      .select('email')
+      .eq('username', username)
+      .maybeSingle();
+
+   if (error || !data) {
+      throw error ?? new Error('Email not found for username');
+   }
+
+   return data.email;
+};
+
+const signInWithGoogleCredential = async (credential: string): Promise<User> => {
+   const supabase = supabaseClient();
+   const { error } = await supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token: credential
+   });
+
+   if (error) {
+      throw error;
+   }
+
+   return await fetchCurrentUserProfile();
+};
 
 const defaultUser: User = {
    id: '',
@@ -16,6 +115,7 @@ const defaultUser: User = {
    telegramUsername: undefined,
    telegramId: undefined,
    chatId: undefined,
+   nullifierHash: undefined,
    mal: 0,
    nal: 0,
    cs: 0,
@@ -31,84 +131,136 @@ const initialState: AuthState = {
 };
 
 export const loginUser = createAsyncThunk('auth/login', async ({ username, password }: { username: string; password: string }) => {
-   await apiHandler.post(API_ENDPOINTS.AUTH.LOGIN, { username, password });
-   const userData = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
+   const email = await fetchEmailByUsername(username);
+   const supabase = supabaseClient();
+   const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+   });
 
+   if (error) {
+      throw error;
+   }
+
+   const user = await fetchCurrentUserProfile();
    return {
-      username,
-      user: userData
+      username: user.username,
+      user
    };
 });
 
 export const loginWithGoogle = createAsyncThunk('auth/loginWithGoogle', async ({ googleCredential }: { googleCredential: string }) => {
-   await apiHandler.post(API_ENDPOINTS.AUTH.LOGIN, { googleCredential });
-   const userData = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
-
+   const user = await signInWithGoogleCredential(googleCredential);
    return {
-      username: userData.username,
-      user: userData
+      username: user.username,
+      user
    };
 });
 
-export const loginWithTelegram = createAsyncThunk('auth/loginWithTelegram', async ({ telegramAuthData }: { telegramAuthData: string }) => {
-   await apiHandler.post(API_ENDPOINTS.AUTH.LOGIN, { telegramAuthData });
-   const userData = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
-
-   return {
-      username: userData.username,
-      user: userData
-   };
+export const loginWithTelegram = createAsyncThunk('auth/loginWithTelegram', async () => {
+   throw new Error('Telegram authentication is not yet supported with Supabase.');
 });
 
 export const registerUser = createAsyncThunk(
    'auth/register',
    async (userData: { username: string; isWorldId: string; password: string; email: string }) => {
-      await apiHandler.post(API_ENDPOINTS.AUTH.REGISTER, userData);
-      const userResponse = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
+      const supabase = supabaseClient();
+      const { error } = await supabase.auth.signUp({
+         email: userData.email,
+         password: userData.password,
+         options: {
+            data: {
+               username: userData.username,
+               is_world_id: userData.isWorldId
+            }
+         }
+      });
+
+      if (error) {
+         throw error;
+      }
+
+      const user = await fetchCurrentUserProfile();
       return {
-         username: userData.username,
-         user: userResponse
+         username: user.username,
+         user
       };
    }
 );
 
-export const registerWithGoogle = createAsyncThunk(
-   'auth/registerWithGoogle',
-   async ({ googleCredential }: { googleCredential: string }) => {
-      await apiHandler.post(API_ENDPOINTS.AUTH.REGISTER, { googleCredential });
-      const userResponse = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
-      return {
-         username: userResponse.username,
-         user: userResponse
-      };
-   }
-);
-
-export const registerWithTelegram = createAsyncThunk(
-   'auth/registerWithTelegram',
-   async ({ telegramAuthData }: { telegramAuthData: string }) => {
-      await apiHandler.post(API_ENDPOINTS.AUTH.REGISTER, { telegramAuthData });
-      const userResponse = await apiHandler.get(API_ENDPOINTS.AUTH.ME);
-      return {
-         username: userResponse.username,
-         user: userResponse
-      };
-   }
-);
-
-export const fetchUser = createAsyncThunk('auth/fetchUser', async () => {
-   return await apiHandler.get(API_ENDPOINTS.AUTH.ME);
+export const registerWithGoogle = createAsyncThunk('auth/registerWithGoogle', async ({ googleCredential }: { googleCredential: string }) => {
+   const user = await signInWithGoogleCredential(googleCredential);
+   return {
+      username: user.username,
+      user
+   };
 });
 
-export const updateUser = createAsyncThunk(
-   'auth/updateUser',
-   async (userData: { username?: string; password?: string; email?: string; telegramUsername?: string; walletAddress?: string }) => {
-      return await apiHandler.post(API_ENDPOINTS.AUTH.UPDATE, userData);
+export const registerWithTelegram = createAsyncThunk('auth/registerWithTelegram', async () => {
+   throw new Error('Telegram authentication is not yet supported with Supabase.');
+});
+
+export const fetchUser = createAsyncThunk('auth/fetchUser', async () => fetchCurrentUserProfile());
+
+export const getUserProfile = createAsyncThunk('auth/getUserProfile', async (username: string) => {
+   const user = await fetchUserProfileByUsername(username);
+   return { user };
+});
+
+export const updateUser = createAsyncThunk('auth/updateUser', async (userData: UpdateUserPayload) => {
+   const supabase = supabaseClient();
+   const {
+      data: { user },
+      error: sessionError
+   } = await supabase.auth.getUser();
+
+   if (sessionError || !user) {
+      throw sessionError ?? new Error('No authenticated user to update');
    }
-);
+
+   if (userData.email || userData.password) {
+      const { error } = await supabase.auth.updateUser({
+         email: userData.email ?? undefined,
+         password: userData.password ?? undefined
+      });
+
+      if (error) {
+         throw error;
+      }
+   }
+
+   const updates: Database['public']['Tables']['users']['Update'] = {};
+   if (userData.username) updates.username = userData.username;
+   if (userData.email) updates.email = userData.email;
+   if (userData.walletAddress) updates.wallet_address = userData.walletAddress;
+   if (userData.telegramUsername !== undefined) updates.telegram_username = userData.telegramUsername;
+
+   if (Object.keys(updates).length === 0) {
+      return await fetchCurrentUserProfile();
+   }
+
+   const { data: updatedRow, error: updateError } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', user.id)
+      .select('*')
+      .single();
+
+   if (updateError || !updatedRow) {
+      throw updateError ?? new Error('Failed to update user profile');
+   }
+
+   return mapSupabaseRowToUser(updatedRow);
+});
 
 export const logoutUser = createAsyncThunk('auth/logout', async () => {
-   await apiHandler.post(API_ENDPOINTS.AUTH.LOGOUT);
+   const supabase = supabaseClient();
+   const { error } = await supabase.auth.signOut();
+
+   if (error) {
+      throw error;
+   }
+
    clearAuthCookieClient();
    return null;
 });
@@ -120,14 +272,13 @@ const authSlice = createSlice({
       clearError: (state) => {
          state.error = null;
       },
-      setUsername: (state, action: PayloadAction<string>) => {
+      setUsername: (state, action) => {
          state.username = action.payload;
       },
       clearAuth: (state) => {
          state.user = defaultUser;
          state.username = null;
          state.error = null;
-         clearAuthCookieClient();
       }
    },
    extraReducers: (builder) => {
@@ -143,7 +294,7 @@ const authSlice = createSlice({
          })
          .addCase(loginUser.rejected, (state, action) => {
             state.isLoading = false;
-            state.error = action.payload as string;
+            state.error = (action.error.message as string) || null;
          })
          .addCase(loginWithGoogle.pending, (state) => {
             state.isLoading = true;
@@ -156,20 +307,18 @@ const authSlice = createSlice({
          })
          .addCase(loginWithGoogle.rejected, (state, action) => {
             state.isLoading = false;
-            state.error = action.payload as string;
+            state.error = (action.error.message as string) || null;
          })
          .addCase(loginWithTelegram.pending, (state) => {
             state.isLoading = true;
             state.error = null;
          })
-         .addCase(loginWithTelegram.fulfilled, (state, action) => {
+         .addCase(loginWithTelegram.fulfilled, (state) => {
             state.isLoading = false;
-            state.username = action.payload.username;
-            state.user = action.payload.user;
          })
          .addCase(loginWithTelegram.rejected, (state, action) => {
             state.isLoading = false;
-            state.error = action.payload as string;
+            state.error = (action.error.message as string) || null;
          })
          .addCase(registerUser.pending, (state) => {
             state.isLoading = true;
@@ -182,7 +331,7 @@ const authSlice = createSlice({
          })
          .addCase(registerUser.rejected, (state, action) => {
             state.isLoading = false;
-            state.error = action.payload as string;
+            state.error = (action.error.message as string) || null;
          })
          .addCase(registerWithGoogle.pending, (state) => {
             state.isLoading = true;
@@ -195,23 +344,19 @@ const authSlice = createSlice({
          })
          .addCase(registerWithGoogle.rejected, (state, action) => {
             state.isLoading = false;
-            state.error = action.payload as string;
+            state.error = (action.error.message as string) || null;
          })
          .addCase(registerWithTelegram.pending, (state) => {
             state.isLoading = true;
             state.error = null;
          })
-         .addCase(registerWithTelegram.fulfilled, (state, action) => {
-            state.isLoading = false;
-            state.username = action.payload.username;
-            state.user = action.payload.user;
-         })
          .addCase(registerWithTelegram.rejected, (state, action) => {
             state.isLoading = false;
-            state.error = action.payload as string;
+            state.error = (action.error.message as string) || null;
          })
          .addCase(fetchUser.pending, (state) => {
             state.isLoading = true;
+            state.error = null;
          })
          .addCase(fetchUser.fulfilled, (state, action) => {
             state.isLoading = false;
@@ -220,13 +365,14 @@ const authSlice = createSlice({
          })
          .addCase(fetchUser.rejected, (state, action) => {
             state.isLoading = false;
-            state.error = action.payload as string;
+            state.error = (action.error.message as string) || null;
          })
          .addCase(updateUser.fulfilled, (state, action) => {
-            state.user = action.payload.user || action.payload;
-            if (action.payload.user?.username || action.payload.username) {
-               state.username = action.payload.user?.username || action.payload.username;
-            }
+            state.user = action.payload;
+            state.username = action.payload.username;
+         })
+         .addCase(updateUser.rejected, (state, action) => {
+            state.error = (action.error.message as string) || null;
          })
          .addCase(logoutUser.fulfilled, (state) => {
             state.user = defaultUser;
@@ -237,16 +383,9 @@ const authSlice = createSlice({
 });
 
 export const { clearError, setUsername, clearAuth } = authSlice.actions;
-
-export const getUserProfile = createAsyncThunk('auth/getUserProfile', async (username: string) => {
-   return await apiHandler.post(API_ENDPOINTS.AUTH.PROFILE, { username });
-});
-
 export const me = fetchUser;
 export const login = loginUser;
 export const register = registerUser;
 export const logout = logoutUser;
 export const profile = getUserProfile;
-export const clear = clearAuth;
-
 export default authSlice.reducer;
