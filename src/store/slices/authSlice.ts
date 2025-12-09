@@ -110,15 +110,15 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
       .from('users')
       .select('*')
       .eq('id', user.id)
-      .single();
-
-   if (profileError?.code === 'PGRST116' || !profile) {
-      const ensuredProfile = await ensureUserProfileRow(supabase, user);
-      return mapSupabaseRowToUser(ensuredProfile);
-   }
+      .maybeSingle();
 
    if (profileError) {
       throw profileError;
+   }
+
+   if (!profile) {
+      const ensuredProfile = await ensureUserProfileRow(supabase, user);
+      return mapSupabaseRowToUser(ensuredProfile);
    }
 
    return mapSupabaseRowToUser(profile);
