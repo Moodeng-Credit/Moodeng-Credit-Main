@@ -10,9 +10,9 @@ import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAccount } from 'wagmi';
 
+import FilterPills, { type AmountSort, type DateSort } from '@/components/filters/FilterPills';
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import SearchBar from '@/components/filters/SearchBar';
-import SortButtons from '@/components/filters/SortButtons';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import YouTubeVideoLightbox from '@/components/ui/YouTubeVideoLightbox';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
@@ -61,6 +61,19 @@ export default function Dashboard() {
    const [days, setDays] = useState('');
    const [customAmount, setCustomAmount] = useState('');
    const [searchLoan, setSearchLoan] = useState('');
+   const [amountSort, setAmountSort] = useState<AmountSort>('lowest');
+   const [dateSort, setDateSort] = useState<DateSort>('newest');
+   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+   // Available tags for filtering (can be extended based on loan data)
+   const availableTags = useMemo(() => {
+      const tags = new Set<string>();
+      floanRequests.forEach((loan) => {
+         if (loan.block) tags.add(loan.block);
+         if (loan.coin) tags.add(loan.coin);
+      });
+      return Array.from(tags);
+   }, [floanRequests]);
 
    const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
    const successModalRef = useClickOutside<HTMLDivElement>(() => setShowPurple(false), showPurple) as RefObject<HTMLDivElement>;
@@ -269,10 +282,27 @@ export default function Dashboard() {
       const allFilters: LoanFilters = {
          ...filters,
          search: searchLoan,
-         sortBy: filters.sortBy
+         sortBy: amountSort // Use amount sort as primary sort
       };
-      return filterLoans(floanRequests, allFilters, customAmount);
-   }, [filters, searchLoan, floanRequests, customAmount]);
+      let result = filterLoans(floanRequests, allFilters, customAmount);
+
+      // Apply tag filtering
+      if (selectedTags.length > 0) {
+         result = result.filter((loan) =>
+            selectedTags.some((tag) => loan.block === tag || loan.coin === tag)
+         );
+      }
+
+      // Apply secondary date sort if different from amount sort preference
+      // The filterLoans already handles the primary sort, but we want to ensure date sort is applied
+      if (dateSort === 'newest') {
+         result = [...result].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      } else if (dateSort === 'oldest') {
+         result = [...result].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      }
+
+      return result;
+   }, [filters, searchLoan, floanRequests, customAmount, amountSort, dateSort, selectedTags]);
 
    useEffect(() => {
       setSortedLoans(filteredLoans);
@@ -337,11 +367,16 @@ export default function Dashboard() {
                      customAmount={customAmount}
                      onCustomAmountChange={setCustomAmount}
                   />
-                  <section className="flex-1 flex flex-col items-center mt-10 md:mt-0">
-                     <div className="flex flex-wrap justify-start md:justify-end gap-3 mb-6 w-full max-w-xl">
-                        <SortButtons
-                           activeSort={filters.sortBy || ''}
-                           onSortChange={(sort) => handleFiltersChange({ sortBy: sort || undefined })}
+                  <section className="flex-1 flex flex-col items-start mt-10 md:mt-0">
+                     <div className="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-6 w-full">
+                        <FilterPills
+                           amountSort={amountSort}
+                           dateSort={dateSort}
+                           selectedTags={selectedTags}
+                           availableTags={availableTags}
+                           onAmountSortChange={setAmountSort}
+                           onDateSortChange={setDateSort}
+                           onTagsChange={setSelectedTags}
                         />
                         <SearchBar value={searchLoan} onChange={setSearchLoan} placeholder="Search Request..." />
                      </div>
