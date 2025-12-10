@@ -26,7 +26,13 @@
       "type-check": "tsc --noEmit",
       "check-all": "npm run type-check && npm run lint:fix && npm run lint",
       "format": "npm run prettier",
-      "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,scss}\""
+      "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,scss}\"",
+      "biome:format": "biome format",
+      "biome:format:write": "biome format --write",
+      "biome:lint": "biome lint",
+      "biome:lint:write": "biome lint --write",
+      "biome:check": "biome check",
+      "biome:check:write": "biome check --write"
    },
    "dependencies": {
       "@fortawesome/fontawesome-free": "^7.1.0",
@@ -71,6 +77,7 @@
       "zustand": "^5.0.9"
    },
    "devDependencies": {
+      "@biomejs/biome": "2.2.4",
       "@eslint/eslintrc": "^3.3.3",
       "@next/eslint-plugin-next": "^15.5.5",
       "@tanstack/eslint-plugin-query": "^5.91.2",

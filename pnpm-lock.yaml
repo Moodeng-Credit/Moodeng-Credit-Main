@@ -129,6 +129,9 @@ importers:
         specifier: ^5.0.9
         version: 5.0.9(@types/react@19.2.7)(immer@11.0.1)(react@19.2.0)(use-sync-external-store@1.4.0(react@19.2.0))
     devDependencies:
+      '@biomejs/biome':
+        specifier: 2.2.4
+        version: 2.2.4
       '@eslint/eslintrc':
         specifier: ^3.3.3
         version: 3.3.3
@@ -262,9 +265,6 @@ importers:
         specifier: ^4.1.11
         version: 4.1.13
     devDependencies:
-      '@biomejs/biome':
-        specifier: 2.2.4
-        version: 2.2.4
       '@tanstack/devtools-vite':
         specifier: ^0.3.11
         version: 0.3.12(bufferutil@4.0.9)(utf-8-validate@5.0.10)(vite@7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2)(sass@1.95.1)(tsx@4.21.0))

@@ -6,17 +6,7 @@
     "useIgnoreFile": false
   },
   "files": {
-    "ignoreUnknown": false,
-    "includes": [
-      "**/*.ts",
-      "**/*.tsx",
-      "**/*.js",
-      "**/*.jsx",
-      "**/*.css",
-      "**/*.html",
-      "**/*.json",
-      "!**/src/routeTree.gen.ts"
-    ]
+    "includes": ["apps/**"]
   },
   "formatter": {
     "enabled": true,
@@ -26,14 +16,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
-      "suspicious": {
-        "noUnknownAtRules": "off",
-        "noArrayIndexKey": "off"
-      },
-      "a11y": {
-        "useButtonType": "off"
-      }
+      "recommended": true
     }
   },
   "javascript": {
