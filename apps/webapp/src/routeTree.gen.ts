@@ -11,8 +11,19 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
+import { Route as mainLayoutRouteImport } from './routes/(main)/_layout'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
+import { Route as mainLayoutWhylendRouteImport } from './routes/(main)/_layout/whylend'
+import { Route as mainLayoutResetPasswordRouteImport } from './routes/(main)/_layout/reset-password'
+import { Route as mainLayoutProfileRouteImport } from './routes/(main)/_layout/profile'
+import { Route as mainLayoutLoginRouteImport } from './routes/(main)/_layout/login'
+import { Route as mainLayoutGuideRouteImport } from './routes/(main)/_layout/guide'
+import { Route as mainLayoutForgotPasswordRouteImport } from './routes/(main)/_layout/forgot-password'
+import { Route as mainLayoutFaqRouteImport } from './routes/(main)/_layout/faq'
+import { Route as mainLayoutDashboardRouteImport } from './routes/(main)/_layout/dashboard'
+import { Route as mainLayoutBenefitsRouteImport } from './routes/(main)/_layout/benefits'
+import { Route as mainLayoutUsersUsernameRouteImport } from './routes/(main)/_layout/users.$username'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,6 +33,10 @@ const IndexRoute = IndexRouteImport.update({
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   id: '/demo/tanstack-query',
   path: '/demo/tanstack-query',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const mainLayoutRoute = mainLayoutRouteImport.update({
+  id: '/(main)/_layout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoFormSimpleRoute = DemoFormSimpleRouteImport.update({
@@ -34,45 +49,163 @@ const DemoFormAddressRoute = DemoFormAddressRouteImport.update({
   path: '/demo/form/address',
   getParentRoute: () => rootRouteImport,
 } as any)
+const mainLayoutWhylendRoute = mainLayoutWhylendRouteImport.update({
+  id: '/whylend',
+  path: '/whylend',
+  getParentRoute: () => mainLayoutRoute,
+} as any)
+const mainLayoutResetPasswordRoute = mainLayoutResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => mainLayoutRoute,
+} as any)
+const mainLayoutProfileRoute = mainLayoutProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => mainLayoutRoute,
+} as any)
+const mainLayoutLoginRoute = mainLayoutLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => mainLayoutRoute,
+} as any)
+const mainLayoutGuideRoute = mainLayoutGuideRouteImport.update({
+  id: '/guide',
+  path: '/guide',
+  getParentRoute: () => mainLayoutRoute,
+} as any)
+const mainLayoutForgotPasswordRoute =
+  mainLayoutForgotPasswordRouteImport.update({
+    id: '/forgot-password',
+    path: '/forgot-password',
+    getParentRoute: () => mainLayoutRoute,
+  } as any)
+const mainLayoutFaqRoute = mainLayoutFaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => mainLayoutRoute,
+} as any)
+const mainLayoutDashboardRoute = mainLayoutDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => mainLayoutRoute,
+} as any)
+const mainLayoutBenefitsRoute = mainLayoutBenefitsRouteImport.update({
+  id: '/benefits',
+  path: '/benefits',
+  getParentRoute: () => mainLayoutRoute,
+} as any)
+const mainLayoutUsersUsernameRoute = mainLayoutUsersUsernameRouteImport.update({
+  id: '/users/$username',
+  path: '/users/$username',
+  getParentRoute: () => mainLayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/benefits': typeof mainLayoutBenefitsRoute
+  '/dashboard': typeof mainLayoutDashboardRoute
+  '/faq': typeof mainLayoutFaqRoute
+  '/forgot-password': typeof mainLayoutForgotPasswordRoute
+  '/guide': typeof mainLayoutGuideRoute
+  '/login': typeof mainLayoutLoginRoute
+  '/profile': typeof mainLayoutProfileRoute
+  '/reset-password': typeof mainLayoutResetPasswordRoute
+  '/whylend': typeof mainLayoutWhylendRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/users/$username': typeof mainLayoutUsersUsernameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/benefits': typeof mainLayoutBenefitsRoute
+  '/dashboard': typeof mainLayoutDashboardRoute
+  '/faq': typeof mainLayoutFaqRoute
+  '/forgot-password': typeof mainLayoutForgotPasswordRoute
+  '/guide': typeof mainLayoutGuideRoute
+  '/login': typeof mainLayoutLoginRoute
+  '/profile': typeof mainLayoutProfileRoute
+  '/reset-password': typeof mainLayoutResetPasswordRoute
+  '/whylend': typeof mainLayoutWhylendRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/users/$username': typeof mainLayoutUsersUsernameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/(main)/_layout': typeof mainLayoutRouteWithChildren
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/(main)/_layout/benefits': typeof mainLayoutBenefitsRoute
+  '/(main)/_layout/dashboard': typeof mainLayoutDashboardRoute
+  '/(main)/_layout/faq': typeof mainLayoutFaqRoute
+  '/(main)/_layout/forgot-password': typeof mainLayoutForgotPasswordRoute
+  '/(main)/_layout/guide': typeof mainLayoutGuideRoute
+  '/(main)/_layout/login': typeof mainLayoutLoginRoute
+  '/(main)/_layout/profile': typeof mainLayoutProfileRoute
+  '/(main)/_layout/reset-password': typeof mainLayoutResetPasswordRoute
+  '/(main)/_layout/whylend': typeof mainLayoutWhylendRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/(main)/_layout/users/$username': typeof mainLayoutUsersUsernameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/demo/tanstack-query'
+    | '/benefits'
+    | '/dashboard'
+    | '/faq'
+    | '/forgot-password'
+    | '/guide'
+    | '/login'
+    | '/profile'
+    | '/reset-password'
+    | '/whylend'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/users/$username'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/demo/tanstack-query' | '/demo/form/address' | '/demo/form/simple'
+  to:
+    | '/'
+    | '/demo/tanstack-query'
+    | '/benefits'
+    | '/dashboard'
+    | '/faq'
+    | '/forgot-password'
+    | '/guide'
+    | '/login'
+    | '/profile'
+    | '/reset-password'
+    | '/whylend'
+    | '/demo/form/address'
+    | '/demo/form/simple'
+    | '/users/$username'
   id:
     | '__root__'
     | '/'
+    | '/(main)/_layout'
     | '/demo/tanstack-query'
+    | '/(main)/_layout/benefits'
+    | '/(main)/_layout/dashboard'
+    | '/(main)/_layout/faq'
+    | '/(main)/_layout/forgot-password'
+    | '/(main)/_layout/guide'
+    | '/(main)/_layout/login'
+    | '/(main)/_layout/profile'
+    | '/(main)/_layout/reset-password'
+    | '/(main)/_layout/whylend'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/(main)/_layout/users/$username'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  mainLayoutRoute: typeof mainLayoutRouteWithChildren
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   DemoFormAddressRoute: typeof DemoFormAddressRoute
   DemoFormSimpleRoute: typeof DemoFormSimpleRoute
@@ -94,6 +227,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoTanstackQueryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(main)/_layout': {
+      id: '/(main)/_layout'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof mainLayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/form/simple': {
       id: '/demo/form/simple'
       path: '/demo/form/simple'
@@ -108,11 +248,112 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoFormAddressRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(main)/_layout/whylend': {
+      id: '/(main)/_layout/whylend'
+      path: '/whylend'
+      fullPath: '/whylend'
+      preLoaderRoute: typeof mainLayoutWhylendRouteImport
+      parentRoute: typeof mainLayoutRoute
+    }
+    '/(main)/_layout/reset-password': {
+      id: '/(main)/_layout/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof mainLayoutResetPasswordRouteImport
+      parentRoute: typeof mainLayoutRoute
+    }
+    '/(main)/_layout/profile': {
+      id: '/(main)/_layout/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof mainLayoutProfileRouteImport
+      parentRoute: typeof mainLayoutRoute
+    }
+    '/(main)/_layout/login': {
+      id: '/(main)/_layout/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof mainLayoutLoginRouteImport
+      parentRoute: typeof mainLayoutRoute
+    }
+    '/(main)/_layout/guide': {
+      id: '/(main)/_layout/guide'
+      path: '/guide'
+      fullPath: '/guide'
+      preLoaderRoute: typeof mainLayoutGuideRouteImport
+      parentRoute: typeof mainLayoutRoute
+    }
+    '/(main)/_layout/forgot-password': {
+      id: '/(main)/_layout/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof mainLayoutForgotPasswordRouteImport
+      parentRoute: typeof mainLayoutRoute
+    }
+    '/(main)/_layout/faq': {
+      id: '/(main)/_layout/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof mainLayoutFaqRouteImport
+      parentRoute: typeof mainLayoutRoute
+    }
+    '/(main)/_layout/dashboard': {
+      id: '/(main)/_layout/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof mainLayoutDashboardRouteImport
+      parentRoute: typeof mainLayoutRoute
+    }
+    '/(main)/_layout/benefits': {
+      id: '/(main)/_layout/benefits'
+      path: '/benefits'
+      fullPath: '/benefits'
+      preLoaderRoute: typeof mainLayoutBenefitsRouteImport
+      parentRoute: typeof mainLayoutRoute
+    }
+    '/(main)/_layout/users/$username': {
+      id: '/(main)/_layout/users/$username'
+      path: '/users/$username'
+      fullPath: '/users/$username'
+      preLoaderRoute: typeof mainLayoutUsersUsernameRouteImport
+      parentRoute: typeof mainLayoutRoute
+    }
   }
 }
 
+interface mainLayoutRouteChildren {
+  mainLayoutBenefitsRoute: typeof mainLayoutBenefitsRoute
+  mainLayoutDashboardRoute: typeof mainLayoutDashboardRoute
+  mainLayoutFaqRoute: typeof mainLayoutFaqRoute
+  mainLayoutForgotPasswordRoute: typeof mainLayoutForgotPasswordRoute
+  mainLayoutGuideRoute: typeof mainLayoutGuideRoute
+  mainLayoutLoginRoute: typeof mainLayoutLoginRoute
+  mainLayoutProfileRoute: typeof mainLayoutProfileRoute
+  mainLayoutResetPasswordRoute: typeof mainLayoutResetPasswordRoute
+  mainLayoutWhylendRoute: typeof mainLayoutWhylendRoute
+  mainLayoutUsersUsernameRoute: typeof mainLayoutUsersUsernameRoute
+}
+
+const mainLayoutRouteChildren: mainLayoutRouteChildren = {
+  mainLayoutBenefitsRoute: mainLayoutBenefitsRoute,
+  mainLayoutDashboardRoute: mainLayoutDashboardRoute,
+  mainLayoutFaqRoute: mainLayoutFaqRoute,
+  mainLayoutForgotPasswordRoute: mainLayoutForgotPasswordRoute,
+  mainLayoutGuideRoute: mainLayoutGuideRoute,
+  mainLayoutLoginRoute: mainLayoutLoginRoute,
+  mainLayoutProfileRoute: mainLayoutProfileRoute,
+  mainLayoutResetPasswordRoute: mainLayoutResetPasswordRoute,
+  mainLayoutWhylendRoute: mainLayoutWhylendRoute,
+  mainLayoutUsersUsernameRoute: mainLayoutUsersUsernameRoute,
+}
+
+const mainLayoutRouteWithChildren = mainLayoutRoute._addFileChildren(
+  mainLayoutRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  mainLayoutRoute: mainLayoutRouteWithChildren,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   DemoFormAddressRoute: DemoFormAddressRoute,
   DemoFormSimpleRoute: DemoFormSimpleRoute,
