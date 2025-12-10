@@ -12,7 +12,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import useWallet from '@/hooks/useWallet';
 
-import { calculateDaysRemaining, calculateDueDate, parseDateSafely } from '@/utils/dateFormatters';
+import { calculateDaysRemaining, calculateDueDate, calculateHoursRemaining, parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
 import { MONTHS } from '@/constants/dates';
@@ -44,6 +44,7 @@ export default function UserCard(loan: Loan) {
 
    const time = parseDateSafely(loanData.createdAt).toISOString();
    const differenceInDays = calculateDaysRemaining(loanData.dueDate);
+   const differenceInHours = calculateHoursRemaining(loanData.dueDate);
    const splt = time.split('T')[0].split('-');
    const formattedDate = calculateDueDate(loanData.dueDate);
 
@@ -208,7 +209,9 @@ export default function UserCard(loan: Loan) {
                   <div className="pl-8">
                      <p className="text-[13px] font-normal text-[#6B6B7B]">Due Date</p>
                      <p className="text-[20px] font-semibold text-[#D92D2D] mt-1">
-                        {differenceInDays > 0 ? differenceInDays : '0'} {differenceInDays > 1 ? 'Days' : 'Day'} Left
+                        {differenceInDays > 0
+                           ? `${differenceInDays} ${differenceInDays > 1 ? 'Days' : 'Day'} Left`
+                           : `${differenceInHours > 0 ? differenceInHours : '0'} ${differenceInHours > 1 ? 'Hours' : 'Hour'} Left`}
                      </p>
                      <p className="text-[11px] font-normal text-[#0B1033] mt-0.5">on {formattedDate}</p>
                   </div>

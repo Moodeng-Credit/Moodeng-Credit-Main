@@ -492,7 +492,7 @@ const UserProfile = () => {
                      <span className="text-gray-400">Typical loan term:</span>
                      <div className="flex items-center gap-2">
                         <span className="text-white">
-                           {loans.length > 0 
+                           {loans.length > 0
                               ? Math.round(
                                  loans.reduce((sum, loan) => {
                                     const dueDate = new Date(loan.dueDate);

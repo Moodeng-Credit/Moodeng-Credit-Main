@@ -10,7 +10,7 @@ import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import Modal from '@/components/ui/Modal';
 import UserPay from '@/components/UserPay';
 
-import { calculateDaysRemaining, calculateDueDate, formatDate } from '@/utils/dateFormatters';
+import { calculateDaysRemaining, calculateDueDate, calculateHoursRemaining, formatDate } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { getLoanBadgeStyles } from '@/utils/loanStatusFormatters';
 
@@ -26,6 +26,7 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
    const router = useRouter();
 
    const differenceInDays = calculateDaysRemaining(loan.dueDate);
+   const differenceInHours = calculateHoursRemaining(loan.dueDate);
    const dueDate = calculateDueDate(loan.dueDate);
    const postedDate = formatDate(loan.createdAt);
    const badgeStyles = getLoanBadgeStyles(loan.loanStatus, loan.repaymentStatus, differenceInDays);
@@ -70,7 +71,9 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
             Due on <strong>{dueDate}</strong> (
             {loan.repaymentStatus === 'Paid'
                ? 'Fully Repaid'
-               : (differenceInDays > 0 ? differenceInDays : '0') + (differenceInDays > 1 ? ' Days Left' : ' Day Left')}
+               : differenceInDays > 0
+                 ? `${differenceInDays} ${differenceInDays > 1 ? 'Days' : 'Day'} Left`
+                 : `${differenceInHours > 0 ? differenceInHours : '0'} ${differenceInHours > 1 ? 'Hours' : 'Hour'} Left`}
             )
          </div>
          <div className="p-5 pt-4">

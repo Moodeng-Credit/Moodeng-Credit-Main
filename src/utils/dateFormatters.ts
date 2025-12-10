@@ -12,12 +12,12 @@ export const parseDateSafely = (dateValue: string | Date): Date => {
 
    // ISO string or timestamp - new Date() handles timezone correctly
    const date = new Date(dateValue);
-   
+
    if (isNaN(date.getTime())) {
       console.warn('Invalid date:', dateValue);
       return new Date();
    }
-   
+
    return date;
 };
 
@@ -49,43 +49,63 @@ export const getMemberSinceText = (createdAt: string | Date): string => {
 };
 
 /**
+ * Calculate exact hours remaining from due date
+ * Works with UTC timestamps from Supabase TIMESTAMPTZ
+ */
+export const calculateHoursRemaining = (dueDate: string | Date): number => {
+   const dueUTC = parseDateSafely(dueDate);
+   const now = new Date();
+   const timeDifference = dueUTC.getTime() - now.getTime();
+   return Math.round(timeDifference / (1000 * 60 * 60));
+};
+
+/**
  * Calculate days remaining from due date
  * Works with UTC timestamps from Supabase TIMESTAMPTZ
  */
 export const calculateDaysRemaining = (dueDate: string | Date): number => {
    const dueUTC = parseDateSafely(dueDate);
-   
+
    // Get today's date in UTC at midnight
    const todayUTC = new Date();
    const year = todayUTC.getUTCFullYear();
    const month = todayUTC.getUTCMonth();
    const day = todayUTC.getUTCDate();
    const today = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
-   
+
    // Get due date at midnight UTC
    const dueYear = dueUTC.getUTCFullYear();
    const dueMonth = dueUTC.getUTCMonth();
    const dueDay = dueUTC.getUTCDate();
    const dueAtMidnight = new Date(Date.UTC(dueYear, dueMonth, dueDay, 0, 0, 0, 0));
-   
+
    const timeDifference = dueAtMidnight.getTime() - today.getTime();
    return Math.round(timeDifference / (1000 * 60 * 60 * 24));
 };
 
 /**
- * Get formatted due date from due date string
+ * Get formatted due date with time and timezone from due date string
+ * Example: "December 21, 2025 at 05:30 PM UTC+00:00"
  * Works with UTC timestamps from Supabase TIMESTAMPTZ
  */
 export const calculateDueDate = (dueDate: string | Date): string => {
    const dueUTC = parseDateSafely(dueDate);
-   
-   // Extract UTC components
+
+   // Extract UTC components for date
    const year = dueUTC.getUTCFullYear();
    const month = dueUTC.getUTCMonth() + 1; // getUTCMonth() returns 0-11
    const day = dueUTC.getUTCDate();
-   
-   // Get month name
    const monthName = MONTHS[month];
-   
-   return `${monthName} ${day}, ${year}`;
+
+   // Extract time components
+   const hours = dueUTC.getUTCHours();
+   const minutes = dueUTC.getUTCMinutes();
+   const ampm = hours >= 12 ? 'PM' : 'AM';
+   const displayHours = hours % 12 || 12;
+   const paddedMinutes = minutes.toString().padStart(2, '0');
+
+   // Get timezone offset (Supabase always uses UTC)
+   const timezone = 'UTC+00:00';
+
+   return `${monthName} ${day}, ${year} at ${displayHours}:${paddedMinutes} ${ampm} ${timezone}`;
 };

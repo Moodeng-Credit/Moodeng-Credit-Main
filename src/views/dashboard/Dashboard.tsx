@@ -213,7 +213,7 @@ export default function Dashboard() {
       // Convert the selected date to midnight UTC+00
       const date = new Date(selectedDate);
       const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0));
-      
+
       // Store as ISO string for the backend
       setDays(utcDate.toISOString());
    };

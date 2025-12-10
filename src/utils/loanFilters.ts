@@ -72,17 +72,17 @@ export const filterByDate = (loans: Loan[], date: Date | null): Loan[] => {
 
    return loans.filter((loan) => {
       const dueUTC = parseDateSafely(loan.dueDate);
-      
+
       // Get due date at midnight UTC
       const dueYear = dueUTC.getUTCFullYear();
       const dueMonth = dueUTC.getUTCMonth();
       const dueDay = dueUTC.getUTCDate();
       const dueAtMidnight = new Date(Date.UTC(dueYear, dueMonth, dueDay, 0, 0, 0, 0));
-      
+
       // Normalize filter date to midnight
       const filterDate = new Date(date);
       filterDate.setHours(0, 0, 0, 0);
-      
+
       return dueAtMidnight <= filterDate;
    });
 };
@@ -102,13 +102,13 @@ export const filterByTimePeriod = (loans: Loan[], loanTime: string): Loan[] => {
 
    return loans.filter((loan) => {
       const dueUTC = parseDateSafely(loan.dueDate);
-      
+
       // Get due date at midnight UTC
       const dueYear = dueUTC.getUTCFullYear();
       const dueMonth = dueUTC.getUTCMonth();
       const dueDay = dueUTC.getUTCDate();
       const dueAtMidnight = new Date(Date.UTC(dueYear, dueMonth, dueDay, 0, 0, 0, 0));
-      
+
       const daysRemaining = Math.round((dueAtMidnight.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
       if (loanTime === '7') return daysRemaining > 0 && daysRemaining <= 7;
