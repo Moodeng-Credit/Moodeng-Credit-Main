@@ -168,6 +168,6 @@ module.exports = [
       }
    },
    {
-      ignores: ['node_modules', '.next', '.git', '.vscode', 'dist', 'build', 'src/generated/**']
+      ignores: ['node_modules', '.next', '.git', '.vscode', 'dist', 'build', 'src/generated/**', './apps/**']
    }
 ];
