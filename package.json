@@ -1,7 +1,13 @@
 {
-   "name": "moodeng",
+   "name": "@repo/moodeng",
    "version": "1.0.0",
    "private": true,
+   "exports": {
+      ".": {
+         "import": "./src/export/index.ts",
+         "types": "./src/export/index.ts"
+      }
+   },
    "scripts": {
       "dev": "next dev",
       "dev:local": "NODE_ENV=development NEXT_SKIP_TYPESCRIPT_CHECK=true NODE_OPTIONS='--max-old-space-size=8192' NODE_TLS_REJECT_UNAUTHORIZED=0  next dev --experimental-https",
