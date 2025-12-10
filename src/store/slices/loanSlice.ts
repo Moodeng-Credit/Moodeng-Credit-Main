@@ -25,7 +25,7 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    reason: row.reason,
    loanStatus: row.loan_status,
    repaymentStatus: row.repayment_status,
-   days: row.days,
+   dueDate: row.due_date,
    block: row.block,
    coin: row.coin,
    hash: row.hash,
@@ -55,7 +55,7 @@ export const createLoan = createAsyncThunk('loans/create', async (loanData: Crea
       loan_amount: loanData.loanAmount,
       total_repayment_amount: loanData.totalRepaymentAmount,
       reason: loanData.reason,
-      days: 30, // Default value, adjust as needed
+      due_date: loanData.dueDate,
       block: 'ethereum', // Default value, adjust as needed
       coin: 'ETH' // Default value, adjust as needed
    };

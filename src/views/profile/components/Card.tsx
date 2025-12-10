@@ -25,8 +25,8 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
    const dispatch = useDispatch<AppDispatch>();
    const router = useRouter();
 
-   const differenceInDays = calculateDaysRemaining(loan.createdAt, loan.days);
-   const dueDate = calculateDueDate(loan.createdAt, loan.days);
+   const differenceInDays = calculateDaysRemaining(loan.dueDate);
+   const dueDate = calculateDueDate(loan.dueDate);
    const postedDate = formatDate(loan.createdAt);
    const badgeStyles = getLoanBadgeStyles(loan.loanStatus, loan.repaymentStatus, differenceInDays);
 

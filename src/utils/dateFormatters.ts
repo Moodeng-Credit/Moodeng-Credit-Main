@@ -2,7 +2,7 @@ import { MONTHS } from '@/constants/dates';
 
 /**
  * Safely parse a date that might be a Date object, ISO string, or timestamp
- * Prisma returns proper Date objects, so this is simplified
+ * Handles TIMESTAMPTZ from Supabase which includes timezone info (e.g., 2025-12-21T00:00:00+00:00)
  */
 export const parseDateSafely = (dateValue: string | Date): Date => {
    // Already a Date object
@@ -10,8 +10,15 @@ export const parseDateSafely = (dateValue: string | Date): Date => {
       return dateValue;
    }
 
-   // ISO string or timestamp
-   return new Date(dateValue);
+   // ISO string or timestamp - new Date() handles timezone correctly
+   const date = new Date(dateValue);
+   
+   if (isNaN(date.getTime())) {
+      console.warn('Invalid date:', dateValue);
+      return new Date();
+   }
+   
+   return date;
 };
 
 /**
@@ -42,27 +49,43 @@ export const getMemberSinceText = (createdAt: string | Date): string => {
 };
 
 /**
- * Calculate days remaining from a loan's created date and duration
+ * Calculate days remaining from due date
+ * Works with UTC timestamps from Supabase TIMESTAMPTZ
  */
-export const calculateDaysRemaining = (createdAt: string | Date, totalDays: number): number => {
-   const created = parseDateSafely(createdAt);
-   const today = new Date();
-   created.setHours(0, 0, 0, 0);
-   today.setHours(0, 0, 0, 0);
-   const timeDifference = today.getTime() - created.getTime();
-   return Math.round(totalDays - timeDifference / (1000 * 60 * 60 * 24));
+export const calculateDaysRemaining = (dueDate: string | Date): number => {
+   const dueUTC = parseDateSafely(dueDate);
+   
+   // Get today's date in UTC at midnight
+   const todayUTC = new Date();
+   const year = todayUTC.getUTCFullYear();
+   const month = todayUTC.getUTCMonth();
+   const day = todayUTC.getUTCDate();
+   const today = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+   
+   // Get due date at midnight UTC
+   const dueYear = dueUTC.getUTCFullYear();
+   const dueMonth = dueUTC.getUTCMonth();
+   const dueDay = dueUTC.getUTCDate();
+   const dueAtMidnight = new Date(Date.UTC(dueYear, dueMonth, dueDay, 0, 0, 0, 0));
+   
+   const timeDifference = dueAtMidnight.getTime() - today.getTime();
+   return Math.round(timeDifference / (1000 * 60 * 60 * 24));
 };
 
 /**
- * Get due date from created date and days duration
+ * Get formatted due date from due date string
+ * Works with UTC timestamps from Supabase TIMESTAMPTZ
  */
-export const calculateDueDate = (createdAt: string | Date, days: number): string => {
-   const created = parseDateSafely(createdAt);
-   const dueDate = new Date(created);
-   dueDate.setDate(created.getDate() + days);
-   return dueDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-   });
+export const calculateDueDate = (dueDate: string | Date): string => {
+   const dueUTC = parseDateSafely(dueDate);
+   
+   // Extract UTC components
+   const year = dueUTC.getUTCFullYear();
+   const month = dueUTC.getUTCMonth() + 1; // getUTCMonth() returns 0-11
+   const day = dueUTC.getUTCDate();
+   
+   // Get month name
+   const monthName = MONTHS[month];
+   
+   return `${monthName} ${day}, ${year}`;
 };

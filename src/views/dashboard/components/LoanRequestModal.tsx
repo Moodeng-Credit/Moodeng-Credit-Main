@@ -125,20 +125,21 @@ export default function LoanRequestModal({
                   value={totalRepaymentAmount}
                />
                <label className="font-semibold text-gray-800 text-sm">Repayment Date</label>
-               <div className="flex gap-3">
-                  <button className="bg-[#D6E1FF] text-[#1E56FF] font-semibold rounded-md px-5 py-2 text-sm select-none" type="button">
-                     {isVerified ? `${days} Days` : '5 Days'}
-                  </button>
-                  {isVerified ? (
-                     <input
-                        onChange={handleDays}
-                        placeholder="DD/MM/YY"
-                        type="date"
-                        min={today}
-                        id="repaymentDate"
-                        className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
-                     />
-                  ) : (
+               <div className="flex flex-col gap-2">
+                  <div className="flex gap-3">
+                     <button className="bg-[#D6E1FF] text-[#1E56FF] font-semibold rounded-md px-5 py-2 text-sm select-none" type="button">
+                        {isVerified && days ? `${Math.ceil((new Date(days).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} Days` : '5 Days'}
+                     </button>
+                     {isVerified ? (
+                        <input
+                           onChange={handleDays}
+                           placeholder="DD/MM/YY"
+                           type="date"
+                           min={today}
+                           id="repaymentDate"
+                           className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
+                        />
+                     ) : (
                      <>
                         <input
                            className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
@@ -154,6 +155,8 @@ export default function LoanRequestModal({
                         </button>
                      </>
                   )}
+                  </div>
+                  {isVerified && <p className="text-xs text-gray-500">Date will be set to midnight UTC+00</p>}
                </div>
                <label className="font-semibold text-gray-800 text-sm" htmlFor="reason">
                   Reason for Borrowing

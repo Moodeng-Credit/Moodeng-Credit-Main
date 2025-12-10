@@ -43,9 +43,9 @@ export default function UserCard(loan: Loan) {
    const [localTotalRepaid, setLocalTotalRepaid] = useState(0);
 
    const time = parseDateSafely(loanData.createdAt).toISOString();
-   const differenceInDays = calculateDaysRemaining(loanData.createdAt, loanData.days);
+   const differenceInDays = calculateDaysRemaining(loanData.dueDate);
    const splt = time.split('T')[0].split('-');
-   const formattedDate = calculateDueDate(loanData.createdAt, loanData.days);
+   const formattedDate = calculateDueDate(loanData.dueDate);
 
    useEffect(() => {
       let mounted = true;
