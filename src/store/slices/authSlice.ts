@@ -24,7 +24,7 @@ const toOptionalBigInt = (value: number | null): bigint | undefined => (
    value === null || value === undefined ? undefined : BigInt(value)
 );
 
-const normalizeWorldIdStatus = (value?: string | WorldId | null): WorldIdStatus => (
+const normalizeWorldIdStatus = (value?: string | WorldIdStatus | null): WorldIdStatus => (
    (value as WorldIdStatus) ?? WorldId.INACTIVE
 );
 
@@ -49,7 +49,7 @@ const deriveUsername = (authUser: SupabaseAuthUser, explicit?: string): string =
 const ensureUserProfileRow = async (
    supabase: SupabaseClientType,
    authUser: SupabaseAuthUser,
-   overrides?: { username?: string; email?: string; isWorldId?: string | WorldId }
+   overrides?: { username?: string; email?: string; isWorldId?: string | WorldIdStatus }
 ): Promise<UserRow> => {
    const email = overrides?.email ?? authUser.email;
 
@@ -400,9 +400,6 @@ const authSlice = createSlice({
          .addCase(loginWithTelegram.pending, (state) => {
             state.isLoading = true;
             state.error = null;
-         })
-         .addCase(loginWithTelegram.fulfilled, (state) => {
-            state.isLoading = false;
          })
          .addCase(loginWithTelegram.rejected, (state, action) => {
             state.isLoading = false;

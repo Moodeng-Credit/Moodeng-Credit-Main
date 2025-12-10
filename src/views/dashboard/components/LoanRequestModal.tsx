@@ -156,7 +156,7 @@ export default function LoanRequestModal({
                      </>
                   )}
                   </div>
-                  {isVerified && <p className="text-xs text-gray-500">Date will be set to midnight UTC+00</p>}
+                  {isVerified ? <p className="text-xs text-gray-500">Date will be set to midnight UTC+00</p> : null}
                </div>
                <label className="font-semibold text-gray-800 text-sm" htmlFor="reason">
                   Reason for Borrowing
