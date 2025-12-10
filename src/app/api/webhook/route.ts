@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 
 import axios from '@/lib/axios';
-import { prisma } from '@/lib/database';
+import { createSupabaseServerClient } from '@/lib/supabase';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { handleCors } from '@/lib/utils/cors';
 import { SUCCESS_CODES } from '@/types/successCodes';
@@ -18,14 +18,12 @@ export async function POST(request: NextRequest) {
          if (message && message.from) {
             const chatId = message.chat.id;
             const username = message.from.username;
+            const supabase = await createSupabaseServerClient();
 
-            const user = await prisma.user.findUnique({ where: { telegramUsername: username } });
+            const { data: user } = await supabase.from('users').select('id, chat_id').eq('telegram_username', username).single();
 
-            if (user && user.chatId !== BigInt(chatId)) {
-               await prisma.user.update({
-                  where: { id: user.id },
-                  data: { chatId: BigInt(chatId) }
-               });
+            if (user && user.chat_id !== chatId) {
+               await supabase.from('users').update({ chat_id: chatId }).eq('id', user.id);
 
                await axios.post(process.env.TELEGRAM_API_URL!, {
                   chat_id: chatId,

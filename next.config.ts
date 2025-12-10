@@ -1,8 +1,6 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-   // Prisma 7 adapter packages should be external
-   serverExternalPackages: ['@prisma/adapter-pg', 'pg'],
    allowedDevOrigins: ['127.0.0.1', 'localhost'],
    async headers() {
       return [
@@ -67,8 +65,7 @@ const nextConfig: NextConfig = {
          topLevelAwait: true
       };
 
-      // Fix Prisma 7 generated client .js imports resolving to .ts files
-      // The generated code imports './enums.js' but the file is 'enums.ts'
+      // Allow .js imports to resolve to .ts files
       config.resolve.extensionAlias = {
          '.js': ['.ts', '.tsx', '.js', '.jsx']
       };

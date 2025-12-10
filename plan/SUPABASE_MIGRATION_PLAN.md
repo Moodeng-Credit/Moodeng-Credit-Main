@@ -1,8 +1,22 @@
 # Supabase Migration Plan
 
+> **✅ Migration Plan Validated** - Updated to use publishable keys (`sb_publishable_...`) instead of legacy anon keys per Supabase latest best practices.
+
 ## 🎯 Migration Goal
 
 Replace the current **Prisma + PostgreSQL + Custom Auth** backend with **Supabase** while keeping **Next.js** as the frontend framework.
+
+---
+
+## 🔑 Key Configuration (UPDATED)
+
+| Key Type | Environment Variable | Usage |
+|----------|---------------------|-------|
+| **Publishable Key** | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Client-side (browser, SSR) - format: `sb_publishable_...` |
+| **Secret Key** | `SUPABASE_SECRET_KEY` | Server-side only - format: `sb_secret_...` |
+| **Project URL** | `NEXT_PUBLIC_SUPABASE_URL` | `https://your-project.supabase.co` |
+
+> ⚠️ **Note:** Legacy `anon` and `service_role` JWT keys still work but are being phased out. New projects should use publishable/secret keys for easier rotation and better security.
 
 ---
 
@@ -93,9 +107,10 @@ prisma.config.ts           # DELETE
 #### New Files to Create
 ```
 src/lib/supabase/
-├── client.ts              # Supabase browser client
-├── server.ts              # Supabase server client (for API routes)
-└── admin.ts               # Supabase admin client (service role)
+├── client.ts              # Supabase browser client (uses publishable key)
+├── server.ts              # Supabase server client for SSR (uses publishable key)
+├── middleware.ts          # Session refresh middleware
+└── admin.ts               # Supabase admin client (uses secret key - server only)
 ```
 
 #### Database Client Replacement
@@ -113,7 +128,7 @@ import { createBrowserClient } from '@supabase/ssr';
 
 export const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!  // Use publishable key (sb_publishable_... or legacy anon)
 );
 ```
 
@@ -126,7 +141,7 @@ export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,  // Use publishable key for SSR
     {
       cookies: {
         getAll() { return cookieStore.getAll(); },
@@ -138,6 +153,55 @@ export async function createSupabaseServerClient() {
       },
     }
   );
+}
+```
+
+**CREATE** - `src/lib/supabase/admin.ts`:
+```typescript
+import { createClient } from '@supabase/supabase-js';
+
+// Admin client for server-side operations that need elevated privileges
+// NEVER use this client in browser/client components!
+export const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SECRET_KEY!,  // Secret key (sb_secret_... or legacy service_role)
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
+```
+
+**CREATE** - `src/lib/supabase/middleware.ts`:
+```typescript
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
+
+export async function updateSession(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll(); },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // Refresh auth token - required for Server Components
+  await supabase.auth.getUser();
+  return supabaseResponse;
 }
 ```
 
@@ -247,14 +311,28 @@ const { data, error } = await supabase
 #### Remove
 ```env
 DATABASE_URL=postgresql://...
+JWT_SECRET=...  # Custom JWT secret no longer needed
 ```
 
 #### Add
 ```env
+# Supabase Configuration - USE PUBLISHABLE KEYS (recommended over legacy anon keys)
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...  # Server-side only, never expose
+
+# Client-side key (safe to expose in browser)
+# Format: sb_publishable_... (new) OR eyJ... (legacy anon key)
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+
+# Server-side key (NEVER expose - server only)
+# Format: sb_secret_... (new) OR eyJ... (legacy service_role)
+SUPABASE_SECRET_KEY=sb_secret_...
 ```
+
+> **Note:** Supabase is transitioning from JWT-based `anon`/`service_role` keys to the new
+> `sb_publishable_...`/`sb_secret_...` format. The new keys offer better security:
+> - Publishable keys can be independently rotated
+> - Secret keys will return HTTP 401 if accidentally used in browsers
+> - No tight coupling with JWT secret for easier key management
 
 ---
 
@@ -344,7 +422,7 @@ CREATE POLICY "Anyone can read loans" ON loans
   FOR SELECT TO authenticated USING (true);
 
 CREATE POLICY "Authenticated users can create loans" ON loans
-  FOR INSERT TO authenticated 
+  FOR INSERT TO authenticated
   WITH CHECK (borrower_user = (SELECT username FROM users WHERE id = auth.uid()));
 
 CREATE POLICY "Borrowers can update their loans" ON loans
@@ -353,12 +431,12 @@ CREATE POLICY "Borrowers can update their loans" ON loans
 
 CREATE POLICY "Lenders can update loans they fund" ON loans
   FOR UPDATE TO authenticated
-  USING (lender_user = (SELECT username FROM users WHERE id = auth.uid()) 
+  USING (lender_user = (SELECT username FROM users WHERE id = auth.uid())
          OR lender_user IS NULL);
 
 CREATE POLICY "Borrowers can delete their pending loans" ON loans
   FOR DELETE TO authenticated
-  USING (borrower_user = (SELECT username FROM users WHERE id = auth.uid()) 
+  USING (borrower_user = (SELECT username FROM users WHERE id = auth.uid())
          AND loan_status = 'Requested');
 
 -- Function to auto-update updated_at
@@ -394,10 +472,14 @@ CREATE TRIGGER update_loans_updated_at BEFORE UPDATE ON loans
 async function handleTelegramAuth(telegramData: TelegramAuthData) {
   // 1. Verify Telegram hash (keep existing logic)
   const isValid = verifyTelegramAuth(telegramData);
-  
-  // 2. Create/get Supabase user with service role
-  const supabaseAdmin = createClient(url, SERVICE_ROLE_KEY);
-  
+
+  // 2. Create/get Supabase user with secret key (for admin operations)
+  // Use sb_secret_... format (recommended) or legacy service_role JWT
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SECRET_KEY!  // Server-side only!
+  );
+
   const { data: user } = await supabaseAdmin.auth.admin.createUser({
     email: `${telegramData.id}@telegram.moodeng.local`,
     email_confirm: true,
@@ -406,7 +488,7 @@ async function handleTelegramAuth(telegramData: TelegramAuthData) {
       telegram_username: telegramData.username
     }
   });
-  
+
   // 3. Generate session manually
   const { data: session } = await supabaseAdmin.auth.admin.generateLink({
     type: 'magiclink',
@@ -429,9 +511,9 @@ const verifyRes = await verifyCloudProof(proof, app_id, action);
 // Update user in Supabase instead of Prisma
 const { error } = await supabase
   .from('users')
-  .update({ 
+  .update({
     is_world_id_verified: true,
-    world_id_hash: verifyRes.nullifier_hash 
+    world_id_hash: verifyRes.nullifier_hash
   })
   .eq('id', userId);
 ```
@@ -450,9 +532,9 @@ Supabase doesn't support SIWE (Sign-In with Ethereum) natively.
 async function walletAuth(address: string, signature: string, message: string) {
   // Verify signature
   const isValid = await verifyMessage({ address, message, signature });
-  
+
   if (!isValid) throw new Error('Invalid signature');
-  
+
   // Upsert user in Supabase
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email: `${address.toLowerCase()}@wallet.moodeng.local`,
@@ -467,7 +549,7 @@ async function walletAuth(address: string, signature: string, message: string) {
 
 Current custom JWT in `src/lib/utils/auth.ts` will be replaced by Supabase session tokens.
 
-**Impact:** 
+**Impact:**
 - Remove `JWT_SECRET` from env
 - Update all `verifyToken()` calls to use Supabase `getUser()`
 
@@ -530,8 +612,10 @@ const { data: loan } = await supabase
 
 ### Phase 1: Setup
 - [ ] Create Supabase project at [supabase.com](https://supabase.com)
-- [ ] Copy Supabase URL and anon key to `.env.local`
-- [ ] Copy service role key (server-side only)
+- [ ] Get publishable key from Dashboard → Settings → API Keys → "API Keys" tab
+- [ ] Get secret key from Dashboard → Settings → API Keys → "API Keys" tab
+- [ ] Copy Supabase URL and publishable key to `.env.local` (NEXT_PUBLIC_*)
+- [ ] Copy secret key (server-side only, SUPABASE_SECRET_KEY)
 - [ ] Run SQL schema in Supabase SQL Editor
 
 ### Phase 2: Install Dependencies
@@ -634,13 +718,13 @@ If you have existing data, run this after schema creation:
 
 -- Migrate loans
 INSERT INTO loans (
-  tracking_id, borrower_user, lender_user, loan_amount, 
+  tracking_id, borrower_user, lender_user, loan_amount,
   total_repayment_amount, reason, loan_status, repayment_status,
   days, block, coin, created_at
 )
-SELECT 
+SELECT
   tracking_id, borrower_user, lender_user, loan_amount,
-  total_repayment_amount, reason, loan_status::loan_status, 
+  total_repayment_amount, reason, loan_status::loan_status,
   repayment_status::repayment_status, days, block, coin, created_at
 FROM old_database.loans;
 ```

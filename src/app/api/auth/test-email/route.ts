@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 
-import { prisma } from '@/lib/database';
 import { sendMail } from '@/lib/services/email';
+import { createSupabaseAdminClient } from '@/lib/supabase';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { SUCCESS_CODES } from '@/types/successCodes';
@@ -10,8 +10,10 @@ export async function POST(request: NextRequest) {
    return handleApiRequest(
       request,
       async (data, userId) => {
-         const user = await prisma.user.findUnique({ where: { id: userId } });
-         if (!user) {
+         const supabase = createSupabaseAdminClient();
+         const { data: user, error } = await supabase.from('users').select('*').eq('id', userId).single();
+
+         if (error || !user) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };
          }
 

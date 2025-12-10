@@ -33,7 +33,7 @@ export const useDashboardData = (activeRole: RoleType) => {
       const repayments = userLoans.filter((loan) => loan.repaymentStatus === 'Paid');
       const activeLoans = userLoans.filter((loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus === 'Unpaid');
       const defaultedLoans = userLoans.filter(
-         (loan) => loan.repaymentStatus === 'Unpaid' && parseDateSafely(loan.createdAt).getTime() + loan.days * 86400000 < Date.now()
+         (loan) => loan.repaymentStatus === 'Unpaid' && parseDateSafely(loan.dueDate).getTime() < Date.now()
       );
       const pendingLoans = userLoans.filter((loan) => loan.loanStatus === 'Requested');
 

@@ -1,4 +1,5 @@
-import type { Prisma } from '@/generated/prisma/client/client';
+// Loan Types for Supabase
+// Amounts are stored as numbers in Supabase
 
 export interface Loan {
    id: string;
@@ -7,13 +8,13 @@ export interface Loan {
    lenderWallet?: string;
    borrowerUser?: string;
    lenderUser?: string;
-   loanAmount: Prisma.Decimal; // Original amount borrowed (principal)
-   repaidAmount: Prisma.Decimal; // Amount already repaid by borrower (cumulative sum of all payments)
-   totalRepaymentAmount: Prisma.Decimal; // Total amount that must be repaid (principal + interest/fees)
+   loanAmount: number; // Original amount borrowed (principal)
+   repaidAmount: number; // Amount already repaid by borrower (cumulative sum of all payments)
+   totalRepaymentAmount: number; // Total amount that must be repaid (principal + interest/fees)
    reason: string;
    loanStatus: string;
    repaymentStatus: string;
-   days: number;
+   dueDate: string; // ISO 8601 datetime string in UTC (midnight UTC+00)
    block: string;
    coin: string;
    hash: string[]; // Array of transaction hashes - includes lending transaction + all repayment transactions
@@ -27,6 +28,7 @@ export interface CreateLoanData {
    loanAmount: number;
    totalRepaymentAmount: number;
    reason: string;
+   dueDate: string; // ISO 8601 datetime string in UTC
 }
 
 export interface LoanState {
@@ -59,13 +61,13 @@ export interface ILoan {
    lenderWallet?: string;
    borrowerUser?: string;
    lenderUser?: string;
-   loanAmount: Prisma.Decimal;
-   repaidAmount: Prisma.Decimal;
-   totalRepaymentAmount: Prisma.Decimal;
+   loanAmount: number;
+   repaidAmount: number;
+   totalRepaymentAmount: number;
    reason: string;
    loanStatus: LoanStatusType;
    repaymentStatus: RepaymentStatusType;
-   days: number;
+   dueDate: Date;
    block: string;
    coin: string;
    hash: string[]; // Array of transaction hashes - includes lending transaction + all repayment transactions
