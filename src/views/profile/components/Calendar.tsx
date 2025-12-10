@@ -31,13 +31,9 @@ export default function Calendar({ activeLoans = EMPTY_LOANS, defaultedLoans = E
    }, []);
 
    const modifiers = useMemo(() => {
-      const activeDates = activeLoans
-         .map((loan) => parseDateSafely(loan.dueDate))
-         .filter((date) => !isNaN(date.getTime()));
+      const activeDates = activeLoans.map((loan) => parseDateSafely(loan.dueDate)).filter((date) => !isNaN(date.getTime()));
 
-      const defaultedDates = defaultedLoans
-         .map((loan) => parseDateSafely(loan.dueDate))
-         .filter((date) => !isNaN(date.getTime()));
+      const defaultedDates = defaultedLoans.map((loan) => parseDateSafely(loan.dueDate)).filter((date) => !isNaN(date.getTime()));
 
       const pendingDates = pendingLoans.map((loan) => parseDateSafely(loan.createdAt)).filter((date) => !isNaN(date.getTime()));
 

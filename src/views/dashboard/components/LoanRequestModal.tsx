@@ -128,7 +128,9 @@ export default function LoanRequestModal({
                <div className="flex flex-col gap-2">
                   <div className="flex gap-3">
                      <button className="bg-[#D6E1FF] text-[#1E56FF] font-semibold rounded-md px-5 py-2 text-sm select-none" type="button">
-                        {isVerified && days ? `${Math.ceil((new Date(days).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} Days` : '5 Days'}
+                        {isVerified && days
+                           ? `${Math.ceil((new Date(days).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} Days`
+                           : '5 Days'}
                      </button>
                      {isVerified ? (
                         <input
@@ -140,21 +142,21 @@ export default function LoanRequestModal({
                            className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
                         />
                      ) : (
-                     <>
-                        <input
-                           className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
-                           placeholder="DD/MM/YY"
-                           type="text"
-                        />
-                        <button
-                           aria-label="Calendar"
-                           className="flex items-center justify-center border border-gray-300 rounded-md px-3 text-gray-700"
-                           type="button"
-                        >
-                           <i className="far fa-calendar-alt"></i>
-                        </button>
-                     </>
-                  )}
+                        <>
+                           <input
+                              className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
+                              placeholder="DD/MM/YY"
+                              type="text"
+                           />
+                           <button
+                              aria-label="Calendar"
+                              className="flex items-center justify-center border border-gray-300 rounded-md px-3 text-gray-700"
+                              type="button"
+                           >
+                              <i className="far fa-calendar-alt"></i>
+                           </button>
+                        </>
+                     )}
                   </div>
                   {isVerified ? <p className="text-xs text-gray-500">Date will be set to midnight UTC+00</p> : null}
                </div>

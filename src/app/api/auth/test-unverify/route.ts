@@ -13,10 +13,7 @@ export async function POST(request: NextRequest) {
          const supabase = createSupabaseAdminClient();
 
          // Update the user as worldId = INACTIVE (for testing purposes)
-         const { error } = await supabase
-            .from('users')
-            .update({ is_world_id: WorldId.INACTIVE })
-            .eq('id', userId);
+         const { error } = await supabase.from('users').update({ is_world_id: WorldId.INACTIVE }).eq('id', userId);
 
          if (error) {
             throw { code: ERROR_CODES.SERVER_ERROR, status: 500 };

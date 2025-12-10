@@ -19,16 +19,20 @@
 
 // Re-export Supabase clients for easier migration
 export {
-    createSupabaseAdminClient, createSupabaseBrowserClient, createSupabaseServerClient, getSupabaseBrowserClient, supabaseAdmin
+   createSupabaseAdminClient,
+   createSupabaseBrowserClient,
+   createSupabaseServerClient,
+   getSupabaseBrowserClient,
+   supabaseAdmin
 } from '@/lib/supabase';
 
 // Deprecated: kept for backwards compatibility during migration
 export default async function connectDB() {
-  console.warn('⚠️ connectDB() is deprecated. Database connection is handled by Supabase.');
-  return null;
+   console.warn('⚠️ connectDB() is deprecated. Database connection is handled by Supabase.');
+   return null;
 }
 
 export async function initializeDatabase() {
-  console.warn('⚠️ initializeDatabase() is deprecated. Database is managed by Supabase.');
-  return null;
+   console.warn('⚠️ initializeDatabase() is deprecated. Database is managed by Supabase.');
+   return null;
 }

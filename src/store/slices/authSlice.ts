@@ -20,13 +20,9 @@ type UserRow = Database['public']['Tables']['users']['Row'];
 type UserInsert = Database['public']['Tables']['users']['Insert'];
 type WorldIdStatus = Database['public']['Enums']['world_id_status'];
 
-const toOptionalBigInt = (value: number | null): bigint | undefined => (
-   value === null || value === undefined ? undefined : BigInt(value)
-);
+const toOptionalBigInt = (value: number | null): bigint | undefined => (value === null || value === undefined ? undefined : BigInt(value));
 
-const normalizeWorldIdStatus = (value?: string | WorldIdStatus | null): WorldIdStatus => (
-   (value as WorldIdStatus) ?? WorldId.INACTIVE
-);
+const normalizeWorldIdStatus = (value?: string | WorldIdStatus | null): WorldIdStatus => (value as WorldIdStatus) ?? WorldId.INACTIVE;
 
 const deriveUsername = (authUser: SupabaseAuthUser, explicit?: string): string => {
    if (explicit) {
@@ -58,11 +54,7 @@ const ensureUserProfileRow = async (
    }
 
    // First, try to fetch existing profile
-   const { data: existingProfile } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', authUser.id)
-      .maybeSingle();
+   const { data: existingProfile } = await supabase.from('users').select('*').eq('id', authUser.id).maybeSingle();
 
    // If profile exists, return it (don't update to avoid unique constraint violations)
    if (existingProfile) {
@@ -77,11 +69,7 @@ const ensureUserProfileRow = async (
       is_world_id: normalizeWorldIdStatus(overrides?.isWorldId ?? authUser.user_metadata?.is_world_id)
    };
 
-   const { data, error } = await supabase
-      .from('users')
-      .insert(payload)
-      .select('*')
-      .single();
+   const { data, error } = await supabase.from('users').insert(payload).select('*').single();
 
    if (error || !data) {
       throw error ?? new Error('Failed to ensure user profile');
@@ -119,11 +107,7 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
       throw sessionError ?? new Error('Unable to resolve authenticated user');
    }
 
-   const { data: profile, error: profileError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle();
+   const { data: profile, error: profileError } = await supabase.from('users').select('*').eq('id', user.id).maybeSingle();
 
    if (profileError) {
       throw profileError;
@@ -139,11 +123,7 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
 
 const fetchUserProfileByUsername = async (username: string): Promise<User> => {
    const supabase = supabaseClient();
-   const { data: profile, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('username', username)
-      .maybeSingle();
+   const { data: profile, error } = await supabase.from('users').select('*').eq('username', username).maybeSingle();
 
    if (error || !profile) {
       throw error ?? new Error('User profile not found');
@@ -154,11 +134,7 @@ const fetchUserProfileByUsername = async (username: string): Promise<User> => {
 
 const fetchEmailByUsername = async (username: string): Promise<string> => {
    const supabase = supabaseClient();
-   const { data, error } = await supabase
-      .from('users')
-      .select('email')
-      .eq('username', username)
-      .maybeSingle();
+   const { data, error } = await supabase.from('users').select('email').eq('username', username).maybeSingle();
 
    if (error || !data) {
       throw error ?? new Error('Email not found for username');
@@ -276,13 +252,16 @@ export const registerUser = createAsyncThunk(
    }
 );
 
-export const registerWithGoogle = createAsyncThunk('auth/registerWithGoogle', async ({ googleCredential }: { googleCredential: string }) => {
-   const user = await signInWithGoogleCredential(googleCredential);
-   return {
-      username: user.username,
-      user
-   };
-});
+export const registerWithGoogle = createAsyncThunk(
+   'auth/registerWithGoogle',
+   async ({ googleCredential }: { googleCredential: string }) => {
+      const user = await signInWithGoogleCredential(googleCredential);
+      return {
+         username: user.username,
+         user
+      };
+   }
+);
 
 export const registerWithTelegram = createAsyncThunk('auth/registerWithTelegram', async () => {
    throw new Error('Telegram authentication is not yet supported with Supabase.');
@@ -327,12 +306,7 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
       return await fetchCurrentUserProfile();
    }
 
-   const { data: updatedRow, error: updateError } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', user.id)
-      .select('*')
-      .single();
+   const { data: updatedRow, error: updateError } = await supabase.from('users').update(updates).eq('id', user.id).select('*').single();
 
    if (updateError || !updatedRow) {
       throw updateError ?? new Error('Failed to update user profile');
