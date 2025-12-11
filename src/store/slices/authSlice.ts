@@ -241,10 +241,6 @@ export const registerUser = createAsyncThunk(
          throw error;
       }
 
-      // Note: Supabase Auth natively handles duplicate emails by returning a success
-      // response but not creating the user or sending a verification email.
-      // This prevents user enumeration attacks. See docs/DUPLICATE_EMAIL_HANDLING.md
-
       const createdUser = data?.user;
 
       if (!createdUser) {
@@ -270,7 +266,10 @@ export const registerUser = createAsyncThunk(
          const errorData = await profileResponse.json();
          // Construct a richer error so the UI can show toast + inline details
          const errMsg = errorData?.error || 'Failed to create user profile';
-         const err = new Error(`${errMsg}${errorData?.details ? `: ${errorData.details}` : ''}`) as Error & { code: string; details: unknown };
+         const err = new Error(`${errMsg}${errorData?.details ? `: ${errorData.details}` : ''}`) as Error & {
+            code: string;
+            details: unknown;
+         };
          err.code = 'CREATE_PROFILE_FAILED';
          err.details = errorData?.details ?? null;
          throw err;
