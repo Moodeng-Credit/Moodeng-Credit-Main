@@ -19,7 +19,7 @@ export default function UserMenu({ showMenu, onToggleMenu, onClose }: UserMenuPr
             href="/dashboard"
             className="bg-[#6d57ff] text-white px-4 py-2 rounded-full hover:bg-[#5a4ae5] transition-colors hidden md:block"
          >
-            <span className="[font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-sm">Dashboard</span>
+            <span className="[font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-sm">App</span>
          </Link>
          <button
             aria-label="Notifications"

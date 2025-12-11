@@ -6,6 +6,7 @@ import type { AsyncThunkAction } from '@reduxjs/toolkit';
 import { useDispatch } from 'react-redux';
 
 import Loading from '@/components/Loading';
+import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import TextWithLine from '@/components/ui/TextWithLine';
 
 import {
@@ -41,6 +42,7 @@ type AuthPayload =
 export default function AuthFormSection(): JSX.Element {
    const router = useRouter();
    const dispatch = useDispatch<AppDispatch>();
+   const toast = useToast();
    const [email, setEmail] = useState('');
    const [password, setPassword] = useState('');
    const [confirm, setConfirm] = useState('');
@@ -51,6 +53,7 @@ export default function AuthFormSection(): JSX.Element {
    const [showEmail, setShowEmail] = useState(false);
    const [showConfirm, setShowConfirm] = useState(false);
    const [showAccount, setShowAccount] = useState(false);
+   const [accountError, setAccountError] = useState('');
    const [isSignUp, setIsSignUp] = useState(true);
    const isWorldId = WorldId.INACTIVE;
 
@@ -67,6 +70,7 @@ export default function AuthFormSection(): JSX.Element {
       setShowEmail(false);
       setShowConfirm(false);
       setShowAccount(false);
+      setAccountError('');
    };
 
    const handleAuthAction = useCallback(
@@ -82,7 +86,7 @@ export default function AuthFormSection(): JSX.Element {
          } else {
             const errorMsg =
                (resultAction.payload as Record<string, string>)?.message ||
-               (resultAction as { error: { message: string } })?.error?.message ||
+               (resultAction as { error?: { message: string } })?.error?.message ||
                ('Authentication failed' as string);
 
             if (errorHandler) {
@@ -97,10 +101,41 @@ export default function AuthFormSection(): JSX.Element {
    );
 
    const handleRegisterError = (errorMsg: string) => {
-      console.log(errorMsg);
-      if (errorMsg.includes('User')) setShowUser(true);
-      if (errorMsg.includes('Email')) setShowEmail(true);
-      if (errorMsg.includes('Password')) setShowPass(true);
+      console.log('Register error:', errorMsg);
+      const msg = errorMsg || '';
+      const lower = msg.toLowerCase();
+      const isEmailError = lower.includes('email') || lower.includes('duplicate') || lower.includes('users_email_key');
+
+      // Show email_exists toast if it's a duplicate email, otherwise generic register_error
+      if (isEmailError) {
+         toast.showToastByConfig('email_exists');
+         setAccountError('An account already exists with this email. Please sign in or reset your password.');
+      } else {
+         toast.showToastByConfig('register_error', { error: msg });
+         setAccountError('Registration failed. Please check your information and try again.');
+      }
+
+      // Show generic signup error inline (will display above Create Account button in AuthForm)
+      setShowAccount(true);
+   };
+
+   const handleLoginError = (errorMsg: string) => {
+      console.log('handleLoginError called with:', errorMsg);
+      // Check if this is an email verification error from Supabase
+      // Supabase returns error_not_confirmed code - our thunk transforms it to a friendly message
+      const isEmailError =
+         errorMsg.toLowerCase().includes('verify') ||
+         errorMsg.toLowerCase().includes('email') ||
+         errorMsg.toLowerCase().includes('confirm');
+      console.log('Is email error?', isEmailError);
+
+      if (isEmailError) {
+         console.log('Showing email verification toast');
+         toast.showToastByConfig('login_error', { error: errorMsg });
+      } else {
+         console.log('Showing account error inline');
+         setShowAccount(true);
+      }
    };
 
    const handleOAuthError = (errorMsg: string, authType: string) => {
@@ -132,7 +167,7 @@ export default function AuthFormSection(): JSX.Element {
       clearShow();
 
       if (username && password) {
-         await handleAuthAction(loginUser, { username, password });
+         await handleAuthAction(loginUser, { username, password }, handleLoginError);
       }
    };
 
@@ -214,6 +249,7 @@ export default function AuthFormSection(): JSX.Element {
                      showPass={showPass}
                      showConfirm={showConfirm}
                      showAccount={showAccount}
+                     accountError={accountError}
                      onUsernameChange={handleUsernameChange}
                      onEmailChange={handleEmailChange}
                      onPasswordChange={handlePasswordChange}
