@@ -217,6 +217,7 @@ export const registerUser = createAsyncThunk(
    'auth/register',
    async (userData: { username: string; isWorldId: string; password: string; email: string }) => {
       const supabase = supabaseClient();
+
       const { data, error } = await supabase.auth.signUp({
          email: userData.email,
          password: userData.password,
@@ -228,9 +229,14 @@ export const registerUser = createAsyncThunk(
          }
       });
 
+      // Handle actual signup errors (network issues, invalid data, etc.)
       if (error) {
          throw error;
       }
+
+      // Note: Supabase Auth natively handles duplicate emails by returning a success
+      // response but not creating the user or sending a verification email.
+      // This prevents user enumeration attacks. See docs/DUPLICATE_EMAIL_HANDLING.md
 
       const createdUser = data?.user;
 
@@ -238,13 +244,29 @@ export const registerUser = createAsyncThunk(
          throw new Error('Supabase did not return a user record after sign up');
       }
 
-      const ensuredProfile = await ensureUserProfileRow(supabase, createdUser, {
-         username: userData.username,
-         email: userData.email,
-         isWorldId: userData.isWorldId
+      // Create user profile using server-side API route with service_role key
+      // This bypasses RLS automatically - no RLS policies needed on users table
+      const profileResponse = await fetch('/api/auth/create-user', {
+         method: 'POST',
+         headers: {
+            'Content-Type': 'application/json'
+         },
+         body: JSON.stringify({
+            userId: createdUser.id,
+            username: userData.username,
+            email: userData.email,
+            isWorldId: userData.isWorldId
+         })
       });
 
-      const user = mapSupabaseRowToUser(ensuredProfile);
+      if (!profileResponse.ok) {
+         const errorData = await profileResponse.json();
+         throw new Error(errorData.error || 'Failed to create user profile');
+      }
+
+      const profileData = await profileResponse.json();
+      const user = mapSupabaseRowToUser(profileData.data);
+      
       return {
          username: user.username,
          user
