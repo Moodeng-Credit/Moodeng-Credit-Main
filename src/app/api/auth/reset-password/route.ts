@@ -1,9 +1,9 @@
-import type { NextRequest } from 'next/server';
+import { resetPasswordSchema } from '@/lib/schemas/auth';
 import { createSupabaseAdminClient } from '@/lib/supabase';
 import { handleApiRequest } from '@/lib/utils/apiRequestHandler';
-import { resetPasswordSchema } from '@/lib/schemas/auth';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { SUCCESS_CODES } from '@/types/successCodes';
+import type { NextRequest } from 'next/server';
 
 export async function POST(request: NextRequest) {
    return handleApiRequest(
