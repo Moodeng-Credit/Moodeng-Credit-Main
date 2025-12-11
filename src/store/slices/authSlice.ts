@@ -191,6 +191,14 @@ export const loginUser = createAsyncThunk('auth/login', async ({ username, passw
    });
 
    if (error) {
+      // Check if this is an email not confirmed error from Supabase
+      if (error.code === 'email_not_confirmed') {
+         const emailNotConfirmedError = new Error('Please verify your email before signing in. Check your inbox for a verification link.');
+         (emailNotConfirmedError as any).code = 'email_not_confirmed';
+         throw emailNotConfirmedError;
+      }
+      
+      // For other errors, throw as-is
       throw error;
    }
 
@@ -266,7 +274,7 @@ export const registerUser = createAsyncThunk(
 
       const profileData = await profileResponse.json();
       const user = mapSupabaseRowToUser(profileData.data);
-      
+
       return {
          username: user.username,
          user
