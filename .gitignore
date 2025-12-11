@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -45,3 +45,31 @@ next-env.d.ts
 
 certificates
 CLAUDE.md
+
+# Nix
+.devenv*
+devenv.local.nix
+devenv.local.yaml
+devenv.lock
+devenv.yaml
+devenv.nix
+flake.nix
+flake.lock
+.nix-build
+.direnv
+.envrc
+
+# lazyvim / just
+.lazy.lua
+Justfile
+
+
+# from apps/webapp
+.DS_Store
+dist
+dist-ssr
+*.local
+count.txt
+.nitro
+.tanstack
+.wrangler
