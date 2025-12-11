@@ -168,6 +168,14 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       buttonAction: 'retry_register'
    },
 
+   email_exists: {
+      toastType: TOAST_TYPES.ERROR,
+      title: 'Email Already Registered',
+      message: () => 'An account already exists with this email. Please sign in or reset your password if you forgot it.',
+      buttonText: 'Sign In',
+      buttonAction: 'go_to_signin',
+      route: '/login'
+   },
    password_weak: {
       toastType: TOAST_TYPES.ERROR,
       title: 'Weak Password',

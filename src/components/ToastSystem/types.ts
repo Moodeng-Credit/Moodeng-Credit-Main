@@ -18,6 +18,7 @@ export type ToastErrorType =
    | 'funding_error'
    | 'network_error'
    | 'register_error'
+   | 'email_exists'
    | 'login_error'
    | 'user_update_error'
    | 'verification_failed'

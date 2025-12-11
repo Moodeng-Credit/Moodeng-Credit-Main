@@ -16,6 +16,7 @@ interface AuthFormProps {
    showPass: boolean;
    showConfirm: boolean;
    showAccount: boolean;
+   accountError?: string;
    onUsernameChange: (e: ChangeEvent<HTMLInputElement>) => void;
    onEmailChange: (e: ChangeEvent<HTMLInputElement>) => void;
    onPasswordChange: (e: ChangeEvent<HTMLInputElement>) => void;
@@ -34,6 +35,7 @@ export default function AuthForm({
    showPass,
    showConfirm,
    showAccount,
+   accountError,
    onUsernameChange,
    onEmailChange,
    onPasswordChange,
@@ -106,6 +108,10 @@ export default function AuthForm({
             ) : null}
 
             {!isSignUp && showAccount ? <span className="text-red-500 text-sm">Invalid credentials.</span> : null}
+
+            {isSignUp && showAccount ? (
+               <span className="text-red-500 text-sm">{accountError || 'Sign Up Error. Please try again.'}</span>
+            ) : null}
 
             {!isSignUp ? (
                <div className="flex items-center justify-between">
