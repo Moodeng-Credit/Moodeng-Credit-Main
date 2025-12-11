@@ -1,5 +1,3 @@
-import { type MouseEvent } from 'react';
-
 import type { SortOption } from '@/utils/loanFilters';
 
 interface SortButtonsProps {
@@ -15,18 +13,16 @@ const sortOptions: Array<{ value: SortOption; label: string }> = [
 ];
 
 export default function SortButtons({ activeSort, onSortChange }: SortButtonsProps) {
-   const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
-      const value = (e.target as HTMLButtonElement).value as SortOption;
-      onSortChange(value);
-   };
+   //TODO: migrate to zustand
+   // const sortBy = useRequestBoardFilterContext((state) => state.sortBy);
+   // const setSortBy = useRequestBoardFilterContext((state) => state.setSortBy);
 
    return (
       <div className="flex flex-wrap justify-start md:justify-end gap-3">
          {sortOptions.map(({ value, label }) => (
             <button
                key={value}
-               onClick={handleClick}
-               value={value}
+               onClick={() => onSortChange(value)}
                className={`text-[10px] md:text-xs border rounded px-3 py-1 flex items-center space-x-1 transition ${
                   activeSort === value ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-100 text-gray-700'
                }`}

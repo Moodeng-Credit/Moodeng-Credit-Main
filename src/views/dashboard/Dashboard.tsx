@@ -28,6 +28,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
+import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
@@ -35,6 +36,14 @@ import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 const CREDIT_LEVELLING_VIDEO_ID = 'gaRjXOd2s2U';
 
 export default function Dashboard() {
+   return (
+      <RequestBoardFilterContextProvider>
+         <Dashboard$ />
+      </RequestBoardFilterContextProvider>
+   );
+}
+
+function Dashboard$() {
    const pathname = usePathname();
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
@@ -74,6 +83,7 @@ export default function Dashboard() {
       search: '',
       sortBy: undefined
    });
+   // const filters2 = useRequestBoardFilterContext((state) => state);
 
    const clear = () => {
       setTotalRepaymentAmount('');
