@@ -197,7 +197,7 @@ export const loginUser = createAsyncThunk('auth/login', async ({ username, passw
          (emailNotConfirmedError as any).code = 'email_not_confirmed';
          throw emailNotConfirmedError;
       }
-      
+
       // For other errors, throw as-is
       throw error;
    }
