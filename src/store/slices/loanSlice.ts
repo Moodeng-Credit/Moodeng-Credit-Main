@@ -25,7 +25,7 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    reason: row.reason,
    loanStatus: row.loan_status,
    repaymentStatus: row.repayment_status,
-   days: row.days,
+   dueDate: row.due_date,
    block: row.block,
    coin: row.coin,
    hash: row.hash,
@@ -50,21 +50,17 @@ export const createLoan = createAsyncThunk('loans/create', async (loanData: Crea
 
    const loanInsert: LoanInsert = {
       tracking_id: trackingId,
-      borrower_user: loanData.borrowerUserId,
-      lender_user: loanData.lenderUserId,
+      borrower_user: loanData.borrowerUserId || null,
+      lender_user: loanData.lenderUserId || null, // Use null instead of empty string to avoid FK violation
       loan_amount: loanData.loanAmount,
       total_repayment_amount: loanData.totalRepaymentAmount,
       reason: loanData.reason,
-      days: 30, // Default value, adjust as needed
+      due_date: loanData.dueDate,
       block: 'ethereum', // Default value, adjust as needed
       coin: 'ETH' // Default value, adjust as needed
    };
 
-   const { data, error } = await supabase
-      .from('loans')
-      .insert(loanInsert)
-      .select()
-      .single();
+   const { data, error } = await supabase.from('loans').insert(loanInsert).select().single();
 
    if (error) {
       throw new Error(error.message);
@@ -80,10 +76,7 @@ export const createLoan = createAsyncThunk('loans/create', async (loanData: Crea
 export const fetchLoans = createAsyncThunk('loans/fetch', async () => {
    const supabase = supabaseClient();
 
-   const { data, error } = await supabase
-      .from('loans')
-      .select('*')
-      .order('created_at', { ascending: false });
+   const { data, error } = await supabase.from('loans').select('*').order('created_at', { ascending: false });
 
    if (error) {
       throw new Error(error.message);
@@ -222,21 +215,12 @@ export const updateLoanStatus = createAsyncThunk(
       }
       if (hash) {
          // Fetch current loan to append the new hash
-         const { data: currentLoan } = await supabase
-            .from('loans')
-            .select('hash')
-            .eq('id', id)
-            .single();
+         const { data: currentLoan } = await supabase.from('loans').select('hash').eq('id', id).single();
 
          updates.hash = [...(currentLoan?.hash || []), hash];
       }
 
-      const { data, error } = await supabase
-         .from('loans')
-         .update(updates)
-         .eq('id', id)
-         .select()
-         .single();
+      const { data, error } = await supabase.from('loans').update(updates).eq('id', id).select().single();
 
       if (error) {
          throw new Error(error.message);
@@ -253,10 +237,7 @@ export const updateLoanStatus = createAsyncThunk(
 export const deleteLoan = createAsyncThunk('loans/delete', async (loanId: string) => {
    const supabase = supabaseClient();
 
-   const { error } = await supabase
-      .from('loans')
-      .delete()
-      .eq('id', loanId);
+   const { error } = await supabase.from('loans').delete().eq('id', loanId);
 
    if (error) {
       throw new Error(error.message);

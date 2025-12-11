@@ -492,7 +492,17 @@ const UserProfile = () => {
                      <span className="text-gray-400">Typical loan term:</span>
                      <div className="flex items-center gap-2">
                         <span className="text-white">
-                           {loans.length > 0 ? Math.round(loans.reduce((sum, loan) => sum + loan.days, 0) / loans.length) : '0'} days
+                           {loans.length > 0
+                              ? Math.round(
+                                   loans.reduce((sum, loan) => {
+                                      const dueDate = new Date(loan.dueDate);
+                                      const createdDate = new Date(loan.createdAt);
+                                      const days = Math.round((dueDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+                                      return sum + days;
+                                   }, 0) / loans.length
+                                )
+                              : '0'}{' '}
+                           days
                         </span>
                         <div className="absolute invisible group-hover:visible bg-gray-800 text-gray-100 p-2 rounded text-sm w64 right-0 bottom-full mb-2 z-10">
                            The most common duration this borrower requests for their loans. This reflects their consistent pattern of loan

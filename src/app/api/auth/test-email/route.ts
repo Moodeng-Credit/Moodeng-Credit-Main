@@ -11,11 +11,7 @@ export async function POST(request: NextRequest) {
       request,
       async (data, userId) => {
          const supabase = createSupabaseAdminClient();
-         const { data: user, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .single();
+         const { data: user, error } = await supabase.from('users').select('*').eq('id', userId).single();
 
          if (error || !user) {
             throw { code: ERROR_CODES.USER_NOT_FOUND, status: 404 };

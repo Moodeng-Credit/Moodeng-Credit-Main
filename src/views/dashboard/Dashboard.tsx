@@ -176,10 +176,8 @@ export default function Dashboard() {
          lenderUserId,
          loanAmount: parseFloat(loanAmount),
          totalRepaymentAmount: parseFloat(totalRepaymentAmount),
-         block,
-         coin,
          reason,
-         days: parseInt(days)
+         dueDate: days
       };
 
       if (
@@ -212,14 +210,12 @@ export default function Dashboard() {
    const handleDays = (e: ChangeEvent<HTMLInputElement>) => {
       const selectedDate = e.target.value;
 
-      const newToday = new Date();
-      newToday.setHours(0, 0, 0, 0);
-
+      // Convert the selected date to midnight UTC+00
       const date = new Date(selectedDate);
-      const timeDifference = date.getTime() - newToday.getTime();
-      const differenceInDays = timeDifference / (1000 * 60 * 60 * 24);
+      const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0));
 
-      setDays(Math.round(differenceInDays).toString());
+      // Store as ISO string for the backend
+      setDays(utcDate.toISOString());
    };
 
    const handlePurple = () => {

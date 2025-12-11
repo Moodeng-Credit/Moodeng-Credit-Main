@@ -41,7 +41,10 @@ function validateRequestData<TSchema extends ZodType>(schema: TSchema, data: unk
 async function getAuthenticatedUserId(): Promise<string | null> {
    try {
       const supabase = await createSupabaseServerClient();
-      const { data: { user }, error } = await supabase.auth.getUser();
+      const {
+         data: { user },
+         error
+      } = await supabase.auth.getUser();
       if (error || !user) return null;
       return user.id;
    } catch {

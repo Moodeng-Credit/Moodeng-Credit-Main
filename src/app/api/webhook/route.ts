@@ -20,17 +20,10 @@ export async function POST(request: NextRequest) {
             const username = message.from.username;
             const supabase = await createSupabaseServerClient();
 
-            const { data: user } = await supabase
-               .from('users')
-               .select('id, chat_id')
-               .eq('telegram_username', username)
-               .single();
+            const { data: user } = await supabase.from('users').select('id, chat_id').eq('telegram_username', username).single();
 
             if (user && user.chat_id !== chatId) {
-               await supabase
-                  .from('users')
-                  .update({ chat_id: chatId })
-                  .eq('id', user.id);
+               await supabase.from('users').update({ chat_id: chatId }).eq('id', user.id);
 
                await axios.post(process.env.TELEGRAM_API_URL!, {
                   chat_id: chatId,

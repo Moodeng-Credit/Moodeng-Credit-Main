@@ -71,10 +71,19 @@ export const filterByDate = (loans: Loan[], date: Date | null): Loan[] => {
    if (!date) return loans;
 
    return loans.filter((loan) => {
-      const createdDate = parseDateSafely(loan.createdAt);
-      const dueDate = new Date(createdDate);
-      dueDate.setDate(createdDate.getDate() + loan.days);
-      return dueDate <= date;
+      const dueUTC = parseDateSafely(loan.dueDate);
+
+      // Get due date at midnight UTC
+      const dueYear = dueUTC.getUTCFullYear();
+      const dueMonth = dueUTC.getUTCMonth();
+      const dueDay = dueUTC.getUTCDate();
+      const dueAtMidnight = new Date(Date.UTC(dueYear, dueMonth, dueDay, 0, 0, 0, 0));
+
+      // Normalize filter date to midnight
+      const filterDate = new Date(date);
+      filterDate.setHours(0, 0, 0, 0);
+
+      return dueAtMidnight <= filterDate;
    });
 };
 
@@ -84,16 +93,23 @@ export const filterByDate = (loans: Loan[], date: Date | null): Loan[] => {
 export const filterByTimePeriod = (loans: Loan[], loanTime: string): Loan[] => {
    if (!loanTime) return loans;
 
-   const today = new Date();
-   today.setHours(0, 0, 0, 0);
+   // Get today's date in UTC at midnight
+   const todayUTC = new Date();
+   const year = todayUTC.getUTCFullYear();
+   const month = todayUTC.getUTCMonth();
+   const day = todayUTC.getUTCDate();
+   const today = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
 
    return loans.filter((loan) => {
-      const created = parseDateSafely(loan.createdAt);
-      created.setHours(0, 0, 0, 0);
-      const dueDate = new Date(created);
-      dueDate.setDate(created.getDate() + loan.days);
+      const dueUTC = parseDateSafely(loan.dueDate);
 
-      const daysRemaining = Math.round((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      // Get due date at midnight UTC
+      const dueYear = dueUTC.getUTCFullYear();
+      const dueMonth = dueUTC.getUTCMonth();
+      const dueDay = dueUTC.getUTCDate();
+      const dueAtMidnight = new Date(Date.UTC(dueYear, dueMonth, dueDay, 0, 0, 0, 0));
+
+      const daysRemaining = Math.round((dueAtMidnight.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
       if (loanTime === '7') return daysRemaining > 0 && daysRemaining <= 7;
       if (loanTime === '30') return daysRemaining > 0 && daysRemaining <= 30;
