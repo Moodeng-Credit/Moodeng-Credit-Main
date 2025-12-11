@@ -5,6 +5,7 @@ import { type MouseEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { differenceInDays, differenceInHours, format, parseISO } from 'date-fns';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAccount } from 'wagmi';
 
@@ -12,7 +13,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import useWallet from '@/hooks/useWallet';
 
-import { calculateDaysRemaining, calculateDueDate, calculateHoursRemaining, parseDateSafely } from '@/utils/dateFormatters';
+import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
 import { MONTHS } from '@/constants/dates';
@@ -43,10 +44,24 @@ export default function UserCard(loan: Loan) {
    const [localTotalRepaid, setLocalTotalRepaid] = useState(0);
 
    const time = parseDateSafely(loanData.createdAt).toISOString();
-   const differenceInDays = calculateDaysRemaining(loanData.dueDate);
-   const differenceInHours = calculateHoursRemaining(loanData.dueDate);
    const splt = time.split('T')[0].split('-');
-   const formattedDate = calculateDueDate(loanData.dueDate);
+
+   const due = parseISO(loanData.dueDate);
+   const now = new Date();
+   const formattedDate = format(due, 'MMMM d, yyyy');
+
+   function plural(value: number, unit: string) {
+      return `${value} ${unit}${value === 1 ? '' : 's'} left`;
+   }
+   const daysLeft = differenceInDays(due, now);
+   let timeLeftLabel = '';
+   if (daysLeft >= 1) {
+      timeLeftLabel = plural(daysLeft, 'Day');
+   } else {
+      let hoursLeft = differenceInHours(due, now);
+      if (hoursLeft < 0) hoursLeft = 0;
+      timeLeftLabel = plural(hoursLeft, 'Hour');
+   }
 
    useEffect(() => {
       let mounted = true;
@@ -166,15 +181,17 @@ export default function UserCard(loan: Loan) {
       }
    };
 
+   const loanReason = loanData.reason?.trim() ? loanData.reason.trim() : 'Unknown Reason';
+
    return (
       <>
          <div
-            className="max-w-fit w-full rounded-xl border border-solid border-gray-300 shadow-lg overflow-hidden flex flex-col justify-between"
+            className="rounded-xl border border-solid border-gray-200 shadow-lg overflow-hidden flex flex-col justify-between"
             style={{ fontFamily: 'Inter, sans-serif' }}
          >
             <div className="bg-white p-5 rounded-t-xl">
                <div className="flex justify-between items-start">
-                  <h2 className="text-navy-900 text-[15px] font-semibold leading-5 text-[#0B1033] truncate">{loanData.reason}</h2>
+                  <h2 className="text-navy-900 text-[15px] font-semibold leading-5 text-[#0B1033] truncate">{loanReason}</h2>
                </div>
                <div className="flex justify-between items-center mt-2">
                   <p className="text-[13px] font-normal text-[#0B1033]">
@@ -183,7 +200,7 @@ export default function UserCard(loan: Loan) {
                         onClick={() => router.push('/user/' + loanData.borrowerUser)}
                         className="text-[#0B1033] underline hover:no-underline"
                      >
-                        {loanData.borrowerUser}
+                        {loanData.borrowerUser?.slice(0, 12)}
                      </a>
                   </p>
                   <p className="text-[13px] font-semibold text-[#6B6B7B]">{MONTHS[parseInt(splt[1])] + ' ' + splt[2] + ', ' + splt[0]}</p>
@@ -195,35 +212,33 @@ export default function UserCard(loan: Loan) {
                <span>${localProfile?.cs || '0'} Maximum Credit</span>
             </div>
 
-            <div className="bg-white px-8 py-5 border-solid border-b border-[#D9D9D9]">
-               <div className="flex items-center justify-center gap-3 text-left">
-                  <div className="">
-                     <p className="text-[13px] font-normal text-[#6B6B7B]">Asking</p>
-                     <p className="text-[20px] font-normal text-[#0B1033] mt-1">${formatNumber(loanData.loanAmount)}</p>
+            <div className="bg-white px-6 py-4 border-solid border-b border-[#D9D9D9]">
+               <div className="flex items-center justify-between gap-12 text-left">
+                  <div className="flex items-center justify-center gap-4">
+                     <div className="flex flex-col items-start">
+                        <p className="text-xs font-normal text-[#6B6B7B]">Asking</p>
+                        <p className="text-lg font-normal text-[#0B1033]">${formatNumber(loanData.loanAmount)}</p>
+                     </div>
+                     <div className="border-s border-gray-400 w-px h-16 rotate-12"></div>
+                     <div className="flex flex-col items-start">
+                        <p className="text-xs font-normal text-[#6B6B7B]">Payback</p>
+                        <p className="text-lg font-normal text-[#2F7A3E]">${formatNumber(loanData.totalRepaymentAmount)}</p>
+                     </div>
                   </div>
-                  <div className="text-[#6B6B7B] text-[30px] font-light select-none">/</div>
-                  <div className="">
-                     <p className="text-[13px] font-normal text-[#6B6B7B]">Payback</p>
-                     <p className="text-[20px] font-normal text-[#2F7A3E] mt-1">${formatNumber(loanData.totalRepaymentAmount)}</p>
-                  </div>
-                  <div className="pl-8">
-                     <p className="text-[13px] font-normal text-[#6B6B7B]">Due Date</p>
-                     <p className="text-[20px] font-semibold text-[#D92D2D] mt-1">
-                        {differenceInDays > 0
-                           ? `${differenceInDays} ${differenceInDays > 1 ? 'Days' : 'Day'} Left`
-                           : `${differenceInHours > 0 ? differenceInHours : '0'} ${differenceInHours > 1 ? 'Hours' : 'Hour'} Left`}
-                     </p>
-                     <p className="text-[11px] font-normal text-[#0B1033] mt-0.5">on {formattedDate}</p>
+                  <div className="flex flex-col gap-0.5">
+                     <p className="text-sm font-normal text-[#6B6B7B]">Due Date</p>
+                     <p className="text-xl font-semibold text-[#D92D2D]">{timeLeftLabel}</p>
+                     <p className="text-xs font-normal text-[#0B1033]">on {formattedDate}</p>
                   </div>
                </div>
             </div>
 
-            <div className="flex justify-between items-center px-5 py-3 border-b border-[#D9D9D9] bg-white">
-               <p className="text-[13px] font-normal text-[#0B1033]">Borrower Details</p>
+            <div className="flex justify-between items-center px-5 py-3 bg-white">
+               <p className="text-sm font-normal text-[#0B1033]">Borrower Details</p>
                <button
                   onClick={() => router.push('/user/' + loanData.borrowerUser)}
                   type="button"
-                  className="flex items-center gap-1 bg-[#2563EB] text-white text-[13px] font-semibold px-4 py-1 rounded-md hover:bg-[#1e4bb8] transition"
+                  className="flex items-center gap-1 bg-[#2563EB] text-white text-sm font-semibold px-4 py-1 rounded-md hover:bg-[#1e4bb8] transition"
                >
                   Insights
                   <i className="fas fa-external-link-alt text-[12px]"></i>
@@ -231,11 +246,11 @@ export default function UserCard(loan: Loan) {
             </div>
 
             <div className="flex text-center text-[15px] font-semibold">
-               <div className="flex-1 bg-[#D9EEFF] py-4 border-r border-[#D9D9D9]">
+               <div className="flex-1 bg-[#D9EEFF] py-4">
                   <p className="text-[#2563EB] font-normal">Repaid</p>
                   <p className="text-[#2563EB] text-[28px] font-bold mt-1">{formatNumber(localTotalRepaid)}</p>
                </div>
-               <div className="flex-1 bg-[#FFE9C9] py-4 border-r border-[#D9D9D9]">
+               <div className="flex-1 bg-[#FFE9C9] py-4">
                   <p className="text-[#FBBF24] font-normal">Active</p>
                   <p className="text-[#FBBF24] text-[28px] font-bold mt-1">{localProfile?.nal ?? 0}</p>
                </div>
@@ -245,8 +260,8 @@ export default function UserCard(loan: Loan) {
                </div>
             </div>
 
-            <div className="flex items-center justify-center gap-2 text-[#2563EB] text-[12px] font-semibold py-3 bg-[#F0F7FF]">
-               <i className="fas fa-info-circle text-[14px]"></i>
+            <div className="flex items-center justify-center gap-2 text-[#2563EB] text-xs font-semibold py-3 bg-[#F0F7FF] mt-4">
+               <i className="fas fa-info-circle text-sm"></i>
                <span>GOOD STANDING</span>
             </div>
 

@@ -343,7 +343,7 @@ function Dashboard$() {
                      customAmount={customAmount}
                      onCustomAmountChange={setCustomAmount}
                   />
-                  <section className="flex-1 flex flex-col items-center mt-10 md:mt-0">
+                  <section className="flex-1 flex flex-col items-start mt-10 md:mt-0">
                      <div className="flex flex-wrap justify-start md:justify-end gap-3 mb-6 w-full max-w-xl">
                         <SortButtons
                            activeSort={filters.sortBy || ''}
@@ -351,7 +351,7 @@ function Dashboard$() {
                         />
                         <SearchBar value={searchLoan} onChange={setSearchLoan} placeholder="Search Request..." />
                      </div>
-                     <div className="flex flex-wrap justify-center gap-6">
+                     <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(350px,1fr))] w-full">
                         {displayedLoans && Array.isArray(displayedLoans)
                            ? displayedLoans.map((loan) => <UserCard key={loan.id} {...loan} />)
                            : null}
