@@ -53,6 +53,7 @@ export default function AuthFormSection(): JSX.Element {
    const [showEmail, setShowEmail] = useState(false);
    const [showConfirm, setShowConfirm] = useState(false);
    const [showAccount, setShowAccount] = useState(false);
+   const [accountError, setAccountError] = useState('');
    const [isSignUp, setIsSignUp] = useState(true);
    const isWorldId = WorldId.INACTIVE;
 
@@ -69,6 +70,7 @@ export default function AuthFormSection(): JSX.Element {
       setShowEmail(false);
       setShowConfirm(false);
       setShowAccount(false);
+      setAccountError('');
    };
 
    const handleAuthAction = useCallback(
@@ -100,10 +102,22 @@ export default function AuthFormSection(): JSX.Element {
    );
 
    const handleRegisterError = (errorMsg: string) => {
-      console.log(errorMsg);
-      if (errorMsg.includes('User')) setShowUser(true);
-      if (errorMsg.includes('Email')) setShowEmail(true);
-      if (errorMsg.includes('Password')) setShowPass(true);
+      console.log('Register error:', errorMsg);
+      const msg = errorMsg || '';
+      const lower = msg.toLowerCase();
+      const isEmailError = lower.includes('email') || lower.includes('duplicate') || lower.includes('users_email_key');
+
+      // Show email_exists toast if it's a duplicate email, otherwise generic register_error
+      if (isEmailError) {
+         toast.showToastByConfig('email_exists');
+         setAccountError('An account already exists with this email. Please sign in or reset your password.');
+      } else {
+         toast.showToastByConfig('register_error', { error: msg });
+         setAccountError('Registration failed. Please check your information and try again.');
+      }
+
+      // Show generic signup error inline (will display above Create Account button in AuthForm)
+      setShowAccount(true);
    };
 
    const handleLoginError = (errorMsg: string) => {
@@ -233,6 +247,7 @@ export default function AuthFormSection(): JSX.Element {
                      showPass={showPass}
                      showConfirm={showConfirm}
                      showAccount={showAccount}
+                     accountError={accountError}
                      onUsernameChange={handleUsernameChange}
                      onEmailChange={handleEmailChange}
                      onPasswordChange={handlePasswordChange}

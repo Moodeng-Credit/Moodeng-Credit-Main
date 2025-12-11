@@ -269,7 +269,12 @@ export const registerUser = createAsyncThunk(
 
       if (!profileResponse.ok) {
          const errorData = await profileResponse.json();
-         throw new Error(errorData.error || 'Failed to create user profile');
+         // Construct a richer error so the UI can show toast + inline details
+         const errMsg = errorData?.error || 'Failed to create user profile';
+         const err = new Error(`${errMsg}${errorData?.details ? `: ${errorData.details}` : ''}`) as any;
+         err.code = 'CREATE_PROFILE_FAILED';
+         err.details = errorData?.details ?? null;
+         throw err;
       }
 
       const profileData = await profileResponse.json();
