@@ -4,7 +4,8 @@
    "private": true,
    "scripts": {
       "dev": "next dev",
-      "dev:local": "NODE_ENV=development NEXT_SKIP_TYPESCRIPT_CHECK=true NODE_OPTIONS='--max-old-space-size=8192' NODE_TLS_REJECT_UNAUTHORIZED=0  next dev --experimental-https",
+      "dev:local": "NODE_ENV=development NEXT_SKIP_TYPESCRIPT_CHECK=true NODE_OPTIONS='--max-old-space-size=8192' NODE_TLS_REJECT_UNAUTHORIZED=0 next dev --experimental-https",
+      "dev:staging": "NODE_ENV=development NODE_SKIP_ENV_VALIDATION=false next dev",
       "build": "NODE_ENV=production next build",
       "start": "next start ",
       "reup": "rm -rf node_modules && rm -rf .next && npm install",

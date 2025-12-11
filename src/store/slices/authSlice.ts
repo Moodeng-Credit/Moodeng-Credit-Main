@@ -225,10 +225,14 @@ export const registerUser = createAsyncThunk(
    async (userData: { username: string; isWorldId: string; password: string; email: string }) => {
       const supabase = supabaseClient();
 
+      // Get the redirect URL from environment variables
+      const redirectUrl = process.env.NEXT_PUBLIC_REDIRECT_URL || 'http://localhost:3000/auth/confirm';
+
       const { data, error } = await supabase.auth.signUp({
          email: userData.email,
          password: userData.password,
          options: {
+            emailRedirectTo: redirectUrl,
             data: {
                username: userData.username,
                is_world_id: userData.isWorldId
