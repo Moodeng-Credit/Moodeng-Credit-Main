@@ -109,7 +109,9 @@ export default function AuthForm({
 
             {!isSignUp && showAccount ? <span className="text-red-500 text-sm">Invalid credentials.</span> : null}
 
-            {isSignUp && showAccount ? <span className="text-red-500 text-sm">{accountError || 'Sign Up Error. Please try again.'}</span> : null}
+            {isSignUp && showAccount ? (
+               <span className="text-red-500 text-sm">{accountError || 'Sign Up Error. Please try again.'}</span>
+            ) : null}
 
             {!isSignUp ? (
                <div className="flex items-center justify-between">

@@ -10,12 +10,12 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import TextWithLine from '@/components/ui/TextWithLine';
 
 import {
-    loginUser,
-    loginWithGoogle,
-    loginWithTelegram,
-    registerUser,
-    registerWithGoogle,
-    registerWithTelegram
+   loginUser,
+   loginWithGoogle,
+   loginWithTelegram,
+   registerUser,
+   registerWithGoogle,
+   registerWithTelegram
 } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
@@ -124,7 +124,10 @@ export default function AuthFormSection(): JSX.Element {
       console.log('handleLoginError called with:', errorMsg);
       // Check if this is an email verification error from Supabase
       // Supabase returns error_not_confirmed code - our thunk transforms it to a friendly message
-      const isEmailError = errorMsg.toLowerCase().includes('verify') || errorMsg.toLowerCase().includes('email') || errorMsg.toLowerCase().includes('confirm');
+      const isEmailError =
+         errorMsg.toLowerCase().includes('verify') ||
+         errorMsg.toLowerCase().includes('email') ||
+         errorMsg.toLowerCase().includes('confirm');
       console.log('Is email error?', isEmailError);
 
       if (isEmailError) {

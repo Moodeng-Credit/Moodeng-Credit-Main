@@ -175,7 +175,8 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       buttonText: 'Sign In',
       buttonAction: 'go_to_signin',
       route: '/login'
-   },   password_weak: {
+   },
+   password_weak: {
       toastType: TOAST_TYPES.ERROR,
       title: 'Weak Password',
       message: (error: string | number) => error.toString() || 'Password does not meet strength requirements.',
