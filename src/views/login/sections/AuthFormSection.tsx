@@ -84,10 +84,9 @@ export default function AuthFormSection(): JSX.Element {
             clear();
             router.push('/dashboard');
          } else {
-            // When a thunk rejects, the error is in action.error, not action.payload
             const errorMsg =
                (resultAction.payload as Record<string, string>)?.message ||
-               (resultAction as any)?.error?.message ||
+               (resultAction as { error?: { message: string } })?.error?.message ||
                ('Authentication failed' as string);
 
             if (errorHandler) {

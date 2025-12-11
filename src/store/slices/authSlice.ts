@@ -191,10 +191,9 @@ export const loginUser = createAsyncThunk('auth/login', async ({ username, passw
    });
 
    if (error) {
-      // Check if this is an email not confirmed error from Supabase
       if (error.code === 'email_not_confirmed') {
          const emailNotConfirmedError = new Error('Please verify your email before signing in. Check your inbox for a verification link.');
-         (emailNotConfirmedError as any).code = 'email_not_confirmed';
+         (emailNotConfirmedError as Error & { code: string }).code = 'email_not_confirmed';
          throw emailNotConfirmedError;
       }
 
@@ -271,7 +270,7 @@ export const registerUser = createAsyncThunk(
          const errorData = await profileResponse.json();
          // Construct a richer error so the UI can show toast + inline details
          const errMsg = errorData?.error || 'Failed to create user profile';
-         const err = new Error(`${errMsg}${errorData?.details ? `: ${errorData.details}` : ''}`) as any;
+         const err = new Error(`${errMsg}${errorData?.details ? `: ${errorData.details}` : ''}`) as Error & { code: string; details: unknown };
          err.code = 'CREATE_PROFILE_FAILED';
          err.details = errorData?.details ?? null;
          throw err;
