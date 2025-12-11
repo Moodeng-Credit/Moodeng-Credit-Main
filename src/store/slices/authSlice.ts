@@ -192,7 +192,21 @@ export const loginUser = createAsyncThunk('auth/login', async ({ username, passw
 
    if (error) {
       if (error.code === 'email_not_confirmed') {
-         const emailNotConfirmedError = new Error('Please verify your email before signing in. Check your inbox for a verification link.');
+         // Auto-resend verification email
+         const redirectUrl = process.env.NEXT_PUBLIC_REDIRECT_URL || 'http://localhost:3000/auth/confirm';
+         const { error: resendError } = await supabase.auth.resend({
+            type: 'signup',
+            email,
+            options: {
+               emailRedirectTo: redirectUrl
+            }
+         });
+
+         if (resendError) {
+            console.error('Failed to resend verification email:', resendError);
+         }
+
+         const emailNotConfirmedError = new Error('Please verify your email before signing in. A verification email has been sent to your inbox.');
          (emailNotConfirmedError as Error & { code: string }).code = 'email_not_confirmed';
          throw emailNotConfirmedError;
       }
