@@ -9,9 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as mainLayoutRouteImport } from './routes/(main)/_layout'
+import { Route as mainLayoutIndexRouteImport } from './routes/(main)/_layout/index'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as mainLayoutWhylendRouteImport } from './routes/(main)/_layout/whylend'
@@ -25,11 +25,6 @@ import { Route as mainLayoutDashboardRouteImport } from './routes/(main)/_layout
 import { Route as mainLayoutBenefitsRouteImport } from './routes/(main)/_layout/benefits'
 import { Route as mainLayoutUsersUsernameRouteImport } from './routes/(main)/_layout/users.$username'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   id: '/demo/tanstack-query',
   path: '/demo/tanstack-query',
@@ -38,6 +33,11 @@ const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
 const mainLayoutRoute = mainLayoutRouteImport.update({
   id: '/(main)/_layout',
   getParentRoute: () => rootRouteImport,
+} as any)
+const mainLayoutIndexRoute = mainLayoutIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => mainLayoutRoute,
 } as any)
 const DemoFormSimpleRoute = DemoFormSimpleRouteImport.update({
   id: '/demo/form/simple',
@@ -102,7 +102,6 @@ const mainLayoutUsersUsernameRoute = mainLayoutUsersUsernameRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/benefits': typeof mainLayoutBenefitsRoute
   '/dashboard': typeof mainLayoutDashboardRoute
@@ -115,10 +114,10 @@ export interface FileRoutesByFullPath {
   '/whylend': typeof mainLayoutWhylendRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/': typeof mainLayoutIndexRoute
   '/users/$username': typeof mainLayoutUsersUsernameRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/benefits': typeof mainLayoutBenefitsRoute
   '/dashboard': typeof mainLayoutDashboardRoute
@@ -131,11 +130,11 @@ export interface FileRoutesByTo {
   '/whylend': typeof mainLayoutWhylendRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/': typeof mainLayoutIndexRoute
   '/users/$username': typeof mainLayoutUsersUsernameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/(main)/_layout': typeof mainLayoutRouteWithChildren
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/(main)/_layout/benefits': typeof mainLayoutBenefitsRoute
@@ -149,12 +148,12 @@ export interface FileRoutesById {
   '/(main)/_layout/whylend': typeof mainLayoutWhylendRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/(main)/_layout/': typeof mainLayoutIndexRoute
   '/(main)/_layout/users/$username': typeof mainLayoutUsersUsernameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/demo/tanstack-query'
     | '/benefits'
     | '/dashboard'
@@ -167,10 +166,10 @@ export interface FileRouteTypes {
     | '/whylend'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/'
     | '/users/$username'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/demo/tanstack-query'
     | '/benefits'
     | '/dashboard'
@@ -183,10 +182,10 @@ export interface FileRouteTypes {
     | '/whylend'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/'
     | '/users/$username'
   id:
     | '__root__'
-    | '/'
     | '/(main)/_layout'
     | '/demo/tanstack-query'
     | '/(main)/_layout/benefits'
@@ -200,11 +199,11 @@ export interface FileRouteTypes {
     | '/(main)/_layout/whylend'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/(main)/_layout/'
     | '/(main)/_layout/users/$username'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   mainLayoutRoute: typeof mainLayoutRouteWithChildren
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   DemoFormAddressRoute: typeof DemoFormAddressRoute
@@ -213,13 +212,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/demo/tanstack-query': {
       id: '/demo/tanstack-query'
       path: '/demo/tanstack-query'
@@ -233,6 +225,13 @@ declare module '@tanstack/react-router' {
       fullPath: ''
       preLoaderRoute: typeof mainLayoutRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/(main)/_layout/': {
+      id: '/(main)/_layout/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof mainLayoutIndexRouteImport
+      parentRoute: typeof mainLayoutRoute
     }
     '/demo/form/simple': {
       id: '/demo/form/simple'
@@ -331,6 +330,7 @@ interface mainLayoutRouteChildren {
   mainLayoutProfileRoute: typeof mainLayoutProfileRoute
   mainLayoutResetPasswordRoute: typeof mainLayoutResetPasswordRoute
   mainLayoutWhylendRoute: typeof mainLayoutWhylendRoute
+  mainLayoutIndexRoute: typeof mainLayoutIndexRoute
   mainLayoutUsersUsernameRoute: typeof mainLayoutUsersUsernameRoute
 }
 
@@ -344,6 +344,7 @@ const mainLayoutRouteChildren: mainLayoutRouteChildren = {
   mainLayoutProfileRoute: mainLayoutProfileRoute,
   mainLayoutResetPasswordRoute: mainLayoutResetPasswordRoute,
   mainLayoutWhylendRoute: mainLayoutWhylendRoute,
+  mainLayoutIndexRoute: mainLayoutIndexRoute,
   mainLayoutUsersUsernameRoute: mainLayoutUsersUsernameRoute,
 }
 
@@ -352,7 +353,6 @@ const mainLayoutRouteWithChildren = mainLayoutRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   mainLayoutRoute: mainLayoutRouteWithChildren,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   DemoFormAddressRoute: DemoFormAddressRoute,
