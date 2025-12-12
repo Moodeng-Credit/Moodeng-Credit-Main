@@ -38,22 +38,6 @@ export default function Profile() {
       telegramUsername: user.user?.telegramUsername
    });
 
-   useEffect(() => {
-      const currentWalletAddress = user.user?.walletAddress;
-      if (account.isConnected && account.address && user.username) {
-         if (currentWalletAddress !== account.address) {
-            dispatch(updateUser({ walletAddress: account.address }))
-               .unwrap()
-               .then(() => {
-                  console.log('Wallet address saved successfully');
-               })
-               .catch((error) => {
-                  console.error('Failed to save wallet address:', error);
-               });
-         }
-      }
-   }, [account.isConnected, account.address, user.username, user.user?.walletAddress, dispatch]);
-
    const activeTab = navItems.find((item) => item.active)?.label || infoNavItems.find((item) => item.active)?.label || ProfileTab.DASHBOARD;
 
    const handleNavItemClick = (label: string) => {
