@@ -40,7 +40,7 @@ export function useWalletSync() {
       // If user has a stored wallet that doesn't match the connected one
       if (storedWalletAddress) {
          const storedAddress = storedWalletAddress.toLowerCase();
-         
+
          if (connectedAddress !== storedAddress) {
             // Wallet mismatch - account switch detected, disconnect it
             console.log(`Wallet mismatch detected - disconnecting wallet (connected: ${connectedAddress.slice(0, 6)}..., stored: ${storedAddress.slice(0, 6)}...)`);
