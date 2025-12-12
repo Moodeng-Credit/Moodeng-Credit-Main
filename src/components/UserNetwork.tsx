@@ -7,12 +7,12 @@ import { useRouter } from 'next/navigation';
 
 import { type Chain, ConnectButton } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
-import { useAccount, useDisconnect, useSwitchChain } from 'wagmi';
+import { useAccount, useSwitchChain } from 'wagmi';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 
 import { chainConfig, chainsWithIcons, type CustomChainConfig, getNetworkSvg } from '@/config/wagmiConfig';
-import { logoutUser, updateUser } from '@/store/slices/authSlice';
+import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
 export default function UserNetwork() {
@@ -20,15 +20,13 @@ export default function UserNetwork() {
    const router = useRouter();
    const account = useAccount();
    const { switchChain } = useSwitchChain();
-   const { disconnect } = useDisconnect();
    const [showNetwork, setShowNetwork] = useState(false);
    const username = useSelector((state: RootState) => state.auth.username);
-   const currentWalletAddress = useSelector((state: RootState) => state.auth.user?.walletAddress);
 
    const handleLogout = () => {
-      disconnect();
+      // Don't disconnect wallet - let wagmi persist the connection
+      // The wallet will auto-reconnect on next login via WalletSyncInitializer
       dispatch(logoutUser());
-
       router.push('/login');
    };
 
@@ -60,21 +58,6 @@ export default function UserNetwork() {
          });
       });
    }, [username]);
-
-   useEffect(() => {
-      if (account.isConnected && account.address && username) {
-         if (currentWalletAddress !== account.address) {
-            dispatch(updateUser({ walletAddress: account.address }))
-               .unwrap()
-               .then(() => {
-                  console.log('Wallet address saved successfully');
-               })
-               .catch((error) => {
-                  console.error('Failed to save wallet address:', error);
-               });
-         }
-      }
-   }, [account.isConnected, account.address, username, currentWalletAddress, dispatch]);
 
    // Use the click outside hook for the network dropdown
    const networkDropdownRef = useClickOutside<HTMLDivElement>(() => setShowNetwork(false), showNetwork);

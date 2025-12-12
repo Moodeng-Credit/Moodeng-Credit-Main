@@ -11,6 +11,7 @@ import { WagmiProvider } from 'wagmi';
 import { ToastProvider } from '@/components/ToastSystem/contexts/ToastContext';
 import ToastContainer from '@/components/ToastSystem/ToastContainer';
 import { ToastInitializer } from '@/components/ToastSystem/ToastInitializer';
+import { WalletSyncInitializer } from '@/components/WalletSyncInitializer';
 
 import { setStoreRef } from '@/lib/axios';
 import { config } from '@/lib/config/wagmi';
@@ -35,6 +36,7 @@ export function Providers({ children }: { children: ReactNode }) {
                   <RainbowKitProvider theme={darkTheme()}>
                      <ToastProvider>
                         <ToastInitializer />
+                        <WalletSyncInitializer />
                         {children}
                         <ToastContainer />
                      </ToastProvider>
