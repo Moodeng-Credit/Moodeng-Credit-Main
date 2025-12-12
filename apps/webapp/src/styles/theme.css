@@ -1,0 +1,96 @@
+/* https://www.tints.dev/palette/v1:YXp1cmV8MUU1MkU3fDcwMHxwfDB8MHwwfDEwMHxtfml2b3J5fEZGRUFDRXwxMDB8cHwwfDB8MHwxMDB8bX5jaGVycnl8RkY1MDdBfDQwMHxwfDB8MHwwfDEwMHxtfnNpbHZlcnxBNUE1QTV8NDAwfHB8MHwwfDB8MTAwfG1-bWludHxFQUZGRUZ8NTB8cHwwfDB8MHwxMDB8bX5saWxhY3w5NDU4RUF8NTAwfHB8MHwwfDB8MTAwfG1-aW5rfDE3MTQyMHw5MDB8cHwwfDB8MHwxMDB8bQ */
+
+@theme {
+  --color-azure-50: oklch(0.967 0.015 282.03);
+  --color-azure-100: oklch(0.933 0.031 279.89);
+  --color-azure-200: oklch(0.857 0.067 279.31);
+  --color-azure-300: oklch(0.789 0.101 278.24);
+  --color-azure-400: oklch(0.715 0.141 275.54);
+  --color-azure-500: oklch(0.648 0.176 272.96);
+  --color-azure-600: oklch(0.581 0.212 268.76);
+  --color-azure-700: oklch(0.509 0.231 264.4);
+  --color-azure-800: oklch(0.391 0.177 264.46);
+  --color-azure-900: oklch(0.267 0.12 264.27);
+  --color-azure-950: oklch(0.205 0.092 264.44);
+  --color-azure-faint: var(--color-azure-50);
+  --color-azure-soft: var(--color-azure-200);
+  --color-azure-main: var(--color-azure-700);
+
+  --color-ivory-50: oklch(0.975 0.019 72.57);
+  --color-ivory-100: oklch(0.947 0.043 75.09);
+  --color-ivory-200: oklch(0.856 0.153 83.73);
+  --color-ivory-300: oklch(0.771 0.158 85.24);
+  --color-ivory-400: oklch(0.675 0.138 85.58);
+  --color-ivory-500: oklch(0.588 0.121 85.39);
+  --color-ivory-600: oklch(0.501 0.103 85.32);
+  --color-ivory-700: oklch(0.407 0.083 84.94);
+  --color-ivory-800: oklch(0.321 0.066 85.8);
+  --color-ivory-900: oklch(0.225 0.046 87.03);
+  --color-ivory-950: oklch(0.179 0.037 87.71);
+  --color-ivory-main: var(--color-ivory-100);
+
+  --color-cherry-50: oklch(0.959 0.021 6.7);
+  --color-cherry-100: oklch(0.919 0.043 9.04);
+  --color-cherry-200: oklch(0.84 0.091 8.95);
+  --color-cherry-300: oklch(0.76 0.148 9.72);
+  --color-cherry-400: oklch(0.684 0.211 10.57);
+  --color-cherry-500: oklch(0.6 0.24 11.61);
+  --color-cherry-600: oklch(0.509 0.204 11.52);
+  --color-cherry-700: oklch(0.419 0.168 11.31);
+  --color-cherry-800: oklch(0.328 0.131 11.51);
+  --color-cherry-900: oklch(0.237 0.095 11.16);
+  --color-cherry-950: oklch(0.187 0.075 11.9);
+  --color-cherry-main: var(--color-cherry-400);
+
+  --color-silver-50: #f3f3f3;
+  --color-silver-100: #e8e8e8;
+  --color-silver-200: #d1d1d1;
+  --color-silver-300: #bbbbbb;
+  --color-silver-400: #a5a5a5;
+  --color-silver-500: #868686;
+  --color-silver-600: #6a6a6a;
+  --color-silver-700: #505050;
+  --color-silver-800: #373737;
+  --color-silver-900: #1d1d1d;
+  --color-silver-950: #131313;
+  --color-silver-main: var(--color-silver-400);
+
+  --color-mint-50: oklch(0.98 0.03 152.83);
+  --color-mint-100: oklch(0.925 0.126 152.29);
+  --color-mint-200: oklch(0.828 0.219 151.81);
+  --color-mint-300: oklch(0.737 0.195 151.68);
+  --color-mint-400: oklch(0.655 0.173 151.73);
+  --color-mint-500: oklch(0.569 0.15 151.79);
+  --color-mint-600: oklch(0.477 0.126 151.71);
+  --color-mint-700: oklch(0.394 0.105 151.52);
+  --color-mint-800: oklch(0.309 0.081 152.09);
+  --color-mint-900: oklch(0.217 0.058 151.37);
+  --color-mint-950: oklch(0.171 0.045 152.39);
+  --color-mint-faint: var(--color-mint-50);
+
+  --color-lilac-50: oklch(0.959 0.019 299.15);
+  --color-lilac-100: oklch(0.917 0.04 299.8);
+  --color-lilac-200: oklch(0.835 0.081 298.33);
+  --color-lilac-300: oklch(0.762 0.121 298.84);
+  --color-lilac-400: oklch(0.679 0.166 298.92);
+  --color-lilac-500: oklch(0.6 0.211 298.79);
+  --color-lilac-600: oklch(0.521 0.237 298.71);
+  --color-lilac-700: oklch(0.429 0.196 298.51);
+  --color-lilac-800: oklch(0.329 0.15 298.89);
+  --color-lilac-900: oklch(0.238 0.107 298.58);
+  --color-lilac-950: oklch(0.189 0.085 299.11);
+  --color-lilac-main: var(--color-lilac-500);
+
+  --color-ink-50: oklch(0.957 0.005 298.01);
+  --color-ink-100: oklch(0.914 0.011 297.75);
+  --color-ink-200: oklch(0.821 0.021 295.17);
+  --color-ink-300: oklch(0.736 0.032 296.06);
+  --color-ink-400: oklch(0.649 0.043 296.26);
+  --color-ink-500: oklch(0.556 0.054 296.4);
+  --color-ink-600: oklch(0.469 0.057 295.95);
+  --color-ink-700: oklch(0.382 0.046 296.07);
+  --color-ink-800: oklch(0.287 0.035 296.23);
+  --color-ink-900: oklch(0.201 0.024 295.65);
+  --color-ink-950: oklch(0.166 0.019 294.47);
+  --color-ink-main: var(--color-ink-900);
+}
