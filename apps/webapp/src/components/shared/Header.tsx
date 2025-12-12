@@ -1,8 +1,20 @@
 import { Link } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
 
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { useUser } from "@/query/hooks/useUsers";
+
 export function Header() {
   const dark = true;
+  const { data: user } = useUser({ userId: "user_12345" });
+
   return (
     <header
       className={cn("relative w-full flex items-center py-4 z-50 ", {
@@ -52,6 +64,7 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-4">
+          {/* TODO: UserMenu */}
           {/* {username ? ( */}
           {/*   <UserMenu */}
           {/*     showMenu={showUserMenu} */}
@@ -61,12 +74,28 @@ export function Header() {
           {/* ) : ( */}
           {/*   <AuthButtons /> */}
           {/* )} */}
+          <AuthButtons />
 
           {/* Mobile menu toggle */}
-          <SideBar />
+          <div className="md:hidden contents">
+            <SideBar />
+          </div>
         </div>
       </div>
     </header>
+  );
+}
+
+function AuthButtons() {
+  return (
+    <div className="flex items-center gap-4 text-white text-xl sm:text-2xl">
+      <Link to="/login" className="bg-black px-4 py-2 rounded-full">
+        Log in
+      </Link>
+      <Link to="/login" className="bg-azure-main px-4 py-2 rounded-full">
+        Sign up
+      </Link>
+    </div>
   );
 }
 
@@ -87,18 +116,7 @@ function Links() {
   );
 }
 
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-
 function SideBar() {
-  const dark = true;
-
   return (
     <Sheet>
       <SheetTrigger className="cursor-pointer">
@@ -106,11 +124,9 @@ function SideBar() {
       </SheetTrigger>
       <SheetContent
         side="left"
-        className={cn("dark text-white pt-4 underline", {
-          "bg-ink-main": dark,
-        })}
+        className={cn("dark text-white pt-8 underline bg-ink-main")}
       >
-        <div className="p-4 flex flex-col gap-4 text-xl">
+        <div className="p-4 flex flex-col gap-8 text-2xl items-center">
           <Links />
         </div>
         <SheetHeader>
