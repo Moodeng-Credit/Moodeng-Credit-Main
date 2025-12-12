@@ -13,10 +13,10 @@ import type { AppDispatch, RootState } from '@/store/store';
  * Hook to synchronize wallet connection with user's stored wallet address
  *
  * This hook handles:
- * 1. Showing a reminder to connect wallet if user has one stored but not connected
- * 2. Updating user's wallet address when they connect a new wallet
- * 3. Disconnecting wallet if user switches to a different account with a different/no wallet
- * 4. Warning users if they connect a wallet that doesn't match their stored address
+ * 1. Keeping wallet connected when user logs in to the same account (stored wallet matches connected wallet)
+ * 2. Disconnecting wallet when user switches to a different account (stored wallet differs from connected wallet)
+ * 3. Allowing initial wallet connection when no stored wallet exists
+ * 4. Saving the most recent wallet address as the stored wallet
  */
 export function useWalletSync() {
    const dispatch = useDispatch<AppDispatch>();
@@ -28,32 +28,26 @@ export function useWalletSync() {
    const storedWalletAddress = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const [hasShownWalletPrompt, setHasShownWalletPrompt] = useState(false);
 
-   // Check for wallet mismatch and handle disconnection when switching accounts
+   // Check for wallet mismatch with stored address and disconnect if needed
+   // Account switch is detected when connected wallet doesn't match stored wallet
    useEffect(() => {
-      if (!username) {
-         setHasShownWalletPrompt(false);
+      if (!username || !account.isConnected || !account.address) {
          return;
       }
 
-      // If user logged in with a different account and wagmi has a wallet connected
-      if (account.isConnected && account.address) {
-         const connectedAddress = account.address.toLowerCase();
+      const connectedAddress = account.address.toLowerCase();
 
-         // If user has NO stored wallet, disconnect any connected wallet
-         if (!storedWalletAddress) {
-            console.log('User has no stored wallet - disconnecting current wallet');
-            disconnect();
-            return;
-         }
-
+      // If user has a stored wallet that doesn't match the connected one
+      if (storedWalletAddress) {
          const storedAddress = storedWalletAddress.toLowerCase();
-
-         // If the connected wallet doesn't match the stored wallet, disconnect it
+         
          if (connectedAddress !== storedAddress) {
-            console.log('Wallet mismatch - disconnecting current wallet');
+            // Wallet mismatch - account switch detected, disconnect it
+            console.log(`Wallet mismatch detected - disconnecting wallet (connected: ${connectedAddress.slice(0, 6)}..., stored: ${storedAddress.slice(0, 6)}...)`);
             disconnect();
          }
       }
+      // If no stored wallet, allow the connection (initial connection scenario)
    }, [username, storedWalletAddress, account.isConnected, account.address, disconnect]);
 
    // Show wallet connection reminder if user has stored wallet but not connected
