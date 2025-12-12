@@ -2,10 +2,6 @@
 
 import { useCallback, useState } from 'react';
 
-import { useDispatch } from 'react-redux';
-import { useAccount } from 'wagmi';
-
-import type { AppDispatch } from '@/store/store';
 import { MobileNav, Sidebar } from '@/views/profile/components/navigation';
 import { FilterButtons, RoleSwitcher, TelegramModal } from '@/views/profile/components/shared';
 import { DashboardTab, FAQTab, LoanSummaryTab, SettingsTab, SupportTab, TransactionHistoryTab } from '@/views/profile/components/tabs';
@@ -14,8 +10,6 @@ import { useLoanData, useProfileData, useProfileUpdate } from '@/views/profile/h
 import { ProfileTab, UserRole } from '@/views/profile/types';
 
 export default function Profile() {
-   const dispatch = useDispatch<AppDispatch>();
-   const account = useAccount();
    const [navItems, setNavItems] = useState(INITIAL_NAV_ITEMS);
    const [infoNavItems, setInfoNavItems] = useState(INFO_NAV_ITEMS);
    const [userRole, setUserRole] = useState<UserRole>(UserRole.LENDER);
