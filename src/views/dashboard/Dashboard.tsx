@@ -28,6 +28,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
+import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
@@ -35,6 +36,14 @@ import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 const CREDIT_LEVELLING_VIDEO_ID = 'gaRjXOd2s2U';
 
 export default function Dashboard() {
+   return (
+      <RequestBoardFilterContextProvider>
+         <Dashboard$ />
+      </RequestBoardFilterContextProvider>
+   );
+}
+
+function Dashboard$() {
    const pathname = usePathname();
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
@@ -74,6 +83,7 @@ export default function Dashboard() {
       search: '',
       sortBy: undefined
    });
+   // const filters2 = useRequestBoardFilterContext((state) => state);
 
    const clear = () => {
       setTotalRepaymentAmount('');
@@ -154,7 +164,11 @@ export default function Dashboard() {
       }
 
       if (!block || !coin) {
-         console.log('Network validation failed:', { block, coin, chainName: account?.chain?.name });
+         console.log('Network validation failed:', {
+            block,
+            coin,
+            chainName: account?.chain?.name
+         });
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
          return;
       }
@@ -333,15 +347,15 @@ export default function Dashboard() {
                      customAmount={customAmount}
                      onCustomAmountChange={setCustomAmount}
                   />
-                  <section className="flex-1 flex flex-col items-center mt-10 md:mt-0">
-                     <div className="flex flex-wrap justify-start md:justify-end gap-3 mb-6 w-full max-w-xl">
+                  <section className="flex-1 flex flex-col items-start mt-10 md:mt-0">
+                     <div className="flex flex-wrap justify-between gap-3 mb-6 w-full">
                         <SortButtons
                            activeSort={filters.sortBy || ''}
                            onSortChange={(sort) => handleFiltersChange({ sortBy: sort || undefined })}
                         />
                         <SearchBar value={searchLoan} onChange={setSearchLoan} placeholder="Search Request..." />
                      </div>
-                     <div className="flex flex-wrap justify-center gap-6">
+                     <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(350px,1fr))] w-full">
                         {displayedLoans && Array.isArray(displayedLoans)
                            ? displayedLoans.map((loan) => <UserCard key={loan.id} {...loan} />)
                            : null}

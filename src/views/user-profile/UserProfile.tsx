@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 
-import Image from 'next/image';
-
 import { ChevronDown, HelpCircle, TrendingUp, Users, XCircle } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
@@ -176,12 +174,12 @@ const UserProfile = () => {
       <div className="min-h-screen bg-[#0B1120] text-white">
          <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
             <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 mb-8">
-               <Image
+               {/* We don't need Image later */}
+               {/* eslint-disable-next-line */}
+               <img
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Chiaroscuro_lighting_illuminates_a_Chibi-style_SVG_logo_a_gray_and_light_pink_hippo__joyfully_jumping__thumbs_up__holding_a_gold_Japanese_Mon_coin.__Hayao_Miyazaki_inspired__deep_teal_hues__warm_candl-uvt0ZI3fogcgqDR4Y2gCSRZfq8QmtX.png"
                   alt="Friendly hippo mascot"
                   className="w-24 h-24 md:w-32 md:h-32"
-                  width={96}
-                  height={96}
                />
                <div className="space-y-1 text-center md:text-left">
                   <h1 className="text-xl md:text-2xl font-semibold">Dashboard Summary</h1>
