@@ -6,10 +6,10 @@ import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAccount, useDisconnect } from 'wagmi';
 
+import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 
 /**
  * Hook to synchronize wallet connection with user's stored wallet address
@@ -83,11 +83,11 @@ export function useWalletSync() {
             })
             .catch((error) => {
                console.error('Failed to save wallet address:', error);
-               
+
                // Check if it's a duplicate wallet constraint error
                const errorMessage = error?.message || '';
                const errorCode = error?.code || '';
-               
+
                if (errorCode === '23505' && errorMessage.includes('users_wallet_address_key')) {
                   // Wallet is already attached to another account
                   showToast(
@@ -109,7 +109,7 @@ export function useWalletSync() {
                   );
                   console.error('Wallet connection error details:', errorDetails);
                }
-               
+
                // Disconnect the wallet on error
                disconnect();
             });
