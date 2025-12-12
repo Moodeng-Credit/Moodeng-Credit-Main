@@ -164,7 +164,11 @@ function Dashboard$() {
       }
 
       if (!block || !coin) {
-         console.log('Network validation failed:', { block, coin, chainName: account?.chain?.name });
+         console.log('Network validation failed:', {
+            block,
+            coin,
+            chainName: account?.chain?.name
+         });
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
          return;
       }
@@ -344,7 +348,7 @@ function Dashboard$() {
                      onCustomAmountChange={setCustomAmount}
                   />
                   <section className="flex-1 flex flex-col items-start mt-10 md:mt-0">
-                     <div className="flex flex-wrap justify-start md:justify-end gap-3 mb-6 w-full max-w-xl">
+                     <div className="flex flex-wrap justify-between gap-3 mb-6 w-full">
                         <SortButtons
                            activeSort={filters.sortBy || ''}
                            onSortChange={(sort) => handleFiltersChange({ sortBy: sort || undefined })}
