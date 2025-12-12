@@ -1,0 +1,13 @@
+@font-face {
+  /* NOTE: this font seems to requre a license */
+  font-family: "PP Telegraf";
+  src: url("https://anima-uploads.s3.amazonaws.com/projects/6567a96c982083644ea4a7d8/fonts/pptelegraf-variable.ttf")
+    format("truetype");
+  font-weight: 100 900; /* Variable range */
+  font-display: swap;
+}
+
+@theme {
+  --font-display: "PP Telegraf";
+  --font-telex: "Telex";
+}
