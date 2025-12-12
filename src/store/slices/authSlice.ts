@@ -206,7 +206,9 @@ export const loginUser = createAsyncThunk('auth/login', async ({ username, passw
             console.error('Failed to resend verification email:', resendError);
          }
 
-         const emailNotConfirmedError = new Error('Please verify your email before signing in. A verification email has been sent to your inbox.');
+         const emailNotConfirmedError = new Error(
+            'Please verify your email before signing in. A verification email has been sent to your inbox.'
+         );
          (emailNotConfirmedError as Error & { code: string }).code = 'email_not_confirmed';
          throw emailNotConfirmedError;
       }

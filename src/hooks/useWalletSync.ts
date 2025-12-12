@@ -63,7 +63,9 @@ export function useWalletSync() {
       }
 
       // Show a console message reminding user to connect their wallet
-      console.log(`Reminder: You have a wallet address stored (${storedWalletAddress.slice(0, 6)}...${storedWalletAddress.slice(-4)}). Please connect your wallet.`);
+      console.log(
+         `Reminder: You have a wallet address stored (${storedWalletAddress.slice(0, 6)}...${storedWalletAddress.slice(-4)}). Please connect your wallet.`
+      );
       setHasShownWalletPrompt(true);
    }, [username, storedWalletAddress, account.isConnected, hasShownWalletPrompt]);
 
