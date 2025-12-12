@@ -1,11 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useDispatch } from 'react-redux';
 import { useAccount } from 'wagmi';
 
-import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { MobileNav, Sidebar } from '@/views/profile/components/navigation';
 import { FilterButtons, RoleSwitcher, TelegramModal } from '@/views/profile/components/shared';
