@@ -1,3 +1,3 @@
 export function LandingPage() {
-  return <div>LandingPage</div>;
+  return <div className="h-screen">LandingPage</div>;
 }
