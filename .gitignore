@@ -73,3 +73,4 @@ count.txt
 .nitro
 .tanstack
 .wrangler
+.circularDependency.json
