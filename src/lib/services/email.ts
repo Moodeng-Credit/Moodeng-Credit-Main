@@ -1,12 +1,13 @@
 import { google } from 'googleapis';
 import nodemailer from 'nodemailer';
+import * as dotenvx from '@dotenvx/dotenvx';
 
 const OAuth2 = google.auth.OAuth2;
 
-const oauth2Client = new OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, 'https://developers.google.com/oauthplayground');
+const oauth2Client = new OAuth2(dotenvx.get('CLIENT_ID'), dotenvx.get('CLIENT_SECRET'), 'https://developers.google.com/oauthplayground');
 
 oauth2Client.setCredentials({
-   refresh_token: process.env.REFRESH_TOKEN
+   refresh_token: dotenvx.get('REFRESH_TOKEN')
 });
 
 const getAccessToken = async () => {
@@ -41,14 +42,14 @@ const createTransporter = async () => {
       maxMessages: 10,
       auth: {
          type: 'OAuth2',
-         user: process.env.EMAIL_USER,
-         clientId: process.env.CLIENT_ID,
-         clientSecret: process.env.CLIENT_SECRET,
-         refreshToken: process.env.REFRESH_TOKEN,
+         user: dotenvx.get('EMAIL_USER'),
+         clientId: dotenvx.get('CLIENT_ID'),
+         clientSecret: dotenvx.get('CLIENT_SECRET'),
+         refreshToken: dotenvx.get('REFRESH_TOKEN'),
          accessToken: accessToken
       },
       logger: true,
-      debug: process.env.NODE_ENV === 'development' // Enable debug in development
+      debug: dotenvx.get('NODE_ENV') === 'development' // Enable debug in development
    } as nodemailer.TransportOptions);
 };
 
@@ -66,7 +67,7 @@ export const verifyTransporter = async () => {
 
 export const sendMail = async (recipientEmail: string, subject: string, message: string, retries = 3) => {
    const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: dotenvx.get('EMAIL_USER'),
       to: recipientEmail,
       subject: subject,
       text: message

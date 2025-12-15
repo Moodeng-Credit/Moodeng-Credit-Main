@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import * as dotenvx from '@dotenvx/dotenvx';
 
 interface JWTPayload {
    user: {
@@ -26,7 +27,7 @@ export const generateToken = (userId: string): string => {
       }
    };
 
-   const token = jwt.sign(payload, process.env.JWT_SECRET!, {
+   const token = jwt.sign(payload, dotenvx.get('JWT_SECRET')!, {
       expiresIn: '24h'
    });
 
