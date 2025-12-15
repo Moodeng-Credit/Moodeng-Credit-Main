@@ -1,10 +1,12 @@
+import * as dotenvx from '@dotenvx/dotenvx';
+
 import { formatNumber } from '@/utils/decimalHelpers';
 
 import axios from '@/lib/axios';
 
 export const sendTelegramMessage = async (chatId: number, message: string) => {
    try {
-      await axios.post(process.env.TELEGRAM_API_URL!, {
+      await axios.post(dotenvx.get('TELEGRAM_API_URL')!, {
          chat_id: chatId,
          text: message,
          parse_mode: 'Markdown'
@@ -17,8 +19,8 @@ export const sendTelegramMessage = async (chatId: number, message: string) => {
 export const setWebhook = async () => {
    try {
       await axios
-         .post(process.env.TELEGRAM_WEBHOOK_API!, {
-            url: process.env.TELEGRAM_WEBHOOK_URL
+         .post(dotenvx.get('TELEGRAM_WEBHOOK_API')!, {
+            url: dotenvx.get('TELEGRAM_WEBHOOK_URL')
          })
          .then(() => {
             console.log('Webhook set successfully');
