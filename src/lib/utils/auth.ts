@@ -1,9 +1,9 @@
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 
+import * as dotenvx from '@dotenvx/dotenvx';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import * as dotenvx from '@dotenvx/dotenvx';
 
 interface JWTPayload {
    user: {

@@ -1,6 +1,6 @@
+import * as dotenvx from '@dotenvx/dotenvx';
 import { google } from 'googleapis';
 import nodemailer from 'nodemailer';
-import * as dotenvx from '@dotenvx/dotenvx';
 
 const OAuth2 = google.auth.OAuth2;
 
