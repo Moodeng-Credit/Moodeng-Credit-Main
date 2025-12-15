@@ -5,7 +5,7 @@
    "scripts": {
       "dotenvx": "dotenvx",
       "dev": "dotenvx run -- next dev",
-      "dev:local": "dotenvx run -- NODE_ENV=development NEXT_SKIP_TYPES_CHECK=true NODE_OPTIONS='--max-old-space-size=8192' NODE_TLS_REJECT_UNAUTHORIZED=0  next dev --experimental-https",
+      "dev:local": "dotenvx run --env-file=.env.staging -- sh -c \"NODE_ENV=development NEXT_SKIP_TYPES_CHECK=true NODE_OPTIONS='--max-old-space-size=8192' NODE_TLS_REJECT_UNAUTHORIZED=0 next dev --experimental-https\"",
       "build": "dotenvx run -- next build",
       "start": "dotenvx run -- next start ",
       "reup": "rm -rf node_modules && rm -rf .next && npm install",

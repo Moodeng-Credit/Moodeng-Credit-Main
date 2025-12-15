@@ -22,6 +22,7 @@ import { usePagination } from '@/hooks/usePagination';
 
 import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
+import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import { fetchUser } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -64,8 +65,6 @@ function Dashboard$() {
    const lenderUserId = '';
    const [loanAmount, setLoanAmount] = useState('');
    const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');
-   const [block, setBlock] = useState(account?.chain?.name);
-   const [coin, setCoin] = useState('USDC');
    const [reason, setReason] = useState('');
    const [days, setDays] = useState('');
    const [customAmount, setCustomAmount] = useState('');
@@ -163,11 +162,10 @@ function Dashboard$() {
          return;
       }
 
-      if (!block || !coin) {
+      if (account.chain?.id !== ALLOWED_CHAIN_ID) {
          console.log('Network validation failed:', {
-            block,
-            coin,
-            chainName: account?.chain?.name
+            required: ALLOWED_CHAIN_DISPLAY_NAME,
+            current: account.chain?.name
          });
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
          return;
@@ -187,6 +185,7 @@ function Dashboard$() {
 
       const loanData = {
          borrowerUserId: borrowerUserId || '',
+         borrowerWallet: user.walletAddress,
          lenderUserId,
          loanAmount: parseFloat(loanAmount),
          totalRepaymentAmount: parseFloat(totalRepaymentAmount),
@@ -196,8 +195,6 @@ function Dashboard$() {
 
       if (
          user.isWorldId === 'ACTIVE' &&
-         block &&
-         coin &&
          (user.nal || 0) < (user.mal || 0) &&
          parseFloat(loanAmount) <= (user.cs || 0) &&
          parseFloat(loanAmount) > 0
@@ -236,13 +233,6 @@ function Dashboard$() {
       setShowPurple(true);
       setShowModal(false);
    };
-
-   useEffect(() => {
-      if (account?.chain?.name) {
-         setBlock(account.chain.name);
-         setCoin('USDC');
-      }
-   }, [account?.chain?.name]);
 
    useEffect(() => {
       if (typeof window !== 'undefined' && window.location.hash) {

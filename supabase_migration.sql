@@ -46,7 +46,6 @@ CREATE TABLE loans (
   loan_status loan_status DEFAULT 'Requested',
   repayment_status repayment_status DEFAULT 'Unpaid',
   days INTEGER NOT NULL,
-  block TEXT NOT NULL,
   coin TEXT NOT NULL,
   hash TEXT[] DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW(),

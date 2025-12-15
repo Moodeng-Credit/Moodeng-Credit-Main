@@ -107,8 +107,7 @@ export default function LoanRequestModal({
                      className="flex-1 px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
                      id="borrow-amount"
                      placeholder="Set your desired amount"
-                     type={isVerified ? 'number' : 'text'}
-                     min={isVerified ? '0' : undefined}
+                     type="text"
                      value={loanAmount}
                   />
                </div>
@@ -120,8 +119,7 @@ export default function LoanRequestModal({
                   className="border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
                   id="repayment-amount"
                   placeholder="Must be more than Borrowed amount..."
-                  type={isVerified ? 'number' : 'text'}
-                  min={isVerified ? '0' : undefined}
+                  type="text"
                   value={totalRepaymentAmount}
                />
                <label className="font-semibold text-gray-800 text-sm">Repayment Date</label>

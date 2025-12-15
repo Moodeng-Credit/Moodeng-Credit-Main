@@ -1,11 +1,11 @@
 'use client';
 
 import { parseUnits } from 'viem';
-import { useSwitchChain, useWriteContract } from 'wagmi';
+import { useWriteContract } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
-import { chainIdFromNetwork, tokenAddresses } from '@/config/wagmiConfig';
+import { ALLOWED_CHAIN_DISPLAY_NAME, getAllowedChainTokenConfig } from '@/config/wagmiConfig';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 
@@ -30,24 +30,39 @@ const ERC20_ABI = [
 ];
 
 const useWallet = () => {
-   const { switchChain } = useSwitchChain();
    const { writeContractAsync } = useWriteContract();
    const { showToastByConfig } = useToast();
 
-   const Transfer = async (
-      e: unknown,
-      recipient: string,
-      amount: string,
-      id: string,
-      block: string,
-      coin: string
-   ): Promise<string | null> => {
-      const blockChain = chainIdFromNetwork(block);
-      try {
-         const targetChainId = tokenAddresses[blockChain || ''].id;
-         const tokenAddress = tokenAddresses[targetChainId][coin as keyof (typeof tokenAddresses)[typeof targetChainId]];
-         switchChain({ chainId: targetChainId });
+   const Transfer = async (e: unknown, recipient: string, amount: string, id: string, coin: string = 'USDC'): Promise<string | null> => {
+      console.log('[Transfer] Starting transfer - Loan ID:', id, 'Coin:', coin);
 
+      const tokenConfig = getAllowedChainTokenConfig();
+      console.log('[Transfer] Token config:', tokenConfig);
+
+      if (!tokenConfig) {
+         console.error('[Transfer] Missing token configuration for', ALLOWED_CHAIN_DISPLAY_NAME, 'Loan ID:', id);
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
+         return null;
+      }
+
+      const targetChainId = tokenConfig.id;
+      const effectiveCoin = (tokenConfig as Record<string, string | number>)[coin] ? coin : 'USDC';
+      const tokenAddress = (tokenConfig as Record<string, string | number>)[effectiveCoin] as string | undefined;
+      if (!tokenAddress) {
+         console.error('[Transfer] Missing token address for', effectiveCoin, 'on', ALLOWED_CHAIN_DISPLAY_NAME);
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
+         return null;
+      }
+
+      console.log('[Transfer] Using', ALLOWED_CHAIN_DISPLAY_NAME, 'and', effectiveCoin);
+
+      // Since RainbowKit is configured to only support the allowed chain,
+      // we can rely on the environment-configured chain ID
+      // const targetChainId = ALLOWED_CHAIN_ID;
+
+      // The wallet connection validation is done in the component (Dashboard/UserCard)
+      // If we reach here, the user is connected to the correct chain
+      try {
          // USDC uses 6 decimals
          const decimals = 6;
          const amounts = parseUnits(amount, decimals);

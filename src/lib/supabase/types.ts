@@ -85,7 +85,6 @@ export interface Database {
                loan_status: LoanStatus;
                repayment_status: RepaymentStatus;
                due_date: string;
-               block: string;
                coin: string;
                hash: string[];
                created_at: string;
@@ -105,7 +104,6 @@ export interface Database {
                loan_status?: LoanStatus;
                repayment_status?: RepaymentStatus;
                due_date: string;
-               block: string;
                coin: string;
                hash?: string[];
                created_at?: string;
@@ -125,7 +123,6 @@ export interface Database {
                loan_status?: LoanStatus;
                repayment_status?: RepaymentStatus;
                due_date?: string;
-               block?: string;
                coin?: string;
                hash?: string[];
                updated_at?: string;
