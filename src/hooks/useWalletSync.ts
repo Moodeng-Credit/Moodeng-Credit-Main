@@ -8,6 +8,7 @@ import { useAccount, useDisconnect } from 'wagmi';
 
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
+
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
@@ -47,7 +48,9 @@ export function useWalletSync() {
 
          if (connectedAddress !== storedAddress) {
             // Wallet mismatch - account switch detected, disconnect it
-            console.log(`Wallet mismatch detected - disconnecting wallet (connected: ${connectedAddress.slice(0, 6)}..., stored: ${storedAddress.slice(0, 6)}...)`);
+            console.log(
+               `Wallet mismatch detected - disconnecting wallet (connected: ${connectedAddress.slice(0, 6)}..., stored: ${storedAddress.slice(0, 6)}...)`
+            );
             disconnect();
          }
       }

@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 
+import * as dotenvx from '@dotenvx/dotenvx';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -26,7 +27,7 @@ export const generateToken = (userId: string): string => {
       }
    };
 
-   const token = jwt.sign(payload, process.env.JWT_SECRET!, {
+   const token = jwt.sign(payload, dotenvx.get('JWT_SECRET')!, {
       expiresIn: '24h'
    });
 
