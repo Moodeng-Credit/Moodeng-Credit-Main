@@ -1,5 +1,6 @@
-import { formatNumber } from '@/utils/decimalHelpers';
 import * as dotenvx from '@dotenvx/dotenvx';
+
+import { formatNumber } from '@/utils/decimalHelpers';
 
 import axios from '@/lib/axios';
 
