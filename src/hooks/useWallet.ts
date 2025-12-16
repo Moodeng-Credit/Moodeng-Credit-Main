@@ -45,7 +45,6 @@ const useWallet = () => {
          return null;
       }
 
-      const targetChainId = tokenConfig.id;
       const effectiveCoin = (tokenConfig as Record<string, string | number>)[coin] ? coin : 'USDC';
       const tokenAddress = (tokenConfig as Record<string, string | number>)[effectiveCoin] as string | undefined;
       if (!tokenAddress) {
@@ -55,13 +54,6 @@ const useWallet = () => {
       }
 
       console.log('[Transfer] Using', ALLOWED_CHAIN_DISPLAY_NAME, 'and', effectiveCoin);
-
-      // Since RainbowKit is configured to only support the allowed chain,
-      // we can rely on the environment-configured chain ID
-      // const targetChainId = ALLOWED_CHAIN_ID;
-
-      // The wallet connection validation is done in the component (Dashboard/UserCard)
-      // If we reach here, the user is connected to the correct chain
       try {
          // USDC uses 6 decimals
          const decimals = 6;
