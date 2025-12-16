@@ -15,6 +15,7 @@ import useWallet from '@/hooks/useWallet';
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
+import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -29,7 +30,8 @@ function UserPay({ loan }: { loan: Loan }) {
    const { Transfer } = useWallet();
    const dispatch = useDispatch<AppDispatch>();
    const { showToastByConfig } = useToast();
-   const { isConnected } = useAccount();
+   const account = useAccount();
+   const { isConnected } = account;
    const { openConnectModal } = useConnectModal();
 
    const handleBorrow = async (e: MouseEvent<HTMLButtonElement>) => {
@@ -41,6 +43,12 @@ function UserPay({ loan }: { loan: Loan }) {
 
       if (!isConnected) {
          openConnectModal?.();
+         e.stopPropagation();
+         return;
+      }
+
+      if (account.chain?.id !== ALLOWED_CHAIN_ID) {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
          e.stopPropagation();
          return;
       }
@@ -57,7 +65,8 @@ function UserPay({ loan }: { loan: Loan }) {
          newRepaidAmount <= totalOwed // Don't allow overpayment
       ) {
          setIsProcessing(true);
-         const transactionHash = await Transfer(e, loan.lenderWallet || '', repaidAmountToAdd.toString(), loan.id, loan.block, loan.coin);
+         const transferCoin = loan.coin?.trim() || 'USDC';
+         const transactionHash = await Transfer(e, loan.lenderWallet || '', repaidAmountToAdd.toString(), loan.id, transferCoin);
 
          if (transactionHash) {
             try {
@@ -151,7 +160,7 @@ function UserPay({ loan }: { loan: Loan }) {
                      width={100}
                      height={100}
                   />
-                  <div className="self-stretch my-auto text-base font-medium leading-loose text-black">{loan.block}</div>
+                  <div className="self-stretch my-auto text-base font-medium leading-loose text-black">{ALLOWED_CHAIN_DISPLAY_NAME}</div>
                </div>
             </div>
             <label htmlFor="repayment" className="block text-sm font-medium text-gray-700">

@@ -26,7 +26,6 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    loanStatus: row.loan_status,
    repaymentStatus: row.repayment_status,
    dueDate: row.due_date,
-   block: row.block,
    coin: row.coin,
    hash: row.hash,
    createdAt: row.created_at,
@@ -50,14 +49,14 @@ export const createLoan = createAsyncThunk('loans/create', async (loanData: Crea
 
    const loanInsert: LoanInsert = {
       tracking_id: trackingId,
+      borrower_wallet: loanData.borrowerWallet || null,
       borrower_user: loanData.borrowerUserId || null,
       lender_user: loanData.lenderUserId || null, // Use null instead of empty string to avoid FK violation
       loan_amount: loanData.loanAmount,
       total_repayment_amount: loanData.totalRepaymentAmount,
       reason: loanData.reason,
       due_date: loanData.dueDate,
-      block: 'ethereum', // Default value, adjust as needed
-      coin: 'ETH' // Default value, adjust as needed
+      coin: 'USDC' // Only USDC transfers supported
    };
 
    const { data, error } = await supabase.from('loans').insert(loanInsert).select().single();

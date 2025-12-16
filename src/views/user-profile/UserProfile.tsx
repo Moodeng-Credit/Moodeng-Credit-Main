@@ -14,6 +14,7 @@ import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity, getDiversityColor, getDiversityStatus } from '@/utils/diversityScore';
 import { getNetworkColor } from '@/utils/networkColors';
 
+import { ALLOWED_CHAIN_DISPLAY_NAME } from '@/config/wagmiConfig';
 import { getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -600,8 +601,10 @@ const UserProfile = () => {
                                     <div className="text-sm text-gray-400">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</div>
                                  </div>
                                  <div className="flex flex-col items-end gap-2">
-                                    <span className={`px-3 py-1 ${getNetworkColor(loan.block)} rounded-lg text-sm font-medium`}>
-                                       {loan.block}
+                                    <span
+                                       className={`px-3 py-1 ${getNetworkColor(ALLOWED_CHAIN_DISPLAY_NAME)} rounded-lg text-sm font-medium`}
+                                    >
+                                       {ALLOWED_CHAIN_DISPLAY_NAME}
                                     </span>
                                     <span
                                        className={`text-sm font-medium ${loan.repaymentStatus !== 'Paid' ? 'text-blue-400' : 'text-emerald-400'}`}
@@ -662,8 +665,10 @@ const UserProfile = () => {
                                  <td className="py-3 px-4 text-gray-300">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
                                  <td className="py-3 px-4 font-medium text-white">${formatNumber(loan.loanAmount)}</td>
                                  <td className="py-3 px-4">
-                                    <span className={`px-2.5 py-1 ${getNetworkColor(loan.block)} rounded-lg text-xs font-medium`}>
-                                       {loan.block}
+                                    <span
+                                       className={`px-2.5 py-1 ${getNetworkColor(ALLOWED_CHAIN_DISPLAY_NAME)} rounded-lg text-xs font-medium`}
+                                    >
+                                       {ALLOWED_CHAIN_DISPLAY_NAME}
                                     </span>
                                  </td>
                                  <td className="py-3 px-4 text-gray-400">{loan.lenderUser || 'Others'}</td>
@@ -688,8 +693,10 @@ const UserProfile = () => {
                                  <td className="py-3 px-4 text-gray-300">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
                                  <td className="py-3 px-4 font-medium text-white">${formatNumber(loan.loanAmount)}</td>
                                  <td className="py-3 px-4">
-                                    <span className={`px-2.5 py-1 ${getNetworkColor(loan.block)} rounded-lg text-xs font-medium`}>
-                                       {loan.block}
+                                    <span
+                                       className={`px-2.5 py-1 ${getNetworkColor(ALLOWED_CHAIN_DISPLAY_NAME)} rounded-lg text-xs font-medium`}
+                                    >
+                                       {ALLOWED_CHAIN_DISPLAY_NAME}
                                     </span>
                                  </td>
                                  <td className="py-3 px-4 text-gray-400">{loan.lenderUser || 'Others'}</td>

@@ -15,7 +15,6 @@ export interface Loan {
    loanStatus: string;
    repaymentStatus: string;
    dueDate: string; // ISO 8601 datetime string in UTC (midnight UTC+00)
-   block: string;
    coin: string;
    hash: string[]; // Array of transaction hashes - includes lending transaction + all repayment transactions
    createdAt: string;
@@ -24,6 +23,7 @@ export interface Loan {
 
 export interface CreateLoanData {
    borrowerUserId: string;
+   borrowerWallet?: string; // Borrower's wallet address
    lenderUserId: string;
    loanAmount: number;
    totalRepaymentAmount: number;
@@ -68,7 +68,6 @@ export interface ILoan {
    loanStatus: LoanStatusType;
    repaymentStatus: RepaymentStatusType;
    dueDate: Date;
-   block: string;
    coin: string;
    hash: string[]; // Array of transaction hashes - includes lending transaction + all repayment transactions
    createdAt: Date;
