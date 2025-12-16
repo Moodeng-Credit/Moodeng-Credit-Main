@@ -33,7 +33,7 @@ interface SecuritySettingsProps {
 }
 
 export default function SecuritySettings({ password, walletAddress, onPasswordChange, onUpdate }: SecuritySettingsProps) {
-   const { isConnected, address, chain } = useAccount();
+   const { address, chain } = useAccount();
 
    // Get USDC balance
    const usdcAddress = getTokenAddresses(chain?.id || ALLOWED_CHAIN_ID)?.USDC;
@@ -103,7 +103,7 @@ export default function SecuritySettings({ password, walletAddress, onPasswordCh
                </div>
             </div>
             <ConnectButton.Custom>
-               {({ account, chain, openAccountModal, openChainModal, openConnectModal, authenticationStatus, mounted }) => {
+               {({ account, chain: currentChain, openAccountModal, openChainModal, openConnectModal, authenticationStatus, mounted }) => {
                   const ready = mounted && authenticationStatus !== 'loading';
                   const connected = ready && account && chain && (!authenticationStatus || authenticationStatus === 'authenticated');
 
@@ -131,7 +131,7 @@ export default function SecuritySettings({ password, walletAddress, onPasswordCh
                               );
                            }
 
-                           if (chain.unsupported) {
+                           if (currentChain?.unsupported) {
                               return (
                                  <button
                                     onClick={openChainModal}
@@ -148,7 +148,7 @@ export default function SecuritySettings({ password, walletAddress, onPasswordCh
                                  <div className="flex flex-col gap-1">
                                     <div className="text-sm font-medium text-gray-700">{account.displayName}</div>
                                     <div className="text-xs text-gray-500">
-                                       {chain?.name} • {formattedUsdcBalance}
+                                       {currentChain?.name} • {formattedUsdcBalance}
                                     </div>
                                  </div>
                                  <button
