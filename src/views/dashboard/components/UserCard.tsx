@@ -116,6 +116,10 @@ export default function UserCard(loan: Loan) {
          return;
       }
 
+      if (loanData.loanStatus === 'Lent') {
+         return; // Loan already lent, no further lending allowed
+      }
+
       if (!isConnected) {
          openConnectModal?.();
          e.stopPropagation();
@@ -291,6 +295,12 @@ export default function UserCard(loan: Loan) {
                <div className="p-5 bg-gray-100">
                   <div className="w-full bg-gray-300 text-gray-600 font-semibold text-[15px] py-3 rounded-lg text-center cursor-not-allowed">
                      Your Loan Request
+                  </div>
+               </div>
+            ) : loanData.loanStatus === 'Lent' ? (
+               <div className="p-5 bg-gray-100">
+                  <div className="w-full bg-gray-300 text-gray-600 font-semibold text-[15px] py-3 rounded-lg text-center cursor-not-allowed">
+                     Help Received
                   </div>
                </div>
             ) : (
