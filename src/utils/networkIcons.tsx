@@ -95,6 +95,15 @@ export const NETWORK_ICONS: Record<string, ReactNode> = {
    )
 };
 
+const normalizeNetworkKey = (value: string) => value.toLowerCase().replace(/\s+/g, '');
+
 export const getNetworkIcon = (network: string): ReactNode => {
-   return NETWORK_ICONS[network] || <i className="fas fa-gem text-white text-lg"></i>;
+   const key = normalizeNetworkKey(network);
+   if (NETWORK_ICONS[key]) {
+      return NETWORK_ICONS[key];
+   }
+   if (key === 'basesepolia' && NETWORK_ICONS.base) {
+      return NETWORK_ICONS.base;
+   }
+   return <i className="fas fa-gem text-white text-lg"></i>;
 };

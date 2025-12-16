@@ -16,6 +16,7 @@ import useWallet from '@/hooks/useWallet';
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
+import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import { MONTHS } from '@/constants/dates';
 import { getUserProfile } from '@/store/slices/authSlice';
 import { fetchLoans, getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
@@ -32,7 +33,8 @@ export default function UserCard(loan: Loan) {
    const router = useRouter();
    const dispatch = useDispatch<AppDispatch>();
    const { Transfer } = useWallet();
-   const { isConnected } = useAccount();
+   const account = useAccount();
+   const { isConnected } = account;
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
@@ -120,35 +122,55 @@ export default function UserCard(loan: Loan) {
          return;
       }
 
+      console.log('[handleLend] wallet state', {
+         reduxWallet: wallet,
+         wagmiAddress: account.address,
+         isConnected,
+         loanWallet: loanData.borrowerWallet,
+         loanCoin: loanData.coin,
+         allowedChain: ALLOWED_CHAIN_DISPLAY_NAME,
+         currentChainId: account.chain?.id,
+         currentChainName: account.chain?.name
+      });
+
       if (loanData.borrowerUser === username) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED));
          e.stopPropagation();
          return;
       }
 
-      if (!wallet || wallet.trim() === '') {
+      const lenderWallet = account.address?.trim() || wallet?.trim();
+      if (!lenderWallet) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
          e.stopPropagation();
          return;
       }
 
+      const borrowerWallet = loanData.borrowerWallet?.trim();
+      if (!borrowerWallet) {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
+         e.stopPropagation();
+         return;
+      }
+
+      if (account.chain?.id !== ALLOWED_CHAIN_ID) {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
+         e.stopPropagation();
+         return;
+      }
+
+      const transferCoin = loanData.coin?.trim() || 'USDC';
+
       setIsProcessing(true);
 
       try {
-         const transactionHash = await Transfer(
-            e,
-            loanData.borrowerWallet || '',
-            formatNumber(loanData.loanAmount),
-            loanData.id,
-            loanData.block,
-            loanData.coin
-         );
+         const transactionHash = await Transfer(e, borrowerWallet, formatNumber(loanData.loanAmount), loanData.id, transferCoin);
 
          if (transactionHash) {
             try {
                const loanPayload = {
                   id: loanData.id,
-                  wallet,
+                  wallet: lenderWallet,
                   username,
                   loanStatus: 'Lent',
                   hash: transactionHash
@@ -338,7 +360,7 @@ export default function UserCard(loan: Loan) {
                      </svg>
                      <dl className="text-left w-full max-w-xs mx-auto grid grid-cols-2 gap-y-1 gap-x-2 text-sm font-semibold">
                         <dt className="text-gray-900">Network:</dt>
-                        <dd className="text-gray-900 text-right font-extrabold">{loan.block}</dd>
+                        <dd className="text-gray-900 text-right font-extrabold">{ALLOWED_CHAIN_DISPLAY_NAME}</dd>
                         <dt className="text-gray-900">Amount Funded:</dt>
                         <dd className="text-gray-900 text-right font-extrabold">${formatNumber(loan.loanAmount)}</dd>
                         <dt className="text-gray-900">Expected Return:</dt>

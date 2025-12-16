@@ -1,17 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { type Chain, ConnectButton } from '@rainbow-me/rainbowkit';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
-import { useAccount, useSwitchChain } from 'wagmi';
+import { useAccount } from 'wagmi';
 
-import { useClickOutside } from '@/hooks/useClickOutside';
-
-import { chainConfig, chainsWithIcons, type CustomChainConfig, getNetworkSvg } from '@/config/wagmiConfig';
+import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID, getNetworkSvg } from '@/config/wagmiConfig';
 import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
@@ -19,8 +15,6 @@ export default function UserNetwork() {
    const dispatch = useDispatch<AppDispatch>();
    const router = useRouter();
    const account = useAccount();
-   const { switchChain } = useSwitchChain();
-   const [showNetwork, setShowNetwork] = useState(false);
    const username = useSelector((state: RootState) => state.auth.username);
 
    const handleLogout = () => {
@@ -28,55 +22,6 @@ export default function UserNetwork() {
       // The wallet will auto-reconnect on next login via WalletSyncInitializer
       dispatch(logoutUser());
       router.push('/login');
-   };
-
-   // Available chains from Wagmi config
-   const availableChains = chainsWithIcons;
-
-   const getNetworkColor = (chainId: number) => {
-      const config = (chainConfig as Record<number, CustomChainConfig>)[chainId];
-      return config ? [config.bgColor, config.shortName] : ['bg-gray-600', 'Unknown'];
-   };
-
-   useEffect(() => {
-      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach((checkbox) => {
-         checkbox.addEventListener('change', (e: Event) => {
-            const target = e.target as HTMLInputElement;
-            const span = target.nextElementSibling;
-            if (target.checked) {
-               span?.classList.add('bg-purple-600');
-               span?.classList.remove('bg-gray-300');
-               span?.firstElementChild?.classList.add('translate-x-5');
-               span?.firstElementChild?.classList.remove('translate-x-0');
-            } else {
-               span?.classList.remove('bg-purple-600');
-               span?.classList.add('bg-gray-300');
-               span?.firstElementChild?.classList.remove('translate-x-5');
-               span?.firstElementChild?.classList.add('translate-x-0');
-            }
-         });
-      });
-   }, [username]);
-
-   // Use the click outside hook for the network dropdown
-   const networkDropdownRef = useClickOutside<HTMLDivElement>(() => setShowNetwork(false), showNetwork);
-
-   // Handle chain switching
-   const handleSwitchChain = async (chainId: number) => {
-      try {
-         if (account.isConnected && chainId) {
-            switchChain({ chainId });
-            setShowNetwork(false);
-         }
-      } catch (error) {
-         console.error('Failed to switch chain:', error);
-      }
-   };
-
-   // Toggle network selection dropdown
-   const toggleNetworkSelection = () => {
-      setShowNetwork(!showNetwork);
    };
 
    return (
@@ -142,48 +87,19 @@ export default function UserNetwork() {
                      </button>
                   </div>
                   {account.isConnected ? (
-                     <div className="relative network-dropdown" ref={networkDropdownRef}>
-                        <div
-                           className="flex border-b border-gray-200 border-solid cursor-pointer hover:bg-gray-50 transition-colors duration-200"
-                           onClick={toggleNetworkSelection}
-                        >
-                           <div className="flex items-center gap-2 w-2/3 px-4 py-3 text-sm font-normal">
-                              Network
-                              <i className="fas fa-exchange-alt"></i>
-                           </div>
-                           <div
-                              className={`
-                      bg-[#ffffff]
-                     w-1/3 text-black font-extrabold text-sm flex items-center justify-center gap-[5px]`}
-                           >
-                              {getNetworkSvg(account.chainId || 0)}
-                              {getNetworkColor(account.chainId || 0)[1]}
-                           </div>
+                     <div className="flex border-b border-gray-200 border-solid">
+                        <div className="flex items-center gap-2 w-2/3 px-4 py-3 text-sm font-normal">
+                           Network
+                           <i className="fas fa-exchange-alt"></i>
                         </div>
-
-                        {/* Chain Selection Dropdown */}
-                        {showNetwork ? (
-                           <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-b-lg shadow-lg z-10 transform transition-all duration-300 ease-out animate-in slide-in-from-top-2 fade-in-0 scale-95 origin-top">
-                              {availableChains.map((chain: Chain) => {
-                                 const displayConfig = chainConfig[chain.id] as CustomChainConfig;
-                                 return (
-                                    <div
-                                       key={chain.id}
-                                       className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-all duration-200 hover:scale-[1.02] hover:shadow-sm"
-                                       onClick={() => handleSwitchChain(chain.id)}
-                                    >
-                                       <div className="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden">
-                                          {getNetworkSvg(chain.id)}
-                                       </div>
-                                       <span className="text-sm font-medium text-gray-700">
-                                          {displayConfig?.displayName || 'Unknown Network'}
-                                       </span>
-                                       {account.chainId === chain.id ? <i className="fas fa-check text-green-500 ml-auto"></i> : null}
-                                    </div>
-                                 );
-                              })}
-                           </div>
-                        ) : null}
+                        <div
+                           className={`
+                     bg-[#ffffff]
+                    w-1/3 text-black font-extrabold text-sm flex items-center justify-center gap-[5px]`}
+                        >
+                           {getNetworkSvg(ALLOWED_CHAIN_ID)}
+                           {ALLOWED_CHAIN_DISPLAY_NAME}
+                        </div>
                      </div>
                   ) : null}
 

@@ -207,8 +207,17 @@ export const chainConfig: Record<number, CustomChainConfig> = {
    }
 };
 
-// Convert to array for RainbowKit
-export const chainsWithIcons = Object.values(chainConfig);
+// Calculate allowed chain before using it
+const normalizeChainName = (value?: string) => (value ?? '').toLowerCase().replace(/\s+/g, '');
+const allowedChainEnvName = (process.env.NEXT_PUBLIC_ALLOWED_CHAIN_NAME || 'Base Sepolia').trim();
+const normalizedAllowedChainName = normalizeChainName(allowedChainEnvName);
+const allowedChainEntry = Object.entries(chainConfig).find(
+   ([, chain]) => normalizeChainName(chain.displayName) === normalizedAllowedChainName
+);
+export const ALLOWED_CHAIN_ID = allowedChainEntry ? parseInt(allowedChainEntry[0], 10) : baseSepolia.id;
+
+// Convert to array for RainbowKit - only include allowed chain
+export const chainsWithIcons = [chainConfig[ALLOWED_CHAIN_ID]];
 
 // RainbowKit config
 export const config = getDefaultConfig({
@@ -265,3 +274,12 @@ export const chainIdFromNetwork = (network: string) => {
    );
    return chain ? Object.keys(chainConfig).find((key) => chainConfig[parseInt(key)] === chain) : undefined;
 };
+
+export const ALLOWED_CHAIN_NAME = allowedChainEnvName;
+export const ALLOWED_CHAIN_DISPLAY_NAME = getChainDisplayConfig(ALLOWED_CHAIN_ID)?.name || ALLOWED_CHAIN_NAME;
+export const getAllowedChainConfig = () => chainConfig[ALLOWED_CHAIN_ID] ?? baseSepolia;
+export const getAllowedChainTokenConfig = () => {
+   const chain = getAllowedChainConfig();
+   return chain ? { id: ALLOWED_CHAIN_ID, ...chain.tokens } : null;
+};
+export const getAllowedChainNormalizedKey = () => normalizeChainName(ALLOWED_CHAIN_DISPLAY_NAME);
