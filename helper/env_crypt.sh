@@ -52,6 +52,6 @@ if head -n 100 "$file" | grep -q "encrypted:"; then
 else
     # Encrypt
     echo "Encrypting $file..."
-    dotenvx encrypt --env-file "$file" 
+    dotenvx encrypt --env-file "$file"
     echo "Encrypted $file"
 fi
