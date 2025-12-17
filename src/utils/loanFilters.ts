@@ -138,6 +138,9 @@ export const filterBySearch = (loans: Loan[], search: string): Loan[] => {
 export const filterLoans = (loans: Loan[], filters: LoanFilters, customAmount?: string): Loan[] => {
    let filtered = [...loans];
 
+   // Filter out loans that are already lent
+   filtered = filtered.filter((loan) => loan.loanStatus === 'Requested');
+
    if (filters.amount || customAmount) {
       filtered = filterByAmount(filtered, filters.amount || '', customAmount);
    }
