@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -23,7 +23,6 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
    const [showDel, setShowDel] = useState(false);
    const [showPay, setShowPay] = useState(false);
    const dispatch = useDispatch<AppDispatch>();
-   const router = useRouter();
 
    const differenceInDays = calculateDaysRemaining(loan.dueDate);
    const differenceInHours = calculateHoursRemaining(loan.dueDate);
@@ -59,9 +58,9 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
                <p className="text-[13px] leading-[16px] text-[#6B7280] mt-2">
                   You Funded <span className="font-extrabold">${formatNumber(loan.loanAmount)}</span> to{' '}
                   <em>
-                     <a onClick={() => router.push('/user/' + loan.borrowerUser)} className="text-[#2563EB] underline">
+                     <Link href={`/user/${loan.borrowerUser}`} className="text-[#2563EB] underline">
                         {loan.borrowerUser}
-                     </a>
+                     </Link>
                   </em>
                </p>
             </div>
@@ -93,14 +92,13 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
                ></div>
             </div>
          </div>
-         <button
-            onClick={() => router.push('/user/' + loan.borrowerUser)}
+         <Link
+            href={`/user/${loan.borrowerUser}`}
             className="bg-[#2563EB] text-white font-extrabold text-[14px] leading-[18px] py-3 rounded-b-xl w-full flex items-center justify-center gap-2"
-            type="button"
          >
             Borrow Insight
             <i className="fas fa-external-link-alt text-white text-sm"></i>
-         </button>
+         </Link>
       </div>
    ) : (
       <div className="bg-white rounded-xl max-w-[320px] w-full h-full flex flex-col shadow-md">

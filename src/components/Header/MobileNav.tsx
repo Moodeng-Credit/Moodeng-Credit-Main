@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import ActionButton from '@/components/ui/ActionButton';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -9,10 +11,10 @@ interface MobileNavProps {
    isOpen: boolean;
    onClose: () => void;
    username?: string | null;
-   onDashboardClick?: () => void;
+   dashboardHref?: string;
 }
 
-export default function MobileNav({ buttons, isOpen, onClose, username, onDashboardClick }: MobileNavProps) {
+export default function MobileNav({ buttons, isOpen, onClose, username, dashboardHref = '/dashboard' }: MobileNavProps) {
    const navRef = useClickOutside<HTMLElement>(onClose, isOpen);
 
    if (!isOpen) return null;
@@ -26,12 +28,13 @@ export default function MobileNav({ buttons, isOpen, onClose, username, onDashbo
       >
          <div className="flex flex-col p-4 space-y-4">
             {username ? (
-               <div
-                  onClick={onDashboardClick}
+               <Link
+                  href={dashboardHref}
+                  onClick={onClose}
                   className="text-white text-center text-[22px] cursor-pointer hover:text-gray-300 transition-colors font-normal"
                >
                   Dashboard
-               </div>
+               </Link>
             ) : null}
             {buttons.map((button) => (
                <ActionButton key={button.href} button={button} onClick={onClose} />

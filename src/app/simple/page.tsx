@@ -4,10 +4,8 @@ import React from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 export default function SimplePage() {
-   const router = useRouter();
 
    return (
       <div className="bg-[#171420] flex flex-row justify-center w-full">
@@ -24,54 +22,50 @@ export default function SimplePage() {
                               width={42}
                               height={47}
                            />
-                           <div
-                              onClick={() => router.push('/')}
+                           <Link
+                              href="/"
                               className="relative w-fit [font-family:'PP_Telegraf-Ultrabold',Helvetica] font-normal text-white text-2xl tracking-[0] leading-[34px] whitespace-nowrap"
                            >
                               Moodeng Credit
-                           </div>
+                           </Link>
                         </div>
                         <div className="inline-flex items-center justify-center gap-[34px] relative flex-[0_0_auto]">
-                           <div
-                              onClick={() => router.push('/guide')}
+                           <Link
+                              href="/guide"
                               className="relative w-[100px] h-10 mt-[-1.00px] [font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-white text-xl text-center tracking-[-0.20px] leading-10 whitespace-nowrap"
                            >
                               Guide
-                           </div>
-                           <div
-                              onClick={() => router.push('/benefits')}
+                           </Link>
+                           <Link
+                              href="/benefits"
                               className="relative w-[100px] h-10 mt-[-1.00px] [font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-white text-xl text-center tracking-[-0.20px] leading-10 whitespace-nowrap"
                            >
                               Benefits
-                           </div>
-                           <div
-                              onClick={() => router.push('/whylend')}
+                           </Link>
+                           <Link
+                              href="/whylend"
                               className="relative w-[100px] h-10 mt-[-1.00px] [font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-white text-xl text-center tracking-[-0.20px] leading-10 whitespace-nowrap"
                            >
                               Why Lend
-                           </div>
+                           </Link>
                            <div className="relative w-[47.62px] h-10 mt-[-1.00px] [font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-white text-xl text-center tracking-[-0.20px] leading-10 whitespace-nowrap">
                               <Link href="https://moodeng-credit.gitbook.io/moodeng-credit">Docs</Link>
                            </div>
                         </div>
                      </div>
                      <div className="inline-flex items-center justify-center gap-4 relative flex-[0_0_auto]">
-                        <div className="relative w-[186px] h-[42px] bg-[#171420] rounded-[100px] overflow-hidden">
-                           <div
-                              onClick={() => router.push('/login')}
-                              className="absolute w-[163px] h-[22px] top-[9px] left-[11px] [font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-[#f6f6f6] text-[22px] text-center tracking-[0] leading-[22px] whitespace-nowrap"
-                           >
-                              Log in
-                           </div>
-                        </div>
-                        <div className="relative w-[186px] h-[42px] bg-[#6d57ff] rounded-[100px] overflow-hidden">
-                           <div
-                              onClick={() => router.push('/login')}
-                              className="absolute w-[163px] h-[22px] top-[11px] left-[11px] [font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-white text-[22px] text-center tracking-[0] leading-[22px] whitespace-nowrap"
-                           >
-                              Sign up
-                           </div>
-                        </div>
+                        <Link
+                           href="/login"
+                           className="relative w-[186px] h-[42px] bg-[#171420] rounded-[100px] overflow-hidden flex items-center justify-center [font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-[#f6f6f6] text-[22px] text-center tracking-[0] leading-[22px] whitespace-nowrap"
+                        >
+                           Log in
+                        </Link>
+                        <Link
+                           href="/login"
+                           className="relative w-[186px] h-[42px] bg-[#6d57ff] rounded-[100px] overflow-hidden flex items-center justify-center [font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-white text-[22px] text-center tracking-[0] leading-[22px] whitespace-nowrap"
+                        >
+                           Sign up
+                        </Link>
                      </div>
                   </div>
                </div>
