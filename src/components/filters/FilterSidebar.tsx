@@ -1,10 +1,10 @@
-import { type ChangeEvent, useCallback, useMemo, useState } from 'react';
+import { type ChangeEvent, useCallback, useState } from 'react';
 
 import DatePicker from '@/components/filters/DatePicker';
 
 import type { LoanFilters } from '@/utils/loanFilters';
 
-import { BORROW_TYPES, LOAN_AMOUNTS, LOAN_TIME_PERIODS, NETWORKS, REPAYMENT_RATES } from '@/constants/loanOptions';
+import { BORROW_TYPES, LOAN_AMOUNTS, LOAN_TIME_PERIODS, REPAYMENT_RATES } from '@/constants/loanOptions';
 
 interface FilterSidebarProps {
    filters: LoanFilters;
@@ -15,7 +15,6 @@ interface FilterSidebarProps {
 
 export default function FilterSidebar({ filters, onFiltersChange, customAmount, onCustomAmountChange }: FilterSidebarProps) {
    const [customRepaymentAmount, setCustomRepaymentAmount] = useState('');
-   const [showMoreNetworks, setShowMoreNetworks] = useState(false);
 
    const handleAmountChange = useCallback(
       (value: string) => {
@@ -65,19 +64,6 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
       },
       [filters.borrowType, onFiltersChange]
    );
-
-   const handleNetworkChange = useCallback(
-      (value: string) => {
-         const currentNetworks = filters.network || [];
-         const newNetworks = currentNetworks.includes(value)
-            ? currentNetworks.filter((n) => n !== value)
-            : [...currentNetworks, value];
-         onFiltersChange({ network: newNetworks });
-      },
-      [filters.network, onFiltersChange]
-   );
-
-   const visibleNetworks = useMemo(() => (showMoreNetworks ? NETWORKS : NETWORKS.slice(0, 6)), [showMoreNetworks]);
 
    return (
       <aside className="w-full md:w-72 flex-shrink-0">
@@ -188,34 +174,6 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
                      </label>
                   ))}
                </div>
-            </div>
-
-            {/* Network */}
-            <div>
-               <h3 className="font-semibold text-gray-900 text-sm mb-3">Network</h3>
-               <div className="space-y-2">
-                  {visibleNetworks.map((network) => (
-                     <label key={network.value} className="flex items-center gap-3 cursor-pointer">
-                        <input
-                           type="checkbox"
-                           value={network.value}
-                           checked={filters.network?.includes(network.value) || false}
-                           onChange={() => handleNetworkChange(network.value)}
-                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700">{network.label}</span>
-                     </label>
-                  ))}
-               </div>
-               {NETWORKS.length > 6 ? (
-                  <button
-                     type="button"
-                     onClick={() => setShowMoreNetworks(!showMoreNetworks)}
-                     className="text-sm text-gray-600 mt-2 hover:text-gray-900"
-                  >
-                     {showMoreNetworks ? 'Show Less' : 'More Networks...'}
-                  </button>
-               ) : null}
             </div>
          </div>
       </aside>
