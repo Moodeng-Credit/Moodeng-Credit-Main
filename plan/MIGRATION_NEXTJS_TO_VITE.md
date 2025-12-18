@@ -3,7 +3,7 @@
 This document outlines the comprehensive strategy for migrating the Moodeng Credit codebase from Next.js (App Router) to a React Single Page Application (SPA) powered by Vite.
 
 ## Overview
-The goal is to move away from Next.js's server-side features (SSR, Server Components, API Routes) to a purely client-side architecture. This will simplify deployment and potentially improve performance for a highly interactive dashboard.
+The goal is to move away from Next.js's server-side features (SSR, Server Components, API Routes) to a purely client-side architecture. This will simplify deployment and significantly improve performance for a highly interactive dashboard.
 
 ---
 
