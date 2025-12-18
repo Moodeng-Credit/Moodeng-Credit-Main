@@ -207,7 +207,7 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
                      </label>
                   ))}
                </div>
-               {NETWORKS.length > 6 && (
+               {NETWORKS.length > 6 ? (
                   <button
                      type="button"
                      onClick={() => setShowMoreNetworks(!showMoreNetworks)}
@@ -215,7 +215,7 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
                   >
                      {showMoreNetworks ? 'Show Less' : 'More Networks...'}
                   </button>
-               )}
+               ) : null}
             </div>
          </div>
       </aside>

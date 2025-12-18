@@ -96,7 +96,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Pick a date
                   showOutsideDays
                   fixedWeeks
                   components={{
-                     Nav: () => <></>
+                     Nav: () => null
                   }}
                   classNames={{
                      root: '',
