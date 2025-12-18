@@ -1,14 +1,13 @@
 import { type JSX } from 'react';
 
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import ActionButton from '@/components/ui/ActionButton';
 
 import { revolutionizeButtons } from '@/config/buttonConfig';
 
 export default function RevolutionizeSection(): JSX.Element {
-   const router = useRouter();
    return (
       <div className="relative w-[1440px] h-[1073px] overflow-hidden">
          <div className="relative w-[1236px] h-[997px] top-[100px] left-[102px]">
@@ -204,14 +203,14 @@ export default function RevolutionizeSection(): JSX.Element {
                            </div>
                         </div>
                      </div>
-                     <button className="all-[unset] box-border flex w-[302px] h-[46px] items-center justify-center gap-5 px-5 py-[18px] absolute top-[544px] left-[87px] bg-[#2154e8] rounded-lg overflow-hidden">
-                        <div
-                           onClick={() => router.push('/dashboard#request')}
-                           className="relative w-fit mt-[-5.50px] mb-[-5.50px] [font-family:'DM_Sans',Helvetica] font-medium text-white text-base text-center tracking-[0] leading-[normal]"
-                        >
+                     <Link
+                        href="/dashboard#request"
+                        className="flex w-[302px] h-[46px] items-center justify-center gap-5 px-5 py-[18px] absolute top-[544px] left-[87px] bg-[#2154e8] rounded-lg overflow-hidden"
+                     >
+                        <span className="relative w-fit mt-[-5.50px] mb-[-5.50px] [font-family:'DM_Sans',Helvetica] font-medium text-white text-base text-center tracking-[0] leading-[normal]">
                            Send Your Help
-                        </div>
-                     </button>
+                        </span>
+                     </Link>
                      <div className="inline-flex items-center gap-2.5 absolute top-[287px] left-[25px]">
                         <svg
                            className="!relative !w-6 !h-6"

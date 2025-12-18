@@ -2,7 +2,7 @@
 
 import { type MouseEvent, useEffect, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { differenceInDays, differenceInHours, format, parseISO } from 'date-fns';
@@ -30,7 +30,6 @@ export default function UserCard(loan: Loan) {
    const loanData = loan;
    const borrowerUser = loanData.borrowerUser || '';
 
-   const router = useRouter();
    const dispatch = useDispatch<AppDispatch>();
    const { Transfer } = useWallet();
    const account = useAccount();
@@ -222,12 +221,12 @@ export default function UserCard(loan: Loan) {
                <div className="flex justify-between items-center mt-2">
                   <p className="text-[13px] font-normal text-[#0B1033]">
                      by{' '}
-                     <a
-                        onClick={() => router.push('/user/' + loanData.borrowerUser)}
+                     <Link
+                        href={`/user/${loanData.borrowerUser}`}
                         className="text-[#0B1033] underline hover:no-underline"
                      >
                         {loanData.borrowerUser?.slice(0, 12)}
-                     </a>
+                     </Link>
                   </p>
                   <p className="text-[13px] font-semibold text-[#6B6B7B]">{MONTHS[parseInt(splt[1])] + ' ' + splt[2] + ', ' + splt[0]}</p>
                </div>
@@ -261,14 +260,13 @@ export default function UserCard(loan: Loan) {
 
             <div className="flex justify-between items-center px-5 py-3 bg-white">
                <p className="text-sm font-normal text-[#0B1033]">Borrower Details</p>
-               <button
-                  onClick={() => router.push('/user/' + loanData.borrowerUser)}
-                  type="button"
+               <Link
+                  href={`/user/${loanData.borrowerUser}`}
                   className="flex items-center gap-1 bg-[#2563EB] text-white text-sm font-semibold px-4 py-1 rounded-md hover:bg-[#1e4bb8] transition"
                >
                   Insights
                   <i className="fas fa-external-link-alt text-[12px]"></i>
-               </button>
+               </Link>
             </div>
 
             <div className="flex text-center text-[15px] font-semibold">
@@ -338,13 +336,12 @@ export default function UserCard(loan: Loan) {
                      <p className="font-extrabold text-base leading-5">{loan.reason}</p>
                      <p className="text-xs font-normal">
                         Thank you for supporting&nbsp;
-                        <a
-                           onClick={() => router.push('/user/' + loanData.borrowerUser)}
+                        <Link
+                           href={`/user/${loanData.borrowerUser}`}
                            className="text-[#1E56FF] font-extrabold underline"
-                           href="#"
                         >
                            {loan.borrowerUser}
-                        </a>
+                        </Link>
                      </p>
                      <svg
                         width="242"
@@ -384,13 +381,12 @@ export default function UserCard(loan: Loan) {
                            Contact Support
                         </a>
                      </p>
-                     <button
-                        onClick={() => router.push('/profile')}
-                        className="bg-[#1E56FF] text-white font-extrabold text-sm rounded-md py-3 mt-4 w-full"
-                        type="button"
+                     <Link
+                        href="/profile"
+                        className="bg-[#1E56FF] text-white font-extrabold text-sm rounded-md py-3 mt-4 w-full block text-center"
                      >
                         Review Funding
-                     </button>
+                     </Link>
                   </div>
                </section>
             </div>
