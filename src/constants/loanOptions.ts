@@ -1,19 +1,18 @@
-export const LOAN_AMOUNTS = [15, 40, 80, 150] as const;
+export const LOAN_AMOUNTS = [150, 80, 40, 15] as const;
 
 export const NETWORKS = [
-   { value: 'optimism', label: 'Optimism' },
-   { value: 'arbitrum', label: 'Arbitrum' },
+   { value: 'solana', label: 'Solana' },
+   { value: 'optimism', label: 'OP' },
+   { value: 'arbitrum', label: 'Arb' },
    { value: 'polygon', label: 'Polygon' },
    { value: 'base', label: 'Base' },
-   { value: 'binance', label: 'Binance' },
-   { value: 'sepolia', label: 'Sepolia' },
-   { value: 'baseSepolia', label: 'Base Sepolia' }
+   { value: 'binance', label: 'Binance' }
 ] as const;
 
 export const REPAYMENT_RATES = [
    { value: '2.5', label: '0% to 5%', range: [0, 5] },
    { value: '7.5', label: '5% to 10%', range: [5, 10] },
-   { value: '12.5', label: '10% to 15%', range: [10, 15] },
+   { value: '15', label: '10% to 20%', range: [10, 20] },
    { value: '+', label: '20%+', range: [20, Infinity] }
 ] as const;
 
