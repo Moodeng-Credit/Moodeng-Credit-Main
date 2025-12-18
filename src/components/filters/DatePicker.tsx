@@ -8,6 +8,7 @@ import { DayPicker } from 'react-day-picker';
 
 // Empty Nav component defined outside to avoid re-creation on each render
 function EmptyNav() {
+   // eslint-disable-next-line react/jsx-no-useless-fragment
    return <></>;
 }
 
