@@ -1,10 +1,10 @@
-import { type ChangeEvent, useCallback, useMemo } from 'react';
+import { type ChangeEvent, useCallback, useState } from 'react';
 
-import CheckboxFilterGroup, { type FilterOption } from '@/components/filters/CheckboxFilterGroup';
+import DatePicker from '@/components/filters/DatePicker';
 
 import type { LoanFilters } from '@/utils/loanFilters';
 
-import { LOAN_AMOUNTS, LOAN_TIME_PERIODS, REPAYMENT_RATES } from '@/constants/loanOptions';
+import { BORROW_TYPES, LOAN_AMOUNTS, LOAN_TIME_PERIODS, REPAYMENT_RATES } from '@/constants/loanOptions';
 
 interface FilterSidebarProps {
    filters: LoanFilters;
@@ -14,69 +14,65 @@ interface FilterSidebarProps {
 }
 
 export default function FilterSidebar({ filters, onFiltersChange, customAmount, onCustomAmountChange }: FilterSidebarProps) {
-   // Convert LOAN_AMOUNTS to FilterOption[]
-   const amountOptions: FilterOption[] = useMemo(
-      () =>
-         LOAN_AMOUNTS.map((amount) => ({
-            value: String(amount),
-            label: `$${amount}`,
-            checked: filters.amount === String(amount)
-         })),
-      [filters.amount]
-   );
+   const [customRepaymentAmount, setCustomRepaymentAmount] = useState('');
 
-   // Convert REPAYMENT_RATES to FilterOption[]
-   const rateOptions: FilterOption[] = useMemo(
-      () =>
-         REPAYMENT_RATES.map((rate) => ({
-            value: rate.value,
-            label: rate.label,
-            checked: filters.rate === rate.value
-         })),
-      [filters.rate]
-   );
-
-   // Convert LOAN_TIME_PERIODS to FilterOption[]
-   const loanTimeOptions: FilterOption[] = useMemo(
-      () =>
-         LOAN_TIME_PERIODS.map((period) => ({
-            value: period.value,
-            label: period.label,
-            checked: filters.loanTime === period.value
-         })),
-      [filters.loanTime]
-   );
-
-   const handleFilterChange = useCallback(
-      (filterKey: keyof LoanFilters) => (value: string) => {
+   const handleAmountChange = useCallback(
+      (value: string) => {
          onFiltersChange({
-            [filterKey]: filters[filterKey] === value ? '' : value
+            amount: filters.amount === value ? '' : value
          });
-
-         if (filterKey === 'amount' && filters[filterKey] !== value) {
+         if (filters.amount !== value) {
             onCustomAmountChange('');
          }
       },
-      [filters, onFiltersChange, onCustomAmountChange]
+      [filters.amount, onFiltersChange, onCustomAmountChange]
+   );
+
+   const handleRateChange = useCallback(
+      (value: string) => {
+         onFiltersChange({
+            rate: filters.rate === value ? '' : value
+         });
+         if (filters.rate !== value) {
+            setCustomRepaymentAmount('');
+         }
+      },
+      [filters.rate, onFiltersChange]
    );
 
    const handleDateChange = useCallback(
-      (e: ChangeEvent<HTMLInputElement>) => {
-         const value = e.target.value;
-         onFiltersChange({
-            date: value ? new Date(value) : null
-         });
+      (date: Date | null) => {
+         onFiltersChange({ date });
       },
       [onFiltersChange]
    );
 
+   const handleLoanTimeChange = useCallback(
+      (value: string) => {
+         onFiltersChange({
+            loanTime: filters.loanTime === value ? '' : value
+         });
+      },
+      [filters.loanTime, onFiltersChange]
+   );
+
+   const handleBorrowTypeChange = useCallback(
+      (value: string) => {
+         const currentTypes = filters.borrowType || [];
+         const newTypes = currentTypes.includes(value) ? currentTypes.filter((t) => t !== value) : [...currentTypes, value];
+         onFiltersChange({ borrowType: newTypes });
+      },
+      [filters.borrowType, onFiltersChange]
+   );
+
    return (
-      <aside className="w-full md:w-64 flex-shrink-0">
-         <h2 className="font-semibold text-gray-900 text-sm mb-4">Filters</h2>
-         <form className="space-y-6 text-xs md:text-sm text-gray-700">
+      <aside className="w-full md:w-72 flex-shrink-0">
+         <h2 className="font-bold text-[#1a1a2e] text-xl mb-6">Filters</h2>
+
+         <div className="space-y-6">
             {/* Set Lending Limit */}
-            <fieldset>
-               <legend className="font-semibold mb-2">Set Lending Limit</legend>
+            <div>
+               <h3 className="font-semibold text-gray-900 text-sm mb-3">Set Lending Limit</h3>
                <input
                   value={customAmount}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
@@ -85,43 +81,101 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
                         onFiltersChange({ amount: '' });
                      }
                   }}
-                  className="w-full border border-gray-300 rounded px-2 py-1 mb-3 text-xs md:text-sm"
-                  placeholder="Custom amount"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3 text-sm focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                  placeholder="Custom Amount"
                   type="number"
                />
-               <div className="space-y-1">
-                  {amountOptions.map((option) => (
-                     <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
+               <div className="space-y-2">
+                  {LOAN_AMOUNTS.map((amount) => (
+                     <label key={amount} className="flex items-center gap-3 cursor-pointer">
                         <input
-                           className="form-checkbox text-blue-600"
-                           type="checkbox"
-                           checked={option.checked}
-                           value={option.value}
-                           onChange={() => handleFilterChange('amount')(option.value)}
+                           type="radio"
+                           name="lendingLimit"
+                           value={amount}
+                           checked={filters.amount === String(amount)}
+                           onChange={() => handleAmountChange(String(amount))}
+                           className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                         />
-                        <span>{option.label}</span>
+                        <span className="text-sm text-gray-700">${amount}</span>
                      </label>
                   ))}
                </div>
-            </fieldset>
+            </div>
 
             {/* Repayment Amount */}
-            <CheckboxFilterGroup legend="Repayment amount" options={rateOptions} onChange={handleFilterChange('rate')} />
+            <div>
+               <h3 className="font-semibold text-gray-900 text-sm mb-3">Repayment Amount</h3>
+               <input
+                  value={customRepaymentAmount}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                     setCustomRepaymentAmount(e.target.value);
+                     if (e.target.value && filters.rate) {
+                        onFiltersChange({ rate: '' });
+                     }
+                  }}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3 text-sm focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                  placeholder="Custom Amount"
+                  type="text"
+               />
+               <div className="space-y-2">
+                  {REPAYMENT_RATES.map((rate) => (
+                     <label key={rate.value} className="flex items-center gap-3 cursor-pointer">
+                        <input
+                           type="radio"
+                           name="repaymentRate"
+                           value={rate.value}
+                           checked={filters.rate === rate.value}
+                           onChange={() => handleRateChange(rate.value)}
+                           className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{rate.label}</span>
+                     </label>
+                  ))}
+               </div>
+            </div>
 
             {/* Repayment Date */}
-            <fieldset>
-               <legend className="font-semibold mb-2">Repayment Date</legend>
-               <input
-                  value={filters.date ? filters.date.toISOString().split('T')[0] : ''}
-                  onChange={handleDateChange}
-                  className="w-full border border-gray-300 rounded px-2 py-1 text-xs md:text-sm"
-                  type="date"
-               />
-            </fieldset>
+            <div>
+               <h3 className="font-semibold text-gray-900 text-sm mb-3">Repayment Date</h3>
+               <div className="mb-3">
+                  <DatePicker value={filters.date || null} onChange={handleDateChange} placeholder="Pick a date..." />
+               </div>
+               <div className="space-y-2">
+                  {LOAN_TIME_PERIODS.map((period) => (
+                     <label key={period.value} className="flex items-center gap-3 cursor-pointer">
+                        <input
+                           type="radio"
+                           name="loanTime"
+                           value={period.value}
+                           checked={filters.loanTime === period.value}
+                           onChange={() => handleLoanTimeChange(period.value)}
+                           className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{period.label}</span>
+                     </label>
+                  ))}
+               </div>
+            </div>
 
-            {/* Borrow Type / Loan Time */}
-            <CheckboxFilterGroup legend="Borrow Type" options={loanTimeOptions} onChange={handleFilterChange('loanTime')} />
-         </form>
+            {/* Borrow Type */}
+            <div>
+               <h3 className="font-semibold text-gray-900 text-sm mb-3">Borrow Type</h3>
+               <div className="space-y-2">
+                  {BORROW_TYPES.map((type) => (
+                     <label key={type.value} className="flex items-center gap-3 cursor-pointer">
+                        <input
+                           type="checkbox"
+                           value={type.value}
+                           checked={filters.borrowType?.includes(type.value) || false}
+                           onChange={() => handleBorrowTypeChange(type.value)}
+                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{type.label}</span>
+                     </label>
+                  ))}
+               </div>
+            </div>
+         </div>
       </aside>
    );
 }

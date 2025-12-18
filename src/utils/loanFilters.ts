@@ -10,7 +10,8 @@ export interface LoanFilters {
    rate?: string;
    date?: Date | null;
    loanTime?: string;
-   network?: string;
+   borrowType?: string[];
+   network?: string[];
    search?: string;
    sortBy?: SortOption;
 }

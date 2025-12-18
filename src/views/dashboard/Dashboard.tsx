@@ -78,7 +78,8 @@ function Dashboard$() {
       rate: '',
       date: null,
       loanTime: '',
-      network: '',
+      borrowType: [],
+      network: [],
       search: '',
       sortBy: undefined
    });
