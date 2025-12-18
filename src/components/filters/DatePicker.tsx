@@ -6,6 +6,11 @@ import { format } from 'date-fns';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 
+// Empty Nav component defined outside to avoid re-creation on each render
+function EmptyNav() {
+   return <></>;
+}
+
 interface DatePickerProps {
    value: Date | null;
    onChange: (date: Date | null) => void;
@@ -96,7 +101,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Pick a date
                   showOutsideDays
                   fixedWeeks
                   components={{
-                     Nav: () => null
+                     Nav: EmptyNav
                   }}
                   classNames={{
                      root: '',
