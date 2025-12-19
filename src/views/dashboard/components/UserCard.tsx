@@ -164,7 +164,7 @@ export default function UserCard(loan: Loan) {
       setIsProcessing(true);
 
       try {
-         const transactionHash = await Transfer(e, borrowerWallet, formatNumber(loanData.loanAmount), loanData.id, transferCoin);
+         const transactionHash = await Transfer(borrowerWallet, formatNumber(loanData.loanAmount), loanData.id, transferCoin);
 
          if (transactionHash) {
             try {

@@ -49,8 +49,7 @@ export default function LenderBenefits() {
 
                <StartBuildingCreditSection />
             </div>
-         </div>{' '}
-         <style jsx>{'builder-component { max-width: none !important; }'}</style>{' '}
+         </div>
       </>
    );
 }

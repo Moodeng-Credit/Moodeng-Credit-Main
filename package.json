@@ -6,7 +6,7 @@
    "scripts": {
       "dev": "dotenvx run --env-file=.env.staging -- vite",
       "dev:local": "dotenvx run --env-file=.env.local -- vite",
-      "build": "dotenvx run --env-file=.env.staging -- sh -c 'tsc -b && vite build'",
+      "build": "tsc -b && vite build",
       "lint": "eslint .",
       "preview": "vite preview",
       "reup": "rm -rf node_modules && npm install",

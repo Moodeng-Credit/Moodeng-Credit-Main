@@ -1,5 +1,7 @@
 @import url('https://fonts.googleapis.com/css?family=Telex:400|Geist:500|Inter:500,400,800');
 
+builder-component { max-width: none !important; }
+
 @font-face {
    font-family: 'PP Telegraf-Ultrabold';
    src: url('https://anima-uploads.s3.amazonaws.com/projects/64a3991ce6e0ef9352289980/fonts/pptelegraf-ultrabold.otf') format('opentype');

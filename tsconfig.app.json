@@ -31,9 +31,9 @@
       "noImplicitAny": true,
       "noImplicitThis": true,
       "strictNullChecks": true,
-      "erasableSyntaxOnly": true,
       "noFallthroughCasesInSwitch": true,
       "noUncheckedSideEffectImports": true
    },
-   "include": ["src", "app-types.d.ts", "**/*.ts", "**/*.tsx"]
+   "include": ["src", "app-types.d.ts"],
+   "exclude": ["node_modules", "supabase/functions"]
 }

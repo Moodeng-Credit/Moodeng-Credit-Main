@@ -66,7 +66,7 @@ function UserPay({ loan }: { loan: Loan }) {
       ) {
          setIsProcessing(true);
          const transferCoin = loan.coin?.trim() || 'USDC';
-         const transactionHash = await Transfer(e, loan.lenderWallet || '', repaidAmountToAdd.toString(), loan.id, transferCoin);
+         const transactionHash = await Transfer(loan.lenderWallet || '', repaidAmountToAdd.toString(), loan.id, transferCoin);
 
          if (transactionHash) {
             try {

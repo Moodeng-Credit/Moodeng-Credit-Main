@@ -36,7 +36,6 @@ export default function BorrowerBenefits(): JSX.Element {
                <WhatPeopleSaySection />
             </div>
          </div>
-         <style jsx>{'builder-component { max-width: none !important; }'}</style>
       </>
    );
 }

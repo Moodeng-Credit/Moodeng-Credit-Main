@@ -40,7 +40,6 @@ export default function Web3WalletSection(): JSX.Element {
                               className="object-contain mt-0 ml-2 w-px aspect-square max-md:ml-2.5"
                               width={400}
                               height={400}
-                              quality={100}
                            />
                         </div>
                      </div>

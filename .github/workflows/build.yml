@@ -12,7 +12,7 @@ jobs:
 
       strategy:
          matrix:
-            node-version: [24.x]
+            node-version: [22.x]
 
       steps:
          - name: Checkout code
@@ -27,27 +27,19 @@ jobs:
          - name: Install dependencies
            run: npm ci
 
-         - name: Create build environment file
-           run: |
-              cat > .env.build << 'EOF'
-              NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
-              NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder
-              SUPABASE_SECRET_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder
-              NEXT_PUBLIC_SITE_URL=https://localhost:3000
-              NEXT_TELEMETRY_DISABLED=1
-              GENERATE_SOURCEMAP=false
-              CI=false
-              EOF
-
          - name: Run build (includes linting and type checking)
            run: NODE_OPTIONS="--max-old-space-size=8192" npm run build
            env:
-              NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-              NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder
-              SUPABASE_SECRET_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder
-              NEXT_PUBLIC_SITE_URL: https://localhost:3000
-              NEXT_TELEMETRY_DISABLED: 1
-              GENERATE_SOURCEMAP: 'false'
+              VITE_SUPABASE_URL: https://placeholder.supabase.co
+              VITE_SUPABASE_PUBLISHABLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder
+              VITE_SITE_URL: https://localhost:3000
+              VITE_REDIRECT_URL: https://localhost:3000
+              VITE_API_URL: https://placeholder.supabase.co/functions/v1
+              VITE_WALLET_CONNECT_PROJECT_ID: placeholder
+              VITE_ALCHEMY_ID: placeholder
+              VITE_WORLD_ID_APP_ID: app_placeholder
+              VITE_WORLD_ID_ACTION_ID: placeholder
+              CI: 'false'
               CI: 'false'
 
          - name: Verify build output
