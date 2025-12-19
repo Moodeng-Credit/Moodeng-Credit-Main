@@ -2,6 +2,8 @@ import { useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
+import { edgeFunctions } from '@/lib/supabase/functions';
+
 export default function ForgotPasswordPage() {
    const [email, setEmail] = useState('');
    const [message, setMessage] = useState('');
@@ -16,21 +18,13 @@ export default function ForgotPasswordPage() {
       setLoading(true);
 
       try {
-         const response = await fetch('/api/auth/forgot-password', {
-            method: 'POST',
-            headers: {
-               'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email })
-         });
+         const { data, error } = await edgeFunctions.forgotPassword({ email });
 
-         const data = await response.json();
-
-         if (response.ok) {
-            setMessage(data.message || 'Password reset email sent! Please check your inbox.');
-            setEmail('');
+         if (error) {
+            setError(error || 'Failed to send reset email. Please try again.');
          } else {
-            setError(data.message || 'Failed to send reset email. Please try again.');
+            setMessage((data as { message?: string })?.message || 'Password reset email sent! Please check your inbox.');
+            setEmail('');
          }
       } catch {
          setError('An error occurred. Please try again.');

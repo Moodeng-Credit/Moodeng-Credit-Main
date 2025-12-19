@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
+import { edgeFunctions } from '@/lib/supabase/functions';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
@@ -23,15 +24,10 @@ export default function WorldIDVerificationStatus({ className = '' }: WorldIDVer
    const handleUnverify = async () => {
       setIsUnverifying(true);
       try {
-         const response = await fetch('/api/auth/test-unverify', {
-            method: 'POST',
-            headers: {
-               'Content-Type': 'application/json'
-            }
-         });
+         const { error } = await edgeFunctions.testUnverify();
 
-         if (!response.ok) {
-            throw new Error('Failed to unverify user');
+         if (error) {
+            throw new Error(error || 'Failed to unverify user');
          }
          // Refresh user data to update verification status
          await dispatch(fetchUser()).unwrap();

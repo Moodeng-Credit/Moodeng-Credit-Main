@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import { edgeFunctions } from '@/lib/supabase/functions';
+
 export default function ResetPasswordPage() {
    const [password, setPassword] = useState('');
    const [confirmPassword, setConfirmPassword] = useState('');
@@ -44,23 +46,15 @@ export default function ResetPasswordPage() {
       setLoading(true);
 
       try {
-         const response = await fetch('/api/auth/reset-password', {
-            method: 'POST',
-            headers: {
-               'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ token, password })
-         });
+         const { data, error } = await edgeFunctions.resetPassword({ token, password });
 
-         const data = await response.json();
-
-         if (response.ok) {
-            setMessage(data.message || 'Password reset successful! Redirecting to login...');
+         if (error) {
+            setError(error || 'Failed to reset password. Please try again.');
+         } else {
+            setMessage((data as { message?: string })?.message || 'Password reset successful! Redirecting to login...');
             setTimeout(() => {
                navigate('/login');
             }, 2000);
-         } else {
-            setError(data.message || 'Failed to reset password. Please try again.');
          }
       } catch {
          setError('An error occurred. Please try again.');

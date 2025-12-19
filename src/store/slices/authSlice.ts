@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { edgeFunctions } from '@/lib/supabase/functions';
 import type { Database } from '@/lib/supabase/types';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
 import { type AuthState, type User, WorldId } from '@/types/authTypes';
@@ -267,36 +268,26 @@ export const registerUser = createAsyncThunk(
          throw new Error('Supabase did not return a user record after sign up');
       }
 
-      // Create user profile using server-side API route with service_role key
+      // Create user profile using Supabase Edge Function with service_role key
       // This bypasses RLS automatically - no RLS policies needed on users table
-      const profileResponse = await fetch('/api/auth/create-user', {
-         method: 'POST',
-         headers: {
-            'Content-Type': 'application/json'
-         },
-         body: JSON.stringify({
-            userId: createdUser.id,
-            username: userData.username,
-            email: userData.email,
-            isWorldId: userData.isWorldId
-         })
+      const { data: profileData, error: profileError } = await edgeFunctions.createUser({
+         userId: createdUser.id,
+         username: userData.username,
+         email: userData.email,
+         isWorldId: userData.isWorldId
       });
 
-      if (!profileResponse.ok) {
-         const errorData = await profileResponse.json();
-         // Construct a richer error so the UI can show toast + inline details
-         const errMsg = errorData?.error || 'Failed to create user profile';
-         const err = new Error(`${errMsg}${errorData?.details ? `: ${errorData.details}` : ''}`) as Error & {
+      if (profileError || !profileData) {
+         const err = new Error(profileError || 'Failed to create user profile') as Error & {
             code: string;
             details: unknown;
          };
          err.code = 'CREATE_PROFILE_FAILED';
-         err.details = errorData?.details ?? null;
+         err.details = profileError;
          throw err;
       }
 
-      const profileData = await profileResponse.json();
-      const user = mapSupabaseRowToUser(profileData.data);
+      const user = mapSupabaseRowToUser((profileData as { data: UserRow }).data);
 
       return {
          username: user.username,

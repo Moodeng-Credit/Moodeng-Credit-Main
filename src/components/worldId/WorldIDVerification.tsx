@@ -7,6 +7,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { VerificationModal } from '@/components/worldId/VerificationModal';
 
 import { handleApiError } from '@/lib/apiHandler';
+import { edgeFunctions } from '@/lib/supabase/functions';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import type { ApiResponse } from '@/types/apiTypes';
@@ -29,22 +30,15 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
    const handleVerify = async (proof: ISuccessResult) => {
       try {
-         const res = await fetch('/api/auth/verify', {
-            method: 'POST',
-            headers: {
-               'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(proof)
-         });
+         const { data, error } = await edgeFunctions.verify(proof as unknown as Record<string, unknown>);
 
-         const result = (await res.json()) as ApiResponse;
-
-         if (!res.ok && !result.success) {
+         if (error || !data) {
+            const result = { success: false, error: error || 'Verification failed.' } as ApiResponse;
             showToastByConfig(handleApiError(result));
-            throw new Error(result.error || 'Verification failed.');
+            throw new Error(error || 'Verification failed.');
          }
 
-         console.log('World ID verification successful:', result);
+         console.log('World ID verification successful:', data);
 
          // Refresh user data to update verification status
          await dispatch(fetchUser())
