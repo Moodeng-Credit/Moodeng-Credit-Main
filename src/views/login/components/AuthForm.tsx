@@ -1,6 +1,6 @@
 import { type ChangeEvent, type FormEvent, type JSX } from 'react';
 
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 import FormInput from '@/views/login/components/FormInput';
 import { Icons } from '@/views/login/components/Icons';
@@ -119,7 +119,7 @@ export default function AuthForm({
                      <input type="checkbox" className="mr-2" />
                      <span className="text-sm text-gray-600">Remember me</span>
                   </label>
-                  <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
+                  <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
                      Forgot password?
                   </Link>
                </div>

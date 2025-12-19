@@ -1,4 +1,4 @@
-'use client';
+
 
 import { useEffect } from 'react';
 
@@ -30,7 +30,7 @@ export default function About() {
                <MoodengCreditSection />
             </div>
          </div>
-         <style jsx>{'builder-component { max-width: none !important; }'}</style>
+         <style>{'builder-component { max-width: none !important; }'}</style>
       </>
    );
 }

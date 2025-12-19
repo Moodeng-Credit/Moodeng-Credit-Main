@@ -1,7 +1,5 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
-
 export default function ProblemSection(): JSX.Element {
    return (
       <div className="flex z-0 flex-wrap gap-4 items-center self-stretch w-full max-md:max-w-full">
@@ -11,7 +9,7 @@ export default function ProblemSection(): JSX.Element {
                   <div className="flex flex-col items-start w-full text-sm font-medium tracking-tight leading-tight text-stone-700 max-md:mt-10">
                      <div className="flex gap-1 items-center">
                         <div className="self-stretch my-auto">A Global Dilemma</div>
-                        <Image
+                        <img
                            alt=""
                            loading="lazy"
                            src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/8cfc628945a40feb21a78f60ccef6475ebab71e17630fddfde10c2583f7451cb?apiKey=e485b3dc4b924975b4554885e21242bbwidth=100"
@@ -33,7 +31,7 @@ export default function ProblemSection(): JSX.Element {
                      </div>
                      <div className="flex gap-2 mt-5 font-semibold text-neutral-900">
                         <div className="grow">You Start From Zero.</div>0...........
-                        <Image
+                        <img
                            alt=""
                            loading="lazy"
                            src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/473dfac1146d7ac986340be4227e25462d9f6097a49851ebb12b4ad3cdcb97fc?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -45,7 +43,7 @@ export default function ProblemSection(): JSX.Element {
                   </div>
                </div>
                <div className="flex flex-col ml-5 w-[59%] max-md:ml-0 max-md:w-full">
-                  <Image
+                  <img
                      alt=""
                      loading="lazy"
                      src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/fd30d6d5d1e9811d55adf78d663141aebb602fe77cf99a6ce1a565aa456f63b4?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -59,7 +57,7 @@ export default function ProblemSection(): JSX.Element {
          <div className="flex flex-col grow shrink items-start self-stretch px-7 pt-5 pb-8 my-auto text-sm font-medium tracking-tight leading-tight rounded-2xl bg-stone-100 min-w-[240px] text-stone-700 w-[283px] max-md:px-5">
             <div className="flex gap-1 items-center">
                <div className="self-stretch my-auto">The Problem</div>
-               <Image
+               <img
                   alt=""
                   loading="lazy"
                   src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/f79e796f7eda8520b5ec951a1533aadb3b8214a9c6834cd98a8f615377323860?apiKey=054474a0b7744b6389c3319e0a9290c2&width=100"
@@ -665,7 +663,7 @@ export default function ProblemSection(): JSX.Element {
             <div className="mt-6 leading-5">Traditional credit systems become more broken and are centralized.</div>
             <div className="flex gap-2.5 mt-7 font-semibold text-neutral-900">
                <div className="grow">So, Millions lose access to credit</div>
-               <Image
+               <img
                   loading="lazy"
                   src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/e80d587bdb8534565590a1cf04fa40a62a5c17163cc8ea0307f5b6e0d6c13413?apiKey=e485b3dc4b924975b4554885e21242bb"
                   alt=""

@@ -1,7 +1,5 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
-
 export default function MeetYourFutureBorrowersSection(): JSX.Element {
    return (
       <div className="pr-6 pl-16 bg-emerald-400 rounded-[60px] max-md:px-5 max-md:max-w-full">
@@ -15,7 +13,7 @@ export default function MeetYourFutureBorrowersSection(): JSX.Element {
                </div>
             </div>
             <div className="flex flex-col ml-5 w-2/5 max-md:ml-0 max-md:w-full">
-               <Image
+               <img
                   loading="lazy"
                   src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/45ad5ed76723d8955bf297795913ba4324596fd1ac8fd84eda5f2caba45e53b1?apiKey=e485b3dc4b924975b4554885e21242bb"
                   alt=""

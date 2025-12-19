@@ -1,7 +1,5 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
-
 import ActionButton from '@/components/ui/ActionButton';
 
 import { aboutHeroButtons } from '@/config/buttonConfig';
@@ -18,7 +16,7 @@ export default function WelcomeHeroSection(): JSX.Element {
 
                         <div className="absolute w-[961px] h-[301px] top-0 left-0">
                            <div className="absolute w-[502px] h-[301px] top-0 left-0">
-                              <Image
+                              <img
                                  className="absolute w-[168px] h-[218px] top-[83px] left-[334px] object-cover"
                                  alt="Screenshot"
                                  src="https://c.animaapp.com/wawSHnKX/img/screenshot-2024-09-19-at-15-51-16-removebg-preview-1.png"
@@ -26,7 +24,7 @@ export default function WelcomeHeroSection(): JSX.Element {
                                  height={218}
                               />
 
-                              <Image
+                              <img
                                  className="absolute w-[323px] h-[165px] top-0 left-0"
                                  alt="Vector"
                                  src="https://c.animaapp.com/wawSHnKX/img/vector.svg"
@@ -39,7 +37,7 @@ export default function WelcomeHeroSection(): JSX.Element {
                               To get funded, you need to write why you need it, so someone will fund you.
                            </p>
 
-                           <Image
+                           <img
                               className="w-[146px] h-[136px] top-[165px] left-48 absolute object-cover"
                               alt=""
                               src="https://c.animaapp.com/wawSHnKX/img/file--4--1-1.png"
@@ -59,7 +57,7 @@ export default function WelcomeHeroSection(): JSX.Element {
 
                <div className="absolute w-[1120px] h-[285px] top-[77px] left-[155px]">
                   <div className="absolute w-[289px] h-32 top-0 left-0">
-                     <Image
+                     <img
                         className="absolute w-[52px] h-11 top-[55px] left-[237px]"
                         alt="Group"
                         src="https://c.animaapp.com/wawSHnKX/img/group-26086621@2x.png"
@@ -87,7 +85,7 @@ export default function WelcomeHeroSection(): JSX.Element {
                      And make sure to submit a request within your credit limit.
                   </p>
 
-                  <Image
+                  <img
                      className="absolute w-[23px] h-[25px] top-[84px] left-[455px]"
                      alt="Bubble point"
                      src="https://c.animaapp.com/wawSHnKX/img/bubble-point.svg"
@@ -95,7 +93,7 @@ export default function WelcomeHeroSection(): JSX.Element {
                      height={25}
                   />
 
-                  <Image
+                  <img
                      className="absolute w-5 h-6 top-[188px] left-[458px]"
                      alt="Bubble point"
                      src="https://c.animaapp.com/wawSHnKX/img/bubble-point-1.svg"
@@ -282,7 +280,7 @@ export default function WelcomeHeroSection(): JSX.Element {
 
                                     <div className="flex w-[100px] h-2.5 items-center gap-0.5 px-1 py-px absolute top-10 left-3 bg-[#e2f7f5] rounded">
                                        <div className="relative w-2 h-2">
-                                          <Image
+                                          <img
                                              className="absolute w-[7px] h-[5px] top-px left-px"
                                              alt="Style"
                                              src="https://c.animaapp.com/wawSHnKX/img/style-1.svg"
@@ -481,7 +479,7 @@ export default function WelcomeHeroSection(): JSX.Element {
 
                                     <div className="flex w-[100px] h-2.5 items-center gap-0.5 px-1 py-px absolute top-10 left-3 bg-[#e2f7f5] rounded">
                                        <div className="relative w-2 h-2">
-                                          <Image
+                                          <img
                                              className="absolute w-[7px] h-[5px] top-px left-px"
                                              alt="Style"
                                              src="https://c.animaapp.com/wawSHnKX/img/style-1.svg"
@@ -503,7 +501,7 @@ export default function WelcomeHeroSection(): JSX.Element {
                            </div>
                         </div>
 
-                        <Image
+                        <img
                            className="absolute w-2.5 h-[9px] top-[66px] left-[124px] object-cover"
                            alt=""
                            src="https://c.animaapp.com/wawSHnKX/img/image-2.png"
@@ -569,7 +567,7 @@ export default function WelcomeHeroSection(): JSX.Element {
                            </div>
                         </div>
 
-                        <Image
+                        <img
                            className="w-[284px] h-[218px] top-0 left-[244px] absolute object-cover"
                            alt="Screenshot"
                            src="https://c.animaapp.com/wawSHnKX/img/screenshot-2024-09-19-at-15-51-16-removebg-preview-3.png"
@@ -759,7 +757,7 @@ export default function WelcomeHeroSection(): JSX.Element {
 
                                     <div className="flex w-[200px] h-5 items-center gap-1 px-2 py-0.5 absolute top-20 left-[25px] bg-[#e2f7f5] rounded-lg">
                                        <div className="relative w-4 h-4">
-                                          <Image
+                                          <img
                                              className="absolute w-[13px] h-[11px] top-[3px] left-px"
                                              alt="Style"
                                              src="https://c.animaapp.com/wawSHnKX/img/style-3.svg"
@@ -959,7 +957,7 @@ export default function WelcomeHeroSection(): JSX.Element {
 
                                     <div className="flex w-[200px] h-5 items-center gap-1 px-2 py-0.5 absolute top-20 left-[25px] bg-[#e2f7f5] rounded-lg">
                                        <div className="relative w-4 h-4">
-                                          <Image
+                                          <img
                                              className="absolute w-[13px] h-[11px] top-[3px] left-px"
                                              alt="Style"
                                              src="https://c.animaapp.com/wawSHnKX/img/style-3.svg"
@@ -981,7 +979,7 @@ export default function WelcomeHeroSection(): JSX.Element {
                            </div>
                         </div>
 
-                        <Image
+                        <img
                            className="absolute w-5 h-[18px] top-[131px] left-[247px] object-cover"
                            alt=""
                            src="https://c.animaapp.com/wawSHnKX/img/image-2-1.png"
@@ -995,7 +993,7 @@ export default function WelcomeHeroSection(): JSX.Element {
                {/* Visual connecting elements */}
                <div className="absolute w-[136px] h-[109px] top-[182px] left-80">
                   <div className="relative w-[131px] h-[102px] top-[7px] left-[5px]">
-                     <Image
+                     <img
                         className="absolute w-[18px] h-[17px] top-0 left-0"
                         alt="Vector"
                         src="https://c.animaapp.com/wawSHnKX/img/vector-1.svg"
@@ -1014,7 +1012,7 @@ export default function WelcomeHeroSection(): JSX.Element {
                      <div className="w-[116px] top-[54px] left-[26px] bg-[#6d57ff] rotate-[40.74deg] absolute h-0.5" />
 
                      <div className="absolute w-[105px] h-[93px] top-0 left-[23px]">
-                        <Image
+                        <img
                            className="absolute w-4 h-5 top-[3px] left-1 rotate-[34.76deg]"
                            alt="Vector"
                            src="https://c.animaapp.com/wawSHnKX/img/vector-2.svg"
@@ -1026,7 +1024,7 @@ export default function WelcomeHeroSection(): JSX.Element {
                      </div>
 
                      <div className="absolute w-[110px] h-[82px] top-[42px] left-0">
-                        <Image
+                        <img
                            className="absolute w-[15px] h-5 top-[3px] left-1 rotate-[34.76deg]"
                            alt="Vector"
                            src="https://c.animaapp.com/wawSHnKX/img/vector-3.svg"
@@ -1040,7 +1038,7 @@ export default function WelcomeHeroSection(): JSX.Element {
                </div>
 
                <div className="absolute w-[157px] h-[61px] top-[396px] left-[302px]">
-                  <Image
+                  <img
                      className="absolute w-[33px] h-[33px] top-7 left-0"
                      alt="Group"
                      src="https://c.animaapp.com/wawSHnKX/img/group-26086640@2x.png"

@@ -1,4 +1,4 @@
-'use client';
+
 
 import { type JSX } from 'react';
 
@@ -13,7 +13,7 @@ export default function Login(): JSX.Element {
                <AuthFormSection />
             </div>
          </div>
-         <style jsx>{'builder-component { max-width: none !important; }'}</style>
+         <style>{'builder-component { max-width: none !important; }'}</style>
       </>
    );
 }

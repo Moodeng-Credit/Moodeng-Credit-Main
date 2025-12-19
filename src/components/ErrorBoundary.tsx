@@ -1,4 +1,4 @@
-'use client';
+
 
 import { ERROR_MESSAGES } from '@/constants/errorMessages';
 

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 import type { ActionButtonConfig } from '@/types/actionButtonTypes';
 
@@ -23,7 +23,7 @@ export default function ActionButton({ button, onClick }: ActionButtonProps) {
 
    if (isExternal) {
       return (
-         <Link
+         <a
             href={href}
             target="_blank"
             rel="noopener noreferrer"
@@ -31,12 +31,12 @@ export default function ActionButton({ button, onClick }: ActionButtonProps) {
             className={buttonClasses}
          >
             <span className={textClasses}>{text}</span>
-         </Link>
+         </a>
       );
    }
 
    return (
-      <Link href={href} onClick={onClick} className={buttonClasses}>
+      <Link to={href} onClick={onClick} className={buttonClasses}>
          <span className={textClasses}>{text}</span>
       </Link>
    );

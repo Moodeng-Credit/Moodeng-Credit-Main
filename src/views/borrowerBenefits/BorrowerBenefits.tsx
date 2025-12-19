@@ -1,4 +1,4 @@
-'use client';
+
 
 import { type JSX, useEffect } from 'react';
 
@@ -36,7 +36,7 @@ export default function BorrowerBenefits(): JSX.Element {
                <WhatPeopleSaySection />
             </div>
          </div>
-         <style jsx>{'builder-component { max-width: none !important; }'}</style>
+         <style>{'builder-component { max-width: none !important; }'}</style>
       </>
    );
 }

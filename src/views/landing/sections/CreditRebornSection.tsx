@@ -1,7 +1,5 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
-
 export default function CreditRebornSection(): JSX.Element {
    return (
       <div className="relative w-[1440px] h-[458px] bg-[#171420]">
@@ -19,7 +17,7 @@ export default function CreditRebornSection(): JSX.Element {
                            <div className="h-[234px]">
                               <div className="relative w-[290px] h-[234px] overflow-hidden">
                                  <div className="absolute w-[290px] h-[232px] top-0 left-0 bg-[url(https://c.animaapp.com/VPWnEuWR/img/vector-77.svg)] bg-[100%_100%]">
-                                    <Image
+                                    <img
                                        className="absolute w-[21px] h-[21px] top-[76px] left-[73px]"
                                        alt="Vector"
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-80.svg"
@@ -27,14 +25,14 @@ export default function CreditRebornSection(): JSX.Element {
                                        height={21}
                                     />
                                  </div>
-                                 <Image
+                                 <img
                                     className="absolute w-[17px] h-[19px] top-[2223px] left-[2821px]"
                                     alt="Vector"
                                     src="https://c.animaapp.com/VPWnEuWR/img/vector-79@2x.png"
                                     width={17}
                                     height={19}
                                  />
-                                 <Image
+                                 <img
                                     className="absolute w-[62px] h-[82px] top-[2318px] left-[2776px]"
                                     alt="Vector"
                                     src="https://c.animaapp.com/VPWnEuWR/img/vector-79@2x.png"
@@ -60,7 +58,7 @@ export default function CreditRebornSection(): JSX.Element {
                         <div className="absolute w-[290px] h-[234px] top-0 left-0">
                            <div className="relative h-[234px] bg-[url(https://c.animaapp.com/VPWnEuWR/img/vector-81.svg)] bg-[100%_100%]">
                               <div className="absolute w-56 h-[72px] top-3 left-[34px]">
-                                 <Image
+                                 <img
                                     className="absolute w-[21px] h-[21px] top-[51px] left-[197px]"
                                     alt="Vector"
                                     src="https://c.animaapp.com/VPWnEuWR/img/vector-82.svg"
@@ -75,7 +73,7 @@ export default function CreditRebornSection(): JSX.Element {
                                  <div className="absolute w-[210px] h-[26px] top-0 left-0 [font-family:'Cabin_Condensed',Helvetica] font-bold text-white text-3xl tracking-[0] leading-[26px] whitespace-nowrap">
                                     High stablecoin returns
                                  </div>
-                                 <Image
+                                 <img
                                     className="absolute w-[82px] h-[82px] top-px left-[110px]"
                                     alt="Icon clock"
                                     src="https://c.animaapp.com/VPWnEuWR/img/---icon--clock--8@2x.png"
@@ -95,14 +93,14 @@ export default function CreditRebornSection(): JSX.Element {
                         <div className="relative w-[266px] h-[245px] top-6 left-3.5">
                            <div className="h-[245px] overflow-hidden">
                               <div className="relative w-[290px] h-[234px]">
-                                 <Image
+                                 <img
                                     className="absolute w-[252px] h-[234px] top-0 left-0"
                                     alt="Vector"
                                     src="https://c.animaapp.com/VPWnEuWR/img/vector-83.svg"
                                     width={252}
                                     height={234}
                                  />
-                                 <Image
+                                 <img
                                     className="absolute w-[22px] h-[22px] top-[77px] left-[202px]"
                                     alt="Vector"
                                     src="https://c.animaapp.com/VPWnEuWR/img/vector-84.svg"

@@ -1,7 +1,3 @@
-'use client';
-
-import React from 'react';
-
 import ToastDemo from '@/components/ToastSystem/ToastDemo';
 
 export default function UserNot() {

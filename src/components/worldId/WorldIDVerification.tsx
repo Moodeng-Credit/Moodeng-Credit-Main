@@ -1,5 +1,3 @@
-'use client';
-
 import { type ReactNode, useCallback, useState } from 'react';
 
 import { IDKitWidget, type ISuccessResult, VerificationLevel } from '@worldcoin/idkit';
@@ -26,8 +24,8 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const { showToastByConfig } = useToast();
    const [isModalOpen, setIsModalOpen] = useState(false);
 
-   const action = process.env.NEXT_PUBLIC_WORLD_ID_ACTION_ID as string;
-   const app_id = process.env.NEXT_PUBLIC_WORLD_ID_APP_ID as `app_${string}`;
+   const action = import.meta.env.VITE_WORLD_ID_ACTION_ID as string;
+   const app_id = import.meta.env.VITE_WORLD_ID_APP_ID as `app_${string}`;
 
    const handleVerify = async (proof: ISuccessResult) => {
       try {

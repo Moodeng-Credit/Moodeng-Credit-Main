@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef } from 'react';
 
 interface TelegramAuthButtonProps {
@@ -17,7 +15,7 @@ declare global {
 
 export default function TelegramAuthButton({ onAuth, buttonSize = 'large' }: TelegramAuthButtonProps) {
    const containerRef = useRef<HTMLDivElement>(null);
-   const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
+   const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME;
    const onAuthRef = useRef(onAuth);
 
    useEffect(() => {

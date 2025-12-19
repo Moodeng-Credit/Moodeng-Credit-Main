@@ -1,8 +1,4 @@
-'use client';
-
 import { type FC, useCallback, useEffect, useState } from 'react';
-
-import Image from 'next/image';
 
 import { TOAST_VARIANTS } from '@/components/ToastSystem/config/toastConfig';
 import { type ToastData, type ToastPropsType } from '@/components/ToastSystem/types';
@@ -13,7 +9,7 @@ interface SvgIconProps {
 }
 
 const SvgIcon: FC<SvgIconProps> = ({ src, className }) => {
-   return <Image src={src} className={className} alt="icon" width={16} height={16} />;
+   return <img src={src} className={className} alt="icon" width={16} height={16} />;
 };
 
 interface ToastProps extends ToastPropsType {

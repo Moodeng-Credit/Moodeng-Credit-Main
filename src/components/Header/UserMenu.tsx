@@ -1,23 +1,23 @@
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 import UserNetwork from '@/components/UserNetwork';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface UserMenuProps {
-   dashboardHref?: string;
+   dashboardTo?: string;
    showMenu: boolean;
    onToggleMenu: () => void;
    onClose: () => void;
 }
 
-export default function UserMenu({ dashboardHref = '/dashboard', showMenu, onToggleMenu, onClose }: UserMenuProps) {
+export default function UserMenu({ dashboardTo = '/dashboard', showMenu, onToggleMenu, onClose }: UserMenuProps) {
    const dropdownRef = useClickOutside<HTMLDivElement>(onClose);
 
    return (
       <div className="flex items-center space-x-4 relative" ref={dropdownRef}>
          <Link
-            href={dashboardHref}
+            to={dashboardTo}
             className="bg-[#6d57ff] text-white px-4 py-2 rounded-full cursor-pointer hover:bg-[#5a4ae5] transition-colors hidden sm:block"
          >
             <span className="[font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-sm">App</span>

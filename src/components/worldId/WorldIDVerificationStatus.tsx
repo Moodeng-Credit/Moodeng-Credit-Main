@@ -1,5 +1,3 @@
-'use client';
-
 import { useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -20,7 +18,7 @@ export default function WorldIDVerificationStatus({ className = '' }: WorldIDVer
    const [isUnverifying, setIsUnverifying] = useState(false);
    const isVerified = user.isWorldId === WorldId.ACTIVE;
 
-   const isDevMode = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
+   const isDevMode = import.meta.env.VITE_DEV_MODE === 'true';
 
    const handleUnverify = async () => {
       setIsUnverifying(true);

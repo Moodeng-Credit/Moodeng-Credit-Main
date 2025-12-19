@@ -1,7 +1,5 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
-
 import ActionButton from '@/components/ui/ActionButton';
 
 import { heroSectionButtons } from '@/config/buttonConfig';
@@ -11,7 +9,7 @@ export default function StartBuildingCreditSection(): JSX.Element {
    return (
       <div className="flex overflow-hidden flex-col items-center px-20 pb-16 mt-20 max-w-full w-[1440px] max-md:px-5 max-md:mt-10">
          <div className="flex flex-col items-center max-w-full w-[1056px]">
-            <Image
+            <img
                alt=""
                loading="lazy"
                src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/63818c0d2e2c11f8d3d69636d4fb34a5c246fd06e7e66b3cd3116ca7901b3ba5?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -26,7 +24,7 @@ export default function StartBuildingCreditSection(): JSX.Element {
             <div className="flex flex-wrap gap-5 justify-between items-start self-stretch mt-10 w-full text-violet-100 max-md:mt-10 max-md:max-w-full">
                <div className="flex flex-col">
                   <div className="flex gap-2.5 text-2xl leading-none">
-                     <Image
+                     <img
                         alt=""
                         loading="lazy"
                         src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/fb0a54689529c92feb9f23e7cec346c010963c77da9fe1c12675fbe0bc91d8dc?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -40,7 +38,7 @@ export default function StartBuildingCreditSection(): JSX.Element {
                </div>
                <div className="flex flex-col">
                   <div className="flex gap-2 text-2xl leading-none">
-                     <Image
+                     <img
                         alt=""
                         loading="lazy"
                         src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/464d7c692f5705b7d3eaf8f170b12897ccc91a586d121e3dcec1e8498d0a8405?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -54,7 +52,7 @@ export default function StartBuildingCreditSection(): JSX.Element {
                </div>
                <div className="flex flex-col">
                   <div className="flex gap-2.5 text-2xl leading-none">
-                     <Image
+                     <img
                         alt=""
                         loading="lazy"
                         src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/fb0a54689529c92feb9f23e7cec346c010963c77da9fe1c12675fbe0bc91d8dc?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -68,7 +66,7 @@ export default function StartBuildingCreditSection(): JSX.Element {
                </div>
                <div className="flex flex-col">
                   <div className="flex gap-2.5 text-2xl leading-none">
-                     <Image
+                     <img
                         alt=""
                         loading="lazy"
                         src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/fb0a54689529c92feb9f23e7cec346c010963c77da9fe1c12675fbe0bc91d8dc?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -82,7 +80,7 @@ export default function StartBuildingCreditSection(): JSX.Element {
                </div>
                <div className="flex flex-col">
                   <div className="flex gap-2.5 text-2xl leading-none">
-                     <Image
+                     <img
                         alt=""
                         loading="lazy"
                         src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/fb0a54689529c92feb9f23e7cec346c010963c77da9fe1c12675fbe0bc91d8dc?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -96,7 +94,7 @@ export default function StartBuildingCreditSection(): JSX.Element {
                </div>
             </div>
             <div className="flex gap-3 items-center mt-10 max-w-full text-2xl leading-none text-center whitespace-nowrap w-[398px]">
-               <Image
+               <img
                   className="w-[46px] h-[46px]"
                   alt="Background"
                   src="https://c.animaapp.com/VPWnEuWR/img/background.svg"

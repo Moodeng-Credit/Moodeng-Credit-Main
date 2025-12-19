@@ -1,7 +1,5 @@
 import { useState } from 'react';
 
-import Image from 'next/image';
-
 import type { NavItem } from '@/views/profile/types';
 
 interface SidebarProps {
@@ -72,10 +70,10 @@ export default function Sidebar({ navItems, infoNavItems, onNavItemClick }: Side
             </button>
          </nav>
          <div className="relative w-full flex justify-center items-center">
-            <Image
+            <img
                alt="hippo"
                className="w-full object-contain transition-all duration-300"
-               draggable="false"
+               draggable={false}
                height="256"
                src="/board-image.png"
                width="256"

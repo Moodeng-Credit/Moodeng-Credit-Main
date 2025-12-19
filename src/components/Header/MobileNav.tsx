@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 import ActionButton from '@/components/ui/ActionButton';
 
@@ -11,10 +11,10 @@ interface MobileNavProps {
    isOpen: boolean;
    onClose: () => void;
    username?: string | null;
-   dashboardHref?: string;
+   dashboardTo?: string;
 }
 
-export default function MobileNav({ buttons, isOpen, onClose, username, dashboardHref = '/dashboard' }: MobileNavProps) {
+export default function MobileNav({ buttons, isOpen, onClose, username, dashboardTo = '/dashboard' }: MobileNavProps) {
    const navRef = useClickOutside<HTMLElement>(onClose, isOpen);
 
    if (!isOpen) return null;
@@ -29,7 +29,7 @@ export default function MobileNav({ buttons, isOpen, onClose, username, dashboar
          <div className="flex flex-col p-4 space-y-4">
             {username ? (
                <Link
-                  href={dashboardHref}
+                  to={dashboardTo}
                   onClick={onClose}
                   className="text-white text-center text-[22px] cursor-pointer hover:text-gray-300 transition-colors font-normal"
                >

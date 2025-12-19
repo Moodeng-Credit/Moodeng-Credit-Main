@@ -1,7 +1,6 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 import ActionButton from '@/components/ui/ActionButton';
 
@@ -17,7 +16,7 @@ export default function CreditGrowthSystemSection(): JSX.Element {
             <div className="overflow-hidden grow shrink bg-blend-normal min-w-[240px] w-[1151px] max-md:max-w-full">
                CREDIT GROWTH SYSTEM
             </div>
-            <Image
+            <img
                alt=""
                loading="lazy"
                src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/51641852f20ced6f518211c7293b22bb9a9b24e39937ccccd134e24b29cfc7bb?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -136,10 +135,10 @@ export default function CreditGrowthSystemSection(): JSX.Element {
                         ) : (
                            <>
                               <div className="overflow-hidden self-stretch px-14 py-6 my-auto bg-indigo-500 rounded-[114px] text-neutral-100 w-[194px] max-md:px-5">
-                                 <Link href="/dashboard#request">Borrow</Link>
+                                 <Link to="/dashboard#request">Borrow</Link>
                               </div>
                               <div className="overflow-hidden self-stretch px-16 py-6 my-auto bg-emerald-400 rounded-[114px] text-zinc-900 w-[182px] max-md:px-5">
-                                 <Link href="/dashboard#request">Lend</Link>
+                                 <Link to="/dashboard#request">Lend</Link>
                               </div>
                            </>
                         )}
@@ -147,7 +146,7 @@ export default function CreditGrowthSystemSection(): JSX.Element {
                   </div>
                   <div className="flex flex-wrap gap-5 justify-center items-center mt-6 w-full max-md:max-w-full">
                      <div className="flex overflow-hidden flex-col grow shrink items-start self-stretch px-5 py-7 my-auto bg-white rounded-2xl min-w-[240px] w-[230px] max-md:px-5">
-                        <Image
+                        <img
                            alt=""
                            loading="lazy"
                            src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/b725d82d60bc3b6ec342f9ece31e0aeba8ce29f39d86430b0a7ded9aae48884b?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -163,7 +162,7 @@ export default function CreditGrowthSystemSection(): JSX.Element {
                      </div>
                      <div className="flex overflow-hidden flex-col grow shrink self-stretch px-5 py-7 my-auto bg-white rounded-2xl min-w-[240px] w-[230px] max-md:px-5">
                         <div className="flex flex-col justify-center items-center px-3.5 bg-fuchsia-300 rounded-full h-[67px] w-[67px]">
-                           <Image
+                           <img
                               alt=""
                               loading="lazy"
                               src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/80d4256ca7d208d1577d4349fc643c094b08f40fd36b27afa832e2c8cc55505e?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -181,7 +180,7 @@ export default function CreditGrowthSystemSection(): JSX.Element {
                      </div>
                      <div className="flex overflow-hidden flex-col grow shrink items-start self-stretch px-5 pt-7 pb-12 my-auto bg-white rounded-2xl min-w-[240px] w-[230px] max-md:px-5">
                         <div className="flex flex-col justify-center items-center px-2.5 bg-emerald-400 rounded-full h-[67px] w-[67px]">
-                           <Image
+                           <img
                               alt=""
                               loading="lazy"
                               src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/88425fd4c9dfda3ebc14876b9d41413a45340d35ac6dc6ad7ce5449f1056c6a5?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -215,7 +214,7 @@ export default function CreditGrowthSystemSection(): JSX.Element {
                         </div>
                      </div>
                      <div className="flex flex-col ml-5 w-[26%] max-md:ml-0 max-md:w-full">
-                        <Image
+                        <img
                            alt=""
                            loading="lazy"
                            src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/73519d7687e7177605b4f32f0fab51d5e296870c8bddcbe9deb1d6bba48e23aa?apiKey=e485b3dc4b924975b4554885e21242bb"

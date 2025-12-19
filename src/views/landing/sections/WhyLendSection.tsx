@@ -1,7 +1,5 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
-
 import ActionButton from '@/components/ui/ActionButton';
 
 import { whyLendButtons } from '@/config/buttonConfig';
@@ -24,7 +22,7 @@ export default function WhyLendSection(): JSX.Element {
                         Directly?
                      </span>
                   </p>
-                  <Image
+                  <img
                      className="absolute w-[50px] h-[37px] top-0 left-[1186px] object-cover"
                      alt="Svg"
                      src="https://c.animaapp.com/VPWnEuWR/img/svg-2.svg"
@@ -61,7 +59,7 @@ export default function WhyLendSection(): JSX.Element {
                      </div>
                   </div>
                </div>
-               <Image
+               <img
                   className="absolute w-[108px] h-[135px] top-[145px] left-[1102px] object-cover"
                   alt="Catuu lighter hang"
                   src="https://c.animaapp.com/VPWnEuWR/img/catuu-lighter-hang-1231231231-1@2x.png"
@@ -70,14 +68,14 @@ export default function WhyLendSection(): JSX.Element {
                />
                <div className="absolute w-[102px] h-[127px] top-[139px] left-[495px]">
                   <div className="relative w-[110px] h-[135px] -left-1 bg-[url(https://c.animaapp.com/VPWnEuWR/img/catuu-1@2x.png)] bg-cover bg-[50%_50%]">
-                     <Image
+                     <img
                         className="absolute w-10 h-10 top-[79px] left-4 object-cover"
                         alt="Acffc aa f"
                         src="https://c.animaapp.com/VPWnEuWR/img/a5cf6f4c-aa64-458f-be0c-e885084dbb87-transformed-1@2x.png"
                         width={40}
                         height={40}
                      />
-                     <Image
+                     <img
                         className="absolute w-[47px] h-6 top-[89px] left-[13px] object-cover"
                         alt="Img"
                         src="https://c.animaapp.com/VPWnEuWR/img/oukwgyzftkmjv95wwbf2ww-removebg-preview-1@2x.png"

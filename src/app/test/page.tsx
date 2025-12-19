@@ -1,5 +1,3 @@
-import Image from 'next/image';
-
 export default function TestPage() {
    return (
       <div className="bg-[#171420] flex flex-row justify-center w-full">
@@ -9,7 +7,7 @@ export default function TestPage() {
                   <div className="flex w-[1431px] items-center justify-between relative top-2 left-[244px]">
                      <div className="inline-flex items-center justify-center gap-[34px] relative flex-[0_0_auto]">
                         <div className="inline-flex items-center justify-center gap-1 relative flex-[0_0_auto]">
-                           <Image
+                           <img
                               className="relative h-[46.95px] mb-[-8.00px] ml-[-4.00px] w-[42px] object-cover"
                               alt=""
                               src="https://c.animaapp.com/VPWnEuWR/img/file--4--1@2x.png"

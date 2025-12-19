@@ -1,7 +1,5 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
-
 import { type LendingIncentiveItem, lendingIncentivesData } from '@/views/lenderBenefits/config/lendingIncentivesConfig';
 
 interface LendingIncentiveCardProps {
@@ -55,7 +53,7 @@ function LendingIncentiveCard({ item }: LendingIncentiveCardProps): JSX.Element 
                item.imagePosition === 'left' ? 'self-start ml-0 pl-0' : 'self-end'
             }`}
          >
-            <Image
+            <img
                loading="lazy"
                src={item.image.src}
                alt={item.image.alt}

@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function ResetPasswordPage() {
    const [password, setPassword] = useState('');
@@ -11,8 +9,8 @@ export default function ResetPasswordPage() {
    const [error, setError] = useState('');
    const [loading, setLoading] = useState(false);
    const [token, setToken] = useState<string | null>(null);
-   const router = useRouter();
-   const searchParams = useSearchParams();
+   const navigate = useNavigate();
+   const [searchParams] = useSearchParams();
 
    useEffect(() => {
       const tokenParam = searchParams.get('token');
@@ -59,7 +57,7 @@ export default function ResetPasswordPage() {
          if (response.ok) {
             setMessage(data.message || 'Password reset successful! Redirecting to login...');
             setTimeout(() => {
-               router.push('/login');
+               navigate('/login');
             }, 2000);
          } else {
             setError(data.message || 'Failed to reset password. Please try again.');
@@ -138,7 +136,7 @@ export default function ResetPasswordPage() {
                </div>
 
                <div className="text-center">
-                  <button type="button" onClick={() => router.push('/login')} className="text-sm text-blue-600 hover:underline">
+                  <button type="button" onClick={() => navigate('/login')} className="text-sm text-blue-600 hover:underline">
                      Back to Login
                   </button>
                </div>
