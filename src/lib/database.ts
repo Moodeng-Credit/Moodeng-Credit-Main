@@ -19,8 +19,8 @@
 
 // Re-export Supabase clients for easier migration
 export {
-   createSupabaseBrowserClient,
-   getSupabaseBrowserClient
+    createSupabaseBrowserClient,
+    getSupabaseBrowserClient
 } from '@/lib/supabase';
 
 // Deprecated: kept for backwards compatibility during migration

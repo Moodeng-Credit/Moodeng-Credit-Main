@@ -6,9 +6,12 @@
    "scripts": {
       "dev": "dotenvx run --env-file=.env.staging -- vite",
       "dev:local": "dotenvx run --env-file=.env.local -- vite",
+      "dev:prod": "dotenvx run --env-file=.env.prod -- vite",
       "build": "tsc -b && vite build",
+      "build:prod": "dotenvx run --env-file=.env.prod -- tsc -b && vite build",
       "lint": "eslint .",
       "preview": "vite preview",
+      "preview:prod": "dotenvx run --env-file=.env.prod -- vite preview",
       "reup": "rm -rf node_modules && npm install",
       "=== Build / Format Helpers ===": "",
       "format_build": "bash ./scripts/formatInstallBuild.sh",
@@ -92,5 +95,8 @@
       "typescript": "~5.9.3",
       "typescript-eslint": "^8.46.4",
       "vite": "^7.2.4"
+   },
+   "engines": {
+      "node": ">=22.0.0"
    }
 }
