@@ -25,15 +25,6 @@ serve(async (req) => {
 
     const redirectUrl = Deno.env.get('REDIRECT_URL') || 'http://localhost:5173/reset-password'
 
-    const { error } = await supabase.auth.admin.generateLink({
-      type: 'recovery',
-      email: email,
-      options: { redirectTo: redirectUrl }
-    })
-
-    // Note: generateLink is one way, but resetPasswordForEmail is easier if we don't need to send the email ourselves.
-    // However, the original code used resetPasswordForEmail with admin client.
-
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl
     })

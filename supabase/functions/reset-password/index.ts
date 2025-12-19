@@ -32,7 +32,7 @@ serve(async (req) => {
             token,
             type: 'recovery'
         })
-        
+
         if (verifyError) {
             return new Response(
                 JSON.stringify({ error: verifyError.message }),
@@ -60,10 +60,10 @@ serve(async (req) => {
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
             )
         }
-        
+
         // Get user from auth header
         const { data: { user }, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
-        
+
         if (userError || !user) {
             return new Response(
                 JSON.stringify({ error: 'Invalid session' }),
