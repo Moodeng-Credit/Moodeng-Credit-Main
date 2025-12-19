@@ -13,11 +13,17 @@ export default function ResetPasswordPage() {
    const [searchParams] = useSearchParams();
 
    useEffect(() => {
-      const tokenParam = searchParams.get('token');
+      // Supabase recovery links can use 'token_hash', 'token', or 'code'
+      const tokenParam = searchParams.get('token') || searchParams.get('token_hash') || searchParams.get('code');
+
+      // Also check hash fragment for access_token (standard Supabase recovery)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+
       if (tokenParam) {
          setToken(tokenParam);
-      } else {
-         setError('Invalid reset link. Please request a new password reset.');
+      } else if (accessToken) {
+         setToken(accessToken);
       }
    }, [searchParams]);
 
@@ -37,19 +43,31 @@ export default function ResetPasswordPage() {
       }
 
       if (!token) {
-         setError('Invalid reset link');
+         setError('No reset token found. Please request a new password reset link.');
          return;
       }
 
       setLoading(true);
 
       try {
+         const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+         };
+
+         const body: any = { password };
+
+         // If the token looks like a JWT (contains dots), it's likely an access_token
+         // Otherwise it's a token_hash or OTP code
+         if (token.includes('.')) {
+            headers['Authorization'] = `Bearer ${token}`;
+         } else {
+            body.token = token;
+         }
+
          const response = await fetch(import.meta.env.VITE_API_URL + '/auth/reset-password', {
             method: 'POST',
-            headers: {
-               'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ token, password })
+            headers,
+            body: JSON.stringify(body)
          });
 
          const data = await response.json();
@@ -122,6 +140,12 @@ export default function ResetPasswordPage() {
                {error ? (
                   <div className="rounded-md bg-red-50 p-4">
                      <p className="text-sm text-red-800">{error}</p>
+                  </div>
+               ) : !token ? (
+                  <div className="rounded-md bg-blue-50 p-4">
+                     <p className="text-sm text-blue-800">
+                        Please use the password reset link sent to your email. If you don't have one, you can request it from the login page.
+                     </p>
                   </div>
                ) : null}
 

@@ -23,7 +23,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const redirectUrl = Deno.env.get('REDIRECT_URL') || 'http://localhost:5173/reset-password'
+    const redirectUrl = Deno.env.get('FORGOT_PASSWORD_REDIRECT_URL')
 
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl
