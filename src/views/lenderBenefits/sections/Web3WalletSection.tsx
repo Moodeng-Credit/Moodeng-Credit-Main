@@ -1,6 +1,6 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
+
 
 import Bsvg from '@/views/lenderBenefits/config/Bsvg';
 
@@ -23,7 +23,7 @@ export default function Web3WalletSection(): JSX.Element {
                               <p>Microloan system to help people build credit from the ground up.</p>
                            </div>
                            <div className="flex z-10 gap-1 items-end mt-3 text-xl font-semibold text-center text-black">
-                              <Image
+                              <img
                                  loading="lazy"
                                  src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/bb78f5953512a02e5ea863cfdb833e99428413a656289baf88ecadb54194f7f7?apiKey=e485b3dc4b924975b4554885e21242bb"
                                  alt=""
@@ -33,7 +33,7 @@ export default function Web3WalletSection(): JSX.Element {
                               />
                               <div>Our Solution</div>
                            </div>
-                           <Image
+                           <img
                               loading="lazy"
                               src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/4df40bbe0988056f440073a4efab81c3a8ec59dc498fb2cbe86f40a9d5432c46?apiKey=e485b3dc4b924975b4554885e21242bbwidth=1000"
                               alt=""
@@ -49,7 +49,7 @@ export default function Web3WalletSection(): JSX.Element {
                <div className="flex flex-col ml-5 w-[34%] max-md:ml-0 max-md:w-full">
                   <div className="flex flex-col w-full max-md:mt-4">
                      <div className="flex gap-3">
-                        <Image
+                        <img
                            loading="lazy"
                            src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/99fc5ff0e4c5c7d1a71a15472e04cefca458634b10b9ab5baab8fd45692d9e8d?apiKey=e485b3dc4b924975b4554885e21242bb"
                            alt=""

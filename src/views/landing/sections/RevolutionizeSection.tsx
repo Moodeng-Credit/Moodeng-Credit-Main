@@ -1,7 +1,7 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
-import Link from 'next/link';
+
+import { Link } from 'react-router-dom';
 
 import ActionButton from '@/components/ui/ActionButton';
 
@@ -77,7 +77,7 @@ export default function RevolutionizeSection(): JSX.Element {
                         <div className="absolute w-[1044px] h-8 -top-px left-0 [font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-[#f6f6f6] text-[40px] tracking-[0] leading-[3rem] whitespace-nowrap">
                            FAIR, TRANSPARENT &amp; EMPOWERED
                         </div>
-                        <Image
+                        <img
                            className="absolute w-[50px] h-[37px] top-[4800px] left-[3798px] object-cover"
                            alt="Svg"
                            src="https://c.animaapp.com/VPWnEuWR/img/vector-79@2x.png"
@@ -91,7 +91,7 @@ export default function RevolutionizeSection(): JSX.Element {
                         <div className="absolute w-[427px] h-[42px] top-[23px] left-[78px] [font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-[#171420] text-[40px] tracking-[0] leading-[42px] whitespace-nowrap">
                            The Moodeng shortcut
                         </div>
-                        <Image
+                        <img
                            className="absolute w-10 h-10 top-[26px] left-6"
                            alt="Svg"
                            src="https://c.animaapp.com/VPWnEuWR/img/svg-1782751338-638.svg"
@@ -109,7 +109,7 @@ export default function RevolutionizeSection(): JSX.Element {
                               </div>
                               <div className="relative w-[21.02px] h-[21.02px]">
                                  <div className="relative w-[21px] h-5 bg-[url(https://c.animaapp.com/VPWnEuWR/img/star-4.svg)] bg-[100%_100%]">
-                                    <Image
+                                    <img
                                        className="absolute w-2 h-[5px] top-2 left-1.5"
                                        alt="Vector"
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-4-1.svg"
@@ -203,8 +203,7 @@ export default function RevolutionizeSection(): JSX.Element {
                            </div>
                         </div>
                      </div>
-                     <Link
-                        href="/dashboard#request"
+                     <Link to="/dashboard#request"
                         className="flex w-[302px] h-[46px] items-center justify-center gap-5 px-5 py-[18px] absolute top-[544px] left-[87px] bg-[#2154e8] rounded-lg overflow-hidden"
                      >
                         <span className="relative w-fit mt-[-5.50px] mb-[-5.50px] [font-family:'DM_Sans',Helvetica] font-medium text-white text-base text-center tracking-[0] leading-[normal]">
@@ -256,7 +255,7 @@ export default function RevolutionizeSection(): JSX.Element {
                   REVOLUTIONIZE MICROLOANS <br />
                   &amp; REIMAGINE CREDIT
                </p>
-               <Image
+               <img
                   className="absolute w-[57px] h-[75px] top-0 left-[23px]"
                   alt="Emoji light bulb"
                   src="https://c.animaapp.com/VPWnEuWR/img/---emoji--light-bulb-@2x.png"

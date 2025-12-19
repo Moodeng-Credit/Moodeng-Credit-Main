@@ -1,4 +1,4 @@
-'use client';
+
 
 import { type JSX, useEffect } from 'react';
 

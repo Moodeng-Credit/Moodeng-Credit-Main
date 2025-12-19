@@ -31,7 +31,7 @@ export default function ProfileSettings({
    isSendingTestEmail,
    onTestEmail
 }: ProfileSettingsProps) {
-   const isDevMode = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
+   const isDevMode = import.meta.env.VITE_DEV_MODE === 'true';
 
    return (
       <form className="flex flex-col md:flex-row gap-8">

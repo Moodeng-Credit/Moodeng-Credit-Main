@@ -1,6 +1,6 @@
 import { type FC } from 'react';
 
-import Image from 'next/image';
+
 
 import type { PartnerLogoType } from '@/views/landing/config/partnersConfig';
 
@@ -14,7 +14,7 @@ const PartnerLogo: FC<PartnerLogoProps> = ({ partner }) => {
    const defaultHeight = 150;
    return (
       <div className="flex items-center justify-center">
-         <Image
+         <img
             className={`${partner.className || ''}`}
             alt={partner.alt}
             src={partner.src}

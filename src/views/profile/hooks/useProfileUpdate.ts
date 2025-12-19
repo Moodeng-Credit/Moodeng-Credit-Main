@@ -57,7 +57,7 @@ export const useProfileUpdate = (currentUserData: { username?: string; email?: s
    const handleTestEmail = async () => {
       setIsSendingTestEmail(true);
       try {
-         const response = await fetch('/api/auth/test-email', {
+         const response = await fetch(import.meta.env.VITE_API_URL + '/auth/test-email', {
             method: 'POST',
             headers: {
                'Content-Type': 'application/json'

@@ -1,4 +1,4 @@
-'use client';
+
 
 import FAQsComponent from '@/views/FAQ';
 

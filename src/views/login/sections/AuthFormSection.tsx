@@ -1,9 +1,8 @@
-import { type ChangeEvent, type FormEvent, type JSX, useCallback, useState } from 'react';
-
-import { useRouter } from 'next/navigation';
+import { type ChangeEvent, type FormEvent, type JSX, useCallback, useEffect, useState } from 'react';
 
 import type { AsyncThunkAction } from '@reduxjs/toolkit';
 import { useDispatch } from 'react-redux';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -40,7 +39,8 @@ type AuthPayload =
    | { telegramAuthData: string };
 
 export default function AuthFormSection(): JSX.Element {
-   const router = useRouter();
+   const navigate = useNavigate();
+   const location = useLocation();
    const dispatch = useDispatch<AppDispatch>();
    const toast = useToast();
    const [email, setEmail] = useState('');
@@ -55,6 +55,15 @@ export default function AuthFormSection(): JSX.Element {
    const [showAccount, setShowAccount] = useState(false);
    const [accountError, setAccountError] = useState('');
    const [isSignUp, setIsSignUp] = useState(true);
+
+   useEffect(() => {
+      if (location.hash === '#login') {
+         setIsSignUp(false);
+      } else if (location.hash === '#signup') {
+         setIsSignUp(true);
+      }
+   }, [location.hash]);
+
    const isWorldId = WorldId.INACTIVE;
 
    const clear = () => {
@@ -82,7 +91,7 @@ export default function AuthFormSection(): JSX.Element {
 
          if (action.fulfilled.match(resultAction)) {
             clear();
-            router.push('/dashboard');
+            navigate('/dashboard');
          } else {
             const errorMsg =
                (resultAction.payload as Record<string, string>)?.message ||
@@ -97,7 +106,7 @@ export default function AuthFormSection(): JSX.Element {
          }
          setIsLoading(false);
       },
-      [dispatch, router]
+      [dispatch, navigate]
    );
 
    const handleRegisterError = (errorMsg: string) => {

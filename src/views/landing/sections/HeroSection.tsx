@@ -1,6 +1,6 @@
 import { type FC } from 'react';
 
-import Image from 'next/image';
+
 
 import ActionButton from '@/components/ui/ActionButton';
 
@@ -29,7 +29,7 @@ const HeroSection: FC = () => {
                      </span>
                   </p>
                   <div className=" w-[878px] h-[70px] top-[300px] left-0 flex items-center gap-4">
-                     <Image
+                     <img
                         className="w-[46px] h-[46px]"
                         alt="Background"
                         src="https://c.animaapp.com/VPWnEuWR/img/background.svg"

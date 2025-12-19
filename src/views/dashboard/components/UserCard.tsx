@@ -1,12 +1,9 @@
-'use client';
-
 import { type MouseEvent, useEffect, useState } from 'react';
-
-import Link from 'next/link';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { differenceInDays, differenceInHours, format, parseISO } from 'date-fns';
 import { useDispatch, useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -221,10 +218,7 @@ export default function UserCard(loan: Loan) {
                <div className="flex justify-between items-center mt-2">
                   <p className="text-[13px] font-normal text-[#0B1033]">
                      by{' '}
-                     <Link
-                        href={`/user/${loanData.borrowerUser}`}
-                        className="text-[#0B1033] underline hover:no-underline"
-                     >
+                     <Link to={`/user/${loanData.borrowerUser}`} className="text-[#0B1033] underline hover:no-underline">
                         {loanData.borrowerUser?.slice(0, 12)}
                      </Link>
                   </p>
@@ -261,7 +255,7 @@ export default function UserCard(loan: Loan) {
             <div className="flex justify-between items-center px-5 py-3 bg-white">
                <p className="text-sm font-normal text-[#0B1033]">Borrower Details</p>
                <Link
-                  href={`/user/${loanData.borrowerUser}`}
+                  to={`/user/${loanData.borrowerUser}`}
                   className="flex items-center gap-1 bg-[#2563EB] text-white text-sm font-semibold px-4 py-1 rounded-md hover:bg-[#1e4bb8] transition"
                >
                   Insights
@@ -336,10 +330,7 @@ export default function UserCard(loan: Loan) {
                      <p className="font-extrabold text-base leading-5">{loan.reason}</p>
                      <p className="text-xs font-normal">
                         Thank you for supporting&nbsp;
-                        <Link
-                           href={`/user/${loanData.borrowerUser}`}
-                           className="text-[#1E56FF] font-extrabold underline"
-                        >
+                        <Link to={`/user/${loanData.borrowerUser}`} className="text-[#1E56FF] font-extrabold underline">
                            {loan.borrowerUser}
                         </Link>
                      </p>
@@ -382,7 +373,7 @@ export default function UserCard(loan: Loan) {
                         </a>
                      </p>
                      <Link
-                        href="/profile"
+                        to="/profile"
                         className="bg-[#1E56FF] text-white font-extrabold text-sm rounded-md py-3 mt-4 w-full block text-center"
                      >
                         Review Funding

@@ -1,4 +1,4 @@
-'use client';
+
 
 import { parseUnits } from 'viem';
 import { useWriteContract } from 'wagmi';

@@ -1,5 +1,3 @@
-'use client';
-
 import { type ReactNode, useCallback, useState } from 'react';
 
 import { IDKitWidget, type ISuccessResult, VerificationLevel } from '@worldcoin/idkit';
@@ -9,6 +7,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { VerificationModal } from '@/components/worldId/VerificationModal';
 
 import { handleApiError } from '@/lib/apiHandler';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import type { ApiResponse } from '@/types/apiTypes';
@@ -26,15 +25,25 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const { showToastByConfig } = useToast();
    const [isModalOpen, setIsModalOpen] = useState(false);
 
-   const action = process.env.NEXT_PUBLIC_WORLD_ID_ACTION_ID as string;
-   const app_id = process.env.NEXT_PUBLIC_WORLD_ID_APP_ID as `app_${string}`;
+   const action = import.meta.env.VITE_WORLD_ID_ACTION_ID as string;
+   const app_id = import.meta.env.VITE_WORLD_ID_APP_ID as `app_${string}`;
 
    const handleVerify = async (proof: ISuccessResult) => {
       try {
-         const res = await fetch('/api/auth/verify', {
+         const supabase = getSupabaseBrowserClient();
+         const {
+            data: { session }
+         } = await supabase.auth.getSession();
+
+         if (!session) {
+            throw new Error('You must be logged in to verify your World ID.');
+         }
+
+         const res = await fetch(import.meta.env.VITE_API_URL + '/verify-worldid', {
             method: 'POST',
             headers: {
-               'Content-Type': 'application/json'
+               'Content-Type': 'application/json',
+               Authorization: `Bearer ${session.access_token}`
             },
             body: JSON.stringify(proof)
          });

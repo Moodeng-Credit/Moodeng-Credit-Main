@@ -1,4 +1,4 @@
-'use client';
+
 
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 
@@ -9,7 +9,7 @@ interface GoogleAuthButtonProps {
 }
 
 export default function GoogleAuthButton({ onSuccess, onError, text = 'continue_with' }: GoogleAuthButtonProps) {
-   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
    if (!clientId) {
       console.error('Google Client ID not configured');

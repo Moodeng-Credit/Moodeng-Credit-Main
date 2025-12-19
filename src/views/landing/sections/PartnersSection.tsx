@@ -1,6 +1,6 @@
 import { type FC } from 'react';
 
-import Image from 'next/image';
+
 
 import PartnerLogo from '@/components/ui/PartnerLogo';
 
@@ -27,7 +27,7 @@ const PartnersSection: FC = () => {
                   {/* Avatar Stack */}
                   <div className="flex gap-4">
                      {partnersConfig.stats.avatars.map((avatar: string, index: number) => (
-                        <Image
+                        <img
                            key={`${avatar}`}
                            className="w-16 h-16 rounded-full border-2 border-[#f6f6f6]"
                            alt={`User ${index + 1}`}

@@ -1,6 +1,6 @@
 import { type JSX, type ReactNode } from 'react';
 
-import Image from 'next/image';
+
 
 interface AuthCardProps {
    title: string;
@@ -17,7 +17,7 @@ export default function AuthCard({ title, isSignUp, headerColor, mascotPosition,
       <div className="w-full max-w-md mx-auto">
          <div className={`flex -mb-4 p-0 ${mascotPosition === 'left' ? 'justify-start' : 'justify-end'}`}>
             <div className="w-20 h-20 z-10">
-               <Image
+               <img
                   src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/63818c0d2e2c11f8d3d69636d4fb34a5c246fd06e7e66b3cd3116ca7901b3ba5?apiKey=e485b3dc4b924975b4554885e21242bb"
                   alt="Moodeng Mascot"
                   width={80}

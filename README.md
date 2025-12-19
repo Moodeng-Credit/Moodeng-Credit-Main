@@ -15,7 +15,7 @@
 
 | Category | Technology |
 |----------|------------|
-| **Framework** | Next.js 15 (App Router) |
+| **Framework** | React + Vite |
 | **Language** | TypeScript |
 | **Database** | PostgreSQL with Prisma ORM |
 | **Styling** | Tailwind CSS |
@@ -54,8 +54,7 @@ src/
 # Install dependencies
 npm install
 
-# Set up environment variables
-cp env.example .env.local
+# Add .env.keys to the repo (ask other devs)
 
 # Run development server
 npm run dev

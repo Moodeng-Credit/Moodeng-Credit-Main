@@ -1,8 +1,6 @@
-'use client';
-
 import { type FC, useCallback } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 
 import { handleToastAction } from '@/components/ToastSystem/config/utils';
 import { useToastContext } from '@/components/ToastSystem/hooks/useToastContext';
@@ -11,13 +9,13 @@ import { type ToastData, type ToastPropsType, type ToastType } from '@/component
 
 const ToastContainer: FC = () => {
    const { toasts, removeToast } = useToastContext();
-   const router = useRouter();
+   const navigate = useNavigate();
 
    const onToastAction = useCallback(
       (action: string, customData?: ToastData) => {
-         handleToastAction(action, customData || {}, router);
+         handleToastAction(action, customData || {}, navigate);
       },
-      [router]
+      [navigate]
    );
 
    if (toasts.length === 0) {

@@ -151,7 +151,7 @@ export const chainConfig: Record<number, CustomChainConfig> = {
       bgColor: 'bg-[#0051ff]',
       textColor: 'text-[#0051ff]',
       tokens: {
-         USDC: process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS || '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'
+         USDC: import.meta.env.VITE_BASE_USDC_ADDRESS || '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'
       }
    },
    // [arbitrum.id]: {
@@ -202,14 +202,14 @@ export const chainConfig: Record<number, CustomChainConfig> = {
       bgColor: 'bg-[#0051ff]',
       textColor: 'text-[#0051ff]',
       tokens: {
-         USDC: process.env.NEXT_PUBLIC_BASE_SEPOLIA_USDC_ADDRESS || '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
+         USDC: import.meta.env.VITE_BASE_SEPOLIA_USDC_ADDRESS || '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
       }
    }
 };
 
 // Calculate allowed chain before using it
 const normalizeChainName = (value?: string) => (value ?? '').toLowerCase().replace(/\s+/g, '');
-const allowedChainEnvName = (process.env.NEXT_PUBLIC_ALLOWED_CHAIN_NAME || 'Base Sepolia').trim();
+const allowedChainEnvName = (import.meta.env.VITE_ALLOWED_CHAIN_NAME || 'Base Sepolia').trim();
 const normalizedAllowedChainName = normalizeChainName(allowedChainEnvName);
 const allowedChainEntry = Object.entries(chainConfig).find(
    ([, chain]) => normalizeChainName(chain.displayName) === normalizedAllowedChainName

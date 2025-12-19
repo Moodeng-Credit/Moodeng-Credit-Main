@@ -1,15 +1,13 @@
-'use client';
-
 import { useState } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 
 export default function ForgotPasswordPage() {
    const [email, setEmail] = useState('');
    const [message, setMessage] = useState('');
    const [error, setError] = useState('');
    const [loading, setLoading] = useState(false);
-   const router = useRouter();
+   const navigate = useNavigate();
 
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -18,7 +16,7 @@ export default function ForgotPasswordPage() {
       setLoading(true);
 
       try {
-         const response = await fetch('/api/auth/forgot-password', {
+         const response = await fetch(import.meta.env.VITE_API_URL + '/forgot-password', {
             method: 'POST',
             headers: {
                'Content-Type': 'application/json'
@@ -91,7 +89,7 @@ export default function ForgotPasswordPage() {
                </div>
 
                <div className="text-center">
-                  <button type="button" onClick={() => router.push('/login')} className="text-sm text-blue-600 hover:underline">
+                  <button type="button" onClick={() => navigate('/login')} className="text-sm text-blue-600 hover:underline">
                      Back to Login
                   </button>
                </div>

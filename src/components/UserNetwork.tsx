@@ -1,10 +1,7 @@
-'use client';
-
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID, getNetworkSvg } from '@/config/wagmiConfig';
@@ -13,7 +10,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 
 export default function UserNetwork() {
    const dispatch = useDispatch<AppDispatch>();
-   const router = useRouter();
+   const navigate = useNavigate();
    const account = useAccount();
    const username = useSelector((state: RootState) => state.auth.username);
 
@@ -21,7 +18,7 @@ export default function UserNetwork() {
       // Don't disconnect wallet - let wagmi persist the connection
       // The wallet will auto-reconnect on next login via WalletSyncInitializer
       dispatch(logoutUser());
-      router.push('/login');
+      navigate('/login');
    };
 
    return (
@@ -63,7 +60,7 @@ export default function UserNetwork() {
                   </nav>
                </div>
                <button
-                  onClick={() => router.push('login')}
+                  onClick={() => navigate('login')}
                   className="bg-blue-600 text-white font-bold text-sm rounded-b-xl w-full py-3 hover:bg-blue-700 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
                   type="button"
                >
@@ -76,7 +73,7 @@ export default function UserNetwork() {
             <section className="h-full bg-white rounded-xl border border-solid border-gray-300 shadow-md w-72 flex flex-col justify-between transform transition-all duration-300 ease-out animate-in slide-in-from-top-2 fade-in-0">
                <div>
                   <div className="flex justify-between items-center border-b border-gray-200 border-solid px-4 py-3">
-                     <Link href="/profile">
+                     <Link to="/profile">
                         <p className="text-sm font-normal text-black">{username}</p>
                      </Link>
                      <button
@@ -110,32 +107,27 @@ export default function UserNetwork() {
                   ) : null}
                   <div className="px-4 py-3 text-xs font-normal text-gray-400">Account Settings</div>
                   <nav className="flex flex-col gap-3 px-4 text-sm font-normal text-black">
-                     <Link
-                        href="/profile"
+                     <Link to="/profile"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
                         Profile <i className="fas fa-chevron-right"></i>
                      </Link>
-                     <Link
-                        href="/profile"
+                     <Link to="/profile"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
                         Repay Loans <i className="fas fa-chevron-right"></i>
                      </Link>
-                     <Link
-                        href="/dashboard"
+                     <Link to="/dashboard"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
                         Connect Account <i className="fas fa-plus"></i>
                      </Link>
-                     <Link
-                        href="/profile"
+                     <Link to="/profile"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
                         View Loan History <i className="fas fa-chevron-right"></i>
                      </Link>
-                     <Link
-                        href="/profile"
+                     <Link to="/profile"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
                         View Lending History <i className="fas fa-chevron-right"></i>

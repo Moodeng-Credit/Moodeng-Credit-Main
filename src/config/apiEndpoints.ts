@@ -29,23 +29,23 @@ interface ApiEndpoints {
 
 export const API_ENDPOINTS: ApiEndpoints = {
    AUTH: {
-      REGISTER: '/api/auth/register',
-      LOGIN: '/api/auth/login',
-      LOGOUT: '/api/auth/logout',
-      UPDATE: '/api/auth/update',
-      VERIFY: '/api/auth/verify',
-      ME: '/api/users/me',
-      PROFILE: '/api/users/profile'
+      REGISTER: `${import.meta.env.VITE_API_URL}/auth/register`,
+      LOGIN: `${import.meta.env.VITE_API_URL}/auth/login`,
+      LOGOUT: `${import.meta.env.VITE_API_URL}/auth/logout`,
+      UPDATE: `${import.meta.env.VITE_API_URL}/auth/update`,
+      VERIFY: `${import.meta.env.VITE_API_URL}/verify-worldid`,
+      ME: `${import.meta.env.VITE_API_URL}/users/me`,
+      PROFILE: `${import.meta.env.VITE_API_URL}/users/profile`
    },
    USERS: {
-      UPDATE: '/api/users/update'
+      UPDATE: `${import.meta.env.VITE_API_URL}/users/update`
    },
    LOANS: {
-      CREATE: '/api/loans/create',
-      UPDATE: '/api/loans/update',
-      GET: '/api/loans/get',
-      FETCH: '/api/loans/fetch',
-      DELETE: '/api/loans/delete'
+      CREATE: `${import.meta.env.VITE_API_URL}/loans/create`,
+      UPDATE: `${import.meta.env.VITE_API_URL}/loans/update`,
+      GET: `${import.meta.env.VITE_API_URL}/loans/get`,
+      FETCH: `${import.meta.env.VITE_API_URL}/loans/fetch`,
+      DELETE: `${import.meta.env.VITE_API_URL}/loans/delete`
    },
    EXTERNAL: {
       WORLDID: {

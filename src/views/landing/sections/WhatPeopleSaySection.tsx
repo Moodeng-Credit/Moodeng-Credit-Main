@@ -1,6 +1,6 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
+
 
 export default function WhatPeopleSaySection(): JSX.Element {
    return (
@@ -9,7 +9,7 @@ export default function WhatPeopleSaySection(): JSX.Element {
             <div className="absolute w-[1716px] h-[740px] top-0 left-0">
                <div className="absolute w-[1716px] h-[68px] top-0 left-0">
                   <div className="relative h-[68px]">
-                     <Image
+                     <img
                         className="absolute w-[1716px] h-[37px] top-0 left-0 object-cover"
                         alt="Container"
                         src="https://c.animaapp.com/VPWnEuWR/img/container-1.svg"
@@ -20,7 +20,7 @@ export default function WhatPeopleSaySection(): JSX.Element {
                         <div className="absolute w-[531px] h-8 top-0.5 left-0 [font-family:'Inter',Helvetica] font-normal text-[#f6f6f6] text-3xl tracking-[0] leading-8 whitespace-nowrap">
                            WHAT PEOPLE ARE SAYING
                         </div>
-                        <Image
+                        <img
                            className="absolute w-[50px] h-[37px] top-0 left-[1186px] object-cover"
                            alt="Svg"
                            src="https://c.animaapp.com/VPWnEuWR/img/svg-3.svg"
@@ -82,7 +82,7 @@ export default function WhatPeopleSaySection(): JSX.Element {
                                  </div>
                               </div>
                            </div>
-                           <Image
+                           <img
                               className="absolute w-10 h-[42px] top-[20px] left-6 object-cover"
                               alt="Avatar"
                               src="https://c.animaapp.com/VPWnEuWR/img/avatar-4-1@2x.png"
@@ -137,7 +137,7 @@ export default function WhatPeopleSaySection(): JSX.Element {
                            </div>
                         </div>
                      </div>
-                     <Image
+                     <img
                         className="absolute w-10 h-[42px] top-4 left-[650px] object-cover"
                         alt="Avatar"
                         src="https://c.animaapp.com/VPWnEuWR/img/avatar-13-1@2x.png"
@@ -147,14 +147,14 @@ export default function WhatPeopleSaySection(): JSX.Element {
                   </div>
                </div>
             </div>
-            <Image
+            <img
                className="absolute w-10 h-[42px] top-[200px] left-[286px] object-cover"
                alt="Avatar"
                src="https://c.animaapp.com/VPWnEuWR/img/avatar-10-1@2x.png"
                width={100}
                height={100}
             />
-            <Image
+            <img
                className="absolute w-10 h-[42px] top-[486px] left-[286px] object-cover"
                alt="Avatar"
                src="https://c.animaapp.com/VPWnEuWR/img/avatar-26-1@2x.png"

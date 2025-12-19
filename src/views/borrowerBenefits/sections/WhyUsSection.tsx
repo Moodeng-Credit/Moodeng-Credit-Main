@@ -1,6 +1,6 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
+
 
 export default function WhyUsSection(): JSX.Element {
    return (
@@ -10,7 +10,7 @@ export default function WhyUsSection(): JSX.Element {
       >
          <div className="flex flex-wrap gap-5 justify-between items-start self-center max-w-full text-3xl leading-none text-zinc-900 w-[1233px]">
             <div>NO MORE LOAN SHARKS</div>
-            <Image
+            <img
                alt=""
                loading="lazy"
                src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/d9ac94ddf05ac09e55e7d62facd9aa97647f3694d6e028af850f87de982de6bf?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -47,7 +47,7 @@ export default function WhyUsSection(): JSX.Element {
                </div>
                <div className="flex flex-col ml-5 w-6/12 max-md:ml-0 max-md:w-full">
                   <div className="flex flex-col grow text-2xl leading-6 text-center text-black max-md:mt-4 max-md:max-w-full">
-                     <Image
+                     <img
                         alt=""
                         loading="lazy"
                         src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/c637e5e1f5ff31348c478a947d562e74584bd750d7002327ad1c8336f34202f1?apiKey=e485b3dc4b924975b4554885e21242bb"

@@ -5,7 +5,7 @@ import { createBrowserClient } from '@supabase/ssr';
  * Safe to use in browser - uses publishable key.
  */
 export function createSupabaseBrowserClient() {
-   return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!);
+   return createBrowserClient(import.meta.env.VITE_SUPABASE_URL!, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY!);
 }
 
 // Singleton instance for client components

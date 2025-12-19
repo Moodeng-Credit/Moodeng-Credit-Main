@@ -1,6 +1,6 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
+
 
 import { type VerifyStatsCardProps } from '@/views/lenderBenefits/config/verifyStatsConfig';
 
@@ -9,7 +9,7 @@ export const VerifyStatsCard = ({ card }: { card: VerifyStatsCardProps }): JSX.E
       <div className="flex flex-col w-[33%] max-md:ml-0 max-md:w-full">
          <div className="flex flex-col grow pb-11 w-full bg-white rounded-xl max-md:mt-2.5">
             <div className="flex relative flex-col px-16 w-full rounded-xl aspect-[1.63] max-md:px-5">
-               <Image
+               <img
                   alt=""
                   loading="lazy"
                   src={card.bgImage}
@@ -17,7 +17,7 @@ export const VerifyStatsCard = ({ card }: { card: VerifyStatsCardProps }): JSX.E
                   width={339}
                   height={208}
                />
-               <Image
+               <img
                   loading="lazy"
                   src={card.image}
                   className="object-contain w-full h-full z-10 aspect-[1.27]"

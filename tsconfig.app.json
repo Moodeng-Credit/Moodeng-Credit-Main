@@ -7,9 +7,12 @@
       "module": "ESNext",
       "types": ["vite/client"],
       "skipLibCheck": true,
+      "allowJs": true,
       "baseUrl": ".",
       "paths": {
-         "@/*": ["./src/*"]
+         "@/*": ["./src/*"],
+         "ui-component": ["./src/components/ui-component"],
+         "ui-component/*": ["./src/components/ui-component/*"]
       },
 
       /* Bundler mode */
@@ -19,14 +22,18 @@
       "moduleDetection": "force",
       "noEmit": true,
       "jsx": "react-jsx",
+      "downlevelIteration": true,
 
       /* Linting */
       "strict": true,
       "noUnusedLocals": true,
       "noUnusedParameters": true,
+      "noImplicitAny": true,
+      "noImplicitThis": true,
+      "strictNullChecks": true,
       "erasableSyntaxOnly": true,
       "noFallthroughCasesInSwitch": true,
       "noUncheckedSideEffectImports": true
    },
-   "include": ["src"]
+   "include": ["src", "app-types.d.ts", "**/*.ts", "**/*.tsx"]
 }

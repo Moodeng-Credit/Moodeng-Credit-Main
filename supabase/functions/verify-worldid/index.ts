@@ -65,15 +65,15 @@ serve(async (req) => {
 
     const responseText = await verifyResponse.text()
     console.log(`World ID API response status: ${verifyResponse.status}`)
-    
+
     let verifyRes;
     try {
         verifyRes = JSON.parse(responseText)
     } catch (e) {
-        return new Response(JSON.stringify({ 
-            error: 'World ID API returned invalid JSON (likely a 404 or 500 HTML page)', 
+        return new Response(JSON.stringify({
+            error: 'World ID API returned invalid JSON (likely a 404 or 500 HTML page)',
             status: verifyResponse.status,
-            details: responseText.substring(0, 200) 
+            details: responseText.substring(0, 200)
         }), { status: 500, headers: corsHeaders })
     }
 
