@@ -23,9 +23,9 @@ export default function ActionButton({ button, onClick }: ActionButtonProps) {
 
    if (isExternal) {
       return (
-         <Link to={href} target="_blank" rel="noopener noreferrer" onClick={onClick} className={buttonClasses}>
+         <a href={href} target="_blank" rel="noopener noreferrer" onClick={onClick} className={buttonClasses}>
             <span className={textClasses}>{text}</span>
-         </Link>
+         </a>
       );
    }
 

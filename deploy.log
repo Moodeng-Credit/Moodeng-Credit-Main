@@ -1,0 +1,20 @@
+Bundling Function: create-user
+v1.69.14: Pulling from supabase/edge-runtime
+5c32499ab806: Already exists
+bf6d821edaf4: Pulling fs layer
+7754a19bb34e: Pulling fs layer
+907bd2166bce: Pulling fs layer
+7574f631d603: Pulling fs layer
+fefa9cd0f32e: Pulling fs layer
+fefa9cd0f32e: Waiting
+7754a19bb34e: Download complete
+bf6d821edaf4: Download complete
+bf6d821edaf4: Pull complete
+7754a19bb34e: Pull complete
+fefa9cd0f32e: Download complete
+907bd2166bce: Verifying Checksum
+907bd2166bce: Download complete
+907bd2166bce: Pull complete
+2166bce: Verifying Checksum
+907bd2166bce: Download complete
+907bd2166bce: Pull complete
