@@ -1,15 +1,13 @@
-'use client';
-
-import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import type { NavigateFunction } from 'react-router-dom';
 
 import { TOAST_CONFIGS } from '@/components/ToastSystem/config/toastConfig';
 import type { ToastData } from '@/components/ToastSystem/types';
 
-export const handleToastAction = (action: string, customData: ToastData, router: AppRouterInstance) => {
+export const handleToastAction = (action: string, customData: ToastData, navigate: NavigateFunction) => {
    const configEntry = Object.values(TOAST_CONFIGS).find((config) => config.buttonAction === action);
 
-   if (configEntry && 'route' in configEntry && configEntry.route && router) {
-      router.push(configEntry.route);
+   if (configEntry && 'route' in configEntry && configEntry.route && navigate) {
+      navigate(configEntry.route);
       return;
    }
 

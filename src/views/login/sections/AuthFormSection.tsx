@@ -1,6 +1,6 @@
 import { type ChangeEvent, type FormEvent, type JSX, useCallback, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 
 import type { AsyncThunkAction } from '@reduxjs/toolkit';
 import { useDispatch } from 'react-redux';
@@ -40,7 +40,7 @@ type AuthPayload =
    | { telegramAuthData: string };
 
 export default function AuthFormSection(): JSX.Element {
-   const router = useRouter();
+   const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
    const toast = useToast();
    const [email, setEmail] = useState('');
@@ -82,7 +82,7 @@ export default function AuthFormSection(): JSX.Element {
 
          if (action.fulfilled.match(resultAction)) {
             clear();
-            router.push('/dashboard');
+            navigate('/dashboard');
          } else {
             const errorMsg =
                (resultAction.payload as Record<string, string>)?.message ||
@@ -97,7 +97,7 @@ export default function AuthFormSection(): JSX.Element {
          }
          setIsLoading(false);
       },
-      [dispatch, router]
+      [dispatch, navigate]
    );
 
    const handleRegisterError = (errorMsg: string) => {

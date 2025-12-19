@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -14,10 +12,9 @@ import type { RootState } from '@/store/store';
  * Hook to guard protected routes (client-side safety net)
  * - Checks if user is authenticated on mount
  * - If not authenticated, clears state and redirects silently
- * - Middleware handles the primary auth check and redirects
  */
 export const useAuthGuard = () => {
-   const router = useRouter();
+   const navigate = useNavigate();
    const dispatch = useDispatch();
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -29,9 +26,9 @@ export const useAuthGuard = () => {
          console.log('🔒 Client-side auth guard: No authentication found');
          clearAuthCookieClient();
          dispatch(clearAuth());
-         router.push('/login');
+         navigate('/login');
       }
-   }, [username, user.id, router, dispatch]);
+   }, [username, user.id, navigate, dispatch]);
 
    return {
       isAuthenticated: !!(username && user.id),

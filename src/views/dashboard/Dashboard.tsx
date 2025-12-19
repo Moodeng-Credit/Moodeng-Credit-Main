@@ -1,10 +1,6 @@
-'use client';
-
 import { type ChangeEvent, type FormEvent, type MouseEvent, type RefObject, useCallback, useEffect, useMemo, useState } from 'react';
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Link, useLocation } from 'react-router-dom';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
@@ -45,7 +41,7 @@ export default function Dashboard() {
 }
 
 function Dashboard$() {
-   const pathname = usePathname();
+   const location = useLocation();
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
    const { showToastByConfig } = useToast();
@@ -236,13 +232,13 @@ function Dashboard$() {
    };
 
    useEffect(() => {
-      if (typeof window !== 'undefined' && window.location.hash) {
-         const element = document.getElementById(window.location.hash.replace('#', ''));
+      if (location.hash) {
+         const element = document.getElementById(location.hash.replace('#', ''));
          if (element) {
             element.scrollIntoView({ behavior: 'smooth' });
          }
       }
-   }, [pathname]);
+   }, [location]);
 
    useEffect(() => {
       const Loan = async () => {
@@ -354,13 +350,11 @@ function Dashboard$() {
                      <LoadMoreButton currentCount={displayedCount} totalCount={totalCount} onLoadMore={handleLoadMore} />
                   </section>
                </div>
-               <Link href="/dashboard#top" className="float-right">
-                  <Image
+               <Link to="/dashboard#top" className="float-right">
+                  <img
                      src="https://cdn.builder.io/api/v1/image/assets/c9a8899718394d87a40cf9e7196a9f95/e81253cfc6443f8a9fc2246506d2c6496689513b?placeholderIfAbsent=true"
                      className="w-[46px]"
                      alt="Floating action button"
-                     width={100}
-                     height={100}
                   />
                </Link>
             </main>
