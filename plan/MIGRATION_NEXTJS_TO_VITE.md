@@ -7,6 +7,7 @@ The goal is to move away from Next.js's server-side features (SSR, Server Compon
 
 ---
 
+
 ## Major Steps & Difficulty
 
 | Step | Description | Difficulty |
