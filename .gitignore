@@ -34,6 +34,7 @@ yarn-error.log*
 .env*
 !.env.production
 !.env.staging
+!.env.local
 .env.keys
 
 # vercel
@@ -71,9 +72,7 @@ Justfile
 .DS_Store
 dist
 dist-ssr
-*.local
 count.txt
 .nitro
 .tanstack
 .wrangler
-.env.local
