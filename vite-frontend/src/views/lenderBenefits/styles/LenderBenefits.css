@@ -1,0 +1,47 @@
+/* LenderBenefits Component Styles */
+
+/* Builder component override */
+.builder-component {
+   max-width: none !important;
+}
+
+/* Responsive utilities for lender benefits */
+@media (max-width: 768px) {
+   .lender-benefits-container {
+      padding: 1rem;
+   }
+
+   .lender-benefits-section {
+      margin-top: 2.5rem;
+   }
+}
+
+/* Custom animations and transitions can be added here */
+.lender-benefits-fade-in {
+   animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+   from {
+      opacity: 0;
+      transform: translateY(20px);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}
+
+/* Specific styles for lender benefits sections */
+.lender-benefits-hero {
+   background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+}
+
+.lender-benefits-problem {
+   background: #f5f5f4;
+}
+
+.lender-benefits-solution {
+   background: #ffffff;
+   box-shadow: 0 60px 160px rgba(0, 0, 0, 0.05);
+}

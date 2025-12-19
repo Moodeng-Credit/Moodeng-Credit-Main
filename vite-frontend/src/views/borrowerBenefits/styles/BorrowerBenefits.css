@@ -1,0 +1,33 @@
+/* BorrowerBenefits Component Styles */
+
+/* Builder component override */
+.builder-component {
+   max-width: none !important;
+}
+
+/* Responsive utilities for borrower benefits */
+@media (max-width: 768px) {
+   .borrower-benefits-container {
+      padding: 1rem;
+   }
+
+   .borrower-benefits-section {
+      margin-top: 2.5rem;
+   }
+}
+
+/* Custom animations and transitions can be added here */
+.borrower-benefits-fade-in {
+   animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+   from {
+      opacity: 0;
+      transform: translateY(20px);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}
