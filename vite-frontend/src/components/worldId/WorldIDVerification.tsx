@@ -7,6 +7,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { VerificationModal } from '@/components/worldId/VerificationModal';
 
 import { handleApiError } from '@/lib/apiHandler';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import type { ApiResponse } from '@/types/apiTypes';
@@ -29,10 +30,18 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
    const handleVerify = async (proof: ISuccessResult) => {
       try {
+         const supabase = getSupabaseBrowserClient();
+         const { data: { session } } = await supabase.auth.getSession();
+
+         if (!session) {
+            throw new Error('You must be logged in to verify your World ID.');
+         }
+
          const res = await fetch(import.meta.env.VITE_API_URL + '/verify-worldid', {
             method: 'POST',
             headers: {
-               'Content-Type': 'application/json'
+               'Content-Type': 'application/json',
+               'Authorization': `Bearer ${session.access_token}`
             },
             body: JSON.stringify(proof)
          });
