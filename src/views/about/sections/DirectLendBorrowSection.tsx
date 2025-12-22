@@ -1,6 +1,6 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
+
 
 export default function DirectLendBorrowSection(): JSX.Element {
    return (
@@ -11,7 +11,7 @@ export default function DirectLendBorrowSection(): JSX.Element {
                <div className="flex gap-5 max-md:flex-col">
                   <div className="flex flex-col w-[22%] max-md:ml-0 max-md:w-full">
                      <div className="flex relative flex-col px-11 py-24 mt-7 text-3xl text-center text-white whitespace-nowrap aspect-square max-md:px-5 max-md:mt-10">
-                        <Image
+                        <img
                            alt=""
                            loading="lazy"
                            src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/9cb588d4fc7188a686c4abc0cbcc8130312b79f2fc02bc61cd27599696614c3f?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -60,7 +60,7 @@ export default function DirectLendBorrowSection(): JSX.Element {
                         <div className="mt-2">Repayment + Interest</div>
                         <div className="flex overflow-hidden gap-2.5 justify-center items-center px-7 py-2.5 mt-3.5 bg-amber-500 rounded-[555px] max-md:px-5">
                            <div className="self-stretch my-auto">Credit Score Improves</div>
-                           <Image
+                           <img
                               alt=""
                               loading="lazy"
                               src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/74468dc87694573da910810782b85ae001cabf498799ed50cd246f13a7556916?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -73,7 +73,7 @@ export default function DirectLendBorrowSection(): JSX.Element {
                   </div>
                   <div className="flex flex-col ml-5 w-[22%] max-md:ml-0 max-md:w-full">
                      <div className="flex relative flex-col px-16 py-24 mt-7 text-3xl text-center text-white whitespace-nowrap aspect-square max-md:px-5 max-md:mt-10">
-                        <Image
+                        <img
                            alt=""
                            loading="lazy"
                            src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/9eca2ffd3b5bc37a22e620f26b1e785938b01c7cf0219c0a27edbc3f71a8a5ff?apiKey=e485b3dc4b924975b4554885e21242bb"

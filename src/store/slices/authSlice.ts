@@ -193,7 +193,7 @@ export const loginUser = createAsyncThunk('auth/login', async ({ username, passw
    if (error) {
       if (error.code === 'email_not_confirmed') {
          // Auto-resend verification email
-         const redirectUrl = process.env.NEXT_PUBLIC_REDIRECT_URL || 'http://localhost:3000/auth/confirm';
+         const redirectUrl = import.meta.env.VITE_REDIRECT_URL || 'http://localhost:3000/auth/confirm';
          const { error: resendError } = await supabase.auth.resend({
             type: 'signup',
             email,
@@ -242,7 +242,7 @@ export const registerUser = createAsyncThunk(
       const supabase = supabaseClient();
 
       // Get the redirect URL from environment variables
-      const redirectUrl = process.env.NEXT_PUBLIC_REDIRECT_URL || 'http://localhost:3000/auth/confirm';
+      const redirectUrl = import.meta.env.VITE_REDIRECT_URL || 'http://localhost:3000/auth/confirm';
 
       const { data, error } = await supabase.auth.signUp({
          email: userData.email,
@@ -269,7 +269,7 @@ export const registerUser = createAsyncThunk(
 
       // Create user profile using server-side API route with service_role key
       // This bypasses RLS automatically - no RLS policies needed on users table
-      const profileResponse = await fetch('/api/auth/create-user', {
+      const profileResponse = await fetch(import.meta.env.VITE_API_URL + '/create-user', {
          method: 'POST',
          headers: {
             'Content-Type': 'application/json'

@@ -1,6 +1,6 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
+
 
 import ActionButton from '@/components/ui/ActionButton';
 
@@ -16,7 +16,7 @@ export default function YourCapitalSection(): JSX.Element {
                </div>
                <div className="flex flex-wrap gap-10 justify-center items-center mt-9 w-full text-2xl leading-none text-violet-100 max-md:max-w-full">
                   <div className="flex gap-2 items-center self-stretch my-auto">
-                     <Image
+                     <img
                         alt=""
                         loading="lazy"
                         src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/96d834ff3f92bb0b26442fb209e19b053cb90c843f4b5a4117d2fff2bc4ffd64?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -27,7 +27,7 @@ export default function YourCapitalSection(): JSX.Element {
                      <div className="self-stretch my-auto">Grow score</div>
                   </div>
                   <div className="flex gap-2 items-start self-stretch my-auto">
-                     <Image
+                     <img
                         alt=""
                         loading="lazy"
                         src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/7b26bb85bf15a72309eea69087f84da8b1b15c7a90e6ac7c23a70ddda7a885b2?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -38,7 +38,7 @@ export default function YourCapitalSection(): JSX.Element {
                      <div className="">Best rates</div>
                   </div>
                   <div className="flex gap-2 items-center self-stretch my-auto">
-                     <Image
+                     <img
                         alt=""
                         loading="lazy"
                         src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/a9c48537a3495505eeb9929006324f5dbdb1ec42b7ce8b51129ca1ab7464525f?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -52,7 +52,7 @@ export default function YourCapitalSection(): JSX.Element {
             </div>
          </div>
          <div className="flex flex-wrap gap-3 items-center pr-9 pl-9 mt-20 max-w-full text-2xl leading-none text-center whitespace-nowrap text-zinc-900 w-[878px] max-md:px-5 max-md:mt-10">
-            <Image
+            <img
                className="w-[46px] h-[46px]"
                alt="Background"
                src="https://c.animaapp.com/VPWnEuWR/img/background.svg"

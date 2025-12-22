@@ -1,6 +1,6 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
+
 
 export default function WhatPeopleSaySection(): JSX.Element {
    return (
@@ -8,7 +8,7 @@ export default function WhatPeopleSaySection(): JSX.Element {
          <div className="flex flex-col mb-0 max-md:mb-2.5 max-md:max-w-full">
             <div className="flex flex-wrap gap-5 justify-between text-3xl leading-none text-neutral-100 max-md:max-w-full">
                <div className="my-auto">WHAT PEOPLE ARE SAYING</div>
-               <Image
+               <img
                   alt=""
                   loading="lazy"
                   src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/29a83b2b5b599a2e4517c42462b57e222b432526876789f71e5963d9444d194b?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -21,7 +21,7 @@ export default function WhatPeopleSaySection(): JSX.Element {
                <div className="flex gap-5 max-md:flex-col">
                   <div className="flex flex-col w-6/12 max-md:ml-0 max-md:w-full">
                      <div className="flex overflow-hidden flex-col grow px-6 pt-9 pb-6 w-full text-base bg-neutral-900 rounded-[30px] max-md:px-5 max-md:mt-4 max-md:max-w-full">
-                        <Image
+                        <img
                            alt=""
                            loading="lazy"
                            src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/886cbacf77b1bd8745369e11f9b44d51e5e08713dc9ce22526fb245248973ed1?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -39,7 +39,7 @@ export default function WhatPeopleSaySection(): JSX.Element {
                   </div>
                   <div className="flex flex-col ml-5 w-6/12 max-md:ml-0 max-md:w-full">
                      <div className="flex overflow-hidden flex-col grow px-6 py-5 w-full text-base bg-neutral-900 rounded-[30px] max-md:px-5 max-md:mt-4 max-md:max-w-full">
-                        <Image
+                        <img
                            alt=""
                            loading="lazy"
                            src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/d6b8801ebda8dc89f5b666f8bfef973d25e4cde41aeec54b13eab3fa8a76eed8?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -61,7 +61,7 @@ export default function WhatPeopleSaySection(): JSX.Element {
                <div className="flex gap-5 max-md:flex-col">
                   <div className="flex flex-col w-6/12 max-md:ml-0 max-md:w-full">
                      <div className="flex overflow-hidden flex-col grow items-start py-9 pr-12 pl-6 w-full text-base bg-neutral-900 rounded-[30px] max-md:px-5 max-md:mt-4 max-md:max-w-full">
-                        <Image
+                        <img
                            alt=""
                            loading="lazy"
                            src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/fc62e2856040112a83053b382070367b42780c6b193ad74e9509e6fe5efb887d?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -79,7 +79,7 @@ export default function WhatPeopleSaySection(): JSX.Element {
                   </div>
                   <div className="flex flex-col ml-5 w-6/12 max-md:ml-0 max-md:w-full">
                      <div className="flex overflow-hidden flex-col grow px-6 py-9 w-full text-base bg-neutral-900 rounded-[30px] max-md:px-5 max-md:mt-4 max-md:max-w-full">
-                        <Image
+                        <img
                            alt=""
                            loading="lazy"
                            src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/e3a90231ed083eca5781bd4c04ebae5c17ce482941f5d22a0c3aade634838710?apiKey=e485b3dc4b924975b4554885e21242bb"

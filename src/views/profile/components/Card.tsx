@@ -1,10 +1,7 @@
-'use client';
-
 import { useCallback, useState } from 'react';
 
-import Link from 'next/link';
-
 import { useDispatch, useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import Modal from '@/components/ui/Modal';
@@ -58,7 +55,7 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
                <p className="text-[13px] leading-[16px] text-[#6B7280] mt-2">
                   You Funded <span className="font-extrabold">${formatNumber(loan.loanAmount)}</span> to{' '}
                   <em>
-                     <Link href={`/user/${loan.borrowerUser}`} className="text-[#2563EB] underline">
+                     <Link to={`/user/${loan.borrowerUser}`} className="text-[#2563EB] underline">
                         {loan.borrowerUser}
                      </Link>
                   </em>
@@ -93,7 +90,7 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
             </div>
          </div>
          <Link
-            href={`/user/${loan.borrowerUser}`}
+            to={`/user/${loan.borrowerUser}`}
             className="bg-[#2563EB] text-white font-extrabold text-[14px] leading-[18px] py-3 rounded-b-xl w-full flex items-center justify-center gap-2"
          >
             Borrow Insight

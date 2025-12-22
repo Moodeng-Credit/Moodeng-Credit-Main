@@ -1,6 +1,6 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
+
 
 export default function CommunityHeroSection(): JSX.Element {
    return (
@@ -25,7 +25,7 @@ export default function CommunityHeroSection(): JSX.Element {
                </p>
             </article>
          </section>
-         <Image
+         <img
             loading="lazy"
             src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/35247927cae2be261a7876006d6cabc93d487eba4ebf1ab20276cc697c04e962?apiKey=054474a0b7744b6389c3319e0a9290c2&"
             alt="Decorative community illustration"

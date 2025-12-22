@@ -1,8 +1,8 @@
-'use client';
+
 
 import { type ChangeEvent, type MouseEvent, useState } from 'react';
 
-import Image from 'next/image';
+
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
@@ -66,7 +66,7 @@ function UserPay({ loan }: { loan: Loan }) {
       ) {
          setIsProcessing(true);
          const transferCoin = loan.coin?.trim() || 'USDC';
-         const transactionHash = await Transfer(e, loan.lenderWallet || '', repaidAmountToAdd.toString(), loan.id, transferCoin);
+         const transactionHash = await Transfer(loan.lenderWallet || '', repaidAmountToAdd.toString(), loan.id, transferCoin);
 
          if (transactionHash) {
             try {
@@ -139,7 +139,7 @@ function UserPay({ loan }: { loan: Loan }) {
                <div className="flex flex-1 gap-4 items-center">
                   <div className="self-stretch my-auto text-sm leading-loose text-black text-opacity-60">Stablecoin</div>
                   <div className="flex gap-1.5 items-center self-stretch my-auto text-base font-medium leading-loose text-black">
-                     <Image
+                     <img
                         loading="lazy"
                         src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/36b2768ece14cc8c27f15df886baeb4d8561b26fdb09d2a7fd36f57790e94282?apiKey=e485b3dc4b924975b4554885e21242bb"
                         alt=""
@@ -152,7 +152,7 @@ function UserPay({ loan }: { loan: Loan }) {
                </div>
                <div className="flex flex-1 gap-1.5 items-center self-start">
                   <div className="self-stretch my-auto text-sm leading-loose text-black text-opacity-60">Network</div>
-                  <Image
+                  <img
                      loading="lazy"
                      src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/4ba089761d655b916ff23874ab3595e64d2f358d02957d03b3aaa8c77195070b?apiKey=e485b3dc4b924975b4554885e21242bb"
                      alt=""

@@ -1,6 +1,6 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
+
 
 export default function OurPartnershipsSection(): JSX.Element {
    return (
@@ -13,7 +13,7 @@ export default function OurPartnershipsSection(): JSX.Element {
          <div className="absolute w-[1236px] h-[1082px] top-[152px] left-[102px]">
             <div className="absolute w-[1236px] h-[308px] top-0 left-0 rounded-[60px] overflow-hidden">
                <div className="absolute w-[598px] h-[308px] top-0 left-0 bg-[url(https://c.animaapp.com/VPWnEuWR/img/oc5ihvkd00fsn0qmlc6hzjznhr4-png.png)] bg-cover bg-[50%_50%]">
-                  <Image
+                  <img
                      className="absolute w-[200px] h-[308px] top-0 left-[199px] object-cover"
                      alt="Img"
                      src="https://c.animaapp.com/VPWnEuWR/img/bhuffxoht5iphbxiuetlkq-1@2x.png"
@@ -42,7 +42,7 @@ export default function OurPartnershipsSection(): JSX.Element {
             </div>
             <div className="absolute w-[1236px] h-[350px] top-[324px] left-0 rounded-[60px] overflow-hidden">
                <div className="absolute w-[598px] h-[350px] top-0 left-0 bg-[url(https://c.animaapp.com/VPWnEuWR/img/w9x50d87osjpkpgb13iezxh7hrk-png.png)] bg-cover bg-[50%_50%]">
-                  <Image
+                  <img
                      className="absolute w-[202px] h-[350px] top-0 left-[198px] object-cover"
                      alt="Zoswu"
                      src="https://c.animaapp.com/VPWnEuWR/img/zos6wu-vqxmis3hal4rcmw-1@2x.png"
@@ -71,7 +71,7 @@ export default function OurPartnershipsSection(): JSX.Element {
             </div>
             <div className="absolute w-[1236px] h-[392px] top-[690px] left-0 rounded-[60px] overflow-hidden">
                <div className="absolute w-[598px] h-[392px] top-0 left-0 bg-[url(https://c.animaapp.com/VPWnEuWR/img/dif6wuh3iykdpw6pe0iyq7z6elo-png.png)] bg-cover bg-[50%_50%]">
-                  <Image
+                  <img
                      className="absolute w-[200px] h-[386px] top-1 left-[199px] object-cover"
                      alt="Img"
                      src="https://c.animaapp.com/VPWnEuWR/img/7aqdnt6vq8exm24qil9ena-1@2x.png"

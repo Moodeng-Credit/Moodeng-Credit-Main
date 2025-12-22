@@ -1,15 +1,15 @@
-const js = require('@eslint/js');
-const typescript = require('@typescript-eslint/eslint-plugin');
-const typescriptParser = require('@typescript-eslint/parser');
-const react = require('eslint-plugin-react');
-const reactHooks = require('eslint-plugin-react-hooks');
-const reactRefresh = require('eslint-plugin-react-refresh');
-const unusedImports = require('eslint-plugin-unused-imports');
-const tanstackQuery = require('@tanstack/eslint-plugin-query');
-const nextPlugin = require('@next/eslint-plugin-next');
-const importPlugin = require('eslint-plugin-import');
+import js from '@eslint/js';
+import tanstackQuery from '@tanstack/eslint-plugin-query';
+import typescript from '@typescript-eslint/eslint-plugin';
+import typescriptParser from '@typescript-eslint/parser';
+import importPlugin from 'eslint-plugin-import';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+import unusedImports from 'eslint-plugin-unused-imports';
+import globals from 'globals';
 
-module.exports = [
+export default [
    js.configs.recommended,
    // Configuration for JavaScript config files (no TypeScript parser)
    {
@@ -18,11 +18,7 @@ module.exports = [
          ecmaVersion: 2022,
          sourceType: 'module',
          globals: {
-            module: 'readonly',
-            require: 'readonly',
-            process: 'readonly',
-            __dirname: 'readonly',
-            __filename: 'readonly'
+            ...globals.node,
          }
       },
       rules: {
@@ -44,17 +40,10 @@ module.exports = [
             }
          },
          globals: {
+            ...globals.browser,
+            ...globals.es2021,
             React: 'readonly',
             JSX: 'readonly',
-            console: 'readonly',
-            process: 'readonly',
-            document: 'readonly',
-            window: 'readonly',
-            location: 'readonly',
-            fetch: 'readonly',
-            setTimeout: 'readonly',
-            clearTimeout: 'readonly',
-            global: 'readonly'
          }
       },
       plugins: {
@@ -73,9 +62,9 @@ module.exports = [
       },
       rules: {
          // Start: Turn off Locally if having performance issues but turn on in CI / build
-         '@typescript-eslint/no-floating-promises': process.env.NODE_ENV === 'production' ? 'off' : 'off',
-         '@typescript-eslint/no-misused-promises': process.env.NODE_ENV === 'production' ? 'off' : 'off', // Too strict for standard React patterns
-         'import/no-cycle': process.env.NODE_ENV === 'production' ? 'error' : 'off',
+         '@typescript-eslint/no-floating-promises': 'off',
+         '@typescript-eslint/no-misused-promises': 'off', // Too strict for standard React patterns
+         'import/no-cycle': 'off',
          // End...
 
          // React 18 specific rules
@@ -144,14 +133,6 @@ module.exports = [
    },
    {
       files: ['**/*.{ts,tsx}'],
-      plugins: {
-         '@next/next': nextPlugin
-      },
-
-      rules: { ...nextPlugin.configs.recommended.rules }
-   },
-   {
-      files: ['**/*.{ts,tsx}'],
       rules: {
          'no-restricted-imports': [
             'error',
@@ -171,3 +152,4 @@ module.exports = [
       ignores: ['node_modules', '.next', '.git', '.vscode', 'dist', 'build', 'src/generated/**']
    }
 ];
+

@@ -1,4 +1,4 @@
-'use client';
+
 
 import { useState } from 'react';
 
@@ -20,12 +20,12 @@ export default function WorldIDVerificationStatus({ className = '' }: WorldIDVer
    const [isUnverifying, setIsUnverifying] = useState(false);
    const isVerified = user.isWorldId === WorldId.ACTIVE;
 
-   const isDevMode = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
+   const isDevMode = import.meta.env.VITE_DEV_MODE === 'true';
 
    const handleUnverify = async () => {
       setIsUnverifying(true);
       try {
-         const response = await fetch('/api/auth/test-unverify', {
+         const response = await fetch(import.meta.env.VITE_API_URL + '/auth/test-unverify', {
             method: 'POST',
             headers: {
                'Content-Type': 'application/json'

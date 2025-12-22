@@ -1,4 +1,4 @@
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = import.meta.env.MODE === 'production';
 
 const COOKIE_CONFIG = {
    name: 'token',

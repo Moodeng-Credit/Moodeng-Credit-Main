@@ -1,6 +1,6 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
+
 
 import { featuresConfig } from '@/views/lenderBenefits/config/featuresConfig';
 import { FeatureRow } from '@/views/lenderBenefits/sections/FeatureRow';
@@ -12,7 +12,7 @@ const FeaturesHeaderRow = (): JSX.Element => {
             Features
          </div>
          <div className="flex overflow-hidden px-2.5 py-7 text-2xl leading-none bg-blue-600 rounded-2xl">
-            <Image
+            <img
                alt=""
                loading="lazy"
                src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/c94bcfa4f537ec96f9e5bcd32dbc5c90aee846a5af5d522c7adba5139ea41450?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -22,7 +22,7 @@ const FeaturesHeaderRow = (): JSX.Element => {
             />
             <div className="my-auto basis-auto">Moodeng</div>
          </div>
-         <Image
+         <img
             alt=""
             loading="lazy"
             src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/dcdd6ee08cc4161b88a9fcad93b15016ea984db92f39e024fbe49b8e356bb14c?apiKey=e485b3dc4b924975b4554885e21242bb"

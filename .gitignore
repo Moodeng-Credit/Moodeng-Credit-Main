@@ -1,3 +1,27 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
@@ -34,6 +58,7 @@ yarn-error.log*
 .env*
 !.env.production
 !.env.staging
+!.env.local
 .env.keys
 
 # vercel
@@ -71,9 +96,7 @@ Justfile
 .DS_Store
 dist
 dist-ssr
-*.local
 count.txt
 .nitro
 .tanstack
 .wrangler
-.env.local

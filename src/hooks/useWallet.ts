@@ -1,4 +1,4 @@
-'use client';
+
 
 import { parseUnits } from 'viem';
 import { useWriteContract } from 'wagmi';
@@ -33,7 +33,7 @@ const useWallet = () => {
    const { writeContractAsync } = useWriteContract();
    const { showToastByConfig } = useToast();
 
-   const Transfer = async (e: unknown, recipient: string, amount: string, id: string, coin: string = 'USDC'): Promise<string | null> => {
+   const Transfer = async (recipient: string, amount: string, id: string, coin: string = 'USDC'): Promise<string | null> => {
       console.log('[Transfer] Starting transfer - Loan ID:', id, 'Coin:', coin);
 
       const tokenConfig = getAllowedChainTokenConfig();

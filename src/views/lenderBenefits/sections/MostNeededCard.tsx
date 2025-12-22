@@ -1,6 +1,6 @@
 import { type JSX } from 'react';
 
-import Image from 'next/image';
+
 
 import { Check } from 'lucide-react';
 
@@ -18,7 +18,7 @@ export default function MostNeededCard({ data }: MostNeededCardProps): JSX.Eleme
    return (
       <div className="flex flex-col h-full px-8 py-12 shadow-2xl bg-neutral-100 rounded-[60px] w-full max-md:px-5">
          {/* Icon */}
-         <Image loading="lazy" src={data.icon} alt="" className="object-contain w-16 aspect-square" width={64} height={64} />
+         <img loading="lazy" src={data.icon} alt="" className="object-contain w-16 aspect-square" width={64} height={64} />
 
          {/* Title and Number Section */}
          <div className="mt-5">

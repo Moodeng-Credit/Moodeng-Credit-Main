@@ -1,4 +1,4 @@
-'use client';
+
 
 import { useWalletSync } from '@/hooks/useWalletSync';
 

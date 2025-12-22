@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 import ActionButton from '@/components/ui/ActionButton';
 
@@ -29,7 +29,7 @@ export default function MobileNav({ buttons, isOpen, onClose, username, dashboar
          <div className="flex flex-col p-4 space-y-4">
             {username ? (
                <Link
-                  href={dashboardHref}
+                  to={dashboardHref}
                   onClick={onClose}
                   className="text-white text-center text-[22px] cursor-pointer hover:text-gray-300 transition-colors font-normal"
                >
