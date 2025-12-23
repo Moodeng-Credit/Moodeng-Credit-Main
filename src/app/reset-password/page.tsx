@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -13,12 +13,12 @@ export default function ResetPasswordPage() {
    const [token, setToken] = useState<string | null>(null);
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
-   const [isExchanging, setIsExchanging] = useState(false);
+   const hasExchanged = useRef(false);
 
    useEffect(() => {
       const handleTokenExtraction = async () => {
          // Prevent multiple exchanges (especially in React Strict Mode)
-         if (isExchanging || token) return;
+         if (hasExchanged.current || token) return;
 
          // Supabase recovery links can use 'token_hash', 'token', or 'code'
          const code = searchParams.get('code');
@@ -30,7 +30,7 @@ export default function ResetPasswordPage() {
          const accessToken = hashParams.get('access_token');
 
          if (code) {
-            setIsExchanging(true);
+            hasExchanged.current = true;
             // If we have a PKCE code, we must exchange it for a session first
             const supabase = getSupabaseBrowserClient();
             
@@ -38,7 +38,6 @@ export default function ResetPasswordPage() {
             const { data: sessionData } = await supabase.auth.getSession();
             if (sessionData.session) {
                setToken(sessionData.session.access_token);
-               setIsExchanging(false);
                return;
             }
 
@@ -49,19 +48,16 @@ export default function ResetPasswordPage() {
                const { data: retrySession } = await supabase.auth.getSession();
                if (retrySession.session) {
                   setToken(retrySession.session.access_token);
-                  setIsExchanging(false);
                   return;
                }
 
                console.error('Error exchanging code for session:', exchangeError);
                setError('The reset link is invalid or has expired. Please request a new one.');
-               setIsExchanging(false);
                return;
             }
             if (data.session) {
                setToken(data.session.access_token);
             }
-            setIsExchanging(false);
          } else if (tokenHash) {
             setToken(tokenHash);
          } else if (tokenParam) {
@@ -72,7 +68,7 @@ export default function ResetPasswordPage() {
       };
 
       handleTokenExtraction();
-   }, [searchParams, isExchanging, token]);
+   }, [searchParams, token]);
 
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -125,7 +121,7 @@ export default function ResetPasswordPage() {
                navigate('/login');
             }, 2000);
          } else {
-            setError(data.message || 'Failed to reset password. Please try again.');
+            setError(data.error || data.message || 'Failed to reset password. Please try again.');
          }
       } catch {
          setError('An error occurred. Please try again.');
