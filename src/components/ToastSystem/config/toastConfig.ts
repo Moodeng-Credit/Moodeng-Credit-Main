@@ -208,14 +208,6 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       buttonAction: 'acknowledge'
    },
 
-   funding_error: {
-      toastType: TOAST_TYPES.ERROR,
-      title: "It's awkward 😅",
-      message: 'We were unable to process payment for your funding.',
-      buttonText: 'Try Again?',
-      buttonAction: 'retry_funding'
-   },
-
    network_required: {
       toastType: TOAST_TYPES.ERROR,
       title: 'Network Selection Required',
