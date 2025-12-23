@@ -33,7 +33,7 @@ type AuthActionThunk =
    | typeof registerWithTelegram;
 
 type AuthPayload =
-   | { username: string; password: string }
+   | { email: string; password: string }
    | { username: string; isWorldId: string; password: string; email: string }
    | { googleCredential: string }
    | { telegramAuthData: string };
@@ -183,8 +183,8 @@ export default function AuthFormSection(): JSX.Element {
       e.preventDefault();
       clearShow();
 
-      if (username && password) {
-         await handleAuthAction(loginUser, { username, password }, handleLoginError);
+      if (email && password) {
+         await handleAuthAction(loginUser, { email, password }, handleLoginError);
       }
    };
 

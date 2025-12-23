@@ -27,31 +27,25 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    let userId: string;
+    let userEmail: string;
+
     // If a token is provided, we verify it to get a user
     if (token) {
+        // Use token_hash for recovery links (UUID-like tokens)
         const { data, error: verifyError } = await supabase.auth.verifyOtp({
-            token,
+            token_hash: token,
             type: 'recovery'
         })
 
-        if (verifyError) {
+        if (verifyError || !data.user) {
             return new Response(
-                JSON.stringify({ error: verifyError.message }),
+                JSON.stringify({ error: verifyError?.message || 'Invalid token' }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
             )
         }
-
-        const { error: updateError } = await supabase.auth.admin.updateUserById(
-            data.user!.id,
-            { password: password }
-        )
-
-        if (updateError) {
-            return new Response(
-                JSON.stringify({ error: updateError.message }),
-                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-            )
-        }
+        userId = data.user.id;
+        userEmail = data.user.email!;
     } else {
         // If no token, we expect an Authorization header
         const authHeader = req.headers.get('Authorization')
@@ -71,18 +65,49 @@ serve(async (req) => {
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
             )
         }
+        userId = user.id;
+        userEmail = user.email!;
+    }
 
-        const { error: updateError } = await supabase.auth.admin.updateUserById(
-            user.id,
-            { password: password }
+    // 1. Update the password
+    const { data: updatedUser, error: updateError } = await supabase.auth.admin.updateUserById(
+        userId,
+        { password: password, email_confirm: true }
+    )
+
+    if (updateError) {
+        return new Response(
+            JSON.stringify({ error: updateError.message }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
         )
+    }
 
-        if (updateError) {
-            return new Response(
-                JSON.stringify({ error: updateError.message }),
-                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-            )
+    // 2. Ensure the 'email' provider is in app_metadata
+    const currentProviders = updatedUser.user.app_metadata?.providers || [];
+    if (!currentProviders.includes('email')) {
+        await supabase.auth.admin.updateUserById(userId, {
+            app_metadata: {
+                ...updatedUser.user.app_metadata,
+                providers: [...currentProviders, 'email']
+            }
+        });
+    }
+
+    // 3. Manually ensure the identity exists in auth.identities
+    // This is necessary for the user to be able to sign in with email/password
+    try {
+        // We use the RPC we created to ensure the email identity exists
+        // This is more reliable than direct insertion from the Edge Function
+        const { error: rpcError } = await supabase.rpc('ensure_email_identity', {
+            user_id_input: userId,
+            email_input: userEmail
+        });
+
+        if (rpcError) {
+            console.error('Error calling ensure_email_identity RPC:', rpcError);
         }
+    } catch (e) {
+        console.error('Error ensuring identity via RPC:', e);
     }
 
     return new Response(

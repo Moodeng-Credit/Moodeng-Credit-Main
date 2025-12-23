@@ -51,12 +51,12 @@ export default function AuthForm({
       <form onSubmit={onSubmit} className="space-y-4">
          <div className="space-y-4">
             <FormInput
-               type="text"
-               placeholder={isSignUp ? 'Create a Username' : '@username'}
-               value={username}
-               onChange={onUsernameChange}
+               type={isSignUp ? 'text' : 'email'}
+               placeholder={isSignUp ? 'Create a Username' : 'Enter your Email'}
+               value={isSignUp ? username : email}
+               onChange={isSignUp ? onUsernameChange : onEmailChange}
                error={isSignUp ? showUser : showAccount}
-               icon={Icons.user}
+               icon={isSignUp ? Icons.user : Icons.email}
                focusColor={focusColor}
             />
             {isSignUp && showUser ? <span className="text-red-500 text-sm">User already exists.</span> : null}

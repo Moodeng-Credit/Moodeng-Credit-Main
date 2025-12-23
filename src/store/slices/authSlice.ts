@@ -182,8 +182,7 @@ const initialState: AuthState = {
    error: null
 };
 
-export const loginUser = createAsyncThunk('auth/login', async ({ username, password }: { username: string; password: string }) => {
-   const email = await fetchEmailByUsername(username);
+export const loginUser = createAsyncThunk('auth/login', async ({ email, password }: { email: string; password: string }) => {
    const supabase = supabaseClient();
    const { error } = await supabase.auth.signInWithPassword({
       email,
