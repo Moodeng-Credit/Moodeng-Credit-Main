@@ -195,10 +195,25 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
    worldid_verified: {
       toastType: TOAST_TYPES.SUCCESS,
       title: 'World ID Verified!',
-      message: 'Congratulations! You have successfully verified your World ID.',
-      buttonText: 'Continue',
-      buttonAction: 'continue',
-      customIcon: 'fas fa-check-circle'
+      message: 'Your World ID has been successfully verified.',
+      buttonText: 'OK',
+      buttonAction: 'acknowledge'
+   },
+
+   password_reset_sent: {
+      toastType: TOAST_TYPES.SUCCESS,
+      title: 'Reset Link Sent',
+      message: 'A password reset link has been sent to your email.',
+      buttonText: 'OK',
+      buttonAction: 'acknowledge'
+   },
+
+   funding_error: {
+      toastType: TOAST_TYPES.ERROR,
+      title: "It's awkward 😅",
+      message: 'We were unable to process payment for your funding.',
+      buttonText: 'Try Again?',
+      buttonAction: 'retry_funding'
    },
 
    network_required: {

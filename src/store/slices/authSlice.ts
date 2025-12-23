@@ -257,6 +257,25 @@ export const registerUser = createAsyncThunk(
    async (userData: { username: string; isWorldId: string; password: string; email: string }) => {
       const supabase = supabaseClient();
 
+      // Check if email already exists in our users table
+      // If it does, it means they likely signed up with Google/Telegram already
+      const { data: existingProfile } = await supabase.from('users').select('id').eq('email', userData.email).maybeSingle();
+
+      if (existingProfile) {
+         // Trigger password reset to allow them to "link" their email/password to the existing account
+         const { error: resetError } = await supabase.auth.resetPasswordForEmail(userData.email, {
+            redirectTo: `${window.location.origin}/reset-password`
+         });
+
+         if (resetError) throw resetError;
+
+         return {
+            isExistingUser: true,
+            message:
+               'An account with this email already exists (likely via Google). A password reset link has been sent to your email. Please use it to set a password and link your email login.'
+         } as any;
+      }
+
       // Get the redirect URL from environment variables
       const redirectUrl = import.meta.env.VITE_REDIRECT_URL || 'http://localhost:3000/auth/confirm';
 
@@ -274,6 +293,20 @@ export const registerUser = createAsyncThunk(
 
       // Handle actual signup errors (network issues, invalid data, etc.)
       if (error) {
+         // If user already exists (e.g. signed up with Google), trigger password reset to "link" accounts
+         if (error.message.toLowerCase().includes('already registered') || error.status === 422) {
+            const { error: resetError } = await supabase.auth.resetPasswordForEmail(userData.email, {
+               redirectTo: `${window.location.origin}/reset-password`
+            });
+
+            if (resetError) throw resetError;
+
+            // Return a special flag so the UI can show a helpful message
+            return {
+               isExistingUser: true,
+               message: 'An account with this email already exists (likely via Google). A password reset link has been sent to your email. Please use it to set a password and link your email login.'
+            } as any;
+         }
          throw error;
       }
 

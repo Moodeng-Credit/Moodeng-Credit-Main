@@ -90,6 +90,14 @@ export default function AuthFormSection(): JSX.Element {
          const resultAction = await dispatch(action(payload as never) as AsyncThunkAction<unknown, unknown, Record<string, unknown>>);
 
          if (action.fulfilled.match(resultAction)) {
+            const payload = resultAction.payload as any;
+            if (payload?.isExistingUser) {
+               toast.showToastByConfig('password_reset_sent');
+               setAccountError(payload.message);
+               setShowAccount(true);
+               setIsLoading(false);
+               return;
+            }
             clear();
             navigate('/dashboard');
          } else {
