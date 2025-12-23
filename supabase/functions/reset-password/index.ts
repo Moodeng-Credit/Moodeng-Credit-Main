@@ -45,7 +45,14 @@ serve(async (req) => {
             )
         }
         userId = data.user.id;
-        userEmail = data.user.email!;
+        userEmail = data.user.email ?? '';
+
+        if (!userEmail) {
+            return new Response(
+                JSON.stringify({ error: 'User email not found' }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+            )
+        }
     } else {
         // If no token, we expect an Authorization header
         const authHeader = req.headers.get('Authorization')
@@ -66,7 +73,14 @@ serve(async (req) => {
             )
         }
         userId = user.id;
-        userEmail = user.email!;
+        userEmail = user.email ?? '';
+
+        if (!userEmail) {
+            return new Response(
+                JSON.stringify({ error: 'User email not found' }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+            )
+        }
     }
 
     // 1. Update the password
@@ -107,7 +121,7 @@ serve(async (req) => {
             console.error('Error calling ensure_email_identity RPC:', rpcError);
             return new Response(
                 JSON.stringify({
-                    error: 'Password was updated, but we could not finalize email sign-in setup. Please try again.'
+                    error: `Password was updated, but we could not finalize email sign-in setup: ${rpcError.message}`
                 }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
             );
@@ -116,7 +130,7 @@ serve(async (req) => {
         console.error('Error ensuring identity via RPC:', e);
         return new Response(
             JSON.stringify({
-                error: 'Password was updated, but we could not finalize email sign-in setup. Please try again.'
+                error: `Password was updated, but we could not finalize email sign-in setup: ${e.message}`
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
         );
