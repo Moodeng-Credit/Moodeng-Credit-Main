@@ -110,8 +110,14 @@ serve(async (req) => {
       email = `telegram_${telegramId}@moodeng.credit`
       
       // Check if auth user already exists with this email (unlikely but possible)
-      const { data: existingAuthUser } = await supabase.auth.admin.listUsers()
-      const foundUser = existingAuthUser.users.find(u => u.email === email)
+      const { data: existingUser, error: lookupError } = await supabase
+        .from('auth.users')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle()
+      
+      if (lookupError) throw lookupError
+      const foundUser = existingUser
       
       if (foundUser) {
         userId = foundUser.id
