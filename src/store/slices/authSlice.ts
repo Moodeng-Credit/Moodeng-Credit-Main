@@ -232,8 +232,24 @@ export const loginWithGoogle = createAsyncThunk('auth/loginWithGoogle', async ({
    };
 });
 
-export const loginWithTelegram = createAsyncThunk('auth/loginWithTelegram', async () => {
-   throw new Error('Telegram authentication is not yet supported with Supabase.');
+export const loginWithTelegram = createAsyncThunk('auth/loginWithTelegram', async ({ telegramAuthData }: { telegramAuthData: string }) => {
+   const supabase = supabaseClient();
+   const { data, error } = await supabase.functions.invoke('telegram-login', {
+      body: { authData: JSON.parse(telegramAuthData) }
+   });
+
+   if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      // Set the session in the client
+      const { error: sessionError } = await supabase.auth.setSession(data.session);
+      if (sessionError) throw sessionError;
+
+      const user = await fetchCurrentUserProfile();
+      return {
+         username: user.username,
+         user
+      };
 });
 
 export const registerUser = createAsyncThunk(
@@ -316,9 +332,28 @@ export const registerWithGoogle = createAsyncThunk(
    }
 );
 
-export const registerWithTelegram = createAsyncThunk('auth/registerWithTelegram', async () => {
-   throw new Error('Telegram authentication is not yet supported with Supabase.');
-});
+export const registerWithTelegram = createAsyncThunk(
+   'auth/registerWithTelegram',
+   async ({ telegramAuthData }: { telegramAuthData: string }) => {
+      const supabase = supabaseClient();
+      const { data, error } = await supabase.functions.invoke('telegram-login', {
+         body: { authData: JSON.parse(telegramAuthData) }
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      // Set the session in the client
+      const { error: sessionError } = await supabase.auth.setSession(data.session);
+      if (sessionError) throw sessionError;
+
+      const user = await fetchCurrentUserProfile();
+      return {
+         username: user.username,
+         user
+      };
+   }
+);
 
 export const fetchUser = createAsyncThunk('auth/fetchUser', async () => fetchCurrentUserProfile());
 
@@ -428,6 +463,11 @@ const authSlice = createSlice({
             state.isLoading = true;
             state.error = null;
          })
+         .addCase(loginWithTelegram.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.username = action.payload.username;
+            state.user = action.payload.user;
+         })
          .addCase(loginWithTelegram.rejected, (state, action) => {
             state.isLoading = false;
             state.error = (action.error.message as string) || null;
@@ -461,6 +501,11 @@ const authSlice = createSlice({
          .addCase(registerWithTelegram.pending, (state) => {
             state.isLoading = true;
             state.error = null;
+         })
+         .addCase(registerWithTelegram.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.username = action.payload.username;
+            state.user = action.payload.user;
          })
          .addCase(registerWithTelegram.rejected, (state, action) => {
             state.isLoading = false;
