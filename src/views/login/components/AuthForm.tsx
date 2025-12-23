@@ -50,17 +50,6 @@ export default function AuthForm({
    return (
       <form onSubmit={onSubmit} className="space-y-4">
          <div className="space-y-4">
-            <FormInput
-               type={isSignUp ? 'text' : 'email'}
-               placeholder={isSignUp ? 'Create a Username' : 'Enter your Email'}
-               value={isSignUp ? username : email}
-               onChange={isSignUp ? onUsernameChange : onEmailChange}
-               error={isSignUp ? showUser : showAccount}
-               icon={isSignUp ? <Icons.user /> : <Icons.email />}
-               focusColor={focusColor}
-            />
-            {isSignUp && showUser ? <span className="text-red-500 text-sm">User already exists.</span> : null}
-
             {isSignUp ? (
                <>
                   <FormInput
@@ -74,7 +63,19 @@ export default function AuthForm({
                   />
                   {showEmail ? <span className="text-red-500 text-sm">Email already exists.</span> : null}
                </>
-            ) : null}
+            ) : (
+               <>
+                  <FormInput
+                     type="email"
+                     placeholder="Enter your Email"
+                     value={email}
+                     onChange={onEmailChange}
+                     error={showAccount}
+                     icon={<Icons.email />}
+                     focusColor={focusColor}
+                  />
+               </>
+            )}
 
             <FormInput
                type="password"
