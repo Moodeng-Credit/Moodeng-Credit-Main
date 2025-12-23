@@ -45,8 +45,8 @@ serve(async (req) => {
             )
         }
         userId = data.user.id;
-        userEmail = data.user.email ?? '';
-
+        userEmail = data.user.email;
+        
         if (!userEmail) {
             return new Response(
                 JSON.stringify({ error: 'User email not found' }),

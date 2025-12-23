@@ -93,14 +93,14 @@ serve(async (req) => {
     console.log(`Processing login for Telegram ID: ${telegramId}`)
     
     // 3. Check if user exists in public.users by telegram_id
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('users')
       .select('id, username, email')
       .eq('telegram_id', telegramId)
       .maybeSingle()
       
-    let userId;
-    let email;
+    let userId: string;
+    let email: string;
     if (profile) {
       userId = profile.id
       email = profile.email || `telegram_${telegramId}@moodeng.credit`
@@ -195,7 +195,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Telegram login error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error)?.message || 'Telegram login failed' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
     )
   }

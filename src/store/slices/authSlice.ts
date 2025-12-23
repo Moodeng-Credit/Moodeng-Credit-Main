@@ -240,17 +240,17 @@ export const loginWithTelegram = createAsyncThunk('auth/loginWithTelegram', asyn
    });
 
    if (error) throw error;
-      if (data.error) throw new Error(data.error);
+   if (data.error) throw new Error(data.error);
 
-      // Set the session in the client
-      const { error: sessionError } = await supabase.auth.setSession(data.session);
-      if (sessionError) throw sessionError;
+   // Set the session in the client
+   const { error: sessionError } = await supabase.auth.setSession(data.session);
+   if (sessionError) throw sessionError;
 
-      const user = await fetchCurrentUserProfile();
-      return {
-         username: user.username,
-         user
-      };
+   const user = await fetchCurrentUserProfile();
+   return {
+      username: user.username,
+      user
+   };
 });
 
 export const registerUser = createAsyncThunk(
