@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
+
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export default function ResetPasswordPage() {
    const [password, setPassword] = useState('');
@@ -11,21 +13,62 @@ export default function ResetPasswordPage() {
    const [token, setToken] = useState<string | null>(null);
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
+   const hasExchanged = useRef(false);
 
    useEffect(() => {
-      // Supabase recovery links can use 'token_hash', 'token', or 'code'
-      const tokenParam = searchParams.get('token') || searchParams.get('token_hash') || searchParams.get('code');
+      const handleTokenExtraction = async () => {
+         // Prevent multiple exchanges (especially in React Strict Mode)
+         if (hasExchanged.current || token) return;
 
-      // Also check hash fragment for access_token (standard Supabase recovery)
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
+         // Supabase recovery links can use 'token_hash', 'token', or 'code'
+         const code = searchParams.get('code');
+         const tokenHash = searchParams.get('token_hash');
+         const tokenParam = searchParams.get('token');
 
-      if (tokenParam) {
-         setToken(tokenParam);
-      } else if (accessToken) {
-         setToken(accessToken);
-      }
-   }, [searchParams]);
+         // Also check hash fragment for access_token (standard Supabase recovery)
+         const hashParams = new URLSearchParams(window.location.hash.substring(1));
+         const accessToken = hashParams.get('access_token');
+
+         if (code) {
+            hasExchanged.current = true;
+            // If we have a PKCE code, we must exchange it for a session first
+            const supabase = getSupabaseBrowserClient();
+            
+            // Check if we already have a session (might have been exchanged already)
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (sessionData.session) {
+               setToken(sessionData.session.access_token);
+               return;
+            }
+
+            const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+            if (exchangeError) {
+               // If the error is "code not found", it might have been exchanged by a previous 
+               // effect run or a browser pre-fetch. Check if we have a session now.
+               const { data: retrySession } = await supabase.auth.getSession();
+               if (retrySession.session) {
+                  setToken(retrySession.session.access_token);
+                  return;
+               }
+
+               console.error('Error exchanging code for session:', exchangeError);
+               setError('The reset link is invalid or has expired. Please request a new one.');
+               return;
+            }
+            if (data.session) {
+               setToken(data.session.access_token);
+            }
+         } else if (tokenHash) {
+            setToken(tokenHash);
+         } else if (tokenParam) {
+            setToken(tokenParam);
+         } else if (accessToken) {
+            setToken(accessToken);
+         }
+      };
+
+      handleTokenExtraction();
+   }, [searchParams, token]);
 
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -78,7 +121,7 @@ export default function ResetPasswordPage() {
                navigate('/login');
             }, 2000);
          } else {
-            setError(data.message || 'Failed to reset password. Please try again.');
+            setError(data.error || data.message || 'Failed to reset password. Please try again.');
          }
       } catch {
          setError('An error occurred. Please try again.');

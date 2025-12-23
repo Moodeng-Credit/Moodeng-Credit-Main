@@ -1,6 +1,6 @@
 export const Icons = {
-   user: (
-      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+   user: ({ className = 'h-5 w-5 text-gray-400' }: { className?: string }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
          <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -9,8 +9,8 @@ export const Icons = {
          />
       </svg>
    ),
-   email: (
-      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+   email: ({ className = 'h-5 w-5 text-gray-400' }: { className?: string }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
          <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -19,8 +19,8 @@ export const Icons = {
          />
       </svg>
    ),
-   lock: (
-      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+   lock: ({ className = 'h-5 w-5 text-gray-400' }: { className?: string }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
          <path
             strokeLinecap="round"
             strokeLinejoin="round"

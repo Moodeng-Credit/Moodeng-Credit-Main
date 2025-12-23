@@ -50,17 +50,6 @@ export default function AuthForm({
    return (
       <form onSubmit={onSubmit} className="space-y-4">
          <div className="space-y-4">
-            <FormInput
-               type="text"
-               placeholder={isSignUp ? 'Create a Username' : '@username'}
-               value={username}
-               onChange={onUsernameChange}
-               error={isSignUp ? showUser : showAccount}
-               icon={Icons.user}
-               focusColor={focusColor}
-            />
-            {isSignUp && showUser ? <span className="text-red-500 text-sm">User already exists.</span> : null}
-
             {isSignUp ? (
                <>
                   <FormInput
@@ -69,12 +58,24 @@ export default function AuthForm({
                      value={email}
                      onChange={onEmailChange}
                      error={showEmail}
-                     icon={Icons.email}
+                     icon={<Icons.email />}
                      focusColor={focusColor}
                   />
                   {showEmail ? <span className="text-red-500 text-sm">Email already exists.</span> : null}
                </>
-            ) : null}
+            ) : (
+               <>
+                  <FormInput
+                     type="email"
+                     placeholder="Enter your Email"
+                     value={email}
+                     onChange={onEmailChange}
+                     error={showAccount}
+                     icon={<Icons.email />}
+                     focusColor={focusColor}
+                  />
+               </>
+            )}
 
             <FormInput
                type="password"
@@ -82,7 +83,7 @@ export default function AuthForm({
                value={password}
                onChange={onPasswordChange}
                error={isSignUp ? showPass : showAccount}
-               icon={Icons.lock}
+               icon={<Icons.lock />}
                focusColor={focusColor}
             />
             {isSignUp && showPass ? (
@@ -100,7 +101,7 @@ export default function AuthForm({
                      value={confirm}
                      onChange={onConfirmChange}
                      error={showConfirm}
-                     icon={Icons.lock}
+                     icon={<Icons.lock />}
                      focusColor={focusColor}
                   />
                   {showConfirm ? <span className="text-red-500 text-sm">Passwords do not match.</span> : null}

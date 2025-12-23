@@ -11,7 +11,7 @@ interface AuthCardProps {
 }
 
 export default function AuthCard({ title, isSignUp, headerColor, mascotPosition, children }: AuthCardProps): JSX.Element {
-   const subtitle = isSignUp ? 'Create your account to get started with moodeng.' : "Welcome back! We're glad to see you again.";
+   const subtitle = 'Create your account to get started with moodeng.';
 
    return (
       <div className="w-full max-w-md mx-auto">

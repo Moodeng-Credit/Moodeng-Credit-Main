@@ -10,6 +10,7 @@ export type ToastSuccessType =
    | 'loan_delete_success'
    | 'points_earned'
    | 'worldid_verified'
+   | 'password_reset_sent'
    | null;
 
 export type ToastErrorType =

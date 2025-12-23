@@ -12,3 +12,6 @@ verify_jwt = false
 
 [functions.reset-password]
 verify_jwt = false
+
+[functions.telegram-login]
+verify_jwt = false

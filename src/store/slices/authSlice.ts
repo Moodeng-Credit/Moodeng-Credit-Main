@@ -132,6 +132,7 @@ const fetchUserProfileByUsername = async (username: string): Promise<User> => {
    return mapSupabaseRowToUser(profile);
 };
 
+/*
 const fetchEmailByUsername = async (username: string): Promise<string> => {
    const supabase = supabaseClient();
    const { data, error } = await supabase.from('users').select('email').eq('username', username).maybeSingle();
@@ -142,6 +143,7 @@ const fetchEmailByUsername = async (username: string): Promise<string> => {
 
    return data.email;
 };
+*/
 
 const signInWithGoogleCredential = async (credential: string): Promise<User> => {
    const supabase = supabaseClient();
@@ -182,8 +184,7 @@ const initialState: AuthState = {
    error: null
 };
 
-export const loginUser = createAsyncThunk('auth/login', async ({ username, password }: { username: string; password: string }) => {
-   const email = await fetchEmailByUsername(username);
+export const loginUser = createAsyncThunk('auth/login', async ({ email, password }: { email: string; password: string }) => {
    const supabase = supabaseClient();
    const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -232,14 +233,49 @@ export const loginWithGoogle = createAsyncThunk('auth/loginWithGoogle', async ({
    };
 });
 
-export const loginWithTelegram = createAsyncThunk('auth/loginWithTelegram', async () => {
-   throw new Error('Telegram authentication is not yet supported with Supabase.');
+export const loginWithTelegram = createAsyncThunk('auth/loginWithTelegram', async ({ telegramAuthData }: { telegramAuthData: string }) => {
+   const supabase = supabaseClient();
+   const { data, error } = await supabase.functions.invoke('telegram-login', {
+      body: { authData: JSON.parse(telegramAuthData) }
+   });
+
+   if (error) throw error;
+   if (data.error) throw new Error(data.error);
+
+   // Set the session in the client
+   const { error: sessionError } = await supabase.auth.setSession(data.session);
+   if (sessionError) throw sessionError;
+
+   const user = await fetchCurrentUserProfile();
+   return {
+      username: user.username,
+      user
+   };
 });
 
 export const registerUser = createAsyncThunk(
    'auth/register',
    async (userData: { username: string; isWorldId: string; password: string; email: string }) => {
       const supabase = supabaseClient();
+
+      // Check if email already exists in our users table
+      // If it does, it means they likely signed up with Google/Telegram already
+      const { data: existingProfile } = await supabase.from('users').select('id').eq('email', userData.email).maybeSingle();
+
+      if (existingProfile) {
+         // Trigger password reset to allow them to "link" their email/password to the existing account
+         const { error: resetError } = await supabase.auth.resetPasswordForEmail(userData.email, {
+            redirectTo: `${window.location.origin}/reset-password`
+         });
+
+         if (resetError) throw resetError;
+
+         return {
+            isExistingUser: true,
+            message:
+               'An account with this email already exists (likely via Google). A password reset link has been sent to your email. Please use it to set a password and link your email login.'
+         };
+      }
 
       // Get the redirect URL from environment variables
       const redirectUrl = import.meta.env.VITE_REDIRECT_URL || 'http://localhost:3000/auth/confirm';
@@ -258,49 +294,27 @@ export const registerUser = createAsyncThunk(
 
       // Handle actual signup errors (network issues, invalid data, etc.)
       if (error) {
+         // If user already exists (e.g. signed up with Google), trigger password reset to "link" accounts
+         if (error.message.toLowerCase().includes('already registered') || error.status === 422) {
+            const { error: resetError } = await supabase.auth.resetPasswordForEmail(userData.email, {
+               redirectTo: `${window.location.origin}/reset-password`
+            });
+
+            if (resetError) throw resetError;
+
+            return {
+               isExistingUser: true,
+               message:
+                  'An account with this email already exists (likely via Google). A password reset link has been sent to your email. Please use it to set a password and link your email login.'
+            };
+         }
          throw error;
       }
 
-      const createdUser = data?.user;
-
-      if (!createdUser) {
-         throw new Error('Supabase did not return a user record after sign up');
-      }
-
-      // Create user profile using server-side API route with service_role key
-      // This bypasses RLS automatically - no RLS policies needed on users table
-      const profileResponse = await fetch(import.meta.env.VITE_API_URL + '/create-user', {
-         method: 'POST',
-         headers: {
-            'Content-Type': 'application/json'
-         },
-         body: JSON.stringify({
-            userId: createdUser.id,
-            username: userData.username,
-            email: userData.email,
-            isWorldId: userData.isWorldId
-         })
-      });
-
-      if (!profileResponse.ok) {
-         const errorData = await profileResponse.json();
-         // Construct a richer error so the UI can show toast + inline details
-         const errMsg = errorData?.error || 'Failed to create user profile';
-         const err = new Error(`${errMsg}${errorData?.details ? `: ${errorData.details}` : ''}`) as Error & {
-            code: string;
-            details: unknown;
-         };
-         err.code = 'CREATE_PROFILE_FAILED';
-         err.details = errorData?.details ?? null;
-         throw err;
-      }
-
-      const profileData = await profileResponse.json();
-      const user = mapSupabaseRowToUser(profileData.data);
-
       return {
-         username: user.username,
-         user
+         username: userData.username,
+         user: data.user,
+         isNewUser: true
       };
    }
 );
@@ -316,9 +330,28 @@ export const registerWithGoogle = createAsyncThunk(
    }
 );
 
-export const registerWithTelegram = createAsyncThunk('auth/registerWithTelegram', async () => {
-   throw new Error('Telegram authentication is not yet supported with Supabase.');
-});
+export const registerWithTelegram = createAsyncThunk(
+   'auth/registerWithTelegram',
+   async ({ telegramAuthData }: { telegramAuthData: string }) => {
+      const supabase = supabaseClient();
+      const { data, error } = await supabase.functions.invoke('telegram-login', {
+         body: { authData: JSON.parse(telegramAuthData) }
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      // Set the session in the client
+      const { error: sessionError } = await supabase.auth.setSession(data.session);
+      if (sessionError) throw sessionError;
+
+      const user = await fetchCurrentUserProfile();
+      return {
+         username: user.username,
+         user
+      };
+   }
+);
 
 export const fetchUser = createAsyncThunk('auth/fetchUser', async () => fetchCurrentUserProfile());
 
@@ -404,7 +437,7 @@ const authSlice = createSlice({
          })
          .addCase(loginUser.fulfilled, (state, action) => {
             state.isLoading = false;
-            state.username = action.payload.username;
+            state.username = action.payload.username ?? null;
             state.user = action.payload.user;
          })
          .addCase(loginUser.rejected, (state, action) => {
@@ -417,7 +450,7 @@ const authSlice = createSlice({
          })
          .addCase(loginWithGoogle.fulfilled, (state, action) => {
             state.isLoading = false;
-            state.username = action.payload.username;
+            state.username = action.payload.username ?? null;
             state.user = action.payload.user;
          })
          .addCase(loginWithGoogle.rejected, (state, action) => {
@@ -427,6 +460,11 @@ const authSlice = createSlice({
          .addCase(loginWithTelegram.pending, (state) => {
             state.isLoading = true;
             state.error = null;
+         })
+         .addCase(loginWithTelegram.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.username = action.payload.username ?? null;
+            state.user = action.payload.user;
          })
          .addCase(loginWithTelegram.rejected, (state, action) => {
             state.isLoading = false;
@@ -461,6 +499,11 @@ const authSlice = createSlice({
          .addCase(registerWithTelegram.pending, (state) => {
             state.isLoading = true;
             state.error = null;
+         })
+         .addCase(registerWithTelegram.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.username = action.payload.username;
+            state.user = action.payload.user;
          })
          .addCase(registerWithTelegram.rejected, (state, action) => {
             state.isLoading = false;

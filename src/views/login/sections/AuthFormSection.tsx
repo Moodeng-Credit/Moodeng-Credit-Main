@@ -33,7 +33,7 @@ type AuthActionThunk =
    | typeof registerWithTelegram;
 
 type AuthPayload =
-   | { username: string; password: string }
+   | { email: string; password: string }
    | { username: string; isWorldId: string; password: string; email: string }
    | { googleCredential: string }
    | { telegramAuthData: string };
@@ -46,9 +46,7 @@ export default function AuthFormSection(): JSX.Element {
    const [email, setEmail] = useState('');
    const [password, setPassword] = useState('');
    const [confirm, setConfirm] = useState('');
-   const [username, setUsername] = useState('');
    const [isLoading, setIsLoading] = useState(false);
-   const [showUser, setShowUser] = useState(false);
    const [showPass, setShowPass] = useState(false);
    const [showEmail, setShowEmail] = useState(false);
    const [showConfirm, setShowConfirm] = useState(false);
@@ -70,11 +68,9 @@ export default function AuthFormSection(): JSX.Element {
       setEmail('');
       setPassword('');
       setConfirm('');
-      setUsername('');
    };
 
    const clearShow = () => {
-      setShowUser(false);
       setShowPass(false);
       setShowEmail(false);
       setShowConfirm(false);
@@ -90,6 +86,15 @@ export default function AuthFormSection(): JSX.Element {
          const resultAction = await dispatch(action(payload as never) as AsyncThunkAction<unknown, unknown, Record<string, unknown>>);
 
          if (action.fulfilled.match(resultAction)) {
+            const payload = resultAction.payload as any;
+            if (payload?.isExistingUser) {
+               navigate('/auth-success?type=link');
+               return;
+            }
+            if (payload?.isNewUser) {
+               navigate('/auth-success?type=verify');
+               return;
+            }
             clear();
             navigate('/dashboard');
          } else {
@@ -166,8 +171,8 @@ export default function AuthFormSection(): JSX.Element {
          return;
       }
 
-      if (username && isWorldId && password && email && password === confirm) {
-         await handleAuthAction(registerUser, { username, isWorldId, password, email }, handleRegisterError);
+      if (isWorldId && password && email && password === confirm) {
+         await handleAuthAction(registerUser, { username: email, isWorldId, password, email }, handleRegisterError);
       }
    };
 
@@ -175,8 +180,8 @@ export default function AuthFormSection(): JSX.Element {
       e.preventDefault();
       clearShow();
 
-      if (username && password) {
-         await handleAuthAction(loginUser, { username, password }, handleLoginError);
+      if (email && password) {
+         await handleAuthAction(loginUser, { email, password }, handleLoginError);
       }
    };
 
@@ -201,10 +206,6 @@ export default function AuthFormSection(): JSX.Element {
       console.error('OAuth authentication failed');
       setShowAccount(true);
    };
-
-   const handleUsernameChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-      setUsername(e.target.value);
-   }, []);
 
    const handleEmailChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
       setEmail(e.target.value);
@@ -249,17 +250,17 @@ export default function AuthFormSection(): JSX.Element {
 
                   <AuthForm
                      mode={isSignUp ? 'signup' : 'signin'}
-                     username={username}
+                     username=""
                      email={email}
                      password={password}
                      confirm={confirm}
-                     showUser={showUser}
+                     showUser={false}
                      showEmail={showEmail}
                      showPass={showPass}
                      showConfirm={showConfirm}
                      showAccount={showAccount}
                      accountError={accountError}
-                     onUsernameChange={handleUsernameChange}
+                     onUsernameChange={() => {}}
                      onEmailChange={handleEmailChange}
                      onPasswordChange={handlePasswordChange}
                      onConfirmChange={handleConfirmChange}
