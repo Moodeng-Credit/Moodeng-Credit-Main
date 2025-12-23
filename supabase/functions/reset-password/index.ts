@@ -105,9 +105,21 @@ serve(async (req) => {
 
         if (rpcError) {
             console.error('Error calling ensure_email_identity RPC:', rpcError);
+            return new Response(
+                JSON.stringify({
+                    error: 'Password was updated, but we could not finalize email sign-in setup. Please try again.'
+                }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+            );
         }
     } catch (e) {
         console.error('Error ensuring identity via RPC:', e);
+        return new Response(
+            JSON.stringify({
+                error: 'Password was updated, but we could not finalize email sign-in setup. Please try again.'
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
     }
 
     return new Response(
