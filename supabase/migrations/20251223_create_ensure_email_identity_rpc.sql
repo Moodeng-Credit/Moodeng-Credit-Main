@@ -19,7 +19,9 @@ BEGIN
         );
     END IF;
 END;
-$$ LANGUAGE plpgsql SECURITY INVOKER;
+$$ LANGUAGE plpgsql 
+SECURITY DEFINER
+SET search_path = public, auth;
 
 -- Grant permissions to allow the Edge Function (using service_role) to call it
 GRANT EXECUTE ON FUNCTION public.ensure_email_identity(UUID, TEXT) TO service_role;
