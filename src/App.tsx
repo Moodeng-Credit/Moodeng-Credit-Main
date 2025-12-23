@@ -11,6 +11,7 @@ import FAQ from '@/app/faq/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
 import Login from '@/app/login/page';
+import AuthSuccess from '@/app/auth-success/page';
 // Import pages
 import Home from '@/app/page';
 import Profile from '@/app/profile/page';
@@ -100,6 +101,14 @@ export default function App() {
                element={
                   <Layout>
                      <ResetPassword />
+                  </Layout>
+               }
+            />
+            <Route
+               path="/auth-success"
+               element={
+                  <Layout>
+                     <AuthSuccess />
                   </Layout>
                }
             />

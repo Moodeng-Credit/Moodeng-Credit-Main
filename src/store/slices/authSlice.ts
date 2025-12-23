@@ -132,6 +132,7 @@ const fetchUserProfileByUsername = async (username: string): Promise<User> => {
    return mapSupabaseRowToUser(profile);
 };
 
+/*
 const fetchEmailByUsername = async (username: string): Promise<string> => {
    const supabase = supabaseClient();
    const { data, error } = await supabase.from('users').select('email').eq('username', username).maybeSingle();
@@ -142,6 +143,7 @@ const fetchEmailByUsername = async (username: string): Promise<string> => {
 
    return data.email;
 };
+*/
 
 const signInWithGoogleCredential = async (credential: string): Promise<User> => {
    const supabase = supabaseClient();
@@ -272,7 +274,7 @@ export const registerUser = createAsyncThunk(
             isExistingUser: true,
             message:
                'An account with this email already exists (likely via Google). A password reset link has been sent to your email. Please use it to set a password and link your email login.'
-         } as any;
+         };
       }
 
       // Get the redirect URL from environment variables
@@ -300,55 +302,19 @@ export const registerUser = createAsyncThunk(
 
             if (resetError) throw resetError;
 
-            // Return a special flag so the UI can show a helpful message
             return {
                isExistingUser: true,
-               message: 'An account with this email already exists (likely via Google). A password reset link has been sent to your email. Please use it to set a password and link your email login.'
-            } as any;
+               message:
+                  'An account with this email already exists (likely via Google). A password reset link has been sent to your email. Please use it to set a password and link your email login.'
+            };
          }
          throw error;
       }
 
-      const createdUser = data?.user;
-
-      if (!createdUser) {
-         throw new Error('Supabase did not return a user record after sign up');
-      }
-
-      // Create user profile using server-side API route with service_role key
-      // This bypasses RLS automatically - no RLS policies needed on users table
-      const profileResponse = await fetch(import.meta.env.VITE_API_URL + '/create-user', {
-         method: 'POST',
-         headers: {
-            'Content-Type': 'application/json'
-         },
-         body: JSON.stringify({
-            userId: createdUser.id,
-            username: userData.username,
-            email: userData.email,
-            isWorldId: userData.isWorldId
-         })
-      });
-
-      if (!profileResponse.ok) {
-         const errorData = await profileResponse.json();
-         // Construct a richer error so the UI can show toast + inline details
-         const errMsg = errorData?.error || 'Failed to create user profile';
-         const err = new Error(`${errMsg}${errorData?.details ? `: ${errorData.details}` : ''}`) as Error & {
-            code: string;
-            details: unknown;
-         };
-         err.code = 'CREATE_PROFILE_FAILED';
-         err.details = errorData?.details ?? null;
-         throw err;
-      }
-
-      const profileData = await profileResponse.json();
-      const user = mapSupabaseRowToUser(profileData.data);
-
       return {
-         username: user.username,
-         user
+         username: userData.username,
+         user: data.user,
+         isNewUser: true
       };
    }
 );
@@ -471,7 +437,7 @@ const authSlice = createSlice({
          })
          .addCase(loginUser.fulfilled, (state, action) => {
             state.isLoading = false;
-            state.username = action.payload.username;
+            state.username = action.payload.username ?? null;
             state.user = action.payload.user;
          })
          .addCase(loginUser.rejected, (state, action) => {
@@ -484,7 +450,7 @@ const authSlice = createSlice({
          })
          .addCase(loginWithGoogle.fulfilled, (state, action) => {
             state.isLoading = false;
-            state.username = action.payload.username;
+            state.username = action.payload.username ?? null;
             state.user = action.payload.user;
          })
          .addCase(loginWithGoogle.rejected, (state, action) => {
@@ -497,7 +463,7 @@ const authSlice = createSlice({
          })
          .addCase(loginWithTelegram.fulfilled, (state, action) => {
             state.isLoading = false;
-            state.username = action.payload.username;
+            state.username = action.payload.username ?? null;
             state.user = action.payload.user;
          })
          .addCase(loginWithTelegram.rejected, (state, action) => {

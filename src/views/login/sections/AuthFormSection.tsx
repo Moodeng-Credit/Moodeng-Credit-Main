@@ -92,10 +92,11 @@ export default function AuthFormSection(): JSX.Element {
          if (action.fulfilled.match(resultAction)) {
             const payload = resultAction.payload as any;
             if (payload?.isExistingUser) {
-               toast.showToastByConfig('password_reset_sent');
-               setAccountError(payload.message);
-               setShowAccount(true);
-               setIsLoading(false);
+               navigate('/auth-success?type=link');
+               return;
+            }
+            if (payload?.isNewUser) {
+               navigate('/auth-success?type=verify');
                return;
             }
             clear();
