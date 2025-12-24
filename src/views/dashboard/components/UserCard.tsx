@@ -1,4 +1,4 @@
-import { type MouseEvent, useEffect, useState } from 'react';
+import { type MouseEvent, useEffect, useMemo, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { differenceInDays, differenceInHours, format, parseISO } from 'date-fns';
@@ -16,7 +16,7 @@ import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import { MONTHS } from '@/constants/dates';
 import { getUserProfile } from '@/store/slices/authSlice';
-import { fetchLoans, getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
+import { fetchLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -37,9 +37,19 @@ export default function UserCard(loan: Loan) {
    const { showToastByConfig } = useToast();
    const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const username = useSelector((state: RootState) => state.auth.username);
+   // Use loans from Redux store to calculate total repaid (avoiding N+1 API calls)
+   const allLoans = useSelector((state: RootState) => state.loans.loans.floans);
 
    const [localProfile, setLocalProfile] = useState<User | null>(null);
-   const [localTotalRepaid, setLocalTotalRepaid] = useState(0);
+
+   // Calculate total repaid from already-fetched loans in Redux store
+   const localTotalRepaid = useMemo(() => {
+      const borrowerLoans = allLoans.filter((ln) => ln.borrowerUser === borrowerUser);
+      return borrowerLoans.reduce(
+         (sum: number, ln: Loan) => (ln.repaymentStatus === 'Paid' ? sum + toNumber(ln.loanAmount) : sum),
+         0
+      );
+   }, [allLoans, borrowerUser]);
 
    const time = parseDateSafely(loanData.createdAt).toISOString();
    const splt = time.split('T')[0].split('-');
@@ -63,7 +73,7 @@ export default function UserCard(loan: Loan) {
 
    useEffect(() => {
       let mounted = true;
-      const fetch = async () => {
+      const fetchProfile = async () => {
          try {
             const profileRes = await dispatch(getUserProfile(borrowerUser)).unwrap();
             const profileObj = profileRes?.user || profileRes;
@@ -71,23 +81,9 @@ export default function UserCard(loan: Loan) {
          } catch (error) {
             console.error('Error fetching profile:', (error as Error).message || error);
          }
-
-         try {
-            const loansRes = await dispatch(getUserLoans(borrowerUser)).unwrap();
-            const loansArray = loansRes?.gloans || loansRes?.loans || loansRes || [];
-            if (mounted) {
-               const repaid = (loansArray || []).reduce(
-                  (sum: number, ln: Loan) => (ln.repaymentStatus === 'Paid' ? sum + toNumber(ln.loanAmount) : sum),
-                  0
-               );
-               setLocalTotalRepaid(repaid);
-            }
-         } catch (error: unknown) {
-            console.error('Error fetching loans:', (error as Error).message || error);
-         }
       };
 
-      fetch();
+      fetchProfile();
       return () => {
          mounted = false;
       };
