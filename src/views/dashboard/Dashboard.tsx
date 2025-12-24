@@ -55,6 +55,7 @@ function Dashboard$() {
    const [isSubmitting, setIsSubmitting] = useState(false);
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
+   const isLoading = useSelector((state: RootState) => state.loans.isLoading);
    const showVerify = user?.isWorldId !== 'ACTIVE';
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
@@ -346,11 +347,17 @@ function Dashboard$() {
                         <SearchBar value={searchLoan} onChange={setSearchLoan} placeholder="Search Request..." />
                      </div>
                      <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(350px,1fr))] w-full">
-                        {displayedLoans && Array.isArray(displayedLoans)
-                           ? displayedLoans.map((loan) => <UserCard key={loan.id} {...loan} />)
-                           : null}
+                        {isLoading ? (
+                           <div className="col-span-full flex justify-center py-20">
+                              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                           </div>
+                        ) : displayedLoans && Array.isArray(displayedLoans) && displayedLoans.length > 0 ? (
+                           displayedLoans.map((loan) => <UserCard key={loan.id} {...loan} />)
+                        ) : (
+                           <div className="col-span-full text-center py-20 text-gray-500">No loan requests found.</div>
+                        )}
                      </div>
-                     <LoadMoreButton currentCount={displayedCount} totalCount={totalCount} onLoadMore={handleLoadMore} />
+                     {!isLoading && <LoadMoreButton currentCount={displayedCount} totalCount={totalCount} onLoadMore={handleLoadMore} />}
                   </section>
                </div>
                <Link to="/dashboard#top" className="float-right">
