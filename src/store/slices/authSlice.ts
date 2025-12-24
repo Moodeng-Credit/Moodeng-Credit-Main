@@ -181,7 +181,8 @@ const initialState: AuthState = {
    user: defaultUser,
    username: null,
    isLoading: false,
-   error: null
+   error: null,
+   userProfiles: {}
 };
 
 export const loginUser = createAsyncThunk('auth/login', async ({ email, password }: { email: string; password: string }) => {
@@ -360,6 +361,22 @@ export const getUserProfile = createAsyncThunk('auth/getUserProfile', async (use
    return { user };
 });
 
+// Batch fetch multiple user profiles by usernames in a single query
+export const fetchUserProfiles = createAsyncThunk('auth/fetchUserProfiles', async (usernames: string[]) => {
+   if (usernames.length === 0) return { users: [] };
+
+   const supabase = supabaseClient();
+   const uniqueUsernames = [...new Set(usernames)]; // Remove duplicates
+
+   const { data: profiles, error } = await supabase.from('users').select('*').in('username', uniqueUsernames);
+
+   if (error) {
+      throw error;
+   }
+
+   return { users: (profiles || []).map(mapSupabaseRowToUser) };
+});
+
 export const updateUser = createAsyncThunk('auth/updateUser', async (userData: UpdateUserPayload) => {
    const supabase = supabaseClient();
    const {
@@ -427,6 +444,7 @@ const authSlice = createSlice({
          state.user = defaultUser;
          state.username = null;
          state.error = null;
+         state.userProfiles = {};
       }
    },
    extraReducers: (builder) => {
@@ -529,11 +547,31 @@ const authSlice = createSlice({
          .addCase(updateUser.rejected, (state, action) => {
             state.error = (action.error.message as string) || null;
          })
+         .addCase(fetchUserProfiles.fulfilled, (state, action) => {
+            // Ensure userProfiles exists (for redux-persist rehydration compatibility)
+            if (!state.userProfiles) {
+               state.userProfiles = {};
+            }
+            // Store fetched user profiles in the userProfiles map
+            for (const user of action.payload.users) {
+               state.userProfiles[user.username] = user;
+            }
+         })
          .addCase(logoutUser.fulfilled, (state) => {
             state.user = defaultUser;
             state.username = null;
             state.error = null;
-         });
+            state.userProfiles = {};
+         })
+         // Handle redux-persist rehydration to ensure userProfiles exists
+         .addMatcher(
+            (action) => action.type === 'persist/REHYDRATE',
+            (state) => {
+               if (!state.userProfiles) {
+                  state.userProfiles = {};
+               }
+            }
+         );
    }
 });
 

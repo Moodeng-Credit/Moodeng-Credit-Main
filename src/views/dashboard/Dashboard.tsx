@@ -22,11 +22,12 @@ import { usePagination } from '@/hooks/usePagination';
 import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
-import { fetchUser } from '@/store/slices/authSlice';
+import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
+import type { Loan } from '@/types/loanTypes';
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
@@ -245,14 +246,19 @@ function Dashboard$() {
 
    useEffect(() => {
       const loadLoans = async () => {
-         await dispatch(fetchLoans())
-            .unwrap()
-            .then(() => {
-               console.log('Loans fetched successfully');
-            })
-            .catch((error: Error) => {
-               console.error('Error fetching loans:', error.message || error);
-            });
+         try {
+            const loans = await dispatch(fetchLoans()).unwrap();
+            console.log('Loans fetched successfully');
+
+            // Extract unique borrower usernames and batch fetch their profiles
+            const borrowerUsernames = [...new Set(loans.map((loan: Loan) => loan.borrowerUser).filter(Boolean))] as string[];
+            if (borrowerUsernames.length > 0) {
+               await dispatch(fetchUserProfiles(borrowerUsernames)).unwrap();
+               console.log('User profiles fetched successfully');
+            }
+         } catch (error) {
+            console.error('Error fetching data:', (error as Error).message || error);
+         }
       };
       loadLoans();
    }, [dispatch]);
