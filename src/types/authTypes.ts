@@ -7,6 +7,7 @@ export interface AuthState {
    cs?: number;
    nal?: number;
    mal?: number;
+   userProfiles: Record<string, User>; // Map of username -> User profile for batch fetched users
 }
 export interface User {
    id: string;
