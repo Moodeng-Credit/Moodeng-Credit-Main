@@ -16,9 +16,9 @@ import '@/views/landing/styles/MainLandingPage.css';
 
 export default function MainLandingPage(): JSX.Element {
    return (
-      <div className="bg-[#171420] flex flex-row justify-center w-full">
-         <div className="bg-[#171420] w-[1920px]">
-            <div className="flex flex-col w-[1920px]  items-center relative">
+      <div className="bg-[#171420] flex flex-col justify-center w-full min-h-screen">
+         <div className="bg-[#171420] w-full">
+            <div className="flex flex-col w-full items-center relative">
                <HeroSection />
                <PartnersSection />
                <FinancialInclusionSection />
