@@ -47,14 +47,16 @@ export function AuthInitializer() {
       // Initial check
       supabase.auth.getUser().then(({ data: { user: supabaseUser }, error }) => {
          if (error || !supabaseUser) {
-            console.log('🔒 Initial auth check failed or no user found, clearing auth');
-            clearAuthCookieClient();
-            dispatch(clearAuth());
+            if (wasAuthenticated) {
+               console.log('🔒 Initial auth check failed or no user found, clearing auth');
+               clearAuthCookieClient();
+               dispatch(clearAuth());
 
-            // If we thought we were authenticated (persisted state) but Supabase says no,
-            // redirect to login (unless already there)
-            if (wasAuthenticated && location.pathname !== '/login') {
-               navigate('/login');
+               // If we thought we were authenticated (persisted state) but Supabase says no,
+               // redirect to login (unless already there)
+               if (location.pathname !== '/login') {
+                  navigate('/login');
+               }
             }
          } else {
             dispatch(fetchUser()).catch((err) => {

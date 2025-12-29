@@ -47,7 +47,7 @@ export default function TelegramAuthButton({ onAuth, buttonSize = 'large' }: Tel
       script.src = 'https://telegram.org/js/telegram-widget.js?22';
       script.setAttribute('data-telegram-login', botUsername);
       script.setAttribute('data-size', buttonSize);
-      script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+      script.setAttribute('data-onauth', 'onTelegramAuth');
       script.setAttribute('data-request-access', 'write');
 
       // Mark as loaded once the script finishes loading
@@ -113,7 +113,15 @@ export default function TelegramAuthButton({ onAuth, buttonSize = 'large' }: Tel
                `}</style>
             </div>
          )}
-         <div ref={containerRef} className="flex justify-center" style={{ display: isLoading ? 'none' : 'flex' }} />
+         <div
+            ref={containerRef}
+            className="flex justify-center"
+            style={{
+               visibility: isLoading ? 'hidden' : 'visible',
+               height: isLoading ? '0' : 'auto',
+               overflow: 'hidden'
+            }}
+         />
       </div>
    );
 }
