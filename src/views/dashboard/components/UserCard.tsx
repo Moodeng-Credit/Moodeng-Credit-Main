@@ -174,11 +174,15 @@ export default function UserCard(loan: Loan) {
 
    // Automatically trigger lending after connection if it was pending
    useEffect(() => {
-      if (isConnected && isPendingAction && !isProcessing) {
+      const connectedAddress = account.address?.toLowerCase();
+      const storedAddress = wallet?.toLowerCase();
+
+      // Only trigger if connected, pending, and the address matches the stored one (Issue 3)
+      if (isConnected && isPendingAction && !isProcessing && connectedAddress === storedAddress) {
          setIsPendingAction(false);
          executeLend();
       }
-   }, [isConnected, isPendingAction, isProcessing, executeLend]);
+   }, [isConnected, isPendingAction, isProcessing, executeLend, account.address, wallet]);
 
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();

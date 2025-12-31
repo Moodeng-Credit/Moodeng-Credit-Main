@@ -131,7 +131,11 @@ function Dashboard$() {
 
    // Automatically open modal after connection if it was pending
    useEffect(() => {
-      if (isConnected && isPendingAction) {
+      const connectedAddress = account.address?.toLowerCase();
+      const storedAddress = user?.walletAddress?.toLowerCase();
+
+      // Only trigger if connected, pending, and the address matches the stored one (Issue 3)
+      if (isConnected && isPendingAction && connectedAddress && connectedAddress === storedAddress) {
          setIsPendingAction(false);
          if ((user.nal || 0) < (user.mal || 0)) {
             setShowModal(true);
@@ -139,7 +143,7 @@ function Dashboard$() {
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          }
       }
-   }, [isConnected, isPendingAction, user.nal, user.mal, showToastByConfig]);
+   }, [isConnected, isPendingAction, user.nal, user.mal, user.walletAddress, account.address, showToastByConfig]);
 
    const handleCloseModal = useCallback(() => {
       setShowModal(false);
