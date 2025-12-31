@@ -1,6 +1,6 @@
 
 
-import { type ChangeEvent, type MouseEvent, useState } from 'react';
+import { type ChangeEvent, type MouseEvent, useCallback, useEffect, useState } from 'react';
 
 
 
@@ -33,23 +33,15 @@ function UserPay({ loan }: { loan: Loan }) {
    const account = useAccount();
    const { isConnected } = account;
    const { openConnectModal } = useConnectModal();
+   const [isPendingAction, setIsPendingAction] = useState(false);
 
-   const handleBorrow = async (e: MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-
+   const executeRepayment = useCallback(async () => {
       if (isProcessing) {
-         return;
-      }
-
-      if (!isConnected) {
-         openConnectModal?.();
-         e.stopPropagation();
          return;
       }
 
       if (account.chain?.id !== ALLOWED_CHAIN_ID) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
-         e.stopPropagation();
          return;
       }
 
@@ -106,6 +98,41 @@ function UserPay({ loan }: { loan: Loan }) {
       } else {
          setIsProcessing(false);
       }
+   }, [
+      isProcessing,
+      account.chain?.id,
+      loan.repaidAmount,
+      loan.totalRepaymentAmount,
+      loan.loanStatus,
+      loan.repaymentStatus,
+      loan.coin,
+      loan.lenderWallet,
+      loan.id,
+      repaidAmountToAdd,
+      Transfer,
+      dispatch,
+      username,
+      showToastByConfig
+   ]);
+
+   // Automatically trigger repayment after connection if it was pending
+   useEffect(() => {
+      if (isConnected && isPendingAction && !isProcessing && repaidAmountToAdd) {
+         setIsPendingAction(false);
+         executeRepayment();
+      }
+   }, [isConnected, isPendingAction, isProcessing, executeRepayment, repaidAmountToAdd]);
+
+   const handleBorrow = async (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+
+      if (!isConnected) {
+         setIsPendingAction(true);
+         openConnectModal?.();
+         return;
+      }
+
+      await executeRepayment();
    };
 
    return (

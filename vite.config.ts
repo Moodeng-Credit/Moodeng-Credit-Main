@@ -3,6 +3,7 @@ import path from 'path';
 import { defineConfig } from 'vite';
 
 // https://vite.dev/config/
+// Force re-bundle
 export default defineConfig({
    plugins: [react()],
    resolve: {
