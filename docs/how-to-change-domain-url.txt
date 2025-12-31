@@ -1,0 +1,4 @@
+Things to change when domain change:
+1. Update Supabase Auth Redirect URL
+2. Update Google Cloud Console Redirect URL for Google Auth
+3. Update Supabase Edge Functions URL for redirect
