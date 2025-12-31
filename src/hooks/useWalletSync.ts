@@ -1,10 +1,10 @@
 
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
-import { useAccount, useDisconnect } from 'wagmi';
+import { useAccount, useAccountEffect, useDisconnect } from 'wagmi';
 
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -32,6 +32,41 @@ export function useWalletSync() {
    const username = useSelector((state: RootState) => state.auth.username);
    const storedWalletAddress = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const [hasShownWalletPrompt, setHasShownWalletPrompt] = useState(false);
+   const isConnecting = useRef(false);
+
+   const showSuccessToast = useCallback(
+      (address: string) => {
+         showToast(
+            TOAST_TYPES.SUCCESS,
+            'Wallet Connected',
+            `Successfully connected to ${address.slice(0, 6)}...${address.slice(-4)}`,
+            undefined,
+            undefined
+         );
+      },
+      [showToast]
+   );
+
+   // Track connection intent to show success toast
+   useAccountEffect({
+      onConnect: () => {
+         isConnecting.current = true;
+      },
+      onDisconnect: () => {
+         isConnecting.current = false;
+      }
+   });
+
+   // Consolidated Success Logic: Fires for BOTH initial connection (after DB update)
+   // and reconnection (immediately on connect)
+   useEffect(() => {
+      if (!isConnecting.current || !account.address || !storedWalletAddress) return;
+
+      if (account.address.toLowerCase() === storedWalletAddress.toLowerCase()) {
+         showSuccessToast(account.address);
+         isConnecting.current = false; // Reset intent so it doesn't fire again on re-renders
+      }
+   }, [account.address, storedWalletAddress, showSuccessToast]);
 
    // Check for wallet mismatch with stored address and disconnect if needed
    // Account switch is detected when connected wallet doesn't match stored wallet
