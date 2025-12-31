@@ -1,6 +1,6 @@
 
 
-import { type ChangeEvent, type MouseEvent, useState } from 'react';
+import { type ChangeEvent, type MouseEvent, useCallback, useEffect, useState } from 'react';
 
 
 
@@ -24,6 +24,7 @@ import type { Loan } from '@/types/loanTypes';
 
 function UserPay({ loan }: { loan: Loan }) {
    const username = useSelector((state: RootState) => state.auth.username);
+   const storedWalletAddress = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const [repaidAmountToAdd, setRepaidAmountToAdd] = useState('');
    const [isProcessing, setIsProcessing] = useState(false);
    const time = parseDateSafely(loan.createdAt).toISOString();
@@ -33,79 +34,115 @@ function UserPay({ loan }: { loan: Loan }) {
    const account = useAccount();
    const { isConnected } = account;
    const { openConnectModal } = useConnectModal();
+   const [isPendingAction, setIsPendingAction] = useState(false);
+   const [pendingAmount, setPendingAmount] = useState<string | null>(null);
 
-   const handleBorrow = async (e: MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault();
+   const executeRepayment = useCallback(
+      async (amount: string) => {
+         if (isProcessing) {
+            return;
+         }
 
-      if (isProcessing) {
-         return;
-      }
+         if (account.chain?.id !== ALLOWED_CHAIN_ID) {
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
+            return;
+         }
 
-      if (!isConnected) {
-         openConnectModal?.();
-         e.stopPropagation();
-         return;
-      }
+         const newRepaidAmount = toNumber(loan.repaidAmount) + Number(amount);
+         const totalOwed = toNumber(loan.totalRepaymentAmount);
 
-      if (account.chain?.id !== ALLOWED_CHAIN_ID) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
-         e.stopPropagation();
-         return;
-      }
+         const newRepaymentStatus = newRepaidAmount >= totalOwed ? 'Paid' : 'Partial';
 
-      const newRepaidAmount = toNumber(loan.repaidAmount) + Number(repaidAmountToAdd);
-      const totalOwed = toNumber(loan.totalRepaymentAmount);
+         if (
+            loan.loanStatus === 'Lent' &&
+            loan.repaymentStatus !== 'Paid' &&
+            parseFloat(amount) > 0 &&
+            newRepaidAmount <= totalOwed // Don't allow overpayment
+         ) {
+            setIsProcessing(true);
+            const transferCoin = loan.coin?.trim() || 'USDC';
+            const transactionHash = await Transfer(loan.lenderWallet || '', amount.toString(), loan.id, transferCoin);
 
-      const newRepaymentStatus = newRepaidAmount >= totalOwed ? 'Paid' : 'Partial';
+            if (transactionHash) {
+               try {
+                  const loanData = {
+                     id: loan.id,
+                     repaidAmount: newRepaidAmount,
+                     repaymentStatus: newRepaymentStatus,
+                     hash: transactionHash
+                  };
 
-      if (
-         loan.loanStatus === 'Lent' &&
-         loan.repaymentStatus !== 'Paid' &&
-         parseFloat(repaidAmountToAdd) > 0 &&
-         newRepaidAmount <= totalOwed // Don't allow overpayment
-      ) {
-         setIsProcessing(true);
-         const transferCoin = loan.coin?.trim() || 'USDC';
-         const transactionHash = await Transfer(loan.lenderWallet || '', repaidAmountToAdd.toString(), loan.id, transferCoin);
-
-         if (transactionHash) {
-            try {
-               const loanData = {
-                  id: loan.id,
-                  repaidAmount: newRepaidAmount,
-                  repaymentStatus: newRepaymentStatus,
-                  hash: transactionHash
-               };
-
-               await dispatch(updateLoanStatus(loanData)).unwrap();
-               await dispatch(getUserLoans(username || ''));
-               showToastByConfig('repayment_success');
-               setRepaidAmountToAdd('');
-            } catch (updateError: unknown) {
-               const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
-               console.error('[CRITICAL] Transaction succeeded but database update failed:', errorMessage);
-               console.error(
-                  '[RECONCILIATION REQUIRED] Loan ID:',
-                  loan.id,
-                  '| Payment Amount:',
-                  repaidAmountToAdd,
-                  '| New Repaid Total:',
-                  newRepaidAmount.toString(),
-                  '| Status:',
-                  newRepaymentStatus,
-                  '| Hash:',
-                  transactionHash
-               );
-               showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
-            } finally {
+                  await dispatch(updateLoanStatus(loanData)).unwrap();
+                  await dispatch(getUserLoans(username || ''));
+                  showToastByConfig('repayment_success');
+                  setRepaidAmountToAdd('');
+               } catch (updateError: unknown) {
+                  const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
+                  console.error('[CRITICAL] Transaction succeeded but database update failed:', errorMessage);
+                  console.error(
+                     '[RECONCILIATION REQUIRED] Loan ID:',
+                     loan.id,
+                     '| Payment Amount:',
+                     amount,
+                     '| New Repaid Total:',
+                     newRepaidAmount.toString(),
+                     '| Status:',
+                     newRepaymentStatus,
+                     '| Hash:',
+                     transactionHash
+                  );
+                  showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
+               } finally {
+                  setIsProcessing(false);
+               }
+            } else {
                setIsProcessing(false);
             }
          } else {
             setIsProcessing(false);
          }
-      } else {
-         setIsProcessing(false);
+      },
+      [
+         isProcessing,
+         account.chain?.id,
+         loan.repaidAmount,
+         loan.totalRepaymentAmount,
+         loan.loanStatus,
+         loan.repaymentStatus,
+         loan.coin,
+         loan.lenderWallet,
+         loan.id,
+         Transfer,
+         dispatch,
+         username,
+         showToastByConfig
+      ]
+   );
+
+   // Automatically trigger repayment after connection if it was pending
+   useEffect(() => {
+      const connectedAddress = account.address?.toLowerCase();
+      const storedAddress = storedWalletAddress?.toLowerCase();
+
+      // Only trigger if connected, pending, and the address matches the stored one (Issue 3)
+      if (isConnected && isPendingAction && !isProcessing && pendingAmount !== null && connectedAddress === storedAddress) {
+         setIsPendingAction(false);
+         setPendingAmount(null);
+         executeRepayment(pendingAmount);
       }
+   }, [isConnected, isPendingAction, isProcessing, executeRepayment, pendingAmount, account.address, storedWalletAddress]);
+
+   const handleBorrow = async (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+
+      if (!isConnected) {
+         setIsPendingAction(true);
+         setPendingAmount(repaidAmountToAdd);
+         openConnectModal?.();
+         return;
+      }
+
+      await executeRepayment(repaidAmountToAdd);
    };
 
    return (

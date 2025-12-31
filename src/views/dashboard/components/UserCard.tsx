@@ -1,4 +1,4 @@
-import { type MouseEvent, useMemo, useState } from 'react';
+import { type MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { differenceInDays, differenceInHours, format, parseISO } from 'date-fns';
@@ -32,6 +32,7 @@ export default function UserCard(loan: Loan) {
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
+   const [isPendingAction, setIsPendingAction] = useState(false);
    const { showToastByConfig } = useToast();
    const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -81,57 +82,34 @@ export default function UserCard(loan: Loan) {
          });
    };
 
-   const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-
+   const executeLend = useCallback(async () => {
       if (isProcessing) {
          return;
       }
 
       if (loanData.loanStatus === 'Lent') {
-         return; // Loan already lent, no further lending allowed
-      }
-
-      if (!isConnected) {
-         openConnectModal?.();
-         e.stopPropagation();
          return;
       }
 
-      console.log('[handleLend] wallet state', {
-         reduxWallet: wallet,
-         wagmiAddress: account.address,
-         isConnected,
-         loanWallet: loanData.borrowerWallet,
-         loanCoin: loanData.coin,
-         allowedChain: ALLOWED_CHAIN_DISPLAY_NAME,
-         currentChainId: account.chain?.id,
-         currentChainName: account.chain?.name
-      });
-
       if (loanData.borrowerUser === username) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED));
-         e.stopPropagation();
          return;
       }
 
       const lenderWallet = account.address?.trim() || wallet?.trim();
       if (!lenderWallet) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
-         e.stopPropagation();
          return;
       }
 
       const borrowerWallet = loanData.borrowerWallet?.trim();
       if (!borrowerWallet) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
-         e.stopPropagation();
          return;
       }
 
       if (account.chain?.id !== ALLOWED_CHAIN_ID) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
-         e.stopPropagation();
          return;
       }
 
@@ -177,6 +155,45 @@ export default function UserCard(loan: Loan) {
       } finally {
          setIsProcessing(false);
       }
+   }, [
+      isProcessing,
+      loanData.loanStatus,
+      loanData.borrowerUser,
+      loanData.borrowerWallet,
+      loanData.coin,
+      loanData.loanAmount,
+      loanData.id,
+      username,
+      account.address,
+      account.chain?.id,
+      wallet,
+      Transfer,
+      dispatch,
+      showToastByConfig
+   ]);
+
+   // Automatically trigger lending after connection if it was pending
+   useEffect(() => {
+      const connectedAddress = account.address?.toLowerCase();
+      const storedAddress = wallet?.toLowerCase();
+
+      // Only trigger if connected, pending, and the address matches the stored one (Issue 3)
+      if (isConnected && isPendingAction && !isProcessing && connectedAddress === storedAddress) {
+         setIsPendingAction(false);
+         executeLend();
+      }
+   }, [isConnected, isPendingAction, isProcessing, executeLend, account.address, wallet]);
+
+   const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+
+      if (!isConnected) {
+         setIsPendingAction(true);
+         openConnectModal?.();
+         return;
+      }
+
+      await executeLend();
    };
 
    const loanReason = loanData.reason?.trim() ? loanData.reason.trim() : 'Unknown Reason';
