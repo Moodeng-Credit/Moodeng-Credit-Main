@@ -2,10 +2,14 @@
 
 import '@/components/loading/Loading.scss';
 
-const Loading = () => {
+interface LoadingProps {
+   fullPage?: boolean;
+}
+
+const Loading = ({ fullPage = true }: LoadingProps) => {
    return (
-      <div className="loading">
-         <div className="loading-root">
+      <div className={fullPage ? 'loading' : ''}>
+         <div className={fullPage ? 'root' : ''}>
             <div className="pl">
                <div className="pl__coin">
                   <div className="pl__coin-flare"></div>

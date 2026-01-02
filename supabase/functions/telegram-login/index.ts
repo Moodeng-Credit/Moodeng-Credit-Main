@@ -103,11 +103,11 @@ serve(async (req) => {
     let email: string;
     if (profile) {
       userId = profile.id
-      email = profile.email || `telegram_${telegramId}@moodeng.credit`
+      email = profile.email || `telegram_${telegramId}@moodeng.internal`
     } else {
       // 4. Create new user if not exists
       // Use a placeholder email since Telegram doesn't provide one
-      email = `telegram_${telegramId}@moodeng.credit`
+      email = `telegram_${telegramId}@moodeng.internal`
       
       // Check if auth user already exists with this email (unlikely but possible)
       const { data: existingUser, error: lookupError } = await supabase

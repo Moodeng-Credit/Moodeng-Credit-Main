@@ -2,6 +2,7 @@ export interface AuthState {
    user: User;
    username: string | null;
    isLoading: boolean;
+   isWalletSyncing?: boolean;
    error: string | null;
    isWorldId?: WorldIdStatus;
    cs?: number;

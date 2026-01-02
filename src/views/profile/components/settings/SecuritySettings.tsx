@@ -1,11 +1,14 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { formatUnits } from 'viem';
-import { useAccount, useReadContract } from 'wagmi';
+import { useAccount, useDisconnect, useReadContract } from 'wagmi';
+import { useDispatch } from 'react-redux';
 
 import FormField from '@/components/forms/FormField';
 import WorldIDVerificationStatus from '@/components/worldId/WorldIDVerificationStatus';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID, getNetworkSvg, getTokenAddresses } from '@/config/wagmiConfig';
+import { updateUser } from '@/store/slices/authSlice';
+import type { AppDispatch } from '@/store/store';
 
 // ERC20 ABI for balanceOf function
 const erc20Abi = [
@@ -33,17 +36,38 @@ interface SecuritySettingsProps {
 }
 
 export default function SecuritySettings({ password, walletAddress, onPasswordChange, onUpdate }: SecuritySettingsProps) {
-   const { address, chain } = useAccount();
+   const { address, chain, isConnected } = useAccount();
+   const { disconnect } = useDisconnect();
+   const dispatch = useDispatch<AppDispatch>();
 
-   // Get USDC balance
-   const usdcAddress = getTokenAddresses(chain?.id || ALLOWED_CHAIN_ID)?.USDC;
-   const { data: usdcBalance } = useReadContract({
+   // Handler for disconnecting wallet
+   const handleDisconnect = () => {
+      // First clear the wallet address from the database
+      dispatch(updateUser({ walletAddress: null }))
+         .unwrap()
+         .then(() => {
+            // Then disconnect the wallet
+            disconnect();
+         })
+         .catch((error) => {
+            console.error('Failed to clear wallet address:', error);
+            // Disconnect anyway even if DB update fails
+            disconnect();
+         });
+   };
+
+   // Get USDC balance - always use ALLOWED_CHAIN_ID to respect VITE_ALLOWED_CHAIN_NAME
+   const usdcAddress = getTokenAddresses(ALLOWED_CHAIN_ID)?.USDC;
+
+   const { data: usdcBalance, error: balanceError, isLoading: isBalanceLoading } = useReadContract({
       address: usdcAddress as `0x${string}`,
       abi: erc20Abi,
       functionName: 'balanceOf',
       args: address ? [address] : undefined,
+      chainId: ALLOWED_CHAIN_ID,
       query: {
-         enabled: !!address && !!usdcAddress
+         enabled: !!address && !!usdcAddress && isConnected,
+         refetchInterval: 10000 // Refetch every 10 seconds
       }
    });
 
@@ -51,6 +75,7 @@ export default function SecuritySettings({ password, walletAddress, onPasswordCh
       address: usdcAddress as `0x${string}`,
       abi: erc20Abi,
       functionName: 'decimals',
+      chainId: ALLOWED_CHAIN_ID,
       query: {
          enabled: !!usdcAddress
       }
@@ -105,7 +130,7 @@ export default function SecuritySettings({ password, walletAddress, onPasswordCh
             <ConnectButton.Custom>
                {({ account, chain: currentChain, openAccountModal, openChainModal, openConnectModal, authenticationStatus, mounted }) => {
                   const ready = mounted && authenticationStatus !== 'loading';
-                  const connected = ready && account && chain && (!authenticationStatus || authenticationStatus === 'authenticated');
+                  const connected = ready && account && (!authenticationStatus || authenticationStatus === 'authenticated');
 
                   return (
                      <div
@@ -131,28 +156,20 @@ export default function SecuritySettings({ password, walletAddress, onPasswordCh
                               );
                            }
 
-                           if (currentChain?.unsupported) {
-                              return (
-                                 <button
-                                    onClick={openChainModal}
-                                    type="button"
-                                    className="w-full bg-red-600 text-white rounded px-3 py-2 text-sm font-medium hover:bg-red-700 transition-colors"
-                                 >
-                                    Wrong network
-                                 </button>
-                              );
-                           }
-
                            return (
                               <div className="flex items-center justify-between w-full">
                                  <div className="flex flex-col gap-1">
                                     <div className="text-sm font-medium text-gray-700">{account.displayName}</div>
                                     <div className="text-xs text-gray-500">
-                                       {currentChain?.name} • {formattedUsdcBalance}
+                                       {currentChain?.name || ALLOWED_CHAIN_DISPLAY_NAME} • {formattedUsdcBalance}
                                     </div>
                                  </div>
                                  <button
-                                    onClick={openAccountModal}
+                                    onClick={(e) => {
+                                       e.preventDefault();
+                                       e.stopPropagation();
+                                       handleDisconnect();
+                                    }}
                                     type="button"
                                     className="bg-gray-100 text-gray-700 rounded px-3 py-1 text-sm hover:bg-gray-200 transition-colors"
                                  >

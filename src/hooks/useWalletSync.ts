@@ -4,11 +4,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
-import { useAccount, useAccountEffect, useDisconnect } from 'wagmi';
+import { useAccount, useAccountEffect, useDisconnect, useSwitchChain } from 'wagmi';
 
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
+import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
@@ -26,13 +27,54 @@ export function useWalletSync() {
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
    const { disconnect } = useDisconnect();
-   const { openConnectModal } = useConnectModal();
+   const { switchChainAsync } = useSwitchChain();
+   const { openConnectModal, connectModalOpen } = useConnectModal();
    const { showToast } = useToast();
 
    const username = useSelector((state: RootState) => state.auth.username);
    const storedWalletAddress = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const [hasShownWalletPrompt, setHasShownWalletPrompt] = useState(false);
+   
+   // Use refs for internal state tracking
    const isConnecting = useRef(false);
+   const chainSwitchAttempted = useRef(false);
+
+   // Track connection intent when RainbowKit modal opens
+   // This ensures that even if the user uses a standard ConnectButton,
+   // we know they are intentionally connecting and won't trigger mismatch disconnects.
+   useEffect(() => {
+      if (connectModalOpen) {
+         setConnectionIntent(true);
+         isConnecting.current = true;
+      }
+   }, [connectModalOpen]);
+   
+   // Use state + effect to persist connection intent across mobile reloads
+   const [connectionIntent, setConnectionIntent] = useState(() => {
+      if (typeof window === 'undefined') return false;
+      return sessionStorage.getItem('wallet_connection_intent') === 'true';
+   });
+
+   useEffect(() => {
+      if (connectionIntent) {
+         sessionStorage.setItem('wallet_connection_intent', 'true');
+      } else {
+         sessionStorage.removeItem('wallet_connection_intent');
+      }
+   }, [connectionIntent]);
+
+   // Poll sessionStorage to stay in sync with WalletConnectionLoader
+   useEffect(() => {
+      const checkIntent = () => {
+         const intent = sessionStorage.getItem('wallet_connection_intent') === 'true';
+         if (intent !== connectionIntent) {
+            setConnectionIntent(intent);
+            if (intent) isConnecting.current = true;
+         }
+      };
+      const interval = setInterval(checkIntent, 500);
+      return () => clearInterval(interval);
+   }, [connectionIntent]);
 
    const showSuccessToast = useCallback(
       (address: string) => {
@@ -47,15 +89,50 @@ export function useWalletSync() {
       [showToast]
    );
 
+   // Wrap openConnectModal to track intent
+   const handleOpenConnectModal = useCallback(() => {
+      setConnectionIntent(true);
+      isConnecting.current = true;
+      openConnectModal?.();
+   }, [openConnectModal]);
+
    // Track connection intent to show success toast
    useAccountEffect({
       onConnect: () => {
-         isConnecting.current = true;
+         // If we had intent, or if there's no stored wallet, we treat it as a fresh connection
+         if (connectionIntent || !storedWalletAddress) {
+            isConnecting.current = true;
+         }
+         setConnectionIntent(false);
+         // Reset chain switch flag when wallet connects
+         chainSwitchAttempted.current = false;
       },
       onDisconnect: () => {
          isConnecting.current = false;
+         setConnectionIntent(false);
+         chainSwitchAttempted.current = false;
       }
    });
+
+   // Automatically switch to the allowed chain when wallet connects
+   useEffect(() => {
+      if (!account.isConnected || !account.address || account.chainId === ALLOWED_CHAIN_ID) {
+         return;
+      }
+
+      // Only attempt once per connection
+      if (chainSwitchAttempted.current) {
+         return;
+      }
+
+      chainSwitchAttempted.current = true;
+
+      // Auto-switch to the allowed chain
+      switchChainAsync({ chainId: ALLOWED_CHAIN_ID }).catch((error) => {
+         console.warn('Failed to auto-switch to allowed chain:', error);
+         // This is a warning only - user can manually switch later
+      });
+   }, [account.isConnected, account.address, account.chainId, switchChainAsync]);
 
    // Consolidated Success Logic: Fires for BOTH initial connection (after DB update)
    // and reconnection (immediately on connect)
@@ -68,29 +145,72 @@ export function useWalletSync() {
       }
    }, [account.address, storedWalletAddress, showSuccessToast]);
 
-   // Check for wallet mismatch with stored address and disconnect if needed
-   // Account switch is detected when connected wallet doesn't match stored wallet
+   // Sync wallet connection with user's stored wallet address
    useEffect(() => {
-      if (!username || !account.isConnected || !account.address) {
+      // Skip check if we are in the middle of connecting or reconnecting
+      // On mobile, we want to be more lenient with 'connecting' status to allow the DB update to trigger
+      if (!username || !account.isConnected || !account.address || account.status === 'reconnecting') {
          return;
       }
 
       const connectedAddress = account.address.toLowerCase();
+      const storedAddress = storedWalletAddress?.toLowerCase();
 
-      // If user has a stored wallet that doesn't match the connected one
-      if (storedWalletAddress) {
-         const storedAddress = storedWalletAddress.toLowerCase();
+      // If we are in sync, we can clear the connection intent
+      if (connectedAddress === storedAddress && connectionIntent) {
+         setConnectionIntent(false);
+      }
 
-         if (connectedAddress !== storedAddress) {
-            // Wallet mismatch - account switch detected, disconnect it
+      // Only act if the address is different from what's stored
+      if (connectedAddress !== storedAddress) {
+         // If we have a stored address and we are NOT currently connecting (i.e. it's a stale auto-connect)
+         // We also check connectionIntent as a fallback for mobile reloads
+         if (storedAddress && !isConnecting.current && !connectionIntent && account.status !== 'connecting') {
             console.log(
-               `Wallet mismatch detected - disconnecting wallet (connected: ${connectedAddress.slice(0, 6)}..., stored: ${storedAddress.slice(0, 6)}...)`
+               `Wallet mismatch detected - disconnecting stale wallet (connected: ${connectedAddress.slice(0, 6)}..., stored: ${storedAddress.slice(0, 6)}...)`
             );
             disconnect();
+            return;
          }
+
+         // Otherwise, we are either connecting for the first time or explicitly changing wallet
+         console.log('Updating wallet address in database...');
+         dispatch(updateUser({ walletAddress: account.address }))
+            .unwrap()
+            .then(() => {
+               console.log('Wallet address saved successfully');
+               setConnectionIntent(false); // Clear intent after successful DB update
+            })
+            .catch((error) => {
+               console.error('Failed to save wallet address:', error);
+
+               // Check if it's a duplicate wallet constraint error
+               const errorMessage = error?.message || '';
+               const errorCode = error?.code || '';
+
+               if (errorCode === '23505' && errorMessage.includes('users_wallet_address_key')) {
+                  showToast(
+                     TOAST_TYPES.ERROR,
+                     'Wallet Already Attached',
+                     'This wallet is already connected to another account. Please use a different wallet or disconnect it from the other account first.',
+                     undefined,
+                     undefined
+                  );
+               } else {
+                  showToast(
+                     TOAST_TYPES.ERROR,
+                     'Failed to Connect Wallet',
+                     `Could not save wallet connection: ${errorMessage || 'Unknown error'}`,
+                     undefined,
+                     undefined
+                  );
+               }
+
+               // Disconnect the wallet on error
+               disconnect();
+            });
       }
-      // If no stored wallet, allow the connection (initial connection scenario)
-   }, [username, storedWalletAddress, account.isConnected, account.address, disconnect]);
+   }, [account.isConnected, account.address, username, storedWalletAddress, dispatch, showToast, disconnect]);
 
    // Show wallet connection reminder if user has stored wallet but not connected
    useEffect(() => {
@@ -105,60 +225,11 @@ export function useWalletSync() {
       setHasShownWalletPrompt(true);
    }, [username, storedWalletAddress, account.isConnected, hasShownWalletPrompt]);
 
-   // Save wallet address when user connects a wallet
-   useEffect(() => {
-      if (!username || !account.isConnected || !account.address) return;
-
-      const connectedAddress = account.address.toLowerCase();
-      const storedAddress = storedWalletAddress?.toLowerCase();
-
-      // Only update if the address is different from what's stored
-      if (connectedAddress !== storedAddress) {
-         dispatch(updateUser({ walletAddress: account.address }))
-            .unwrap()
-            .then(() => {
-               console.log('Wallet address saved successfully');
-            })
-            .catch((error) => {
-               console.error('Failed to save wallet address:', error);
-
-               // Check if it's a duplicate wallet constraint error
-               const errorMessage = error?.message || '';
-               const errorCode = error?.code || '';
-
-               if (errorCode === '23505' && errorMessage.includes('users_wallet_address_key')) {
-                  // Wallet is already attached to another account
-                  showToast(
-                     TOAST_TYPES.ERROR,
-                     'Wallet Already Attached',
-                     'This wallet is already connected to another account. Please use a different wallet or disconnect it from the other account first.',
-                     undefined,
-                     undefined
-                  );
-               } else {
-                  // Generic error with logs
-                  const errorDetails = `Code: ${errorCode}\nMessage: ${errorMessage}`;
-                  showToast(
-                     TOAST_TYPES.ERROR,
-                     'Failed to Connect Wallet',
-                     `Could not save wallet connection. This might occur if the wallet is already in use.\n\nError: ${errorMessage || 'Unknown error'}`,
-                     undefined,
-                     undefined
-                  );
-                  console.error('Wallet connection error details:', errorDetails);
-               }
-
-               // Disconnect the wallet on error
-               disconnect();
-            });
-      }
-   }, [account.isConnected, account.address, username, storedWalletAddress, dispatch, showToast, disconnect]);
-
    return {
       isWalletConnected: account.isConnected,
       walletAddress: account.address,
       storedWalletAddress,
       shouldConnectWallet: Boolean(username && storedWalletAddress && !account.isConnected),
-      openConnectModal
+      openConnectModal: handleOpenConnectModal
    };
 }

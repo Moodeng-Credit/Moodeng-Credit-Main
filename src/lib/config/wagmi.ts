@@ -1,3 +1,3 @@
-import { config } from '@/config/wagmiConfig';
+import { config, initialChain } from '@/config/wagmiConfig';
 
-export { config };
+export { config, initialChain };

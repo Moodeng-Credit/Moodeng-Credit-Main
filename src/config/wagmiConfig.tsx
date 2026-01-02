@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { http } from 'wagmi';
 import { arbitrum, base, baseSepolia, bsc, type Chain, optimism, polygon, sepolia } from 'wagmi/chains';
 
 import { type CustomChainConfig } from '@/types/wagmiTypes';
@@ -219,13 +220,32 @@ export const ALLOWED_CHAIN_ID = allowedChainEntry ? parseInt(allowedChainEntry[0
 // Convert to array for RainbowKit - only include allowed chain
 export const chainsWithIcons = [chainConfig[ALLOWED_CHAIN_ID]];
 
+// Get public RPC URL for the allowed chain
+const getAllowedChainRpcUrl = () => {
+   if (ALLOWED_CHAIN_ID === base.id) {
+      return 'https://mainnet.base.org';
+   } else if (ALLOWED_CHAIN_ID === baseSepolia.id) {
+      return 'https://sepolia.base.org';
+   }
+   // Fallback to chain's default RPC
+   return undefined;
+};
+
 // RainbowKit config
 export const config = getDefaultConfig({
    appName: 'Moodeng',
-   projectId: 'c2f88357f7fa932dbc04481d125c00ff',
+   appDescription: 'Moodeng Credit - Decentralized Lending Platform',
+   appUrl: import.meta.env.VITE_SITE_URL,
+   projectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || 'c2f88357f7fa932dbc04481d125c00ff',
    chains: chainsWithIcons as unknown as [Chain, ...Chain[]],
-   ssr: true
+   ssr: false,
+   transports: {
+      [ALLOWED_CHAIN_ID]: http(getAllowedChainRpcUrl())
+   }
 });
+
+// Export the initial chain for RainbowKit
+export const initialChain = chainConfig[ALLOWED_CHAIN_ID];
 
 // Helper functions for accessing chain data
 export const getChainConfig = (chainId: number) => (chainConfig as Record<number, CustomChainConfig>)[chainId];

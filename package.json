@@ -5,7 +5,7 @@
    "type": "module",
    "scripts": {
       "dev": "dotenvx run --env-file=.env.staging -- vite",
-      "dev:local": "dotenvx run --env-file=.env.local -- vite",
+      "dev:local": "dotenvx run --env-file=.env.local -- vite --host",
       "dev:prod": "dotenvx run --env-file=.env.prod -- vite",
       "build": "dotenvx run -- vite build",
       "build:prod": "dotenvx run --env-file=.env.prod -- tsc -b && vite build",

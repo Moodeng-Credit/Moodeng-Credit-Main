@@ -181,6 +181,7 @@ const initialState: AuthState = {
    user: defaultUser,
    username: null,
    isLoading: false,
+   isWalletSyncing: false,
    error: null,
    userProfiles: {}
 };
@@ -540,11 +541,23 @@ const authSlice = createSlice({
             state.isLoading = false;
             state.error = (action.error.message as string) || null;
          })
+         .addCase(updateUser.pending, (state, action) => {
+            state.isLoading = true;
+            // If we are updating wallet address, set isWalletSyncing
+            if (action.meta.arg.walletAddress) {
+               state.isWalletSyncing = true;
+            }
+            state.error = null;
+         })
          .addCase(updateUser.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.isWalletSyncing = false;
             state.user = action.payload;
             state.username = action.payload.username;
          })
          .addCase(updateUser.rejected, (state, action) => {
+            state.isLoading = false;
+            state.isWalletSyncing = false;
             state.error = (action.error.message as string) || null;
          })
          .addCase(fetchUserProfiles.fulfilled, (state, action) => {
