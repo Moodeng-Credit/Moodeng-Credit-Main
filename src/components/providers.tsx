@@ -12,8 +12,10 @@ import { ToastProvider } from '@/components/ToastSystem/contexts/ToastContext';
 import ToastContainer from '@/components/ToastSystem/ToastContainer';
 import { ToastInitializer } from '@/components/ToastSystem/ToastInitializer';
 import { WalletSyncInitializer } from '@/components/WalletSyncInitializer';
+import { WalletDebugPanel } from '@/components/WalletDebugPanel';
 import { AuthInitializer } from '@/components/AuthInitializer';
 
+import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import { setStoreRef } from '@/lib/axios';
 import { config } from '@/lib/config/wagmi';
 import { persistor, store } from '@/store/store';
@@ -34,11 +36,12 @@ export function Providers({ children }: { children: ReactNode }) {
             <StoreInitializer />
             <WagmiProvider config={config}>
                <QueryClientProvider client={queryClient}>
-                  <RainbowKitProvider theme={darkTheme()}>
+                  <RainbowKitProvider theme={darkTheme()} initialChain={ALLOWED_CHAIN_ID}>
                      <ToastProvider>
                         <AuthInitializer />
                         <ToastInitializer />
                         <WalletSyncInitializer />
+                        <WalletDebugPanel />
                         {children}
                         <ToastContainer />
                      </ToastProvider>

@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 import { arbitrum, base, baseSepolia, bsc, type Chain, optimism, polygon, sepolia } from 'wagmi/chains';
+import { http } from 'wagmi';
 
 import { type CustomChainConfig } from '@/types/wagmiTypes';
 
@@ -219,12 +220,24 @@ export const ALLOWED_CHAIN_ID = allowedChainEntry ? parseInt(allowedChainEntry[0
 // Convert to array for RainbowKit - only include allowed chain
 export const chainsWithIcons = [chainConfig[ALLOWED_CHAIN_ID]];
 
-// RainbowKit config
+const projectId = import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || 'c2f88357f7fa932dbc04481d125c00ff';
+
+// Get the allowed chain object for RainbowKit config
+const allowedChain = chainConfig[ALLOWED_CHAIN_ID];
+
+// RainbowKit 2.x config with getDefaultConfig
+// Following https://rainbowkit.com/docs/migration-guide#2xx-breaking-changes
 export const config = getDefaultConfig({
    appName: 'Moodeng',
-   projectId: 'c2f88357f7fa932dbc04481d125c00ff',
-   chains: chainsWithIcons as unknown as [Chain, ...Chain[]],
-   ssr: true
+   projectId,
+   // Only include the allowed chain to force it as the only option
+   chains: [allowedChain] as unknown as [Chain, ...Chain[]],
+   // Explicit transports per chain (required for RainbowKit 2.x)
+   transports: {
+      [ALLOWED_CHAIN_ID]: http()
+   },
+   // Client-side only (Vite SPA, not Next.js SSR)
+   ssr: false
 });
 
 // Helper functions for accessing chain data

@@ -2,7 +2,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
-import { useAccount } from 'wagmi';
+import { useChainId } from 'wagmi';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID, getNetworkSvg } from '@/config/wagmiConfig';
 import { logoutUser } from '@/store/slices/authSlice';
@@ -11,8 +11,10 @@ import type { AppDispatch, RootState } from '@/store/store';
 export default function UserNetwork() {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
-   const account = useAccount();
    const username = useSelector((state: RootState) => state.auth.username);
+   
+   // Use wagmi's useChainId which returns the chain from config, not connector
+   const wagmiChainId = useChainId();
 
    const handleLogout = () => {
       // Don't disconnect wallet - let wagmi persist the connection
@@ -83,28 +85,79 @@ export default function UserNetwork() {
                         <i className="fas fa-coins"></i> IOU 50000
                      </button>
                   </div>
-                  {account.isConnected ? (
-                     <div className="flex border-b border-gray-200 border-solid">
-                        <div className="flex items-center gap-2 w-2/3 px-4 py-3 text-sm font-normal">
-                           Network
-                           <i className="fas fa-exchange-alt"></i>
-                        </div>
-                        <div
-                           className={`
-                     bg-[#ffffff]
-                    w-1/3 text-black font-extrabold text-sm flex items-center justify-center gap-[5px]`}
-                        >
-                           {getNetworkSvg(ALLOWED_CHAIN_ID)}
-                           {ALLOWED_CHAIN_DISPLAY_NAME}
-                        </div>
-                     </div>
-                  ) : null}
+                  <ConnectButton.Custom>
+                     {({ account, chain: currentChain, openAccountModal, openChainModal, openConnectModal, authenticationStatus, mounted }) => {
+                        const ready = mounted && authenticationStatus !== 'loading';
+                        const connected = ready && account && currentChain && (!authenticationStatus || authenticationStatus === 'authenticated');
+                        
+                        // Use wagmi's useChainId() which is reliable, NOT currentChain from connector
+                        // currentChain.id comes from connector and may be stale on mobile
+                        const isChainSupported = wagmiChainId === ALLOWED_CHAIN_ID;
 
-                  {account.isDisconnected ? (
-                     <div className="flex flex-col md:flex-row justify-center items-center">
-                        <ConnectButton />
-                     </div>
-                  ) : null}
+                        return (
+                           <div
+                              {...(!ready && {
+                                 'aria-hidden': true,
+                                 style: {
+                                    opacity: 0,
+                                    pointerEvents: 'none',
+                                    userSelect: 'none'
+                                 }
+                              })}
+                           >
+                              {/* Debug Info - Remove after debugging */}
+                              <div className="px-2 py-1 bg-gray-100 text-[8px] font-mono text-gray-500 border-b border-gray-200">
+                                 <span>wagmi: {wagmiChainId} | connector: {currentChain?.id || 'none'} | expected: {ALLOWED_CHAIN_ID} | match: {isChainSupported ? '✅' : '❌'}</span>
+                              </div>
+                              
+                              {connected ? (
+                                 !isChainSupported ? (
+                                    <div className="flex flex-col items-center p-3 border-b border-gray-200 border-solid">
+                                       <p className="text-[10px] text-red-500 mb-1 font-medium text-center">
+                                          Wrong Network (ID: {wagmiChainId})
+                                       </p>
+                                       <p className="text-[9px] text-gray-500 mb-2 text-center">
+                                          Please switch to {ALLOWED_CHAIN_DISPLAY_NAME} (ID: {ALLOWED_CHAIN_ID})
+                                       </p>
+                                       <button
+                                          onClick={openChainModal}
+                                          type="button"
+                                          className="bg-red-600 text-white rounded px-4 py-1.5 text-xs font-semibold hover:bg-red-700 transition-all duration-200 w-full"
+                                       >
+                                          SWITCH NETWORK
+                                       </button>
+                                    </div>
+                                 ) : (
+                                    <div className="flex border-b border-gray-200 border-solid">
+                                       <div className="flex items-center gap-2 w-2/3 px-4 py-3 text-sm font-normal">
+                                          Network
+                                          <i className="fas fa-exchange-alt"></i>
+                                       </div>
+                                       <div
+                                          className={`
+                                    bg-[#ffffff]
+                                   w-1/3 text-black font-extrabold text-sm flex items-center justify-center gap-[5px]`}
+                                       >
+                                          {getNetworkSvg(ALLOWED_CHAIN_ID)}
+                                          {ALLOWED_CHAIN_DISPLAY_NAME}
+                                       </div>
+                                    </div>
+                                 )
+                              ) : (
+                                 <div className="flex flex-col md:flex-row justify-center items-center p-3">
+                                    <button
+                                       onClick={openConnectModal}
+                                       type="button"
+                                       className="bg-blue-600 text-white rounded px-4 py-2 text-sm font-medium hover:bg-blue-700 transition-colors"
+                                    >
+                                       Connect Wallet
+                                    </button>
+                                 </div>
+                              )}
+                           </div>
+                        );
+                     }}
+                  </ConnectButton.Custom>
                   <div className="px-4 py-3 text-xs font-normal text-gray-400">Account Settings</div>
                   <nav className="flex flex-col gap-3 px-4 text-sm font-normal text-black">
                      <Link to="/profile"

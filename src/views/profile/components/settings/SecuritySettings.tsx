@@ -1,6 +1,9 @@
+import { useState } from 'react';
+
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { formatUnits } from 'viem';
-import { useAccount, useReadContract } from 'wagmi';
+import { useAccount, useChainId, useConfig, useReadContract, useSwitchChain } from 'wagmi';
+import { reconnect } from '@wagmi/core';
 
 import FormField from '@/components/forms/FormField';
 import WorldIDVerificationStatus from '@/components/worldId/WorldIDVerificationStatus';
@@ -33,7 +36,13 @@ interface SecuritySettingsProps {
 }
 
 export default function SecuritySettings({ password, walletAddress, onPasswordChange, onUpdate }: SecuritySettingsProps) {
-   const { address, chain } = useAccount();
+   const config = useConfig();
+   const { address, chain, connector } = useAccount();
+   const { switchChain, isPending: isSwitching } = useSwitchChain();
+   const [isManualSwitching, setIsManualSwitching] = useState(false);
+   
+   // Use wagmi's useChainId() - this is reliable, unlike useAccount().chainId which can be stale on mobile
+   const wagmiChainId = useChainId();
 
    // Get USDC balance
    const usdcAddress = getTokenAddresses(chain?.id || ALLOWED_CHAIN_ID)?.USDC;
@@ -105,7 +114,43 @@ export default function SecuritySettings({ password, walletAddress, onPasswordCh
             <ConnectButton.Custom>
                {({ account, chain: currentChain, openAccountModal, openChainModal, openConnectModal, authenticationStatus, mounted }) => {
                   const ready = mounted && authenticationStatus !== 'loading';
-                  const connected = ready && account && chain && (!authenticationStatus || authenticationStatus === 'authenticated');
+                  // Fix: Use account and currentChain from ConnectButton.Custom props instead of useAccount's chain
+                  // This ensures proper state synchronization on mobile browsers
+                  const connected = ready && account && currentChain && (!authenticationStatus || authenticationStatus === 'authenticated');
+                  
+                  // Use wagmi's useChainId() which is reliable - NOT currentChain.id which can be stale on mobile
+                  const isChainSupported = wagmiChainId === ALLOWED_CHAIN_ID;
+                  
+                  // Handler for manual switch via wagmi (bypasses RainbowKit modal)
+                  const handleManualSwitch = async () => {
+                     setIsManualSwitching(true);
+                     try {
+                        switchChain?.({ chainId: ALLOWED_CHAIN_ID });
+                        // After 5 seconds, try to refresh the connection state
+                        setTimeout(async () => {
+                           try {
+                              await reconnect(config);
+                           } catch (e) {
+                              console.log('Reconnect after switch:', e);
+                           }
+                           setIsManualSwitching(false);
+                        }, 5000);
+                     } catch (e) {
+                        console.error('Switch error:', e);
+                        setIsManualSwitching(false);
+                     }
+                  };
+                  
+                  // Handler to refresh/reconnect
+                  const handleRefresh = async () => {
+                     try {
+                        await reconnect(config);
+                     } catch (e) {
+                        console.log('Refresh error:', e);
+                     }
+                  };
+
+                  const showSwitching = isSwitching || isManualSwitching;
 
                   return (
                      <div
@@ -118,6 +163,23 @@ export default function SecuritySettings({ password, walletAddress, onPasswordCh
                            }
                         })}
                      >
+                        {/* Debug Info Panel - Remove after debugging */}
+                        <div className="mb-3 p-2 bg-gray-100 rounded text-[9px] font-mono text-gray-600 border border-gray-300">
+                           <div><strong>🔍 Debug Info (Mobile):</strong></div>
+                           <div>mounted: {String(mounted)}</div>
+                           <div>authStatus: {authenticationStatus || 'none'}</div>
+                           <div>ready: {String(ready)}</div>
+                           <div>connected: {String(connected)}</div>
+                           <div>account: {account?.address ? `${account.address.slice(0,6)}...${account.address.slice(-4)}` : 'null'}</div>
+                           <div>currentChain (connector): id={currentChain?.id}, name={currentChain?.name || 'undefined'}</div>
+                           <div><strong>wagmiChainId (reliable): {wagmiChainId}</strong></div>
+                           <div>ALLOWED_CHAIN_ID: {ALLOWED_CHAIN_ID}</div>
+                           <div>isChainSupported: {String(isChainSupported)}</div>
+                           <div>connector: {connector?.name || 'none'} ({connector?.type || 'unknown'})</div>
+                           <div>isSwitching: {String(isSwitching)} | manual: {String(isManualSwitching)}</div>
+                           <div>Match: {wagmiChainId === ALLOWED_CHAIN_ID ? '✅ YES' : '❌ NO'}</div>
+                        </div>
+                        
                         {(() => {
                            if (!connected) {
                               return (
@@ -131,15 +193,41 @@ export default function SecuritySettings({ password, walletAddress, onPasswordCh
                               );
                            }
 
-                           if (currentChain?.unsupported) {
+                           // Use wagmiChainId for chain validation (reliable source)
+                           if (!isChainSupported) {
                               return (
-                                 <button
-                                    onClick={openChainModal}
-                                    type="button"
-                                    className="w-full bg-red-600 text-white rounded px-3 py-2 text-sm font-medium hover:bg-red-700 transition-colors"
-                                 >
-                                    Wrong network
-                                 </button>
+                                 <div className="flex flex-col gap-2">
+                                    <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                       <strong>⚠️ Wrong Network!</strong>
+                                       <p>Connected to: {currentChain?.name || 'Unknown'} (ID: {currentChain?.id})</p>
+                                       <p>wagmiChainId: {wagmiChainId}</p>
+                                       <p>Required: {ALLOWED_CHAIN_DISPLAY_NAME} (ID: {ALLOWED_CHAIN_ID})</p>
+                                    </div>
+                                    <button
+                                       onClick={handleManualSwitch}
+                                       disabled={showSwitching}
+                                       type="button"
+                                       className="w-full bg-orange-500 text-white rounded px-3 py-2 text-sm font-medium hover:bg-orange-600 transition-colors disabled:opacity-50"
+                                    >
+                                       {showSwitching ? 'Switching... (check MetaMask)' : `🔄 Switch to ${ALLOWED_CHAIN_DISPLAY_NAME}`}
+                                    </button>
+                                    {showSwitching && (
+                                       <button
+                                          onClick={handleRefresh}
+                                          type="button"
+                                          className="w-full bg-blue-500 text-white rounded px-3 py-1 text-xs font-medium hover:bg-blue-600 transition-colors"
+                                       >
+                                          🔃 Already switched? Tap to refresh
+                                       </button>
+                                    )}
+                                    <button
+                                       onClick={openChainModal}
+                                       type="button"
+                                       className="w-full bg-gray-500 text-white rounded px-3 py-1 text-xs font-medium hover:bg-gray-600 transition-colors"
+                                    >
+                                       Open Network Selector
+                                    </button>
+                                 </div>
                               );
                            }
 
@@ -148,7 +236,7 @@ export default function SecuritySettings({ password, walletAddress, onPasswordCh
                                  <div className="flex flex-col gap-1">
                                     <div className="text-sm font-medium text-gray-700">{account.displayName}</div>
                                     <div className="text-xs text-gray-500">
-                                       {currentChain?.name} • {formattedUsdcBalance}
+                                       Network: {currentChain?.name} (ID: {currentChain?.id}) • {formattedUsdcBalance}
                                     </div>
                                  </div>
                                  <button
