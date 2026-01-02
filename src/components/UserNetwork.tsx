@@ -90,8 +90,6 @@ export default function UserNetwork() {
                         const ready = mounted && authenticationStatus !== 'loading';
                         const connected = ready && account && currentChain && (!authenticationStatus || authenticationStatus === 'authenticated');
                         
-                        // Use wagmi's useChainId() which is reliable, NOT currentChain from connector
-                        // currentChain.id comes from connector and may be stale on mobile
                         const isChainSupported = wagmiChainId === ALLOWED_CHAIN_ID;
 
                         return (

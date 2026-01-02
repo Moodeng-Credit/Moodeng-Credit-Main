@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { formatUnits } from 'viem';
-import { useAccount, useChainId, useConfig, useReadContract, useSwitchChain } from 'wagmi';
+import { useAccount, useChainId, useConfig, useDisconnect, useReadContract, useSwitchChain } from 'wagmi';
 import { reconnect } from '@wagmi/core';
 
 import FormField from '@/components/forms/FormField';
@@ -37,12 +37,30 @@ interface SecuritySettingsProps {
 
 export default function SecuritySettings({ password, walletAddress, onPasswordChange, onUpdate }: SecuritySettingsProps) {
    const config = useConfig();
-   const { address, chain, connector } = useAccount();
+   const { address, chain, connector, isConnected } = useAccount();
    const { switchChain, isPending: isSwitching } = useSwitchChain();
+   const { disconnect } = useDisconnect();
    const [isManualSwitching, setIsManualSwitching] = useState(false);
    
    // Use wagmi's useChainId() - this is reliable, unlike useAccount().chainId which can be stale on mobile
    const wagmiChainId = useChainId();
+   
+   // Log disconnect attempts
+   const handleDisconnect = () => {
+      console.log('[SecuritySettings:Disconnect] Disconnect button clicked');
+      console.log('[SecuritySettings:Disconnect] Current state:', { 
+         isConnected, 
+         address, 
+         connector: connector?.name,
+         wagmiChainId 
+      });
+      try {
+         disconnect();
+         console.log('[SecuritySettings:Disconnect] disconnect() called successfully');
+      } catch (e) {
+         console.error('[SecuritySettings:Disconnect] Error calling disconnect():', e);
+      }
+   };
 
    // Get USDC balance
    const usdcAddress = getTokenAddresses(chain?.id || ALLOWED_CHAIN_ID)?.USDC;
@@ -114,11 +132,8 @@ export default function SecuritySettings({ password, walletAddress, onPasswordCh
             <ConnectButton.Custom>
                {({ account, chain: currentChain, openAccountModal, openChainModal, openConnectModal, authenticationStatus, mounted }) => {
                   const ready = mounted && authenticationStatus !== 'loading';
-                  // Fix: Use account and currentChain from ConnectButton.Custom props instead of useAccount's chain
-                  // This ensures proper state synchronization on mobile browsers
                   const connected = ready && account && currentChain && (!authenticationStatus || authenticationStatus === 'authenticated');
                   
-                  // Use wagmi's useChainId() which is reliable - NOT currentChain.id which can be stale on mobile
                   const isChainSupported = wagmiChainId === ALLOWED_CHAIN_ID;
                   
                   // Handler for manual switch via wagmi (bypasses RainbowKit modal)
@@ -199,9 +214,7 @@ export default function SecuritySettings({ password, walletAddress, onPasswordCh
                                  <div className="flex flex-col gap-2">
                                     <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
                                        <strong>⚠️ Wrong Network!</strong>
-                                       <p>Connected to: {currentChain?.name || 'Unknown'} (ID: {currentChain?.id})</p>
-                                       <p>wagmiChainId: {wagmiChainId}</p>
-                                       <p>Required: {ALLOWED_CHAIN_DISPLAY_NAME} (ID: {ALLOWED_CHAIN_ID})</p>
+                                       <p>Required: {ALLOWED_CHAIN_DISPLAY_NAME}</p>
                                     </div>
                                     <button
                                        onClick={handleManualSwitch}
@@ -240,7 +253,7 @@ export default function SecuritySettings({ password, walletAddress, onPasswordCh
                                     </div>
                                  </div>
                                  <button
-                                    onClick={openAccountModal}
+                                    onClick={handleDisconnect}
                                     type="button"
                                     className="bg-gray-100 text-gray-700 rounded px-3 py-1 text-sm hover:bg-gray-200 transition-colors"
                                  >

@@ -7,7 +7,7 @@ import { Link, useLocation } from 'react-router-dom';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
-import { useAccount } from 'wagmi';
+import { useAccount, useChainId } from 'wagmi';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import SearchBar from '@/components/filters/SearchBar';
@@ -48,6 +48,7 @@ function Dashboard$() {
    const pathname = useLocation().pathname;
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
+   const wagmiChainId = useChainId();
    const { showToastByConfig } = useToast();
    const { isConnected } = useAccount();
    const { openConnectModal } = useConnectModal();
@@ -180,7 +181,7 @@ function Dashboard$() {
          return;
       }
 
-      if (account.chain?.id !== ALLOWED_CHAIN_ID) {
+      if (wagmiChainId !== ALLOWED_CHAIN_ID) {
          console.log('Network validation failed:', {
             required: ALLOWED_CHAIN_DISPLAY_NAME,
             current: account.chain?.name

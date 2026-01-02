@@ -4,7 +4,7 @@ import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { differenceInDays, differenceInHours, format, parseISO } from 'date-fns';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { useAccount } from 'wagmi';
+import { useAccount, useChainId } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
@@ -29,6 +29,7 @@ export default function UserCard(loan: Loan) {
    const { Transfer } = useWallet();
    const account = useAccount();
    const { isConnected } = account;
+   const wagmiChainId = useChainId();
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
@@ -108,7 +109,7 @@ export default function UserCard(loan: Loan) {
          return;
       }
 
-      if (account.chain?.id !== ALLOWED_CHAIN_ID) {
+      if (wagmiChainId !== ALLOWED_CHAIN_ID) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
          return;
       }
@@ -165,7 +166,7 @@ export default function UserCard(loan: Loan) {
       loanData.id,
       username,
       account.address,
-      account.chain?.id,
+      wagmiChainId,
       wallet,
       Transfer,
       dispatch,

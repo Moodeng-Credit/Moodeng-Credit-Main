@@ -6,7 +6,7 @@ import { type ChangeEvent, type MouseEvent, useCallback, useEffect, useState } f
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
-import { useAccount } from 'wagmi';
+import { useAccount, useChainId } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
@@ -33,6 +33,7 @@ function UserPay({ loan }: { loan: Loan }) {
    const { showToastByConfig } = useToast();
    const account = useAccount();
    const { isConnected } = account;
+   const wagmiChainId = useChainId();
    const { openConnectModal } = useConnectModal();
    const [isPendingAction, setIsPendingAction] = useState(false);
    const [pendingAmount, setPendingAmount] = useState<string | null>(null);
@@ -43,7 +44,7 @@ function UserPay({ loan }: { loan: Loan }) {
             return;
          }
 
-         if (account.chain?.id !== ALLOWED_CHAIN_ID) {
+         if (wagmiChainId !== ALLOWED_CHAIN_ID) {
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
             return;
          }
@@ -104,7 +105,7 @@ function UserPay({ loan }: { loan: Loan }) {
       },
       [
          isProcessing,
-         account.chain?.id,
+         wagmiChainId,
          loan.repaidAmount,
          loan.totalRepaymentAmount,
          loan.loanStatus,

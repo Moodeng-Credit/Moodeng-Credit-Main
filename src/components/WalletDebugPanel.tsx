@@ -53,13 +53,8 @@ export function WalletDebugPanel() {
    const [, forceUpdate] = useState(0);
    const config = useConfig();
    
-   const { isConnected, address, chainId: accountChainId, connector } = useAccount();
+   const { isConnected, address, connector } = useAccount();
    const chainId = useChainId();
-   
-   // useChainId() is the reliable source - it returns the chain wagmi is configured for
-   // useAccount().chainId returns what the connector reports (can be stale on mobile)
-   const currentChain = chainId; // Use wagmi's chain, not connector's
-   const isCorrectChain = currentChain === ALLOWED_CHAIN_ID;
    useEffect(() => {
       const handleNewLog = () => forceUpdate(n => n + 1);
       window.addEventListener('wallet-debug-log', handleNewLog);
@@ -68,7 +63,7 @@ export function WalletDebugPanel() {
    
    // Add initial state log
    useEffect(() => {
-      addLog(`Panel mounted - Chain: ${chainId}, Account Chain: ${accountChainId}, Connected: ${isConnected}`, 'info');
+      addLog(`Panel mounted - Chain: ${chainId}, Connected: ${isConnected}`, 'info');
    }, []);
    
    // Log chain changes
@@ -79,18 +74,14 @@ export function WalletDebugPanel() {
       }
    }, [chainId]);
    
-   // Log account chain changes
-   useEffect(() => {
-      if (accountChainId) {
-         const isCorrect = accountChainId === ALLOWED_CHAIN_ID;
-         addLog(`Account Chain ID: ${accountChainId} ${isCorrect ? '✅' : '❌'}`, isCorrect ? 'success' : 'warn');
-      }
-   }, [accountChainId]);
-   
    // Log connection changes
    useEffect(() => {
-      addLog(`Connection: ${isConnected ? 'Connected' : 'Disconnected'}, Connector: ${connector?.name || 'none'}`, isConnected ? 'success' : 'info');
-   }, [isConnected, connector]);
+      if (isConnected) {
+         addLog(`✅ Connected to: ${address?.slice(0, 6)}...${address?.slice(-4)}, Connector: ${connector?.name || 'none'}, Chain: ${chainId}`, 'success');
+      } else {
+         addLog(`❌ Disconnected from wallet`, 'warn');
+      }
+   }, [isConnected, connector, chainId, address]);
    
    const handleForceReconnect = useCallback(async () => {
       addLog('Manual reconnect triggered...', 'info');
@@ -152,17 +143,13 @@ export function WalletDebugPanel() {
                      <span className={chainId === ALLOWED_CHAIN_ID ? 'text-green-400' : 'text-red-400'}>{chainId || 'none'}</span>
                   </div>
                   <div className="flex justify-between">
-                     <span className="text-gray-400">useAccount().chainId:</span>
-                     <span className={accountChainId === ALLOWED_CHAIN_ID ? 'text-green-400' : 'text-red-400'}>{accountChainId || 'none'}</span>
-                  </div>
-                  <div className="flex justify-between">
                      <span className="text-gray-400">Expected:</span>
                      <span className="text-yellow-400">{ALLOWED_CHAIN_ID} ({ALLOWED_CHAIN_DISPLAY_NAME})</span>
                   </div>
                   <div className="flex justify-between">
                      <span className="text-gray-400">Status:</span>
-                     <span className={isCorrectChain ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
-                        {isCorrectChain ? '✅ CORRECT CHAIN' : '❌ WRONG CHAIN'}
+                     <span className={chainId === ALLOWED_CHAIN_ID ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
+                        {chainId === ALLOWED_CHAIN_ID ? '✅ CORRECT CHAIN' : '❌ WRONG CHAIN'}
                      </span>
                   </div>
                   <div className="flex justify-between">

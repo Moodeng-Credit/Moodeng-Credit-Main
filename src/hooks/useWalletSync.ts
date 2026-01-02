@@ -72,6 +72,7 @@ export function useWalletSync() {
    // Account switch is detected when connected wallet doesn't match stored wallet
    useEffect(() => {
       if (!username || !account.isConnected || !account.address) {
+         console.log('[WalletSync:Disconnect] Skipping - username:', username, 'isConnected:', account.isConnected, 'address:', account.address);
          return;
       }
 
@@ -84,10 +85,20 @@ export function useWalletSync() {
          if (connectedAddress !== storedAddress) {
             // Wallet mismatch - account switch detected, disconnect it
             console.log(
-               `Wallet mismatch detected - disconnecting wallet (connected: ${connectedAddress.slice(0, 6)}..., stored: ${storedAddress.slice(0, 6)}...)`
+               `[WalletSync:Disconnect] Wallet mismatch - disconnecting (connected: ${connectedAddress.slice(0, 6)}..., stored: ${storedAddress.slice(0, 6)}...)`
             );
-            disconnect();
+            console.log('[WalletSync:Disconnect] Calling disconnect()...');
+            try {
+               disconnect();
+               console.log('[WalletSync:Disconnect] Disconnect called successfully');
+            } catch (e) {
+               console.error('[WalletSync:Disconnect] Disconnect error:', e);
+            }
+         } else {
+            console.log('[WalletSync:Disconnect] Wallet addresses match - no disconnect needed');
          }
+      } else {
+         console.log('[WalletSync:Disconnect] No stored wallet - allowing connection');
       }
       // If no stored wallet, allow the connection (initial connection scenario)
    }, [username, storedWalletAddress, account.isConnected, account.address, disconnect]);
