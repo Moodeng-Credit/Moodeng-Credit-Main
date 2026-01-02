@@ -21,15 +21,17 @@ export function WalletSyncInitializer() {
    // Log connection state for debugging
    useEffect(() => {
       if (isConnected) {
-         console.log('[WalletSync] Connected:', {
+         const logData = {
             address: address?.slice(0, 6) + '...' + address?.slice(-4),
             connector: connector?.name,
             chainId,
             expectedChainId: ALLOWED_CHAIN_ID,
             isCorrectChain: chainId === ALLOWED_CHAIN_ID
-         });
+         };
+         console.log('[WalletSync] Connected:', logData);
+         console.log(`✅ Connected to: ${logData.address}, Connector: ${logData.connector}, Chain: ${logData.chainId}`);
       } else {
-         console.log('[WalletSync] Disconnected');
+         console.log('[WalletSync] Disconnected from wallet');
       }
    }, [isConnected, address, connector, chainId]);
    
