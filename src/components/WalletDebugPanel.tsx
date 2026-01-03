@@ -31,19 +31,28 @@ const addLog = (message: string, type: LogEntry['type'] = 'info') => {
    window.dispatchEvent(new CustomEvent('wallet-debug-log'));
 };
 
-// Intercept console.log for [WalletSync] messages
+// Helper to safely stringify objects with BigInt
+const safeStringify = (obj: unknown) => {
+   try {
+      return JSON.stringify(obj, (_, v) => typeof v === 'bigint' ? v.toString() : v);
+   } catch (e) {
+      return String(obj);
+   }
+};
+
+// Intercept console.log for relevant messages
 console.log = (...args: unknown[]) => {
    originalConsoleLog(...args);
-   const message = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
-   if (message.includes('[WalletSync]') || message.includes('[Wallet')) {
+   const message = args.map(a => typeof a === 'object' ? safeStringify(a) : String(a)).join(' ');
+   if (message.includes('[WalletSync]') || message.includes('[Wallet') || message.includes('[Lend]') || message.includes('[Transfer]') || message.includes('Security context')) {
       addLog(message.replace('[WalletSync] ', ''), 'info');
    }
 };
 
 console.error = (...args: unknown[]) => {
    originalConsoleError(...args);
-   const message = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
-   if (message.includes('[WalletSync]') || message.includes('[Wallet')) {
+   const message = args.map(a => typeof a === 'object' ? safeStringify(a) : String(a)).join(' ');
+   if (message.includes('[WalletSync]') || message.includes('[Wallet') || message.includes('[Lend]') || message.includes('[Transfer]') || message.includes('Tx failed')) {
       addLog(message.replace('[WalletSync] ', ''), 'error');
    }
 };

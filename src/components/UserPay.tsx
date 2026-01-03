@@ -121,6 +121,9 @@ function UserPay({ loan }: { loan: Loan }) {
    );
 
    // Automatically trigger repayment after connection if it was pending
+   // DISABLED: Auto-triggering transactions from useEffect is often blocked by mobile browsers
+   // as it's not considered a direct user gesture.
+   /*
    useEffect(() => {
       const connectedAddress = account.address?.toLowerCase();
       const storedAddress = storedWalletAddress?.toLowerCase();
@@ -132,17 +135,20 @@ function UserPay({ loan }: { loan: Loan }) {
          executeRepayment(pendingAmount);
       }
    }, [isConnected, isPendingAction, isProcessing, executeRepayment, pendingAmount, account.address, storedWalletAddress]);
+   */
 
    const handleBorrow = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
 
       if (!isConnected) {
+         console.log('[UserPay] Not connected, opening connect modal');
          setIsPendingAction(true);
          setPendingAmount(repaidAmountToAdd);
          openConnectModal?.();
          return;
       }
 
+      console.log('[UserPay] Connected, calling executeRepayment');
       await executeRepayment(repaidAmountToAdd);
    };
 

@@ -117,6 +117,14 @@ export default function UserCard(loan: Loan) {
       const transferCoin = loanData.coin?.trim() || 'USDC';
 
       setIsProcessing(true);
+      console.log('[Lend] Initiating transfer:', {
+         borrowerWallet,
+         amount: formatNumber(loanData.loanAmount),
+         loanId: loanData.id,
+         coin: transferCoin,
+         wagmiChainId,
+         ALLOWED_CHAIN_ID
+      });
 
       try {
          const transactionHash = await Transfer(borrowerWallet, formatNumber(loanData.loanAmount), loanData.id, transferCoin);
@@ -174,26 +182,39 @@ export default function UserCard(loan: Loan) {
    ]);
 
    // Automatically trigger lending after connection if it was pending
+   // DISABLED: Auto-triggering transactions from useEffect is often blocked by mobile browsers
+   // as it's not considered a direct user gesture.
+   /*
    useEffect(() => {
       const connectedAddress = account.address?.toLowerCase();
       const storedAddress = wallet?.toLowerCase();
 
       // Only trigger if connected, pending, and the address matches the stored one (Issue 3)
       if (isConnected && isPendingAction && !isProcessing && connectedAddress === storedAddress) {
+         console.log('[UserCard] Auto-triggering executeLend after connection. Adding 1s delay for mobile stability...');
          setIsPendingAction(false);
-         executeLend();
+         
+         const timer = setTimeout(() => {
+            console.log('[UserCard] Delay finished, calling executeLend');
+            executeLend();
+         }, 1000);
+         
+         return () => clearTimeout(timer);
       }
    }, [isConnected, isPendingAction, isProcessing, executeLend, account.address, wallet]);
+   */
 
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
 
       if (!isConnected) {
+         console.log('[UserCard] Not connected, opening connect modal');
          setIsPendingAction(true);
          openConnectModal?.();
          return;
       }
 
+      console.log('[UserCard] Connected, calling executeLend');
       await executeLend();
    };
 
