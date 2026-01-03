@@ -1,11 +1,11 @@
 
 
 import { parseUnits } from 'viem';
-import { useWriteContract, useChainId } from 'wagmi';
+import { useWriteContract, useChainId, useAccount } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
-import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID, getAllowedChainTokenConfig } from '@/config/wagmiConfig';
+import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID, getAllowedChainTokenConfig, getAllowedChainConfig } from '@/config/wagmiConfig';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 
@@ -33,12 +33,25 @@ const useWallet = () => {
    const { writeContractAsync } = useWriteContract();
    const { showToastByConfig } = useToast();
    const currentChainId = useChainId();
+   const { chain: activeChain, connector, address } = useAccount();
 
    const Transfer = async (recipient: string, amount: string, id: string, coin: string = 'USDC'): Promise<string | null> => {
       console.log('[Transfer] Starting transfer - Loan ID:', id, 'Coin:', coin);
+      console.log('[Transfer] Security context:', { isSecureContext: window.isSecureContext });
+      console.log('[Transfer] Account state:', { 
+         address, 
+         connector: connector?.name, 
+         isConnected: !!address,
+         activeChainId: activeChain?.id,
+         currentChainId
+      });
 
       const tokenConfig = getAllowedChainTokenConfig();
+      const allowedChain = getAllowedChainConfig();
+      
       console.log('[Transfer] Token config:', tokenConfig);
+      console.log('[Transfer] Allowed chain:', allowedChain.name, 'ID:', allowedChain.id);
+      console.log('[Transfer] Active chain:', activeChain?.name, 'ID:', activeChain?.id);
 
       if (!tokenConfig) {
          console.error('[Transfer] Missing token configuration for', ALLOWED_CHAIN_DISPLAY_NAME, 'Loan ID:', id);
@@ -61,13 +74,21 @@ const useWallet = () => {
          const amounts = parseUnits(amount, decimals);
 
          console.log('[Transfer] Executing on chainId:', currentChainId, 'Expected:', ALLOWED_CHAIN_ID);
+         console.log('[Transfer] Write parameters:', {
+            address: tokenAddress,
+            functionName: 'transfer',
+            args: [recipient, amounts.toString()],
+            chainId: allowedChain.id,
+            account: address
+         });
 
          const hash = await writeContractAsync({
             address: tokenAddress as unknown as `0x${string}`,
             abi: ERC20_ABI,
             functionName: 'transfer',
             args: [recipient, amounts],
-            chainId: ALLOWED_CHAIN_ID
+            chain: allowedChain,
+            account: address as `0x${string}`, // Explicitly pass the account address
          });
 
          console.log('Transaction hash:', hash);
@@ -76,6 +97,10 @@ const useWallet = () => {
          return hash;
       } catch (err) {
          console.error('Tx failed:', err);
+         // Handle BigInt serialization for logging
+         const errorDetail = JSON.parse(JSON.stringify(err, (_, v) => typeof v === 'bigint' ? v.toString() : v));
+         console.error('Transfer failed detail:', errorDetail);
+
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
          return null;
       }

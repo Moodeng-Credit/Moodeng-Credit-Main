@@ -20,7 +20,7 @@ type UserRow = Database['public']['Tables']['users']['Row'];
 type UserInsert = Database['public']['Tables']['users']['Insert'];
 type WorldIdStatus = Database['public']['Enums']['world_id_status'];
 
-const toOptionalBigInt = (value: number | null): bigint | undefined => (value === null || value === undefined ? undefined : BigInt(value));
+const toOptionalString = (value: number | null): string | undefined => (value === null || value === undefined ? undefined : String(value));
 
 const normalizeWorldIdStatus = (value?: string | WorldIdStatus | null): WorldIdStatus => (value as WorldIdStatus) ?? WorldId.INACTIVE;
 
@@ -87,8 +87,8 @@ const mapSupabaseRowToUser = (row: UserRow): User => ({
    isWorldId: row.is_world_id,
    nullifierHash: row.nullifier_hash ?? undefined,
    telegramUsername: row.telegram_username ?? undefined,
-   telegramId: toOptionalBigInt(row.telegram_id),
-   chatId: toOptionalBigInt(row.chat_id),
+   telegramId: toOptionalString(row.telegram_id),
+   chatId: toOptionalString(row.chat_id),
    mal: row.mal,
    nal: row.nal,
    cs: row.cs,
