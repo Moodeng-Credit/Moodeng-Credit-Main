@@ -1,11 +1,11 @@
 
 
 import { parseUnits } from 'viem';
-import { useWriteContract } from 'wagmi';
+import { useWriteContract, useChainId } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
-import { ALLOWED_CHAIN_DISPLAY_NAME, getAllowedChainTokenConfig } from '@/config/wagmiConfig';
+import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID, getAllowedChainTokenConfig } from '@/config/wagmiConfig';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 
@@ -32,6 +32,7 @@ const ERC20_ABI = [
 const useWallet = () => {
    const { writeContractAsync } = useWriteContract();
    const { showToastByConfig } = useToast();
+   const currentChainId = useChainId();
 
    const Transfer = async (recipient: string, amount: string, id: string, coin: string = 'USDC'): Promise<string | null> => {
       console.log('[Transfer] Starting transfer - Loan ID:', id, 'Coin:', coin);
@@ -59,11 +60,14 @@ const useWallet = () => {
          const decimals = 6;
          const amounts = parseUnits(amount, decimals);
 
+         console.log('[Transfer] Executing on chainId:', currentChainId, 'Expected:', ALLOWED_CHAIN_ID);
+
          const hash = await writeContractAsync({
             address: tokenAddress as unknown as `0x${string}`,
             abi: ERC20_ABI,
             functionName: 'transfer',
-            args: [recipient, amounts]
+            args: [recipient, amounts],
+            chainId: ALLOWED_CHAIN_ID
          });
 
          console.log('Transaction hash:', hash);

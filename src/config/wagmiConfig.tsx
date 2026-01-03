@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 
-import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { getDefaultConfig, getDefaultWallets } from '@rainbow-me/rainbowkit';
 import { arbitrum, base, baseSepolia, bsc, type Chain, optimism, polygon, sepolia } from 'wagmi/chains';
 import { http } from 'wagmi';
 
@@ -227,6 +227,9 @@ const allowedChain = chainConfig[ALLOWED_CHAIN_ID];
 
 // RainbowKit 2.x config with getDefaultConfig
 // Following https://rainbowkit.com/docs/migration-guide#2xx-breaking-changes
+console.log('[wagmiConfig] Initializing with ALLOWED_CHAIN_ID:', ALLOWED_CHAIN_ID, 'projectId:', projectId);
+console.log('[wagmiConfig] isSecureContext:', typeof window !== 'undefined' ? window.isSecureContext : 'N/A');
+
 export const config = getDefaultConfig({
    appName: 'Moodeng',
    projectId,

@@ -30,6 +30,44 @@ function StoreInitializer() {
 }
 
 export function Providers({ children }: { children: ReactNode }) {
+   useEffect(() => {
+      const handleGlobalClick = (e: MouseEvent) => {
+         const target = e.target as HTMLElement;
+         // Find the closest button or clickable element to get better context
+         const clickable = target.closest('button, a, [role="button"]');
+         const text = target.innerText || clickable?.textContent || '';
+         
+         console.log('[Click Log]', {
+            tagName: target.tagName,
+            text: text.trim().slice(0, 100),
+            className: target.className,
+            isBaseAccount: text.includes('Base Account')
+         });
+
+         if (text.includes('Base Account')) {
+            console.log('!!! Base Account button detected in click !!!');
+         }
+      };
+
+      const handleGlobalError = (e: ErrorEvent) => {
+         console.error('[Global Error Log]', e.error || e.message);
+      };
+
+      const handleGlobalRejection = (e: PromiseRejectionEvent) => {
+         console.error('[Global Promise Rejection]', e.reason);
+      };
+
+      window.addEventListener('click', handleGlobalClick, true);
+      window.addEventListener('error', handleGlobalError);
+      window.addEventListener('unhandledrejection', handleGlobalRejection);
+
+      return () => {
+         window.removeEventListener('click', handleGlobalClick, true);
+         window.removeEventListener('error', handleGlobalError);
+         window.removeEventListener('unhandledrejection', handleGlobalRejection);
+      };
+   }, []);
+
    return (
       <Provider store={store}>
          <PersistGate loading={null} persistor={persistor}>
