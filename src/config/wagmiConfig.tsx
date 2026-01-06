@@ -224,7 +224,7 @@ export const config = getDefaultConfig({
    appName: 'Moodeng',
    projectId: 'c2f88357f7fa932dbc04481d125c00ff',
    chains: chainsWithIcons as unknown as [Chain, ...Chain[]],
-   ssr: true
+   ssr: false
 });
 
 // Helper functions for accessing chain data

@@ -28,11 +28,11 @@ export default function UserCard(loan: Loan) {
    const dispatch = useDispatch<AppDispatch>();
    const { Transfer } = useWallet();
    const account = useAccount();
-   const { isConnected } = account;
+   const { isConnected, status } = account;
+   const isWalletBusy = status === 'connecting' || status === 'reconnecting';
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
-   const [isPendingAction, setIsPendingAction] = useState(false);
    const { showToastByConfig } = useToast();
    const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -172,23 +172,10 @@ export default function UserCard(loan: Loan) {
       showToastByConfig
    ]);
 
-   // Automatically trigger lending after connection if it was pending
-   useEffect(() => {
-      const connectedAddress = account.address?.toLowerCase();
-      const storedAddress = wallet?.toLowerCase();
-
-      // Only trigger if connected, pending, and the address matches the stored one (Issue 3)
-      if (isConnected && isPendingAction && !isProcessing && connectedAddress === storedAddress) {
-         setIsPendingAction(false);
-         executeLend();
-      }
-   }, [isConnected, isPendingAction, isProcessing, executeLend, account.address, wallet]);
-
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
 
       if (!isConnected) {
-         setIsPendingAction(true);
          openConnectModal?.();
          return;
       }
@@ -292,11 +279,11 @@ export default function UserCard(loan: Loan) {
                <div className="p-5 bg-white">
                   <button
                      onClick={handleLend}
-                     disabled={isProcessing}
+                     disabled={isProcessing || isWalletBusy}
                      type="button"
                      className="w-full bg-[#2563EB] text-white font-semibold text-[15px] py-3 rounded-lg hover:bg-[#1e4bb8] transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                     {isProcessing ? 'Processing...' : 'Send Your Help'}
+                     {isProcessing ? 'Processing...' : isWalletBusy ? 'Connecting...' : 'Send Your Help'}
                   </button>
                </div>
             )}

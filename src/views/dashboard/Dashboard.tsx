@@ -48,11 +48,11 @@ function Dashboard$() {
    const pathname = useLocation().pathname;
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
+   const { isConnected, status } = account;
+   const isWalletBusy = status === 'connecting' || status === 'reconnecting';
    const { showToastByConfig } = useToast();
-   const { isConnected } = useAccount();
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
-   const [isPendingAction, setIsPendingAction] = useState(false);
    const [showPurple, setShowPurple] = useState(false);
    const [isSubmitting, setIsSubmitting] = useState(false);
    const user = useSelector((state: RootState) => state.auth.user);
@@ -117,7 +117,6 @@ function Dashboard$() {
       e.preventDefault();
 
       if (!isConnected) {
-         setIsPendingAction(true);
          openConnectModal?.();
          return;
       }
@@ -128,22 +127,6 @@ function Dashboard$() {
       }
       setShowModal(true);
    };
-
-   // Automatically open modal after connection if it was pending
-   useEffect(() => {
-      const connectedAddress = account.address?.toLowerCase();
-      const storedAddress = user?.walletAddress?.toLowerCase();
-
-      // Only trigger if connected, pending, and the address matches the stored one (Issue 3)
-      if (isConnected && isPendingAction && connectedAddress && connectedAddress === storedAddress) {
-         setIsPendingAction(false);
-         if ((user.nal || 0) < (user.mal || 0)) {
-            setShowModal(true);
-         } else {
-            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
-         }
-      }
-   }, [isConnected, isPendingAction, user.nal, user.mal, user.walletAddress, account.address, showToastByConfig]);
 
    const handleCloseModal = useCallback(() => {
       setShowModal(false);
@@ -318,9 +301,10 @@ function Dashboard$() {
                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-10">
                   <button
                      onClick={handleApplyLoanClick}
-                     className="bg-blue-600 text-white text-xs md:text-sm font-semibold px-5 py-2 rounded-md w-full sm:w-auto hover:bg-blue-700 transition"
+                     disabled={isWalletBusy}
+                     className="bg-blue-600 text-white text-xs md:text-sm font-semibold px-5 py-2 rounded-md w-full sm:w-auto hover:bg-blue-700 transition disabled:opacity-50"
                   >
-                     APPLY LOAN
+                     {isWalletBusy ? 'CONNECTING...' : 'APPLY LOAN'}
                   </button>
                   <YouTubeVideoLightbox videoId={CREDIT_LEVELLING_VIDEO_ID} />
                </div>

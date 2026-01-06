@@ -32,10 +32,9 @@ function UserPay({ loan }: { loan: Loan }) {
    const dispatch = useDispatch<AppDispatch>();
    const { showToastByConfig } = useToast();
    const account = useAccount();
-   const { isConnected } = account;
+   const { isConnected, status } = account;
+   const isWalletBusy = status === 'connecting' || status === 'reconnecting';
    const { openConnectModal } = useConnectModal();
-   const [isPendingAction, setIsPendingAction] = useState(false);
-   const [pendingAmount, setPendingAmount] = useState<string | null>(null);
 
    const executeRepayment = useCallback(
       async (amount: string) => {
@@ -119,25 +118,10 @@ function UserPay({ loan }: { loan: Loan }) {
       ]
    );
 
-   // Automatically trigger repayment after connection if it was pending
-   useEffect(() => {
-      const connectedAddress = account.address?.toLowerCase();
-      const storedAddress = storedWalletAddress?.toLowerCase();
-
-      // Only trigger if connected, pending, and the address matches the stored one (Issue 3)
-      if (isConnected && isPendingAction && !isProcessing && pendingAmount !== null && connectedAddress === storedAddress) {
-         setIsPendingAction(false);
-         setPendingAmount(null);
-         executeRepayment(pendingAmount);
-      }
-   }, [isConnected, isPendingAction, isProcessing, executeRepayment, pendingAmount, account.address, storedWalletAddress]);
-
    const handleBorrow = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
 
       if (!isConnected) {
-         setIsPendingAction(true);
-         setPendingAmount(repaidAmountToAdd);
          openConnectModal?.();
          return;
       }
@@ -215,10 +199,10 @@ function UserPay({ loan }: { loan: Loan }) {
             />
             <button
                onClick={handleBorrow}
-               disabled={isProcessing || !repaidAmountToAdd || parseFloat(repaidAmountToAdd) <= 0}
+               disabled={isProcessing || isWalletBusy || !repaidAmountToAdd || parseFloat(repaidAmountToAdd) <= 0}
                className="overflow-hidden gap-5 self-stretch p-5 mt-8 text-base font-medium leading-none text-center text-white bg-blue-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-               {isProcessing ? 'Processing...' : 'Repay Now'}
+               {isProcessing ? 'Processing...' : isWalletBusy ? 'Connecting...' : 'Repay Now'}
             </button>
             <p className="mt-5 text-sm leading-6 text-black text-opacity-60">
                You can repay any amount at any time before the due date. Ensure full repayment by the due date to maintain your credit
