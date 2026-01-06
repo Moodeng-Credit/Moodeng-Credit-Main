@@ -14,6 +14,7 @@ import { ToastInitializer } from '@/components/ToastSystem/ToastInitializer';
 import { WalletSyncInitializer } from '@/components/WalletSyncInitializer';
 import { AuthInitializer } from '@/components/AuthInitializer';
 
+import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import { setStoreRef } from '@/lib/axios';
 import { config } from '@/lib/config/wagmi';
 import { persistor, store } from '@/store/store';
@@ -28,13 +29,51 @@ function StoreInitializer() {
 }
 
 export function Providers({ children }: { children: ReactNode }) {
+   useEffect(() => {
+      const handleGlobalClick = (e: MouseEvent) => {
+         const target = e.target as HTMLElement;
+         // Find the closest button or clickable element to get better context
+         const clickable = target.closest('button, a, [role="button"]');
+         const text = target.innerText || clickable?.textContent || '';
+         
+         console.log('[Click Log]', {
+            tagName: target.tagName,
+            text: text.trim().slice(0, 100),
+            className: target.className,
+            isBaseAccount: text.includes('Base Account')
+         });
+
+         if (text.includes('Base Account')) {
+            console.log('!!! Base Account button detected in click !!!');
+         }
+      };
+
+      const handleGlobalError = (e: ErrorEvent) => {
+         console.error('[Global Error Log]', e.error || e.message);
+      };
+
+      const handleGlobalRejection = (e: PromiseRejectionEvent) => {
+         console.error('[Global Promise Rejection]', e.reason);
+      };
+
+      window.addEventListener('click', handleGlobalClick, true);
+      window.addEventListener('error', handleGlobalError);
+      window.addEventListener('unhandledrejection', handleGlobalRejection);
+
+      return () => {
+         window.removeEventListener('click', handleGlobalClick, true);
+         window.removeEventListener('error', handleGlobalError);
+         window.removeEventListener('unhandledrejection', handleGlobalRejection);
+      };
+   }, []);
+
    return (
       <Provider store={store}>
          <PersistGate loading={null} persistor={persistor}>
             <StoreInitializer />
             <WagmiProvider config={config}>
                <QueryClientProvider client={queryClient}>
-                  <RainbowKitProvider theme={darkTheme()}>
+                  <RainbowKitProvider theme={darkTheme()} initialChain={ALLOWED_CHAIN_ID}>
                      <ToastProvider>
                         <AuthInitializer />
                         <ToastInitializer />

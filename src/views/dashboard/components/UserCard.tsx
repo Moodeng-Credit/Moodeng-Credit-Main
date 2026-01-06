@@ -29,7 +29,6 @@ export default function UserCard(loan: Loan) {
    const { Transfer } = useWallet();
    const account = useAccount();
    const { isConnected, status } = account;
-   const isWalletBusy = status === 'connecting' || status === 'reconnecting';
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
@@ -279,11 +278,11 @@ export default function UserCard(loan: Loan) {
                <div className="p-5 bg-white">
                   <button
                      onClick={handleLend}
-                     disabled={isProcessing || isWalletBusy}
+                     disabled={isProcessing}
                      type="button"
                      className="w-full bg-[#2563EB] text-white font-semibold text-[15px] py-3 rounded-lg hover:bg-[#1e4bb8] transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                     {isProcessing ? 'Processing...' : isWalletBusy ? 'Connecting...' : 'Send Your Help'}
+                     {isProcessing ? 'Processing...' : 'Send Your Help'}
                   </button>
                </div>
             )}

@@ -4,7 +4,6 @@ import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Providers } from '@/components/providers';
-import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
 
 import Benefits from '@/app/benefits/page';
 import Dashboard from '@/app/dashboard/page';
@@ -36,7 +35,6 @@ function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
    return (
       <Providers>
-         <WalletLoadingOverlay />
          <Routes>
             <Route
                path="/"

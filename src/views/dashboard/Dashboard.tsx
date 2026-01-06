@@ -49,7 +49,6 @@ function Dashboard$() {
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
    const { isConnected, status } = account;
-   const isWalletBusy = status === 'connecting' || status === 'reconnecting';
    const { showToastByConfig } = useToast();
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
@@ -301,10 +300,9 @@ function Dashboard$() {
                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-10">
                   <button
                      onClick={handleApplyLoanClick}
-                     disabled={isWalletBusy}
                      className="bg-blue-600 text-white text-xs md:text-sm font-semibold px-5 py-2 rounded-md w-full sm:w-auto hover:bg-blue-700 transition disabled:opacity-50"
                   >
-                     {isWalletBusy ? 'CONNECTING...' : 'APPLY LOAN'}
+                     APPLY LOAN
                   </button>
                   <YouTubeVideoLightbox videoId={CREDIT_LEVELLING_VIDEO_ID} />
                </div>

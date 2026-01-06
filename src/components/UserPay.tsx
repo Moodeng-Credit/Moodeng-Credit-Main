@@ -33,7 +33,6 @@ function UserPay({ loan }: { loan: Loan }) {
    const { showToastByConfig } = useToast();
    const account = useAccount();
    const { isConnected, status } = account;
-   const isWalletBusy = status === 'connecting' || status === 'reconnecting';
    const { openConnectModal } = useConnectModal();
 
    const executeRepayment = useCallback(
@@ -199,10 +198,10 @@ function UserPay({ loan }: { loan: Loan }) {
             />
             <button
                onClick={handleBorrow}
-               disabled={isProcessing || isWalletBusy || !repaidAmountToAdd || parseFloat(repaidAmountToAdd) <= 0}
+               disabled={isProcessing || !repaidAmountToAdd || parseFloat(repaidAmountToAdd) <= 0}
                className="overflow-hidden gap-5 self-stretch p-5 mt-8 text-base font-medium leading-none text-center text-white bg-blue-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-               {isProcessing ? 'Processing...' : isWalletBusy ? 'Connecting...' : 'Repay Now'}
+               {isProcessing ? 'Processing...' : 'Repay Now'}
             </button>
             <p className="mt-5 text-sm leading-6 text-black text-opacity-60">
                You can repay any amount at any time before the due date. Ensure full repayment by the due date to maintain your credit
