@@ -48,6 +48,16 @@ function Dashboard$() {
    const pathname = useLocation().pathname;
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
+   
+   useEffect(() => {
+      console.log('[Dashboard Debug] Mount Status:', {
+         pathname,
+         walletStatus: account.status,
+         walletAddress: account.address,
+         isConnected: account.isConnected
+      });
+   }, []);
+
    const { isConnected, status } = account;
    const { showToastByConfig } = useToast();
    const { openConnectModal } = useConnectModal();

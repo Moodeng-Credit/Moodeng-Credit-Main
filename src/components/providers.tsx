@@ -1,12 +1,12 @@
 
 
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 
 import { darkTheme, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
-import { WagmiProvider } from 'wagmi';
+import { WagmiProvider, useAccount, useConnect, useConnections } from 'wagmi';
 
 import { ToastProvider } from '@/components/ToastSystem/contexts/ToastContext';
 import ToastContainer from '@/components/ToastSystem/ToastContainer';
@@ -21,6 +21,50 @@ import { persistor, store } from '@/store/store';
 
 const queryClient = new QueryClient();
 
+function WalletConnectionLogger() {
+   const account = useAccount();
+   const { connectors, status: connectStatus, error: connectError } = useConnect();
+   const connections = useConnections();
+   const lastStatus = useRef(account.status);
+
+   useEffect(() => {
+      // Log on initial mount and when account status changes
+      console.log('[Wallet Debug] Current Status:', {
+         status: account.status,
+         address: account.address,
+         chainId: account.chainId,
+         isConnected: account.isConnected,
+         isConnecting: account.isConnecting,
+         isReconnecting: account.isReconnecting,
+         connector: account.connector?.name,
+         failureReason: account.failureReason?.message || account.failureReason
+      });
+
+      if (lastStatus.current !== account.status) {
+         console.log(`[Wallet Debug] Status changed: ${lastStatus.current} -> ${account.status}`);
+         lastStatus.current = account.status;
+      }
+   }, [account.status, account.address, account.chainId, account.failureReason]);
+
+   useEffect(() => {
+      if (connectStatus !== 'idle') {
+         console.log('[Wallet Debug] Connection Attempt:', {
+            status: connectStatus,
+            error: connectError?.message || connectError
+         });
+      }
+   }, [connectStatus, connectError]);
+
+   useEffect(() => {
+      console.log('[Wallet Debug] Active Connections:', connections.map(c => ({
+         name: c.connector.name,
+         accounts: c.accounts
+      })));
+   }, [connections]);
+
+   return null;
+}
+
 function StoreInitializer() {
    useEffect(() => {
       setStoreRef(store);
@@ -30,6 +74,12 @@ function StoreInitializer() {
 
 export function Providers({ children }: { children: ReactNode }) {
    useEffect(() => {
+      console.log('[App Debug] Session Start:', {
+         url: window.location.href,
+         userAgent: navigator.userAgent,
+         timestamp: new Date().toISOString()
+      });
+
       const handleGlobalClick = (e: MouseEvent) => {
          const target = e.target as HTMLElement;
          // Find the closest button or clickable element to get better context
@@ -74,6 +124,7 @@ export function Providers({ children }: { children: ReactNode }) {
             <WagmiProvider config={config}>
                <QueryClientProvider client={queryClient}>
                   <RainbowKitProvider theme={darkTheme()} initialChain={ALLOWED_CHAIN_ID}>
+                     <WalletConnectionLogger />
                      <ToastProvider>
                         <AuthInitializer />
                         <ToastInitializer />
