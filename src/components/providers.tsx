@@ -121,8 +121,8 @@ export function Providers({ children }: { children: ReactNode }) {
       <Provider store={store}>
          <PersistGate loading={null} persistor={persistor}>
             <StoreInitializer />
-            <WagmiProvider config={config}>
-               <QueryClientProvider client={queryClient}>
+            <QueryClientProvider client={queryClient}>
+               <WagmiProvider config={config}>
                   <RainbowKitProvider theme={darkTheme()} initialChain={ALLOWED_CHAIN_ID}>
                      <WalletConnectionLogger />
                      <ToastProvider>
@@ -133,8 +133,8 @@ export function Providers({ children }: { children: ReactNode }) {
                         <ToastContainer />
                      </ToastProvider>
                   </RainbowKitProvider>
-               </QueryClientProvider>
-            </WagmiProvider>
+               </WagmiProvider>
+            </QueryClientProvider>
          </PersistGate>
       </Provider>
    );
