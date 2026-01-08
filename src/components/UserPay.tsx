@@ -32,10 +32,8 @@ function UserPay({ loan }: { loan: Loan }) {
    const dispatch = useDispatch<AppDispatch>();
    const { showToastByConfig } = useToast();
    const account = useAccount();
-   const { isConnected } = account;
+   const { isConnected, status } = account;
    const { openConnectModal } = useConnectModal();
-   const [isPendingAction, setIsPendingAction] = useState(false);
-   const [pendingAmount, setPendingAmount] = useState<string | null>(null);
 
    const executeRepayment = useCallback(
       async (amount: string) => {
@@ -119,25 +117,10 @@ function UserPay({ loan }: { loan: Loan }) {
       ]
    );
 
-   // Automatically trigger repayment after connection if it was pending
-   useEffect(() => {
-      const connectedAddress = account.address?.toLowerCase();
-      const storedAddress = storedWalletAddress?.toLowerCase();
-
-      // Only trigger if connected, pending, and the address matches the stored one (Issue 3)
-      if (isConnected && isPendingAction && !isProcessing && pendingAmount !== null && connectedAddress === storedAddress) {
-         setIsPendingAction(false);
-         setPendingAmount(null);
-         executeRepayment(pendingAmount);
-      }
-   }, [isConnected, isPendingAction, isProcessing, executeRepayment, pendingAmount, account.address, storedWalletAddress]);
-
    const handleBorrow = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
 
       if (!isConnected) {
-         setIsPendingAction(true);
-         setPendingAmount(repaidAmountToAdd);
          openConnectModal?.();
          return;
       }

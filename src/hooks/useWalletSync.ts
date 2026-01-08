@@ -49,10 +49,12 @@ export function useWalletSync() {
 
    // Track connection intent to show success toast
    useAccountEffect({
-      onConnect: () => {
+      onConnect: (data) => {
+         console.log('[WalletSync] onConnect Event:', data);
          isConnecting.current = true;
       },
       onDisconnect: () => {
+         console.log('[WalletSync] onDisconnect Event');
          isConnecting.current = false;
       }
    });
@@ -68,10 +70,20 @@ export function useWalletSync() {
       }
    }, [account.address, storedWalletAddress, showSuccessToast]);
 
-   // Check for wallet mismatch with stored address and disconnect if needed
-   // Account switch is detected when connected wallet doesn't match stored wallet
    useEffect(() => {
+      console.log('[WalletSync] State Check:', {
+         username,
+         storedWalletAddress,
+         isConnected: account.isConnected,
+         accountAddress: account.address,
+         status: account.status,
+         connector: account.connector?.name
+      });
+
       if (!username || !account.isConnected || !account.address) {
+         if (account.status === 'reconnecting') {
+            console.log('[WalletSync] Still reconnecting...');
+         }
          return;
       }
 

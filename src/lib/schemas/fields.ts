@@ -203,7 +203,7 @@ export const telegramIdSchema = z
          message: 'Telegram ID must be a positive integer'
       }
    )
-   .transform((val) => (typeof val === 'bigint' ? val : BigInt(val)));
+   .transform((val) => val.toString());
 
 /**
  * Boolean validation schema
