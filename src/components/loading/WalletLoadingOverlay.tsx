@@ -3,8 +3,8 @@ import { useAccount, useDisconnect } from 'wagmi';
 
 /**
  * Global overlay that appears during user-initiated wallet connections.
- * Uses a status-based delay to filter out short initialization flashes 
- * on page load while still supporting mobile full-page redirects.
+ * Distinguishes between explicit connection attempts and background 
+ * auto-reconnections on page load.
  */
 export const WalletLoadingOverlay = () => {
    const { status, isReconnecting } = useAccount();
@@ -13,22 +13,12 @@ export const WalletLoadingOverlay = () => {
    const [showLoader, setShowLoader] = useState(false);
 
    useEffect(() => {
-      let timeout: ReturnType<typeof setTimeout>;
-
-      // Status 'connecting' with !isReconnecting is our target.
-      // We add a small delay to ensure it's not just a quick initialization flash 
-      // which happens during Wagmi's internal mount check.
+      // Show loader immediately when connecting but not reconnecting.
       if (status === 'connecting' && !isReconnecting) {
-         timeout = setTimeout(() => {
-            setShowLoader(true);
-         }, 3000);
+         setShowLoader(true);
       } else {
          setShowLoader(false);
       }
-
-      return () => {
-         if (timeout) clearTimeout(timeout);
-      };
    }, [status, isReconnecting]);
 
    useEffect(() => {
