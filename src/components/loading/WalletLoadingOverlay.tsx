@@ -16,7 +16,7 @@ export const WalletLoadingOverlay = () => {
       let timeout: ReturnType<typeof setTimeout>;
 
       // Status 'connecting' with !isReconnecting is our target.
-      // We add a 500ms delay to ensure it's not just a quick initialization flash 
+      // We add a small delay to ensure it's not just a quick initialization flash 
       // which happens during Wagmi's internal mount check.
       if (status === 'connecting' && !isReconnecting) {
          timeout = setTimeout(() => {
