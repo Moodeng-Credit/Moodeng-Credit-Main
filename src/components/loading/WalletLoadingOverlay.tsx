@@ -1,16 +1,45 @@
+import { useEffect, useState } from 'react';
 import { useAccount, useDisconnect } from 'wagmi';
 
 /**
- * Global overlay that appears during wallet connection and reconnection (redirects)
- * Ensures the user sees a loading state while waiting for the handshake or redirect.
+ * Global overlay that appears during user-initiated wallet connections.
+ * Uses a status-based delay to filter out short initialization flashes 
+ * on page load while still supporting mobile full-page redirects.
  */
 export const WalletLoadingOverlay = () => {
-   const { status, isConnecting, isReconnecting } = useAccount();
+   const { status, isReconnecting } = useAccount();
    const { disconnect } = useDisconnect();
 
-   const isBusy = status === 'connecting' || status === 'reconnecting' || isConnecting || isReconnecting;
+   const [showLoader, setShowLoader] = useState(false);
 
-   if (!isBusy) return null;
+   useEffect(() => {
+      let timeout: ReturnType<typeof setTimeout>;
+
+      // Status 'connecting' with !isReconnecting is our target.
+      // We add a 500ms delay to ensure it's not just a quick initialization flash 
+      // which happens during Wagmi's internal mount check.
+      if (status === 'connecting' && !isReconnecting) {
+         timeout = setTimeout(() => {
+            setShowLoader(true);
+         }, 3000);
+      } else {
+         setShowLoader(false);
+      }
+
+      return () => {
+         if (timeout) clearTimeout(timeout);
+      };
+   }, [status, isReconnecting]);
+
+   useEffect(() => {
+      console.log('[WalletLoadingOverlay] useAccount State:', {
+         status,
+         isReconnecting,
+         showLoader
+      });
+   }, [status, isReconnecting, showLoader]);
+
+   if (!showLoader) return null;
 
    return (
       <div className="fixed inset-0 !z-[2147483647] flex items-center justify-center bg-[#171420]/80 backdrop-blur-md transition-all duration-300 animate-in fade-in">
