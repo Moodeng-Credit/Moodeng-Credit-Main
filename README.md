@@ -62,6 +62,19 @@ npm run dev
 
 Visit [http://localhost:3000](http://localhost:3000) to access the application.
 
+## ✅ How to Run Tests
+
+```bash
+# Unit tests
+pnpm test
+
+# Coverage report
+pnpm test:coverage
+
+# End-to-end tests (headless)
+pnpm test:e2e
+```
+
 ## 📄 License
 
 MIT License
