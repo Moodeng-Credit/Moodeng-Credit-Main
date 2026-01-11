@@ -229,6 +229,16 @@ export const updateLoanStatus = createAsyncThunk(
          throw new Error('Failed to update loan');
       }
 
+      if (loanStatus === 'Lent') {
+         const { error: notificationError } = await supabase.functions.invoke('loan-funded-notification', {
+            body: { loanId: id }
+         });
+
+         if (notificationError) {
+            console.error('Failed to send funded notification:', notificationError.message);
+         }
+      }
+
       return mapSupabaseLoanToLoan(data);
    }
 );
