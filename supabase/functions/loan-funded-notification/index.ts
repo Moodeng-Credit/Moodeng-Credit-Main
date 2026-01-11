@@ -12,7 +12,7 @@ const corsHeaders = {
 
 const hasNotificationBeenSent = async (supabase: ReturnType<typeof createClient>, payload: { loanId: string; userId: string; type: LoanNotificationType }) => {
    const { data } = await supabase
-      .from('loan_email_notifications')
+      .from('loan_notifications')
       .select('id')
       .eq('loan_id', payload.loanId)
       .eq('user_id', payload.userId)
@@ -81,7 +81,7 @@ serve(async (req) => {
 
    await sendEmail(borrower.email, subject, text);
 
-   const { error: insertError } = await supabase.from('loan_email_notifications').insert({
+   const { error: insertError } = await supabase.from('loan_notifications').insert({
       loan_id: loan.id,
       user_id: borrower.id,
       notification_type: 'funded'
