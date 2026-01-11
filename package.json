@@ -3,6 +3,7 @@
    "private": true,
    "version": "1.0.0",
    "type": "module",
+   "packageManager": "pnpm@10.11.0",
    "scripts": {
       "dev": "dotenvx run --env-file=.env.staging -- vite",
       "dev:local": "dotenvx run --env-file=.env.local -- vite",
