@@ -30,7 +30,7 @@
       "test": "vitest run",
       "test:coverage": "vitest run --coverage",
       "test:e2e": "playwright test",
-      "postinstall": "playwright install --with-deps"
+      "postinstall": "node scripts/install-browsers.mjs"
    },
    "dependencies": {
       "@dotenvx/dotenvx": "^1.51.2",
