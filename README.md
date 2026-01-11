@@ -2,7 +2,7 @@
 
 ## 📋 Project Summary
 
-**Moodeng Credit** is a decentralized peer-to-peer lending platform built as a monolithic Next.js 15 application. The platform connects borrowers with lenders, enabling trustless loan transactions with Web3 wallet integration and World ID verification for enhanced security and identity verification.
+**Moodeng Credit** is a decentralized peer-to-peer lending platform built with **React and Vite**. The platform connects borrowers with lenders, enabling trustless loan transactions with Web3 wallet integration and World ID verification for enhanced security and identity verification.
 
 ## 🎯 Core Purpose
 
@@ -17,51 +17,92 @@
 |----------|------------|
 | **Framework** | React + Vite |
 | **Language** | TypeScript |
-| **Database** | PostgreSQL with Prisma ORM |
+| **Database** | PostgreSQL (Supabase) |
 | **Styling** | Tailwind CSS |
-| **State Management** | Redux Toolkit |
+| **State Management** | Redux Toolkit & React Query |
 | **Web3** | RainbowKit, Wagmi, Viem |
-| **Authentication** | JWT Tokens, World ID, Google OAuth |
-| **Notifications** | Gmail OAuth2, Telegram Bot |
-
-## 🌟 Key Features
-
-- **User Authentication** - Register, login, and secure session management with JWT
-- **World ID Verification** - Proof-of-personhood verification via Worldcoin
-- **Loan Management** - Create, edit, fund, and track loans
-- **Multi-chain Support** - Ethereum, Polygon, Base, Arbitrum, and more
-- **Real-time Notifications** - Email and Telegram alerts for loan events
-- **Responsive Dashboard** - Comprehensive borrower and lender dashboards
-- **Credit Tiers** - Tiered credit system for borrowers
+| **Authentication** | JWT, World ID, Google OAuth, Telegram |
+| **Testing** | Vitest, MSW, Playwright |
 
 ## 📁 Architecture Overview
 
 ```
 src/
-├── app/api/          # Backend API routes (Auth, Users, Loans, Webhooks)
-├── app/              # Frontend pages (Dashboard, Profile, Benefits, FAQ)
+├── app/              # Routes and page views
 ├── components/       # Reusable UI components
-├── lib/              # Core services (Database, Email, Telegram)
-├── store/            # Redux state management
+├── config/           # App configuration and constants
 ├── hooks/            # Custom React hooks
+├── lib/              # Core services (Supabase, API handlers)
+├── store/            # Redux state management
 ├── types/            # TypeScript definitions
-└── views/            # Page-specific views and sections
+└── utils/            # Helper functions
 ```
 
-## 🚀 Quick Start
+## 🚀 Local Development
+
+### Prerequisites
+
+- **Node.js**: >= 24.0.0
+- **pnpm**: >= 10.0.0
+- **dotenvx**: `npm install -g @dotenvx/dotenvx` (optional, or use via `pnpm`)
+
+### Installation
+
+1. **Clone and Install**
+   ```bash
+   git clone <repo-url>
+   cd Moodeng-Credit-Main
+   pnpm install
+   ```
+   *Note: `pnpm install` will automatically install Playwright browsers.*
+
+2. **Environment Variables**
+   - This project uses **dotenvx** for environment variable management.
+   - You **must** obtain the `.env.keys` file from an existing developer to decrypt the secrets.
+   - Without `.env.keys`, the app will not have access to the necessary API keys.
+
+### Running the App
+
+- **Standard Development**:
+  ```bash
+  pnpm run dev
+  ```
+- **Local Development (with local environment and HTTPS)**:
+  ```bash
+  pnpm run dev:local
+  ```
+
+Visit [http://localhost:3000](http://localhost:3000) (or `https://localhost:3000` for local dev) to access the application.
+
+## ✅ Quality Control
+
+### Running Tests
 
 ```bash
-# Install dependencies
-npm install
+# Unit tests (Vitest + MSW)
+pnpm test
 
-# Add .env.keys to the repo (ask other devs)
+# Coverage report
+pnpm test:coverage
 
-# Run development server
-npm run dev
+# End-to-end tests (Playwright)
+pnpm test:e2e
 ```
 
-Visit [http://localhost:3000](http://localhost:3000) to access the application.
+### Linting and Formatting
+
+```bash
+# Check for lint issues
+pnpm run lint
+
+# Check types
+pnpm run type-check
+
+# Format code
+pnpm run format
+```
 
 ## 📄 License
 
 MIT License
+

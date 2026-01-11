@@ -20,6 +20,16 @@ export default defineConfig(({ mode }) => {
          port: 3000,
          host: isLocal ? true : false,
          allowedHosts: ['.ngrok-free.app', '.ngrok.io']
+      },
+      test: {
+         environment: 'jsdom',
+         setupFiles: './src/test/setup.ts',
+         include: ['src/**/*.{test,spec}.ts'],
+         exclude: ['e2e/**', 'node_modules/**'],
+         coverage: {
+            provider: 'v8',
+            reporter: ['text', 'html']
+         }
       }
    };
 });
