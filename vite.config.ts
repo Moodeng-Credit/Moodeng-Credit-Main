@@ -28,7 +28,8 @@ export default defineConfig(({ mode }) => {
          exclude: ['e2e/**', 'node_modules/**'],
          coverage: {
             provider: 'v8',
-            reporter: ['text', 'html']
+            reporter: ['text', 'html', 'json', 'lcov'],
+            reportsDirectory: './coverage'
          }
       }
    };
