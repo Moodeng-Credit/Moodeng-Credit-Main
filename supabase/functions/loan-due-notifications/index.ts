@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendEmail } from '../_shared/email.ts';
 import {
    buildLoanNotificationEmail,
-   getCloseToDefaultWindow,
+   getReminderWindows,
    LoanNotificationLoan,
    LoanNotificationType,
    LoanNotificationRecipient
@@ -14,18 +14,6 @@ const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
    'Access-Control-Allow-Methods': 'POST, OPTIONS'
-};
-
-const hasNotificationBeenSent = async (supabase: ReturnType<typeof createClient>, payload: { loanId: string; userId: string; type: LoanNotificationType }) => {
-   const { data } = await supabase
-      .from('loan_notifications')
-      .select('id')
-      .eq('loan_id', payload.loanId)
-      .eq('user_id', payload.userId)
-      .eq('notification_type', payload.type)
-      .maybeSingle();
-
-   return Boolean(data);
 };
 
 const loadBorrowers = async (supabase: ReturnType<typeof createClient>, usernames: string[]) => {
@@ -42,31 +30,80 @@ const loadBorrowers = async (supabase: ReturnType<typeof createClient>, username
    return new Map(data.map((borrower) => [borrower.username, borrower]));
 };
 
+const loadSentLoanIds = async (
+   supabase: ReturnType<typeof createClient>,
+   payload: { loanIds: string[]; userId: string; type: LoanNotificationType }
+) => {
+   if (!payload.loanIds.length) {
+      return new Set<string>();
+   }
+
+   const { data, error } = await supabase
+      .from('loan_notifications')
+      .select('loan_id')
+      .in('loan_id', payload.loanIds)
+      .eq('user_id', payload.userId)
+      .eq('notification_type', payload.type);
+
+   if (error) {
+      throw new Error(error.message);
+   }
+
+   return new Set((data ?? []).map((item) => item.loan_id));
+};
+
+const recordNotification = async (
+   supabase: ReturnType<typeof createClient>,
+   borrowerId: string,
+   type: LoanNotificationType,
+   loanIds: string[]
+) => {
+   if (!loanIds.length) {
+      return;
+   }
+
+   const { error } = await supabase.from('loan_notifications').insert(
+      loanIds.map((loanId) => ({
+         loan_id: loanId,
+         user_id: borrowerId,
+         notification_type: type
+      }))
+   );
+
+   if (error) {
+      throw new Error(error.message);
+   }
+};
+
 const notifyBorrower = async (
    supabase: ReturnType<typeof createClient>,
-   loan: LoanNotificationLoan & { id: string },
    borrower: LoanNotificationRecipient & { id: string },
+   loans: Array<LoanNotificationLoan & { id: string }>,
    type: LoanNotificationType
 ) => {
-   const alreadySent = await hasNotificationBeenSent(supabase, { loanId: loan.id, userId: borrower.id, type });
+   const loanIds = loans.map((loan) => loan.id);
+   const sentLoanIds = await loadSentLoanIds(supabase, { loanIds, userId: borrower.id, type });
+   const pendingLoans = loans.filter((loan) => !sentLoanIds.has(loan.id));
 
-   if (alreadySent) {
+   if (!pendingLoans.length) {
       return false;
    }
 
-   const { subject, text } = buildLoanNotificationEmail(type, loan, borrower);
+   const aggregate = {
+      count: pendingLoans.length,
+      totalAmount: pendingLoans.reduce((sum, loan) => sum + loan.total_repayment_amount, 0)
+   };
+
+   const { subject, text } = buildLoanNotificationEmail(type, null, borrower, aggregate);
 
    await sendEmail(borrower.email, subject, text);
 
-   const { error: insertError } = await supabase.from('loan_notifications').insert({
-      loan_id: loan.id,
-      user_id: borrower.id,
-      notification_type: type
-   });
-
-   if (insertError) {
-      throw new Error(insertError.message);
-   }
+   await recordNotification(
+      supabase,
+      borrower.id,
+      type,
+      pendingLoans.map((loan) => loan.id)
+   );
 
    return true;
 };
@@ -81,14 +118,23 @@ serve(async (req) => {
    }
 
    const body = await req.json().catch(() => ({}));
-   const closeToDefaultDays = Number.parseInt(Deno.env.get('CLOSE_TO_DEFAULT_DAYS') ?? `${body.closeToDefaultDays ?? 3}`, 10);
+   const urgentReminderHours = Number.parseInt(
+      Deno.env.get('URGENT_REMINDER_HOURS') ?? `${body.urgentReminderHours ?? 72}`,
+      10
+   );
+   const finalReminderHours = Number.parseInt(
+      Deno.env.get('FINAL_REMINDER_HOURS') ?? `${body.finalReminderHours ?? 24}`,
+      10
+   );
    const referenceDate = body.referenceDate ? new Date(body.referenceDate) : new Date();
 
    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
    const { data: loans, error } = await supabase
       .from('loans')
-      .select('id, tracking_id, borrower_user, loan_amount, total_repayment_amount, due_date, repayment_status')
+      .select(
+         'id, tracking_id, borrower_user, loan_amount, total_repayment_amount, due_date, funded_at, lender_user, repayment_status'
+      )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])
       .not('due_date', 'is', null);
@@ -102,35 +148,64 @@ serve(async (req) => {
       Array.from(new Set((loans ?? []).map((loan) => loan.borrower_user).filter(Boolean))) as string[]
    );
 
-   const { end: closeToDefaultEnd } = getCloseToDefaultWindow(referenceDate, Number.isNaN(closeToDefaultDays) ? 3 : closeToDefaultDays);
+   const { final, urgent } = getReminderWindows(
+      referenceDate,
+      Number.isNaN(urgentReminderHours) ? 72 : urgentReminderHours,
+      Number.isNaN(finalReminderHours) ? 24 : finalReminderHours
+   );
 
-   let sentCount = 0;
+   const borrowerBuckets = new Map<
+      string,
+      {
+         urgent: Array<LoanNotificationLoan & { id: string }>;
+         final: Array<LoanNotificationLoan & { id: string }>;
+      }
+   >();
 
    for (const loan of loans ?? []) {
       if (!loan.borrower_user || !loan.due_date) {
          continue;
       }
 
-      const borrower = borrowers.get(loan.borrower_user);
+      const dueDate = new Date(loan.due_date);
+
+      const isFinalWindow = dueDate.getTime() >= final.start.getTime() && dueDate.getTime() <= final.end.getTime();
+      const isUrgentWindow = dueDate.getTime() > urgent.start.getTime() && dueDate.getTime() <= urgent.end.getTime();
+
+      if (!isFinalWindow && !isUrgentWindow) {
+         continue;
+      }
+
+      const bucket = borrowerBuckets.get(loan.borrower_user) ?? { urgent: [], final: [] };
+      if (isFinalWindow) {
+         bucket.final.push(loan);
+      } else if (isUrgentWindow) {
+         bucket.urgent.push(loan);
+      }
+
+      borrowerBuckets.set(loan.borrower_user, bucket);
+   }
+
+   let sentCount = 0;
+
+   for (const [borrowerUsername, bucket] of borrowerBuckets.entries()) {
+      const borrower = borrowers.get(borrowerUsername);
       if (!borrower?.email) {
          continue;
       }
 
-      const dueDate = new Date(loan.due_date);
-      const notificationType: LoanNotificationType | null =
-         dueDate.getTime() < referenceDate.getTime()
-            ? 'outstanding'
-            : dueDate.getTime() <= closeToDefaultEnd.getTime()
-              ? 'close_to_default'
-              : null;
-
-      if (!notificationType) {
-         continue;
+      if (bucket.urgent.length) {
+         const wasSent = await notifyBorrower(supabase, borrower, bucket.urgent, 'urgent_reminder');
+         if (wasSent) {
+            sentCount += 1;
+         }
       }
 
-      const wasSent = await notifyBorrower(supabase, loan, borrower, notificationType);
-      if (wasSent) {
-         sentCount += 1;
+      if (bucket.final.length) {
+         const wasSent = await notifyBorrower(supabase, borrower, bucket.final, 'final_reminder');
+         if (wasSent) {
+            sentCount += 1;
+         }
       }
    }
 

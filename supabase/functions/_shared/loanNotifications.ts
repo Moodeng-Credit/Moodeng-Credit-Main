@@ -1,16 +1,23 @@
-export type LoanNotificationType = 'funded' | 'close_to_default' | 'outstanding';
+export type LoanNotificationType = 'funded' | 'urgent_reminder' | 'final_reminder' | 'weekly_digest';
 
 export type LoanNotificationLoan = {
    tracking_id: string;
    loan_amount: number;
    total_repayment_amount: number;
    due_date: string | null;
+   funded_at: string | null;
    borrower_user: string | null;
+   lender_user: string | null;
 };
 
 export type LoanNotificationRecipient = {
    username: string;
    email: string;
+};
+
+export type LoanNotificationAggregate = {
+   count: number;
+   totalAmount: number;
 };
 
 const formatCurrency = (amount: number) =>
@@ -20,50 +27,94 @@ const formatCurrency = (amount: number) =>
       maximumFractionDigits: 2
    }).format(amount);
 
-const formatDueDate = (dueDate: string | null) => {
-   if (!dueDate) {
+const formatDate = (dateValue: string | null) => {
+   if (!dateValue) {
       return 'N/A';
    }
 
    return new Intl.DateTimeFormat('en-US', {
       dateStyle: 'medium',
-      timeStyle: 'short',
       timeZone: 'UTC'
-   }).format(new Date(dueDate));
+   }).format(new Date(dateValue));
+};
+
+const getEnvValue = (key: string) => {
+   if (typeof Deno !== 'undefined' && 'env' in Deno) {
+      return Deno.env.get(key);
+   }
+
+   if (typeof process !== 'undefined' && process.env) {
+      return process.env[key];
+   }
+
+   return undefined;
+};
+
+const buildDashboardLink = () => {
+   const siteUrl = getEnvValue('VITE_SITE_URL') ?? '';
+   if (!siteUrl) {
+      return '/dashboard';
+   }
+
+   return `${siteUrl.replace(/\/$/, '')}/dashboard`;
 };
 
 export const buildLoanNotificationEmail = (
    type: LoanNotificationType,
-   loan: LoanNotificationLoan,
-   recipient: LoanNotificationRecipient
+   loan: LoanNotificationLoan | null,
+   recipient: LoanNotificationRecipient,
+   aggregate?: LoanNotificationAggregate
 ) => {
-   const formattedLoanAmount = formatCurrency(loan.loan_amount);
-   const formattedTotalRepayment = formatCurrency(loan.total_repayment_amount);
-   const formattedDueDate = formatDueDate(loan.due_date);
+   const formattedLoanAmount = loan ? formatCurrency(loan.loan_amount) : '';
+   const formattedTotalRepayment = loan ? formatCurrency(loan.total_repayment_amount) : '';
+   const formattedDueDate = loan ? formatDate(loan.due_date) : '';
+   const formattedFundedDate = loan ? formatDate(loan.funded_at) : '';
+   const formattedAggregateTotal = aggregate ? formatCurrency(aggregate.totalAmount) : '';
+   const dashboardLink = buildDashboardLink();
 
    if (type === 'funded') {
+      if (!loan) {
+         throw new Error('Loan details are required for funded notifications.');
+      }
+
       return {
-         subject: 'Your loan has been funded! 🎉',
-         text: `Hi ${recipient.username},\n\nGreat news! Your loan request has been funded.\n\nLoan ID: ${loan.tracking_id}\nLoan amount: ${formattedLoanAmount}\nTotal repayment: ${formattedTotalRepayment}\nDue date: ${formattedDueDate}\n\nYou can track your loan status in your Moodeng Credit dashboard.\n\n— Moodeng Credit Team`
+         subject: 'Your loan has been funded!',
+         text: `Great news! Your request for ${formattedLoanAmount} (ID: ${loan.tracking_id}) was funded by ${loan.lender_user ?? 'a lender'} on ${formattedFundedDate}. 🍉 Your USDC is ready in your wallet! To keep building your credit and unlocking higher tiers, remember to repay ${formattedTotalRepayment} by ${formattedDueDate}.  If you need help with how to do it or have other uses, contact support@moodeng.app`
       };
    }
 
-   if (type === 'close_to_default') {
+   if (type === 'urgent_reminder') {
       return {
-         subject: 'Your loan is close to default',
-         text: `Hi ${recipient.username},\n\nThis is a reminder that your loan is approaching its due date.\n\nLoan ID: ${loan.tracking_id}\nOutstanding balance: ${formattedTotalRepayment}\nDue date: ${formattedDueDate}\n\nPlease make a repayment soon to avoid defaulting on your loan.\n\n— Moodeng Credit Team`
+         subject: 'Urgent reminder: loans due in 3 days',
+         text: `Hiii! Moodeng here with a quick check-in from the water. 🌊 You have ${aggregate?.count ?? 0} loans due in 3 days.  Total to Repay: ${formattedAggregateTotal}  Repaying these on time keeps your 'Good Standing' status and helps you climb to the next level of the Value Pyramid! ✨  If you need help with how to do it or have other uses, contact support@moodeng.app`
+      };
+   }
+
+   if (type === 'final_reminder') {
+      return {
+         subject: 'Final reminder: repayment due in 24 hours',
+         text: `Final splash! 💦 Your repayment of ${formattedAggregateTotal} is due in 24 hours. Please make sure your wallet has the stablecoins ready for the transfer so your credit progress stays on track. You're so close to completing another successful cycle!  ${dashboardLink}  If you need help with how to do it or have other uses, contact support@moodeng.app`
       };
    }
 
    return {
-      subject: 'Your loan is overdue',
-      text: `Hi ${recipient.username},\n\nYour loan is now overdue. Please make a repayment as soon as possible.\n\nLoan ID: ${loan.tracking_id}\nOutstanding balance: ${formattedTotalRepayment}\nDue date: ${formattedDueDate}\n\nIf you have already repaid, please ignore this message.\n\n— Moodeng Credit Team`
+      subject: 'Your Weekly Moodeng Credit Digest',
+      text: `Your Weekly Moodeng Credit Digest 📊  • Active Loans: ${aggregate?.count ?? 0}  • Total Outstanding: ${formattedAggregateTotal}  • Current Tier: [Tier Name]  Every on-time payment is a brick in your trust layer. Keep growing with me! 🦛  If you need help with how to do it or have other uses, contact support@moodeng.app`
    };
 };
 
-export const getCloseToDefaultWindow = (referenceDate: Date, closeToDefaultDays: number) => {
-   const start = new Date(referenceDate);
-   const end = new Date(referenceDate);
-   end.setUTCDate(end.getUTCDate() + closeToDefaultDays);
-   return { start, end };
+export const getReminderWindows = (referenceDate: Date, urgentHours: number, finalHours: number) => {
+   const finalEnd = new Date(referenceDate);
+   finalEnd.setUTCHours(finalEnd.getUTCHours() + finalHours);
+
+   const urgentStart = new Date(referenceDate);
+   urgentStart.setUTCHours(urgentStart.getUTCHours() + finalHours);
+
+   const urgentEnd = new Date(referenceDate);
+   urgentEnd.setUTCHours(urgentEnd.getUTCHours() + urgentHours);
+
+   return {
+      final: { start: referenceDate, end: finalEnd },
+      urgent: { start: urgentStart, end: urgentEnd }
+   };
 };

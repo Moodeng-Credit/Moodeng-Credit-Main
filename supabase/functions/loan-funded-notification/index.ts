@@ -10,7 +10,10 @@ const corsHeaders = {
    'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
-const hasNotificationBeenSent = async (supabase: ReturnType<typeof createClient>, payload: { loanId: string; userId: string; type: LoanNotificationType }) => {
+const hasNotificationBeenSent = async (
+   supabase: ReturnType<typeof createClient>,
+   payload: { loanId: string; userId: string; type: LoanNotificationType }
+) => {
    const { data } = await supabase
       .from('loan_notifications')
       .select('id')
@@ -41,7 +44,7 @@ serve(async (req) => {
 
    const { data: loan, error: loanError } = await supabase
       .from('loans')
-      .select('id, tracking_id, borrower_user, loan_amount, total_repayment_amount, due_date')
+      .select('id, tracking_id, borrower_user, loan_amount, total_repayment_amount, due_date, funded_at, lender_user')
       .eq('id', loanId)
       .maybeSingle();
 
