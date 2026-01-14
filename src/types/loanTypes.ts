@@ -19,6 +19,7 @@ export interface Loan {
    hash: string[]; // Array of transaction hashes - includes lending transaction + all repayment transactions
    createdAt: string;
    updatedAt: string;
+   fundedAt?: string; // Timestamp when loan was funded (transitioned to 'Lent' status)
 }
 
 export interface CreateLoanData {
@@ -72,4 +73,5 @@ export interface ILoan {
    hash: string[]; // Array of transaction hashes - includes lending transaction + all repayment transactions
    createdAt: Date;
    updatedAt: Date;
+   fundedAt?: Date; // Timestamp when loan was funded (transitioned to 'Lent' status)
 }

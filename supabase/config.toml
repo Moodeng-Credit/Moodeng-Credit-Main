@@ -15,3 +15,9 @@ verify_jwt = false
 
 [functions.telegram-login]
 verify_jwt = false
+
+[functions.loan-funded-notification]
+verify_jwt = true
+
+[functions.loan-due-notifications]
+verify_jwt = false

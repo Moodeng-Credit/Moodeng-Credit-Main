@@ -29,7 +29,8 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    coin: row.coin,
    hash: row.hash,
    createdAt: row.created_at,
-   updatedAt: row.updated_at
+   updatedAt: row.updated_at,
+   fundedAt: row.funded_at ?? undefined
 });
 
 const initialState: LoanState = {
@@ -212,6 +213,10 @@ export const updateLoanStatus = createAsyncThunk(
       if (repaidAmount !== undefined) {
          updates.repaid_amount = repaidAmount;
       }
+      if (loanStatus === 'Lent') {
+         // Set funded_at timestamp when loan is funded
+         updates.funded_at = new Date().toISOString();
+      }
       if (hash) {
          // Fetch current loan to append the new hash
          const { data: currentLoan } = await supabase.from('loans').select('hash').eq('id', id).single();
@@ -227,6 +232,16 @@ export const updateLoanStatus = createAsyncThunk(
 
       if (!data) {
          throw new Error('Failed to update loan');
+      }
+
+      if (loanStatus === 'Lent') {
+         const { error: notificationError } = await supabase.functions.invoke('loan-funded-notification', {
+            body: { loanId: id }
+         });
+
+         if (notificationError) {
+            console.error('Failed to send funded notification:', notificationError.message);
+         }
       }
 
       return mapSupabaseLoanToLoan(data);
