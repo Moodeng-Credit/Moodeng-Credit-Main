@@ -80,11 +80,8 @@ export const buildLoanNotificationEmail = (
       return {
          subject: 'Your loan has been funded!',
          text: `Great news! Your request for ${formattedLoanAmount} (ID: ${loan.tracking_id}) was funded by ${loan.lender_user ?? 'a lender'} on ${formattedFundedDate}. 🍉
-
 Your USDC is ready in your wallet!
-
 To keep building your credit and unlocking higher tiers, remember to repay ${formattedTotalRepayment} by ${formattedDueDate}.
-
 If you need help with how to do it or have other uses, contact support@moodeng.app`
       };
    }
@@ -93,13 +90,9 @@ If you need help with how to do it or have other uses, contact support@moodeng.a
       return {
          subject: 'Urgent reminder: loans due in 3 days',
          text: `Hiii! Moodeng here with a quick check-in from the water. 🌊
-
 You have ${aggregate?.count ?? 0} loans due in 3 days.
-
 Total to Repay: ${formattedAggregateTotal}
-
 Repaying these on time keeps your 'Good Standing' status and helps you climb to the next level of the Value Pyramid! ✨
-
 If you need help with how to do it or have other uses, contact support@moodeng.app`
       };
    }
@@ -108,13 +101,9 @@ If you need help with how to do it or have other uses, contact support@moodeng.a
       return {
          subject: 'Final reminder: repayment due in 24 hours',
          text: `Final splash! 💦
-
 Your repayment of ${formattedAggregateTotal} is due in 24 hours.
-
 Please make sure your wallet has the stablecoins ready for the transfer so your credit progress stays on track. You're so close to completing another successful cycle!
-
 ${dashboardLink}
-
 If you need help with how to do it or have other uses, contact support@moodeng.app`
       };
    }
@@ -122,13 +111,10 @@ If you need help with how to do it or have other uses, contact support@moodeng.a
    return {
       subject: 'Your Weekly Moodeng Credit Digest',
       text: `Your Weekly Moodeng Credit Digest 📊
-
 • Active Loans: ${aggregate?.count ?? 0}
 • Total Outstanding: ${formattedAggregateTotal}
 • Current Tier: [Tier Name]
-
 Every on-time payment is a brick in your trust layer. Keep growing with me! 🦛
-
 If you need help with how to do it or have other uses, contact support@moodeng.app`
    };
 };

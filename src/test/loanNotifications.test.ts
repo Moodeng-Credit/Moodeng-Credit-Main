@@ -35,6 +35,9 @@ describe('buildLoanNotificationEmail', () => {
       expect(result.text).toContain('$275.00');
       expect(result.text).toContain('Jan 15, 2026');
       expect(result.text).toContain('support@moodeng.app');
+      
+      // Ensure no double newlines anywhere (Gmail collapse prevention)
+      expect(result.text).not.toContain('\n\n');
    });
 
    it('builds an urgent reminder email', () => {
@@ -49,6 +52,9 @@ describe('buildLoanNotificationEmail', () => {
       expect(result.text).toContain('Total to Repay: $550.00');
       expect(result.text).toContain('Good Standing');
       expect(result.text).toContain('support@moodeng.app');
+      
+      // Ensure no double newlines anywhere (Gmail collapse prevention)
+      expect(result.text).not.toContain('\n\n');
    });
 
    it('builds a final reminder email with dashboard link', () => {
@@ -64,6 +70,9 @@ describe('buildLoanNotificationEmail', () => {
       expect(result.text).toContain('$275.00');
       expect(result.text).toContain('https://moodeng.app/dashboard');
       expect(result.text).toContain('support@moodeng.app');
+      
+      // Ensure no double newlines anywhere (Gmail collapse prevention)
+      expect(result.text).not.toContain('\n\n');
    });
 
    it('builds a weekly digest email', () => {
@@ -79,6 +88,9 @@ describe('buildLoanNotificationEmail', () => {
       expect(result.text).toContain('Current Tier: [Tier Name]');
       expect(result.text).toContain('trust layer');
       expect(result.text).toContain('support@moodeng.app');
+      
+      // Ensure no double newlines anywhere (Gmail collapse prevention)
+      expect(result.text).not.toContain('\n\n');
    });
 });
 
