@@ -26,10 +26,12 @@ describe('buildLoanNotificationEmail', () => {
       const result = buildLoanNotificationEmail('funded', baseLoan, recipient);
 
       expect(result.subject).toBe('Your loan has been funded!');
+      expect(result.text).toContain('Great news!');
       expect(result.text).toContain('$250.00');
       expect(result.text).toContain('ID: LOAN-123');
       expect(result.text).toContain('lender-01');
       expect(result.text).toContain('Jan 10, 2026');
+      expect(result.text).toContain('Your USDC is ready in your wallet!');
       expect(result.text).toContain('$275.00');
       expect(result.text).toContain('Jan 15, 2026');
       expect(result.text).toContain('support@moodeng.app');
@@ -41,9 +43,11 @@ describe('buildLoanNotificationEmail', () => {
          totalAmount: 550
       });
 
-      expect(result.subject).toContain('Urgent reminder');
+      expect(result.subject).toBe('Urgent reminder: loans due in 3 days');
+      expect(result.text).toContain('Hiii! Moodeng here');
       expect(result.text).toContain('2 loans');
-      expect(result.text).toContain('$550.00');
+      expect(result.text).toContain('Total to Repay: $550.00');
+      expect(result.text).toContain('Good Standing');
       expect(result.text).toContain('support@moodeng.app');
    });
 
@@ -55,9 +59,11 @@ describe('buildLoanNotificationEmail', () => {
          totalAmount: 275
       });
 
-      expect(result.subject).toContain('Final reminder');
+      expect(result.subject).toBe('Final reminder: repayment due in 24 hours');
+      expect(result.text).toContain('Final splash! 💦');
       expect(result.text).toContain('$275.00');
       expect(result.text).toContain('https://moodeng.app/dashboard');
+      expect(result.text).toContain('support@moodeng.app');
    });
 
    it('builds a weekly digest email', () => {
@@ -66,10 +72,13 @@ describe('buildLoanNotificationEmail', () => {
          totalAmount: 825
       });
 
-      expect(result.subject).toContain('Weekly Moodeng Credit Digest');
+      expect(result.subject).toBe('Your Weekly Moodeng Credit Digest');
+      expect(result.text).toContain('Your Weekly Moodeng Credit Digest 📊');
       expect(result.text).toContain('Active Loans: 3');
-      expect(result.text).toContain('$825.00');
+      expect(result.text).toContain('Total Outstanding: $825.00');
       expect(result.text).toContain('Current Tier: [Tier Name]');
+      expect(result.text).toContain('trust layer');
+      expect(result.text).toContain('support@moodeng.app');
    });
 });
 
