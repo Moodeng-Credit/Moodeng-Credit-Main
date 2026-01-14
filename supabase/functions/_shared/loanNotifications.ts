@@ -59,6 +59,13 @@ const buildDashboardLink = () => {
    return `${siteUrl.replace(/\/$/, '')}/dashboard`;
 };
 
+const normalizeNotificationText = (text: string) =>
+   text
+      .replace(/\r\n/g, '\n')
+      .replace(/\n[ \t]*\n+/g, '\n')
+      .replace(/[ \t]+\n/g, '\n')
+      .trimEnd();
+
 export const buildLoanNotificationEmail = (
    type: LoanNotificationType,
    loan: LoanNotificationLoan | null,
@@ -79,43 +86,43 @@ export const buildLoanNotificationEmail = (
 
       return {
          subject: 'Your loan has been funded!',
-         text: `Great news! Your request for ${formattedLoanAmount} (ID: ${loan.tracking_id}) was funded by ${loan.lender_user ?? 'a lender'} on ${formattedFundedDate}. 🍉
+         text: normalizeNotificationText(`Great news! Your request for ${formattedLoanAmount} (ID: ${loan.tracking_id}) was funded by ${loan.lender_user ?? 'a lender'} on ${formattedFundedDate}. 🍉
 Your USDC is ready in your wallet!
 To keep building your credit and unlocking higher tiers, remember to repay ${formattedTotalRepayment} by ${formattedDueDate}.
-If you need help with how to do it or have other uses, contact support@moodeng.app`
+If you need help with how to do it or have other uses, contact support@moodeng.app`)
       };
    }
 
    if (type === 'urgent_reminder') {
       return {
          subject: 'Urgent reminder: loans due in 3 days',
-         text: `Hiii! Moodeng here with a quick check-in from the water. 🌊
+         text: normalizeNotificationText(`Hiii! Moodeng here with a quick check-in from the water. 🌊
 You have ${aggregate?.count ?? 0} loans due in 3 days.
 Total to Repay: ${formattedAggregateTotal}
 Repaying these on time keeps your 'Good Standing' status and helps you climb to the next level of the Value Pyramid! ✨
-If you need help with how to do it or have other uses, contact support@moodeng.app`
+If you need help with how to do it or have other uses, contact support@moodeng.app`)
       };
    }
 
    if (type === 'final_reminder') {
       return {
          subject: 'Final reminder: repayment due in 24 hours',
-         text: `Final splash! 💦
+         text: normalizeNotificationText(`Final splash! 💦
 Your repayment of ${formattedAggregateTotal} is due in 24 hours.
 Please make sure your wallet has the stablecoins ready for the transfer so your credit progress stays on track. You're so close to completing another successful cycle!
 ${dashboardLink}
-If you need help with how to do it or have other uses, contact support@moodeng.app`
+If you need help with how to do it or have other uses, contact support@moodeng.app`)
       };
    }
 
    return {
       subject: 'Your Weekly Moodeng Credit Digest',
-      text: `Your Weekly Moodeng Credit Digest 📊
+      text: normalizeNotificationText(`Your Weekly Moodeng Credit Digest 📊
 • Active Loans: ${aggregate?.count ?? 0}
 • Total Outstanding: ${formattedAggregateTotal}
 • Current Tier: [Tier Name]
 Every on-time payment is a brick in your trust layer. Keep growing with me! 🦛
-If you need help with how to do it or have other uses, contact support@moodeng.app`
+If you need help with how to do it or have other uses, contact support@moodeng.app`)
    };
 };
 
