@@ -8,7 +8,7 @@ This document summarizes the current architecture and infrastructure used by Moo
 - **Backend services**: Supabase (PostgreSQL + Auth + Edge Functions).
 - **Web3**: RainbowKit + Wagmi + Viem with WalletConnect and Alchemy.
 - **Identity**: World ID (Worldcoin) verification.
-- **Notifications**: Email (Gmail OAuth2 via Nodemailer) and Telegram Bot.
+- **Notifications**: Email (Resend API) and Telegram Bot.
 
 ## Runtime Flow
 1. **Client** renders UI via React/Vite.
