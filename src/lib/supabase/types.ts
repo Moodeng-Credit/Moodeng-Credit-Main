@@ -89,6 +89,7 @@ export interface Database {
                hash: string[];
                created_at: string;
                updated_at: string;
+               funded_at: string | null;
             };
             Insert: {
                id?: string;
@@ -108,6 +109,7 @@ export interface Database {
                hash?: string[];
                created_at?: string;
                updated_at?: string;
+               funded_at?: string | null;
             };
             Update: {
                id?: string;
@@ -126,6 +128,7 @@ export interface Database {
                coin?: string;
                hash?: string[];
                updated_at?: string;
+               funded_at?: string | null;
             };
          };
       };

@@ -29,7 +29,8 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    coin: row.coin,
    hash: row.hash,
    createdAt: row.created_at,
-   updatedAt: row.updated_at
+   updatedAt: row.updated_at,
+   fundedAt: row.funded_at ?? undefined
 });
 
 const initialState: LoanState = {
@@ -211,6 +212,10 @@ export const updateLoanStatus = createAsyncThunk(
       }
       if (repaidAmount !== undefined) {
          updates.repaid_amount = repaidAmount;
+      }
+      if (loanStatus === 'Lent') {
+         // Set funded_at timestamp when loan is funded
+         updates.funded_at = new Date().toISOString();
       }
       if (hash) {
          // Fetch current loan to append the new hash
