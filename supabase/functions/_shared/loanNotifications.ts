@@ -8,6 +8,8 @@ export type LoanNotificationLoan = {
    funded_at: string | null;
    borrower_user: string | null;
    lender_user: string | null;
+   borrower_username?: string | null;
+   lender_username?: string | null;
 };
 
 export type LoanNotificationRecipient = {
@@ -86,7 +88,7 @@ export const buildLoanNotificationEmail = (
 
       return {
          subject: 'Your loan has been funded!',
-         text: normalizeNotificationText(`Great news! Your request for ${formattedLoanAmount} (ID: ${loan.tracking_id}) was funded by ${loan.lender_user ?? 'a lender'} on ${formattedFundedDate}. 🍉
+         text: normalizeNotificationText(`Great news! Your request for ${formattedLoanAmount} (ID: ${loan.tracking_id}) was funded by ${loan.lender_username ?? 'a lender'} on ${formattedFundedDate}. 🍉
 Your USDC is ready in your wallet!
 To keep building your credit and unlocking higher tiers, remember to repay ${formattedTotalRepayment} by ${formattedDueDate}.
 If you need help with how to do it or have other uses, contact support@moodeng.app`)

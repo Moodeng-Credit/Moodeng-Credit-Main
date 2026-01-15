@@ -16,18 +16,18 @@ const corsHeaders = {
    'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
-const loadBorrowers = async (supabase: ReturnType<typeof createClient>, usernames: string[]) => {
-   if (!usernames.length) {
+const loadBorrowers = async (supabase: ReturnType<typeof createClient>, userIds: string[]) => {
+   if (!userIds.length) {
       return new Map<string, LoanNotificationRecipient & { id: string }>();
    }
 
-   const { data, error } = await supabase.from('users').select('id, username, email').in('username', usernames);
+   const { data, error } = await supabase.from('users').select('id, username, email').in('id', userIds);
 
    if (error || !data) {
       throw new Error(error?.message ?? 'Failed to load borrowers');
    }
 
-   return new Map(data.map((borrower) => [borrower.username, borrower]));
+   return new Map(data.map((borrower) => [borrower.id, borrower]));
 };
 
 const loadSentLoanIds = async (
@@ -188,8 +188,8 @@ serve(async (req) => {
 
    let sentCount = 0;
 
-   for (const [borrowerUsername, bucket] of borrowerBuckets.entries()) {
-      const borrower = borrowers.get(borrowerUsername);
+   for (const [borrowerId, bucket] of borrowerBuckets.entries()) {
+      const borrower = borrowers.get(borrowerId);
       if (!borrower?.email) {
          continue;
       }

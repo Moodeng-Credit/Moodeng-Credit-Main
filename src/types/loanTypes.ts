@@ -6,8 +6,8 @@ export interface Loan {
    trackingId: string;
    borrowerWallet?: string;
    lenderWallet?: string;
-   borrowerUser?: string;
-   lenderUser?: string;
+   borrowerUser?: string; // Supabase auth user ID (UUID)
+   lenderUser?: string; // Supabase auth user ID (UUID)
    loanAmount: number; // Original amount borrowed (principal)
    repaidAmount: number; // Amount already repaid by borrower (cumulative sum of all payments)
    totalRepaymentAmount: number; // Total amount that must be repaid (principal + interest/fees)
@@ -23,9 +23,9 @@ export interface Loan {
 }
 
 export interface CreateLoanData {
-   borrowerUserId: string;
+   borrowerUserId: string; // Supabase auth user ID (UUID)
    borrowerWallet?: string; // Borrower's wallet address
-   lenderUserId: string;
+   lenderUserId: string; // Supabase auth user ID (UUID)
    loanAmount: number;
    totalRepaymentAmount: number;
    reason: string;
@@ -60,8 +60,8 @@ export interface ILoan {
    trackingId: string;
    borrowerWallet?: string;
    lenderWallet?: string;
-   borrowerUser?: string;
-   lenderUser?: string;
+   borrowerUser?: string; // Supabase auth user ID (UUID)
+   lenderUser?: string; // Supabase auth user ID (UUID)
    loanAmount: number;
    repaidAmount: number;
    totalRepaymentAmount: number;

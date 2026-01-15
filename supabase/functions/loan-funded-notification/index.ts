@@ -63,7 +63,7 @@ serve(async (req) => {
    const { data: borrower, error: borrowerError } = await supabase
       .from('users')
       .select('id, username, email')
-      .eq('username', loan.borrower_user)
+      .eq('id', loan.borrower_user)
       .maybeSingle();
 
    if (borrowerError) {
@@ -74,13 +74,22 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Borrower email not found' }), { status: 404, headers: corsHeaders });
    }
 
+   const { data: lender } = loan.lender_user
+      ? await supabase.from('users').select('username').eq('id', loan.lender_user).maybeSingle()
+      : { data: null };
+
+   const loanPayload = {
+      ...loan,
+      lender_username: lender?.username ?? null
+   };
+
    const alreadySent = await hasNotificationBeenSent(supabase, { loanId: loan.id, userId: borrower.id, type: 'funded' });
 
    if (alreadySent) {
       return new Response(JSON.stringify({ message: 'Notification already sent' }), { status: 200, headers: corsHeaders });
    }
 
-   const { subject, text } = buildLoanNotificationEmail('funded', loan, borrower);
+   const { subject, text } = buildLoanNotificationEmail('funded', loanPayload, borrower);
 
    await sendEmail(borrower.email, subject, text);
 

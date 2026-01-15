@@ -85,21 +85,43 @@ export const fetchLoans = createAsyncThunk('loans/fetch', async () => {
    return (data || []).map(mapSupabaseLoanToLoan);
 });
 
-export const getUserLoans = createAsyncThunk('loans/getUserLoans', async (username: string) => {
-   const supabase = supabaseClient();
+export const getUserLoans = createAsyncThunk(
+   'loans/getUserLoans',
+   async ({ userId, username }: { userId?: string | null; username?: string | null }) => {
+      const supabase = supabaseClient();
 
-   const { data, error } = await supabase
-      .from('loans')
-      .select('*')
-      .or(`borrower_user.eq.${username},lender_user.eq.${username}`)
-      .order('created_at', { ascending: false });
+      let resolvedUserId = userId?.trim();
+      if (!resolvedUserId && username) {
+         const { data: profile, error: profileError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('username', username)
+            .maybeSingle();
 
-   if (error) {
-      throw new Error(error.message);
+         if (profileError) {
+            throw new Error(profileError.message);
+         }
+
+         resolvedUserId = profile?.id ?? undefined;
+      }
+
+      if (!resolvedUserId) {
+         return [];
+      }
+
+      const { data, error } = await supabase
+         .from('loans')
+         .select('*')
+         .or(`borrower_user.eq.${resolvedUserId},lender_user.eq.${resolvedUserId}`)
+         .order('created_at', { ascending: false });
+
+      if (error) {
+         throw new Error(error.message);
+      }
+
+      return (data || []).map(mapSupabaseLoanToLoan);
    }
-
-   return (data || []).map(mapSupabaseLoanToLoan);
-});
+);
 
 const loanSlice = createSlice({
    name: 'loans',
@@ -186,7 +208,7 @@ export const updateLoanStatus = createAsyncThunk(
    'loans/updateStatus',
    async (loanData: {
       id: string;
-      username?: string | null;
+      userId?: string | null;
       wallet?: string;
       repaymentStatus?: string;
       loanStatus?: string;
@@ -194,12 +216,12 @@ export const updateLoanStatus = createAsyncThunk(
       hash?: string;
    }) => {
       const supabase = supabaseClient();
-      const { id, username, wallet, repaymentStatus, loanStatus, repaidAmount, hash } = loanData;
+      const { id, userId, wallet, repaymentStatus, loanStatus, repaidAmount, hash } = loanData;
 
       const updates: LoanUpdate = {};
 
-      if (username) {
-         updates.lender_user = username;
+      if (userId) {
+         updates.lender_user = userId;
       }
       if (wallet) {
          updates.lender_wallet = wallet;

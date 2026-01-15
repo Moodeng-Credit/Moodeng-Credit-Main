@@ -12,22 +12,22 @@ import type { CreditLevel, RoleType, StatsData } from '@/views/profile/component
 
 export const useDashboardData = (activeRole: RoleType) => {
    const dispatch = useDispatch<AppDispatch>();
-   const username = useSelector((state: RootState) => state.auth.username);
+   const userId = useSelector((state: RootState) => state.auth.user.id);
    const gloanRequests = useSelector((state: RootState) => state.loans.loans.gloans || []);
 
    useEffect(() => {
       const fetchData = async () => {
-         if (username) {
-            await dispatch(getUserLoans(username));
+         if (userId) {
+            await dispatch(getUserLoans({ userId }));
             await dispatch(fetchUser());
          }
       };
       fetchData();
-   }, [dispatch, username]);
+   }, [dispatch, userId]);
 
    const userLoans = useMemo(() => {
-      return gloanRequests.filter((loan) => (activeRole === 'borrower' ? loan.borrowerUser === username : loan.lenderUser === username));
-   }, [gloanRequests, activeRole, username]);
+      return gloanRequests.filter((loan) => (activeRole === 'borrower' ? loan.borrowerUser === userId : loan.lenderUser === userId));
+   }, [gloanRequests, activeRole, userId]);
 
    const loanArrays = useMemo(() => {
       const repayments = userLoans.filter((loan) => loan.repaymentStatus === 'Paid');

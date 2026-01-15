@@ -1,6 +1,7 @@
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 
+import type { User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
 
 export type SortOption = 'highest' | 'lowest' | 'newest' | 'oldest';
@@ -124,19 +125,25 @@ export const filterByTimePeriod = (loans: Loan[], loanTime: string): Loan[] => {
 /**
  * Filter loans by search query (searches reason and borrower username)
  */
-export const filterBySearch = (loans: Loan[], search: string): Loan[] => {
+export const filterBySearch = (loans: Loan[], search: string, userProfiles?: Record<string, User>): Loan[] => {
    if (!search) return loans;
 
    const searchLower = search.toLowerCase();
-   return loans.filter(
-      (loan) => loan.reason?.toLowerCase().includes(searchLower) || loan.borrowerUser?.toLowerCase().includes(searchLower)
-   );
+   return loans.filter((loan) => {
+      const borrowerUsername = loan.borrowerUser ? userProfiles?.[loan.borrowerUser]?.username ?? loan.borrowerUser : '';
+      return loan.reason?.toLowerCase().includes(searchLower) || borrowerUsername.toLowerCase().includes(searchLower);
+   });
 };
 
 /**
  * Apply all filters to a list of loans
  */
-export const filterLoans = (loans: Loan[], filters: LoanFilters, customAmount?: string): Loan[] => {
+export const filterLoans = (
+   loans: Loan[],
+   filters: LoanFilters,
+   customAmount?: string,
+   userProfiles?: Record<string, User>
+): Loan[] => {
    let filtered = [...loans];
 
    // Filter out loans that are already lent
@@ -159,7 +166,7 @@ export const filterLoans = (loans: Loan[], filters: LoanFilters, customAmount?: 
    }
 
    if (filters.search) {
-      filtered = filterBySearch(filtered, filters.search);
+      filtered = filterBySearch(filtered, filters.search, userProfiles);
    }
 
    if (filters.sortBy) {

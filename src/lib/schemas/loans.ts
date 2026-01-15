@@ -36,7 +36,7 @@ export type CreateLoanInput = z.infer<typeof createLoanSchema>;
  */
 export const updateLoanSchema = z.object({
    loanId: objectIdSchema,
-   username: z.string().min(1).optional(),
+   userId: z.string().min(1).optional(),
    wallet: z.string().min(1).optional(),
    loanAmount: loanAmountSchema.optional(),
    repaidAmount: repaidAmountSchema.optional(), // Can be 0 (no repayments yet)

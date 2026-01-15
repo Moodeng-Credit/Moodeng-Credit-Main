@@ -1,6 +1,8 @@
 
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+
+import { useDispatch } from 'react-redux';
 
 import { MobileNav, Sidebar } from '@/views/profile/components/navigation';
 import { FilterButtons, RoleSwitcher, TelegramModal } from '@/views/profile/components/shared';
@@ -8,14 +10,17 @@ import { DashboardTab, FAQTab, LoanSummaryTab, SettingsTab, SupportTab, Transact
 import { INFO_NAV_ITEMS, INITIAL_NAV_ITEMS } from '@/views/profile/constants';
 import { useLoanData, useProfileData, useProfileUpdate } from '@/views/profile/hooks';
 import { ProfileTab, UserRole } from '@/views/profile/types';
+import { fetchUserProfiles } from '@/store/slices/authSlice';
+import type { AppDispatch } from '@/store/store';
 
 export default function Profile() {
+   const dispatch = useDispatch<AppDispatch>();
    const [navItems, setNavItems] = useState(INITIAL_NAV_ITEMS);
    const [infoNavItems, setInfoNavItems] = useState(INFO_NAV_ITEMS);
    const [userRole, setUserRole] = useState<UserRole>(UserRole.LENDER);
 
    const { user } = useProfileData();
-   const { loans } = useLoanData(user.username || '');
+   const { loans } = useLoanData(user.user?.id || '');
    const {
       formData,
       updateField,
@@ -42,16 +47,30 @@ export default function Profile() {
       setShowTelegramModal(false);
    }, [setShowTelegramModal]);
 
+   useEffect(() => {
+      const loanUserIds = [
+         ...new Set(
+            loans
+               .flatMap((loan) => [loan.borrowerUser, loan.lenderUser])
+               .filter(Boolean)
+         )
+      ] as string[];
+
+      if (loanUserIds.length > 0) {
+         dispatch(fetchUserProfiles(loanUserIds)).catch(() => undefined);
+      }
+   }, [dispatch, loans]);
+
    const renderTabContent = () => {
       switch (activeTab) {
          case ProfileTab.DASHBOARD:
             return <DashboardTab />;
 
          case ProfileTab.LOAN_SUMMARY:
-            return <LoanSummaryTab loans={loans} currentUsername={user.username || ''} userRole={userRole} />;
+            return <LoanSummaryTab loans={loans} currentUserId={user.user?.id || ''} userRole={userRole} />;
 
          case ProfileTab.TRANSACTION_HISTORY:
-            return <TransactionHistoryTab loans={loans} currentUsername={user.username || ''} userRole={userRole} />;
+            return <TransactionHistoryTab loans={loans} currentUserId={user.user?.id || ''} userRole={userRole} />;
 
          case ProfileTab.SETTINGS:
             return (

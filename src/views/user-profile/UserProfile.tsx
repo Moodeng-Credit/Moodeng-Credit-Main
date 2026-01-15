@@ -15,9 +15,10 @@ import { calculateLenderDiversity, getDiversityColor, getDiversityStatus } from 
 import { getNetworkColor } from '@/utils/networkColors';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME } from '@/config/wagmiConfig';
-import { getUserProfile } from '@/store/slices/authSlice';
+import { fetchUserProfiles, getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import type { User } from '@/types/authTypes';
 import { type Loan } from '@/types/loanTypes';
 
 const LevelBadge = ({ status }: { status: string }) => (
@@ -37,43 +38,43 @@ const LevelBadge = ({ status }: { status: string }) => (
 const UserProfile = () => {
    const dispatch = useDispatch<AppDispatch>();
    const { username } = useParams();
+   const [profileUser, setProfileUser] = useState<User | null>(null);
 
    useEffect(() => {
-      const Profile = async () => {
-         await dispatch(getUserProfile(username as string))
-            .unwrap()
-            .then(() => {
-               console.log('Profile fetched successfully');
-            })
-            .catch((error: Error) => {
-               console.error('Error fetching profile:', error.message || error);
-            });
+      const loadProfile = async () => {
+         if (!username) return;
+         try {
+            const { user: fetchedUser } = await dispatch(getUserProfile(username)).unwrap();
+            setProfileUser(fetchedUser);
+            await dispatch(getUserLoans({ userId: fetchedUser.id })).unwrap();
+         } catch (error) {
+            console.error('Error fetching profile:', (error as Error).message || error);
+         }
       };
-      const Loan = async () => {
-         await dispatch(getUserLoans(username || ''))
-            .unwrap()
-            .then(() => {
-               console.log('Loan fetched successfully');
-            })
-            .catch((error: Error) => {
-               console.error('Error fetching loan:', error.message || error);
-            });
-      };
-      Profile();
-      Loan();
+      loadProfile();
    }, [dispatch, username]);
 
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
+   const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
+   const resolvedUser = profileUser ?? user;
    const [showDetailedHistory, setShowDetailedHistory] = useState(false);
    const [showLenderNames, setShowLenderNames] = useState(false);
    const [showAllTiers, setShowAllTiers] = useState(false);
 
-   if (!user || !loans) {
+   useEffect(() => {
+      const lenderUserIds = [...new Set(loans.map((loan) => loan.lenderUser).filter(Boolean))] as string[];
+      if (lenderUserIds.length > 0) {
+         dispatch(fetchUserProfiles(lenderUserIds)).catch(() => undefined);
+      }
+   }, [dispatch, loans]);
+
+   if (!resolvedUser || !loans) {
       return <Loading />;
    }
 
-   const memberSince = getMemberSinceText(user.createdAt);
+   const memberSince = getMemberSinceText(resolvedUser.createdAt);
+   const resolveUsername = (userId?: string | null) => (userId ? userProfiles[userId]?.username ?? userId : '');
 
    const ignoredTier = new Set();
    const TierLists = loans.reduce((acc: Loan[], loan: Loan) => {
@@ -123,7 +124,7 @@ const UserProfile = () => {
    }
 
    const countMap = loans.reduce((acc: Record<string, number>, loan: Loan) => {
-      const usernameToCount = loan.lenderUser || 'Unknown';
+      const usernameToCount = resolveUsername(loan.lenderUser) || 'Unknown';
       acc[usernameToCount] = (acc[usernameToCount] || 0) + 1;
       return acc;
    }, {});
@@ -149,10 +150,10 @@ const UserProfile = () => {
    });
    const avgPaymentTime = Math.round(totalPaymentTime / paidLoans.length);
 
-   const lenderDiversity = calculateLenderDiversity(loans);
+   const lenderDiversity = calculateLenderDiversity(loans, userProfiles);
 
    const borrowerData = {
-      username: username,
+      username: resolvedUser.username || username,
       memberSince: memberSince,
       stats: {
          totalLoans: loans.length,
@@ -164,9 +165,10 @@ const UserProfile = () => {
          building: TierLists.length
       },
       creditGrowth: {
-         currentLimit: user.cs > 20 ? user.cs - 20 : user.cs,
-         nextLimit: user.cs,
-         currentDate: user.cs > 20 && user.updatedAt ? formatDate(user.updatedAt) : formatDate(user.createdAt)
+         currentLimit: resolvedUser.cs > 20 ? resolvedUser.cs - 20 : resolvedUser.cs,
+         nextLimit: resolvedUser.cs,
+         currentDate:
+            resolvedUser.cs > 20 && resolvedUser.updatedAt ? formatDate(resolvedUser.updatedAt) : formatDate(resolvedUser.createdAt)
       },
       lenderDiversity: lenderDiversity
    };
@@ -614,19 +616,19 @@ const UserProfile = () => {
                                  </div>
                               </div>
                               <div className="flex justify-between items-center">
-                                 <span className="text-sm text-gray-400">{loan.lenderUser || 'Others'}</span>
+                                 <span className="text-sm text-gray-400">{resolveUsername(loan.lenderUser) || 'Others'}</span>
                                  <span
                                     className={`text-sm font-medium px-2 py-1 rounded-lg ${
                                        unlock
                                           ? 'bg-emerald-900/20 text-emerald-400 border border-emerald-800/40'
-                                          : build && loan.lenderUser !== ''
+                                          : build && Boolean(loan.lenderUser)
                                             ? 'bg-blue-900/20 text-blue-400 border border-blue-800/40'
                                             : 'bg-gray-800 text-gray-400'
                                     }`}
                                  >
                                     {unlock
                                        ? 'Credit Unlocking Loan'
-                                       : build && loan.lenderUser !== ''
+                                       : build && Boolean(loan.lenderUser)
                                          ? 'Trust Building Loan'
                                          : 'Regular Loan'}
                                  </span>
@@ -671,7 +673,7 @@ const UserProfile = () => {
                                        {ALLOWED_CHAIN_DISPLAY_NAME}
                                     </span>
                                  </td>
-                                 <td className="py-3 px-4 text-gray-400">{loan.lenderUser || 'Others'}</td>
+                                 <td className="py-3 px-4 text-gray-400">{resolveUsername(loan.lenderUser) || 'Others'}</td>
                                  <td className="py-3 px-4">
                                     <span
                                        className={`font-medium ${loan.repaymentStatus !== 'Paid' ? 'text-blue-400' : 'text-emerald-400'}`}
@@ -699,7 +701,7 @@ const UserProfile = () => {
                                        {ALLOWED_CHAIN_DISPLAY_NAME}
                                     </span>
                                  </td>
-                                 <td className="py-3 px-4 text-gray-400">{loan.lenderUser || 'Others'}</td>
+                                 <td className="py-3 px-4 text-gray-400">{resolveUsername(loan.lenderUser) || 'Others'}</td>
                                  <td className="py-3 px-4">
                                     <span
                                        className={`font-medium ${loan.repaymentStatus !== 'Paid' ? 'text-blue-400' : 'text-emerald-400'}`}
@@ -710,12 +712,12 @@ const UserProfile = () => {
                                  <td className="py-3 px-4">
                                     <span
                                        className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
-                                          loan.lenderUser !== ''
+                                          Boolean(loan.lenderUser)
                                              ? 'bg-blue-900/20 text-blue-400 border border-blue-800/40'
                                              : 'bg-gray-800 text-gray-400'
                                        }`}
                                     >
-                                       {loan.lenderUser !== '' ? 'Trust Building Loan' : 'Regular Loan'}
+                                       {loan.lenderUser ? 'Trust Building Loan' : 'Regular Loan'}
                                     </span>
                                  </td>
                               </tr>

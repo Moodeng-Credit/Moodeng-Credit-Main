@@ -7,14 +7,14 @@ import { UserRole } from '@/views/profile/types';
 
 interface LoanSummaryTabProps {
    loans: Loan[];
-   currentUsername: string;
+   currentUserId: string;
    userRole: UserRole;
 }
 
-export default function LoanSummaryTab({ loans, currentUsername, userRole }: LoanSummaryTabProps) {
+export default function LoanSummaryTab({ loans, currentUserId, userRole }: LoanSummaryTabProps) {
    const isLender = userRole === UserRole.LENDER;
 
-   const filteredLoans = loans.filter((loan) => (isLender ? loan.lenderUser === currentUsername : loan.borrowerUser === currentUsername));
+   const filteredLoans = loans.filter((loan) => (isLender ? loan.lenderUser === currentUserId : loan.borrowerUser === currentUserId));
 
    const {
       displayedItems: displayedLoans,

@@ -5,6 +5,7 @@ import type { Column } from '@/components/tables/DataTable';
 import { formatDate } from '@/utils/dateFormatters';
 import { formatNumber } from '@/utils/decimalHelpers';
 
+import type { User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
 
 const renderLoanStatus = (loan: Loan): ReactNode => (
@@ -17,7 +18,7 @@ const renderLoanStatus = (loan: Loan): ReactNode => (
    </span>
 );
 
-export const getTransactionColumns = (isLender: boolean): Column<Loan>[] => [
+export const getTransactionColumns = (isLender: boolean, userProfiles: Record<string, User>): Column<Loan>[] => [
    {
       header: 'All Transaction',
       accessor: 'reason' as const,
@@ -50,7 +51,10 @@ export const getTransactionColumns = (isLender: boolean): Column<Loan>[] => [
    },
    {
       header: `${isLender ? "Borrower's" : "Lender's"} Name`,
-      accessor: (loan) => (isLender ? loan.borrowerUser : loan.lenderUser),
+      accessor: (loan) => {
+         const userId = isLender ? loan.borrowerUser : loan.lenderUser;
+         return userId ? userProfiles[userId]?.username ?? userId : '';
+      },
       className: 'font-bold text-[#2a56f4]',
       mobileLabel: 'Name'
    },

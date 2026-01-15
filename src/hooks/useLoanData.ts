@@ -6,7 +6,7 @@ import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch } from '@/store/store';
 
 interface UseLoanDataOptions {
-   username: string | null | undefined;
+   userId: string | null | undefined;
    enabled?: boolean;
 }
 
@@ -15,14 +15,14 @@ interface UseLoanDataOptions {
  * Consolidates duplicate loan fetching logic across components
  * @param options - Configuration object with username and optional enabled flag
  */
-export function useLoanData({ username, enabled = true }: UseLoanDataOptions) {
+export function useLoanData({ userId, enabled = true }: UseLoanDataOptions) {
    const dispatch = useDispatch<AppDispatch>();
 
    useEffect(() => {
-      if (!enabled || !username) return;
+      if (!enabled || !userId) return;
 
       const fetchLoans = async () => {
-         await dispatch(getUserLoans(username))
+         await dispatch(getUserLoans({ userId }))
             .unwrap()
             .then(() => {
                console.log('Loan fetched successfully');
@@ -33,5 +33,5 @@ export function useLoanData({ username, enabled = true }: UseLoanDataOptions) {
       };
 
       fetchLoans();
-   }, [dispatch, username, enabled]);
+   }, [dispatch, userId, enabled]);
 }
