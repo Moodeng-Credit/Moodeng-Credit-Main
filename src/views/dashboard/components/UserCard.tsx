@@ -37,7 +37,9 @@ export default function UserCard(loan: Loan) {
    const username = useSelector((state: RootState) => state.auth.username);
    const userId = useSelector((state: RootState) => state.auth.user.id);
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
-   const borrowerUsername = borrowerUserId ? userProfiles[borrowerUserId]?.username ?? borrowerUserId : '';
+   const borrowerProfile = borrowerUserId ? userProfiles[borrowerUserId] : undefined;
+   const borrowerUsername = borrowerProfile?.username ?? '';
+   const borrowerDisplayName = borrowerUsername || 'Unknown user';
    // Use loans from Redux store to calculate total repaid (avoiding N+1 API calls)
    const allLoans = useSelector((state: RootState) => state.loans.loans.floans);
    // Get user profile from batch-fetched profiles in Redux store (avoiding N+1 API calls)
@@ -201,9 +203,13 @@ export default function UserCard(loan: Loan) {
                <div className="flex justify-between items-center mt-2">
                   <p className="text-[13px] font-normal text-[#0B1033]">
                      by{' '}
-                     <Link to={`/user/${borrowerUsername}`} className="text-[#0B1033] underline hover:no-underline">
-                        {borrowerUsername.slice(0, 12)}
-                     </Link>
+                     {borrowerUsername ? (
+                        <Link to={`/user/${borrowerUsername}`} className="text-[#0B1033] underline hover:no-underline">
+                           {borrowerDisplayName.slice(0, 12)}
+                        </Link>
+                     ) : (
+                        <span className="text-[#0B1033]">{borrowerDisplayName.slice(0, 12)}</span>
+                     )}
                   </p>
                   <p className="text-[13px] font-semibold text-[#6B6B7B]">{MONTHS[parseInt(splt[1])] + ' ' + splt[2] + ', ' + splt[0]}</p>
                </div>
@@ -237,13 +243,20 @@ export default function UserCard(loan: Loan) {
 
             <div className="flex justify-between items-center px-5 py-3 bg-white">
                <p className="text-sm font-normal text-[#0B1033]">Borrower Details</p>
-               <Link
-                  to={`/user/${borrowerUsername}`}
-                  className="flex items-center gap-1 bg-[#2563EB] text-white text-sm font-semibold px-4 py-1 rounded-md hover:bg-[#1e4bb8] transition"
-               >
-                  Insights
-                  <i className="fas fa-external-link-alt text-[12px]"></i>
-               </Link>
+               {borrowerUsername ? (
+                  <Link
+                     to={`/user/${borrowerUsername}`}
+                     className="flex items-center gap-1 bg-[#2563EB] text-white text-sm font-semibold px-4 py-1 rounded-md hover:bg-[#1e4bb8] transition"
+                  >
+                     Insights
+                     <i className="fas fa-external-link-alt text-[12px]"></i>
+                  </Link>
+               ) : (
+                  <span className="flex items-center gap-1 bg-[#2563EB] text-white text-sm font-semibold px-4 py-1 rounded-md opacity-60 cursor-not-allowed">
+                     Insights
+                     <i className="fas fa-external-link-alt text-[12px]"></i>
+                  </span>
+               )}
             </div>
 
             <div className="flex text-center text-[15px] font-semibold">
@@ -313,9 +326,13 @@ export default function UserCard(loan: Loan) {
                      <p className="font-extrabold text-base leading-5">{loan.reason}</p>
                      <p className="text-xs font-normal">
                         Thank you for supporting&nbsp;
-                        <Link to={`/user/${borrowerUsername}`} className="text-[#1E56FF] font-extrabold underline">
-                           {borrowerUsername}
-                        </Link>
+                        {borrowerUsername ? (
+                           <Link to={`/user/${borrowerUsername}`} className="text-[#1E56FF] font-extrabold underline">
+                              {borrowerDisplayName}
+                           </Link>
+                        ) : (
+                           <span className="text-[#1E56FF] font-extrabold">{borrowerDisplayName}</span>
+                        )}
                      </p>
                      <svg
                         width="242"
