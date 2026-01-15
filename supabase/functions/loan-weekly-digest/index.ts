@@ -86,7 +86,7 @@ serve(async (req) => {
    const { data: loans, error } = await supabase
       .from('loans')
       .select(
-         'id, tracking_id, borrower_user, loan_amount, total_repayment_amount, due_date, funded_at, lender_user, repayment_status'
+         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, due_date, funded_at, lender_user_id, repayment_status'
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial']);
@@ -97,19 +97,19 @@ serve(async (req) => {
 
    const borrowers = await loadBorrowers(
       supabase,
-      Array.from(new Set((loans ?? []).map((loan) => loan.borrower_user).filter(Boolean))) as string[]
+      Array.from(new Set((loans ?? []).map((loan) => loan.borrower_user_id).filter(Boolean))) as string[]
    );
 
    const borrowerBuckets = new Map<string, Array<LoanNotificationLoan & { id: string }>>();
 
    for (const loan of loans ?? []) {
-      if (!loan.borrower_user) {
+      if (!loan.borrower_user_id) {
          continue;
       }
 
-      const bucket = borrowerBuckets.get(loan.borrower_user) ?? [];
+      const bucket = borrowerBuckets.get(loan.borrower_user_id) ?? [];
       bucket.push(loan);
-      borrowerBuckets.set(loan.borrower_user, bucket);
+      borrowerBuckets.set(loan.borrower_user_id, bucket);
    }
 
    let sentCount = 0;

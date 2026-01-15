@@ -55,7 +55,7 @@ export type Database = {
       }
       loans: {
         Row: {
-          borrower_user: string | null
+          borrower_user_id: string | null
           borrower_wallet: string | null
           coin: string
           created_at: string | null
@@ -63,7 +63,7 @@ export type Database = {
           funded_at: string | null
           hash: string[] | null
           id: string
-          lender_user: string | null
+          lender_user_id: string | null
           lender_wallet: string | null
           loan_amount: number
           loan_status: Database["public"]["Enums"]["loan_status"] | null
@@ -77,7 +77,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          borrower_user?: string | null
+          borrower_user_id?: string | null
           borrower_wallet?: string | null
           coin: string
           created_at?: string | null
@@ -85,7 +85,7 @@ export type Database = {
           funded_at?: string | null
           hash?: string[] | null
           id?: string
-          lender_user?: string | null
+          lender_user_id?: string | null
           lender_wallet?: string | null
           loan_amount: number
           loan_status?: Database["public"]["Enums"]["loan_status"] | null
@@ -99,7 +99,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          borrower_user?: string | null
+          borrower_user_id?: string | null
           borrower_wallet?: string | null
           coin?: string
           created_at?: string | null
@@ -107,7 +107,7 @@ export type Database = {
           funded_at?: string | null
           hash?: string[] | null
           id?: string
-          lender_user?: string | null
+          lender_user_id?: string | null
           lender_wallet?: string | null
           loan_amount?: number
           loan_status?: Database["public"]["Enums"]["loan_status"] | null
@@ -122,15 +122,15 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "loans_borrower_user_fkey"
-            columns: ["borrower_user"]
+            foreignKeyName: "loans_borrower_user_id_fkey"
+            columns: ["borrower_user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "loans_lender_user_fkey"
-            columns: ["lender_user"]
+            foreignKeyName: "loans_lender_user_id_fkey"
+            columns: ["lender_user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]

@@ -44,7 +44,7 @@ serve(async (req) => {
 
    const { data: loan, error: loanError } = await supabase
       .from('loans')
-      .select('id, tracking_id, borrower_user, loan_amount, total_repayment_amount, due_date, funded_at, lender_user')
+      .select('id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, due_date, funded_at, lender_user_id')
       .eq('id', loanId)
       .maybeSingle();
 
@@ -56,14 +56,14 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Loan not found' }), { status: 404, headers: corsHeaders });
    }
 
-   if (!loan.borrower_user) {
+   if (!loan.borrower_user_id) {
       return new Response(JSON.stringify({ error: 'Loan borrower is missing' }), { status: 400, headers: corsHeaders });
    }
 
    const { data: borrower, error: borrowerError } = await supabase
       .from('users')
       .select('id, username, email')
-      .eq('id', loan.borrower_user)
+      .eq('id', loan.borrower_user_id)
       .maybeSingle();
 
    if (borrowerError) {
@@ -74,8 +74,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Borrower email not found' }), { status: 404, headers: corsHeaders });
    }
 
-   const { data: lender } = loan.lender_user
-      ? await supabase.from('users').select('username').eq('id', loan.lender_user).maybeSingle()
+   const { data: lender } = loan.lender_user_id
+      ? await supabase.from('users').select('username').eq('id', loan.lender_user_id).maybeSingle()
       : { data: null };
 
    const loanPayload = {

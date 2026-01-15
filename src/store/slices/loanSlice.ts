@@ -17,8 +17,8 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    trackingId: row.tracking_id,
    borrowerWallet: row.borrower_wallet ?? undefined,
    lenderWallet: row.lender_wallet ?? undefined,
-   borrowerUser: row.borrower_user ?? undefined,
-   lenderUser: row.lender_user ?? undefined,
+   borrowerUser: row.borrower_user_id ?? undefined,
+   lenderUser: row.lender_user_id ?? undefined,
    loanAmount: row.loan_amount,
    repaidAmount: row.repaid_amount,
    totalRepaymentAmount: row.total_repayment_amount,
@@ -51,8 +51,8 @@ export const createLoan = createAsyncThunk('loans/create', async (loanData: Crea
    const loanInsert: LoanInsert = {
       tracking_id: trackingId,
       borrower_wallet: loanData.borrowerWallet || null,
-      borrower_user: loanData.borrowerUserId || null,
-      lender_user: loanData.lenderUserId || null, // Use null instead of empty string to avoid FK violation
+      borrower_user_id: loanData.borrowerUserId || null,
+      lender_user_id: loanData.lenderUserId || null, // Use null instead of empty string to avoid FK violation
       loan_amount: loanData.loanAmount,
       total_repayment_amount: loanData.totalRepaymentAmount,
       reason: loanData.reason,
@@ -113,7 +113,7 @@ export const getUserLoans = createAsyncThunk(
       const { data, error } = await supabase
          .from('loans')
          .select('*')
-         .or(`borrower_user.eq.${resolvedUserId},lender_user.eq.${resolvedUserId}`)
+         .or(`borrower_user_id.eq.${resolvedUserId},lender_user_id.eq.${resolvedUserId}`)
          .order('created_at', { ascending: false });
 
       if (error) {
@@ -222,7 +222,7 @@ export const updateLoanStatus = createAsyncThunk(
       const updates: LoanUpdate = {};
 
       if (userId) {
-         updates.lender_user = userId;
+         updates.lender_user_id = userId;
       }
       if (wallet) {
          updates.lender_wallet = wallet;

@@ -6,8 +6,8 @@ export type LoanNotificationLoan = {
    total_repayment_amount: number;
    due_date: string | null;
    funded_at: string | null;
-   borrower_user: string | null;
-   lender_user: string | null;
+   borrower_user_id: string | null;
+   lender_user_id: string | null;
    borrower_username?: string | null;
    lender_username?: string | null;
 };
