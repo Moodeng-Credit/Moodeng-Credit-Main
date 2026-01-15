@@ -365,13 +365,13 @@ export const getUserProfile = createAsyncThunk('auth/getUserProfile', async (use
 });
 
 // Batch fetch multiple user profiles by usernames in a single query
-export const fetchUserProfiles = createAsyncThunk('auth/fetchUserProfiles', async (usernames: string[]) => {
-   if (usernames.length === 0) return { users: [] };
+export const fetchUserProfiles = createAsyncThunk('auth/fetchUserProfiles', async (userIds: string[]) => {
+   if (userIds.length === 0) return { users: [] };
 
    const supabase = supabaseClient();
-   const uniqueUsernames = [...new Set(usernames)]; // Remove duplicates
+   const uniqueUserIds = [...new Set(userIds)]; // Remove duplicates
 
-   const { data: profiles, error } = await supabase.from('users').select('*').in('username', uniqueUsernames);
+   const { data: profiles, error } = await supabase.from('users').select('*').in('id', uniqueUserIds);
 
    if (error) {
       throw error;
@@ -555,11 +555,11 @@ const authSlice = createSlice({
             if (!state.userProfiles) {
                state.userProfiles = {};
             }
-            // Store fetched user profiles in the userProfiles map
-            for (const user of action.payload.users) {
-               state.userProfiles[user.username] = user;
-            }
-         })
+         // Store fetched user profiles in the userProfiles map
+         for (const user of action.payload.users) {
+            state.userProfiles[user.id] = user;
+         }
+      })
          .addCase(logoutUser.fulfilled, (state) => {
             state.user = defaultUser;
             state.username = null;

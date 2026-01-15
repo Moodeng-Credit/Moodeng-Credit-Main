@@ -16,18 +16,18 @@ const corsHeaders = {
    'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
-const loadBorrowers = async (supabase: ReturnType<typeof createClient>, usernames: string[]) => {
-   if (!usernames.length) {
+const loadBorrowers = async (supabase: ReturnType<typeof createClient>, userIds: string[]) => {
+   if (!userIds.length) {
       return new Map<string, LoanNotificationRecipient & { id: string }>();
    }
 
-   const { data, error } = await supabase.from('users').select('id, username, email').in('username', usernames);
+   const { data, error } = await supabase.from('users').select('id, username, email').in('id', userIds);
 
    if (error || !data) {
       throw new Error(error?.message ?? 'Failed to load borrowers');
    }
 
-   return new Map(data.map((borrower) => [borrower.username, borrower]));
+   return new Map(data.map((borrower) => [borrower.id, borrower]));
 };
 
 const loadSentLoanIds = async (
@@ -133,7 +133,7 @@ serve(async (req) => {
    const { data: loans, error } = await supabase
       .from('loans')
       .select(
-         'id, tracking_id, borrower_user, loan_amount, total_repayment_amount, due_date, funded_at, lender_user, repayment_status'
+         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, due_date, funded_at, lender_user_id, repayment_status'
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])
@@ -145,7 +145,7 @@ serve(async (req) => {
 
    const borrowers = await loadBorrowers(
       supabase,
-      Array.from(new Set((loans ?? []).map((loan) => loan.borrower_user).filter(Boolean))) as string[]
+      Array.from(new Set((loans ?? []).map((loan) => loan.borrower_user_id).filter(Boolean))) as string[]
    );
 
    const { final, urgent } = getReminderWindows(
@@ -163,7 +163,7 @@ serve(async (req) => {
    >();
 
    for (const loan of loans ?? []) {
-      if (!loan.borrower_user || !loan.due_date) {
+      if (!loan.borrower_user_id || !loan.due_date) {
          continue;
       }
 
@@ -176,20 +176,20 @@ serve(async (req) => {
          continue;
       }
 
-      const bucket = borrowerBuckets.get(loan.borrower_user) ?? { urgent: [], final: [] };
+      const bucket = borrowerBuckets.get(loan.borrower_user_id) ?? { urgent: [], final: [] };
       if (isFinalWindow) {
          bucket.final.push(loan);
       } else if (isUrgentWindow) {
          bucket.urgent.push(loan);
       }
 
-      borrowerBuckets.set(loan.borrower_user, bucket);
+      borrowerBuckets.set(loan.borrower_user_id, bucket);
    }
 
    let sentCount = 0;
 
-   for (const [borrowerUsername, bucket] of borrowerBuckets.entries()) {
-      const borrower = borrowers.get(borrowerUsername);
+   for (const [borrowerId, bucket] of borrowerBuckets.entries()) {
+      const borrower = borrowers.get(borrowerId);
       if (!borrower?.email) {
          continue;
       }

@@ -1,3 +1,4 @@
+import type { User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
 
 export const getDiversityColor = (diversity: number): string => {
@@ -18,7 +19,8 @@ export const getDiversityStatus = (diversity: number): string => {
 };
 
 export const calculateLenderDiversity = (
-   loans: Loan[]
+   loans: Loan[],
+   userProfiles?: Record<string, User>
 ): {
    score: number;
    distribution: Array<{ name: string; percent: string }>;
@@ -36,7 +38,7 @@ export const calculateLenderDiversity = (
 
    // Count loans by lender
    const countMap = loans.reduce((acc: Record<string, number>, loan: Loan) => {
-      const lenderName = loan.lenderUser || 'Unknown';
+      const lenderName = loan.lenderUser ? userProfiles?.[loan.lenderUser]?.username ?? loan.lenderUser : 'Unknown';
       acc[lenderName] = (acc[lenderName] || 0) + 1;
       return acc;
    }, {});

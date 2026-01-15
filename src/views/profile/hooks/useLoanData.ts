@@ -5,13 +5,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
-export const useLoanData = (username: string) => {
+export const useLoanData = (userId: string) => {
    const dispatch = useDispatch<AppDispatch>();
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
 
    useEffect(() => {
       const fetchLoans = async () => {
-         await dispatch(getUserLoans(username || ''))
+         await dispatch(getUserLoans({ userId }))
             .unwrap()
             .then(() => {
                console.log('Loan fetched successfully');
@@ -21,10 +21,10 @@ export const useLoanData = (username: string) => {
             });
       };
 
-      if (username) {
+      if (userId) {
          fetchLoans();
       }
-   }, [dispatch, username]);
+   }, [dispatch, userId]);
 
    return { loans };
 };

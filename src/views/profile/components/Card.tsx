@@ -16,7 +16,8 @@ import type { AppDispatch, RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
 
 export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
-   const username = useSelector((state: RootState) => state.auth.username);
+   const userId = useSelector((state: RootState) => state.auth.user.id);
+   const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const [showDel, setShowDel] = useState(false);
    const [showPay, setShowPay] = useState(false);
    const dispatch = useDispatch<AppDispatch>();
@@ -26,13 +27,14 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
    const dueDate = calculateDueDate(loan.dueDate);
    const postedDate = formatDate(loan.createdAt);
    const badgeStyles = getLoanBadgeStyles(loan.loanStatus, loan.repaymentStatus, differenceInDays);
+   const borrowerUsername = loan.borrowerUser ? userProfiles[loan.borrowerUser]?.username ?? loan.borrowerUser : '';
 
    const handleDelete = async () => {
       const id = loan.id;
       await dispatch(deleteLoan(id))
          .unwrap()
          .then(async () => {
-            await dispatch(getUserLoans(username || ''));
+            await dispatch(getUserLoans({ userId }));
          })
          .catch((error: Error) => {
             console.error('Error deleting loan:', error.message || error);
@@ -55,8 +57,8 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
                <p className="text-[13px] leading-[16px] text-[#6B7280] mt-2">
                   You Funded <span className="font-extrabold">${formatNumber(loan.loanAmount)}</span> to{' '}
                   <em>
-                     <Link to={`/user/${loan.borrowerUser}`} className="text-[#2563EB] underline">
-                        {loan.borrowerUser}
+                     <Link to={`/user/${borrowerUsername}`} className="text-[#2563EB] underline">
+                        {borrowerUsername}
                      </Link>
                   </em>
                </p>
@@ -90,7 +92,7 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
             </div>
          </div>
          <Link
-            to={`/user/${loan.borrowerUser}`}
+            to={`/user/${borrowerUsername}`}
             className="bg-[#2563EB] text-white font-extrabold text-[14px] leading-[18px] py-3 rounded-b-xl w-full flex items-center justify-center gap-2"
          >
             Borrow Insight

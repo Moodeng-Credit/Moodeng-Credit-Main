@@ -23,7 +23,7 @@ import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
 
 function UserPay({ loan }: { loan: Loan }) {
-   const username = useSelector((state: RootState) => state.auth.username);
+   const userId = useSelector((state: RootState) => state.auth.user.id);
    const storedWalletAddress = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const [repaidAmountToAdd, setRepaidAmountToAdd] = useState('');
    const [isProcessing, setIsProcessing] = useState(false);
@@ -71,7 +71,7 @@ function UserPay({ loan }: { loan: Loan }) {
                   };
 
                   await dispatch(updateLoanStatus(loanData)).unwrap();
-                  await dispatch(getUserLoans(username || ''));
+                  await dispatch(getUserLoans({ userId }));
                   showToastByConfig('repayment_success');
                   setRepaidAmountToAdd('');
                } catch (updateError: unknown) {
@@ -112,7 +112,7 @@ function UserPay({ loan }: { loan: Loan }) {
          loan.id,
          Transfer,
          dispatch,
-         username,
+         userId,
          showToastByConfig
       ]
    );

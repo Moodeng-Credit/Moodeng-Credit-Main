@@ -17,8 +17,8 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    trackingId: row.tracking_id,
    borrowerWallet: row.borrower_wallet ?? undefined,
    lenderWallet: row.lender_wallet ?? undefined,
-   borrowerUser: row.borrower_user ?? undefined,
-   lenderUser: row.lender_user ?? undefined,
+   borrowerUser: row.borrower_user_id ?? undefined,
+   lenderUser: row.lender_user_id ?? undefined,
    loanAmount: row.loan_amount,
    repaidAmount: row.repaid_amount,
    totalRepaymentAmount: row.total_repayment_amount,
@@ -51,8 +51,8 @@ export const createLoan = createAsyncThunk('loans/create', async (loanData: Crea
    const loanInsert: LoanInsert = {
       tracking_id: trackingId,
       borrower_wallet: loanData.borrowerWallet || null,
-      borrower_user: loanData.borrowerUserId || null,
-      lender_user: loanData.lenderUserId || null, // Use null instead of empty string to avoid FK violation
+      borrower_user_id: loanData.borrowerUserId || null,
+      lender_user_id: loanData.lenderUserId || null, // Use null instead of empty string to avoid FK violation
       loan_amount: loanData.loanAmount,
       total_repayment_amount: loanData.totalRepaymentAmount,
       reason: loanData.reason,
@@ -85,21 +85,44 @@ export const fetchLoans = createAsyncThunk('loans/fetch', async () => {
    return (data || []).map(mapSupabaseLoanToLoan);
 });
 
-export const getUserLoans = createAsyncThunk('loans/getUserLoans', async (username: string) => {
-   const supabase = supabaseClient();
+export const getUserLoans = createAsyncThunk(
+   'loans/getUserLoans',
+   async ({ userId, username }: { userId?: string | null; username?: string | null }) => {
+      const supabase = supabaseClient();
 
-   const { data, error } = await supabase
-      .from('loans')
-      .select('*')
-      .or(`borrower_user.eq.${username},lender_user.eq.${username}`)
-      .order('created_at', { ascending: false });
+      let resolvedUserId = userId?.trim();
+      //TODO: Check if we can remove the deprecated username lookup later
+      if (!resolvedUserId && username) {
+         const { data: profile, error: profileError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('username', username)
+            .maybeSingle();
 
-   if (error) {
-      throw new Error(error.message);
+         if (profileError) {
+            throw new Error(profileError.message);
+         }
+
+         resolvedUserId = profile?.id ?? undefined;
+      }
+
+      if (!resolvedUserId) {
+         return [];
+      }
+
+      const { data, error } = await supabase
+         .from('loans')
+         .select('*')
+         .or(`borrower_user_id.eq.${resolvedUserId},lender_user_id.eq.${resolvedUserId}`)
+         .order('created_at', { ascending: false });
+
+      if (error) {
+         throw new Error(error.message);
+      }
+
+      return (data || []).map(mapSupabaseLoanToLoan);
    }
-
-   return (data || []).map(mapSupabaseLoanToLoan);
-});
+);
 
 const loanSlice = createSlice({
    name: 'loans',
@@ -186,7 +209,7 @@ export const updateLoanStatus = createAsyncThunk(
    'loans/updateStatus',
    async (loanData: {
       id: string;
-      username?: string | null;
+      userId?: string | null;
       wallet?: string;
       repaymentStatus?: string;
       loanStatus?: string;
@@ -194,12 +217,12 @@ export const updateLoanStatus = createAsyncThunk(
       hash?: string;
    }) => {
       const supabase = supabaseClient();
-      const { id, username, wallet, repaymentStatus, loanStatus, repaidAmount, hash } = loanData;
+      const { id, userId, wallet, repaymentStatus, loanStatus, repaidAmount, hash } = loanData;
 
       const updates: LoanUpdate = {};
 
-      if (username) {
-         updates.lender_user = username;
+      if (userId) {
+         updates.lender_user_id = userId;
       }
       if (wallet) {
          updates.lender_wallet = wallet;

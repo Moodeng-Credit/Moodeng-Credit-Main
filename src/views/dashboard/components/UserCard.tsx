@@ -23,7 +23,7 @@ import type { Loan } from '@/types/loanTypes';
 
 export default function UserCard(loan: Loan) {
    const loanData = loan;
-   const borrowerUser = loanData.borrowerUser || '';
+   const borrowerUserId = loanData.borrowerUser || '';
 
    const dispatch = useDispatch<AppDispatch>();
    const { Transfer } = useWallet();
@@ -35,19 +35,24 @@ export default function UserCard(loan: Loan) {
    const { showToastByConfig } = useToast();
    const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const username = useSelector((state: RootState) => state.auth.username);
+   const userId = useSelector((state: RootState) => state.auth.user.id);
+   const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
+   const borrowerProfile = borrowerUserId ? userProfiles[borrowerUserId] : undefined;
+   const borrowerUsername = borrowerProfile?.username ?? '';
+   const borrowerDisplayName = borrowerUsername || 'Unknown user';
    // Use loans from Redux store to calculate total repaid (avoiding N+1 API calls)
    const allLoans = useSelector((state: RootState) => state.loans.loans.floans);
    // Get user profile from batch-fetched profiles in Redux store (avoiding N+1 API calls)
-   const localProfile = useSelector((state: RootState) => state.auth.userProfiles[borrowerUser] || null);
+   const localProfile = useSelector((state: RootState) => state.auth.userProfiles[borrowerUserId] || null);
 
    // Calculate total repaid from already-fetched loans in Redux store
    const localTotalRepaid = useMemo(() => {
-      const borrowerLoans = allLoans.filter((ln) => ln.borrowerUser === borrowerUser);
+      const borrowerLoans = allLoans.filter((ln) => ln.borrowerUser === borrowerUserId);
       return borrowerLoans.reduce(
          (sum: number, ln: Loan) => (ln.repaymentStatus === 'Paid' ? sum + toNumber(ln.loanAmount) : sum),
          0
       );
-   }, [allLoans, borrowerUser]);
+   }, [allLoans, borrowerUserId]);
 
    const time = parseDateSafely(loanData.createdAt).toISOString();
    const splt = time.split('T')[0].split('-');
@@ -90,7 +95,7 @@ export default function UserCard(loan: Loan) {
          return;
       }
 
-      if (loanData.borrowerUser === username) {
+      if (loanData.borrowerUser === userId) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED));
          return;
       }
@@ -124,7 +129,7 @@ export default function UserCard(loan: Loan) {
                const loanPayload = {
                   id: loanData.id,
                   wallet: lenderWallet,
-                  username,
+                  userId,
                   loanStatus: 'Lent',
                   hash: transactionHash
                };
@@ -163,6 +168,7 @@ export default function UserCard(loan: Loan) {
       loanData.loanAmount,
       loanData.id,
       username,
+      userId,
       account.address,
       account.chain?.id,
       wallet,
@@ -197,9 +203,13 @@ export default function UserCard(loan: Loan) {
                <div className="flex justify-between items-center mt-2">
                   <p className="text-[13px] font-normal text-[#0B1033]">
                      by{' '}
-                     <Link to={`/user/${loanData.borrowerUser}`} className="text-[#0B1033] underline hover:no-underline">
-                        {loanData.borrowerUser?.slice(0, 12)}
-                     </Link>
+                     {borrowerUsername ? (
+                        <Link to={`/user/${borrowerUsername}`} className="text-[#0B1033] underline hover:no-underline">
+                           {borrowerDisplayName.slice(0, 12)}
+                        </Link>
+                     ) : (
+                        <span className="text-[#0B1033]">{borrowerDisplayName.slice(0, 12)}</span>
+                     )}
                   </p>
                   <p className="text-[13px] font-semibold text-[#6B6B7B]">{MONTHS[parseInt(splt[1])] + ' ' + splt[2] + ', ' + splt[0]}</p>
                </div>
@@ -233,13 +243,20 @@ export default function UserCard(loan: Loan) {
 
             <div className="flex justify-between items-center px-5 py-3 bg-white">
                <p className="text-sm font-normal text-[#0B1033]">Borrower Details</p>
-               <Link
-                  to={`/user/${loanData.borrowerUser}`}
-                  className="flex items-center gap-1 bg-[#2563EB] text-white text-sm font-semibold px-4 py-1 rounded-md hover:bg-[#1e4bb8] transition"
-               >
-                  Insights
-                  <i className="fas fa-external-link-alt text-[12px]"></i>
-               </Link>
+               {borrowerUsername ? (
+                  <Link
+                     to={`/user/${borrowerUsername}`}
+                     className="flex items-center gap-1 bg-[#2563EB] text-white text-sm font-semibold px-4 py-1 rounded-md hover:bg-[#1e4bb8] transition"
+                  >
+                     Insights
+                     <i className="fas fa-external-link-alt text-[12px]"></i>
+                  </Link>
+               ) : (
+                  <span className="flex items-center gap-1 bg-[#2563EB] text-white text-sm font-semibold px-4 py-1 rounded-md opacity-60 cursor-not-allowed">
+                     Insights
+                     <i className="fas fa-external-link-alt text-[12px]"></i>
+                  </span>
+               )}
             </div>
 
             <div className="flex text-center text-[15px] font-semibold">
@@ -262,7 +279,7 @@ export default function UserCard(loan: Loan) {
                <span>GOOD STANDING</span>
             </div>
 
-            {loanData.borrowerUser === username ? (
+            {loanData.borrowerUser === userId ? (
                <div className="p-5 bg-gray-100">
                   <div className="w-full bg-gray-300 text-gray-600 font-semibold text-[15px] py-3 rounded-lg text-center cursor-not-allowed">
                      Your Loan Request
@@ -309,9 +326,13 @@ export default function UserCard(loan: Loan) {
                      <p className="font-extrabold text-base leading-5">{loan.reason}</p>
                      <p className="text-xs font-normal">
                         Thank you for supporting&nbsp;
-                        <Link to={`/user/${loanData.borrowerUser}`} className="text-[#1E56FF] font-extrabold underline">
-                           {loan.borrowerUser}
-                        </Link>
+                        {borrowerUsername ? (
+                           <Link to={`/user/${borrowerUsername}`} className="text-[#1E56FF] font-extrabold underline">
+                              {borrowerDisplayName}
+                           </Link>
+                        ) : (
+                           <span className="text-[#1E56FF] font-extrabold">{borrowerDisplayName}</span>
+                        )}
                      </p>
                      <svg
                         width="242"

@@ -65,13 +65,14 @@ function Dashboard$() {
    const [showPurple, setShowPurple] = useState(false);
    const [isSubmitting, setIsSubmitting] = useState(false);
    const user = useSelector((state: RootState) => state.auth.user);
+   const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const isLoading = useSelector((state: RootState) => state.loans.isLoading);
    const showVerify = user?.isWorldId !== 'ACTIVE';
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
    const [sortedLoans, setSortedLoans] = useState(floanRequests);
    const today = new Date().toISOString().split('T')[0];
-   const borrowerUserId = user?.username || '';
+   const borrowerUserId = user?.id || '';
    const lenderUserId = '';
    const [loanAmount, setLoanAmount] = useState('');
    const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');
@@ -259,10 +260,10 @@ function Dashboard$() {
             const loans = await dispatch(fetchLoans()).unwrap();
             console.log('Loans fetched successfully');
 
-            // Extract unique borrower usernames and batch fetch their profiles
-            const borrowerUsernames = [...new Set(loans.map((loan: Loan) => loan.borrowerUser).filter(Boolean))] as string[];
-            if (borrowerUsernames.length > 0) {
-               await dispatch(fetchUserProfiles(borrowerUsernames)).unwrap();
+            // Extract unique borrower user IDs and batch fetch their profiles
+            const borrowerUserIds = [...new Set(loans.map((loan: Loan) => loan.borrowerUser).filter(Boolean))] as string[];
+            if (borrowerUserIds.length > 0) {
+               await dispatch(fetchUserProfiles(borrowerUserIds)).unwrap();
                console.log('User profiles fetched successfully');
             }
          } catch (error) {
@@ -278,8 +279,8 @@ function Dashboard$() {
          search: searchLoan,
          sortBy: filters.sortBy
       };
-      return filterLoans(floanRequests, allFilters, customAmount);
-   }, [filters, searchLoan, floanRequests, customAmount]);
+      return filterLoans(floanRequests, allFilters, customAmount, userProfiles);
+   }, [filters, searchLoan, floanRequests, customAmount, userProfiles]);
 
    useEffect(() => {
       setSortedLoans(filteredLoans);

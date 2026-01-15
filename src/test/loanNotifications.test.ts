@@ -12,8 +12,9 @@ const baseLoan = {
    total_repayment_amount: 275,
    due_date: '2026-01-15T00:00:00.000Z',
    funded_at: '2026-01-10T00:00:00.000Z',
-   borrower_user: 'sam',
-   lender_user: 'lender-01'
+   borrower_user_id: '11111111-1111-1111-1111-111111111111',
+   lender_user_id: '22222222-2222-2222-2222-222222222222',
+   lender_username: 'lender-01'
 };
 
 const recipient = {
