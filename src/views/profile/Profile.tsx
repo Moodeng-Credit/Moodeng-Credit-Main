@@ -79,6 +79,7 @@ export default function Profile() {
                   email={formData.email || ''}
                   telegramUsername={formData.telegramUsername || ''}
                   password={formData.password || ''}
+                  iouPoints={user.user?.iouPoints ?? 0}
                   currentUsername={user.username || ''}
                   currentEmail={user.user?.email || ''}
                   currentTelegramUsername={user.user?.telegramUsername || ''}

@@ -5,6 +5,7 @@ interface SettingsTabProps {
    email: string;
    telegramUsername: string;
    password: string;
+   iouPoints: number;
    currentUsername?: string;
    currentEmail?: string;
    currentTelegramUsername?: string;
@@ -24,6 +25,7 @@ export default function SettingsTab({
    email,
    telegramUsername,
    password,
+   iouPoints,
    currentUsername,
    currentEmail,
    currentTelegramUsername,
@@ -63,6 +65,7 @@ export default function SettingsTab({
                username={username}
                email={email}
                telegramUsername={telegramUsername}
+               iouPoints={iouPoints}
                currentUsername={currentUsername}
                currentEmail={currentEmail}
                currentTelegramUsername={currentTelegramUsername}

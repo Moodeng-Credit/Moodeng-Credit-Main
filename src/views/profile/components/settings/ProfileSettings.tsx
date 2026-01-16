@@ -1,11 +1,13 @@
 import type { ChangeEvent } from 'react';
 
 import FormField from '@/components/forms/FormField';
+import { formatNumber } from '@/utils/decimalHelpers';
 
 interface ProfileSettingsProps {
    username: string;
    email: string;
    telegramUsername: string;
+   iouPoints: number;
    currentUsername?: string;
    currentEmail?: string;
    currentTelegramUsername?: string;
@@ -21,6 +23,7 @@ export default function ProfileSettings({
    username,
    email,
    telegramUsername,
+   iouPoints,
    currentUsername,
    currentEmail,
    currentTelegramUsername,
@@ -67,6 +70,14 @@ export default function ProfileSettings({
                   label: 'Change Email',
                   onClick: onUpdate
                }}
+            />
+            <FormField
+               id="iou-points"
+               label="IOU Points"
+               value={formatNumber(iouPoints)}
+               onChange={() => undefined}
+               disabled
+               description="Read-only total based on your funded loans."
             />
             {isDevMode ? (
                <div className="grid grid-cols-12 gap-3">

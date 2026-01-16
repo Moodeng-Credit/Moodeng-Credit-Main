@@ -95,6 +95,7 @@ const mapSupabaseRowToUser = (row: UserRow): User => ({
    mal: row.mal,
    nal: row.nal,
    cs: row.cs,
+   iouPoints: row.iou_points ?? 0,
    createdAt: row.created_at,
    updatedAt: row.updated_at
 });
@@ -176,6 +177,7 @@ const defaultUser: User = {
    mal: 0,
    nal: 0,
    cs: 0,
+   iouPoints: 0,
    createdAt: '',
    updatedAt: ''
 };

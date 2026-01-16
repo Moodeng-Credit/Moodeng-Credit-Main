@@ -145,6 +145,8 @@ export type Database = {
           email: string
           google_id: string | null
           id: string
+          iou_points: number | null
+          iou_points_updated_at: string | null
           is_world_id: Database["public"]["Enums"]["world_id_status"] | null
           mal: number | null
           nal: number | null
@@ -164,6 +166,8 @@ export type Database = {
           email: string
           google_id?: string | null
           id: string
+          iou_points?: number | null
+          iou_points_updated_at?: string | null
           is_world_id?: Database["public"]["Enums"]["world_id_status"] | null
           mal?: number | null
           nal?: number | null
@@ -183,6 +187,8 @@ export type Database = {
           email?: string
           google_id?: string | null
           id?: string
+          iou_points?: number | null
+          iou_points_updated_at?: string | null
           is_world_id?: Database["public"]["Enums"]["world_id_status"] | null
           mal?: number | null
           nal?: number | null
