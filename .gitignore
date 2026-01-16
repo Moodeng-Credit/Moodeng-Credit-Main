@@ -63,6 +63,7 @@ yarn-error.log*
 !.env.production
 !.env.staging
 !.env.local
+!.env.ci
 .env.keys
 
 # vercel
