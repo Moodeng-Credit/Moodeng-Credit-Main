@@ -19,12 +19,10 @@ export interface CreditLevel {
    unlocked: boolean;
    amount: number;
    date?: string;
-   lender?: string;
-   reason?: string;
-   repayTime?: string;
    isMaxCredit?: boolean;
    unlockRequirement?: string;
-   hasRequestButton?: boolean;
+   requestable?: boolean;
+   progressionPaused?: boolean;
 }
 
 export type RoleType = 'borrower' | 'lender';

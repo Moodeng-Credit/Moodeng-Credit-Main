@@ -1,8 +1,11 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
+import { evaluateCreditProgression } from '@/lib/creditLeveling';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
+import { fetchUser } from '@/store/slices/authSlice';
+import type { RootState } from '@/store/store';
 import { type CreateLoanData, type Loan, type LoanState } from '@/types/loanTypes';
 
 const supabaseClient = () => getSupabaseBrowserClient();
@@ -207,15 +210,18 @@ export const { clearError, addLoan, updateLoan } = loanSlice.actions;
 
 export const updateLoanStatus = createAsyncThunk(
    'loans/updateStatus',
-   async (loanData: {
-      id: string;
-      userId?: string | null;
-      wallet?: string;
-      repaymentStatus?: string;
-      loanStatus?: string;
-      repaidAmount?: number;
-      hash?: string;
-   }) => {
+   async (
+      loanData: {
+         id: string;
+         userId?: string | null;
+         wallet?: string;
+         repaymentStatus?: string;
+         loanStatus?: string;
+         repaidAmount?: number;
+         hash?: string;
+      },
+      { dispatch, getState }
+   ) => {
       const supabase = supabaseClient();
       const { id, userId, wallet, repaymentStatus, loanStatus, repaidAmount, hash } = loanData;
 
@@ -255,6 +261,55 @@ export const updateLoanStatus = createAsyncThunk(
 
       if (!data) {
          throw new Error('Failed to update loan');
+      }
+
+      const isPaid = repaymentStatus === 'Paid' || data.repayment_status === 'Paid';
+      if (isPaid && data.borrower_user_id && data.due_date) {
+         const { data: borrower, error: borrowerError } = await supabase
+            .from('users')
+            .select('id, cs, is_world_id, credit_progression_paused')
+            .eq('id', data.borrower_user_id)
+            .single();
+
+         if (borrowerError) {
+            throw new Error(borrowerError.message);
+         }
+
+         if (borrower) {
+            const creditEvaluation = evaluateCreditProgression({
+               currentLimit: borrower.cs ?? 0,
+               isVerified: borrower.is_world_id === 'ACTIVE',
+               isPaused: borrower.credit_progression_paused ?? false,
+               loanAmount: data.loan_amount,
+               repaidAmount: data.repaid_amount,
+               totalRepaymentAmount: data.total_repayment_amount,
+               dueDate: data.due_date,
+               paidAt: data.updated_at ?? new Date().toISOString()
+            });
+
+            const userUpdates: Database['public']['Tables']['users']['Update'] = {};
+
+            if (creditEvaluation.shouldPause && !borrower.credit_progression_paused) {
+               userUpdates.credit_progression_paused = true;
+            }
+
+            if (creditEvaluation.shouldLevelUp) {
+               userUpdates.cs = creditEvaluation.nextLimit;
+            }
+
+            if (Object.keys(userUpdates).length > 0) {
+               const { error: userUpdateError } = await supabase.from('users').update(userUpdates).eq('id', borrower.id);
+
+               if (userUpdateError) {
+                  throw new Error(userUpdateError.message);
+               }
+
+               const state = getState() as RootState;
+               if (state.auth.user.id === borrower.id) {
+                  await dispatch(fetchUser());
+               }
+            }
+         }
       }
 
       if (loanStatus === 'Lent') {

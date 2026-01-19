@@ -140,6 +140,7 @@ export const userResponseSchema = z.object({
    mal: z.number(),
    nal: z.number(),
    cs: z.number(),
+   creditProgressionPaused: z.boolean().optional(),
    createdAt: z.date(),
    updatedAt: z.date()
 });

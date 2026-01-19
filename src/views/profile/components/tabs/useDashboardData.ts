@@ -2,7 +2,8 @@ import { useEffect, useMemo } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 
-import { parseDateSafely } from '@/utils/dateFormatters';
+import { CREDIT_STEP, CREDIT_TIERS, MAX_CREDIT_LIMIT, getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 
 import { fetchUser } from '@/store/slices/authSlice';
@@ -10,9 +11,93 @@ import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { CreditLevel, RoleType, StatsData } from '@/views/profile/components/tabs/types';
 
+import type { Loan } from '@/types/loanTypes';
+import type { User } from '@/types/authTypes';
+
+type CreditLevelInput = {
+   user: User;
+   loans: Loan[];
+};
+
+const buildUnlockDate = (date?: string | null): string | undefined => {
+   if (!date) return undefined;
+   return formatDate(date);
+};
+
+export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLevel[] => {
+   const isVerified = user.isWorldId === 'ACTIVE';
+   const currentLimit = getEffectiveCreditLimit(user.cs, isVerified);
+   const isPaused = Boolean(user.creditProgressionPaused);
+   const paidLoans = loans.filter((loan) => loan.repaymentStatus === 'Paid');
+   const onTimePaidLoans = paidLoans.filter((loan) => {
+      const repaidAmount = toNumber(loan.repaidAmount);
+      const totalRepayment = toNumber(loan.totalRepaymentAmount);
+      const isFullyRepaid = totalRepayment > 0 ? repaidAmount >= totalRepayment : repaidAmount > 0;
+      const paidAt = parseDateSafely(loan.updatedAt);
+      const dueDate = parseDateSafely(loan.dueDate);
+      return isFullyRepaid && paidAt.getTime() <= dueDate.getTime();
+   });
+
+   const paidOnTimeByAmount = new Map<number, Loan>();
+   [...onTimePaidLoans]
+      .sort((a, b) => parseDateSafely(a.updatedAt).getTime() - parseDateSafely(b.updatedAt).getTime())
+      .forEach((loan) => {
+         if (!paidOnTimeByAmount.has(loan.loanAmount)) {
+            paidOnTimeByAmount.set(loan.loanAmount, loan);
+         }
+      });
+
+   const fallbackDate = buildUnlockDate(user.updatedAt || user.createdAt || new Date().toISOString());
+
+   return CREDIT_TIERS.map((amount) => {
+      const isUnlocked = isVerified && amount <= currentLimit;
+      const isCurrentLimit = isVerified && amount === currentLimit;
+      const isNextTier = isVerified && amount === currentLimit + CREDIT_STEP && currentLimit < MAX_CREDIT_LIMIT;
+      const isMaxCredit = isUnlocked && amount === MAX_CREDIT_LIMIT;
+
+      let unlockRequirement = '';
+      let date: string | undefined = fallbackDate;
+      let requestable = false;
+
+      if (!isVerified) {
+         unlockRequirement = 'Verify World ID to start borrowing';
+         date = undefined;
+      } else if (isUnlocked) {
+         if (amount === CREDIT_TIERS[0]) {
+            date = buildUnlockDate(user.createdAt) ?? fallbackDate;
+         } else {
+            const triggeringLoan = paidOnTimeByAmount.get(amount - CREDIT_STEP);
+            date = buildUnlockDate(triggeringLoan?.updatedAt) ?? fallbackDate;
+         }
+         requestable = isCurrentLimit;
+      } else if (isPaused) {
+         unlockRequirement = 'Progression Paused (Late Repayment)';
+         date = undefined;
+      } else if (isNextTier) {
+         unlockRequirement = `Fully repay $${currentLimit} on time to unlock this level`;
+         date = undefined;
+      } else {
+         unlockRequirement = 'Locked';
+         date = undefined;
+      }
+
+      return {
+         id: `tier-${amount}`,
+         amount,
+         unlocked: isUnlocked,
+         date,
+         unlockRequirement,
+         isMaxCredit,
+         requestable,
+         progressionPaused: isPaused
+      };
+   });
+};
+
 export const useDashboardData = (activeRole: RoleType) => {
    const dispatch = useDispatch<AppDispatch>();
    const userId = useSelector((state: RootState) => state.auth.user.id);
+   const user = useSelector((state: RootState) => state.auth.user);
    const gloanRequests = useSelector((state: RootState) => state.loans.loans.gloans || []);
 
    useEffect(() => {
@@ -67,49 +152,7 @@ export const useDashboardData = (activeRole: RoleType) => {
       return Math.min(100, uniqueLenders.size * 10);
    }, [userLoans, activeRole]);
 
-   const creditLevels: CreditLevel[] = useMemo(() => {
-      const completedLoans = stats.repayments.count;
-      return [
-         {
-            id: 'level-60',
-            unlocked: completedLoans >= 1,
-            amount: 60,
-            date: 'March 02 2025',
-            lender: 'Lender_4000',
-            reason: 'Need to buy\nBooks for School',
-            repayTime: '3 DAYS TO REPAY'
-         },
-         {
-            id: 'level-80',
-            unlocked: completedLoans >= 2,
-            amount: 80,
-            date: 'March 02 2025',
-            lender: 'Lender Name',
-            reason: 'Unexpected car repair,\nwaiting for reimbursement',
-            repayTime: '1 WEEK TO REPAY'
-         },
-         {
-            id: 'level-100',
-            unlocked: completedLoans >= 3,
-            amount: 100,
-            date: 'March 01 2025',
-            isMaxCredit: true
-         },
-         {
-            id: 'level-120',
-            unlocked: false,
-            amount: 120,
-            unlockRequirement: 'Repay a $100 Loan\nto Unlock this Level',
-            hasRequestButton: true
-         },
-         {
-            id: 'level-140',
-            unlocked: false,
-            amount: 140,
-            unlockRequirement: 'Repay a $120 Loan\nto Unlock this Level'
-         }
-      ];
-   }, [stats.repayments.count]);
+   const creditLevels: CreditLevel[] = useMemo(() => buildCreditLevels({ user, loans: userLoans }), [user, userLoans]);
 
    return { stats, lenderDiversityScore, creditLevels, loanArrays };
 };

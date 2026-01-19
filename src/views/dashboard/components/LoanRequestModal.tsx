@@ -4,6 +4,8 @@ import { type ChangeEvent, type FormEvent, type RefObject } from 'react';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
+import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
+
 import { type User } from '@/types/authTypes';
 
 interface LoanRequestModalProps {
@@ -47,7 +49,7 @@ export default function LoanRequestModal({
 
    const isVerified = !showVerify;
    const modalWidth = isVerified ? '400px' : '320px';
-   const limitAmount = isVerified ? user.cs : 15;
+   const limitAmount = getEffectiveCreditLimit(user.cs, isVerified);
 
    return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
