@@ -40,4 +40,34 @@ export const buildPointsIdempotencyKey = (payload: {
    return `${payload.userId}:${payload.sourceType}:${payload.sourceId}:${payload.eventType}`;
 };
 
+const safeToBigInt = (value: number | string | bigint): bigint => {
+   if (typeof value === 'bigint') return value;
+   if (typeof value === 'number') {
+      if (!Number.isFinite(value)) return 0n;
+      return BigInt(Math.trunc(value));
+   }
+
+   const normalized = value.trim();
+   if (normalized.length === 0) return 0n;
+   const numeric = normalized.split('.')[0];
+   if (!/^\d+$/.test(numeric)) return 0n;
+   return BigInt(numeric);
+};
+
+export const formatPointsMajor = (minorUnits?: number | string | bigint | null): string => {
+   if (minorUnits === null || minorUnits === undefined) return '0';
+
+   const minor = safeToBigInt(minorUnits);
+   const scaleFactor = 10n ** BigInt(POINTS_SCALE);
+   const whole = minor / scaleFactor;
+   const fraction = minor % scaleFactor;
+
+   if (fraction === 0n) {
+      return whole.toString();
+   }
+
+   const fractionStr = fraction.toString().padStart(POINTS_SCALE, '0').replace(/0+$/, '');
+   return `${whole.toString()}.${fractionStr}`;
+};
+
 export const pointsScale = POINTS_SCALE;
