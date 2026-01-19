@@ -18,14 +18,17 @@ export default function UserNetwork() {
    const username = useSelector((state: RootState) => state.auth.username);
    const userId = useSelector((state: RootState) => state.auth.user.id);
    const [pointsTotal, setPointsTotal] = useState<number | null>(null);
+   const [isPointsLoading, setIsPointsLoading] = useState(false);
 
    useEffect(() => {
       if (!userId) {
          setPointsTotal(null);
+         setIsPointsLoading(false);
          return;
       }
 
       let isActive = true;
+      setIsPointsLoading(true);
 
       const fetchUserPoints = async () => {
          const supabase = getSupabaseBrowserClient();
@@ -36,10 +39,12 @@ export default function UserNetwork() {
          if (error) {
             console.error('Failed to fetch IOU points:', error.message);
             setPointsTotal(0);
+            setIsPointsLoading(false);
             return;
          }
 
          setPointsTotal(data?.points_total ?? 0);
+         setIsPointsLoading(false);
       };
 
       fetchUserPoints();
@@ -117,7 +122,8 @@ export default function UserNetwork() {
                         className="bg-purple-600 text-white text-xs font-semibold rounded-md px-3 pb-1 pt-[0.375rem] flex items-center gap-1 hover:bg-purple-700 transition-all duration-200 hover:scale-105 hover:shadow-md"
                         type="button"
                      >
-                        <i className="fas fa-coins"></i> IOU {formatPointsMajor(pointsTotal ?? 0)}
+                        <i className="fas fa-coins"></i>{' '}
+                        {isPointsLoading ? 'IOU Loading' : `IOU ${formatPointsMajor(pointsTotal ?? 0)}`}
                      </button>
                   </div>
                   {account.isConnected ? (
