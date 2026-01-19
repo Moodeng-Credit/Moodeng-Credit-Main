@@ -108,8 +108,10 @@ export default function UserNetwork() {
             <section className="h-full bg-white rounded-xl border border-solid border-gray-300 shadow-md w-72 flex flex-col justify-between transform transition-all duration-300 ease-out animate-in slide-in-from-top-2 fade-in-0">
                <div>
                   <div className="flex justify-between items-center border-b border-gray-200 border-solid px-4 py-3">
-                     <Link to="/profile">
-                        <p className="text-sm font-normal text-black">{username}</p>
+                     <Link to="/profile" className="max-w-[150px]">
+                        <p className="text-sm font-normal text-black truncate" title={username ?? ''}>
+                           {username}
+                        </p>
                      </Link>
                      <button
                         className="bg-purple-600 text-white text-xs font-semibold rounded-md px-3 pb-1 pt-[0.375rem] flex items-center gap-1 hover:bg-purple-700 transition-all duration-200 hover:scale-105 hover:shadow-md"
