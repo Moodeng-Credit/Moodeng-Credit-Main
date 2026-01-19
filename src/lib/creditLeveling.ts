@@ -10,9 +10,9 @@ type CreditProgressionInput = {
    currentLimit: number | null | undefined;
    isVerified: boolean;
    isPaused: boolean;
-   loanAmount: number | null | undefined;
    repaidAmount: number | null | undefined;
    totalRepaymentAmount: number | null | undefined;
+   cumulativeRepaidAmount: number | null | undefined;
    dueDate: string;
    paidAt: string;
 };
@@ -34,24 +34,24 @@ export const evaluateCreditProgression = ({
    currentLimit,
    isVerified,
    isPaused,
-   loanAmount,
    repaidAmount,
    totalRepaymentAmount,
+   cumulativeRepaidAmount,
    dueDate,
    paidAt
 }: CreditProgressionInput): CreditProgressionResult => {
    const normalizedLimit = getEffectiveCreditLimit(currentLimit, isVerified);
-   const normalizedLoanAmount = toNumber(loanAmount ?? 0);
    const repaid = toNumber(repaidAmount ?? 0);
    const totalRepayment = toNumber(totalRepaymentAmount ?? 0);
+   const cumulativeRepaid = toNumber(cumulativeRepaidAmount ?? 0);
    const isFullyRepaid = totalRepayment > 0 && repaid >= totalRepayment;
    const paidAtDate = parseDateSafely(paidAt);
    const dueDateValue = parseDateSafely(dueDate);
    const isLate = paidAtDate.getTime() > dueDateValue.getTime();
-   const matchesLimit = normalizedLoanAmount === normalizedLimit;
+   const meetsCumulativeVolume = cumulativeRepaid >= normalizedLimit;
    const shouldPause = isLate;
    const canLevelUp =
-      isVerified && !isPaused && !shouldPause && isFullyRepaid && matchesLimit && normalizedLimit < MAX_CREDIT_LIMIT;
+      isVerified && !isPaused && !shouldPause && isFullyRepaid && meetsCumulativeVolume && normalizedLimit < MAX_CREDIT_LIMIT;
 
    return {
       shouldPause,

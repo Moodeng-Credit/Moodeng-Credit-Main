@@ -54,9 +54,9 @@ describe('Credit leveling logic', () => {
          currentLimit: 20,
          isVerified: true,
          isPaused: false,
-         loanAmount: 20,
          repaidAmount: 25,
          totalRepaymentAmount: 25,
+         cumulativeRepaidAmount: 20,
          dueDate: '2025-02-01T00:00:00.000Z',
          paidAt: '2025-01-31T00:00:00.000Z'
       });
@@ -70,15 +70,31 @@ describe('Credit leveling logic', () => {
          currentLimit: 20,
          isVerified: true,
          isPaused: false,
-         loanAmount: 20,
          repaidAmount: 25,
          totalRepaymentAmount: 25,
+         cumulativeRepaidAmount: 20,
          dueDate: '2025-02-01T00:00:00.000Z',
          paidAt: '2025-02-03T00:00:00.000Z'
       });
 
       expect(evaluation.shouldPause).toBe(true);
       expect(evaluation.shouldLevelUp).toBe(false);
+   });
+
+   it('levels up when cumulative repayments reach the current limit', () => {
+      const evaluation = evaluateCreditProgression({
+         currentLimit: 40,
+         isVerified: true,
+         isPaused: false,
+         repaidAmount: 10,
+         totalRepaymentAmount: 10,
+         cumulativeRepaidAmount: 45,
+         dueDate: '2025-02-01T00:00:00.000Z',
+         paidAt: '2025-01-31T00:00:00.000Z'
+      });
+
+      expect(evaluation.shouldLevelUp).toBe(true);
+      expect(evaluation.nextLimit).toBe(60);
    });
 });
 
@@ -132,7 +148,7 @@ describe('Dashboard credit level carousel', () => {
 
       expect(tiers).toHaveLength(7);
       expect(tiers[0].unlocked).toBe(true);
-      expect(tiers[1].unlockRequirement).toContain('Fully repay $20 on time');
+      expect(tiers[1].unlockRequirement).toContain('Fully repay $20 total on time');
    });
 
    it('builds tiers for an experienced user with multiple repayments', () => {
@@ -152,7 +168,7 @@ describe('Dashboard credit level carousel', () => {
       });
 
       expect(tiers.find((tier) => tier.amount === 60)?.unlocked).toBe(true);
-      expect(tiers.find((tier) => tier.amount === 80)?.unlockRequirement).toContain('Fully repay $60 on time');
+      expect(tiers.find((tier) => tier.amount === 80)?.unlockRequirement).toContain('Fully repay $60 total on time');
    });
 
    it('locks tiers for unverified users', () => {

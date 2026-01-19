@@ -38,13 +38,21 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
       return isFullyRepaid && paidAt.getTime() <= dueDate.getTime();
    });
 
-   const paidOnTimeByAmount = new Map<number, Loan>();
+   const paidOnTimeByTier = new Map<number, Loan>();
+   let cumulativeRepaidAmount = 0;
    [...onTimePaidLoans]
       .sort((a, b) => parseDateSafely(a.updatedAt).getTime() - parseDateSafely(b.updatedAt).getTime())
       .forEach((loan) => {
-         if (!paidOnTimeByAmount.has(loan.loanAmount)) {
-            paidOnTimeByAmount.set(loan.loanAmount, loan);
-         }
+         cumulativeRepaidAmount += toNumber(loan.loanAmount);
+         CREDIT_TIERS.forEach((tier) => {
+            if (tier === CREDIT_TIERS[0] || paidOnTimeByTier.has(tier)) {
+               return;
+            }
+
+            if (cumulativeRepaidAmount >= tier) {
+               paidOnTimeByTier.set(tier, loan);
+            }
+         });
       });
 
    const fallbackDate = buildUnlockDate(user.updatedAt || user.createdAt || new Date().toISOString());
@@ -66,7 +74,7 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
          if (amount === CREDIT_TIERS[0]) {
             date = buildUnlockDate(user.createdAt) ?? fallbackDate;
          } else {
-            const triggeringLoan = paidOnTimeByAmount.get(amount - CREDIT_STEP);
+            const triggeringLoan = paidOnTimeByTier.get(amount);
             date = buildUnlockDate(triggeringLoan?.updatedAt) ?? fallbackDate;
          }
          requestable = isCurrentLimit;
@@ -74,7 +82,7 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
          unlockRequirement = 'Progression Paused (Late Repayment)';
          date = undefined;
       } else if (isNextTier) {
-         unlockRequirement = `Fully repay $${currentLimit} on time to unlock this level`;
+         unlockRequirement = `Fully repay $${currentLimit} total on time to unlock this level`;
          date = undefined;
       } else {
          unlockRequirement = 'Locked';

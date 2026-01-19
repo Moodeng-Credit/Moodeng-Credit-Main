@@ -8,6 +8,8 @@ import { computePointsDelta } from '@/shared/points';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { RootState } from '@/store/store';
 import { type CreateLoanData, type Loan, type LoanState } from '@/types/loanTypes';
+import { parseDateSafely } from '@/utils/dateFormatters';
+import { toNumber } from '@/utils/decimalHelpers';
 
 const supabaseClient = () => getSupabaseBrowserClient();
 
@@ -300,13 +302,43 @@ export const updateLoanStatus = createAsyncThunk(
          }
 
          if (borrower) {
+            const { data: paidLoans, error: paidLoansError } = await supabase
+               .from('loans')
+               .select('loan_amount, repaid_amount, total_repayment_amount, due_date, updated_at')
+               .eq('borrower_user_id', data.borrower_user_id)
+               .eq('repayment_status', 'Paid');
+
+            if (paidLoansError) {
+               throw new Error(paidLoansError.message);
+            }
+
+            const cumulativeRepaidAmount = (paidLoans ?? []).reduce((sum, loan) => {
+               if (!loan.due_date || !loan.updated_at) {
+                  return sum;
+               }
+
+               const repaid = toNumber(loan.repaid_amount ?? 0);
+               const totalRepayment = toNumber(loan.total_repayment_amount ?? 0);
+               const isFullyRepaid = totalRepayment > 0 ? repaid >= totalRepayment : repaid > 0;
+
+               if (!isFullyRepaid) {
+                  return sum;
+               }
+
+               const paidAt = parseDateSafely(loan.updated_at);
+               const dueDate = parseDateSafely(loan.due_date);
+               const isOnTime = paidAt.getTime() <= dueDate.getTime();
+
+               return isOnTime ? sum + toNumber(loan.loan_amount ?? 0) : sum;
+            }, 0);
+
             const creditEvaluation = evaluateCreditProgression({
                currentLimit: borrower.cs ?? 0,
                isVerified: borrower.is_world_id === 'ACTIVE',
                isPaused: borrower.credit_progression_paused ?? false,
-               loanAmount: data.loan_amount,
                repaidAmount: data.repaid_amount,
                totalRepaymentAmount: data.total_repayment_amount,
+               cumulativeRepaidAmount,
                dueDate: data.due_date,
                paidAt: data.updated_at ?? new Date().toISOString()
             });
