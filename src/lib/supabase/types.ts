@@ -137,6 +137,76 @@ export type Database = {
           },
         ]
       }
+      point_events: {
+        Row: {
+          created_at: string
+          delta: number
+          event_type: string
+          id: number
+          metadata: Json
+          source_id: string
+          source_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          event_type: string
+          id?: number
+          metadata?: Json
+          source_id: string
+          source_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          event_type?: string
+          id?: number
+          metadata?: Json
+          source_id?: string
+          source_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_points: {
+        Row: {
+          last_event_id: number | null
+          points_total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          last_event_id?: number | null
+          points_total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          last_event_id?: number | null
+          points_total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_points_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           chat_id: number | null
@@ -202,6 +272,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_points: {
+        Args: {
+          delta_input: number
+          event_type_input: string
+          metadata_input?: Json
+          source_id_input: string
+          source_type_input: string
+          user_id_input: string
+        }
+        Returns: {
+          applied: boolean
+          event_id: number | null
+          points_total: number
+        }[]
+      }
       ensure_email_identity: {
         Args: { email_input: string; user_id_input: string }
         Returns: undefined

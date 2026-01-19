@@ -31,7 +31,18 @@ describe('Loan Flow Trigger Integration', () => {
          select: vi.fn().mockReturnThis(),
          eq: vi.fn().mockReturnThis(),
          single: vi.fn().mockResolvedValue({
-            data: { id: 'loan-123', tracking_id: 'TRK-123', loan_status: 'Lent' },
+            data: {
+               id: 'loan-123',
+               tracking_id: 'TRK-123',
+               loan_status: 'Lent',
+               loan_amount: 10,
+               lender_user_id: 'user-123',
+               funded_at: '2024-01-01T00:00:00Z'
+            },
+            error: null
+         }),
+         rpc: vi.fn().mockResolvedValue({
+            data: [{ applied: true, event_id: 1, points_total: 20000000 }],
             error: null
          }),
          functions: {
@@ -66,6 +77,16 @@ describe('Loan Flow Trigger Integration', () => {
             body: { loanId: 'loan-123' }
          })
       );
+
+      expect(mockSupabase.rpc).toHaveBeenCalledWith(
+         'award_points',
+         expect.objectContaining({
+            user_id_input: 'user-123',
+            source_type_input: 'loan',
+            source_id_input: 'loan-123',
+            event_type_input: 'funded'
+         })
+      );
    });
 
    it('should NOT trigger the notification if the status is not "Lent"', async () => {
@@ -80,5 +101,6 @@ describe('Loan Flow Trigger Integration', () => {
 
       // Assert that the edge function was NOT invoked
       expect(mockSupabase.functions.invoke).not.toHaveBeenCalled();
+      expect(mockSupabase.rpc).not.toHaveBeenCalled();
    });
 });
