@@ -44,7 +44,7 @@ export const evaluateCreditProgression = ({
    const normalizedLoanAmount = toNumber(loanAmount ?? 0);
    const repaid = toNumber(repaidAmount ?? 0);
    const totalRepayment = toNumber(totalRepaymentAmount ?? 0);
-   const isFullyRepaid = totalRepayment > 0 ? repaid >= totalRepayment : repaid > 0;
+   const isFullyRepaid = totalRepayment > 0 && repaid >= totalRepayment;
    const paidAtDate = parseDateSafely(paidAt);
    const dueDateValue = parseDateSafely(dueDate);
    const isLate = paidAtDate.getTime() > dueDateValue.getTime();
