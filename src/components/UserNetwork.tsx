@@ -1,10 +1,13 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID, getNetworkSvg } from '@/config/wagmiConfig';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { formatPointsMajor } from '@/shared/points';
 import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
@@ -13,6 +16,43 @@ export default function UserNetwork() {
    const navigate = useNavigate();
    const account = useAccount();
    const username = useSelector((state: RootState) => state.auth.username);
+   const userId = useSelector((state: RootState) => state.auth.user.id);
+   const [pointsTotal, setPointsTotal] = useState<number | null>(null);
+   const [isPointsLoading, setIsPointsLoading] = useState(false);
+
+   useEffect(() => {
+      if (!userId) {
+         setPointsTotal(null);
+         setIsPointsLoading(false);
+         return;
+      }
+
+      let isActive = true;
+      setIsPointsLoading(true);
+
+      const fetchUserPoints = async () => {
+         const supabase = getSupabaseBrowserClient();
+         const { data, error } = await supabase.from('user_points').select('points_total').eq('user_id', userId).maybeSingle();
+
+         if (!isActive) return;
+
+         if (error) {
+            console.error('Failed to fetch IOU points:', error.message);
+            setPointsTotal(0);
+            setIsPointsLoading(false);
+            return;
+         }
+
+         setPointsTotal(data?.points_total ?? 0);
+         setIsPointsLoading(false);
+      };
+
+      fetchUserPoints();
+
+      return () => {
+         isActive = false;
+      };
+   }, [userId]);
 
    const handleLogout = () => {
       // Don't disconnect wallet - let wagmi persist the connection
@@ -73,14 +113,17 @@ export default function UserNetwork() {
             <section className="h-full bg-white rounded-xl border border-solid border-gray-300 shadow-md w-72 flex flex-col justify-between transform transition-all duration-300 ease-out animate-in slide-in-from-top-2 fade-in-0">
                <div>
                   <div className="flex justify-between items-center border-b border-gray-200 border-solid px-4 py-3">
-                     <Link to="/profile">
-                        <p className="text-sm font-normal text-black">{username}</p>
+                     <Link to="/profile" className="max-w-[150px]">
+                        <p className="text-sm font-normal text-black truncate" title={username ?? ''}>
+                           {username}
+                        </p>
                      </Link>
                      <button
                         className="bg-purple-600 text-white text-xs font-semibold rounded-md px-3 pb-1 pt-[0.375rem] flex items-center gap-1 hover:bg-purple-700 transition-all duration-200 hover:scale-105 hover:shadow-md"
                         type="button"
                      >
-                        <i className="fas fa-coins"></i> IOU 50000
+                        <i className="fas fa-coins"></i>{' '}
+                        {isPointsLoading ? 'IOU Loading' : `IOU ${formatPointsMajor(pointsTotal ?? 0)}`}
                      </button>
                   </div>
                   {account.isConnected ? (

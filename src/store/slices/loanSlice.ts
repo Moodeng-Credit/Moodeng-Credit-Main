@@ -4,6 +4,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { evaluateCreditProgression } from '@/lib/creditLeveling';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
+import { computePointsDelta } from '@/shared/points';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { RootState } from '@/store/store';
 import { type CreateLoanData, type Loan, type LoanState } from '@/types/loanTypes';
@@ -261,6 +262,29 @@ export const updateLoanStatus = createAsyncThunk(
 
       if (!data) {
          throw new Error('Failed to update loan');
+      }
+
+      if (loanStatus === 'Lent' && data.lender_user_id) {
+         const pointsDelta = computePointsDelta(String(data.loan_amount));
+         const pointsMetadata = {
+            loan_id: data.id,
+            loan_amount: String(data.loan_amount),
+            loan_tracking_id: data.tracking_id,
+            loan_funded_at: data.funded_at
+         };
+
+         const { error: pointsError } = await supabase.rpc('award_points', {
+            user_id_input: data.lender_user_id,
+            source_type_input: 'loan',
+            source_id_input: data.id,
+            event_type_input: 'funded',
+            delta_input: pointsDelta.toString(),
+            metadata_input: pointsMetadata
+         });
+
+         if (pointsError) {
+            console.error('Failed to award points:', pointsError.message);
+         }
       }
 
       const isPaid = repaymentStatus === 'Paid' || data.repayment_status === 'Paid';

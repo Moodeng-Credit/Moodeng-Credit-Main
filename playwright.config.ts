@@ -13,19 +13,11 @@ export default defineConfig({
       trace: 'on-first-retry'
    },
    webServer: {
-      command: 'pnpm exec vite --host 0.0.0.0 --port 3000',
+      command: 'pnpm exec dotenvx run --env-file=.env.ci -- vite --host 127.0.0.1 --port 3000 --strictPort',
       url: baseURL,
       reuseExistingServer: !process.env.CI,
       env: {
-         VITE_SUPABASE_URL: 'https://placeholder.supabase.co',
-         VITE_SUPABASE_PUBLISHABLE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder',
-         VITE_SITE_URL: 'https://localhost:3000',
-         VITE_REDIRECT_URL: 'https://localhost:3000',
-         VITE_API_URL: 'https://placeholder.supabase.co/functions/v1',
-         VITE_WALLET_CONNECT_PROJECT_ID: 'placeholder',
-         VITE_ALCHEMY_ID: 'placeholder',
-         VITE_WORLD_ID_APP_ID: 'app_placeholder',
-         VITE_WORLD_ID_ACTION_ID: 'placeholder'
+         NODE_ENV: 'development'
       }
    },
    projects: [
