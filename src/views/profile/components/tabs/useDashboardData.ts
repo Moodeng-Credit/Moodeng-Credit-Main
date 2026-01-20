@@ -122,6 +122,10 @@ export const useDashboardData = (activeRole: RoleType) => {
       return gloanRequests.filter((loan) => (activeRole === 'borrower' ? loan.borrowerUser === userId : loan.lenderUser === userId));
    }, [gloanRequests, activeRole, userId]);
 
+   const borrowerLoans = useMemo(() => {
+      return gloanRequests.filter((loan) => loan.borrowerUser === userId);
+   }, [gloanRequests, userId]);
+
    const loanArrays = useMemo(() => {
       const repayments = userLoans.filter((loan) => loan.repaymentStatus === 'Paid');
       const activeLoans = userLoans.filter((loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus === 'Unpaid');
@@ -160,7 +164,7 @@ export const useDashboardData = (activeRole: RoleType) => {
       return Math.min(100, uniqueLenders.size * 10);
    }, [userLoans, activeRole]);
 
-   const creditLevels: CreditLevel[] = useMemo(() => buildCreditLevels({ user, loans: userLoans }), [user, userLoans]);
+   const creditLevels: CreditLevel[] = useMemo(() => buildCreditLevels({ user, loans: borrowerLoans }), [user, borrowerLoans]);
 
    return { stats, lenderDiversityScore, creditLevels, loanArrays };
 };
