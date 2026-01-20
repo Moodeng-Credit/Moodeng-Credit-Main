@@ -1,0 +1,6 @@
+UPDATE users
+SET cs = 20
+WHERE cs = 15;
+
+ALTER TABLE users
+ALTER COLUMN cs SET DEFAULT 20;
