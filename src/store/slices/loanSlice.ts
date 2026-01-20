@@ -312,7 +312,7 @@ export const updateLoanStatus = createAsyncThunk(
                throw new Error(paidLoansError.message);
             }
 
-            const cumulativeRepaidAmount = (paidLoans ?? []).reduce((sum, loan) => {
+            const cumulativeBorrowedAmount = (paidLoans ?? []).reduce((sum, loan) => {
                if (!loan.due_date || !loan.updated_at) {
                   return sum;
                }
@@ -338,7 +338,7 @@ export const updateLoanStatus = createAsyncThunk(
                isPaused: borrower.credit_progression_paused ?? false,
                repaidAmount: data.repaid_amount,
                totalRepaymentAmount: data.total_repayment_amount,
-               cumulativeRepaidAmount,
+               cumulativeBorrowedAmount,
                dueDate: data.due_date,
                paidAt: data.updated_at ?? new Date().toISOString()
             });

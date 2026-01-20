@@ -56,7 +56,7 @@ describe('Credit leveling logic', () => {
          isPaused: false,
          repaidAmount: 25,
          totalRepaymentAmount: 25,
-         cumulativeRepaidAmount: 20,
+         cumulativeBorrowedAmount: 20,
          dueDate: '2025-02-01T00:00:00.000Z',
          paidAt: '2025-01-31T00:00:00.000Z'
       });
@@ -72,7 +72,7 @@ describe('Credit leveling logic', () => {
          isPaused: false,
          repaidAmount: 25,
          totalRepaymentAmount: 25,
-         cumulativeRepaidAmount: 20,
+         cumulativeBorrowedAmount: 20,
          dueDate: '2025-02-01T00:00:00.000Z',
          paidAt: '2025-02-03T00:00:00.000Z'
       });
@@ -88,7 +88,7 @@ describe('Credit leveling logic', () => {
          isPaused: false,
          repaidAmount: 10,
          totalRepaymentAmount: 10,
-         cumulativeRepaidAmount: 45,
+         cumulativeBorrowedAmount: 45,
          dueDate: '2025-02-01T00:00:00.000Z',
          paidAt: '2025-01-31T00:00:00.000Z'
       });
