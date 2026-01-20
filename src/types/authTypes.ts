@@ -23,6 +23,7 @@ export interface User {
    mal: number;
    nal: number;
    cs: number;
+   creditProgressionPaused?: boolean;
    createdAt: string;
    updatedAt: string;
 }
@@ -49,6 +50,7 @@ export interface IUser {
    mal: number; // max active loans
    nal: number; // number of active loans
    cs: number; // credit score
+   creditProgressionPaused?: boolean;
    resetToken?: string;
    resetTokenExpiry?: Date;
    createdAt: Date;

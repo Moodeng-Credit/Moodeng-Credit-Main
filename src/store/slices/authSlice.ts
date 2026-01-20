@@ -95,6 +95,7 @@ const mapSupabaseRowToUser = (row: UserRow): User => ({
    mal: row.mal,
    nal: row.nal,
    cs: row.cs,
+   creditProgressionPaused: row.credit_progression_paused ?? false,
    createdAt: row.created_at,
    updatedAt: row.updated_at
 });
@@ -176,6 +177,7 @@ const defaultUser: User = {
    mal: 0,
    nal: 0,
    cs: 0,
+   creditProgressionPaused: false,
    createdAt: '',
    updatedAt: ''
 };

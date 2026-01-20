@@ -16,6 +16,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import YouTubeVideoLightbox from '@/components/ui/YouTubeVideoLightbox';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
+import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { usePagination } from '@/hooks/usePagination';
 
@@ -80,6 +81,7 @@ function Dashboard$() {
    const [days, setDays] = useState('');
    const [customAmount, setCustomAmount] = useState('');
    const [searchLoan, setSearchLoan] = useState('');
+   const effectiveCreditLimit = getEffectiveCreditLimit(user.cs, user.isWorldId === 'ACTIVE');
 
    const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
    const successModalRef = useClickOutside<HTMLDivElement>(() => setShowPurple(false), showPurple) as RefObject<HTMLDivElement>;
@@ -188,7 +190,7 @@ function Dashboard$() {
          return;
       }
 
-      if (parseFloat(loanAmount) > (user.cs || 0)) {
+      if (parseFloat(loanAmount) > effectiveCreditLimit) {
          console.log('Loan amount exceeds credit score');
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
          return;
@@ -207,7 +209,7 @@ function Dashboard$() {
       if (
          user.isWorldId === 'ACTIVE' &&
          (user.nal || 0) < (user.mal || 0) &&
-         parseFloat(loanAmount) <= (user.cs || 0) &&
+         parseFloat(loanAmount) <= effectiveCreditLimit &&
          parseFloat(loanAmount) > 0
       ) {
          setIsSubmitting(true);

@@ -211,6 +211,7 @@ export type Database = {
         Row: {
           chat_id: number | null
           created_at: string | null
+          credit_progression_paused: boolean | null
           cs: number | null
           email: string
           google_id: string | null
@@ -230,6 +231,7 @@ export type Database = {
         Insert: {
           chat_id?: number | null
           created_at?: string | null
+          credit_progression_paused?: boolean | null
           cs?: number | null
           email: string
           google_id?: string | null
@@ -249,6 +251,7 @@ export type Database = {
         Update: {
           chat_id?: number | null
           created_at?: string | null
+          credit_progression_paused?: boolean | null
           cs?: number | null
           email?: string
           google_id?: string | null
