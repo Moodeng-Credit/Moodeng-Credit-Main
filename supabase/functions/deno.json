@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.90.1?target=deno",
+    "@supabase/auth-js": "https://esm.sh/@supabase/auth-js@2.90.1?target=deno",
+    "@supabase/postgrest-js": "https://esm.sh/@supabase/postgrest-js@2.90.1?target=deno",
+    "@supabase/realtime-js": "https://esm.sh/@supabase/realtime-js@2.90.1?target=deno",
+    "@supabase/storage-js": "https://esm.sh/@supabase/storage-js@2.90.1?target=deno"
+  }
+}
