@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { createClient } from "@supabase/supabase-js"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -111,7 +111,7 @@ serve(async (req) => {
       
       // Check if auth user already exists with this email (unlikely but possible)
       const { data: existingUser, error: lookupError } = await supabase
-        .from('auth.users')
+        .from('users')
         .select('id')
         .eq('email', email)
         .maybeSingle()
