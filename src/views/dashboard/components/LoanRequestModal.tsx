@@ -3,7 +3,6 @@
 import { type ChangeEvent, type FormEvent, type RefObject } from 'react';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
-
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 
 import { type User } from '@/types/authTypes';

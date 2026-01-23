@@ -7,7 +7,7 @@
    "scripts": {
       "dev": "dotenvx run --env-file=.env.staging -- vite",
       "dev:local": "dotenvx run --env-file=.env.local -- vite",
-      "dev:prod": "dotenvx run --env-file=.env.prod -- vite",
+      "dev:prod": "dotenvx run --env-file=.env.production -- vite",
       "build": "dotenvx run -- vite build",
       "build:prod": "dotenvx run --env-file=.env.prod -- tsc -b && vite build",
       "lint": "eslint .",

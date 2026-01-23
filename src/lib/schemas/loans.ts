@@ -24,7 +24,6 @@ export const createLoanSchema = z.object({
    totalRepaymentAmount: loanAmountSchema, // Total amount to be repaid (principal + interest) - must be provided
    reason: textFieldSchema(500, 'Reason'),
    days: loanDaysSchema,
-   block: z.string().optional().default('0'),
    coin: z.literal('USDC').default('USDC')
 });
 
@@ -44,7 +43,6 @@ export const updateLoanSchema = z.object({
    loanStatus: z.enum([LoanStatus.REQUESTED, LoanStatus.LENT]).optional(),
    repaymentStatus: z.enum([RepaymentStatus.UNPAID, RepaymentStatus.PARTIAL, RepaymentStatus.PAID]).optional(),
    days: loanDaysSchema.optional(),
-   block: z.string().optional(),
    coin: z.literal('USDC').optional(),
    hash: z
       .string()
