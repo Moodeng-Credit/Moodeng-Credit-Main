@@ -21,6 +21,8 @@ if [[ "$file_base" == .env.* ]]; then
         key_var="DOTENV_PRIVATE_KEY_PRODUCTION"
     elif [[ "$env_part" == "staging" ]]; then
         key_var="DOTENV_PRIVATE_KEY_STAGING"
+    elif [[ "$env_part" == "local" ]]; then
+        key_var="DOTENV_PRIVATE_KEY_LOCAL"
     else
         echo "Unsupported environment: $env_part"
         exit 1
