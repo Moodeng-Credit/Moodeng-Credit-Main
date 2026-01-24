@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useDispatch } from 'react-redux';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { MobileNav, Sidebar } from '@/views/profile/components/navigation';
 import { FilterButtons, RoleSwitcher, TelegramModal } from '@/views/profile/components/shared';
@@ -15,6 +16,8 @@ import type { AppDispatch } from '@/store/store';
 
 export default function Profile() {
    const dispatch = useDispatch<AppDispatch>();
+   const location = useLocation();
+   const navigate = useNavigate();
    const [navItems, setNavItems] = useState(INITIAL_NAV_ITEMS);
    const [infoNavItems, setInfoNavItems] = useState(INFO_NAV_ITEMS);
    const [userRole, setUserRole] = useState<UserRole>(UserRole.LENDER);
@@ -38,10 +41,10 @@ export default function Profile() {
 
    const activeTab = navItems.find((item) => item.active)?.label || infoNavItems.find((item) => item.active)?.label || ProfileTab.DASHBOARD;
 
-   const handleNavItemClick = (label: string) => {
+   const handleNavItemClick = useCallback((label: ProfileTab) => {
       setNavItems((prevItems) => prevItems.map((item) => ({ ...item, active: item.label === label })));
       setInfoNavItems((prevItems) => prevItems.map((item) => ({ ...item, active: item.label === label })));
-   };
+   }, []);
 
    const handleCloseTelegramModal = useCallback(() => {
       setShowTelegramModal(false);
@@ -60,6 +63,21 @@ export default function Profile() {
          dispatch(fetchUserProfiles(loanUserIds)).catch(() => undefined);
       }
    }, [dispatch, loans]);
+
+   useEffect(() => {
+      const state = location.state as { targetTab?: ProfileTab; userRole?: UserRole } | null;
+      if (!state?.targetTab && !state?.userRole) return;
+
+      if (state?.targetTab) {
+         handleNavItemClick(state.targetTab);
+      }
+
+      if (state?.userRole) {
+         setUserRole(state.userRole);
+      }
+
+      navigate(location.pathname, { replace: true, state: null });
+   }, [handleNavItemClick, location.pathname, location.state, navigate]);
 
    const handlePayLoansNow = () => {
       handleNavItemClick(ProfileTab.LOAN_SUMMARY);

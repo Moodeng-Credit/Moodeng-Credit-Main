@@ -10,6 +10,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { formatPointsMajor } from '@/shared/points';
 import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import { ProfileTab, UserRole } from '@/views/profile/types';
 
 export default function UserNetwork() {
    const dispatch = useDispatch<AppDispatch>();
@@ -155,7 +156,9 @@ export default function UserNetwork() {
                      >
                         Profile <i className="fas fa-chevron-right"></i>
                      </Link>
-                     <Link to="/profile"
+                     <Link
+                        to="/profile"
+                        state={{ targetTab: ProfileTab.LOAN_SUMMARY, userRole: UserRole.BORROWER }}
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
                         Repay Loans <i className="fas fa-chevron-right"></i>
