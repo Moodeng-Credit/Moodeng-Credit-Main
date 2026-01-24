@@ -222,7 +222,7 @@ export const chainsWithIcons = [chainConfig[ALLOWED_CHAIN_ID]];
 // RainbowKit config
 export const config = getDefaultConfig({
    appName: 'Moodeng',
-   projectId: 'c2f88357f7fa932dbc04481d125c00ff',
+   projectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || '',
    chains: chainsWithIcons as unknown as [Chain, ...Chain[]],
    ssr: false
 });
