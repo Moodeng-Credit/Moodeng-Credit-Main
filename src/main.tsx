@@ -4,14 +4,33 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import '@rainbow-me/rainbowkit/styles.css';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { PostHogProvider } from 'posthog-js/react';
 
 import App from './App.tsx';
 import './globals.css';
 
+const posthogKey = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
+const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
+const isPosthogEnabled = import.meta.env.PROD && Boolean(posthogKey);
+
+const posthogOptions = {
+   api_host: posthogHost,
+   capture_pageview: false,
+   capture_pageleave: true
+} as const;
+
 createRoot(document.getElementById('root')!).render(
    <StrictMode>
-      <BrowserRouter>
-         <App />
-      </BrowserRouter>
+      {isPosthogEnabled ? (
+         <PostHogProvider apiKey={posthogKey} options={posthogOptions}>
+            <BrowserRouter>
+               <App />
+            </BrowserRouter>
+         </PostHogProvider>
+      ) : (
+         <BrowserRouter>
+            <App />
+         </BrowserRouter>
+      )}
    </StrictMode>
 );

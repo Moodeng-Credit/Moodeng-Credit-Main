@@ -1,4 +1,6 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
+import posthog from 'posthog-js';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
@@ -34,6 +36,19 @@ function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+   const location = useLocation();
+   const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
+
+   useEffect(() => {
+      if (!isPosthogEnabled) {
+         return;
+      }
+
+      posthog.capture('$pageview', {
+         $current_url: window.location.href
+      });
+   }, [isPosthogEnabled, location]);
+
    return (
       <Providers>
          <WalletLoadingOverlay />
