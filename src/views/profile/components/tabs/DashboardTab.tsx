@@ -10,7 +10,11 @@ import StatCard from '@/views/profile/components/tabs/StatCard';
 import type { RoleType } from '@/views/profile/components/tabs/types';
 import { useDashboardData } from '@/views/profile/components/tabs/useDashboardData';
 
-const DashboardTab = () => {
+interface DashboardTabProps {
+   onPayLoansNow?: () => void;
+}
+
+const DashboardTab = ({ onPayLoansNow }: DashboardTabProps) => {
    const [activeRole, setActiveRole] = useState<RoleType>('borrower');
    const { stats, lenderDiversityScore, creditLevels, loanArrays } = useDashboardData(activeRole);
 
@@ -39,7 +43,11 @@ const DashboardTab = () => {
                         <span className="text-sm select-none whitespace-nowrap font-medium">{lenderDiversityScore} Points</span>
                      </div>
                   </div>
-                  <button className="bg-[#2563eb] text-white px-6 py-3 rounded-md font-semibold select-none hover:bg-[#1e40af] transition">
+                  <button
+                     className="bg-[#2563eb] text-white px-6 py-3 rounded-md font-semibold select-none hover:bg-[#1e40af] transition"
+                     onClick={onPayLoansNow}
+                     type="button"
+                  >
                      PAY LOANS NOW
                   </button>
                </div>

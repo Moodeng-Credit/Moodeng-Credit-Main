@@ -61,10 +61,15 @@ export default function Profile() {
       }
    }, [dispatch, loans]);
 
+   const handlePayLoansNow = () => {
+      handleNavItemClick(ProfileTab.LOAN_SUMMARY);
+      setUserRole(UserRole.BORROWER);
+   };
+
    const renderTabContent = () => {
       switch (activeTab) {
          case ProfileTab.DASHBOARD:
-            return <DashboardTab />;
+            return <DashboardTab onPayLoansNow={handlePayLoansNow} />;
 
          case ProfileTab.LOAN_SUMMARY:
             return <LoanSummaryTab loans={loans} currentUserId={user.user?.id || ''} userRole={userRole} />;
