@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { PostHogProvider } from 'posthog-js/react';
 
+import { Providers } from '@/components/providers';
 import App from './App.tsx';
 import './globals.css';
 
@@ -24,12 +25,16 @@ createRoot(document.getElementById('root')!).render(
       {isPosthogEnabled ? (
          <PostHogProvider apiKey={posthogKey} options={posthogOptions}>
             <BrowserRouter>
-               <App />
+               <Providers>
+                  <App />
+               </Providers>
             </BrowserRouter>
          </PostHogProvider>
       ) : (
          <BrowserRouter>
-            <App />
+            <Providers>
+               <App />
+            </Providers>
          </BrowserRouter>
       )}
    </StrictMode>

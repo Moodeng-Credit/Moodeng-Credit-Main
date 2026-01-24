@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
 import posthog from 'posthog-js';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { Providers } from '@/components/providers';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
+import { type RootState } from '@/store/store';
 
 import Benefits from '@/app/benefits/page';
 import Dashboard from '@/app/dashboard/page';
@@ -38,6 +39,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
+   const { user, username } = useSelector((state: RootState) => state.auth);
 
    useEffect(() => {
       if (!isPosthogEnabled) {
@@ -49,8 +51,24 @@ export default function App() {
       });
    }, [isPosthogEnabled, location]);
 
+   useEffect(() => {
+      if (!isPosthogEnabled) {
+         return;
+      }
+
+      if (user?.id) {
+         posthog.identify(user.id, {
+            email: user.email,
+            username: user.username || username
+         });
+         return;
+      }
+
+      posthog.reset();
+   }, [isPosthogEnabled, user?.email, user?.id, user?.username, username]);
+
    return (
-      <Providers>
+      <>
          <WalletLoadingOverlay />
          <Routes>
             <Route
@@ -181,6 +199,6 @@ export default function App() {
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
          </Routes>
-      </Providers>
+      </>
    );
 }
