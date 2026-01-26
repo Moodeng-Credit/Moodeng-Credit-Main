@@ -16,7 +16,7 @@ import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import { MONTHS } from '@/constants/dates';
-import { fetchLoans, updateLoanStatus } from '@/store/slices/loanSlice';
+import { type LoanSideEffectError, fetchLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
@@ -126,24 +126,44 @@ export default function UserCard(loan: Loan) {
          const transactionHash = await Transfer(borrowerWallet, formatNumber(loanData.loanAmount), loanData.id, transferCoin);
 
          if (transactionHash) {
-            try {
-               const loanPayload = {
-                  id: loanData.id,
-                  wallet: lenderWallet,
-                  userId,
-                  loanStatus: 'Lent',
-                  hash: transactionHash
-               };
+            const loanPayload = {
+               id: loanData.id,
+               wallet: lenderWallet,
+               userId,
+               loanStatus: 'Lent',
+               hash: transactionHash
+            };
 
-               await dispatch(updateLoanStatus(loanPayload)).unwrap();
+            const updateResult = await dispatch(updateLoanStatus(loanPayload));
+
+            if (updateLoanStatus.fulfilled.match(updateResult)) {
+               const sideEffectErrors = updateResult.meta.sideEffectErrors ?? [];
                setShowModal(true);
-               showToast(
-                  TOAST_TYPES.SUCCESS,
-                  'Thank You!',
-                  `You successfully funded $${formatNumber(loanData.loanAmount)} to ${borrowerDisplayName}.`
-               );
-            } catch (updateError: unknown) {
-               const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
+
+               if (sideEffectErrors.length === 0) {
+                  showToast(
+                     TOAST_TYPES.SUCCESS,
+                     'Thank You!',
+                     `You successfully funded $${formatNumber(loanData.loanAmount)} to ${borrowerDisplayName}.`
+                  );
+               } else {
+                  const errorDetails = sideEffectErrors
+                     .map((error: LoanSideEffectError) => {
+                        if (error.type === 'award_points') {
+                           return `awarding points failed (${error.message})`;
+                        }
+                        return `sending funded notification failed (${error.message})`;
+                     })
+                     .join('; ');
+
+                  showToast(
+                     TOAST_TYPES.WARNING,
+                     'Funded with Warnings',
+                     `Loan funded successfully, but some follow-ups failed: ${errorDetails}.`
+                  );
+               }
+            } else {
+               const errorMessage = updateResult.error?.message ?? 'Unknown error';
                console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
                console.error(
                   '[RECONCILIATION REQUIRED] Loan ID:',
@@ -155,7 +175,11 @@ export default function UserCard(loan: Loan) {
                   '| Hash:',
                   transactionHash
                );
-               showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
+               showToast(
+                  TOAST_TYPES.ERROR,
+                  'Funding Failed',
+                  `We could not update the loan in the database. Error: ${errorMessage}.`
+               );
             }
          }
       } catch (transferError: unknown) {
