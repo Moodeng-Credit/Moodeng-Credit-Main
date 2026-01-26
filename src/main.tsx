@@ -16,6 +16,14 @@ const isPosthogEnabled = import.meta.env.PROD && Boolean(posthogKey);
 
 const posthogOptions = {
    api_host: posthogHost,
+   capture_exceptions: {
+      capture_console_errors: true
+   },
+   session_recording: {
+      recordHeaders: true,
+      recordBody: true,
+      maskCapturedNetworkRequestFn: (data) => data
+   },
    capture_pageview: false,
    capture_pageleave: true
 } as const;
