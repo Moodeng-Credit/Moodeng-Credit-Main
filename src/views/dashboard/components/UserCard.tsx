@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
+import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import useWallet from '@/hooks/useWallet';
@@ -32,7 +33,7 @@ export default function UserCard(loan: Loan) {
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
-   const { showToastByConfig } = useToast();
+   const { showToast, showToastByConfig } = useToast();
    const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const username = useSelector((state: RootState) => state.auth.username);
    const userId = useSelector((state: RootState) => state.auth.user.id);
@@ -136,6 +137,11 @@ export default function UserCard(loan: Loan) {
 
                await dispatch(updateLoanStatus(loanPayload)).unwrap();
                setShowModal(true);
+               showToast(
+                  TOAST_TYPES.SUCCESS,
+                  'Thank You!',
+                  `You successfully funded $${formatNumber(loanData.loanAmount)} to ${borrowerDisplayName}.`
+               );
             } catch (updateError: unknown) {
                const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
                console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
@@ -168,12 +174,14 @@ export default function UserCard(loan: Loan) {
       loanData.loanAmount,
       loanData.id,
       username,
+      borrowerDisplayName,
       userId,
       account.address,
       account.chain?.id,
       wallet,
       Transfer,
       dispatch,
+      showToast,
       showToastByConfig
    ]);
 
