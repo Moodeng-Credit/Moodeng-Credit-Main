@@ -151,7 +151,9 @@ export default function UserNetwork() {
                   ) : null}
                   <div className="px-4 py-3 text-xs font-normal text-gray-400">Account Settings</div>
                   <nav className="flex flex-col gap-3 px-4 text-sm font-normal text-black">
-                     <Link to="/profile"
+                     <Link
+                        to="/profile"
+                        state={{ targetTab: ProfileTab.DASHBOARD }}
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
                      >
                         Profile <i className="fas fa-chevron-right"></i>
