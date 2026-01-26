@@ -41,9 +41,9 @@ export const TOAST_VARIANTS = {
    },
    warning: {
       icon: 'fas fa-wifi',
-      iconBg: 'bg-gray-300',
-      iconColor: 'text-gray-600',
-      textColor: 'text-gray-400'
+      iconBg: 'bg-yellow-100',
+      iconColor: 'text-yellow-600',
+      textColor: 'text-yellow-700'
    }
 } as const;
 

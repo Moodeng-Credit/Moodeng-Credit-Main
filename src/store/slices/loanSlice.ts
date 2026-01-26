@@ -16,6 +16,10 @@ const supabaseClient = () => getSupabaseBrowserClient();
 type LoanRow = Database['public']['Tables']['loans']['Row'];
 type LoanInsert = Database['public']['Tables']['loans']['Insert'];
 type LoanUpdate = Database['public']['Tables']['loans']['Update'];
+export type LoanSideEffectError = {
+   type: 'award_points' | 'loan_notification';
+   message: string;
+};
 
 // Helper function to map Supabase loan row to frontend Loan type
 const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
@@ -211,22 +215,27 @@ const loanSlice = createSlice({
 
 export const { clearError, addLoan, updateLoan } = loanSlice.actions;
 
-export const updateLoanStatus = createAsyncThunk(
+export const updateLoanStatus = createAsyncThunk<
+   Loan,
+   {
+      id: string;
+      userId?: string | null;
+      wallet?: string;
+      repaymentStatus?: string;
+      loanStatus?: string;
+      repaidAmount?: number;
+      hash?: string;
+   },
+   { fulfilledMeta: { sideEffectErrors: LoanSideEffectError[] } }
+>(
    'loans/updateStatus',
    async (
-      loanData: {
-         id: string;
-         userId?: string | null;
-         wallet?: string;
-         repaymentStatus?: string;
-         loanStatus?: string;
-         repaidAmount?: number;
-         hash?: string;
-      },
-      { dispatch, getState }
+      loanData,
+      { dispatch, getState, fulfillWithValue }
    ) => {
       const supabase = supabaseClient();
       const { id, userId, wallet, repaymentStatus, loanStatus, repaidAmount, hash } = loanData;
+      const sideEffectErrors: LoanSideEffectError[] = [];
 
       const updates: LoanUpdate = {};
 
@@ -286,6 +295,7 @@ export const updateLoanStatus = createAsyncThunk(
 
          if (pointsError) {
             console.error('Failed to award points:', pointsError.message);
+            sideEffectErrors.push({ type: 'award_points', message: pointsError.message });
          }
       }
 
@@ -375,10 +385,11 @@ export const updateLoanStatus = createAsyncThunk(
 
          if (notificationError) {
             console.error('Failed to send funded notification:', notificationError.message);
+            sideEffectErrors.push({ type: 'loan_notification', message: notificationError.message });
          }
       }
 
-      return mapSupabaseLoanToLoan(data);
+      return fulfillWithValue(mapSupabaseLoanToLoan(data), { sideEffectErrors });
    }
 );
 
