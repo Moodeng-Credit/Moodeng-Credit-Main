@@ -27,15 +27,23 @@
 ## 📁 Architecture Overview
 
 ```
-src/
-├── app/              # Routes and page views
-├── components/       # Reusable UI components
-├── config/           # App configuration and constants
-├── hooks/            # Custom React hooks
-├── lib/              # Core services (Supabase, API handlers)
-├── store/            # Redux state management
-├── types/            # TypeScript definitions
-└── utils/            # Helper functions
+frontend/
+├── src/
+│   ├── app/              # Routes and page views
+│   ├── components/       # Reusable UI components
+│   ├── config/           # App configuration and constants
+│   ├── hooks/            # Custom React hooks
+│   ├── lib/              # Core services (Supabase, API handlers)
+│   ├── store/            # Redux state management
+│   ├── types/            # TypeScript definitions
+│   └── utils/            # Helper functions
+└── Dockerfile.dev        # Docker config for frontend
+
+backend/
+├── supabase/
+│   ├── functions/        # Edge functions
+│   └── migrations/       # Database migrations
+└── Dockerfile.dev        # Docker config for backend
 ```
 
 ## 🚀 Local Development
@@ -45,13 +53,72 @@ src/
 - **Node.js**: >= 24.0.0
 - **pnpm**: >= 10.0.0
 - **dotenvx**: `npm install -g @dotenvx/dotenvx` (optional, or use via `pnpm`)
+- **Docker & Docker Compose**: For containerized development (recommended)
 
-### Installation
+### Option 1: Docker Development Setup (Recommended)
+
+Run both frontend and backend with hot reloading using Docker Compose.
+
+#### Quick Start
+
+```bash
+# Start services in background
+./docker-dev.sh up-d
+
+# View logs
+./docker-dev.sh logs
+
+# Stop services
+./docker-dev.sh down
+
+# Rebuild containers
+./docker-dev.sh rebuild
+```
+
+#### Services
+
+- **Frontend (frontend-new)**: http://localhost:3000 (hot reload enabled)
+- **Backend**: http://localhost:8000 (hot reload enabled)
+
+#### Commands
+
+- `./docker-dev.sh up` - Start in foreground
+- `./docker-dev.sh up-d` - Start in background
+- `./docker-dev.sh down` - Stop services
+- `./docker-dev.sh logs` - View logs (add service name for specific logs)
+- `./docker-dev.sh build` - Build containers
+- `./docker-dev.sh rebuild` - Rebuild and start
+
+#### After adding new npm dependencies (e.g. `@react-oauth/google`)
+
+The frontend container runs `npm install` on startup, so new deps in `package.json` are installed automatically. If you still see "Module not found" for a new package:
+
+1. **Restart the frontend** so it runs `npm install` again:
+   ```bash
+   docker-compose -f docker-compose.dev.yml restart frontend
+   ```
+
+2. If that doesn't fix it, **remove volumes and rebuild** (clears cached `node_modules`):
+   ```bash
+   docker-compose -f docker-compose.dev.yml down -v
+   docker-compose -f docker-compose.dev.yml build frontend --no-cache
+   ./docker-dev.sh up-d
+   ```
+
+#### Prerequisites for Docker Setup
+
+- Docker and Docker Compose installed
+- Backend files: `sakey.json` and `config.json` in `backend/` (if needed)
+- Docker Desktop file sharing enabled for `/Users` (macOS)
+
+### Option 2: Local Development (Without Docker)
+
+#### Installation
 
 1. **Clone and Install**
    ```bash
    git clone <repo-url>
-   cd Moodeng-Credit-Main
+   cd Moodeng-Credit-Main/frontend
    pnpm install
    ```
    *Note: `pnpm install` will automatically install Playwright browsers.*
@@ -61,14 +128,16 @@ src/
    - You **must** obtain the `.env.keys` file from an existing developer to decrypt the secrets.
    - Without `.env.keys`, the app will not have access to the necessary API keys.
 
-### Running the App
+#### Running the App
 
 - **Standard Development**:
   ```bash
+  cd frontend
   pnpm run dev
   ```
 - **Local Development (with local environment and HTTPS)**:
   ```bash
+  cd frontend
   pnpm run dev:local
   ```
 
@@ -79,6 +148,9 @@ Visit [http://localhost:3000](http://localhost:3000) (or `https://localhost:3000
 ### Running Tests
 
 ```bash
+# Navigate to frontend directory
+cd frontend
+
 # Unit tests (Vitest + MSW)
 pnpm test
 
@@ -92,6 +164,9 @@ pnpm test:e2e
 ### Linting and Formatting
 
 ```bash
+# Navigate to frontend directory
+cd frontend
+
 # Check for lint issues
 pnpm run lint
 
