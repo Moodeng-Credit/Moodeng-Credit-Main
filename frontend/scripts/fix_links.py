@@ -20,4 +20,7 @@ def replace_link_href(directory):
                     print(f"Updated {path}")
 
 if __name__ == "__main__":
-    replace_link_href('/Users/anthonytjuatja/Dev/business/Moodeng-Credit-Main/vite-frontend/src')
+    import sys
+    # Use current directory's src folder if no argument provided
+    src_dir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), '..', 'src')
+    replace_link_href(src_dir)
