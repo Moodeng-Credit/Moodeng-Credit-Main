@@ -1,5 +1,7 @@
 # Moodeng Credit - Peer-to-Peer Lending Platform
 
+> 💡 **New**: The project is now organized into separate Frontend and Backend folders with Docker support. See [DOCKER_SETUP.md](./DOCKER_SETUP.md) for Docker development instructions.
+
 ## 📋 Project Summary
 
 **Moodeng Credit** is a decentralized peer-to-peer lending platform built with **React and Vite**. The platform connects borrowers with lenders, enabling trustless loan transactions with Web3 wallet integration and World ID verification for enhanced security and identity verification.
@@ -180,4 +182,11 @@ pnpm run format
 ## 📄 License
 
 MIT License
+
+## 📚 Additional Documentation
+
+- [DOCKER_SETUP.md](./DOCKER_SETUP.md) - Comprehensive Docker development guide
+- [AGENTS.md](./AGENTS.md) - AI agent instructions and guidelines
+- [docs/CODING_STANDARDS.md](./docs/CODING_STANDARDS.md) - Coding standards and best practices
+- [docs/SYSTEM_DESIGN.md](./docs/SYSTEM_DESIGN.md) - System architecture overview
 
