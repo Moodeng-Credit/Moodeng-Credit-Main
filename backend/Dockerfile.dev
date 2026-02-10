@@ -1,12 +1,12 @@
-FROM denoland/deno:alpine-2.1.4
+FROM node:24-alpine
 
 WORKDIR /app
 
-# Copy the functions directory
-COPY supabase/functions ./functions
+# Copy backend files
+COPY . .
 
 # Expose port 8000
 EXPOSE 8000
 
-# Run Deno in watch mode for hot reload
-CMD ["deno", "run", "--allow-all", "--watch", "--unstable", "functions/serve.ts"]
+# Run the Node.js server
+CMD ["node", "server.js"]
