@@ -244,9 +244,10 @@ The app needs a **plain** (non-encrypted) Supabase URL and anon key. If your `fr
 ```
 ├── docker-compose.dev.yml    # Docker Compose configuration
 ├── docker-dev.sh              # Docker management script
+├── src/                       # V2 app (repo root) – mounted as /app/v2 in frontend container, import as @v2/
 ├── frontend/
 │   ├── Dockerfile.dev         # Frontend Docker configuration
-│   ├── src/                   # React application source
+│   ├── src/                   # Main React application source (@/)
 │   └── ...
 └── backend/
     ├── Dockerfile.dev         # Backend Docker configuration

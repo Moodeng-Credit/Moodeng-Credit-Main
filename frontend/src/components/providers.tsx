@@ -19,7 +19,14 @@ import { setStoreRef } from '@/lib/axios';
 import { config } from '@/lib/config/wagmi';
 import { persistor, store } from '@/store/store';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+   defaultOptions: {
+      queries: {
+         staleTime: 60 * 1000,
+         retry: 1
+      }
+   }
+});
 
 function WalletConnectionLogger() {
    const account = useAccount();
