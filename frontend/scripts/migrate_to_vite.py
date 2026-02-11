@@ -63,5 +63,8 @@ def walk_dir(dir_path):
                 migrate_file(os.path.join(root, file))
 
 if __name__ == "__main__":
-    walk_dir('/Users/anthonytjuatja/Dev/business/Moodeng-Credit-Main/vite-frontend/src')
+    import sys
+    # Use current directory's src folder if no argument provided
+    src_dir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), '..', 'src')
+    walk_dir(src_dir)
 
