@@ -15,18 +15,18 @@ describe('RequestLoanModal validation', () => {
       expect(() => createLoanSchema.parse(validData)).not.toThrow();
    });
 
-   it('should reject when repayment amount is not greater than borrow amount', () => {
-      const invalidData = {
+   it('should allow equal repayment amount in schema (business logic in component validates)', () => {
+      const data = {
          borrowerUserId: '123',
          loanAmount: 10,
-         totalRepaymentAmount: 10, // Should be > borrow amount
+         totalRepaymentAmount: 10, // Equal amounts - schema allows, but UI validation will reject
          reason: 'Need help',
          days: 7,
          coin: 'USDC' as const
       };
 
-      // This will pass schema validation but business logic should catch it
-      expect(() => createLoanSchema.parse(invalidData)).not.toThrow();
+      // Schema validation passes - component's validateForm() will catch this
+      expect(() => createLoanSchema.parse(data)).not.toThrow();
    });
 
    it('should reject when reason exceeds 500 characters (schema limit)', () => {

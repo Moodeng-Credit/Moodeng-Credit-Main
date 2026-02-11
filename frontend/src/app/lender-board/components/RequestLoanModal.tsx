@@ -1,3 +1,5 @@
+'use client';
+
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
@@ -349,10 +351,10 @@ export default function RequestLoanModal({ isOpen, onClose, user }: RequestLoanM
 
                {/* Submit Button */}
                <button
-                  className={`${isVerified && !isSubmitting ? 'bg-[#1E56FF]' : 'bg-gray-400 cursor-not-allowed'} text-white font-extrabold text-sm rounded-md py-3 mt-2 w-full`}
+                  className={`${isVerified && !isSubmitting ? 'bg-[#1E56FF]' : 'bg-gray-400 cursor-not-allowed'} text-white font-extrabold text-sm rounded-md py-3 px-6 mt-2 w-full`}
                   type="submit"
                   disabled={!isVerified || isSubmitting}
-                  style={{ minHeight: '44px' }}
+                  style={{ minHeight: '44px', minWidth: '44px' }}
                >
                   {isSubmitting ? 'Submitting...' : 'Make Your Request'}
                </button>
