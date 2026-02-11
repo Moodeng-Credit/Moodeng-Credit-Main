@@ -125,6 +125,18 @@ lsof -i :8000
 kill -9 <PID>
 ```
 
+### Nothing on localhost:3000 or localhost:8000
+
+1. **Check that containers are running**: `./docker-dev.sh ps` — both `frontend-new` and `backend-new` should be "Up".
+2. **Check logs** to see if the dev server started:
+   ```bash
+   ./docker-dev.sh logs frontend
+   ./docker-dev.sh logs backend
+   ```
+   For frontend, wait until you see something like "Local: http://localhost:3000" (Vite can take a minute after `pnpm install`).
+3. **Frontend**: If you use encrypted env files, ensure `frontend/.env.staging` and (if needed) `frontend/.env.keys` exist on your machine — they are mounted from the host. Without `.env.staging`, the container falls back to running Vite with no env file so the app still loads.
+4. **Backend**: Open http://localhost:8000/health — you should get `{"status":"ok",...}`.
+
 ### Container Won't Start
 
 ```bash
@@ -197,11 +209,35 @@ supabase functions serve
 ## Environment Variables
 
 Environment files for the frontend are located in the `frontend/` directory:
-- `.env.local` - Local development
-- `.env.staging` - Staging environment
+- `.env.local` - Local development (plain key=value; recommended for Docker)
+- `.env.staging` - Staging environment (encrypted with dotenvx; needs `.env.keys` to decrypt)
 - `.env.production` - Production environment
 
 The project uses **dotenvx** for environment management. Ensure you have the `.env.keys` file to decrypt secrets.
+
+### Docker: Supabase / "Invalid supabaseUrl" errors
+
+The app needs a **plain** (non-encrypted) Supabase URL and anon key. If your `frontend/.env.local` only has `encrypted:...` values and you don't have `.env.keys`, add one of these:
+
+1. **Option A – plain override vars (recommended)**  
+   At the end of `frontend/.env.local`, add (replace with your real values from Supabase Dashboard → Settings → API):
+   ```bash
+   VITE_SUPABASE_URL_PLAIN=https://YOUR_PROJECT_REF.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY_PLAIN=your-anon-key
+   ```
+   The app uses these when the main `VITE_SUPABASE_*` vars are missing or still encrypted.
+
+2. **Option B – plain main vars**  
+   In `frontend/.env.local` use **plain** values for the main vars (no `encrypted:...`):
+   ```bash
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
+   ```
+
+3. **Option C – decrypt with `.env.keys`**  
+   Get `.env.keys` from the team. You can place it either:
+   - **Project root** as `env.keys` — it is mounted into the frontend container as `/app/.env.keys` (see `docker-compose.dev.yml`).
+   - **Frontend folder** as `frontend/.env.keys` — already included via the `./frontend:/app` mount. If you use only this and not the root file, comment out the `./env.keys:/app/.env.keys` volume in `docker-compose.dev.yml` so the optional root mount doesn’t overwrite it.
 
 ## Architecture
 

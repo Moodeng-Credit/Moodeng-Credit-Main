@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => {
    // Check if we are running the local dev script
    const isLocal = process.env.npm_lifecycle_event === 'dev:local';
 
+   const inDocker = process.env.DOCKER === '1';
    return {
       plugins: [react(), isLocal ? mkcert() : null].filter(Boolean),
       resolve: {
@@ -18,7 +19,7 @@ export default defineConfig(({ mode }) => {
       },
       server: {
          port: 3000,
-         host: isLocal ? true : false,
+         host: inDocker ? '0.0.0.0' : isLocal ? true : false,
          allowedHosts: ['.ngrok-free.app', '.ngrok.io']
       },
       test: {

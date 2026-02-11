@@ -11,8 +11,11 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      # Keys file for dotenvx (decrypt .env.local/.env.staging). Use repo-root env.keys or frontend/.env.keys
+      - ./env.keys:/app/.env.keys
     environment:
       - NODE_ENV=development
+      - DOCKER=1
     stdin_open: true
     tty: true
     restart: unless-stopped
