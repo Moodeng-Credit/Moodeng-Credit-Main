@@ -18,11 +18,14 @@ export default function LenderBoardHeader() {
    // Generate initials for avatar
    const getInitials = () => {
       if (!user?.username) return 'U';
-      const parts = user.username.split(/[\s_-]/);
-      if (parts.length >= 2) {
+      const parts = user.username.split(/[\s_-]/).filter(part => part.length > 0);
+      if (parts.length >= 2 && parts[0].length > 0 && parts[1].length > 0) {
          return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
       }
-      return user.username.substring(0, 2).toUpperCase();
+      if (parts.length > 0 && parts[0].length >= 2) {
+         return parts[0].substring(0, 2).toUpperCase();
+      }
+      return user.username.substring(0, Math.min(2, user.username.length)).toUpperCase() || 'U';
    };
 
    return (
