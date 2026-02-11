@@ -4,11 +4,12 @@ This document describes how to use Docker for local development with hot reloadi
 
 ## Overview
 
-The project is now separated into two main parts:
+The project has three main services:
 - **Frontend**: React + Vite application (port 3000)
 - **Backend**: Node.js server (port 8000)
+- **API**: Python FastAPI app (port 8001), persists data to Firebase Firestore
 
-Both services run in separate Docker containers with hot reloading enabled, allowing you to make changes to the code and see them reflected immediately without rebuilding containers.
+All run in separate Docker containers with hot reloading where applicable.
 
 ## Prerequisites
 
@@ -30,8 +31,8 @@ Both services run in separate Docker containers with hot reloading enabled, allo
 ### Accessing Services
 
 - **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000/api
-- **Backend Health Check**: http://localhost:8000/health
+- **Backend**: http://localhost:8000/api, health: http://localhost:8000/health
+- **API (FastAPI)**: http://localhost:8001, docs: http://localhost:8001/docs, health: http://localhost:8001/health
 
 ### Viewing Logs
 
@@ -42,6 +43,7 @@ Both services run in separate Docker containers with hot reloading enabled, allo
 # View logs from a specific service
 ./docker-dev.sh logs frontend
 ./docker-dev.sh logs backend
+./docker-dev.sh logs api
 ```
 
 ### Stopping Services
@@ -252,6 +254,10 @@ The app needs a **plain** (non-encrypted) Supabase URL and anon key. If your `fr
 └── backend/
     ├── Dockerfile.dev         # Backend Docker configuration
     ├── server.js              # Development Node.js server
+    ├── api/                   # FastAPI app (Docker: api service, port 8001)
+    │   ├── Dockerfile.dev
+    │   ├── app/               # routes, services, repositories, Firebase
+    │   └── requirements.txt
     └── supabase/              # Supabase functions (production)
         └── functions/
 ```

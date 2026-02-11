@@ -47,7 +47,10 @@ export default function LenderBoardHeader() {
                      </Badge>
                   ) : (
                      <>
-                        <Badge variant="destructive" className="gap-1">
+                        <Badge
+                           className="gap-1 border-0 shadow-none"
+                           style={{ backgroundColor: '#FED7DA', color: '#B60413' }}
+                        >
                            <span className="size-1.5 rounded-full bg-current" />
                            Not Verified
                         </Badge>
