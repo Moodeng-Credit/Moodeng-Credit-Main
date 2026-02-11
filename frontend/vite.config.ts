@@ -14,7 +14,10 @@ export default defineConfig(({ mode }) => {
       plugins: [react(), isLocal ? mkcert() : null].filter(Boolean),
       resolve: {
          alias: {
-            '@': path.resolve(__dirname, './src')
+            // Use cwd so the alias resolves correctly in Docker (where __dirname can differ)
+            '@': path.resolve(process.cwd(), 'src'),
+            // Repo-root src (v2): in Docker it's /app/v2, locally it's ../src from frontend
+            '@v2': inDocker ? path.resolve(process.cwd(), 'v2') : path.resolve(process.cwd(), '..', 'src')
          }
       },
       server: {

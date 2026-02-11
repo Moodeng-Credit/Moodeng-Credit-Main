@@ -23,10 +23,11 @@ import type { Loan } from '@/types/loanTypes';
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
-import BorrowerRequestCard from '@/views/lenderBoard/components/BorrowerRequestCard';
-import BrowseRequestsHeader from '@/views/lenderBoard/components/BrowseRequestsHeader';
-import LenderBoardHeader from '@/views/lenderBoard/components/LenderBoardHeader';
-import LoanApplicationBanner from '@/views/lenderBoard/components/LoanApplicationBanner';
+
+import BorrowerRequestCard from '@v2/views/lenderBoard/components/BorrowerRequestCard';
+import BrowseRequestsHeader from '@v2/views/lenderBoard/components/BrowseRequestsHeader';
+import LenderBoardHeader from '@v2/views/lenderBoard/components/LenderBoardHeader';
+import LoanApplicationBanner from '@v2/views/lenderBoard/components/LoanApplicationBanner';
 
 export default function LenderBoard() {
    const dispatch = useDispatch<AppDispatch>();

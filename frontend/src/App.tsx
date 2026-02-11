@@ -18,7 +18,7 @@ import Login from '@/app/login/page';
 import AuthSuccess from '@/app/auth-success/page';
 // Import pages
 import Home from '@/app/page';
-import LenderBoard from '@/app/lender-board/page';
+import LenderBoard from '@v2/app/lender-board/page';
 import Profile from '@/app/profile/page';
 import ResetPassword from '@/app/reset-password/page';
 import Simple from '@/app/simple/page';
@@ -93,11 +93,9 @@ export default function App() {
             <Route
                path="/lender-board"
                element={
-                  <ProtectedRoute>
-                     <Layout>
-                        <LenderBoard />
-                     </Layout>
-                  </ProtectedRoute>
+                  <Layout>
+                     <LenderBoard />
+                  </Layout>
                }
             />
             <Route
