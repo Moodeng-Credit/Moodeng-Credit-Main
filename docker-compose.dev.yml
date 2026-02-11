@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  frontend:
+    container_name: frontend-new
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      # Keys file for dotenvx (decrypt .env.local/.env.staging). Use repo-root env.keys or frontend/.env.keys
+      - ./env.keys:/app/.env.keys
+    environment:
+      - NODE_ENV=development
+      - DOCKER=1
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+  backend:
+    container_name: backend-new
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DENO_ENV=development
+    restart: unless-stopped
+
+networks:
+  default:
+    name: moodeng-network

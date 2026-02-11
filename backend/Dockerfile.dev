@@ -1,0 +1,12 @@
+FROM node:24-alpine
+
+WORKDIR /app
+
+# Copy backend files
+COPY . .
+
+# Expose port 8000
+EXPOSE 8000
+
+# Run the Node.js server
+CMD ["node", "server.js"]
