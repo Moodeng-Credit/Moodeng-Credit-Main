@@ -94,14 +94,7 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
-            <Route
-               path="/lender-board"
-               element={
-                  <Layout>
-                     <LenderBoard />
-                  </Layout>
-               }
-            />
+            <Route path="/lender-board" element={<LenderBoard />} />
             <Route
                path="/login"
                element={

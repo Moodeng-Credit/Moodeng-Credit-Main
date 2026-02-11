@@ -24,6 +24,8 @@ import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 
+import { Card, CardContent } from '@/components/shadcn/card';
+
 import BorrowerRequestCard from '@v2/views/lenderBoard/components/BorrowerRequestCard';
 import BrowseRequestsHeader from '@v2/views/lenderBoard/components/BrowseRequestsHeader';
 import LenderBoardHeader from '@v2/views/lenderBoard/components/LenderBoardHeader';
@@ -251,30 +253,27 @@ export default function LenderBoard() {
 
    return (
       <>
-         <div className="bg-gray-50 min-h-screen" style={{ fontFamily: 'Inter, sans-serif' }}>
-            <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6 pb-20">
-               {/* Header with User Info */}
+         <div className="min-h-screen bg-background">
+            <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6 pb-24">
                <LenderBoardHeader />
-               
-               {/* Page Title */}
-               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Microloan Request Board</h1>
-               <p className="text-sm text-gray-600 mb-6">
-                  Browse requests posted on Moodeng, or jump right in and get verified to start borrowing in USDC.
+
+               <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                  Microloan Request Board
+               </h1>
+               <p className="text-sm text-muted-foreground mb-6">
+                  Browse requests posted on Moodeng, or jump right in and get verified to start
+                  borrowing in USDC.
                </p>
-               
-               {/* Loan Application Banner */}
+
                <LoanApplicationBanner onApplyClick={handleApplyLoanClick} />
-               
-               {/* Browse Requests Section */}
+
                <BrowseRequestsHeader
                   searchValue={searchQuery}
                   onSearchChange={setSearchQuery}
                   onFilterClick={() => setShowFilterSidebar(!showFilterSidebar)}
                />
-               
-               {/* Requests Grid with Optional Sidebar */}
+
                <div className="flex flex-col md:flex-row gap-6">
-                  {/* Filter Sidebar (collapsible on mobile) */}
                   {showFilterSidebar && (
                      <div className="md:w-64 shrink-0">
                         <FilterSidebar
@@ -285,37 +284,61 @@ export default function LenderBoard() {
                         />
                      </div>
                   )}
-                  
-                  {/* Request Cards Grid */}
-                  <div className="flex-1">
+
+                  <div className="flex-1 min-w-0">
                      {isLoading ? (
-                        <div className="flex justify-center py-20">
-                           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-                        </div>
+                        <Card className="rounded-2xl">
+                           <CardContent className="flex flex-col items-center justify-center py-20">
+                              <div
+                                 className="w-8 h-8 animate-spin rounded-full border-2 border-[#6d57ff] border-t-transparent"
+                                 aria-hidden
+                              />
+                              <p className="mt-4 text-sm text-muted-foreground">
+                                 Loading requests…
+                              </p>
+                            </CardContent>
+                        </Card>
                      ) : displayedLoans && Array.isArray(displayedLoans) && displayedLoans.length > 0 ? (
                         <>
                            <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
                               {displayedLoans.map((loan) => (
-                                 <BorrowerRequestCard 
-                                    key={loan.id} 
+                                 <BorrowerRequestCard
+                                    key={loan.id}
                                     loan={loan}
                                     onViewRequest={() => handleViewRequest(loan)}
                                  />
                               ))}
                            </div>
-                           <LoadMoreButton 
-                              currentCount={displayedCount} 
-                              totalCount={totalCount} 
-                              onLoadMore={handleLoadMore} 
+                           <LoadMoreButton
+                              currentCount={displayedCount}
+                              totalCount={totalCount}
+                              onLoadMore={handleLoadMore}
                            />
                         </>
                      ) : (
-                        <div className="text-center py-20">
-                           <div className="text-gray-400 text-6xl mb-4">
-                              <i className="fas fa-inbox"></i>
-                           </div>
-                           <p className="text-gray-500 text-lg">No loan requests found.</p>
-                        </div>
+                        <Card className="rounded-2xl">
+                           <CardContent className="flex flex-col items-center justify-center py-20">
+                              <div
+                                 className="rounded-full bg-muted p-4 mb-4"
+                                 aria-hidden
+                              >
+                                 <svg
+                                    className="size-10 text-muted-foreground"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                 >
+                                    <path
+                                       strokeLinecap="round"
+                                       strokeLinejoin="round"
+                                       strokeWidth={1.5}
+                                       d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                                    />
+                                 </svg>
+                              </div>
+                              <p className="text-muted-foreground font-medium">No loan requests found.</p>
+                           </CardContent>
+                        </Card>
                      )}
                   </div>
                </div>
