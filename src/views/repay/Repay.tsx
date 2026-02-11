@@ -89,6 +89,7 @@ export default function Repay() {
       <div className="w-full min-h-screen bg-gradient-to-b from-[#171420] to-[#2a1f3d] text-white p-4 md:p-8">
          <div className="max-w-7xl mx-auto">
             <div className="mb-8">
+               <span className="text-xs font-medium text-[#6d57ff] bg-[#6d57ff]/20 px-2 py-1 rounded mb-2 inline-block">Draft (v2)</span>
                <h1 className="text-3xl md:text-4xl font-bold mb-2">Repay Loans</h1>
                <p className="text-gray-400">Manage and repay your active loans</p>
             </div>

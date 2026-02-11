@@ -15,14 +15,14 @@ import Dashboard from '@/app/dashboard/page';
 import FAQ from '@/app/faq/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
-import History from '@/app/history/page';
 import Login from '@/app/login/page';
 import AuthSuccess from '@/app/auth-success/page';
 // Import pages
 import Home from '@/app/page';
 import LenderBoard from '@v2/app/lender-board/page';
+import History from '@v2/app/history/page';
 import Profile from '@/app/profile/page';
-import Repay from '@/app/repay/page';
+import Repay from '@v2/app/repay/page';
 import ResetPassword from '@/app/reset-password/page';
 import Simple from '@/app/simple/page';
 import Test from '@/app/test/page';
