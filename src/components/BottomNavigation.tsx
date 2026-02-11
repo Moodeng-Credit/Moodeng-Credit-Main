@@ -54,7 +54,7 @@ export default function BottomNavigation() {
                
                return (
                   <Link
-                     key={item.path + item.label}
+                     key={item.path}
                      to={item.path}
                      className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                         isActive 

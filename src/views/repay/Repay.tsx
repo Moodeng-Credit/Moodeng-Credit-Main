@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 
 import DataTable from '@/components/tables/DataTable';
@@ -31,6 +31,11 @@ export default function Repay() {
    } = usePagination({
       items: loansToRepay
    });
+
+   const handleRepay = useCallback((loan: Loan) => {
+      // TODO: Implement repayment functionality
+      console.log('Repay loan:', loan);
+   }, []);
 
    const columns = useMemo(
       () => [
@@ -77,13 +82,8 @@ export default function Repay() {
             )
          }
       ],
-      [userProfiles]
+      [userProfiles, handleRepay]
    );
-
-   const handleRepay = (loan: Loan) => {
-      // TODO: Implement repayment functionality
-      console.log('Repay loan:', loan);
-   };
 
    return (
       <div className="w-full min-h-screen bg-gradient-to-b from-[#171420] to-[#2a1f3d] text-white p-4 md:p-8">
