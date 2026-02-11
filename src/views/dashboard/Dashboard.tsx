@@ -13,8 +13,6 @@ import FilterSidebar from '@/components/filters/FilterSidebar';
 import SearchBar from '@/components/filters/SearchBar';
 import SortButtons from '@/components/filters/SortButtons';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
-import YouTubeVideoLightbox from '@/components/ui/YouTubeVideoLightbox';
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -29,13 +27,12 @@ import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
+import LenderBoardHeader from '@/views/dashboard/components/LenderBoardHeader';
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
-
-const CREDIT_LEVELLING_VIDEO_ID = 'gaRjXOd2s2U';
 
 export default function Dashboard() {
    return (
@@ -306,40 +303,34 @@ function Dashboard$() {
       <>
          <div id="top" className="bg-white text-gray-900" style={{ fontFamily: 'Inter, sans-serif' }}>
             <main className="mx-auto px-6 pt-6 pb-20 md:px-20">
-               <h1 className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">Request Board for Microloans</h1>
+               {/* Lender Board Header with User Info */}
+               <LenderBoardHeader />
+               
+               <h1 className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">Microloan Request Board</h1>
                <p className="text-xs md:text-sm text-gray-700 mb-6">
-                  Browse requests posted on Moodeng, or jump right in and get verified to start borrowing.
+                  Browse requests posted on Moodeng, or jump right in and get verified to start borrowing in USDC.
                </p>
-               <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-10">
-                  <button
-                     onClick={handleApplyLoanClick}
-                     className="bg-blue-600 text-white text-xs md:text-sm font-semibold px-5 py-2 rounded-md w-full sm:w-auto hover:bg-blue-700 transition disabled:opacity-50"
-                  >
-                     APPLY LOAN
-                  </button>
-                  <YouTubeVideoLightbox videoId={CREDIT_LEVELLING_VIDEO_ID} />
-               </div>
-               {user.isWorldId !== 'ACTIVE' ? (
-                  <div className="bg-blue-100 text-blue-900 text-center py-3 px-4 rounded-md mb-6">
-                     <span className="text-sm md:text-base font-medium">
-                        Interested in Borrowing?{' '}
-                        <WorldIDVerification>
-                           {({ open }) => (
-                              <button
-                                 onClick={open}
-                                 className="underline font-semibold hover:text-blue-700 bg-transparent border-none cursor-pointer"
-                              >
-                                 Click Here
-                              </button>
-                           )}
-                        </WorldIDVerification>{' '}
-                        and Verify You're a Real Person via{' '}
-                        <a href="https://worldcoin.org/" className="underline font-semibold hover:text-blue-700">
-                           World ID!
-                        </a>
-                     </span>
+               
+               {/* Need short-term support card */}
+               <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6 mb-6 border border-purple-100">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                     <div className="flex-1">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-2">Need short-term support?</h2>
+                        <p className="text-sm text-gray-700">
+                           Borrow USDC to build trust and unlock higher loan levels.
+                        </p>
+                     </div>
+                     <button
+                        onClick={handleApplyLoanClick}
+                        className="bg-purple-600 text-white text-sm font-semibold px-6 py-3 rounded-lg hover:bg-purple-700 transition shadow-md whitespace-nowrap"
+                     >
+                        Apply For A Loan
+                     </button>
                   </div>
-               ) : null}
+               </div>
+               
+               {/* Browse Latest Requests section title */}
+               <h2 className="text-lg font-semibold text-gray-900 mb-4">Browse Latest Requests</h2>
                <div className="flex flex-col md:flex-row md:space-x-10">
                   <FilterSidebar
                      filters={filters}
