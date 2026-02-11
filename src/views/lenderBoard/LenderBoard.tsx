@@ -51,7 +51,7 @@ export default function LenderBoard() {
    const today = new Date().toISOString().split('T')[0];
    const borrowerUserId = user?.id || '';
    const lenderUserId = '';
-   const effectiveCreditLimit = getEffectiveCreditLimit(user.cs, user.isWorldId === 'ACTIVE');
+   const effectiveCreditLimit = getEffectiveCreditLimit(user?.cs || 0, user?.isWorldId === 'ACTIVE');
    
    const [loanAmount, setLoanAmount] = useState('');
    const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');

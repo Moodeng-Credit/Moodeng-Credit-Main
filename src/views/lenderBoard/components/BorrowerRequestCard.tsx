@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 
@@ -22,7 +22,7 @@ export default function BorrowerRequestCard({ loan, onViewRequest }: BorrowerReq
    // Check if borrower is in good standing (can customize this logic)
    const isGoodStanding = borrowerProfile?.cs && borrowerProfile.cs >= 50;
    
-   const dueDate = parseISO(loan.dueDate);
+   const dueDate = parseDateSafely(loan.dueDate);
    const formattedDueDate = format(dueDate, 'MMM dd yyyy');
    
    const loanReason = loan.reason?.trim() ? loan.reason.trim() : 'Help me with my loan request';
