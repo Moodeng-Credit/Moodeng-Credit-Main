@@ -30,7 +30,7 @@ const navItems: NavItem[] = [
    },
    {
       label: 'Account',
-      path: '/profile',
+      path: '/profile#settings',
       icon: User
    }
 ];
@@ -47,11 +47,14 @@ export default function BottomNavigation() {
          <div className="flex justify-around items-center h-16">
             {navItems.map((item) => {
                const Icon = item.icon;
-               const isActive = location.pathname === item.path;
+               // For /profile paths, also check the hash
+               const isActive = 
+                  location.pathname === item.path.split('#')[0] && 
+                  (!item.path.includes('#') || location.hash === '#' + item.path.split('#')[1]);
                
                return (
                   <Link
-                     key={item.path}
+                     key={item.path + item.label}
                      to={item.path}
                      className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                         isActive 
