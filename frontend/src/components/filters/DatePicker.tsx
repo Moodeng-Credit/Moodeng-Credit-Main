@@ -16,9 +16,11 @@ interface DatePickerProps {
    value: Date | null;
    onChange: (date: Date | null) => void;
    placeholder?: string;
+   minDate?: Date;
+   disabled?: boolean;
 }
 
-export default function DatePicker({ value, onChange, placeholder = 'Pick a date...' }: DatePickerProps) {
+export default function DatePicker({ value, onChange, placeholder = 'Pick a date...', minDate, disabled = false }: DatePickerProps) {
    const [isOpen, setIsOpen] = useState(false);
    const [month, setMonth] = useState(value || new Date());
    const containerRef = useRef<HTMLDivElement>(null);
@@ -45,22 +47,29 @@ export default function DatePicker({ value, onChange, placeholder = 'Pick a date
       setIsOpen(false);
    };
 
+   const handleEarliestOrToday = () => {
+      const date = minDate && new Date() < minDate ? minDate : new Date();
+      onChange(date);
+      setIsOpen(false);
+   };
+
    return (
       <div className="relative" ref={containerRef}>
          <button
             type="button"
-            onClick={() => setIsOpen(!isOpen)}
-            className="w-full flex items-center justify-between border border-gray-300 rounded-lg px-4 py-2.5 text-sm hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none bg-white transition-all duration-200"
+            onClick={() => !disabled && setIsOpen(!isOpen)}
+            disabled={disabled}
+            className="w-full flex items-center justify-between border border-input rounded-md bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:border-muted-foreground/30"
          >
-            <span className={value ? 'text-gray-900' : 'text-gray-400'}>
-               {value ? format(value, 'MMM dd, yyyy') : placeholder}
+            <span className={value ? 'text-foreground' : 'text-muted-foreground'}>
+               {value ? format(value, 'MMM d, yyyy') : placeholder}
             </span>
-            <Calendar className="w-5 h-5 text-gray-400" />
+            <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
          </button>
 
          <div
-            className={`absolute z-50 mt-1 right-0 bg-white border border-gray-200 rounded-lg shadow-lg transition-all duration-200 origin-top-right ${
-               isOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'
+            className={`absolute z-50 mt-1 left-0 bg-popover border border-border rounded-lg shadow-md transition-all origin-top-left ${
+               isOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible pointer-events-none'
             }`}
          >
             <div className="p-3">
@@ -99,6 +108,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Pick a date
                   onMonthChange={setMonth}
                   selected={value || undefined}
                   onSelect={handleSelect}
+                  disabled={minDate ? { before: minDate } : undefined}
                   showOutsideDays
                   fixedWeeks
                   components={{
@@ -124,26 +134,23 @@ export default function DatePicker({ value, onChange, placeholder = 'Pick a date
                />
 
                {/* Footer */}
-               <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+               <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
                   <button
                      type="button"
                      onClick={() => {
                         onChange(null);
                         setIsOpen(false);
                      }}
-                     className="text-xs text-gray-500 hover:text-gray-700 transition-colors duration-150"
+                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                      Clear
                   </button>
                   <button
                      type="button"
-                     onClick={() => {
-                        onChange(new Date());
-                        setIsOpen(false);
-                     }}
-                     className="text-xs text-blue-600 font-medium hover:text-blue-700 transition-colors duration-150"
+                     onClick={handleEarliestOrToday}
+                     className="text-xs font-medium text-foreground hover:underline"
                   >
-                     Today
+                     {minDate && new Date() < minDate ? 'Earliest' : 'Today'}
                   </button>
                </div>
             </div>

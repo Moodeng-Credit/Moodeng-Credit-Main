@@ -28,13 +28,14 @@ export default function LoanApplicationBanner({ onApplyClick }: LoanApplicationB
                      
                   </p>
                   <Button
+                     type="button"
                      onClick={onApplyClick}
                      className="bg-[#6d57ff] hover:bg-[#5b46e0] text-white text-sm font-semibold rounded-lg shadow-sm"
                   >
                      Apply For A Loan
                   </Button>
                </div>
-               <div className="shrink-0 w-[142px] h-[120px] rounded-xl overflow-visible bg-white/60 flex items-center justify-center">
+               <div className="shrink-0 w-[142px] h-[120px] rounded-xl overflow-visible flex items-center justify-center">
                   <img
                      src={supportImage}
                      alt=""
