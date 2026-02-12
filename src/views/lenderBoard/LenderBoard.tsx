@@ -1,4 +1,4 @@
-import { type FormEvent, type MouseEvent, type RefObject, useCallback, useEffect, useMemo, useState } from 'react';
+import { type MouseEvent, type RefObject, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
@@ -7,20 +7,17 @@ import { useAccount } from 'wagmi';
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
-import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { usePagination } from '@/hooks/usePagination';
 
 import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
-import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
-import { createLoan, fetchLoans } from '@/store/slices/loanSlice';
+import { fetchLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
-import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 
@@ -30,17 +27,16 @@ import BorrowerRequestCard from '@v2/views/lenderBoard/components/BorrowerReques
 import BrowseRequestsHeader from '@v2/views/lenderBoard/components/BrowseRequestsHeader';
 import LenderBoardHeader from '@v2/views/lenderBoard/components/LenderBoardHeader';
 import LoanApplicationBanner from '@v2/views/lenderBoard/components/LoanApplicationBanner';
+import RequestLoanModal from '@v2/views/lenderBoard/components/RequestLoanModal';
 
 export default function LenderBoard() {
    const dispatch = useDispatch<AppDispatch>();
-   const account = useAccount();
-   const { isConnected } = account;
+   const { isConnected } = useAccount();
    const { showToastByConfig } = useToast();
    const { openConnectModal } = useConnectModal();
    
    const [showModal, setShowModal] = useState(false);
    const [showPurple, setShowPurple] = useState(false);
-   const [isSubmitting, setIsSubmitting] = useState(false);
    const [showFilterSidebar, setShowFilterSidebar] = useState(false);
    const [searchQuery, setSearchQuery] = useState('');
    const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
@@ -51,18 +47,8 @@ export default function LenderBoard() {
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
    
-   const today = new Date().toISOString().split('T')[0];
-   const borrowerUserId = user?.id || '';
-   const lenderUserId = '';
-   const effectiveCreditLimit = getEffectiveCreditLimit(user?.cs || 0, user?.isWorldId === 'ACTIVE');
-   
-   const [loanAmount, setLoanAmount] = useState('');
-   const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');
-   const [reason, setReason] = useState('');
-   const [days, setDays] = useState('');
    const [customAmount, setCustomAmount] = useState('');
    
-   const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
    const successModalRef = useClickOutside<HTMLDivElement>(() => setShowPurple(false), showPurple) as RefObject<HTMLDivElement>;
    
    const [filters, setFilters] = useState<LoanFilters>({
@@ -75,13 +61,6 @@ export default function LenderBoard() {
       search: '',
       sortBy: undefined
    });
-
-   const clear = () => {
-      setTotalRepaymentAmount('');
-      setLoanAmount('');
-      setReason('');
-      setDays('');
-   };
 
    const handleFiltersChange = (newFilters: Partial<LoanFilters>) => {
       setFilters((prev) => {
@@ -118,93 +97,16 @@ export default function LenderBoard() {
       setShowModal(false);
    }, []);
 
-   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-
-      if (isSubmitting) {
-         return;
-      }
-
-      if (!isConnected) {
-         openConnectModal?.();
-         e.stopPropagation();
-         return;
-      }
-
-      if ((user.nal || 0) >= (user.mal || 0)) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
-         return;
-      }
-
-      if (user.isWorldId !== 'ACTIVE') {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WORLDID_REQUIRED));
-         return;
-      }
-
-      if (!user.walletAddress || user.walletAddress.trim() === '') {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
-         return;
-      }
-
-      if (account.chain?.id !== ALLOWED_CHAIN_ID) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
-         return;
-      }
-
-      if (!loanAmount || parseFloat(loanAmount) <= 0) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_INVALID_AMOUNT));
-         return;
-      }
-
-      if (parseFloat(loanAmount) > effectiveCreditLimit) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
-         return;
-      }
-
-      const loanData = {
-         borrowerUserId: borrowerUserId || '',
-         borrowerWallet: user.walletAddress,
-         lenderUserId,
-         loanAmount: parseFloat(loanAmount),
-         totalRepaymentAmount: parseFloat(totalRepaymentAmount),
-         reason,
-         dueDate: days
-      };
-
-      if (
-         user.isWorldId === 'ACTIVE' &&
-         (user.nal || 0) < (user.mal || 0) &&
-         parseFloat(loanAmount) <= effectiveCreditLimit &&
-         parseFloat(loanAmount) > 0
-      ) {
-         setIsSubmitting(true);
-         try {
-            await dispatch(createLoan(loanData)).unwrap();
-            clear();
-            handlePurple();
-            try {
-               await dispatch(fetchUser()).unwrap();
-            } catch (error) {
-               console.error('Error fetching user:', (error as Error).message || error);
-            }
-         } catch (error) {
-            console.error('Error creating loan:', (error as Error).message || error);
-         } finally {
-            setIsSubmitting(false);
-         }
-      }
-   };
-
-   const handleDays = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const selectedDate = e.target.value;
-      const date = new Date(selectedDate);
-      const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0));
-      setDays(utcDate.toISOString());
-   };
-
-   const handlePurple = () => {
+   const handleLoanSuccess = async () => {
+      // Show success modal
       setShowPurple(true);
-      setShowModal(false);
+      
+      // Refresh user data to update loan count
+      try {
+         await dispatch(fetchUser()).unwrap();
+      } catch (error) {
+         console.error('Error fetching user after loan creation:', (error as Error).message || error);
+      }
    };
 
    useEffect(() => {
@@ -346,23 +248,11 @@ export default function LenderBoard() {
          </div>
          
          {/* Modals */}
-         <LoanRequestModal
+         <RequestLoanModal
             isOpen={showModal}
             onClose={handleCloseModal}
-            showVerify={user?.isWorldId !== 'ACTIVE'}
             user={user}
-            loanAmount={loanAmount}
-            setLoanAmount={setLoanAmount}
-            totalRepaymentAmount={totalRepaymentAmount}
-            setTotalRepaymentAmount={setTotalRepaymentAmount}
-            reason={reason}
-            setReason={setReason}
-            days={days}
-            today={today}
-            handleDays={handleDays}
-            handleSubmit={handleSubmit}
-            isSubmitting={isSubmitting}
-            clickOutsideRef={loanRequestModalRef}
+            onSuccess={handleLoanSuccess}
          />
          <SuccessModal isOpen={showPurple} onClose={handleSuccessModalClose} clickOutsideRef={successModalRef} />
       </>
