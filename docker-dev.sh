@@ -29,6 +29,7 @@ function print_help() {
     echo -e "${YELLOW}Services:${NC}"
     echo "  - Frontend (frontend-new): http://localhost:3000"
     echo "  - Backend: http://localhost:8000"
+    echo "  - API (FastAPI): http://localhost:8001"
 }
 
 function check_docker() {
@@ -64,6 +65,7 @@ case "$1" in
         echo -e "${GREEN}Services started!${NC}"
         echo "Frontend: http://localhost:3000"
         echo "Backend: http://localhost:8000"
+        echo "API (FastAPI): http://localhost:8001"
         echo ""
         echo "Run './docker-dev.sh logs' to view logs"
         ;;
@@ -96,6 +98,7 @@ case "$1" in
         echo -e "${GREEN}Rebuild complete!${NC}"
         echo "Frontend: http://localhost:3000"
         echo "Backend: http://localhost:8000"
+        echo "API (FastAPI): http://localhost:8001"
         ;;
     restart)
         check_docker

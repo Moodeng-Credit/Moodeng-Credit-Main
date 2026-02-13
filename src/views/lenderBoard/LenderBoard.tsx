@@ -81,12 +81,9 @@ export default function LenderBoard() {
    const handleApplyLoanClick = (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
 
-      if (!isConnected) {
-         openConnectModal?.();
-         return;
-      }
-
-      if ((user.nal || 0) >= (user.mal || 0)) {
+      const nal = user?.nal ?? 0;
+      const mal = user?.mal ?? 0;
+      if (isConnected && user != null && mal > 0 && nal >= mal) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
@@ -250,6 +247,8 @@ export default function LenderBoard() {
             isOpen={showModal}
             onClose={handleCloseModal}
             user={user}
+            isConnected={isConnected}
+            onOpenConnect={openConnectModal ?? undefined}
             onSuccess={handleLoanSuccess}
          />
          <SuccessModal isOpen={showPurple} onClose={handleSuccessModalClose} clickOutsideRef={successModalRef} />
