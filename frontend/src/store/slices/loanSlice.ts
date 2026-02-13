@@ -83,17 +83,26 @@ export const createLoan = createAsyncThunk('loans/create', async (loanData: Crea
    return mapSupabaseLoanToLoan(data);
 });
 
-export const fetchLoans = createAsyncThunk('loans/fetch', async () => {
-   const supabase = supabaseClient();
+export const fetchLoans = createAsyncThunk(
+   'loans/fetch',
+   async (userId?: string | null) => {
+      const supabase = supabaseClient();
 
-   const { data, error } = await supabase.from('loans').select('*').order('created_at', { ascending: false });
+      let query = supabase.from('loans').select('*').order('created_at', { ascending: false });
 
-   if (error) {
-      throw new Error(error.message);
+      if (userId) {
+         query = query.eq('borrower_user_id', userId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+         throw new Error(error.message);
+      }
+
+      return (data || []).map(mapSupabaseLoanToLoan);
    }
-
-   return (data || []).map(mapSupabaseLoanToLoan);
-});
+);
 
 export const getUserLoans = createAsyncThunk(
    'loans/getUserLoans',

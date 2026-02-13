@@ -13,14 +13,14 @@ export const ModalOverlay: FC<ModalOverlayProps> = ({ isOpen, onClose, children,
 
    return (
       <div
-         className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+         className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]"
          onClick={onClose}
          role="dialog"
          aria-modal="true"
          aria-labelledby={ariaLabelledBy}
          aria-describedby={ariaDescribedBy}
       >
-         <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+         <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             {children}
          </div>
       </div>

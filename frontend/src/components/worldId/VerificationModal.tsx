@@ -2,7 +2,6 @@
 
 import { type FC } from 'react';
 
-import { ModalNote } from '@/components/worldId/modal/ModalNote';
 import { ModalOverlay } from '@/components/worldId/modal/ModalOverlay';
 import { VerificationModalBody } from '@/components/worldId/modal/VerificationModalBody';
 import { VerificationModalHeader } from '@/components/worldId/modal/VerificationModalHeader';
@@ -22,11 +21,10 @@ export const VerificationModal: FC<VerificationModalProps> = ({ isOpen, onClose,
          ariaLabelledBy="verification-modal-title"
          ariaDescribedBy="verification-modal-description"
       >
-         <div className="overflow-hidden rounded-3xl bg-white shadow-2xl">
+         <section className="overflow-hidden rounded-xl shadow-2xl border border-border bg-background">
             <VerificationModalHeader onClose={onClose} />
             <VerificationModalBody onVerify={onVerify} onCheckStatus={onCheckStatus} />
-            <ModalNote />
-         </div>
+         </section>
       </ModalOverlay>
    );
 };

@@ -2,12 +2,25 @@
 
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 
+<<<<<<< Updated upstream
+=======
+import { useDispatch } from 'react-redux';
+
+import DatePicker from '@/components/filters/DatePicker';
+import { Button } from '@/components/shadcn/button';
+import { Input } from '@/components/shadcn/input';
+>>>>>>> Stashed changes
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
-import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
-import { useApiMutation } from '@/lib/api/hooks';
-import { API_ENDPOINTS } from '@/config/apiEndpoints';
+import { createLoan } from '@/store/slices/loanSlice';
+import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
+<<<<<<< Updated upstream
 import { createLoanSchema } from '@/lib/schemas/loans';
+=======
+import { cn } from '@/lib/utils';
+
+import hippoVerifyImage from '../../../images/hippo_verify.png';
+>>>>>>> Stashed changes
 
 interface RequestLoanModalProps {
    isOpen: boolean;
@@ -16,20 +29,24 @@ interface RequestLoanModalProps {
    onSuccess?: () => void;
 }
 
+<<<<<<< Updated upstream
 export default function RequestLoanModal({ isOpen, onClose, user, onSuccess }: RequestLoanModalProps) {
+=======
+export default function RequestLoanModal({ isOpen, onClose, user, isConnected = true, onOpenConnect, onSuccess }: RequestLoanModalProps) {
+   const dispatch = useDispatch<AppDispatch>();
+>>>>>>> Stashed changes
    const [borrowAmount, setBorrowAmount] = useState('');
    const [repaymentAmount, setRepaymentAmount] = useState('');
    const [repaymentDate, setRepaymentDate] = useState('');
    const [reason, setReason] = useState('');
    const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+   const [isSubmitting, setIsSubmitting] = useState(false);
 
    const modalRef = useRef<HTMLDivElement>(null);
    const borrowAmountInputRef = useRef<HTMLInputElement>(null);
 
-   const createLoanMutation = useApiMutation(API_ENDPOINTS.LOANS.CREATE);
-
    const isVerified = user?.wld || false;
-   const creditLimit = getEffectiveCreditLimit(user?.cs, isVerified);
+   const creditLimit = 100; // Limit $100 for borrow amount
 
    // Focus management - move focus to borrow amount input when modal opens
    useEffect(() => {
@@ -104,41 +121,40 @@ export default function RequestLoanModal({ isOpen, onClose, user, onSuccess }: R
    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
 
-      if (!isVerified) {
+      if (!validateForm()) return;
+      if (!repaymentDate) {
+         setValidationErrors((prev) => ({ ...prev, repaymentDate: 'Repayment date is required' }));
          return;
       }
 
-      if (!validateForm()) {
-         return;
-      }
+      const dueDate = new Date(repaymentDate);
+      dueDate.setUTCHours(0, 0, 0, 0);
 
-      const days = calculateDays();
-
+      // TEMPORARY: allow save without being connected (borrower_user_id may be null)
+      setIsSubmitting(true);
       try {
-         // Validate with Zod schema
-         const loanData = createLoanSchema.parse({
-            borrowerUserId: user?.id,
-            loanAmount: parseFloat(borrowAmount),
-            totalRepaymentAmount: parseFloat(repaymentAmount),
-            reason: reason.trim(),
-            days: days,
-            coin: 'USDC'
-         });
+         await dispatch(
+            createLoan({
+               borrowerUserId: user?.id ?? '',
+               lenderUserId: '',
+               loanAmount: parseFloat(borrowAmount),
+               totalRepaymentAmount: parseFloat(repaymentAmount),
+               reason: reason.trim(),
+               dueDate: dueDate.toISOString()
+            })
+         ).unwrap();
 
-         await createLoanMutation.mutateAsync(loanData);
-
-         // Reset form and close modal on success
          setBorrowAmount('');
          setRepaymentAmount('');
          setRepaymentDate('');
          setReason('');
          setValidationErrors({});
          onClose();
-         
-         // Call onSuccess callback if provided
          onSuccess?.();
       } catch (error) {
          console.error('Loan request failed:', error);
+      } finally {
+         setIsSubmitting(false);
       }
    };
 
@@ -170,8 +186,6 @@ export default function RequestLoanModal({ isOpen, onClose, user, onSuccess }: R
    }, [isOpen, handleClose]);
 
    if (!isOpen) return null;
-
-   const isSubmitting = createLoanMutation.isPending;
 
    return (
       <div 
@@ -228,6 +242,37 @@ export default function RequestLoanModal({ isOpen, onClose, user, onSuccess }: R
                   <div className="flex items-center gap-1 bg-[#E6E9FF] text-[#1E56FF] text-xs font-semibold rounded-md px-2 py-1 select-none">
                      <span>Current Limit: ${creditLimit.toFixed(2)}</span>
                   </div>
+<<<<<<< Updated upstream
+=======
+                  <div className="flex rounded-lg border border-input overflow-hidden focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ring-offset-background">
+                     <span
+                        aria-hidden
+                        className="flex items-center justify-center bg-muted px-4 text-sm font-medium text-muted-foreground border-r border-input"
+                     >
+                        USDC
+                     </span>
+                     <input
+                        ref={borrowAmountInputRef}
+                        onChange={(e) => {
+                           setBorrowAmount(e.target.value);
+                           if (validationErrors.borrowAmount) {
+                              setValidationErrors((prev) => ({ ...prev, borrowAmount: '' }));
+                           }
+                        }}
+                        className="flex-1 min-w-0 bg-background px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        id="borrow-amount"
+                        placeholder="Amount"
+                        type="text"
+                        value={borrowAmount}
+                     aria-describedby={validationErrors.borrowAmount ? 'borrow-amount-error' : undefined}
+                     />
+                  </div>
+                  {validationErrors.borrowAmount ? (
+                     <p id="borrow-amount-error" className="text-sm text-destructive">
+                        {validationErrors.borrowAmount}
+                     </p>
+                  ) : null}
+>>>>>>> Stashed changes
                </div>
 
                <div className="flex border-solid border border-gray-300 rounded-md overflow-hidden">
@@ -262,6 +307,7 @@ export default function RequestLoanModal({ isOpen, onClose, user, onSuccess }: R
                ) : null}
 
                {/* Repayment Amount */}
+<<<<<<< Updated upstream
                <label className="font-semibold text-gray-800 text-sm" htmlFor="repayment-amount">
                   Repayment Amount
                </label>
@@ -319,6 +365,63 @@ export default function RequestLoanModal({ isOpen, onClose, user, onSuccess }: R
                      />
                   </div>
                   {isVerified ? <p className="text-xs text-gray-500">Date will be set to midnight UTC+00</p> : null}
+=======
+               <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="repayment-amount">
+                     Repayment amount
+                  </label>
+                  <Input
+                     id="repayment-amount"
+                     type="text"
+                     placeholder="Greater than borrow amount"
+                     value={repaymentAmount}
+                     onChange={(e) => {
+                        setRepaymentAmount(e.target.value);
+                        if (validationErrors.repaymentAmount) {
+                           setValidationErrors((prev) => ({ ...prev, repaymentAmount: '' }));
+                        }
+                     }}
+                     aria-describedby={validationErrors.repaymentAmount ? 'repayment-amount-error' : undefined}
+                  />
+                  {validationErrors.repaymentAmount ? (
+                     <p id="repayment-amount-error" className="text-sm text-destructive">
+                        {validationErrors.repaymentAmount}
+                     </p>
+                  ) : null}
+               </div>
+
+               {/* Repayment Date */}
+               <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="repayment-date">
+                     Repayment date
+                  </label>
+                  <div className="flex gap-2 flex-wrap items-center">
+                     {repaymentDate ? (
+                        <span className="inline-flex items-center rounded-md bg-muted text-muted-foreground text-sm px-3 py-2 h-10 tabular-nums">
+                           {calculateDays()} days
+                        </span>
+                     ) : null}
+                     <div className="flex-1 min-w-[180px]">
+                        <DatePicker
+                           value={repaymentDate}
+                           onChange={(date) => {
+                              setRepaymentDate(date);
+                              if (validationErrors.repaymentDate) {
+                                 setValidationErrors((prev) => ({ ...prev, repaymentDate: '' }));
+                              }
+                           }}
+                           placeholder="Pick repayment date"
+                           minDate={getMinimumDate()}
+                        />
+                     </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">Due at midnight UTC.</p>
+                  {validationErrors.repaymentDate ? (
+                     <p id="repayment-date-error" className="text-sm text-destructive">
+                        {validationErrors.repaymentDate}
+                     </p>
+                  ) : null}
+>>>>>>> Stashed changes
                </div>
                {validationErrors.repaymentDate ? (
                   <p id="repayment-date-error" className="text-red-500 text-xs mt-1">
@@ -326,6 +429,7 @@ export default function RequestLoanModal({ isOpen, onClose, user, onSuccess }: R
                   </p>
                ) : null}
 
+<<<<<<< Updated upstream
                {/* Reason for Borrowing */}
                <label className="font-semibold text-gray-800 text-sm" htmlFor="reason">
                   Reason For Borrowing
@@ -352,13 +456,52 @@ export default function RequestLoanModal({ isOpen, onClose, user, onSuccess }: R
                      {validationErrors.reason}
                   </p>
                ) : null}
+=======
+               {/* Reason */}
+               <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                     <label className="text-sm font-medium text-foreground" htmlFor="reason">
+                        Reason for borrowing
+                     </label>
+                     <span className="text-xs text-muted-foreground tabular-nums">{reason.length}/40</span>
+                  </div>
+                  <textarea
+                     id="reason"
+                     maxLength={40}
+                     rows={3}
+                     placeholder="e.g. Car repair, short-term cash flow..."
+                     value={reason}
+                     onChange={(e) => {
+                        setReason(e.target.value);
+                        if (validationErrors.reason) {
+                           setValidationErrors((prev) => ({ ...prev, reason: '' }));
+                        }
+                     }}
+                     className={cn(
+                        'flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed resize-none'
+                     )}
+                     aria-describedby={validationErrors.reason ? 'reason-error' : undefined}
+                  />
+                  {validationErrors.reason ? (
+                     <p id="reason-error" className="text-sm text-destructive">
+                        {validationErrors.reason}
+                     </p>
+                  ) : null}
+               </div>
+>>>>>>> Stashed changes
 
                {/* Submit Button */}
                <button
                   className={`${isVerified && !isSubmitting ? 'bg-[#1E56FF]' : 'bg-gray-400 cursor-not-allowed'} text-white font-extrabold text-sm rounded-md py-3 px-6 mt-2 w-full`}
                   type="submit"
+<<<<<<< Updated upstream
                   disabled={!isVerified || isSubmitting}
                   style={{ minHeight: '44px', minWidth: '44px' }}
+=======
+                  disabled={isSubmitting}
+                  variant={isConnected && !isSubmitting ? 'default' : 'secondary'}
+                  className="w-full h-11 font-medium"
+>>>>>>> Stashed changes
                >
                   {isSubmitting ? 'Submitting...' : 'Make Your Request'}
                </button>

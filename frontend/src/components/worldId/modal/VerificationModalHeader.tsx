@@ -1,30 +1,33 @@
 import { type FC } from 'react';
 
-import { Shield } from 'lucide-react';
-
-import { ModalHeader } from '@/components/worldId/modal/ModalHeader';
-import { modalHeaderConfig } from '@/components/worldId/modal/verificationModalConfig';
-
 interface VerificationModalHeaderProps {
    onClose: () => void;
 }
 
-/**
- * Pre-configured header for the verification modal
- */
 export const VerificationModalHeader: FC<VerificationModalHeaderProps> = ({ onClose }) => {
    return (
-      <ModalHeader
-         icon={
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-               <Shield size={40} />
-            </div>
-         }
-         title={modalHeaderConfig.title}
-         description={modalHeaderConfig.description}
-         onClose={onClose}
-         titleId="verification-modal-title"
-         descriptionId="verification-modal-description"
-      />
+      <header className="border-b border-border px-6 py-4 relative flex items-center justify-end">
+         <div className="flex items-center gap-2">
+            <a
+               href="https://worldcoin.org"
+               target="_blank"
+               rel="noopener noreferrer"
+               className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+               aria-label="Help"
+            >
+               <span className="text-sm font-semibold">?</span>
+            </a>
+            <button
+               type="button"
+               onClick={onClose}
+               className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+               aria-label="Close modal"
+            >
+               <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+               </svg>
+            </button>
+         </div>
+      </header>
    );
 };

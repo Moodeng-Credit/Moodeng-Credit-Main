@@ -98,21 +98,19 @@ export default function LenderBoard() {
    }, []);
 
    const handleLoanSuccess = async () => {
-      // Show success modal
       setShowPurple(true);
-      
-      // Refresh user data to update loan count
       try {
          await dispatch(fetchUser()).unwrap();
+         await dispatch(fetchLoans(user?.id ?? undefined)).unwrap();
       } catch (error) {
-         console.error('Error fetching user after loan creation:', (error as Error).message || error);
+         console.error('Error fetching user/loans after loan creation:', (error as Error).message || error);
       }
    };
 
    useEffect(() => {
       const loadLoans = async () => {
          try {
-            const loans = await dispatch(fetchLoans()).unwrap();
+            const loans = await dispatch(fetchLoans(user?.id ?? undefined)).unwrap();
             const borrowerUserIds = [...new Set(loans.map((loan: Loan) => loan.borrowerUser).filter(Boolean))] as string[];
             if (borrowerUserIds.length > 0) {
                await dispatch(fetchUserProfiles(borrowerUserIds)).unwrap();
@@ -122,7 +120,7 @@ export default function LenderBoard() {
          }
       };
       loadLoans();
-   }, [dispatch]);
+   }, [dispatch, user?.id]);
 
    const filteredLoans = useMemo(() => {
       const allFilters: LoanFilters = {

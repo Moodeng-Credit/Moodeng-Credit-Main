@@ -94,7 +94,14 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
-            <Route path="/lender-board" element={<LenderBoard />} />
+            <Route
+               path="/lender-board"
+               element={
+                  <ProtectedRoute>
+                     <LenderBoard />
+                  </ProtectedRoute>
+               }
+            />
             <Route
                path="/login"
                element={
