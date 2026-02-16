@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { HelpCircle, Search, Filter } from 'lucide-react';
+import { format } from 'date-fns';
 
 import FilterModal from '@/components/FilterModal';
 import TransactionCard from '@/components/TransactionCard';
@@ -46,10 +47,20 @@ function loansToTransactions(loans: Loan[], userId: string, userProfiles: User[]
          date: loan.createdAt,
          amount_paid: amountPaid,
          total_amount: loan.totalRepaymentAmount,
-         status: loan.repaymentStatus.toLowerCase() as Transaction['status'],
+         status: mapRepaymentStatusToTransactionStatus(loan.repaymentStatus),
          user_role: isLender ? 'lender' : 'borrower'
       };
    });
+}
+
+// Map repayment status to transaction status
+function mapRepaymentStatusToTransactionStatus(repaymentStatus: string): Transaction['status'] {
+   const statusMap: Record<string, Transaction['status']> = {
+      Unpaid: 'pending',
+      Partial: 'partial',
+      Paid: 'paid'
+   };
+   return statusMap[repaymentStatus] || 'pending';
 }
 
 export default function History() {
@@ -77,9 +88,15 @@ export default function History() {
       // Apply search filter
       if (debouncedSearchQuery) {
          const query = debouncedSearchQuery.toLowerCase();
-         result = result.filter(
-            (t) => t.title.toLowerCase().includes(query) || t.lender_name.toLowerCase().includes(query) || t.date.includes(query)
-         );
+         result = result.filter((t) => {
+            // Format date for human-readable search
+            const formattedDate = format(new Date(t.date), 'MMM dd, yyyy').toLowerCase();
+            return (
+               t.title.toLowerCase().includes(query) ||
+               t.lender_name.toLowerCase().includes(query) ||
+               formattedDate.includes(query)
+            );
+         });
       }
 
       // Apply status filter

@@ -108,7 +108,7 @@ export default function FilterModal({ isOpen, onClose, onApply, currentFilters }
                <div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">Status</h3>
                   <div className="space-y-2">
-                     {['pending', 'active', 'default'].map((status) => (
+                     {['pending', 'active', 'partial', 'paid', 'default'].map((status) => (
                         <label key={status} className="flex items-center gap-3 cursor-pointer">
                            <input
                               type="checkbox"

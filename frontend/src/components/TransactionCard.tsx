@@ -19,7 +19,7 @@ export default function TransactionCard({ transaction }: TransactionCardProps) {
    const amountPrefix = isIncoming ? '+' : '-';
 
    // Determine the relationship label based on user role
-   const relationshipLabel = user_role === 'borrower' ? 'Lent by' : 'Borrowed by';
+   const relationshipLabel = user_role === 'borrower' ? 'Lent by' : 'Lent to';
 
    return (
       <div className="flex items-start gap-3 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">

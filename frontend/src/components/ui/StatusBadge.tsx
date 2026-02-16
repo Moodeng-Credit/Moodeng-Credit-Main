@@ -1,39 +1,36 @@
-import { type RepaymentStatusType, RepaymentStatus } from '@/types/loanTypes';
+import { type RepaymentStatusType } from '@/types/loanTypes';
 
 interface StatusBadgeProps {
-   status: RepaymentStatusType | string;
+   status: string; // Accept any string status value
    className?: string;
 }
 
 const statusConfig = {
-   [RepaymentStatus.PAID]: {
+   paid: {
       label: 'PAID',
       className: 'bg-green-100 text-green-700 border-green-300'
    },
-   [RepaymentStatus.PARTIAL]: {
+   partial: {
       label: 'PARTIAL',
       className: 'bg-yellow-100 text-yellow-700 border-yellow-300'
    },
-   [RepaymentStatus.UNPAID]: {
+   pending: {
       label: 'PENDING',
       className: 'bg-blue-100 text-blue-700 border-blue-300'
    },
-   DEFAULT: {
+   default: {
       label: 'DEFAULT',
       className: 'bg-red-100 text-red-700 border-red-300'
    },
-   PENDING: {
-      label: 'PENDING',
-      className: 'bg-blue-100 text-blue-700 border-blue-300'
-   },
-   ACTIVE: {
+   active: {
       label: 'ACTIVE',
       className: 'bg-blue-100 text-blue-700 border-blue-300'
    }
 };
 
 export default function StatusBadge({ status, className = '' }: StatusBadgeProps) {
-   const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.PENDING;
+   const normalizedStatus = status.toLowerCase();
+   const config = statusConfig[normalizedStatus as keyof typeof statusConfig] || statusConfig.pending;
 
    return (
       <span
