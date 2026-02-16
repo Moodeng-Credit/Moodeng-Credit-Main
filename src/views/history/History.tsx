@@ -12,24 +12,42 @@ import type { RootState } from '@/store/store';
 import type { Transaction, TransactionFilters } from '@/types/transactionTypes';
 import { WorldId } from '@/types/authTypes';
 
+import type { Loan } from '@/types/loanTypes';
+import type { User } from '@/types/authTypes';
+
+const WALLET_DISPLAY_LENGTH = 10;
+
 // Mock function to convert loans to transactions
 // In a real implementation, this would come from an API
-function loansToTransactions(loans: any[], userId: string, userProfiles: any[]): Transaction[] {
+function loansToTransactions(loans: Loan[], userId: string, userProfiles: User[]): Transaction[] {
    return loans.map((loan) => {
       const isLender = loan.lenderUser === userId;
+      const isBorrower = loan.borrowerUser === userId;
       const otherUserId = isLender ? loan.borrowerUser : loan.lenderUser;
       const otherProfile = userProfiles.find((p) => p.id === otherUserId);
       const otherWallet = isLender ? loan.borrowerWallet : loan.lenderWallet;
-      const lenderName = otherProfile?.username || otherWallet?.slice(0, 10) + '...' || 'Unknown';
+      const otherUserName = otherProfile?.username || (otherWallet ? `${otherWallet.slice(0, WALLET_DISPLAY_LENGTH)}...` : 'Unknown');
+
+      // For borrowers: receiving loan is positive (+), repaying is negative (-)
+      // For lenders: lending is negative (-), receiving repayment is positive (+)
+      let amountPaid: number;
+      if (isBorrower) {
+         // Borrower view: loan amount received is positive, repaid amount is negative
+         amountPaid = loan.loanAmount - loan.repaidAmount;
+      } else {
+         // Lender view: loan amount lent is negative, repaid amount is positive
+         amountPaid = loan.repaidAmount - loan.loanAmount;
+      }
 
       return {
          id: loan.id,
          title: loan.reason || 'Loan transaction',
-         lender_name: lenderName,
+         lender_name: otherUserName,
          date: loan.createdAt,
-         amount_paid: isLender ? loan.loanAmount : -loan.repaidAmount,
+         amount_paid: amountPaid,
          total_amount: loan.totalRepaymentAmount,
-         status: loan.repaymentStatus.toLowerCase() as Transaction['status']
+         status: loan.repaymentStatus.toLowerCase() as Transaction['status'],
+         user_role: isLender ? 'lender' : 'borrower'
       };
    });
 }

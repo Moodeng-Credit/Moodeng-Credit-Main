@@ -8,17 +8,18 @@ interface TransactionCardProps {
 }
 
 export default function TransactionCard({ transaction }: TransactionCardProps) {
-   const { title, lender_name, date, amount_paid, total_amount, status } = transaction;
+   const { title, lender_name, date, amount_paid, total_amount, status, user_role } = transaction;
 
    // Format the date
    const formattedDate = format(new Date(date), 'MMM dd, yyyy');
 
    // Determine if amount is incoming or outgoing
-   // For borrowers: incoming (+) is when receiving loan, outgoing (-) is when repaying
-   // We'll use amount_paid to determine direction (positive = received, negative = paid)
    const isIncoming = amount_paid > 0;
    const amountColor = isIncoming ? 'text-green-600' : 'text-red-600';
    const amountPrefix = isIncoming ? '+' : '-';
+
+   // Determine the relationship label based on user role
+   const relationshipLabel = user_role === 'borrower' ? 'Lent by' : 'Borrowed by';
 
    return (
       <div className="flex items-start gap-3 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
@@ -34,9 +35,9 @@ export default function TransactionCard({ transaction }: TransactionCardProps) {
             {/* Title */}
             <h3 className="text-sm font-semibold text-gray-900 truncate">{title}</h3>
 
-            {/* Subtitle: Lender + Date */}
+            {/* Subtitle: Relationship + Date */}
             <p className="text-xs text-gray-500 mt-1">
-               Lent by {lender_name} • {formattedDate}
+               {relationshipLabel} {lender_name} • {formattedDate}
             </p>
          </div>
 
