@@ -61,6 +61,9 @@ export const calculateTrustScore = (user: User, loans: Loan[]): TrustScoreData =
    // Filter to only paid loans
    const paidLoans = loans.filter((loan) => loan.repaymentStatus === 'Paid');
 
+   // Evaluate each paid loan to determine if it was on-time or late
+   // On-time: payment date (updatedAt) <= due date
+   // Late: payment date (updatedAt) > due date
    paidLoans.forEach((loan) => {
       const repaidAmount = toNumber(loan.repaidAmount);
       const totalRepayment = toNumber(loan.totalRepaymentAmount);

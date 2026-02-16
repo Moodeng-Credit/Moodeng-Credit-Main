@@ -21,8 +21,14 @@ const UserProfileHeader = ({ user }: UserProfileHeaderProps) => {
          <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
                {/* Profile Image Placeholder - using Moodeng mascot style */}
-               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-300 to-purple-300 flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">🦛</span>
+               <div
+                  className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-300 to-purple-300 flex items-center justify-center flex-shrink-0"
+                  role="img"
+                  aria-label="Profile avatar"
+               >
+                  <span className="text-2xl" aria-hidden="true">
+                     🦛
+                  </span>
                </div>
 
                <div className="space-y-2">

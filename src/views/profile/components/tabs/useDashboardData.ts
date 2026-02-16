@@ -168,6 +168,8 @@ export const useDashboardData = (activeRole: RoleType) => {
    const creditLevels: CreditLevel[] = useMemo(() => buildCreditLevels({ user, loans: borrowerLoans }), [user, borrowerLoans]);
 
    const trustScoreData = useMemo(() => {
+      // Trust Score is borrower-specific, so for lenders we calculate with empty loans
+      // This keeps the API consistent even though lenders don't display Trust Score
       if (activeRole === 'lender') {
          return calculateTrustScore(user, []);
       }

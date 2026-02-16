@@ -154,7 +154,11 @@ const ReputationMilestones = ({ loans, onViewAllClick }: ReputationMilestonesPro
                         <h3 className="font-semibold text-gray-900">{milestone.title}</h3>
                         <p className="text-sm text-gray-600">{milestone.description}</p>
                         {milestone.requirement !== undefined && milestone.current !== undefined && (
-                           <div className="text-xs text-gray-500 mt-1">
+                           <div
+                              className="text-xs text-gray-500 mt-1"
+                              role="status"
+                              aria-label={`Progress: ${Math.min(milestone.current, milestone.requirement)} out of ${milestone.requirement} loans completed`}
+                           >
                               Progress: {Math.min(milestone.current, milestone.requirement)}/{milestone.requirement}
                            </div>
                         )}

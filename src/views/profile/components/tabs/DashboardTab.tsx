@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useSelector } from 'react-redux';
 
@@ -34,6 +34,9 @@ const DashboardTab = ({ onPayLoansNow }: DashboardTabProps) => {
       showTrustScoreHelp
    );
 
+   // Calculate current credit level (memoized to avoid filtering on every render)
+   const currentCreditLevel = useMemo(() => creditLevels.filter((l) => l.unlocked).length - 1, [creditLevels]);
+
    return (
       <section className="flex-1 overflow-auto p-6 space-y-6">
          {/* User Profile Header - Only show for borrower role */}
@@ -49,7 +52,7 @@ const DashboardTab = ({ onPayLoansNow }: DashboardTabProps) => {
                   <h2 className="font-extrabold text-xl select-none">Credit Level</h2>
                   <div className="space-y-3">
                      <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-bold text-gray-900">LVL {creditLevels.filter((l) => l.unlocked).length - 1}</span>
+                        <span className="text-4xl font-bold text-gray-900">LVL {currentCreditLevel}</span>
                         <span className="text-lg text-gray-600">/ {creditLevels.length - 1}</span>
                      </div>
                      <div className="space-y-1">
