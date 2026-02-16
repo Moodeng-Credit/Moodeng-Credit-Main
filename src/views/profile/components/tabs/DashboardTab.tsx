@@ -1,14 +1,23 @@
 
-
 import { useState } from 'react';
+
+import { useSelector } from 'react-redux';
+
+import { useClickOutside } from '@/hooks/useClickOutside';
+
+import type { RootState } from '@/store/store';
 
 import Calendar from '@/views/profile/components/Calendar';
 import { STAT_CARDS_CONFIG } from '@/views/profile/components/tabs/constants';
 import CreditLevelCard from '@/views/profile/components/tabs/CreditLevelCard';
+import ReputationMilestones from '@/views/profile/components/tabs/ReputationMilestones';
 import RoleToggle from '@/views/profile/components/tabs/RoleToggle';
 import StatCard from '@/views/profile/components/tabs/StatCard';
+import TrustScoreHelpModal from '@/views/profile/components/tabs/TrustScoreHelpModal';
+import TrustScoreWidget from '@/views/profile/components/tabs/TrustScoreWidget';
 import type { RoleType } from '@/views/profile/components/tabs/types';
 import { useDashboardData } from '@/views/profile/components/tabs/useDashboardData';
+import UserProfileHeader from '@/views/profile/components/tabs/UserProfileHeader';
 
 interface DashboardTabProps {
    onPayLoansNow?: () => void;
@@ -16,10 +25,65 @@ interface DashboardTabProps {
 
 const DashboardTab = ({ onPayLoansNow }: DashboardTabProps) => {
    const [activeRole, setActiveRole] = useState<RoleType>('borrower');
-   const { stats, lenderDiversityScore, creditLevels, loanArrays } = useDashboardData(activeRole);
+   const [showTrustScoreHelp, setShowTrustScoreHelp] = useState(false);
+   const user = useSelector((state: RootState) => state.auth.user);
+   const { stats, lenderDiversityScore, creditLevels, loanArrays, trustScoreData } = useDashboardData(activeRole);
+
+   const trustScoreHelpRef = useClickOutside<HTMLDivElement>(
+      () => setShowTrustScoreHelp(false),
+      showTrustScoreHelp
+   );
 
    return (
       <section className="flex-1 overflow-auto p-6 space-y-6">
+         {/* User Profile Header - Only show for borrower role */}
+         {activeRole === 'borrower' && <UserProfileHeader user={user} />}
+
+         {/* Trust Score and Credit Level Summary - Only for borrower */}
+         {activeRole === 'borrower' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+               <TrustScoreWidget trustScoreData={trustScoreData} onHelpClick={() => setShowTrustScoreHelp(true)} />
+
+               {/* Current Credit Level Summary */}
+               <div className="bg-white rounded-xl p-6 space-y-4">
+                  <h2 className="font-extrabold text-xl select-none">Credit Level</h2>
+                  <div className="space-y-3">
+                     <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-bold text-gray-900">LVL {creditLevels.filter((l) => l.unlocked).length - 1}</span>
+                        <span className="text-lg text-gray-600">/ {creditLevels.length - 1}</span>
+                     </div>
+                     <div className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                           <span className="text-gray-600">Credit Limit</span>
+                           <span className="font-semibold text-gray-900">
+                              ${stats.active.total.toFixed(2)} / ${user.cs || 0}
+                           </span>
+                        </div>
+                        <div className="w-full h-3 rounded-full bg-gray-200 overflow-hidden">
+                           <div
+                              className="h-3 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-300"
+                              style={{
+                                 width: `${user.cs ? Math.min((stats.active.total / user.cs) * 100, 100) : 0}%`
+                              }}
+                           />
+                        </div>
+                     </div>
+                     <button className="text-sm text-purple-600 hover:text-purple-700 font-semibold flex items-center gap-1">
+                        <i className="fa-solid fa-play" />
+                        Watch our credit levelling guide
+                     </button>
+                  </div>
+               </div>
+            </div>
+         )}
+
+         {/* Reputation Milestones - Only for borrower */}
+         {activeRole === 'borrower' && (
+            <ReputationMilestones
+               loans={loanArrays.repayments.concat(loanArrays.activeLoans)}
+            />
+         )}
+
          <div className="flex flex-col lg:flex-row gap-6">
             <div className="bg-white rounded-xl p-6 flex-1 max-w-full lg:max-w-[720px] space-y-6">
                <div className="flex justify-between items-center">
@@ -84,6 +148,13 @@ const DashboardTab = ({ onPayLoansNow }: DashboardTabProps) => {
                ))}
             </div>
          </div>
+
+         {/* Trust Score Help Modal */}
+         <TrustScoreHelpModal
+            isOpen={showTrustScoreHelp}
+            onClose={() => setShowTrustScoreHelp(false)}
+            clickOutsideRef={trustScoreHelpRef}
+         />
       </section>
    );
 };

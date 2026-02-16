@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { CREDIT_STEP, CREDIT_TIERS, MAX_CREDIT_LIMIT, getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { calculateTrustScore } from '@/lib/trustScore';
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 
@@ -166,5 +167,12 @@ export const useDashboardData = (activeRole: RoleType) => {
 
    const creditLevels: CreditLevel[] = useMemo(() => buildCreditLevels({ user, loans: borrowerLoans }), [user, borrowerLoans]);
 
-   return { stats, lenderDiversityScore, creditLevels, loanArrays };
+   const trustScoreData = useMemo(() => {
+      if (activeRole === 'lender') {
+         return calculateTrustScore(user, []);
+      }
+      return calculateTrustScore(user, borrowerLoans);
+   }, [user, borrowerLoans, activeRole]);
+
+   return { stats, lenderDiversityScore, creditLevels, loanArrays, trustScoreData };
 };
