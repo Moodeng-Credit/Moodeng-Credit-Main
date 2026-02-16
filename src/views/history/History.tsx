@@ -27,28 +27,29 @@ function loansToTransactions(loans: Loan[], userId: string, userProfiles: User[]
       const otherUserId = isLender ? loan.borrowerUser : loan.lenderUser;
       const otherProfile = userProfiles.find((p) => p.id === otherUserId);
       const otherWallet = isLender ? loan.borrowerWallet : loan.lenderWallet;
-      const otherUserName = otherProfile?.username || (otherWallet ? `${otherWallet.slice(0, WALLET_DISPLAY_LENGTH)}...` : 'Unknown');
+      const otherUsername = otherProfile?.username || (otherWallet ? `${otherWallet.slice(0, WALLET_DISPLAY_LENGTH)}...` : 'Unknown');
 
       // For borrowers: receiving loan is positive (+), repaying is negative (-)
       // For lenders: lending is negative (-), receiving repayment is positive (+)
-      let amountPaid: number;
+      let netAmount: number;
       if (isBorrower) {
          // Borrower view: loan amount received is positive, repaid amount is negative
-         amountPaid = loan.loanAmount - loan.repaidAmount;
+         netAmount = loan.loanAmount - loan.repaidAmount;
       } else {
          // Lender view: loan amount lent is negative, repaid amount is positive
-         amountPaid = loan.repaidAmount - loan.loanAmount;
+         netAmount = loan.repaidAmount - loan.loanAmount;
       }
 
       return {
          id: loan.id,
          title: loan.reason || 'Loan transaction',
-         lender_name: otherUserName,
+         lender_name: otherUsername,
          date: loan.createdAt,
-         amount_paid: amountPaid,
+         amount_paid: netAmount,
          total_amount: loan.totalRepaymentAmount,
          status: mapRepaymentStatusToTransactionStatus(loan.repaymentStatus),
-         user_role: isLender ? 'lender' : 'borrower'
+         user_role: isLender ? 'lender' : 'borrower',
+         currency: loan.coin
       };
    });
 }
@@ -154,7 +155,7 @@ export default function History() {
                      {isVerified ? (
                         <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
                            <span className="w-2 h-2 bg-green-600 rounded-full"></span>
-                           Verified Borrower
+                           Verified User
                         </span>
                      ) : (
                         <Link

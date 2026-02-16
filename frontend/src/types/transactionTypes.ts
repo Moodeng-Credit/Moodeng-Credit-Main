@@ -7,6 +7,7 @@ export interface Transaction {
    total_amount: number;
    status: 'pending' | 'active' | 'partial' | 'paid' | 'default';
    user_role: 'lender' | 'borrower'; // Role of the current user in this transaction
+   currency?: string; // Currency symbol (e.g., 'USDC', 'ETH', 'USDT')
 }
 
 export interface TransactionListResponse {

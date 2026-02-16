@@ -8,7 +8,7 @@ interface TransactionCardProps {
 }
 
 export default function TransactionCard({ transaction }: TransactionCardProps) {
-   const { title, lender_name, date, amount_paid, total_amount, status, user_role } = transaction;
+   const { title, lender_name, date, amount_paid, total_amount, status, user_role, currency = 'USDC' } = transaction;
 
    // Format the date
    const formattedDate = format(new Date(date), 'MMM dd, yyyy');
@@ -21,13 +21,14 @@ export default function TransactionCard({ transaction }: TransactionCardProps) {
    // Determine the relationship label based on user role
    const relationshipLabel = user_role === 'borrower' ? 'Lent by' : 'Lent to';
 
+   // Format currency display (use $ for USDC, otherwise show currency code)
+   const currencySymbol = currency === 'USDC' ? '$' : currency + ' ';
+
    return (
       <div className="flex items-start gap-3 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
          {/* Avatar placeholder */}
          <div className="flex-shrink-0 w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-            <span className="text-gray-500 text-sm font-semibold">
-               {lender_name.charAt(0).toUpperCase()}
-            </span>
+            <span className="text-gray-500 text-sm font-semibold">{lender_name.charAt(0).toUpperCase()}</span>
          </div>
 
          {/* Content */}
@@ -46,9 +47,14 @@ export default function TransactionCard({ transaction }: TransactionCardProps) {
             {/* Amount */}
             <div className="text-right">
                <p className={`text-sm font-bold ${amountColor}`}>
-                  {amountPrefix}${Math.abs(amount_paid).toFixed(2)}
+                  {amountPrefix}
+                  {currencySymbol}
+                  {Math.abs(amount_paid).toFixed(2)}
                </p>
-               <p className="text-xs text-gray-500">out of ${total_amount.toFixed(2)}</p>
+               <p className="text-xs text-gray-500">
+                  out of {currencySymbol}
+                  {total_amount.toFixed(2)}
+               </p>
             </div>
 
             {/* Status Badge */}
