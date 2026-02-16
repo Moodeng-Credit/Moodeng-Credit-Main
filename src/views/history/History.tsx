@@ -4,13 +4,13 @@ import { Link } from 'react-router-dom';
 import { HelpCircle, Search, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 
-import FilterModal from '@/components/FilterModal';
-import TransactionCard from '@/components/TransactionCard';
+import FilterModal from '@v2/components/FilterModal';
+import TransactionCard from '@v2/components/TransactionCard';
 import Button from '@/components/ui/Button';
-import { useDebounce } from '@/hooks/useDebounce';
+import { useDebounce } from '@v2/hooks/useDebounce';
 import { usePagination } from '@/hooks/usePagination';
 import type { RootState } from '@/store/store';
-import type { Transaction, TransactionFilters } from '@/types/transactionTypes';
+import type { Transaction, TransactionFilters } from '@v2/types/transactionTypes';
 import { WorldId } from '@/types/authTypes';
 
 import type { Loan } from '@/types/loanTypes';

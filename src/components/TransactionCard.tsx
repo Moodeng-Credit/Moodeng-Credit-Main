@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 
-import StatusBadge from '@/components/ui/StatusBadge';
-import type { Transaction } from '@/types/transactionTypes';
+import StatusBadge from '@v2/components/ui/StatusBadge';
+import type { Transaction } from '@v2/types/transactionTypes';
 
 interface TransactionCardProps {
    transaction: Transaction;

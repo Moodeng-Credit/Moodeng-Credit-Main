@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import Button from '@/components/ui/Button';
-import type { TransactionFilters } from '@/types/transactionTypes';
+import type { TransactionFilters } from '@v2/types/transactionTypes';
 
 interface FilterModalProps {
    isOpen: boolean;
