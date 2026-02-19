@@ -246,6 +246,17 @@ export const updateLoanStatus = createAsyncThunk<
       const { id, userId, wallet, repaymentStatus, loanStatus, repaidAmount, hash } = loanData;
       const sideEffectErrors: LoanSideEffectError[] = [];
 
+      // Fetch current loan for hash append and/or previous repaid_amount (for repayment delta)
+      let previousRepaidAmount: number | null = null;
+      let currentLoan: { hash: string[] | null; repaid_amount: number | null } | null = null;
+      if (hash || repaidAmount !== undefined) {
+         const { data: row } = await supabase.from('loans').select('hash, repaid_amount').eq('id', id).single();
+         currentLoan = row ?? null;
+         if (currentLoan && repaidAmount !== undefined) {
+            previousRepaidAmount = toNumber(currentLoan.repaid_amount ?? 0);
+         }
+      }
+
       const updates: LoanUpdate = {};
 
       if (userId) {
@@ -267,11 +278,8 @@ export const updateLoanStatus = createAsyncThunk<
          // Set funded_at timestamp when loan is funded
          updates.funded_at = new Date().toISOString();
       }
-      if (hash) {
-         // Fetch current loan to append the new hash
-         const { data: currentLoan } = await supabase.from('loans').select('hash').eq('id', id).single();
-
-         updates.hash = [...(currentLoan?.hash || []), hash];
+      if (hash && currentLoan) {
+         updates.hash = [...(currentLoan.hash || []), hash];
       }
 
       const { data, error } = await supabase.from('loans').update(updates).eq('id', id).select().single();
@@ -282,6 +290,35 @@ export const updateLoanStatus = createAsyncThunk<
 
       if (!data) {
          throw new Error('Failed to update loan');
+      }
+
+      // Record real on-chain transactions (e.g. Binance) in transaction history
+      if (hash) {
+         if (loanStatus === 'Lent' && data.lender_user_id && data.borrower_user_id) {
+            await supabase.from('transactions').insert({
+               loan_id: data.id,
+               from_user_id: data.lender_user_id,
+               to_user_id: data.borrower_user_id,
+               type: 'loan_funded',
+               amount: data.loan_amount,
+               currency: 'USDC',
+               tx_hash: hash
+            });
+         }
+         if (previousRepaidAmount !== null && data.borrower_user_id && data.lender_user_id) {
+            const repaymentDelta = toNumber(data.repaid_amount ?? 0) - previousRepaidAmount;
+            if (repaymentDelta > 0) {
+               await supabase.from('transactions').insert({
+                  loan_id: data.id,
+                  from_user_id: data.borrower_user_id,
+                  to_user_id: data.lender_user_id,
+                  type: 'repayment',
+                  amount: repaymentDelta,
+                  currency: 'USDC',
+                  tx_hash: hash
+               });
+            }
+         }
       }
 
       if (loanStatus === 'Lent' && data.lender_user_id) {

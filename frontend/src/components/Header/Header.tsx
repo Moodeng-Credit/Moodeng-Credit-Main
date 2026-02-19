@@ -24,7 +24,7 @@ export default function Header() {
    const closeUserMenu = () => setShowUserMenu(false);
 
    return (
-      <header className="relative w-full bg-[#171420] flex items-center py-4 z-50" role="banner">
+      <header className="sticky top-0 left-0 right-0 w-full z-50 flex items-center py-4 bg-white/10 dark:bg-black/20 backdrop-blur-xl border-b border-white/20 dark:border-white/10 shadow-sm" role="banner">
          <div className="flex w-full items-center justify-between px-4 md:px-6">
             <div className="flex items-center gap-2 md:gap-4">
                <HeaderLogo href="/" onClick={closeMenu} />
