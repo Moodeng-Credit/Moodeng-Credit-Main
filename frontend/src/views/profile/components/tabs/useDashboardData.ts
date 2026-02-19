@@ -9,7 +9,7 @@ import { toNumber } from '@/utils/decimalHelpers';
 import { fetchUser } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-import type { CreditLevel, RoleType, StatsData } from '@/views/profile/components/tabs/types';
+import type { CreditLevel, Milestone, RoleType, StatsData } from '@/views/profile/components/tabs/types';
 
 import type { Loan } from '@/types/loanTypes';
 import type { User } from '@/types/authTypes';
@@ -166,5 +166,99 @@ export const useDashboardData = (activeRole: RoleType) => {
 
    const creditLevels: CreditLevel[] = useMemo(() => buildCreditLevels({ user, loans: borrowerLoans }), [user, borrowerLoans]);
 
-   return { stats, lenderDiversityScore, creditLevels, loanArrays };
+   const trustScore: number = useMemo(() => calculateTrustScore(user, borrowerLoans), [user, borrowerLoans]);
+
+   const milestones: Milestone[] = useMemo(() => buildMilestones(borrowerLoans), [borrowerLoans]);
+
+   return { stats, lenderDiversityScore, creditLevels, loanArrays, trustScore, milestones };
+};
+
+// ─── Trust Score ────────────────────────────────────────────────────────────
+
+export type TrustScoreLabel = 'Poor' | 'Fair' | 'Good Standing' | 'Excellent';
+
+export interface TrustScoreInfo {
+   label: TrustScoreLabel;
+   color: string;
+}
+
+export const getTrustScoreInfo = (score: number): TrustScoreInfo => {
+   if (score < 40) return { label: 'Poor', color: '#ef4444' };
+   if (score < 70) return { label: 'Fair', color: '#f97316' };
+   if (score < 90) return { label: 'Good Standing', color: '#22c55e' };
+   return { label: 'Excellent', color: '#10b981' };
+};
+
+export const calculateTrustScore = (user: User, loans: Loan[]): number => {
+   let score = 50;
+
+   if (user.isWorldId === 'ACTIVE') {
+      score += 10;
+   }
+
+   for (const loan of loans) {
+      if (loan.repaymentStatus === 'Paid') {
+         const paidAt = parseDateSafely(loan.updatedAt);
+         const dueDate = parseDateSafely(loan.dueDate);
+         if (paidAt.getTime() <= dueDate.getTime()) {
+            score += 5;
+         }
+      } else if (loan.repaymentStatus === 'Unpaid' && parseDateSafely(loan.dueDate).getTime() < Date.now()) {
+         score -= 10;
+      }
+   }
+
+   return Math.min(100, Math.max(0, score));
+};
+
+// ─── Milestones ──────────────────────────────────────────────────────────────
+
+interface MilestoneDefinition {
+   id: string;
+   title: string;
+   description: string;
+   requiredOnTimeRepayments: number;
+}
+
+const MILESTONE_DEFINITIONS: MilestoneDefinition[] = [
+   {
+      id: 'repay_1',
+      title: 'Repay a loan on time',
+      description: 'Increase your Trust Level',
+      requiredOnTimeRepayments: 1
+   },
+   {
+      id: 'repay_2',
+      title: 'Repay one more loan on time',
+      description: 'Complete a full repayment to unlock',
+      requiredOnTimeRepayments: 2
+   },
+   {
+      id: 'repay_5',
+      title: 'Repay 5 loans on time',
+      description: 'Complete a full repayment to unlock',
+      requiredOnTimeRepayments: 5
+   }
+];
+
+export const buildMilestones = (loans: Loan[]): Milestone[] => {
+   const onTimeCount = loans.filter((loan) => {
+      if (loan.repaymentStatus !== 'Paid') return false;
+      const paidAt = parseDateSafely(loan.updatedAt);
+      const dueDate = parseDateSafely(loan.dueDate);
+      return paidAt.getTime() <= dueDate.getTime();
+   }).length;
+
+   let nextAssigned = false;
+
+   return MILESTONE_DEFINITIONS.map((def) => {
+      if (onTimeCount >= def.requiredOnTimeRepayments) {
+         return { id: def.id, title: def.title, description: def.description, status: 'completed' as const };
+      }
+      if (!nextAssigned) {
+         nextAssigned = true;
+         return { id: def.id, title: def.title, description: def.description, status: 'next' as const };
+      }
+      return { id: def.id, title: def.title, description: def.description, status: 'locked' as const };
+   });
 };
