@@ -6,6 +6,7 @@ import { ChevronDown, HelpCircle, TrendingUp, Users, XCircle } from 'lucide-reac
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
+import LenderBoardHeader from '@v2/views/lenderBoard/components/LenderBoardHeader';
 import Loading from '@/components/Loading';
 import CollapsibleSection from '@/components/ui/CollapsibleSection';
 
@@ -174,9 +175,11 @@ const UserProfile = () => {
    };
 
    return (
-      <div className="min-h-screen bg-[#0B1120] text-white">
-         <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 mb-8">
+      <div className="min-h-screen bg-gray-50">
+         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6 pb-24">
+            <LenderBoardHeader />
+            <div className="space-y-6">
+               <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 mb-8">
                {/* We don't need Image later */}
                {/* eslint-disable-next-line */}
                <img
@@ -185,28 +188,28 @@ const UserProfile = () => {
                   className="w-24 h-24 md:w-32 md:h-32"
                />
                <div className="space-y-1 text-center md:text-left">
-                  <h1 className="text-xl md:text-2xl font-semibold">Dashboard Summary</h1>
-                  <p className="text-sm md:text-base text-gray-400">
+                  <h1 className="text-xl md:text-2xl font-semibold text-gray-900">Dashboard Summary</h1>
+                  <p className="text-sm md:text-base text-gray-600">
                      {borrowerData.username} • Member since {borrowerData.memberSince}
                   </p>
                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div className="bg-[#1F2937] rounded-xl p-6">
+               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                   <div className="flex justify-between items-start mb-4">
                      <div>
-                        <div className="text-5xl font-bold mb-2">{borrowerData.stats.totalLoans}</div>
-                        <div className="text-gray-400">Total Loans</div>
+                        <div className="text-5xl font-bold mb-2 text-gray-900">{borrowerData.stats.totalLoans}</div>
+                        <div className="text-gray-600">Total Loans</div>
                      </div>
                      <TrendingUp className="text-blue-500 w-6 h-6" />
                   </div>
                   <div className="space-y-1">
                      <div className="flex items-center gap-2">
-                        <span className="text-green-400">{borrowerData.stats.unlocking} Credit Unlocking</span>
+                        <span className="text-green-600">{borrowerData.stats.unlocking} Credit Unlocking</span>
                         <div className="relative group">
-                           <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
-                           <div className="absolute invisible group-hover:visible bg-[#111827] text-gray-100 p-3 rounded-lg text-sm w-64 bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 shadow-xl border border-gray-800">
+                           <HelpCircle className="w-4 h-4 text-gray-500 cursor-help" />
+                           <div className="absolute invisible group-hover:visible bg-white text-gray-800 p-3 rounded-lg text-sm w-64 bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 shadow-xl border border-gray-200">
                               <p className="mb-2">
                                  <span className="font-medium">Credit Unlocking Loans:</span> Loans that match exact credit tier amounts
                                  ($20, $40, etc.). These help increase your credit limit.
@@ -215,10 +218,10 @@ const UserProfile = () => {
                         </div>
                      </div>
                      <div className="flex items-center gap-2">
-                        <span className="text-blue-400">{borrowerData.stats.building} Trust Building</span>
+                        <span className="text-blue-600">{borrowerData.stats.building} Trust Building</span>
                         <div className="relative group">
-                           <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
-                           <div className="absolute invisible group-hover:visible bg-[#111827] text-gray-100 p-3 rounded-lg text-sm w-64 bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 shadow-xl border border-gray-800">
+                           <HelpCircle className="w-4 h-4 text-gray-500 cursor-help" />
+                           <div className="absolute invisible group-hover:visible bg-white text-gray-800 p-3 rounded-lg text-sm w-64 bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 shadow-xl border border-gray-200">
                               <p>
                                  <span className="font-medium">Trust Building Loans:</span> Loans below the next credit tier amount. These
                                  don't affect credit limit but help build trust with lenders.
@@ -229,78 +232,78 @@ const UserProfile = () => {
                   </div>
                </div>
 
-               <div className="bg-[#1F2937] rounded-xl p-6">
+               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                   <div className="flex justify-between items-start mb-4">
                      <div>
-                        <div className="text-5xl font-bold mb-2">{borrowerData.stats.defaults}</div>
-                        <div className="text-gray-400">Defaults</div>
+                        <div className="text-5xl font-bold mb-2 text-gray-900">{borrowerData.stats.defaults}</div>
+                        <div className="text-gray-600">Defaults</div>
                      </div>
                      <XCircle className="text-red-500 w-6 h-6" />
                   </div>
-                  <div className="text-green-400">Good Standing</div>
+                  <div className="text-green-600">Good Standing</div>
                </div>
 
-               <div className="bg-[#1F2937] rounded-xl p-6">
+               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                   <div className="flex justify-between items-start mb-4">
                      <div>
-                        <div className="text-5xl font-bold mb-2">${formatNumber(borrowerData.stats.totalBorrowed)}</div>
-                        <div className="text-gray-400">Total Borrowed</div>
+                        <div className="text-5xl font-bold mb-2 text-gray-900">${formatNumber(borrowerData.stats.totalBorrowed)}</div>
+                        <div className="text-gray-600">Total Borrowed</div>
                      </div>
                      <div className="text-emerald-500 text-2xl">$</div>
                   </div>
-                  <div className="text-green-400">${formatNumber(borrowerData.stats.totalRepaid)} Repaid</div>
+                  <div className="text-green-600">${formatNumber(borrowerData.stats.totalRepaid)} Repaid</div>
                </div>
 
-               <div className="bg-[#1F2937] rounded-xl p-6">
+               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                   <div className="flex justify-between items-start mb-4">
                      <div>
-                        <div className="text-5xl font-bold mb-2">{borrowerData.stats.uniqueLenders}</div>
-                        <div className="text-gray-400">Unique Lenders</div>
+                        <div className="text-5xl font-bold mb-2 text-gray-900">{borrowerData.stats.uniqueLenders}</div>
+                        <div className="text-gray-600">Unique Lenders</div>
                      </div>
                      <Users className="text-purple-500 w-6 h-6" />
                   </div>
-                  <div className={'text-' + getDiversityColor(borrowerData.lenderDiversity.score) + '-400'}>
+                  <div className={'text-' + getDiversityColor(borrowerData.lenderDiversity.score) + '-600'}>
                      {getDiversityStatus(borrowerData.lenderDiversity.score)} Diversity
                   </div>
                </div>
             </div>
 
-            <div className="bg-[#1F2937] rounded-xl p-6">
-               <h2 className="text-lg md:text-xl font-semibold mb-6">Credit Growth</h2>
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+               <h2 className="text-lg md:text-xl font-semibold mb-6 text-gray-900">Credit Growth</h2>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
-                  <div className="bg-gray-800 rounded-xl p-6 text-center">
-                     <div className="text-gray-400 mb-4">Previous Credit Level</div>
-                     <div className="inline-block bg-gray-700 rounded-full p-4 mb-4">
+                  <div className="bg-gray-100 rounded-xl p-6 text-center border border-gray-200">
+                     <div className="text-gray-600 mb-4">Previous Credit Level</div>
+                     <div className="inline-block bg-gray-200 rounded-full p-4 mb-4">
                         <div className="w-12 h-12 flex items-center justify-center">
                            <LevelBadge status="completed" />
                         </div>
                      </div>
-                     <div className="text-4xl font-bold mb-2">${formatNumber(borrowerData.creditGrowth.currentLimit)}</div>
-                     <div className="text-gray-400">{borrowerData.creditGrowth.currentDate}</div>
+                     <div className="text-4xl font-bold mb-2 text-gray-900">${formatNumber(borrowerData.creditGrowth.currentLimit)}</div>
+                     <div className="text-gray-600">{borrowerData.creditGrowth.currentDate}</div>
                   </div>
 
-                  <div className="bg-green-800/20 rounded-xl p-6 text-center border border-green-700">
-                     <div className="text-green-400 mb-4">Current Credit Level</div>
-                     <div className="inline-block bg-green-700/30 rounded-full p-4 mb-4">
+                  <div className="bg-green-50 rounded-xl p-6 text-center border border-green-200">
+                     <div className="text-green-700 mb-4">Current Credit Level</div>
+                     <div className="inline-block bg-green-100 rounded-full p-4 mb-4">
                         <div className="w-12 h-12 flex items-center justify-center">
                            <LevelBadge status="current" />
                         </div>
                      </div>
-                     <div className="text-4xl font-bold text-green-400 mb-2">${formatNumber(borrowerData.creditGrowth.nextLimit)}</div>
-                     <div className="text-green-400">Available to Borrow Now</div>
+                     <div className="text-4xl font-bold text-green-700 mb-2">${formatNumber(borrowerData.creditGrowth.nextLimit)}</div>
+                     <div className="text-green-700">Available to Borrow Now</div>
                   </div>
                </div>
 
                <div className="space-y-4">
-                  <div className="flex justify-between text-sm text-gray-400">
+                  <div className="flex justify-between text-sm text-gray-600">
                      <span>Starting Credit Limit ($20)</span>
                      <span>Current Credit Limit (${formatNumber(borrowerData.creditGrowth.nextLimit)})</span>
                   </div>
-                  <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                      <div className={'h-full bg-blue-500 w-[' + parseInt(((user.cs * 100) / (user.cs + 20)).toString()) + '%]'} />
                   </div>
-                  <div className="flex justify-between text-sm text-gray-400">
+                  <div className="flex justify-between text-sm text-gray-600">
                      <span>Total Borrowed: ${formatNumber(borrowerData.stats.totalBorrowed)}</span>
                      <span>{borrowerData.stats.totalLoans} Total Loans</span>
                   </div>
@@ -312,7 +315,7 @@ const UserProfile = () => {
                   buttonText={showAllTiers ? 'Hide Progress History' : 'View Progress History'}
                >
                   <div className="mt-6 space-y-4">
-                     <h3 className="text-lg font-medium text-gray-100">Credit Growth Timeline</h3>
+                     <h3 className="text-lg font-medium text-gray-900">Credit Growth Timeline</h3>
                      {uniqueLoans.map((tier: Loan) => {
                         const tierLoanAmount = toNumber(tier.loanAmount);
                         return (
@@ -320,10 +323,10 @@ const UserProfile = () => {
                               key={tier.id}
                               className={`p-4 rounded-lg ${
                                  tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
-                                    ? 'bg-green-900/20 border border-green-800'
+                                    ? 'bg-green-50 border border-green-200'
                                     : tierLoanAmount === user.cs
-                                      ? 'bg-blue-800/50 border border-blue-800'
-                                      : 'bg-gray-800/50 border border-gray-800'
+                                      ? 'bg-blue-50 border border-blue-200'
+                                      : 'bg-gray-50 border border-gray-200'
                               }`}
                            >
                               <div className="flex justify-between items-start">
@@ -342,17 +345,17 @@ const UserProfile = () => {
                                           <span
                                              className={`text-lg font-medium ${
                                                 tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
-                                                   ? 'text-green-400'
+                                                   ? 'text-green-700'
                                                    : tierLoanAmount === user.cs
-                                                     ? 'text-blue-100'
-                                                     : 'text-gray-100'
+                                                     ? 'text-blue-700'
+                                                     : 'text-gray-900'
                                              }`}
                                           >
                                              ${formatNumber(tier.loanAmount)} Credit Limit
                                           </span>
-                                          <span className="text-sm text-gray-400">{formatDate(tier.updatedAt)}</span>
+                                          <span className="text-sm text-gray-600">{formatDate(tier.updatedAt)}</span>
                                        </div>
-                                       <span className="text-xs text-gray-400">
+                                       <span className="text-xs text-gray-600">
                                           ${formatNumber(tier.loanAmount)} loan repaid ${formatNumber(tier.totalRepaymentAmount)} unlocked $
                                           {tierLoanAmount + 20} limit
                                        </span>
@@ -361,15 +364,15 @@ const UserProfile = () => {
 
                                  {TierList[tierLoanAmount]?.length > 0 ? (
                                     <div className="flex items-start gap-2">
-                                       <div className="contents text-xs text-gray-400">Trust-Building Loans</div>
+                                       <div className="contents text-xs text-gray-600">Trust-Building Loans</div>
                                        <div className="relative group">
                                           <div className="flex items-center gap-1 cursor-help">
-                                             <span className="text-gray-400">+</span>
-                                             <div className="px-2 py-1 rounded-full bg-gray-700/40 border border-gray-600 text-sm text-gray-300">
+                                             <span className="text-gray-600">+</span>
+                                             <div className="px-2 py-1 rounded-full bg-gray-200 border border-gray-300 text-sm text-gray-700">
                                                 {TierList[tierLoanAmount]?.length}
                                              </div>
                                           </div>
-                                          <div className="absolute invisible group-hover:visible bg-gray-700 text-gray-100 p-3 rounded-lg text-sm w-64 right-0 top-full mt-2 z-10 shadow-xl border border-gray-600">
+                                          <div className="absolute invisible group-hover:visible bg-white text-gray-800 p-3 rounded-lg text-sm w-64 right-0 top-full mt-2 z-10 shadow-xl border border-gray-200">
                                              <div className="space-y-2">
                                                 <p className="font-medium">
                                                    Trust-Building Loans at ${formatNumber(tier.loanAmount)} credit limit:
@@ -393,18 +396,18 @@ const UserProfile = () => {
                   </div>
 
                   <div className="mt-6 space-y-4">
-                     <div className="p-4 rounded-lg bg-green-900/20 border border-green-800">
+                     <div className="p-4 rounded-lg bg-green-50 border border-green-200">
                         <div className="flex items-center gap-2">
                            <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                           <h3 className="font-medium text-green-400">Credit Unlocking Loans</h3>
+                           <h3 className="font-medium text-green-700">Credit Unlocking Loans</h3>
                            <div className="relative group">
-                              <HelpCircle className="w-4 h-4 text-green-400 cursor-help" />
-                              <div className="absolute invisible group-hover:visible w-64 p-3 bg-[#1F2937] rounded-lg shadow-xl text-sm text-gray-100 -translate-x-1/2 left-1/2 bottom-full mb-2 z-10 border border-gray-700">
+                              <HelpCircle className="w-4 h-4 text-green-600 cursor-help" />
+                              <div className="absolute invisible group-hover:visible w-64 p-3 bg-white rounded-lg shadow-xl text-sm text-gray-800 -translate-x-1/2 left-1/2 bottom-full mb-2 z-10 border border-gray-200">
                                  <p>
                                     Loans that match exact credit tier amounts ($20, $40, etc.). Successfully repaying these loans unlocks
                                     the next credit tier.
                                  </p>
-                                 <ul className="mt-2 list-disc pl-4 space-y-1 text-gray-400">
+                                 <ul className="mt-2 list-disc pl-4 space-y-1 text-gray-600">
                                     <li>Must match exact tier amount</li>
                                     <li>Unlocks next credit level on repayment</li>
                                     <li>Shows strong borrowing responsibility</li>
@@ -412,21 +415,21 @@ const UserProfile = () => {
                               </div>
                            </div>
                         </div>
-                        <p className="mt-2 text-sm text-green-400">Example: $20 loan unlocks $40 credit limit when repaid</p>
+                        <p className="mt-2 text-sm text-green-700">Example: $20 loan unlocks $40 credit limit when repaid</p>
                      </div>
 
-                     <div className="p-4 rounded-lg bg-blue-900/20 border border-blue-800">
+                     <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
                         <div className="flex items-center gap-2">
                            <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                           <h3 className="font-medium text-blue-400">Trust Building Loans</h3>
+                           <h3 className="font-medium text-blue-700">Trust Building Loans</h3>
                            <div className="relative group">
-                              <HelpCircle className="w-4 h-4 text-blue-400 cursor-help" />
-                              <div className="absolute invisible group-hover:visible w-64 p-3 bg-[#1F2937] rounded-lg shadow-xl text-sm text-gray-100 -translate-x-1/2 left-1/2 bottom-full mb-2 z-10 border border-gray-700">
+                              <HelpCircle className="w-4 h-4 text-blue-600 cursor-help" />
+                              <div className="absolute invisible group-hover:visible w-64 p-3 bg-white rounded-lg shadow-xl text-sm text-gray-800 -translate-x-1/2 left-1/2 bottom-full mb-2 z-10 border border-gray-200">
                                  <p>
                                     Smaller loans below your current credit tier. These help build trust with lenders but don't unlock
                                     higher credit limits.
                                  </p>
-                                 <ul className="mt-2 list-disc pl-4 space-y-1 text-gray-400">
+                                 <ul className="mt-2 list-disc pl-4 space-y-1 text-gray-600">
                                     <li>Must be at least $20</li>
                                     <li>Shows active platform usage</li>
                                     <li>Builds lender confidence</li>
@@ -435,23 +438,23 @@ const UserProfile = () => {
                               </div>
                            </div>
                         </div>
-                        <p className="mt-2 text-sm text-blue-400">Example: $20 loan while at $40 credit limit</p>
+                        <p className="mt-2 text-sm text-blue-700">Example: $20 loan while at $40 credit limit</p>
                      </div>
                   </div>
                </CollapsibleSection>
             </div>
 
-            <div className="bg-[#1F2937] rounded-xl p-6">
-               <h2 className="text-xl font-semibold mb-6">Borrower Insights</h2>
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+               <h2 className="text-xl font-semibold mb-6 text-gray-900">Borrower Insights</h2>
 
                <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                     <span className="text-gray-400">Avg days between loans:</span>
+                     <span className="text-gray-600">Avg days between loans:</span>
                      <div className="flex items-center gap-2">
-                        <span className="text-yellow-400">{loans.length > 0 ? avgDays : '0'} days</span>
+                        <span className="text-amber-600 font-medium">{loans.length > 0 ? avgDays : '0'} days</span>
                         <div className="relative group">
                            <HelpCircle className="w-4 h-4 text-gray-500 cursor-help" />
-                           <div className="absolute invisible group-hover:visible bg-gray-800 text-gray-100 p-2 rounded text-sm w-64 right-0 bottom-full mb-2 z-10">
+                           <div className="absolute invisible group-hover:visible bg-white text-gray-800 p-2 rounded text-sm w-64 right-0 bottom-full mb-2 z-10 shadow-lg border border-gray-200">
                               The average number of days this borrower waits between taking out new loans.
                            </div>
                         </div>
@@ -459,12 +462,12 @@ const UserProfile = () => {
                   </div>
 
                   <div className="flex justify-between items-center">
-                     <span className="text-gray-400">Typical payment time:</span>
+                     <span className="text-gray-600">Typical payment time:</span>
                      <div className="flex items-center gap-2">
-                        <span className="text-yellow-400">{loans.length > 0 ? avgPaymentTime : '0'} day</span>
+                        <span className="text-amber-600 font-medium">{loans.length > 0 ? avgPaymentTime : '0'} day</span>
                         <div className="relative group">
                            <HelpCircle className="w-4 h-4 text-gray-500 cursor-help" />
-                           <div className="absolute invisible group-hover:visible bg-gray-800 text-gray-100 p-2 rounded text-sm w-64 right-0 bottom-full mb-2 z-10">
+                           <div className="absolute invisible group-hover:visible bg-white text-gray-800 p-2 rounded text-sm w-64 right-0 bottom-full mb-2 z-10 shadow-lg border border-gray-200">
                               The most common time it takes for this borrower to repay their loans after receiving them.
                            </div>
                         </div>
@@ -472,9 +475,9 @@ const UserProfile = () => {
                   </div>
 
                   <div className="flex justify-between items-center">
-                     <span className="text-gray-400">Usual loan size:</span>
+                     <span className="text-gray-600">Usual loan size:</span>
                      <div className="flex items-center gap-2">
-                        <span className="text-yellow-400">
+                        <span className="text-amber-600 font-medium">
                            $
                            {loans.length > 0
                               ? Math.round(loans.reduce((sum, loan) => sum + toNumber(loan.loanAmount), 0) / loans.length)
@@ -482,7 +485,7 @@ const UserProfile = () => {
                         </span>
                         <div className="relative group">
                            <HelpCircle className="w-4 h-4 text-gray-500 cursor-help" />
-                           <div className="absolute invisible group-hover:visible bg-gray-800 text-gray-100 p-2 rounded text-sm w-64 right-0 bottom-full mb-2 z-10">
+                           <div className="absolute invisible group-hover:visible bg-white text-gray-800 p-2 rounded text-sm w-64 right-0 bottom-full mb-2 z-10 shadow-lg border border-gray-200">
                               The amount this borrower most frequently requests for their loans. Currently at their maximum credit limit.
                            </div>
                         </div>
@@ -490,9 +493,9 @@ const UserProfile = () => {
                   </div>
 
                   <div className="flex justify-between items-center">
-                     <span className="text-gray-400">Typical loan term:</span>
+                     <span className="text-gray-600">Typical loan term:</span>
                      <div className="flex items-center gap-2">
-                        <span className="text-white">
+                        <span className="text-gray-900 font-medium">
                            {loans.length > 0
                               ? Math.round(
                                    loans.reduce((sum, loan) => {
@@ -505,23 +508,26 @@ const UserProfile = () => {
                               : '0'}{' '}
                            days
                         </span>
-                        <div className="absolute invisible group-hover:visible bg-gray-800 text-gray-100 p-2 rounded text-sm w64 right-0 bottom-full mb-2 z-10">
-                           The most common duration this borrower requests for their loans. This reflects their consistent pattern of loan
-                           term preferences rather than an average.
+                        <div className="relative group">
+                           <HelpCircle className="w-4 h-4 text-gray-500 cursor-help" />
+                           <div className="absolute invisible group-hover:visible bg-white text-gray-800 p-2 rounded text-sm w-64 right-0 bottom-full mb-2 z-10 shadow-lg border border-gray-200">
+                              The most common duration this borrower requests for their loans. This reflects their consistent pattern of loan
+                              term preferences rather than an average.
+                           </div>
                         </div>
                      </div>
                   </div>
 
                   <div className="flex justify-between items-center">
-                     <span className="text-gray-400">Repeat lenders:</span>
+                     <span className="text-gray-600">Repeat lenders:</span>
                      <div className="flex items-center gap-2">
-                        <span className="text-red-400">
+                        <span className="text-red-600 font-medium">
                            {Object.keys(countMap).length - Object.values(countMap).filter((count) => count === 1).length} of{' '}
                            {Object.keys(countMap).length}
                         </span>
                         <div className="relative group">
                            <HelpCircle className="w-4 h-4 text-gray-500 cursor-help" />
-                           <div className="absolute invisible group-hover:visible bg-gray-800 text-gray-100 p-2 rounded text-sm w-64 right-0 bottom-full mb-2 z-10">
+                           <div className="absolute invisible group-hover:visible bg-white text-gray-800 p-2 rounded text-sm w-64 right-0 bottom-full mb-2 z-10 shadow-lg border border-gray-200">
                               The number of lenders who have provided multiple loans to this borrower out of their total unique lenders.
                            </div>
                         </div>
@@ -530,30 +536,30 @@ const UserProfile = () => {
                </div>
             </div>
 
-            <div className="bg-[#1F2937] rounded-xl p-6">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold">Lender Diversity</h2>
+                  <h2 className="text-xl font-semibold text-gray-900">Lender Diversity</h2>
                   <div className="flex items-center justify-between">
                      <div className="space-y-2">
-                        <div className={'text-4xl font-bold text-' + getDiversityColor(borrowerData.lenderDiversity.score) + '-400'}>
+                        <div className={'text-4xl font-bold text-' + getDiversityColor(borrowerData.lenderDiversity.score) + '-600'}>
                            {borrowerData.lenderDiversity.score} %
                         </div>
-                        <div className="text-sm text-gray-400">Diversity Score</div>
+                        <div className="text-sm text-gray-600">Diversity Score</div>
                      </div>
                      <div
                         className={
                            'h-16 w-16 rounded-full bg-' +
                            getDiversityColor(borrowerData.lenderDiversity.score) +
-                           '-900/20 border border-' +
+                           '-100 border border-' +
                            getDiversityColor(borrowerData.lenderDiversity.score) +
-                           '-800 flex items-center justify-center'
+                           '-300 flex items-center justify-center'
                         }
                      >
-                        <Users className={'w-8 h-8 text-' + getDiversityColor(borrowerData.lenderDiversity.score) + '-500'} />
+                        <Users className={'w-8 h-8 text-' + getDiversityColor(borrowerData.lenderDiversity.score) + '-600'} />
                      </div>
                   </div>
 
-                  <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                      <div
                         className={
                            'h-full transition-all duration-500 bg-' + getDiversityColor(borrowerData.lenderDiversity.score) + '-500'
@@ -564,7 +570,7 @@ const UserProfile = () => {
 
                   <button
                      onClick={() => setShowLenderNames(!showLenderNames)}
-                     className="w-full px-4 py-2.5 text-sm font-medium text-blue-400 hover:bg-blue-900/20 border border-blue-800 rounded-lg transition-colors flex items-center justify-center gap-1"
+                     className="w-full px-4 py-2.5 text-sm font-medium text-blue-600 hover:bg-blue-50 border border-blue-200 rounded-lg transition-colors flex items-center justify-center gap-1"
                   >
                      {showLenderNames ? 'Hide' : 'Show'} Lender Distribution
                      <ChevronDown className={`w-4 h-4 transform transition-transform ${showLenderNames ? 'rotate-180' : ''}`} />
@@ -573,9 +579,9 @@ const UserProfile = () => {
                   {showLenderNames ? (
                      <div className="space-y-2 pt-2">
                         {borrowerData.lenderDiversity.distribution.map((lender) => (
-                           <div key={lender.name} className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-800/50">
-                              <span className="font-medium text-gray-100">{lender.name || 'Others'}</span>
-                              <span className="text-gray-400">{lender.percent} of total loans</span>
+                           <div key={lender.name} className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50 border border-transparent">
+                              <span className="font-medium text-gray-900">{lender.name || 'Others'}</span>
+                              <span className="text-gray-600">{lender.percent} of total loans</span>
                            </div>
                         ))}
                      </div>
@@ -583,8 +589,8 @@ const UserProfile = () => {
                </div>
             </div>
 
-            <div className="bg-[#1F2937] rounded-xl p-6">
-               <h2 className="text-xl font-semibold mb-6">Recent Loans</h2>
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+               <h2 className="text-xl font-semibold mb-6 text-gray-900">Recent Loans</h2>
                <div className="space-y-4">
                   {loans
                      .filter((loan) => loan.repaymentStatus === 'Paid')
@@ -593,14 +599,14 @@ const UserProfile = () => {
                         const unlock = uniqueLoans.some((item) => item.id === loan.id);
                         const build = TierLists.some((item) => item.id === loan.id);
                         return (
-                           <div key={loan.id} className="bg-[#111827] rounded-lg p-4 space-y-3">
+                           <div key={loan.id} className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200">
                               <div className="flex justify-between items-start">
                                  <div>
                                     <div className="flex items-center gap-2">
-                                       <span className="text-lg font-semibold text-gray-100">${formatNumber(loan.loanAmount)}</span>
-                                       <span className="text-sm text-gray-400">→ ${formatNumber(loan.repaidAmount)} repaid</span>
+                                       <span className="text-lg font-semibold text-gray-900">${formatNumber(loan.loanAmount)}</span>
+                                       <span className="text-sm text-gray-600">→ ${formatNumber(loan.repaidAmount)} repaid</span>
                                     </div>
-                                    <div className="text-sm text-gray-400">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</div>
+                                    <div className="text-sm text-gray-600">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</div>
                                  </div>
                                  <div className="flex flex-col items-end gap-2">
                                     <span
@@ -609,21 +615,21 @@ const UserProfile = () => {
                                        {ALLOWED_CHAIN_DISPLAY_NAME}
                                     </span>
                                     <span
-                                       className={`text-sm font-medium ${loan.repaymentStatus !== 'Paid' ? 'text-blue-400' : 'text-emerald-400'}`}
+                                       className={`text-sm font-medium ${loan.repaymentStatus !== 'Paid' ? 'text-blue-600' : 'text-emerald-600'}`}
                                     >
                                        {loan.repaymentStatus === 'Paid' ? 'Repaid' : 'Active'}
                                     </span>
                                  </div>
                               </div>
                               <div className="flex justify-between items-center">
-                                 <span className="text-sm text-gray-400">{resolveUsername(loan.lenderUser) || 'Others'}</span>
+                                 <span className="text-sm text-gray-600">{resolveUsername(loan.lenderUser) || 'Others'}</span>
                                  <span
                                     className={`text-sm font-medium px-2 py-1 rounded-lg ${
                                        unlock
-                                          ? 'bg-emerald-900/20 text-emerald-400 border border-emerald-800/40'
+                                          ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
                                           : build && Boolean(loan.lenderUser)
-                                            ? 'bg-blue-900/20 text-blue-400 border border-blue-800/40'
-                                            : 'bg-gray-800 text-gray-400'
+                                            ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                                            : 'bg-gray-200 text-gray-700'
                                     }`}
                                  >
                                     {unlock
@@ -641,31 +647,31 @@ const UserProfile = () => {
 
             <button
                onClick={() => setShowDetailedHistory(!showDetailedHistory)}
-               className="w-full px-4 py-2.5 text-sm font-medium text-blue-400 hover:bg-blue-900/20 border border-blue-800 rounded-lg transition-colors flex items-center justify-center gap-1"
+               className="w-full px-4 py-2.5 text-sm font-medium text-blue-600 hover:bg-blue-50 border border-blue-200 rounded-lg transition-colors flex items-center justify-center gap-1"
             >
                {showDetailedHistory ? 'Hide' : 'Show'} All History
                <ChevronDown className={`w-4 h-4 transform transition-transform ${showDetailedHistory ? 'rotate-180' : ''}`} />
             </button>
 
             {showDetailedHistory ? (
-               <div className="bg-[#1F2937] rounded-xl overflow-x-auto">
+               <div className="bg-white rounded-xl overflow-x-auto shadow-sm border border-gray-200">
                   <table className="w-full text-sm">
                      <thead>
-                        <tr className="bg-[#111827]">
-                           <th className="py-3 px-4 text-left font-medium text-gray-200">Date</th>
-                           <th className="py-3 px-4 text-left font-medium text-gray-200">Amount</th>
-                           <th className="py-3 px-4 text-left font-medium text-gray-200">Network</th>
-                           <th className="py-3 px-4 text-left font-medium text-gray-200">Lender</th>
-                           <th className="py-3 px-4 text-left font-medium text-gray-200">Status</th>
-                           <th className="py-3 px-4 text-left font-medium text-gray-200">Type</th>
+                        <tr className="bg-gray-100 border-b border-gray-200">
+                           <th className="py-3 px-4 text-left font-medium text-gray-700">Date</th>
+                           <th className="py-3 px-4 text-left font-medium text-gray-700">Amount</th>
+                           <th className="py-3 px-4 text-left font-medium text-gray-700">Network</th>
+                           <th className="py-3 px-4 text-left font-medium text-gray-700">Lender</th>
+                           <th className="py-3 px-4 text-left font-medium text-gray-700">Status</th>
+                           <th className="py-3 px-4 text-left font-medium text-gray-700">Type</th>
                         </tr>
                      </thead>
-                     <tbody className="divide-y divide-gray-700">
+                     <tbody className="divide-y divide-gray-200">
                         {uniqueLoans.map((loan: Loan) => {
                            return (
-                              <tr key={loan.id} className="hover:bg-[#111827]">
-                                 <td className="py-3 px-4 text-gray-300">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
-                                 <td className="py-3 px-4 font-medium text-white">${formatNumber(loan.loanAmount)}</td>
+                              <tr key={loan.id} className="hover:bg-gray-50">
+                                 <td className="py-3 px-4 text-gray-700">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
+                                 <td className="py-3 px-4 font-medium text-gray-900">${formatNumber(loan.loanAmount)}</td>
                                  <td className="py-3 px-4">
                                     <span
                                        className={`px-2.5 py-1 ${getNetworkColor(ALLOWED_CHAIN_DISPLAY_NAME)} rounded-lg text-xs font-medium`}
@@ -673,16 +679,16 @@ const UserProfile = () => {
                                        {ALLOWED_CHAIN_DISPLAY_NAME}
                                     </span>
                                  </td>
-                                 <td className="py-3 px-4 text-gray-400">{resolveUsername(loan.lenderUser) || 'Others'}</td>
+                                 <td className="py-3 px-4 text-gray-600">{resolveUsername(loan.lenderUser) || 'Others'}</td>
                                  <td className="py-3 px-4">
                                     <span
-                                       className={`font-medium ${loan.repaymentStatus !== 'Paid' ? 'text-blue-400' : 'text-emerald-400'}`}
+                                       className={`font-medium ${loan.repaymentStatus !== 'Paid' ? 'text-blue-600' : 'text-emerald-600'}`}
                                     >
                                        {loan.repaymentStatus === 'Paid' ? 'Repaid' : 'Active'}
                                     </span>
                                  </td>
                                  <td className="py-3 px-4">
-                                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-900/20 text-emerald-400 border border-emerald-800/40">
+                                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
                                        Credit Unlocking Loan
                                     </span>
                                  </td>
@@ -691,9 +697,9 @@ const UserProfile = () => {
                         })}
                         {TierLists.map((loan: Loan) => {
                            return (
-                              <tr key={loan.id} className="hover:bg-[#111827]">
-                                 <td className="py-3 px-4 text-gray-300">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
-                                 <td className="py-3 px-4 font-medium text-white">${formatNumber(loan.loanAmount)}</td>
+                              <tr key={loan.id} className="hover:bg-gray-50">
+                                 <td className="py-3 px-4 text-gray-700">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
+                                 <td className="py-3 px-4 font-medium text-gray-900">${formatNumber(loan.loanAmount)}</td>
                                  <td className="py-3 px-4">
                                     <span
                                        className={`px-2.5 py-1 ${getNetworkColor(ALLOWED_CHAIN_DISPLAY_NAME)} rounded-lg text-xs font-medium`}
@@ -701,10 +707,10 @@ const UserProfile = () => {
                                        {ALLOWED_CHAIN_DISPLAY_NAME}
                                     </span>
                                  </td>
-                                 <td className="py-3 px-4 text-gray-400">{resolveUsername(loan.lenderUser) || 'Others'}</td>
+                                 <td className="py-3 px-4 text-gray-600">{resolveUsername(loan.lenderUser) || 'Others'}</td>
                                  <td className="py-3 px-4">
                                     <span
-                                       className={`font-medium ${loan.repaymentStatus !== 'Paid' ? 'text-blue-400' : 'text-emerald-400'}`}
+                                       className={`font-medium ${loan.repaymentStatus !== 'Paid' ? 'text-blue-600' : 'text-emerald-600'}`}
                                     >
                                        {loan.repaymentStatus === 'Paid' ? 'Repaid' : 'Active'}
                                     </span>
@@ -713,8 +719,8 @@ const UserProfile = () => {
                                     <span
                                        className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
                                           Boolean(loan.lenderUser)
-                                             ? 'bg-blue-900/20 text-blue-400 border border-blue-800/40'
-                                             : 'bg-gray-800 text-gray-400'
+                                             ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                                             : 'bg-gray-200 text-gray-700'
                                        }`}
                                     >
                                        {loan.lenderUser ? 'Trust Building Loan' : 'Regular Loan'}
@@ -727,7 +733,8 @@ const UserProfile = () => {
                   </table>
                </div>
             ) : null}
-         </div>
+            </div>
+         </main>
       </div>
    );
 };

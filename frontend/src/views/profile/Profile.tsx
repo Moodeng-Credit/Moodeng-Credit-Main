@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import LenderBoardHeader from '@v2/views/lenderBoard/components/LenderBoardHeader';
 import { MobileNav, Sidebar } from '@/views/profile/components/navigation';
 import { FilterButtons, RoleSwitcher, TelegramModal } from '@/views/profile/components/shared';
 import { DashboardTab, FAQTab, LoanSummaryTab, SettingsTab, SupportTab, TransactionHistoryTab } from '@/views/profile/components/tabs';
@@ -128,21 +129,26 @@ export default function Profile() {
       }
    };
 
-   const showRoleSwitcher = activeTab !== ProfileTab.SETTINGS;
+   const showRoleSwitcher = activeTab !== ProfileTab.SETTINGS && activeTab !== ProfileTab.DASHBOARD;
    const showFilterButtons = activeTab === ProfileTab.LOAN_SUMMARY || activeTab === ProfileTab.TRANSACTION_HISTORY;
 
    return (
-      <div className="bg-[#c9d5f9] min-h-screen flex flex-col" style={{ fontFamily: 'Inter, sans-serif' }}>
-         <main className="flex flex-col md:flex-row flex-1 overflow-hidden">
-            <Sidebar navItems={navItems} infoNavItems={infoNavItems} onNavItemClick={handleNavItemClick} />
-            <MobileNav navItems={navItems} infoNavItems={infoNavItems} onNavItemClick={handleNavItemClick} />
+      <div className="min-h-screen bg-background">
+         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6 pb-24">
+            <LenderBoardHeader />
+            <div className="flex flex-col md:flex-row gap-6">
+               <div className="shrink-0">
+                  <Sidebar navItems={navItems} infoNavItems={infoNavItems} onNavItemClick={handleNavItemClick} />
+               </div>
+               <MobileNav navItems={navItems} infoNavItems={infoNavItems} onNavItemClick={handleNavItemClick} />
 
-            <section className="flex-1 p-4 md:p-8 overflow-auto">
-               {showRoleSwitcher ? <RoleSwitcher currentRole={userRole} onRoleChange={setUserRole} /> : null}
-               {showFilterButtons ? <FilterButtons userRole={userRole} /> : null}
+               <section className="flex-1 min-w-0 overflow-auto">
+                  {showRoleSwitcher ? <RoleSwitcher currentRole={userRole} onRoleChange={setUserRole} /> : null}
+                  {showFilterButtons ? <FilterButtons userRole={userRole} /> : null}
 
-               <div className="overflow-x-auto">{renderTabContent()}</div>
-            </section>
+                  <div className="overflow-x-auto">{renderTabContent()}</div>
+               </section>
+            </div>
          </main>
 
          <TelegramModal isOpen={showTelegramModal} onClose={handleCloseTelegramModal} />

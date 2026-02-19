@@ -11,7 +11,7 @@ import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay'
 import { type RootState } from '@/store/store';
 
 import Benefits from '@/app/benefits/page';
-import Dashboard from '@/app/dashboard/page';
+import Dashboard from '@v2/app/dashboard/page';
 import FAQ from '@/app/faq/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
@@ -30,11 +30,12 @@ import UserProfile from '@/app/user/[username]/page';
 import Ut from '@/app/ut/page';
 import WhyLend from '@/app/whylend/page';
 
-const ROUTES_WITHOUT_HEADER = ['/lender-board', '/history'];
+const ROUTES_WITHOUT_HEADER = ['/lender-board', '/history', '/dashboard', '/profile'];
 
 function Layout({ children }: { children: React.ReactNode }) {
    const location = useLocation();
-   const hideHeader = ROUTES_WITHOUT_HEADER.includes(location.pathname);
+   const hideHeader =
+      ROUTES_WITHOUT_HEADER.includes(location.pathname) || location.pathname.startsWith('/user/');
 
    return (
       <div className="flex flex-col min-h-screen">

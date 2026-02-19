@@ -15,8 +15,8 @@ const MilestoneCard = ({ milestone, onView }: MilestoneCardProps) => {
                <i className="fas fa-check text-[#22c55e] text-lg" aria-hidden="true" />
             </div>
             <div className="flex-1 min-w-0">
-               <p className="font-semibold text-sm text-[#111827] leading-snug">{title}</p>
-               <p className="text-xs text-[#6b7280] mt-0.5">{description}</p>
+               <p className="font-semibold text-sm sm:text-base text-[#111827] leading-snug line-clamp-2">{title}</p>
+               <p className="text-xs sm:text-sm text-[#6b7280] mt-0.5 line-clamp-2">{description}</p>
             </div>
             <span className="text-xs font-semibold text-[#22c55e] bg-[#dcfce7] px-3 py-1 rounded-full flex-shrink-0">
                Done <i className="fas fa-check ml-1" aria-hidden="true" />
@@ -32,9 +32,9 @@ const MilestoneCard = ({ milestone, onView }: MilestoneCardProps) => {
                <i className="fas fa-star text-[#7c3aed] text-lg" aria-hidden="true" />
             </div>
             <div className="flex-1 min-w-0">
-               <p className="text-[10px] font-semibold text-[#7c3aed] uppercase tracking-wide mb-0.5">Next milestone</p>
-               <p className="font-semibold text-sm text-[#111827] leading-snug">{title}</p>
-               <p className="text-xs text-[#6b7280] mt-0.5">{description}</p>
+               <p className="text-xs font-semibold text-[#7c3aed] uppercase tracking-wide mb-0.5">Next milestone</p>
+               <p className="font-semibold text-sm sm:text-base text-[#111827] leading-snug line-clamp-2">{title}</p>
+               <p className="text-xs sm:text-sm text-[#6b7280] mt-0.5 line-clamp-2">{description}</p>
             </div>
             <button
                type="button"
@@ -54,8 +54,8 @@ const MilestoneCard = ({ milestone, onView }: MilestoneCardProps) => {
             <i className="fas fa-lock text-[#9ca3af] text-lg" aria-hidden="true" />
          </div>
          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm text-[#111827] leading-snug">{title}</p>
-            <p className="text-xs text-[#6b7280] mt-0.5">{description}</p>
+            <p className="font-semibold text-sm sm:text-base text-[#111827] leading-snug line-clamp-2">{title}</p>
+            <p className="text-xs sm:text-sm text-[#6b7280] mt-0.5 line-clamp-2">{description}</p>
          </div>
          <button
             type="button"

@@ -29,6 +29,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
+import LenderBoardHeader from '@v2/views/lenderBoard/components/LenderBoardHeader';
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
@@ -304,13 +305,10 @@ function Dashboard$() {
 
    return (
       <>
-         <div id="top" className="bg-white text-gray-900" style={{ fontFamily: 'Inter, sans-serif' }}>
-            <main className="mx-auto px-6 pt-6 pb-20 md:px-20">
-               <h1 className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">Request Board for Microloans</h1>
-               <p className="text-xs md:text-sm text-gray-700 mb-6">
-                  Browse requests posted on Moodeng, or jump right in and get verified to start borrowing.
-               </p>
-               <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-10">
+         <div id="top" className="min-h-screen bg-background">
+            <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6 pb-24">
+               <LenderBoardHeader />
+               <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-6">
                   <button
                      onClick={handleApplyLoanClick}
                      className="bg-blue-600 text-white text-xs md:text-sm font-semibold px-5 py-2 rounded-md w-full sm:w-auto hover:bg-blue-700 transition disabled:opacity-50"
@@ -340,14 +338,16 @@ function Dashboard$() {
                      </span>
                   </div>
                ) : null}
-               <div className="flex flex-col md:flex-row md:space-x-10">
-                  <FilterSidebar
-                     filters={filters}
-                     onFiltersChange={handleFiltersChange}
-                     customAmount={customAmount}
-                     onCustomAmountChange={setCustomAmount}
-                  />
-                  <section className="flex-1 flex flex-col items-start mt-10 md:mt-0">
+               <div className="flex flex-col md:flex-row gap-6">
+                  <div className="md:w-64 shrink-0">
+                     <FilterSidebar
+                        filters={filters}
+                        onFiltersChange={handleFiltersChange}
+                        customAmount={customAmount}
+                        onCustomAmountChange={setCustomAmount}
+                     />
+                  </div>
+                  <div className="flex-1 min-w-0">
                      <div className="flex flex-wrap justify-between gap-3 mb-6 w-full">
                         <SortButtons
                            activeSort={filters.sortBy || ''}
@@ -355,7 +355,7 @@ function Dashboard$() {
                         />
                         <SearchBar value={searchLoan} onChange={setSearchLoan} placeholder="Search Request..." />
                      </div>
-                     <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(350px,1fr))] w-full">
+                     <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 w-full">
                         {isLoading ? (
                            <div className="col-span-full flex justify-center py-20">
                               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -367,7 +367,7 @@ function Dashboard$() {
                         )}
                      </div>
                      {!isLoading && <LoadMoreButton currentCount={displayedCount} totalCount={totalCount} onLoadMore={handleLoadMore} />}
-                  </section>
+                  </div>
                </div>
                <Link to="/dashboard#top" className="float-right">
                   <img
