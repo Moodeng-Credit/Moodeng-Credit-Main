@@ -1,80 +1,105 @@
-import { useMemo, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { HelpCircle, Search, Filter } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
 import { format } from 'date-fns';
 
 import FilterModal from '@v2/components/FilterModal';
 import TransactionCard from '@v2/components/TransactionCard';
-import Button from '@/components/ui/Button';
+import { Card, CardContent } from '@/components/shadcn/card';
+import { Input } from '@/components/shadcn/input';
+import { Button } from '@/components/shadcn/button';
 import { useDebounce } from '@v2/hooks/useDebounce';
 import { usePagination } from '@/hooks/usePagination';
-import type { RootState } from '@/store/store';
+import { fetchUserProfiles } from '@/store/slices/authSlice';
+import { fetchTransactions } from '@/store/slices/transactionSlice';
+import type { AppDispatch, RootState } from '@/store/store';
 import type { Transaction, TransactionFilters } from '@v2/types/transactionTypes';
-import { WorldId } from '@/types/authTypes';
 
-import type { Loan } from '@/types/loanTypes';
 import type { User } from '@/types/authTypes';
+import LenderBoardHeader from '@v2/views/lenderBoard/components/LenderBoardHeader';
+import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 
-const WALLET_DISPLAY_LENGTH = 10;
+type TransactionType = 'loan_requested' | 'loan_funded' | 'repayment';
 
-// Mock function to convert loans to transactions
-// In a real implementation, this would come from an API
-function loansToTransactions(loans: Loan[], userId: string, userProfiles: User[]): Transaction[] {
-   return loans.map((loan) => {
-      const isLender = loan.lenderUser === userId;
-      const isBorrower = loan.borrowerUser === userId;
-      const otherUserId = isLender ? loan.borrowerUser : loan.lenderUser;
+function transactionTypeToTitle(type: TransactionType): string {
+   const titles: Record<TransactionType, string> = {
+      loan_requested: 'Loan requested',
+      loan_funded: 'Loan funded',
+      repayment: 'Repayment'
+   };
+   return titles[type] || type;
+}
+
+function transactionTypeToStatus(type: TransactionType): Transaction['status'] {
+   const statusMap: Record<TransactionType, Transaction['status']> = {
+      loan_requested: 'pending',
+      loan_funded: 'active',
+      repayment: 'paid'
+   };
+   return statusMap[type] || 'pending';
+}
+
+function mapTransactionRowsToTransactions(
+   rows: { id: string; loan_id: string; from_user_id: string | null; to_user_id: string | null; type: TransactionType; amount: number; currency: string; created_at: string }[],
+   currentUserId: string,
+   userProfiles: User[]
+): Transaction[] {
+   return rows.map((row) => {
+      const isFrom = row.from_user_id === currentUserId;
+      const otherUserId = isFrom ? row.to_user_id : row.from_user_id;
       const otherProfile = userProfiles.find((p) => p.id === otherUserId);
-      const otherWallet = isLender ? loan.borrowerWallet : loan.lenderWallet;
-      const otherUsername = otherProfile?.username || (otherWallet ? `${otherWallet.slice(0, WALLET_DISPLAY_LENGTH)}...` : 'Unknown');
+      const otherUsername = otherProfile?.username || (otherUserId ? `${otherUserId.slice(0, 8)}…` : 'Unknown');
 
-      // For borrowers: receiving loan is positive (+), repaying is negative (-)
-      // For lenders: lending is negative (-), receiving repayment is positive (+)
-      let netAmount: number;
-      if (isBorrower) {
-         // Borrower view: loan amount received is positive, repaid amount is negative
-         netAmount = loan.loanAmount - loan.repaidAmount;
+      let user_role: 'lender' | 'borrower';
+      let amount_paid: number;
+      if (row.type === 'loan_funded') {
+         user_role = isFrom ? 'lender' : 'borrower';
+         amount_paid = isFrom ? -row.amount : row.amount;
       } else {
-         // Lender view: loan amount lent is negative, repaid amount is positive
-         netAmount = loan.repaidAmount - loan.loanAmount;
+         user_role = isFrom ? 'borrower' : 'lender';
+         amount_paid = isFrom ? -row.amount : row.amount;
       }
 
       return {
-         id: loan.id,
-         title: loan.reason || 'Loan transaction',
+         id: row.id,
+         title: transactionTypeToTitle(row.type),
          lender_name: otherUsername,
-         date: loan.createdAt,
-         amount_paid: netAmount,
-         total_amount: loan.totalRepaymentAmount,
-         status: mapRepaymentStatusToTransactionStatus(loan.repaymentStatus),
-         user_role: isLender ? 'lender' : 'borrower',
-         currency: loan.coin
+         date: row.created_at,
+         amount_paid,
+         total_amount: row.amount,
+         status: transactionTypeToStatus(row.type),
+         user_role,
+         currency: row.currency
       };
    });
 }
 
-// Map repayment status to transaction status
-function mapRepaymentStatusToTransactionStatus(repaymentStatus: string): Transaction['status'] {
-   const statusMap: Record<string, Transaction['status']> = {
-      Unpaid: 'pending',
-      Partial: 'partial',
-      Paid: 'paid'
-   };
-   return statusMap[repaymentStatus] || 'pending';
-}
-
 export default function History() {
+   const dispatch = useDispatch<AppDispatch>();
    const user = useSelector((state: RootState) => state.auth.user);
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
-   const rawLoans = useSelector((state: RootState) => state.loans?.loans);
-   const allLoans = useMemo(() => [...(rawLoans?.gloans || []), ...(rawLoans?.floans || [])], [rawLoans]);
+   const { transactions: transactionRows, isLoading } = useSelector((state: RootState) => state.transactions);
 
-   // Convert loans to transactions
+   useEffect(() => {
+      const load = async () => {
+         if (!user?.id) return;
+         try {
+            const rows = await dispatch(fetchTransactions(user.id)).unwrap();
+            const userIds = [...new Set(rows.flatMap((r) => [r.from_user_id, r.to_user_id].filter(Boolean)))] as string[];
+            if (userIds.length > 0) {
+               await dispatch(fetchUserProfiles(userIds)).unwrap();
+            }
+         } catch (e) {
+            console.error('Error fetching transactions:', e);
+         }
+      };
+      load();
+   }, [dispatch, user?.id]);
+
    const allTransactions = useMemo(() => {
       if (!user?.id) return [];
-      return loansToTransactions(allLoans, user.id, Object.values(userProfiles));
-   }, [allLoans, user?.id, userProfiles]);
+      return mapTransactionRowsToTransactions(transactionRows, user.id, Object.values(userProfiles));
+   }, [transactionRows, user?.id, userProfiles]);
 
    const [searchQuery, setSearchQuery] = useState('');
    const [filters, setFilters] = useState<TransactionFilters>({});
@@ -82,15 +107,12 @@ export default function History() {
 
    const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-   // Filter and sort transactions
    const filteredTransactions = useMemo(() => {
       let result = [...allTransactions];
 
-      // Apply search filter
       if (debouncedSearchQuery) {
          const query = debouncedSearchQuery.toLowerCase();
          result = result.filter((t) => {
-            // Format date for human-readable search
             const formattedDate = format(new Date(t.date), 'MMM dd, yyyy').toLowerCase();
             return (
                t.title.toLowerCase().includes(query) ||
@@ -100,12 +122,10 @@ export default function History() {
          });
       }
 
-      // Apply status filter
       if (filters.status && filters.status.length > 0) {
          result = result.filter((t) => filters.status!.includes(t.status));
       }
 
-      // Apply sorting
       if (filters.sort) {
          result.sort((a, b) => {
             switch (filters.sort) {
@@ -132,134 +152,102 @@ export default function History() {
       resetDependencies: [debouncedSearchQuery, filters]
    });
 
-   const isVerified = user?.isWorldId === WorldId.ACTIVE;
    const hasTransactions = allTransactions.length > 0;
 
-   const handleApplyFilters = (newFilters: TransactionFilters) => {
-      setFilters(newFilters);
-   };
-
    return (
-      <div className="w-full min-h-screen bg-white">
-         <div className="max-w-4xl mx-auto px-4 py-6">
-            {/* Header */}
-            <div className="flex items-start justify-between mb-6">
-               <div className="flex items-center gap-3">
-                  {/* Avatar placeholder */}
-                  <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                     <span className="text-gray-600 text-lg font-semibold">{user?.username?.charAt(0).toUpperCase() || 'U'}</span>
-                  </div>
+      <>
+         <div className="min-h-screen bg-background">
+            <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6 pb-24">
+               <LenderBoardHeader />
+               <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                  Transaction History
+               </h1>
+               <p className="text-sm text-muted-foreground mb-6">
+                  View your loans and repayments. Search and filter below.
+               </p>
 
-                  <div>
-                     <h1 className="text-base font-semibold text-gray-900">Hello, {user?.username || 'User'}</h1>
-                     {isVerified ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
-                           <span className="w-2 h-2 bg-green-600 rounded-full"></span>
-                           Verified User
+               <div className="mb-6">
+                  <h2 className="text-xl font-semibold text-foreground mb-4">Browse transactions</h2>
+                  <div className="flex items-center gap-3">
+                     <div className="flex-1 relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-4 h-4 text-muted-foreground pointer-events-none">
+                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                              <circle cx="11" cy="11" r="8" />
+                              <path d="m21 21-4.35-4.35" />
+                           </svg>
                         </span>
-                     ) : (
-                        <Link
-                           to="/profile"
-                           className="inline-flex items-center gap-1 text-xs text-red-600 font-medium hover:underline"
-                        >
-                           <span className="w-2 h-2 bg-red-600 rounded-full"></span>
-                           Not Verified • Verify World ID &gt;
-                        </Link>
-                     )}
-                  </div>
-               </div>
-
-               {/* Help Icon */}
-               <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                  <HelpCircle className="w-6 h-6" />
-               </button>
-            </div>
-
-            {/* Page Title */}
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Transaction History</h2>
-
-            {/* Search and Filter */}
-            <div className="flex gap-2 mb-6">
-               {/* Search Bar */}
-               <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                     type="text"
-                     placeholder="Search transaction history"
-                     value={searchQuery}
-                     onChange={(e) => setSearchQuery(e.target.value)}
-                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-               </div>
-
-               {/* Filter Button */}
-               <button
-                  onClick={() => setIsFilterModalOpen(true)}
-                  className="p-2 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors"
-               >
-                  <Filter className="w-5 h-5 text-gray-600" />
-               </button>
-            </div>
-
-            {/* Content */}
-            {!hasTransactions ? (
-               // Empty State
-               <div className="flex flex-col items-center justify-center py-16 px-4">
-                  <div className="w-24 h-24 mb-6 bg-gray-100 rounded-full flex items-center justify-center">
-                     <span className="text-4xl">📋</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No transactions yet</h3>
-                  <p className="text-sm text-gray-500 text-center mb-6 max-w-sm">
-                     Your loan activity will appear here once you start borrowing.
-                  </p>
-                  <Link to="/dashboard">
-                     <Button variant="primary" size="lg">
-                        Request a loan
-                     </Button>
-                  </Link>
-               </div>
-            ) : (
-               // Filled State
-               <>
-                  {filteredTransactions.length === 0 ? (
-                     <div className="py-12 text-center">
-                        <p className="text-gray-500">No transactions match your search or filters.</p>
+                        <Input
+                           type="text"
+                           value={searchQuery}
+                           onChange={(e) => setSearchQuery(e.target.value)}
+                           placeholder="Search transactions"
+                           className="pl-9 h-11 rounded-lg border-input"
+                        />
                      </div>
-                  ) : (
+                     <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-11 w-11 rounded-lg shrink-0 text-[#6d57ff] border-input hover:bg-muted/50"
+                        onClick={() => setIsFilterModalOpen(true)}
+                        aria-label="Filter transactions"
+                     >
+                        <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                     </Button>
+                  </div>
+               </div>
+
+               <div className="flex-1 min-w-0">
+                  {isLoading ? (
+                     <Card className="rounded-2xl">
+                        <CardContent className="flex flex-col items-center justify-center py-20">
+                           <div className="w-8 h-8 animate-spin rounded-full border-2 border-[#6d57ff] border-t-transparent" aria-hidden />
+                           <p className="mt-4 text-sm text-muted-foreground">Loading transactions…</p>
+                        </CardContent>
+                     </Card>
+                  ) : displayedTransactions.length > 0 ? (
                      <>
-                        {/* Transaction List */}
-                        <div className="space-y-3">
+                        <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
                            {displayedTransactions.map((transaction) => (
                               <TransactionCard key={transaction.id} transaction={transaction} />
                            ))}
                         </div>
-
-                        {/* Load More */}
-                        {displayedCount < totalCount && (
-                           <div className="mt-6 flex justify-center">
-                              <Button variant="outline" onClick={handleLoadMore}>
-                                 Load More ({displayedCount} of {totalCount})
-                              </Button>
-                           </div>
-                        )}
-
-                        {/* End Message */}
-                        {displayedCount >= totalCount && totalCount > 0 && (
-                           <div className="mt-6 text-center text-sm text-gray-500">No more transactions</div>
-                        )}
+                        <LoadMoreButton
+                           currentCount={displayedCount}
+                           totalCount={totalCount}
+                           onLoadMore={handleLoadMore}
+                        />
                      </>
+                  ) : (
+                     <Card className="rounded-2xl">
+                        <CardContent className="flex flex-col items-center justify-center py-20">
+                           <div className="rounded-full bg-muted p-4 mb-4" aria-hidden>
+                              <svg className="size-10 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                              </svg>
+                           </div>
+                           <p className="text-muted-foreground font-medium mb-2">
+                              {hasTransactions ? 'No transactions match your search or filters.' : 'No transactions yet.'}
+                           </p>
+                           {!hasTransactions && (
+                              <Link to="/lender-board">
+                                 <Button variant="default" size="sm">Go to lender board</Button>
+                              </Link>
+                           )}
+                        </CardContent>
+                     </Card>
                   )}
-               </>
-            )}
+               </div>
+            </main>
          </div>
 
-         {/* Filter Modal */}
          <FilterModal
             isOpen={isFilterModalOpen}
             onClose={() => setIsFilterModalOpen(false)}
-            onApply={handleApplyFilters}
+            onApply={(newFilters) => setFilters(newFilters)}
             currentFilters={filters}
          />
-      </div>
+      </>
    );
 }

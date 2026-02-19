@@ -22,7 +22,7 @@ export default function MobileNav({ buttons, isOpen, onClose, username, dashboar
    return (
       <nav
          ref={navRef}
-         className="absolute top-full left-0 w-full bg-[#171420] border-t border-gray-700 md:hidden z-[60]"
+         className="absolute top-full left-0 w-full md:hidden z-[60] bg-white/10 dark:bg-black/25 backdrop-blur-xl border-t border-white/20 dark:border-white/10 shadow-xl"
          role="navigation"
          aria-label="Mobile navigation"
       >
@@ -31,7 +31,7 @@ export default function MobileNav({ buttons, isOpen, onClose, username, dashboar
                <Link
                   to={dashboardHref}
                   onClick={onClose}
-                  className="text-white text-center text-[22px] cursor-pointer hover:text-gray-300 transition-colors font-normal"
+                  className="text-gray-800 dark:text-gray-200 text-center text-[22px] cursor-pointer hover:text-[#6d57ff] transition-colors font-normal"
                >
                   Dashboard
                </Link>

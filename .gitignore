@@ -59,7 +59,6 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
 !.env.production
 !.env.staging
 !.env.local
@@ -107,3 +106,4 @@ count.txt
 .wrangler
 frontend/.pnpm-store/
 env.keys
+config.bat

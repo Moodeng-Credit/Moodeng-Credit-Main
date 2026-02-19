@@ -1,16 +1,17 @@
 'use client';
 
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { useDispatch } from 'react-redux';
 
 import DatePicker from '@/components/filters/DatePicker';
 import { Button } from '@/components/shadcn/button';
 import { Input } from '@/components/shadcn/input';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
-import { useApiMutation } from '@/lib/api/hooks';
-import { API_ENDPOINTS } from '@/config/apiEndpoints';
+import { createLoan } from '@/store/slices/loanSlice';
+import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
-import { createLoanSchema } from '@/lib/schemas/loans';
+import { WorldId } from '@/types/authTypes';
 import { cn } from '@/lib/utils';
 
 import hippoVerifyImage from '../../../images/hippo_verify.png';
@@ -31,12 +32,12 @@ export default function RequestLoanModal({ isOpen, onClose, user, isConnected = 
    const [reason, setReason] = useState('');
    const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
+   const dispatch = useDispatch<AppDispatch>();
    const modalRef = useRef<HTMLDivElement>(null);
    const borrowAmountInputRef = useRef<HTMLInputElement>(null);
+   const [isSubmitting, setIsSubmitting] = useState(false);
 
-   const createLoanMutation = useApiMutation(API_ENDPOINTS.LOANS.CREATE);
-
-   const isVerified = user?.wld || false;
+   const isVerified = user?.isWorldId === WorldId.ACTIVE;
    const creditLimit = getEffectiveCreditLimit(user?.cs, isVerified);
 
    // Focus management - move focus to borrow amount input when modal opens
@@ -119,33 +120,35 @@ export default function RequestLoanModal({ isOpen, onClose, user, isConnected = 
          return;
       }
 
-      const days = calculateDays();
+      if (!repaymentDate) return;
 
+      // Due date at midnight UTC
+      const d = new Date(repaymentDate);
+      const dueDate = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0)).toISOString();
+
+      const loanData = {
+         borrowerUserId: user?.id ?? '',
+         lenderUserId: '',
+         loanAmount: parseFloat(borrowAmount),
+         totalRepaymentAmount: parseFloat(repaymentAmount),
+         reason: reason.trim(),
+         dueDate
+      };
+
+      setIsSubmitting(true);
       try {
-         // Validate with Zod schema
-         const loanData = createLoanSchema.parse({
-            borrowerUserId: user?.id,
-            loanAmount: parseFloat(borrowAmount),
-            totalRepaymentAmount: parseFloat(repaymentAmount),
-            reason: reason.trim(),
-            days: days,
-            coin: 'USDC'
-         });
-
-         await createLoanMutation.mutateAsync(loanData);
-
-         // Reset form and close modal on success
+         await dispatch(createLoan(loanData)).unwrap();
          setBorrowAmount('');
          setRepaymentAmount('');
          setRepaymentDate(null);
          setReason('');
          setValidationErrors({});
          onClose();
-         
-         // Call onSuccess callback if provided
          onSuccess?.();
       } catch (error) {
          console.error('Loan request failed:', error);
+      } finally {
+         setIsSubmitting(false);
       }
    };
 
@@ -177,8 +180,6 @@ export default function RequestLoanModal({ isOpen, onClose, user, isConnected = 
    }, [isOpen, handleClose]);
 
    if (!isOpen) return null;
-
-   const isSubmitting = createLoanMutation.isPending;
 
    return (
       <div

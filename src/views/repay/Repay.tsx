@@ -11,7 +11,12 @@ export default function Repay() {
    const user = useSelector((state: RootState) => state.auth.user);
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const rawLoans = useSelector((state: RootState) => state.loans?.loans);
-   const allLoans = useMemo(() => [...(rawLoans?.gloans || []), ...(rawLoans?.floans || [])], [rawLoans]);
+   const allLoans = useMemo(() => {
+      const combined = [...(rawLoans?.gloans || []), ...(rawLoans?.floans || [])];
+      const byId = new Map<string, Loan>();
+      combined.forEach((loan) => byId.set(loan.id, loan));
+      return Array.from(byId.values());
+   }, [rawLoans]);
 
    // Filter loans that need repayment (user is borrower, loan is active, not fully paid)
    const loansToRepay = useMemo(() => {

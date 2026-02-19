@@ -5,6 +5,7 @@ import storage from 'redux-persist/lib/storage';
 
 import authSlice from '@/store/slices/authSlice';
 import loanSlice from '@/store/slices/loanSlice';
+import transactionSlice from '@/store/slices/transactionSlice';
 import wagmiSlice from '@/store/slices/wagmiSlice';
 
 const persistConfig = {
@@ -16,6 +17,7 @@ const persistConfig = {
 const rootReducer = combineReducers({
    auth: authSlice,
    loans: loanSlice,
+   transactions: transactionSlice,
    wagmi: wagmiSlice
 });
 
