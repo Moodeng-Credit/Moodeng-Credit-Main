@@ -17,6 +17,10 @@ This document summarizes the current architecture and infrastructure used by Moo
 4. **Web3** wallet connections are handled client-side via RainbowKit/Wagmi.
 5. **Notifications** are sent from Edge Functions using Gmail OAuth2 or Telegram Bot tokens.
 
+## Data / Supabase tables
+- **`public.loans`**: Loan requests and their status (amounts, borrower/lender, repayment status, etc.).
+- **`public.transactions`**: Discrete events per loan, linked to **loans** and **users**. Each row has `loan_id`, `from_user_id`, `to_user_id`, `type` (`loan_requested` | `loan_funded` | `repayment`), `amount`, `currency`, optional `tx_hash`, and `created_at`. Use for transaction history and audit; RLS allows users to read rows where they are `from_user_id` or `to_user_id`.
+
 ## Infrastructure Components
 - **Supabase**
   - Postgres database

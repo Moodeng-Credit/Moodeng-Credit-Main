@@ -51,6 +51,7 @@ node_modules
 # misc
 .DS_Store
 *.pem
+*.pyc
 
 # debug
 npm-debug.log*
@@ -105,3 +106,5 @@ count.txt
 .nitro
 .tanstack
 .wrangler
+frontend/.pnpm-store/
+env.keys
