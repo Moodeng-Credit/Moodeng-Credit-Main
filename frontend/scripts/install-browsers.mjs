@@ -1,7 +1,7 @@
 import { spawnSync } from 'child_process';
 
-if (process.env.CI || process.env.VERCEL) {
-  console.log('CI/Vercel environment detected. Skipping Playwright browser installation.');
+if (process.env.CI || process.env.VERCEL || process.env.DOCKER === '1') {
+  console.log('CI/Vercel/Docker detected. Skipping Playwright browser installation.');
   process.exit(0);
 }
 

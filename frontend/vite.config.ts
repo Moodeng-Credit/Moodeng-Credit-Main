@@ -13,21 +13,21 @@ export default defineConfig(({ mode }) => {
    const isLocal = process.env.npm_lifecycle_event === 'dev:local';
 
    const inDocker = process.env.DOCKER === '1';
-   // Resolve from config file so aliases work regardless of cwd (e.g. pnpm run dev from root)
+   // In Docker: no HTTPS (so http://localhost:3000 works), allow all hosts
+   const useHttps = isLocal && !inDocker;
    const frontendDir = __dirname;
    return {
-      plugins: [react(), isLocal ? mkcert() : null].filter(Boolean),
+      plugins: [react(), useHttps ? mkcert() : null].filter(Boolean),
       resolve: {
          alias: {
             '@': path.resolve(frontendDir, 'src'),
-            // Repo-root src (v2): in Docker it's /app/v2, locally it's ../src from frontend
             '@v2': inDocker ? path.resolve(process.cwd(), 'v2') : path.resolve(frontendDir, '..', 'src')
          }
       },
       server: {
          port: 3000,
          host: inDocker ? '0.0.0.0' : isLocal ? true : false,
-         allowedHosts: ['.ngrok-free.app', '.ngrok.io']
+         allowedHosts: inDocker ? true : ['.ngrok-free.app', '.ngrok.io']
       },
       test: {
          environment: 'jsdom',

@@ -13,8 +13,7 @@ services:
       - /app/node_modules
       # Repo-root src (v2) – available as @v2 in the app
       - ./src:/app/v2
-      # Keys file for dotenvx (decrypt .env.local/.env.staging). Use repo-root env.keys or frontend/.env.keys
-      - ./env.keys:/app/.env.keys
+      # For Docker: copy .env.local and .env.keys from repo root into frontend/ so they are at /app/ in the container.
     environment:
       - NODE_ENV=development
       - DOCKER=1
