@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import Calendar from '@/views/profile/components/Calendar';
+import BorrowerDashboardTab from '@/views/profile/components/tabs/BorrowerDashboardTab';
 import { STAT_CARDS_CONFIG } from '@/views/profile/components/tabs/constants';
 import CreditLevelCard from '@/views/profile/components/tabs/CreditLevelCard';
 import RoleToggle from '@/views/profile/components/tabs/RoleToggle';
@@ -14,18 +15,15 @@ interface DashboardTabProps {
    onPayLoansNow?: () => void;
 }
 
-const DashboardTab = ({ onPayLoansNow }: DashboardTabProps) => {
-   const [activeRole, setActiveRole] = useState<RoleType>('borrower');
-   const { stats, lenderDiversityScore, creditLevels, loanArrays } = useDashboardData(activeRole);
+// ─── Lender view (rendered only when role is 'lender') ───────────────────────
+const LenderDashboardView = ({ onPayLoansNow }: DashboardTabProps) => {
+   const { stats, lenderDiversityScore, creditLevels, loanArrays } = useDashboardData('lender');
 
    return (
-      <section className="flex-1 overflow-auto p-6 space-y-6">
+      <>
          <div className="flex flex-col lg:flex-row gap-6">
             <div className="bg-white rounded-xl p-6 flex-1 max-w-full lg:max-w-[720px] space-y-6">
-               <div className="flex justify-between items-center">
-                  <h2 className="font-extrabold text-xl select-none">Loan Summary</h2>
-                  <RoleToggle activeRole={activeRole} onRoleChange={setActiveRole} />
-               </div>
+               <h2 className="font-extrabold text-xl select-none">Loan Summary</h2>
 
                <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div className="flex-1 max-w-[280px] min-w-[200px]">
@@ -84,8 +82,28 @@ const DashboardTab = ({ onPayLoansNow }: DashboardTabProps) => {
                ))}
             </div>
          </div>
+      </>
+   );
+};
+
+// ─── Main Dashboard tab with role switch ─────────────────────────────────────
+const DashboardTab = ({ onPayLoansNow }: DashboardTabProps) => {
+   const [activeRole, setActiveRole] = useState<RoleType>('borrower');
+
+   return (
+      <section className="flex-1 overflow-auto p-6 space-y-6">
+         <div className="flex justify-end">
+            <RoleToggle activeRole={activeRole} onRoleChange={setActiveRole} />
+         </div>
+
+         {activeRole === 'borrower' ? (
+            <BorrowerDashboardTab onPayLoansNow={onPayLoansNow} />
+         ) : (
+            <LenderDashboardView onPayLoansNow={onPayLoansNow} />
+         )}
       </section>
    );
 };
 
 export default DashboardTab;
+

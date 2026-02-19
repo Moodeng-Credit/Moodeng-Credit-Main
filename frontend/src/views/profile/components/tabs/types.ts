@@ -26,3 +26,13 @@ export interface CreditLevel {
 }
 
 export type RoleType = 'borrower' | 'lender';
+
+export type MilestoneStatus = 'completed' | 'next' | 'locked';
+
+export interface Milestone {
+   id: string;
+   title: string;
+   description: string;
+   status: MilestoneStatus;
+   icon?: string;
+}
