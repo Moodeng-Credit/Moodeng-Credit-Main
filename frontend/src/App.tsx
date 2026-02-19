@@ -30,12 +30,17 @@ import UserProfile from '@/app/user/[username]/page';
 import Ut from '@/app/ut/page';
 import WhyLend from '@/app/whylend/page';
 
+const ROUTES_WITHOUT_HEADER = ['/lender-board', '/history'];
+
 function Layout({ children }: { children: React.ReactNode }) {
+   const location = useLocation();
+   const hideHeader = ROUTES_WITHOUT_HEADER.includes(location.pathname);
+
    return (
       <div className="flex flex-col min-h-screen">
-         <Header />
+         {!hideHeader && <Header />}
          <main className="flex-grow pb-16 md:pb-0">{children}</main>
-         <Footer />
+         {!hideHeader && <Footer />}
          <BottomNavigation />
       </div>
    );
@@ -98,7 +103,9 @@ export default function App() {
                path="/lender-board"
                element={
                   <ProtectedRoute>
-                     <LenderBoard />
+                     <Layout>
+                        <LenderBoard />
+                     </Layout>
                   </ProtectedRoute>
                }
             />

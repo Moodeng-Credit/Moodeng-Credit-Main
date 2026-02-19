@@ -137,6 +137,64 @@ export type Database = {
           },
         ]
       }
+      transactions: {
+        Row: {
+          id: string
+          loan_id: string
+          from_user_id: string | null
+          to_user_id: string | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          amount: number
+          currency: string
+          tx_hash: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          loan_id: string
+          from_user_id?: string | null
+          to_user_id?: string | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          amount: number
+          currency?: string
+          tx_hash?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          loan_id?: string
+          from_user_id?: string | null
+          to_user_id?: string | null
+          type?: Database["public"]["Enums"]["transaction_type"]
+          amount?: number
+          currency?: string
+          tx_hash?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_from_user_id_fkey"
+            columns: ["from_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_to_user_id_fkey"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       point_events: {
         Row: {
           created_at: string
@@ -303,6 +361,7 @@ export type Database = {
         | "weekly_digest"
       loan_status: "Requested" | "Lent"
       repayment_status: "Unpaid" | "Partial" | "Paid"
+      transaction_type: "loan_requested" | "loan_funded" | "repayment"
       world_id_status: "INACTIVE" | "ACTIVE"
     }
     CompositeTypes: {
@@ -439,6 +498,7 @@ export const Constants = {
       ],
       loan_status: ["Requested", "Lent"],
       repayment_status: ["Unpaid", "Partial", "Paid"],
+      transaction_type: ["loan_requested", "loan_funded", "repayment"],
       world_id_status: ["INACTIVE", "ACTIVE"],
     },
   },
