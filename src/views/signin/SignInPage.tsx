@@ -111,7 +111,7 @@ export default function SignInPage() {
          <div
             className="flex flex-col w-full max-w-[440px] min-h-[calc(100vh-3rem)] sm:min-h-[calc(100vh-6rem)] rounded-[20px] overflow-y-auto shrink-0"
             style={{
-               background: 'linear-gradient(180deg, #FBFAFD 0%, #FFFFFF 100%)',
+               // background: 'linear-gradient(180deg, #FBFAFD 0%, #FFFFFF 100%)',
                isolation: 'isolate'
             }}
          >
