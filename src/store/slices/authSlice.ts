@@ -4,7 +4,7 @@ import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
-import { type AuthState, type User, WorldId } from '@/types/authTypes';
+import { type AuthState, type User, type UserRole, WorldId } from '@/types/authTypes';
 
 type UpdateUserPayload = {
    username?: string;
@@ -96,6 +96,7 @@ const mapSupabaseRowToUser = (row: UserRow): User => ({
    nal: row.nal,
    cs: row.cs,
    creditProgressionPaused: row.credit_progression_paused ?? false,
+   userRole: row.user_role ?? undefined,
    createdAt: row.created_at,
    updatedAt: row.updated_at
 });
@@ -278,6 +279,7 @@ export const registerUser = createAsyncThunk(
 
          return {
             isExistingUser: true,
+            reason: 'linked' as const,
             message:
                'An account with this email already exists (likely via Google). A password reset link has been sent to your email. Please use it to set a password and link your email login.'
          };
@@ -310,6 +312,7 @@ export const registerUser = createAsyncThunk(
 
             return {
                isExistingUser: true,
+               reason: 'linked' as const,
                message:
                   'An account with this email already exists (likely via Google). A password reset link has been sent to your email. Please use it to set a password and link your email login.'
             };
@@ -418,6 +421,32 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
 
    if (updateError || !updatedRow) {
       throw updateError ?? new Error('Failed to update user profile');
+   }
+
+   return mapSupabaseRowToUser(updatedRow);
+});
+
+/** Set user_role in Supabase. Single source of truth for role-based routing. */
+export const updateUserRole = createAsyncThunk('auth/updateUserRole', async (role: UserRole) => {
+   const supabase = supabaseClient();
+   const {
+      data: { user },
+      error: sessionError
+   } = await supabase.auth.getUser();
+
+   if (sessionError || !user) {
+      throw sessionError ?? new Error('Not authenticated');
+   }
+
+   const { data: updatedRow, error } = await supabase
+      .from('users')
+      .update({ user_role: role })
+      .eq('id', user.id)
+      .select('*')
+      .single();
+
+   if (error || !updatedRow) {
+      throw error ?? new Error('Failed to update user role');
    }
 
    return mapSupabaseRowToUser(updatedRow);
@@ -550,6 +579,12 @@ const authSlice = createSlice({
             state.username = action.payload.username;
          })
          .addCase(updateUser.rejected, (state, action) => {
+            state.error = (action.error.message as string) || null;
+         })
+         .addCase(updateUserRole.fulfilled, (state, action) => {
+            state.user = action.payload;
+         })
+         .addCase(updateUserRole.rejected, (state, action) => {
             state.error = (action.error.message as string) || null;
          })
          .addCase(fetchUserProfiles.fulfilled, (state, action) => {

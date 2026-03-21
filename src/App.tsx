@@ -17,6 +17,7 @@ import Guide from '@/app/guide/page';
 import Login from '@/app/login/page';
 import SignUp from '@/app/signup/page';
 import AuthSuccess from '@/app/auth-success/page';
+import RoleSelection from '@/app/select-role/page';
 // Import pages
 import Home from '@/app/page';
 import Profile from '@/app/profile/page';
@@ -81,9 +82,17 @@ export default function App() {
                }
             />
             <Route
-               path="/dashboard"
+               path="/select-role"
                element={
                   <ProtectedRoute>
+                     <RoleSelection />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/dashboard"
+               element={
+                  <ProtectedRoute requiresRole>
                      <Layout>
                         <Dashboard />
                      </Layout>
@@ -111,7 +120,7 @@ export default function App() {
             <Route
                path="/profile"
                element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiresRole>
                      <Layout>
                         <Profile />
                      </Layout>

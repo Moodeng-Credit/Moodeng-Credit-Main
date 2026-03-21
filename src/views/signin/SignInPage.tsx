@@ -3,15 +3,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 
 import Loading from '@/components/Loading';
-import { AuthFooter, AuthInputField, DividerWithText, SocialAuthButtons } from '@/components/auth';
+import {
+   AuthErrorAlert,
+   AuthFooter,
+   AuthInputField,
+   DividerWithText,
+   SocialAuthButtons
+} from '@/components/auth';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { Icons } from '@/views/login/components/Icons';
 import { loginUser, loginWithGoogle, loginWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import '@/views/signup/styles/signup.css';
-
-const MASCOT_URL =
-   'https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/63818c0d2e2c11f8d3d69636d4fb34a5c246fd06e7e66b3cd3116ca7901b3ba5?apiKey=e485b3dc4b924975b4554885e21242bb';
 
 export default function SignInPage() {
    const navigate = useNavigate();
@@ -21,30 +24,50 @@ export default function SignInPage() {
    const [password, setPassword] = useState('');
    const [isLoading, setIsLoading] = useState(false);
    const [showAccount, setShowAccount] = useState(false);
+   const [errorType, setErrorType] = useState<'incorrect_credentials' | 'too_many_attempts' | null>(null);
+   const [attemptsRemaining, setAttemptsRemaining] = useState(5);
 
    const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       setShowAccount(false);
+      setErrorType(null);
       if (!email || !password) return;
 
       setIsLoading(true);
       try {
-         await dispatch(loginUser({ email, password })).unwrap();
-         navigate('/dashboard');
+         const result = await dispatch(loginUser({ email, password })).unwrap();
+         navigate(result.user?.userRole ? '/dashboard' : '/select-role');
       } catch (err) {
          const msg = err instanceof Error ? err.message : 'Authentication failed';
+         const errObj = err as { status?: number };
+         const status = errObj?.status ?? 0;
+         const lower = msg.toLowerCase();
+
          const isEmailError =
-            msg.toLowerCase().includes('verify') ||
-            msg.toLowerCase().includes('email') ||
-            msg.toLowerCase().includes('confirm');
+            lower.includes('verify') || lower.includes('email') || lower.includes('confirm');
          if (isEmailError) {
             toast.showToastByConfig('login_error', { error: msg });
-         } else {
-            setShowAccount(true);
+            return;
          }
+
+         const isRateLimited =
+            status === 429 || lower.includes('too many') || lower.includes('rate limit');
+         if (isRateLimited) {
+            setErrorType('too_many_attempts');
+         } else {
+            setErrorType('incorrect_credentials');
+            setAttemptsRemaining((prev) => Math.max(0, prev - 1));
+         }
+         setShowAccount(true);
       } finally {
          setIsLoading(false);
       }
+   };
+
+   const handleRetry = () => {
+      setShowAccount(false);
+      setErrorType(null);
+      setPassword('');
    };
 
    const handleGoogleAuth = async (credential: string) => {
@@ -53,6 +76,7 @@ export default function SignInPage() {
          await dispatch(loginWithGoogle({ googleCredential: credential })).unwrap();
          navigate('/dashboard');
       } catch {
+         setErrorType('incorrect_credentials');
          setShowAccount(true);
       } finally {
          setIsLoading(false);
@@ -62,9 +86,12 @@ export default function SignInPage() {
    const handleTelegramAuth = async (authData: Record<string, string>) => {
       setIsLoading(true);
       try {
-         await dispatch(loginWithTelegram({ telegramAuthData: JSON.stringify(authData) })).unwrap();
-         navigate('/dashboard');
+         const result = await dispatch(
+            loginWithTelegram({ telegramAuthData: JSON.stringify(authData) })
+         ).unwrap();
+         navigate(result.user?.userRole ? '/dashboard' : '/select-role');
       } catch {
+         setErrorType('incorrect_credentials');
          setShowAccount(true);
       } finally {
          setIsLoading(false);
@@ -118,6 +145,13 @@ export default function SignInPage() {
                            value={email}
                            onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                            error={showAccount}
+                           errorMessage={
+                              showAccount && errorType === 'too_many_attempts'
+                                 ? '⚠️ Too many attempts detected'
+                                 : showAccount && errorType === 'incorrect_credentials'
+                                   ? 'Incorrect credentials'
+                                   : undefined
+                           }
                            icon={<Icons.email />}
                         />
                         <AuthInputField
@@ -132,8 +166,12 @@ export default function SignInPage() {
                         />
                      </div>
 
-                     {showAccount && (
-                        <p className="text-sm text-red-500">Invalid credentials. Please try again.</p>
+                     {showAccount && errorType && (
+                        <AuthErrorAlert
+                           type={errorType}
+                           attemptsRemaining={attemptsRemaining}
+                           onRetry={errorType === 'incorrect_credentials' ? handleRetry : undefined}
+                        />
                      )}
 
                      <div className="flex flex-row justify-between items-center gap-2 w-full max-w-[400px] h-6">

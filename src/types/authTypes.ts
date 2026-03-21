@@ -9,6 +9,8 @@ export interface AuthState {
    mal?: number;
    userProfiles: Record<string, User>; // Map of userId -> User profile for batch fetched users
 }
+export type UserRole = 'borrower' | 'lender';
+
 export interface User {
    id: string;
    username: string;
@@ -24,6 +26,8 @@ export interface User {
    nal: number;
    cs: number;
    creditProgressionPaused?: boolean;
+   /** Single source of truth for role-based routing, wallet connect options, and tab bar */
+   userRole?: UserRole | null;
    createdAt: string;
    updatedAt: string;
 }

@@ -225,6 +225,7 @@ export type Database = {
           telegram_id: number | null
           telegram_username: string | null
           updated_at: string | null
+          user_role: "borrower" | "lender" | null
           username: string
           wallet_address: string | null
         }
@@ -245,6 +246,7 @@ export type Database = {
           telegram_id?: number | null
           telegram_username?: string | null
           updated_at?: string | null
+          user_role?: "borrower" | "lender" | null
           username: string
           wallet_address?: string | null
         }
@@ -265,6 +267,7 @@ export type Database = {
           telegram_id?: number | null
           telegram_username?: string | null
           updated_at?: string | null
+          user_role?: "borrower" | "lender" | null
           username?: string
           wallet_address?: string | null
         }
