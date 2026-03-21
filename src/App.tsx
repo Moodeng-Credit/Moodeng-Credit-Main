@@ -143,14 +143,8 @@ export default function App() {
                   </Layout>
                }
             />
-            <Route
-               path="/auth-success"
-               element={
-                  <Layout>
-                     <AuthSuccess />
-                  </Layout>
-               }
-            />
+            <Route path="/auth-success" element={<AuthSuccess />} />
+            <Route path="/auth/confirm" element={<Navigate to="/auth-success?type=created" replace />} />
             <Route
                path="/benefits"
                element={

@@ -24,7 +24,9 @@ export default function SignInPage() {
    const [password, setPassword] = useState('');
    const [isLoading, setIsLoading] = useState(false);
    const [showAccount, setShowAccount] = useState(false);
-   const [errorType, setErrorType] = useState<'incorrect_credentials' | 'too_many_attempts' | null>(null);
+   const [errorType, setErrorType] = useState<
+      'incorrect_credentials' | 'email_not_found' | 'too_many_attempts' | null
+   >(null);
    const [attemptsRemaining, setAttemptsRemaining] = useState(5);
 
    const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
@@ -52,8 +54,12 @@ export default function SignInPage() {
 
          const isRateLimited =
             status === 429 || lower.includes('too many') || lower.includes('rate limit');
+         const isEmailNotFound =
+            lower.includes('user not found') || lower.includes('email not found') || lower.includes('no user');
          if (isRateLimited) {
             setErrorType('too_many_attempts');
+         } else if (isEmailNotFound) {
+            setErrorType('email_not_found');
          } else {
             setErrorType('incorrect_credentials');
             setAttemptsRemaining((prev) => Math.max(0, prev - 1));
@@ -73,8 +79,8 @@ export default function SignInPage() {
    const handleGoogleAuth = async (credential: string) => {
       setIsLoading(true);
       try {
-         await dispatch(loginWithGoogle({ googleCredential: credential })).unwrap();
-         navigate('/dashboard');
+         const result = await dispatch(loginWithGoogle({ googleCredential: credential })).unwrap();
+         navigate(result.user?.userRole ? '/dashboard' : '/select-role');
       } catch {
          setErrorType('incorrect_credentials');
          setShowAccount(true);
@@ -112,16 +118,15 @@ export default function SignInPage() {
             <div className="flex flex-1 flex-col items-center justify-center w-full px-5 py-6 sm:py-10">
                {/* Mascot - 110x96 per design */}
                <img
-                                src='/auth-screen.png'
-
+                  src="/auth-screen.png"
                   alt="Moodeng Mascot"
-                  className="w-[110px] h-[96px] object-contain mb-5"
+                  className="w-[88px] h-[77px] object-contain mb-5"
                />
                <h1 className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em] text-[#040033] text-center mb-1">
                   Welcome back to Moodeng
                </h1>
                <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D] text-center mb-5">
-                  It takes just a few minutes to get started.
+                  Sign in to access your account.
                </p>
 
                {/* Social auth */}
@@ -147,10 +152,12 @@ export default function SignInPage() {
                            error={showAccount}
                            errorMessage={
                               showAccount && errorType === 'too_many_attempts'
-                                 ? '⚠️ Too many attempts detected'
-                                 : showAccount && errorType === 'incorrect_credentials'
-                                   ? 'Incorrect credentials'
-                                   : undefined
+                                 ? 'Too many attempts detected'
+                                 : showAccount && errorType === 'email_not_found'
+                                   ? 'Email not found'
+                                   : showAccount && errorType === 'incorrect_credentials'
+                                     ? 'Incorrect credentials'
+                                     : undefined
                            }
                            icon={<Icons.email />}
                         />
@@ -170,7 +177,11 @@ export default function SignInPage() {
                         <AuthErrorAlert
                            type={errorType}
                            attemptsRemaining={attemptsRemaining}
-                           onRetry={errorType === 'incorrect_credentials' ? handleRetry : undefined}
+                           onRetry={
+                              errorType === 'incorrect_credentials' || errorType === 'email_not_found'
+                                 ? handleRetry
+                                 : undefined
+                           }
                         />
                      )}
 

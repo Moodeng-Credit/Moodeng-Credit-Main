@@ -71,12 +71,15 @@ export default function SignUpPage() {
          navigate('/auth-success?type=verify');
          return;
       }
+      if (data?.user) {
+         navigate('/auth-success?type=created');
+         return;
+      }
       setFullName('');
       setEmail('');
       setPassword('');
       setConfirm('');
-      const user = data?.user;
-      navigate(user?.userRole ? '/dashboard' : '/select-role');
+      navigate('/auth-success?type=created');
    };
 
    const handleFormRegister = async () => {

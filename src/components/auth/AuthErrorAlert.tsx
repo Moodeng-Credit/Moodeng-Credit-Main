@@ -1,4 +1,6 @@
-type AuthErrorAlertType = 'incorrect_credentials' | 'too_many_attempts';
+import { Link } from 'react-router-dom';
+
+type AuthErrorAlertType = 'incorrect_credentials' | 'email_not_found' | 'too_many_attempts';
 
 interface AuthErrorAlertProps {
    type: AuthErrorAlertType;
@@ -37,6 +39,28 @@ export function AuthErrorAlert({ type, attemptsRemaining = 3, onRetry }: AuthErr
                   Contact Support
                </a>
             </div>
+         </div>
+      );
+   }
+
+   if (type === 'email_not_found') {
+      return (
+         <div className="w-full rounded-[10px] border-[0.8px] border-[#FDAFB6] px-4 py-4" style={{ background: 'rgba(251, 55, 72, 0.1)' }}>
+            <p className="text-sm font-medium text-[#4D4359] tracking-[-0.02em]">
+               No account found with this email address.
+            </p>
+            {onRetry && (
+               <p className="mt-2 text-sm text-[#4D4359] tracking-[-0.02em]">
+                  <button type="button" onClick={onRetry} className="font-semibold text-[#8336F0] hover:underline">
+                     Try a different email
+                  </button>
+                  {' or '}
+                  <Link to="/signup" className="font-semibold text-[#8336F0] hover:underline">
+                     Sign up
+                  </Link>
+                  .
+               </p>
+            )}
          </div>
       );
    }

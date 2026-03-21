@@ -1,8 +1,49 @@
 import { JSX } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Check, ChevronRight, HelpCircle } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { ChevronRight, HelpCircle } from 'lucide-react';
 import { Icons } from '@/views/login/components/Icons';
 import AuthCard from '@/views/login/components/AuthCard';
+import type { RootState } from '@/store/store';
+
+function AccountCreatedView(): JSX.Element {
+   const navigate = useNavigate();
+   const user = useSelector((s: RootState) => s.auth.user);
+   const proceedTo = user?.userRole ? '/dashboard' : '/select-role';
+
+   return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white px-6 py-12">
+         <Link
+            to="/faq"
+            className="absolute top-6 right-6 w-10 h-10 rounded-full border border-[#8336F0] flex items-center justify-center text-[#8336F0] hover:bg-purple-50"
+            aria-label="Help"
+         >
+            <HelpCircle className="w-5 h-5" />
+         </Link>
+         <div className="flex flex-col items-center text-center max-w-sm">
+            <img
+               src="/confirm-image.png"
+               alt=""
+               className="mb-6 w-52 h-52 object-contain"
+            />
+            <h1 className="text-2xl font-bold text-[#0A0A29] tracking-tight mb-3">
+               Your account has been created
+            </h1>
+            <p className="text-base text-[#6B7280] leading-relaxed mb-8">
+               Your wallet is used to build your Trust Score and receive USDC loans.
+            </p>
+            <button
+               type="button"
+               onClick={() => navigate(proceedTo)}
+               className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-2xl font-semibold text-white bg-[#6010D2] hover:opacity-95 transition-opacity"
+            >
+               Proceed
+               <ChevronRight className="w-5 h-5" />
+            </button>
+         </div>
+      </div>
+   );
+}
 
 export default function AuthSuccessPage(): JSX.Element {
    const [searchParams] = useSearchParams();
@@ -12,33 +53,7 @@ export default function AuthSuccessPage(): JSX.Element {
 
    if (isCreatedFlow) {
       return (
-         <div className="flex flex-col items-center justify-center min-h-screen bg-white px-6 py-12">
-            <Link
-               to="/faq"
-               className="absolute top-6 right-6 w-10 h-10 rounded-full border border-[#8336F0] flex items-center justify-center text-[#8336F0] hover:bg-purple-50"
-               aria-label="Help"
-            >
-               <HelpCircle className="w-5 h-5" />
-            </Link>
-            <div className="flex flex-col items-center text-center max-w-sm">
-               <div className="w-24 h-24 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 mb-6 shadow-inner">
-                  <Check className="w-14 h-14" strokeWidth={2.5} />
-               </div>
-               <h1 className="text-2xl font-bold text-[#0A0A29] tracking-tight mb-3">
-                  Your account has been created
-               </h1>
-               <p className="text-base text-[#6B7280] leading-relaxed mb-8">
-                  Your wallet is used to build your Trust Score and receive USDC loans.
-               </p>
-               <Link
-                  to="/login"
-                  className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-2xl font-semibold text-white bg-[#6010D2] hover:opacity-95 transition-opacity"
-               >
-                  Proceed
-                  <ChevronRight className="w-5 h-5" />
-               </Link>
-            </div>
-         </div>
+         <AccountCreatedView />
       );
    }
 
