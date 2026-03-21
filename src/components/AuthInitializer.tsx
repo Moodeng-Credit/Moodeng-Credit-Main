@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import { clearAuth, fetchUser } from '@/store/slices/authSlice';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -10,13 +10,23 @@ export function AuthInitializer() {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
    const location = useLocation();
-   const supabase = getSupabaseBrowserClient();
 
    // Get current auth state from Redux (might be persisted)
    const { user, username } = useSelector((state: RootState) => state.auth);
    const wasAuthenticated = !!(user?.id && username);
 
    useEffect(() => {
+      if (!isSupabaseBrowserConfigured()) {
+         if (import.meta.env.DEV) {
+            console.warn(
+               '[AuthInitializer] Supabase not configured (env encrypted or missing). Auth sync disabled. Use `pnpm run dev` with dotenvx + .env.keys.'
+            );
+         }
+         return;
+      }
+
+      const supabase = getSupabaseBrowserClient();
+
       // Listen for auth state changes
       const {
          data: { subscription }
@@ -66,7 +76,7 @@ export function AuthInitializer() {
       return () => {
          subscription.unsubscribe();
       };
-   }, [dispatch, supabase, navigate, location.pathname, wasAuthenticated]);
+   }, [dispatch, navigate, location.pathname, wasAuthenticated]);
 
    return null;
 }

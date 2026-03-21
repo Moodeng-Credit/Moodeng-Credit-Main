@@ -116,14 +116,14 @@ export const menuAuthButtons: ActionButtonConfig[] = [
       text: 'Log in',
       bgColor: 'bg-black',
       textColor: 'text-white',
-      href: '/login#login',
+      href: '/login',
       width: 'w-full p-4'
    },
    {
       text: 'Sign up',
       bgColor: 'bg-[#6d57ff]',
       textColor: 'text-white',
-      href: '/login',
+      href: '/signup',
       width: 'w-full p-4'
    }
 ];

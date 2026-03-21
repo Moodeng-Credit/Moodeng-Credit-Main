@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 interface TelegramAuthButtonProps {
    onAuth: (authData: Record<string, string>) => void;
    buttonSize?: 'large' | 'medium' | 'small';
+   /** Hide loading state when embedding in custom-styled buttons */
+   hideLoading?: boolean;
 }
 
 declare global {
@@ -15,7 +17,11 @@ declare global {
    }
 }
 
-export default function TelegramAuthButton({ onAuth, buttonSize = 'large' }: TelegramAuthButtonProps) {
+export default function TelegramAuthButton({
+   onAuth,
+   buttonSize = 'large',
+   hideLoading = false
+}: TelegramAuthButtonProps) {
    const containerRef = useRef<HTMLDivElement>(null);
    const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME;
    const onAuthRef = useRef(onAuth);
@@ -82,7 +88,7 @@ export default function TelegramAuthButton({ onAuth, buttonSize = 'large' }: Tel
 
    return (
       <div>
-         {isLoading && (
+         {!hideLoading && isLoading && (
             <div className="flex justify-center py-4">
                <div className="flex flex-col items-center gap-3 w-full px-4">
                   {/* Animated loading bar skeleton */}
@@ -113,7 +119,11 @@ export default function TelegramAuthButton({ onAuth, buttonSize = 'large' }: Tel
                `}</style>
             </div>
          )}
-         <div ref={containerRef} className="flex justify-center" style={{ display: isLoading ? 'none' : 'flex' }} />
+         <div
+            ref={containerRef}
+            className="flex justify-center min-w-0 min-h-0"
+            style={{ display: hideLoading || !isLoading ? 'flex' : 'none' }}
+         />
       </div>
    );
 }

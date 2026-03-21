@@ -1,3 +1,6 @@
+/* SF Pro Display - primary app font */
+@import url('https://cdn.jsdelivr.net/npm/@qpokychuk/sf-pro-display@1.0.2/index.css');
+
 @import url('https://fonts.googleapis.com/css?family=Telex:400|JetBrains+Mono:500|Cabin+Condensed:700,400|Inter:400|DM+Sans:500,400|Poppins:500,600|Fira+Code:400,700');
 @import url('https://fonts.googleapis.com/css?family=Telex:400|Geist:500|Inter:500,400,800');
 @font-face {
@@ -51,6 +54,7 @@ html,
 body {
    margin: 0px;
    height: 100%;
+   font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 button:focus-visible {

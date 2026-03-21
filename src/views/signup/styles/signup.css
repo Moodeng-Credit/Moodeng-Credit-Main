@@ -1,0 +1,19 @@
+/* Auth pages - OAuth buttons per design (400px, 56px, 12px radius) */
+.auth-oauth-btn {
+   width: 100%;
+   max-width: 400px;
+}
+
+.auth-oauth-btn .g_id_signin {
+   width: 100% !important;
+}
+
+.auth-oauth-btn .g_id_signin > div {
+   width: 100% !important;
+   max-width: 100% !important;
+}
+
+.auth-oauth-btn iframe {
+   min-height: 56px !important;
+   border-radius: 12px !important;
+}
