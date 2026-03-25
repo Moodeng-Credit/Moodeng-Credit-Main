@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { Send } from 'lucide-react';
 
@@ -36,6 +37,11 @@ export function SocialAuthButtons({
 }: SocialAuthButtonsProps) {
    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
    const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME;
+   const [origin, setOrigin] = useState('');
+
+   useEffect(() => {
+      setOrigin(window.location.origin);
+   }, []);
 
    const googleLabel = isSignUp ? 'Sign Up with Google' : 'Sign In with Google';
    const telegramLabel = isSignUp ? 'Sign Up with Telegram' : 'Sign In with Telegram';
@@ -78,6 +84,7 @@ export function SocialAuthButtons({
                </div>
             </div>
          )}
+     
 
          {/* Telegram: custom UI overlay, hidden widget receives clicks */}
          {botUsername && (

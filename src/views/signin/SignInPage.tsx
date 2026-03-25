@@ -38,7 +38,7 @@ export default function SignInPage() {
       setIsLoading(true);
       try {
          const result = await dispatch(loginUser({ email, password })).unwrap();
-         navigate(result.user?.userRole ? '/dashboard' : '/select-role');
+         navigate('/dashboard', { replace: true });
       } catch (err) {
          const msg = err instanceof Error ? err.message : 'Authentication failed';
          const errObj = err as { status?: number };
@@ -53,7 +53,13 @@ export default function SignInPage() {
          }
 
          const isRateLimited =
-            status === 429 || lower.includes('too many') || lower.includes('rate limit');
+            status === 429 ||
+            lower.includes('too many') ||
+            lower.includes('rate limit') ||
+            lower.includes('temporarily restricted') ||
+            lower.includes('locked out') ||
+            lower.includes('multiple failed') ||
+            /\b0\s+attempts?\s+remaining\b/.test(lower);
          const isEmailNotFound =
             lower.includes('user not found') || lower.includes('email not found') || lower.includes('no user');
          if (isRateLimited) {
@@ -61,8 +67,9 @@ export default function SignInPage() {
          } else if (isEmailNotFound) {
             setErrorType('email_not_found');
          } else {
-            setErrorType('incorrect_credentials');
-            setAttemptsRemaining((prev) => Math.max(0, prev - 1));
+            const nextAttempts = Math.max(0, attemptsRemaining - 1);
+            setAttemptsRemaining(nextAttempts);
+            setErrorType(nextAttempts === 0 ? 'too_many_attempts' : 'incorrect_credentials');
          }
          setShowAccount(true);
       } finally {
@@ -80,7 +87,7 @@ export default function SignInPage() {
       setIsLoading(true);
       try {
          const result = await dispatch(loginWithGoogle({ googleCredential: credential })).unwrap();
-         navigate(result.user?.userRole ? '/dashboard' : '/select-role');
+         navigate('/dashboard', { replace: true });
       } catch {
          setErrorType('incorrect_credentials');
          setShowAccount(true);
@@ -95,7 +102,7 @@ export default function SignInPage() {
          const result = await dispatch(
             loginWithTelegram({ telegramAuthData: JSON.stringify(authData) })
          ).unwrap();
-         navigate(result.user?.userRole ? '/dashboard' : '/select-role');
+         navigate('/dashboard', { replace: true });
       } catch {
          setErrorType('incorrect_credentials');
          setShowAccount(true);

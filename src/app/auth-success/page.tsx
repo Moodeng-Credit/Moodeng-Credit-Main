@@ -1,15 +1,11 @@
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useSelector } from 'react-redux';
 import { ChevronRight, HelpCircle } from 'lucide-react';
 import { Icons } from '@/views/login/components/Icons';
 import AuthCard from '@/views/login/components/AuthCard';
-import type { RootState } from '@/store/store';
 
 function AccountCreatedView(): JSX.Element {
    const navigate = useNavigate();
-   const user = useSelector((s: RootState) => s.auth.user);
-   const proceedTo = user?.userRole ? '/dashboard' : '/select-role';
 
    return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-white px-6 py-12">
@@ -34,7 +30,7 @@ function AccountCreatedView(): JSX.Element {
             </p>
             <button
                type="button"
-               onClick={() => navigate(proceedTo)}
+               onClick={() => navigate('/dashboard', { replace: true })}
                className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-2xl font-semibold text-white bg-[#6010D2] hover:opacity-95 transition-opacity"
             >
                Proceed

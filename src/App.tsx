@@ -16,8 +16,8 @@ import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
 import Login from '@/app/login/page';
 import SignUp from '@/app/signup/page';
+import AuthConfirm from '@/app/auth/confirm/page';
 import AuthSuccess from '@/app/auth-success/page';
-import RoleSelection from '@/app/select-role/page';
 // Import pages
 import Home from '@/app/page';
 import Profile from '@/app/profile/page';
@@ -82,17 +82,9 @@ export default function App() {
                }
             />
             <Route
-               path="/select-role"
-               element={
-                  <ProtectedRoute>
-                     <RoleSelection />
-                  </ProtectedRoute>
-               }
-            />
-            <Route
                path="/dashboard"
                element={
-                  <ProtectedRoute requiresRole>
+                  <ProtectedRoute>
                      <Layout>
                         <Dashboard />
                      </Layout>
@@ -120,7 +112,7 @@ export default function App() {
             <Route
                path="/profile"
                element={
-                  <ProtectedRoute requiresRole>
+                  <ProtectedRoute>
                      <Layout>
                         <Profile />
                      </Layout>
@@ -144,7 +136,7 @@ export default function App() {
                }
             />
             <Route path="/auth-success" element={<AuthSuccess />} />
-            <Route path="/auth/confirm" element={<Navigate to="/auth-success?type=created" replace />} />
+            <Route path="/auth/confirm" element={<AuthConfirm />} />
             <Route
                path="/benefits"
                element={

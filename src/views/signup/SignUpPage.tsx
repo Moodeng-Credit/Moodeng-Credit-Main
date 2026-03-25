@@ -58,7 +58,8 @@ export default function SignUpPage() {
       const data = result as {
          isExistingUser?: boolean;
          isNewUser?: boolean;
-         user?: { userRole?: string };
+         needsEmailVerification?: boolean;
+         user?: { id?: string; userRole?: string | null };
          reason?: 'linked' | 'taken';
       };
       if (data?.isExistingUser) {
@@ -68,6 +69,14 @@ export default function SignUpPage() {
          return;
       }
       if (data?.isNewUser) {
+         if (data.needsEmailVerification) {
+            navigate('/auth-success?type=verify');
+            return;
+         }
+         if (data.user?.id) {
+            navigate('/dashboard');
+            return;
+         }
          navigate('/auth-success?type=verify');
          return;
       }

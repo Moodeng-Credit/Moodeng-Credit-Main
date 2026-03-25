@@ -201,7 +201,9 @@ export const loginUser = createAsyncThunk('auth/login', async ({ email, password
    if (error) {
       if (error.code === 'email_not_confirmed') {
          // Auto-resend verification email
-         const redirectUrl = import.meta.env.VITE_REDIRECT_URL || 'http://localhost:3000/auth/confirm';
+         const redirectUrl =
+            import.meta.env.VITE_REDIRECT_URL ||
+            (typeof window !== 'undefined' ? `${window.location.origin}/auth/confirm` : 'http://localhost:3000/auth/confirm');
          const { error: resendError } = await supabase.auth.resend({
             type: 'signup',
             email,
@@ -285,8 +287,9 @@ export const registerUser = createAsyncThunk(
          };
       }
 
-      // Get the redirect URL from environment variables
-      const redirectUrl = import.meta.env.VITE_REDIRECT_URL || 'http://localhost:3000/auth/confirm';
+      const redirectUrl =
+         import.meta.env.VITE_REDIRECT_URL ||
+         (typeof window !== 'undefined' ? `${window.location.origin}/auth/confirm` : 'http://localhost:3000/auth/confirm');
 
       const { data, error } = await supabase.auth.signUp({
          email: userData.email,
@@ -320,10 +323,23 @@ export const registerUser = createAsyncThunk(
          throw error;
       }
 
+      const {
+         data: { session }
+      } = await supabase.auth.getSession();
+
+      if (session?.user) {
+         const user = await fetchCurrentUserProfile();
+         return {
+            username: user.username,
+            user,
+            isNewUser: true as const
+         };
+      }
+
       return {
          username: userData.username,
-         user: data.user,
-         isNewUser: true
+         isNewUser: true as const,
+         needsEmailVerification: true as const
       };
    }
 );
@@ -528,8 +544,19 @@ const authSlice = createSlice({
          })
          .addCase(registerUser.fulfilled, (state, action) => {
             state.isLoading = false;
-            state.username = action.payload.username;
-            state.user = action.payload.user;
+            const p = action.payload;
+            if ('isExistingUser' in p && p.isExistingUser) {
+               return;
+            }
+            if ('needsEmailVerification' in p && p.needsEmailVerification) {
+               state.user = defaultUser;
+               state.username = null;
+               return;
+            }
+            if ('user' in p && p.user) {
+               state.username = p.username ?? null;
+               state.user = p.user;
+            }
          })
          .addCase(registerUser.rejected, (state, action) => {
             state.isLoading = false;

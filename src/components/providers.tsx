@@ -10,6 +10,7 @@ import { WagmiProvider, useAccount, useConnect, useConnections } from 'wagmi';
 
 import { ToastProvider } from '@/components/ToastSystem/contexts/ToastContext';
 import ToastContainer from '@/components/ToastSystem/ToastContainer';
+import Loading from '@/components/Loading';
 import { ToastInitializer } from '@/components/ToastSystem/ToastInitializer';
 import { WalletSyncInitializer } from '@/components/WalletSyncInitializer';
 import { AuthInitializer } from '@/components/AuthInitializer';
@@ -119,7 +120,7 @@ export function Providers({ children }: { children: ReactNode }) {
 
    return (
       <Provider store={store}>
-         <PersistGate loading={null} persistor={persistor}>
+         <PersistGate loading={<Loading />} persistor={persistor}>
             <StoreInitializer />
             <WagmiProvider config={config}>
                <QueryClientProvider client={queryClient}>
