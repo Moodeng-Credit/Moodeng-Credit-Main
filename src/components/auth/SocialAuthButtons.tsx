@@ -1,12 +1,12 @@
-import { useEffect } from 'react';
-import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import { useState } from 'react';
 
 import TelegramAuthButton from '@/components/TelegramAuthButton';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 interface SocialAuthButtonsProps {
    isSignUp: boolean;
-   onGoogleSuccess: (credential: string) => void;
-   onGoogleError: () => void;
+   onGoogleSuccess?: (credential: string) => void;
+   onGoogleError?: () => void;
    onTelegramAuth: (authData: Record<string, string>) => void;
 }
 
@@ -24,64 +24,57 @@ const GoogleLogo = () => (
 
 export function SocialAuthButtons({
    isSignUp,
-   onGoogleSuccess,
-   onGoogleError,
    onTelegramAuth
 }: SocialAuthButtonsProps) {
    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-   const rawBotUsername = "moodengnewbranchbot";
-   const botUsername = "moodengnewbranchbot"?.trim().replace(/^@/, '');
+   const botUsername = 'moodengnewbranchbot';
+   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
    const googleLabel = isSignUp ? 'Sign Up with Google' : 'Sign In with Google';
 
-   useEffect(() => {
-      console.debug('[SocialAuthButtons] render state', {
-         mode: isSignUp ? 'signup' : 'signin',
-         hasGoogleClientId: !!clientId,
-         rawBotUsername,
-         normalizedBotUsername: botUsername
-      });
-   }, [botUsername, clientId, isSignUp, rawBotUsername]);
+   const handleGoogleClick = async () => {
+      if (isGoogleLoading) return;
+      setIsGoogleLoading(true);
+      try {
+         const supabase = getSupabaseBrowserClient();
+         const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+               redirectTo: `${window.location.origin}/auth/confirm`,
+            },
+         });
+         if (error) {
+            console.error('[SocialAuthButtons] Google OAuth error:', error.message);
+            setIsGoogleLoading(false);
+         }
+         // If successful, the browser redirects — no need to reset loading state
+      } catch (err) {
+         console.error('[SocialAuthButtons] Google OAuth exception:', err);
+         setIsGoogleLoading(false);
+      }
+   };
 
    return (
       <div className="flex flex-col gap-4 w-full max-w-[400px]">
-         {/* Google: custom UI overlay, hidden GoogleLogin receives clicks */}
+         {/* Google: uses Supabase OAuth redirect flow */}
          {clientId && (
-            <div
-               className={`${btnBase} relative bg-[#FDFCFD] border border-[#B5ACBE] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] overflow-hidden`}
+            <button
+               type="button"
+               onClick={handleGoogleClick}
+               disabled={isGoogleLoading}
+               className={`${btnBase} bg-[#FDFCFD] border border-[#B5ACBE] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] ${
+                  isGoogleLoading ? 'opacity-60 cursor-not-allowed' : ''
+               }`}
             >
-               <div className="absolute inset-0 flex items-center justify-center gap-2.5 pointer-events-none z-10">
-                  <GoogleLogo />
-                  <span
-                     className="text-base font-medium tracking-[-0.02em] text-[#141218]"
-                     style={{ fontFamily: 'SF Pro Display, sans-serif' }}
-                  >
-                     {googleLabel}
-                  </span>
-               </div>
-               <div
-                  className="absolute inset-0 opacity-0 [&_.g_id_signin]:!w-full [&_.g_id_signin]:!h-full [&_.g_id_signin]>div:!w-full [&_.g_id_signin]>div:!h-full"
-                  aria-hidden
+               <GoogleLogo />
+               <span
+                  className="text-base font-medium tracking-[-0.02em] text-[#141218]"
+                  style={{ fontFamily: 'SF Pro Display, sans-serif' }}
                >
-                  <GoogleOAuthProvider clientId={clientId}>
-                     <GoogleLogin
-                        onSuccess={(r) => {
-                           if (r?.credential) onGoogleSuccess(r.credential);
-                           else onGoogleError();
-                        }}
-                        onError={onGoogleError}
-                        text={isSignUp ? 'signup_with' : 'signin_with'}
-                        size="large"
-                        width="400"
-                        theme="outline"
-                        shape="rectangular"
-                        useOneTap={false}
-                     />
-                  </GoogleOAuthProvider>
-               </div>
-            </div>
+                  {isGoogleLoading ? 'Redirecting...' : googleLabel}
+               </span>
+            </button>
          )}
-     
 
          {/* Telegram: show the real Telegram widget directly */}
          {botUsername && (
