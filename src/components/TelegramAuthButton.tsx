@@ -143,21 +143,7 @@ export default function TelegramAuthButton({
                   </div>
                   <p className="text-sm text-gray-500 font-medium">Loading Telegram...</p>
                </div>
-               <style>{`
-                  @keyframes shimmer {
-                     0% {
-                        background-position: -200% 0;
-                        opacity: 0.7;
-                     }
-                     50% {
-                        opacity: 1;
-                     }
-                     100% {
-                        background-position: 200% 0;
-                        opacity: 0.7;
-                     }
-                  }
-               `}</style>
+         
             </div>
          )}
          <div
