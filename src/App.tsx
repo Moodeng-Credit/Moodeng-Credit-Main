@@ -18,6 +18,9 @@ import Login from '@/app/login/page';
 import SignUp from '@/app/signup/page';
 import AuthConfirm from '@/app/auth/confirm/page';
 import AuthSuccess from '@/app/auth-success/page';
+import OnboardingRole from '@/app/onboarding/role/page';
+import OnboardingWelcome from '@/app/onboarding/welcome/page';
+import WalletConnect from '@/app/wallet-connect/page';
 // Import pages
 import Home from '@/app/page';
 import Profile from '@/app/profile/page';
@@ -136,6 +139,30 @@ export default function App() {
                }
             />
             <Route path="/auth-success" element={<AuthSuccess />} />
+            <Route
+               path="/onboarding/role"
+               element={
+                  <ProtectedRoute>
+                     <OnboardingRole />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/onboarding/welcome"
+               element={
+                  <ProtectedRoute>
+                     <OnboardingWelcome />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/wallet-connect"
+               element={
+                  <ProtectedRoute>
+                     <WalletConnect />
+                  </ProtectedRoute>
+               }
+            />
             <Route path="/auth/confirm" element={<AuthConfirm />} />
             <Route
                path="/benefits"

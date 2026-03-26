@@ -14,6 +14,7 @@ import Loading from '@/components/Loading';
 import { ToastInitializer } from '@/components/ToastSystem/ToastInitializer';
 import { WalletSyncInitializer } from '@/components/WalletSyncInitializer';
 import { AuthInitializer } from '@/components/AuthInitializer';
+import { SessionBootstrapGate } from '@/components/SessionBootstrapGate';
 
 import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import { setStoreRef } from '@/lib/axios';
@@ -128,9 +129,11 @@ export function Providers({ children }: { children: ReactNode }) {
                      <WalletConnectionLogger />
                      <ToastProvider>
                         <AuthInitializer />
-                        <ToastInitializer />
-                        <WalletSyncInitializer />
-                        {children}
+                        <SessionBootstrapGate>
+                           <ToastInitializer />
+                           <WalletSyncInitializer />
+                           {children}
+                        </SessionBootstrapGate>
                         <ToastContainer />
                      </ToastProvider>
                   </RainbowKitProvider>

@@ -8,6 +8,7 @@ import Loading from '@/components/Loading';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import TextWithLine from '@/components/ui/TextWithLine';
 
+import { getPostAuthEntryPath } from '@/lib/auth/navigation';
 import {
    loginUser,
    loginWithGoogle,
@@ -96,7 +97,11 @@ export default function AuthFormSection(): JSX.Element {
                return;
             }
             clear();
-            navigate('/dashboard');
+            if (payload?.user?.id) {
+               navigate(getPostAuthEntryPath(payload.user), { replace: true });
+            } else {
+               navigate('/dashboard', { replace: true });
+            }
          } else {
             const errorMsg =
                (resultAction.payload as Record<string, string>)?.message ||

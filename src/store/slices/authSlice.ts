@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
 import { type AuthState, type User, type UserRole, WorldId } from '@/types/authTypes';
@@ -188,51 +188,65 @@ const initialState: AuthState = {
    username: null,
    isLoading: false,
    error: null,
+   sessionBootstrapStatus: 'pending',
    userProfiles: {}
 };
 
-export const loginUser = createAsyncThunk('auth/login', async ({ email, password }: { email: string; password: string }) => {
-   const supabase = supabaseClient();
-   const { error } = await supabase.auth.signInWithPassword({
+export const loginUser = createAsyncThunk(
+   'auth/login',
+   async ({
       email,
-      password
-   });
-
-   if (error) {
-      if (error.code === 'email_not_confirmed') {
-         // Auto-resend verification email
-         const redirectUrl =
-            import.meta.env.VITE_REDIRECT_URL ||
-            (typeof window !== 'undefined' ? `${window.location.origin}/auth/confirm` : 'http://localhost:3000/auth/confirm');
-         const { error: resendError } = await supabase.auth.resend({
-            type: 'signup',
+      password,
+      persistSession = true
+   }: {
+      email: string;
+      password: string;
+      /** When false, session is not written to persistent storage (tab-session style). */
+      persistSession?: boolean;
+   }) => {
+      const supabase = supabaseClient();
+      const { error } = await supabase.auth.signInWithPassword(
+         {
             email,
-            options: {
-               emailRedirectTo: redirectUrl
-            }
-         });
+            password
+         },
+         { persistSession } as { persistSession: boolean }
+      );
 
-         if (resendError) {
-            console.error('Failed to resend verification email:', resendError);
+      if (error) {
+         if (error.code === 'email_not_confirmed') {
+            const redirectUrl =
+               import.meta.env.VITE_REDIRECT_URL ||
+               (typeof window !== 'undefined' ? `${window.location.origin}/auth/confirm` : 'http://localhost:3000/auth/confirm');
+            const { error: resendError } = await supabase.auth.resend({
+               type: 'signup',
+               email,
+               options: {
+                  emailRedirectTo: redirectUrl
+               }
+            });
+
+            if (resendError) {
+               console.error('Failed to resend verification email:', resendError);
+            }
+
+            const emailNotConfirmedError = new Error(
+               'Please verify your email before signing in. A verification email has been sent to your inbox.'
+            );
+            (emailNotConfirmedError as Error & { code: string }).code = 'email_not_confirmed';
+            throw emailNotConfirmedError;
          }
 
-         const emailNotConfirmedError = new Error(
-            'Please verify your email before signing in. A verification email has been sent to your inbox.'
-         );
-         (emailNotConfirmedError as Error & { code: string }).code = 'email_not_confirmed';
-         throw emailNotConfirmedError;
+         throw error;
       }
 
-      // For other errors, throw as-is
-      throw error;
+      const user = await fetchCurrentUserProfile();
+      return {
+         username: user.username,
+         user
+      };
    }
-
-   const user = await fetchCurrentUserProfile();
-   return {
-      username: user.username,
-      user
-   };
-});
+);
 
 export const loginWithGoogle = createAsyncThunk('auth/loginWithGoogle', async ({ googleCredential }: { googleCredential: string }) => {
    const user = await signInWithGoogleCredential(googleCredential);
@@ -380,6 +394,66 @@ export const registerWithTelegram = createAsyncThunk(
 
 export const fetchUser = createAsyncThunk('auth/fetchUser', async () => fetchCurrentUserProfile());
 
+/**
+ * First paint: read Supabase session from storage, refresh if expired, hydrate Redux.
+ * Must run once after redux-persist rehydration.
+ */
+export const bootstrapSession = createAsyncThunk('auth/bootstrapSession', async (_, { dispatch }) => {
+   if (!isSupabaseBrowserConfigured()) {
+      dispatch({ type: 'auth/clearAuth' });
+      return { hasSession: false as const };
+   }
+
+   const supabase = supabaseClient();
+   const {
+      data: { session },
+      error: sessionErr
+   } = await supabase.auth.getSession();
+
+   if (sessionErr) {
+      if (import.meta.env.DEV) {
+         console.warn('[bootstrapSession] getSession:', sessionErr.message);
+      }
+      clearAuthCookieClient();
+      dispatch({ type: 'auth/clearAuth' });
+      return { hasSession: false as const };
+   }
+
+   if (!session) {
+      clearAuthCookieClient();
+      dispatch({ type: 'auth/clearAuth' });
+      return { hasSession: false as const };
+   }
+
+   const nowSec = Math.floor(Date.now() / 1000);
+   const exp = session.expires_at;
+   if (exp != null && exp < nowSec - 30) {
+      const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+      if (refreshErr || !refreshed.session) {
+         if (import.meta.env.DEV) {
+            console.warn('[bootstrapSession] refreshSession:', refreshErr?.message);
+         }
+         await supabase.auth.signOut();
+         clearAuthCookieClient();
+         dispatch({ type: 'auth/clearAuth' });
+         return { hasSession: false as const };
+      }
+   }
+
+   try {
+      await dispatch(fetchUser()).unwrap();
+      return { hasSession: true as const };
+   } catch (e) {
+      if (import.meta.env.DEV) {
+         console.warn('[bootstrapSession] fetchUser failed:', e);
+      }
+      await supabase.auth.signOut();
+      clearAuthCookieClient();
+      dispatch({ type: 'auth/clearAuth' });
+      return { hasSession: false as const };
+   }
+});
+
 export const getUserProfile = createAsyncThunk('auth/getUserProfile', async (username: string) => {
    const user = await fetchUserProfileByUsername(username);
    return { user };
@@ -499,6 +573,15 @@ const authSlice = createSlice({
    },
    extraReducers: (builder) => {
       builder
+         .addCase(bootstrapSession.pending, (state) => {
+            state.sessionBootstrapStatus = 'pending';
+         })
+         .addCase(bootstrapSession.fulfilled, (state) => {
+            state.sessionBootstrapStatus = 'ready';
+         })
+         .addCase(bootstrapSession.rejected, (state) => {
+            state.sessionBootstrapStatus = 'ready';
+         })
          .addCase(loginUser.pending, (state) => {
             state.isLoading = true;
             state.error = null;
