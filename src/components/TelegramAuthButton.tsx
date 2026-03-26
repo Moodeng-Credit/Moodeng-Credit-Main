@@ -23,27 +23,41 @@ export default function TelegramAuthButton({
    hideLoading = false
 }: TelegramAuthButtonProps) {
    const containerRef = useRef<HTMLDivElement>(null);
-   const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME;
+   const rawBotUsername = "moodengnewbranchbot";
+   const botUsername = rawBotUsername?.trim().replace(/^@/, '');
    const onAuthRef = useRef(onAuth);
    const [isLoading, setIsLoading] = useState(true);
+   const debugTag = '[TelegramAuthButton]';
 
    useEffect(() => {
       onAuthRef.current = onAuth;
    });
 
    useEffect(() => {
+      console.debug(`${debugTag} init`, {
+         rawBotUsername,
+         normalizedBotUsername: botUsername,
+         buttonSize,
+         hideLoading
+      });
+
       if (!botUsername) {
-         console.error('Telegram bot username not configured');
+         console.error(`${debugTag} bot username not configured`, {
+            rawBotUsername,
+            normalizedBotUsername: botUsername
+         });
          setIsLoading(false);
          return;
       }
 
       const existingScript = document.getElementById('telegram-login-script');
       if (existingScript) {
+         console.debug(`${debugTag} removing existing script before re-mount`);
          existingScript.remove();
       }
 
       (window as unknown as Record<string, unknown>).onTelegramAuth = (user: Record<string, string>) => {
+         console.debug(`${debugTag} onTelegramAuth callback fired`, user);
          onAuthRef.current(user);
       };
 
@@ -55,26 +69,52 @@ export default function TelegramAuthButton({
       script.setAttribute('data-size', buttonSize);
       script.setAttribute('data-onauth', 'onTelegramAuth(user)');
       script.setAttribute('data-request-access', 'write');
+      console.debug(`${debugTag} script configured`, {
+         src: script.src,
+         telegramLoginAttr: script.getAttribute('data-telegram-login'),
+         sizeAttr: script.getAttribute('data-size'),
+         origin: window.location.origin
+      });
 
       // Mark as loaded once the script finishes loading
       script.onload = () => {
+         console.debug(`${debugTag} script loaded`);
          // Small delay to ensure widget renders completely
          setTimeout(() => {
+            const hasIframe = !!containerRef.current?.querySelector('iframe');
+            if (!hasIframe) {
+               console.error(`${debugTag} widget iframe not found after script load`, {
+                  html: containerRef.current?.innerHTML ?? '',
+                  childElementCount: containerRef.current?.childElementCount ?? 0,
+                  origin: window.location.origin
+               });
+            } else {
+               console.debug(`${debugTag} widget iframe rendered successfully`);
+            }
             setIsLoading(false);
          }, 100);
       };
 
       script.onerror = () => {
-         console.error('Failed to load Telegram widget script');
+         console.error(`${debugTag} failed to load Telegram widget script`, {
+            src: script.src,
+            origin: window.location.origin
+         });
          setIsLoading(false);
       };
 
       if (containerRef.current) {
          containerRef.current.innerHTML = '';
          containerRef.current.appendChild(script);
+         console.debug(`${debugTag} script appended to container`, {
+            childElementCount: containerRef.current.childElementCount
+         });
+      } else {
+         console.error(`${debugTag} containerRef is null, cannot append widget script`);
       }
 
       return () => {
+         console.debug(`${debugTag} cleanup`);
          const win = window as unknown as Record<string, unknown>;
          if (win.onTelegramAuth) {
             delete win.onTelegramAuth;
@@ -83,6 +123,7 @@ export default function TelegramAuthButton({
    }, [buttonSize, botUsername]);
 
    if (!botUsername) {
+      console.debug(`${debugTag} returning null because bot username missing`);
       return null;
    }
 

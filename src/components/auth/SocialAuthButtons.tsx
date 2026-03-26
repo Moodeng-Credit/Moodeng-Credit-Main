@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
-import { Send } from 'lucide-react';
 
 import TelegramAuthButton from '@/components/TelegramAuthButton';
 
@@ -23,12 +22,6 @@ const GoogleLogo = () => (
    </svg>
 );
 
-const TelegramLogo = () => (
-   <div className="shrink-0 w-5 h-5 flex items-center justify-center">
-      <Send className="w-5 h-5 text-white" strokeWidth={2} />
-   </div>
-);
-
 export function SocialAuthButtons({
    isSignUp,
    onGoogleSuccess,
@@ -36,15 +29,19 @@ export function SocialAuthButtons({
    onTelegramAuth
 }: SocialAuthButtonsProps) {
    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-   const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME;
-   const [origin, setOrigin] = useState('');
-
-   useEffect(() => {
-      setOrigin(window.location.origin);
-   }, []);
+   const rawBotUsername = "moodengnewbranchbot";
+   const botUsername = "moodengnewbranchbot";
 
    const googleLabel = isSignUp ? 'Sign Up with Google' : 'Sign In with Google';
-   const telegramLabel = isSignUp ? 'Sign Up with Telegram' : 'Sign In with Telegram';
+
+   useEffect(() => {
+      console.debug('[SocialAuthButtons] render state', {
+         mode: isSignUp ? 'signup' : 'signin',
+         hasGoogleClientId: !!clientId,
+         rawBotUsername,
+         normalizedBotUsername: botUsername
+      });
+   }, [botUsername, clientId, isSignUp, rawBotUsername]);
 
    return (
       <div className="flex flex-col gap-4 w-full max-w-[400px]">
@@ -86,23 +83,10 @@ export function SocialAuthButtons({
          )}
      
 
-         {/* Telegram: custom UI overlay, hidden widget receives clicks */}
+         {/* Telegram: show the real Telegram widget directly */}
          {botUsername && (
-            <div
-               className={`${btnBase} relative bg-[#1A8DFF] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] overflow-hidden`}
-            >
-               <div className="absolute inset-0 flex items-center justify-center gap-2.5 pointer-events-none z-10">
-                  <TelegramLogo />
-                  <span
-                     className="text-base font-medium tracking-[-0.02em] text-[#FDFCFD]"
-                     style={{ fontFamily: 'SF Pro Display, sans-serif' }}
-                  >
-                     {telegramLabel}
-                  </span>
-               </div>
-               <div className="absolute inset-0 flex items-center justify-center [&_iframe]:!opacity-0 [&_iframe]:!absolute [&_iframe]:!inset-0 [&_iframe]:!w-full [&_iframe]:!h-full [&_iframe]:!min-h-[56px]" aria-hidden>
-                  <TelegramAuthButton onAuth={onTelegramAuth} buttonSize="large" hideLoading />
-               </div>
+            <div className="w-full flex justify-center rounded-xl bg-[#1A8DFF] p-2 shadow-[0px_2px_4px_rgba(27,28,29,0.04)]">
+               <TelegramAuthButton onAuth={onTelegramAuth} buttonSize="large" />
             </div>
          )}
       </div>
