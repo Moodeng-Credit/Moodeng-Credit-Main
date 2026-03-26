@@ -14,7 +14,7 @@ interface MobileNavProps {
    dashboardHref?: string;
 }
 
-export default function MobileNav({ buttons, isOpen, onClose, username, dashboardHref = '/dashboard' }: MobileNavProps) {
+export default function MobileNav({ buttons, isOpen, onClose, username, dashboardHref = '/request-board' }: MobileNavProps) {
    const navRef = useClickOutside<HTMLElement>(onClose, isOpen);
 
    if (!isOpen) return null;
@@ -33,7 +33,7 @@ export default function MobileNav({ buttons, isOpen, onClose, username, dashboar
                   onClick={onClose}
                   className="text-white text-center text-[22px] cursor-pointer hover:text-gray-300 transition-colors font-normal"
                >
-                  Dashboard
+                  Request Board
                </Link>
             ) : null}
             {buttons.map((button) => (
