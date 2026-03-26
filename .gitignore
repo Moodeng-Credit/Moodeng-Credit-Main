@@ -58,12 +58,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (never commit secrets)
+.env
+.env.*
 .env*
-!.env.production
-!.env.staging
-!.env.local
-!.env.ci
 .env.keys
 
 # vercel
@@ -106,9 +104,3 @@ count.txt
 .tanstack
 .wrangler
 
-
-.env.keys
-.env.local
-.env.staging
-.env.production
-.env.ci
