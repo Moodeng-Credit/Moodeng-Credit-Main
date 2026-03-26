@@ -1,32 +1,17 @@
-
-
-import '@/components/loading/Loading.scss';
-
+/** Full-viewport loading state (bootstrap, persist rehydrate, auth confirm, etc.). */
 const Loading = () => {
    return (
-      <div className="loading">
-         <div className="loading-root">
-            <div className="pl">
-               <div className="pl__coin">
-                  <div className="pl__coin-flare"></div>
-                  <div className="pl__coin-flare"></div>
-                  <div className="pl__coin-flare"></div>
-                  <div className="pl__coin-flare"></div>
-                  <div className="pl__coin-layers">
-                     <div className="pl__coin-layer">
-                        <div className="pl__coin-inscription"></div>
-                     </div>
-                     <div className="pl__coin-layer"></div>
-                     <div className="pl__coin-layer"></div>
-                     <div className="pl__coin-layer"></div>
-                     <div className="pl__coin-layer">
-                        <div className="pl__coin-inscription"></div>
-                     </div>
-                  </div>
-               </div>
-               <div className="pl__shadow"></div>
-            </div>
-         </div>
+      <div
+         className="flex min-h-dvh w-full items-center justify-center bg-gradient-to-b from-[#FBFAFD] to-[#FFFFFF]"
+         role="status"
+         aria-live="polite"
+         aria-busy="true"
+      >
+         <span className="sr-only">Loading</span>
+         <div
+            className="h-10 w-10 shrink-0 animate-spin rounded-full border-2 border-[#E8E5EF] border-t-[#6010D2]"
+            aria-hidden
+         />
       </div>
    );
 };

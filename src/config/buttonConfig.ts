@@ -19,7 +19,7 @@ export const heroSectionButtons: ActionButtonConfig[] = [
       text: 'Chat',
       bgColor: 'bg-[#f093ff]',
       textColor: 'text-[#171420]',
-      href: `https://t.me/${"moodengnewbranchbot"}`,
+      href: `https://t.me/${import.meta.env.VITE_TELEGRAM_BOT_USERNAME}`,
       isExternal: true,
       width: 'w-44'
    },

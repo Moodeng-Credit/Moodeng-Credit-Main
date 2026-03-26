@@ -23,7 +23,7 @@ export default function TelegramModal({ isOpen, onClose }: TelegramModalProps) {
                      Cancel
                   </button>
                   <button
-                     onClick={() => window.open(`https://t.me/${"moodengnewbranchbot"}`, '_blank')}
+                     onClick={() => window.open(`https://t.me/${import.meta.env.VITE_TELEGRAM_BOT_USERNAME}`, '_blank')}
                      className="overflow-hidden flex-auto gap-5 self-stretch px-5 py-3.5 rounded-lg min-h-[46px] bg-blue-500 text-white border border-solid"
                   >
                      Connect

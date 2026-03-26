@@ -2,9 +2,7 @@ import { type ChangeEvent, type FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 
-import { Mail } from 'lucide-react';
-
-import Loading from '@/components/Loading';
+import { Loader2, Mail } from 'lucide-react';
 import {
    AuthFooter,
    AuthInputField,
@@ -48,7 +46,7 @@ export default function SignUpPage() {
    const [email, setEmail] = useState('');
    const [password, setPassword] = useState('');
    const [confirm, setConfirm] = useState('');
-   const [isLoading, setIsLoading] = useState(false);
+   const [pendingAuth, setPendingAuth] = useState<'email' | 'social' | null>(null);
    const [showPassWeak, setShowPassWeak] = useState(false);
    const [showConfirmMismatch, setShowConfirmMismatch] = useState(false);
    const [accountErrorType, setAccountErrorType] = useState<SignUpErrorType>(null);
@@ -92,7 +90,7 @@ export default function SignUpPage() {
    };
 
    const handleFormRegister = async () => {
-      setIsLoading(true);
+      setPendingAuth('email');
       setShowPassWeak(false);
       setShowConfirmMismatch(false);
       setAccountErrorType(null);
@@ -109,12 +107,12 @@ export default function SignUpPage() {
       } catch (err) {
          handleRegisterError(err instanceof Error ? err.message : 'Authentication failed');
       } finally {
-         setIsLoading(false);
+         setPendingAuth(null);
       }
    };
 
    const handleGoogleAuth = async (credential: string) => {
-      setIsLoading(true);
+      setPendingAuth('social');
       setAccountErrorType(null);
       try {
          const result = await dispatch(registerWithGoogle({ googleCredential: credential })).unwrap();
@@ -122,12 +120,12 @@ export default function SignUpPage() {
       } catch (err) {
          handleRegisterError(err instanceof Error ? err.message : 'Authentication failed');
       } finally {
-         setIsLoading(false);
+         setPendingAuth(null);
       }
    };
 
    const handleTelegramAuth = async (authData: Record<string, string>) => {
-      setIsLoading(true);
+      setPendingAuth('social');
       setAccountErrorType(null);
       try {
          const result = await dispatch(
@@ -137,7 +135,7 @@ export default function SignUpPage() {
       } catch (err) {
          handleRegisterError(err instanceof Error ? err.message : 'Authentication failed');
       } finally {
-         setIsLoading(false);
+         setPendingAuth(null);
       }
    };
 
@@ -178,21 +176,18 @@ export default function SignUpPage() {
    };
 
    const hasEmailError = !!accountErrorType;
-
-   if (isLoading) {
-      return <Loading />;
-   }
+   const isBusy = pendingAuth !== null;
 
    return (
-      <div className="flex justify-center items-center min-h-screen py-6 sm:py-12 px-4">
+      <div className="flex min-h-dvh flex-col items-center px-4 py-6 sm:py-12">
          <div
-            className="flex flex-col w-full max-w-[440px] min-h-[calc(100vh-3rem)] sm:min-h-[calc(100vh-6rem)] items-center rounded-[20px] overflow-y-auto shrink-0"
+            className="flex min-h-0 w-full max-w-[440px] flex-1 flex-col rounded-[20px] shrink-0"
             style={{
                // background: 'linear-gradient(180deg, #FBFAFD 0%, #FFFFFF 100%)',
                isolation: 'isolate'
             }}
          >
-            <div className="flex flex-1 flex-col items-center justify-center w-full px-5 py-6 sm:py-10">
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto w-full px-5 py-6 sm:py-10">
                <img
                   src="/auth-screen.png"
                   alt="Moodeng Mascot"
@@ -207,20 +202,32 @@ export default function SignUpPage() {
                      <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D] text-center mb-5 max-w-[400px]">
                         Request short-term loans, repay clearly, and build trust over time.
                      </p>
-                     <SocialAuthButtons
-                        isSignUp
-                        onGoogleSuccess={handleGoogleAuth}
-                        onGoogleError={handleOAuthError}
-                        onTelegramAuth={handleTelegramAuth}
-                     />
-                     <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" className="my-6" />
-                     <SocialButton
-                        icon={<Mail className="w-5 h-5 text-[#250650]" />}
-                        text="Sign Up with Email"
-                        variant="outline"
-                        onClick={() => setShowEmailForm(true)}
-                        className="mb-4 border-[#B5ACBE]"
-                     />
+                     <div className="relative w-full max-w-[400px]">
+                        {pendingAuth === 'social' && (
+                           <div
+                              className="absolute inset-0 z-[1] flex items-center justify-center rounded-xl bg-white/75 backdrop-blur-[1px]"
+                              aria-busy="true"
+                              aria-live="polite"
+                           >
+                              <Loader2 className="h-8 w-8 animate-spin text-[#6010D2]" aria-hidden />
+                           </div>
+                        )}
+                        <SocialAuthButtons
+                           isSignUp
+                           onGoogleSuccess={handleGoogleAuth}
+                           onGoogleError={handleOAuthError}
+                           onTelegramAuth={handleTelegramAuth}
+                        />
+                        <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" className="my-6" />
+                        <SocialButton
+                           icon={<Mail className="w-5 h-5 text-[#250650]" />}
+                           text="Sign Up with Email"
+                           variant="outline"
+                           disabled={isBusy}
+                           onClick={() => setShowEmailForm(true)}
+                           className="mb-4 border-[#B5ACBE]"
+                        />
+                     </div>
                      <p className="text-center text-base text-[#4D4359] tracking-[-0.02em]">
                         Already have an account?{' '}
                         <Link
@@ -247,6 +254,7 @@ export default function SignUpPage() {
                            type="text"
                            placeholder="Enter your full name"
                            value={fullName}
+                           disabled={isBusy}
                            onChange={(e: ChangeEvent<HTMLInputElement>) => setFullName(e.target.value)}
                            icon={<Icons.user />}
                         />
@@ -257,6 +265,7 @@ export default function SignUpPage() {
                               type="email"
                               placeholder="Enter your email address"
                               value={email}
+                              disabled={isBusy}
                               onChange={(e: ChangeEvent<HTMLInputElement>) => {
                                  setEmail(e.target.value);
                                  setAccountErrorType(null);
@@ -292,6 +301,7 @@ export default function SignUpPage() {
                               type="password"
                               placeholder="Enter your password"
                               value={password}
+                              disabled={isBusy}
                               onChange={(e: ChangeEvent<HTMLInputElement>) => {
                                  setPassword(e.target.value);
                                  setShowPassWeak(false);
@@ -318,6 +328,7 @@ export default function SignUpPage() {
                               type="password"
                               placeholder="Confirm your password"
                               value={confirm}
+                              disabled={isBusy}
                               onChange={(e: ChangeEvent<HTMLInputElement>) => {
                                  setConfirm(e.target.value);
                                  setShowConfirmMismatch(false);
@@ -330,10 +341,18 @@ export default function SignUpPage() {
 
                         <button
                            type="submit"
-                           className="w-full h-14 rounded-2xl font-semibold text-[#FDFCFD] text-base tracking-[-0.02em] transition-opacity hover:opacity-95"
+                           disabled={isBusy}
+                           className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-65"
                            style={{ backgroundColor: '#6010D2' }}
                         >
-                           Create An Account
+                           {pendingAuth === 'email' ? (
+                              <>
+                                 <Loader2 className="h-5 w-5 shrink-0 animate-spin" aria-hidden />
+                                 <span>Creating account…</span>
+                              </>
+                           ) : (
+                              'Create An Account'
+                           )}
                         </button>
 
                         <p className="text-center text-xs leading-[18px] text-[#4D4359] tracking-[-0.02em]">
@@ -364,7 +383,9 @@ export default function SignUpPage() {
                )}
             </div>
 
-            <AuthFooter />
+            <div className="shrink-0 w-full">
+               <AuthFooter />
+            </div>
          </div>
       </div>
    );

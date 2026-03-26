@@ -1,8 +1,12 @@
+export type SessionBootstrapStatus = 'pending' | 'ready';
+
 export interface AuthState {
    user: User;
    username: string | null;
    isLoading: boolean;
    error: string | null;
+   /** After redux-persist rehydrate + Supabase session sync; gate first paint until `ready`. */
+   sessionBootstrapStatus: SessionBootstrapStatus;
    isWorldId?: WorldIdStatus;
    cs?: number;
    nal?: number;

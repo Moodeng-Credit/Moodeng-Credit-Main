@@ -2,7 +2,7 @@ import { type ChangeEvent, type FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 
-import Loading from '@/components/Loading';
+import { Loader2 } from 'lucide-react';
 import {
    AuthErrorAlert,
    AuthFooter,
@@ -12,6 +12,7 @@ import {
 } from '@/components/auth';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { Icons } from '@/views/login/components/Icons';
+import { getPostAuthEntryPath } from '@/lib/auth/navigation';
 import { loginUser, loginWithGoogle, loginWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import '@/views/signup/styles/signup.css';
@@ -22,12 +23,13 @@ export default function SignInPage() {
    const toast = useToast();
    const [email, setEmail] = useState('');
    const [password, setPassword] = useState('');
-   const [isLoading, setIsLoading] = useState(false);
+   const [pendingAuth, setPendingAuth] = useState<'email' | 'social' | null>(null);
    const [showAccount, setShowAccount] = useState(false);
    const [errorType, setErrorType] = useState<
       'incorrect_credentials' | 'email_not_found' | 'too_many_attempts' | null
    >(null);
    const [attemptsRemaining, setAttemptsRemaining] = useState(5);
+   const [rememberMe, setRememberMe] = useState(true);
 
    const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -35,10 +37,10 @@ export default function SignInPage() {
       setErrorType(null);
       if (!email || !password) return;
 
-      setIsLoading(true);
+      setPendingAuth('email');
       try {
-         const result = await dispatch(loginUser({ email, password })).unwrap();
-         navigate('/dashboard', { replace: true });
+         const result = await dispatch(loginUser({ email, password, persistSession: rememberMe })).unwrap();
+         navigate(getPostAuthEntryPath(result.user), { replace: true });
       } catch (err) {
          const msg = err instanceof Error ? err.message : 'Authentication failed';
          const errObj = err as { status?: number };
@@ -73,7 +75,7 @@ export default function SignInPage() {
          }
          setShowAccount(true);
       } finally {
-         setIsLoading(false);
+         setPendingAuth(null);
       }
    };
 
@@ -84,45 +86,45 @@ export default function SignInPage() {
    };
 
    const handleGoogleAuth = async (credential: string) => {
-      setIsLoading(true);
+      setPendingAuth('social');
       try {
          const result = await dispatch(loginWithGoogle({ googleCredential: credential })).unwrap();
-         navigate('/dashboard', { replace: true });
+         navigate(getPostAuthEntryPath(result.user), { replace: true });
       } catch {
          setErrorType('incorrect_credentials');
          setShowAccount(true);
       } finally {
-         setIsLoading(false);
+         setPendingAuth(null);
       }
    };
 
    const handleTelegramAuth = async (authData: Record<string, string>) => {
-      setIsLoading(true);
+      setPendingAuth('social');
       try {
          const result = await dispatch(
             loginWithTelegram({ telegramAuthData: JSON.stringify(authData) })
          ).unwrap();
-         navigate('/dashboard', { replace: true });
+         navigate(getPostAuthEntryPath(result.user), { replace: true });
       } catch {
          setErrorType('incorrect_credentials');
          setShowAccount(true);
       } finally {
-         setIsLoading(false);
+         setPendingAuth(null);
       }
    };
 
-   if (isLoading) return <Loading />;
+   const isBusy = pendingAuth !== null;
 
    return (
-      <div className="flex justify-center items-center min-h-screen py-6 sm:py-12 px-4">
+      <div className="flex min-h-dvh flex-col items-center px-4 py-6 sm:py-12">
          <div
-            className="flex flex-col w-full max-w-[440px] min-h-[calc(100vh-3rem)] sm:min-h-[calc(100vh-6rem)] rounded-[20px] overflow-y-auto shrink-0"
+            className="flex min-h-0 w-full max-w-[440px] flex-1 flex-col rounded-[20px] shrink-0"
             style={{
                // background: 'linear-gradient(180deg, #FBFAFD 0%, #FFFFFF 100%)',
                isolation: 'isolate'
             }}
          >
-            <div className="flex flex-1 flex-col items-center justify-center w-full px-5 py-6 sm:py-10">
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto w-full px-5 py-6 sm:py-10">
                {/* Mascot - 110x96 per design */}
                <img
                   src="/auth-screen.png"
@@ -137,7 +139,18 @@ export default function SignInPage() {
                </p>
 
                {/* Social auth */}
-               <div className="w-full flex flex-col gap-4">
+               <div
+                  className={`relative w-full flex flex-col gap-4 ${pendingAuth === 'email' ? 'pointer-events-none opacity-50' : ''}`}
+               >
+                  {pendingAuth === 'social' && (
+                     <div
+                        className="absolute inset-0 z-[1] flex items-center justify-center rounded-xl bg-white/75 backdrop-blur-[1px]"
+                        aria-busy="true"
+                        aria-live="polite"
+                     >
+                        <Loader2 className="h-8 w-8 animate-spin text-[#6010D2]" aria-hidden />
+                     </div>
+                  )}
                   <SocialAuthButtons
                      isSignUp={false}
                      onGoogleSuccess={handleGoogleAuth}
@@ -155,6 +168,7 @@ export default function SignInPage() {
                            type="email"
                            placeholder="Enter your email address"
                            value={email}
+                           disabled={isBusy}
                            onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                            error={showAccount}
                            errorMessage={
@@ -173,6 +187,7 @@ export default function SignInPage() {
                            type="password"
                            placeholder="Enter your password"
                            value={password}
+                           disabled={isBusy}
                            onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                            error={showAccount}
                            icon={<Icons.lock />}
@@ -197,7 +212,10 @@ export default function SignInPage() {
                            <span className="relative flex size-6 shrink-0">
                               <input
                                  type="checkbox"
-                                 className="peer absolute inset-0 z-10 cursor-pointer appearance-none rounded-lg"
+                                 checked={rememberMe}
+                                 disabled={isBusy}
+                                 onChange={(e) => setRememberMe(e.target.checked)}
+                                 className="peer absolute inset-0 z-10 cursor-pointer appearance-none rounded-lg disabled:cursor-not-allowed"
                               />
                               <span className="pointer-events-none absolute inset-0 rounded-lg border border-[#B5ACBE] bg-white peer-checked:border-[#8336F0] peer-checked:bg-[#8336F0]" />
                               <svg
@@ -224,10 +242,18 @@ export default function SignInPage() {
 
                      <button
                         type="submit"
-                        className="w-full h-14 rounded-2xl font-semibold text-[#FDFCFD] text-base tracking-[-0.02em] transition-opacity hover:opacity-95"
+                        disabled={isBusy}
+                        className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-65"
                         style={{ backgroundColor: '#6010D2' }}
                      >
-                        Sign In to Moodeng
+                        {pendingAuth === 'email' ? (
+                           <>
+                              <Loader2 className="h-5 w-5 shrink-0 animate-spin" aria-hidden />
+                              <span>Signing in…</span>
+                           </>
+                        ) : (
+                           'Sign In to Moodeng'
+                        )}
                      </button>
 
                      <p className="text-center text-base text-[#4D4359] tracking-[-0.02em]">
@@ -244,7 +270,9 @@ export default function SignInPage() {
                </div>
             </div>
 
-            <AuthFooter />
+            <div className="shrink-0 w-full">
+               <AuthFooter />
+            </div>
          </div>
       </div>
    );

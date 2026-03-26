@@ -23,7 +23,7 @@ export default function TelegramAuthButton({
    hideLoading = false
 }: TelegramAuthButtonProps) {
    const containerRef = useRef<HTMLDivElement>(null);
-   const rawBotUsername = "moodengnewbranchbot";
+   const rawBotUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME;
    const botUsername = rawBotUsername?.trim().replace(/^@/, '');
    const onAuthRef = useRef(onAuth);
    const [isLoading, setIsLoading] = useState(true);

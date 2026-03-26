@@ -1,16 +1,31 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { combineReducers } from '@reduxjs/toolkit';
-import { persistReducer, persistStore } from 'redux-persist';
+import { createTransform, persistReducer, persistStore } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 
 import authSlice from '@/store/slices/authSlice';
 import loanSlice from '@/store/slices/loanSlice';
 import wagmiSlice from '@/store/slices/wagmiSlice';
+import type { AuthState } from '@/types/authTypes';
+
+/** Never persist bootstrap flag — every cold start re-runs Supabase session sync. */
+const authPersistTransform = createTransform(
+   (auth: AuthState) => {
+      const { sessionBootstrapStatus: _ignored, ...rest } = auth;
+      return rest;
+   },
+   (partial: AuthState) => ({
+      ...partial,
+      sessionBootstrapStatus: 'pending' as const
+   }),
+   { whitelist: ['auth'] }
+);
 
 const persistConfig = {
    key: 'root',
    storage,
-   whitelist: ['auth'] // Only persist auth slice
+   whitelist: ['auth'], // Only persist auth slice
+   transforms: [authPersistTransform]
 };
 
 const rootReducer = combineReducers({

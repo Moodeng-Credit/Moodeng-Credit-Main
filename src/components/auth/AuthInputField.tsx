@@ -16,6 +16,7 @@ interface AuthInputFieldProps {
    errorVariant?: ErrorVariant;
    icon: ReactNode;
    showEyeToggle?: boolean;
+   disabled?: boolean;
 }
 
 export function AuthInputField({
@@ -28,7 +29,8 @@ export function AuthInputField({
    errorMessage,
    errorVariant = 'red',
    icon,
-   showEyeToggle = false
+   showEyeToggle = false,
+   disabled = false
 }: AuthInputFieldProps) {
    const [showPassword, setShowPassword] = useState(false);
    const type = showEyeToggle ? (showPassword ? 'text' : 'password') : initialType;
@@ -59,7 +61,7 @@ export function AuthInputField({
             )}
          </div>
          <div
-            className={`flex items-center gap-2 w-full h-12 rounded-[12px] border bg-[#FDFCFD] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] px-4 py-3 ${errorBorder}`}
+            className={`flex items-center gap-2 w-full h-12 rounded-[12px] border bg-[#FDFCFD] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] px-4 py-3 ${errorBorder} ${disabled ? 'opacity-60' : ''}`}
          >
             <span className={`shrink-0 w-6 h-6 flex items-center justify-center [&_svg]:text-inherit ${errorText}`}>
                {icon}
@@ -70,13 +72,15 @@ export function AuthInputField({
                value={value}
                onChange={onChange}
                required
-               className={`flex-1 min-w-0 bg-transparent text-base outline-none ${errorPlaceholder} ${errorInputText}`}
+               disabled={disabled}
+               className={`flex-1 min-w-0 bg-transparent text-base outline-none disabled:cursor-not-allowed ${errorPlaceholder} ${errorInputText}`}
             />
             {showEyeToggle && (
                <button
                   type="button"
+                  disabled={disabled}
                   onClick={() => setShowPassword((p) => !p)}
-                  className="shrink-0 w-6 h-6 flex items-center justify-center text-[#8336F0] hover:opacity-80"
+                  className="shrink-0 w-6 h-6 flex items-center justify-center text-[#8336F0] hover:opacity-80 disabled:pointer-events-none disabled:opacity-50"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
