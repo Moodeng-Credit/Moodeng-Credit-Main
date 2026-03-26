@@ -83,7 +83,7 @@ export default function WelcomeOnboardingPage(): JSX.Element {
 
                      <div className="mt-auto flex flex-col gap-4">
                         <Link
-                           to="/dashboard"
+                           to="/wallet-connect"
                            className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#6010D2] text-base font-[590] leading-6 tracking-[-0.02em] text-[#FDFCFD] transition-opacity hover:opacity-95"
                         >
                            <Sparkles className="h-6 w-6 shrink-0 text-[#FDFCFD]" strokeWidth={1.5} aria-hidden />
