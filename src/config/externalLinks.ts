@@ -5,7 +5,7 @@
 
 export const EXTERNAL_LINKS = {
    telegram: {
-      bot: `https://t.me/${import.meta.env.VITE_TELEGRAM_BOT_USERNAME}`,
+      bot: `https://t.me/${"moodengnewbranchbot"}`,
       channel: `https://t.me/${import.meta.env.VITE_TELEGRAM_CHANNEL_USERNAME}`
    },
    worldcoin: {

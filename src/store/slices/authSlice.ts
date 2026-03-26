@@ -4,7 +4,7 @@ import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
-import { type AuthState, type User, WorldId } from '@/types/authTypes';
+import { type AuthState, type User, type UserRole, WorldId } from '@/types/authTypes';
 
 type UpdateUserPayload = {
    username?: string;
@@ -96,6 +96,7 @@ const mapSupabaseRowToUser = (row: UserRow): User => ({
    nal: row.nal,
    cs: row.cs,
    creditProgressionPaused: row.credit_progression_paused ?? false,
+   userRole: row.user_role ?? undefined,
    createdAt: row.created_at,
    updatedAt: row.updated_at
 });
@@ -200,7 +201,9 @@ export const loginUser = createAsyncThunk('auth/login', async ({ email, password
    if (error) {
       if (error.code === 'email_not_confirmed') {
          // Auto-resend verification email
-         const redirectUrl = import.meta.env.VITE_REDIRECT_URL || 'http://localhost:3000/auth/confirm';
+         const redirectUrl =
+            import.meta.env.VITE_REDIRECT_URL ||
+            (typeof window !== 'undefined' ? `${window.location.origin}/auth/confirm` : 'http://localhost:3000/auth/confirm');
          const { error: resendError } = await supabase.auth.resend({
             type: 'signup',
             email,
@@ -278,13 +281,15 @@ export const registerUser = createAsyncThunk(
 
          return {
             isExistingUser: true,
+            reason: 'linked' as const,
             message:
                'An account with this email already exists (likely via Google). A password reset link has been sent to your email. Please use it to set a password and link your email login.'
          };
       }
 
-      // Get the redirect URL from environment variables
-      const redirectUrl = import.meta.env.VITE_REDIRECT_URL || 'http://localhost:3000/auth/confirm';
+      const redirectUrl =
+         import.meta.env.VITE_REDIRECT_URL ||
+         (typeof window !== 'undefined' ? `${window.location.origin}/auth/confirm` : 'http://localhost:3000/auth/confirm');
 
       const { data, error } = await supabase.auth.signUp({
          email: userData.email,
@@ -310,6 +315,7 @@ export const registerUser = createAsyncThunk(
 
             return {
                isExistingUser: true,
+               reason: 'linked' as const,
                message:
                   'An account with this email already exists (likely via Google). A password reset link has been sent to your email. Please use it to set a password and link your email login.'
             };
@@ -317,10 +323,23 @@ export const registerUser = createAsyncThunk(
          throw error;
       }
 
+      const {
+         data: { session }
+      } = await supabase.auth.getSession();
+
+      if (session?.user) {
+         const user = await fetchCurrentUserProfile();
+         return {
+            username: user.username,
+            user,
+            isNewUser: true as const
+         };
+      }
+
       return {
          username: userData.username,
-         user: data.user,
-         isNewUser: true
+         isNewUser: true as const,
+         needsEmailVerification: true as const
       };
    }
 );
@@ -423,6 +442,32 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
    return mapSupabaseRowToUser(updatedRow);
 });
 
+/** Set user_role in Supabase. Single source of truth for role-based routing. */
+export const updateUserRole = createAsyncThunk('auth/updateUserRole', async (role: UserRole) => {
+   const supabase = supabaseClient();
+   const {
+      data: { user },
+      error: sessionError
+   } = await supabase.auth.getUser();
+
+   if (sessionError || !user) {
+      throw sessionError ?? new Error('Not authenticated');
+   }
+
+   const { data: updatedRow, error } = await supabase
+      .from('users')
+      .update({ user_role: role })
+      .eq('id', user.id)
+      .select('*')
+      .single();
+
+   if (error || !updatedRow) {
+      throw error ?? new Error('Failed to update user role');
+   }
+
+   return mapSupabaseRowToUser(updatedRow);
+});
+
 export const logoutUser = createAsyncThunk('auth/logout', async () => {
    const supabase = supabaseClient();
    const { error } = await supabase.auth.signOut();
@@ -499,8 +544,19 @@ const authSlice = createSlice({
          })
          .addCase(registerUser.fulfilled, (state, action) => {
             state.isLoading = false;
-            state.username = action.payload.username;
-            state.user = action.payload.user;
+            const p = action.payload;
+            if ('isExistingUser' in p && p.isExistingUser) {
+               return;
+            }
+            if ('needsEmailVerification' in p && p.needsEmailVerification) {
+               state.user = defaultUser;
+               state.username = null;
+               return;
+            }
+            if ('user' in p && p.user) {
+               state.username = p.username ?? null;
+               state.user = p.user;
+            }
          })
          .addCase(registerUser.rejected, (state, action) => {
             state.isLoading = false;
@@ -550,6 +606,12 @@ const authSlice = createSlice({
             state.username = action.payload.username;
          })
          .addCase(updateUser.rejected, (state, action) => {
+            state.error = (action.error.message as string) || null;
+         })
+         .addCase(updateUserRole.fulfilled, (state, action) => {
+            state.user = action.payload;
+         })
+         .addCase(updateUserRole.rejected, (state, action) => {
             state.error = (action.error.message as string) || null;
          })
          .addCase(fetchUserProfiles.fulfilled, (state, action) => {

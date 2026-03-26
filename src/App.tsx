@@ -15,6 +15,8 @@ import FAQ from '@/app/faq/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
 import Login from '@/app/login/page';
+import SignUp from '@/app/signup/page';
+import AuthConfirm from '@/app/auth/confirm/page';
 import AuthSuccess from '@/app/auth-success/page';
 // Import pages
 import Home from '@/app/page';
@@ -89,14 +91,8 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
-            <Route
-               path="/login"
-               element={
-                  <Layout>
-                     <Login />
-                  </Layout>
-               }
-            />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
             <Route
                path="/faq"
                element={
@@ -139,14 +135,8 @@ export default function App() {
                   </Layout>
                }
             />
-            <Route
-               path="/auth-success"
-               element={
-                  <Layout>
-                     <AuthSuccess />
-                  </Layout>
-               }
-            />
+            <Route path="/auth-success" element={<AuthSuccess />} />
+            <Route path="/auth/confirm" element={<AuthConfirm />} />
             <Route
                path="/benefits"
                element={

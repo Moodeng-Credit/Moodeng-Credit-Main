@@ -19,7 +19,7 @@ export const heroSectionButtons: ActionButtonConfig[] = [
       text: 'Chat',
       bgColor: 'bg-[#f093ff]',
       textColor: 'text-[#171420]',
-      href: `https://t.me/${import.meta.env.VITE_TELEGRAM_BOT_USERNAME}`,
+      href: `https://t.me/${"moodengnewbranchbot"}`,
       isExternal: true,
       width: 'w-44'
    },
@@ -116,14 +116,14 @@ export const menuAuthButtons: ActionButtonConfig[] = [
       text: 'Log in',
       bgColor: 'bg-black',
       textColor: 'text-white',
-      href: '/login#login',
+      href: '/login',
       width: 'w-full p-4'
    },
    {
       text: 'Sign up',
       bgColor: 'bg-[#6d57ff]',
       textColor: 'text-white',
-      href: '/login',
+      href: '/signup',
       width: 'w-full p-4'
    }
 ];
