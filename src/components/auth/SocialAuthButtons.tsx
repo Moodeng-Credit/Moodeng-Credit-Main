@@ -29,8 +29,8 @@ export function SocialAuthButtons({
    onTelegramAuth
 }: SocialAuthButtonsProps) {
    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-   const rawBotUsername = "moodengnewbranchbot";
-   const botUsername = "moodengnewbranchbot";
+   const rawBotUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME;
+   const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME?.trim().replace(/^@/, '');
 
    const googleLabel = isSignUp ? 'Sign Up with Google' : 'Sign In with Google';
 
