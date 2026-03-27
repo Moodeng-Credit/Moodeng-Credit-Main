@@ -1,44 +1,42 @@
-
-
 import { useEffect, useState } from 'react';
 
-import { ChevronDown, HelpCircle, TrendingUp, Users, XCircle } from 'lucide-react';
+import { Check, ChevronLeft, CircleAlert, HelpCircle } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
-import CollapsibleSection from '@/components/ui/CollapsibleSection';
 
 import { formatDate, getMemberSinceText, parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
-import { calculateLenderDiversity, getDiversityColor, getDiversityStatus } from '@/utils/diversityScore';
-import { getNetworkColor } from '@/utils/networkColors';
+import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
 
-import { ALLOWED_CHAIN_DISPLAY_NAME } from '@/config/wagmiConfig';
+import { CREDIT_TIER_INCREMENT } from '@/config/creditTiers';
 import { fetchUserProfiles, getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import { type Loan } from '@/types/loanTypes';
 
-const LevelBadge = ({ status }: { status: string }) => (
-   <svg viewBox="0 0 40 40" className="w-10 h-10">
-      <path
-         d="M20 2L4 8v12c0 11 13 18 16 20 3-2 16-9 16-20V8L20 2z"
-         fill={status === 'current' ? '#059669' : status === 'next' ? '#2563EB' : '#4B5563'}
-      />
-      <path
-         d="M20 4L6 9.4v10.2C6 29 17.5 35.2 20 37c2.5-1.8 14-8 14-17.4V9.4L20 4z"
-         fill={status === 'current' ? '#10B981' : status === 'next' ? '#3B82F6' : '#6B7280'}
-      />
-      <path d="M20 8l2.5 5 5.5.8-4 3.9.9 5.3-4.9-2.6-4.9 2.6 1-5.3-4-3.9 5.5-.8L20 8z" fill="#E5E7EB" />
-   </svg>
-);
+const PLACEHOLDER_AVATAR =
+   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Chiaroscuro_lighting_illuminates_a_Chibi-style_SVG_logo_a_gray_and_light_pink_hippo__joyfully_jumping__thumbs_up__holding_a_gold_Japanese_Mon_coin.__Hayao_Miyazaki_inspired__deep_teal_hues__warm_candl-uvt0ZI3fogcgqDR4Y2gCSRZfq8QmtX.png';
+
+const getDiversityBorderColor = (score: number) => {
+   if (score >= 80) return 'border-green-400 text-green-600';
+   if (score >= 60) return 'border-blue-400 text-blue-600';
+   if (score >= 40) return 'border-yellow-400 text-yellow-600';
+   if (score >= 20) return 'border-orange-400 text-orange-600';
+   return 'border-red-400 text-red-600';
+};
 
 const UserProfile = () => {
    const dispatch = useDispatch<AppDispatch>();
+   const navigate = useNavigate();
    const { username } = useParams();
    const [profileUser, setProfileUser] = useState<User | null>(null);
+
+   useEffect(() => {
+      window.scrollTo(0, 0);
+   }, []);
 
    useEffect(() => {
       const loadProfile = async () => {
@@ -58,9 +56,6 @@ const UserProfile = () => {
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const resolvedUser = profileUser ?? user;
-   const [showDetailedHistory, setShowDetailedHistory] = useState(false);
-   const [showLenderNames, setShowLenderNames] = useState(false);
-   const [showAllTiers, setShowAllTiers] = useState(false);
 
    useEffect(() => {
       const lenderUserIds = [...new Set(loans.map((loan) => loan.lenderUser).filter(Boolean))] as string[];
@@ -76,11 +71,23 @@ const UserProfile = () => {
    const memberSince = getMemberSinceText(resolvedUser.createdAt);
    const resolveUsername = (userId?: string | null) => (userId ? userProfiles[userId]?.username ?? userId : '');
 
-   const ignoredTier = new Set();
-   const TierLists = loans.reduce((acc: Loan[], loan: Loan) => {
+   // Credit Unlocking loans (exact tier amounts, first occurrence only)
+   const uniqueLoans: Loan[] = [];
+   const seenAmounts = new Set();
+   for (const loan of loans) {
       const loanAmountNum = toNumber(loan.loanAmount);
-      const remainder = loanAmountNum % 20;
-      const key = Math.floor(loanAmountNum / 20) * 20;
+      if (loanAmountNum % CREDIT_TIER_INCREMENT === 0 && !seenAmounts.has(loanAmountNum)) {
+         uniqueLoans.push(loan);
+         seenAmounts.add(loanAmountNum);
+      }
+   }
+
+   // Trust Building loans (non-tier or duplicate tier amounts)
+   const ignoredTier = new Set();
+   const trustBuildingLoans = loans.reduce((acc: Loan[], loan: Loan) => {
+      const loanAmountNum = toNumber(loan.loanAmount);
+      const remainder = loanAmountNum % CREDIT_TIER_INCREMENT;
+      const key = Math.floor(loanAmountNum / CREDIT_TIER_INCREMENT) * CREDIT_TIER_INCREMENT;
       if (remainder === 0) {
          if (ignoredTier.has(key)) {
             acc.push(loan);
@@ -93,640 +100,263 @@ const UserProfile = () => {
       return acc;
    }, []);
 
-   const ignoredTiers = new Set();
-   const TierList = loans.reduce((acc: Record<number, Loan[]>, loan: Loan) => {
-      const loanAmountNum = toNumber(loan.loanAmount);
-      const remainder = loanAmountNum % 20;
-      if (remainder === 0) {
-         const key = Math.floor(loanAmountNum / 20) * 20;
-         if (ignoredTiers.has(key)) {
-            if (!acc[key]) acc[key] = [];
-            acc[key].push(loan);
-         } else {
-            ignoredTiers.add(key);
-         }
-         return acc;
-      }
-      const key = Math.floor(loanAmountNum / 20) * 20;
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(loan);
-      return acc;
-   }, {});
-
-   const uniqueLoans: Loan[] = [];
-   const seenAmounts = new Set();
-   for (const loan of loans) {
-      const loanAmountNum = toNumber(loan.loanAmount);
-      if (loanAmountNum % 20 === 0 && !seenAmounts.has(loanAmountNum)) {
-         uniqueLoans.push(loan);
-         seenAmounts.add(loanAmountNum);
-      }
-   }
-
+   // Repeat lender count
    const countMap = loans.reduce((acc: Record<string, number>, loan: Loan) => {
       const usernameToCount = resolveUsername(loan.lenderUser) || 'Unknown';
       acc[usernameToCount] = (acc[usernameToCount] || 0) + 1;
       return acc;
    }, {});
 
+   // Average days between loans
    const sortedLoans = [...loans].sort((a, b) => parseDateSafely(a.createdAt).getTime() - parseDateSafely(b.createdAt).getTime());
    let totalDays = 0;
    for (let i = 1; i < sortedLoans.length; i++) {
       const prev = parseDateSafely(sortedLoans[i].createdAt);
       const next = parseDateSafely(sortedLoans[i - 1].createdAt);
-      const diffInTime = prev.getTime() - next.getTime();
-      const diffInDays = diffInTime / (1000 * 3600 * 24);
-      totalDays += diffInDays;
+      totalDays += (prev.getTime() - next.getTime()) / (1000 * 3600 * 24);
    }
-   const avgDays = Math.round(totalDays / (sortedLoans.length - 1));
+   const avgDays = sortedLoans.length > 1 ? Math.round(totalDays / (sortedLoans.length - 1)) : 0;
 
+   // Average payment time for paid loans
    const paidLoans = loans.filter((loan) => loan.repaymentStatus === 'Paid');
    let totalPaymentTime = 0;
    paidLoans.forEach((loan) => {
       const loanedAt = parseDateSafely(loan.createdAt);
       const paidAt = parseDateSafely(loan.updatedAt);
-      const timeDiff = (paidAt.getTime() - loanedAt.getTime()) / (1000 * 60 * 60 * 24);
-      totalPaymentTime += timeDiff;
+      totalPaymentTime += (paidAt.getTime() - loanedAt.getTime()) / (1000 * 60 * 60 * 24);
    });
-   const avgPaymentTime = Math.round(totalPaymentTime / paidLoans.length);
+   const avgPaymentTime = paidLoans.length > 0 ? Math.round(totalPaymentTime / paidLoans.length) : 0;
+
+   // Usual loan size
+   const usualLoanSize = loans.length > 0 ? Math.round(loans.reduce((sum, loan) => sum + toNumber(loan.loanAmount), 0) / loans.length) : 0;
+
+   // Typical loan term
+   const avgLoanTerm =
+      loans.length > 0
+         ? Math.round(
+              loans.reduce((sum, loan) => {
+                 const dueDate = new Date(loan.dueDate);
+                 const createdDate = new Date(loan.createdAt);
+                 return sum + Math.round((dueDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+              }, 0) / loans.length
+           )
+         : 0;
+
+   // Repeat lenders
+   const totalUniqueLenders = Object.keys(countMap).length;
+   const repeatLenderCount = totalUniqueLenders - Object.values(countMap).filter((count) => count === 1).length;
 
    const lenderDiversity = calculateLenderDiversity(loans, userProfiles);
 
-   const borrowerData = {
-      username: resolvedUser.username || username,
-      memberSince: memberSince,
-      stats: {
-         totalLoans: loans.length,
-         defaults: 0,
-         totalBorrowed: loans.reduce((sum, loan) => (loan.loanStatus === 'Lent' ? sum + toNumber(loan.loanAmount) : sum), 0),
-         totalRepaid: loans.reduce((sum, loan) => (loan.repaymentStatus === 'Paid' ? sum + toNumber(loan.loanAmount) : sum), 0),
-         uniqueLenders: lenderDiversity.uniqueLenders,
-         unlocking: uniqueLoans.length,
-         building: TierLists.length
-      },
-      creditGrowth: {
-         currentLimit: resolvedUser.cs > 20 ? resolvedUser.cs - 20 : resolvedUser.cs,
-         nextLimit: resolvedUser.cs,
-         currentDate:
-            resolvedUser.cs > 20 && resolvedUser.updatedAt ? formatDate(resolvedUser.updatedAt) : formatDate(resolvedUser.createdAt)
-      },
-      lenderDiversity: lenderDiversity
-   };
+   const totalBorrowed = loans.reduce((sum, loan) => (loan.loanStatus === 'Lent' ? sum + toNumber(loan.loanAmount) : sum), 0);
+   const totalRepaid = loans.reduce((sum, loan) => (loan.repaymentStatus === 'Paid' ? sum + toNumber(loan.loanAmount) : sum), 0);
+
+   // Credit level
+   const creditLevel = Math.floor(resolvedUser.cs / CREDIT_TIER_INCREMENT);
+   const creditMax = resolvedUser.cs;
+   const creditProgress = creditMax > 0 ? Math.min((totalBorrowed / creditMax) * 100, 100) : 0;
+
+   const diversityScore = lenderDiversity.score;
+   const diversityStatus = getDiversityStatus(diversityScore);
 
    return (
-      <div className="min-h-screen bg-[#0B1120] text-white">
-         <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 mb-8">
-               {/* We don't need Image later */}
-               {/* eslint-disable-next-line */}
-               <img
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Chiaroscuro_lighting_illuminates_a_Chibi-style_SVG_logo_a_gray_and_light_pink_hippo__joyfully_jumping__thumbs_up__holding_a_gold_Japanese_Mon_coin.__Hayao_Miyazaki_inspired__deep_teal_hues__warm_candl-uvt0ZI3fogcgqDR4Y2gCSRZfq8QmtX.png"
-                  alt="Friendly hippo mascot"
-                  className="w-24 h-24 md:w-32 md:h-32"
-               />
-               <div className="space-y-1 text-center md:text-left">
-                  <h1 className="text-xl md:text-2xl font-semibold">Dashboard Summary</h1>
-                  <p className="text-sm md:text-base text-gray-400">
-                     {borrowerData.username} • Member since {borrowerData.memberSince}
-                  </p>
-               </div>
+      <div className="min-h-screen bg-[#F4F4F5]">
+         <div className="max-w-lg mx-auto pb-8">
+            {/* Top App Bar */}
+            <div className="flex items-center justify-between px-5 py-4 bg-white">
+               <button onClick={() => navigate(-1)} className="text-[#111827] hover:text-gray-600">
+                  <ChevronLeft className="w-6 h-6" />
+               </button>
+               <h1 className="text-[22px] font-bold text-[#111827]">Borrower Insights</h1>
+               <button className="w-8 h-8 rounded-full border-2 border-[#6366F1] flex items-center justify-center text-[#6366F1] hover:bg-indigo-50">
+                  <span className="text-sm font-bold">?</span>
+               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div className="bg-[#1F2937] rounded-xl p-6">
-                  <div className="flex justify-between items-start mb-4">
-                     <div>
-                        <div className="text-5xl font-bold mb-2">{borrowerData.stats.totalLoans}</div>
-                        <div className="text-gray-400">Total Loans</div>
-                     </div>
-                     <TrendingUp className="text-blue-500 w-6 h-6" />
-                  </div>
-                  <div className="space-y-1">
-                     <div className="flex items-center gap-2">
-                        <span className="text-green-400">{borrowerData.stats.unlocking} Credit Unlocking</span>
-                        <div className="relative group">
-                           <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
-                           <div className="absolute invisible group-hover:visible bg-[#111827] text-gray-100 p-3 rounded-lg text-sm w-64 bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 shadow-xl border border-gray-800">
-                              <p className="mb-2">
-                                 <span className="font-medium">Credit Unlocking Loans:</span> Loans that match exact credit tier amounts
-                                 ($20, $40, etc.). These help increase your credit limit.
-                              </p>
-                           </div>
-                        </div>
-                     </div>
-                     <div className="flex items-center gap-2">
-                        <span className="text-blue-400">{borrowerData.stats.building} Trust Building</span>
-                        <div className="relative group">
-                           <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
-                           <div className="absolute invisible group-hover:visible bg-[#111827] text-gray-100 p-3 rounded-lg text-sm w-64 bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 shadow-xl border border-gray-800">
-                              <p>
-                                 <span className="font-medium">Trust Building Loans:</span> Loans below the next credit tier amount. These
-                                 don't affect credit limit but help build trust with lenders.
-                              </p>
-                           </div>
-                        </div>
-                     </div>
+            <div className="px-5 pt-5 space-y-4">
+               {/* User Profile Section */}
+               <div className="flex items-center gap-3">
+                  <img
+                     src={PLACEHOLDER_AVATAR}
+                     alt="Profile"
+                     className="w-12 h-12 rounded-full object-cover"
+                  />
+                  <div className="flex flex-col">
+                     <span className="text-[16px] font-bold text-[#111827]">{resolvedUser.username || username}</span>
+                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 rounded-full w-fit">
+                        <Check className="w-3 h-3 text-green-600" />
+                        <span className="text-[10px] font-medium text-green-700">Verified Lender</span>
+                     </span>
+                     <span className="text-[12px] text-[#6B7280] mt-0.5">Member since {memberSince}</span>
                   </div>
                </div>
 
-               <div className="bg-[#1F2937] rounded-xl p-6">
-                  <div className="flex justify-between items-start mb-4">
-                     <div>
-                        <div className="text-5xl font-bold mb-2">{borrowerData.stats.defaults}</div>
-                        <div className="text-gray-400">Defaults</div>
+               {/* Credit Level Section */}
+               <div className="bg-white rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                     <div className="flex items-center gap-1.5">
+                        <span className="text-[15px] font-bold text-[#111827]">Credit Level</span>
+                        <HelpCircle className="w-4 h-4 text-[#6366F1]" />
                      </div>
-                     <XCircle className="text-red-500 w-6 h-6" />
+                     <button className="text-[13px] font-bold text-[#3B82F6] underline">View Progress History</button>
                   </div>
-                  <div className="text-green-400">Good Standing</div>
-               </div>
-
-               <div className="bg-[#1F2937] rounded-xl p-6">
-                  <div className="flex justify-between items-start mb-4">
-                     <div>
-                        <div className="text-5xl font-bold mb-2">${formatNumber(borrowerData.stats.totalBorrowed)}</div>
-                        <div className="text-gray-400">Total Borrowed</div>
-                     </div>
-                     <div className="text-emerald-500 text-2xl">$</div>
+                  <div className="flex items-center justify-between mb-2">
+                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 rounded-full">
+                        <span className="w-2 h-2 rounded-full bg-gray-500" />
+                        <span className="text-[12px] text-gray-400 italic">LVL {creditLevel}</span>
+                     </span>
+                     <span className="text-[13px]">
+                        <span className="text-[#6366F1] font-bold">${formatNumber(creditMax)}</span>
+                        <span className="text-[#6B7280]"> / ${formatNumber(creditMax)}</span>
+                     </span>
                   </div>
-                  <div className="text-green-400">${formatNumber(borrowerData.stats.totalRepaid)} Repaid</div>
-               </div>
-
-               <div className="bg-[#1F2937] rounded-xl p-6">
-                  <div className="flex justify-between items-start mb-4">
-                     <div>
-                        <div className="text-5xl font-bold mb-2">{borrowerData.stats.uniqueLenders}</div>
-                        <div className="text-gray-400">Unique Lenders</div>
-                     </div>
-                     <Users className="text-purple-500 w-6 h-6" />
-                  </div>
-                  <div className={'text-' + getDiversityColor(borrowerData.lenderDiversity.score) + '-400'}>
-                     {getDiversityStatus(borrowerData.lenderDiversity.score)} Diversity
-                  </div>
-               </div>
-            </div>
-
-            <div className="bg-[#1F2937] rounded-xl p-6">
-               <h2 className="text-lg md:text-xl font-semibold mb-6">Credit Growth</h2>
-
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
-                  <div className="bg-gray-800 rounded-xl p-6 text-center">
-                     <div className="text-gray-400 mb-4">Previous Credit Level</div>
-                     <div className="inline-block bg-gray-700 rounded-full p-4 mb-4">
-                        <div className="w-12 h-12 flex items-center justify-center">
-                           <LevelBadge status="completed" />
-                        </div>
-                     </div>
-                     <div className="text-4xl font-bold mb-2">${formatNumber(borrowerData.creditGrowth.currentLimit)}</div>
-                     <div className="text-gray-400">{borrowerData.creditGrowth.currentDate}</div>
-                  </div>
-
-                  <div className="bg-green-800/20 rounded-xl p-6 text-center border border-green-700">
-                     <div className="text-green-400 mb-4">Current Credit Level</div>
-                     <div className="inline-block bg-green-700/30 rounded-full p-4 mb-4">
-                        <div className="w-12 h-12 flex items-center justify-center">
-                           <LevelBadge status="current" />
-                        </div>
-                     </div>
-                     <div className="text-4xl font-bold text-green-400 mb-2">${formatNumber(borrowerData.creditGrowth.nextLimit)}</div>
-                     <div className="text-green-400">Available to Borrow Now</div>
-                  </div>
-               </div>
-
-               <div className="space-y-4">
-                  <div className="flex justify-between text-sm text-gray-400">
-                     <span>Starting Credit Limit ($20)</span>
-                     <span>Current Credit Limit (${formatNumber(borrowerData.creditGrowth.nextLimit)})</span>
-                  </div>
-                  <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                     <div className={'h-full bg-blue-500 w-[' + parseInt(((user.cs * 100) / (user.cs + 20)).toString()) + '%]'} />
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-400">
-                     <span>Total Borrowed: ${formatNumber(borrowerData.stats.totalBorrowed)}</span>
-                     <span>{borrowerData.stats.totalLoans} Total Loans</span>
-                  </div>
-               </div>
-
-               <CollapsibleSection
-                  isOpen={showAllTiers}
-                  onToggle={() => setShowAllTiers(!showAllTiers)}
-                  buttonText={showAllTiers ? 'Hide Progress History' : 'View Progress History'}
-               >
-                  <div className="mt-6 space-y-4">
-                     <h3 className="text-lg font-medium text-gray-100">Credit Growth Timeline</h3>
-                     {uniqueLoans.map((tier: Loan) => {
-                        const tierLoanAmount = toNumber(tier.loanAmount);
-                        return (
-                           <div
-                              key={tier.id}
-                              className={`p-4 rounded-lg ${
-                                 tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
-                                    ? 'bg-green-900/20 border border-green-800'
-                                    : tierLoanAmount === user.cs
-                                      ? 'bg-blue-800/50 border border-blue-800'
-                                      : 'bg-gray-800/50 border border-gray-800'
-                              }`}
-                           >
-                              <div className="flex justify-between items-start">
-                                 <div className="flex items-center gap-4">
-                                    <LevelBadge
-                                       status={
-                                          tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
-                                             ? 'current'
-                                             : tierLoanAmount === user.cs
-                                               ? 'next'
-                                               : 'completed'
-                                       }
-                                    />
-                                    <div className="flex flex-col gap-1">
-                                       <div className="flex items-center gap-2">
-                                          <span
-                                             className={`text-lg font-medium ${
-                                                tierLoanAmount === user.cs - 20 && tier.repaymentStatus === 'Paid'
-                                                   ? 'text-green-400'
-                                                   : tierLoanAmount === user.cs
-                                                     ? 'text-blue-100'
-                                                     : 'text-gray-100'
-                                             }`}
-                                          >
-                                             ${formatNumber(tier.loanAmount)} Credit Limit
-                                          </span>
-                                          <span className="text-sm text-gray-400">{formatDate(tier.updatedAt)}</span>
-                                       </div>
-                                       <span className="text-xs text-gray-400">
-                                          ${formatNumber(tier.loanAmount)} loan repaid ${formatNumber(tier.totalRepaymentAmount)} unlocked $
-                                          {tierLoanAmount + 20} limit
-                                       </span>
-                                    </div>
-                                 </div>
-
-                                 {TierList[tierLoanAmount]?.length > 0 ? (
-                                    <div className="flex items-start gap-2">
-                                       <div className="contents text-xs text-gray-400">Trust-Building Loans</div>
-                                       <div className="relative group">
-                                          <div className="flex items-center gap-1 cursor-help">
-                                             <span className="text-gray-400">+</span>
-                                             <div className="px-2 py-1 rounded-full bg-gray-700/40 border border-gray-600 text-sm text-gray-300">
-                                                {TierList[tierLoanAmount]?.length}
-                                             </div>
-                                          </div>
-                                          <div className="absolute invisible group-hover:visible bg-gray-700 text-gray-100 p-3 rounded-lg text-sm w-64 right-0 top-full mt-2 z-10 shadow-xl border border-gray-600">
-                                             <div className="space-y-2">
-                                                <p className="font-medium">
-                                                   Trust-Building Loans at ${formatNumber(tier.loanAmount)} credit limit:
-                                                </p>
-                                                <ul className="list-disc pl-4 space-y-1">
-                                                   {TierList[tierLoanAmount]?.map((loan: Loan) => (
-                                                      <li key={loan.id}>
-                                                         ${formatNumber(loan.loanAmount)} loan - {formatDate(loan.updatedAt)}
-                                                      </li>
-                                                   ))}
-                                                </ul>
-                                             </div>
-                                          </div>
-                                       </div>
-                                    </div>
-                                 ) : null}
-                              </div>
-                           </div>
-                        );
-                     })}
-                  </div>
-
-                  <div className="mt-6 space-y-4">
-                     <div className="p-4 rounded-lg bg-green-900/20 border border-green-800">
-                        <div className="flex items-center gap-2">
-                           <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                           <h3 className="font-medium text-green-400">Credit Unlocking Loans</h3>
-                           <div className="relative group">
-                              <HelpCircle className="w-4 h-4 text-green-400 cursor-help" />
-                              <div className="absolute invisible group-hover:visible w-64 p-3 bg-[#1F2937] rounded-lg shadow-xl text-sm text-gray-100 -translate-x-1/2 left-1/2 bottom-full mb-2 z-10 border border-gray-700">
-                                 <p>
-                                    Loans that match exact credit tier amounts ($20, $40, etc.). Successfully repaying these loans unlocks
-                                    the next credit tier.
-                                 </p>
-                                 <ul className="mt-2 list-disc pl-4 space-y-1 text-gray-400">
-                                    <li>Must match exact tier amount</li>
-                                    <li>Unlocks next credit level on repayment</li>
-                                    <li>Shows strong borrowing responsibility</li>
-                                 </ul>
-                              </div>
-                           </div>
-                        </div>
-                        <p className="mt-2 text-sm text-green-400">Example: $20 loan unlocks $40 credit limit when repaid</p>
-                     </div>
-
-                     <div className="p-4 rounded-lg bg-blue-900/20 border border-blue-800">
-                        <div className="flex items-center gap-2">
-                           <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                           <h3 className="font-medium text-blue-400">Trust Building Loans</h3>
-                           <div className="relative group">
-                              <HelpCircle className="w-4 h-4 text-blue-400 cursor-help" />
-                              <div className="absolute invisible group-hover:visible w-64 p-3 bg-[#1F2937] rounded-lg shadow-xl text-sm text-gray-100 -translate-x-1/2 left-1/2 bottom-full mb-2 z-10 border border-gray-700">
-                                 <p>
-                                    Smaller loans below your current credit tier. These help build trust with lenders but don't unlock
-                                    higher credit limits.
-                                 </p>
-                                 <ul className="mt-2 list-disc pl-4 space-y-1 text-gray-400">
-                                    <li>Must be at least $20</li>
-                                    <li>Shows active platform usage</li>
-                                    <li>Builds lender confidence</li>
-                                    <li>Doesn't affect credit limit</li>
-                                 </ul>
-                              </div>
-                           </div>
-                        </div>
-                        <p className="mt-2 text-sm text-blue-400">Example: $20 loan while at $40 credit limit</p>
-                     </div>
-                  </div>
-               </CollapsibleSection>
-            </div>
-
-            <div className="bg-[#1F2937] rounded-xl p-6">
-               <h2 className="text-xl font-semibold mb-6">Borrower Insights</h2>
-
-               <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                     <span className="text-gray-400">Avg days between loans:</span>
-                     <div className="flex items-center gap-2">
-                        <span className="text-yellow-400">{loans.length > 0 ? avgDays : '0'} days</span>
-                        <div className="relative group">
-                           <HelpCircle className="w-4 h-4 text-gray-500 cursor-help" />
-                           <div className="absolute invisible group-hover:visible bg-gray-800 text-gray-100 p-2 rounded text-sm w-64 right-0 bottom-full mb-2 z-10">
-                              The average number of days this borrower waits between taking out new loans.
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                     <span className="text-gray-400">Typical payment time:</span>
-                     <div className="flex items-center gap-2">
-                        <span className="text-yellow-400">{loans.length > 0 ? avgPaymentTime : '0'} day</span>
-                        <div className="relative group">
-                           <HelpCircle className="w-4 h-4 text-gray-500 cursor-help" />
-                           <div className="absolute invisible group-hover:visible bg-gray-800 text-gray-100 p-2 rounded text-sm w-64 right-0 bottom-full mb-2 z-10">
-                              The most common time it takes for this borrower to repay their loans after receiving them.
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                     <span className="text-gray-400">Usual loan size:</span>
-                     <div className="flex items-center gap-2">
-                        <span className="text-yellow-400">
-                           $
-                           {loans.length > 0
-                              ? Math.round(loans.reduce((sum, loan) => sum + toNumber(loan.loanAmount), 0) / loans.length)
-                              : '0'}
-                        </span>
-                        <div className="relative group">
-                           <HelpCircle className="w-4 h-4 text-gray-500 cursor-help" />
-                           <div className="absolute invisible group-hover:visible bg-gray-800 text-gray-100 p-2 rounded text-sm w-64 right-0 bottom-full mb-2 z-10">
-                              The amount this borrower most frequently requests for their loans. Currently at their maximum credit limit.
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                     <span className="text-gray-400">Typical loan term:</span>
-                     <div className="flex items-center gap-2">
-                        <span className="text-white">
-                           {loans.length > 0
-                              ? Math.round(
-                                   loans.reduce((sum, loan) => {
-                                      const dueDate = new Date(loan.dueDate);
-                                      const createdDate = new Date(loan.createdAt);
-                                      const days = Math.round((dueDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
-                                      return sum + days;
-                                   }, 0) / loans.length
-                                )
-                              : '0'}{' '}
-                           days
-                        </span>
-                        <div className="absolute invisible group-hover:visible bg-gray-800 text-gray-100 p-2 rounded text-sm w64 right-0 bottom-full mb-2 z-10">
-                           The most common duration this borrower requests for their loans. This reflects their consistent pattern of loan
-                           term preferences rather than an average.
-                        </div>
-                     </div>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                     <span className="text-gray-400">Repeat lenders:</span>
-                     <div className="flex items-center gap-2">
-                        <span className="text-red-400">
-                           {Object.keys(countMap).length - Object.values(countMap).filter((count) => count === 1).length} of{' '}
-                           {Object.keys(countMap).length}
-                        </span>
-                        <div className="relative group">
-                           <HelpCircle className="w-4 h-4 text-gray-500 cursor-help" />
-                           <div className="absolute invisible group-hover:visible bg-gray-800 text-gray-100 p-2 rounded text-sm w-64 right-0 bottom-full mb-2 z-10">
-                              The number of lenders who have provided multiple loans to this borrower out of their total unique lenders.
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-
-            <div className="bg-[#1F2937] rounded-xl p-6">
-               <div className="space-y-4">
-                  <h2 className="text-xl font-semibold">Lender Diversity</h2>
-                  <div className="flex items-center justify-between">
-                     <div className="space-y-2">
-                        <div className={'text-4xl font-bold text-' + getDiversityColor(borrowerData.lenderDiversity.score) + '-400'}>
-                           {borrowerData.lenderDiversity.score} %
-                        </div>
-                        <div className="text-sm text-gray-400">Diversity Score</div>
-                     </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                      <div
-                        className={
-                           'h-16 w-16 rounded-full bg-' +
-                           getDiversityColor(borrowerData.lenderDiversity.score) +
-                           '-900/20 border border-' +
-                           getDiversityColor(borrowerData.lenderDiversity.score) +
-                           '-800 flex items-center justify-center'
-                        }
-                     >
-                        <Users className={'w-8 h-8 text-' + getDiversityColor(borrowerData.lenderDiversity.score) + '-500'} />
-                     </div>
-                  </div>
-
-                  <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                     <div
-                        className={
-                           'h-full transition-all duration-500 bg-' + getDiversityColor(borrowerData.lenderDiversity.score) + '-500'
-                        }
-                        style={{ width: borrowerData.lenderDiversity.score + '%' }}
+                        className="h-full bg-[#6366F1] rounded-full transition-all duration-500"
+                        style={{ width: `${creditProgress}%` }}
                      />
                   </div>
+               </div>
 
-                  <button
-                     onClick={() => setShowLenderNames(!showLenderNames)}
-                     className="w-full px-4 py-2.5 text-sm font-medium text-blue-400 hover:bg-blue-900/20 border border-blue-800 rounded-lg transition-colors flex items-center justify-center gap-1"
-                  >
-                     {showLenderNames ? 'Hide' : 'Show'} Lender Distribution
-                     <ChevronDown className={`w-4 h-4 transform transition-transform ${showLenderNames ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {showLenderNames ? (
-                     <div className="space-y-2 pt-2">
-                        {borrowerData.lenderDiversity.distribution.map((lender) => (
-                           <div key={lender.name} className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-800/50">
-                              <span className="font-medium text-gray-100">{lender.name || 'Others'}</span>
-                              <span className="text-gray-400">{lender.percent} of total loans</span>
-                           </div>
-                        ))}
+               {/* Loan Summary Section */}
+               <div>
+                  <div className="flex items-center gap-2 mb-3">
+                     <span className="text-[15px] font-bold text-[#111827]">Loan Summary</span>
+                     <span className="px-2.5 py-0.5 bg-white border border-green-400 rounded-full text-[11px] font-medium text-green-600">
+                        Good Standing
+                     </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                     {/* Total Borrowed Card */}
+                     <div className="bg-white rounded-2xl p-4 shadow-sm">
+                        <span className="text-[12px] text-[#6B7280]">Total Borrowed</span>
+                        <div className="text-[28px] font-bold text-[#111827] leading-tight mt-1">${formatNumber(totalBorrowed)}</div>
+                        <div className="text-[12px] text-green-500 mt-1">${formatNumber(totalRepaid)} Repaid</div>
+                        <div className="text-[12px] text-[#6B7280]">0 Defaults</div>
                      </div>
-                  ) : null}
+                     {/* Total Loans Card */}
+                     <div className="bg-white rounded-2xl p-4 shadow-sm">
+                        <div className="flex items-center gap-1">
+                           <span className="text-[12px] text-[#6B7280]">Total Loans</span>
+                           <HelpCircle className="w-3.5 h-3.5 text-[#6366F1]" />
+                        </div>
+                        <div className="text-[28px] font-bold text-[#111827] leading-tight mt-1">{loans.length}</div>
+                        <div className="text-[12px] text-[#6B7280] mt-1">{uniqueLoans.length} Credit Unlocking</div>
+                        <div className="text-[12px] text-[#6B7280]">{trustBuildingLoans.length} Trust Building</div>
+                     </div>
+                  </div>
+               </div>
+
+               {/* Lender Diversity Score Section */}
+               <div className="bg-white rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                     <span className="text-[15px] font-bold text-[#111827]">Lender Diversity Score</span>
+                     <button className="text-[13px] font-bold text-[#3B82F6] underline">
+                        {lenderDiversity.uniqueLenders} Unique Lenders
+                     </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                     <span className="text-[28px] font-bold text-[#111827]">{diversityScore} points</span>
+                     <span className={`px-2.5 py-0.5 bg-white border rounded-full text-[11px] font-medium ${getDiversityBorderColor(diversityScore)}`}>
+                        {diversityStatus} Diversity
+                     </span>
+                  </div>
+               </div>
+
+               {/* Borrower Insights Section */}
+               <div>
+                  <span className="text-[15px] font-bold text-[#111827] mb-3 block">Borrower Insights</span>
+                  <div className="bg-white rounded-2xl shadow-sm divide-y divide-gray-50">
+                     <InsightRow label="Avg days between loans" value={`${avgDays} days`} showHelp valueColor="text-[#6366F1]" />
+                     <InsightRow label="Typical payment time" value={`${avgPaymentTime} day`} showHelp valueColor="text-[#6366F1]" />
+                     <InsightRow label="Usual loan size" value={`$${usualLoanSize}`} showHelp valueColor="text-[#6366F1]" />
+                     <InsightRow label="Typical loan term" value={`${avgLoanTerm} days`} valueColor="text-[#111827]" />
+                     <InsightRow
+                        label="Repeat lenders"
+                        value={`${repeatLenderCount} of ${totalUniqueLenders}`}
+                        showHelp
+                        valueColor="text-red-500"
+                     />
+                  </div>
+               </div>
+
+               {/* Recent Loans Section */}
+               <div>
+                  <div className="flex items-center justify-between mb-1">
+                     <span className="text-[15px] font-bold text-[#111827]">Recent Loans</span>
+                     <button className="text-[13px] font-bold text-[#3B82F6] underline">View History</button>
+                  </div>
+                  <p className="text-[12px] text-[#6B7280] mb-4">View who you've lent to and the status of each loan.</p>
+                  <div className="space-y-5">
+                     {loans.slice(0, 5).map((loan: Loan) => (
+                        <RecentLoanItem key={loan.id} loan={loan} resolveUsername={resolveUsername} />
+                     ))}
+                     {loans.length === 0 && <p className="text-sm text-[#6B7280] text-center py-4">No loans yet</p>}
+                  </div>
                </div>
             </div>
+         </div>
+      </div>
+   );
+};
 
-            <div className="bg-[#1F2937] rounded-xl p-6">
-               <h2 className="text-xl font-semibold mb-6">Recent Loans</h2>
-               <div className="space-y-4">
-                  {loans
-                     .filter((loan) => loan.repaymentStatus === 'Paid')
-                     .slice(0, 5)
-                     .map((loan: Loan) => {
-                        const unlock = uniqueLoans.some((item) => item.id === loan.id);
-                        const build = TierLists.some((item) => item.id === loan.id);
-                        return (
-                           <div key={loan.id} className="bg-[#111827] rounded-lg p-4 space-y-3">
-                              <div className="flex justify-between items-start">
-                                 <div>
-                                    <div className="flex items-center gap-2">
-                                       <span className="text-lg font-semibold text-gray-100">${formatNumber(loan.loanAmount)}</span>
-                                       <span className="text-sm text-gray-400">→ ${formatNumber(loan.repaidAmount)} repaid</span>
-                                    </div>
-                                    <div className="text-sm text-gray-400">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</div>
-                                 </div>
-                                 <div className="flex flex-col items-end gap-2">
-                                    <span
-                                       className={`px-3 py-1 ${getNetworkColor(ALLOWED_CHAIN_DISPLAY_NAME)} rounded-lg text-sm font-medium`}
-                                    >
-                                       {ALLOWED_CHAIN_DISPLAY_NAME}
-                                    </span>
-                                    <span
-                                       className={`text-sm font-medium ${loan.repaymentStatus !== 'Paid' ? 'text-blue-400' : 'text-emerald-400'}`}
-                                    >
-                                       {loan.repaymentStatus === 'Paid' ? 'Repaid' : 'Active'}
-                                    </span>
-                                 </div>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                 <span className="text-sm text-gray-400">{resolveUsername(loan.lenderUser) || 'Others'}</span>
-                                 <span
-                                    className={`text-sm font-medium px-2 py-1 rounded-lg ${
-                                       unlock
-                                          ? 'bg-emerald-900/20 text-emerald-400 border border-emerald-800/40'
-                                          : build && Boolean(loan.lenderUser)
-                                            ? 'bg-blue-900/20 text-blue-400 border border-blue-800/40'
-                                            : 'bg-gray-800 text-gray-400'
-                                    }`}
-                                 >
-                                    {unlock
-                                       ? 'Credit Unlocking Loan'
-                                       : build && Boolean(loan.lenderUser)
-                                         ? 'Trust Building Loan'
-                                         : 'Regular Loan'}
-                                 </span>
-                              </div>
-                           </div>
-                        );
-                     })}
-               </div>
-            </div>
+const InsightRow = ({
+   label,
+   value,
+   showHelp,
+   valueColor
+}: {
+   label: string;
+   value: string;
+   showHelp?: boolean;
+   valueColor: string;
+}) => (
+   <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center gap-1.5">
+         <span className="text-[13px] text-[#6B7280]">{label}</span>
+         {showHelp && <HelpCircle className="w-3.5 h-3.5 text-[#6366F1]" />}
+      </div>
+      <span className={`text-[13px] font-bold ${valueColor}`}>{value}</span>
+   </div>
+);
 
-            <button
-               onClick={() => setShowDetailedHistory(!showDetailedHistory)}
-               className="w-full px-4 py-2.5 text-sm font-medium text-blue-400 hover:bg-blue-900/20 border border-blue-800 rounded-lg transition-colors flex items-center justify-center gap-1"
-            >
-               {showDetailedHistory ? 'Hide' : 'Show'} All History
-               <ChevronDown className={`w-4 h-4 transform transition-transform ${showDetailedHistory ? 'rotate-180' : ''}`} />
-            </button>
+const RecentLoanItem = ({
+   loan,
+   resolveUsername
+}: {
+   loan: Loan;
+   resolveUsername: (userId?: string | null) => string;
+}) => {
+   const isPaid = loan.repaymentStatus === 'Paid';
+   const lenderName = resolveUsername(loan.lenderUser) || 'Unknown';
+   const lentDate = formatDate(loan.createdAt);
 
-            {showDetailedHistory ? (
-               <div className="bg-[#1F2937] rounded-xl overflow-x-auto">
-                  <table className="w-full text-sm">
-                     <thead>
-                        <tr className="bg-[#111827]">
-                           <th className="py-3 px-4 text-left font-medium text-gray-200">Date</th>
-                           <th className="py-3 px-4 text-left font-medium text-gray-200">Amount</th>
-                           <th className="py-3 px-4 text-left font-medium text-gray-200">Network</th>
-                           <th className="py-3 px-4 text-left font-medium text-gray-200">Lender</th>
-                           <th className="py-3 px-4 text-left font-medium text-gray-200">Status</th>
-                           <th className="py-3 px-4 text-left font-medium text-gray-200">Type</th>
-                        </tr>
-                     </thead>
-                     <tbody className="divide-y divide-gray-700">
-                        {uniqueLoans.map((loan: Loan) => {
-                           return (
-                              <tr key={loan.id} className="hover:bg-[#111827]">
-                                 <td className="py-3 px-4 text-gray-300">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
-                                 <td className="py-3 px-4 font-medium text-white">${formatNumber(loan.loanAmount)}</td>
-                                 <td className="py-3 px-4">
-                                    <span
-                                       className={`px-2.5 py-1 ${getNetworkColor(ALLOWED_CHAIN_DISPLAY_NAME)} rounded-lg text-xs font-medium`}
-                                    >
-                                       {ALLOWED_CHAIN_DISPLAY_NAME}
-                                    </span>
-                                 </td>
-                                 <td className="py-3 px-4 text-gray-400">{resolveUsername(loan.lenderUser) || 'Others'}</td>
-                                 <td className="py-3 px-4">
-                                    <span
-                                       className={`font-medium ${loan.repaymentStatus !== 'Paid' ? 'text-blue-400' : 'text-emerald-400'}`}
-                                    >
-                                       {loan.repaymentStatus === 'Paid' ? 'Repaid' : 'Active'}
-                                    </span>
-                                 </td>
-                                 <td className="py-3 px-4">
-                                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-900/20 text-emerald-400 border border-emerald-800/40">
-                                       Credit Unlocking Loan
-                                    </span>
-                                 </td>
-                              </tr>
-                           );
-                        })}
-                        {TierLists.map((loan: Loan) => {
-                           return (
-                              <tr key={loan.id} className="hover:bg-[#111827]">
-                                 <td className="py-3 px-4 text-gray-300">{loan.createdAt.split('T')[0].replaceAll('-', '/')}</td>
-                                 <td className="py-3 px-4 font-medium text-white">${formatNumber(loan.loanAmount)}</td>
-                                 <td className="py-3 px-4">
-                                    <span
-                                       className={`px-2.5 py-1 ${getNetworkColor(ALLOWED_CHAIN_DISPLAY_NAME)} rounded-lg text-xs font-medium`}
-                                    >
-                                       {ALLOWED_CHAIN_DISPLAY_NAME}
-                                    </span>
-                                 </td>
-                                 <td className="py-3 px-4 text-gray-400">{resolveUsername(loan.lenderUser) || 'Others'}</td>
-                                 <td className="py-3 px-4">
-                                    <span
-                                       className={`font-medium ${loan.repaymentStatus !== 'Paid' ? 'text-blue-400' : 'text-emerald-400'}`}
-                                    >
-                                       {loan.repaymentStatus === 'Paid' ? 'Repaid' : 'Active'}
-                                    </span>
-                                 </td>
-                                 <td className="py-3 px-4">
-                                    <span
-                                       className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
-                                          Boolean(loan.lenderUser)
-                                             ? 'bg-blue-900/20 text-blue-400 border border-blue-800/40'
-                                             : 'bg-gray-800 text-gray-400'
-                                       }`}
-                                    >
-                                       {loan.lenderUser ? 'Trust Building Loan' : 'Regular Loan'}
-                                    </span>
-                                 </td>
-                              </tr>
-                           );
-                        })}
-                     </tbody>
-                  </table>
-               </div>
-            ) : null}
+   return (
+      <div className="flex items-center gap-3">
+         <img
+            src={PLACEHOLDER_AVATAR}
+            alt="Borrower"
+            className="w-10 h-10 rounded-full object-cover shrink-0"
+         />
+         <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-bold text-[#111827] leading-tight line-clamp-2">{loan.reason || 'Loan request'}</p>
+            <p className="text-[12px] text-[#6B7280] mt-0.5">
+               Lent to {lenderName} &bull; {lentDate}
+            </p>
+         </div>
+         <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <span className="text-[14px] font-bold text-[#111827]">${formatNumber(loan.loanAmount)}</span>
+            {isPaid ? (
+               <span className="inline-flex items-center gap-1 px-2 py-0.5 border border-green-400 rounded-full">
+                  <Check className="w-3 h-3 text-green-500" />
+                  <span className="text-[10px] font-bold text-green-500">REPAID</span>
+               </span>
+            ) : (
+               <span className="inline-flex items-center gap-1 px-2 py-0.5 border border-blue-400 rounded-full">
+                  <CircleAlert className="w-3 h-3 text-blue-500" />
+                  <span className="text-[10px] font-bold text-blue-500">ACTIVE</span>
+               </span>
+            )}
          </div>
       </div>
    );
