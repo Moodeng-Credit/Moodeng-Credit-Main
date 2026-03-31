@@ -1,32 +1,33 @@
 import { useEffect, useState } from 'react';
 
-import { Check, ChevronLeft, CircleAlert, HelpCircle } from 'lucide-react';
+import { Check, ChevronLeft, HelpCircle } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
-
-import { formatDate, getMemberSinceText, parseDateSafely } from '@/utils/dateFormatters';
-import { formatNumber, toNumber } from '@/utils/decimalHelpers';
-import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
-
 import { CREDIT_TIER_INCREMENT } from '@/config/creditTiers';
 import { fetchUserProfiles, getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
-import { type Loan } from '@/types/loanTypes';
+import type { Loan } from '@/types/loanTypes';
+import { formatDate, getMemberSinceText, parseDateSafely } from '@/utils/dateFormatters';
+import { formatNumber, toNumber } from '@/utils/decimalHelpers';
+import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
 
 const PLACEHOLDER_AVATAR =
    'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Chiaroscuro_lighting_illuminates_a_Chibi-style_SVG_logo_a_gray_and_light_pink_hippo__joyfully_jumping__thumbs_up__holding_a_gold_Japanese_Mon_coin.__Hayao_Miyazaki_inspired__deep_teal_hues__warm_candl-uvt0ZI3fogcgqDR4Y2gCSRZfq8QmtX.png';
 
-const getDiversityBorderColor = (score: number) => {
-   if (score >= 80) return 'border-green-400 text-green-600';
-   if (score >= 60) return 'border-blue-400 text-blue-600';
-   if (score >= 40) return 'border-yellow-400 text-yellow-600';
-   if (score >= 20) return 'border-orange-400 text-orange-600';
-   return 'border-red-400 text-red-600';
+const DIVERSITY_STYLES: Record<string, { border: string; text: string; bg: string }> = {
+   Excellent: { border: 'border-md-green-600', text: 'text-md-green-600', bg: 'bg-[rgba(0,134,36,0.05)]' },
+   Good: { border: 'border-md-blue-500', text: 'text-md-blue-500', bg: 'bg-[rgba(0,118,235,0.1)]' },
+   Fair: { border: 'border-md-yellow-700', text: 'text-md-yellow-700', bg: 'bg-[rgba(211,170,0,0.05)]' },
+   Low: { border: 'border-orange-400', text: 'text-orange-500', bg: 'bg-orange-50' },
+   Poor: { border: 'border-md-red-500', text: 'text-md-red-500', bg: 'bg-red-50' }
 };
+
+const getDiversityBadgeStyle = (status: string) =>
+   DIVERSITY_STYLES[status] ?? DIVERSITY_STYLES.Poor;
 
 const UserProfile = () => {
    const dispatch = useDispatch<AppDispatch>();
@@ -34,13 +35,18 @@ const UserProfile = () => {
    const { username } = useParams();
    const [profileUser, setProfileUser] = useState<User | null>(null);
 
+   const user = useSelector((state: RootState) => state.auth.user);
+   const loans = useSelector((state: RootState) => state.loans.loans.gloans);
+   const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
+   const resolvedUser = profileUser ?? user;
+
    useEffect(() => {
       window.scrollTo(0, 0);
    }, []);
 
    useEffect(() => {
+      if (!username) return;
       const loadProfile = async () => {
-         if (!username) return;
          try {
             const { user: fetchedUser } = await dispatch(getUserProfile(username)).unwrap();
             setProfileUser(fetchedUser);
@@ -52,11 +58,6 @@ const UserProfile = () => {
       loadProfile();
    }, [dispatch, username]);
 
-   const user = useSelector((state: RootState) => state.auth.user);
-   const loans = useSelector((state: RootState) => state.loans.loans.gloans);
-   const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
-   const resolvedUser = profileUser ?? user;
-
    useEffect(() => {
       const lenderUserIds = [...new Set(loans.map((loan) => loan.lenderUser).filter(Boolean))] as string[];
       if (lenderUserIds.length > 0) {
@@ -64,234 +65,253 @@ const UserProfile = () => {
       }
    }, [dispatch, loans]);
 
-   if (!resolvedUser || !loans) {
-      return <Loading />;
-   }
+   if (!resolvedUser || !loans) return <Loading />;
 
    const memberSince = getMemberSinceText(resolvedUser.createdAt);
    const resolveUsername = (userId?: string | null) => (userId ? userProfiles[userId]?.username ?? userId : '');
 
-   // Credit Unlocking loans (exact tier amounts, first occurrence only)
+   // --- Computed loan data ---
+
    const uniqueLoans: Loan[] = [];
-   const seenAmounts = new Set();
+   const seenAmounts = new Set<number>();
    for (const loan of loans) {
-      const loanAmountNum = toNumber(loan.loanAmount);
-      if (loanAmountNum % CREDIT_TIER_INCREMENT === 0 && !seenAmounts.has(loanAmountNum)) {
+      const amt = toNumber(loan.loanAmount);
+      if (amt % CREDIT_TIER_INCREMENT === 0 && !seenAmounts.has(amt)) {
          uniqueLoans.push(loan);
-         seenAmounts.add(loanAmountNum);
+         seenAmounts.add(amt);
       }
    }
 
-   // Trust Building loans (non-tier or duplicate tier amounts)
-   const ignoredTier = new Set();
+   const ignoredTier = new Set<number>();
    const trustBuildingLoans = loans.reduce((acc: Loan[], loan: Loan) => {
-      const loanAmountNum = toNumber(loan.loanAmount);
-      const remainder = loanAmountNum % CREDIT_TIER_INCREMENT;
-      const key = Math.floor(loanAmountNum / CREDIT_TIER_INCREMENT) * CREDIT_TIER_INCREMENT;
-      if (remainder === 0) {
-         if (ignoredTier.has(key)) {
-            acc.push(loan);
-         } else {
-            ignoredTier.add(key);
-         }
+      const amt = toNumber(loan.loanAmount);
+      const key = Math.floor(amt / CREDIT_TIER_INCREMENT) * CREDIT_TIER_INCREMENT;
+      if (amt % CREDIT_TIER_INCREMENT === 0) {
+         if (ignoredTier.has(key)) acc.push(loan);
+         else ignoredTier.add(key);
       } else {
          acc.push(loan);
       }
       return acc;
    }, []);
 
-   // Repeat lender count
-   const countMap = loans.reduce((acc: Record<string, number>, loan: Loan) => {
-      const usernameToCount = resolveUsername(loan.lenderUser) || 'Unknown';
-      acc[usernameToCount] = (acc[usernameToCount] || 0) + 1;
+   const countMap = loans.reduce<Record<string, number>>((acc, loan) => {
+      const name = resolveUsername(loan.lenderUser) || 'Unknown';
+      acc[name] = (acc[name] || 0) + 1;
       return acc;
    }, {});
 
-   // Average days between loans
-   const sortedLoans = [...loans].sort((a, b) => parseDateSafely(a.createdAt).getTime() - parseDateSafely(b.createdAt).getTime());
-   let totalDays = 0;
+   const sortedLoans = [...loans].sort(
+      (a, b) => parseDateSafely(a.createdAt).getTime() - parseDateSafely(b.createdAt).getTime()
+   );
+   let totalDaysBetween = 0;
    for (let i = 1; i < sortedLoans.length; i++) {
-      const prev = parseDateSafely(sortedLoans[i].createdAt);
-      const next = parseDateSafely(sortedLoans[i - 1].createdAt);
-      totalDays += (prev.getTime() - next.getTime()) / (1000 * 3600 * 24);
+      totalDaysBetween +=
+         (parseDateSafely(sortedLoans[i].createdAt).getTime() - parseDateSafely(sortedLoans[i - 1].createdAt).getTime()) /
+         (1000 * 3600 * 24);
    }
-   const avgDays = sortedLoans.length > 1 ? Math.round(totalDays / (sortedLoans.length - 1)) : 0;
+   const avgDays = sortedLoans.length > 1 ? Math.round(totalDaysBetween / (sortedLoans.length - 1)) : 0;
 
-   // Average payment time for paid loans
-   const paidLoans = loans.filter((loan) => loan.repaymentStatus === 'Paid');
-   let totalPaymentTime = 0;
-   paidLoans.forEach((loan) => {
-      const loanedAt = parseDateSafely(loan.createdAt);
-      const paidAt = parseDateSafely(loan.updatedAt);
-      totalPaymentTime += (paidAt.getTime() - loanedAt.getTime()) / (1000 * 60 * 60 * 24);
-   });
-   const avgPaymentTime = paidLoans.length > 0 ? Math.round(totalPaymentTime / paidLoans.length) : 0;
+   const paidLoans = loans.filter((l) => l.repaymentStatus === 'Paid');
+   const avgPaymentTime =
+      paidLoans.length > 0
+         ? Math.round(
+              paidLoans.reduce((sum, l) => {
+                 return sum + (parseDateSafely(l.updatedAt).getTime() - parseDateSafely(l.createdAt).getTime()) / (1000 * 3600 * 24);
+              }, 0) / paidLoans.length
+           )
+         : 0;
 
-   // Usual loan size
-   const usualLoanSize = loans.length > 0 ? Math.round(loans.reduce((sum, loan) => sum + toNumber(loan.loanAmount), 0) / loans.length) : 0;
+   const usualLoanSize =
+      loans.length > 0 ? Math.round(loans.reduce((sum, l) => sum + toNumber(l.loanAmount), 0) / loans.length) : 0;
 
-   // Typical loan term
    const avgLoanTerm =
       loans.length > 0
          ? Math.round(
-              loans.reduce((sum, loan) => {
-                 const dueDate = new Date(loan.dueDate);
-                 const createdDate = new Date(loan.createdAt);
-                 return sum + Math.round((dueDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+              loans.reduce((sum, l) => {
+                 return sum + (new Date(l.dueDate).getTime() - new Date(l.createdAt).getTime()) / (1000 * 3600 * 24);
               }, 0) / loans.length
            )
          : 0;
 
-   // Repeat lenders
    const totalUniqueLenders = Object.keys(countMap).length;
-   const repeatLenderCount = totalUniqueLenders - Object.values(countMap).filter((count) => count === 1).length;
+   const repeatLenderCount = totalUniqueLenders - Object.values(countMap).filter((c) => c === 1).length;
 
    const lenderDiversity = calculateLenderDiversity(loans, userProfiles);
+   const totalBorrowed = loans.reduce((sum, l) => (l.loanStatus === 'Lent' ? sum + toNumber(l.loanAmount) : sum), 0);
+   const totalRepaid = loans.reduce((sum, l) => (l.repaymentStatus === 'Paid' ? sum + toNumber(l.loanAmount) : sum), 0);
 
-   const totalBorrowed = loans.reduce((sum, loan) => (loan.loanStatus === 'Lent' ? sum + toNumber(loan.loanAmount) : sum), 0);
-   const totalRepaid = loans.reduce((sum, loan) => (loan.repaymentStatus === 'Paid' ? sum + toNumber(loan.loanAmount) : sum), 0);
-
-   // Credit level
    const creditLevel = Math.floor(resolvedUser.cs / CREDIT_TIER_INCREMENT);
    const creditMax = resolvedUser.cs;
    const creditProgress = creditMax > 0 ? Math.min((totalBorrowed / creditMax) * 100, 100) : 0;
 
    const diversityScore = lenderDiversity.score;
    const diversityStatus = getDiversityStatus(diversityScore);
+   const badge = getDiversityBadgeStyle(diversityStatus);
 
    return (
-      <div className="min-h-screen bg-[#F4F4F5]">
-         <div className="max-w-lg mx-auto pb-8">
-            {/* Top App Bar */}
-            <div className="flex items-center justify-between px-5 py-4 bg-white">
-               <button onClick={() => navigate(-1)} className="text-[#111827] hover:text-gray-600">
-                  <ChevronLeft className="w-6 h-6" />
-               </button>
-               <h1 className="text-[22px] font-bold text-[#111827]">Borrower Insights</h1>
-               <button className="w-8 h-8 rounded-full border-2 border-[#6366F1] flex items-center justify-center text-[#6366F1] hover:bg-indigo-50">
-                  <span className="text-sm font-bold">?</span>
+      <div className="min-h-screen bg-md-neutral-200">
+         <div className="max-w-[440px] mx-auto pb-8">
+            {/* Header */}
+            <div className="flex items-center justify-between px-md-5 py-md-3">
+               <div className="flex-1 flex items-center gap-4">
+                  <button onClick={() => navigate(-1)} className="shrink-0 w-6 h-6 flex items-center justify-center">
+                     <ChevronLeft className="w-6 h-6 text-md-primary-2000" />
+                  </button>
+                  <h1 className="text-md-h3 font-semibold text-md-primary-2000">Borrower Insights</h1>
+               </div>
+               <button className="shrink-0 w-12 h-12 bg-white rounded-full shadow-md-card flex items-center justify-center">
+                  <HelpCircle className="w-6 h-6 text-md-primary-900" strokeWidth={1.5} />
                </button>
             </div>
 
-            <div className="px-5 pt-5 space-y-4">
-               {/* User Profile Section */}
-               <div className="flex items-center gap-3">
-                  <img
-                     src={PLACEHOLDER_AVATAR}
-                     alt="Profile"
-                     className="w-12 h-12 rounded-full object-cover"
-                  />
-                  <div className="flex flex-col">
-                     <span className="text-[16px] font-bold text-[#111827]">{resolvedUser.username || username}</span>
-                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 rounded-full w-fit">
-                        <Check className="w-3 h-3 text-green-600" />
-                        <span className="text-[10px] font-medium text-green-700">Verified Lender</span>
-                     </span>
-                     <span className="text-[12px] text-[#6B7280] mt-0.5">Member since {memberSince}</span>
+            {/* Body */}
+            <div className="flex flex-col gap-5 px-md-4 py-md-3">
+               {/* User Profile */}
+               <div className="flex items-start gap-3">
+                  <img src={PLACEHOLDER_AVATAR} alt="Profile" className="shrink-0 w-[70px] h-[70px] rounded-full object-cover" />
+                  <div className="flex-1 flex flex-col gap-1 justify-center">
+                     <p className="text-[18px] tracking-[-0.04em] leading-[1.2] font-semibold text-md-primary-2000">
+                        {resolvedUser.username || username}
+                     </p>
+                     <div className="flex items-center">
+                        <span className="inline-flex items-center gap-1 px-md-1 py-md-0 bg-md-green-100 rounded-md-sm">
+                           <span className="w-3 h-3 rounded-full bg-md-green-900 flex items-center justify-center">
+                              <Check className="w-2 h-2 text-white" strokeWidth={4} />
+                           </span>
+                           <span className="text-md-b3 font-semibold text-md-green-900 capitalize">Verified Borrower</span>
+                        </span>
+                     </div>
+                     <p className="text-md-b3 font-normal text-md-neutral-1400">Member since {memberSince}</p>
                   </div>
                </div>
 
-               {/* Credit Level Section */}
-               <div className="bg-white rounded-2xl p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                     <div className="flex items-center gap-1.5">
-                        <span className="text-[15px] font-bold text-[#111827]">Credit Level</span>
-                        <HelpCircle className="w-4 h-4 text-[#6366F1]" />
+               {/* Credit Level */}
+               <div className="flex flex-col gap-5">
+                  <div className="flex items-center justify-between">
+                     <div className="flex items-center gap-2">
+                        <span className="text-md-h5 font-semibold text-md-heading">Credit Level</span>
+                        <HelpCircle className="w-5 h-5 text-md-primary-900" strokeWidth={1.5} />
                      </div>
-                     <button className="text-[13px] font-bold text-[#3B82F6] underline">View Progress History</button>
+                     <button className="text-md-b2 font-semibold text-md-blue-600 underline">View Progress History</button>
                   </div>
-                  <div className="flex items-center justify-between mb-2">
-                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 rounded-full">
-                        <span className="w-2 h-2 rounded-full bg-gray-500" />
-                        <span className="text-[12px] text-gray-400 italic">LVL {creditLevel}</span>
-                     </span>
-                     <span className="text-[13px]">
-                        <span className="text-[#6366F1] font-bold">${formatNumber(creditMax)}</span>
-                        <span className="text-[#6B7280]"> / ${formatNumber(creditMax)}</span>
-                     </span>
-                  </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                     <div
-                        className="h-full bg-[#6366F1] rounded-full transition-all duration-500"
-                        style={{ width: `${creditProgress}%` }}
-                     />
-                  </div>
-               </div>
-
-               {/* Loan Summary Section */}
-               <div>
-                  <div className="flex items-center gap-2 mb-3">
-                     <span className="text-[15px] font-bold text-[#111827]">Loan Summary</span>
-                     <span className="px-2.5 py-0.5 bg-white border border-green-400 rounded-full text-[11px] font-medium text-green-600">
-                        Good Standing
-                     </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                     {/* Total Borrowed Card */}
-                     <div className="bg-white rounded-2xl p-4 shadow-sm">
-                        <span className="text-[12px] text-[#6B7280]">Total Borrowed</span>
-                        <div className="text-[28px] font-bold text-[#111827] leading-tight mt-1">${formatNumber(totalBorrowed)}</div>
-                        <div className="text-[12px] text-green-500 mt-1">${formatNumber(totalRepaid)} Repaid</div>
-                        <div className="text-[12px] text-[#6B7280]">0 Defaults</div>
-                     </div>
-                     {/* Total Loans Card */}
-                     <div className="bg-white rounded-2xl p-4 shadow-sm">
-                        <div className="flex items-center gap-1">
-                           <span className="text-[12px] text-[#6B7280]">Total Loans</span>
-                           <HelpCircle className="w-3.5 h-3.5 text-[#6366F1]" />
+                  <div className="flex flex-col gap-3">
+                     <div className="flex items-center gap-2">
+                        {/* LVL Badge */}
+                        <div className="flex items-center">
+                           <div className="w-[28px] h-[28px] rounded-full bg-md-neutral-500 flex items-center justify-center z-10">
+                              <div className="w-4 h-4 rounded-full bg-md-neutral-1400" />
+                           </div>
+                           <div className="bg-md-neutral-500 rounded-md-sm flex items-center justify-end px-md-1 h-[22px] w-[58px] -ml-2">
+                              <span className="font-knewave text-md-b2 text-md-neutral-1400 text-center">LVL {creditLevel}</span>
+                           </div>
                         </div>
-                        <div className="text-[28px] font-bold text-[#111827] leading-tight mt-1">{loans.length}</div>
-                        <div className="text-[12px] text-[#6B7280] mt-1">{uniqueLoans.length} Credit Unlocking</div>
-                        <div className="text-[12px] text-[#6B7280]">{trustBuildingLoans.length} Trust Building</div>
+                        <div className="flex-1 flex items-center justify-end gap-1 text-md-b2">
+                           <span className="font-semibold text-md-primary-800">${formatNumber(creditMax)}</span>
+                           <span className="font-normal text-md-neutral-700">/ ${formatNumber(creditMax)}</span>
+                        </div>
+                     </div>
+                     {/* Progress Bar */}
+                     <div className="h-3 bg-md-neutral-100 rounded-md-pill overflow-hidden">
+                        <div
+                           className="h-full bg-md-primary-900 rounded-md-pill transition-all duration-500"
+                           style={{ width: `${Math.max(creditProgress, 8)}%` }}
+                        />
                      </div>
                   </div>
                </div>
 
-               {/* Lender Diversity Score Section */}
-               <div className="bg-white rounded-2xl p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                     <span className="text-[15px] font-bold text-[#111827]">Lender Diversity Score</span>
-                     <button className="text-[13px] font-bold text-[#3B82F6] underline">
-                        {lenderDiversity.uniqueLenders} Unique Lenders
-                     </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                     <span className="text-[28px] font-bold text-[#111827]">{diversityScore} points</span>
-                     <span className={`px-2.5 py-0.5 bg-white border rounded-full text-[11px] font-medium ${getDiversityBorderColor(diversityScore)}`}>
-                        {diversityStatus} Diversity
+               {/* Loan Summary */}
+               <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-4">
+                     <span className="text-md-h5 font-semibold text-md-heading">Loan Summary</span>
+                     <span className="inline-flex items-center justify-center px-md-1 py-md-0 rounded-[30px] border border-md-green-600 bg-[rgba(0,134,36,0.05)]">
+                        <span className="text-md-b4 font-semibold text-md-green-600">Good Standing</span>
                      </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                     {/* Total Borrowed */}
+                     <div className="bg-md-neutral-100 rounded-md-lg p-4 shadow-md-card flex flex-col gap-1">
+                        <p className="text-md-b2 font-medium text-md-neutral-1500">Total Borrowed</p>
+                        <p className="text-md-h3 font-semibold text-md-neutral-2000">${formatNumber(totalBorrowed)}</p>
+                        <p className="text-md-b3 font-semibold text-md-green-700">${formatNumber(totalRepaid)} Repaid</p>
+                        <p className="text-md-b3 text-md-neutral-1200">
+                           <span className="font-semibold">0 </span>
+                           <span className="font-normal">Defaults</span>
+                        </p>
+                     </div>
+
+                     {/* Total Loans */}
+                     <div className="bg-md-neutral-100 rounded-md-lg p-4 shadow-md-card flex flex-col gap-1 justify-center">
+                        <div className="flex items-center gap-1">
+                           <p className="text-md-b2 font-medium text-md-neutral-1500">Total Loans</p>
+                           <HelpCircle className="w-4 h-4 text-md-primary-900" strokeWidth={1.5} />
+                        </div>
+                        <p className="text-md-h3 font-semibold text-md-neutral-2000">{loans.length}</p>
+                        <div className="flex flex-col gap-1 text-md-b3 text-md-neutral-1200">
+                           <p>
+                              <span className="font-semibold">{uniqueLoans.length} </span>
+                              <span className="font-normal">Credit Unlocking</span>
+                           </p>
+                           <p>
+                              <span className="font-semibold">{trustBuildingLoans.length} </span>
+                              <span className="font-normal">Trust Building</span>
+                           </p>
+                        </div>
+                     </div>
+
+                     {/* Lender Diversity Score */}
+                     <div className="col-span-2 bg-md-neutral-100 rounded-md-lg p-md-4 border border-md-primary-100 flex flex-col gap-2.5">
+                        <div className="flex items-center justify-between">
+                           <p className="text-md-b1 font-semibold text-md-heading">Lender Diversity Score</p>
+                           <button className="text-md-b2 font-semibold text-md-blue-600 underline">
+                              {lenderDiversity.uniqueLenders} Unique {lenderDiversity.uniqueLenders === 1 ? 'Lender' : 'Lenders'}
+                           </button>
+                        </div>
+                        <div className="flex items-center gap-4">
+                           <p className="text-md-h4 font-semibold text-md-heading">{diversityScore} points</p>
+                           <span className={`inline-flex items-center justify-center px-md-1 py-md-0 rounded-[30px] border ${badge.border} ${badge.bg}`}>
+                              <span className={`text-md-b4 font-semibold ${badge.text}`}>{diversityStatus} Diversity</span>
+                           </span>
+                        </div>
+                     </div>
                   </div>
                </div>
 
-               {/* Borrower Insights Section */}
-               <div>
-                  <span className="text-[15px] font-bold text-[#111827] mb-3 block">Borrower Insights</span>
-                  <div className="bg-white rounded-2xl shadow-sm divide-y divide-gray-50">
-                     <InsightRow label="Avg days between loans" value={`${avgDays} days`} showHelp valueColor="text-[#6366F1]" />
-                     <InsightRow label="Typical payment time" value={`${avgPaymentTime} day`} showHelp valueColor="text-[#6366F1]" />
-                     <InsightRow label="Usual loan size" value={`$${usualLoanSize}`} showHelp valueColor="text-[#6366F1]" />
-                     <InsightRow label="Typical loan term" value={`${avgLoanTerm} days`} valueColor="text-[#111827]" />
+               {/* Borrower Insights */}
+               <div className="flex flex-col gap-4">
+                  <p className="text-md-h5 font-semibold text-md-heading">Borrower Insights</p>
+                  <div className="bg-md-neutral-100 rounded-md-lg border border-md-primary-100 p-md-4 flex flex-col gap-2.5">
+                     <InsightRow label="Avg days between loans" value={`${avgDays} days`} showHelp valueColor="text-md-primary-900" />
+                     <InsightRow label="Typical payment time" value={`${avgPaymentTime} ${avgPaymentTime === 1 ? 'day' : 'days'}`} showHelp valueColor="text-md-primary-900" />
+                     <InsightRow label="Usual loan size" value={`$${usualLoanSize}`} showHelp valueColor="text-md-primary-900" />
+                     <InsightRow label="Typical loan term" value={`${avgLoanTerm} days`} valueColor="text-md-primary-2000" />
                      <InsightRow
                         label="Repeat lenders"
                         value={`${repeatLenderCount} of ${totalUniqueLenders}`}
                         showHelp
-                        valueColor="text-red-500"
+                        valueColor="text-md-red-500"
                      />
                   </div>
                </div>
 
-               {/* Recent Loans Section */}
-               <div>
-                  <div className="flex items-center justify-between mb-1">
-                     <span className="text-[15px] font-bold text-[#111827]">Recent Loans</span>
-                     <button className="text-[13px] font-bold text-[#3B82F6] underline">View History</button>
+               {/* Recent Loans */}
+               <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2">
+                     <div className="flex items-center justify-between">
+                        <span className="text-md-h5 font-semibold text-md-heading">Recent Loans</span>
+                        <button className="text-md-b2 font-semibold text-md-blue-600 underline">View History</button>
+                     </div>
+                     <p className="text-md-b3 font-normal text-md-neutral-1500">
+                        View who you've lent to and the status of each loan.
+                     </p>
                   </div>
-                  <p className="text-[12px] text-[#6B7280] mb-4">View who you've lent to and the status of each loan.</p>
-                  <div className="space-y-5">
+                  <div className="bg-white rounded-md-lg shadow-md-card py-4 px-3 flex flex-col gap-5">
                      {loans.slice(0, 5).map((loan: Loan) => (
                         <RecentLoanItem key={loan.id} loan={loan} resolveUsername={resolveUsername} />
                      ))}
-                     {loans.length === 0 && <p className="text-sm text-[#6B7280] text-center py-4">No loans yet</p>}
+                     {loans.length === 0 && <p className="text-md-b2 text-md-neutral-1200 text-center py-4">No loans yet</p>}
                   </div>
                </div>
             </div>
@@ -311,50 +331,44 @@ const InsightRow = ({
    showHelp?: boolean;
    valueColor: string;
 }) => (
-   <div className="flex items-center justify-between px-4 py-3">
-      <div className="flex items-center gap-1.5">
-         <span className="text-[13px] text-[#6B7280]">{label}</span>
-         {showHelp && <HelpCircle className="w-3.5 h-3.5 text-[#6366F1]" />}
+   <div className="flex items-center justify-between gap-5">
+      <div className="flex items-center gap-1">
+         <span className="text-md-b1 font-normal text-md-neutral-1400">{label}</span>
+         {showHelp && <HelpCircle className="w-4 h-4 text-md-primary-900" strokeWidth={1.5} />}
       </div>
-      <span className={`text-[13px] font-bold ${valueColor}`}>{value}</span>
+      <span className={`text-md-b2 font-semibold ${valueColor}`}>{value}</span>
    </div>
 );
 
-const RecentLoanItem = ({
-   loan,
-   resolveUsername
-}: {
-   loan: Loan;
-   resolveUsername: (userId?: string | null) => string;
-}) => {
+const RecentLoanItem = ({ loan, resolveUsername }: { loan: Loan; resolveUsername: (id?: string | null) => string }) => {
    const isPaid = loan.repaymentStatus === 'Paid';
    const lenderName = resolveUsername(loan.lenderUser) || 'Unknown';
    const lentDate = formatDate(loan.createdAt);
 
    return (
-      <div className="flex items-center gap-3">
-         <img
-            src={PLACEHOLDER_AVATAR}
-            alt="Borrower"
-            className="w-10 h-10 rounded-full object-cover shrink-0"
-         />
-         <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-bold text-[#111827] leading-tight line-clamp-2">{loan.reason || 'Loan request'}</p>
-            <p className="text-[12px] text-[#6B7280] mt-0.5">
-               Lent to {lenderName} &bull; {lentDate}
-            </p>
+      <div className="flex items-start gap-2 py-md-0">
+         <img src={PLACEHOLDER_AVATAR} alt="Avatar" className="shrink-0 w-12 rounded-full object-cover" />
+         <div className="flex-1 min-w-0 flex flex-col gap-1">
+            <p className="text-md-b1 font-semibold text-md-primary-2000 line-clamp-2">{loan.reason || 'Loan request'}</p>
+            <div className="flex items-center gap-1 text-md-b3 text-md-neutral-1200">
+               <span>Lent to {lenderName}</span>
+               <span className="w-1 h-1 rounded-full bg-md-neutral-1200" />
+               <span>{lentDate}</span>
+            </div>
          </div>
-         <div className="flex flex-col items-end gap-1.5 shrink-0">
-            <span className="text-[14px] font-bold text-[#111827]">${formatNumber(loan.loanAmount)}</span>
+         <div className="shrink-0 flex flex-col items-end gap-1">
+            <p className="text-md-b1 font-semibold text-md-primary-2000 overflow-hidden text-ellipsis whitespace-nowrap">
+               ${formatNumber(loan.loanAmount)}
+            </p>
             {isPaid ? (
-               <span className="inline-flex items-center gap-1 px-2 py-0.5 border border-green-400 rounded-full">
-                  <Check className="w-3 h-3 text-green-500" />
-                  <span className="text-[10px] font-bold text-green-500">REPAID</span>
+               <span className="inline-flex items-center gap-1 px-md-1 py-md-0 rounded-[24px] border border-md-primary-900 bg-[rgba(131,54,240,0.1)]">
+                  <Check className="w-3 h-3 text-md-primary-900" strokeWidth={3} />
+                  <span className="text-md-b4 font-semibold text-md-primary-900">REPAID</span>
                </span>
             ) : (
-               <span className="inline-flex items-center gap-1 px-2 py-0.5 border border-blue-400 rounded-full">
-                  <CircleAlert className="w-3 h-3 text-blue-500" />
-                  <span className="text-[10px] font-bold text-blue-500">ACTIVE</span>
+               <span className="inline-flex items-center gap-1 px-md-1 py-md-0 rounded-[24px] border border-md-green-700 bg-[rgba(31,193,107,0.1)]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-md-green-700" />
+                  <span className="text-md-b4 font-semibold text-md-green-700">ACTIVE</span>
                </span>
             )}
          </div>
