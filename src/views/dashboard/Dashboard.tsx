@@ -57,7 +57,6 @@ function Dashboard$() {
    }, []);
 
    const { isConnected, status } = account;
-   const { isConnected } = account;
    const { showToastByConfig } = useToast();
    const { openConnectModal } = useConnectModal();
 
