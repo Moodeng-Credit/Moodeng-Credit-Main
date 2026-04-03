@@ -1,7 +1,5 @@
 import { type FC } from 'react';
 
-import { Shield } from 'lucide-react';
-
 import { ModalHeader } from '@/components/worldId/modal/ModalHeader';
 import { modalHeaderConfig } from '@/components/worldId/modal/verificationModalConfig';
 
@@ -9,22 +7,36 @@ interface VerificationModalHeaderProps {
    onClose: () => void;
 }
 
-/**
- * Pre-configured header for the verification modal
- */
 export const VerificationModalHeader: FC<VerificationModalHeaderProps> = ({ onClose }) => {
    return (
-      <ModalHeader
-         icon={
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-               <Shield size={40} />
+      <>
+         <div className="flex items-center justify-between bg-white px-6 py-4 font-sans border-b border-gray-200">
+            <div className="flex items-center gap-3">
+               <button
+                  onClick={onClose}
+                  className="flex items-center justify-center -ml-2 rounded-full transition-all active:scale-95"
+                  aria-label="Go back"
+               >
+                  <img src="/world-id-back.svg" alt="" aria-hidden="true" className="w-8 h-8" />
+               </button>
+
+               <h3 className="text-3xl font-semibold text-gray-900 tracking-tighter">Verify World ID</h3>
             </div>
-         }
-         title={modalHeaderConfig.title}
-         description={modalHeaderConfig.description}
-         onClose={onClose}
-         titleId="verification-modal-title"
-         descriptionId="verification-modal-description"
-      />
+            <button
+               // onClick={() => window.open(modalHeaderConfig.infoLink, '_blank')}
+               className="flex items-center justify-center rounded-full text-blue-600 w-12 h-12 transition-all active:scale-95 shadow-md"
+               aria-label="View information"
+            >
+               <img src="/world-id-info.svg" alt="" aria-hidden="true" className="w-7 h-7" />
+            </button>
+         </div>
+         <ModalHeader
+            title={modalHeaderConfig.title}
+            description={modalHeaderConfig.description}
+            titleId="verification-modal-title"
+            descriptionId="verification-modal-description"
+            isMainContent
+         />
+      </>
    );
 };

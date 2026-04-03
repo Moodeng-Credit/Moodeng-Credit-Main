@@ -9,25 +9,18 @@ interface ModalStepProps {
    bgColor?: string;
 }
 
-export const ModalStep: FC<ModalStepProps> = ({
-   stepNumber,
-   title,
-   description,
-   icon,
-   iconColor = 'bg-blue-100 text-blue-600',
-   bgColor = 'bg-gray-50'
-}) => {
+export const ModalStep: FC<ModalStepProps> = ({ stepNumber, title, description, icon }) => {
    return (
-      <div className={`flex gap-4 rounded-2xl p-6 ${bgColor}`}>
-         <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl ${iconColor}`}>
-            {icon || <span className="text-xl font-bold">{stepNumber}</span>}
+      <div className={`flex gap-3 items-center font-sans border border-md-neutral-500 justify-center rounded-[14px] p-5 bg-md-primary-100`}>
+         <div
+            className={`flex h-8 w-8 text-white flex-shrink-0 text-xl font-semibold items-center justify-center rounded-xl bg-md-primary-1200`}
+         >
+            {icon || <span className="text-white  ">{stepNumber}</span>}
          </div>
 
-         <div className="flex-1">
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">
-               {stepNumber}. {title}
-            </h3>
-            <p className="text-sm leading-relaxed text-gray-600">{description}</p>
+         <div className="flex-1 text-left">
+            <h3 className="text-base font-medium leading-tighter text-md-neutral-2000">{title}</h3>
+            <p className="text-xs font-regular leading-tighter text-md-neutral-1400">{description}</p>
          </div>
       </div>
    );

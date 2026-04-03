@@ -12,15 +12,21 @@ export default {
             md: {
                primary: {
                   100: '#f1e9fd',
+                  500: '#914cf2',
                   800: '#914cf2',
+                  1200: '#6010D2',
+                  1100: '#8336F0',
                   900: '#8336f0',
                   2000: '#1c053d'
                },
                heading: '#040033',
                neutral: {
+                  50: '#fdfbfd',
                   100: '#fdfcfd',
                   200: '#f9f8fa',
+                  300: '#f2f0f5',
                   500: '#c0b9c8',
+                  600: '#9d93a6',
                   700: '#6d6d6d',
                   1000: '#877897',
                   1200: '#70617f',
@@ -56,17 +62,23 @@ export default {
             'md-5': '24px'
          },
          borderRadius: {
+            'md-xs': '10px',
             'md-sm': '4px',
+            'md-sm-md': '14px',
             'md-md': '8px',
             'md-lg': '16px',
             'md-xl': '20px',
             'md-pill': '500px'
+         },
+         maxWidth: {
+            modal: '440px'
          },
          boxShadow: {
             'md-card': '0px 2px 4px 0px rgba(27, 28, 29, 0.04)',
             'md-nav': '0px 4px 40.8px 0px rgba(0, 0, 0, 0.08)'
          },
          fontSize: {
+            'md-display': ['34px', { lineHeight: '1.2', letterSpacing: '-0.04em', fontWeight: '590' }],
             'md-h3': ['28px', { lineHeight: '1.2', letterSpacing: '-0.04em', fontWeight: '590' }],
             'md-h4': ['24px', { lineHeight: '1.2', letterSpacing: '-0.04em', fontWeight: '590' }],
             'md-h5': ['18px', { lineHeight: '1.2', letterSpacing: '-0.04em', fontWeight: '590' }],

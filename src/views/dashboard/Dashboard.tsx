@@ -1,12 +1,8 @@
-
-
 import { type ChangeEvent, type FormEvent, type MouseEvent, type RefObject, useCallback, useEffect, useMemo, useState } from 'react';
-
-
-import { Link, useLocation } from 'react-router-dom';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
+import { Link, useLocation } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
@@ -16,13 +12,13 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import YouTubeVideoLightbox from '@/components/ui/YouTubeVideoLightbox';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
-import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { usePagination } from '@/hooks/usePagination';
 
 import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
+import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -49,7 +45,7 @@ function Dashboard$() {
    const pathname = useLocation().pathname;
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
-   
+
    useEffect(() => {
       console.log('[Dashboard Debug] Mount Status:', {
          pathname,
