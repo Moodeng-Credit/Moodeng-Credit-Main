@@ -14,6 +14,7 @@ export interface VerificationButton {
    variant: 'primary' | 'secondary' | 'outline';
    label: string;
    icon: ReactNode;
+   iconPosition?: 'left' | 'right';
    action: 'externalLink' | 'verify' | 'checkStatus';
    externalIcon?: ReactNode;
    url?: string;

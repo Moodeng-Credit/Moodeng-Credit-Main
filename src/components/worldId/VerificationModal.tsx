@@ -1,5 +1,3 @@
-
-
 import { type FC } from 'react';
 
 import { ModalNote } from '@/components/worldId/modal/ModalNote';
@@ -22,7 +20,7 @@ export const VerificationModal: FC<VerificationModalProps> = ({ isOpen, onClose,
          ariaLabelledBy="verification-modal-title"
          ariaDescribedBy="verification-modal-description"
       >
-         <div className="overflow-hidden rounded-3xl bg-white shadow-2xl">
+         <div className="overflow-hidden rounded-[20px] bg-white shadow-2xl">
             <VerificationModalHeader onClose={onClose} />
             <VerificationModalBody onVerify={onVerify} onCheckStatus={onCheckStatus} />
             <ModalNote />

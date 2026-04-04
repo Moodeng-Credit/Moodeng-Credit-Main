@@ -1,8 +1,9 @@
 import { type FC } from 'react';
 
-import TextWithLine from '@/components/ui/TextWithLine';
+// import TextWithLine from '@/components/ui/TextWithLine';
 import { ModalButton } from '@/components/worldId/modal/ModalButton';
-import { dividerText, verificationButtons } from '@/components/worldId/modal/verificationModalConfig';
+// import { dividerText, verificationButtons } from '@/components/worldId/modal/verificationModalConfig';
+import { verificationButtons } from '@/components/worldId/modal/verificationModalConfig';
 
 interface ActionButtonsSectionProps {
    onVerify: () => void;
@@ -29,9 +30,14 @@ export const ActionButtonsSection: FC<ActionButtonsSectionProps> = ({ onVerify, 
 
    return (
       <div className="space-y-3">
-         {verificationButtons.map((button, index) => (
+         {verificationButtons.map((button) => (
             <div key={button.id}>
-               <ModalButton variant={button.variant} onClick={() => handleButtonClick(button)} icon={button.icon} iconPosition="left">
+               <ModalButton
+                  variant={button.variant}
+                  onClick={() => handleButtonClick(button)}
+                  icon={button.icon}
+                  iconPosition={button.iconPosition || 'left'}
+               >
                   {button.externalIcon ? (
                      <span className="flex items-center gap-2">
                         {button.label}
@@ -43,7 +49,7 @@ export const ActionButtonsSection: FC<ActionButtonsSectionProps> = ({ onVerify, 
                </ModalButton>
 
                {/* Show divider after first button */}
-               {index === 0 ? <TextWithLine text={dividerText} textColour="text-gray-500" lineColour="bg-gray-300" /> : null}
+               {/* {index === 0 ? <TextWithLine text={dividerText} textColour="text-gray-500" lineColour="bg-gray-300" /> : null} */}
             </div>
          ))}
       </div>

@@ -1,32 +1,33 @@
 import { useEffect } from 'react';
+
 import posthog from 'posthog-js';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
-import { type RootState } from '@/store/store';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
+import AuthSuccess from '@/app/auth-success/page';
+import AuthConfirm from '@/app/auth/confirm/page';
 import Benefits from '@/app/benefits/page';
 import Dashboard from '@/app/dashboard/page';
 import FAQ from '@/app/faq/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
 import Login from '@/app/login/page';
-import SignUp from '@/app/signup/page';
-import AuthConfirm from '@/app/auth/confirm/page';
-import AuthSuccess from '@/app/auth-success/page';
 // Import pages
 import Home from '@/app/page';
 import Profile from '@/app/profile/page';
 import ResetPassword from '@/app/reset-password/page';
+import SignUp from '@/app/signup/page';
 import Simple from '@/app/simple/page';
 import Test from '@/app/test/page';
 import UserProfile from '@/app/user/[username]/page';
 import Ut from '@/app/ut/page';
 import WhyLend from '@/app/whylend/page';
+import { type RootState } from '@/store/store';
 
 function Layout({ children }: { children: React.ReactNode }) {
    return (

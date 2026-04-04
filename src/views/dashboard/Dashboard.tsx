@@ -3,7 +3,7 @@ import { type ChangeEvent, type FormEvent, type MouseEvent, type RefObject, useC
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { AlertTriangle, HelpCircle, Search, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
@@ -12,10 +12,11 @@ import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { usePagination } from '@/hooks/usePagination';
-import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
+
 import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
+import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -45,7 +46,17 @@ function Dashboard$() {
    const pathname = useLocation().pathname;
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
-   const { isConnected } = account;
+
+   useEffect(() => {
+      console.log('[Dashboard Debug] Mount Status:', {
+         pathname,
+         walletStatus: account.status,
+         walletAddress: account.address,
+         isConnected: account.isConnected
+      });
+   }, []);
+
+   const { isConnected, status } = account;
    const { showToastByConfig } = useToast();
    const { openConnectModal } = useConnectModal();
 
@@ -244,7 +255,12 @@ function Dashboard$() {
       setSortedLoans(filteredLoans);
    }, [filteredLoans]);
 
-   const { displayedItems: displayedLoans, displayedCount, totalCount, handleLoadMore } = usePagination({
+   const {
+      displayedItems: displayedLoans,
+      displayedCount,
+      totalCount,
+      handleLoadMore
+   } = usePagination({
       items: sortedLoans,
       resetDependencies: [filters, searchLoan]
    });
@@ -321,7 +337,9 @@ function Dashboard$() {
                            <div className="flex flex-col gap-1 max-w-[232px]">
                               <p className="text-md-h5 font-semibold text-md-heading">Need short-term support?</p>
                               <p className="text-md-b2 font-medium text-md-neutral-700">
-                                 Borrow USDC to build trust and<br />unlock higher loan levels.
+                                 Borrow USDC to build trust and
+                                 <br />
+                                 unlock higher loan levels.
                               </p>
                            </div>
                            <button

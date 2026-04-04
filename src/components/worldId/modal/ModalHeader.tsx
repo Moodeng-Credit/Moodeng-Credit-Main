@@ -1,40 +1,60 @@
 import { type FC, type ReactNode } from 'react';
 
-import { X } from 'lucide-react';
-
 interface ModalHeaderProps {
-   icon?: ReactNode;
-   title: string;
+   title?: string;
    description?: string;
-   onClose?: () => void;
    titleId?: string;
    descriptionId?: string;
+   leftIcon?: ReactNode;
+   onLeftIconClick?: () => void;
+   onClose?: () => void;
+   isMainContent?: boolean;
 }
 
-export const ModalHeader: FC<ModalHeaderProps> = ({ icon, title, description, onClose, titleId, descriptionId }) => {
+export const ModalHeader: FC<ModalHeaderProps> = ({
+   title,
+   description,
+   titleId,
+   descriptionId,
+   leftIcon,
+   onLeftIconClick,
+   onClose,
+   isMainContent
+}) => {
    return (
-      <div className="relative rounded-t-3xl bg-gradient-to-br from-blue-600 to-purple-600 px-8 py-10 text-white">
-         {onClose ? (
-            <button
-               onClick={onClose}
-               className="absolute right-6 top-6 text-white/80 transition-colors hover:text-white"
-               aria-label="Close modal"
-            >
-               <X size={24} />
-            </button>
-         ) : null}
+      <div className="relative flex font-sans flex-col bg-white px-5 space-y-5 pt-6">
+         {/* Top Nav Bar */}
+         {onClose && (
+            <div className="flex items-center justify-between">
+               <button
+                  onClick={onClose}
+                  className="flex items-center justify-center text-gray-700 hover:text-gray-900 transition-colors"
+                  aria-label="Go back"
+               >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+               </button>
+               <span className="text-sm font-medium text-gray-900">Verify World ID</span>
+               <div className="w-6" />
+            </div>
+         )}
 
-         {icon ? <div className="mb-6 flex justify-center">{icon}</div> : null}
+         <img src="/world-id.png" alt="" aria-hidden="true" className="w-40" />
 
-         <h2 id={titleId} className="text-center text-3xl font-bold">
-            {title}
-         </h2>
+         <div className="flex-1 text-left flex flex-col gap-2">
+            {/* Main Title: Deep Navy, Bold, Large */}
+            <h2 id={titleId} className="text-4xl font-semibold text-md-heading leading-tighter tracking-tight">
+               {title || "Verify You're Human"}
+            </h2>
 
-         {description ? (
-            <p id={descriptionId} className="mt-4 text-center text-base leading-relaxed text-white/90">
-               {description}
-            </p>
-         ) : null}
+            {/* Description: Medium Gray, Regular Weight */}
+            {description && (
+               <p id={descriptionId} className="text-base text-gray-500 font-medium">
+                  {description}
+               </p>
+            )}
+         </div>
       </div>
    );
 };
