@@ -11,7 +11,7 @@ interface UserMenuProps {
    onClose: () => void;
 }
 
-export default function UserMenu({ dashboardHref = '/dashboard', showMenu, onToggleMenu, onClose }: UserMenuProps) {
+export default function UserMenu({ dashboardHref = '/request-board', showMenu, onToggleMenu, onClose }: UserMenuProps) {
    const dropdownRef = useClickOutside<HTMLDivElement>(onClose);
 
    return (
