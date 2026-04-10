@@ -37,11 +37,13 @@ export function SocialAuthButtons({
       setIsGoogleLoading(true);
       try {
          const supabase = getSupabaseBrowserClient();
+         const redirectTo =
+            import.meta.env.VITE_REDIRECT_URL ||
+            `${window.location.origin}/auth/confirm`;
+
          const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: {
-               redirectTo: `${window.location.origin}/auth/confirm`,
-            },
+            options: { redirectTo },
          });
          if (error) {
             console.error('[SocialAuthButtons] Google OAuth error:', error.message);

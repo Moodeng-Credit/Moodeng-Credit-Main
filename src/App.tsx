@@ -9,6 +9,7 @@ import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { RoleGuard } from '@/components/RoleGuard';
 
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
@@ -94,7 +95,9 @@ export default function App() {
                path="/request-board"
                element={
                   <ProtectedRoute>
-                     <Dashboard />
+                     <RoleGuard>
+                        <Dashboard />
+                     </RoleGuard>
                   </ProtectedRoute>
                }
             />
@@ -102,7 +105,9 @@ export default function App() {
                path="/dashboard"
                element={
                   <ProtectedRoute>
-                     <Dashboard />
+                     <RoleGuard>
+                        <Dashboard />
+                     </RoleGuard>
                   </ProtectedRoute>
                }
             />
@@ -110,7 +115,9 @@ export default function App() {
                path="/repay"
                element={
                   <ProtectedRoute>
-                     <Repay />
+                     <RoleGuard>
+                        <Repay />
+                     </RoleGuard>
                   </ProtectedRoute>
                }
             />
@@ -118,7 +125,9 @@ export default function App() {
                path="/history"
                element={
                   <ProtectedRoute>
-                     <History />
+                     <RoleGuard>
+                        <History />
+                     </RoleGuard>
                   </ProtectedRoute>
                }
             />
@@ -126,7 +135,9 @@ export default function App() {
                path="/account"
                element={
                   <ProtectedRoute>
-                     <Account />
+                     <RoleGuard>
+                        <Account />
+                     </RoleGuard>
                   </ProtectedRoute>
                }
             />

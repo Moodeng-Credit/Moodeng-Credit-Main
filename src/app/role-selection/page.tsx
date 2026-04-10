@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useNavigate } from 'react-router-dom';
 
+import { useToast } from '@/components/ToastSystem/hooks/useToast';
+import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import { updateUserRole } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { UserRole } from '@/types/authTypes';
@@ -11,6 +13,7 @@ export default function RoleSelectionPage() {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
    const user = useSelector((state: RootState) => state.auth.user);
+   const { showToast } = useToast();
    const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
    const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -24,6 +27,8 @@ export default function RoleSelectionPage() {
       try {
          await dispatch(updateUserRole(selectedRole)).unwrap();
          navigate('/request-board', { replace: true });
+      } catch {
+         showToast(TOAST_TYPES.ERROR, 'Something went wrong', 'Failed to save your role. Please try again.');
       } finally {
          setIsSubmitting(false);
       }
@@ -54,7 +59,7 @@ export default function RoleSelectionPage() {
                   className={[
                      'flex flex-col gap-3 items-start p-4 rounded-[12px] border w-full text-left transition-colors',
                      selectedRole === 'borrower'
-                        ? 'bg-[rgba(105,17,229,0.1)] border-md-primary-900'
+                        ? 'bg-md-primary-900/10 border-md-primary-900'
                         : 'bg-md-neutral-100 border-md-neutral-600'
                   ].join(' ')}
                >
@@ -72,7 +77,7 @@ export default function RoleSelectionPage() {
                   className={[
                      'flex flex-col gap-3 items-start p-4 rounded-[12px] border w-full text-left transition-colors',
                      selectedRole === 'lender'
-                        ? 'bg-[rgba(105,17,229,0.1)] border-md-primary-900'
+                        ? 'bg-md-primary-900/10 border-md-primary-900'
                         : 'bg-md-neutral-100 border-md-neutral-600'
                   ].join(' ')}
                >
