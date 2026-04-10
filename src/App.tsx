@@ -4,6 +4,7 @@ import posthog from 'posthog-js';
 import { useSelector } from 'react-redux';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
+import BottomNav from '@/components/BottomNav';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
@@ -28,6 +29,10 @@ import UserProfile from '@/app/user/[username]/page';
 import Ut from '@/app/ut/page';
 import WhyLend from '@/app/whylend/page';
 import { type RootState } from '@/store/store';
+import Account from '@/views/account/Account';
+import History from '@/views/history/History';
+import Repay from '@/views/repay/Repay';
+import RoleSelection from '@/app/role-selection/page';
 
 function Layout({ children }: { children: React.ReactNode }) {
    return (
@@ -39,10 +44,13 @@ function Layout({ children }: { children: React.ReactNode }) {
    );
 }
 
+const BOTTOM_NAV_ROUTES = ['/request-board', '/repay', '/dashboard', '/history', '/account'];
+
 export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
    const { user, username } = useSelector((state: RootState) => state.auth);
+   const showBottomNav = user?.id && BOTTOM_NAV_ROUTES.includes(location.pathname);
 
    useEffect(() => {
       if (!isPosthogEnabled) {
@@ -83,10 +91,42 @@ export default function App() {
                }
             />
             <Route
+               path="/request-board"
+               element={
+                  <ProtectedRoute>
+                     <Dashboard />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
                path="/dashboard"
                element={
                   <ProtectedRoute>
                      <Dashboard />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/repay"
+               element={
+                  <ProtectedRoute>
+                     <Repay />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/history"
+               element={
+                  <ProtectedRoute>
+                     <History />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/account"
+               element={
+                  <ProtectedRoute>
+                     <Account />
                   </ProtectedRoute>
                }
             />
@@ -135,6 +175,14 @@ export default function App() {
                }
             />
             <Route path="/auth-success" element={<AuthSuccess />} />
+            <Route
+               path="/role-selection"
+               element={
+                  <ProtectedRoute>
+                     <RoleSelection />
+                  </ProtectedRoute>
+               }
+            />
             <Route path="/auth/confirm" element={<AuthConfirm />} />
             <Route
                path="/benefits"
@@ -181,6 +229,7 @@ export default function App() {
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
          </Routes>
+         {showBottomNav && <BottomNav />}
       </>
    );
 }

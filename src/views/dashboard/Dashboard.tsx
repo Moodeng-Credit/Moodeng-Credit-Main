@@ -272,7 +272,7 @@ function Dashboard$() {
    return (
       <>
          <div id="top" className="min-h-screen bg-md-neutral-200">
-            <div className="max-w-[440px] mx-auto pb-8">
+            <div className="max-w-[440px] mx-auto pb-28">
                {/* Header */}
                <div className="flex items-center justify-between px-md-5 py-md-3">
                   <div className="flex items-center gap-3">
