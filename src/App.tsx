@@ -32,6 +32,7 @@ import { type RootState } from '@/store/store';
 import Account from '@/views/account/Account';
 import History from '@/views/history/History';
 import Repay from '@/views/repay/Repay';
+import RoleSelection from '@/app/role-selection/page';
 
 function Layout({ children }: { children: React.ReactNode }) {
    return (
@@ -174,6 +175,14 @@ export default function App() {
                }
             />
             <Route path="/auth-success" element={<AuthSuccess />} />
+            <Route
+               path="/role-selection"
+               element={
+                  <ProtectedRoute>
+                     <RoleSelection />
+                  </ProtectedRoute>
+               }
+            />
             <Route path="/auth/confirm" element={<AuthConfirm />} />
             <Route
                path="/benefits"

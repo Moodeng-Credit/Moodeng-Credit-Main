@@ -30,7 +30,7 @@ function AccountCreatedView(): JSX.Element {
             </p>
             <button
                type="button"
-               onClick={() => navigate('/dashboard', { replace: true })}
+               onClick={() => navigate('/role-selection', { replace: true })}
                className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-2xl font-semibold text-white bg-[#6010D2] hover:opacity-95 transition-opacity"
             >
                Proceed
