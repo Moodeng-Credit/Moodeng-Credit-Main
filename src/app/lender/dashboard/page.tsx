@@ -1,5 +1,5 @@
-import { PlaceholderPage } from '@/components/PlaceholderPage';
+import LenderDashboard from '@/views/lender/dashboard/LenderDashboard';
 
-export default function LenderDashboard() {
-   return <PlaceholderPage title="Lender Dashboard" />;
+export default function LenderDashboardPage() {
+   return <LenderDashboard />;
 }

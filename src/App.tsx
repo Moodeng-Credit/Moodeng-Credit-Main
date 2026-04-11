@@ -6,7 +6,9 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import AdminPanel from '@/app/admin/page';
 import LenderDashboard from '@/app/lender/dashboard/page';
+import LenderPerformance from '@/app/lender/performance/page';
 import LenderRequestBoard from '@/app/lender/request-board/page';
+import LenderTransactions from '@/app/lender/transactions/page';
 import WalletConnect from '@/app/onboarding/wallet/page';
 import WorldIdVerification from '@/app/verify-world-id/page';
 import BottomNav from '@/components/BottomNav';
@@ -58,7 +60,8 @@ export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
    const { user, username } = useSelector((state: RootState) => state.auth);
-   const showBottomNav = user?.id && user?.userRole && BOTTOM_NAV_ROUTES.includes(location.pathname);
+   const showBottomNav =
+      user?.id && user?.userRole && (BOTTOM_NAV_ROUTES.includes(location.pathname) || location.pathname.startsWith('/user/'));
 
    useEffect(() => {
       if (!isPosthogEnabled) {
@@ -111,6 +114,8 @@ export default function App() {
             {/* Lender */}
             <Route path="/lender/dashboard" element={<ProtectedRoute><RoleGuard><LenderDashboard /></RoleGuard></ProtectedRoute>} />
             <Route path="/lender/request-board" element={<ProtectedRoute><RoleGuard><LenderRequestBoard /></RoleGuard></ProtectedRoute>} />
+            <Route path="/lender/performance" element={<ProtectedRoute><RoleGuard><LenderPerformance /></RoleGuard></ProtectedRoute>} />
+            <Route path="/lender/transactions" element={<ProtectedRoute><RoleGuard><LenderTransactions /></RoleGuard></ProtectedRoute>} />
 
             {/* Shared authenticated */}
             <Route path="/history" element={<ProtectedRoute><RoleGuard><History /></RoleGuard></ProtectedRoute>} />
