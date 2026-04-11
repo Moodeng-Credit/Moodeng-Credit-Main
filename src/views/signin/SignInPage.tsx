@@ -233,7 +233,7 @@ export default function SignInPage() {
                      <p className="text-center text-base text-[#4D4359] tracking-[-0.02em]">
                         Don&apos;t have an account?{' '}
                         <Link
-                           to="/signup"
+                           to="/sign-up"
                            className="font-semibold hover:underline"
                            style={{ color: '#8336F0' }}
                         >

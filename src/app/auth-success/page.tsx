@@ -30,7 +30,7 @@ function AccountCreatedView(): JSX.Element {
             </p>
             <button
                type="button"
-               onClick={() => navigate('/role-selection', { replace: true })}
+               onClick={() => navigate('/onboarding/role', { replace: true })}
                className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-2xl font-semibold text-white bg-[#6010D2] hover:opacity-95 transition-opacity"
             >
                Proceed
@@ -86,7 +86,7 @@ export default function AuthSuccessPage(): JSX.Element {
 
                   <div className="w-full pt-4">
                      <Link
-                        to="/login#login"
+                        to="/sign-in#login"
                         className="flex justify-center items-center px-6 py-3 w-full text-white font-bold bg-emerald-500 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"
                      >
                         Back to Login

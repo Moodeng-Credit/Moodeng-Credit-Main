@@ -55,7 +55,7 @@ export function AuthErrorAlert({ type, attemptsRemaining = 3, onRetry }: AuthErr
                      Try a different email
                   </button>
                   {' or '}
-                  <Link to="/signup" className="font-semibold text-[#8336F0] hover:underline">
+                  <Link to="/sign-up" className="font-semibold text-[#8336F0] hover:underline">
                      Sign up
                   </Link>
                   .

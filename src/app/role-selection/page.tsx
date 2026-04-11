@@ -18,7 +18,7 @@ export default function RoleSelectionPage() {
    const [isSubmitting, setIsSubmitting] = useState(false);
 
    if (user?.userRole) {
-      return <Navigate to="/request-board" replace />;
+      return <Navigate to="/dashboard" replace />;
    }
 
    const handleConfirm = async () => {
@@ -26,7 +26,7 @@ export default function RoleSelectionPage() {
       setIsSubmitting(true);
       try {
          await dispatch(updateUserRole(selectedRole)).unwrap();
-         navigate('/request-board', { replace: true });
+         navigate('/dashboard', { replace: true });
       } catch {
          showToast(TOAST_TYPES.ERROR, 'Something went wrong', 'Failed to save your role. Please try again.');
       } finally {

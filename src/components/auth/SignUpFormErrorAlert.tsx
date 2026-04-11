@@ -71,7 +71,7 @@ export function SignUpFormErrorAlert({ type }: SignUpFormErrorAlertProps) {
          <div className={`w-full ${amberAlert}`} style={{ background: 'rgba(255, 219, 67, 0.1)' }}>
             <p className="text-xs leading-[18px] tracking-[-0.02em] text-[#594D65]">
                This email is already linked to a Google account. Use a different email address or{' '}
-               <Link to="/login" className="font-semibold text-[#8336F0] underline">
+               <Link to="/sign-in" className="font-semibold text-[#8336F0] underline">
                   Sign In
                </Link>{' '}
                instead.

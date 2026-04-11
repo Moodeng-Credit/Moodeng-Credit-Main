@@ -47,8 +47,8 @@ export function AuthInitializer() {
                dispatch(clearAuth());
 
                // Redirect to login if they were previously authenticated and not already on login page
-               if (wasAuthenticated && location.pathname !== '/login') {
-                  navigate('/login');
+               if (wasAuthenticated && location.pathname !== '/sign-in') {
+                  navigate('/sign-in');
                }
             }
          }
@@ -63,8 +63,8 @@ export function AuthInitializer() {
 
             // If we thought we were authenticated (persisted state) but Supabase says no,
             // redirect to login (unless already there)
-            if (wasAuthenticated && location.pathname !== '/login') {
-               navigate('/login');
+            if (wasAuthenticated && location.pathname !== '/sign-in') {
+               navigate('/sign-in');
             }
          } else {
             dispatch(fetchUser()).catch((err) => {

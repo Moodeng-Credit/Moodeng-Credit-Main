@@ -11,7 +11,7 @@ export function RoleGuard({ children }: RoleGuardProps) {
    const user = useSelector((state: RootState) => state.auth.user);
 
    if (user?.id && !user.userRole) {
-      return <Navigate to="/role-selection" replace />;
+      return <Navigate to="/onboarding/role" replace />;
    }
 
    return <>{children}</>;
