@@ -52,7 +52,7 @@ function Layout({ children }: { children: React.ReactNode }) {
    );
 }
 
-const BOTTOM_NAV_ROUTES = ['/request-board', '/repay', '/dashboard', '/history', '/account'];
+const BOTTOM_NAV_ROUTES = ['/request-board', '/repay', '/dashboard', '/lender/dashboard', '/history', '/account'];
 
 export default function App() {
    const location = useLocation();

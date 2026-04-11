@@ -18,7 +18,7 @@ const BORROWER_TABS: NavTab[] = [
 
 const LENDER_TABS: NavTab[] = [
    { label: 'Request Board', path: '/request-board', icon: 'request-board.png' },
-   { label: 'Dashboard', path: '/dashboard', icon: 'dashboard.png' },
+   { label: 'Dashboard', path: '/lender/dashboard', icon: 'dashboard.png' },
    { label: 'History', path: '/history', icon: 'history.png' },
    { label: 'Account', path: '/account', icon: 'account.png' }
 ];
@@ -46,7 +46,7 @@ export default function BottomNav() {
                   className="flex-1 flex flex-col items-center gap-1 self-stretch"
                >
                   {({ isActive }) => {
-                     const showBg = isActive && tab.path === '/dashboard' && isBorrower;
+                     const showBg = isActive && isBorrower;
                      return (
                         <>
                            <div
