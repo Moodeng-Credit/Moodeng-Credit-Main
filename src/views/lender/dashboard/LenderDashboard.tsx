@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, Check, CheckCircle, ChevronLeft, ChevronRight, HelpCircle, Search, X } from 'lucide-react';
+import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, HelpCircle, Search} from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -308,7 +308,8 @@ export default function LenderDashboard() {
    const filterBtnRef = useRef<HTMLButtonElement>(null);
    const filterDropdownRef = useClickOutside<HTMLDivElement>(
       () => setShowFilter(false),
-      showFilter
+      showFilter,
+      filterBtnRef
    ) as React.RefObject<HTMLDivElement>;
 
    const handleFilterToggle = () => {
