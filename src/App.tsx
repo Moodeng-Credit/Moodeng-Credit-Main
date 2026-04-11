@@ -4,17 +4,24 @@ import posthog from 'posthog-js';
 import { useSelector } from 'react-redux';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
+import AdminPanel from '@/app/admin/page';
+import LenderDashboard from '@/app/lender/dashboard/page';
+import LenderRequestBoard from '@/app/lender/request-board/page';
+import WalletConnect from '@/app/onboarding/wallet/page';
+import WorldIdVerification from '@/app/verify-world-id/page';
 import BottomNav from '@/components/BottomNav';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
+import { AdminGuard } from '@/components/AdminGuard';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { RoleGuard } from '@/components/RoleGuard';
 
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
 import Benefits from '@/app/benefits/page';
-import Dashboard from '@/app/dashboard/page';
+import Dashboard from '@/views/dashboard/Dashboard';
+import RequestBoard from '@/views/dashboard/RequestBoard';
 import FAQ from '@/app/faq/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
@@ -45,13 +52,13 @@ function Layout({ children }: { children: React.ReactNode }) {
    );
 }
 
-const BOTTOM_NAV_ROUTES = ['/request-board', '/repay', '/dashboard', '/history', '/account'];
+const BOTTOM_NAV_ROUTES = ['/request-board', '/repay', '/dashboard', '/lender/dashboard', '/history', '/account'];
 
 export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
    const { user, username } = useSelector((state: RootState) => state.auth);
-   const showBottomNav = user?.id && BOTTOM_NAV_ROUTES.includes(location.pathname);
+   const showBottomNav = user?.id && user?.userRole && BOTTOM_NAV_ROUTES.includes(location.pathname);
 
    useEffect(() => {
       if (!isPosthogEnabled) {
@@ -83,159 +90,53 @@ export default function App() {
       <>
          <WalletLoadingOverlay />
          <Routes>
-            <Route
-               path="/"
-               element={
-                  <Layout>
-                     <Home />
-                  </Layout>
-               }
-            />
-            <Route
-               path="/request-board"
-               element={
-                  <ProtectedRoute>
-                     <RoleGuard>
-                        <Dashboard />
-                     </RoleGuard>
-                  </ProtectedRoute>
-               }
-            />
-            <Route
-               path="/dashboard"
-               element={
-                  <ProtectedRoute>
-                     <RoleGuard>
-                        <Dashboard />
-                     </RoleGuard>
-                  </ProtectedRoute>
-               }
-            />
-            <Route
-               path="/repay"
-               element={
-                  <ProtectedRoute>
-                     <RoleGuard>
-                        <Repay />
-                     </RoleGuard>
-                  </ProtectedRoute>
-               }
-            />
-            <Route
-               path="/history"
-               element={
-                  <ProtectedRoute>
-                     <RoleGuard>
-                        <History />
-                     </RoleGuard>
-                  </ProtectedRoute>
-               }
-            />
-            <Route
-               path="/account"
-               element={
-                  <ProtectedRoute>
-                     <RoleGuard>
-                        <Account />
-                     </RoleGuard>
-                  </ProtectedRoute>
-               }
-            />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route
-               path="/faq"
-               element={
-                  <Layout>
-                     <FAQ />
-                  </Layout>
-               }
-            />
-            <Route
-               path="/guide"
-               element={
-                  <Layout>
-                     <Guide />
-                  </Layout>
-               }
-            />
-            <Route
-               path="/profile"
-               element={
-                  <ProtectedRoute>
-                     <Layout>
-                        <Profile />
-                     </Layout>
-                  </ProtectedRoute>
-               }
-            />
-            <Route
-               path="/forgot-password"
-               element={
-                  <Layout>
-                     <ForgotPassword />
-                  </Layout>
-               }
-            />
-            <Route
-               path="/reset-password"
-               element={
-                  <Layout>
-                     <ResetPassword />
-                  </Layout>
-               }
-            />
+            <Route path="/" element={<Layout><Home /></Layout>} />
+
+            {/* Auth */}
+            <Route path="/sign-in" element={<Login />} />
+            <Route path="/sign-up" element={<SignUp />} />
+
+            {/* Onboarding */}
+            <Route path="/onboarding/role" element={<ProtectedRoute><RoleSelection /></ProtectedRoute>} />
+            <Route path="/onboarding/wallet" element={<ProtectedRoute><WalletConnect /></ProtectedRoute>} />
+
+            {/* Verification */}
+            <Route path="/verify-world-id" element={<ProtectedRoute><RoleGuard><WorldIdVerification /></RoleGuard></ProtectedRoute>} />
+
+            {/* Borrower */}
+            <Route path="/dashboard" element={<ProtectedRoute><RoleGuard><Dashboard /></RoleGuard></ProtectedRoute>} />
+            <Route path="/request-board" element={<ProtectedRoute><RoleGuard><RequestBoard /></RoleGuard></ProtectedRoute>} />
+            <Route path="/repay" element={<ProtectedRoute><RoleGuard><Repay /></RoleGuard></ProtectedRoute>} />
+
+            {/* Lender */}
+            <Route path="/lender/dashboard" element={<ProtectedRoute><RoleGuard><LenderDashboard /></RoleGuard></ProtectedRoute>} />
+            <Route path="/lender/request-board" element={<ProtectedRoute><RoleGuard><LenderRequestBoard /></RoleGuard></ProtectedRoute>} />
+
+            {/* Shared authenticated */}
+            <Route path="/history" element={<ProtectedRoute><RoleGuard><History /></RoleGuard></ProtectedRoute>} />
+            <Route path="/account" element={<ProtectedRoute><RoleGuard><Account /></RoleGuard></ProtectedRoute>} />
+
+            {/* Admin */}
+            <Route path="/admin" element={<AdminGuard><AdminPanel /></AdminGuard>} />
+
+            {/* Profile */}
+            <Route path="/profile" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
+
+            {/* Auth flows */}
+            <Route path="/forgot-password" element={<Layout><ForgotPassword /></Layout>} />
+            <Route path="/reset-password" element={<Layout><ResetPassword /></Layout>} />
             <Route path="/auth-success" element={<AuthSuccess />} />
-            <Route
-               path="/role-selection"
-               element={
-                  <ProtectedRoute>
-                     <RoleSelection />
-                  </ProtectedRoute>
-               }
-            />
             <Route path="/auth/confirm" element={<AuthConfirm />} />
-            <Route
-               path="/benefits"
-               element={
-                  <Layout>
-                     <Benefits />
-                  </Layout>
-               }
-            />
-            <Route
-               path="/whylend"
-               element={
-                  <Layout>
-                     <WhyLend />
-                  </Layout>
-               }
-            />
-            <Route
-               path="/simple"
-               element={
-                  <Layout>
-                     <Simple />
-                  </Layout>
-               }
-            />
-            <Route
-               path="/test"
-               element={
-                  <Layout>
-                     <Test />
-                  </Layout>
-               }
-            />
+
+            {/* Public */}
+            <Route path="/faq" element={<Layout><FAQ /></Layout>} />
+            <Route path="/guide" element={<Layout><Guide /></Layout>} />
+            <Route path="/benefits" element={<Layout><Benefits /></Layout>} />
+            <Route path="/whylend" element={<Layout><WhyLend /></Layout>} />
+            <Route path="/simple" element={<Layout><Simple /></Layout>} />
+            <Route path="/test" element={<Layout><Test /></Layout>} />
             <Route path="/user/:username" element={<UserProfile />} />
-            <Route
-               path="/ut"
-               element={
-                  <Layout>
-                     <Ut />
-                  </Layout>
-               }
-            />
+            <Route path="/ut" element={<Layout><Ut /></Layout>} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

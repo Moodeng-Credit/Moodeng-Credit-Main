@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
                </div>
 
                <div className="text-center">
-                  <button type="button" onClick={() => navigate('/login')} className="text-sm text-blue-600 hover:underline">
+                  <button type="button" onClick={() => navigate('/sign-in')} className="text-sm text-blue-600 hover:underline">
                      Back to Login
                   </button>
                </div>

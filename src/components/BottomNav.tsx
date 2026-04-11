@@ -1,33 +1,39 @@
-import { ClipboardList, Clock, LayoutGrid, RotateCcw, User } from 'lucide-react';
-import { useSelector } from 'react-redux';
 import { NavLink } from 'react-router-dom';
 
-import type { RootState } from '@/store/store';
+import { useIsBorrower } from '@/hooks/useIsBorrower';
 
 interface NavTab {
    label: string;
    path: string;
-   icon: typeof ClipboardList;
+   icon: string;
 }
 
 const BORROWER_TABS: NavTab[] = [
-   { label: 'Request Board', path: '/request-board', icon: ClipboardList },
-   { label: 'Repay', path: '/repay', icon: RotateCcw },
-   { label: 'Dashboard', path: '/dashboard', icon: LayoutGrid },
-   { label: 'History', path: '/history', icon: Clock },
-   { label: 'Account', path: '/account', icon: User }
+   { label: 'Request Board', path: '/request-board', icon: 'request-board.png' },
+   { label: 'Repay', path: '/repay', icon: 'repay.png' },
+   { label: 'Dashboard', path: '/dashboard', icon: 'dashboard.png' },
+   { label: 'History', path: '/history', icon: 'history.png' },
+   { label: 'Account', path: '/account', icon: 'account.png' }
 ];
 
 const LENDER_TABS: NavTab[] = [
-   { label: 'Request Board', path: '/request-board', icon: ClipboardList },
-   { label: 'Dashboard', path: '/dashboard', icon: LayoutGrid },
-   { label: 'History', path: '/history', icon: Clock },
-   { label: 'Account', path: '/account', icon: User }
+   { label: 'Request Board', path: '/request-board', icon: 'request-board.png' },
+   { label: 'Dashboard', path: '/lender/dashboard', icon: 'dashboard.png' },
+   { label: 'History', path: '/history', icon: 'history.png' },
+   { label: 'Account', path: '/account', icon: 'account.png' }
 ];
 
+const MASK_BASE: React.CSSProperties = {
+   WebkitMaskSize: 'contain',
+   maskSize: 'contain',
+   WebkitMaskRepeat: 'no-repeat',
+   maskRepeat: 'no-repeat',
+   WebkitMaskPosition: 'center',
+   maskPosition: 'center',
+};
+
 export default function BottomNav() {
-   const userRole = useSelector((state: RootState) => state.auth.user?.userRole);
-   const isBorrower = (userRole ?? 'borrower') !== 'lender';
+   const isBorrower = useIsBorrower();
    const tabs = isBorrower ? BORROWER_TABS : LENDER_TABS;
 
    return (
@@ -39,27 +45,40 @@ export default function BottomNav() {
                   to={tab.path}
                   className="flex-1 flex flex-col items-center gap-1 self-stretch"
                >
-                  {({ isActive }) => (
-                     <>
-                        <div
-                           className={`w-9 h-9 flex items-center justify-center shrink-0 ${
-                              isActive ? 'bg-md-primary-900 rounded-md-md' : 'rounded-full'
-                           }`}
-                        >
-                           <tab.icon
-                              className={`w-6 h-6 ${isActive ? 'text-white' : 'text-md-neutral-1000'}`}
-                              strokeWidth={1.5}
-                           />
-                        </div>
-                        <span
-                           className={`text-md-b4 font-medium text-center w-full ${
-                              isActive ? 'text-md-primary-900' : 'text-md-neutral-1000'
-                           }`}
-                        >
-                           {tab.label}
-                        </span>
-                     </>
-                  )}
+                  {({ isActive }) => {
+                     const showBg = isActive && isBorrower;
+                     return (
+                        <>
+                           <div
+                              className={`w-9 h-9 flex items-center justify-center shrink-0 ${
+                                 showBg ? 'bg-md-primary-900 rounded-md-md' : ''
+                              }`}
+                           >
+                              <div
+                                 className={`w-6 h-6 shrink-0 ${
+                                    showBg
+                                       ? 'bg-white'
+                                       : isActive
+                                         ? 'bg-md-primary-900'
+                                         : 'bg-md-neutral-1000'
+                                 }`}
+                                 style={{
+                                    ...MASK_BASE,
+                                    WebkitMaskImage: `url('/icons/${tab.icon}')`,
+                                    maskImage: `url('/icons/${tab.icon}')`,
+                                 }}
+                              />
+                           </div>
+                           <span
+                              className={`text-md-b4 font-medium text-center w-full ${
+                                 isActive ? 'text-md-primary-900' : 'text-md-neutral-1000'
+                              }`}
+                           >
+                              {tab.label}
+                           </span>
+                        </>
+                     );
+                  }}
                </NavLink>
             ))}
          </div>

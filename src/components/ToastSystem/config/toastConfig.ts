@@ -174,7 +174,7 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       message: () => 'An account already exists with this email. Please sign in or reset your password if you forgot it.',
       buttonText: 'Sign In',
       buttonAction: 'go_to_signin',
-      route: '/login'
+      route: '/sign-in'
    },
    password_weak: {
       toastType: TOAST_TYPES.ERROR,
@@ -324,7 +324,7 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       message: 'Your session has expired. Please log in again.',
       buttonText: 'Log In',
       buttonAction: 'go_to_login',
-      route: '/login',
+      route: '/sign-in',
       customIcon: 'fas fa-clock'
    },
 
@@ -334,7 +334,7 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       message: 'You are not authorized. Please log in.',
       buttonText: 'Log In',
       buttonAction: 'go_to_login',
-      route: '/login'
+      route: '/sign-in'
    },
 
    worldid_already_used: {

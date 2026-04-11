@@ -118,7 +118,7 @@ export default function ResetPasswordPage() {
          if (response.ok) {
             setMessage(data.message || 'Password reset successful! Redirecting to login...');
             setTimeout(() => {
-               navigate('/login');
+               navigate('/sign-in');
             }, 2000);
          } else {
             setError(data.error || data.message || 'Failed to reset password. Please try again.');
@@ -204,7 +204,7 @@ export default function ResetPasswordPage() {
                </div>
 
                <div className="text-center">
-                  <button type="button" onClick={() => navigate('/login')} className="text-sm text-blue-600 hover:underline">
+                  <button type="button" onClick={() => navigate('/sign-in')} className="text-sm text-blue-600 hover:underline">
                      Back to Login
                   </button>
                </div>

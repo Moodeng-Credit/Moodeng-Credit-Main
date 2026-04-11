@@ -59,7 +59,7 @@ export default function UserNetwork() {
       // Don't disconnect wallet - let wagmi persist the connection
       // The wallet will auto-reconnect on next login via WalletSyncInitializer
       dispatch(logoutUser());
-      navigate('/login');
+      navigate('/sign-in');
    };
 
    return (
@@ -101,7 +101,7 @@ export default function UserNetwork() {
                   </nav>
                </div>
                <button
-                  onClick={() => navigate('login')}
+                  onClick={() => navigate('/sign-in')}
                   className="bg-blue-600 text-white font-bold text-sm rounded-b-xl w-full py-3 hover:bg-blue-700 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
                   type="button"
                >

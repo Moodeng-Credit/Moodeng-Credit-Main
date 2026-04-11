@@ -224,7 +224,7 @@ export default function SignUpPage() {
                      <p className="text-center text-base text-[#4D4359] tracking-[-0.02em]">
                         Already have an account?{' '}
                         <Link
-                           to="/login"
+                           to="/sign-in"
                            className="font-semibold hover:underline"
                            style={{ color: LINK_PURPLE }}
                         >
@@ -353,7 +353,7 @@ export default function SignUpPage() {
                      <p className="mt-6 text-center text-base text-[#4D4359] tracking-[-0.02em]">
                         Already have an account?{' '}
                         <Link
-                           to="/login"
+                           to="/sign-in"
                            className="font-semibold hover:underline"
                            style={{ color: LINK_PURPLE }}
                         >

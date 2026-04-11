@@ -47,12 +47,12 @@ export default function SimplePage() {
                         </div>
                      </div>
                      <div className="inline-flex items-center justify-center gap-4 relative flex-[0_0_auto]">
-                        <Link to="/login"
+                        <Link to="/sign-in"
                            className="relative w-[186px] h-[42px] bg-[#171420] rounded-[100px] overflow-hidden flex items-center justify-center [font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-[#f6f6f6] text-[22px] text-center tracking-[0] leading-[22px] whitespace-nowrap"
                         >
                            Log in
                         </Link>
-                        <Link to="/login"
+                        <Link to="/sign-in"
                            className="relative w-[186px] h-[42px] bg-[#6d57ff] rounded-[100px] overflow-hidden flex items-center justify-center [font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-white text-[22px] text-center tracking-[0] leading-[22px] whitespace-nowrap"
                         >
                            Sign up

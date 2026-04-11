@@ -80,8 +80,8 @@ export default function AuthConfirmPage() {
          }
 
          if (sessionData.session?.user) {
-            await dispatch(fetchUser()).unwrap().catch(() => {});
-            finish(CREATED_PATH);
+            const user = await dispatch(fetchUser()).unwrap().catch(() => null);
+            finish(user?.userRole ? '/dashboard' : CREATED_PATH);
             return true;
          }
 
@@ -91,10 +91,8 @@ export default function AuthConfirmPage() {
             if (timeoutId) clearTimeout(timeoutId);
             void dispatch(fetchUser())
                .unwrap()
-               .catch(() => {})
-               .finally(() => {
-                  finish(CREATED_PATH);
-               });
+               .then((user) => finish(user?.userRole ? '/dashboard' : CREATED_PATH))
+               .catch(() => finish(CREATED_PATH));
          });
          unsub = () => sub.subscription.unsubscribe();
 
@@ -118,7 +116,7 @@ export default function AuthConfirmPage() {
       return (
          <div className="flex flex-col items-center justify-center min-h-screen gap-4 px-6 bg-white">
             <p className="text-center text-sm text-red-600 max-w-md">{error}</p>
-            <Link to="/login" className="text-sm font-semibold text-[#8336F0] hover:underline">
+            <Link to="/sign-in" className="text-sm font-semibold text-[#8336F0] hover:underline">
                Back to login
             </Link>
          </div>
