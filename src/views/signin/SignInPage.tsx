@@ -14,7 +14,22 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { Icons } from '@/views/login/components/Icons';
 import { loginUser, loginWithGoogle, loginWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
+import type { User } from '@/types/authTypes';
 import '@/views/signup/styles/signup.css';
+
+/**
+ * Determines where to send a user after a successful sign-in.
+ *
+ * - Borrower with at least one active loan (nal > 0) → /dashboard
+ * - Borrower with no active loans                   → /request-board
+ * - Lender / any other role                          → /dashboard
+ */
+function getPostLoginRedirect(user: User): string {
+   if (user.userRole === 'borrower') {
+      return user.nal > 0 ? '/dashboard' : '/request-board';
+   }
+   return '/dashboard';
+}
 
 export default function SignInPage() {
    const navigate = useNavigate();
@@ -38,7 +53,7 @@ export default function SignInPage() {
       setIsLoading(true);
       try {
          const result = await dispatch(loginUser({ email, password })).unwrap();
-         navigate('/dashboard', { replace: true });
+         navigate(getPostLoginRedirect(result.user), { replace: true });
       } catch (err) {
          const msg = err instanceof Error ? err.message : 'Authentication failed';
          const errObj = err as { status?: number };
@@ -87,7 +102,7 @@ export default function SignInPage() {
       setIsLoading(true);
       try {
          const result = await dispatch(loginWithGoogle({ googleCredential: credential })).unwrap();
-         navigate('/dashboard', { replace: true });
+         navigate(getPostLoginRedirect(result.user), { replace: true });
       } catch {
          setErrorType('incorrect_credentials');
          setShowAccount(true);
@@ -102,7 +117,7 @@ export default function SignInPage() {
          const result = await dispatch(
             loginWithTelegram({ telegramAuthData: JSON.stringify(authData) })
          ).unwrap();
-         navigate('/dashboard', { replace: true });
+         navigate(getPostLoginRedirect(result.user), { replace: true });
       } catch {
          setErrorType('incorrect_credentials');
          setShowAccount(true);
