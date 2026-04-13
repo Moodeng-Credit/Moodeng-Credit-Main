@@ -1,5 +1,5 @@
-import { PlaceholderPage } from '@/components/PlaceholderPage';
+import LenderPerformance from '@/views/lender/performance/LenderPerformance';
 
 export default function LenderPerformancePage() {
-   return <PlaceholderPage title="Performance Insights" />;
+   return <LenderPerformance />;
 }
