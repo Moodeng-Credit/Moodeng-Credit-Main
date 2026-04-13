@@ -15,6 +15,8 @@ export interface User {
    id: string;
    username: string;
    email: string;
+   /** Profile picture URL from auth provider metadata (Google, Telegram). Not stored in the DB users table. */
+   avatarUrl?: string;
    googleId?: string;
    walletAddress?: string;
    isWorldId: WorldIdStatus;

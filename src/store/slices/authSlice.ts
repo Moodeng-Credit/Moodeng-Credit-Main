@@ -81,10 +81,11 @@ const ensureUserProfileRow = async (
    return data;
 };
 
-const mapSupabaseRowToUser = (row: UserRow): User => ({
+const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string): User => ({
    id: row.id,
    username: row.username,
    email: row.email,
+   avatarUrl,
    googleId: row.google_id ?? undefined,
    walletAddress: row.wallet_address ?? undefined,
    isWorldId: row.is_world_id,
@@ -118,12 +119,14 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
       throw profileError;
    }
 
+   const avatarUrl = (user.user_metadata?.avatar_url ?? user.user_metadata?.picture) as string | undefined;
+
    if (!profile) {
       const ensuredProfile = await ensureUserProfileRow(supabase, user);
-      return mapSupabaseRowToUser(ensuredProfile);
+      return mapSupabaseRowToUser(ensuredProfile, avatarUrl);
    }
 
-   return mapSupabaseRowToUser(profile);
+   return mapSupabaseRowToUser(profile, avatarUrl);
 };
 
 const fetchUserProfileByUsername = async (username: string): Promise<User> => {
