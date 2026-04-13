@@ -175,6 +175,7 @@ function TransactionRow({ loan, borrowerAvatar, borrowerName }: TransactionRowPr
             src={borrowerAvatar ?? PLACEHOLDER_AVATAR}
             alt={borrowerName}
             className="w-10 h-10 rounded-full object-cover shrink-0"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_AVATAR; }}
          />
 
          {/* Loan info */}
@@ -183,7 +184,7 @@ function TransactionRow({ loan, borrowerAvatar, borrowerName }: TransactionRowPr
             <div className="flex items-center gap-1.5">
                <span className="text-md-b3 text-md-neutral-1200 truncate max-w-[100px]">{borrowerName}</span>
                <span className="w-1 h-1 rounded-full bg-md-neutral-600 shrink-0" />
-               <span className="text-md-b3 text-md-neutral-1200 shrink-0">{formatDateShort(loan.createdAt)}</span>
+               <span className="text-md-b3 text-md-neutral-1200 shrink-0">{formatDateShort(loan.fundedAt ?? loan.updatedAt)}</span>
             </div>
          </div>
 
@@ -368,14 +369,15 @@ export default function LenderDashboard() {
       }
 
       const statusMap: Record<string, LoanDisplayStatus> = { pending: 'PENDING', active: 'ACTIVE', default: 'DEFAULT' };
-      if (appliedFilters.status === 'new-to-old') result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      else if (appliedFilters.status === 'old-to-new') result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      const fundedTime = (l: Loan) => new Date(l.fundedAt ?? l.updatedAt).getTime();
+      if (appliedFilters.status === 'new-to-old') result.sort((a, b) => fundedTime(b) - fundedTime(a));
+      else if (appliedFilters.status === 'old-to-new') result.sort((a, b) => fundedTime(a) - fundedTime(b));
       else if (appliedFilters.status in statusMap) result = result.filter((l) => getLoanDisplayStatus(l) === statusMap[appliedFilters.status]);
 
       if (appliedFilters.sortBy === 'low-to-high') result.sort((a, b) => a.loanAmount - b.loanAmount);
       else if (appliedFilters.sortBy === 'high-to-low') result.sort((a, b) => b.loanAmount - a.loanAmount);
 
-      if (!appliedFilters.sortBy && !appliedFilters.status) result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      if (!appliedFilters.sortBy && !appliedFilters.status) result.sort((a, b) => fundedTime(b) - fundedTime(a));
       return result;
    }, [lenderLoans, searchQuery, appliedFilters, userProfiles]);
 
@@ -408,7 +410,12 @@ export default function LenderDashboard() {
 
             {/* ── Profile section ── */}
             <div className="flex items-start gap-3 px-md-5 pb-md-3">
-               <img src={PLACEHOLDER_AVATAR} alt="Profile" className="w-[70px] h-[70px] rounded-full object-cover shrink-0" />
+               <img
+                  src={user?.avatarUrl ?? PLACEHOLDER_AVATAR}
+                  alt="Profile"
+                  className="w-[70px] h-[70px] rounded-full object-cover shrink-0"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_AVATAR; }}
+               />
                <div className="flex flex-col gap-1 justify-center pt-1">
                   <div className="flex items-center gap-2 flex-wrap">
                      <p className="text-[18px] tracking-[-0.04em] leading-[1.2] font-semibold text-md-primary-2000">
@@ -550,6 +557,7 @@ export default function LenderDashboard() {
                            <TransactionRow
                               key={loan.id}
                               loan={loan}
+                              borrowerAvatar={userProfiles[loan.borrowerUser ?? '']?.avatarUrl}
                               borrowerName={userProfiles[loan.borrowerUser ?? '']?.username ?? 'Unknown'}
                            />
                         ))}
