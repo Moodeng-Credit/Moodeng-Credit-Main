@@ -76,6 +76,13 @@ function RequestBoard$() {
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
    const [sortedLoans, setSortedLoans] = useState(floanRequests);
 
+   // Compute active loan status from Redux state in real time.
+   // user.nal is NOT reliable (never updated server-side), so we derive it here.
+   const hasActiveLoan = useMemo(
+      () => floanRequests.some((loan) => loan.borrowerUser === user?.id && loan.repaymentStatus !== 'Paid'),
+      [floanRequests, user?.id]
+   );
+
    const today = new Date().toISOString().split('T')[0];
    const borrowerUserId = user?.id || '';
    const lenderUserId = '';
@@ -123,7 +130,7 @@ function RequestBoard$() {
          openConnectModal?.();
          return;
       }
-      if ((user.nal || 0) >= (user.mal || 0)) {
+      if (hasActiveLoan) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
@@ -142,7 +149,7 @@ function RequestBoard$() {
          return;
       }
 
-      if ((user.nal || 0) >= (user.mal || 0)) {
+      if (hasActiveLoan) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
@@ -179,7 +186,7 @@ function RequestBoard$() {
 
       if (
          user.isWorldId === 'ACTIVE' &&
-         (user.nal || 0) < (user.mal || 0) &&
+         !hasActiveLoan &&
          parseFloat(loanAmount) <= effectiveCreditLimit &&
          parseFloat(loanAmount) > 0
       ) {
