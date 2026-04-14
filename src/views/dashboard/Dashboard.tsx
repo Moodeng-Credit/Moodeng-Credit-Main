@@ -1,4 +1,5 @@
 import { useSelector } from 'react-redux';
+import { Navigate } from 'react-router-dom';
 
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import type { RootState } from '@/store/store';
@@ -18,6 +19,11 @@ const LENDER_STATS = [
 export default function Dashboard() {
    const user = useSelector((state: RootState) => state.auth.user);
    const isBorrower = useIsBorrower();
+
+   if (!isBorrower) {
+      return <Navigate to="/lender/dashboard" replace />;
+   }
+
    const firstName = user?.username?.split(' ')[0] || 'there';
    const cs = user?.cs?.toLocaleString() ?? '—';
 
