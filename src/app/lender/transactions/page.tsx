@@ -1,5 +1,5 @@
-import { PlaceholderPage } from '@/components/PlaceholderPage';
+import LenderTransactions from '@/views/lender/transactions/LenderTransactions';
 
 export default function LenderTransactionsPage() {
-   return <PlaceholderPage title="Funding Transactions" />;
+   return <LenderTransactions />;
 }
