@@ -10,6 +10,7 @@ import BottomNav from '@/components/BottomNav';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import UserAvatar from '@/components/UserAvatar';
 import type { Loan } from '@/types/loanTypes';
 
 // ---------------------------------------------------------------------------
@@ -40,9 +41,6 @@ interface ChartPoint {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-const PLACEHOLDER_AVATAR =
-   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Chiaroscuro_lighting_illuminates_a_Chibi-style_SVG_logo_a_gray_and_light_pink_hippo__joyfully_jumping__thumbs_up__holding_a_gold_Japanese_Mon_coin.__Hayao_Miyazaki_inspired__deep_teal_hues__warm_candl-uvt0ZI3fogcgqDR4Y2gCSRZfq8QmtX.png';
 
 function getLoanDisplayStatus(loan: Loan): 'REPAID' | 'ACTIVE' | 'DEFAULT' | 'PENDING' {
    if (loan.repaymentStatus === 'Paid') return 'REPAID';
@@ -262,14 +260,7 @@ export default function LenderPerformance() {
 
                {/* Profile row */}
                <div className="flex items-start gap-3">
-                  <img
-                     src={user?.avatarUrl ?? PLACEHOLDER_AVATAR}
-                     alt="Profile"
-                     className="w-[70px] h-[70px] rounded-full object-cover shrink-0"
-                     onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_AVATAR;
-                     }}
-                  />
+                  <UserAvatar size={70} />
                   <div className="flex flex-col gap-1 justify-center pt-1">
                      <p className="text-[18px] tracking-[-0.04em] leading-[1.2] font-semibold text-md-primary-2000">
                         Hello, {firstName}

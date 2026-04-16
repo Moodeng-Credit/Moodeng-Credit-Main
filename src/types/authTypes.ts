@@ -18,6 +18,8 @@ export interface User {
    email: string;
    /** Profile picture URL from auth provider metadata (Google, Telegram). Not stored in the DB users table. */
    avatarUrl?: string;
+   /** Display name from Supabase auth user_metadata.name. Not stored in the DB users table. */
+   displayName?: string;
    googleId?: string;
    walletAddress?: string;
    isWorldId: WorldIdStatus;

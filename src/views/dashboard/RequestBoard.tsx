@@ -31,8 +31,7 @@ import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 
-const PLACEHOLDER_AVATAR =
-   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Chiaroscuro_lighting_illuminates_a_Chibi-style_SVG_logo_a_gray_and_light_pink_hippo__joyfully_jumping__thumbs_up__holding_a_gold_Japanese_Mon_coin.__Hayao_Miyazaki_inspired__deep_teal_hues__warm_candl-uvt0ZI3fogcgqDR4Y2gCSRZfq8QmtX.png';
+import UserAvatar from '@/components/UserAvatar';
 
 const LENDER_NOTE_STORAGE_KEY = 'moodeng_lender_note_dismissed';
 
@@ -272,7 +271,7 @@ function RequestBoard$() {
                {isAuthenticated ? (
                   <div className="flex items-center justify-between px-md-5 py-md-3">
                      <div className="flex items-center gap-3">
-                        <img src={PLACEHOLDER_AVATAR} alt="Profile" className="w-12 h-12 rounded-full object-cover" />
+                        <UserAvatar size={48} />
                         <div className="flex flex-col gap-1">
                            <p className="text-md-h5 font-semibold text-md-primary-2000">Hello, {firstName}</p>
                            {isBorrower ? (
