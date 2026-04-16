@@ -49,15 +49,6 @@ function RequestBoard$() {
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
 
-   useEffect(() => {
-      console.log('[Dashboard Debug] Mount Status:', {
-         pathname,
-         walletStatus: account.status,
-         walletAddress: account.address,
-         isConnected: account.isConnected
-      });
-   }, []);
-
    const { isConnected, status } = account;
    const { showToastByConfig } = useToast();
    const { openConnectModal } = useConnectModal();
@@ -88,7 +79,7 @@ function RequestBoard$() {
    const [days, setDays] = useState('');
    const [customAmount, setCustomAmount] = useState('');
    const [searchLoan, setSearchLoan] = useState('');
-   const effectiveCreditLimit = getEffectiveCreditLimit(user.cs, user.isWorldId === 'ACTIVE');
+   const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(user.cs, user.isWorldId === 'ACTIVE') : 0;
 
    const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
    const successModalRef = useClickOutside<HTMLDivElement>(() => setShowPurple(false), showPurple) as RefObject<HTMLDivElement>;

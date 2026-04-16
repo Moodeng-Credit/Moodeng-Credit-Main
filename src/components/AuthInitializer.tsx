@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
@@ -11,10 +11,19 @@ export function AuthInitializer() {
    const navigate = useNavigate();
    const location = useLocation();
 
-   // Get current auth state from Redux (might be persisted)
    const { user, username } = useSelector((state: RootState) => state.auth);
    const wasAuthenticated = !!(user?.id && username);
 
+   // Latest values for the post-sign-out redirect, read from inside the subscription.
+   const wasAuthenticatedRef = useRef(wasAuthenticated);
+   const pathnameRef = useRef(location.pathname);
+
+   useEffect(() => {
+      wasAuthenticatedRef.current = wasAuthenticated;
+      pathnameRef.current = location.pathname;
+   }, [wasAuthenticated, location.pathname]);
+
+   // Subscription + initial session check — runs once.
    useEffect(() => {
       if (!isSupabaseBrowserConfigured()) {
          if (import.meta.env.DEV) {
@@ -28,27 +37,25 @@ export function AuthInitializer() {
 
       const supabase = getSupabaseBrowserClient();
 
-      // Listen for auth state changes
       const {
          data: { subscription }
       } = supabase.auth.onAuthStateChange(async (event, session) => {
-         console.log(`🔔 Supabase Auth Event: ${event}`);
-
          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
             if (session?.user) {
-               // Sync user data to Redux if needed
                dispatch(fetchUser()).catch((err) => {
                   console.error('Failed to fetch user profile on auth change:', err);
                });
             }
          } else if (event === 'SIGNED_OUT') {
             if (!session) {
-               console.log('🔒 Session cleared, updating Redux state');
                clearAuthCookieClient();
                dispatch(clearAuth());
 
-               // Redirect to request board (public landing) if they were previously authenticated
-               if (wasAuthenticated && location.pathname !== '/sign-in' && location.pathname !== '/request-board') {
+               if (
+                  wasAuthenticatedRef.current &&
+                  pathnameRef.current !== '/sign-in' &&
+                  pathnameRef.current !== '/request-board'
+               ) {
                   navigate('/request-board');
                }
             }
@@ -58,19 +65,16 @@ export function AuthInitializer() {
       // Initial session check
       supabase.auth.getSession().then(async ({ data: { session }, error: sessionError }) => {
          if (sessionError || !session) {
-            // No valid session — try to clear stale persisted state
             clearAuthCookieClient();
             dispatch(clearAuth());
             dispatch(setAuthChecked());
             return;
          }
 
-         // Session exists — try refresh if expired, then fetch user
          try {
             const { data: { user: supabaseUser }, error: userError } = await supabase.auth.getUser();
 
             if (userError || !supabaseUser) {
-               // Session invalid — try refreshing
                const { error: refreshError } = await supabase.auth.refreshSession();
                if (refreshError) {
                   clearAuthCookieClient();
@@ -92,7 +96,7 @@ export function AuthInitializer() {
       return () => {
          subscription.unsubscribe();
       };
-   }, [dispatch, navigate, location.pathname, wasAuthenticated]);
+   }, [dispatch, navigate]);
 
    return null;
 }
