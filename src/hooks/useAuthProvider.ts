@@ -14,17 +14,29 @@ export function useAuthProvider(): { provider: AuthProvider; isEmailPasswordUser
 
    useEffect(() => {
       const supabase = getSupabaseBrowserClient();
-      supabase.auth.getUser().then(({ data }) => {
-         const p = data.user?.app_metadata?.provider as string | undefined;
-         if (p === 'google') {
-            setProvider('google');
-         } else if (p === 'telegram' || data.user?.app_metadata?.providers?.includes('telegram')) {
-            setProvider('telegram');
-         } else {
-            setProvider('email');
-         }
-         setIsLoading(false);
-      });
+      supabase.auth
+         .getUser()
+         .then(({ data, error }) => {
+            if (error || !data.user) {
+               setProvider(null);
+               setIsLoading(false);
+               return;
+            }
+
+            const p = data.user.app_metadata?.provider as string | undefined;
+            if (p === 'google') {
+               setProvider('google');
+            } else if (p === 'telegram' || data.user.app_metadata?.providers?.includes('telegram')) {
+               setProvider('telegram');
+            } else {
+               setProvider('email');
+            }
+            setIsLoading(false);
+         })
+         .catch(() => {
+            setProvider(null);
+            setIsLoading(false);
+         });
    }, []);
 
    return {
