@@ -6,6 +6,7 @@ import { useAccount } from 'wagmi';
 
 import UserAvatar from '@/components/UserAvatar';
 import { useAuthProvider } from '@/hooks/useAuthProvider';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
@@ -118,6 +119,7 @@ function PasswordInput({ label, value, onChange, placeholder }: {
 
 function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
    const dispatch = useDispatch<AppDispatch>();
+   const userEmail = useSelector((state: RootState) => state.auth.user?.email);
    const [oldPassword, setOldPassword] = useState('');
    const [newPassword, setNewPassword] = useState('');
    const [confirmPassword, setConfirmPassword] = useState('');
@@ -151,7 +153,24 @@ function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
          return;
       }
 
+      if (!userEmail) {
+         setError('Unable to verify current account');
+         return;
+      }
+
       setIsSubmitting(true);
+
+      const supabase = getSupabaseBrowserClient();
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+         email: userEmail,
+         password: oldPassword
+      });
+      if (verifyError) {
+         setIsSubmitting(false);
+         setError('Current password is incorrect');
+         return;
+      }
+
       const result = await dispatch(updateUser({ password: newPassword }));
       setIsSubmitting(false);
 

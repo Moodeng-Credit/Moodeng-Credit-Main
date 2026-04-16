@@ -30,7 +30,10 @@ export default function UserAvatar({ src, alt = 'Profile', size = 48, className 
          className={`rounded-full object-cover shrink-0 ${className}`}
          style={{ width: size, height: size }}
          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_AVATAR;
+            const img = e.currentTarget as HTMLImageElement;
+            if (img.src !== PLACEHOLDER_AVATAR) {
+               img.src = PLACEHOLDER_AVATAR;
+            }
          }}
       />
    );

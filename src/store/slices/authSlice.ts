@@ -440,7 +440,7 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
       return await fetchCurrentUserProfile();
    }
 
-   const { error: updateError } = await supabase.from('users').update(updates).eq('id', user.id).select('*').single();
+   const { error: updateError } = await supabase.from('users').update(updates).eq('id', user.id);
 
    if (updateError) {
       throw updateError;
