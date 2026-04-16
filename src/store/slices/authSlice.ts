@@ -190,15 +190,19 @@ const initialState: AuthState = {
    user: defaultUser,
    username: null,
    isLoading: false,
+   isAuthChecked: false,
    error: null,
    userProfiles: {}
 };
 
-export const loginUser = createAsyncThunk('auth/login', async ({ email, password }: { email: string; password: string }) => {
+export const loginUser = createAsyncThunk(
+   'auth/login',
+   async ({ email, password, rememberMe = true }: { email: string; password: string; rememberMe?: boolean }) => {
    const supabase = supabaseClient();
    const { error } = await supabase.auth.signInWithPassword({
       email,
-      password
+      password,
+      options: { persistSession: rememberMe }
    });
 
    if (error) {
@@ -498,6 +502,9 @@ const authSlice = createSlice({
          state.username = null;
          state.error = null;
          state.userProfiles = {};
+      },
+      setAuthChecked: (state) => {
+         state.isAuthChecked = true;
       }
    },
    extraReducers: (builder) => {
@@ -633,19 +640,21 @@ const authSlice = createSlice({
             state.error = null;
             state.userProfiles = {};
          })
-         // Handle redux-persist rehydration to ensure userProfiles exists
+         // Handle redux-persist rehydration
          .addMatcher(
             (action) => action.type === 'persist/REHYDRATE',
             (state) => {
                if (!state.userProfiles) {
                   state.userProfiles = {};
                }
+               // Always reset isAuthChecked on rehydration so the initial auth check runs
+               state.isAuthChecked = false;
             }
          );
    }
 });
 
-export const { clearError, setUsername, clearAuth } = authSlice.actions;
+export const { clearError, setUsername, clearAuth, setAuthChecked } = authSlice.actions;
 export const me = fetchUser;
 export const login = loginUser;
 export const register = registerUser;

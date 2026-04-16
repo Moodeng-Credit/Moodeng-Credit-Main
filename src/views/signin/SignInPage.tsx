@@ -28,6 +28,7 @@ export default function SignInPage() {
       'incorrect_credentials' | 'email_not_found' | 'too_many_attempts' | null
    >(null);
    const [attemptsRemaining, setAttemptsRemaining] = useState(5);
+   const [rememberMe, setRememberMe] = useState(true);
 
    const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -37,7 +38,7 @@ export default function SignInPage() {
 
       setIsLoading(true);
       try {
-         const result = await dispatch(loginUser({ email, password })).unwrap();
+         const result = await dispatch(loginUser({ email, password, rememberMe })).unwrap();
          navigate('/dashboard', { replace: true });
       } catch (err) {
          const msg = err instanceof Error ? err.message : 'Authentication failed';
@@ -197,6 +198,8 @@ export default function SignInPage() {
                            <span className="relative flex size-6 shrink-0">
                               <input
                                  type="checkbox"
+                                 checked={rememberMe}
+                                 onChange={(e) => setRememberMe(e.target.checked)}
                                  className="peer absolute inset-0 z-10 cursor-pointer appearance-none rounded-lg"
                               />
                               <span className="pointer-events-none absolute inset-0 rounded-lg border border-[#B5ACBE] bg-white peer-checked:border-[#8336F0] peer-checked:bg-[#8336F0]" />
