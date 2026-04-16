@@ -25,7 +25,7 @@ export const useAuthGuard = () => {
          console.log('🔒 Client-side auth guard: No authentication found');
          clearAuthCookieClient();
          dispatch(clearAuth());
-         navigate('/sign-in');
+         navigate('/request-board');
       }
    }, [username, user?.id, navigate, dispatch]);
 

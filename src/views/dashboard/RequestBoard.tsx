@@ -17,6 +17,7 @@ import { usePagination } from '@/hooks/usePagination';
 import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
+import { logoImageSrc } from '@/config/navigationConfig';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
@@ -47,15 +48,6 @@ function RequestBoard$() {
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
 
-   useEffect(() => {
-      console.log('[Dashboard Debug] Mount Status:', {
-         pathname,
-         walletStatus: account.status,
-         walletAddress: account.address,
-         isConnected: account.isConnected
-      });
-   }, []);
-
    const { isConnected, status } = account;
    const { showToastByConfig } = useToast();
    const { openConnectModal } = useConnectModal();
@@ -67,8 +59,10 @@ function RequestBoard$() {
    const [showLenderNote, setShowLenderNote] = useState(false);
 
    const user = useSelector((state: RootState) => state.auth.user);
+   const username = useSelector((state: RootState) => state.auth.username);
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const isLoading = useSelector((state: RootState) => state.loans.isLoading);
+   const isAuthenticated = !!(user?.id && username);
    const showVerify = user?.isWorldId !== 'ACTIVE';
    const isBorrower = useIsBorrower();
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
@@ -84,7 +78,7 @@ function RequestBoard$() {
    const [days, setDays] = useState('');
    const [customAmount, setCustomAmount] = useState('');
    const [searchLoan, setSearchLoan] = useState('');
-   const effectiveCreditLimit = getEffectiveCreditLimit(user.cs, user.isWorldId === 'ACTIVE');
+   const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(user.cs, user.isWorldId === 'ACTIVE') : 0;
 
    const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
    const successModalRef = useClickOutside<HTMLDivElement>(() => setShowPurple(false), showPurple) as RefObject<HTMLDivElement>;
@@ -273,52 +267,62 @@ function RequestBoard$() {
       <>
          <div id="top" className="min-h-screen bg-md-neutral-200">
             <div className="max-w-[440px] mx-auto pb-28">
-               {/* Header */}
-               <div className="flex items-center justify-between px-md-5 py-md-3">
-                  <div className="flex items-center gap-3">
-                     <UserAvatar size={48} />
-                     <div className="flex flex-col gap-1">
-                        <p className="text-md-h5 font-semibold text-md-primary-2000">Hello, {firstName}</p>
-                        {isBorrower ? (
-                           <div className="flex items-center gap-2">
-                              {showVerify ? (
-                                 <>
-                                    <span className="inline-flex items-center gap-1 px-md-1 py-md-0 bg-md-red-100 rounded-md-sm">
-                                       <span className="w-3 h-3 rounded-full bg-md-red-800 flex items-center justify-center">
-                                          <span className="text-white text-[8px] font-bold">!</span>
+               {/* Header — authenticated vs public */}
+               {isAuthenticated ? (
+                  <div className="flex items-center justify-between px-md-5 py-md-3">
+                     <div className="flex items-center gap-3">
+                        <UserAvatar size={48} />
+                        <div className="flex flex-col gap-1">
+                           <p className="text-md-h5 font-semibold text-md-primary-2000">Hello, {firstName}</p>
+                           {isBorrower ? (
+                              <div className="flex items-center gap-2">
+                                 {showVerify ? (
+                                    <>
+                                       <span className="inline-flex items-center gap-1 px-md-1 py-md-0 bg-md-red-100 rounded-md-sm">
+                                          <span className="w-3 h-3 rounded-full bg-md-red-800 flex items-center justify-center">
+                                             <span className="text-white text-[8px] font-bold">!</span>
+                                          </span>
+                                          <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
                                        </span>
-                                       <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
+                                       <WorldIDVerification>
+                                          {({ open }) => (
+                                             <button onClick={open} className="text-md-b3 font-semibold text-md-primary-900 underline">
+                                                {'Verify World ID >'}
+                                             </button>
+                                          )}
+                                       </WorldIDVerification>
+                                    </>
+                                 ) : (
+                                    <span className="inline-flex items-center gap-1 px-md-1 py-md-0 bg-md-green-100 rounded-md-sm">
+                                       <span className="w-3 h-3 rounded-full bg-md-green-900 flex items-center justify-center">
+                                          <span className="text-white text-[8px] font-bold">&#10003;</span>
+                                       </span>
+                                       <span className="text-md-b3 font-semibold text-md-green-900">Verified</span>
                                     </span>
-                                    <WorldIDVerification>
-                                       {({ open }) => (
-                                          <button onClick={open} className="text-md-b3 font-semibold text-md-primary-900 underline">
-                                             {'Verify World ID >'}
-                                          </button>
-                                       )}
-                                    </WorldIDVerification>
-                                 </>
-                              ) : (
-                                 <span className="inline-flex items-center gap-1 px-md-1 py-md-0 bg-md-green-100 rounded-md-sm">
-                                    <span className="w-3 h-3 rounded-full bg-md-green-900 flex items-center justify-center">
-                                       <span className="text-white text-[8px] font-bold">&#10003;</span>
-                                    </span>
-                                    <span className="text-md-b3 font-semibold text-md-green-900">Verified</span>
+                                 )}
+                              </div>
+                           ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-md-primary-900 rounded-md-sm w-fit">
+                                 <span className="text-md-b3 font-semibold text-md-neutral-100 capitalize whitespace-nowrap">
+                                    IOU {user?.cs?.toLocaleString() ?? '0'}
                                  </span>
-                              )}
-                           </div>
-                        ) : (
-                           <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-md-primary-900 rounded-md-sm w-fit">
-                              <span className="text-md-b3 font-semibold text-md-neutral-100 capitalize whitespace-nowrap">
-                                 IOU {user?.cs?.toLocaleString() ?? '0'}
                               </span>
-                           </span>
-                        )}
+                           )}
+                        </div>
                      </div>
+                     <button className="shrink-0 w-12 h-12 bg-white rounded-full shadow-md-card flex items-center justify-center">
+                        <HelpCircle className="w-6 h-6 text-md-primary-900" strokeWidth={1.5} />
+                     </button>
                   </div>
-                  <button className="shrink-0 w-12 h-12 bg-white rounded-full shadow-md-card flex items-center justify-center">
-                     <HelpCircle className="w-6 h-6 text-md-primary-900" strokeWidth={1.5} />
-                  </button>
-               </div>
+               ) : (
+                  /* Public header — logo + wordmark only */
+                  <div className="flex items-center gap-2 px-md-5 py-md-3">
+                     <div className="w-10 h-10 rounded-full bg-md-primary-1200 flex items-center justify-center overflow-hidden">
+                        <img src={logoImageSrc} alt="Moodeng" className="w-8 h-8 object-contain" />
+                     </div>
+                     <span className="text-md-h5 font-semibold text-md-heading">Moodeng</span>
+                  </div>
+               )}
 
                {/* Content */}
                <div className="flex flex-col gap-5 px-md-4 py-md-3">
@@ -326,12 +330,14 @@ function RequestBoard$() {
                   <div className="flex flex-col gap-1">
                      <h1 className="text-md-h3 font-semibold text-md-heading">Microloan Request Board</h1>
                      <p className="text-md-b2 font-medium text-md-neutral-700">
-                        Browse requests posted on Moodeng, or jump right in and get verified to start borrowing in USDC.
+                        {isAuthenticated
+                           ? 'Browse requests posted on Moodeng, or jump right in and get verified to start borrowing in USDC.'
+                           : 'Browse requests publicly.'}
                      </p>
                   </div>
 
-                  {/* Apply Loan Card — borrower only */}
-                  {isBorrower && (
+                  {/* Apply Loan Card — visible for authenticated borrowers, or as CTA for public */}
+                  {isAuthenticated && isBorrower ? (
                      <div className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden">
                         <div className="flex flex-col gap-4 relative z-10">
                            <div className="flex flex-col gap-1 max-w-[232px]">
@@ -355,7 +361,31 @@ function RequestBoard$() {
                            className="absolute right-0 top-0 h-full object-contain pointer-events-none"
                         />
                      </div>
-                  )}
+                  ) : !isAuthenticated ? (
+                     <div className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden">
+                        <div className="flex flex-col gap-4 relative z-10">
+                           <div className="flex flex-col gap-1 max-w-[232px]">
+                              <p className="text-md-h5 font-semibold text-md-heading">Need short-term support?</p>
+                              <p className="text-md-b2 font-medium text-md-neutral-700">
+                                 Borrow USDC to build trust and
+                                 <br />
+                                 unlock higher loan levels.
+                              </p>
+                           </div>
+                           <Link
+                              to="/sign-up"
+                              className="border border-md-primary-1200 text-md-primary-1200 text-md-b1 font-semibold px-md-4 py-md-3 rounded-md-lg w-fit"
+                           >
+                              Apply For A Loan
+                           </Link>
+                        </div>
+                        <img
+                           src="/hippos/thumb-up-right.png"
+                           alt=""
+                           className="absolute right-0 top-0 h-full object-contain pointer-events-none"
+                        />
+                     </div>
+                  ) : null}
 
                   {/* Browse Section */}
                   <div className="flex flex-col gap-5">
@@ -384,7 +414,7 @@ function RequestBoard$() {
                      </div>
 
                      {/* Important Note — lender only */}
-                     {!isBorrower && showLenderNote && (
+                     {isAuthenticated && !isBorrower && showLenderNote && (
                         <div className="bg-[rgba(255,237,161,0.2)] rounded-md-lg flex items-start gap-4 px-4 py-[15px]">
                            <AlertTriangle className="w-5 h-5 shrink-0 text-md-yellow-700 mt-0.5" strokeWidth={2} />
                            <div className="flex-1 flex flex-col gap-1">
@@ -417,7 +447,9 @@ function RequestBoard$() {
                               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-md-primary-900" />
                            </div>
                         ) : displayedLoans && displayedLoans.length > 0 ? (
-                           displayedLoans.map((loan) => <UserCard key={loan.id} {...loan} isBorrower={isBorrower} />)
+                           displayedLoans.map((loan) => (
+                              <UserCard key={loan.id} {...loan} isBorrower={isBorrower} isAuthenticated={isAuthenticated} />
+                           ))
                         ) : (
                            <div className="text-center py-20 text-md-neutral-1200 text-md-b2">No loan requests found.</div>
                         )}
@@ -429,7 +461,27 @@ function RequestBoard$() {
             </div>
          </div>
 
-         {isBorrower && (
+         {/* Bottom auth bar for logged-out users */}
+         {!isAuthenticated && (
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-md-neutral-400 py-4 px-5">
+               <div className="max-w-[440px] mx-auto flex items-center gap-3">
+                  <Link
+                     to="/sign-in"
+                     className="flex-1 text-center py-3 rounded-md-lg border border-md-primary-1200 text-md-primary-1200 text-md-b1 font-semibold"
+                  >
+                     Sign In
+                  </Link>
+                  <Link
+                     to="/sign-up"
+                     className="flex-1 text-center py-3 rounded-md-lg bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold"
+                  >
+                     Sign Up
+                  </Link>
+               </div>
+            </div>
+         )}
+
+         {isAuthenticated && isBorrower && (
             <>
                <LoanRequestModal
                   isOpen={showModal}

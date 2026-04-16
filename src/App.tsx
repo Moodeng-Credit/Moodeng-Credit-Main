@@ -109,7 +109,7 @@ export default function App() {
 
             {/* Borrower */}
             <Route path="/dashboard" element={<ProtectedRoute><RoleGuard><Dashboard /></RoleGuard></ProtectedRoute>} />
-            <Route path="/request-board" element={<ProtectedRoute><RoleGuard><RequestBoard /></RoleGuard></ProtectedRoute>} />
+            <Route path="/request-board" element={<RequestBoard />} />
             <Route path="/repay" element={<ProtectedRoute><RoleGuard><Repay /></RoleGuard></ProtectedRoute>} />
 
             {/* Lender */}
@@ -146,7 +146,7 @@ export default function App() {
             <Route path="/ut" element={<Layout><Ut /></Layout>} />
 
             {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to={user?.id && username ? '/' : '/request-board'} replace />} />
          </Routes>
          {showBottomNav && <BottomNav />}
       </>

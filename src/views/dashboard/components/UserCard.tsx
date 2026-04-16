@@ -21,8 +21,8 @@ import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
 
-export default function UserCard(loan: Loan & { isBorrower?: boolean }) {
-   const { isBorrower = true, ...loanData } = loan;
+export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenticated?: boolean }) {
+   const { isBorrower = true, isAuthenticated = true, ...loanData } = loan;
    const borrowerUserId = loanData.borrowerUser || '';
 
    const dispatch = useDispatch<AppDispatch>();
@@ -176,9 +176,13 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean }) {
                      <p className="text-md-b3 text-md-neutral-700">
                         <span>by </span>
                         {borrowerUsername ? (
-                           <Link to={`/user/${borrowerUsername}`} className="text-[#d0588b] underline">
-                              {borrowerDisplayName}
-                           </Link>
+                           isAuthenticated ? (
+                              <Link to={`/user/${borrowerUsername}`} className="text-[#d0588b] underline">
+                                 {borrowerDisplayName}
+                              </Link>
+                           ) : (
+                              <span className="text-[#d0588b]">{borrowerDisplayName}</span>
+                           )
                         ) : (
                            <span className="text-md-neutral-700">{borrowerDisplayName}</span>
                         )}
@@ -215,7 +219,15 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean }) {
 
             {/* CTA + Borrower Link */}
             <div className="flex flex-col gap-4">
-               {isOwnLoan ? (
+               {!isAuthenticated ? (
+                  <Link
+                     to="/sign-in"
+                     className="w-full border border-md-primary-1200 text-md-primary-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2"
+                  >
+                     View Request
+                     <ChevronRight className="w-5 h-5" />
+                  </Link>
+               ) : isOwnLoan ? (
                   <div className="bg-md-neutral-500 text-md-neutral-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg text-center cursor-not-allowed">
                      Your Loan Request
                   </div>
@@ -243,19 +255,22 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean }) {
                   </button>
                )}
 
-               {borrowerUsername ? (
-                  <Link
-                     to={`/user/${borrowerUsername}`}
-                     className="flex items-center justify-center gap-2 text-md-b2 font-semibold text-[#2154e8]"
-                  >
-                     View Borrower Details
-                     <ExternalLink className="w-5 h-5" />
-                  </Link>
-               ) : (
-                  <span className="flex items-center justify-center gap-2 text-md-b2 font-semibold text-md-neutral-800 cursor-not-allowed">
-                     View Borrower Details
-                     <ExternalLink className="w-5 h-5" />
-                  </span>
+               {/* View Borrower Details — hidden for logged-out users */}
+               {isAuthenticated && (
+                  borrowerUsername ? (
+                     <Link
+                        to={`/user/${borrowerUsername}`}
+                        className="flex items-center justify-center gap-2 text-md-b2 font-semibold text-[#2154e8]"
+                     >
+                        View Borrower Details
+                        <ExternalLink className="w-5 h-5" />
+                     </Link>
+                  ) : (
+                     <span className="flex items-center justify-center gap-2 text-md-b2 font-semibold text-md-neutral-800 cursor-not-allowed">
+                        View Borrower Details
+                        <ExternalLink className="w-5 h-5" />
+                     </span>
+                  )
                )}
             </div>
          </div>
