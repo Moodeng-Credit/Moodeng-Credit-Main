@@ -8,6 +8,7 @@ import { type AuthState, type User, type UserRole, WorldId } from '@/types/authT
 
 type UpdateUserPayload = {
    username?: string;
+   displayName?: string;
    email?: string | null;
    password?: string;
    telegramUsername?: string | null;
@@ -81,11 +82,12 @@ const ensureUserProfileRow = async (
    return data;
 };
 
-const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string): User => ({
+const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: string): User => ({
    id: row.id,
    username: row.username,
    email: row.email,
    avatarUrl,
+   displayName,
    googleId: row.google_id ?? undefined,
    walletAddress: row.wallet_address ?? undefined,
    isWorldId: row.is_world_id,
@@ -120,13 +122,14 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
    }
 
    const avatarUrl = (user.user_metadata?.avatar_url ?? user.user_metadata?.picture) as string | undefined;
+   const displayName = user.user_metadata?.name as string | undefined;
 
    if (!profile) {
       const ensuredProfile = await ensureUserProfileRow(supabase, user);
-      return mapSupabaseRowToUser(ensuredProfile, avatarUrl);
+      return mapSupabaseRowToUser(ensuredProfile, avatarUrl, displayName);
    }
 
-   return mapSupabaseRowToUser(profile, avatarUrl);
+   return mapSupabaseRowToUser(profile, avatarUrl, displayName);
 };
 
 const fetchUserProfileByUsername = async (username: string): Promise<User> => {
@@ -415,10 +418,11 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
       throw sessionError ?? new Error('No authenticated user to update');
    }
 
-   if (userData.email || userData.password) {
+   if (userData.email || userData.password || userData.displayName !== undefined) {
       const { error } = await supabase.auth.updateUser({
          email: userData.email ?? undefined,
-         password: userData.password ?? undefined
+         password: userData.password ?? undefined,
+         data: userData.displayName !== undefined ? { name: userData.displayName } : undefined
       });
 
       if (error) {
@@ -436,13 +440,13 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
       return await fetchCurrentUserProfile();
    }
 
-   const { data: updatedRow, error: updateError } = await supabase.from('users').update(updates).eq('id', user.id).select('*').single();
+   const { error: updateError } = await supabase.from('users').update(updates).eq('id', user.id).select('*').single();
 
-   if (updateError || !updatedRow) {
-      throw updateError ?? new Error('Failed to update user profile');
+   if (updateError) {
+      throw updateError;
    }
 
-   return mapSupabaseRowToUser(updatedRow);
+   return await fetchCurrentUserProfile();
 });
 
 /** Set user_role in Supabase. Single source of truth for role-based routing. */

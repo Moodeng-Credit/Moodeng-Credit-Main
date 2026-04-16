@@ -33,6 +33,7 @@ export default {
                   1200: '#70617f',
                   1400: '#594d65',
                   1500: '#4d4359',
+                  1900: '#1f1c25',
                   2000: '#141218'
                },
                green: {
@@ -43,6 +44,7 @@ export default {
                   900: '#116b3c'
                },
                blue: {
+                  400: '#466dde',
                   500: '#1a8dff',
                   600: '#0076eb'
                },
@@ -51,6 +53,7 @@ export default {
                },
                red: {
                   100: '#fed7da',
+                  300: '#fb3748',
                   400: '#ff0420',
                   500: '#dd0417',
                   600: '#d92121',
@@ -73,7 +76,8 @@ export default {
             'md-md': '8px',
             'md-lg': '16px',
             'md-xl': '20px',
-            'md-pill': '500px'
+            'md-pill': '500px',
+            'md-input': '12px'
          },
          maxWidth: {
             modal: '440px'
@@ -87,6 +91,7 @@ export default {
             'md-h3': ['28px', { lineHeight: '1.2', letterSpacing: '-0.04em', fontWeight: '590' }],
             'md-h4': ['24px', { lineHeight: '1.2', letterSpacing: '-0.04em', fontWeight: '590' }],
             'md-h5': ['18px', { lineHeight: '1.2', letterSpacing: '-0.04em', fontWeight: '590' }],
+            'md-h6': ['20px', { lineHeight: '1.2', letterSpacing: '-0.04em', fontWeight: '590' }],
             'md-b1': ['16px', { lineHeight: '24px', letterSpacing: '-0.02em' }],
             'md-b2': ['14px', { lineHeight: '21px', letterSpacing: '-0.02em' }],
             'md-b3': ['12px', { lineHeight: '18px', letterSpacing: '-0.02em' }],

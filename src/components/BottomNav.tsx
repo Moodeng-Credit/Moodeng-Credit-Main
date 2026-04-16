@@ -43,6 +43,7 @@ export default function BottomNav() {
                <NavLink
                   key={tab.path}
                   to={tab.path}
+                  end={tab.path !== '/account'}
                   className="flex-1 flex flex-col items-center gap-1 self-stretch"
                >
                   {({ isActive }) => {

@@ -10,6 +10,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import UserAvatar from '@/components/UserAvatar';
 import type { Loan } from '@/types/loanTypes';
 
 // ---------------------------------------------------------------------------
@@ -28,9 +29,6 @@ interface FilterState {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-const PLACEHOLDER_AVATAR =
-   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Chiaroscuro_lighting_illuminates_a_Chibi-style_SVG_logo_a_gray_and_light_pink_hippo__joyfully_jumping__thumbs_up__holding_a_gold_Japanese_Mon_coin.__Hayao_Miyazaki_inspired__deep_teal_hues__warm_candl-uvt0ZI3fogcgqDR4Y2gCSRZfq8QmtX.png';
 
 function getLoanDisplayStatus(loan: Loan): LoanDisplayStatus {
    if (loan.repaymentStatus === 'Paid') return 'REPAID';
@@ -171,12 +169,7 @@ function TransactionRow({ loan, borrowerAvatar, borrowerName }: TransactionRowPr
    return (
       <div className="bg-md-neutral-100 rounded-md-lg px-4 py-3 flex items-center gap-3 shadow-md-card">
          {/* Borrower avatar */}
-         <img
-            src={borrowerAvatar ?? PLACEHOLDER_AVATAR}
-            alt={borrowerName}
-            className="w-10 h-10 rounded-full object-cover shrink-0"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_AVATAR; }}
-         />
+         <UserAvatar src={borrowerAvatar} alt={borrowerName} size={40} />
 
          {/* Loan info */}
          <div className="flex-1 min-w-0 flex flex-col gap-1">
@@ -410,12 +403,7 @@ export default function LenderDashboard() {
 
             {/* ── Profile section ── */}
             <div className="flex items-start gap-3 px-md-5 pb-md-3">
-               <img
-                  src={user?.avatarUrl ?? PLACEHOLDER_AVATAR}
-                  alt="Profile"
-                  className="w-[70px] h-[70px] rounded-full object-cover shrink-0"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_AVATAR; }}
-               />
+               <UserAvatar size={70} />
                <div className="flex flex-col gap-1 justify-center pt-1">
                   <div className="flex items-center gap-2 flex-wrap">
                      <p className="text-[18px] tracking-[-0.04em] leading-[1.2] font-semibold text-md-primary-2000">

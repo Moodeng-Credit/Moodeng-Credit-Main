@@ -40,6 +40,7 @@ import Ut from '@/app/ut/page';
 import WhyLend from '@/app/whylend/page';
 import { type RootState } from '@/store/store';
 import Account from '@/views/account/Account';
+import AccountSettings from '@/views/account/AccountSettings';
 import History from '@/views/history/History';
 import Repay from '@/views/repay/Repay';
 import RoleSelection from '@/app/role-selection/page';
@@ -54,7 +55,7 @@ function Layout({ children }: { children: React.ReactNode }) {
    );
 }
 
-const BOTTOM_NAV_ROUTES = ['/request-board', '/repay', '/dashboard', '/lender/dashboard', '/history', '/account'];
+const BOTTOM_NAV_ROUTES = ['/request-board', '/repay', '/dashboard', '/lender/dashboard', '/history', '/account', '/account/settings'];
 
 export default function App() {
    const location = useLocation();
@@ -120,6 +121,7 @@ export default function App() {
             {/* Shared authenticated */}
             <Route path="/history" element={<ProtectedRoute><RoleGuard><History /></RoleGuard></ProtectedRoute>} />
             <Route path="/account" element={<ProtectedRoute><RoleGuard><Account /></RoleGuard></ProtectedRoute>} />
+            <Route path="/account/settings" element={<ProtectedRoute><RoleGuard><AccountSettings /></RoleGuard></ProtectedRoute>} />
 
             {/* Admin */}
             <Route path="/admin" element={<AdminGuard><AdminPanel /></AdminGuard>} />
