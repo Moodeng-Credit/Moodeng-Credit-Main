@@ -66,7 +66,7 @@ export default {
                timeline: {
                   active: '#534AB7',
                   bg: '#F1EFE8',
-                  border: '#D3D1C7',
+                  border: '#B4B2A9',
                   text: '#888780'
                }
             }

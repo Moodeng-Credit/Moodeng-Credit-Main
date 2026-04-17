@@ -90,14 +90,18 @@ interface TimelineStep {
 
 function getActiveStepKey(loan: Loan): TimelineStep['key'] | null {
    if (loan.loanStatus === 'Requested') return 'funded';
-   if (loan.repaymentStatus === 'Unpaid') return 'partial_repayment';
-   if (loan.repaymentStatus === 'Partial') return 'repaid';
-   return null;
+   if (loan.repaymentStatus === 'Paid') return null;
+   return 'repaid';
 }
 
 function buildTimeline(loan: Loan): TimelineStep[] {
-   const order: TimelineStep['key'][] = ['requested', 'funded', 'partial_repayment', 'repaid'];
    const activeKey = getActiveStepKey(loan);
+   const showPartial =
+      activeKey === 'partial_repayment' ||
+      (activeKey === 'repaid' && loan.repaymentStatus === 'Partial');
+   const order: TimelineStep['key'][] = showPartial
+      ? ['requested', 'funded', 'partial_repayment', 'repaid']
+      : ['requested', 'funded', 'repaid'];
    const activeIdx = activeKey ? order.indexOf(activeKey) : order.length;
 
    const stateFor = (idx: number): StepState =>
@@ -155,7 +159,7 @@ function StepDot({ state }: { state: StepState }) {
       );
    }
    return (
-      <span className="w-6 h-6 rounded-full bg-md-timeline-bg border-[1.5px] border-md-timeline-border shrink-0" />
+      <span className="w-6 h-6 rounded-full bg-md-timeline-bg border-2 border-md-timeline-border shrink-0" />
    );
 }
 
