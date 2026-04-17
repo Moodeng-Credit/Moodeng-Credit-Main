@@ -291,7 +291,7 @@ export default function TransactionDetail() {
                      </div>
                      <div className="flex flex-col gap-1">
                         <span className="text-md-b3 text-md-neutral-1000">Repaid</span>
-                        <span className="text-md-b1 font-semibold text-md-green-800">
+                        <span className={`text-md-b1 font-semibold ${loan.repaidAmount > 0 ? 'text-md-green-800' : 'text-md-neutral-600'}`}>
                            {formatCurrency(loan.repaidAmount)}
                         </span>
                      </div>
