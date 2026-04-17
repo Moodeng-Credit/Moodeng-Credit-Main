@@ -153,7 +153,7 @@ function StepDot({ state }: { state: StepState }) {
    }
    if (state === 'active') {
       return (
-         <span className="w-6 h-6 rounded-full bg-white border-[2.5px] border-md-timeline-active flex items-center justify-center shrink-0">
+         <span className="w-6 h-6 rounded-full bg-white border-2 border-md-timeline-border flex items-center justify-center shrink-0">
             <span className="w-[10px] h-[10px] rounded-full bg-md-timeline-active" />
          </span>
       );
