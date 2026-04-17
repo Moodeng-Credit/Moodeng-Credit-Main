@@ -396,7 +396,11 @@ export default function LenderDashboard() {
                   </button>
                   <h1 className="text-md-h3 font-semibold text-md-primary-2000">Dashboard</h1>
                </div>
-               <button className="shrink-0 w-12 h-12 bg-white rounded-full shadow-md-card flex items-center justify-center">
+               <button
+                  type="button"
+                  onClick={() => navigate('/support')}
+                  className="shrink-0 w-12 h-12 bg-white rounded-full shadow-md-card flex items-center justify-center"
+               >
                   <HelpCircle className="w-6 h-6 text-md-primary-900" strokeWidth={1.5} />
                </button>
             </div>

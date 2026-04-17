@@ -35,6 +35,13 @@ import ResetPassword from '@/app/reset-password/page';
 import SignUp from '@/app/signup/page';
 import Simple from '@/app/simple/page';
 import Test from '@/app/test/page';
+import SupportPage from '@/app/support/page';
+import SupportGettingStartedPage from '@/app/support/getting-started/page';
+import SupportGuidesPage from '@/app/support/guides/page';
+import SupportGuideDetailPage from '@/app/support/guides/[slug]/page';
+import SupportFAQPage from '@/app/support/faq/page';
+import SupportUpdatesPage from '@/app/support/updates/page';
+import SupportUpdateDetailPage from '@/app/support/updates/[slug]/page';
 import UserProfile from '@/app/user/[username]/page';
 import Ut from '@/app/ut/page';
 import WhyLend from '@/app/whylend/page';
@@ -62,7 +69,11 @@ export default function App() {
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
    const { user, username } = useSelector((state: RootState) => state.auth);
    const showBottomNav =
-      user?.id && user?.userRole && (BOTTOM_NAV_ROUTES.includes(location.pathname) || location.pathname.startsWith('/user/'));
+      user?.id &&
+      user?.userRole &&
+      (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
+         location.pathname.startsWith('/user/') ||
+         location.pathname.startsWith('/support'));
 
    useEffect(() => {
       if (!isPosthogEnabled) {
@@ -134,6 +145,15 @@ export default function App() {
             <Route path="/reset-password" element={<Layout><ResetPassword /></Layout>} />
             <Route path="/auth-success" element={<AuthSuccess />} />
             <Route path="/auth/confirm" element={<AuthConfirm />} />
+
+            {/* Help & Support */}
+            <Route path="/support" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />
+            <Route path="/support/getting-started" element={<ProtectedRoute><SupportGettingStartedPage /></ProtectedRoute>} />
+            <Route path="/support/guides" element={<ProtectedRoute><SupportGuidesPage /></ProtectedRoute>} />
+            <Route path="/support/guides/:slug" element={<ProtectedRoute><SupportGuideDetailPage /></ProtectedRoute>} />
+            <Route path="/support/faq" element={<ProtectedRoute><SupportFAQPage /></ProtectedRoute>} />
+            <Route path="/support/updates" element={<ProtectedRoute><SupportUpdatesPage /></ProtectedRoute>} />
+            <Route path="/support/updates/:slug" element={<ProtectedRoute><SupportUpdateDetailPage /></ProtectedRoute>} />
 
             {/* Public */}
             <Route path="/faq" element={<Layout><FAQ /></Layout>} />
