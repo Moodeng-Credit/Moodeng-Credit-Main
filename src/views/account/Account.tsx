@@ -133,7 +133,11 @@ export default function Account() {
                <div className="flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                      <p className="text-md-b2 font-medium text-md-neutral-700">Frequently Asked Questions</p>
-                     <button type="button" className="text-md-b2 font-medium text-md-primary-900">
+                     <button
+                        type="button"
+                        onClick={() => navigate('/support')}
+                        className="text-md-b2 font-medium text-md-primary-900"
+                     >
                         View More
                      </button>
                   </div>
