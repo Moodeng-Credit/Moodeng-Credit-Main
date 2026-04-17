@@ -62,6 +62,12 @@ export default {
                   500: '#dd0417',
                   600: '#d92121',
                   800: '#b60413'
+               },
+               timeline: {
+                  active: '#534AB7',
+                  bg: '#F1EFE8',
+                  border: '#B4B2A9',
+                  text: '#888780'
                }
             }
          },

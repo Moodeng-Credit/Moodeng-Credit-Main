@@ -8,7 +8,6 @@ import AdminPanel from '@/app/admin/page';
 import LenderDashboard from '@/app/lender/dashboard/page';
 import LenderPerformance from '@/app/lender/performance/page';
 import LenderRequestBoard from '@/app/lender/request-board/page';
-import LenderTransactions from '@/app/lender/transactions/page';
 import WalletConnect from '@/app/onboarding/wallet/page';
 import WorldIdVerification from '@/app/verify-world-id/page';
 import BottomNav from '@/components/BottomNav';
@@ -48,8 +47,9 @@ import WhyLend from '@/app/whylend/page';
 import { type RootState } from '@/store/store';
 import Account from '@/views/account/Account';
 import AccountSettings from '@/views/account/AccountSettings';
-import History from '@/views/history/History';
 import Repay from '@/views/repay/Repay';
+import TransactionDetail from '@/views/transactions/TransactionDetail';
+import TransactionHistory from '@/views/transactions/TransactionHistory';
 import RoleSelection from '@/app/role-selection/page';
 
 function Layout({ children }: { children: React.ReactNode }) {
@@ -62,7 +62,7 @@ function Layout({ children }: { children: React.ReactNode }) {
    );
 }
 
-const BOTTOM_NAV_ROUTES = ['/request-board', '/repay', '/dashboard', '/lender/dashboard', '/history', '/account', '/account/settings'];
+const BOTTOM_NAV_ROUTES = ['/request-board', '/repay', '/dashboard', '/lender/dashboard', '/lender/transactions', '/history', '/account', '/account/settings'];
 
 export default function App() {
    const location = useLocation();
@@ -73,7 +73,8 @@ export default function App() {
       user?.userRole &&
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
          location.pathname.startsWith('/user/') ||
-         location.pathname.startsWith('/support'));
+         location.pathname.startsWith('/support') ||
+         location.pathname.startsWith('/history/'));
 
    useEffect(() => {
       if (!isPosthogEnabled) {
@@ -127,10 +128,11 @@ export default function App() {
             <Route path="/lender/dashboard" element={<ProtectedRoute><RoleGuard><LenderDashboard /></RoleGuard></ProtectedRoute>} />
             <Route path="/lender/request-board" element={<ProtectedRoute><RoleGuard><LenderRequestBoard /></RoleGuard></ProtectedRoute>} />
             <Route path="/lender/performance" element={<ProtectedRoute><RoleGuard><LenderPerformance /></RoleGuard></ProtectedRoute>} />
-            <Route path="/lender/transactions" element={<ProtectedRoute><RoleGuard><LenderTransactions /></RoleGuard></ProtectedRoute>} />
+            <Route path="/lender/transactions" element={<ProtectedRoute><RoleGuard><TransactionHistory /></RoleGuard></ProtectedRoute>} />
 
             {/* Shared authenticated */}
-            <Route path="/history" element={<ProtectedRoute><RoleGuard><History /></RoleGuard></ProtectedRoute>} />
+            <Route path="/history" element={<ProtectedRoute><RoleGuard><TransactionHistory /></RoleGuard></ProtectedRoute>} />
+            <Route path="/history/:loanId" element={<ProtectedRoute><RoleGuard><TransactionDetail /></RoleGuard></ProtectedRoute>} />
             <Route path="/account" element={<ProtectedRoute><RoleGuard><Account /></RoleGuard></ProtectedRoute>} />
             <Route path="/account/settings" element={<ProtectedRoute><RoleGuard><AccountSettings /></RoleGuard></ProtectedRoute>} />
 
