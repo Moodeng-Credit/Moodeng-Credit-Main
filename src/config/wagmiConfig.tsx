@@ -1,6 +1,16 @@
 import { type ReactNode } from 'react';
 
-import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { connectorsForWallets } from '@rainbow-me/rainbowkit';
+import {
+   argentWallet,
+   coinbaseWallet,
+   metaMaskWallet,
+   phantomWallet,
+   rainbowWallet,
+   trustWallet,
+   walletConnectWallet
+} from '@rainbow-me/rainbowkit/wallets';
+import { createConfig, http } from 'wagmi';
 import { arbitrum, base, baseSepolia, bsc, type Chain, optimism, polygon, sepolia } from 'wagmi/chains';
 
 import { type CustomChainConfig } from '@/types/wagmiTypes';
@@ -219,11 +229,40 @@ export const ALLOWED_CHAIN_ID = allowedChainEntry ? parseInt(allowedChainEntry[0
 // Convert to array for RainbowKit - only include allowed chain
 export const chainsWithIcons = [chainConfig[ALLOWED_CHAIN_ID]];
 
-// RainbowKit config
-export const config = getDefaultConfig({
-   appName: 'Moodeng',
-   projectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || '',
-   chains: chainsWithIcons as unknown as [Chain, ...Chain[]],
+export const WALLET_CONNECTOR_NAMES = {
+   coinbase: 'Coinbase Wallet',
+   metaMask: 'MetaMask',
+   phantom: 'Phantom',
+   walletConnect: 'WalletConnect'
+} as const;
+
+export type WalletConnectorKey = keyof typeof WALLET_CONNECTOR_NAMES;
+
+const walletConnectProjectId = import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || '';
+
+const connectors = connectorsForWallets(
+   [
+      {
+         groupName: 'Recommended',
+         wallets: [coinbaseWallet, metaMaskWallet, phantomWallet, walletConnectWallet]
+      },
+      {
+         groupName: 'Other',
+         wallets: [trustWallet, rainbowWallet, argentWallet]
+      }
+   ],
+   {
+      appName: 'Moodeng',
+      projectId: walletConnectProjectId
+   }
+);
+
+const chainsTuple = chainsWithIcons as unknown as [Chain, ...Chain[]];
+
+export const config = createConfig({
+   chains: chainsTuple,
+   connectors,
+   transports: Object.fromEntries(chainsTuple.map((chain) => [chain.id, http()])),
    ssr: false
 });
 

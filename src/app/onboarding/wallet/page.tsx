@@ -1,5 +1,5 @@
-import { PlaceholderPage } from '@/components/PlaceholderPage';
+import ConnectWallet from '@/views/onboarding/ConnectWallet';
 
-export default function WalletConnect() {
-   return <PlaceholderPage title="Connect Wallet" />;
+export default function WalletConnectPage() {
+   return <ConnectWallet />;
 }
