@@ -238,8 +238,8 @@ function LenderConnectView({
                   onClick={() => selectedKey && onConnect(selectedKey)}
                   className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
                >
-                  {isConnecting ? 'Connecting…' : 'Connect Wallet'}
-                  {!isConnecting && (
+                  {isConnecting ? 'Connecting…' : selectedKey ? 'Connect Wallet' : 'Select a wallet above'}
+                  {!isConnecting && selectedKey && (
                      <span
                         className="block size-6 bg-md-neutral-100"
                         style={{

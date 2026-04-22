@@ -8,18 +8,16 @@ import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 export default function WalletConnected() {
    const navigate = useNavigate();
    const user = useSelector((state: RootState) => state.auth.user);
-   const { isConnected } = useAccount();
+   const { isConnected, status } = useAccount();
    const { disconnect } = useDisconnect();
 
    if (!user?.userRole) {
       return <Navigate to="/onboarding/role" replace />;
    }
 
-   if (!isConnected) {
+   if (!isConnected && status !== 'reconnecting') {
       return <FailureView onRetry={() => navigate('/onboarding/wallet')} />;
    }
-
-   const destination = user.userRole === 'lender' ? '/lender/dashboard' : '/dashboard';
 
    return (
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
@@ -33,7 +31,7 @@ export default function WalletConnected() {
             </p>
             <button
                type="button"
-               onClick={() => navigate(destination, { replace: true })}
+               onClick={() => navigate('/request-board', { replace: true })}
                className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100"
             >
                Next

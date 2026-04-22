@@ -1,9 +1,12 @@
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
+import type { RootState } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
 export default function Welcome() {
    const navigate = useNavigate();
+   const user = useSelector((state: RootState) => state.auth.user);
 
    return (
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
@@ -17,12 +20,25 @@ export default function Welcome() {
             />
 
             <div className="flex flex-col gap-md-0 w-full">
-               <h2 className="text-md-display text-md-heading">
-                  You're building a reputation your wallet can carry anywhere.
-               </h2>
-               <p className="text-md-b1 text-md-neutral-700 font-medium">
-                  Borrow responsibly. Build trust. Unlock more over time.
-               </p>
+               {user?.userRole === 'lender' ? (
+                  <>
+                     <h2 className="text-md-display text-md-heading">
+                        Lend to real people and help them build credit.
+                     </h2>
+                     <p className="text-md-b1 text-md-neutral-700 font-medium">
+                        Earn onchain — powered by Base.
+                     </p>
+                  </>
+               ) : (
+                  <>
+                     <h2 className="text-md-display text-md-heading">
+                        You're building a reputation your wallet can carry anywhere.
+                     </h2>
+                     <p className="text-md-b1 text-md-neutral-700 font-medium">
+                        Borrow responsibly. Build trust. Unlock more over time.
+                     </p>
+                  </>
+               )}
             </div>
 
             <div className="flex flex-col gap-md-4 p-md-4 rounded-[12px] border border-md-primary-900 bg-md-primary-900/10 w-full">
@@ -139,7 +155,7 @@ export default function Welcome() {
 
                <button
                   type="button"
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => navigate('/request-board')}
                   className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg border border-md-blue-600 text-md-b1 font-semibold text-md-blue-600"
                >
                   Explore Moodeng
