@@ -64,6 +64,7 @@ yarn-error.log*
 !.env.local
 !.env.ci
 .env.keys
+env.test
 
 # vercel
 .vercel
