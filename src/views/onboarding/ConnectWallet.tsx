@@ -22,6 +22,7 @@ export default function ConnectWallet() {
    const { showToast } = useToast();
    const [pendingKey, setPendingKey] = useState<WalletConnectorKey | null>(null);
    const [selectedKey, setSelectedKey] = useState<WalletConnectorKey | null>(null);
+   const [userInitiatedConnection, setUserInitiatedConnection] = useState(false);
 
    const connectorsByName = useMemo(() => {
       const map = new Map<string, (typeof connectors)[number]>();
@@ -37,21 +38,23 @@ export default function ConnectWallet() {
             return;
          }
          setPendingKey(key);
+         setUserInitiatedConnection(true);
          connect({ connector });
       },
       [connect, connectorsByName, showToast]
    );
 
    useEffect(() => {
-      if (isConnected) {
+      if (isConnected && userInitiatedConnection) {
          setPendingKey(null);
          navigate('/onboarding/wallet/connected', { replace: true });
       }
-   }, [isConnected, navigate]);
+   }, [isConnected, userInitiatedConnection, navigate]);
 
    useEffect(() => {
       if (status === 'error' && error) {
          setPendingKey(null);
+         setUserInitiatedConnection(false);
          const code = (error as { code?: number | string }).code;
          if (code !== 4001 && !/reject/i.test(error.message)) {
             showToast(TOAST_TYPES.ERROR, 'Connection failed', error.message || 'Could not connect wallet. Please try again.');
@@ -81,6 +84,7 @@ export default function ConnectWallet() {
          onConnect={(key) => handleConnect(key)}
          onOpenOther={() => {
             setSelectedKey(null);
+            setUserInitiatedConnection(true);
             openConnectModal?.();
          }}
          isConnecting={status === 'pending'}

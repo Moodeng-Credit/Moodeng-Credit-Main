@@ -93,25 +93,27 @@ export default function Welcome() {
                      Start Setup
                   </button>
 
-                  <button
-                     type="button"
-                     className="inline-flex items-center justify-center gap-md-1 w-full text-md-b2 font-semibold text-md-primary-1200"
-                  >
-                     <span
-                        className="block size-6 bg-md-primary-1200"
-                        style={{
-                           WebkitMaskImage: "url('/icons/play.svg')",
-                           maskImage: "url('/icons/play.svg')",
-                           WebkitMaskRepeat: 'no-repeat',
-                           maskRepeat: 'no-repeat',
-                           WebkitMaskPosition: 'center',
-                           maskPosition: 'center',
-                           WebkitMaskSize: 'contain',
-                           maskSize: 'contain'
-                        }}
-                     />
-                     Watch Tutorial
-                  </button>
+                  {false && (
+                     <button
+                        type="button"
+                        className="inline-flex items-center justify-center gap-md-1 w-full text-md-b2 font-semibold text-md-primary-1200"
+                     >
+                        <span
+                           className="block size-6 bg-md-primary-1200"
+                           style={{
+                              WebkitMaskImage: "url('/icons/play.svg')",
+                              maskImage: "url('/icons/play.svg')",
+                              WebkitMaskRepeat: 'no-repeat',
+                              maskRepeat: 'no-repeat',
+                              WebkitMaskPosition: 'center',
+                              maskPosition: 'center',
+                              WebkitMaskSize: 'contain',
+                              maskSize: 'contain'
+                           }}
+                        />
+                        Watch Tutorial
+                     </button>
+                  )}
                </div>
             </div>
 
