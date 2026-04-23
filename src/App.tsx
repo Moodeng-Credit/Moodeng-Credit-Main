@@ -9,6 +9,8 @@ import LenderDashboard from '@/app/lender/dashboard/page';
 import LenderPerformance from '@/app/lender/performance/page';
 import LenderRequestBoard from '@/app/lender/request-board/page';
 import WalletConnect from '@/app/onboarding/wallet/page';
+import WalletConnected from '@/app/onboarding/wallet/connected/page';
+import OnboardingWelcome from '@/app/onboarding/welcome/page';
 import WorldIdVerification from '@/app/verify-world-id/page';
 import BottomNav from '@/components/BottomNav';
 import Footer from '@/components/Footer';
@@ -114,7 +116,9 @@ export default function App() {
 
             {/* Onboarding */}
             <Route path="/onboarding/role" element={<ProtectedRoute><RoleSelection /></ProtectedRoute>} />
+            <Route path="/onboarding/welcome" element={<ProtectedRoute><OnboardingWelcome /></ProtectedRoute>} />
             <Route path="/onboarding/wallet" element={<ProtectedRoute><WalletConnect /></ProtectedRoute>} />
+            <Route path="/onboarding/wallet/connected" element={<ProtectedRoute><WalletConnected /></ProtectedRoute>} />
 
             {/* Verification */}
             <Route path="/verify-world-id" element={<ProtectedRoute><RoleGuard><WorldIdVerification /></RoleGuard></ProtectedRoute>} />

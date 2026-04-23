@@ -24,7 +24,7 @@ export const ModalButton: FC<ModalButtonProps> = ({
    className = ''
 }) => {
    const baseStyles =
-      'flex items-center justify-center gap-2 rounded-2xl px-5 py-4 font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50';
+      'flex items-center justify-center gap-2 rounded-2xl px-5 py-3 sm:py-4 font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50';
 
    const variantStyles: Record<ButtonVariant, string> = {
       primary: 'bg-md-primary-1200 text-base text-white font-sans',

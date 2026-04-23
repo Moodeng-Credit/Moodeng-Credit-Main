@@ -22,7 +22,7 @@ export const ModalHeader: FC<ModalHeaderProps> = ({
    isMainContent
 }) => {
    return (
-      <div className="relative flex font-sans flex-col bg-white px-5 space-y-5 pt-6">
+      <div className="relative flex font-sans flex-col bg-white px-4 sm:px-5 space-y-2 sm:space-y-3 pt-3 sm:pt-5">
          {/* Top Nav Bar */}
          {onClose && (
             <div className="flex items-center justify-between">
@@ -40,17 +40,17 @@ export const ModalHeader: FC<ModalHeaderProps> = ({
             </div>
          )}
 
-         <img src="/world-id.png" alt="" aria-hidden="true" className="w-40" />
+         <img src="/world-id.png" alt="" aria-hidden="true" className="w-16 sm:w-20" />
 
-         <div className="flex-1 text-left flex flex-col gap-2">
+         <div className="flex-1 text-left flex flex-col gap-1 sm:gap-2">
             {/* Main Title: Deep Navy, Bold, Large */}
-            <h2 id={titleId} className="text-4xl font-semibold text-md-heading leading-tighter tracking-tight">
+            <h2 id={titleId} className="text-lg sm:text-3xl font-semibold text-md-heading leading-tighter tracking-tight">
                {title || "Verify You're Human"}
             </h2>
 
             {/* Description: Medium Gray, Regular Weight */}
             {description && (
-               <p id={descriptionId} className="text-base text-gray-500 font-medium">
+               <p id={descriptionId} className="text-xs sm:text-base text-gray-500 font-medium">
                   {description}
                </p>
             )}

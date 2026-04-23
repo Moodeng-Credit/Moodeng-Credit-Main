@@ -18,7 +18,7 @@ export default function RoleSelectionPage() {
    const [isSubmitting, setIsSubmitting] = useState(false);
 
    if (user?.userRole) {
-      return <Navigate to="/dashboard" replace />;
+      return <Navigate to={user.userRole === 'lender' ? '/lender/dashboard' : '/dashboard'} replace />;
    }
 
    const handleConfirm = async () => {
@@ -26,7 +26,8 @@ export default function RoleSelectionPage() {
       setIsSubmitting(true);
       try {
          await dispatch(updateUserRole(selectedRole)).unwrap();
-         navigate('/dashboard', { replace: true });
+         const next = selectedRole === 'borrower' ? '/onboarding/welcome' : '/onboarding/wallet';
+         navigate(next, { replace: true });
       } catch {
          showToast(TOAST_TYPES.ERROR, 'Something went wrong', 'Failed to save your role. Please try again.');
       } finally {
