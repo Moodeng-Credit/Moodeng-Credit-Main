@@ -23,7 +23,7 @@ const ACCOUNT_ITEMS = [
 ] as const;
 
 const FAQ_ITEMS = [
-   { label: 'Watch our credit levelling guide', icon: 'play' as const },
+   { label: 'Watch our Credit Levelling Guide', icon: 'play' as const },
    { label: 'Why does Moodeng use USDC', icon: 'chevron' as const },
    { label: 'How to Increase Credit Limit?', icon: 'chevron' as const },
    { label: 'What are IOU Points', icon: 'chevron' as const },
