@@ -145,9 +145,9 @@ export default function FAQsComponent() {
                   </span>
                </p>
                <p className="mb-4">
-                  <span>We recommend using a </span>
-                  <span className="font-bold">Coinbase Smart Wallet</span>
-                  <span> on Base — it's gasless, simple to set up, and works perfectly with Moodeng.</span>
+                  <span>Borrowers must use a </span>
+                  <span className="font-bold">Coinbase Smart Wallet on Base</span>
+                  <span> — it's gasless, simple to set up, and works perfectly with Moodeng. Lenders have more flexibility but we recommend the same setup.</span>
                </p>
             </>
          )
@@ -174,23 +174,26 @@ export default function FAQsComponent() {
       },
       {
          number: '06',
-         question: 'Why is Base the recommended network (and why Coinbase Wallet)?',
+         question: 'Why is Base required for borrowers (and why Coinbase Wallet)?',
          answer: (
             <>
                <p className="mb-4">
-                  <span>Base is built by Coinbase and supports </span>
+                  <span>Borrowers on Moodeng must use a </span>
+                  <span className="font-bold">Coinbase Smart Wallet on Base</span>
+                  <span>. It's the only wallet supported for receiving loan funds today. Lenders have more flexibility — any wallet that holds USDC works — but we recommend the same setup to keep transactions gasless.</span>
+               </p>
+               <p className="mb-4">
+                  <span>Why Base? It supports </span>
                   <span className="font-bold">gasless USDC transactions</span>
-                  <span>, meaning there are no network fees when sending or repaying loans.</span>
+                  <span>, meaning no network fees when sending or repaying loans. 100% of what a lender funds reaches the borrower, and 100% of a repayment reaches the lender.</span>
                </p>
                <p className="mb-4">
-                  <span>Using </span>
-                  <span className="font-bold">Coinbase Wallet on Base</span>
-                  <span> keeps everything </span>
-                  <span className="font-bold">feeless, fast, and simple.</span>
-                  <span> Your repayments go entirely to your lender — not to network fees.</span>
+                  <span>Why Coinbase Smart Wallet? It's </span>
+                  <span className="font-bold">passwordless and seedless</span>
+                  <span> — sign in with email or passkey, no 12-word recovery phrase to lose. For users who've never touched crypto, that's a meaningful improvement over older wallets like MetaMask.</span>
                </p>
                <p className="mb-4">
-                  <span>This helps keep Moodeng affordable, beginner-friendly, and accessible for everyone building credit.</span>
+                  <span>This combination keeps Moodeng affordable, beginner-friendly, and accessible for everyone building credit.</span>
                </p>
             </>
          )
@@ -226,14 +229,21 @@ export default function FAQsComponent() {
          number: '08',
          question: 'Does Moodeng Credit charge fees?',
          answer: (
-            <p className="mb-4">
-               <span>
-                  No, we don't charge fees for borrowing or lending.
-                  <br /> However, there's a small{' '}
-               </span>
-               <span className="font-bold">$1 verification fee</span>
-               <span> (for borrowers and lenders). This helps prevent bots and keeps the platform safe.</span>
-            </p>
+            <>
+               <p className="mb-4">
+                  <span>No. Moodeng Credit charges </span>
+                  <span className="font-bold">no fees</span>
+                  <span> on borrowing or lending. </span>
+                  <span className="font-bold">100% of what a lender funds reaches the borrower</span>
+                  <span>, and </span>
+                  <span className="font-bold">100% of a repayment reaches the lender.</span>
+               </p>
+               <p className="mb-4">
+                  <span>Network fees (gas) are also zero when you use a </span>
+                  <span className="font-bold">Coinbase Smart Wallet on Base</span>
+                  <span>. The only cost of using Moodeng is the interest rate the borrower offers — and that goes entirely to the lender, not to us.</span>
+               </p>
+            </>
          )
       },
       {
