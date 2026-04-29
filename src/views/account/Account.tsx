@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import UserAvatar from '@/components/UserAvatar';
+import { ACCOUNT_FAQS } from '@/views/account/data/accountFaqs';
 import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
@@ -20,14 +21,6 @@ const ACCOUNT_ITEMS = [
    { label: 'Account Settings', path: '/account/settings' },
    { label: 'Repay Loans', path: '/repay' },
    { label: 'View Loan Transaction History', path: '/history' },
-] as const;
-
-const FAQ_ITEMS = [
-   { label: 'Watch our Credit Levelling Guide', icon: 'play' as const },
-   { label: 'Why does Moodeng use USDC?', icon: 'chevron' as const },
-   { label: 'How to Increase Credit Limit?', icon: 'chevron' as const },
-   { label: 'What are IOU Points?', icon: 'chevron' as const },
-   { label: 'How do I get verified?', icon: 'chevron' as const },
 ] as const;
 
 function ChevronRight() {
@@ -62,6 +55,7 @@ export default function Account() {
    const user = useSelector((state: RootState) => state.auth.user);
    const [showSignOutModal, setShowSignOutModal] = useState(false);
    const [isSigningOut, setIsSigningOut] = useState(false);
+   const [openFaqId, setOpenFaqId] = useState<string | null>(null);
 
    const displayName = user?.displayName || user?.username || 'User';
    const iouPoints = user?.cs?.toLocaleString() ?? '0';
@@ -129,10 +123,10 @@ export default function Account() {
                   ))}
                </div>
 
-               {/* FAQ */}
+               {/* Common questions */}
                <div className="flex flex-col gap-3">
                   <div className="flex items-center justify-between">
-                     <p className="text-md-b2 font-medium text-md-neutral-700">Frequently Asked Questions</p>
+                     <p className="text-md-b2 font-medium text-md-neutral-700">Common questions</p>
                      <button
                         type="button"
                         onClick={() => navigate('/support')}
@@ -141,18 +135,53 @@ export default function Account() {
                         View More
                      </button>
                   </div>
-                  {FAQ_ITEMS.map((item) => (
-                     <button
-                        key={item.label}
-                        type="button"
-                        className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
-                     >
-                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
-                           {item.label}
-                        </span>
-                        {item.icon === 'play' ? <PlayIcon /> : <ChevronRight />}
-                     </button>
-                  ))}
+
+                  {/* Video guide link */}
+                  <button
+                     type="button"
+                     onClick={() => navigate('/support/guides')}
+                     className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
+                  >
+                     <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
+                        Watch our Credit Levelling Guide
+                     </span>
+                     <PlayIcon />
+                  </button>
+
+                  {/* FAQ accordion */}
+                  {ACCOUNT_FAQS.map((item) => {
+                     const isOpen = openFaqId === item.id;
+                     return (
+                        <div
+                           key={item.id}
+                           className="border border-md-neutral-400 rounded-md-md w-full overflow-hidden"
+                        >
+                           <button
+                              type="button"
+                              onClick={() => setOpenFaqId(isOpen ? null : item.id)}
+                              aria-expanded={isOpen}
+                              className="flex items-center justify-between gap-md-2 px-md-5 py-md-3 w-full text-left"
+                           >
+                              <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em] flex-1">
+                                 {item.question}
+                              </span>
+                              <div
+                                 className={`w-6 h-6 shrink-0 bg-md-primary-900 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                                 style={{
+                                    ...ICON_MASK_BASE,
+                                    WebkitMaskImage: "url('/icons/chevron-down.svg')",
+                                    maskImage: "url('/icons/chevron-down.svg')",
+                                 }}
+                              />
+                           </button>
+                           {isOpen ? (
+                              <div className="px-md-5 pb-md-3 text-md-b2 text-md-neutral-1200 whitespace-pre-line">
+                                 {item.answer}
+                              </div>
+                           ) : null}
+                        </div>
+                     );
+                  })}
                </div>
 
                {/* Sign Out */}
