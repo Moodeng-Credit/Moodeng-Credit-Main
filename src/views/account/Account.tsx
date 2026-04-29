@@ -19,8 +19,19 @@ const ICON_MASK_BASE: React.CSSProperties = {
 
 const ACCOUNT_ITEMS = [
    { label: 'Account Settings', path: '/account/settings' },
-   { label: 'Repay Loans', path: '/repay' },
    { label: 'View Loan Transaction History', path: '/history' },
+] as const;
+
+const TELEGRAM_SUPPORT_URL =
+   'https://t.me/jimmymoodengcredit?text=Hello%2C%20I%27m%20Jimmy%2C%20co-founder%20of%20Moodeng%20Credit.%20Happy%20to%20help%20you.%20If%20English%20isn%27t%20your%20first%20language%2C%20just%20tell%20me%20and%20we%20can%20use%20Google%20Translate.%20Anything%20you%20need%20to%20know%20about%20the%20platform%20or%20how%20to%20use%20it%2C%20I%20can%20support%20you';
+
+const FACEBOOK_PAGE_URL = 'https://www.facebook.com/profile.php?id=61589106561061';
+const FACEBOOK_GROUP_URL = 'https://www.facebook.com/groups/1593629908540434';
+
+const CONTACT_ITEMS = [
+   { label: 'Join Our Community', url: FACEBOOK_GROUP_URL },
+   { label: 'Get Help', url: FACEBOOK_PAGE_URL },
+   { label: 'Contact Us', url: TELEGRAM_SUPPORT_URL },
 ] as const;
 
 function ChevronRight() {
@@ -49,6 +60,19 @@ function PlayIcon() {
    );
 }
 
+function ExternalLinkIcon() {
+   return (
+      <div
+         className="w-6 h-6 shrink-0 bg-md-primary-900"
+         style={{
+            ...ICON_MASK_BASE,
+            WebkitMaskImage: "url('/icons/view_link.svg')",
+            maskImage: "url('/icons/view_link.svg')",
+         }}
+      />
+   );
+}
+
 export default function Account() {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
@@ -66,6 +90,8 @@ export default function Account() {
       await dispatch(logoutUser());
       navigate('/sign-in');
    };
+
+   const openExternal = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
 
    return (
       <div className="min-h-screen bg-md-neutral-200">
@@ -182,6 +208,24 @@ export default function Account() {
                         </div>
                      );
                   })}
+               </div>
+
+               {/* Get in touch */}
+               <div className="flex flex-col gap-3">
+                  <p className="text-md-b2 font-medium text-md-neutral-700">Get in touch</p>
+                  {CONTACT_ITEMS.map((item) => (
+                     <button
+                        key={item.label}
+                        type="button"
+                        onClick={() => openExternal(item.url)}
+                        className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
+                     >
+                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
+                           {item.label}
+                        </span>
+                        <ExternalLinkIcon />
+                     </button>
+                  ))}
                </div>
 
                {/* Sign Out */}
