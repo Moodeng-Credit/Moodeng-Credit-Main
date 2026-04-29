@@ -4,9 +4,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import UserAvatar from '@/components/UserAvatar';
-import { ACCOUNT_FAQS } from '@/views/account/data/accountFaqs';
+import { SHARED_FAQS, BORROWER_FAQS, LENDER_FAQS } from '@/views/account/data/accountFaqs';
 import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+
+// TODO: Replace with YouTube video URL when available
+const CREDIT_GUIDE_URL = '';
 
 const ICON_MASK_BASE: React.CSSProperties = {
    WebkitMaskSize: 'contain',
@@ -84,6 +87,10 @@ export default function Account() {
    const displayName = user?.displayName || user?.username || 'User';
    const iouPoints = user?.cs?.toLocaleString() ?? '0';
    const hasWallet = Boolean(user?.walletAddress);
+   const isLender = user?.userRole === 'lender';
+
+   const roleFaqs = isLender ? LENDER_FAQS : BORROWER_FAQS;
+   const faqs = [...SHARED_FAQS, ...roleFaqs];
 
    const handleSignOut = async () => {
       setIsSigningOut(true);
@@ -165,7 +172,7 @@ export default function Account() {
                   {/* Video guide link */}
                   <button
                      type="button"
-                     onClick={() => navigate('/support/guides')}
+                     onClick={() => CREDIT_GUIDE_URL ? openExternal(CREDIT_GUIDE_URL) : navigate('/support/guides')}
                      className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
                   >
                      <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
@@ -175,7 +182,7 @@ export default function Account() {
                   </button>
 
                   {/* FAQ accordion */}
-                  {ACCOUNT_FAQS.map((item) => {
+                  {faqs.map((item) => {
                      const isOpen = openFaqId === item.id;
                      return (
                         <div
