@@ -76,6 +76,20 @@ function ExternalLinkIcon() {
    );
 }
 
+function ChevronDown({ isOpen }: { isOpen: boolean }) {
+   return (
+      <div
+         className="w-6 h-6 shrink-0 bg-md-primary-900 transition-transform duration-200"
+         style={{
+            ...ICON_MASK_BASE,
+            WebkitMaskImage: "url('/icons/chevron-down.svg')",
+            maskImage: "url('/icons/chevron-down.svg')",
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+         }}
+      />
+   );
+}
+
 export default function Account() {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
@@ -198,14 +212,7 @@ export default function Account() {
                               <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em] flex-1">
                                  {item.question}
                               </span>
-                              <div
-                                 className={`w-6 h-6 shrink-0 bg-md-primary-900 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                                 style={{
-                                    ...ICON_MASK_BASE,
-                                    WebkitMaskImage: "url('/icons/chevron-down.svg')",
-                                    maskImage: "url('/icons/chevron-down.svg')",
-                                 }}
-                              />
+                              <ChevronDown isOpen={isOpen} />
                            </button>
                            {isOpen ? (
                               <div className="px-md-5 pb-md-3 text-md-b2 text-md-neutral-1200 whitespace-pre-line">
