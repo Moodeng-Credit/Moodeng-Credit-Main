@@ -103,8 +103,9 @@ export default function Account() {
    const hasWallet = Boolean(user?.walletAddress);
    const isLender = user?.userRole === 'lender';
 
+   const sharedFaqs = isLender ? SHARED_FAQS.filter((item) => item.id !== 'how-to-get-verified') : SHARED_FAQS;
    const roleFaqs = isLender ? LENDER_FAQS : BORROWER_FAQS;
-   const faqs = [...SHARED_FAQS, ...roleFaqs];
+   const faqs = [...sharedFaqs, ...roleFaqs];
 
    const handleSignOut = async () => {
       setIsSigningOut(true);
