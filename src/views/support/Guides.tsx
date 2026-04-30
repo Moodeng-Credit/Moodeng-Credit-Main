@@ -1,21 +1,34 @@
 import { useMemo, useState } from 'react';
 
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import SearchBar from '@/views/support/components/SearchBar';
 import SupportHeader from '@/views/support/components/SupportHeader';
 import { GUIDES } from '@/views/support/data/guides';
 import { ICON_MASK_BASE } from '@/views/support/constants';
+import type { RootState } from '@/store/store';
+
+const LENDER_HIDDEN_GUIDE_SLUGS = new Set([
+   'understanding-your-trust-score',
+   'how-repayments-affect-your-trust-score',
+]);
 
 export default function Guides() {
    const navigate = useNavigate();
    const [query, setQuery] = useState('');
+   const user = useSelector((state: RootState) => state.auth.user);
+   const isLender = user?.userRole === 'lender';
 
    const filtered = useMemo(() => {
+      const visibleGuides = isLender
+         ? GUIDES.filter((guide) => !LENDER_HIDDEN_GUIDE_SLUGS.has(guide.slug))
+         : GUIDES;
+
       const q = query.trim().toLowerCase();
-      if (!q) return GUIDES;
-      return GUIDES.filter((g) => g.title.toLowerCase().includes(q));
-   }, [query]);
+      if (!q) return visibleGuides;
+      return visibleGuides.filter((g) => g.title.toLowerCase().includes(q));
+   }, [isLender, query]);
 
    return (
       <div className="min-h-screen bg-md-neutral-200">

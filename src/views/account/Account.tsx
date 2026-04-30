@@ -4,8 +4,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import UserAvatar from '@/components/UserAvatar';
+import { SHARED_FAQS, BORROWER_FAQS, LENDER_FAQS } from '@/views/account/data/accountFaqs';
 import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+
+// TODO: Replace with YouTube video URL when available
+const CREDIT_GUIDE_URL = '';
 
 const ICON_MASK_BASE: React.CSSProperties = {
    WebkitMaskSize: 'contain',
@@ -18,16 +22,19 @@ const ICON_MASK_BASE: React.CSSProperties = {
 
 const ACCOUNT_ITEMS = [
    { label: 'Account Settings', path: '/account/settings' },
-   { label: 'Repay Loans', path: '/repay' },
    { label: 'View Loan Transaction History', path: '/history' },
 ] as const;
 
-const FAQ_ITEMS = [
-   { label: 'Watch our Credit Levelling Guide', icon: 'play' as const },
-   { label: 'Why does Moodeng use USDC?', icon: 'chevron' as const },
-   { label: 'How to Increase Credit Limit?', icon: 'chevron' as const },
-   { label: 'What are IOU Points?', icon: 'chevron' as const },
-   { label: 'How do I get verified?', icon: 'chevron' as const },
+const TELEGRAM_SUPPORT_URL =
+   'https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more.';
+
+const FACEBOOK_PAGE_URL = 'https://www.facebook.com/profile.php?id=61589106561061';
+const FACEBOOK_GROUP_URL = 'https://www.facebook.com/groups/1593629908540434';
+
+const CONTACT_ITEMS = [
+   { label: 'Join Our Community', url: FACEBOOK_GROUP_URL },
+   { label: 'Get Help', url: FACEBOOK_PAGE_URL },
+   { label: 'Contact Us', url: TELEGRAM_SUPPORT_URL },
 ] as const;
 
 function ChevronRight() {
@@ -56,22 +63,57 @@ function PlayIcon() {
    );
 }
 
+function ExternalLinkIcon() {
+   return (
+      <div
+         className="w-6 h-6 shrink-0 bg-md-primary-900"
+         style={{
+            ...ICON_MASK_BASE,
+            WebkitMaskImage: "url('/icons/view_link.svg')",
+            maskImage: "url('/icons/view_link.svg')",
+         }}
+      />
+   );
+}
+
+function ChevronDown({ isOpen }: { isOpen: boolean }) {
+   return (
+      <div
+         className="w-6 h-6 shrink-0 bg-md-primary-900 transition-transform duration-200"
+         style={{
+            ...ICON_MASK_BASE,
+            WebkitMaskImage: "url('/icons/chevron-down.svg')",
+            maskImage: "url('/icons/chevron-down.svg')",
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+         }}
+      />
+   );
+}
+
 export default function Account() {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
    const user = useSelector((state: RootState) => state.auth.user);
    const [showSignOutModal, setShowSignOutModal] = useState(false);
    const [isSigningOut, setIsSigningOut] = useState(false);
+   const [openFaqId, setOpenFaqId] = useState<string | null>(null);
 
    const displayName = user?.displayName || user?.username || 'User';
    const iouPoints = user?.cs?.toLocaleString() ?? '0';
    const hasWallet = Boolean(user?.walletAddress);
+   const isLender = user?.userRole === 'lender';
+
+   const sharedFaqs = isLender ? SHARED_FAQS.filter((item) => item.id !== 'how-to-get-verified') : SHARED_FAQS;
+   const roleFaqs = isLender ? LENDER_FAQS : BORROWER_FAQS;
+   const faqs = [...sharedFaqs, ...roleFaqs];
 
    const handleSignOut = async () => {
       setIsSigningOut(true);
       await dispatch(logoutUser());
       navigate('/sign-in');
    };
+
+   const openExternal = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
 
    return (
       <div className="min-h-screen bg-md-neutral-200">
@@ -129,10 +171,10 @@ export default function Account() {
                   ))}
                </div>
 
-               {/* FAQ */}
+               {/* Common questions */}
                <div className="flex flex-col gap-3">
                   <div className="flex items-center justify-between">
-                     <p className="text-md-b2 font-medium text-md-neutral-700">Frequently Asked Questions</p>
+                     <p className="text-md-b2 font-medium text-md-neutral-700">Common questions</p>
                      <button
                         type="button"
                         onClick={() => navigate('/support')}
@@ -141,16 +183,64 @@ export default function Account() {
                         View More
                      </button>
                   </div>
-                  {FAQ_ITEMS.map((item) => (
+
+                  {/* Video guide link */}
+                  {!isLender ? (
+                     <button
+                        type="button"
+                        onClick={() => CREDIT_GUIDE_URL ? openExternal(CREDIT_GUIDE_URL) : navigate('/support/guides')}
+                        className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
+                     >
+                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
+                           Watch our Credit Levelling Guide
+                        </span>
+                        <PlayIcon />
+                     </button>
+                  ) : null}
+
+                  {/* FAQ accordion */}
+                  {faqs.map((item) => {
+                     const isOpen = openFaqId === item.id;
+                     return (
+                        <div
+                           key={item.id}
+                           className="border border-md-neutral-400 rounded-md-md w-full overflow-hidden"
+                        >
+                           <button
+                              type="button"
+                              onClick={() => setOpenFaqId(isOpen ? null : item.id)}
+                              aria-expanded={isOpen}
+                              className="flex items-center justify-between gap-md-2 px-md-5 py-md-3 w-full text-left"
+                           >
+                              <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em] flex-1">
+                                 {item.question}
+                              </span>
+                              <ChevronDown isOpen={isOpen} />
+                           </button>
+                           {isOpen ? (
+                              <div className="px-md-5 pb-md-3 text-md-b2 text-md-neutral-1200 whitespace-pre-line">
+                                 {item.answer}
+                              </div>
+                           ) : null}
+                        </div>
+                     );
+                  })}
+               </div>
+
+               {/* Get in touch */}
+               <div className="flex flex-col gap-3">
+                  <p className="text-md-b2 font-medium text-md-neutral-700">Get in touch</p>
+                  {CONTACT_ITEMS.map((item) => (
                      <button
                         key={item.label}
                         type="button"
+                        onClick={() => openExternal(item.url)}
                         className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
                      >
                         <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
                            {item.label}
                         </span>
-                        {item.icon === 'play' ? <PlayIcon /> : <ChevronRight />}
+                        <ExternalLinkIcon />
                      </button>
                   ))}
                </div>
