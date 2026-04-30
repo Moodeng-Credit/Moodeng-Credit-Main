@@ -86,11 +86,18 @@ Right now IOU is just points. Down the line, we'll launch a token also called IO
 IOU is for lenders only — borrowers build their Trust Score and Credit Level instead. So if you want to earn IOU, fund a loan request from the Request Board.`
    },
    {
-      id: 'are-borrowers-real',
-      question: 'Are borrowers real people?',
-      answer: `Yes. Every borrower on Moodeng is verified through World ID — a one-time biometric scan that confirms they are a unique, real human being. No fake accounts, no bots.
+      id: 'how-borrowers-verify',
+      question: 'How do borrowers verify?',
+      answer: `Borrowers verify through World ID. This is a one-time biometric verification that confirms each borrower is a unique real person, which helps prevent fake accounts and bots.
 
-Each person can only create one verified account, so the Trust Score and repayment history you see belongs to a real person who has staked their reputation on the platform.`
+Each person can only create one verified account, so lenders know the borrower profile and repayment history belong to the same real individual. If someone is banned, they cannot simply come back with a new account — one World ID equals one person.`
+   },
+   {
+      id: 'how-borrowers-increase-credit-limit',
+      question: 'How do borrowers increase their credit limit and level?',
+      answer: `Borrowers increase their credit limit by taking out a Credit-Building Loan and borrowing their full current limit. If they repay that full-limit loan on time, they level up and unlock a higher credit limit.
+
+If they borrow below their limit, it is a Trust-Building Loan instead. That does not level them up, but it helps build a stronger repayment record and better borrower stats on the platform.`
    },
    {
       id: 'how-to-fund-loan',
