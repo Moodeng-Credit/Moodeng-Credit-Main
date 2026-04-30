@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import type { RootState } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
+const TUTORIAL_URL = 'https://youtube.com/shorts/fKpBC9zD6Hk';
+
 export default function Welcome() {
    const navigate = useNavigate();
    const user = useSelector((state: RootState) => state.auth.user);
@@ -93,27 +95,26 @@ export default function Welcome() {
                      Start Setup
                   </button>
 
-                  {false && (
-                     <button
-                        type="button"
-                        className="inline-flex items-center justify-center gap-md-1 w-full text-md-b2 font-semibold text-md-primary-1200"
-                     >
-                        <span
-                           className="block size-6 bg-md-primary-1200"
-                           style={{
-                              WebkitMaskImage: "url('/icons/play.svg')",
-                              maskImage: "url('/icons/play.svg')",
-                              WebkitMaskRepeat: 'no-repeat',
-                              maskRepeat: 'no-repeat',
-                              WebkitMaskPosition: 'center',
-                              maskPosition: 'center',
-                              WebkitMaskSize: 'contain',
-                              maskSize: 'contain'
-                           }}
-                        />
-                        Watch Tutorial
-                     </button>
-                  )}
+                  <button
+                     type="button"
+                     onClick={() => window.open(TUTORIAL_URL, '_blank', 'noopener,noreferrer')}
+                     className="inline-flex items-center justify-center gap-md-1 w-full text-md-b2 font-semibold text-md-primary-1200"
+                  >
+                     <span
+                        className="block size-6 bg-md-primary-1200"
+                        style={{
+                           WebkitMaskImage: "url('/icons/play.svg')",
+                           maskImage: "url('/icons/play.svg')",
+                           WebkitMaskRepeat: 'no-repeat',
+                           maskRepeat: 'no-repeat',
+                           WebkitMaskPosition: 'center',
+                           maskPosition: 'center',
+                           WebkitMaskSize: 'contain',
+                           maskSize: 'contain'
+                        }}
+                     />
+                     Watch Tutorial
+                  </button>
                </div>
             </div>
 
