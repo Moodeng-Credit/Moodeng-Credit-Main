@@ -184,16 +184,18 @@ export default function Account() {
                   </div>
 
                   {/* Video guide link */}
-                  <button
-                     type="button"
-                     onClick={() => CREDIT_GUIDE_URL ? openExternal(CREDIT_GUIDE_URL) : navigate('/support/guides')}
-                     className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
-                  >
-                     <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
-                        Watch our Credit Levelling Guide
-                     </span>
-                     <PlayIcon />
-                  </button>
+                  {!isLender ? (
+                     <button
+                        type="button"
+                        onClick={() => CREDIT_GUIDE_URL ? openExternal(CREDIT_GUIDE_URL) : navigate('/support/guides')}
+                        className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
+                     >
+                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
+                           Watch our Credit Levelling Guide
+                        </span>
+                        <PlayIcon />
+                     </button>
+                  ) : null}
 
                   {/* FAQ accordion */}
                   {faqs.map((item) => {
