@@ -102,7 +102,7 @@ If they borrow below their limit, it is a Trust-Building Loan instead. That does
    {
       id: 'how-to-fund-loan',
       question: 'How do I fund a loan?',
-      answer: `Go to the Request Board and browse open loan requests. Each request shows the borrower's Trust Score, credit level, requested amount, and repayment term.
+      answer: `Go to the Request Board and browse open loan requests. Each request shows the borrower's stats, credit limit, requested amount, and repayment term.
 
 When you find one you want to fund, tap Fund and confirm. The USDC leaves your Base account immediately and goes directly to the borrower's Base account — no middleman, no delay.
 
