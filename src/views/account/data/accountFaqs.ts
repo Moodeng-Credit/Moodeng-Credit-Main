@@ -94,7 +94,7 @@ Each person can only create one verified account, so lenders know the borrower p
    },
    {
       id: 'how-borrowers-increase-credit-limit',
-      question: 'How do borrowers increase their credit limit and level?',
+      question: 'How do borrowers increase their credit limit?',
       answer: `Borrowers increase their credit limit by taking out a Credit-Building Loan and borrowing their full current limit. If they repay that full-limit loan on time, they level up and unlock a higher credit limit.
 
 If they borrow below their limit, it is a Trust-Building Loan instead. That does not level them up, but it helps build a stronger repayment record and better borrower stats on the platform.`
