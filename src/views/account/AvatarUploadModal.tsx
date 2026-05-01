@@ -10,7 +10,7 @@ interface AvatarUploadModalProps {
    currentAvatar?: string;
    isSaving?: boolean;
    onClose: () => void;
-   onSave: (imageDataUrl: string) => Promise<void> | void;
+   onSave: (file: File) => Promise<void> | void;
 }
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
@@ -24,6 +24,7 @@ export default function AvatarUploadModal({
 }: AvatarUploadModalProps) {
    const inputRef = useRef<HTMLInputElement | null>(null);
    const [step, setStep] = useState<'upload' | 'crop'>('upload');
+   const [selectedFile, setSelectedFile] = useState<File | null>(null);
    const [imageSrc, setImageSrc] = useState<string | null>(null);
    const [crop, setCrop] = useState({ x: 0, y: 0 });
    const [zoom, setZoom] = useState(1);
@@ -34,6 +35,7 @@ export default function AvatarUploadModal({
 
    const resetState = () => {
       setStep('upload');
+      setSelectedFile(null);
       setImageSrc(null);
       setCrop({ x: 0, y: 0 });
       setZoom(1);
@@ -70,6 +72,7 @@ export default function AvatarUploadModal({
 
       const reader = new FileReader();
       reader.onload = () => {
+         setSelectedFile(file);
          setImageSrc(reader.result as string);
          setStep('crop');
          setError('');
@@ -80,7 +83,7 @@ export default function AvatarUploadModal({
       reader.readAsDataURL(file);
    };
 
-   const createCroppedImage = async () => {
+   const createCroppedImageFile = async () => {
       if (!imageSrc || !croppedAreaPixels) return null;
 
       const image = new Image();
@@ -109,7 +112,16 @@ export default function AvatarUploadModal({
          croppedAreaPixels.height
       );
 
-      return canvas.toDataURL('image/jpeg', 0.9);
+      const blob = await new Promise<Blob | null>((resolve) => {
+         canvas.toBlob((value) => resolve(value), 'image/jpeg', 0.9);
+      });
+
+      if (!blob) {
+         return null;
+      }
+
+      const baseName = selectedFile?.name.replace(/\.[^.]+$/, '') || 'avatar';
+      return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' });
    };
 
    const handleSave = async () => {
@@ -118,13 +130,13 @@ export default function AvatarUploadModal({
          return;
       }
 
-      const croppedImage = await createCroppedImage();
-      if (!croppedImage) {
+      const croppedFile = await createCroppedImageFile();
+      if (!croppedFile) {
          setError('We could not prepare that image. Please try again.');
          return;
       }
 
-      await onSave(croppedImage);
+      await onSave(croppedFile);
       resetState();
    };
 
@@ -239,8 +251,10 @@ export default function AvatarUploadModal({
                   onClick={() => {
                      if (step === 'crop') {
                         setStep('upload');
+                        setSelectedFile(null);
                         setImageSrc(null);
                         setZoom(1);
+                        setCroppedAreaPixels(null);
                         setError('');
                         return;
                      }
