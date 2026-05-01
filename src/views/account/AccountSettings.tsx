@@ -1,17 +1,14 @@
 import { useEffect, useState } from 'react';
 
-import { Camera } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
 import UserAvatar from '@/components/UserAvatar';
 import { useAuthProvider } from '@/hooks/useAuthProvider';
-import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 
 const ICON_MASK: React.CSSProperties = {
    WebkitMaskSize: 'contain',
@@ -36,23 +33,6 @@ function loadNotificationPrefs(): NotificationPrefs {
       return JSON.parse(stored) as NotificationPrefs;
    }
    return { accountActivity: true, transactionActivity: true, moodengBlogs: false };
-}
-
-function EditableAvatar({ size = 64, onClick }: { size?: number; onClick?: () => void }) {
-   return (
-      <button
-         type="button"
-         onClick={onClick}
-         className="group relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-         aria-label="Change profile photo"
-      >
-         <UserAvatar size={size} className="border-2 border-md-primary-100 transition-colors group-hover:border-md-primary-900" />
-         <div className="absolute inset-0 rounded-full bg-black/0 transition-colors group-hover:bg-black/15 group-active:bg-black/15" />
-         <div className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-md-primary-900 shadow-md-card transition-colors group-hover:bg-md-primary-1200">
-            <Camera size={14} className="text-white" />
-         </div>
-      </button>
-   );
 }
 
 // ─── Reusable field ───
@@ -376,8 +356,6 @@ export default function AccountSettings() {
    const [isSavingName, setIsSavingName] = useState(false);
    const [showPasswordModal, setShowPasswordModal] = useState(false);
    const [showEmailModal, setShowEmailModal] = useState(false);
-   const [showAvatarModal, setShowAvatarModal] = useState(false);
-   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
    const [walletCopied, setWalletCopied] = useState(false);
    const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
 
@@ -404,23 +382,6 @@ export default function AccountSettings() {
       await navigator.clipboard.writeText(user.walletAddress);
       setWalletCopied(true);
       setTimeout(() => setWalletCopied(false), 2000);
-   };
-
-   const handleSaveAvatar = async (file: File) => {
-      setIsSavingAvatar(true);
-      try {
-         const avatarUrl = await uploadAvatarForCurrentUser(file);
-         const result = await dispatch(updateUser({ avatarUrl }));
-
-         if (updateUser.fulfilled.match(result)) {
-            setShowAvatarModal(false);
-            return;
-         }
-
-         throw new Error(result.error?.message || 'Failed to update profile photo');
-      } finally {
-         setIsSavingAvatar(false);
-      }
    };
 
    const truncateAddress = (addr: string) => {
@@ -453,8 +414,8 @@ export default function AccountSettings() {
             {/* Avatar + Name */}
             <div className="flex items-center gap-md-5 px-md-5 py-md-3">
                <div className="flex flex-col gap-md-1 items-center shrink-0">
-                  <EditableAvatar onClick={() => setShowAvatarModal(true)} />
-                  <button type="button" onClick={() => setShowAvatarModal(true)} className="text-md-b1 text-md-primary-900">Change</button>
+                  <UserAvatar size={64} />
+                  <button type="button" className="text-md-b1 text-md-primary-900">Change</button>
                </div>
                <div className="flex flex-col gap-md-1 flex-1 min-w-0">
                   <p className="text-md-b2 font-semibold text-md-heading">Display Name</p>
@@ -641,14 +602,6 @@ export default function AccountSettings() {
                </div>
             </div>
          </div>
-
-         <AvatarUploadModal
-            isOpen={showAvatarModal}
-            isSaving={isSavingAvatar}
-            currentAvatar={user?.avatarUrl}
-            onClose={() => setShowAvatarModal(false)}
-            onSave={handleSaveAvatar}
-         />
 
          <ChangePasswordModal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
          <ChangeEmailModal isOpen={showEmailModal} onClose={() => setShowEmailModal(false)} />
