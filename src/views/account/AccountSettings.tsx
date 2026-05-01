@@ -7,6 +7,7 @@ import { useAccount } from 'wagmi';
 
 import UserAvatar from '@/components/UserAvatar';
 import { useAuthProvider } from '@/hooks/useAuthProvider';
+import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -405,13 +406,20 @@ export default function AccountSettings() {
       setTimeout(() => setWalletCopied(false), 2000);
    };
 
-   const handleSaveAvatar = async (avatarUrl: string) => {
+   const handleSaveAvatar = async (file: File) => {
       setIsSavingAvatar(true);
-      const result = await dispatch(updateUser({ avatarUrl }));
-      setIsSavingAvatar(false);
+      try {
+         const avatarUrl = await uploadAvatarForCurrentUser(file);
+         const result = await dispatch(updateUser({ avatarUrl }));
 
-      if (updateUser.fulfilled.match(result)) {
-         setShowAvatarModal(false);
+         if (updateUser.fulfilled.match(result)) {
+            setShowAvatarModal(false);
+            return;
+         }
+
+         throw new Error(result.error?.message || 'Failed to update profile photo');
+      } finally {
+         setIsSavingAvatar(false);
       }
    };
 
