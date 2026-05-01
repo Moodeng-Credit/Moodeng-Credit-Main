@@ -9,7 +9,6 @@ import { type AuthState, type User, type UserRole, WorldId } from '@/types/authT
 type UpdateUserPayload = {
    username?: string;
    displayName?: string;
-   avatarUrl?: string | null;
    email?: string | null;
    password?: string;
    telegramUsername?: string | null;
@@ -423,20 +422,11 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
       throw sessionError ?? new Error('No authenticated user to update');
    }
 
-   if (userData.email || userData.password || userData.displayName !== undefined || userData.avatarUrl !== undefined) {
-      const nextMetadata =
-         userData.displayName !== undefined || userData.avatarUrl !== undefined
-            ? {
-                 ...(user.user_metadata ?? {}),
-                 ...(userData.displayName !== undefined ? { name: userData.displayName } : {}),
-                 ...(userData.avatarUrl !== undefined ? { avatar_url: userData.avatarUrl } : {})
-              }
-            : undefined;
-
+   if (userData.email || userData.password || userData.displayName !== undefined) {
       const { error } = await supabase.auth.updateUser({
          email: userData.email ?? undefined,
          password: userData.password ?? undefined,
-         data: nextMetadata
+         data: userData.displayName !== undefined ? { name: userData.displayName } : undefined
       });
 
       if (error) {
