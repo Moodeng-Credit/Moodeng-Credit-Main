@@ -81,13 +81,27 @@ Deno.serve(async (req) => {
     const email = `telegram_${id}@moodeng.app`
     const password = `tg_${id}_${botToken.slice(0, 8)}`
 
+    const telegramMetadata = {
+      telegram_id: id,
+      first_name,
+      last_name,
+      username,
+      photo_url,
+      provider: 'telegram',
+    }
+
     // Try to sign in first
-    const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+    const { data: signInData } = await supabaseAdmin.auth.signInWithPassword({
       email,
       password,
     })
 
     if (signInData?.session) {
+      // Always refresh metadata so photo_url (and name changes) stay current
+      await supabaseAdmin.auth.admin.updateUserById(signInData.session.user.id, {
+        user_metadata: telegramMetadata,
+      })
+
       return new Response(
         JSON.stringify({ session: signInData.session }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -99,14 +113,7 @@ Deno.serve(async (req) => {
       email,
       password,
       email_confirm: true,
-      user_metadata: {
-        telegram_id: id,
-        first_name,
-        last_name,
-        username,
-        photo_url,
-        provider: 'telegram',
-      },
+      user_metadata: telegramMetadata,
     })
 
     if (createError) {
