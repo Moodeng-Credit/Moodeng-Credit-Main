@@ -121,7 +121,7 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
       throw profileError;
    }
 
-   const avatarUrl = (user.user_metadata?.avatar_url ?? user.user_metadata?.picture) as string | undefined;
+   const avatarUrl = (user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? user.user_metadata?.photo_url) as string | undefined;
    const displayName = user.user_metadata?.name as string | undefined;
 
    if (!profile) {
