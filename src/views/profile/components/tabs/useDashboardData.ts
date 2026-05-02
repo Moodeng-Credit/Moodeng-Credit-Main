@@ -2,7 +2,8 @@ import { useEffect, useMemo } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 
-import { CREDIT_STEP, CREDIT_TIERS, MAX_CREDIT_LIMIT, getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { CREDIT_TIERS, MAX_CREDIT_LIMIT, getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { getNextCreditTier } from '@/config/creditTiers';
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 
@@ -44,15 +45,16 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
       .sort((a, b) => parseDateSafely(a.updatedAt).getTime() - parseDateSafely(b.updatedAt).getTime())
       .forEach((loan) => {
          cumulativeRepaidAmount += toNumber(loan.loanAmount);
-         CREDIT_TIERS.forEach((tier) => {
-            if (tier === CREDIT_TIERS[0] || paidOnTimeByTier.has(tier)) {
-               return;
-            }
+            CREDIT_TIERS.forEach((tier, index) => {
+               if (tier === CREDIT_TIERS[0] || paidOnTimeByTier.has(tier)) {
+                  return;
+               }
 
-            if (cumulativeRepaidAmount >= tier) {
-               paidOnTimeByTier.set(tier, loan);
-            }
-         });
+               const previousTier = CREDIT_TIERS[index - 1];
+               if (cumulativeRepaidAmount >= previousTier) {
+                  paidOnTimeByTier.set(tier, loan);
+               }
+            });
       });
 
    const fallbackDate = buildUnlockDate(user.updatedAt || user.createdAt || new Date().toISOString());
@@ -60,7 +62,7 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
    return CREDIT_TIERS.map((amount) => {
       const isUnlocked = isVerified && amount <= currentLimit;
       const isCurrentLimit = isVerified && amount === currentLimit;
-      const isNextTier = isVerified && amount === currentLimit + CREDIT_STEP && currentLimit < MAX_CREDIT_LIMIT;
+      const isNextTier = isVerified && amount === getNextCreditTier(currentLimit) && currentLimit < MAX_CREDIT_LIMIT;
       const isMaxCredit = isUnlocked && amount === MAX_CREDIT_LIMIT;
 
       let unlockRequirement = '';

@@ -44,6 +44,7 @@ import SupportFAQPage from '@/app/support/faq/page';
 import SupportUpdatesPage from '@/app/support/updates/page';
 import SupportUpdateDetailPage from '@/app/support/updates/[slug]/page';
 import UserProfile from '@/app/user/[username]/page';
+import UserProgressHistoryPage from '@/app/user/[username]/progress-history/page';
 import Ut from '@/app/ut/page';
 import WhyLend from '@/app/whylend/page';
 import { type RootState } from '@/store/store';
@@ -70,11 +71,12 @@ export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
    const { user, username } = useSelector((state: RootState) => state.auth);
+   const isProgressHistoryRoute = location.pathname.includes('/progress-history');
    const showBottomNav =
       user?.id &&
       user?.userRole &&
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
-         location.pathname.startsWith('/user/') ||
+         (location.pathname.startsWith('/user/') && !isProgressHistoryRoute) ||
          location.pathname.startsWith('/support') ||
          location.pathname.startsWith('/history/'));
 
@@ -168,6 +170,7 @@ export default function App() {
             <Route path="/whylend" element={<Layout><WhyLend /></Layout>} />
             <Route path="/simple" element={<Layout><Simple /></Layout>} />
             <Route path="/test" element={<Layout><Test /></Layout>} />
+            <Route path="/user/:username/progress-history" element={<UserProgressHistoryPage />} />
             <Route path="/user/:username" element={<UserProfile />} />
             <Route path="/ut" element={<Layout><Ut /></Layout>} />
 
