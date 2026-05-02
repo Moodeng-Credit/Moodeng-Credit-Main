@@ -117,10 +117,10 @@ export default function FilterSidebar({
                         key={tab.id}
                         type="button"
                         onClick={() => setActiveTab(tab.id)}
-                        className={`shrink-0 px-3 py-1.5 rounded-md-sm border text-md-b3 font-medium whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
+                        className={`shrink-0 px-3 py-1.5 rounded-md-sm border text-md-b3 font-medium whitespace-nowrap transition-all duration-150 active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
                            activeTab === tab.id
-                              ? 'bg-md-primary-100 text-md-primary-1200 border-md-primary-1200'
-                              : 'bg-md-neutral-100 text-md-neutral-1100 border-md-neutral-600'
+                              ? 'bg-md-primary-100 text-md-primary-1200 border-md-primary-1200 shadow-sm'
+                              : 'bg-md-neutral-100 text-md-neutral-1100 border-md-neutral-600 hover:bg-md-neutral-200 hover:border-md-neutral-800'
                         }`}
                      >
                         {tab.label}
@@ -195,14 +195,14 @@ export default function FilterSidebar({
                <button
                   type="button"
                   onClick={resetFilters}
-                  className="flex-1 rounded-md-lg border border-md-neutral-600 px-5 py-3 text-md-b1 font-medium text-md-heading focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
+                  className="flex-1 rounded-md-lg border border-md-neutral-600 px-5 py-3 text-md-b1 font-medium text-md-heading transition-all duration-150 hover:bg-md-neutral-200 hover:border-md-neutral-800 active:scale-[0.98] active:bg-md-neutral-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
                >
                   Reset
                </button>
                <button
                   type="button"
                   onClick={applyFilters}
-                  className="flex-1 rounded-md-lg bg-md-primary-1200 px-5 py-3 text-md-b1 font-medium text-md-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
+                  className="flex-1 rounded-md-lg bg-md-primary-1200 px-5 py-3 text-md-b1 font-medium text-md-neutral-100 transition-all duration-150 hover:brightness-95 active:scale-[0.98] active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
                >
                   Apply
                </button>
@@ -226,10 +226,10 @@ function FilterChip({ label, selected, onClick }: { label: string; selected: boo
       <button
          type="button"
          onClick={onClick}
-         className={`px-3.5 py-2 rounded-md-sm border text-md-b3 font-normal transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
+         className={`px-3.5 py-2 rounded-md-sm border text-md-b3 font-normal transition-all duration-150 active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
             selected
-               ? 'bg-md-primary-100 text-md-primary-1200 border-md-primary-1200'
-               : 'bg-md-neutral-100 text-md-neutral-1100 border-md-neutral-600'
+               ? 'bg-md-primary-100 text-md-primary-1200 border-md-primary-1200 shadow-sm'
+               : 'bg-md-neutral-100 text-md-neutral-1100 border-md-neutral-600 hover:bg-md-neutral-200 hover:border-md-neutral-800'
          }`}
       >
          {label}
