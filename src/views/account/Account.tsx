@@ -121,7 +121,14 @@ export default function Account() {
             {/* User header */}
             <div className="flex items-center justify-between px-md-5 py-md-3">
                <div className="flex gap-4 items-center">
-                  <UserAvatar size={48} />
+                  <button
+                     type="button"
+                     onClick={() => navigate('/account/settings')}
+                     className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                     aria-label="Go to Account Settings"
+                  >
+                     <UserAvatar size={48} />
+                  </button>
                   <div className="flex flex-col gap-1">
                      <p className="text-md-h6 font-semibold text-md-heading">{displayName}</p>
                      <div className="bg-md-primary-900 rounded-md-sm px-2 py-1 self-start">

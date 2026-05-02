@@ -9,6 +9,7 @@ import { type AuthState, type User, type UserRole, WorldId } from '@/types/authT
 type UpdateUserPayload = {
    username?: string;
    displayName?: string;
+   avatarUrl?: string | null;
    email?: string | null;
    password?: string;
    telegramUsername?: string | null;
@@ -121,7 +122,14 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
       throw profileError;
    }
 
-   const avatarUrl = (user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? user.user_metadata?.photo_url) as string | undefined;
+   // avatar_url = manually uploaded photo (highest priority)
+   // picture    = Google OAuth profile photo
+   // photo_url  = Telegram profile photo (written by edge function on sign-in)
+   const avatarUrl = (
+      user.user_metadata?.avatar_url ??
+      user.user_metadata?.picture ??
+      user.user_metadata?.photo_url
+   ) as string | undefined;
    const displayName = user.user_metadata?.name as string | undefined;
 
    if (!profile) {
@@ -422,11 +430,20 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
       throw sessionError ?? new Error('No authenticated user to update');
    }
 
-   if (userData.email || userData.password || userData.displayName !== undefined) {
+   if (userData.email || userData.password || userData.displayName !== undefined || userData.avatarUrl !== undefined) {
+      const nextMetadata =
+         userData.displayName !== undefined || userData.avatarUrl !== undefined
+            ? {
+                 ...(user.user_metadata ?? {}),
+                 ...(userData.displayName !== undefined ? { name: userData.displayName } : {}),
+                 ...(userData.avatarUrl !== undefined ? { avatar_url: userData.avatarUrl } : {})
+              }
+            : undefined;
+
       const { error } = await supabase.auth.updateUser({
          email: userData.email ?? undefined,
          password: userData.password ?? undefined,
-         data: userData.displayName !== undefined ? { name: userData.displayName } : undefined
+         data: nextMetadata
       });
 
       if (error) {
