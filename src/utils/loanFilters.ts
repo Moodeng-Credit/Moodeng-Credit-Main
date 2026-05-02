@@ -43,6 +43,20 @@ export const filterByAmount = (loans: Loan[], amount: string, customAmount?: str
       return loans.filter((loan) => toNumber(loan.loanAmount) <= Number(customAmount));
    }
    if (!amount || Number(amount) === 0) return loans;
+
+   if (amount.includes('-')) {
+      const [min, max] = amount.split('-').map(Number);
+      return loans.filter((loan) => {
+         const loanAmount = toNumber(loan.loanAmount);
+         return loanAmount >= min && loanAmount <= max;
+      });
+   }
+
+   if (amount.endsWith('+')) {
+      const min = Number(amount.replace('+', ''));
+      return loans.filter((loan) => toNumber(loan.loanAmount) >= min);
+   }
+
    return loans.filter((loan) => toNumber(loan.loanAmount) === Number(amount));
 };
 
@@ -59,7 +73,7 @@ export const filterByRate = (loans: Loan[], rate: string): Loan[] => {
 
       if (rate === '2.5') return repayRate >= 0 && repayRate <= 5;
       if (rate === '7.5') return repayRate > 5 && repayRate <= 10;
-      if (rate === '12.5') return repayRate > 10 && repayRate <= 15;
+      if (rate === '15') return repayRate > 10 && repayRate <= 20;
       if (rate === '+') return repayRate >= 20;
 
       return true;
@@ -115,6 +129,7 @@ export const filterByTimePeriod = (loans: Loan[], loanTime: string): Loan[] => {
 
       if (loanTime === '7') return daysRemaining > 0 && daysRemaining <= 7;
       if (loanTime === '30') return daysRemaining > 0 && daysRemaining <= 30;
+      if (loanTime === '60') return daysRemaining > 0 && daysRemaining <= 60;
       if (loanTime === '90') return daysRemaining > 0 && daysRemaining <= 90;
       if (loanTime === '120') return daysRemaining > 120;
 

@@ -1,4 +1,9 @@
-export const LOAN_AMOUNTS = [150, 80, 40, 15] as const;
+export const LOAN_AMOUNTS = [
+   { value: '15-30', label: '$15 - $30', range: [15, 30] },
+   { value: '30-50', label: '$30 - $50', range: [30, 50] },
+   { value: '50-70', label: '$50 - $70', range: [50, 70] },
+   { value: '70+', label: '$70+', range: [70, Infinity] }
+] as const;
 
 export const NETWORKS = [
    { value: 'solana', label: 'Solana' },
@@ -19,6 +24,7 @@ export const REPAYMENT_RATES = [
 export const LOAN_TIME_PERIODS = [
    { value: '7', label: 'Next Week' },
    { value: '30', label: 'Next 30 Days' },
+   { value: '60', label: 'Next 60 Days' },
    { value: '90', label: 'Next 90 Days' },
    { value: '120', label: 'Next 120 Days+' }
 ] as const;

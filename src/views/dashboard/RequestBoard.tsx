@@ -437,6 +437,7 @@ function RequestBoard$() {
                            onFiltersChange={handleFiltersChange}
                            customAmount={customAmount}
                            onCustomAmountChange={setCustomAmount}
+                           onClose={() => setShowFilters(false)}
                         />
                      )}
 
