@@ -122,7 +122,14 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
       throw profileError;
    }
 
-   const avatarUrl = (user.user_metadata?.avatar_url ?? user.user_metadata?.picture) as string | undefined;
+   // avatar_url = manually uploaded photo (highest priority)
+   // picture    = Google OAuth profile photo
+   // photo_url  = Telegram profile photo (written by edge function on sign-in)
+   const avatarUrl = (
+      user.user_metadata?.avatar_url ??
+      user.user_metadata?.picture ??
+      user.user_metadata?.photo_url
+   ) as string | undefined;
    const displayName = user.user_metadata?.name as string | undefined;
 
    if (!profile) {
