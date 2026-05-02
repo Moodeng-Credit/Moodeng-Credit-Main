@@ -14,16 +14,16 @@ export default function BorrowerVerificationBadge() {
 
    if (verified) {
       return (
-         <span className="inline-flex items-center gap-1 bg-md-green-100 rounded-md-sm px-md-1 py-md-0">
+         <span className="self-start inline-flex items-center gap-1 bg-md-green-100 rounded-md-sm px-md-1 py-md-0">
             <span className="w-3 h-3 rounded-full bg-md-green-900 flex items-center justify-center">
                <span className="text-white text-[8px] font-bold">&#10003;</span>
             </span>
-            <span className="text-md-b3 font-semibold text-md-green-900">Verified borrower</span>
+            <span className="text-md-b3 font-semibold text-md-green-900">Verified Borrower</span>
          </span>
       );
    }
    return (
-      <span className="inline-flex items-center gap-1 bg-md-red-100 rounded-md-sm px-md-1 py-md-0">
+      <span className="self-start inline-flex items-center gap-1 bg-md-red-100 rounded-md-sm px-md-1 py-md-0">
          <span className="w-3 h-3 rounded-full bg-md-red-800 flex items-center justify-center">
             <span className="text-white text-[8px] font-bold">!</span>
          </span>
