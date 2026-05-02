@@ -94,10 +94,10 @@ export default function FilterSidebar({
    };
 
    return (
-      <div className="fixed inset-0 z-[70]">
+      <div className="fixed inset-0 z-[70] flex items-end justify-center">
          <button aria-label="Close filters" className="absolute inset-0 bg-black/40" type="button" onClick={onClose} />
 
-         <aside className="absolute bottom-0 left-0 right-0 max-h-[85vh] rounded-t-[24px] bg-md-neutral-100 shadow-2xl flex flex-col overflow-hidden animate-[filterSheetUp_0.25s_ease-out]">
+         <aside className="relative w-full sm:max-w-[440px] max-h-[85vh] rounded-t-[24px] sm:rounded-[24px] sm:mb-6 bg-md-neutral-100 shadow-2xl flex flex-col overflow-hidden animate-[filterSheetUp_0.25s_ease-out]">
             <style>
                {`
                   @keyframes filterSheetUp {
@@ -129,7 +129,7 @@ export default function FilterSidebar({
                </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-md-4 pt-4 pb-28 border-t border-md-neutral-300">
+            <div className="flex-1 overflow-y-auto px-md-4 pt-4 pb-6 border-t border-md-neutral-300">
                {activeTab === 'amount' && (
                   <FilterSection title="Credit Limit">
                      <div className="flex flex-wrap gap-2">
@@ -191,7 +191,7 @@ export default function FilterSidebar({
                )}
             </div>
 
-            <div className="fixed bottom-0 left-0 right-0 bg-md-neutral-100 px-md-4 py-4 border-t border-md-neutral-400 flex gap-3">
+            <div className="shrink-0 bg-md-neutral-100 px-md-4 py-4 border-t border-md-neutral-400 flex gap-3">
                <button
                   type="button"
                   onClick={resetFilters}
