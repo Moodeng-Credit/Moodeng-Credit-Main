@@ -46,7 +46,8 @@ function EditableAvatar({ size = 64, onClick }: { size?: number; onClick?: () =>
          className="group relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
          aria-label="Change profile photo"
       >
-         <UserAvatar size={size} className="border-2 border-md-primary-100 transition-colors group-hover:border-md-primary-900" />
+         {/* clickable=false: this button already handles the click; we don't want a nested button */}
+         <UserAvatar size={size} clickable={false} className="border-2 border-md-primary-100 transition-colors group-hover:border-md-primary-900" />
          <div className="absolute inset-0 rounded-full bg-black/0 transition-colors group-hover:bg-black/15 group-active:bg-black/15" />
          <div className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-md-primary-900 shadow-md-card transition-colors group-hover:bg-md-primary-1200">
             <Camera size={14} className="text-white" />
