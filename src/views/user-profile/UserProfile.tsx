@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { PointerEvent, ReactNode } from 'react';
 
 import {
    BarChart3,
@@ -369,9 +369,16 @@ const UserProfile = () => {
                               <ChevronRight className="h-2.5 w-2.5 shrink-0 text-[#8b5cf6]" strokeWidth={2.5} />
                            </button>
                            {hasLoanHistory ? (
-                              <p className="text-[12px] font-medium leading-[1.3] text-[#9ca3af]">
-                                 {trustBuildingCount} Trust Building · {creditBuildingCount} Credit Building
-                              </p>
+                              <div className="max-w-full space-y-0.5 text-[10px] font-semibold leading-[1.15]">
+                                 <div className="flex min-w-0 items-center gap-1 text-[#2563eb]">
+                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#2563eb]" />
+                                    <span className="whitespace-nowrap">{trustBuildingCount} Trust Building</span>
+                                 </div>
+                                 <div className="flex min-w-0 items-center gap-1 text-[#059669]">
+                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#059669]" />
+                                    <span className="whitespace-nowrap">{creditBuildingCount} Credit Building</span>
+                                 </div>
+                              </div>
                            ) : null}
                         </div>
                      </SummaryMetricCard>
@@ -605,6 +612,10 @@ const NewBorrowerInsightsCard = () => (
 );
 
 const CreditLevelBottomSheet = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+   const dragStartY = useRef<number | null>(null);
+   const dragOffsetRef = useRef(0);
+   const [dragOffset, setDragOffset] = useState(0);
+
    if (!isOpen) return null;
 
    const creditLevels = [
@@ -614,17 +625,50 @@ const CreditLevelBottomSheet = ({ isOpen, onClose }: { isOpen: boolean; onClose:
       { level: 4, amount: 60, stars: '⭐⭐⭐⭐', className: 'from-[#7c3aed] to-[#6d28d9] text-white' }
    ];
 
+   const handleDragStart = (event: PointerEvent<HTMLDivElement>) => {
+      dragStartY.current = event.clientY;
+      dragOffsetRef.current = 0;
+      event.currentTarget.setPointerCapture(event.pointerId);
+   };
+
+   const handleDragMove = (event: PointerEvent<HTMLDivElement>) => {
+      if (dragStartY.current === null) return;
+      const nextOffset = Math.max(0, event.clientY - dragStartY.current);
+      dragOffsetRef.current = nextOffset;
+      setDragOffset(nextOffset);
+   };
+
+   const handleDragEnd = (event: PointerEvent<HTMLDivElement>) => {
+      if (dragStartY.current === null) return;
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      if (dragOffsetRef.current > 96) {
+         onClose();
+      }
+      dragStartY.current = null;
+      dragOffsetRef.current = 0;
+      setDragOffset(0);
+   };
+
    return (
-      <div className="fixed inset-0 z-50 flex items-end">
+      <div className="fixed inset-0 z-[80] flex items-end">
          <button
             type="button"
             aria-label="Close credit level explanation"
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={onClose}
          />
-         <div className="relative mx-auto max-h-[88vh] w-full max-w-[440px] overflow-hidden rounded-t-[28px] bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.15)]">
-            <div className="flex justify-center pb-2 pt-3">
-               <div className="h-1 w-10 rounded-full bg-[#b7add0]" />
+         <div
+            className="relative mx-auto max-h-[88dvh] w-full max-w-[440px] overflow-hidden rounded-t-[28px] bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.15)] transition-transform duration-150 ease-out"
+            style={{ transform: `translateY(${dragOffset}px)` }}
+         >
+            <div
+               className="touch-none cursor-grab select-none pb-2 pt-3 active:cursor-grabbing"
+               onPointerDown={handleDragStart}
+               onPointerMove={handleDragMove}
+               onPointerUp={handleDragEnd}
+               onPointerCancel={handleDragEnd}
+            >
+               <div className="mx-auto h-1 w-12 rounded-full bg-[#b7add0]" />
             </div>
             <div className="border-b border-[#f1edf8] px-6 pb-5 pt-2">
                <div className="flex items-center justify-between gap-4">
@@ -646,7 +690,7 @@ const CreditLevelBottomSheet = ({ isOpen, onClose }: { isOpen: boolean; onClose:
                   </button>
                </div>
             </div>
-            <div className="max-h-[calc(88vh-112px)] overflow-y-auto px-6 pb-8 pt-6">
+            <div className="max-h-[calc(88dvh-112px)] overflow-y-auto px-6 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-6">
                <div className="space-y-4 text-[20px] leading-[1.45] text-[#4b5563]">
                   <p>Credit Level shows the borrower’s current borrowing tier.</p>
                   <p>Borrowers level up by taking a Credit Building loan at their current limit and repaying it successfully.</p>
@@ -695,56 +739,117 @@ const LoanMixBottomSheet = ({
    trustBuildingCount: number;
    creditBuildingCount: number;
 }) => {
+   const dragStartY = useRef<number | null>(null);
+   const dragOffsetRef = useRef(0);
+   const [dragOffset, setDragOffset] = useState(0);
+
    if (!isOpen) return null;
 
+   const handleDragStart = (event: PointerEvent<HTMLDivElement>) => {
+      dragStartY.current = event.clientY;
+      dragOffsetRef.current = 0;
+      event.currentTarget.setPointerCapture(event.pointerId);
+   };
+
+   const handleDragMove = (event: PointerEvent<HTMLDivElement>) => {
+      if (dragStartY.current === null) return;
+      const nextOffset = Math.max(0, event.clientY - dragStartY.current);
+      dragOffsetRef.current = nextOffset;
+      setDragOffset(nextOffset);
+   };
+
+   const handleDragEnd = (event: PointerEvent<HTMLDivElement>) => {
+      if (dragStartY.current === null) return;
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      if (dragOffsetRef.current > 96) {
+         onClose();
+      }
+      dragStartY.current = null;
+      dragOffsetRef.current = 0;
+      setDragOffset(0);
+   };
+
    return (
-      <div className="fixed inset-0 z-50 flex items-end">
+      <div className="fixed inset-0 z-[80] flex items-end">
          <button
             type="button"
             aria-label="Close loan mix explanation"
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={onClose}
          />
-         <div className="relative mx-auto w-full max-w-[440px] rounded-t-[24px] bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.15)]">
-            <div className="flex justify-center pb-2 pt-3">
-               <div className="h-1 w-10 rounded-full bg-[#e5e7eb]" />
+         <div
+            className="relative mx-auto flex max-h-[84dvh] w-full max-w-[440px] flex-col overflow-hidden rounded-t-[28px] bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.15)] transition-transform duration-150 ease-out"
+            style={{ transform: `translateY(${dragOffset}px)` }}
+         >
+            <div
+               className="shrink-0 touch-none cursor-grab select-none pb-2 pt-3 active:cursor-grabbing"
+               onPointerDown={handleDragStart}
+               onPointerMove={handleDragMove}
+               onPointerUp={handleDragEnd}
+               onPointerCancel={handleDragEnd}
+            >
+               <div className="mx-auto h-1 w-12 rounded-full bg-[#e5e7eb]" />
             </div>
-            <div className="px-6 pb-8 pt-2">
-               <div className="mb-3 flex items-start justify-between gap-4">
-                  <h3 className="text-[20px] font-bold leading-tight tracking-tight text-[#1f2937]">{label}</h3>
+            <div className="shrink-0 border-b border-[#f1edf8] px-6 pb-4 pt-2">
+               <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                     <h3 className="text-[24px] font-bold leading-tight tracking-[-0.02em] text-[#1f2937]">{label}</h3>
+                     <p className="mt-2 text-[15px] leading-6 text-[#4b5563]">
+                        {trustBuildingCount + creditBuildingCount === 0
+                           ? 'This borrower does not have enough loan history for a loan mix yet.'
+                           : `This borrower has ${trustBuildingCount} trust-building ${trustBuildingCount === 1 ? 'loan' : 'loans'} and ${creditBuildingCount} credit-building ${creditBuildingCount === 1 ? 'loan' : 'loans'}.`}
+                     </p>
+                  </div>
                   <button
                      type="button"
                      onClick={onClose}
-                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f3f4f6]"
+                     className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f3f4f6] text-[#4b5563] active:scale-95"
+                     aria-label="Close"
                   >
-                     <X className="h-4 w-4 text-[#4b5563]" />
+                     <X className="h-6 w-6" strokeWidth={2} />
                   </button>
                </div>
-               <p className="mb-4 text-[15px] leading-[22px] text-[#4b5563]">
-                  {trustBuildingCount + creditBuildingCount === 0
-                     ? 'This borrower does not have enough loan history for a loan mix yet.'
-                     : `This borrower has ${trustBuildingCount} trust-building ${trustBuildingCount === 1 ? 'loan' : 'loans'} and ${creditBuildingCount} credit-building ${creditBuildingCount === 1 ? 'loan' : 'loans'}.`}
-               </p>
-               <div className="mb-5 rounded-[16px] bg-[#f9fafb] p-4">
-                  <p className="mb-2 text-[13px] font-semibold text-[#8b5cf6]">Why it matters to lenders</p>
-                  <p className="text-[14px] leading-5 text-[#6b7280]">
-                     Loan mix helps show whether this borrower usually builds trust with smaller repeat loans or focuses on increasing
-                     available credit.
+            </div>
+            <div className="overflow-y-auto px-6 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-5">
+               <div className="grid grid-cols-2 gap-3">
+                  <LoanMixStat label="Trust loans" value={trustBuildingCount} className="border-[#dbeafe] bg-[#eff6ff] text-[#2563eb]" />
+                  <LoanMixStat label="Credit loans" value={creditBuildingCount} className="border-[#dcfce7] bg-[#f0fdf4] text-[#059669]" />
+               </div>
+
+               <div className="mt-5 rounded-[18px] bg-[#f9fafb] p-4">
+                  <p className="mb-2 text-[14px] font-bold text-[#8b5cf6]">Why lenders care</p>
+                  <p className="text-[14px] leading-6 text-[#6b7280]">
+                     Loan mix shows whether this borrower is mostly proving reliability with smaller loans, or actively growing their borrowing
+                     limit with full-limit repayments.
                   </p>
                </div>
-               <div className="space-y-3">
+
+               <div className="mt-5 space-y-4">
                   <LoanMixType
                      icon={<ShieldCheck className="h-4 w-4 text-[#3b82f6]" strokeWidth={2.5} />}
                      iconClassName="bg-[#eff6ff]"
                      title="Trust Building"
-                     description="Smaller loans below the current credit limit."
+                     label="Relationship signal"
+                     description="Smaller repeat loans under the current limit. They help show the borrower can repay consistently."
+                     example="Example: $8 or $10 when the borrower can already request $20."
                   />
                   <LoanMixType
                      icon={<TrendingUp className="h-4 w-4 text-[#10b981]" strokeWidth={2.5} />}
                      iconClassName="bg-[#f0fdf4]"
                      title="Credit Building"
-                     description="Loans used to progress toward a higher limit."
+                     label="Limit-growth signal"
+                     description="A full-limit loan. If it is repaid successfully, it can unlock the borrower’s next credit level."
+                     example="Example: borrowing the full $20 limit to unlock the $40 level."
                   />
+               </div>
+
+               <div className="mt-5 flex items-center gap-3 rounded-[18px] border border-[#eadfff] bg-[#fbfaff] p-4">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ede9fe]">
+                     <Sparkles className="h-5 w-5 text-[#8b5cf6]" strokeWidth={2.2} />
+                  </span>
+                  <p className="text-[13px] leading-5 text-[#6b7280]">
+                     A healthy borrower can have both: trust loans for repayment history, credit loans for higher future limits.
+                  </p>
                </div>
             </div>
          </div>
@@ -752,22 +857,37 @@ const LoanMixBottomSheet = ({
    );
 };
 
+const LoanMixStat = ({ label, value, className }: { label: string; value: number; className: string }) => (
+   <div className={`rounded-[16px] border px-4 py-3 ${className}`}>
+      <p className="text-[26px] font-bold leading-none">{value}</p>
+      <p className="mt-1 text-[12px] font-semibold leading-tight">{label}</p>
+   </div>
+);
+
 const LoanMixType = ({
    icon,
    iconClassName,
    title,
-   description
+   label,
+   description,
+   example
 }: {
    icon: ReactNode;
    iconClassName: string;
    title: string;
+   label: string;
    description: string;
+   example: string;
 }) => (
-   <div className="flex gap-3">
-      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${iconClassName}`}>{icon}</span>
-      <div className="flex-1">
-         <p className="mb-0.5 text-[14px] font-semibold text-[#1f2937]">{title}</p>
-         <p className="text-[13px] leading-[18px] text-[#6b7280]">{description}</p>
+   <div className="rounded-[18px] border border-[#f1edf8] bg-white p-4 shadow-[0_8px_18px_rgba(48,24,92,0.04)]">
+      <div className="flex gap-3">
+         <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${iconClassName}`}>{icon}</span>
+         <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-bold leading-tight text-[#1f2937]">{title}</p>
+            <p className="mt-1 text-[12px] font-semibold uppercase tracking-[0.02em] text-[#8b5cf6]">{label}</p>
+            <p className="mt-2 text-[14px] leading-5 text-[#6b7280]">{description}</p>
+            <p className="mt-3 rounded-[12px] bg-[#f9fafb] px-3 py-2 text-[12px] leading-4 text-[#6b7280]">{example}</p>
+         </div>
       </div>
    </div>
 );
@@ -779,34 +899,33 @@ const RecentLoanItem = ({ loan, resolveUsername }: { loan: Loan; resolveUsername
    const fundedDate = formatDate(loan.fundedAt ?? loan.createdAt);
 
    return (
-      <div className="flex items-start gap-2 py-md-0">
-         <img src={PLACEHOLDER_AVATAR} alt="Avatar" className="shrink-0 w-12 rounded-full object-cover" />
-         <div className="flex-1 min-w-0 flex flex-col gap-1">
-            <p className="text-md-b1 font-semibold text-md-primary-2000 line-clamp-2">{loan.reason || 'Loan request'}</p>
-            <div className="flex items-center gap-1 text-md-b3 text-md-neutral-1200">
-               <span>Funded by {lenderName}</span>
-               <span className="w-1 h-1 rounded-full bg-md-neutral-1200" />
-               <span>{fundedDate}</span>
+      <div className="grid grid-cols-[36px_minmax(0,1fr)_auto] items-start gap-3 py-1">
+         <img src={PLACEHOLDER_AVATAR} alt="Avatar" className="mt-0.5 h-9 w-9 shrink-0 rounded-full object-cover" />
+         <div className="min-w-0">
+            <p className="line-clamp-2 text-[15px] font-semibold leading-[1.2] text-md-primary-2000">{loan.reason || 'Loan request'}</p>
+            <div className="mt-1 space-y-0.5 text-[12px] font-medium leading-[1.25] text-md-neutral-1200">
+               <p className="truncate">Funded by {lenderName}</p>
+               <p>{fundedDate}</p>
             </div>
          </div>
-         <div className="shrink-0 flex flex-col items-end gap-1">
-            <p className="text-md-b1 font-semibold text-md-primary-2000 overflow-hidden text-ellipsis whitespace-nowrap">
+         <div className="flex shrink-0 flex-col items-end gap-1">
+            <p className="text-[16px] font-semibold leading-none text-md-primary-2000">
                ${formatNumber(loan.loanAmount)}
             </p>
             {isPaid ? (
-               <span className="inline-flex items-center gap-1 px-md-1 py-md-0 rounded-[24px] border border-md-primary-900 bg-[rgba(131,54,240,0.1)]">
-                  <Check className="w-3 h-3 text-md-primary-900" strokeWidth={3} />
-                  <span className="text-md-b4 font-semibold text-md-primary-900">REPAID</span>
+               <span className="inline-flex items-center gap-1 rounded-[24px] border border-md-primary-900 bg-[rgba(131,54,240,0.1)] px-2 py-1">
+                  <Check className="h-2.5 w-2.5 text-md-primary-900" strokeWidth={3} />
+                  <span className="text-[10px] font-semibold leading-none text-md-primary-900">REPAID</span>
                </span>
             ) : isDefaulted ? (
-               <span className="inline-flex items-center gap-1 px-md-1 py-md-0 rounded-[24px] border border-md-red-500 bg-red-50">
+               <span className="inline-flex items-center gap-1 rounded-[24px] border border-md-red-500 bg-red-50 px-2 py-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-md-red-500" />
-                  <span className="text-md-b4 font-semibold text-md-red-500">DEFAULT</span>
+                  <span className="text-[10px] font-semibold leading-none text-md-red-500">DEFAULT</span>
                </span>
             ) : (
-               <span className="inline-flex items-center gap-1 px-md-1 py-md-0 rounded-[24px] border border-md-green-700 bg-[rgba(31,193,107,0.1)]">
+               <span className="inline-flex items-center gap-1 rounded-[24px] border border-md-green-700 bg-[rgba(31,193,107,0.1)] px-2 py-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-md-green-700" />
-                  <span className="text-md-b4 font-semibold text-md-green-700">ACTIVE</span>
+                  <span className="text-[10px] font-semibold leading-none text-md-green-700">ACTIVE</span>
                </span>
             )}
          </div>

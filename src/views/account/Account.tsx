@@ -176,10 +176,31 @@ export default function Account() {
                         <ChevronRight />
                      </button>
                   ))}
+                  <a
+                     href="#account-common-questions"
+                     className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
+                  >
+                     <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
+                        Common Questions
+                     </span>
+                     <ChevronRight />
+                  </a>
+                  <a
+                     href="#account-get-in-touch"
+                     className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
+                  >
+                     <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
+                        Get in Touch
+                     </span>
+                     <ChevronRight />
+                  </a>
                </div>
 
                {/* Common questions */}
-               <div className="flex flex-col gap-3">
+               <div
+                  id="account-common-questions"
+                  className="scroll-mt-4 flex flex-col gap-3"
+               >
                   <div className="flex items-center justify-between">
                      <p className="text-md-b2 font-medium text-md-neutral-700">Common questions</p>
                      <button
@@ -235,7 +256,10 @@ export default function Account() {
                </div>
 
                {/* Get in touch */}
-               <div className="flex flex-col gap-3">
+               <div
+                  id="account-get-in-touch"
+                  className="scroll-mt-4 flex flex-col gap-3"
+               >
                   <p className="text-md-b2 font-medium text-md-neutral-700">Get in touch</p>
                   {CONTACT_ITEMS.map((item) => (
                      <button

@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type PointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { LoanFilters } from '@/utils/loanFilters';
 
@@ -42,6 +42,12 @@ export default function FilterSidebar({
    const [activeTab, setActiveTab] = useState<FilterTab>('amount');
    const [draftFilters, setDraftFilters] = useState<LoanFilters>(filters);
    const [draftCustomAmount, setDraftCustomAmount] = useState(customAmount);
+   const dragStartY = useRef<number | null>(null);
+   const dragOffsetRef = useRef(0);
+   const sideSwipeStart = useRef<{ x: number; y: number } | null>(null);
+   const sideSwipeOffsetRef = useRef(0);
+   const [dragOffset, setDragOffset] = useState(0);
+   const [sideSwipeOffset, setSideSwipeOffset] = useState(0);
 
    useEffect(() => {
       setDraftFilters(filters);
@@ -93,11 +99,64 @@ export default function FilterSidebar({
       onClose?.();
    };
 
+   const handleDragStart = (event: PointerEvent<HTMLDivElement>) => {
+      dragStartY.current = event.clientY;
+      dragOffsetRef.current = 0;
+      event.currentTarget.setPointerCapture(event.pointerId);
+   };
+
+   const handleDragMove = (event: PointerEvent<HTMLDivElement>) => {
+      if (dragStartY.current === null) return;
+      const nextOffset = Math.max(0, event.clientY - dragStartY.current);
+      dragOffsetRef.current = nextOffset;
+      setDragOffset(nextOffset);
+   };
+
+   const handleDragEnd = (event: PointerEvent<HTMLDivElement>) => {
+      if (dragStartY.current === null) return;
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      if (dragOffsetRef.current > 96) {
+         onClose?.();
+      }
+      dragStartY.current = null;
+      dragOffsetRef.current = 0;
+      setDragOffset(0);
+   };
+
+   const handleSideSwipeStart = (event: PointerEvent<HTMLDivElement>) => {
+      sideSwipeStart.current = { x: event.clientX, y: event.clientY };
+      sideSwipeOffsetRef.current = 0;
+      event.currentTarget.setPointerCapture(event.pointerId);
+   };
+
+   const handleSideSwipeMove = (event: PointerEvent<HTMLDivElement>) => {
+      if (!sideSwipeStart.current) return;
+      const nextX = Math.max(0, event.clientX - sideSwipeStart.current.x);
+      const nextY = Math.abs(event.clientY - sideSwipeStart.current.y);
+      if (nextY > nextX && nextY > 16) return;
+      sideSwipeOffsetRef.current = nextX;
+      setSideSwipeOffset(nextX);
+   };
+
+   const handleSideSwipeEnd = (event: PointerEvent<HTMLDivElement>) => {
+      if (!sideSwipeStart.current) return;
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      if (sideSwipeOffsetRef.current > 80) {
+         onClose?.();
+      }
+      sideSwipeStart.current = null;
+      sideSwipeOffsetRef.current = 0;
+      setSideSwipeOffset(0);
+   };
+
    return (
       <div className="fixed inset-0 z-[70] flex items-end justify-center">
          <button aria-label="Close filters" className="absolute inset-0 bg-black/40" type="button" onClick={onClose} />
 
-         <aside className="relative w-full sm:max-w-[440px] max-h-[85vh] rounded-t-[24px] sm:rounded-[24px] sm:mb-6 bg-md-neutral-100 shadow-2xl flex flex-col overflow-hidden animate-[filterSheetUp_0.25s_ease-out]">
+         <aside
+            className="relative w-full sm:max-w-[440px] max-h-[85vh] rounded-t-[24px] sm:rounded-[24px] sm:mb-6 bg-md-neutral-100 shadow-2xl flex flex-col overflow-hidden animate-[filterSheetUp_0.25s_ease-out] transition-transform duration-150 ease-out"
+            style={{ transform: `translate(${sideSwipeOffset}px, ${dragOffset}px)` }}
+         >
             <style>
                {`
                   @keyframes filterSheetUp {
@@ -107,8 +166,26 @@ export default function FilterSidebar({
                `}
             </style>
 
+            <div
+               aria-label="Swipe right to close filters"
+               className="absolute bottom-0 left-0 top-0 z-10 w-8 touch-none cursor-ew-resize select-none"
+               onPointerDown={handleSideSwipeStart}
+               onPointerMove={handleSideSwipeMove}
+               onPointerUp={handleSideSwipeEnd}
+               onPointerCancel={handleSideSwipeEnd}
+               role="presentation"
+            />
+
             <div className="bg-md-neutral-100 shrink-0">
-               <div className="w-10 h-1 bg-md-neutral-500 rounded-full mx-auto mt-3 mb-4" />
+               <div
+                  className="touch-none cursor-grab select-none pb-4 pt-3 active:cursor-grabbing"
+                  onPointerDown={handleDragStart}
+                  onPointerMove={handleDragMove}
+                  onPointerUp={handleDragEnd}
+                  onPointerCancel={handleDragEnd}
+               >
+                  <div className="w-10 h-1 bg-md-neutral-500 rounded-full mx-auto" />
+               </div>
                <h2 className="text-md-h5 font-semibold text-md-heading px-md-4 mb-4">Filters</h2>
 
                <div className="flex gap-1.5 px-md-4 pb-3 overflow-x-auto">

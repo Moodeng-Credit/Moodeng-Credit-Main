@@ -32,6 +32,5 @@ export const LOAN_TIME_PERIODS = [
 export const BORROW_TYPES = [
    { value: 'good-standing', label: 'Good Standing' },
    { value: 'beginner', label: 'Beginner Borrower' },
-   { value: 'no-active', label: 'No Active Loans' },
-   { value: 'long-term', label: 'Long Term Loans' }
+   { value: 'no-active', label: 'No Active Loans' }
 ] as const;
