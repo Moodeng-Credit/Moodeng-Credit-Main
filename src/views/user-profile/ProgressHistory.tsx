@@ -489,6 +489,13 @@ export default function ProgressHistory() {
    const borrowerName = borrower.displayName || borrower.username || username || 'Borrower';
    const memberSince = formatDate(normalizeDate(borrower.createdAt).toISOString());
    const isVerified = borrower.isWorldId === WorldId.ACTIVE;
+   const defaultCount = timelineLoans.filter(
+      (loan) =>
+         loan.loanStatus === LoanStatus.LENT &&
+         loan.repaymentStatus !== RepaymentStatus.PAID &&
+         normalizeDate(loan.dueDate).getTime() < Date.now()
+   ).length;
+   const isGoodStanding = defaultCount === 0;
 
    return (
       <div className="min-h-screen bg-[#fbf8ff]">
@@ -531,8 +538,8 @@ export default function ProgressHistory() {
                   </div>
                </div>
                <div className="mt-4 flex justify-end">
-                  <StatusPill tone="green" icon={<ShieldCheck className="h-3.5 w-3.5" strokeWidth={2.4} />}>
-                     Good Standing
+                  <StatusPill tone={isGoodStanding ? 'green' : 'red'} icon={<ShieldCheck className="h-3.5 w-3.5" strokeWidth={2.4} />}>
+                     {isGoodStanding ? 'Good Standing' : 'Defaults Present'}
                   </StatusPill>
                </div>
             </section>
@@ -603,9 +610,13 @@ function TimelineEventCard({ event }: { event: BorrowerTimelineEvent }) {
    );
 }
 
-function StatusPill({ children, icon, tone }: { children: ReactNode; icon: ReactNode; tone: 'green' | 'purple' }) {
+function StatusPill({ children, icon, tone }: { children: ReactNode; icon: ReactNode; tone: 'green' | 'purple' | 'red' }) {
    const className =
-      tone === 'green' ? 'border-[#bfe8cf] bg-md-green-100 text-md-green-900' : 'border-[#e3d4ff] bg-[#f2eaff] text-md-primary-900';
+      tone === 'green'
+         ? 'border-[#bfe8cf] bg-md-green-100 text-md-green-900'
+         : tone === 'red'
+           ? 'border-red-100 bg-red-50 text-md-red-500'
+           : 'border-[#e3d4ff] bg-[#f2eaff] text-md-primary-900';
 
    return (
       <span

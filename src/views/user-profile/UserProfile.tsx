@@ -28,7 +28,7 @@ import { formatDate, getMemberSinceText, parseDateSafely } from '@/utils/dateFor
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
 
-import { getCreditLevelNumber, getCreditTierKey, isExactCreditTier, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
+import { getCreditLevelNumber, getCreditTierKey, isExactCreditTier } from '@/config/creditTiers';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { fetchUserProfiles, getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
@@ -90,9 +90,16 @@ const UserProfile = () => {
 
    // --- Computed loan data ---
 
+   const fundedLoans = loans.filter((loan) => loan.loanStatus === 'Lent');
+   const defaultedLoans = fundedLoans.filter(
+      (loan) => loan.repaymentStatus !== 'Paid' && parseDateSafely(loan.dueDate).getTime() < Date.now()
+   );
+   const defaultCount = defaultedLoans.length;
+   const isGoodStanding = defaultCount === 0;
+
    const uniqueLoans: Loan[] = [];
    const seenAmounts = new Set<number>();
-   for (const loan of loans) {
+   for (const loan of fundedLoans) {
       const amt = toNumber(loan.loanAmount);
       if (isExactCreditTier(amt) && !seenAmounts.has(amt)) {
          uniqueLoans.push(loan);
@@ -101,7 +108,7 @@ const UserProfile = () => {
    }
 
    const ignoredTier = new Set<number>();
-   const trustBuildingLoans = loans.reduce((acc: Loan[], loan: Loan) => {
+   const trustBuildingLoans = fundedLoans.reduce((acc: Loan[], loan: Loan) => {
       const amt = toNumber(loan.loanAmount);
       const key = getCreditTierKey(amt);
       if (isExactCreditTier(amt)) {
@@ -113,53 +120,62 @@ const UserProfile = () => {
       return acc;
    }, []);
 
-   const countMap = loans.reduce<Record<string, number>>((acc, loan) => {
+   const countMap = fundedLoans.reduce<Record<string, number>>((acc, loan) => {
       const name = resolveUsername(loan.lenderUser) || 'Unknown';
       acc[name] = (acc[name] || 0) + 1;
       return acc;
    }, {});
 
-   const sortedLoans = [...loans].sort((a, b) => parseDateSafely(a.createdAt).getTime() - parseDateSafely(b.createdAt).getTime());
+   const sortedLoans = [...fundedLoans].sort(
+      (a, b) => parseDateSafely(a.fundedAt ?? a.createdAt).getTime() - parseDateSafely(b.fundedAt ?? b.createdAt).getTime()
+   );
    let totalDaysBetween = 0;
    for (let i = 1; i < sortedLoans.length; i++) {
       totalDaysBetween +=
-         (parseDateSafely(sortedLoans[i].createdAt).getTime() - parseDateSafely(sortedLoans[i - 1].createdAt).getTime()) /
+         (parseDateSafely(sortedLoans[i].fundedAt ?? sortedLoans[i].createdAt).getTime() -
+            parseDateSafely(sortedLoans[i - 1].fundedAt ?? sortedLoans[i - 1].createdAt).getTime()) /
          (1000 * 3600 * 24);
    }
    const avgDays = sortedLoans.length > 1 ? Math.round(totalDaysBetween / (sortedLoans.length - 1)) : 0;
 
-   const paidLoans = loans.filter((l) => l.repaymentStatus === 'Paid');
+   const paidLoans = fundedLoans.filter((l) => l.repaymentStatus === 'Paid');
    const avgPaymentTime =
       paidLoans.length > 0
          ? Math.round(
               paidLoans.reduce((sum, l) => {
-                 return sum + (parseDateSafely(l.updatedAt).getTime() - parseDateSafely(l.createdAt).getTime()) / (1000 * 3600 * 24);
+                 return (
+                    sum +
+                    (parseDateSafely(l.updatedAt).getTime() - parseDateSafely(l.fundedAt ?? l.createdAt).getTime()) / (1000 * 3600 * 24)
+                 );
               }, 0) / paidLoans.length
            )
          : 0;
 
-   const usualLoanSize = loans.length > 0 ? Math.round(loans.reduce((sum, l) => sum + toNumber(l.loanAmount), 0) / loans.length) : 0;
+   const usualLoanSize =
+      fundedLoans.length > 0 ? Math.round(fundedLoans.reduce((sum, l) => sum + toNumber(l.loanAmount), 0) / fundedLoans.length) : 0;
 
    const avgLoanTerm =
-      loans.length > 0
+      fundedLoans.length > 0
          ? Math.round(
-              loans.reduce((sum, l) => {
-                 return sum + (new Date(l.dueDate).getTime() - new Date(l.createdAt).getTime()) / (1000 * 3600 * 24);
-              }, 0) / loans.length
+              fundedLoans.reduce((sum, l) => {
+                 return (
+                    sum + (parseDateSafely(l.dueDate).getTime() - parseDateSafely(l.fundedAt ?? l.createdAt).getTime()) / (1000 * 3600 * 24)
+                 );
+              }, 0) / fundedLoans.length
            )
          : 0;
 
    const totalUniqueLenders = Object.keys(countMap).length;
    const repeatLenderCount = totalUniqueLenders - Object.values(countMap).filter((c) => c === 1).length;
 
-   const lenderDiversity = calculateLenderDiversity(loans, userProfiles);
-   const totalBorrowed = loans.reduce((sum, l) => (l.loanStatus === 'Lent' ? sum + toNumber(l.loanAmount) : sum), 0);
-   const totalRepaid = loans.reduce((sum, l) => (l.repaymentStatus === 'Paid' ? sum + toNumber(l.loanAmount) : sum), 0);
+   const lenderDiversity = calculateLenderDiversity(fundedLoans, userProfiles);
+   const totalBorrowed = fundedLoans.reduce((sum, l) => sum + toNumber(l.loanAmount), 0);
+   const totalRepaid = fundedLoans.reduce((sum, l) => sum + toNumber(l.repaidAmount), 0);
 
    const isVerifiedBorrower = resolvedUser.isWorldId === WorldId.ACTIVE;
-   const displayedCreditLimit = isVerifiedBorrower ? getEffectiveCreditLimit(resolvedUser.cs, true) : STARTING_CREDIT_LIMIT;
+   const displayedCreditLimit = getEffectiveCreditLimit(resolvedUser.cs, isVerifiedBorrower);
    const creditMax = displayedCreditLimit;
-   const creditLevel = getCreditLevelNumber(creditMax);
+   const creditLevel = creditMax > 0 ? getCreditLevelNumber(creditMax) : 0;
    const creditProgress = creditMax > 0 ? 100 : 0;
 
    const diversityScore = lenderDiversity.score;
@@ -167,7 +183,7 @@ const UserProfile = () => {
    const badge = getDiversityBadgeStyle(diversityStatus);
    const creditBuildingCount = uniqueLoans.length;
    const trustBuildingCount = trustBuildingLoans.length;
-   const hasLoanHistory = loans.length > 0;
+   const hasLoanHistory = fundedLoans.length > 0;
    const loanMixLabel = !hasLoanHistory
       ? 'No loan mix yet'
       : trustBuildingCount > creditBuildingCount
@@ -207,11 +223,29 @@ const UserProfile = () => {
                         {resolvedUser.username || username}
                      </p>
                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#bfe8cf] bg-md-green-100 px-3 py-1.5">
-                           <span className="flex h-4 w-4 items-center justify-center rounded-full bg-md-green-900">
-                              <Check className="h-2.5 w-2.5 text-white" strokeWidth={4} />
+                        <span
+                           className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 ${
+                              isVerifiedBorrower ? 'border-[#bfe8cf] bg-md-green-100' : 'border-md-neutral-500 bg-md-neutral-200'
+                           }`}
+                        >
+                           <span
+                              className={`flex h-4 w-4 items-center justify-center rounded-full ${
+                                 isVerifiedBorrower ? 'bg-md-green-900' : 'bg-md-neutral-900'
+                              }`}
+                           >
+                              {isVerifiedBorrower ? (
+                                 <Check className="h-2.5 w-2.5 text-white" strokeWidth={4} />
+                              ) : (
+                                 <X className="h-2.5 w-2.5 text-white" strokeWidth={4} />
+                              )}
                            </span>
-                           <span className="text-[13px] font-semibold leading-none text-md-green-900">Verified Borrower</span>
+                           <span
+                              className={`text-[13px] font-semibold leading-none ${
+                                 isVerifiedBorrower ? 'text-md-green-900' : 'text-md-neutral-1400'
+                              }`}
+                           >
+                              {isVerifiedBorrower ? 'Verified Borrower' : 'Not Verified'}
+                           </span>
                         </span>
                      </div>
                      <p className="mt-3 text-[14px] font-medium leading-none text-[#6b5f7c]">Member since {memberSince}</p>
@@ -253,7 +287,7 @@ const UserProfile = () => {
                      <div className="h-3 bg-md-neutral-100 rounded-md-pill overflow-hidden">
                         <div
                            className="h-full bg-md-primary-900 rounded-md-pill transition-all duration-500"
-                           style={{ width: `${Math.max(creditProgress, 8)}%` }}
+                           style={{ width: creditProgress > 0 ? `${Math.max(creditProgress, 8)}%` : '0%' }}
                         />
                      </div>
                   </div>
@@ -263,8 +297,14 @@ const UserProfile = () => {
                <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-4">
                      <span className="text-md-h5 font-semibold text-md-heading">Loan Summary</span>
-                     <span className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#d4f4e2] to-[#e8f9f0] px-3 py-1.5 shadow-sm">
-                        <span className="text-[11px] leading-none font-semibold text-[#059669]">Good Standing</span>
+                     <span
+                        className={`inline-flex items-center justify-center rounded-full px-3 py-1.5 shadow-sm ${
+                           isGoodStanding ? 'bg-gradient-to-r from-[#d4f4e2] to-[#e8f9f0]' : 'bg-red-50'
+                        }`}
+                     >
+                        <span className={`text-[11px] leading-none font-semibold ${isGoodStanding ? 'text-[#059669]' : 'text-[#ef4444]'}`}>
+                           {isGoodStanding ? 'Good Standing' : 'Defaults Present'}
+                        </span>
                      </span>
                   </div>
 
@@ -282,7 +322,9 @@ const UserProfile = () => {
                            {totalRepaid > 0 ? (
                               <p className="text-[12px] font-medium text-[#10b981]">${formatNumber(totalRepaid)} Repaid</p>
                            ) : null}
-                           <p className="text-[12px] font-medium text-[#9ca3af]">0 Defaults</p>
+                           <p className={`text-[12px] font-medium ${defaultCount > 0 ? 'text-[#ef4444]' : 'text-[#9ca3af]'}`}>
+                              {defaultCount} {defaultCount === 1 ? 'Default' : 'Defaults'}
+                           </p>
                         </div>
                      </SummaryMetricCard>
 
@@ -293,7 +335,7 @@ const UserProfile = () => {
                         waveStart="#ddd6fe"
                         waveEnd="#c4b5fd"
                         title="Total Loans"
-                        value={String(loans.length)}
+                        value={String(fundedLoans.length)}
                      >
                         <div className="relative z-10 space-y-[6px]">
                            <button
@@ -427,13 +469,15 @@ const UserProfile = () => {
                         <span className="text-md-h5 font-semibold text-md-heading">Recent Loans</span>
                         <button className="text-md-b2 font-semibold text-md-blue-600 underline">View History</button>
                      </div>
-                     <p className="text-md-b3 font-normal text-md-neutral-1500">View who you've lent to and the status of each loan.</p>
+                     <p className="text-md-b3 font-normal text-md-neutral-1500">
+                        View who has funded this borrower and the status of each loan.
+                     </p>
                   </div>
                   <div className="bg-white rounded-md-lg shadow-md-card py-4 px-3 flex flex-col gap-5">
-                     {loans.slice(0, 5).map((loan: Loan) => (
+                     {fundedLoans.slice(0, 5).map((loan: Loan) => (
                         <RecentLoanItem key={loan.id} loan={loan} resolveUsername={resolveUsername} />
                      ))}
-                     {loans.length === 0 && <p className="text-md-b2 text-md-neutral-1200 text-center py-4">No loans yet</p>}
+                     {fundedLoans.length === 0 && <p className="text-md-b2 text-md-neutral-1200 text-center py-4">No funded loans yet</p>}
                   </div>
                </div>
             </div>
@@ -619,8 +663,9 @@ const LoanMixType = ({
 
 const RecentLoanItem = ({ loan, resolveUsername }: { loan: Loan; resolveUsername: (id?: string | null) => string }) => {
    const isPaid = loan.repaymentStatus === 'Paid';
+   const isDefaulted = !isPaid && parseDateSafely(loan.dueDate).getTime() < Date.now();
    const lenderName = resolveUsername(loan.lenderUser) || 'Unknown';
-   const lentDate = formatDate(loan.createdAt);
+   const fundedDate = formatDate(loan.fundedAt ?? loan.createdAt);
 
    return (
       <div className="flex items-start gap-2 py-md-0">
@@ -628,9 +673,9 @@ const RecentLoanItem = ({ loan, resolveUsername }: { loan: Loan; resolveUsername
          <div className="flex-1 min-w-0 flex flex-col gap-1">
             <p className="text-md-b1 font-semibold text-md-primary-2000 line-clamp-2">{loan.reason || 'Loan request'}</p>
             <div className="flex items-center gap-1 text-md-b3 text-md-neutral-1200">
-               <span>Lent to {lenderName}</span>
+               <span>Funded by {lenderName}</span>
                <span className="w-1 h-1 rounded-full bg-md-neutral-1200" />
-               <span>{lentDate}</span>
+               <span>{fundedDate}</span>
             </div>
          </div>
          <div className="shrink-0 flex flex-col items-end gap-1">
@@ -641,6 +686,11 @@ const RecentLoanItem = ({ loan, resolveUsername }: { loan: Loan; resolveUsername
                <span className="inline-flex items-center gap-1 px-md-1 py-md-0 rounded-[24px] border border-md-primary-900 bg-[rgba(131,54,240,0.1)]">
                   <Check className="w-3 h-3 text-md-primary-900" strokeWidth={3} />
                   <span className="text-md-b4 font-semibold text-md-primary-900">REPAID</span>
+               </span>
+            ) : isDefaulted ? (
+               <span className="inline-flex items-center gap-1 px-md-1 py-md-0 rounded-[24px] border border-md-red-500 bg-red-50">
+                  <span className="w-1.5 h-1.5 rounded-full bg-md-red-500" />
+                  <span className="text-md-b4 font-semibold text-md-red-500">DEFAULT</span>
                </span>
             ) : (
                <span className="inline-flex items-center gap-1 px-md-1 py-md-0 rounded-[24px] border border-md-green-700 bg-[rgba(31,193,107,0.1)]">
