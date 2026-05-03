@@ -6,6 +6,7 @@ import { CREDIT_TIERS, MAX_CREDIT_LIMIT, getEffectiveCreditLimit } from '@/lib/c
 import { getNextCreditTier } from '@/config/creditTiers';
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
+import { calculateLenderDiversity } from '@/utils/diversityScore';
 
 import { fetchUser } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
@@ -162,8 +163,8 @@ export const useDashboardData = (activeRole: RoleType) => {
 
    const lenderDiversityScore = useMemo(() => {
       if (activeRole === 'lender') return 0;
-      const uniqueLenders = new Set(userLoans.filter((loan) => loan.lenderUser).map((loan) => loan.lenderUser));
-      return Math.min(100, uniqueLenders.size * 10);
+      const fundedLoans = userLoans.filter((loan) => loan.loanStatus === 'Lent');
+      return calculateLenderDiversity(fundedLoans).score;
    }, [userLoans, activeRole]);
 
    const creditLevels: CreditLevel[] = useMemo(() => buildCreditLevels({ user, loans: borrowerLoans }), [user, borrowerLoans]);

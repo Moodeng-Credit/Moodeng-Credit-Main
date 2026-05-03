@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 import {
    BarChart3,
+   Award,
    CalendarDays,
    Check,
    ChevronLeft,
@@ -19,7 +20,7 @@ import {
    X
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
 import { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
@@ -35,6 +36,7 @@ import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type User, WorldId } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
+import { DEMO_BORROWER_INSIGHTS_LOANS, DEMO_BORROWER_INSIGHTS_USER, DEMO_LENDER_PROFILES } from './demoBorrowerInsights';
 
 const DIVERSITY_STYLES: Record<string, { border: string; text: string; bg: string }> = {
    Excellent: { border: 'border-md-green-600', text: 'text-md-green-600', bg: 'bg-[rgba(0,134,36,0.05)]' },
@@ -50,20 +52,25 @@ const UserProfile = () => {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
    const { username } = useParams();
+   const [searchParams] = useSearchParams();
    const [profileUser, setProfileUser] = useState<User | null>(null);
    const [isLoanMixSheetOpen, setIsLoanMixSheetOpen] = useState(false);
+   const [isCreditLevelSheetOpen, setIsCreditLevelSheetOpen] = useState(false);
+   const isDemoInsights = searchParams.get('demo') === 'rich';
 
    const user = useSelector((state: RootState) => state.auth.user);
-   const loans = useSelector((state: RootState) => state.loans.loans.gloans);
-   const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
-   const resolvedUser = profileUser ?? user;
+   const storedLoans = useSelector((state: RootState) => state.loans.loans.gloans);
+   const storedUserProfiles = useSelector((state: RootState) => state.auth.userProfiles);
+   const loans = isDemoInsights ? DEMO_BORROWER_INSIGHTS_LOANS : storedLoans;
+   const userProfiles = isDemoInsights ? DEMO_LENDER_PROFILES : storedUserProfiles;
+   const resolvedUser = isDemoInsights ? DEMO_BORROWER_INSIGHTS_USER : (profileUser ?? user);
 
    useEffect(() => {
       window.scrollTo(0, 0);
    }, []);
 
    useEffect(() => {
-      if (!username) return;
+      if (!username || isDemoInsights) return;
       const loadProfile = async () => {
          try {
             const { user: fetchedUser } = await dispatch(getUserProfile(username)).unwrap();
@@ -74,14 +81,15 @@ const UserProfile = () => {
          }
       };
       loadProfile();
-   }, [dispatch, username]);
+   }, [dispatch, isDemoInsights, username]);
 
    useEffect(() => {
+      if (isDemoInsights) return;
       const lenderUserIds = [...new Set(loans.map((loan) => loan.lenderUser).filter(Boolean))] as string[];
       if (lenderUserIds.length > 0) {
          dispatch(fetchUserProfiles(lenderUserIds)).catch(() => undefined);
       }
-   }, [dispatch, loans]);
+   }, [dispatch, isDemoInsights, loans]);
 
    if (!resolvedUser || !loans) return <Loading />;
 
@@ -184,6 +192,7 @@ const UserProfile = () => {
    const creditBuildingCount = uniqueLoans.length;
    const trustBuildingCount = trustBuildingLoans.length;
    const hasLoanHistory = fundedLoans.length > 0;
+   const hasMoreRecentLoans = fundedLoans.length > 5;
    const loanMixLabel = !hasLoanHistory
       ? 'No loan mix yet'
       : trustBuildingCount > creditBuildingCount
@@ -257,11 +266,24 @@ const UserProfile = () => {
                   <div className="flex items-center justify-between">
                      <div className="flex items-center gap-2">
                         <span className="text-md-h5 font-semibold text-md-heading">Credit Level</span>
-                        <HelpCircle className="w-5 h-5 text-md-primary-900" strokeWidth={1.5} />
+                        <button
+                           type="button"
+                           onClick={() => setIsCreditLevelSheetOpen(true)}
+                           aria-label="How Credit Level works"
+                           className="flex h-7 w-7 items-center justify-center rounded-full active:scale-95"
+                        >
+                           <HelpCircle className="w-5 h-5 text-md-primary-900" strokeWidth={1.5} />
+                        </button>
                      </div>
                      <button
                         type="button"
-                        onClick={() => navigate(`/user/${resolvedUser.username || username}/progress-history`)}
+                        onClick={() =>
+                           navigate(
+                              `/user/${encodeURIComponent(resolvedUser.username || username || '')}/progress-history${
+                                 isDemoInsights ? '?demo=rich' : ''
+                              }`
+                           )
+                        }
                         className="text-md-b2 font-semibold text-md-blue-600 underline"
                      >
                         View Progress History
@@ -376,7 +398,15 @@ const UserProfile = () => {
                                           </span>
                                        </span>
                                     </div>
-                                    <button type="button" className="flex items-center gap-1.5">
+                                    <button
+                                       type="button"
+                                       onClick={() =>
+                                          navigate(
+                                             `/user/${encodeURIComponent(resolvedUser.username)}/lender-diversity${isDemoInsights ? '?demo=rich' : ''}`
+                                          )
+                                       }
+                                       className="flex items-center gap-1.5 transition-opacity hover:opacity-80 active:scale-[0.98]"
+                                    >
                                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#dbeafe]">
                                           <Users className="h-3.5 w-3.5 text-[#3b82f6]" strokeWidth={2.5} />
                                        </span>
@@ -467,7 +497,9 @@ const UserProfile = () => {
                   <div className="flex flex-col gap-2">
                      <div className="flex items-center justify-between">
                         <span className="text-md-h5 font-semibold text-md-heading">Recent Loans</span>
-                        <button className="text-md-b2 font-semibold text-md-blue-600 underline">View History</button>
+                        {hasMoreRecentLoans ? (
+                           <button className="text-md-b2 font-semibold text-md-blue-600 underline">View History</button>
+                        ) : null}
                      </div>
                      <p className="text-md-b3 font-normal text-md-neutral-1500">
                         View who has funded this borrower and the status of each loan.
@@ -489,6 +521,7 @@ const UserProfile = () => {
             trustBuildingCount={trustBuildingCount}
             creditBuildingCount={creditBuildingCount}
          />
+         <CreditLevelBottomSheet isOpen={isCreditLevelSheetOpen} onClose={() => setIsCreditLevelSheetOpen(false)} />
       </div>
    );
 };
@@ -570,6 +603,84 @@ const NewBorrowerInsightsCard = () => (
       </div>
    </div>
 );
+
+const CreditLevelBottomSheet = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+   if (!isOpen) return null;
+
+   const creditLevels = [
+      { level: 1, amount: 15, stars: '⭐', className: 'from-[#c4b5fd] to-[#b9a2fb] text-white' },
+      { level: 2, amount: 20, stars: '⭐⭐', className: 'from-[#a78bfa] to-[#9977f2] text-white' },
+      { level: 3, amount: 40, stars: '⭐⭐⭐', className: 'from-[#8b5cf6] to-[#7c4df1] text-white' },
+      { level: 4, amount: 60, stars: '⭐⭐⭐⭐', className: 'from-[#7c3aed] to-[#6d28d9] text-white' }
+   ];
+
+   return (
+      <div className="fixed inset-0 z-50 flex items-end">
+         <button
+            type="button"
+            aria-label="Close credit level explanation"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={onClose}
+         />
+         <div className="relative mx-auto max-h-[88vh] w-full max-w-[440px] overflow-hidden rounded-t-[28px] bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.15)]">
+            <div className="flex justify-center pb-2 pt-3">
+               <div className="h-1 w-10 rounded-full bg-[#b7add0]" />
+            </div>
+            <div className="border-b border-[#f1edf8] px-6 pb-5 pt-2">
+               <div className="flex items-center justify-between gap-4">
+                  <div className="flex min-w-0 items-center gap-4">
+                     <span className="flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-full bg-[#ede9fe] text-md-primary-900">
+                        <Award className="h-8 w-8" strokeWidth={2.2} />
+                     </span>
+                     <h3 className="text-[26px] font-bold leading-tight tracking-[-0.01em] text-[#1f2937]">
+                        How Credit Level Works
+                     </h3>
+                  </div>
+                  <button
+                     type="button"
+                     onClick={onClose}
+                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#6b7280] active:scale-95"
+                     aria-label="Close"
+                  >
+                     <X className="h-7 w-7" strokeWidth={2} />
+                  </button>
+               </div>
+            </div>
+            <div className="max-h-[calc(88vh-112px)] overflow-y-auto px-6 pb-8 pt-6">
+               <div className="space-y-4 text-[20px] leading-[1.45] text-[#4b5563]">
+                  <p>Credit Level shows the borrower’s current borrowing tier.</p>
+                  <p>Borrowers level up by taking a Credit Building loan at their current limit and repaying it successfully.</p>
+               </div>
+               <p className="mt-7 text-[18px] font-bold uppercase tracking-[0.02em] text-[#6b7280]">Credit Levels</p>
+               <div className="mt-4 space-y-3">
+                  {creditLevels.map((level) => (
+                     <div
+                        key={level.level}
+                        className="flex items-center justify-between gap-4 rounded-[18px] border-2 border-[#eadfff] bg-[#fbfaff] px-4 py-4 shadow-[0_8px_18px_rgba(48,24,92,0.04)]"
+                     >
+                        <div className="flex min-w-0 items-center gap-4">
+                           <span
+                              className={`flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-[18px] bg-gradient-to-br text-[28px] font-bold ${level.className}`}
+                           >
+                              {level.level}
+                           </span>
+                           <span className="min-w-0">
+                              <span className="block text-[19px] font-bold leading-tight text-[#1f2937]">Level {level.level}</span>
+                              <span className="mt-1 block text-[16px] font-medium leading-tight text-[#6b7280]">Credit limit</span>
+                           </span>
+                        </div>
+                        <div className="shrink-0 text-right">
+                           <p className="text-[24px] font-bold leading-tight text-md-primary-900">${level.amount}</p>
+                           <p className="mt-1 text-[15px] leading-none">{level.stars}</p>
+                        </div>
+                     </div>
+                  ))}
+               </div>
+            </div>
+         </div>
+      </div>
+   );
+};
 
 const LoanMixBottomSheet = ({
    isOpen,
