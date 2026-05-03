@@ -178,9 +178,12 @@ export default function LenderDiversityHistory() {
             </div>
 
             <section className="px-4 pb-4">
-               <div className="overflow-hidden rounded-[24px] bg-white p-5 shadow-[0_12px_32px_rgba(48,24,92,0.08)]">
-                  <div className="flex items-start justify-between gap-3">
-                     <div className="min-w-0 flex-1 pt-1">
+               <div className="relative overflow-hidden rounded-[24px] bg-white p-5 shadow-[0_12px_32px_rgba(48,24,92,0.08)]">
+                  <div className="absolute bottom-0 right-0 h-[176px] w-[176px] rounded-tl-[90px] bg-gradient-to-br from-[#f5f3ff] via-[#ede9fe] to-[#f8f5ff]" />
+                  <div className="absolute right-8 top-10 text-[24px] font-bold leading-none text-[#a78bfa]">✦</div>
+                  <div className="absolute bottom-8 right-3 text-[18px] font-bold leading-none text-[#c4b5fd]">✦</div>
+                  <div className="relative z-10 flex items-start justify-between gap-2">
+                     <div className="min-w-0 flex-1 pt-1 pr-1">
                         <p className="mb-1.5 text-[13px] font-semibold text-md-neutral-1400">Lender Diversity Score</p>
                         {hasLenderHistory ? (
                            <>
@@ -215,7 +218,7 @@ export default function LenderDiversityHistory() {
                      <img
                         src="/hippos/lender-diversity-piechart.png"
                         alt=""
-                        className="h-[132px] w-[132px] shrink-0 object-contain drop-shadow-xl"
+                        className="-mr-3 mt-2 h-[160px] w-[150px] shrink-0 object-contain drop-shadow-xl"
                      />
                   </div>
                </div>
@@ -232,7 +235,27 @@ export default function LenderDiversityHistory() {
                <div className="rounded-[24px] bg-white px-4 pb-3 pt-4 shadow-[0_12px_32px_rgba(48,24,92,0.08)]">
                   {distribution.length > 0 ? (
                      <>
-                        <div className="relative mb-3 flex h-[288px] items-center justify-center">
+                        <div className="lender-diversity-chart relative mb-3 flex h-[288px] items-center justify-center">
+                           <style>
+                              {`
+                                 .lender-diversity-chart .recharts-wrapper,
+                                 .lender-diversity-chart .recharts-wrapper *,
+                                 .lender-diversity-chart svg,
+                                 .lender-diversity-chart svg * {
+                                    outline: none !important;
+                                    -webkit-tap-highlight-color: transparent;
+                                    -webkit-touch-callout: none;
+                                    user-select: none;
+                                 }
+                                 .lender-diversity-chart .recharts-sector:focus,
+                                 .lender-diversity-chart .recharts-sector:active,
+                                 .lender-diversity-chart .recharts-pie-sector:focus,
+                                 .lender-diversity-chart .recharts-pie-sector:active {
+                                    outline: none !important;
+                                    filter: none !important;
+                                 }
+                              `}
+                           </style>
                            <ResponsiveContainer width="100%" height="100%">
                               <PieChart>
                                  <Pie
@@ -246,6 +269,7 @@ export default function LenderDiversityHistory() {
                                     labelLine={false}
                                     outerRadius={128}
                                     paddingAngle={2}
+                                    rootTabIndex={-1}
                                     onMouseEnter={(_, index) => setActiveIndex(index)}
                                     onMouseLeave={() => setActiveIndex(null)}
                                  >
@@ -253,8 +277,14 @@ export default function LenderDiversityHistory() {
                                        <Cell
                                           key={lender.id}
                                           fill={lender.color}
+                                          focusable={false}
                                           opacity={activeIndex === null || activeIndex === index ? 1 : 0.32}
-                                          style={{ cursor: 'pointer' }}
+                                          style={{
+                                             cursor: 'pointer',
+                                             outline: 'none',
+                                             WebkitTapHighlightColor: 'transparent',
+                                             userSelect: 'none'
+                                          }}
                                        />
                                     ))}
                                  </Pie>

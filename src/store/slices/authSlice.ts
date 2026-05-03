@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import type { Database } from '@/lib/supabase/types';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
 import { type AuthState, type User, type UserRole, WorldId } from '@/types/authTypes';
@@ -219,9 +220,7 @@ export const loginUser = createAsyncThunk(
    if (error) {
       if (error.code === 'email_not_confirmed') {
          // Auto-resend verification email
-         const redirectUrl =
-            import.meta.env.VITE_REDIRECT_URL ||
-            (typeof window !== 'undefined' ? `${window.location.origin}/auth/confirm` : 'http://localhost:3000/auth/confirm');
+         const redirectUrl = getAuthRedirectUrl();
          const { error: resendError } = await supabase.auth.resend({
             type: 'signup',
             email,
@@ -305,9 +304,7 @@ export const registerUser = createAsyncThunk(
          };
       }
 
-      const redirectUrl =
-         import.meta.env.VITE_REDIRECT_URL ||
-         (typeof window !== 'undefined' ? `${window.location.origin}/auth/confirm` : 'http://localhost:3000/auth/confirm');
+      const redirectUrl = getAuthRedirectUrl();
 
       const { data, error } = await supabase.auth.signUp({
          email: userData.email,

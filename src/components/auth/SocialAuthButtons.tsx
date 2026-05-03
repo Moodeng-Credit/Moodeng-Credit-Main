@@ -1,7 +1,8 @@
 import { useState } from 'react';
 
 import TelegramAuthButton from '@/components/TelegramAuthButton';
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 interface SocialAuthButtonsProps {
    isSignUp: boolean;
@@ -29,17 +30,24 @@ export function SocialAuthButtons({
    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
    const botUsername = 'moodengnewbranchbot';
    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+   const [googleError, setGoogleError] = useState('');
 
    const googleLabel = isSignUp ? 'Sign Up with Google' : 'Sign In with Google';
+   const hasGoogleClientId = typeof clientId === 'string' && clientId.trim().length > 0 && !clientId.startsWith('encrypted:');
 
    const handleGoogleClick = async () => {
       if (isGoogleLoading) return;
+      setGoogleError('');
+
+      if (!hasGoogleClientId || !isSupabaseBrowserConfigured()) {
+         setGoogleError('Google sign-up is not configured in this local app. Ask for the .env.keys file, then restart the dev server.');
+         return;
+      }
+
       setIsGoogleLoading(true);
       try {
          const supabase = getSupabaseBrowserClient();
-         const redirectTo =
-            import.meta.env.VITE_REDIRECT_URL ||
-            `${window.location.origin}/auth/confirm`;
+         const redirectTo = getAuthRedirectUrl();
 
          const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
@@ -47,11 +55,13 @@ export function SocialAuthButtons({
          });
          if (error) {
             console.error('[SocialAuthButtons] Google OAuth error:', error.message);
+            setGoogleError(error.message || 'Google sign-up could not start. Please try again.');
             setIsGoogleLoading(false);
          }
          // If successful, the browser redirects — no need to reset loading state
       } catch (err) {
          console.error('[SocialAuthButtons] Google OAuth exception:', err);
+         setGoogleError(err instanceof Error ? err.message : 'Google sign-up could not start. Please try again.');
          setIsGoogleLoading(false);
       }
    };
@@ -77,6 +87,7 @@ export function SocialAuthButtons({
                </span>
             </button>
          )}
+         {googleError ? <p className="text-sm font-medium leading-5 text-[#B91C1C]">{googleError}</p> : null}
 
          {/* Telegram: show the real Telegram widget directly */}
          {botUsername && (

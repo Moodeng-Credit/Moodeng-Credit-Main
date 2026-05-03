@@ -113,10 +113,6 @@ function RequestBoard$() {
 
    const handleApplyLoanClick = (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
-      if (!isConnected) {
-         openConnectModal?.();
-         return;
-      }
       if ((user.nal || 0) >= (user.mal || 0)) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
