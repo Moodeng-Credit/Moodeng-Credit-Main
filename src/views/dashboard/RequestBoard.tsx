@@ -193,6 +193,10 @@ function RequestBoard$() {
    };
 
    const handleDays = (e: ChangeEvent<HTMLInputElement>) => {
+      if (!e.target.value) {
+         setDays('');
+         return;
+      }
       const date = new Date(e.target.value);
       const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0));
       setDays(utcDate.toISOString());
