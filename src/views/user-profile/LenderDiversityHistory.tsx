@@ -15,6 +15,7 @@ import type { User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
+import { getWalletAgeInfo } from '@/lib/web3/walletAge';
 import { DEMO_BORROWER_INSIGHTS_LOANS, DEMO_BORROWER_INSIGHTS_USER, DEMO_LENDER_PROFILES } from './demoBorrowerInsights';
 
 const CHART_COLORS = ['#5b21b6', '#7c3aed', '#3b82f6', '#60a5fa', '#c4b5fd', '#a78bfa', '#93c5fd'];
@@ -110,6 +111,7 @@ export default function LenderDiversityHistory() {
    const [searchParams] = useSearchParams();
    const [profileUser, setProfileUser] = useState<User | null>(null);
    const [activeIndex, setActiveIndex] = useState<number | null>(null);
+   const [walletAges, setWalletAges] = useState<Record<string, number>>({});
    const isDemoInsights = searchParams.get('demo') === 'rich';
 
    const user = useSelector((state: RootState) => state.auth.user);
@@ -143,8 +145,53 @@ export default function LenderDiversityHistory() {
       loadProfile();
    }, [dispatch, isDemoInsights, username]);
 
+   // Fetch on-chain wallet ages for all unique lenders once their profiles are loaded.
+   // These ages are fed into calculateLenderDiversity for a stronger fraud signal
+   // than Moodeng account age alone (wallet age can't be cheaply faked).
+   useEffect(() => {
+      if (isDemoInsights) return;
+
+      const fundedLenderIds = [
+         ...new Set(
+            loans
+               .filter((l) => l.loanStatus === 'Lent')
+               .map((l) => l.lenderUser)
+               .filter(Boolean)
+         )
+      ] as string[];
+
+      if (fundedLenderIds.length === 0) return;
+
+      const lendersWithAddresses = fundedLenderIds
+         .map((id) => ({ id, address: userProfiles[id]?.walletAddress }))
+         .filter((x): x is { id: string; address: string } =>
+            typeof x.address === 'string' && x.address.startsWith('0x') && x.address.length === 42
+         );
+
+      if (lendersWithAddresses.length === 0) return;
+
+      Promise.all(
+         lendersWithAddresses.map(async ({ id, address }) => {
+            const info = await getWalletAgeInfo(address);
+            if (!info) return null;
+            return { id, age: info.ageInDays };
+         })
+      )
+         .then((results) => {
+            const ages: Record<string, number> = {};
+            for (const result of results) {
+               if (result) ages[result.id] = result.age;
+            }
+            if (Object.keys(ages).length > 0) setWalletAges(ages);
+         })
+         .catch(() => undefined);
+   }, [isDemoInsights, loans, userProfiles]);
+
    const fundedLoans = useMemo(() => loans.filter((loan) => loan.loanStatus === 'Lent'), [loans]);
-   const lenderDiversity = useMemo(() => calculateLenderDiversity(fundedLoans, userProfiles), [fundedLoans, userProfiles]);
+   const lenderDiversity = useMemo(
+      () => calculateLenderDiversity(fundedLoans, userProfiles, walletAges),
+      [fundedLoans, userProfiles, walletAges]
+   );
    const distribution = useMemo(() => buildLenderDistribution(fundedLoans, userProfiles), [fundedLoans, userProfiles]);
    const diversityStatus = getDiversityStatus(lenderDiversity.score);
    const borrowerName = borrower?.displayName || borrower?.username || username || 'Borrower';
