@@ -1,13 +1,13 @@
-// Queries Alchemy's Transfers API for the first on-chain transaction of an EVM
-// wallet address across Ethereum mainnet + Base mainnet, giving a true
-// multi-chain wallet age even if the user has never transacted on Base before.
+// Queries Alchemy's Transfers API for wallet age AND liveness signals
+// (first tx, total transfer count, most recent tx) across Ethereum mainnet
+// + Base mainnet, giving a true multi-chain picture even if the user has
+// never transacted on Base before.
 //
-// On testnet (Base Sepolia) only that chain is checked — wallet age is not
-// meaningful in a test environment anyway.
+// On testnet (Base Sepolia) only that chain is checked.
 //
 // Usage:
-//   const age = await getWalletAgeInfo('0x...');
-//   if (age) console.log(age.firstTxDate, age.ageInDays);
+//   const info = await getWalletAgeInfo('0x...');
+//   if (info) console.log(info.firstTxDate, info.ageInDays, info.totalTransferCount);
 //
 // Required env var:
 //   VITE_ALCHEMY_API_KEY=your_key_here
@@ -23,8 +23,6 @@ import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 const ALCHEMY_API_KEY = import.meta.env.VITE_ALCHEMY_API_KEY ?? '';
 const IS_MAINNET = ALLOWED_CHAIN_ID === base.id;
 
-// On mainnet we check both Ethereum and Base to catch wallets with history
-// on other chains that are new to Base.
 const MAINNET_RPC_URLS = [
    `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
    `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`
@@ -37,89 +35,112 @@ const TESTNET_RPC_URLS = [`https://base-sepolia.g.alchemy.com/v2/${ALCHEMY_API_K
 // ---------------------------------------------------------------------------
 
 export interface WalletAgeInfo {
-   /** The queried wallet address */
    address: string;
    /** ISO 8601 timestamp of the first on-chain transaction across all checked chains */
    firstTxDate: string;
    /** Unix epoch seconds of the first on-chain transaction */
    firstTxTimestamp: number;
-   /** How many days old the wallet is (based on first tx) */
+   /** How many days old the wallet is based on its first transaction */
    ageInDays: number;
-   /**
-    * false when the wallet has no transaction history at all.
-    * A brand-new wallet counts as 0 days old.
-    */
+   /** false when the wallet has no transaction history at all */
    hasHistory: boolean;
+   /**
+    * Approximate total number of asset transfers summed across all checked
+    * chains and directions (from + to).  Capped at 400 — use as a rough
+    * activity bucket, not a precise count.
+    */
+   totalTransferCount: number;
+   /** True when at least one chain/direction returned a pageKey (> 100 transfers there) */
+   hasMoreThan100Transfers: boolean;
+   /** ISO 8601 timestamp of the most recent on-chain transfer */
+   lastTxDate: string;
+   /** Unix epoch seconds of the most recent on-chain transfer */
+   lastTxTimestamp: number;
 }
 
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Fetches the earliest transfer timestamp for one direction (from/to) on one chain.
- * Returns null if no transfers found or on any error.
- */
-async function fetchEarliestTransfer(
-   rpcUrl: string,
-   address: string,
-   direction: 'from' | 'to'
-): Promise<number | null> {
-   const param = direction === 'from' ? 'fromAddress' : 'toAddress';
-
-   const body = {
-      id: 1,
-      jsonrpc: '2.0',
-      method: 'alchemy_getAssetTransfers',
-      params: [
-         {
-            fromBlock: '0x0',
-            toBlock: 'latest',
-            [param]: address,
-            category: ['external', 'internal', 'erc20'],
-            maxCount: '0x1',
-            order: 'asc',
-            withMetadata: true
-         }
-      ]
-   };
-
-   try {
-      const res = await fetch(rpcUrl, {
-         method: 'POST',
-         headers: { 'content-type': 'application/json' },
-         body: JSON.stringify(body)
-      });
-      if (!res.ok) return null;
-
-      const json = (await res.json()) as {
-         result?: { transfers: Array<{ metadata?: { blockTimestamp?: string } }> };
-      };
-
-      const transfers = json.result?.transfers;
-      if (!transfers || transfers.length === 0) return null;
-
-      const ts = transfers[0].metadata?.blockTimestamp;
-      if (!ts) return null;
-
-      return Math.floor(new Date(ts).getTime() / 1000);
-   } catch {
-      return null;
-   }
+/** Result of a single alchemy_getAssetTransfers call */
+interface TransferResult {
+   earliestTimestamp: number | null;
+   latestTimestamp: number | null;
+   count: number;
+   hasMore: boolean;
 }
 
 /**
- * Returns the earliest known transaction timestamp for a wallet on a single chain,
- * checking both incoming and outgoing transfers in parallel.
+ * Fetches transfer data for one direction on one chain.
+ * Makes two parallel calls:
+ *   - ascending  (maxCount 1):  cheaply finds the earliest tx timestamp
+ *   - descending (maxCount 100): finds the latest tx + rough count
  */
-async function getEarliestTimestampOnChain(rpcUrl: string, address: string): Promise<number | null> {
-   const [incoming, outgoing] = await Promise.all([
-      fetchEarliestTransfer(rpcUrl, address, 'to'),
-      fetchEarliestTransfer(rpcUrl, address, 'from')
-   ]);
+async function fetchTransferData(
+   rpcUrl: string,
+   address: string,
+   direction: 'from' | 'to'
+): Promise<TransferResult> {
+   const param = direction === 'from' ? 'fromAddress' : 'toAddress';
+   const baseParams = {
+      fromBlock: '0x0',
+      toBlock: 'latest',
+      [param]: address,
+      category: ['external', 'internal', 'erc20'],
+      withMetadata: true
+   };
 
-   const found = [incoming, outgoing].filter((t): t is number => t !== null);
-   return found.length > 0 ? Math.min(...found) : null;
+   const ascBody = JSON.stringify({
+      id: 1,
+      jsonrpc: '2.0',
+      method: 'alchemy_getAssetTransfers',
+      params: [{ ...baseParams, maxCount: '0x1', order: 'asc' }]
+   });
+
+   const descBody = JSON.stringify({
+      id: 2,
+      jsonrpc: '2.0',
+      method: 'alchemy_getAssetTransfers',
+      params: [{ ...baseParams, maxCount: '0x64', order: 'desc' }]
+   });
+
+   type AlchemyResponse = {
+      result?: {
+         transfers: Array<{ metadata?: { blockTimestamp?: string } }>;
+         pageKey?: string;
+      };
+   };
+
+   const fetchOne = async (body: string): Promise<AlchemyResponse | null> => {
+      try {
+         const res = await fetch(rpcUrl, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body
+         });
+         if (!res.ok) return null;
+         return (await res.json()) as AlchemyResponse;
+      } catch {
+         return null;
+      }
+   };
+
+   const tsOf = (item: { metadata?: { blockTimestamp?: string } } | undefined): number | null => {
+      const raw = item?.metadata?.blockTimestamp;
+      if (!raw) return null;
+      const ms = new Date(raw).getTime();
+      return Number.isFinite(ms) ? Math.floor(ms / 1000) : null;
+   };
+
+   const [ascJson, descJson] = await Promise.all([fetchOne(ascBody), fetchOne(descBody)]);
+
+   const earliest = tsOf(ascJson?.result?.transfers?.[0]);
+   const descTransfers = descJson?.result?.transfers ?? [];
+   const latest = tsOf(descTransfers[0]);
+   const count = descTransfers.length;
+   const hasMore = !!descJson?.result?.pageKey;
+
+   return { earliestTimestamp: earliest, latestTimestamp: latest, count, hasMore };
 }
 
 // ---------------------------------------------------------------------------
@@ -127,14 +148,17 @@ async function getEarliestTimestampOnChain(rpcUrl: string, address: string): Pro
 // ---------------------------------------------------------------------------
 
 /**
- * Returns age info for an EVM wallet based on its earliest known on-chain
- * transaction. On mainnet, checks both Ethereum and Base so wallets with
- * years of ETH history but new to Base still show their true age.
+ * Returns age and liveness info for an EVM wallet.
  *
- * Returns null on invalid address or if VITE_ALCHEMY_API_KEY is missing.
- * Always fails silently — callers should fall back to account createdAt.
+ * Liveness signals (totalTransferCount, lastTxDate) are used by the
+ * lender diversity fraud model to distinguish:
+ *   - Old active wallet  → low suspicion (real crypto person)
+ *   - Old dormant wallet → high suspicion (pre-aged sybil account)
+ *   - New active wallet  → moderate suspicion
+ *   - New inactive wallet → maximum suspicion
  *
- * A wallet with no history on any chain returns hasHistory: false, ageInDays: 0.
+ * Returns null on invalid address or missing VITE_ALCHEMY_API_KEY.
+ * Always fails silently — callers fall back to Moodeng account createdAt.
  */
 export async function getWalletAgeInfo(address: string): Promise<WalletAgeInfo | null> {
    if (!address || !address.startsWith('0x') || address.length !== 42) return null;
@@ -142,38 +166,54 @@ export async function getWalletAgeInfo(address: string): Promise<WalletAgeInfo |
 
    const rpcUrls = IS_MAINNET ? MAINNET_RPC_URLS : TESTNET_RPC_URLS;
 
-   // Query all chains in parallel, take the earliest timestamp found
-   const timestamps = await Promise.all(rpcUrls.map((url) => getEarliestTimestampOnChain(url, address)));
-   const found = timestamps.filter((t): t is number => t !== null);
+   // Query all chains × both directions in parallel
+   const results = await Promise.all(
+      rpcUrls.flatMap((url) => [
+         fetchTransferData(url, address, 'from'),
+         fetchTransferData(url, address, 'to')
+      ])
+   );
 
-   if (found.length === 0) {
+   // Aggregate across all chains and directions
+   const allEarliest = results.map((r) => r.earliestTimestamp).filter((t): t is number => t !== null);
+   const allLatest = results.map((r) => r.latestTimestamp).filter((t): t is number => t !== null);
+   const totalTransferCount = results.reduce((sum, r) => sum + r.count, 0);
+   const hasMoreThan100Transfers = results.some((r) => r.hasMore);
+
+   const nowSec = Math.floor(Date.now() / 1000);
+
+   if (allEarliest.length === 0) {
+      // Wallet has no history on any checked chain
       return {
          address,
          firstTxDate: new Date().toISOString(),
-         firstTxTimestamp: Math.floor(Date.now() / 1000),
+         firstTxTimestamp: nowSec,
          ageInDays: 0,
-         hasHistory: false
+         hasHistory: false,
+         totalTransferCount: 0,
+         hasMoreThan100Transfers: false,
+         lastTxDate: new Date().toISOString(),
+         lastTxTimestamp: nowSec
       };
    }
 
-   const firstTxTimestamp = Math.min(...found);
-   const firstTxDate = new Date(firstTxTimestamp * 1000).toISOString();
-   const ageInDays = Math.floor((Date.now() / 1000 - firstTxTimestamp) / 86400);
+   const firstTxTimestamp = Math.min(...allEarliest);
+   const lastTxTimestamp = allLatest.length > 0 ? Math.max(...allLatest) : firstTxTimestamp;
 
    return {
       address,
-      firstTxDate,
+      firstTxDate: new Date(firstTxTimestamp * 1000).toISOString(),
       firstTxTimestamp,
-      ageInDays,
-      hasHistory: true
+      ageInDays: Math.floor((nowSec - firstTxTimestamp) / 86400),
+      hasHistory: true,
+      totalTransferCount,
+      hasMoreThan100Transfers,
+      lastTxDate: new Date(lastTxTimestamp * 1000).toISOString(),
+      lastTxTimestamp
    };
 }
 
-/**
- * Convenience helper — returns just the wallet age in days.
- * Returns 0 if the wallet has no history, address is invalid,
- * or the API key is missing.
- */
+/** Convenience helper — wallet age in days, 0 if no history or on error. */
 export async function getWalletAgeDays(address: string): Promise<number> {
    const info = await getWalletAgeInfo(address);
    return info?.ageInDays ?? 0;
@@ -182,9 +222,6 @@ export async function getWalletAgeDays(address: string): Promise<number> {
 /**
  * Returns true if the wallet should be considered "new" from a
  * fraud-detection perspective.
- *
- * @param address       - EVM wallet address
- * @param thresholdDays - Age below which wallet is flagged as new (default 30)
  */
 export async function isNewWallet(address: string, thresholdDays = 30): Promise<boolean> {
    const ageDays = await getWalletAgeDays(address);

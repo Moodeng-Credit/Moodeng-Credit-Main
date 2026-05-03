@@ -14,7 +14,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
-import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
+import { calculateLenderDiversity, getDiversityStatus, type WalletLivenessData } from '@/utils/diversityScore';
 import { getWalletAgeInfo } from '@/lib/web3/walletAge';
 import { DEMO_BORROWER_INSIGHTS_LOANS, DEMO_BORROWER_INSIGHTS_USER, DEMO_LENDER_PROFILES } from './demoBorrowerInsights';
 
@@ -111,7 +111,7 @@ export default function LenderDiversityHistory() {
    const [searchParams] = useSearchParams();
    const [profileUser, setProfileUser] = useState<User | null>(null);
    const [activeIndex, setActiveIndex] = useState<number | null>(null);
-   const [walletAges, setWalletAges] = useState<Record<string, number>>({});
+   const [walletData, setWalletData] = useState<Record<string, WalletLivenessData>>({});
    const isDemoInsights = searchParams.get('demo') === 'rich';
 
    const user = useSelector((state: RootState) => state.auth.user);
@@ -145,9 +145,10 @@ export default function LenderDiversityHistory() {
       loadProfile();
    }, [dispatch, isDemoInsights, username]);
 
-   // Fetch on-chain wallet ages for all unique lenders once their profiles are loaded.
-   // These ages are fed into calculateLenderDiversity for a stronger fraud signal
-   // than Moodeng account age alone (wallet age can't be cheaply faked).
+   // Fetch on-chain wallet liveness for every unique funded lender.
+   // Runs once lender profiles arrive in Redux (walletAddress comes from profile).
+   // Results feed into calculateLenderDiversity for the combined
+   // age + activity + dormancy fraud signal.
    useEffect(() => {
       if (isDemoInsights) return;
 
@@ -170,27 +171,38 @@ export default function LenderDiversityHistory() {
 
       if (lendersWithAddresses.length === 0) return;
 
+      const nowSec = Date.now() / 1000;
+
       Promise.all(
          lendersWithAddresses.map(async ({ id, address }) => {
             const info = await getWalletAgeInfo(address);
             if (!info) return null;
-            return { id, age: info.ageInDays };
+            return {
+               id,
+               data: {
+                  ageInDays: info.ageInDays,
+                  transferCount: info.totalTransferCount,
+                  hasMoreThan100Transfers: info.hasMoreThan100Transfers,
+                  daysSinceLastTx: Math.max(0, (nowSec - info.lastTxTimestamp) / 86400),
+                  hasHistory: info.hasHistory
+               } satisfies WalletLivenessData
+            };
          })
       )
          .then((results) => {
-            const ages: Record<string, number> = {};
+            const data: Record<string, WalletLivenessData> = {};
             for (const result of results) {
-               if (result) ages[result.id] = result.age;
+               if (result) data[result.id] = result.data;
             }
-            if (Object.keys(ages).length > 0) setWalletAges(ages);
+            if (Object.keys(data).length > 0) setWalletData(data);
          })
          .catch(() => undefined);
    }, [isDemoInsights, loans, userProfiles]);
 
    const fundedLoans = useMemo(() => loans.filter((loan) => loan.loanStatus === 'Lent'), [loans]);
    const lenderDiversity = useMemo(
-      () => calculateLenderDiversity(fundedLoans, userProfiles, walletAges),
-      [fundedLoans, userProfiles, walletAges]
+      () => calculateLenderDiversity(fundedLoans, userProfiles, walletData),
+      [fundedLoans, userProfiles, walletData]
    );
    const distribution = useMemo(() => buildLenderDistribution(fundedLoans, userProfiles), [fundedLoans, userProfiles]);
    const diversityStatus = getDiversityStatus(lenderDiversity.score);

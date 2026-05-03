@@ -26,20 +26,48 @@ export const getDiversityStatus = (diversity: number): string => {
 // Types
 // ---------------------------------------------------------------------------
 
+/**
+ * On-chain liveness data for a single lender wallet, sourced from Alchemy.
+ * Passed as walletData to calculateLenderDiversity for a stronger fraud
+ * signal than Moodeng account age alone.
+ */
+export interface WalletLivenessData {
+   /** Days since wallet's first ever on-chain transaction */
+   ageInDays: number;
+   /**
+    * Approximate total asset transfers (from + to) across all checked chains.
+    * Capped at ~400 — treat as a rough activity bucket.
+    */
+   transferCount: number;
+   /** True when any chain/direction returned > 100 transfers */
+   hasMoreThan100Transfers: boolean;
+   /** Days since the wallet's most recent on-chain transfer (from today) */
+   daysSinceLastTx: number;
+   /** False when wallet has zero on-chain history */
+   hasHistory: boolean;
+}
+
 export interface LenderGravityDetail {
    lenderId: string;
    name: string;
-   /** Raw gravity score for this lender — higher means more suspicious */
+   /** Raw gravity score — higher = more suspicious */
    gravity: number;
    /**
-    * Amplifier for fresh accounts: 1× for accounts ≥ 180 days old,
-    * up to 180× for a brand-new account (1 day old).
+    * Combined age + activity + dormancy amplifier.
+    * 1× = fully established live wallet (no amplification).
+    * Up to 180× = brand-new or dormant wallet.
     */
    newnessFactor: number;
-   /** Penalty for rapid consecutive loans from the same lender (< 7 days apart) */
+   /** Penalty for rapid consecutive loans < 7 days apart */
    burstFactor: number;
-   /** How old the lender's wallet/account was at the time of their first loan here */
+   /** Wallet age at the time of the lender's first loan to this borrower */
    accountAgeAtFirstLoanDays: number;
+   /**
+    * Combined wallet trust score (0–1) when liveness data is available.
+    * ageTrust (40%) + activityTrust (30%) + dormancyTrust (30%).
+    * undefined when only account age fallback was used.
+    */
+   walletTrustScore?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -48,7 +76,6 @@ export interface LenderGravityDetail {
 
 const MS_PER_DAY = 86_400_000;
 
-/** Safe Date parse → Unix ms.  Returns NaN for bad/missing input. */
 function toMs(date: string | undefined | null): number {
    if (!date) return NaN;
    const ms = new Date(date).getTime();
@@ -56,11 +83,8 @@ function toMs(date: string | undefined | null): number {
 }
 
 /**
- * Sliding-window maximum: find the largest number of items whose timestamps
- * all fall within any single 30-day rolling window.
- *
- * Used to detect signup coordination — multiple lenders who all created their
- * Moodeng accounts around the same time (suggesting they were recruited together).
+ * Sliding-window maximum: largest count of timestamps within any 30-day window.
+ * Detects signup coordination — multiple lenders who all joined Moodeng at once.
  */
 function maxItemsIn30DayWindow(timestampsMs: number[]): number {
    if (timestampsMs.length === 0) return 0;
@@ -77,6 +101,50 @@ function maxItemsIn30DayWindow(timestampsMs: number[]): number {
    return max;
 }
 
+/**
+ * Computes a combined wallet trust score (0–1) from three signals.
+ *
+ * ── Components ────────────────────────────────────────────────────────────
+ *
+ *   ageTrustScore      (40%) = min(1, accountAgeAtFirstLoanDays / 180)
+ *   activityTrustScore (30%) = min(1, sqrt(transferCount) / 10)
+ *                              [sqrt gives diminishing returns; 100 txs = 1.0]
+ *   dormancyTrustScore (30%) = exp(−daysSinceLastTx / 365)
+ *                              [365-day decay; active last week ≈ 1.0]
+ *
+ * ── Why three signals ────────────────────────────────────────────────────
+ *
+ *   Age alone misses the "patient attacker" who creates wallets early and
+ *   sits on them.  A wallet that is 200 days old but has 2 transactions and
+ *   has been dormant for 18 months is not a legitimate active wallet —
+ *   it scores ~0.5 here vs 1.0 under the age-only model.
+ *
+ * ── newnessFactor from walletTrustScore ──────────────────────────────────
+ *
+ *   newnessFactor = max(1, 180 × (1 − walletTrustScore))
+ *
+ *   walletTrustScore 1.0 → newnessFactor  1× (established live wallet)
+ *   walletTrustScore 0.5 → newnessFactor 90× (dormant / barely active)
+ *   walletTrustScore 0.0 → newnessFactor 180× (brand new / no history)
+ */
+function computeWalletTrustScore(
+   accountAgeAtFirstLoanDays: number,
+   liveness: WalletLivenessData
+): number {
+   const ageTrustScore = Math.min(1, accountAgeAtFirstLoanDays / 180);
+
+   // If wallet has no on-chain history, activity and dormancy both contribute 0
+   if (!liveness.hasHistory) {
+      return 0.4 * ageTrustScore;
+   }
+
+   const effectiveCount = liveness.hasMoreThan100Transfers ? 150 : liveness.transferCount;
+   const activityTrustScore = Math.min(1, Math.sqrt(effectiveCount) / 10);
+   const dormancyTrustScore = Math.exp(-liveness.daysSinceLastTx / 365);
+
+   return 0.4 * ageTrustScore + 0.3 * activityTrustScore + 0.3 * dormancyTrustScore;
+}
+
 // ---------------------------------------------------------------------------
 // Main export
 // ---------------------------------------------------------------------------
@@ -87,39 +155,41 @@ function maxItemsIn30DayWindow(timestampsMs: number[]): number {
  * ── Threat model ──────────────────────────────────────────────────────────
  * A borrower recruits friends to open lender accounts and send fake loans,
  * building artificial credit history.  They then take a large real loan and
- * disappear.  Borrowers must have World ID (biometric, hard to fake), but
- * lenders do not — so fake LENDER accounts are the attack vector.
+ * disappear.  Borrowers must have World ID (biometric), but lenders do not —
+ * so fake LENDER accounts are the attack vector.
  *
- * ── Algorithm (per lender L) ──────────────────────────────────────────────
+ * ── Per-lender gravity ────────────────────────────────────────────────────
  *
  *   amountShare    = totalAmountFromL / totalAmount
- *   newnessFactor  = max(1, 180 / max(1, accountAgeAtFirstLoanDays))
- *   recencyDecay   = Σ exp(−daysSinceLoan / 60)          [60-day half-life]
+ *
+ *   newnessFactor  = max(1, 180 × (1 − walletTrustScore))       [if liveness data]
+ *                  = max(1, 180 / accountAgeAtFirstLoanDays)     [fallback: age only]
+ *
+ *   recencyDecay   = Σ exp(−daysSinceLoan / 60)   [60-day half-life]
  *   burstFactor    = 1 + rapidPairs / max(1, loansFromL − 1)
  *
  *   Gravity(L)     = amountShare² × newnessFactor × recencyDecay × burstFactor
  *
  * ── Portfolio-level adjustment ────────────────────────────────────────────
  *
- *   coordinationRate  = maxLendersIn30DaySignupWindow / uniqueLenders
- *   coordinationBoost = 1 + coordinationRate²             [range: 1–2]
+ *   coordinationRate  = maxLendersInAny30DaySignupWindow / uniqueLenders
+ *   coordinationBoost = 1 + coordinationRate²
  *   TotalGravity      = Σ Gravity(L) × coordinationBoost
  *
  * ── Score ─────────────────────────────────────────────────────────────────
  *
  *   TrustScore = max(0, min(100, round(100 − 20 × ln(1 + TotalGravity))))
  *
- * Low score = suspicious pattern; High score = trustworthy diverse lender base.
- *
- * @param loans        Funded loans for this borrower (caller should pre-filter to loanStatus === 'Lent')
- * @param userProfiles User profiles keyed by user ID (for account age + display names)
- * @param walletAges   On-chain wallet ages in days from today, keyed by lender user ID.
- *                     Preferred over account age — supply via getWalletAgeInfo() from walletAge.ts.
+ * @param loans        Pre-filtered funded loans (loanStatus === 'Lent')
+ * @param userProfiles User profiles keyed by user ID
+ * @param walletData   On-chain liveness data keyed by lender user ID.
+ *                     Supply via getWalletAgeInfo() from walletAge.ts.
+ *                     Falls back to userProfiles createdAt when absent.
  */
 export const calculateLenderDiversity = (
    loans: Loan[],
    userProfiles?: Record<string, User>,
-   walletAges?: Record<string, number>
+   walletData?: Record<string, WalletLivenessData>
 ): {
    score: number;
    distribution: Array<{ name: string; count: number; percent: string; percentValue: number }>;
@@ -150,34 +220,31 @@ export const calculateLenderDiversity = (
    // ── Per-lender gravity ───────────────────────────────────────────────────
    let sumGravity = 0;
    const gravityDetails: LenderGravityDetail[] = [];
-   const signupTimestampsMs: number[] = []; // collected for coordination check
+   const signupTimestampsMs: number[] = [];
 
    for (const [lenderId, lenderLoans] of byLender.entries()) {
       const profile = lenderId !== 'unknown' ? userProfiles?.[lenderId] : undefined;
 
-      // ── Amount share (HHI-style) ───────────────────────────────────────
+      // Amount share squared (HHI-style concentration)
       const lenderAmount = lenderLoans.reduce((s, l) => s + (Number(l.loanAmount) || 0), 0);
       const amountShare = totalAmount > 0 ? lenderAmount / totalAmount : 1 / uniqueLendersCount;
 
-      // ── Sort this lender's loans chronologically ───────────────────────
+      // Sort chronologically to find first loan and detect bursts
       const sorted = [...lenderLoans].sort(
          (a, b) => (toMs(a.fundedAt ?? a.createdAt) || 0) - (toMs(b.fundedAt ?? b.createdAt) || 0)
       );
       const firstLoanMs = toMs(sorted[0].fundedAt ?? sorted[0].createdAt);
 
-      // ── Account age at first loan ──────────────────────────────────────
-      // Default to 180 (treated as "established") when no data is available
-      // so we neither reward nor punish unknown lenders unfairly.
+      // ── Account age at first loan to this borrower ─────────────────────
+      // Default 180 = "established" when we have no data, so unknown lenders
+      // don't unfairly inflate or deflate the score.
       let accountAgeAtFirstLoanDays = 180;
 
       if (!isNaN(firstLoanMs)) {
-         if (walletAges && lenderId in walletAges) {
-            // On-chain wallet age: most reliable — can't be faked at low cost.
-            // walletAges[id] = days since first on-chain tx from today.
-            const walletFirstTxMs = now - walletAges[lenderId] * MS_PER_DAY;
+         if (walletData && lenderId in walletData) {
+            const walletFirstTxMs = now - walletData[lenderId].ageInDays * MS_PER_DAY;
             accountAgeAtFirstLoanDays = Math.max(0, (firstLoanMs - walletFirstTxMs) / MS_PER_DAY);
          } else if (profile?.createdAt) {
-            // Moodeng account age fallback: weaker signal but still useful.
             const lenderCreatedMs = toMs(profile.createdAt);
             if (!isNaN(lenderCreatedMs)) {
                accountAgeAtFirstLoanDays = Math.max(0, (firstLoanMs - lenderCreatedMs) / MS_PER_DAY);
@@ -185,26 +252,38 @@ export const calculateLenderDiversity = (
          }
       }
 
-      // Collect for coordination analysis
       const signupMs = profile?.createdAt ? toMs(profile.createdAt) : NaN;
       if (!isNaN(signupMs)) signupTimestampsMs.push(signupMs);
 
       // ── Newness factor ─────────────────────────────────────────────────
-      // Saturates to 1× at ≥ 180 days; peaks at 180× for a 1-day-old account.
-      const newnessFactor = Math.max(1, 180 / Math.max(1, accountAgeAtFirstLoanDays));
+      //
+      // With liveness data: uses walletTrustScore (age + activity + dormancy)
+      //   newnessFactor = max(1, 180 × (1 − walletTrustScore))
+      //   A perfectly established live wallet scores ~1×.
+      //   An old dormant wallet (patient attacker) scores ~90×.
+      //
+      // Without liveness data: falls back to age-only signal.
+      //   newnessFactor = max(1, 180 / accountAgeAtFirstLoanDays)
+      let newnessFactor: number;
+      let walletTrustScore: number | undefined;
 
-      // ── Recency decay  Σ exp(−daysSinceLoan / 60) ─────────────────────
-      // A loan 60 days ago contributes ~37% vs a fresh loan today.
+      if (walletData && lenderId in walletData) {
+         walletTrustScore = computeWalletTrustScore(accountAgeAtFirstLoanDays, walletData[lenderId]);
+         newnessFactor = Math.max(1, 180 * (1 - walletTrustScore));
+      } else {
+         newnessFactor = Math.max(1, 180 / Math.max(1, accountAgeAtFirstLoanDays));
+      }
+
+      // ── Recency decay Σ exp(−daysSinceLoan / 60) ──────────────────────
       let recencyDecay = 0;
       for (const loan of lenderLoans) {
          const loanMs = toMs(loan.fundedAt ?? loan.createdAt);
          const daysSince = isNaN(loanMs) ? 0 : Math.max(0, (now - loanMs) / MS_PER_DAY);
          recencyDecay += Math.exp(-daysSince / 60);
       }
-      recencyDecay = Math.max(recencyDecay, 0.01); // avoid degenerate zero
+      recencyDecay = Math.max(recencyDecay, 0.01);
 
       // ── Burst factor ───────────────────────────────────────────────────
-      // Count consecutive loan pairs with < 7 days gap.
       let rapidPairs = 0;
       for (let i = 1; i < sorted.length; i++) {
          const prev = toMs(sorted[i - 1].fundedAt ?? sorted[i - 1].createdAt);
@@ -225,13 +304,12 @@ export const calculateLenderDiversity = (
          gravity,
          newnessFactor,
          burstFactor,
-         accountAgeAtFirstLoanDays
+         accountAgeAtFirstLoanDays,
+         walletTrustScore
       });
    }
 
    // ── Coordination boost ───────────────────────────────────────────────────
-   // If many lenders all joined Moodeng within the same 30-day window they may
-   // have been recruited together.  coordinationRate ∈ (0, 1]; boost ∈ [1, 2].
    let coordinationBoost = 1;
    if (signupTimestampsMs.length > 1) {
       const maxInWindow = maxItemsIn30DayWindow(signupTimestampsMs);
@@ -242,33 +320,16 @@ export const calculateLenderDiversity = (
    const totalGravity = sumGravity * coordinationBoost;
 
    // ── Trust score (log-scale) ──────────────────────────────────────────────
-   // TotalGravity ≈ 0.05  →  score ~99   (5 well-established diverse lenders)
-   // TotalGravity ≈ 1     →  score ~86   (moderate concern)
-   // TotalGravity ≈ 10    →  score ~53   (notable concentration / newness)
-   // TotalGravity ≈ 100   →  score  ~7   (severe fraud signal)
    const score = Math.max(0, Math.min(100, Math.round(100 - 20 * Math.log(1 + totalGravity))));
 
-   // ── Distribution (backward-compatible shape) ─────────────────────────────
+   // ── Distribution (backward-compatible) ──────────────────────────────────
    const distribution = gravityDetails
       .map(({ lenderId, name }) => {
-         const lenderLoans = byLender.get(lenderId)!;
-         const percentValue = Math.round((lenderLoans.length / loans.length) * 100);
-         return {
-            name,
-            count: lenderLoans.length,
-            percent: `${percentValue}%`,
-            percentValue
-         };
+         const ll = byLender.get(lenderId)!;
+         const percentValue = Math.round((ll.length / loans.length) * 100);
+         return { name, count: ll.length, percent: `${percentValue}%`, percentValue };
       })
       .sort((a, b) => b.count - a.count);
 
-   return {
-      score,
-      distribution,
-      uniqueLenders: uniqueLendersCount,
-      repeatLenders,
-      gravityDetails,
-      coordinationBoost,
-      totalGravity
-   };
+   return { score, distribution, uniqueLenders: uniqueLendersCount, repeatLenders, gravityDetails, coordinationBoost, totalGravity };
 };
