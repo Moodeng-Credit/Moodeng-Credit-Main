@@ -232,7 +232,17 @@ export default function LenderDiversityHistory() {
                <div className="rounded-[24px] bg-white px-4 pb-3 pt-4 shadow-[0_12px_32px_rgba(48,24,92,0.08)]">
                   {distribution.length > 0 ? (
                      <>
-                        <div className="relative mb-3 flex h-[288px] items-center justify-center">
+                        <div className="lender-diversity-chart relative mb-3 flex h-[288px] items-center justify-center">
+                           <style>
+                              {`
+                                 .lender-diversity-chart .recharts-wrapper,
+                                 .lender-diversity-chart .recharts-wrapper *,
+                                 .lender-diversity-chart svg,
+                                 .lender-diversity-chart svg * {
+                                    outline: none !important;
+                                 }
+                              `}
+                           </style>
                            <ResponsiveContainer width="100%" height="100%">
                               <PieChart>
                                  <Pie
