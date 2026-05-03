@@ -23,7 +23,7 @@ const baseUser: User = {
    isWorldId: 'ACTIVE',
    mal: 1,
    nal: 0,
-   cs: 20,
+   cs: 15,
    creditProgressionPaused: false,
    createdAt: '2025-01-01T00:00:00.000Z',
    updatedAt: '2025-01-02T00:00:00.000Z'
@@ -34,9 +34,9 @@ const createLoan = (overrides: Partial<Loan>): Loan => ({
    trackingId: 'TRACK-1',
    borrowerUser: 'user-1',
    lenderUser: 'lender-1',
-   loanAmount: 20,
-   repaidAmount: 20,
-   totalRepaymentAmount: 20,
+   loanAmount: 15,
+   repaidAmount: 15,
+   totalRepaymentAmount: 15,
    reason: 'Test',
    loanStatus: 'Lent',
    repaymentStatus: 'Paid',
@@ -50,6 +50,22 @@ const createLoan = (overrides: Partial<Loan>): Loan => ({
 
 describe('Credit leveling logic', () => {
    it('increments limit after on-time full repayment at the current limit', () => {
+      const evaluation = evaluateCreditProgression({
+         currentLimit: 15,
+         isVerified: true,
+         isPaused: false,
+         repaidAmount: 25,
+         totalRepaymentAmount: 25,
+         cumulativeBorrowedAmount: 15,
+         dueDate: '2025-02-01T00:00:00.000Z',
+         paidAt: '2025-01-31T00:00:00.000Z'
+      });
+
+      expect(evaluation.shouldLevelUp).toBe(true);
+      expect(evaluation.nextLimit).toBe(20);
+   });
+
+   it('progresses from the second tier to the next 20-dollar step', () => {
       const evaluation = evaluateCreditProgression({
          currentLimit: 20,
          isVerified: true,
@@ -143,12 +159,12 @@ describe('LoanRequestModal borrowing gate', () => {
 });
 
 describe('Dashboard credit level carousel', () => {
-   it('builds tiers for a new verified user with a $20 limit', () => {
+   it('builds tiers for a new verified user with a $15 limit', () => {
       const tiers = buildCreditLevels({ user: baseUser, loans: [] });
 
-      expect(tiers).toHaveLength(7);
+      expect(tiers).toHaveLength(8);
       expect(tiers[0].unlocked).toBe(true);
-      expect(tiers[1].unlockRequirement).toContain('Fully repay $20 total on time');
+      expect(tiers[1].unlockRequirement).toContain('Fully repay $15 total on time');
    });
 
    it('builds tiers for an experienced user with multiple repayments', () => {

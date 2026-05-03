@@ -1,10 +1,10 @@
+import { CREDIT_TIERS, MAX_CREDIT_LIMIT, STARTING_CREDIT_LIMIT, getNextCreditTier } from '@/config/creditTiers';
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 
 export const CREDIT_STEP = 20;
-export const MIN_CREDIT_LIMIT = 20;
-export const MAX_CREDIT_LIMIT = 140;
-export const CREDIT_TIERS = [20, 40, 60, 80, 100, 120, 140] as const;
+export const MIN_CREDIT_LIMIT = STARTING_CREDIT_LIMIT;
+export { CREDIT_TIERS, MAX_CREDIT_LIMIT };
 
 type CreditProgressionInput = {
    currentLimit: number | null | undefined;
@@ -56,7 +56,7 @@ export const evaluateCreditProgression = ({
    return {
       shouldPause,
       shouldLevelUp: canLevelUp,
-      nextLimit: Math.min(normalizedLimit + CREDIT_STEP, MAX_CREDIT_LIMIT),
+      nextLimit: getNextCreditTier(normalizedLimit),
       isLate,
       isFullyRepaid
    };

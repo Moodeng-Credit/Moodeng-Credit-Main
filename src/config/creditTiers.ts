@@ -3,8 +3,10 @@
  * Used for credit limit calculations throughout the application
  */
 
+export const CREDIT_TIERS = [15, 20, 40, 60, 80, 100, 120, 140] as const;
+export const STARTING_CREDIT_LIMIT = CREDIT_TIERS[0];
+export const MAX_CREDIT_LIMIT = CREDIT_TIERS[CREDIT_TIERS.length - 1];
 export const CREDIT_TIER_INCREMENT = 20;
-export const STARTING_CREDIT_LIMIT = 20;
 
 /**
  * Calculate the credit tier key for a given loan amount
@@ -12,7 +14,8 @@ export const STARTING_CREDIT_LIMIT = 20;
  * @returns The credit tier key (rounded down to nearest tier)
  */
 export function getCreditTierKey(loanAmount: number): number {
-   return Math.floor(loanAmount / CREDIT_TIER_INCREMENT) * CREDIT_TIER_INCREMENT;
+   const matchingTier = [...CREDIT_TIERS].reverse().find((tier) => loanAmount >= tier);
+   return matchingTier ?? 0;
 }
 
 /**
@@ -21,7 +24,8 @@ export function getCreditTierKey(loanAmount: number): number {
  * @returns The remainder when divided by tier increment
  */
 export function getCreditTierRemainder(loanAmount: number): number {
-   return loanAmount % CREDIT_TIER_INCREMENT;
+   const tier = getCreditTierKey(loanAmount);
+   return tier > 0 ? loanAmount - tier : loanAmount;
 }
 
 /**
@@ -30,7 +34,7 @@ export function getCreditTierRemainder(loanAmount: number): number {
  * @returns True if the loan amount is exactly on a tier boundary
  */
 export function isExactCreditTier(loanAmount: number): boolean {
-   return getCreditTierRemainder(loanAmount) === 0;
+   return CREDIT_TIERS.includes(loanAmount as (typeof CREDIT_TIERS)[number]);
 }
 
 /**
@@ -39,5 +43,12 @@ export function isExactCreditTier(loanAmount: number): boolean {
  * @returns The next tier amount
  */
 export function getNextCreditTier(currentAmount: number): number {
-   return getCreditTierKey(currentAmount) + CREDIT_TIER_INCREMENT;
+   const currentTierIndex = CREDIT_TIERS.findIndex((tier) => tier >= currentAmount);
+   if (currentTierIndex < 0) return MAX_CREDIT_LIMIT;
+   return CREDIT_TIERS[Math.min(currentTierIndex + 1, CREDIT_TIERS.length - 1)];
+}
+
+export function getCreditLevelNumber(creditLimit: number): number {
+   const tierIndex = CREDIT_TIERS.findIndex((tier) => tier >= creditLimit);
+   return tierIndex >= 0 ? tierIndex + 1 : CREDIT_TIERS.length;
 }
