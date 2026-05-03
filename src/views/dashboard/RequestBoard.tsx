@@ -3,7 +3,7 @@ import { type ChangeEvent, type FormEvent, type MouseEvent, type RefObject, useC
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { AlertTriangle, HelpCircle, Search, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
@@ -45,6 +45,7 @@ export default function RequestBoard() {
 
 function RequestBoard$() {
    const pathname = useLocation().pathname;
+   const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
 
@@ -310,7 +311,12 @@ function RequestBoard$() {
                            )}
                         </div>
                      </div>
-                     <button className="shrink-0 w-12 h-12 bg-white rounded-full shadow-md-card flex items-center justify-center">
+                     <button
+                        type="button"
+                        onClick={() => navigate('/support')}
+                        aria-label="Open help and support center"
+                        className="shrink-0 w-12 h-12 bg-white rounded-full shadow-md-card flex items-center justify-center"
+                     >
                         <HelpCircle className="w-6 h-6 text-md-primary-900" strokeWidth={1.5} />
                      </button>
                   </div>

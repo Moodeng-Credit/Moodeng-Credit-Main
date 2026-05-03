@@ -233,7 +233,7 @@ const UserProfile = () => {
                      </p>
                      <div className="mt-2 flex flex-wrap items-center gap-2">
                         <span
-                           className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 ${
+                           className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 ${
                               isVerifiedBorrower ? 'border-[#bfe8cf] bg-md-green-100' : 'border-md-neutral-500 bg-md-neutral-200'
                            }`}
                         >
