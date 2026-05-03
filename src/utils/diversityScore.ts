@@ -23,7 +23,7 @@ export const calculateLenderDiversity = (
    userProfiles?: Record<string, User>
 ): {
    score: number;
-   distribution: Array<{ name: string; percent: string }>;
+   distribution: Array<{ name: string; count: number; percent: string; percentValue: number }>;
    uniqueLenders: number;
    repeatLenders: number;
 } => {
@@ -43,20 +43,26 @@ export const calculateLenderDiversity = (
       return acc;
    }, {});
 
-   // Calculate unique lenders (those who lent only once)
-   const uniqueLendersCount = Object.values(countMap).filter((count) => count === 1).length;
+   const lenderCounts = Object.values(countMap);
+   const uniqueLendersCount = lenderCounts.length;
+   const repeatLenders = lenderCounts.filter((count) => count > 1).length;
 
-   // Calculate score as percentage of unique lenders
-   const score = Math.round((uniqueLendersCount / loans.length) * 100);
+   const mostFrequentLenderShare = Math.max(...lenderCounts) / loans.length;
+   const concentrationPenalty =
+      loans.length >= 3 && mostFrequentLenderShare > 0.8 ? 25 : loans.length >= 3 && mostFrequentLenderShare > 0.6 ? 15 : 0;
+   const score = Math.max(0, Math.min(100, uniqueLendersCount * 20) - concentrationPenalty);
 
-   // Create distribution array
-   const distribution = Object.keys(countMap).map((name) => ({
-      name,
-      percent: `${Math.round((countMap[name] / loans.length) * 100)}%`
-   }));
-
-   // Calculate repeat lenders
-   const repeatLenders = Object.keys(countMap).length - uniqueLendersCount;
+   const distribution = Object.keys(countMap)
+      .map((name) => {
+         const percentValue = Math.round((countMap[name] / loans.length) * 100);
+         return {
+            name,
+            count: countMap[name],
+            percent: `${percentValue}%`,
+            percentValue
+         };
+      })
+      .sort((a, b) => b.count - a.count);
 
    return {
       score,
