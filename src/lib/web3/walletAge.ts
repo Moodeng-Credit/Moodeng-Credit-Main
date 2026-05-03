@@ -1,13 +1,16 @@
-// Queries Basescan for the first on-chain transaction of an EVM wallet address.
-// Works on Base mainnet and Base Sepolia testnet.
-// Free-tier Basescan: 5 req/s, 100 k req/day — more than sufficient for this app.
+// Queries Alchemy's Transfers API for the first on-chain transaction of an EVM
+// wallet address across Ethereum mainnet + Base mainnet, giving a true
+// multi-chain wallet age even if the user has never transacted on Base before.
+//
+// On testnet (Base Sepolia) only that chain is checked — wallet age is not
+// meaningful in a test environment anyway.
 //
 // Usage:
 //   const age = await getWalletAgeInfo('0x...');
 //   if (age) console.log(age.firstTxDate, age.ageInDays);
 //
-// Env var (optional — works without key at lower rate limit):
-//   VITE_BASESCAN_API_KEY=your_key_here
+// Required env var:
+//   VITE_ALCHEMY_API_KEY=your_key_here
 
 import { base } from 'wagmi/chains';
 
@@ -17,16 +20,17 @@ import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 // Internal config
 // ---------------------------------------------------------------------------
 
-const BASESCAN_API_KEY = import.meta.env.VITE_BASESCAN_API_KEY ?? '';
+const ALCHEMY_API_KEY = import.meta.env.VITE_ALCHEMY_API_KEY ?? '';
+const IS_MAINNET = ALLOWED_CHAIN_ID === base.id;
 
-function getBasescanApiUrl(): string {
-   // Base mainnet → api.basescan.org
-   // Base Sepolia (or any other chain id) → api-sepolia.basescan.org
-   if (ALLOWED_CHAIN_ID === base.id) {
-      return 'https://api.basescan.org/api';
-   }
-   return 'https://api-sepolia.basescan.org/api';
-}
+// On mainnet we check both Ethereum and Base to catch wallets with history
+// on other chains that are new to Base.
+const MAINNET_RPC_URLS = [
+   `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
+   `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`
+];
+
+const TESTNET_RPC_URLS = [`https://base-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`];
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,7 +39,7 @@ function getBasescanApiUrl(): string {
 export interface WalletAgeInfo {
    /** The queried wallet address */
    address: string;
-   /** ISO 8601 timestamp of the first on-chain transaction */
+   /** ISO 8601 timestamp of the first on-chain transaction across all checked chains */
    firstTxDate: string;
    /** Unix epoch seconds of the first on-chain transaction */
    firstTxTimestamp: number;
@@ -49,74 +53,126 @@ export interface WalletAgeInfo {
 }
 
 // ---------------------------------------------------------------------------
-// Main helpers
+// Internal helpers
 // ---------------------------------------------------------------------------
 
 /**
- * Returns age info for an EVM wallet based on its first on-chain transaction
- * on Base (mainnet or Sepolia, driven by VITE_ALLOWED_CHAIN_NAME).
- *
- * Returns null on network error or invalid address — always fails silently
- * so callers can proceed without wallet age data.
- *
- * A wallet with no history returns hasHistory: false and ageInDays: 0.
+ * Fetches the earliest transfer timestamp for one direction (from/to) on one chain.
+ * Returns null if no transfers found or on any error.
  */
-export async function getWalletAgeInfo(address: string): Promise<WalletAgeInfo | null> {
-   if (!address || !address.startsWith('0x') || address.length !== 42) return null;
+async function fetchEarliestTransfer(
+   rpcUrl: string,
+   address: string,
+   direction: 'from' | 'to'
+): Promise<number | null> {
+   const param = direction === 'from' ? 'fromAddress' : 'toAddress';
 
-   const url = new URL(getBasescanApiUrl());
-   url.searchParams.set('module', 'account');
-   url.searchParams.set('action', 'txlist');
-   url.searchParams.set('address', address);
-   url.searchParams.set('startblock', '0');
-   url.searchParams.set('endblock', '99999999');
-   url.searchParams.set('page', '1');
-   url.searchParams.set('offset', '1'); // only need the very first tx
-   url.searchParams.set('sort', 'asc');
-   if (BASESCAN_API_KEY) url.searchParams.set('apikey', BASESCAN_API_KEY);
+   const body = {
+      id: 1,
+      jsonrpc: '2.0',
+      method: 'alchemy_getAssetTransfers',
+      params: [
+         {
+            fromBlock: '0x0',
+            toBlock: 'latest',
+            [param]: address,
+            category: ['external', 'internal', 'erc20'],
+            maxCount: '0x1',
+            order: 'asc',
+            withMetadata: true
+         }
+      ]
+   };
 
    try {
-      const res = await fetch(url.toString());
+      const res = await fetch(rpcUrl, {
+         method: 'POST',
+         headers: { 'content-type': 'application/json' },
+         body: JSON.stringify(body)
+      });
       if (!res.ok) return null;
 
       const json = (await res.json()) as {
-         status: string;
-         message: string;
-         result: Array<{ timeStamp: string }>;
+         result?: { transfers: Array<{ metadata?: { blockTimestamp?: string } }> };
       };
 
-      // status '0' = no transactions found (brand-new wallet)
-      if (json.status !== '1' || !Array.isArray(json.result) || json.result.length === 0) {
-         return {
-            address,
-            firstTxDate: new Date().toISOString(),
-            firstTxTimestamp: Math.floor(Date.now() / 1000),
-            ageInDays: 0,
-            hasHistory: false
-         };
-      }
+      const transfers = json.result?.transfers;
+      if (!transfers || transfers.length === 0) return null;
 
-      const firstTxTimestamp = parseInt(json.result[0].timeStamp, 10);
-      const firstTxDate = new Date(firstTxTimestamp * 1000).toISOString();
-      const ageInDays = Math.floor((Date.now() / 1000 - firstTxTimestamp) / 86400);
+      const ts = transfers[0].metadata?.blockTimestamp;
+      if (!ts) return null;
 
-      return {
-         address,
-         firstTxDate,
-         firstTxTimestamp,
-         ageInDays,
-         hasHistory: true
-      };
+      return Math.floor(new Date(ts).getTime() / 1000);
    } catch {
-      // Network error, rate limit, JSON parse failure — fail silently
       return null;
    }
 }
 
 /**
+ * Returns the earliest known transaction timestamp for a wallet on a single chain,
+ * checking both incoming and outgoing transfers in parallel.
+ */
+async function getEarliestTimestampOnChain(rpcUrl: string, address: string): Promise<number | null> {
+   const [incoming, outgoing] = await Promise.all([
+      fetchEarliestTransfer(rpcUrl, address, 'to'),
+      fetchEarliestTransfer(rpcUrl, address, 'from')
+   ]);
+
+   const found = [incoming, outgoing].filter((t): t is number => t !== null);
+   return found.length > 0 ? Math.min(...found) : null;
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns age info for an EVM wallet based on its earliest known on-chain
+ * transaction. On mainnet, checks both Ethereum and Base so wallets with
+ * years of ETH history but new to Base still show their true age.
+ *
+ * Returns null on invalid address or if VITE_ALCHEMY_API_KEY is missing.
+ * Always fails silently — callers should fall back to account createdAt.
+ *
+ * A wallet with no history on any chain returns hasHistory: false, ageInDays: 0.
+ */
+export async function getWalletAgeInfo(address: string): Promise<WalletAgeInfo | null> {
+   if (!address || !address.startsWith('0x') || address.length !== 42) return null;
+   if (!ALCHEMY_API_KEY) return null;
+
+   const rpcUrls = IS_MAINNET ? MAINNET_RPC_URLS : TESTNET_RPC_URLS;
+
+   // Query all chains in parallel, take the earliest timestamp found
+   const timestamps = await Promise.all(rpcUrls.map((url) => getEarliestTimestampOnChain(url, address)));
+   const found = timestamps.filter((t): t is number => t !== null);
+
+   if (found.length === 0) {
+      return {
+         address,
+         firstTxDate: new Date().toISOString(),
+         firstTxTimestamp: Math.floor(Date.now() / 1000),
+         ageInDays: 0,
+         hasHistory: false
+      };
+   }
+
+   const firstTxTimestamp = Math.min(...found);
+   const firstTxDate = new Date(firstTxTimestamp * 1000).toISOString();
+   const ageInDays = Math.floor((Date.now() / 1000 - firstTxTimestamp) / 86400);
+
+   return {
+      address,
+      firstTxDate,
+      firstTxTimestamp,
+      ageInDays,
+      hasHistory: true
+   };
+}
+
+/**
  * Convenience helper — returns just the wallet age in days.
- * Returns 0 if the wallet has no history, the address is invalid,
- * or the API call fails.
+ * Returns 0 if the wallet has no history, address is invalid,
+ * or the API key is missing.
  */
 export async function getWalletAgeDays(address: string): Promise<number> {
    const info = await getWalletAgeInfo(address);
@@ -124,11 +180,11 @@ export async function getWalletAgeDays(address: string): Promise<number> {
 }
 
 /**
- * Checks whether a wallet should be considered "new" (i.e. suspicious
- * from a fraud-detection perspective).
+ * Returns true if the wallet should be considered "new" from a
+ * fraud-detection perspective.
  *
- * @param address  - EVM wallet address
- * @param thresholdDays - Age below which a wallet is flagged as new (default 30)
+ * @param address       - EVM wallet address
+ * @param thresholdDays - Age below which wallet is flagged as new (default 30)
  */
 export async function isNewWallet(address: string, thresholdDays = 30): Promise<boolean> {
    const ageDays = await getWalletAgeDays(address);
