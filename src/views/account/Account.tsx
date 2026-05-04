@@ -177,15 +177,6 @@ export default function Account() {
                      </button>
                   ))}
                   <a
-                     href="#account-common-questions"
-                     className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
-                  >
-                     <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
-                        Common Questions
-                     </span>
-                     <ChevronRight />
-                  </a>
-                  <a
                      href="#account-get-in-touch"
                      className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
                   >

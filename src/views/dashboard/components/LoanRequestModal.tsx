@@ -62,7 +62,7 @@ export default function LoanRequestModal({
    };
 
    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-50">
          <section
             ref={clickOutsideRef}
             className="bg-white rounded-2xl shadow-md max-w-md mx-auto flex flex-col relative"
@@ -79,8 +79,8 @@ export default function LoanRequestModal({
             </header>
 
             {showVerify ? (
-               <div className="bg-[#FFD7DD] text-[#D94A5B] text-sm font-semibold flex items-center justify-between px-4 py-2 rounded-t-none rounded-b-md select-none">
-                  <div className="flex items-center gap-2">
+               <div className="flex items-center justify-between gap-2 rounded-b-md bg-[#FFD7DD] px-4 py-2 text-[13px] font-semibold leading-tight text-[#D94A5B] select-none">
+                  <div className="flex min-w-0 items-center gap-2">
                      <i className="fas fa-id-card"></i>
                      <span>Verification Required for Borrowers</span>
                   </div>
@@ -88,7 +88,7 @@ export default function LoanRequestModal({
                      {({ open }) => (
                         <button
                            onClick={open}
-                           className="bg-[#FF5A6E] text-white text-xs font-extrabold rounded-md px-3 py-1 cursor-pointer"
+                           className="shrink-0 cursor-pointer whitespace-nowrap rounded-md bg-[#FF5A6E] px-3 py-1 text-xs font-extrabold text-white"
                         >
                            Click Here
                         </button>
@@ -168,18 +168,20 @@ export default function LoanRequestModal({
                <label className="font-semibold text-gray-800 text-sm" htmlFor="reason">
                   Reason for Borrowing
                </label>
-               <textarea
-                  maxLength={40}
-                  onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}
-                  className="border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-normal resize-none focus:outline-none"
-                  id="reason"
-                  placeholder="My car broke down I need help..."
-                  rows={4}
-                  value={reason}
-               ></textarea>
-               <div className="text-right text-xs text-gray-400 font-normal select-none">{reason.length} / 40</div>
+               <div className="flex flex-col gap-2">
+                  <textarea
+                     maxLength={40}
+                     onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}
+                     className="resize-none rounded-md border border-gray-300 px-4 py-2 text-sm font-normal text-gray-700 focus:outline-none"
+                     id="reason"
+                     placeholder="My car broke down I need help..."
+                     rows={3}
+                     value={reason}
+                  ></textarea>
+                  <div className="text-right text-xs font-normal text-gray-400 select-none">{reason.length} / 40</div>
+               </div>
                <button
-                  className={`${isVerified && !isSubmitting ? 'bg-[#1E56FF]' : 'bg-gray-400 cursor-not-allowed'} text-white font-extrabold text-sm rounded-md py-3 mt-2 w-full`}
+                  className={`${isVerified && !isSubmitting ? 'bg-[#1E56FF]' : 'bg-gray-400 cursor-not-allowed'} w-full rounded-md py-3 text-sm font-extrabold text-white`}
                   type="submit"
                   disabled={!isVerified || isSubmitting}
                >
