@@ -12,6 +12,7 @@ import WalletConnect from '@/app/onboarding/wallet/page';
 import WalletConnected from '@/app/onboarding/wallet/connected/page';
 import OnboardingWelcome from '@/app/onboarding/welcome/page';
 import WorldIdVerification from '@/app/verify-world-id/page';
+import CongratulationsPage from '@/app/onboarding/congratulations/page';
 import BottomNav from '@/components/BottomNav';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
@@ -122,6 +123,7 @@ export default function App() {
             <Route path="/onboarding/welcome" element={<ProtectedRoute><OnboardingWelcome /></ProtectedRoute>} />
             <Route path="/onboarding/wallet" element={<ProtectedRoute><WalletConnect /></ProtectedRoute>} />
             <Route path="/onboarding/wallet/connected" element={<ProtectedRoute><WalletConnected /></ProtectedRoute>} />
+            <Route path="/onboarding/congratulations" element={<ProtectedRoute><CongratulationsPage /></ProtectedRoute>} />
 
             {/* Verification */}
             <Route path="/verify-world-id" element={<ProtectedRoute><RoleGuard><WorldIdVerification /></RoleGuard></ProtectedRoute>} />
