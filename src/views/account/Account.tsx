@@ -177,15 +177,6 @@ export default function Account() {
                      </button>
                   ))}
                   <a
-                     href="#account-common-questions"
-                     className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
-                  >
-                     <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
-                        Common Questions
-                     </span>
-                     <ChevronRight />
-                  </a>
-                  <a
                      href="#account-get-in-touch"
                      className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
                   >
@@ -206,7 +197,7 @@ export default function Account() {
                      <button
                         type="button"
                         onClick={() => navigate('/support')}
-                        className="text-md-b2 font-medium text-md-primary-900"
+                        className="rounded-md-sm px-2 py-1 text-md-b2 font-medium text-md-primary-900 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.96] active:bg-md-primary-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
                      >
                         View More
                      </button>

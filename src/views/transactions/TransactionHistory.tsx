@@ -259,8 +259,9 @@ function EmptyState({ variant }: { variant: 'lender' | 'borrower' }) {
                Your loan activity will appear here once you start borrowing.
             </p>
             <Link
-               to="/dashboard"
-               className="flex items-center justify-center gap-2 bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold px-md-4 py-md-3 rounded-md-lg"
+               to="/request-board?applyLoan=1"
+               state={{ openLoanRequest: true }}
+               className="flex items-center justify-center gap-2 bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold px-md-4 py-md-3 rounded-md-lg transition-all duration-150 hover:brightness-105 active:scale-[0.97] active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
             >
                Request a loan
             </Link>

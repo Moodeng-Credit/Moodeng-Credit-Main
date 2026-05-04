@@ -44,7 +44,8 @@ export default function RequestBoard() {
 }
 
 function RequestBoard$() {
-   const pathname = useLocation().pathname;
+   const location = useLocation();
+   const pathname = location.pathname;
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
@@ -80,6 +81,9 @@ function RequestBoard$() {
    const [customAmount, setCustomAmount] = useState('');
    const [searchLoan, setSearchLoan] = useState('');
    const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(user.cs, user.isWorldId === 'ACTIVE') : 0;
+   const shouldOpenLoanRequest =
+      (location.state as { openLoanRequest?: boolean } | null)?.openLoanRequest === true ||
+      new URLSearchParams(location.search).get('applyLoan') === '1';
 
    const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
    const successModalRef = useClickOutside<HTMLDivElement>(() => setShowPurple(false), showPurple) as RefObject<HTMLDivElement>;
@@ -121,6 +125,27 @@ function RequestBoard$() {
    };
 
    const handleCloseModal = useCallback(() => setShowModal(false), []);
+
+   useEffect(() => {
+      if (!shouldOpenLoanRequest || !isAuthenticated || !isBorrower || !user?.id) return;
+      if ((user.nal || 0) >= (user.mal || 0)) {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
+         navigate(pathname, { replace: true, state: null });
+         return;
+      }
+      setShowModal(true);
+      navigate(pathname, { replace: true, state: null });
+   }, [
+      isAuthenticated,
+      isBorrower,
+      navigate,
+      pathname,
+      shouldOpenLoanRequest,
+      showToastByConfig,
+      user?.id,
+      user?.mal,
+      user?.nal
+   ]);
 
    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -344,19 +369,22 @@ function RequestBoard$() {
 
                   {/* Apply Loan Card — visible for authenticated borrowers, or as CTA for public */}
                   {isAuthenticated && isBorrower ? (
-                     <div className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden">
+                     <div className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3">
                         <div className="flex flex-col gap-4 relative z-10">
-                           <div className="flex flex-col gap-1 max-w-[232px]">
-                              <p className="text-md-h5 font-semibold text-md-heading">Need short-term support?</p>
+                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
+                              <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Need short-term support?</p>
                               <p className="text-md-b2 font-medium text-md-neutral-700">
-                                 Borrow USDC to build trust and
-                                 <br />
-                                 unlock higher loan levels.
+                                 <span className="max-[374px]:hidden">
+                                    Borrow USDC to build trust and
+                                    <br />
+                                    unlock higher loan levels.
+                                 </span>
+                                 <span className="hidden max-[374px]:inline">Borrow USDC to build trust. Unlock higher levels.</span>
                               </p>
                            </div>
                            <button
                               onClick={handleApplyLoanClick}
-                              className="bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold px-md-4 py-md-3 rounded-md-lg w-fit"
+                              className="bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold px-md-4 py-md-3 rounded-md-lg w-fit max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
                            >
                               Apply For A Loan
                            </button>
@@ -364,23 +392,26 @@ function RequestBoard$() {
                         <img
                            src="/hippos/thumb-up-right.png"
                            alt=""
-                           className="absolute right-0 top-0 h-full object-contain pointer-events-none"
+                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:bottom-0 max-[374px]:right-[-42px] max-[374px]:top-auto max-[374px]:h-[76%]"
                         />
                      </div>
                   ) : !isAuthenticated ? (
-                     <div className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden">
+                     <div className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3">
                         <div className="flex flex-col gap-4 relative z-10">
-                           <div className="flex flex-col gap-1 max-w-[232px]">
-                              <p className="text-md-h5 font-semibold text-md-heading">Need short-term support?</p>
+                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
+                              <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Need short-term support?</p>
                               <p className="text-md-b2 font-medium text-md-neutral-700">
-                                 Borrow USDC to build trust and
-                                 <br />
-                                 unlock higher loan levels.
+                                 <span className="max-[374px]:hidden">
+                                    Borrow USDC to build trust and
+                                    <br />
+                                    unlock higher loan levels.
+                                 </span>
+                                 <span className="hidden max-[374px]:inline">Borrow USDC to build trust. Unlock higher levels.</span>
                               </p>
                            </div>
                            <Link
                               to="/sign-up"
-                              className="border border-md-primary-1200 text-md-primary-1200 text-md-b1 font-semibold px-md-4 py-md-3 rounded-md-lg w-fit"
+                              className="border border-md-primary-1200 text-md-primary-1200 text-md-b1 font-semibold px-md-4 py-md-3 rounded-md-lg w-fit max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
                            >
                               Apply For A Loan
                            </Link>
@@ -388,7 +419,7 @@ function RequestBoard$() {
                         <img
                            src="/hippos/thumb-up-right.png"
                            alt=""
-                           className="absolute right-0 top-0 h-full object-contain pointer-events-none"
+                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:bottom-0 max-[374px]:right-[-42px] max-[374px]:top-auto max-[374px]:h-[76%]"
                         />
                      </div>
                   ) : null}

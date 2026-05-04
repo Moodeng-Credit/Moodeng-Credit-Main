@@ -91,9 +91,11 @@ export default function Support() {
                         key={card.label}
                         type="button"
                         onClick={() => navigate(card.path)}
-                        className="flex flex-col items-start gap-md-3 border border-md-neutral-600 rounded-md-input p-md-3 text-left bg-transparent"
+                        className="group flex flex-col items-start gap-md-3 border border-md-neutral-600 rounded-md-input p-md-3 text-left bg-transparent transition-all duration-150 hover:border-md-primary-900 hover:bg-md-primary-100/45 active:scale-[0.985] active:border-md-primary-900 active:bg-md-primary-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
                      >
-                        <CategoryIcon icon={card.icon} />
+                        <div className="transition-transform duration-150 group-active:scale-95">
+                           <CategoryIcon icon={card.icon} />
+                        </div>
                         <div className="flex flex-col gap-md-0 w-full">
                            <div className="flex items-start gap-1">
                               <span className="text-md-h5 font-semibold text-md-heading">{card.label}</span>
@@ -127,7 +129,7 @@ export default function Support() {
                         href={TELEGRAM_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-md-blue-500 rounded-md-input flex items-center justify-center gap-md-1 px-md-4 py-md-2 shadow-md-card"
+                        className="bg-md-blue-500 rounded-md-input flex items-center justify-center gap-md-1 px-md-4 py-md-2 shadow-md-card transition-all duration-150 hover:brightness-105 active:scale-[0.97] active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
                      >
                         <div
                            className="w-5 h-5 bg-md-neutral-100"
@@ -143,7 +145,7 @@ export default function Support() {
                         href={X_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-md-neutral-1700 rounded-md-input flex items-center justify-center gap-md-1 px-md-4 py-md-2 shadow-md-card"
+                        className="bg-md-neutral-1700 rounded-md-input flex items-center justify-center gap-md-1 px-md-4 py-md-2 shadow-md-card transition-all duration-150 hover:brightness-110 active:scale-[0.97] active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
                      >
                         <div
                            className="w-[22px] h-5 bg-md-neutral-100"
