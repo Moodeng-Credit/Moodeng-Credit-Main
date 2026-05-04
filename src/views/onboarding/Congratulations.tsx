@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
 const TELEGRAM_URL =
-   'https://t.me/jimmymoodengcredit?text=Hello%2C%20I%27m%20Jimmy%2C%20co-founder%20of%20Moodeng%20Credit.%20Happy%20to%20help%20you.%20If%20English%20isn%27t%20your%20first%20language%2C%20just%20tell%20me%20and%20we%20can%20use%20Google%20Translate.%20Anything%20you%20need%20to%20know%20about%20the%20platform%20or%20how%20to%20use%20it%2C%20I%20can%20support%20you';
+   'https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more.';
 
 const FACEBOOK_PAGE_URL = 'https://www.facebook.com/profile.php?id=61589106561061';
 const FACEBOOK_COMMUNITY_URL = 'https://www.facebook.com/groups/1593629908540434';
@@ -21,17 +21,17 @@ function ActionRow({ icon, title, subtitle, onClick, noBorder }: ActionRowProps)
       <button
          type="button"
          onClick={onClick}
-         className={`w-full flex gap-[10px] items-center py-md-3 text-left ${!noBorder ? 'border-b border-md-neutral-600' : ''}`}
+         className={`flex w-full items-center gap-[10px] py-3 text-left active:scale-[0.99] ${!noBorder ? 'border-b border-md-neutral-600' : ''}`}
       >
-         <div className="flex flex-1 gap-[10px] h-[52px] items-center min-w-0">
+         <div className="flex min-w-0 flex-1 items-center gap-[10px]">
             {icon}
-            <div className="flex flex-col flex-1 items-start justify-center min-w-0">
-               <p className="text-[16px] font-[510] leading-[24px] tracking-[-0.32px] text-[#0f172b]">{title}</p>
-               <p className="text-[12px] font-bold leading-[18px] tracking-[-0.24px] text-[#45556c]">{subtitle}</p>
+            <div className="flex min-w-0 flex-1 flex-col justify-center">
+               <p className="truncate text-[16px] font-[510] leading-6 tracking-[-0.02em] text-[#0f172b]">{title}</p>
+               <p className="truncate text-[12px] font-normal leading-[18px] tracking-[-0.02em] text-[#45556c]">{subtitle}</p>
             </div>
          </div>
          <span
-            className="block size-6 flex-shrink-0 bg-md-neutral-600"
+            className="block size-6 shrink-0 bg-md-primary-2000"
             style={{
                WebkitMaskImage: "url('/icons/chevron-right.svg')",
                maskImage: "url('/icons/chevron-right.svg')",
@@ -75,34 +75,21 @@ export default function Congratulations() {
    const openExternal = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
 
    return (
-      <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
-         <OnboardingHeader hideBack />
+      <div className="mx-auto flex min-h-screen w-full max-w-[440px] flex-col overflow-hidden rounded-[20px] bg-gradient-to-b from-[#fbfafd] to-white">
+         <OnboardingHeader title="Verify World ID" />
 
-         <div className="flex flex-col flex-1 gap-[20px] p-[20px]">
+         <main className="flex flex-1 flex-col gap-5 px-5 pb-5 pt-3">
+            <img src="/hippos/party.png" alt="Moodeng celebrating" className="h-24 w-[110px] object-contain" />
 
-            {/* Party hippo — export from Figma node 2379:8824 → /public/hippos/party.png. Falls back to thumb-up-right.png until then. */}
-            <img
-               src="/hippos/party.png"
-               alt="Moodeng celebrating"
-               className="w-[110px] h-[96px] object-cover"
-               onError={(e) => { (e.target as HTMLImageElement).src = '/hippos/thumb-up-right.png'; }}
-            />
-
-            {/* Heading */}
-            <div className="flex flex-col gap-[4px]">
-               <h1 className="text-[34px] font-[590] leading-[1.2] tracking-[-1.36px] text-[#040033]">
-                  Congratulations! 🎉
-               </h1>
-               <p className="text-[16px] font-[510] leading-[24px] tracking-[-0.32px] text-[#45556c]">
+            <div className="flex flex-col gap-1">
+               <h1 className="text-[34px] font-[590] leading-[1.2] tracking-[-0.04em] text-[#040033]">Congratulations! 🎉</h1>
+               <p className="text-[16px] font-[510] leading-6 tracking-[-0.02em] text-[#45556c]">
                   Your Moodeng account is fully set up and you&rsquo;re ready to go!
                </p>
             </div>
 
-            {/* What's Next */}
-            <div className="flex flex-col gap-[4px]">
-               <h2 className="text-[18px] font-[590] leading-[1.2] tracking-[-0.72px] text-[#0a0a0a]">
-                  What&rsquo;s Next?
-               </h2>
+            <section className="flex flex-col gap-1">
+               <h2 className="text-[18px] font-[590] leading-[1.2] tracking-[-0.04em] text-[#0a0a0a]">What&apos;s Next?</h2>
                <div className="flex flex-col">
                   <ActionRow
                      icon={<IconBadge color="#155dfc" iconPath="/icons/book-open.svg" />}
@@ -130,14 +117,13 @@ export default function Congratulations() {
                      onClick={() => navigate('/support/getting-started')}
                   />
                </div>
-            </div>
+            </section>
 
-            {/* Explore CTA */}
-            <div className="flex flex-col gap-[8px]">
+            <section className="flex flex-col gap-2">
                <button
                   type="button"
                   onClick={() => navigate('/request-board')}
-                  className="flex items-center justify-center gap-[8px] w-full px-[20px] py-[16px] rounded-[16px] bg-[#6010d2] text-[16px] font-[590] leading-[24px] tracking-[-0.32px] text-[#fdfcfd]"
+                  className="flex w-full items-center justify-center gap-2 rounded-[16px] bg-[#6010d2] px-5 py-4 text-[16px] font-[590] leading-6 tracking-[-0.02em] text-[#fdfcfd] active:scale-[0.99]"
                >
                   Explore the Request Board
                   <span
@@ -154,33 +140,32 @@ export default function Congratulations() {
                      }}
                   />
                </button>
-               <p className="text-[12px] font-bold leading-[18px] tracking-[-0.24px] text-[#62748e] text-center">
+               <p className="px-5 text-center text-[12px] font-normal leading-[18px] tracking-[-0.02em] text-[#62748e]">
                   You can now explore Moodeng Credit and begin your journey with confidence.
                </p>
-            </div>
+            </section>
 
-            {/* Voices Against Unfair Loans card */}
-            <div className="flex gap-[12px] items-start rounded-[16px] border border-md-neutral-600 bg-md-neutral-300 overflow-hidden">
+            <section className="flex w-full items-start gap-3 overflow-hidden rounded-[16px] border border-md-neutral-600 bg-md-neutral-300">
                <img
-                  src="/hippos/community.png"
+                  src="/hippos/thinking.png"
                   alt="Moodeng community hippo"
-                  className="w-[136px] h-[120px] object-bottom flex-shrink-0"
+                  className="h-[120px] w-[136px] shrink-0 object-cover object-center"
                />
-               <div className="flex flex-col gap-[8px] items-start p-[16px] flex-1 min-w-0">
-                  <div className="flex flex-col">
-                     <p className="text-[16px] font-[510] leading-[24px] tracking-[-0.32px] text-[#0f172b]">
+               <div className="flex min-w-0 flex-1 flex-col items-start gap-2 p-4">
+                  <div className="flex w-full flex-col">
+                     <p className="truncate text-[16px] font-[510] leading-6 tracking-[-0.02em] text-[#0f172b]">
                         Voices Against Unfair Loans
                      </p>
-                     <p className="text-[12px] font-bold leading-[18px] tracking-[-0.24px] text-[#45556c]">
-                        Join Our Facebook Community. Connect with other Moodeng Credit users.
+                     <p className="line-clamp-2 text-[12px] font-normal leading-[18px] tracking-[-0.02em] text-[#45556c]">
+                        Join Our Facebook Community. Connect with other Moodeng Credit users
                      </p>
                   </div>
                   <button
                      type="button"
                      onClick={() => openExternal(FACEBOOK_COMMUNITY_URL)}
-                     className="flex items-center gap-[4px] px-[12px] py-[8px] rounded-[12px] border border-[#6010d2] text-[14px] font-[590] leading-[21px] tracking-[-0.28px] text-[#6010d2] whitespace-nowrap"
+                     className="flex items-center gap-1 rounded-[12px] border border-[#6010d2] px-3 py-2 text-[14px] font-[590] leading-[21px] tracking-[-0.02em] text-[#6010d2] active:scale-[0.98]"
                   >
-                     Join Our Community
+                     <span className="whitespace-nowrap">Join Our Community</span>
                      <span
                         className="block size-[18px] bg-[#6010d2] flex-shrink-0"
                         style={{
@@ -196,9 +181,8 @@ export default function Congratulations() {
                      />
                   </button>
                </div>
-            </div>
-
-         </div>
+            </section>
+         </main>
       </div>
    );
 }
