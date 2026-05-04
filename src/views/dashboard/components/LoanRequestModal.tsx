@@ -1,11 +1,23 @@
 
 
-import { type ChangeEvent, type FormEvent, type PointerEvent, type RefObject, useRef, useState } from 'react';
+import { type ChangeEvent, type FormEvent, type PointerEvent, type RefObject, useEffect, useRef, useState } from 'react';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 import { type User } from '@/types/authTypes';
+
+export type AppliedReferralCode = {
+   id: string;
+   code: string;
+   boostAmount: number;
+};
+
+const REFERRAL_TEST_CODES: Record<string, AppliedReferralCode> = {
+   BOOST5: { id: 'referral-test-boost5', code: 'BOOST5', boostAmount: 5 },
+   TEST123: { id: 'referral-test-test123', code: 'TEST123', boostAmount: 5 }
+};
 
 interface LoanRequestModalProps {
    clickOutsideRef: RefObject<HTMLDivElement>;
@@ -23,7 +35,9 @@ interface LoanRequestModalProps {
    today: string;
    handleDays: (e: ChangeEvent<HTMLInputElement>) => void;
    handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
+   onReferralApplied: (referral: AppliedReferralCode | null) => void;
    isSubmitting: boolean;
+   startOnReferralStep?: boolean;
 }
 
 export default function LoanRequestModal({
@@ -42,12 +56,29 @@ export default function LoanRequestModal({
    today,
    handleDays,
    handleSubmit,
-   isSubmitting
+   onReferralApplied,
+   isSubmitting,
+   startOnReferralStep = true
 }: LoanRequestModalProps) {
-   const dateInputRef = useRef<HTMLInputElement | null>(null);
    const dismissGestureRef = useRef<{ x: number; y: number; mode: 'down' | 'side' } | null>(null);
    const dismissOffsetRef = useRef({ x: 0, y: 0 });
    const [dismissOffset, setDismissOffset] = useState({ x: 0, y: 0 });
+   const [showReferralStep, setShowReferralStep] = useState(startOnReferralStep);
+   const [referralCode, setReferralCode] = useState('');
+   const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
+   const [referralCodeError, setReferralCodeError] = useState('');
+   const [isApplyingReferralCode, setIsApplyingReferralCode] = useState(false);
+
+   useEffect(() => {
+      if (!isOpen) return;
+
+      setShowReferralStep(startOnReferralStep);
+      setReferralCode('');
+      setAppliedReferral(null);
+      setReferralCodeError('');
+      setIsApplyingReferralCode(false);
+      onReferralApplied(null);
+   }, [isOpen, onReferralApplied, startOnReferralStep]);
 
    if (!isOpen) return null;
 
@@ -55,13 +86,96 @@ export default function LoanRequestModal({
    const modalWidth = isVerified ? '400px' : '320px';
    const limitAmount = getEffectiveCreditLimit(user.cs, isVerified);
    const selectedDate = days ? days.slice(0, 10) : '';
+   const hasReferralCode = referralCode.trim().length > 0;
+   const hasAppliedReferralCode = appliedReferral !== null;
+   const hasReferralCodeError = referralCodeError.length > 0;
+   const isReferralTestMode = import.meta.env.DEV && new URLSearchParams(window.location.search).has('referralTest');
+   const referralPrimaryActionText = hasAppliedReferralCode ? 'Continue' : hasReferralCode ? 'Apply code' : 'Skip';
 
-   const openDatePicker = () => {
-      const input = dateInputRef.current;
-      if (!input) return;
+   const formatReferralBoost = (boostAmount: number) => {
+      const amount = Number(boostAmount);
+      return Number.isInteger(amount) ? amount.toFixed(0) : amount.toFixed(2);
+   };
 
-      input.focus();
-      input.showPicker?.();
+   const handleReferralCodeChange = (value: string) => {
+      setReferralCode(value);
+      setReferralCodeError('');
+
+      if (appliedReferral && value.trim().toUpperCase() !== appliedReferral.code) {
+         setAppliedReferral(null);
+         onReferralApplied(null);
+      }
+   };
+
+   const applyReferralCode = async (): Promise<boolean> => {
+      const cleanCode = referralCode.trim().toUpperCase();
+
+      if (!cleanCode) return false;
+
+      setReferralCode(cleanCode);
+      setIsApplyingReferralCode(true);
+
+      try {
+         if (isReferralTestMode) {
+            const testReferral = REFERRAL_TEST_CODES[cleanCode];
+
+            if (!testReferral) {
+               setAppliedReferral(null);
+               onReferralApplied(null);
+               setReferralCodeError('Referral code incorrect. If you have issues, contact support.');
+               return false;
+            }
+
+            setAppliedReferral(testReferral);
+            onReferralApplied(testReferral);
+            setReferralCodeError('');
+            return true;
+         }
+
+         const supabase = getSupabaseBrowserClient();
+         const { data, error } = await supabase
+            .from('referral_codes')
+            .select('id, code, boost_amount')
+            .eq('code', cleanCode)
+            .maybeSingle();
+
+         if (error) throw error;
+
+         if (!data) {
+            setAppliedReferral(null);
+            onReferralApplied(null);
+            setReferralCodeError('Referral code incorrect. If you have issues, contact support.');
+            return false;
+         }
+
+         const nextReferral = {
+            id: data.id,
+            code: data.code,
+            boostAmount: Number(data.boost_amount)
+         };
+
+         setAppliedReferral(nextReferral);
+         onReferralApplied(nextReferral);
+         setReferralCodeError('');
+         return true;
+      } catch (error) {
+         console.error('Error validating referral code:', (error as Error).message || error);
+         setAppliedReferral(null);
+         onReferralApplied(null);
+         setReferralCodeError("We couldn't check that code. Please try again.");
+         return false;
+      } finally {
+         setIsApplyingReferralCode(false);
+      }
+   };
+
+   const continueToLoanForm = async () => {
+      if (hasReferralCode && !hasAppliedReferralCode) {
+         const didApply = await applyReferralCode();
+         if (!didApply) return;
+      }
+
+      setShowReferralStep(false);
    };
 
    const startDismissGesture = (event: PointerEvent<HTMLElement>, mode: 'down' | 'side') => {
@@ -130,10 +244,16 @@ export default function LoanRequestModal({
                onPointerUp={endDismissGesture}
                onPointerCancel={endDismissGesture}
             >
-               <h2 className="text-white font-extrabold text-lg leading-6">Set Your Own Terms</h2>
-               <button aria-label="Help info" className="text-white text-sm font-semibold focus:outline-none" type="button">
-                  <i className="fas fa-question-circle"></i>
-               </button>
+               {showReferralStep ? (
+                  <h2 className="text-white font-extrabold text-lg leading-6">Referral Boost</h2>
+               ) : (
+                  <>
+                     <h2 className="text-white font-extrabold text-lg leading-6">Set Your Own Terms</h2>
+                     <button aria-label="Help info" className="text-white text-sm font-semibold focus:outline-none" type="button">
+                        <i className="fas fa-question-circle"></i>
+                     </button>
+                  </>
+               )}
             </header>
 
             {showVerify ? (
@@ -155,7 +275,75 @@ export default function LoanRequestModal({
                </div>
             ) : null}
 
+            {showReferralStep ? (
+               <div className="p-6 flex flex-col gap-5 text-gray-800 text-sm font-semibold">
+                  <div className="flex items-start gap-4">
+                     <div className="min-w-0 flex-1">
+                        <span className="inline-flex rounded-md bg-[#E6E9FF] px-2 py-1 text-xs font-semibold text-[#1E56FF]">Optional</span>
+                        <h3 className="mt-3 text-lg font-extrabold leading-6 text-gray-800">Have a referral code?</h3>
+                        <p className="mt-1 text-sm font-normal leading-5 text-gray-500">Add it before you apply for a higher starting limit.</p>
+                     </div>
+                     <img src="/hippos/referral-boost.png" alt="" className="h-20 w-20 shrink-0 object-contain" />
+                  </div>
+
+                  <div className="inline-flex w-fit items-center gap-2 rounded-md bg-[#D4F4DD] px-3 py-2 text-sm font-semibold text-[#2B9B5F]">
+                     <i className="fas fa-check"></i>
+                     <span>+$5 Credit Limit Boost</span>
+                  </div>
+
+                  <label className="sr-only" htmlFor="referral-code">
+                     Referral code
+                  </label>
+                  <div
+                     className={`flex items-center gap-3 rounded-md border bg-white px-4 py-2 ${
+                        hasReferralCodeError ? 'border-[#D94A5B]' : hasAppliedReferralCode ? 'border-[#2B9B5F]' : 'border-gray-300'
+                     }`}
+                  >
+                     <i className={`fas fa-ticket-alt ${hasReferralCodeError ? 'text-[#D94A5B]' : 'text-[#1E56FF]'}`}></i>
+                     <input
+                        id="referral-code"
+                        value={referralCode}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => handleReferralCodeChange(event.target.value)}
+                        placeholder="Enter code"
+                        className="min-w-0 flex-1 bg-transparent text-sm font-normal text-gray-700 placeholder:text-gray-400 focus:outline-none"
+                        type="text"
+                     />
+                  </div>
+
+                  {hasReferralCodeError ? (
+                     <div className="flex items-center gap-2 rounded-md bg-[#FFF1F2] px-3 py-2 text-xs font-semibold text-[#D94A5B]">
+                        <i className="fas fa-circle-exclamation"></i>
+                        <span>{referralCodeError}</span>
+                     </div>
+                  ) : hasAppliedReferralCode ? (
+                     <div className="flex items-center gap-2 rounded-md bg-[#F0FDF4] px-3 py-2 text-xs font-semibold text-[#2B9B5F]">
+                        <i className="fas fa-check-circle"></i>
+                        <span>
+                           Code {appliedReferral.code} applied: +${formatReferralBoost(appliedReferral.boostAmount)} starting limit
+                        </span>
+                     </div>
+                  ) : null}
+
+                  <button
+                     className="w-full rounded-md bg-[#1E56FF] py-3 text-sm font-extrabold text-white hover:opacity-90 disabled:opacity-70"
+                     type="button"
+                     disabled={isApplyingReferralCode}
+                     onClick={continueToLoanForm}
+                  >
+                     {isApplyingReferralCode ? 'Checking code...' : referralPrimaryActionText}
+                  </button>
+                  <p className="text-center text-xs font-medium text-gray-400">No code? You can still apply as normal.</p>
+               </div>
+            ) : (
             <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 text-gray-800 text-sm font-semibold">
+               {hasAppliedReferralCode ? (
+                  <div className="flex items-center gap-2 rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm font-bold text-[#2B9B5F]">
+                     <i className="fas fa-check-circle"></i>
+                     <span>
+                        Referral {appliedReferral.code} added: +${formatReferralBoost(appliedReferral.boostAmount)} starting limit
+                     </span>
+                  </div>
+               ) : null}
                <div className="flex justify-between items-center">
                   <label className="text-gray-800 font-semibold text-sm" htmlFor="borrow-amount">
                      Borrow amount
@@ -188,7 +376,7 @@ export default function LoanRequestModal({
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setTotalRepaymentAmount(e.target.value)}
                   className="border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
                   id="repayment-amount"
-                  placeholder="Must be more than Borrowed amount..."
+                  placeholder="Must be more than borrowed amount..."
                   type="text"
                   value={totalRepaymentAmount}
                />
@@ -202,7 +390,6 @@ export default function LoanRequestModal({
                      </button>
                      <div className="flex flex-1 overflow-hidden rounded-md border border-gray-300">
                         <input
-                           ref={dateInputRef}
                            onChange={handleDays}
                            placeholder="DD/MM/YY"
                            type="date"
@@ -211,14 +398,6 @@ export default function LoanRequestModal({
                            id="repaymentDate"
                            className="min-w-0 flex-1 px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
                         />
-                        <button
-                           aria-label="Open repayment date calendar"
-                           className="flex items-center justify-center border-l border-gray-300 px-3 text-gray-700"
-                           type="button"
-                           onClick={openDatePicker}
-                        >
-                           <i className="far fa-calendar-alt"></i>
-                        </button>
                      </div>
                   </div>
                   <p className="text-xs text-gray-500">Date will be set to midnight UTC+00</p>
@@ -246,6 +425,7 @@ export default function LoanRequestModal({
                   {isSubmitting ? 'Submitting...' : 'Make Your Request'}
                </button>
             </form>
+            )}
          </section>
       </div>
    );

@@ -72,6 +72,9 @@ export type Database = {
           repayment_status:
             | Database["public"]["Enums"]["repayment_status"]
             | null
+          referral_boost_amount: number | null
+          referral_code: string | null
+          referral_code_id: string | null
           total_repayment_amount: number
           tracking_id: string
           updated_at: string | null
@@ -94,6 +97,9 @@ export type Database = {
           repayment_status?:
             | Database["public"]["Enums"]["repayment_status"]
             | null
+          referral_boost_amount?: number | null
+          referral_code?: string | null
+          referral_code_id?: string | null
           total_repayment_amount: number
           tracking_id: string
           updated_at?: string | null
@@ -116,11 +122,21 @@ export type Database = {
           repayment_status?:
             | Database["public"]["Enums"]["repayment_status"]
             | null
+          referral_boost_amount?: number | null
+          referral_code?: string | null
+          referral_code_id?: string | null
           total_repayment_amount?: number
           tracking_id?: string
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "loans_referral_code_id_fkey"
+            columns: ["referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "referral_codes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "loans_borrower_user_id_fkey"
             columns: ["borrower_user_id"]
@@ -136,6 +152,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referral_codes: {
+        Row: {
+          boost_amount: number
+          code: string
+          created_at: string
+          current_uses: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          updated_at: string
+        }
+        Insert: {
+          boost_amount?: number
+          code: string
+          created_at?: string
+          current_uses?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          updated_at?: string
+        }
+        Update: {
+          boost_amount?: number
+          code?: string
+          created_at?: string
+          current_uses?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       point_events: {
         Row: {
