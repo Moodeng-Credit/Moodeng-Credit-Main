@@ -151,10 +151,10 @@ export default function FilterSidebar({
 
    return (
       <div className="fixed inset-0 z-[70] flex items-end justify-center">
-         <button aria-label="Close filters" className="absolute inset-0 bg-black/40" type="button" onClick={onClose} />
+         <button aria-label="Close filters" className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" type="button" onClick={onClose} />
 
          <aside
-            className="relative w-full sm:max-w-[440px] max-h-[85vh] rounded-t-[24px] sm:rounded-[24px] sm:mb-6 bg-md-neutral-100 shadow-2xl flex flex-col overflow-hidden animate-[filterSheetUp_0.25s_ease-out] transition-transform duration-150 ease-out"
+            className="relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-[24px] border border-white/70 bg-gradient-to-b from-[#fdfbff] via-white to-white shadow-[0_-14px_42px_rgba(96,16,210,0.16),0_-2px_12px_rgba(0,0,0,0.08)] transition-transform duration-150 ease-out animate-[filterSheetUp_0.25s_ease-out] sm:mb-6 sm:max-w-[440px] sm:rounded-[24px]"
             style={{ transform: `translate(${sideSwipeOffset}px, ${dragOffset}px)` }}
          >
             <style>
@@ -176,7 +176,7 @@ export default function FilterSidebar({
                role="presentation"
             />
 
-            <div className="bg-md-neutral-100 shrink-0">
+            <div className="shrink-0 bg-gradient-to-b from-[#fdfbff] via-white to-white">
                <div
                   className="touch-none cursor-grab select-none pb-4 pt-3 active:cursor-grabbing"
                   onPointerDown={handleDragStart}
@@ -184,9 +184,9 @@ export default function FilterSidebar({
                   onPointerUp={handleDragEnd}
                   onPointerCancel={handleDragEnd}
                >
-                  <div className="w-10 h-1 bg-md-neutral-500 rounded-full mx-auto" />
+                  <div className="mx-auto h-1 w-10 rounded-full bg-gradient-to-r from-[#b8a4f5] to-md-primary-1200 shadow-[0_1px_3px_rgba(96,16,210,0.22)]" />
                </div>
-               <h2 className="text-md-h5 font-semibold text-md-heading px-md-4 mb-4">Filters</h2>
+               <h2 className="mb-4 px-md-4 text-md-h5 font-semibold text-md-heading [text-shadow:0_1px_2px_rgba(0,0,0,0.03)]">Filters</h2>
 
                <div className="flex gap-1.5 px-md-4 pb-3 overflow-x-auto">
                   {tabs.map((tab) => (
@@ -194,10 +194,10 @@ export default function FilterSidebar({
                         key={tab.id}
                         type="button"
                         onClick={() => setActiveTab(tab.id)}
-                        className={`shrink-0 px-3 py-1.5 rounded-md-sm border text-md-b3 font-medium whitespace-nowrap transition-all duration-150 active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
+                        className={`shrink-0 rounded-[10px] px-3.5 py-2 text-md-b3 font-medium whitespace-nowrap transition-all duration-150 active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
                            activeTab === tab.id
-                              ? 'bg-md-primary-100 text-md-primary-1200 border-md-primary-1200 shadow-sm'
-                              : 'bg-md-neutral-100 text-md-neutral-1100 border-md-neutral-600 hover:bg-md-neutral-200 hover:border-md-neutral-800'
+                              ? 'bg-gradient-to-br from-[#7028e4] to-md-primary-1200 text-white shadow-[0_2px_8px_rgba(96,16,210,0.25),inset_0_1px_0_rgba(255,255,255,0.25)]'
+                              : 'bg-white text-md-neutral-1100 shadow-[0_1px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.92)]'
                         }`}
                      >
                         {tab.label}
@@ -206,7 +206,7 @@ export default function FilterSidebar({
                </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-md-4 pt-4 pb-6 border-t border-md-neutral-300">
+            <div className="flex-1 overflow-y-auto border-t border-[#eee8f7] px-md-4 pb-6 pt-4">
                {activeTab === 'amount' && (
                   <FilterSection title="Credit Limit">
                      <div className="flex flex-wrap gap-2">
@@ -268,18 +268,18 @@ export default function FilterSidebar({
                )}
             </div>
 
-            <div className="shrink-0 bg-md-neutral-100 px-md-4 py-4 border-t border-md-neutral-400 flex gap-3">
+            <div className="flex shrink-0 gap-3 border-t border-[#eee8f7] bg-gradient-to-t from-white via-white to-white/90 px-md-4 py-4 shadow-[0_-4px_14px_rgba(0,0,0,0.04)]">
                <button
                   type="button"
                   onClick={resetFilters}
-                  className="flex-1 rounded-md-lg border border-md-neutral-600 px-5 py-3 text-md-b1 font-medium text-md-heading transition-all duration-150 hover:bg-md-neutral-200 hover:border-md-neutral-800 active:scale-[0.98] active:bg-md-neutral-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
+                  className="flex-1 rounded-[12px] bg-white px-5 py-3 text-md-b1 font-medium text-md-heading shadow-[0_2px_6px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] transition-all duration-150 hover:shadow-[0_3px_10px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
                >
                   Reset
                </button>
                <button
                   type="button"
                   onClick={applyFilters}
-                  className="flex-1 rounded-md-lg bg-md-primary-1200 px-5 py-3 text-md-b1 font-medium text-md-neutral-100 transition-all duration-150 hover:brightness-95 active:scale-[0.98] active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
+                  className="flex-1 rounded-[12px] bg-gradient-to-br from-[#7028e4] to-md-primary-1200 px-5 py-3 text-md-b1 font-medium text-white shadow-[0_4px_12px_rgba(96,16,210,0.35),inset_0_1px_0_rgba(255,255,255,0.25)] transition-all duration-150 hover:shadow-[0_6px_16px_rgba(96,16,210,0.42),inset_0_1px_0_rgba(255,255,255,0.25)] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
                >
                   Apply
                </button>
@@ -292,7 +292,7 @@ export default function FilterSidebar({
 function FilterSection({ title, children }: { title: string; children: ReactNode }) {
    return (
       <div>
-         <h3 className="text-md-b1 font-normal text-md-heading mb-3">{title}</h3>
+         <h3 className="mb-3 text-md-b1 font-normal text-md-heading">{title}</h3>
          {children}
       </div>
    );
@@ -303,10 +303,10 @@ function FilterChip({ label, selected, onClick }: { label: string; selected: boo
       <button
          type="button"
          onClick={onClick}
-         className={`px-3.5 py-2 rounded-md-sm border text-md-b3 font-normal transition-all duration-150 active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
+         className={`rounded-[10px] px-4 py-2.5 text-md-b3 font-normal transition-all duration-150 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
             selected
-               ? 'bg-md-primary-100 text-md-primary-1200 border-md-primary-1200 shadow-sm'
-               : 'bg-md-neutral-100 text-md-neutral-1100 border-md-neutral-600 hover:bg-md-neutral-200 hover:border-md-neutral-800'
+               ? 'scale-[1.02] bg-gradient-to-br from-[#f5f0ff] to-[#ede5ff] text-md-primary-1200 shadow-[0_2px_8px_rgba(96,16,210,0.2),inset_0_-1px_0_rgba(96,16,210,0.15),inset_0_1px_0_rgba(255,255,255,0.86)]'
+               : 'bg-white text-md-neutral-1100 shadow-[0_1px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.92)]'
          }`}
       >
          {label}
