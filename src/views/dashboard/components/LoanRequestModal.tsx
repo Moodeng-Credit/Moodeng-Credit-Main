@@ -1,6 +1,6 @@
 
 
-import { type ChangeEvent, type FormEvent, type RefObject } from 'react';
+import { type ChangeEvent, type FormEvent, type RefObject, useRef } from 'react';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
@@ -44,11 +44,22 @@ export default function LoanRequestModal({
    handleSubmit,
    isSubmitting
 }: LoanRequestModalProps) {
+   const dateInputRef = useRef<HTMLInputElement | null>(null);
+
    if (!isOpen) return null;
 
    const isVerified = !showVerify;
    const modalWidth = isVerified ? '400px' : '320px';
    const limitAmount = getEffectiveCreditLimit(user.cs, isVerified);
+   const selectedDate = days ? days.slice(0, 10) : '';
+
+   const openDatePicker = () => {
+      const input = dateInputRef.current;
+      if (!input) return;
+
+      input.focus();
+      input.showPicker?.();
+   };
 
    return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -131,33 +142,28 @@ export default function LoanRequestModal({
                            ? `${Math.ceil((new Date(days).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} Days`
                            : '5 Days'}
                      </button>
-                     {isVerified ? (
+                     <div className="flex flex-1 overflow-hidden rounded-md border border-gray-300">
                         <input
+                           ref={dateInputRef}
                            onChange={handleDays}
                            placeholder="DD/MM/YY"
                            type="date"
                            min={today}
+                           value={selectedDate}
                            id="repaymentDate"
-                           className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
+                           className="min-w-0 flex-1 px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
                         />
-                     ) : (
-                        <>
-                           <input
-                              className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
-                              placeholder="DD/MM/YY"
-                              type="text"
-                           />
-                           <button
-                              aria-label="Calendar"
-                              className="flex items-center justify-center border border-gray-300 rounded-md px-3 text-gray-700"
-                              type="button"
-                           >
-                              <i className="far fa-calendar-alt"></i>
-                           </button>
-                        </>
-                     )}
+                        <button
+                           aria-label="Open repayment date calendar"
+                           className="flex items-center justify-center border-l border-gray-300 px-3 text-gray-700"
+                           type="button"
+                           onClick={openDatePicker}
+                        >
+                           <i className="far fa-calendar-alt"></i>
+                        </button>
+                     </div>
                   </div>
-                  {isVerified ? <p className="text-xs text-gray-500">Date will be set to midnight UTC+00</p> : null}
+                  <p className="text-xs text-gray-500">Date will be set to midnight UTC+00</p>
                </div>
                <label className="font-semibold text-gray-800 text-sm" htmlFor="reason">
                   Reason for Borrowing
