@@ -321,15 +321,21 @@ const UserProfile = () => {
                <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-4">
                      <span className="text-md-h5 font-semibold text-md-heading">Loan Summary</span>
-                     <span
-                        className={`inline-flex items-center justify-center rounded-full px-3 py-1.5 shadow-sm ${
-                           isGoodStanding ? 'bg-gradient-to-r from-[#d4f4e2] to-[#e8f9f0]' : 'bg-red-50'
-                        }`}
-                     >
-                        <span className={`text-[11px] leading-none font-semibold ${isGoodStanding ? 'text-[#059669]' : 'text-[#ef4444]'}`}>
-                           {isGoodStanding ? 'Good Standing' : 'Defaults Present'}
+                     {isGoodStanding ? (
+                        <span className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#d4f4e2] to-[#e8f9f0] px-3 py-1.5 shadow-sm">
+                           <span className="text-[11px] font-semibold leading-none text-[#059669]">Good Standing</span>
                         </span>
-                     </span>
+                     ) : (
+                        <button
+                           type="button"
+                           onClick={() => setIsDefaultHistorySheetOpen(true)}
+                           className="inline-flex items-center justify-center rounded-full bg-red-50 px-3 py-1.5 shadow-sm transition-opacity active:opacity-70"
+                        >
+                           <span className="text-[11px] font-semibold leading-none text-[#ef4444]">
+                              {defaultCount} {defaultCount === 1 ? 'Default' : 'Defaults'}
+                           </span>
+                        </button>
+                     )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-[14px]">
