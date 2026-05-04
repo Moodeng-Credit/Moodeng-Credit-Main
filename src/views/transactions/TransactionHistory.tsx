@@ -445,7 +445,7 @@ export default function TransactionHistory() {
                      <button
                         ref={filterBtnRef}
                         onClick={handleFilterToggle}
-                        className="w-[48px] h-[48px] rounded-[12px] flex items-center justify-center border border-md-primary-1200"
+                        className="w-[48px] h-[48px] rounded-[12px] flex items-center justify-center border border-md-primary-1200 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.96] active:bg-md-primary-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
                         aria-label="Filter"
                      >
                         <img src="/icons/filter.png" alt="Filter" className="w-6 h-6 object-contain" />
