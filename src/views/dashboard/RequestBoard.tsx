@@ -44,7 +44,8 @@ export default function RequestBoard() {
 }
 
 function RequestBoard$() {
-   const pathname = useLocation().pathname;
+   const location = useLocation();
+   const pathname = location.pathname;
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
@@ -80,6 +81,9 @@ function RequestBoard$() {
    const [customAmount, setCustomAmount] = useState('');
    const [searchLoan, setSearchLoan] = useState('');
    const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(user.cs, user.isWorldId === 'ACTIVE') : 0;
+   const shouldOpenLoanRequest =
+      (location.state as { openLoanRequest?: boolean } | null)?.openLoanRequest === true ||
+      new URLSearchParams(location.search).get('applyLoan') === '1';
 
    const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
    const successModalRef = useClickOutside<HTMLDivElement>(() => setShowPurple(false), showPurple) as RefObject<HTMLDivElement>;
@@ -121,6 +125,27 @@ function RequestBoard$() {
    };
 
    const handleCloseModal = useCallback(() => setShowModal(false), []);
+
+   useEffect(() => {
+      if (!shouldOpenLoanRequest || !isAuthenticated || !isBorrower || !user?.id) return;
+      if ((user.nal || 0) >= (user.mal || 0)) {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
+         navigate(pathname, { replace: true, state: null });
+         return;
+      }
+      setShowModal(true);
+      navigate(pathname, { replace: true, state: null });
+   }, [
+      isAuthenticated,
+      isBorrower,
+      navigate,
+      pathname,
+      shouldOpenLoanRequest,
+      showToastByConfig,
+      user?.id,
+      user?.mal,
+      user?.nal
+   ]);
 
    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();

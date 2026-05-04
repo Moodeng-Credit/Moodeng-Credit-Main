@@ -197,7 +197,7 @@ export default function Account() {
                      <button
                         type="button"
                         onClick={() => navigate('/support')}
-                        className="text-md-b2 font-medium text-md-primary-900"
+                        className="rounded-md-sm px-2 py-1 text-md-b2 font-medium text-md-primary-900 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.96] active:bg-md-primary-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
                      >
                         View More
                      </button>

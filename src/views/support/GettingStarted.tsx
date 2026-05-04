@@ -1,8 +1,11 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
 import SupportHeader from '@/views/support/components/SupportHeader';
 import { DEMO_VIDEO_ID, ICON_MASK_BASE } from '@/views/support/constants';
+import type { RootState } from '@/store/store';
 
 interface BasicsItem {
    title: string;
@@ -58,6 +61,22 @@ function ChevronRight() {
 
 export default function GettingStarted() {
    const navigate = useNavigate();
+   const user = useSelector((state: RootState) => state.auth.user);
+   const isLender = user?.userRole === 'lender';
+   const basics = useMemo(
+      () =>
+         BASICS.map((item) =>
+            item.title === 'Browse Benefits' && isLender
+               ? {
+                    ...item,
+                    title: 'Lender Benefits',
+                    description: 'See why lending matters',
+                    path: '/whylend'
+                 }
+               : item
+         ),
+      [isLender]
+   );
 
    return (
       <div className="min-h-screen bg-md-neutral-200">
@@ -67,13 +86,13 @@ export default function GettingStarted() {
             <div className="flex flex-col gap-md-4 p-md-4">
                <div className="flex flex-col">
                   <h2 className="text-md-h4 font-semibold text-md-heading tracking-[-0.96px] pb-md-2">Learn the Moodeng basics</h2>
-                  {BASICS.map((item, idx) => (
+                  {basics.map((item, idx) => (
                      <button
                         key={item.title}
                         type="button"
                         onClick={() => navigate(item.path)}
                         className={`flex items-center gap-md-2 py-md-2 text-left bg-transparent ${
-                           idx < BASICS.length - 1 ? 'border-b border-md-neutral-600' : ''
+                           idx < basics.length - 1 ? 'border-b border-md-neutral-600' : ''
                         }`}
                      >
                         <div className={`${item.bg} rounded-[10px] w-8 h-8 shrink-0 flex items-center justify-center`}>
