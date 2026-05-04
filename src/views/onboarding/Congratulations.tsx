@@ -70,6 +70,10 @@ function IconBadge({ color, iconPath, rounded }: { color: string; iconPath: stri
    );
 }
 
+function ImageIconBadge({ src }: { src: string }) {
+   return <img src={src} alt="" className="size-8 shrink-0" />;
+}
+
 export default function Congratulations() {
    const navigate = useNavigate();
    const openExternal = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
@@ -98,7 +102,7 @@ export default function Congratulations() {
                      onClick={() => navigate('/support/guides')}
                   />
                   <ActionRow
-                     icon={<IconBadge color="linear-gradient(180deg, #2aabee 0%, #229ed9 100%)" iconPath="/icons/send.svg" rounded />}
+                     icon={<ImageIconBadge src="/icons/telegram-classic-filled.png" />}
                      title="Get Help via Telegram"
                      subtitle="Message us for wallet help, deposits, or questions"
                      onClick={() => openExternal(TELEGRAM_URL)}
