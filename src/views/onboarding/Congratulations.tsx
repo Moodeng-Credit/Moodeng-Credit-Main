@@ -149,13 +149,11 @@ export default function Congratulations() {
                </p>
             </section>
 
-            <section className="flex w-full items-start gap-3 overflow-hidden rounded-[16px] border border-md-neutral-600 bg-md-neutral-300">
-               <img
-                  src="/hippos/thinking.png"
-                  alt="Moodeng community hippo"
-                  className="h-[120px] w-[136px] shrink-0 object-cover object-center"
-               />
-               <div className="flex min-w-0 flex-1 flex-col items-start gap-2 p-4">
+            <section className="flex min-h-[136px] w-full items-end gap-3 overflow-hidden rounded-[16px] border border-md-neutral-600 bg-md-neutral-300">
+               <div className="flex h-[136px] w-[144px] shrink-0 items-end justify-center overflow-hidden">
+                  <img src="/hippos/thinking.png" alt="Moodeng community hippo" className="h-[132px] w-auto object-contain object-bottom" />
+               </div>
+               <div className="flex min-w-0 flex-1 flex-col items-start gap-2 self-center py-4 pr-4">
                   <div className="flex w-full flex-col">
                      <p className="truncate text-[16px] font-[510] leading-6 tracking-[-0.02em] text-[#0f172b]">
                         Voices Against Unfair Loans
