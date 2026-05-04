@@ -1,6 +1,6 @@
 
 
-import { type ChangeEvent, type FormEvent, type RefObject, useRef } from 'react';
+import { type ChangeEvent, type FormEvent, type PointerEvent, type RefObject, useRef, useState } from 'react';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
@@ -45,6 +45,9 @@ export default function LoanRequestModal({
    isSubmitting
 }: LoanRequestModalProps) {
    const dateInputRef = useRef<HTMLInputElement | null>(null);
+   const dismissGestureRef = useRef<{ x: number; y: number; mode: 'down' | 'side' } | null>(null);
+   const dismissOffsetRef = useRef({ x: 0, y: 0 });
+   const [dismissOffset, setDismissOffset] = useState({ x: 0, y: 0 });
 
    if (!isOpen) return null;
 
@@ -61,17 +64,72 @@ export default function LoanRequestModal({
       input.showPicker?.();
    };
 
+   const startDismissGesture = (event: PointerEvent<HTMLElement>, mode: 'down' | 'side') => {
+      dismissGestureRef.current = { x: event.clientX, y: event.clientY, mode };
+      dismissOffsetRef.current = { x: 0, y: 0 };
+      event.currentTarget.setPointerCapture(event.pointerId);
+   };
+
+   const moveDismissGesture = (event: PointerEvent<HTMLElement>) => {
+      const gesture = dismissGestureRef.current;
+      if (!gesture) return;
+
+      const deltaX = event.clientX - gesture.x;
+      const deltaY = event.clientY - gesture.y;
+      const nextOffset =
+         gesture.mode === 'down'
+            ? { x: 0, y: Math.max(0, deltaY) }
+            : { x: Math.max(0, deltaX), y: 0 };
+
+      dismissOffsetRef.current = nextOffset;
+      setDismissOffset(nextOffset);
+   };
+
+   const endDismissGesture = (event: PointerEvent<HTMLElement>) => {
+      const gesture = dismissGestureRef.current;
+      if (!gesture) return;
+
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      const shouldClose =
+         (gesture.mode === 'down' && dismissOffsetRef.current.y > 88) ||
+         (gesture.mode === 'side' && dismissOffsetRef.current.x > 76);
+
+      dismissGestureRef.current = null;
+      dismissOffsetRef.current = { x: 0, y: 0 };
+      setDismissOffset({ x: 0, y: 0 });
+
+      if (shouldClose) onClose();
+   };
+
    return (
       <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-50">
          <section
             ref={clickOutsideRef}
-            className="bg-white rounded-2xl shadow-md max-w-md mx-auto flex flex-col relative"
-            style={{ minWidth: modalWidth }}
+            className="bg-white rounded-2xl shadow-md max-w-md mx-auto flex flex-col relative transition-transform duration-150 ease-out"
+            style={{
+               minWidth: modalWidth,
+               transform: `translate(${dismissOffset.x}px, ${dismissOffset.y}px)`
+            }}
          >
+            <div
+               aria-label="Swipe right to close loan form"
+               className="absolute bottom-0 left-0 top-0 z-10 w-8 touch-none cursor-ew-resize select-none"
+               onPointerDown={(event) => startDismissGesture(event, 'side')}
+               onPointerMove={moveDismissGesture}
+               onPointerUp={endDismissGesture}
+               onPointerCancel={endDismissGesture}
+               role="presentation"
+            />
             <button onClick={onClose} className="absolute top-3 right-4 text-white hover:text-gray-800 z-10 text-2xl">
                ✖
             </button>
-            <header className="bg-[#1E56FF] rounded-t-2xl px-6 py-4 flex items-center justify-center gap-2">
+            <header
+               className="bg-[#1E56FF] rounded-t-2xl px-6 py-4 flex touch-none cursor-grab select-none items-center justify-center gap-2 active:cursor-grabbing"
+               onPointerDown={(event) => startDismissGesture(event, 'down')}
+               onPointerMove={moveDismissGesture}
+               onPointerUp={endDismissGesture}
+               onPointerCancel={endDismissGesture}
+            >
                <h2 className="text-white font-extrabold text-lg leading-6">Set Your Own Terms</h2>
                <button aria-label="Help info" className="text-white text-sm font-semibold focus:outline-none" type="button">
                   <i className="fas fa-question-circle"></i>
