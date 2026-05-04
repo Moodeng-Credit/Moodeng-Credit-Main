@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { PointerEvent, ReactNode } from 'react';
 
 import {
+   AlertCircle,
    BarChart3,
    Award,
    CalendarDays,
@@ -56,6 +57,7 @@ const UserProfile = () => {
    const [profileUser, setProfileUser] = useState<User | null>(null);
    const [isLoanMixSheetOpen, setIsLoanMixSheetOpen] = useState(false);
    const [isCreditLevelSheetOpen, setIsCreditLevelSheetOpen] = useState(false);
+   const [isDefaultHistorySheetOpen, setIsDefaultHistorySheetOpen] = useState(false);
    const isDemoInsights = searchParams.get('demo') === 'rich';
 
    const user = useSelector((state: RootState) => state.auth.user);
@@ -344,9 +346,17 @@ const UserProfile = () => {
                            {totalRepaid > 0 ? (
                               <p className="text-[12px] font-medium text-[#10b981]">${formatNumber(totalRepaid)} Repaid</p>
                            ) : null}
-                           <p className={`text-[12px] font-medium ${defaultCount > 0 ? 'text-[#ef4444]' : 'text-[#9ca3af]'}`}>
-                              {defaultCount} {defaultCount === 1 ? 'Default' : 'Defaults'}
-                           </p>
+                           {defaultCount > 0 ? (
+                              <button
+                                 type="button"
+                                 onClick={() => setIsDefaultHistorySheetOpen(true)}
+                                 className="text-[12px] font-medium text-[#ef4444] underline-offset-2 transition-opacity hover:underline active:opacity-70"
+                              >
+                                 {defaultCount} {defaultCount === 1 ? 'Default' : 'Defaults'}
+                              </button>
+                           ) : (
+                              <p className="text-[12px] font-medium text-[#9ca3af]">0 Defaults</p>
+                           )}
                         </div>
                      </SummaryMetricCard>
 
@@ -529,6 +539,11 @@ const UserProfile = () => {
             creditBuildingCount={creditBuildingCount}
          />
          <CreditLevelBottomSheet isOpen={isCreditLevelSheetOpen} onClose={() => setIsCreditLevelSheetOpen(false)} />
+         <DefaultHistoryBottomSheet
+            isOpen={isDefaultHistorySheetOpen}
+            onClose={() => setIsDefaultHistorySheetOpen(false)}
+            defaultedLoans={defaultedLoans}
+         />
       </div>
    );
 };
@@ -610,6 +625,128 @@ const NewBorrowerInsightsCard = () => (
       </div>
    </div>
 );
+
+const DefaultHistoryBottomSheet = ({
+   isOpen,
+   onClose,
+   defaultedLoans
+}: {
+   isOpen: boolean;
+   onClose: () => void;
+   defaultedLoans: Loan[];
+}) => {
+   const dragStartY = useRef<number | null>(null);
+   const dragOffsetRef = useRef(0);
+   const [dragOffset, setDragOffset] = useState(0);
+
+   if (!isOpen) return null;
+
+   const handleDragStart = (event: PointerEvent<HTMLDivElement>) => {
+      dragStartY.current = event.clientY;
+      dragOffsetRef.current = 0;
+      event.currentTarget.setPointerCapture(event.pointerId);
+   };
+
+   const handleDragMove = (event: PointerEvent<HTMLDivElement>) => {
+      if (dragStartY.current === null) return;
+      const nextOffset = Math.max(0, event.clientY - dragStartY.current);
+      dragOffsetRef.current = nextOffset;
+      setDragOffset(nextOffset);
+   };
+
+   const handleDragEnd = (event: PointerEvent<HTMLDivElement>) => {
+      if (dragStartY.current === null) return;
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      if (dragOffsetRef.current > 96) {
+         onClose();
+      }
+      dragStartY.current = null;
+      dragOffsetRef.current = 0;
+      setDragOffset(0);
+   };
+
+   return (
+      <div className="fixed inset-0 z-[80] flex items-end">
+         <button
+            type="button"
+            aria-label="Close default history"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={onClose}
+         />
+         <div
+            className="relative mx-auto flex max-h-[84dvh] w-full max-w-[440px] flex-col overflow-hidden rounded-t-[28px] bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.15)] transition-transform duration-150 ease-out"
+            style={{ transform: `translateY(${dragOffset}px)` }}
+         >
+            <div
+               className="shrink-0 touch-none cursor-grab select-none pb-2 pt-3 active:cursor-grabbing"
+               onPointerDown={handleDragStart}
+               onPointerMove={handleDragMove}
+               onPointerUp={handleDragEnd}
+               onPointerCancel={handleDragEnd}
+            >
+               <div className="mx-auto h-1 w-12 rounded-full bg-[#e5e7eb]" />
+            </div>
+            <div className="shrink-0 border-b border-[#f1edf8] px-6 pb-4 pt-2">
+               <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                     <h3 className="text-[26px] font-bold leading-tight tracking-[-0.01em] text-[#1f2937]">Default History</h3>
+                     <p className="mt-2 text-[15px] leading-5 text-[#6b7280]">Missed repayments on this borrower’s past loans.</p>
+                  </div>
+                  <button
+                     type="button"
+                     onClick={onClose}
+                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#6b7280] active:scale-95"
+                     aria-label="Close"
+                  >
+                     <X className="h-7 w-7" strokeWidth={2} />
+                  </button>
+               </div>
+            </div>
+            <div className="max-h-[calc(84dvh-112px)] overflow-y-auto px-6 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-5">
+               <div className="grid grid-cols-[auto_1fr] items-center gap-4">
+                  <div className="rounded-[18px] bg-[#fee2e2] px-4 py-3 text-[20px] font-bold leading-none text-[#ef4444]">
+                     {defaultedLoans.length} {defaultedLoans.length === 1 ? 'Default' : 'Defaults'}
+                  </div>
+                  <p className="text-[15px] leading-5 text-[#6b7280]">
+                     A default happens when a repayment deadline passes without full repayment.
+                  </p>
+               </div>
+
+               <div className="mt-5 space-y-3">
+                  {defaultedLoans.map((loan) => (
+                     <div
+                        key={loan.id}
+                        className="flex items-center gap-3 rounded-[18px] border border-[#f3f4f6] bg-white p-4 shadow-[0_4px_16px_rgba(239,68,68,0.08)]"
+                     >
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fee2e2]">
+                           <AlertCircle className="h-6 w-6 text-[#ef4444]" strokeWidth={2.5} />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                           <p className="text-[16px] font-bold leading-tight text-[#1f2937]">Loan defaulted</p>
+                           <p className="mt-1 text-[14px] leading-tight text-[#6b7280]">Borrowed: ${formatNumber(loan.loanAmount)}</p>
+                           <p className="mt-1 text-[14px] leading-tight text-[#6b7280]">Due: {formatDate(loan.dueDate)}</p>
+                        </div>
+                        <span className="shrink-0 rounded-full bg-[#fee2e2] px-3 py-1 text-[12px] font-bold leading-none text-[#ef4444]">
+                           Unresolved
+                        </span>
+                     </div>
+                  ))}
+               </div>
+
+               <div className="mt-5 flex gap-3 rounded-[18px] border border-[#fecaca] bg-[#fef2f2] p-4">
+                  <AlertCircle className="mt-1 h-5 w-5 shrink-0 text-[#ef4444]" strokeWidth={2.5} />
+                  <div>
+                     <p className="text-[16px] font-bold leading-tight text-[#1f2937]">Why it matters</p>
+                     <p className="mt-2 text-[15px] leading-5 text-[#4b5563]">
+                        Defaults may signal repayment risk. Lenders should review the borrower’s full history, not just credit level.
+                     </p>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+   );
+};
 
 const CreditLevelBottomSheet = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
    const dragStartY = useRef<number | null>(null);
