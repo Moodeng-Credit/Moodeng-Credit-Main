@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
 const TELEGRAM_URL =
-   'https://t.me/jimmymoodengcredit?text=Hello%2C%20I%27m%20Jimmy%2C%20co-founder%20of%20Moodeng%20Credit.%20Happy%20to%20help%20you.%20If%20English%20isn%27t%20your%20first%20language%2C%20just%20tell%20me%20and%20we%20can%20use%20Google%20Translate.%20Anything%20you%20need%20to%20know%20about%20the%20platform%20or%20how%20to%20use%20it%2C%20I%20can%20support%20you';
+   'https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more.';
 
 const FACEBOOK_PAGE_URL = 'https://www.facebook.com/profile.php?id=61589106561061';
 const FACEBOOK_COMMUNITY_URL = 'https://www.facebook.com/groups/1593629908540434';
