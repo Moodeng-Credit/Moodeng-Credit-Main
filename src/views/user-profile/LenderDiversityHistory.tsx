@@ -1,20 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import { ChevronLeft, HelpCircle, Users } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 
 import Loading from '@/components/Loading';
 import { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 
+import { formatNumber, toNumber } from '@/utils/decimalHelpers';
+import { calculateLenderDiversity, getDiversityStatus, type WalletLivenessData } from '@/utils/diversityScore';
+
+import { getWalletAgeInfo } from '@/lib/web3/walletAge';
 import { fetchUserProfiles, getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
-import { formatNumber, toNumber } from '@/utils/decimalHelpers';
-import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
+
 import { DEMO_BORROWER_INSIGHTS_LOANS, DEMO_BORROWER_INSIGHTS_USER, DEMO_LENDER_PROFILES } from './demoBorrowerInsights';
 
 const CHART_COLORS = ['#5b21b6', '#7c3aed', '#3b82f6', '#60a5fa', '#c4b5fd', '#a78bfa', '#93c5fd'];
@@ -57,14 +60,7 @@ const renderPieLabel = ({ cx = 0, cy = 0, midAngle = 0, innerRadius = 0, outerRa
    return (
       <g style={{ pointerEvents: 'none' }}>
          <rect x={x - 18} y={y - 10} width={36} height={20} rx={10} fill="white" />
-         <text
-            x={x}
-            y={y + 1}
-            fill="#7c3aed"
-            textAnchor="middle"
-            dominantBaseline="central"
-            style={{ fontSize: '11px', fontWeight: 700 }}
-         >
+         <text x={x} y={y + 1} fill="#7c3aed" textAnchor="middle" dominantBaseline="central" style={{ fontSize: '11px', fontWeight: 700 }}>
             {label}
          </text>
       </g>
@@ -72,27 +68,28 @@ const renderPieLabel = ({ cx = 0, cy = 0, midAngle = 0, innerRadius = 0, outerRa
 };
 
 const buildLenderDistribution = (loans: Loan[], userProfiles: Record<string, User>): LenderDistributionDatum[] => {
-   const lenderMap = loans.reduce<
-      Record<string, { id: string; name: string; avatarUrl?: string; count: number; totalAmount: number }>
-   >((acc, loan) => {
-      const lenderId = loan.lenderUser || 'unknown';
-      const profile = lenderId === 'unknown' ? undefined : userProfiles[lenderId];
-      const lenderName = profile?.username || lenderId;
+   const lenderMap = loans.reduce<Record<string, { id: string; name: string; avatarUrl?: string; count: number; totalAmount: number }>>(
+      (acc, loan) => {
+         const lenderId = loan.lenderUser || 'unknown';
+         const profile = lenderId === 'unknown' ? undefined : userProfiles[lenderId];
+         const lenderName = profile?.username || lenderId;
 
-      if (!acc[lenderId]) {
-         acc[lenderId] = {
-            id: lenderId,
-            name: lenderName === 'unknown' ? 'Unknown lender' : lenderName,
-            avatarUrl: profile?.avatarUrl,
-            count: 0,
-            totalAmount: 0
-         };
-      }
+         if (!acc[lenderId]) {
+            acc[lenderId] = {
+               id: lenderId,
+               name: lenderName === 'unknown' ? 'Unknown lender' : lenderName,
+               avatarUrl: profile?.avatarUrl,
+               count: 0,
+               totalAmount: 0
+            };
+         }
 
-      acc[lenderId].count += 1;
-      acc[lenderId].totalAmount += toNumber(loan.loanAmount);
-      return acc;
-   }, {});
+         acc[lenderId].count += 1;
+         acc[lenderId].totalAmount += toNumber(loan.loanAmount);
+         return acc;
+      },
+      {}
+   );
 
    return Object.values(lenderMap)
       .sort((a, b) => b.count - a.count || b.totalAmount - a.totalAmount)
@@ -110,6 +107,7 @@ export default function LenderDiversityHistory() {
    const [searchParams] = useSearchParams();
    const [profileUser, setProfileUser] = useState<User | null>(null);
    const [activeIndex, setActiveIndex] = useState<number | null>(null);
+   const [walletData, setWalletData] = useState<Record<string, WalletLivenessData>>({});
    const isDemoInsights = searchParams.get('demo') === 'rich';
 
    const user = useSelector((state: RootState) => state.auth.user);
@@ -144,7 +142,64 @@ export default function LenderDiversityHistory() {
    }, [dispatch, isDemoInsights, username]);
 
    const fundedLoans = useMemo(() => loans.filter((loan) => loan.loanStatus === 'Lent'), [loans]);
-   const lenderDiversity = useMemo(() => calculateLenderDiversity(fundedLoans, userProfiles), [fundedLoans, userProfiles]);
+
+   useEffect(() => {
+      if (isDemoInsights) return;
+
+      const lenderIds = [...new Set(fundedLoans.map((loan) => loan.lenderUser).filter(Boolean))] as string[];
+      const lendersWithWallets = lenderIds
+         .map((lenderId) => ({ lenderId, walletAddress: userProfiles[lenderId]?.walletAddress }))
+         .filter(
+            (lender): lender is { lenderId: string; walletAddress: string } =>
+               typeof lender.walletAddress === 'string' && lender.walletAddress.startsWith('0x') && lender.walletAddress.length === 42
+         );
+
+      if (lendersWithWallets.length === 0) {
+         setWalletData({});
+         return;
+      }
+
+      let cancelled = false;
+      const nowSeconds = Date.now() / 1000;
+
+      Promise.all(
+         lendersWithWallets.map(async ({ lenderId, walletAddress }) => {
+            const info = await getWalletAgeInfo(walletAddress);
+            if (!info) return null;
+
+            return {
+               lenderId,
+               data: {
+                  ageInDays: info.ageInDays,
+                  transferCount: info.totalTransferCount,
+                  hasMoreThan100Transfers: info.hasMoreThan100Transfers,
+                  daysSinceLastTx: Math.max(0, (nowSeconds - info.lastTxTimestamp) / 86400),
+                  hasHistory: info.hasHistory
+               }
+            };
+         })
+      )
+         .then((results) => {
+            if (cancelled) return;
+            const nextWalletData: Record<string, WalletLivenessData> = {};
+            results.forEach((result) => {
+               if (result) nextWalletData[result.lenderId] = result.data;
+            });
+            setWalletData(nextWalletData);
+         })
+         .catch(() => {
+            if (!cancelled) setWalletData({});
+         });
+
+      return () => {
+         cancelled = true;
+      };
+   }, [fundedLoans, isDemoInsights, userProfiles]);
+
+   const lenderDiversity = useMemo(
+      () => calculateLenderDiversity(fundedLoans, userProfiles, Object.keys(walletData).length > 0 ? walletData : undefined),
+      [fundedLoans, userProfiles, walletData]
+   );
    const distribution = useMemo(() => buildLenderDistribution(fundedLoans, userProfiles), [fundedLoans, userProfiles]);
    const diversityStatus = getDiversityStatus(lenderDiversity.score);
    const borrowerName = borrower?.displayName || borrower?.username || username || 'Borrower';
@@ -331,7 +386,8 @@ export default function LenderDiversityHistory() {
                                              {lender.name}
                                           </span>
                                           <span className="block text-[12px] text-md-neutral-1200">
-                                             {lender.count} {lender.count === 1 ? 'loan' : 'loans'} · ${formatNumber(lender.totalAmount)} funded
+                                             {lender.count} {lender.count === 1 ? 'loan' : 'loans'} · ${formatNumber(lender.totalAmount)}{' '}
+                                             funded
                                           </span>
                                        </span>
                                     </span>
