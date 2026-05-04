@@ -8,14 +8,31 @@ interface SearchBarProps {
    onChange: (value: string) => void;
    showFilter?: boolean;
    filterPath?: string;
+   filterActive?: boolean;
+   onFilterClick?: () => void;
 }
 
-export default function SearchBar({ placeholder, value, onChange, showFilter, filterPath }: SearchBarProps) {
+export default function SearchBar({
+   placeholder,
+   value,
+   onChange,
+   showFilter,
+   filterPath,
+   filterActive,
+   onFilterClick
+}: SearchBarProps) {
    const navigate = useNavigate();
+   const handleFilterClick = () => {
+      if (onFilterClick) {
+         onFilterClick();
+         return;
+      }
+      if (filterPath) navigate(filterPath);
+   };
 
    return (
       <div className="flex items-center gap-md-2 w-full">
-         <div className="flex-1 flex items-center gap-md-2 bg-md-neutral-100 border border-md-neutral-400 rounded-md-input px-md-3 py-md-2">
+         <div className="flex-1 flex items-center gap-md-2 bg-md-neutral-100 border border-md-neutral-400 rounded-md-input px-md-3 py-md-2 transition-colors focus-within:border-md-primary-1200 focus-within:ring-2 focus-within:ring-md-primary-900/20">
             <div
                className="w-5 h-5 bg-md-neutral-1000 shrink-0"
                style={{
@@ -35,9 +52,15 @@ export default function SearchBar({ placeholder, value, onChange, showFilter, fi
          {showFilter ? (
             <button
                type="button"
-               onClick={() => filterPath && navigate(filterPath)}
+               onClick={handleFilterClick}
                aria-label="Filter"
-               className="w-12 h-12 shrink-0 flex items-center justify-center border border-md-primary-900 rounded-md-input bg-md-neutral-100"
+               aria-pressed={filterActive}
+               className={[
+                  'w-12 h-12 shrink-0 flex items-center justify-center border rounded-md-input transition-colors',
+                  filterActive
+                     ? 'border-md-primary-1200 bg-md-primary-100'
+                     : 'border-md-primary-900 bg-md-neutral-100'
+               ].join(' ')}
             >
                <div
                   className="w-6 h-6 bg-md-primary-900"

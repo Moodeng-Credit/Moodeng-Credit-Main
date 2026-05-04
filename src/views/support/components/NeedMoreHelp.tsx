@@ -13,8 +13,6 @@ export default function NeedMoreHelp() {
             <p className="text-md-b2 text-md-neutral-1200">Our support team is available 24/7 to assist you.</p>
             <a
                href={SUPPORT_FACEBOOK_URL}
-               target="_blank"
-               rel="noopener noreferrer"
                className="bg-md-primary-1200 rounded-md-lg flex items-center justify-center gap-md-1 px-md-4 py-md-2 self-start"
             >
                <span className="text-md-b1 font-semibold text-md-neutral-100">Get In Touch</span>
