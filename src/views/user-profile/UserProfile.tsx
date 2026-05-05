@@ -331,6 +331,37 @@ const UserProfile = () => {
                color: #5f6878 !important;
             }
 
+            .borrower-verification-pill {
+               border-color: #b9c0cc !important;
+               background: #ffffff !important;
+               color: #374151 !important;
+            }
+
+            .borrower-verification-pill.verified {
+               border-color: #bfe8cf !important;
+               background: #eefbf3 !important;
+               color: #166534 !important;
+            }
+
+            .borrower-verification-pill.unverified {
+               border-color: #cfd5df !important;
+               background: #ffffff !important;
+               color: #4b5563 !important;
+            }
+
+            .borrower-verification-icon {
+               background: #4b5563 !important;
+               color: #ffffff !important;
+            }
+
+            .borrower-verification-pill.verified .borrower-verification-icon {
+               background: #166534 !important;
+            }
+
+            .borrower-verification-label {
+               color: inherit !important;
+            }
+
             .borrower-insights-dark .summary-wave path:first-of-type {
                opacity: 0.35 !important;
             }
@@ -451,26 +482,18 @@ const UserProfile = () => {
                      </p>
                      <div className="mt-2 flex flex-wrap items-center gap-2">
                         <span
-                           className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 ${
-                              isVerifiedBorrower ? 'border-[#bfe8cf] bg-md-green-100' : 'border-md-neutral-500 bg-md-neutral-200'
+                           className={`borrower-verification-pill inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 ${
+                              isVerifiedBorrower ? 'verified' : 'unverified'
                            }`}
                         >
-                           <span
-                              className={`flex h-4 w-4 items-center justify-center rounded-full ${
-                                 isVerifiedBorrower ? 'bg-md-green-900' : 'bg-md-neutral-900'
-                              }`}
-                           >
+                           <span className="borrower-verification-icon flex h-4 w-4 items-center justify-center rounded-full">
                               {isVerifiedBorrower ? (
                                  <Check className="h-2.5 w-2.5 text-white" strokeWidth={4} />
                               ) : (
                                  <X className="h-2.5 w-2.5 text-white" strokeWidth={4} />
                               )}
                            </span>
-                           <span
-                              className={`text-[13px] font-semibold leading-none ${
-                                 isVerifiedBorrower ? 'text-md-green-900' : 'text-md-neutral-1400'
-                              }`}
-                           >
+                           <span className="borrower-verification-label text-[13px] font-semibold leading-none">
                               {isVerifiedBorrower ? 'Verified Borrower' : 'Not Verified'}
                            </span>
                         </span>
