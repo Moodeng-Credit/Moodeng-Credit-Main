@@ -208,6 +208,8 @@ const UserProfile = () => {
    const creditBuildingCount = uniqueLoans.length;
    const trustBuildingCount = trustBuildingLoans.length;
    const hasLoanHistory = fundedLoans.length > 0;
+   const hasEnoughLenderDiversityHistory = lenderDiversity.hasEnoughHistory;
+   const isEarlyLenderDiversityScore = hasEnoughLenderDiversityHistory && lenderDiversity.confidence < 1;
    const recentLoansShouldScroll = fundedLoans.length > 5;
    const displayedRecentLoans = recentLoansShouldScroll ? fundedLoans : fundedLoans.slice(0, 5);
    const loanMixLabel = !hasLoanHistory
@@ -632,7 +634,7 @@ const UserProfile = () => {
                                     <HelpCircle className="h-4 w-4" strokeWidth={2.2} />
                                  </button>
                               </div>
-                              {hasLoanHistory ? (
+                              {hasEnoughLenderDiversityHistory ? (
                                  <>
                                     <div className="mb-3 flex flex-wrap items-center gap-2.5">
                                        <div className="flex items-baseline gap-1.5">
@@ -645,10 +647,15 @@ const UserProfile = () => {
                                           className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 ${badge.border} ${badge.bg}`}
                                        >
                                           <span className={`text-[11px] font-semibold leading-none ${badge.text}`}>
-                                             {diversityStatus} Diversity
+                                             {isEarlyLenderDiversityScore ? 'Early Score' : `${diversityStatus} Diversity`}
                                           </span>
                                        </span>
                                     </div>
+                                    {isEarlyLenderDiversityScore ? (
+                                       <p className="mb-3 text-[13px] leading-5 text-[#6b7280]">
+                                          Limited history: this score is blended toward 50 until more loans build up.
+                                       </p>
+                                    ) : null}
                                     <button
                                        type="button"
                                        onClick={() =>
@@ -671,13 +678,11 @@ const UserProfile = () => {
                                  <div className="max-w-[210px]">
                                     <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#f5f3ff] px-3 py-2">
                                        <Sparkles className="h-4 w-4 text-[#8b5cf6]" strokeWidth={2.5} />
-                                       <span className="text-[15px] font-bold leading-none text-[#8b5cf6]">New borrower</span>
+                                       <span className="text-[15px] font-bold leading-none text-[#8b5cf6]">Not enough history</span>
                                     </span>
-                                    <p className="mb-2 text-[16px] font-semibold leading-[1.25] text-[#4b5563]">
-                                       No lender diversity history yet
-                                    </p>
+                                    <p className="mb-2 text-[16px] font-semibold leading-[1.25] text-[#4b5563]">Not enough history</p>
                                     <p className="text-[14px] leading-5 text-[#6b7280]">
-                                       This score becomes more useful after completed loans.
+                                       This score appears after at least 2 funded loans.
                                     </p>
                                  </div>
                               )}
