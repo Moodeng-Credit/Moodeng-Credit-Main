@@ -257,6 +257,16 @@ export default function AdminPanel() {
    const selectedUser = directoryRows.find((user) => user.id === selectedUserId) ?? filteredDirectory[0] ?? scaffoldUsers[0];
    const selectedRequest = loanRequests.find((request) => request.id === selectedRequestId) ?? loanRequests[0];
    const selectedTemplate = noticeTemplates.find((template) => template.id === selectedTemplateId) ?? noticeTemplates[0];
+   const noticeSearch = noticeUsername.trim().toLowerCase();
+   const selectedTemplateRole: PersonRole = selectedTemplate.audience.includes('lender') ? 'lender' : 'borrower';
+   const audienceMatchedDirectory = directoryRows.filter((user) => user.role === selectedTemplateRole);
+   const suggestedNoticeUsers = audienceMatchedDirectory.length ? audienceMatchedDirectory : directoryRows;
+   const noticeRecipientRows = (noticeSearch ? directoryRows : suggestedNoticeUsers)
+      .filter((user) => {
+         if (!noticeSearch) return true;
+         return `${user.username} ${user.wallet}`.toLowerCase().includes(noticeSearch);
+      })
+      .slice(0, 8);
 
    async function refresh(searchValue = search) {
       const [nextOverview, nextUsers] = await Promise.all([getAdminOverview(), listAdminDirectoryUsers(searchValue)]);
@@ -556,6 +566,41 @@ export default function AdminPanel() {
                            <h3 className="text-3xl font-black">Send notification</h3>
                            <p className="mt-2 text-xl text-[#6f627e]">Selected: {selectedTemplate.title}</p>
                            <input value={noticeUsername} onChange={(event) => setNoticeUsername(event.target.value)} placeholder="Username" className="mt-5 h-16 w-full rounded-2xl border border-[#ded0ef] px-5 text-2xl" />
+                           <div className="mt-4 rounded-3xl border border-[#eadff8] bg-white">
+                              <div className="border-b border-[#eadff8] p-4">
+                                 <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Matching users</p>
+                                 <p className="mt-1 text-base font-bold text-[#6f627e]">
+                                    Click a person below to fill the username before sending.
+                                 </p>
+                              </div>
+                              <div className="max-h-80 overflow-y-auto">
+                                 {noticeRecipientRows.length ? (
+                                    noticeRecipientRows.map((user) => (
+                                       <button
+                                          key={user.id}
+                                          type="button"
+                                          onClick={() => setNoticeUsername(user.username)}
+                                          className={`flex w-full items-start gap-3 border-b border-[#f0e8fb] p-4 text-left last:border-b-0 ${noticeUsername === user.username ? 'bg-[#fbf8ff]' : 'bg-white hover:bg-[#fbf8ff]'}`}
+                                       >
+                                          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#8336f0] text-lg font-black text-white">
+                                             {user.username.charAt(0).toUpperCase()}
+                                          </span>
+                                          <span className="min-w-0 flex-1">
+                                             <span className="block text-xl font-black text-[#1c053d]">{user.username}</span>
+                                             <span className="mt-1 block break-all text-base font-bold text-[#6f627e]">{user.wallet}</span>
+                                          </span>
+                                          <Badge className={user.role === 'lender' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}>
+                                             {user.role}
+                                          </Badge>
+                                       </button>
+                                    ))
+                                 ) : (
+                                    <div className="p-5 text-lg font-bold text-[#6f627e]">
+                                       No matching users found. Check the spelling or search by wallet.
+                                    </div>
+                                 )}
+                              </div>
+                           </div>
                            <div className="mt-5 rounded-3xl border border-[#eadff8] bg-[#fbf8ff] p-5">
                               <Badge className="bg-purple-100 text-purple-800">{selectedTemplate.audience.replace('_', ' ')}</Badge>
                               <h4 className="mt-4 text-3xl font-black">{selectedTemplate.title}</h4>
