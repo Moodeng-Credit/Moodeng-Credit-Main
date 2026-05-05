@@ -243,6 +243,8 @@ export default function AdminPanel() {
    const [search, setSearch] = useState('');
    const [roleFilter, setRoleFilter] = useState<'all' | PersonRole>('all');
    const [selectedUserId, setSelectedUserId] = useState(scaffoldUsers[0].id);
+   const [selectedDefaultCaseId, setSelectedDefaultCaseId] = useState(defaultCases[0].id);
+   const [selectedRecoveryPathName, setSelectedRecoveryPathName] = useState(recoveryPaths[0].name);
    const [selectedRequestId, setSelectedRequestId] = useState(loanRequests[0].id);
    const [selectedTemplateId, setSelectedTemplateId] = useState(noticeTemplates[0].id);
    const [noticeUsername, setNoticeUsername] = useState('');
@@ -255,6 +257,8 @@ export default function AdminPanel() {
    const directoryRows = users.length ? directoryFromSupabase(users) : scaffoldUsers;
    const filteredDirectory = directoryRows.filter((user) => roleFilter === 'all' || user.role === roleFilter);
    const selectedUser = directoryRows.find((user) => user.id === selectedUserId) ?? filteredDirectory[0] ?? scaffoldUsers[0];
+   const selectedDefaultCase = defaultCases.find((item) => item.id === selectedDefaultCaseId) ?? defaultCases[0];
+   const selectedRecoveryPath = recoveryPaths.find((path) => path.name === selectedRecoveryPathName) ?? recoveryPaths[0];
    const selectedRequest = loanRequests.find((request) => request.id === selectedRequestId) ?? loanRequests[0];
    const selectedTemplate = noticeTemplates.find((template) => template.id === selectedTemplateId) ?? noticeTemplates[0];
 
@@ -470,25 +474,71 @@ export default function AdminPanel() {
                      <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
                         <div className="overflow-hidden rounded-3xl border border-[#eadff8] bg-white shadow-sm">
                            {defaultCases.map((item) => (
-                              <div key={item.id} className="border-b border-[#eadff8] p-6 last:border-b-0">
+                              <button
+                                 key={item.id}
+                                 type="button"
+                                 onClick={() => setSelectedDefaultCaseId(item.id)}
+                                 className={`block w-full border-b border-[#eadff8] p-6 text-left last:border-b-0 ${
+                                    selectedDefaultCaseId === item.id ? 'bg-[#fbf8ff]' : 'bg-white'
+                                 }`}
+                              >
                                  <div className="flex items-start justify-between gap-4">
                                     <div><h3 className="text-3xl font-black">{item.borrower}</h3><p className="mt-2 text-xl text-[#6f627e]">Defaulted to {item.lender} · due {item.due}</p></div>
                                     <strong className="text-4xl font-black">{item.amount}</strong>
                                  </div>
                                  <Badge className={`mt-4 ${statusClasses(item.status)}`}>{item.status}</Badge>
                                  <p className="mt-4 text-xl text-[#6f627e]">{item.summary}</p>
-                              </div>
+                              </button>
                            ))}
                         </div>
                         <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
                            <h3 className="text-3xl font-black">Choose recovery path</h3>
                            <div className="mt-5 grid gap-4">
                               {recoveryPaths.map((path) => (
-                                 <button key={path.name} type="button" className="rounded-2xl border border-[#ded0ef] bg-[#fbf8ff] p-5 text-left hover:border-[#8336f0]">
+                                 <button
+                                    key={path.name}
+                                    type="button"
+                                    onClick={() => setSelectedRecoveryPathName(path.name)}
+                                    className={`rounded-2xl border p-5 text-left transition ${
+                                       selectedRecoveryPathName === path.name
+                                          ? 'border-[#8336f0] bg-[#f4edff] shadow-[0_0_0_3px_rgba(131,54,240,0.12)]'
+                                          : 'border-[#ded0ef] bg-[#fbf8ff] hover:border-[#8336f0]'
+                                    }`}
+                                 >
+                                    <span className="mb-3 inline-flex rounded-full bg-white px-3 py-1 text-sm font-black uppercase tracking-wide text-[#8336f0]">
+                                       {selectedRecoveryPathName === path.name ? 'Selected' : 'Choose'}
+                                    </span>
                                     <strong className="block text-2xl font-black">{path.name}</strong>
                                     <span className="mt-2 block text-lg text-[#6f627e]">{path.detail}</span>
                                  </button>
                               ))}
+                           </div>
+                           <div className="mt-5 rounded-3xl border border-[#eadff8] bg-[#fbf8ff] p-5">
+                              <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Current selection</p>
+                              <h4 className="mt-2 text-2xl font-black">{selectedRecoveryPath.name}</h4>
+                              <p className="mt-2 text-lg text-[#6f627e]">
+                                 Apply to {selectedDefaultCase.borrower}'s {selectedDefaultCase.amount} default with {selectedDefaultCase.lender}.
+                              </p>
+                              <div className="mt-5 grid gap-3">
+                                 <button
+                                    type="button"
+                                    onClick={() => {
+                                       setNoticeUsername(selectedDefaultCase.borrower);
+                                       setSelectedTemplateId(selectedRecoveryPath.name === 'Payment plan' ? 'borrower-plan' : 'borrower-blocked');
+                                       setActiveTab('notifications');
+                                    }}
+                                    className="rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white"
+                                 >
+                                    Prepare borrower notice
+                                 </button>
+                                 <button
+                                    type="button"
+                                    onClick={() => setStatusMessage(`${selectedRecoveryPath.name} selected for ${selectedDefaultCase.borrower}. Backend recovery action still needs approval wiring.`)}
+                                    className="rounded-2xl border border-[#ded0ef] bg-white px-5 py-4 text-xl font-black text-[#34234f]"
+                                 >
+                                    Mark path selected
+                                 </button>
+                              </div>
                            </div>
                         </div>
                      </div>
