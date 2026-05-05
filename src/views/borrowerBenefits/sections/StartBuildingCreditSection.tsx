@@ -17,6 +17,9 @@ const creditSteps = [
    }
 ];
 
+const firstLoanVideoUrl = 'https://youtu.be/VoFcPS124HE';
+const firstLoanEmbedUrl = 'https://www.youtube.com/embed/VoFcPS124HE';
+
 export default function StartBuildingCreditSection(): JSX.Element {
    return (
       <section className="borrower-credit-section flex overflow-hidden flex-col items-center px-20 py-20 mt-20 max-w-full w-[1440px] max-md:px-5 max-md:py-14 max-md:mt-0">
@@ -30,6 +33,28 @@ export default function StartBuildingCreditSection(): JSX.Element {
                   Moodeng is not a magic credit score or a guaranteed approval engine. It is a transparent way to request small loans, repay
                   them, and make that record easier for future lenders to evaluate.
                </p>
+            </div>
+
+            <div className="borrower-loan-video mt-10">
+               <div className="borrower-loan-video__copy">
+                  <div className="text-md-b2 font-semibold uppercase tracking-[0.16em] text-md-primary-300">Video walkthrough</div>
+                  <h3>How to request your first loan</h3>
+                  <p>
+                     Watch the blackboard walkthrough before you post. It explains what to enter, how terms work, and what happens after
+                     your request appears on the board.
+                  </p>
+                  <a href={firstLoanVideoUrl} target="_blank" rel="noreferrer">
+                     Open on YouTube
+                  </a>
+               </div>
+               <div className="borrower-loan-video__frame">
+                  <iframe
+                     src={firstLoanEmbedUrl}
+                     title="How to request your first loan"
+                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                     allowFullScreen
+                  />
+               </div>
             </div>
 
             <div className="mt-10 grid grid-cols-3 gap-4 max-md:grid-cols-1">
