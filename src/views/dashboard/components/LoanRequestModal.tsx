@@ -306,7 +306,7 @@ export default function LoanRequestModal({
                         <h3 className="mt-3 text-lg font-extrabold leading-6 text-gray-800">Have a referral code?</h3>
                         <p className="mt-1 text-sm font-normal leading-5 text-gray-500">Add it before you apply for a higher starting limit.</p>
                      </div>
-                     <img src="/hippos/thumb-up-right.png" alt="" className="h-20 w-20 shrink-0 object-contain" />
+                     <img src="/hippos/referral-boost.png" alt="" className="h-20 w-20 shrink-0 object-contain" />
                   </div>
 
                   <div className="inline-flex w-fit items-center gap-2 rounded-md bg-[#D4F4DD] px-3 py-2 text-sm font-semibold text-[#2B9B5F]">
