@@ -20,30 +20,32 @@ export const TOAST_SETTINGS = {
    POSITION: 'bottom-right'
 } as const;
 
+// MVP v2 reskin (MOO-89): use Moodeng design tokens defined in tailwind.config.js
+// (md-primary-*, md-green-*, md-red-*, md-neutral-*) instead of legacy Tailwind generics.
 export const TOAST_VARIANTS = {
    success: {
       icon: '/comment-check.svg',
-      iconBg: 'bg-green-100',
-      iconColor: 'text-green-600',
-      textColor: 'text-green-700'
+      iconBg: 'bg-md-green-100',
+      iconColor: 'text-md-green-900',
+      textColor: 'text-md-green-900'
    },
    info: {
       icon: 'fas fa-fingerprint',
-      iconBg: 'bg-blue-200',
-      iconColor: 'text-blue-600',
-      textColor: 'text-blue-700'
+      iconBg: 'bg-md-primary-100',
+      iconColor: 'text-md-primary-900',
+      textColor: 'text-md-primary-1200'
    },
    error: {
       icon: '/comment-xmark.svg',
-      iconBg: 'bg-pink-100',
-      iconColor: 'text-pink-500',
-      textColor: 'text-pink-500'
+      iconBg: 'bg-md-red-100',
+      iconColor: 'text-md-red-500',
+      textColor: 'text-md-red-500'
    },
    warning: {
       icon: 'fas fa-wifi',
-      iconBg: 'bg-yellow-100',
-      iconColor: 'text-yellow-600',
-      textColor: 'text-yellow-700'
+      iconBg: 'bg-md-neutral-300',
+      iconColor: 'text-md-neutral-1400',
+      textColor: 'text-md-neutral-1500'
    }
 } as const;
 

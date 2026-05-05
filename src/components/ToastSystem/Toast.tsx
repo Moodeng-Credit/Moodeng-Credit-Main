@@ -76,17 +76,17 @@ const Toast: FC<ToastProps> = ({
    return (
       <div
          className={`
-        relative flex shadow-lg rounded border border-gray-200 bg-white max-w-[320px] mb-4
+        relative flex shadow-md-card rounded-md-md border border-md-neutral-300 bg-white max-w-[320px] mb-4
         transform transition-all duration-300 ease-in-out
         ${isVisible && !isLeaving ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
         ${isLeaving ? 'translate-x-full opacity-0' : ''}
       `}
       >
-         <button aria-label="Close" className="absolute top-2 right-2 p-1 text-black hover:text-gray-700 z-10" onClick={handleClose}>
+         <button aria-label="Close" className="absolute top-2 right-2 p-1 text-md-heading hover:text-md-neutral-1200 z-10" onClick={handleClose}>
             <i className="fas fa-times text-xs"></i>
          </button>
 
-         <div className={`flex flex-col justify-center items-center ${variant.iconBg} w-10 relative rounded-l`}>
+         <div className={`flex flex-col justify-center items-center ${variant.iconBg} w-10 relative rounded-l-md-md`}>
             <div className={`${variant.iconColor} text-xs font-bold`}>
                {iconToUse.endsWith('.svg') ? <SvgIcon src={iconToUse} className="w-4 h-4" /> : <i className={iconToUse}></i>}
             </div>
