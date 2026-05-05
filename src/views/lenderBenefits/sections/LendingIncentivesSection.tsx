@@ -30,6 +30,16 @@ function LendingIncentiveCard({ item }: LendingIncentiveCardProps): JSX.Element 
                      </div>
                   ))}
                </div>
+               {item.docsLink ? (
+                  <a
+                     className="lender-incentive-docs-link"
+                     href={item.docsLink.href}
+                     target="_blank"
+                     rel="noreferrer"
+                  >
+                     {item.docsLink.label}
+                  </a>
+               ) : null}
             </div>
 
             <div className="lender-incentive-visual">
@@ -43,6 +53,7 @@ function LendingIncentiveCard({ item }: LendingIncentiveCardProps): JSX.Element 
                      height={288}
                   />
                </div>
+               {item.imageNote ? <p className="lender-incentive-image-note">{item.imageNote}</p> : null}
                <div className="lender-incentive-stage" aria-hidden="true" />
             </div>
          </div>

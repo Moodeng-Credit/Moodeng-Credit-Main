@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 
 import CommunityHeroSection from '@/views/lenderBenefits/sections/CommunityHeroSection';
 import FeaturesSection from '@/views/lenderBenefits/sections/FeaturesSection';
@@ -13,6 +13,8 @@ import Web3WalletSection from '@/views/lenderBenefits/sections/Web3WalletSection
 import '@/views/lenderBenefits/styles/LenderBenefits.css';
 
 export default function LenderBenefits() {
+   const [readingProgress, setReadingProgress] = useState(0);
+
    useEffect(() => {
       if (location.hash) {
          const element = document.getElementById(location.hash.replace('#', ''));
@@ -22,9 +24,44 @@ export default function LenderBenefits() {
       }
    }, []);
 
+   useEffect(() => {
+      const updateReadingProgress = () => {
+         const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
+
+         if (documentHeight <= 0) {
+            setReadingProgress(0);
+            return;
+         }
+
+         const progress = (window.scrollY / documentHeight) * 100;
+         setReadingProgress(Math.min(100, Math.max(0, Math.round(progress))));
+      };
+
+      updateReadingProgress();
+      window.addEventListener('scroll', updateReadingProgress, { passive: true });
+      window.addEventListener('resize', updateReadingProgress);
+
+      return () => {
+         window.removeEventListener('scroll', updateReadingProgress);
+         window.removeEventListener('resize', updateReadingProgress);
+      };
+   }, []);
+
+   const progressStyle = useMemo(
+      () => ({ '--why-lend-reading-progress': `${readingProgress}%` }) as CSSProperties,
+      [readingProgress]
+   );
+
    return (
       <>
          <div id="why-lend" className="flex min-h-screen flex-col overflow-x-hidden bg-zinc-900">
+            <div
+               className="why-lend-reading-progress"
+               style={progressStyle}
+               aria-label={`Why Lend reading progress ${readingProgress}%`}
+            >
+               <span>{readingProgress}%</span>
+            </div>
             <div className="flex flex-col items-center w-full min-h-full max-md:max-w-full">
                <CommunityHeroSection />
 

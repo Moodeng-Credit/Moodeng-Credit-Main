@@ -3,6 +3,7 @@ import { type ReactNode, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Link, NavLink } from 'react-router-dom';
 
+import UserAvatar from '@/components/UserAvatar';
 import type { RootState } from '@/store/store';
 
 interface MarketingPageShellProps {
@@ -12,7 +13,7 @@ interface MarketingPageShellProps {
 const navItems = [
    { label: 'Borrow', href: '/benefits' },
    { label: 'Lend', href: '/whylend' },
-   { label: 'Guide', href: '/guide' }
+   { label: 'Academy', href: '/guide' }
 ];
 
 const LogoMark = ({ className = 'size-12' }: { className?: string }) => (
@@ -25,8 +26,9 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
    const [isMenuOpen, setIsMenuOpen] = useState(false);
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
+   const isSignedIn = Boolean(user?.id && username);
    const appHref = user?.id && username ? (user.userRole === 'lender' ? '/lender/dashboard' : '/dashboard') : '/sign-up';
-   const appLabel = user?.id && username ? 'Open app' : 'Sign up';
+   const appLabel = isSignedIn ? 'Open app' : 'Sign up';
 
    return (
       <div className="min-h-screen bg-[#fbfafd] text-md-heading">
@@ -57,6 +59,13 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                </nav>
 
                <div className="flex items-center gap-md-1">
+                  {isSignedIn ? (
+                     <UserAvatar
+                        size={44}
+                        alt={username ? `${username} profile` : 'Profile'}
+                        className="border-2 border-white shadow-md-card"
+                     />
+                  ) : null}
                   <Link
                      to={appHref}
                      className="inline-flex h-11 items-center justify-center rounded-md-pill bg-md-primary-1200 px-md-3 text-md-b2 font-semibold text-white shadow-md-card"
@@ -125,7 +134,7 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                         Why lend
                      </Link>
                      <Link to="/guide" className="hover:text-md-primary-1200">
-                        Guide
+                        Academy
                      </Link>
                   </nav>
                </div>
