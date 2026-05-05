@@ -212,7 +212,7 @@ export default function LenderDiversityHistory() {
    const distribution = useMemo(() => buildLenderDistribution(fundedLoans, userProfiles), [fundedLoans, userProfiles]);
    const diversityStatus = getDiversityStatus(lenderDiversity.score);
    const borrowerName = borrower?.displayName || borrower?.username || username || 'Borrower';
-   const hasLenderHistory = fundedLoans.length > 0;
+   const hasEnoughLenderHistory = lenderDiversity.hasEnoughHistory;
 
    if (!borrower) return <Loading />;
 
@@ -332,7 +332,7 @@ export default function LenderDiversityHistory() {
                   <div className="relative z-10 flex items-start justify-between gap-2">
                      <div className="min-w-0 flex-1 pt-1 pr-1">
                         <p className="mb-1.5 text-[13px] font-semibold text-md-neutral-1400">Lender Diversity Score</p>
-                        {hasLenderHistory ? (
+                        {hasEnoughLenderHistory ? (
                            <>
                               <div className="mb-3 flex items-end gap-2">
                                  <span className="text-[56px] font-bold leading-none text-md-primary-900">{lenderDiversity.score}</span>
@@ -346,12 +346,12 @@ export default function LenderDiversityHistory() {
                            </>
                         ) : (
                            <>
-                              <p className="mb-3 mt-5 text-[28px] font-bold leading-tight text-md-primary-2000">No score yet</p>
+                              <p className="mb-3 mt-5 text-[28px] font-bold leading-tight text-md-primary-2000">Not enough history</p>
                               <span className="mb-3 inline-flex rounded-full border border-[#e3d4ff] bg-[#f5f3ff] px-3 py-1.5 text-[12px] font-semibold text-md-primary-900">
-                                 Not enough history yet
+                                 Need at least 2 funded loans
                               </span>
                               <p className="mb-3 max-w-[190px] text-[13px] leading-5 text-md-neutral-1400">
-                                 This becomes useful after the borrower receives funded loans.
+                                 A lender diversity score appears once there is enough borrower history to compare.
                               </p>
                            </>
                         )}
