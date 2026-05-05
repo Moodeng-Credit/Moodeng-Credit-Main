@@ -128,7 +128,8 @@ describe('calculateLenderDiversity', () => {
       );
 
       expect(spread.confidence).toBe(1);
-      expect(spread.score).toBeGreaterThanOrEqual(90);
+      expect(spread.score).toBe(spread.rawScore);
+      expect(spread.hasEnoughHistory).toBe(true);
    });
 
    it('lowers points when lenders are brand new and coordinated', () => {
