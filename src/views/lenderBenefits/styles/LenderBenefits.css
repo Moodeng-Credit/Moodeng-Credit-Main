@@ -166,24 +166,30 @@
       padding: 0 20px;
    }
 
+   .lender-features-section > div:first-child {
+      border-radius: 24px !important;
+      padding: 18px 20px !important;
+      font-size: 30px !important;
+      line-height: 1.08 !important;
+   }
+
    .lender-feature-header {
       display: none;
    }
 
    .lender-feature-row {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
+      display: block;
       width: 100%;
       margin-top: 12px;
    }
 
    .lender-feature-copy {
-      grid-column: 1 / -1;
       min-height: auto;
       align-items: flex-start;
-      border-radius: 18px !important;
-      padding: 22px 18px !important;
+      border-radius: 22px !important;
+      padding: 20px !important;
       text-align: left;
+      box-shadow: 0 10px 26px rgba(17, 20, 23, 0.1);
    }
 
    .lender-feature-copy > div:first-child {
@@ -198,15 +204,16 @@
       text-align: left;
    }
 
-   .lender-feature-status {
+   .lender-feature-mobile-result {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
       width: 100%;
-      min-height: 92px;
-      border-radius: 18px !important;
-      padding: 14px !important;
+      margin-top: 16px;
    }
 
-   .lender-feature-status__label {
-      display: block;
+   .lender-feature-status--desktop {
+      display: none;
    }
 }
 
@@ -378,6 +385,33 @@
    line-height: 1;
    letter-spacing: 0.12em;
    text-transform: uppercase;
+}
+
+.lender-feature-mobile-result {
+   display: none;
+}
+
+.lender-feature-mobile-pill {
+   display: flex;
+   min-width: 0;
+   align-items: center;
+   justify-content: space-between;
+   gap: 10px;
+   border-radius: 16px;
+   padding: 12px 14px;
+   font-size: 0.95rem;
+   font-weight: 800;
+   line-height: 1;
+}
+
+.lender-feature-mobile-pill--yes {
+   background: #22c55e;
+   color: #ffffff;
+}
+
+.lender-feature-mobile-pill--no {
+   background: #fee2ef;
+   color: #111417;
 }
 
 .lender-community-hero span {
