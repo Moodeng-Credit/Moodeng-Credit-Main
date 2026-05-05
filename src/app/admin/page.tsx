@@ -1,166 +1,355 @@
+'use client';
+
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 import { useSelector } from 'react-redux';
 
 import type { RootState } from '@/store/store';
-import { type AdminDirectoryUser, type AdminOverview, type AdminUser, getAdminOverview, getCurrentAdmin, listAdminDirectoryUsers, sendNoticeToUsername, upsertAccountRestrictionByUsername } from './adminSupabase';
+import {
+   type AdminDirectoryUser,
+   type AdminOverview,
+   type AdminUser,
+   getAdminOverview,
+   getCurrentAdmin,
+   listAdminDirectoryUsers,
+   sendNoticeToUsername,
+   upsertAccountRestrictionByUsername
+} from './adminSupabase';
 
-type TabKey = 'users' | 'defaults' | 'requests' | 'risk' | 'notifications';
-type UserKind = 'all' | 'borrower' | 'lender';
+type AdminTab = 'users' | 'defaults' | 'requests' | 'risk' | 'notifications';
+type PersonRole = 'borrower' | 'lender';
+type RiskLevel = 'low' | 'medium' | 'high';
+type AccountStatus = 'active' | 'watchlist' | 'banned';
 
-const demoUsers = [
-   { name: 'Cookiemonster1337', role: 'borrower', wallet: '0x71c...9d42', status: 'active', risk: 'high', note: 'Blocked from new loans because 2 defaults are unresolved.', evidence: '2 defaults, $71.50 total due, 5 recovery messages' },
-   { name: 'ScamRequestGuy', role: 'borrower', wallet: '0x999...bad1', status: 'banned', risk: 'high', note: 'Repeated fake requests and abusive messages.', evidence: '4 reports, 3 deleted requests, 2 abusive messages' },
-   { name: 'MaybeDuplicate123', role: 'borrower', wallet: '0x444...dupe', status: 'watchlist', risk: 'medium', note: 'Possible duplicate wallet pattern.', evidence: 'Wallet overlaps with banned account' },
-   { name: 'LateButResponsive', role: 'borrower', wallet: '0x555...payd', status: 'active', risk: 'low', note: 'Was late before but repaid after support chat.', evidence: 'No abuse reports' },
-   { name: 'BaseBuilder', role: 'lender', wallet: '0x8a4...19b0', status: 'active', risk: 'low', note: 'Original lender on one overdue loan.', evidence: 'No account restriction needed' },
-   { name: 'OnchainNina', role: 'lender', wallet: '0x31d...f6aa', status: 'active', risk: 'low', note: 'Original lender on smaller overdue loan.', evidence: 'No reports' }
+type DirectoryRow = {
+   id: string;
+   username: string;
+   wallet: string;
+   role: PersonRole;
+   status: AccountStatus;
+   risk: RiskLevel;
+   note: string;
+   evidence: string;
+   adminNote: string;
+};
+
+type LoanRequest = {
+   id: string;
+   borrower: string;
+   amount: string;
+   status: string;
+   reason: string;
+   evidence: string;
+   posted: string;
+};
+
+type NoticeTemplate = {
+   id: string;
+   audience: 'borrower' | 'lender' | 'candidate_lender';
+   title: string;
+   body: string;
+};
+
+const navItems: Array<{ id: AdminTab; label: string }> = [
+   { id: 'users', label: 'User directory' },
+   { id: 'defaults', label: 'Default recovery' },
+   { id: 'requests', label: 'Delete loan requests' },
+   { id: 'risk', label: 'Risk assessment' },
+   { id: 'notifications', label: 'Notifications' }
+];
+
+const scaffoldUsers: DirectoryRow[] = [
+   {
+      id: 'cookiemonster1337',
+      username: 'Cookiemonster1337',
+      wallet: '0x71c...9d42',
+      role: 'borrower',
+      status: 'active',
+      risk: 'high',
+      note: 'Blocked from new loans because 2 defaults are unresolved.',
+      evidence: '2 defaults, $71.50 total due, 5 recovery messages',
+      adminNote: 'Case manager: Cookiemonster admin. Recovery mode is open.'
+   },
+   {
+      id: 'scamrequestguy',
+      username: 'ScamRequestGuy',
+      wallet: '0x999...bad1',
+      role: 'borrower',
+      status: 'banned',
+      risk: 'high',
+      note: 'Repeated fake requests and abusive messages.',
+      evidence: '4 reports, 3 deleted requests, 2 abusive messages',
+      adminNote: 'Reviewed by Cookiemonster admin. User can appeal through support.'
+   },
+   {
+      id: 'maybeduplicate123',
+      username: 'MaybeDuplicate123',
+      wallet: '0x444...dupe',
+      role: 'borrower',
+      status: 'watchlist',
+      risk: 'medium',
+      note: 'Possible duplicate wallet pattern.',
+      evidence: '1 duplicate wallet signal, 1 matching device note',
+      adminNote: 'Needs second admin review before ban.'
+   },
+   {
+      id: 'basebuilder',
+      username: 'BaseBuilder',
+      wallet: '0x8a4...19b0',
+      role: 'lender',
+      status: 'active',
+      risk: 'low',
+      note: 'Original lender on one overdue loan.',
+      evidence: '1 active default recovery case',
+      adminNote: 'Should receive lender-facing recovery notices.'
+   }
 ];
 
 const defaultCases = [
-   { borrower: 'Cookiemonster1337', lender: 'BaseBuilder', amount: '$55.00', due: '2026-04-15', late: '20 days late', status: 'blocked' },
-   { borrower: 'Cookiemonster1337', lender: 'OnchainNina', amount: '$16.50', due: '2026-04-26', late: '9 days late', status: 'blocked' }
+   {
+      id: 'default-1',
+      borrower: 'Cookiemonster1337',
+      lender: 'BaseBuilder',
+      amount: '$55.00',
+      due: '2026-04-15',
+      status: 'Blocked',
+      summary: '20 days late. Borrower can repay immediately or request recovery mode.'
+   },
+   {
+      id: 'default-2',
+      borrower: 'Cookiemonster1337',
+      lender: 'OnchainNina',
+      amount: '$16.50',
+      due: '2026-04-20',
+      status: 'Blocked',
+      summary: '15 days late. Smaller default, same borrower, same case manager.'
+   }
 ];
 
-const loanRequests = [
-   { borrower: 'SpamLoan420', wallet: '0x420...spam', amount: '$250', status: 'reported', risk: 'high', reason: 'Looks like scam request and has two user reports.', evidence: '2 reports, suspicious external payment language', audit: 'Reported by lender, hidden from featured feed' },
-   { borrower: 'Cookiemonster1337', wallet: '0x71c...9d42', amount: '$40', status: 'duplicate', risk: 'medium', reason: 'Similar active request already exists.', evidence: 'Same borrower, similar amount, same day', audit: 'Duplicate match detected, review queued' },
-   { borrower: 'NewBorrowerPH', wallet: '0x777...newp', amount: '$25', status: 'active', risk: 'low', reason: 'Missing clear repayment date.', evidence: 'No lender reports, but repayment terms are incomplete', audit: 'Validation flagged missing due date' }
+const recoveryPaths = [
+   { name: 'Extend loan', detail: 'Same lender, new due date. Borrower and lender both get a notice.' },
+   { name: 'Payment plan', detail: 'Same lender, split repayment into smaller scheduled payments.' },
+   { name: 'Bridge refinance', detail: 'Borrower applies with evidence and deposit. New lender pays the old lender.' },
+   { name: 'Manual resolution', detail: 'Waive, reporting error, dispute, keep blocked, or admin-only note.' }
 ];
 
-const notices = [
-   { audience: 'borrower' as const, title: 'Repayment plan saved', body: 'Your repayment was split into 3 payments. You are blocked until the plan is complete.' },
-   { audience: 'lender' as const, title: 'Loan repayment changed', body: 'A loan you funded was converted into a payment plan. You can view each scheduled payment.' },
-   { audience: 'candidate_lender' as const, title: 'Bridge recovery opportunity', body: 'A borrower is requesting a short bridge recovery loan. Review the details before funding.' },
-   { audience: 'borrower' as const, title: 'Account notice', body: 'Your account needs attention from the Moodeng team. Contact support if you need help.' }
+const loanRequests: LoanRequest[] = [
+   {
+      id: 'loan-request-1',
+      borrower: 'SpamLoan420',
+      amount: '$250',
+      status: 'reported',
+      reason: 'Looks like scam request and has two user reports.',
+      evidence: '2 reports, suspicious external payment language',
+      posted: 'May 5, 2026'
+   },
+   {
+      id: 'loan-request-2',
+      borrower: 'MaybeDuplicate123',
+      amount: '$80',
+      status: 'needs review',
+      reason: 'Possible duplicate request from same wallet pattern.',
+      evidence: 'Duplicate wallet signal and repeated amount pattern',
+      posted: 'May 5, 2026'
+   },
+   {
+      id: 'loan-request-3',
+      borrower: 'LateButResponsive',
+      amount: '$35',
+      status: 'visible',
+      reason: 'Normal request. Keep visible unless a new report arrives.',
+      evidence: 'No reports, prior late repayment resolved with support',
+      posted: 'May 4, 2026'
+   }
 ];
 
-function badgeClass(value: string) {
-   if (['banned', 'blocked', 'high', 'reported'].includes(value)) return 'bg-red-100 text-red-700';
-   if (['active', 'low'].includes(value)) return 'bg-emerald-100 text-emerald-700';
-   if (['watchlist', 'medium', 'duplicate'].includes(value)) return 'bg-amber-100 text-amber-800';
-   return 'bg-purple-100 text-purple-700';
+const noticeTemplates: NoticeTemplate[] = [
+   {
+      id: 'borrower-blocked',
+      audience: 'borrower',
+      title: 'Action needed on your account',
+      body: 'Your borrowing is paused because a loan is overdue. Repay now or contact support to request recovery mode.'
+   },
+   {
+      id: 'borrower-plan',
+      audience: 'borrower',
+      title: 'Payment plan confirmed',
+      body: 'Your overdue repayment has been split into scheduled payments. Borrowing stays paused until the plan is complete.'
+   },
+   {
+      id: 'lender-missed',
+      audience: 'lender',
+      title: 'Loan repayment missed',
+      body: 'A borrower missed repayment. Our team is contacting the borrower and reviewing recovery options.'
+   },
+   {
+      id: 'candidate-bridge',
+      audience: 'candidate_lender',
+      title: 'Bridge recovery opportunity',
+      body: 'A borrower has submitted recovery evidence and a deposit. If approved, your bridge loan is routed to the original lender.'
+   }
+];
+
+function statusClasses(status: AccountStatus | string) {
+   if (status === 'banned' || status === 'Blocked') return 'bg-red-100 text-red-800';
+   if (status === 'watchlist' || status === 'needs review' || status === 'reported') return 'bg-amber-100 text-amber-800';
+   return 'bg-emerald-100 text-emerald-800';
 }
 
-function Badge({ children, tone }: { children: string; tone?: string }) {
-   return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase ${badgeClass(tone ?? children.toLowerCase())}`}>{children}</span>;
+function riskClasses(risk: RiskLevel) {
+   if (risk === 'high') return 'bg-red-100 text-red-800';
+   if (risk === 'medium') return 'bg-amber-100 text-amber-800';
+   return 'bg-emerald-100 text-emerald-800';
 }
 
-function StatCard({ label, value, note }: { label: string; value: number | string; note: string }) {
+function Badge({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+   return <span className={`inline-flex rounded-full px-4 py-2 text-sm font-black uppercase tracking-wide ${className}`}>{children}</span>;
+}
+
+function StatCard({ label, value, note }: { label: string; value: number; note: string }) {
    return (
-      <div className="rounded-2xl border border-purple-100 bg-white p-5 shadow-sm">
-         <p className="text-sm font-black uppercase tracking-wide text-slate-500">{label}</p>
-         <strong className="mt-3 block text-4xl font-black text-[#1c053d]">{value}</strong>
-         <p className="mt-1 text-sm font-bold text-slate-500">{note}</p>
+      <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+         <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">{label}</p>
+         <strong className="mt-3 block text-5xl font-black text-[#1c053d]">{value}</strong>
+         <p className="mt-2 text-sm font-bold text-[#6f627e]">{note}</p>
       </div>
    );
 }
 
-function SectionShell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
-   return (
-      <section className="rounded-3xl border border-purple-100 bg-white shadow-sm">
-         <div className="border-b border-purple-100 p-5">
-            <h2 className="text-3xl font-black text-[#1c053d]">{title}</h2>
-            <p className="mt-1 text-lg text-slate-600">{subtitle}</p>
-         </div>
-         {children}
-      </section>
-   );
+function EmptyOrError({ message }: { message: string }) {
+   return <div className="rounded-3xl border border-[#eadff8] bg-white p-6 text-lg font-bold text-[#6f627e]">{message}</div>;
+}
+
+function directoryFromSupabase(users: AdminDirectoryUser[]): DirectoryRow[] {
+   return users.map((user) => ({
+      id: user.id,
+      username: user.username ?? 'Unnamed user',
+      wallet: user.wallet_address ?? 'No wallet on file',
+      role: 'borrower',
+      status: 'active',
+      risk: 'medium',
+      note: 'Live Supabase user. Review account details before taking action.',
+      evidence: 'Loaded from Supabase user directory.',
+      adminNote: 'No scaffold note attached yet.'
+   }));
 }
 
 export default function AdminPanel() {
    const reduxUser = useSelector((state: RootState) => state.auth.user);
+   const [activeTab, setActiveTab] = useState<AdminTab>('users');
    const [admin, setAdmin] = useState<AdminUser | null>(null);
    const [overview, setOverview] = useState<AdminOverview | null>(null);
-   const [directoryUsers, setDirectoryUsers] = useState<AdminDirectoryUser[]>([]);
-   const [tab, setTab] = useState<TabKey>('users');
-   const [userKind, setUserKind] = useState<UserKind>('all');
+   const [users, setUsers] = useState<AdminDirectoryUser[]>([]);
    const [search, setSearch] = useState('');
-   const [selectedUser, setSelectedUser] = useState(0);
-   const [selectedDefault, setSelectedDefault] = useState(0);
-   const [selectedRequest, setSelectedRequest] = useState(0);
-   const [selectedNotice, setSelectedNotice] = useState(0);
+   const [roleFilter, setRoleFilter] = useState<'all' | PersonRole>('all');
+   const [selectedUserId, setSelectedUserId] = useState(scaffoldUsers[0].id);
+   const [selectedRequestId, setSelectedRequestId] = useState(loanRequests[0].id);
+   const [selectedTemplateId, setSelectedTemplateId] = useState(noticeTemplates[0].id);
    const [noticeUsername, setNoticeUsername] = useState('');
-   const [noticeTitle, setNoticeTitle] = useState('Account notice');
-   const [noticeBody, setNoticeBody] = useState('Please open Moodeng and review this account notice.');
    const [statusMessage, setStatusMessage] = useState<string | null>(null);
    const [error, setError] = useState<string | null>(null);
    const [loading, setLoading] = useState(true);
 
    const currentAdminName = useMemo(() => admin?.display_name ?? reduxUser?.username ?? 'Cookiemonster admin', [admin?.display_name, reduxUser?.username]);
-   const visibleUsers = demoUsers.filter((user) => (userKind === 'all' || user.role === userKind) && `${user.name} ${user.wallet} ${user.note}`.toLowerCase().includes(search.toLowerCase()));
-   const activeUser = visibleUsers[selectedUser] ?? visibleUsers[0] ?? demoUsers[0];
-   const activeDefault = defaultCases[selectedDefault] ?? defaultCases[0];
-   const activeRequest = loanRequests[selectedRequest] ?? loanRequests[0];
-   const activeNotice = notices[selectedNotice] ?? notices[0];
+   const adminInitial = currentAdminName.trim().charAt(0).toUpperCase() || 'C';
+   const directoryRows = users.length ? directoryFromSupabase(users) : scaffoldUsers;
+   const filteredDirectory = directoryRows.filter((user) => roleFilter === 'all' || user.role === roleFilter);
+   const selectedUser = directoryRows.find((user) => user.id === selectedUserId) ?? filteredDirectory[0] ?? scaffoldUsers[0];
+   const selectedRequest = loanRequests.find((request) => request.id === selectedRequestId) ?? loanRequests[0];
+   const selectedTemplate = noticeTemplates.find((template) => template.id === selectedTemplateId) ?? noticeTemplates[0];
 
-   async function refreshSupabase(searchValue = search) {
+   async function refresh(searchValue = search) {
       const [nextOverview, nextUsers] = await Promise.all([getAdminOverview(), listAdminDirectoryUsers(searchValue)]);
       setOverview(nextOverview);
-      setDirectoryUsers(nextUsers);
+      setUsers(nextUsers);
+      if (nextUsers[0]) setSelectedUserId(nextUsers[0].id);
    }
 
    useEffect(() => {
       let alive = true;
+
       async function load() {
          try {
+            setLoading(true);
             const currentAdmin = await getCurrentAdmin(reduxUser?.id);
             if (!alive) return;
+
             setAdmin(currentAdmin);
-            if (currentAdmin) await refreshSupabase('');
+            if (currentAdmin) await refresh('');
          } catch (caught) {
             if (alive) setError(caught instanceof Error ? caught.message : 'Could not load admin panel.');
          } finally {
             if (alive) setLoading(false);
          }
       }
+
       load();
-      return () => { alive = false; };
+      return () => {
+         alive = false;
+      };
    }, [reduxUser?.id]);
 
-   async function handleGlobalSearch(event: FormEvent<HTMLFormElement>) {
+   async function handleSearch(event: FormEvent<HTMLFormElement>) {
       event.preventDefault();
-      setSelectedUser(0);
-      if (admin) await refreshSupabase(search);
+      setError(null);
+      await refresh(search);
+   }
+
+   async function handleBan(username: string) {
+      setError(null);
+      setStatusMessage(null);
+
+      try {
+         await upsertAccountRestrictionByUsername({
+            username,
+            status: 'banned',
+            reason: 'manual',
+            risk_level: 'high',
+            admin_note: `Banned by ${currentAdminName} from the admin workspace.`,
+            updated_by: admin?.user_id ?? reduxUser?.id ?? null
+         });
+         setStatusMessage(`${username} is now marked banned in Supabase.`);
+         await refresh(search);
+      } catch (caught) {
+         setError(caught instanceof Error ? caught.message : 'Could not ban this user.');
+      }
    }
 
    async function handleSendNotice(event: FormEvent<HTMLFormElement>) {
       event.preventDefault();
-      setStatusMessage(null);
       setError(null);
+      setStatusMessage(null);
+
       try {
          await sendNoticeToUsername(
-            noticeUsername || activeUser.name,
-            { audience: activeNotice.audience, notice_type: 'admin_notice', title: noticeTitle, body: noticeBody, metadata: { source: 'admin_panel_workspace' } },
+            noticeUsername,
+            {
+               audience: selectedTemplate.audience,
+               notice_type: selectedTemplate.id,
+               title: selectedTemplate.title,
+               body: selectedTemplate.body,
+               metadata: { source: 'admin_workspace', case_manager: currentAdminName }
+            },
             admin?.user_id ?? reduxUser?.id ?? null
          );
-         setStatusMessage(`Notification sent to ${noticeUsername || activeUser.name}. It will show when they open Moodeng.`);
+         setStatusMessage(`Notification sent to ${noticeUsername}. It will show when they open Moodeng.`);
       } catch (caught) {
          setError(caught instanceof Error ? caught.message : 'Could not send notification.');
       }
    }
 
-   async function handleBanUser(username = activeUser.name) {
-      setStatusMessage(null);
-      setError(null);
-      try {
-         await upsertAccountRestrictionByUsername({ username, status: 'banned', reason: 'manual', risk_level: 'high', admin_note: `Banned by ${currentAdminName} from the admin workspace.`, updated_by: admin?.user_id ?? reduxUser?.id ?? null });
-         setStatusMessage(`${username} is now marked banned.`);
-      } catch (caught) {
-         setError(caught instanceof Error ? caught.message : 'Could not update restriction.');
-      }
+   if (loading) {
+      return <main className="min-h-screen bg-[#120429] p-8 text-xl font-black text-white">Checking admin access...</main>;
    }
-
-   if (loading) return <main className="min-h-screen bg-[#120429] p-6 text-white">Checking admin access...</main>;
 
    if (!admin) {
       return (
-         <main className="min-h-screen bg-slate-50 p-6">
-            <section className="mx-auto max-w-xl rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
+         <main className="min-h-screen bg-[#f7f5fb] p-6">
+            <section className="mx-auto max-w-xl rounded-3xl border border-red-200 bg-white p-8 shadow-sm">
                <p className="text-sm font-black uppercase tracking-wide text-red-600">Admin panel</p>
-               <h1 className="mt-3 text-3xl font-black text-[#08002f]">You do not have access</h1>
-               <p className="mt-2 text-slate-600">Only approved Moodeng admins can open this panel.</p>
-               {error ? <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
+               <h1 className="mt-3 text-4xl font-black text-[#08002f]">You do not have access</h1>
+               <p className="mt-3 text-lg text-slate-600">Only approved Moodeng admins can open this panel.</p>
+               {error ? <p className="mt-5 rounded-2xl bg-red-50 p-4 text-red-700">{error}</p> : null}
             </section>
          </main>
       );
@@ -169,135 +358,215 @@ export default function AdminPanel() {
    return (
       <main className="min-h-screen bg-[#f7f5fb] text-[#1c053d]">
          <div className="grid min-h-screen lg:grid-cols-[320px_1fr]">
-            <aside className="bg-[#120429] p-6 text-white lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
-               <div className="flex items-center gap-4">
-                  <a href="/account/settings" title="Account settings" className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-purple-700 text-3xl font-black text-white outline-offset-4 focus-visible:outline focus-visible:outline-4 focus-visible:outline-purple-200">{currentAdminName.slice(0, 1).toUpperCase()}</a>
+            <aside className="bg-[#120429] p-8 text-white lg:sticky lg:top-0 lg:h-screen">
+               <div className="flex items-center gap-5">
+                  <a href="/account/settings" className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-[#8336f0] text-4xl font-black text-white no-underline focus:outline focus:outline-4 focus:outline-offset-4 focus:outline-purple-200" title="Account settings">
+                     {adminInitial}
+                  </a>
                   <div>
-                     <p className="text-sm font-black uppercase tracking-[0.16em] text-purple-200">Admin panel</p>
-                     <h1 className="text-3xl font-black leading-tight">{currentAdminName}</h1>
-                     <p className="text-purple-100">Moodeng Credit</p>
+                     <p className="text-sm font-black uppercase tracking-[0.18em] text-purple-200">Admin panel</p>
+                     <h1 className="mt-1 text-3xl font-black leading-tight">{currentAdminName}</h1>
+                     <p className="mt-1 text-lg text-purple-200">Moodeng Credit</p>
                   </div>
                </div>
 
-               <nav className="mt-8 grid gap-3">
-                  {[
-                     ['users', 'User directory'],
-                     ['defaults', 'Default recovery'],
-                     ['requests', 'Delete loan requests'],
-                     ['risk', 'Risk assessment'],
-                     ['notifications', 'Notifications']
-                  ].map(([key, label]) => (
-                     <button key={key} onClick={() => setTab(key as TabKey)} className={`rounded-2xl border px-5 py-4 text-left text-xl font-black ${tab === key ? 'border-purple-500 bg-purple-950/60 text-white' : 'border-transparent text-purple-100 hover:bg-purple-950/40'}`}>{label}</button>
+               <nav className="mt-12 grid gap-4">
+                  {navItems.map((item) => (
+                     <button key={item.id} type="button" onClick={() => setActiveTab(item.id)} className={`rounded-2xl border px-6 py-5 text-left text-xl font-black ${activeTab === item.id ? 'border-[#8336f0] bg-[#2a1453] text-white' : 'border-transparent text-purple-200 hover:border-[#8336f0] hover:bg-[#20103e]'}`}>
+                        {item.label}
+                     </button>
                   ))}
                </nav>
 
-               <div className="mt-8 rounded-2xl border border-purple-500 bg-purple-950/40 p-5">
-                  <p className="text-purple-200">Logged in as</p>
-                  <strong className="mt-2 block text-2xl">{currentAdminName}</strong>
-                  <p className="mt-2 text-purple-200">Owner access</p>
+               <div className="mt-12 rounded-3xl border border-[#8336f0] bg-[#241044] p-6">
+                  <p className="text-lg text-purple-200">Logged in as</p>
+                  <strong className="mt-2 block text-2xl font-black">{currentAdminName}</strong>
+                  <p className="mt-2 text-lg text-purple-200">Owner access</p>
                </div>
             </aside>
 
-            <div className="space-y-6 p-5 lg:p-8">
-               <div>
-                  <h2 className="text-5xl font-black">{tab === 'users' ? 'User directory' : tab === 'defaults' ? 'Default recovery' : tab === 'requests' ? 'Delete loan requests' : tab === 'risk' ? 'Risk assessment' : 'Notifications'}</h2>
-                  <p className="mt-2 text-xl text-slate-600">{tab === 'users' ? 'Search every borrower and lender, then manage the selected account.' : tab === 'defaults' ? 'Pick a defaulted loan, then choose a recovery path.' : tab === 'requests' ? 'Review, show details, or delete suspicious loan requests.' : tab === 'risk' ? 'Review each user risk profile and risk factors.' : 'Choose users and send notifications that appear when they open Moodeng.'}</p>
-               </div>
+            <section className="min-w-0 p-5 sm:p-8 lg:p-10">
+               {error ? <div className="mb-5 rounded-3xl border border-red-200 bg-red-50 p-5 text-lg font-bold text-red-800">{error}</div> : null}
+               {statusMessage ? <div className="mb-5 rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-lg font-bold text-emerald-800">{statusMessage}</div> : null}
 
-               <form onSubmit={handleGlobalSearch} className="rounded-3xl border border-purple-100 bg-white p-4 shadow-sm">
-                  <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search users, wallets, lenders, loan requests" className="w-full rounded-2xl border border-purple-100 px-5 py-4 text-xl" />
-               </form>
-
-               {statusMessage ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">{statusMessage}</div> : null}
-               {error ? <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div> : null}
-
-               <section className="grid gap-4 md:grid-cols-4">
-                  <StatCard label="All users" value={overview?.defaultedLoanCount ? Math.max(overview.defaultedLoanCount, 8) : 8} note="Total accounts" />
-                  <StatCard label="Needs review" value={overview?.recoveryReviewCount ?? 3} note="Open items" />
-                  <StatCard label="Defaults" value={overview?.defaultedLoanCount ?? 2} note="Blocked loans" />
-                  <StatCard label="Loan requests" value={overview?.loanRequestReviewCount ?? 8} note="Posted requests" />
-               </section>
-
-               {tab === 'users' ? (
-                  <SectionShell title="People" subtitle="Full account list. Split by borrower or lender when needed.">
-                     <div className="border-b border-purple-100 p-5">
-                        <div className="grid grid-cols-3 gap-2 rounded-2xl border border-purple-100 bg-white p-1">
-                           {(['all', 'borrower', 'lender'] as UserKind[]).map((kind) => <button key={kind} onClick={() => { setUserKind(kind); setSelectedUser(0); }} className={`rounded-xl px-4 py-3 text-lg font-black ${userKind === kind ? 'bg-purple-700 text-white' : 'text-slate-600'}`}>{kind === 'all' ? 'Everyone' : kind === 'borrower' ? 'Borrowers' : 'Lenders'}</button>)}
-                        </div>
+               {activeTab === 'users' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <h2 className="text-5xl font-black tracking-normal">User directory</h2>
+                        <p className="mt-3 max-w-3xl text-2xl text-[#6f627e]">Search every borrower and lender, then manage the selected account directly under that person.</p>
                      </div>
-                     <div className="divide-y divide-purple-100">
-                        {visibleUsers.map((user, index) => (
-                           <div key={user.name}>
-                              <button onClick={() => setSelectedUser(selectedUser === index ? -1 : index)} className="grid w-full grid-cols-[1fr_auto] gap-4 p-5 text-left hover:bg-purple-50">
+
+                     <form onSubmit={handleSearch} className="rounded-3xl border border-[#eadff8] bg-white p-5 shadow-sm">
+                        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search users, wallets, lenders, loan requests" className="h-16 w-full rounded-2xl border border-[#ded0ef] px-6 text-2xl text-[#1c053d]" />
+                        <div className="mt-4 grid grid-cols-3 overflow-hidden rounded-2xl border border-[#ded0ef] text-center text-xl font-black">
+                           {(['all', 'borrower', 'lender'] as const).map((role) => (
+                              <button key={role} type="button" onClick={() => setRoleFilter(role)} className={`py-4 capitalize ${roleFilter === role ? 'bg-[#8336f0] text-white' : 'bg-white text-[#6f627e]'}`}>
+                                 {role === 'all' ? 'Everyone' : `${role}s`}
+                              </button>
+                           ))}
+                        </div>
+                     </form>
+
+                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <StatCard label="All users" value={directoryRows.length} note="Total accounts" />
+                        <StatCard label="Needs review" value={overview?.recoveryReviewCount ?? 0} note="Open items" />
+                        <StatCard label="Defaults" value={overview?.defaultedLoanCount ?? defaultCases.length} note="Borrowing paused" />
+                        <StatCard label="Loan requests" value={overview?.loanRequestReviewCount ?? loanRequests.length} note="Request queue" />
+                     </div>
+
+                     <div className="overflow-hidden rounded-3xl border border-[#eadff8] bg-white shadow-sm">
+                        {filteredDirectory.map((user) => (
+                           <article key={user.id} className="border-b border-[#eadff8] last:border-b-0">
+                              <div className="grid gap-4 p-6 sm:grid-cols-[1fr_auto] sm:items-center">
                                  <div className="flex gap-4">
-                                    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-purple-700 text-xl font-black text-white">{user.name[0]}</div>
+                                    <button type="button" onClick={() => setSelectedUserId(user.id)} className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#8336f0] text-2xl font-black text-white">
+                                       {user.username.charAt(0).toUpperCase()}
+                                    </button>
                                     <div>
-                                       <h3 className="text-2xl font-black underline">{user.name}</h3>
-                                       <div className="mt-2 flex flex-wrap gap-2"><Badge>{user.role}</Badge><Badge tone={user.status}>{user.status}</Badge><Badge tone={user.risk}>{user.risk} risk</Badge></div>
-                                       <p className="mt-2 text-lg text-slate-600">{user.wallet} · {user.note}</p>
+                                       <button type="button" onClick={() => setSelectedUserId(user.id)} className="text-left text-3xl font-black underline decoration-2 underline-offset-4">
+                                          {user.username}
+                                       </button>
+                                       <div className="mt-3 flex flex-wrap gap-3">
+                                          <Badge className="bg-purple-100 text-purple-800">{user.role}</Badge>
+                                          <Badge className={statusClasses(user.status)}>{user.status}</Badge>
+                                          <Badge className={riskClasses(user.risk)}>{user.risk} risk</Badge>
+                                       </div>
+                                       <p className="mt-3 text-xl text-[#6f627e]">{user.wallet} · {user.note}</p>
                                     </div>
                                  </div>
-                                 <strong className="text-2xl">{selectedUser === index ? 'Close' : 'Manage'}</strong>
-                              </button>
-                              {selectedUser === index ? (
-                                 <div className="grid gap-4 bg-white p-5 md:grid-cols-2">
-                                    <div className="rounded-2xl border border-purple-100 bg-purple-50 p-4"><p className="font-black uppercase text-slate-500">Evidence</p><strong className="mt-2 block text-xl">{user.evidence}</strong></div>
-                                    <div className="rounded-2xl border border-purple-100 bg-purple-50 p-4"><p className="font-black uppercase text-slate-500">Admin note</p><strong className="mt-2 block text-xl">{user.note}</strong></div>
-                                    <a href={`/user/${user.name}`} className="rounded-2xl bg-[#34234f] px-5 py-4 text-center text-lg font-black text-white">Dashboard</a>
-                                    <button onClick={() => handleBanUser(user.name)} className="rounded-2xl bg-red-600 px-5 py-4 text-lg font-black text-white">Ban user</button>
+                                 <button type="button" onClick={() => setSelectedUserId(user.id)} className="rounded-2xl bg-[#34234f] px-6 py-4 text-xl font-black text-white">
+                                    Manage
+                                 </button>
+                              </div>
+                              {selectedUser?.id === user.id ? (
+                                 <div className="border-t border-[#eadff8] bg-[#fbf8ff] p-6">
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                       <h3 className="text-3xl font-black">Selected account</h3>
+                                       <button type="button" onClick={() => setSelectedUserId('')} className="rounded-full border border-[#ded0ef] bg-white px-5 py-3 text-lg font-black text-[#6b21a8]">Collapse</button>
+                                    </div>
+                                    <div className="mt-5 grid gap-4 md:grid-cols-2">
+                                       <div className="rounded-2xl border border-[#eadff8] bg-white p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Name</p><strong className="mt-2 block text-3xl">{user.username}</strong></div>
+                                       <div className="rounded-2xl border border-[#eadff8] bg-white p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Wallet</p><strong className="mt-2 block text-3xl">{user.wallet}</strong></div>
+                                       <div className="rounded-2xl border border-[#eadff8] bg-white p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Evidence</p><strong className="mt-2 block text-2xl">{user.evidence}</strong></div>
+                                       <div className="rounded-2xl border border-[#eadff8] bg-white p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Admin note</p><strong className="mt-2 block text-2xl">{user.adminNote}</strong></div>
+                                    </div>
+                                    <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                                       <a href={`/user/${encodeURIComponent(user.username)}`} className="rounded-2xl bg-[#34234f] px-5 py-4 text-center text-xl font-black text-white no-underline">Open dashboard</a>
+                                       <button type="button" onClick={() => { setNoticeUsername(user.username); setActiveTab('notifications'); }} className="rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white">Send notification</button>
+                                       <button type="button" onClick={() => handleBan(user.username)} className="rounded-2xl bg-red-600 px-5 py-4 text-xl font-black text-white">Ban account</button>
+                                    </div>
                                  </div>
                               ) : null}
+                           </article>
+                        ))}
+                        {!filteredDirectory.length ? <EmptyOrError message="No users match these filters." /> : null}
+                     </div>
+                  </section>
+               ) : null}
+
+               {activeTab === 'defaults' ? (
+                  <section className="space-y-6">
+                     <div><h2 className="text-5xl font-black">Default recovery</h2><p className="mt-3 text-2xl text-[#6f627e]">Pick a defaulted loan, then choose a recovery path.</p></div>
+                     <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
+                        <div className="overflow-hidden rounded-3xl border border-[#eadff8] bg-white shadow-sm">
+                           {defaultCases.map((item) => (
+                              <div key={item.id} className="border-b border-[#eadff8] p-6 last:border-b-0">
+                                 <div className="flex items-start justify-between gap-4">
+                                    <div><h3 className="text-3xl font-black">{item.borrower}</h3><p className="mt-2 text-xl text-[#6f627e]">Defaulted to {item.lender} · due {item.due}</p></div>
+                                    <strong className="text-4xl font-black">{item.amount}</strong>
+                                 </div>
+                                 <Badge className={`mt-4 ${statusClasses(item.status)}`}>{item.status}</Badge>
+                                 <p className="mt-4 text-xl text-[#6f627e]">{item.summary}</p>
+                              </div>
+                           ))}
+                        </div>
+                        <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                           <h3 className="text-3xl font-black">Choose recovery path</h3>
+                           <div className="mt-5 grid gap-4">
+                              {recoveryPaths.map((path) => (
+                                 <button key={path.name} type="button" className="rounded-2xl border border-[#ded0ef] bg-[#fbf8ff] p-5 text-left hover:border-[#8336f0]">
+                                    <strong className="block text-2xl font-black">{path.name}</strong>
+                                    <span className="mt-2 block text-lg text-[#6f627e]">{path.detail}</span>
+                                 </button>
+                              ))}
                            </div>
+                        </div>
+                     </div>
+                  </section>
+               ) : null}
+
+               {activeTab === 'requests' ? (
+                  <section className="space-y-6">
+                     <div><h2 className="text-5xl font-black">Delete loan requests</h2><p className="mt-3 text-2xl text-[#6f627e]">Review requests in a clean list. Expand one at a time before deleting.</p></div>
+                     <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
+                        <div className="overflow-hidden rounded-3xl border border-[#eadff8] bg-white shadow-sm">
+                           {loanRequests.map((request) => (
+                              <button key={request.id} type="button" onClick={() => setSelectedRequestId(request.id)} className={`block w-full border-b border-[#eadff8] p-6 text-left last:border-b-0 ${selectedRequestId === request.id ? 'bg-[#fbf8ff]' : 'bg-white'}`}>
+                                 <div className="flex items-center justify-between gap-4"><h3 className="text-3xl font-black underline underline-offset-4">{request.borrower}</h3><strong className="text-3xl">{request.amount}</strong></div>
+                                 <div className="mt-3 flex flex-wrap gap-3"><Badge className="bg-purple-100 text-purple-800">borrower</Badge><Badge className={statusClasses(request.status)}>{request.status}</Badge></div>
+                                 <p className="mt-3 text-xl text-[#6f627e]">{request.reason}</p>
+                              </button>
+                           ))}
+                        </div>
+                        <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                           <h3 className="text-3xl font-black">Request detail</h3>
+                           <p className="mt-2 text-xl text-[#6f627e]">Delete only with a clear reason.</p>
+                           <div className="mt-5 grid gap-4">
+                              <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Borrower</p><strong className="mt-2 block text-3xl underline">{selectedRequest.borrower}</strong></div>
+                              <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Request reason</p><strong className="mt-2 block text-2xl">{selectedRequest.reason}</strong></div>
+                              <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Evidence</p><strong className="mt-2 block text-2xl">{selectedRequest.evidence}</strong></div>
+                              <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Posted</p><strong className="mt-2 block text-2xl">{selectedRequest.posted}</strong></div>
+                           </div>
+                           <button type="button" className="mt-5 w-full rounded-2xl bg-red-600 px-5 py-4 text-xl font-black text-white">Delete request</button>
+                           <button type="button" className="mt-3 w-full rounded-2xl border border-[#ded0ef] bg-white px-5 py-4 text-xl font-black text-[#34234f]">Leave visible</button>
+                        </div>
+                     </div>
+                  </section>
+               ) : null}
+
+               {activeTab === 'risk' ? (
+                  <section className="space-y-6">
+                     <div><h2 className="text-5xl font-black">Risk assessment</h2><p className="mt-3 text-2xl text-[#6f627e]">A place for the scoring algorithm and the plain-English reasons behind each account risk.</p></div>
+                     <div className="grid gap-5 xl:grid-cols-2">
+                        {scaffoldUsers.map((user) => (
+                           <article key={user.id} className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                              <div className="flex items-start justify-between gap-3"><h3 className="text-3xl font-black">{user.username}</h3><Badge className={riskClasses(user.risk)}>{user.risk} risk</Badge></div>
+                              <p className="mt-4 text-xl text-[#6f627e]">{user.note}</p>
+                              <div className="mt-5 rounded-2xl bg-[#fbf8ff] p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Risk factors</p><strong className="mt-2 block text-2xl">{user.evidence}</strong></div>
+                           </article>
                         ))}
                      </div>
-                  </SectionShell>
+                  </section>
                ) : null}
 
-               {tab === 'defaults' ? (
-                  <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-                     <SectionShell title="Default cases" subtitle="Pick a defaulted loan, then choose a recovery path.">
-                        <div className="divide-y divide-purple-100">
-                           {defaultCases.map((item, index) => <button key={`${item.borrower}-${item.amount}`} onClick={() => setSelectedDefault(index)} className={`w-full p-5 text-left ${selectedDefault === index ? 'bg-purple-50' : ''}`}><div className="flex justify-between gap-4"><div><h3 className="text-2xl font-black">{item.borrower}</h3><p className="mt-2 text-lg text-slate-600">Defaulted to {item.lender} · due {item.due} · {item.late}</p><div className="mt-3"><Badge tone="blocked">Blocked</Badge></div></div><strong className="text-3xl">{item.amount}</strong></div></button>)}
+               {activeTab === 'notifications' ? (
+                  <section className="space-y-6">
+                     <div><h2 className="text-5xl font-black">Notifications</h2><p className="mt-3 text-2xl text-[#6f627e]">Choose users and send notifications. These show on their screen when they open Moodeng.</p></div>
+                     <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
+                        <div className="grid gap-4">
+                           {noticeTemplates.map((template) => (
+                              <button key={template.id} type="button" onClick={() => setSelectedTemplateId(template.id)} className={`rounded-3xl border p-6 text-left shadow-sm ${selectedTemplateId === template.id ? 'border-[#8336f0] bg-[#fbf8ff]' : 'border-[#eadff8] bg-white'}`}>
+                                 <Badge className="bg-purple-100 text-purple-800">{template.audience.replace('_', ' ')}</Badge>
+                                 <h3 className="mt-4 text-3xl font-black">{template.title}</h3>
+                                 <p className="mt-3 text-xl text-[#6f627e]">{template.body}</p>
+                              </button>
+                           ))}
                         </div>
-                     </SectionShell>
-                     <SectionShell title="Recovery workspace" subtitle="Choose a recovery path and fill the details.">
-                        <div className="space-y-4 p-5">
-                           <div className="rounded-2xl border border-purple-100 bg-purple-50 p-4"><p className="font-black uppercase text-slate-500">Selected loan</p><strong className="mt-2 block text-2xl">{activeDefault.borrower} owes {activeDefault.amount} to {activeDefault.lender}</strong></div>
-                           {['Extend loan', 'Payment plan', 'Bridge recovery loan', 'Manual resolution'].map((label) => <button key={label} className="w-full rounded-2xl border border-purple-200 bg-white p-5 text-left text-2xl font-black hover:bg-purple-50">{label}<p className="mt-1 text-base font-normal text-slate-600">{label === 'Extend loan' ? 'Same lender, new due date.' : label === 'Payment plan' ? 'Same lender, split repayment into pieces.' : label === 'Bridge recovery loan' ? 'New lender pays the old lender directly.' : 'Waive, dispute, reporting error, or keep blocked.'}</p></button>)}
-                           <textarea className="min-h-28 w-full rounded-2xl border border-purple-100 p-4" defaultValue="Case manager note goes here." />
-                           <button className="w-full rounded-2xl bg-purple-700 p-4 text-xl font-black text-white">Save recovery plan</button>
-                        </div>
-                     </SectionShell>
-                  </div>
-               ) : null}
-
-               {tab === 'requests' ? (
-                  <SectionShell title="Delete loan requests" subtitle="Use show information before deleting suspicious requests.">
-                     <div className="divide-y divide-purple-100">
-                        {loanRequests.map((request, index) => <div key={request.borrower}><button onClick={() => setSelectedRequest(selectedRequest === index ? -1 : index)} className="grid w-full grid-cols-[1fr_auto] gap-4 p-5 text-left"><div><h3 className="text-2xl font-black underline">{request.borrower}</h3><p className="mt-2 text-lg text-slate-600">{request.wallet} · {request.reason}</p><div className="mt-3 flex gap-2"><Badge tone={request.status}>{request.status}</Badge><Badge tone={request.risk}>{request.risk} risk</Badge></div></div><strong className="text-3xl">{request.amount}</strong></button>{selectedRequest === index ? <div className="grid gap-4 p-5 md:grid-cols-2"><div className="rounded-2xl border border-purple-100 bg-purple-50 p-4"><p className="font-black uppercase text-slate-500">Evidence</p><strong>{request.evidence}</strong></div><div className="rounded-2xl border border-purple-100 bg-purple-50 p-4"><p className="font-black uppercase text-slate-500">Audit trail</p><strong>{request.audit}</strong></div><button className="rounded-2xl bg-[#34234f] p-4 font-black text-white">Show information</button><button className="rounded-2xl bg-red-600 p-4 font-black text-white">Delete request</button></div> : null}</div>)}
+                        <form onSubmit={handleSendNotice} className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                           <h3 className="text-3xl font-black">Send notification</h3>
+                           <p className="mt-2 text-xl text-[#6f627e]">Selected: {selectedTemplate.title}</p>
+                           <input value={noticeUsername} onChange={(event) => setNoticeUsername(event.target.value)} placeholder="Username" className="mt-5 h-16 w-full rounded-2xl border border-[#ded0ef] px-5 text-2xl" />
+                           <div className="mt-5 rounded-3xl border border-[#eadff8] bg-[#fbf8ff] p-5">
+                              <Badge className="bg-purple-100 text-purple-800">{selectedTemplate.audience.replace('_', ' ')}</Badge>
+                              <h4 className="mt-4 text-3xl font-black">{selectedTemplate.title}</h4>
+                              <p className="mt-3 text-xl text-[#6f627e]">{selectedTemplate.body}</p>
+                           </div>
+                           <button className="mt-5 w-full rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white">Send notification</button>
+                        </form>
                      </div>
-                  </SectionShell>
+                  </section>
                ) : null}
-
-               {tab === 'risk' ? (
-                  <SectionShell title="Risk assessment" subtitle="Each user has a risk profile and factors.">
-                     <div className="grid gap-4 p-5 md:grid-cols-2">{demoUsers.slice(0, 4).map((user) => <div key={user.name} className="rounded-2xl border border-purple-100 bg-purple-50 p-5"><h3 className="text-2xl font-black">{user.name}</h3><div className="mt-3 flex gap-2"><Badge tone={user.risk}>{user.risk} risk</Badge><Badge tone={user.status}>{user.status}</Badge></div><p className="mt-3 text-lg text-slate-600">{user.evidence}</p></div>)}</div>
-                  </SectionShell>
-               ) : null}
-
-               {tab === 'notifications' ? (
-                  <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
-                     <SectionShell title="Notification previews" subtitle="Inspect borrower and lender popups separately.">
-                        <div className="grid gap-4 p-5">{notices.map((notice, index) => <button key={notice.title} onClick={() => { setSelectedNotice(index); setNoticeTitle(notice.title); setNoticeBody(notice.body); }} className={`rounded-2xl border p-5 text-left ${selectedNotice === index ? 'border-purple-500 bg-purple-50' : 'border-purple-100'}`}><Badge>{notice.audience}</Badge><h3 className="mt-3 text-2xl font-black">{notice.title}</h3><p className="mt-2 text-lg text-slate-600">{notice.body}</p></button>)}</div>
-                     </SectionShell>
-                     <SectionShell title="Choose users and send notification" subtitle="This creates a notice shown when that user opens Moodeng.">
-                        <form onSubmit={handleSendNotice} className="space-y-4 p-5"><input value={noticeUsername} onChange={(event) => setNoticeUsername(event.target.value)} placeholder="Username" className="w-full rounded-2xl border border-purple-100 p-4 text-lg" /><input value={noticeTitle} onChange={(event) => setNoticeTitle(event.target.value)} className="w-full rounded-2xl border border-purple-100 p-4 text-lg" /><textarea value={noticeBody} onChange={(event) => setNoticeBody(event.target.value)} className="min-h-36 w-full rounded-2xl border border-purple-100 p-4 text-lg" /><button className="w-full rounded-2xl bg-purple-700 p-4 text-xl font-black text-white">Send notification</button></form>
-                     </SectionShell>
-                  </div>
-               ) : null}
-
-               {directoryUsers.length ? <p className="text-sm text-slate-500">Loaded {directoryUsers.length} real Supabase users for admin search.</p> : null}
-            </div>
+            </section>
          </div>
       </main>
    );
