@@ -25,7 +25,13 @@ export default function MostNeededCard({ data }: MostNeededCardProps): JSX.Eleme
          <div className="lender-market-card__region">
             <div className="lender-market-card__symbols" aria-hidden="true">
                {data.regionSymbols.map((symbol) => (
-                  <span key={symbol}>{symbol}</span>
+                  <span key={`${symbol.label}-${symbol.value}`}>
+                     {symbol.type === 'image' ? (
+                        <img src={symbol.value} alt="" width={32} height={32} loading="lazy" />
+                     ) : (
+                        symbol.value
+                     )}
+                  </span>
                ))}
             </div>
             <div>
