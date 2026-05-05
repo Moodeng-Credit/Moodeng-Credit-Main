@@ -9,7 +9,7 @@ import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
 // TODO: Replace with YouTube video URL when available
-const CREDIT_GUIDE_URL = '';
+const CREDIT_GUIDE_URL = '/credit-leveling-guide';
 
 const ICON_MASK_BASE: React.CSSProperties = {
    WebkitMaskSize: 'contain',
@@ -207,7 +207,7 @@ export default function Account() {
                   {!isLender ? (
                      <button
                         type="button"
-                        onClick={() => CREDIT_GUIDE_URL ? openExternal(CREDIT_GUIDE_URL) : navigate('/support/guides')}
+                        onClick={() => navigate(CREDIT_GUIDE_URL)}
                         className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
                      >
                         <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
