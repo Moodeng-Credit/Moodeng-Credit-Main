@@ -40,7 +40,10 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    hash: row.hash,
    createdAt: row.created_at,
    updatedAt: row.updated_at,
-   fundedAt: row.funded_at ?? undefined
+   fundedAt: row.funded_at ?? undefined,
+   referralCodeId: row.referral_code_id ?? undefined,
+   referralCode: row.referral_code ?? undefined,
+   referralBoostAmount: row.referral_boost_amount ?? undefined
 });
 
 const initialState: LoanState = {
@@ -67,6 +70,9 @@ export const createLoan = createAsyncThunk('loans/create', async (loanData: Crea
       total_repayment_amount: loanData.totalRepaymentAmount,
       reason: loanData.reason,
       due_date: loanData.dueDate,
+      referral_code_id: loanData.referralCodeId || null,
+      referral_code: loanData.referralCode || null,
+      referral_boost_amount: loanData.referralBoostAmount ?? null,
       coin: 'USDC' // Only USDC transfers supported
    };
 

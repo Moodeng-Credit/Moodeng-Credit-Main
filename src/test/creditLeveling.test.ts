@@ -129,6 +129,7 @@ describe('LoanRequestModal borrowing gate', () => {
       today: '2025-01-01',
       handleDays: () => undefined,
       handleSubmit: () => undefined,
+      onReferralApplied: () => undefined,
       isSubmitting: false
    };
 
@@ -150,7 +151,8 @@ describe('LoanRequestModal borrowing gate', () => {
          createElement(LoanRequestModal, {
             ...sharedProps,
             showVerify: false,
-            user: { ...baseUser, cs: 40 }
+            user: { ...baseUser, cs: 40 },
+            startOnReferralStep: false
          })
       );
 

@@ -22,10 +22,11 @@ import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import type { User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
-import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
+import LoanRequestModal, { type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
@@ -34,6 +35,19 @@ import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 import UserAvatar from '@/components/UserAvatar';
 
 const LENDER_NOTE_STORAGE_KEY = 'moodeng_lender_note_dismissed';
+const REFERRAL_TEST_USER: User = {
+   id: 'referral-test-user',
+   username: 'referral-test',
+   email: 'referral-test@moodeng.local',
+   walletAddress: '0x0000000000000000000000000000000000000000',
+   isWorldId: 'ACTIVE',
+   mal: 3,
+   nal: 0,
+   cs: 100,
+   userRole: 'borrower',
+   createdAt: new Date(0).toISOString(),
+   updatedAt: new Date(0).toISOString()
+};
 
 export default function RequestBoard() {
    return (
@@ -64,15 +78,18 @@ function RequestBoard$() {
    const username = useSelector((state: RootState) => state.auth.username);
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const isLoading = useSelector((state: RootState) => state.loans.isLoading);
-   const isAuthenticated = !!(user?.id && username);
-   const showVerify = user?.isWorldId !== 'ACTIVE';
-   const isBorrower = useIsBorrower();
+   const isReferralTestMode = import.meta.env.DEV && new URLSearchParams(location.search).has('referralTest');
+   const effectiveUser = isReferralTestMode && !(user?.id && username) ? REFERRAL_TEST_USER : user;
+   const isAuthenticated = !!(effectiveUser?.id && (username || isReferralTestMode));
+   const showVerify = effectiveUser?.isWorldId !== 'ACTIVE';
+   const storeIsBorrower = useIsBorrower();
+   const isBorrower = isReferralTestMode || storeIsBorrower;
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
    const [sortedLoans, setSortedLoans] = useState(floanRequests);
 
    const today = new Date().toISOString().split('T')[0];
-   const borrowerUserId = user?.id || '';
+   const borrowerUserId = effectiveUser?.id || '';
    const lenderUserId = '';
    const [loanAmount, setLoanAmount] = useState('');
    const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');
@@ -80,7 +97,8 @@ function RequestBoard$() {
    const [days, setDays] = useState('');
    const [customAmount, setCustomAmount] = useState('');
    const [searchLoan, setSearchLoan] = useState('');
-   const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(user.cs, user.isWorldId === 'ACTIVE') : 0;
+   const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
+   const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, effectiveUser.isWorldId === 'ACTIVE') : 0;
    const shouldOpenLoanRequest =
       (location.state as { openLoanRequest?: boolean } | null)?.openLoanRequest === true ||
       new URLSearchParams(location.search).get('applyLoan') === '1';
@@ -104,6 +122,7 @@ function RequestBoard$() {
       setLoanAmount('');
       setReason('');
       setDays('');
+      setAppliedReferral(null);
    };
 
    const handleFiltersChange = (newFilters: Partial<LoanFilters>) => {
@@ -117,7 +136,7 @@ function RequestBoard$() {
 
    const handleApplyLoanClick = (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
-      if ((user.nal || 0) >= (user.mal || 0)) {
+      if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
@@ -127,8 +146,8 @@ function RequestBoard$() {
    const handleCloseModal = useCallback(() => setShowModal(false), []);
 
    useEffect(() => {
-      if (!shouldOpenLoanRequest || !isAuthenticated || !isBorrower || !user?.id) return;
-      if ((user.nal || 0) >= (user.mal || 0)) {
+      if (!shouldOpenLoanRequest || !isAuthenticated || !isBorrower || !effectiveUser?.id) return;
+      if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          navigate(pathname, { replace: true, state: null });
          return;
@@ -142,9 +161,9 @@ function RequestBoard$() {
       pathname,
       shouldOpenLoanRequest,
       showToastByConfig,
-      user?.id,
-      user?.mal,
-      user?.nal
+      effectiveUser?.id,
+      effectiveUser?.mal,
+      effectiveUser?.nal
    ]);
 
    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -157,15 +176,15 @@ function RequestBoard$() {
          return;
       }
 
-      if ((user.nal || 0) >= (user.mal || 0)) {
+      if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
-      if (user.isWorldId !== 'ACTIVE') {
+      if (effectiveUser.isWorldId !== 'ACTIVE') {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WORLDID_REQUIRED));
          return;
       }
-      if (!user.walletAddress || user.walletAddress.trim() === '') {
+      if (!effectiveUser.walletAddress || effectiveUser.walletAddress.trim() === '') {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
          return;
       }
@@ -184,17 +203,20 @@ function RequestBoard$() {
 
       const loanData = {
          borrowerUserId: borrowerUserId || '',
-         borrowerWallet: user.walletAddress,
+         borrowerWallet: effectiveUser.walletAddress,
          lenderUserId,
          loanAmount: parseFloat(loanAmount),
          totalRepaymentAmount: parseFloat(totalRepaymentAmount),
          reason,
-         dueDate: days
+         dueDate: days,
+         referralCodeId: appliedReferral?.id,
+         referralCode: appliedReferral?.code,
+         referralBoostAmount: appliedReferral?.boostAmount
       };
 
       if (
-         user.isWorldId === 'ACTIVE' &&
-         (user.nal || 0) < (user.mal || 0) &&
+         effectiveUser.isWorldId === 'ACTIVE' &&
+         (effectiveUser.nal || 0) < (effectiveUser.mal || 0) &&
          parseFloat(loanAmount) <= effectiveCreditLimit &&
          parseFloat(loanAmount) > 0
       ) {
@@ -525,7 +547,7 @@ function RequestBoard$() {
                   isOpen={showModal}
                   onClose={handleCloseModal}
                   showVerify={showVerify}
-                  user={user}
+                  user={effectiveUser}
                   loanAmount={loanAmount}
                   setLoanAmount={setLoanAmount}
                   totalRepaymentAmount={totalRepaymentAmount}
@@ -536,6 +558,7 @@ function RequestBoard$() {
                   today={today}
                   handleDays={handleDays}
                   handleSubmit={handleSubmit}
+                  onReferralApplied={setAppliedReferral}
                   isSubmitting={isSubmitting}
                   clickOutsideRef={loanRequestModalRef}
                />
