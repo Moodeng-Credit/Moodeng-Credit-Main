@@ -141,19 +141,10 @@ export default function AdminPanel() {
    return (
       <main className="min-h-screen bg-[#f7f5fb] p-5 text-[#1c053d]">
          <div className="mx-auto max-w-6xl space-y-6">
-            <header className="flex flex-col gap-4 rounded-3xl bg-[#120429] p-6 text-white sm:flex-row sm:items-center">
-               <a
-                  href="/account/settings"
-                  title="Account settings"
-                  className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-purple-700 text-3xl font-black text-white outline-offset-4 focus-visible:outline focus-visible:outline-4 focus-visible:outline-purple-200"
-               >
-                  {currentAdminName.slice(0, 1).toUpperCase()}
-               </a>
-               <div>
-                  <p className="text-sm font-black uppercase tracking-wide text-purple-200">Admin panel</p>
-                  <h1 className="mt-2 text-4xl font-black">Moodeng admin</h1>
-                  <p className="mt-2 text-purple-100">Signed in as {currentAdminName}</p>
-               </div>
+            <header className="rounded-3xl bg-[#120429] p-6 text-white">
+               <p className="text-sm font-black uppercase tracking-wide text-purple-200">Admin panel</p>
+               <h1 className="mt-2 text-4xl font-black">Moodeng admin</h1>
+               <p className="mt-2 text-purple-100">Signed in as {currentAdminName}</p>
             </header>
 
             {error ? <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div> : null}
