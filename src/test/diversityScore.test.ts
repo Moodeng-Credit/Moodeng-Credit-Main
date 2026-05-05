@@ -58,7 +58,17 @@ describe('calculateLenderDiversity', () => {
       expect(empty.score).toBe(0);
       expect(singleLoan.hasEnoughHistory).toBe(false);
       expect(singleLoan.score).toBe(0);
+      expect(singleLoan.confidence).toBe(0);
       expect(singleLoan.uniqueLenders).toBe(1);
+   });
+
+   it('blends early scores toward the middle until more history exists', () => {
+      const early = calculateLenderDiversity([makeLoan('loan-1', 'lender-a'), makeLoan('loan-2', 'lender-a')], userProfiles);
+
+      expect(early.hasEnoughHistory).toBe(true);
+      expect(early.confidence).toBeCloseTo(1 / 7);
+      expect(early.score).toBeGreaterThan(early.rawScore);
+      expect(early.score).toBeLessThan(50);
    });
 
    it('counts distinct lenders as unique lenders', () => {
@@ -109,11 +119,15 @@ describe('calculateLenderDiversity', () => {
             makeLoan('loan-2', 'lender-b'),
             makeLoan('loan-3', 'lender-c'),
             makeLoan('loan-4', 'lender-d'),
-            makeLoan('loan-5', 'lender-e')
+            makeLoan('loan-5', 'lender-e'),
+            makeLoan('loan-6', 'lender-a'),
+            makeLoan('loan-7', 'lender-b'),
+            makeLoan('loan-8', 'lender-c')
          ],
          userProfiles
       );
 
+      expect(spread.confidence).toBe(1);
       expect(spread.score).toBeGreaterThanOrEqual(90);
    });
 
