@@ -99,12 +99,25 @@ const toTimestampSeconds = (date: string | undefined): number => {
    return Number.isFinite(timestamp) ? timestamp / 1000 : Date.now() / 1000;
 };
 
+function getEarlyHistoryConfidence(fundedLoanCount: number): number {
+   if (fundedLoanCount < 2) return 0;
+   if (fundedLoanCount >= 8) return 1;
+   return (fundedLoanCount - 1) / 7;
+}
+
+function blendTowardNeutralScore(rawScore: number, confidence: number): number {
+   const neutralScore = 50;
+   return Math.round(rawScore * confidence + neutralScore * (1 - confidence));
+}
+
 export const calculateLenderDiversity = (
    loans: Loan[],
    userProfiles?: Record<string, User>,
    walletData?: Record<string, WalletLivenessData>
 ): {
    score: number;
+   rawScore: number;
+   confidence: number;
    hasEnoughHistory: boolean;
    distribution: LenderDistributionItem[];
    uniqueLenders: number;
@@ -118,6 +131,8 @@ export const calculateLenderDiversity = (
    if (fundedLoans.length === 0) {
       return {
          score: 0,
+         rawScore: 0,
+         confidence: 0,
          hasEnoughHistory: false,
          distribution: [],
          uniqueLenders: 0,
@@ -159,6 +174,8 @@ export const calculateLenderDiversity = (
    if (fundedLoans.length < 2) {
       return {
          score: 0,
+         rawScore: 0,
+         confidence: 0,
          hasEnoughHistory: false,
          distribution,
          uniqueLenders,
@@ -219,10 +236,14 @@ export const calculateLenderDiversity = (
    const maxCoordinated = maxItemsIn30DayWindow(joinTimestamps);
    const coordinationRate = uniqueLenders > 1 ? maxCoordinated / uniqueLenders : 0;
    const coordinationBoost = 1 + coordinationRate * coordinationRate;
-   const score = Math.max(0, Math.min(100, Math.round(100 - 20 * Math.log(1 + totalGravity * coordinationBoost))));
+   const rawScore = Math.max(0, Math.min(100, Math.round(100 - 20 * Math.log(1 + totalGravity * coordinationBoost))));
+   const confidence = getEarlyHistoryConfidence(fundedLoans.length);
+   const score = blendTowardNeutralScore(rawScore, confidence);
 
    return {
       score,
+      rawScore,
+      confidence,
       hasEnoughHistory: true,
       distribution,
       uniqueLenders,

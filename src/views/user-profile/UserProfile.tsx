@@ -209,6 +209,7 @@ const UserProfile = () => {
    const trustBuildingCount = trustBuildingLoans.length;
    const hasLoanHistory = fundedLoans.length > 0;
    const hasEnoughLenderDiversityHistory = lenderDiversity.hasEnoughHistory;
+   const isEarlyLenderDiversityScore = hasEnoughLenderDiversityHistory && lenderDiversity.confidence < 1;
    const recentLoansShouldScroll = fundedLoans.length > 5;
    const displayedRecentLoans = recentLoansShouldScroll ? fundedLoans : fundedLoans.slice(0, 5);
    const loanMixLabel = !hasLoanHistory
@@ -646,10 +647,15 @@ const UserProfile = () => {
                                           className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 ${badge.border} ${badge.bg}`}
                                        >
                                           <span className={`text-[11px] font-semibold leading-none ${badge.text}`}>
-                                             {diversityStatus} Diversity
+                                             {isEarlyLenderDiversityScore ? 'Early Score' : `${diversityStatus} Diversity`}
                                           </span>
                                        </span>
                                     </div>
+                                    {isEarlyLenderDiversityScore ? (
+                                       <p className="mb-3 text-[13px] leading-5 text-[#6b7280]">
+                                          Limited history: this score is blended toward 50 until more loans build up.
+                                       </p>
+                                    ) : null}
                                     <button
                                        type="button"
                                        onClick={() =>

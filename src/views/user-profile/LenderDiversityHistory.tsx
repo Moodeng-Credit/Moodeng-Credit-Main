@@ -213,6 +213,7 @@ export default function LenderDiversityHistory() {
    const diversityStatus = getDiversityStatus(lenderDiversity.score);
    const borrowerName = borrower?.displayName || borrower?.username || username || 'Borrower';
    const hasEnoughLenderHistory = lenderDiversity.hasEnoughHistory;
+   const isEarlyLenderDiversityScore = hasEnoughLenderHistory && lenderDiversity.confidence < 1;
 
    if (!borrower) return <Loading />;
 
@@ -341,8 +342,13 @@ export default function LenderDiversityHistory() {
                               <span
                                  className={`mb-3 inline-flex rounded-full border px-3 py-1.5 text-[12px] font-semibold ${getDiversityBadgeClassName(diversityStatus)}`}
                               >
-                                 {diversityStatus} Diversity
+                                 {isEarlyLenderDiversityScore ? 'Early Score' : `${diversityStatus} Diversity`}
                               </span>
+                              {isEarlyLenderDiversityScore ? (
+                                 <p className="mb-3 max-w-[210px] text-[13px] leading-5 text-md-neutral-1400">
+                                    Limited history: this score is blended toward 50 until more loans build up.
+                                 </p>
+                              ) : null}
                            </>
                         ) : (
                            <>
