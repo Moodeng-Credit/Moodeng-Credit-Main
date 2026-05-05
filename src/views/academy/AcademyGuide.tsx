@@ -8,7 +8,7 @@ type AcademyStep = {
    title: string;
    body: string;
    action: string;
-   screen: 'signup' | 'verify' | 'choose' | 'request' | 'board' | 'repay' | 'grow';
+   screen: 'signup' | 'wallet' | 'verify' | 'choose' | 'request' | 'board' | 'repay' | 'grow';
    id: string;
 };
 
@@ -25,6 +25,10 @@ type QuizQuestion = {
 const quizSecondsPerQuestion = 12;
 const quizPointsPerAnswer = 2;
 const tutorialVideoUrl = 'https://youtube.com/shorts/fKpBC9zD6Hk?feature=share';
+const quizPassingScore = 4;
+const baseWalletAndroidUrl = 'https://play.google.com/store/apps/details?id=org.toshi&hl=en';
+const baseWalletIosUrl = 'https://apps.apple.com/th/app/base-formerly-coinbase-wallet/id1278383455';
+const worldIdOrbUrl = 'https://world.org/find-orb';
 
 const steps: AcademyStep[] = [
    {
@@ -32,7 +36,7 @@ const steps: AcademyStep[] = [
       eyebrow: 'Step 1',
       title: 'Create your account',
       body: 'Sign up with email so Moodeng can save your borrower profile, loans, repayments, and credit progress.',
-      action: 'Sign up',
+      action: 'Create account',
       screen: 'signup'
    },
    {
@@ -44,8 +48,16 @@ const steps: AcademyStep[] = [
       screen: 'verify'
    },
    {
-      id: 'choose',
+      id: 'wallet',
       eyebrow: 'Step 3',
+      title: 'Connect your Base wallet',
+      body: 'Connect Coinbase Wallet on Base so Moodeng can track your onchain reputation and handle USDC loans.',
+      action: 'Connect wallet',
+      screen: 'wallet'
+   },
+   {
+      id: 'choose',
+      eyebrow: 'Step 4',
       title: 'Your amount sets the loan type',
       body: 'If your request is below your credit limit, it is trust-building. If it is above your credit limit, it is credit-building.',
       action: 'Amount decides',
@@ -53,7 +65,7 @@ const steps: AcademyStep[] = [
    },
    {
       id: 'request',
-      eyebrow: 'Step 4',
+      eyebrow: 'Step 5',
       title: 'Submit a loan request',
       body: 'Pick your amount, choose when you will repay, and explain why you need support before posting to lenders.',
       action: 'Request',
@@ -61,7 +73,7 @@ const steps: AcademyStep[] = [
    },
    {
       id: 'board',
-      eyebrow: 'Step 5',
+      eyebrow: 'Step 6',
       title: 'Get matched on the request board',
       body: 'Your request appears on the board where lenders can review the terms and decide whether to fund it.',
       action: 'Browse',
@@ -69,7 +81,7 @@ const steps: AcademyStep[] = [
    },
    {
       id: 'repay',
-      eyebrow: 'Step 6',
+      eyebrow: 'Step 7',
       title: 'Repay clearly',
       body: 'Pay back the agreed amount on time. Moodeng tracks repayment progress clearly in your account.',
       action: 'Repay',
@@ -77,7 +89,7 @@ const steps: AcademyStep[] = [
    },
    {
       id: 'grow',
-      eyebrow: 'Step 7',
+      eyebrow: 'Step 8',
       title: 'Grow your next limit',
       body: 'Full-limit loans repaid on time can unlock the next level, helping you build a visible credit record.',
       action: 'Grow',
@@ -88,6 +100,7 @@ const steps: AcademyStep[] = [
 const pathLinks = [
    { label: 'Sign up', stepId: 'signup' },
    { label: 'Verify', stepId: 'verify' },
+   { label: 'Wallet', stepId: 'wallet' },
    { label: 'Loan amount', stepId: 'choose' },
    { label: 'Request', stepId: 'request' },
    { label: 'Repay', stepId: 'repay' },
@@ -101,6 +114,12 @@ const quizQuestions: QuizQuestion[] = [
       question: 'Why do borrowers verify with World ID?',
       options: ['To prove they are unique', 'To skip repayment', 'To hide from lenders'],
       answer: 'To prove they are unique'
+   },
+   {
+      id: 'wallet',
+      question: 'Why do borrowers connect a Base wallet?',
+      options: ['To receive USDC loans and build onchain reputation', 'To hide repayment history', 'To skip World ID'],
+      answer: 'To receive USDC loans and build onchain reputation'
    },
    {
       id: 'loan-type',
@@ -144,7 +163,35 @@ const SignupScreen = (): JSX.Element => (
          <p>Enter the same email you will use for your borrower account.</p>
          <div className="academy-field">Email address</div>
          <div className="academy-field">Create your password</div>
-         <div className="academy-primary academy-primary--dark">Create An Account</div>
+         <Link className="academy-primary academy-primary--dark" to="/sign-up">
+            Create An Account
+         </Link>
+      </div>
+   </div>
+);
+
+const WalletScreen = (): JSX.Element => (
+   <div className="academy-screen academy-screen--wallet">
+      <ProgressDots active={2} />
+      <div className="academy-wallet-card">
+         <div className="academy-wallet-card__icon">
+            <img src="/icons/base-wallet.png" alt="" />
+         </div>
+         <h3>Connect Your Coinbase Wallet</h3>
+         <p>Your wallet is used to build your Trust Score and receive USDC loans on Base.</p>
+         <div className="academy-wallet-network">
+            <span>Network</span>
+            <strong>Base</strong>
+         </div>
+         <div className="academy-wallet-actions">
+            <a className="academy-primary academy-primary--dark" href={baseWalletAndroidUrl} target="_blank" rel="noreferrer">
+               Android
+            </a>
+            <a className="academy-primary" href={baseWalletIosUrl} target="_blank" rel="noreferrer">
+               iOS
+            </a>
+         </div>
+         <small>Gasless transactions are supported on Base.</small>
       </div>
    </div>
 );
@@ -158,7 +205,9 @@ const VerifyScreen = (): JSX.Element => (
          </div>
          <h3>Verify World ID</h3>
          <p>Prove you are a real person. This is a one-time step before larger borrowing limits.</p>
-         <div className="academy-primary academy-primary--dark">Verify with World ID</div>
+         <a className="academy-primary academy-primary--dark" href={worldIdOrbUrl} target="_blank" rel="noreferrer">
+            Verify with World ID
+         </a>
       </div>
    </div>
 );
@@ -198,7 +247,7 @@ const LoanChoiceScreen = (): JSX.Element => (
    </div>
 );
 
-const RequestScreen = (): JSX.Element => (
+const RequestScreen = ({ onLockedAction }: { onLockedAction: (message: string) => void }): JSX.Element => (
    <div className="academy-screen academy-screen--request">
       <div className="academy-request-modal">
          <div className="academy-request-header">Set Your Own Terms</div>
@@ -214,7 +263,13 @@ const RequestScreen = (): JSX.Element => (
             <div className="academy-field">Repayment timeline: 2 days</div>
             <div className="academy-field">Payback amount: $17</div>
             <div className="academy-field">Reason: groceries before payday</div>
-            <div className="academy-primary">Submit Request</div>
+            <button
+               className="academy-primary"
+               type="button"
+               onClick={() => onLockedAction('Please join and verify to submit a request.')}
+            >
+               Submit Request
+            </button>
          </div>
       </div>
    </div>
@@ -250,7 +305,7 @@ const BoardScreen = (): JSX.Element => (
    </div>
 );
 
-const RepayScreen = (): JSX.Element => (
+const RepayScreen = ({ onLockedAction }: { onLockedAction: (message: string) => void }): JSX.Element => (
    <div className="academy-screen academy-screen--repay">
       <h3>Loan Repayment</h3>
       <div className="academy-repay-total">$18.00</div>
@@ -259,7 +314,13 @@ const RepayScreen = (): JSX.Element => (
          <span style={{ width: '72%' }} />
       </div>
       <div className="academy-field">Repayment amount</div>
-      <div className="academy-primary">Repay Now</div>
+      <button
+         className="academy-primary"
+         type="button"
+         onClick={() => onLockedAction('Please join and verify to repay a loan.')}
+      >
+         Repay Now
+      </button>
    </div>
 );
 
@@ -281,20 +342,28 @@ const GrowScreen = (): JSX.Element => (
    </div>
 );
 
-const StepScreen = ({ screen }: { screen: AcademyStep['screen'] }): JSX.Element => {
+const StepScreen = ({
+   screen,
+   onLockedAction
+}: {
+   screen: AcademyStep['screen'];
+   onLockedAction: (message: string) => void;
+}): JSX.Element => {
    switch (screen) {
       case 'signup':
          return <SignupScreen />;
+      case 'wallet':
+         return <WalletScreen />;
       case 'verify':
          return <VerifyScreen />;
       case 'choose':
          return <LoanChoiceScreen />;
       case 'request':
-         return <RequestScreen />;
+         return <RequestScreen onLockedAction={onLockedAction} />;
       case 'board':
          return <BoardScreen />;
       case 'repay':
-         return <RepayScreen />;
+         return <RepayScreen onLockedAction={onLockedAction} />;
       case 'grow':
          return <GrowScreen />;
       default:
@@ -310,6 +379,7 @@ export default function AcademyGuide(): JSX.Element {
    const [quizStatus, setQuizStatus] = useState<QuizStatus>('start');
    const [quizSubmitted, setQuizSubmitted] = useState(false);
    const [quizTimer, setQuizTimer] = useState(quizSecondsPerQuestion);
+   const [lockedMessage, setLockedMessage] = useState('');
 
    const quizScore = useMemo(() => {
       return quizQuestions.reduce((score, question) => {
@@ -320,7 +390,7 @@ export default function AcademyGuide(): JSX.Element {
    const quizPoints = quizScore * quizPointsPerAnswer;
    const activeQuestion = quizQuestions[quizIndex];
    const activeAnswer = activeQuestion ? quizAnswers[activeQuestion.id] : '';
-   const quizPassed = quizStatus === 'score' && quizScore >= 3;
+   const quizPassed = quizStatus === 'score' && quizScore >= quizPassingScore;
    const quizReward = quizRole === 'borrower' ? 'trust points' : 'IOU points';
    const quizClaimPath = quizRole === 'borrower' ? '/verify-world-id' : '/sign-up';
    const quizClaimLabel = quizRole === 'borrower' ? 'Verify to claim' : 'Register to claim';
@@ -419,8 +489,64 @@ export default function AcademyGuide(): JSX.Element {
       window.scrollTo({ top: targetTop, behavior: 'smooth' });
    };
 
+   const showLockedMessage = (message: string) => {
+      setLockedMessage(message);
+   };
+
+   const renderStepAction = (step: AcademyStep) => {
+      if (step.id === 'signup') {
+         return (
+            <Link className="academy-step__action" to="/sign-up">
+               {step.action}
+            </Link>
+         );
+      }
+
+      if (step.id === 'verify') {
+         return (
+            <a className="academy-step__action" href={worldIdOrbUrl} target="_blank" rel="noreferrer">
+               {step.action}
+            </a>
+         );
+      }
+
+      if (step.id === 'request') {
+         return (
+            <button
+               className="academy-step__action"
+               type="button"
+               onClick={() => showLockedMessage('Please join and verify to submit a request.')}
+            >
+               {step.action}
+            </button>
+         );
+      }
+
+      if (step.id === 'repay') {
+         return (
+            <button
+               className="academy-step__action"
+               type="button"
+               onClick={() => showLockedMessage('Please join and verify to repay a loan.')}
+            >
+               {step.action}
+            </button>
+         );
+      }
+
+      return <span>{step.action}</span>;
+   };
+
    return (
       <main className="academy-guide">
+         {lockedMessage ? (
+            <div className="academy-toast" role="status" aria-live="polite">
+               <span>{lockedMessage}</span>
+               <button type="button" onClick={() => setLockedMessage('')} aria-label="Close message">
+                  ×
+               </button>
+            </div>
+         ) : null}
          <div className="academy-reading-progress" style={progressStyle} aria-label={`Guide progress ${readingProgress}%`}>
             <span>{readingProgress}%</span>
          </div>
@@ -480,10 +606,10 @@ export default function AcademyGuide(): JSX.Element {
                      <div className="academy-step__eyebrow">{step.eyebrow}</div>
                      <h2>{step.title}</h2>
                      <p>{step.body}</p>
-                     <span>{step.action}</span>
+                     {renderStepAction(step)}
                   </div>
                   <div className="academy-step__screen">
-                     <StepScreen screen={step.screen} />
+                     <StepScreen screen={step.screen} onLockedAction={showLockedMessage} />
                   </div>
                </article>
             ))}
@@ -492,8 +618,8 @@ export default function AcademyGuide(): JSX.Element {
                   <div className="academy-step__eyebrow">Final quiz</div>
                   <h2>Earn your Academy reward</h2>
                   <p>
-                     Finish the quick check. Score 3 of 4 or better and the reward matches your role: borrowers get trust
-                     points, lenders get IOU points.
+                     Finish the quick check. Score {quizPassingScore} of {quizQuestions.length} or better and the reward
+                     matches your role: borrowers get trust points, lenders get IOU points.
                   </p>
                   <div className="academy-role-toggle" aria-label="Choose reward type">
                      <button
@@ -518,7 +644,7 @@ export default function AcademyGuide(): JSX.Element {
                            ? `Nice. You earned ${quizReward}.`
                            : quizStatus === 'score'
                              ? `Almost. Retake for ${quizReward}.`
-                             : `Score 3+ to earn ${quizReward}. Each correct answer is 2 points.`}
+                             : `Score ${quizPassingScore}+ to earn ${quizReward}. Each correct answer is 2 points.`}
                      </strong>
                   </div>
                </div>
@@ -527,7 +653,9 @@ export default function AcademyGuide(): JSX.Element {
                      <div className="academy-quiz-start">
                         <span>Moodeng Academy Quiz</span>
                         <h3>Ready for the check?</h3>
-                        <p>Answer four quick questions. Each correct answer earns 2 points toward your reward.</p>
+                        <p>
+                           Answer {quizQuestions.length} quick questions. Each correct answer earns 2 points toward your reward.
+                        </p>
                         <button type="button" onClick={resetQuiz}>
                            Start quiz
                         </button>
@@ -588,7 +716,7 @@ export default function AcademyGuide(): JSX.Element {
                         <p>
                            {quizPassed
                               ? `You scored ${quizScore} of ${quizQuestions.length}. Log in and finish the ${quizRole} flow to claim ${quizReward}.`
-                              : `You scored ${quizScore} of ${quizQuestions.length}. Score 3 of 4 to unlock ${quizReward}.`}
+                              : `You scored ${quizScore} of ${quizQuestions.length}. Score ${quizPassingScore} of ${quizQuestions.length} to unlock ${quizReward}.`}
                         </p>
                         {quizPassed && (
                            <Link className="academy-quiz-claim" to={quizClaimPath}>

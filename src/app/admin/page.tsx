@@ -357,15 +357,15 @@ export default function AdminPanel() {
 
    return (
       <main className="min-h-screen bg-[#f7f5fb] text-[#1c053d]">
-         <div className="grid min-h-screen lg:grid-cols-[320px_1fr]">
-            <aside className="bg-[#120429] p-8 text-white lg:sticky lg:top-0 lg:h-screen">
-               <div className="flex items-center gap-5">
-                  <a href="/account/settings" className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-[#8336f0] text-4xl font-black text-white no-underline focus:outline focus:outline-4 focus:outline-offset-4 focus:outline-purple-200" title="Account settings">
+         <div className="grid min-h-screen lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
+            <aside className="overflow-hidden bg-[#120429] p-6 text-white sm:p-8 lg:sticky lg:top-0 lg:h-screen">
+               <div className="flex min-w-0 items-center gap-4">
+                  <a href="/account/settings" className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#8336f0] text-3xl font-black text-white no-underline focus:outline focus:outline-4 focus:outline-offset-4 focus:outline-purple-200 sm:h-20 sm:w-20 sm:text-4xl" title="Account settings">
                      {adminInitial}
                   </a>
-                  <div>
+                  <div className="min-w-0">
                      <p className="text-sm font-black uppercase tracking-[0.18em] text-purple-200">Admin panel</p>
-                     <h1 className="mt-1 text-3xl font-black leading-tight">{currentAdminName}</h1>
+                     <h1 className="mt-1 max-w-full break-words text-2xl font-black leading-tight sm:text-3xl">{currentAdminName}</h1>
                      <p className="mt-1 text-lg text-purple-200">Moodeng Credit</p>
                   </div>
                </div>
@@ -380,7 +380,7 @@ export default function AdminPanel() {
 
                <div className="mt-12 rounded-3xl border border-[#8336f0] bg-[#241044] p-6">
                   <p className="text-lg text-purple-200">Logged in as</p>
-                  <strong className="mt-2 block text-2xl font-black">{currentAdminName}</strong>
+                  <strong className="mt-2 block break-words text-2xl font-black">{currentAdminName}</strong>
                   <p className="mt-2 text-lg text-purple-200">Owner access</p>
                </div>
             </aside>
@@ -392,7 +392,7 @@ export default function AdminPanel() {
                {activeTab === 'users' ? (
                   <section className="space-y-6">
                      <div>
-                        <h2 className="text-5xl font-black tracking-normal">User directory</h2>
+                        <h2 className="break-words text-4xl font-black tracking-normal sm:text-5xl">User directory</h2>
                         <p className="mt-3 max-w-3xl text-2xl text-[#6f627e]">Search every borrower and lender, then manage the selected account directly under that person.</p>
                      </div>
 
@@ -466,7 +466,7 @@ export default function AdminPanel() {
 
                {activeTab === 'defaults' ? (
                   <section className="space-y-6">
-                     <div><h2 className="text-5xl font-black">Default recovery</h2><p className="mt-3 text-2xl text-[#6f627e]">Pick a defaulted loan, then choose a recovery path.</p></div>
+                     <div><h2 className="break-words text-4xl font-black sm:text-5xl">Default recovery</h2><p className="mt-3 text-2xl text-[#6f627e]">Pick a defaulted loan, then choose a recovery path.</p></div>
                      <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
                         <div className="overflow-hidden rounded-3xl border border-[#eadff8] bg-white shadow-sm">
                            {defaultCases.map((item) => (
@@ -497,7 +497,7 @@ export default function AdminPanel() {
 
                {activeTab === 'requests' ? (
                   <section className="space-y-6">
-                     <div><h2 className="text-5xl font-black">Delete loan requests</h2><p className="mt-3 text-2xl text-[#6f627e]">Review requests in a clean list. Expand one at a time before deleting.</p></div>
+                     <div><h2 className="break-words text-4xl font-black sm:text-5xl">Delete loan requests</h2><p className="mt-3 text-2xl text-[#6f627e]">Review requests in a clean list. Expand one at a time before deleting.</p></div>
                      <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
                         <div className="overflow-hidden rounded-3xl border border-[#eadff8] bg-white shadow-sm">
                            {loanRequests.map((request) => (
@@ -526,7 +526,7 @@ export default function AdminPanel() {
 
                {activeTab === 'risk' ? (
                   <section className="space-y-6">
-                     <div><h2 className="text-5xl font-black">Risk assessment</h2><p className="mt-3 text-2xl text-[#6f627e]">A place for the scoring algorithm and the plain-English reasons behind each account risk.</p></div>
+                     <div><h2 className="break-words text-4xl font-black sm:text-5xl">Risk assessment</h2><p className="mt-3 text-2xl text-[#6f627e]">A place for the scoring algorithm and the plain-English reasons behind each account risk.</p></div>
                      <div className="grid gap-5 xl:grid-cols-2">
                         {scaffoldUsers.map((user) => (
                            <article key={user.id} className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
@@ -541,7 +541,7 @@ export default function AdminPanel() {
 
                {activeTab === 'notifications' ? (
                   <section className="space-y-6">
-                     <div><h2 className="text-5xl font-black">Notifications</h2><p className="mt-3 text-2xl text-[#6f627e]">Choose users and send notifications. These show on their screen when they open Moodeng.</p></div>
+                     <div><h2 className="break-words text-4xl font-black sm:text-5xl">Notifications</h2><p className="mt-3 text-2xl text-[#6f627e]">Choose users and send notifications. These show on their screen when they open Moodeng.</p></div>
                      <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
                         <div className="grid gap-4">
                            {noticeTemplates.map((template) => (
