@@ -66,7 +66,7 @@ describe('calculateLenderDiversity', () => {
       const early = calculateLenderDiversity([makeLoan('loan-1', 'lender-a'), makeLoan('loan-2', 'lender-a')], userProfiles);
 
       expect(early.hasEnoughHistory).toBe(true);
-      expect(early.confidence).toBeCloseTo(1 / 7);
+      expect(early.confidence).toBe(0.35);
       expect(early.score).toBeGreaterThan(early.rawScore);
       expect(early.score).toBeLessThan(50);
    });

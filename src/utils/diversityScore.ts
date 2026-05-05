@@ -102,7 +102,17 @@ const toTimestampSeconds = (date: string | undefined): number => {
 function getEarlyHistoryConfidence(fundedLoanCount: number): number {
    if (fundedLoanCount < 2) return 0;
    if (fundedLoanCount >= 8) return 1;
-   return (fundedLoanCount - 1) / 7;
+
+   const confidenceByLoanCount: Record<number, number> = {
+      2: 0.35,
+      3: 0.45,
+      4: 0.55,
+      5: 0.65,
+      6: 0.75,
+      7: 0.85
+   };
+
+   return confidenceByLoanCount[fundedLoanCount] ?? 1;
 }
 
 function blendTowardNeutralScore(rawScore: number, confidence: number): number {
