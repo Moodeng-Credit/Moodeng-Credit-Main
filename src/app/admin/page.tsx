@@ -519,6 +519,120 @@ export default function AdminPanel() {
                               <p className="mt-2 text-lg text-[#6f627e]">
                                  Apply to {selectedDefaultCase.borrower}'s {selectedDefaultCase.amount} default with {selectedDefaultCase.lender}.
                               </p>
+                              {selectedRecoveryPath.name === 'Extend loan' ? (
+                                 <div className="mt-5 grid gap-4 rounded-2xl border border-[#eadff8] bg-white p-4">
+                                    <div>
+                                       <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">What happens</p>
+                                       <p className="mt-2 text-lg font-bold text-[#1c053d]">
+                                          Same lender, same loan, new due date. Borrower and lender both get a notice.
+                                       </p>
+                                    </div>
+                                    <label className="grid gap-2 text-sm font-black uppercase tracking-wide text-[#6f627e]">
+                                       New due date
+                                       <input type="date" defaultValue="2026-06-20" className="h-14 rounded-2xl border border-[#ded0ef] px-4 text-lg font-bold normal-case tracking-normal text-[#1c053d]" />
+                                    </label>
+                                    <label className="grid gap-2 text-sm font-black uppercase tracking-wide text-[#6f627e]">
+                                       Admin note
+                                       <textarea defaultValue="Loan extended because borrower says repayment is coming soon." className="min-h-28 rounded-2xl border border-[#ded0ef] p-4 text-lg font-bold normal-case tracking-normal text-[#1c053d]" />
+                                    </label>
+                                 </div>
+                              ) : null}
+
+                              {selectedRecoveryPath.name === 'Payment plan' ? (
+                                 <div className="mt-5 grid gap-4 rounded-2xl border border-[#eadff8] bg-white p-4">
+                                    <div>
+                                       <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">What happens</p>
+                                       <p className="mt-2 text-lg font-bold text-[#1c053d]">
+                                          Split the overdue repayment into smaller scheduled payments. Borrowing stays paused until the plan is complete.
+                                       </p>
+                                    </div>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                       <label className="grid gap-2 text-sm font-black uppercase tracking-wide text-[#6f627e]">
+                                          Payments
+                                          <select defaultValue="3" className="h-14 rounded-2xl border border-[#ded0ef] px-4 text-lg font-bold normal-case tracking-normal text-[#1c053d]">
+                                             <option value="2">2 payments</option>
+                                             <option value="3">3 payments</option>
+                                             <option value="4">4 payments</option>
+                                          </select>
+                                       </label>
+                                       <label className="grid gap-2 text-sm font-black uppercase tracking-wide text-[#6f627e]">
+                                          Frequency
+                                          <select defaultValue="30" className="h-14 rounded-2xl border border-[#ded0ef] px-4 text-lg font-bold normal-case tracking-normal text-[#1c053d]">
+                                             <option value="7">Every week</option>
+                                             <option value="14">Every 2 weeks</option>
+                                             <option value="30">Every 30 days</option>
+                                             <option value="40">Every 40 days</option>
+                                          </select>
+                                       </label>
+                                    </div>
+                                    <label className="grid gap-2 text-sm font-black uppercase tracking-wide text-[#6f627e]">
+                                       First payment date
+                                       <input type="date" defaultValue="2026-05-20" className="h-14 rounded-2xl border border-[#ded0ef] px-4 text-lg font-bold normal-case tracking-normal text-[#1c053d]" />
+                                    </label>
+                                    <div className="rounded-2xl bg-[#fbf8ff] p-4 text-lg font-bold text-[#1c053d]">
+                                       Preview: 3 scheduled payments, starting 2026-05-20, then every 30 days.
+                                    </div>
+                                 </div>
+                              ) : null}
+
+                              {selectedRecoveryPath.name === 'Bridge refinance' ? (
+                                 <div className="mt-5 grid gap-4 rounded-2xl border border-[#eadff8] bg-white p-4">
+                                    <div>
+                                       <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">What happens</p>
+                                       <p className="mt-2 text-lg font-bold text-[#1c053d]">
+                                          Borrower submits evidence plus a deposit. A new bridge lender pays the old lender directly.
+                                       </p>
+                                    </div>
+                                    <label className="flex gap-3 text-lg font-bold text-[#1c053d]">
+                                       <input type="checkbox" defaultChecked className="mt-1 h-5 w-5 shrink-0" />
+                                       Payday or income evidence received
+                                    </label>
+                                    <label className="flex gap-3 text-lg font-bold text-[#1c053d]">
+                                       <input type="checkbox" className="mt-1 h-5 w-5 shrink-0" />
+                                       Borrower deposit received
+                                    </label>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                       <label className="grid gap-2 text-sm font-black uppercase tracking-wide text-[#6f627e]">
+                                          Borrower deposit
+                                          <input defaultValue="$10.00" className="h-14 rounded-2xl border border-[#ded0ef] px-4 text-lg font-bold normal-case tracking-normal text-[#1c053d]" />
+                                       </label>
+                                       <label className="grid gap-2 text-sm font-black uppercase tracking-wide text-[#6f627e]">
+                                          Bridge amount
+                                          <input defaultValue="$45.00" className="h-14 rounded-2xl border border-[#ded0ef] px-4 text-lg font-bold normal-case tracking-normal text-[#1c053d]" />
+                                       </label>
+                                    </div>
+                                    <label className="grid gap-2 text-sm font-black uppercase tracking-wide text-[#6f627e]">
+                                       Bridge due date
+                                       <input type="date" defaultValue="2026-05-27" className="h-14 rounded-2xl border border-[#ded0ef] px-4 text-lg font-bold normal-case tracking-normal text-[#1c053d]" />
+                                    </label>
+                                 </div>
+                              ) : null}
+
+                              {selectedRecoveryPath.name === 'Manual resolution' ? (
+                                 <div className="mt-5 grid gap-4 rounded-2xl border border-[#eadff8] bg-white p-4">
+                                    <div>
+                                       <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">What happens</p>
+                                       <p className="mt-2 text-lg font-bold text-[#1c053d]">
+                                          Use this when the team needs to waive, correct, dispute, unblock, or keep the borrower blocked.
+                                       </p>
+                                    </div>
+                                    <label className="grid gap-2 text-sm font-black uppercase tracking-wide text-[#6f627e]">
+                                       Outcome
+                                       <select defaultValue="keep-reviewing" className="h-14 rounded-2xl border border-[#ded0ef] px-4 text-lg font-bold normal-case tracking-normal text-[#1c053d]">
+                                          <option value="paid-late">Paid late - unblock borrower</option>
+                                          <option value="waived">Waive default - unblock borrower</option>
+                                          <option value="reporting-error">Reporting error - unblock borrower</option>
+                                          <option value="keep-reviewing">Dispute / keep reviewing</option>
+                                          <option value="keep-blocked">Keep blocked</option>
+                                       </select>
+                                    </label>
+                                    <label className="grid gap-2 text-sm font-black uppercase tracking-wide text-[#6f627e]">
+                                       Team note
+                                       <textarea defaultValue="Explain the decision in plain English. This note appears in the admin audit trail and can be used in the borrower notice." className="min-h-28 rounded-2xl border border-[#ded0ef] p-4 text-lg font-bold normal-case tracking-normal text-[#1c053d]" />
+                                    </label>
+                                 </div>
+                              ) : null}
+
                               <div className="mt-5 grid gap-3">
                                  <button
                                     type="button"
@@ -533,10 +647,14 @@ export default function AdminPanel() {
                                  </button>
                                  <button
                                     type="button"
-                                    onClick={() => setStatusMessage(`${selectedRecoveryPath.name} selected for ${selectedDefaultCase.borrower}. Backend recovery action still needs approval wiring.`)}
+                                    onClick={() =>
+                                       setStatusMessage(
+                                          `${selectedRecoveryPath.name} saved as the selected recovery path for ${selectedDefaultCase.borrower}.`
+                                       )
+                                    }
                                     className="rounded-2xl border border-[#ded0ef] bg-white px-5 py-4 text-xl font-black text-[#34234f]"
                                  >
-                                    Mark path selected
+                                    Save recovery path
                                  </button>
                               </div>
                            </div>
