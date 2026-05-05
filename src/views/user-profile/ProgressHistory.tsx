@@ -12,10 +12,12 @@ import {
    HelpCircle,
    History,
    Lightbulb,
+   Moon,
    RefreshCcw,
    ShieldCheck,
    Sparkles,
    Star,
+   Sun,
    Users
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -34,6 +36,7 @@ import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type User, WorldId } from '@/types/authTypes';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
+import { DEMO_BORROWER_INSIGHTS_USER } from './demoBorrowerInsights';
 
 type TimelineTone = 'purple' | 'blue' | 'green' | 'red' | 'neutral';
 
@@ -50,19 +53,9 @@ export type BorrowerTimelineEvent = {
 };
 
 type LoanClassification = 'trust' | 'credit';
+const BORROWER_INSIGHTS_THEME_KEY = 'borrower-insights-theme';
 
-const DEMO_BORROWER: User = {
-   id: 'demo-progress-borrower',
-   username: 'MilestoneMoo',
-   email: 'demo-progress@moodeng.app',
-   displayName: 'MilestoneMoo',
-   isWorldId: WorldId.ACTIVE,
-   mal: 0,
-   nal: 0,
-   cs: 60,
-   createdAt: '2026-05-02T09:00:00.000Z',
-   updatedAt: '2026-05-02T10:00:00.000Z'
-};
+const DEMO_BORROWER = DEMO_BORROWER_INSIGHTS_USER;
 
 const createDemoLoan = (
    id: string,
@@ -452,6 +445,10 @@ export default function ProgressHistory() {
    const { username } = useParams();
    const [searchParams] = useSearchParams();
    const [profileUser, setProfileUser] = useState<User | null>(null);
+   const [isDarkMode, setIsDarkMode] = useState(() => {
+      if (typeof window === 'undefined') return false;
+      return window.localStorage.getItem(BORROWER_INSIGHTS_THEME_KEY) === 'dark';
+   });
 
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
@@ -462,6 +459,10 @@ export default function ProgressHistory() {
    useEffect(() => {
       window.scrollTo(0, 0);
    }, []);
+
+   useEffect(() => {
+      window.localStorage.setItem(BORROWER_INSIGHTS_THEME_KEY, isDarkMode ? 'dark' : 'light');
+   }, [isDarkMode]);
 
    useEffect(() => {
       if (!username) return;
@@ -498,9 +499,103 @@ export default function ProgressHistory() {
    const isGoodStanding = defaultCount === 0;
 
    return (
-      <div className="min-h-screen bg-[#fbf8ff]">
+      <div className={`progress-history-page min-h-screen bg-[#fbf8ff] transition-colors duration-200 ${isDarkMode ? 'progress-history-dark' : ''}`}>
+         <style>{`
+            .progress-history-dark {
+               background: #0f1117;
+               color: #eef2ff;
+            }
+
+            .progress-history-dark .bg-white {
+               background-color: #171a23 !important;
+            }
+
+            .progress-history-dark .bg-\\[\\#fbf8ff\\],
+            .progress-history-dark .bg-\\[\\#fbfaff\\],
+            .progress-history-dark .bg-md-neutral-200 {
+               background-color: #202532 !important;
+            }
+
+            .progress-history-dark .text-md-primary-2000,
+            .progress-history-dark .text-\\[\\#1f2937\\] {
+               color: #eef2ff !important;
+            }
+
+            .progress-history-dark .text-md-neutral-1400,
+            .progress-history-dark .text-md-neutral-1200,
+            .progress-history-dark .text-\\[\\#6b7280\\],
+            .progress-history-dark .text-\\[\\#4b5563\\] {
+               color: #a8b0c3 !important;
+            }
+
+            .progress-history-dark .border-\\[\\#eadfff\\],
+            .progress-history-dark .border-md-neutral-500 {
+               border-color: #2d3546 !important;
+            }
+
+            .progress-history-dark .shadow-md-card,
+            .progress-history-dark .shadow-\\[0_14px_34px_rgba\\(48\\,24\\,92\\,0\\.08\\)\\],
+            .progress-history-dark .shadow-\\[0_12px_26px_rgba\\(48\\,24\\,92\\,0\\.07\\)\\] {
+               box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24) !important;
+            }
+
+            .progress-history-dark .timeline-line {
+               background-color: #3a2f58 !important;
+            }
+
+            .progress-history-dark .timeline-card {
+               background-color: #171a23 !important;
+               border-color: #2d3546 !important;
+            }
+
+            .progress-history-dark .timeline-card::before {
+               background-color: #171a23 !important;
+               border-color: #2d3546 !important;
+            }
+
+            .progress-history-dark .timeline-node-ring {
+               border-color: #0f1117 !important;
+            }
+
+            .progress-history-dark .progress-identity-card {
+               background: #eef1f6 !important;
+               border-color: #d7deea !important;
+               box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2) !important;
+            }
+
+            .progress-history-dark .progress-identity-card .text-md-primary-2000 {
+               color: #141827 !important;
+            }
+
+            .progress-history-dark .progress-identity-card .text-md-neutral-1400 {
+               color: #5f6878 !important;
+            }
+
+            .progress-history-dark * {
+               scrollbar-color: #4a5265 #151922;
+            }
+
+            .progress-history-dark *::-webkit-scrollbar {
+               width: 8px;
+            }
+
+            .progress-history-dark *::-webkit-scrollbar-track {
+               background: #151922;
+            }
+
+            .progress-history-dark *::-webkit-scrollbar-thumb {
+               background: #4a5265;
+               border-radius: 999px;
+            }
+
+            @media (max-width: 380px) {
+               .progress-history-title {
+                  font-size: 20px;
+               }
+            }
+         `}</style>
          <div className="mx-auto flex min-h-screen max-w-[440px] flex-col px-4 pb-10 pt-5">
-            <div className="relative flex items-center justify-between py-3">
+            <div className="grid grid-cols-[48px_minmax(0,1fr)_104px] items-center gap-2 py-3">
                <button
                   type="button"
                   onClick={() => navigate(-1)}
@@ -509,23 +604,34 @@ export default function ProgressHistory() {
                >
                   <ChevronLeft className="h-6 w-6" strokeWidth={2.4} />
                </button>
-               <h1 className="absolute left-1/2 -translate-x-1/2 text-[24px] font-semibold leading-tight text-md-primary-2000">
+               <h1 className="progress-history-title truncate text-center text-[24px] font-semibold leading-tight text-md-primary-2000">
                   Progress History
                </h1>
-               <button
-                  type="button"
-                  onClick={() => navigate('/support')}
-                  aria-label="Open help and support center"
-                  className="flex h-12 w-12 items-center justify-center rounded-full border border-[#eadfff] bg-white text-md-primary-900 shadow-md-card active:scale-95"
-               >
-                  <HelpCircle className="h-6 w-6" strokeWidth={2} />
-               </button>
+               <div className="flex items-center justify-end gap-2">
+                  <button
+                     type="button"
+                     onClick={() => setIsDarkMode((current) => !current)}
+                     aria-label={isDarkMode ? 'Switch progress history to light mode' : 'Switch progress history to dark mode'}
+                     aria-pressed={isDarkMode}
+                     className="flex h-12 w-12 items-center justify-center rounded-full border border-[#eadfff] bg-white text-md-primary-900 shadow-md-card active:scale-95"
+                  >
+                     {isDarkMode ? <Sun className="h-5 w-5 text-[#facc15]" strokeWidth={2.2} /> : <Moon className="h-5 w-5" strokeWidth={2.2} />}
+                  </button>
+                  <button
+                     type="button"
+                     onClick={() => navigate('/support')}
+                     aria-label="Open help and support center"
+                     className="flex h-12 w-12 items-center justify-center rounded-full border border-[#eadfff] bg-white text-md-primary-900 shadow-md-card active:scale-95"
+                  >
+                     <HelpCircle className="h-6 w-6" strokeWidth={2} />
+                  </button>
+               </div>
             </div>
 
-            <section className="mt-5 rounded-[18px] border border-[#eadfff] bg-white p-4 shadow-[0_14px_34px_rgba(48,24,92,0.08)]">
+            <section className="progress-identity-card mt-5 rounded-[20px] border border-[#eadfff] bg-white px-4 py-4 shadow-[0_14px_34px_rgba(48,24,92,0.08)]">
                <div className="flex items-center gap-4">
-                  <img src={PLACEHOLDER_AVATAR} alt="" className="h-[84px] w-[84px] rounded-full object-cover" />
-                  <div className="min-w-0 flex-1">
+                  <img src={PLACEHOLDER_AVATAR} alt="" className="h-16 w-16 shrink-0 rounded-full object-cover" />
+                  <div className="min-w-0 flex-1 py-1">
                      <h2 className="truncate text-[22px] font-semibold leading-tight text-md-primary-2000">{borrowerName}</h2>
                      <div className="mt-2 flex flex-wrap gap-2">
                         {isVerified && (
@@ -533,14 +639,12 @@ export default function ProgressHistory() {
                               Verified Borrower
                            </StatusPill>
                         )}
+                        <StatusPill tone={isGoodStanding ? 'green' : 'red'} icon={<ShieldCheck className="h-3.5 w-3.5" strokeWidth={2.4} />}>
+                           {isGoodStanding ? 'Good Standing' : 'Defaults Present'}
+                        </StatusPill>
                      </div>
                      <p className="mt-3 text-md-b2 text-md-neutral-1400">Member since {memberSince}</p>
                   </div>
-               </div>
-               <div className="mt-4 flex justify-end">
-                  <StatusPill tone={isGoodStanding ? 'green' : 'red'} icon={<ShieldCheck className="h-3.5 w-3.5" strokeWidth={2.4} />}>
-                     {isGoodStanding ? 'Good Standing' : 'Defaults Present'}
-                  </StatusPill>
                </div>
             </section>
 
@@ -556,7 +660,7 @@ export default function ProgressHistory() {
                </div>
 
                <div className="relative">
-                  <div className="absolute bottom-8 left-6 top-2 w-0.5 bg-[#d9c9fb]" />
+                  <div className="timeline-line absolute bottom-8 left-6 top-2 w-0.5 bg-[#d9c9fb]" />
                   <div className="flex flex-col gap-3">
                      {events.map((event) => (
                         <TimelineEventCard key={event.id} event={event} />
@@ -577,12 +681,12 @@ function TimelineEventCard({ event }: { event: BorrowerTimelineEvent }) {
    return (
       <div className="relative grid grid-cols-[48px_1fr] gap-4">
          <div className="relative z-10 flex justify-center pt-3">
-            <div className={`flex h-12 w-12 items-center justify-center rounded-full border-[5px] border-[#f7f0ff] ${styles.node}`}>
+            <div className={`timeline-node-ring flex h-12 w-12 items-center justify-center rounded-full border-[5px] border-[#f7f0ff] ${styles.node}`}>
                <Icon className="h-5.5 w-5.5" strokeWidth={2.5} />
             </div>
          </div>
 
-         <article className="relative rounded-[18px] border border-[#eadfff] bg-white px-4 py-4 shadow-[0_12px_26px_rgba(48,24,92,0.07)] before:absolute before:left-[-8px] before:top-7 before:h-4 before:w-4 before:rotate-45 before:border-b before:border-l before:border-[#eadfff] before:bg-white">
+         <article className="timeline-card relative rounded-[18px] border border-[#eadfff] bg-white px-4 py-4 shadow-[0_12px_26px_rgba(48,24,92,0.07)] before:absolute before:left-[-8px] before:top-7 before:h-4 before:w-4 before:rotate-45 before:border-b before:border-l before:border-[#eadfff] before:bg-white">
             <div className="flex items-start justify-between gap-3">
                <div className="min-w-0">
                   <h3 className={`text-[18px] font-semibold leading-snug ${styles.title}`}>{event.title}</h3>
