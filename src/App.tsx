@@ -31,7 +31,10 @@ import FAQ from '@/app/faq/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
 import CreditLevelingGuidePage from '@/app/credit-leveling-guide/page';
+import LenderDiversityPage from '@/app/lender-diversity/page';
+import LoanInsightsPage from '@/app/loan-insights/page';
 import Login from '@/app/login/page';
+import MilestonesPage from '@/app/milestones/page';
 // Import pages
 import Home from '@/app/page';
 import Profile from '@/app/profile/page';
@@ -69,7 +72,19 @@ function Layout({ children }: { children: React.ReactNode }) {
    );
 }
 
-const BOTTOM_NAV_ROUTES = ['/request-board', '/repay', '/dashboard', '/lender/dashboard', '/lender/transactions', '/history', '/account', '/account/settings'];
+const BOTTOM_NAV_ROUTES = [
+   '/request-board',
+   '/repay',
+   '/dashboard',
+   '/milestones',
+   '/lender-diversity',
+   '/loan-insights',
+   '/lender/dashboard',
+   '/lender/transactions',
+   '/history',
+   '/account',
+   '/account/settings'
+];
 
 export default function App() {
    const location = useLocation();
@@ -134,6 +149,9 @@ export default function App() {
             <Route path="/dashboard" element={<ProtectedRoute><RoleGuard><Dashboard /></RoleGuard></ProtectedRoute>} />
             <Route path="/request-board" element={<RequestBoard />} />
             <Route path="/repay" element={<ProtectedRoute><RoleGuard><Repay /></RoleGuard></ProtectedRoute>} />
+            <Route path="/milestones" element={<ProtectedRoute><RoleGuard><MilestonesPage /></RoleGuard></ProtectedRoute>} />
+            <Route path="/lender-diversity" element={<ProtectedRoute><RoleGuard><LenderDiversityPage /></RoleGuard></ProtectedRoute>} />
+            <Route path="/loan-insights" element={<ProtectedRoute><RoleGuard><LoanInsightsPage /></RoleGuard></ProtectedRoute>} />
 
             {/* Lender */}
             <Route path="/lender/dashboard" element={<ProtectedRoute><RoleGuard><LenderDashboard /></RoleGuard></ProtectedRoute>} />

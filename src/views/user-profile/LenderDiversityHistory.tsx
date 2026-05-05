@@ -150,7 +150,28 @@ export default function LenderDiversityHistory() {
       loadProfile();
    }, [dispatch, isDemoInsights, username]);
 
-   const fundedLoans = useMemo(() => loans.filter((loan) => loan.loanStatus === 'Lent'), [loans]);
+   useEffect(() => {
+      if (username || isDemoInsights || !user?.id) return;
+
+      const loadCurrentBorrowerLoans = async () => {
+         try {
+            const borrowerLoans = await dispatch(getUserLoans({ userId: user.id })).unwrap();
+            const lenderUserIds = [...new Set(borrowerLoans.map((loan) => loan.lenderUser).filter(Boolean))] as string[];
+            if (lenderUserIds.length > 0) {
+               dispatch(fetchUserProfiles(lenderUserIds)).catch(() => undefined);
+            }
+         } catch (error) {
+            console.error('Error fetching current lender diversity history:', (error as Error).message || error);
+         }
+      };
+
+      loadCurrentBorrowerLoans();
+   }, [dispatch, isDemoInsights, user?.id, username]);
+
+   const fundedLoans = useMemo(
+      () => loans.filter((loan) => loan.loanStatus === 'Lent' && (!borrower?.id || loan.borrowerUser === borrower.id)),
+      [borrower?.id, loans]
+   );
 
    useEffect(() => {
       if (isDemoInsights) return;
@@ -218,7 +239,9 @@ export default function LenderDiversityHistory() {
    if (!borrower) return <Loading />;
 
    return (
-      <div className={`lender-diversity-page min-h-screen bg-[#f7f3ff] transition-colors duration-200 ${isDarkMode ? 'lender-diversity-dark' : ''}`}>
+      <div
+         className={`lender-diversity-page min-h-screen bg-[#f7f3ff] transition-colors duration-200 ${isDarkMode ? 'lender-diversity-dark' : ''}`}
+      >
          <style>{`
             .lender-diversity-dark {
                background: #0f1117;
@@ -312,7 +335,11 @@ export default function LenderDiversityHistory() {
                      aria-pressed={isDarkMode}
                      className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-md-primary-900 shadow-md-card active:scale-95"
                   >
-                     {isDarkMode ? <Sun className="h-4 w-4 text-[#facc15]" strokeWidth={2.2} /> : <Moon className="h-4 w-4" strokeWidth={2.2} />}
+                     {isDarkMode ? (
+                        <Sun className="h-4 w-4 text-[#facc15]" strokeWidth={2.2} />
+                     ) : (
+                        <Moon className="h-4 w-4" strokeWidth={2.2} />
+                     )}
                   </button>
                   <button
                      type="button"
