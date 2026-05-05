@@ -242,6 +242,14 @@ function EmptyOrError({ message }: { message: string }) {
    return <div className="rounded-3xl border border-[#eadff8] bg-white p-6 text-lg font-bold text-[#6f627e]">{message}</div>;
 }
 
+function LoadingPanel({ message }: { message: string }) {
+   return (
+      <div className="rounded-3xl border border-[#eadff8] bg-white p-6 text-lg font-bold text-[#6f627e] shadow-sm">
+         {message}
+      </div>
+   );
+}
+
 function parseMoney(value: string) {
    return Number(value.replace(/[^0-9.]/g, '')) || 0;
 }
@@ -317,10 +325,12 @@ export default function AdminPanel() {
    const [statusMessage, setStatusMessage] = useState<string | null>(null);
    const [error, setError] = useState<string | null>(null);
    const [loading, setLoading] = useState(true);
+   const [adminDataLoading, setAdminDataLoading] = useState(false);
+   const [adminDataLoaded, setAdminDataLoaded] = useState(false);
 
    const currentAdminName = useMemo(() => admin?.display_name ?? reduxUser?.username ?? 'Cookiemonster admin', [admin?.display_name, reduxUser?.username]);
    const adminInitial = currentAdminName.trim().charAt(0).toUpperCase() || 'C';
-   const baseDirectoryRows = users.length ? directoryFromSupabase(users) : scaffoldUsers;
+   const baseDirectoryRows = adminDataLoaded ? directoryFromSupabase(users) : [];
    const directoryRows = baseDirectoryRows.map((user) => ({ ...user, status: accountStatusOverrides[user.username] ?? user.status }));
    const filteredDirectory = directoryRows.filter((user) => roleFilter === 'all' || user.role === roleFilter);
    const selectedUser = directoryRows.find((user) => user.id === selectedUserId) ?? null;
@@ -346,10 +356,17 @@ export default function AdminPanel() {
       })
       .slice(0, 8);
 
-   async function refresh(searchValue = search) {
-      const [nextOverview, nextUsers] = await Promise.all([getAdminOverview(), listAdminDirectoryUsers(searchValue)]);
-      setOverview(nextOverview);
-      setUsers(nextUsers);
+   async function refresh(searchValue = search, options: { showLoading?: boolean } = {}) {
+      if (options.showLoading) setAdminDataLoading(true);
+
+      try {
+         const [nextOverview, nextUsers] = await Promise.all([getAdminOverview(), listAdminDirectoryUsers(searchValue)]);
+         setOverview(nextOverview);
+         setUsers(nextUsers);
+         setAdminDataLoaded(true);
+      } finally {
+         if (options.showLoading) setAdminDataLoading(false);
+      }
    }
 
    useEffect(() => {
@@ -362,7 +379,12 @@ export default function AdminPanel() {
             if (!alive) return;
 
             setAdmin(currentAdmin);
-            if (currentAdmin) await refresh('');
+            setLoading(false);
+            if (currentAdmin) {
+               refresh('', { showLoading: true }).catch((caught) => {
+                  if (alive) setError(caught instanceof Error ? caught.message : 'Could not load admin panel data.');
+               });
+            }
          } catch (caught) {
             if (alive) setError(caught instanceof Error ? caught.message : 'Could not load admin panel.');
          } finally {
@@ -379,7 +401,7 @@ export default function AdminPanel() {
    async function handleSearch(event: FormEvent<HTMLFormElement>) {
       event.preventDefault();
       setError(null);
-      await refresh(search);
+      await refresh(search, { showLoading: true });
    }
 
    async function handleAccountRestriction(username: string, status: AccountStatus) {
@@ -578,6 +600,11 @@ export default function AdminPanel() {
             <section className="min-w-0 p-5 sm:p-8 lg:p-10">
                {error ? <div className="mb-5 rounded-3xl border border-red-200 bg-red-50 p-5 text-lg font-bold text-red-800">{error}</div> : null}
                {statusMessage ? <div className="mb-5 rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-lg font-bold text-emerald-800">{statusMessage}</div> : null}
+               {adminDataLoading ? (
+                  <div className="mb-5 rounded-3xl border border-purple-200 bg-purple-50 p-5 text-lg font-bold text-purple-900">
+                     Loading live admin data. The panel is ready; sections will fill in as Supabase responds.
+                  </div>
+               ) : null}
 
                {activeTab === 'users' ? (
                   <section className="space-y-6">
@@ -598,14 +625,15 @@ export default function AdminPanel() {
                      </form>
 
                      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <StatCard label="All users" value={directoryRows.length} note="Total accounts" />
-                        <StatCard label="Needs review" value={overview?.recoveryReviewCount ?? 0} note="Open items" />
-                        <StatCard label="Defaults" value={overview?.defaultedLoanCount ?? defaultCases.length} note="Borrowing paused" />
-                        <StatCard label="Loan requests" value={overview?.loanRequestReviewCount ?? loanRequests.length} note="Request queue" />
+                        <StatCard label="All users" value={directoryRows.length} note={adminDataLoaded ? 'Total accounts' : 'Loading live count'} />
+                        <StatCard label="Needs review" value={overview?.recoveryReviewCount ?? 0} note={adminDataLoaded ? 'Open items' : 'Loading live count'} />
+                        <StatCard label="Defaults" value={overview?.defaultedLoanCount ?? 0} note={adminDataLoaded ? 'Borrowing paused' : 'Loading live count'} />
+                        <StatCard label="Loan requests" value={overview?.loanRequestReviewCount ?? 0} note={adminDataLoaded ? 'Request queue' : 'Loading live count'} />
                      </div>
 
                      <div className="overflow-hidden rounded-3xl border border-[#eadff8] bg-white shadow-sm">
-                        {filteredDirectory.map((user) => (
+                        {adminDataLoading && !adminDataLoaded ? <LoadingPanel message="Loading user directory from Supabase..." /> : null}
+                        {adminDataLoaded ? filteredDirectory.map((user) => (
                            <article key={user.id} className="border-b border-[#eadff8] last:border-b-0">
                               <div className="grid gap-4 p-6 sm:grid-cols-[1fr_auto] sm:items-center">
                                  <div className="flex gap-4">
@@ -650,8 +678,8 @@ export default function AdminPanel() {
                                  </div>
                               ) : null}
                            </article>
-                        ))}
-                        {!filteredDirectory.length ? <EmptyOrError message="No users match these filters." /> : null}
+                        )) : null}
+                        {adminDataLoaded && !filteredDirectory.length ? <EmptyOrError message="No users match these filters." /> : null}
                      </div>
                   </section>
                ) : null}
@@ -1013,7 +1041,8 @@ export default function AdminPanel() {
                   <section className="space-y-6">
                      <div><h2 className="break-words text-4xl font-black sm:text-5xl">Risk assessment</h2><p className="mt-3 text-2xl text-[#6f627e]">Review risk factors, save a manual review, or move an account to the watchlist.</p></div>
                      <div className="grid gap-5 xl:grid-cols-2">
-                        {directoryRows.map((user) => (
+                        {adminDataLoading && !adminDataLoaded ? <LoadingPanel message="Loading users before risk review..." /> : null}
+                        {adminDataLoaded ? directoryRows.map((user) => (
                            <article key={user.id} className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
                               <div className="flex items-start justify-between gap-3"><h3 className="break-words text-3xl font-black">{user.username}</h3><Badge className={riskClasses(user.risk)}>{user.risk} risk</Badge></div>
                               <p className="mt-4 text-xl text-[#6f627e]">{user.note}</p>
@@ -1047,7 +1076,8 @@ export default function AdminPanel() {
                                  </button>
                               </div>
                            </article>
-                        ))}
+                        )) : null}
+                        {adminDataLoaded && !directoryRows.length ? <EmptyOrError message="No users loaded for risk review." /> : null}
                      </div>
                   </section>
                ) : null}
@@ -1096,7 +1126,11 @@ export default function AdminPanel() {
                                        </button>
                                     ))
                                  ) : (
-                                    <div className="p-5 text-lg font-bold text-[#6f627e]">No matching users found. Check the spelling or search by wallet.</div>
+                                    <div className="p-5 text-lg font-bold text-[#6f627e]">
+                                       {adminDataLoading && !adminDataLoaded
+                                          ? 'Loading matching users from Supabase...'
+                                          : 'No matching users found. Check the spelling or search by wallet.'}
+                                    </div>
                                  )}
                               </div>
                            </div>
