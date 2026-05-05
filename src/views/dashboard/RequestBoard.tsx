@@ -1,7 +1,7 @@
 import { type ChangeEvent, type FormEvent, type MouseEvent, type RefObject, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { AlertTriangle, HelpCircle, Search, X } from 'lucide-react';
+import { AlertTriangle, BookOpenText, ChevronRight, HelpCircle, Search, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
@@ -445,6 +445,22 @@ function RequestBoard$() {
                         />
                      </div>
                   ) : null}
+
+                  <Link
+                     to="/guide"
+                     className="group flex items-center justify-between rounded-md-lg border border-md-neutral-400 bg-white p-4 shadow-md-card transition-all duration-150 hover:border-md-primary-900 hover:bg-md-primary-50 active:scale-[0.99]"
+                  >
+                     <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-md-primary-1200 text-white">
+                           <BookOpenText className="h-6 w-6" strokeWidth={1.8} />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                           <span className="text-md-b1 font-semibold text-md-heading">Visit the Academy</span>
+                           <span className="text-md-b2 font-medium text-md-neutral-700">Learn borrowing, repayment, and credit levels</span>
+                        </div>
+                     </div>
+                     <ChevronRight className="h-6 w-6 shrink-0 text-md-primary-900 transition-transform duration-150 group-hover:translate-x-1" strokeWidth={2} />
+                  </Link>
 
                   {/* Browse Section */}
                   <div className="flex flex-col gap-5">

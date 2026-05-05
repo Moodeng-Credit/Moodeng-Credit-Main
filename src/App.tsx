@@ -30,6 +30,7 @@ import RequestBoard from '@/views/dashboard/RequestBoard';
 import FAQ from '@/app/faq/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
+import CreditLevelingGuidePage from '@/app/credit-leveling-guide/page';
 import Login from '@/app/login/page';
 // Import pages
 import Home from '@/app/page';
@@ -170,6 +171,7 @@ export default function App() {
             {/* Public */}
             <Route path="/faq" element={<Layout><FAQ /></Layout>} />
             <Route path="/guide" element={<MarketingPageShell><Guide /></MarketingPageShell>} />
+            <Route path="/credit-leveling-guide" element={<MarketingPageShell><CreditLevelingGuidePage /></MarketingPageShell>} />
             <Route path="/benefits" element={<MarketingPageShell><Benefits /></MarketingPageShell>} />
             <Route path="/whylend" element={<MarketingPageShell><WhyLend /></MarketingPageShell>} />
             <Route path="/simple" element={<Layout><Simple /></Layout>} />
