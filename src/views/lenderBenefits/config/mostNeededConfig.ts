@@ -5,7 +5,11 @@ export interface CardData {
    id: string;
    regionLabel: string;
    regionDetail: string;
-   regionSymbols: string[];
+   regionSymbols: {
+      label: string;
+      value: string;
+      type?: 'image' | 'text';
+   }[];
    title: string;
    titleColor: string;
    accentColor: string;
@@ -33,7 +37,7 @@ export const mostNeededCards: CardData[] = [
       id: 'overseas-filipinos',
       regionLabel: 'PH',
       regionDetail: 'first corridor',
-      regionSymbols: ['🇵🇭'],
+      regionSymbols: [{ label: 'Philippines', value: '🇵🇭' }],
       title: 'Overseas Filipino workers',
       titleColor: 'text-emerald-500',
       accentColor: '#10b981',
@@ -74,7 +78,12 @@ export const mostNeededCards: CardData[] = [
       id: 'world-id-corridors',
       regionLabel: 'ORB',
       regionDetail: 'Korea, Taiwan, Japan',
-      regionSymbols: ['🇰🇷', '🇹🇼', '🇯🇵', '🇸🇬'],
+      regionSymbols: [
+         { label: 'South Korea', value: '🇰🇷' },
+         { label: 'Taiwan', value: '🇹🇼' },
+         { label: 'Japan', value: '🇯🇵' },
+         { label: 'Singapore', value: '🇸🇬' }
+      ],
       title: 'Orb-ready corridors',
       titleColor: 'text-indigo-500',
       accentColor: '#6366f1',
@@ -116,7 +125,7 @@ export const mostNeededCards: CardData[] = [
       id: 'portable-credit',
       regionLabel: 'USDC',
       regionDetail: 'small emergency loans',
-      regionSymbols: ['$'],
+      regionSymbols: [{ label: 'USDC', value: '/icons/usdc-logo.png', type: 'image' }],
       title: 'Portable credit builders',
       titleColor: 'text-amber-500',
       accentColor: '#f59e0b',
