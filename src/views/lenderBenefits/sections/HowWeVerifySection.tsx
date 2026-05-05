@@ -36,7 +36,7 @@ export default function HowWeVerifySection(): JSX.Element {
             </div>
 
             <div className="lender-world-verify__badge" aria-label="World ID">
-               <div className="lender-world-verify__orb">W</div>
+               <img src="/brand/world-full-logo.svg" alt="World" className="lender-world-verify__logo" />
                <div>
                   <div className="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-500">Verified with</div>
                   <div className="text-4xl font-semibold leading-none">World ID</div>

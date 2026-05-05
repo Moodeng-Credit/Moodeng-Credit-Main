@@ -792,6 +792,13 @@
    box-shadow: 0 20px 42px rgba(17, 20, 23, 0.12);
 }
 
+.lender-world-verify__logo {
+   width: min(176px, 100%);
+   height: auto;
+   border-radius: 18px;
+   box-shadow: 0 16px 32px rgba(17, 20, 23, 0.18);
+}
+
 .lender-world-verify__orb {
    display: grid;
    width: 82px;
