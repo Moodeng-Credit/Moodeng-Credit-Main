@@ -16,6 +16,7 @@ import CongratulationsPage from '@/app/onboarding/congratulations/page';
 import BottomNav from '@/components/BottomNav';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
+import MarketingPageShell from '@/components/marketing/MarketingPageShell';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
 import { AdminGuard } from '@/components/AdminGuard';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -169,8 +170,8 @@ export default function App() {
             {/* Public */}
             <Route path="/faq" element={<Layout><FAQ /></Layout>} />
             <Route path="/guide" element={<Layout><Guide /></Layout>} />
-            <Route path="/benefits" element={<Layout><Benefits /></Layout>} />
-            <Route path="/whylend" element={<Layout><WhyLend /></Layout>} />
+            <Route path="/benefits" element={<MarketingPageShell><Benefits /></MarketingPageShell>} />
+            <Route path="/whylend" element={<MarketingPageShell><WhyLend /></MarketingPageShell>} />
             <Route path="/simple" element={<Layout><Simple /></Layout>} />
             <Route path="/test" element={<Layout><Test /></Layout>} />
             <Route path="/user/:username/lender-diversity" element={<UserLenderDiversityPage />} />
