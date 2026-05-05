@@ -84,7 +84,6 @@ export default function LoanRequestModal({
    if (!isOpen) return null;
 
    const isVerified = !showVerify;
-   const modalWidth = isVerified ? '400px' : '320px';
    const limitAmount = getEffectiveCreditLimit(user.cs, isVerified);
    const selectedDate = days ? days.slice(0, 10) : '';
    const hasReferralCode = referralCode.trim().length > 0;
@@ -231,12 +230,11 @@ export default function LoanRequestModal({
    };
 
    return (
-      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-50">
+      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-50 px-3 py-4">
          <section
             ref={clickOutsideRef}
-            className="bg-white rounded-2xl shadow-md max-w-md mx-auto flex flex-col relative transition-transform duration-150 ease-out"
+            className="relative mx-auto flex max-h-full min-w-0 w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-md transition-transform duration-150 ease-out"
             style={{
-               minWidth: modalWidth,
                transform: `translate(${dismissOffset.x}px, ${dismissOffset.y}px)`
             }}
          >
@@ -255,17 +253,17 @@ export default function LoanRequestModal({
                ✖
             </button>
             <header
-               className="bg-[#1E56FF] rounded-t-2xl px-6 py-4 flex touch-none cursor-grab select-none items-center justify-center gap-2 active:cursor-grabbing"
+               className="flex touch-none cursor-grab select-none items-center justify-center gap-2 rounded-t-2xl bg-[#1E56FF] px-4 py-3 active:cursor-grabbing sm:px-6 sm:py-4"
                onPointerDown={(event) => startDismissGesture(event, 'down')}
                onPointerMove={moveDismissGesture}
                onPointerUp={endDismissGesture}
                onPointerCancel={endDismissGesture}
             >
                {showReferralStep ? (
-                  <h2 className="text-white font-extrabold text-lg leading-6">Referral Boost</h2>
+                  <h2 className="text-[clamp(1rem,4vw,1.125rem)] font-extrabold leading-6 text-white">Referral Boost</h2>
                ) : (
                   <>
-                     <h2 className="text-white font-extrabold text-lg leading-6">Set Your Own Terms</h2>
+                     <h2 className="text-[clamp(1rem,4vw,1.125rem)] font-extrabold leading-6 text-white">Set Your Own Terms</h2>
                      <button aria-label="Help info" className="text-white text-sm font-semibold focus:outline-none" type="button">
                         <i className="fas fa-question-circle"></i>
                      </button>
@@ -358,7 +356,10 @@ export default function LoanRequestModal({
                   <p className="text-center text-xs font-medium text-gray-400">No code? You can still apply as normal.</p>
                </div>
             ) : (
-            <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 text-gray-800 text-sm font-semibold">
+            <form
+               onSubmit={handleSubmit}
+               className="flex min-h-0 flex-col gap-4 overflow-y-auto p-4 text-[clamp(0.8125rem,3.5vw,0.875rem)] font-semibold text-gray-800 sm:gap-5 sm:p-6"
+            >
                {hasAppliedReferralCode ? (
                   <div className="flex items-center gap-2 rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm font-bold text-[#2B9B5F]">
                      <i className="fas fa-check-circle"></i>
@@ -367,51 +368,51 @@ export default function LoanRequestModal({
                      </span>
                   </div>
                ) : null}
-               <div className="flex justify-between items-center">
-                  <label className="text-gray-800 font-semibold text-sm" htmlFor="borrow-amount">
+               <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="font-semibold text-gray-800" htmlFor="borrow-amount">
                      Borrow amount
                   </label>
-                  <div className="flex items-center gap-1 bg-[#E6E9FF] text-[#1E56FF] text-xs font-semibold rounded-md px-2 py-1 select-none">
+                  <div className="flex items-center gap-1 rounded-md bg-[#E6E9FF] px-2 py-1 text-[clamp(0.6875rem,3vw,0.75rem)] font-semibold text-[#1E56FF] select-none">
                      <button aria-label="Limit info" className="focus:outline-none" type="button">
                         <i className="fas fa-question-circle"></i>
                      </button>
                      <span>Limit: ${limitAmount || '0'}</span>
                   </div>
                </div>
-               <div className="flex border-solid border border-gray-300 rounded-md overflow-hidden">
-                  <span aria-hidden="true" className="flex items-center justify-center bg-[#E6E9FF] text-[#1E56FF] px-4 text-base">
+               <div className="flex min-w-0 overflow-hidden rounded-md border border-solid border-gray-300">
+                  <span aria-hidden="true" className="flex shrink-0 items-center justify-center bg-[#E6E9FF] px-3 text-[clamp(0.875rem,3.8vw,1rem)] text-[#1E56FF] sm:px-4">
                      <i className="fas fa-dollar-sign"></i>
                      USD
                   </span>
                   <input
                      onChange={(e: ChangeEvent<HTMLInputElement>) => setLoanAmount(e.target.value)}
-                     className="flex-1 px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
+                     className="min-w-0 flex-1 px-3 py-2 text-[inherit] font-normal text-gray-700 focus:outline-none sm:px-4"
                      id="borrow-amount"
                      placeholder="Set your desired amount"
                      type="text"
                      value={loanAmount}
                   />
                </div>
-               <label className="font-semibold text-gray-800 text-sm" htmlFor="repayment-amount">
+               <label className="font-semibold text-gray-800" htmlFor="repayment-amount">
                   Set Repayment amount
                </label>
                <input
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setTotalRepaymentAmount(e.target.value)}
-                  className="border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
+                  className="rounded-md border border-gray-300 px-3 py-2 text-[inherit] font-normal text-gray-700 focus:outline-none sm:px-4"
                   id="repayment-amount"
                   placeholder="Must be more than borrowed amount..."
                   type="text"
                   value={totalRepaymentAmount}
                />
-               <label className="font-semibold text-gray-800 text-sm">Repayment Date</label>
+               <label className="font-semibold text-gray-800">Repayment Date</label>
                <div className="flex flex-col gap-2">
-                  <div className="flex gap-3">
-                     <button className="bg-[#D6E1FF] text-[#1E56FF] font-semibold rounded-md px-5 py-2 text-sm select-none" type="button">
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                     <button className="rounded-md bg-[#D6E1FF] px-4 py-2 text-[inherit] font-semibold text-[#1E56FF] select-none sm:px-5" type="button">
                         {isVerified && days
                            ? `${Math.ceil((new Date(days).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} Days`
                            : '5 Days'}
                      </button>
-                     <div className="flex flex-1 overflow-hidden rounded-md border border-gray-300">
+                     <div className="flex min-w-0 flex-1 overflow-hidden rounded-md border border-gray-300">
                         <input
                            onChange={handleDays}
                            placeholder="DD/MM/YY"
@@ -419,20 +420,20 @@ export default function LoanRequestModal({
                            min={today}
                            value={selectedDate}
                            id="repaymentDate"
-                           className="min-w-0 flex-1 px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
+                           className="min-w-0 flex-1 px-3 py-2 text-[inherit] font-normal text-gray-700 focus:outline-none sm:px-4"
                         />
                      </div>
                   </div>
                   <p className="text-xs text-gray-500">Date will be set to midnight UTC+00</p>
                </div>
-               <label className="font-semibold text-gray-800 text-sm" htmlFor="reason">
+               <label className="font-semibold text-gray-800" htmlFor="reason">
                   Reason for Borrowing
                </label>
                <div className="flex flex-col gap-2">
                   <textarea
                      maxLength={40}
                      onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}
-                     className="resize-none rounded-md border border-gray-300 px-4 py-2 text-sm font-normal text-gray-700 focus:outline-none"
+                     className="resize-none rounded-md border border-gray-300 px-3 py-2 text-[inherit] font-normal text-gray-700 focus:outline-none sm:px-4"
                      id="reason"
                      placeholder="My car broke down I need help..."
                      rows={3}
