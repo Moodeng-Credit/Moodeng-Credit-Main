@@ -279,6 +279,11 @@ const UserProfile = () => {
                background-color: #202532 !important;
             }
 
+            .borrower-insights-dark .insight-row:hover,
+            .borrower-insights-dark .insight-row:focus-within {
+               background-color: #202532 !important;
+            }
+
             .borrower-insights-dark .ring-\\[\\#f1edf8\\] {
                --tw-ring-color: #30384a !important;
             }
@@ -861,7 +866,7 @@ const InsightRow = ({
    value: string;
    valueColor: string;
 }) => (
-   <div className="flex items-center justify-between gap-3 p-4 transition-colors hover:bg-[#fafafa]">
+   <div className="insight-row flex items-center justify-between gap-3 p-4 transition-colors hover:bg-[#fafafa]">
       <div className="flex min-w-0 items-center gap-2.5">
          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${iconClassName}`}>{icon}</span>
          <span className="min-w-0 text-[15px] font-medium leading-[1.2] text-[#4b5563]">{label}</span>
