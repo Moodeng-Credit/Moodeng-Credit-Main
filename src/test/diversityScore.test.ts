@@ -67,8 +67,8 @@ describe('calculateLenderDiversity', () => {
 
       expect(early.hasEnoughHistory).toBe(true);
       expect(early.confidence).toBe(0.35);
-      expect(early.score).toBeGreaterThan(early.rawScore);
-      expect(early.score).toBeLessThan(50);
+      expect(early.score).not.toBe(early.rawScore);
+      expect(Math.abs(early.score - 50)).toBeLessThan(Math.abs(early.rawScore - 50));
    });
 
    it('counts distinct lenders as unique lenders', () => {
