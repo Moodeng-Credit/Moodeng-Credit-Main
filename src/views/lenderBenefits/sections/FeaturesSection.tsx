@@ -1,18 +1,35 @@
+import { Landmark, type LucideIcon } from 'lucide-react';
 import { type JSX } from 'react';
 
 import { featuresConfig } from '@/views/lenderBenefits/config/featuresConfig';
 import { FeatureRow } from '@/views/lenderBenefits/sections/FeatureRow';
+
+const MoodengFeatureLogo = (): JSX.Element => {
+   return (
+      <span className="lender-feature-column-logo lender-feature-column-logo--moodeng" aria-hidden="true">
+         <img src="/hippos/referral-boost.png" alt="" />
+      </span>
+   );
+};
+
+const TradFiFeatureLogo = ({ Icon }: { Icon: LucideIcon }): JSX.Element => {
+   return (
+      <span className="lender-feature-column-logo lender-feature-column-logo--tradfi" aria-hidden="true">
+         <Icon className="size-5 stroke-[2.5]" />
+      </span>
+   );
+};
 
 const FeaturesHeaderRow = (): JSX.Element => {
    return (
       <div className="lender-feature-header mt-16 mb-8 w-[1268px] max-w-full text-white max-md:mt-8">
          <div className="lender-feature-heading bg-orange-600">Features</div>
          <div className="lender-feature-column-label bg-blue-600">
-            <span>MC</span>
+            <MoodengFeatureLogo />
             <strong>Moodeng</strong>
          </div>
          <div className="lender-feature-column-label bg-zinc-700">
-            <span>TF</span>
+            <TradFiFeatureLogo Icon={Landmark} />
             <strong>TradFi</strong>
          </div>
       </div>
