@@ -91,7 +91,7 @@ export default function LoanRequestModal({
    const hasAppliedReferralCode = appliedReferral !== null;
    const hasReferralCodeError = referralCodeError.length > 0;
    const isReferralTestMode = import.meta.env.DEV && new URLSearchParams(window.location.search).has('referralTest');
-   const referralPrimaryActionText = hasAppliedReferralCode ? 'Continue' : hasReferralCode ? 'Apply code' : 'Skip';
+   const referralPrimaryActionText = hasAppliedReferralCode ? 'Continue' : hasReferralCodeError ? 'Try again' : hasReferralCode ? 'Apply code' : 'Skip';
 
    const formatReferralBoost = (boostAmount: number) => {
       const amount = Number(boostAmount);
