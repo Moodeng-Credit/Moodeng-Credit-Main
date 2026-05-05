@@ -62,6 +62,7 @@ const UserProfile = () => {
    const [isCreditLevelSheetOpen, setIsCreditLevelSheetOpen] = useState(false);
    const [isDefaultHistorySheetOpen, setIsDefaultHistorySheetOpen] = useState(false);
    const [isRepaymentHistorySheetOpen, setIsRepaymentHistorySheetOpen] = useState(false);
+   const [isLenderDiversitySheetOpen, setIsLenderDiversitySheetOpen] = useState(false);
    const [isDarkMode, setIsDarkMode] = useState(() => {
       if (typeof window === 'undefined') return false;
       return window.localStorage.getItem(BORROWER_INSIGHTS_THEME_KEY) === 'dark';
@@ -615,7 +616,17 @@ const UserProfile = () => {
                         <div className="absolute right-0 top-0 h-[120px] w-[120px] rounded-full bg-gradient-to-br from-[#f3e8ff] to-transparent opacity-60 blur-2xl" />
                         <div className="relative z-10 flex items-start justify-between gap-3">
                            <div className="min-w-0 flex-1">
-                              <p className="mb-3 text-[15px] font-semibold text-[#6b7280]">Lender Diversity Score</p>
+                              <div className="mb-3 flex items-center gap-1.5">
+                                 <p className="text-[15px] font-semibold text-[#6b7280]">Lender Diversity Score</p>
+                                 <button
+                                    type="button"
+                                    onClick={() => setIsLenderDiversitySheetOpen(true)}
+                                    aria-label="How Lender Diversity Score works"
+                                    className="flex h-6 w-6 items-center justify-center rounded-full text-[#8b5cf6] transition active:scale-95"
+                                 >
+                                    <HelpCircle className="h-4 w-4" strokeWidth={2.2} />
+                                 </button>
+                              </div>
                               {hasLoanHistory ? (
                                  <>
                                     <div className="mb-3 flex flex-wrap items-center gap-2.5">
@@ -782,6 +793,11 @@ const UserProfile = () => {
             onClose={() => setIsRepaymentHistorySheetOpen(false)}
             repaymentLoans={repaymentLoans}
             totalRepaid={totalRepaid}
+         />
+         <LenderDiversityBottomSheet
+            isOpen={isLenderDiversitySheetOpen}
+            onClose={() => setIsLenderDiversitySheetOpen(false)}
+            onOpenDocs={() => navigate('/support/guides/lender-diversity-score')}
          />
       </div>
    );
@@ -1261,6 +1277,180 @@ const CreditLevelBottomSheet = ({ isOpen, onClose }: { isOpen: boolean; onClose:
       </div>
    );
 };
+
+const LenderDiversityBottomSheet = ({
+   isOpen,
+   onClose,
+   onOpenDocs
+}: {
+   isOpen: boolean;
+   onClose: () => void;
+   onOpenDocs: () => void;
+}) => {
+   const dragStartY = useRef<number | null>(null);
+   const dragOffsetRef = useRef(0);
+   const [dragOffset, setDragOffset] = useState(0);
+
+   if (!isOpen) return null;
+
+   const handleDragStart = (event: PointerEvent<HTMLDivElement>) => {
+      dragStartY.current = event.clientY;
+      dragOffsetRef.current = 0;
+      event.currentTarget.setPointerCapture(event.pointerId);
+   };
+
+   const handleDragMove = (event: PointerEvent<HTMLDivElement>) => {
+      if (dragStartY.current === null) return;
+      const nextOffset = Math.max(0, event.clientY - dragStartY.current);
+      dragOffsetRef.current = nextOffset;
+      setDragOffset(nextOffset);
+   };
+
+   const handleDragEnd = (event: PointerEvent<HTMLDivElement>) => {
+      if (dragStartY.current === null) return;
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      if (dragOffsetRef.current > 96) {
+         onClose();
+      }
+      dragStartY.current = null;
+      dragOffsetRef.current = 0;
+      setDragOffset(0);
+   };
+
+   return (
+      <div className="fixed inset-0 z-[80] flex items-end">
+         <button
+            type="button"
+            aria-label="Close lender diversity explanation"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={onClose}
+         />
+         <div
+            className="insight-bottom-sheet relative mx-auto flex max-h-[86dvh] w-full max-w-[440px] flex-col overflow-hidden rounded-t-[28px] bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.15)] transition-transform duration-150 ease-out"
+            style={{ transform: `translateY(${dragOffset}px)` }}
+         >
+            <div
+               className="shrink-0 touch-none cursor-grab select-none pb-2 pt-3 active:cursor-grabbing"
+               onPointerDown={handleDragStart}
+               onPointerMove={handleDragMove}
+               onPointerUp={handleDragEnd}
+               onPointerCancel={handleDragEnd}
+            >
+               <div className="insight-bottom-sheet-handle mx-auto h-1 w-12 rounded-full bg-[#e5e7eb]" />
+            </div>
+            <div className="shrink-0 border-b border-[#f1edf8] px-6 pb-4 pt-2">
+               <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                     <h3 className="text-[24px] font-bold leading-tight tracking-[-0.02em] text-[#1f2937]">
+                        How Lender Diversity Works
+                     </h3>
+                     <p className="mt-2 text-[15px] leading-6 text-[#4b5563]">
+                        This score belongs to the borrower. It measures the quality of the people who have lent to them.
+                     </p>
+                  </div>
+                  <button
+                     type="button"
+                     onClick={onClose}
+                     className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f3f4f6] text-[#4b5563] active:scale-95"
+                     aria-label="Close"
+                  >
+                     <X className="h-6 w-6" strokeWidth={2} />
+                  </button>
+               </div>
+            </div>
+            <div className="overflow-y-auto px-6 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-5">
+               <div className="rounded-[18px] border border-[#eadfff] bg-[#fbfaff] p-4">
+                  <p className="text-[14px] font-bold uppercase tracking-[0.02em] text-[#8b5cf6]">What a high score means</p>
+                  <p className="mt-2 text-[15px] leading-6 text-[#4b5563]">
+                     Lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not overly
+                     concentrated in one lender.
+                  </p>
+               </div>
+
+               <div className="mt-4 rounded-[18px] border border-[#fee2e2] bg-[#fef2f2] p-4">
+                  <p className="text-[14px] font-bold uppercase tracking-[0.02em] text-[#ef4444]">What it is trying to catch</p>
+                  <p className="mt-2 text-[15px] leading-6 text-[#4b5563]">
+                     A borrower could look trustworthy by using fake lender accounts to fund small loans, then ask for a larger real loan. This
+                     score looks for that kind of coordinated lender history.
+                  </p>
+               </div>
+
+               <div className="mt-5 space-y-3">
+                  <LenderDiversitySignal
+                     title="Amount concentration"
+                     description="Checks whether one lender funded most of the borrower's history."
+                  />
+                  <LenderDiversitySignal
+                     title="Lender newness"
+                     description="New or inactive wallets count as riskier than established wallets with real on-chain activity."
+                  />
+                  <LenderDiversitySignal
+                     title="Timing patterns"
+                     description="Looks for loans arriving in suspicious clusters instead of normal lending intervals."
+                  />
+                  <LenderDiversitySignal
+                     title="Recent activity"
+                     description="Recent suspicious patterns matter more. Older clean history fades over time."
+                  />
+                  <LenderDiversitySignal
+                     title="Group coordination"
+                     description="Checks whether many lenders appeared around the same time, which can suggest a recruited group."
+                  />
+               </div>
+
+               <div className="mt-5 rounded-[18px] border border-[#f1edf8] bg-white p-4 shadow-[0_8px_18px_rgba(48,24,92,0.04)]">
+                  <p className="mb-3 text-[15px] font-bold leading-tight text-[#1f2937]">Score bands</p>
+                  <div className="space-y-2">
+                     <LenderDiversityBand label="Excellent" range="80–100" className="bg-[#dcfce7] text-[#047857]" />
+                     <LenderDiversityBand label="Good" range="60–79" className="bg-[#dbeafe] text-[#2563eb]" />
+                     <LenderDiversityBand label="Fair" range="40–59" className="bg-[#fef3c7] text-[#92400e]" />
+                     <LenderDiversityBand label="Low" range="20–39" className="bg-[#ffedd5] text-[#ea580c]" />
+                     <LenderDiversityBand label="Very Low" range="0–19" className="bg-[#fee2e2] text-[#ef4444]" />
+                  </div>
+               </div>
+
+               <div className="mt-5 flex gap-3 rounded-[18px] border border-[#dbeafe] bg-[#eff6ff] p-4">
+                  <Users className="mt-1 h-5 w-5 shrink-0 text-[#2563eb]" strokeWidth={2.5} />
+                  <p className="text-[14px] leading-6 text-[#4b5563]">
+                     This does not judge the borrower directly. It tells lenders whether the borrower's lender network looks organic or suspicious.
+                  </p>
+               </div>
+
+               <button
+                  type="button"
+                  onClick={onOpenDocs}
+                  className="mt-5 flex w-full items-center justify-between gap-3 rounded-[18px] bg-[#8b5cf6] px-4 py-4 text-left text-white shadow-[0_14px_28px_rgba(139,92,246,0.22)] active:scale-[0.99]"
+               >
+                  <span className="flex min-w-0 items-center gap-3">
+                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15">
+                        <FileText className="h-5 w-5" strokeWidth={2.4} />
+                     </span>
+                     <span className="min-w-0">
+                        <span className="block text-[15px] font-bold leading-tight">Read the full docs</span>
+                        <span className="mt-1 block text-[12px] font-medium leading-tight text-white/75">Lender Diversity Score documentation</span>
+                     </span>
+                  </span>
+                  <ChevronRight className="h-5 w-5 shrink-0" strokeWidth={2.4} />
+               </button>
+            </div>
+         </div>
+      </div>
+   );
+};
+
+const LenderDiversitySignal = ({ title, description }: { title: string; description: string }) => (
+   <div className="rounded-[16px] border border-[#f1edf8] bg-white p-4 shadow-[0_8px_18px_rgba(48,24,92,0.04)]">
+      <p className="text-[15px] font-bold leading-tight text-[#1f2937]">{title}</p>
+      <p className="mt-2 text-[14px] leading-5 text-[#6b7280]">{description}</p>
+   </div>
+);
+
+const LenderDiversityBand = ({ label, range, className }: { label: string; range: string; className: string }) => (
+   <div className="flex items-center justify-between gap-3 rounded-[12px] bg-[#f9fafb] px-3 py-2">
+      <span className="text-[13px] font-semibold text-[#4b5563]">{range}</span>
+      <span className={`rounded-full px-2.5 py-1 text-[12px] font-bold leading-none ${className}`}>{label}</span>
+   </div>
+);
 
 const LoanMixBottomSheet = ({
    isOpen,
