@@ -17,8 +17,7 @@ export type AppliedReferralCode = {
 };
 
 const REFERRAL_TEST_CODES: Record<string, AppliedReferralCode> = {
-   BOOST5: { id: 'referral-test-boost5', code: 'BOOST5', boostAmount: 5 },
-   TEST123: { id: 'referral-test-test123', code: 'TEST123', boostAmount: 5 }
+   BELLE: { id: 'referral-test-belle', code: 'BELLE', boostAmount: 5 }
 };
 
 interface LoanRequestModalProps {
