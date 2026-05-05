@@ -50,12 +50,24 @@ describe('calculateLenderDiversity', () => {
       vi.useRealTimers();
    });
 
+   it('marks lender diversity as not enough history with fewer than two funded loans', () => {
+      const empty = calculateLenderDiversity([], userProfiles);
+      const singleLoan = calculateLenderDiversity([makeLoan('loan-1', 'lender-a')], userProfiles);
+
+      expect(empty.hasEnoughHistory).toBe(false);
+      expect(empty.score).toBe(0);
+      expect(singleLoan.hasEnoughHistory).toBe(false);
+      expect(singleLoan.score).toBe(0);
+      expect(singleLoan.uniqueLenders).toBe(1);
+   });
+
    it('counts distinct lenders as unique lenders', () => {
       const result = calculateLenderDiversity(
          [makeLoan('loan-1', 'lender-a'), makeLoan('loan-2', 'lender-a'), makeLoan('loan-3', 'lender-b')],
          userProfiles
       );
 
+      expect(result.hasEnoughHistory).toBe(true);
       expect(result.uniqueLenders).toBe(2);
       expect(result.repeatLenders).toBe(1);
       expect(result.distribution).toEqual([

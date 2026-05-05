@@ -105,6 +105,7 @@ export const calculateLenderDiversity = (
    walletData?: Record<string, WalletLivenessData>
 ): {
    score: number;
+   hasEnoughHistory: boolean;
    distribution: LenderDistributionItem[];
    uniqueLenders: number;
    repeatLenders: number;
@@ -117,6 +118,7 @@ export const calculateLenderDiversity = (
    if (fundedLoans.length === 0) {
       return {
          score: 0,
+         hasEnoughHistory: false,
          distribution: [],
          uniqueLenders: 0,
          repeatLenders: 0,
@@ -153,6 +155,19 @@ export const calculateLenderDiversity = (
          };
       })
       .sort((a, b) => b.count - a.count || b.percentValue - a.percentValue);
+
+   if (fundedLoans.length < 2) {
+      return {
+         score: 0,
+         hasEnoughHistory: false,
+         distribution,
+         uniqueLenders,
+         repeatLenders,
+         gravityDetails: [],
+         coordinationBoost: 1,
+         totalGravity: 0
+      };
+   }
 
    const gravityDetails: LenderGravityDetail[] = [];
    let totalGravity = 0;
@@ -208,6 +223,7 @@ export const calculateLenderDiversity = (
 
    return {
       score,
+      hasEnoughHistory: true,
       distribution,
       uniqueLenders,
       repeatLenders,
