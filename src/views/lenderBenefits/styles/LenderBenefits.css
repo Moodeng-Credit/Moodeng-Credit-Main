@@ -266,19 +266,22 @@
 
 .lender-community-hero {
    position: relative;
-   width: min(1425px, 100%);
-   margin-top: 8px;
+   width: min(1180px, calc(100% - 48px));
+   margin-top: 24px;
    overflow: hidden;
-   border-radius: 60px;
-   background: #9b7ff0;
+   border-radius: 38px;
+   background:
+      radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0) 32%),
+      linear-gradient(135deg, #a48af5 0%, #8f73e7 100%);
    color: #17151d;
 }
 
 .lender-community-hero__content {
    position: relative;
    z-index: 1;
-   width: min(760px, 100%);
-   padding: 72px 64px 88px;
+   width: 100%;
+   max-width: 980px;
+   padding: 64px 68px 72px;
 }
 
 .lender-community-hero__kicker {
@@ -290,20 +293,20 @@
 }
 
 .lender-community-hero h1 {
-   max-width: 720px;
+   max-width: 900px;
    margin: 0;
    font-family: Poppins, Inter, sans-serif;
-   font-size: clamp(48px, 5vw, 76px);
+   font-size: clamp(56px, 5.6vw, 88px);
    font-weight: 600;
-   line-height: 0.98;
+   line-height: 0.96;
    letter-spacing: 0;
 }
 
 .lender-community-hero p:not(.lender-community-hero__kicker) {
-   max-width: 640px;
-   margin: 28px 0 0;
-   font-size: 28px;
-   line-height: 1.28;
+   max-width: 740px;
+   margin: 32px 0 0;
+   font-size: 26px;
+   line-height: 1.32;
 }
 
 .lender-feature-header,
@@ -385,17 +388,6 @@
    padding: 8px 12px;
    font-size: 24px;
    line-height: 1.2;
-}
-
-.lender-community-hero__art {
-   position: absolute;
-   right: 28px;
-   bottom: 18px;
-   z-index: 0;
-   width: 240px;
-   max-width: 24%;
-   object-fit: contain;
-   opacity: 0.9;
 }
 
 .lender-illustration-visual {
