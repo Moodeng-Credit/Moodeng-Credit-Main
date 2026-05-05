@@ -8,6 +8,8 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 import { type User } from '@/types/authTypes';
 
+type DismissGestureMode = 'down' | 'side' | 'referral';
+
 export type AppliedReferralCode = {
    id: string;
    code: string;
@@ -60,7 +62,7 @@ export default function LoanRequestModal({
    isSubmitting,
    startOnReferralStep = true
 }: LoanRequestModalProps) {
-   const dismissGestureRef = useRef<{ x: number; y: number; mode: 'down' | 'side' } | null>(null);
+   const dismissGestureRef = useRef<{ x: number; y: number; mode: DismissGestureMode } | null>(null);
    const dismissOffsetRef = useRef({ x: 0, y: 0 });
    const [dismissOffset, setDismissOffset] = useState({ x: 0, y: 0 });
    const [showReferralStep, setShowReferralStep] = useState(startOnReferralStep);
@@ -178,7 +180,12 @@ export default function LoanRequestModal({
       setShowReferralStep(false);
    };
 
-   const startDismissGesture = (event: PointerEvent<HTMLElement>, mode: 'down' | 'side') => {
+   const isInteractiveReferralTarget = (target: EventTarget | null) =>
+      target instanceof HTMLElement && Boolean(target.closest('input, button, textarea, select, a'));
+
+   const startDismissGesture = (event: PointerEvent<HTMLElement>, mode: DismissGestureMode) => {
+      if (mode === 'referral' && isInteractiveReferralTarget(event.target)) return;
+
       dismissGestureRef.current = { x: event.clientX, y: event.clientY, mode };
       dismissOffsetRef.current = { x: 0, y: 0 };
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -193,7 +200,9 @@ export default function LoanRequestModal({
       const nextOffset =
          gesture.mode === 'down'
             ? { x: 0, y: Math.max(0, deltaY) }
-            : { x: Math.max(0, deltaX), y: 0 };
+            : gesture.mode === 'referral'
+              ? { x: Math.max(-120, Math.min(120, deltaX)), y: 0 }
+              : { x: Math.max(0, deltaX), y: 0 };
 
       dismissOffsetRef.current = nextOffset;
       setDismissOffset(nextOffset);
@@ -207,12 +216,19 @@ export default function LoanRequestModal({
       const shouldClose =
          (gesture.mode === 'down' && dismissOffsetRef.current.y > 88) ||
          (gesture.mode === 'side' && dismissOffsetRef.current.x > 76);
+      const shouldSkipReferral = gesture.mode === 'referral' && dismissOffsetRef.current.x > 88;
+      const shouldCancelReferral = gesture.mode === 'referral' && dismissOffsetRef.current.x < -88;
 
       dismissGestureRef.current = null;
       dismissOffsetRef.current = { x: 0, y: 0 };
       setDismissOffset({ x: 0, y: 0 });
 
-      if (shouldClose) onClose();
+      if (shouldSkipReferral) {
+         setShowReferralStep(false);
+         return;
+      }
+
+      if (shouldClose || shouldCancelReferral) onClose();
    };
 
    return (
@@ -225,15 +241,17 @@ export default function LoanRequestModal({
                transform: `translate(${dismissOffset.x}px, ${dismissOffset.y}px)`
             }}
          >
-            <div
-               aria-label="Swipe right to close loan form"
-               className="absolute bottom-0 left-0 top-0 z-10 w-8 touch-none cursor-ew-resize select-none"
-               onPointerDown={(event) => startDismissGesture(event, 'side')}
-               onPointerMove={moveDismissGesture}
-               onPointerUp={endDismissGesture}
-               onPointerCancel={endDismissGesture}
-               role="presentation"
-            />
+            {!showReferralStep ? (
+               <div
+                  aria-label="Swipe right to close loan form"
+                  className="absolute bottom-0 left-0 top-0 z-10 w-8 touch-none cursor-ew-resize select-none"
+                  onPointerDown={(event) => startDismissGesture(event, 'side')}
+                  onPointerMove={moveDismissGesture}
+                  onPointerUp={endDismissGesture}
+                  onPointerCancel={endDismissGesture}
+                  role="presentation"
+               />
+            ) : null}
             <button onClick={onClose} className="absolute top-3 right-4 text-white hover:text-gray-800 z-10 text-2xl">
                ✖
             </button>
@@ -276,7 +294,13 @@ export default function LoanRequestModal({
             ) : null}
 
             {showReferralStep ? (
-               <div className="p-6 flex flex-col gap-5 text-gray-800 text-sm font-semibold">
+               <div
+                  className="touch-pan-y p-6 flex flex-col gap-5 text-gray-800 text-sm font-semibold"
+                  onPointerDown={(event) => startDismissGesture(event, 'referral')}
+                  onPointerMove={moveDismissGesture}
+                  onPointerUp={endDismissGesture}
+                  onPointerCancel={endDismissGesture}
+               >
                   <div className="flex items-start gap-4">
                      <div className="min-w-0 flex-1">
                         <span className="inline-flex rounded-md bg-[#E6E9FF] px-2 py-1 text-xs font-semibold text-[#1E56FF]">Optional</span>
