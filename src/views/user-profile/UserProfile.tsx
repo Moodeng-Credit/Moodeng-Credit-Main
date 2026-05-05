@@ -51,6 +51,8 @@ const DIVERSITY_STYLES: Record<string, { border: string; text: string; bg: strin
 
 const getDiversityBadgeStyle = (status: string) => DIVERSITY_STYLES[status] ?? DIVERSITY_STYLES.Poor;
 const BORROWER_INSIGHTS_THEME_KEY = 'borrower-insights-theme';
+const LENDER_DIVERSITY_DOCS_URL =
+   'https://app.gitbook.com/o/AMHwk2hHdkax8lFhGYOU/s/1QbbZpQ1L3YZPjatm5Lw/the-product/lender-diversity-score/~/gitsync/status';
 
 const UserProfile = () => {
    const dispatch = useDispatch<AppDispatch>();
@@ -802,7 +804,7 @@ const UserProfile = () => {
          <LenderDiversityBottomSheet
             isOpen={isLenderDiversitySheetOpen}
             onClose={() => setIsLenderDiversitySheetOpen(false)}
-            onOpenDocs={() => navigate('/support/guides/lender-diversity-score')}
+            onOpenDocs={() => window.open(LENDER_DIVERSITY_DOCS_URL, '_blank', 'noopener,noreferrer')}
          />
       </div>
    );

@@ -8,80 +8,7 @@ import { aboutHeroButtons } from '@/config/buttonConfig';
 
 export default function WelcomeHeroSection(): JSX.Element {
    return (
-      <>
-         <section className="guide-welcome-mobile" aria-labelledby="guide-welcome-title">
-            <div className="guide-welcome-mobile__hero">
-               <h1 id="guide-welcome-title">Welcome to Moodeng Academy</h1>
-               <div className="guide-welcome-mobile__conversation">
-                  <img
-                     className="guide-welcome-mobile__mecha"
-                     alt=""
-                     src="https://c.animaapp.com/wawSHnKX/img/screenshot-2024-09-19-at-15-51-16-removebg-preview-1.png"
-                     width={168}
-                     height={218}
-                  />
-                  <div className="guide-welcome-mobile__bubbles">
-                     <p className="guide-welcome-mobile__bubble guide-welcome-mobile__bubble--intro">
-                        Hi there! I am Mecha! Leader of the Mechas, here to help <strong>Moodeng</strong> explain how her
-                        platform works!
-                     </p>
-                     <p className="guide-welcome-mobile__bubble guide-welcome-mobile__bubble--green">
-                        To get funded, write why you need it, so someone can fund you.
-                     </p>
-                     <p className="guide-welcome-mobile__bubble guide-welcome-mobile__bubble--yellow">
-                        And make sure to submit a request within your credit limit.
-                     </p>
-                  </div>
-               </div>
-            </div>
-
-            <div className="guide-welcome-mobile__card">
-               <h2>How It Works</h2>
-               <ol>
-                  <li>1. Enter your loan amount</li>
-                  <li>2. Choose repayment timeline</li>
-                  <li>3. Specify payback amount</li>
-                  <li>4. Explain your reason for the loan</li>
-                  <li>5. Submit your request</li>
-               </ol>
-
-               <div className="guide-welcome-mobile__loan-card" aria-label="Apply for a loan preview">
-                  <div className="guide-welcome-mobile__loan-tabs">
-                     <span>Ask For Help</span>
-                     <span>Offer Help</span>
-                  </div>
-                  <div className="guide-welcome-mobile__credit-limit">Your available credit limit: $15</div>
-                  <div className="guide-welcome-mobile__loan-field">How much do you need today? i.e. $15</div>
-                  <div className="guide-welcome-mobile__amounts">
-                     <span>$10</span>
-                     <span>$15</span>
-                     <span>$20</span>
-                     <span>$40</span>
-                     <span>Other</span>
-                  </div>
-                  <div className="guide-welcome-mobile__loan-field guide-welcome-mobile__loan-field--split">
-                     <span>
-                        <small>Repayment timeline</small>
-                        dd/mm/yy
-                     </span>
-                     <span aria-hidden="true">Date</span>
-                  </div>
-                  <div className="guide-welcome-mobile__loan-field">Enter how much you will payback? i.e. $17</div>
-                  <div className="guide-welcome-mobile__loan-field">Type your reason? i.e. an emergency, etc.</div>
-                  <div className="guide-welcome-mobile__submit">Submit Request</div>
-               </div>
-            </div>
-
-            {aboutHeroButtons.length > 0 ? (
-               <div className="guide-welcome-mobile__actions">
-                  {aboutHeroButtons.map((button) => (
-                     <ActionButton key={button.text} button={button} />
-                  ))}
-               </div>
-            ) : null}
-         </section>
-
-         <div className="guide-welcome-desktop flex flex-col h-[1086px] items-start w-[1425px] relative">
+      <div className="flex flex-col h-[1086px] items-start w-[1425px] relative">
          <div className="h-[438px] bg-[#f7c9ff] rounded-[60px] overflow-hidden w-[1425px] relative">
             <div className="relative w-[1274px] h-[361px] top-[17px] left-[53px]">
                <div className="absolute w-[1272px] h-[361px] top-0 left-0">
@@ -1125,7 +1052,6 @@ export default function WelcomeHeroSection(): JSX.Element {
                </div>
             </div>
          </div>
-         </div>
-      </>
+      </div>
    );
 }

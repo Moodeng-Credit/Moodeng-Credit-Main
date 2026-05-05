@@ -169,7 +169,7 @@ export default function App() {
 
             {/* Public */}
             <Route path="/faq" element={<Layout><FAQ /></Layout>} />
-            <Route path="/guide" element={<Layout><Guide /></Layout>} />
+            <Route path="/guide" element={<MarketingPageShell><Guide /></MarketingPageShell>} />
             <Route path="/benefits" element={<MarketingPageShell><Benefits /></MarketingPageShell>} />
             <Route path="/whylend" element={<MarketingPageShell><WhyLend /></MarketingPageShell>} />
             <Route path="/simple" element={<Layout><Simple /></Layout>} />
