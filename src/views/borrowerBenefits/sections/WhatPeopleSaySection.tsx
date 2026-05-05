@@ -1,103 +1,67 @@
 import { type JSX } from 'react';
 
-
+const testimonials = [
+   {
+      name: 'Yolo_Finance2010',
+      role: 'Verified Borrower',
+      quote: "I never thought I'd be able to get a loan, let alone build credit. Moodeng changed that for me. It's not just about the money - it's about feeling like I have a real shot at my dreams now.",
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&h=160&q=80'
+   },
+   {
+      name: 'CryptoKween69',
+      role: 'Active Lender',
+      quote: "The whole process is so straightforward. No hidden fees, no confusing terms. Just simple, honest lending. It's refreshing to use this.",
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&h=160&q=80'
+   },
+   {
+      name: 'WanderLust3000',
+      role: 'Verified Borrower',
+      quote: 'As someone who moves around a lot for work, having a credit score that travels with me is incredible. Moodeng has made my lifestyle so much easier.',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=160&h=160&q=80'
+   },
+   {
+      name: 'StonksWizard42',
+      role: 'Active Lender',
+      quote: "I love being able to help people while earning a bit on the side. Even though it's all digital. It's pretty cool to see the direct impact on me.",
+      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=160&h=160&q=80'
+   }
+];
 
 export default function WhatPeopleSaySection(): JSX.Element {
    return (
-      <div className="flex overflow-hidden flex-col justify-center px-20 py-28 mt-20 max-w-full w-[1440px] max-md:px-5 max-md:py-24 max-md:mt-10">
-         <div className="flex flex-col mb-0 max-md:mb-2.5 max-md:max-w-full">
-            <div className="flex flex-wrap gap-5 justify-between text-3xl leading-none text-neutral-100 max-md:max-w-full">
-               <div className="my-auto">WHAT PEOPLE ARE SAYING</div>
-               <img
-                  alt=""
-                  loading="lazy"
-                  src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/29a83b2b5b599a2e4517c42462b57e222b432526876789f71e5963d9444d194b?apiKey=e485b3dc4b924975b4554885e21242bb"
-                  className="object-contain shrink-0 aspect-[1.35] w-[50px]"
-                  width={100}
-                  height={100}
-               />
+      <section className="borrower-proof-section flex overflow-hidden flex-col justify-center px-20 py-24 mt-20 max-w-full w-[1440px] max-md:px-5 max-md:py-14 max-md:mt-0">
+         <div className="flex flex-col max-md:max-w-full">
+            <div className="flex flex-col max-w-[760px] text-neutral-100">
+               <div className="text-md-b2 font-semibold uppercase tracking-[0.16em] text-md-primary-300">What people are saying</div>
+               <h2 className="mt-4 text-5xl font-semibold leading-tight max-md:text-4xl">Borrowers and lenders describe the difference</h2>
+               <p className="mt-5 text-xl leading-8 text-violet-100 max-md:text-md-b1">
+                  These quotes are kept in the page, with realistic placeholder avatars for now. Swap in approved real photos whenever those
+                  are ready.
+               </p>
             </div>
-            <div className="mt-10 max-md:max-w-full">
-               <div className="flex gap-5 max-md:flex-col">
-                  <div className="flex flex-col w-6/12 max-md:ml-0 max-md:w-full">
-                     <div className="flex overflow-hidden flex-col grow px-6 pt-9 pb-6 w-full text-base bg-neutral-900 rounded-[30px] max-md:px-5 max-md:mt-4 max-md:max-w-full">
+
+            <div className="mt-10 grid grid-cols-2 gap-5 max-md:grid-cols-1">
+               {testimonials.map((testimonial) => (
+                  <article key={testimonial.name} className="rounded-[24px] border border-white/10 bg-white/[0.045] p-6 shadow-md-card">
+                     <div className="flex items-center gap-4">
                         <img
                            alt=""
                            loading="lazy"
-                           src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/886cbacf77b1bd8745369e11f9b44d51e5e08713dc9ce22526fb245248973ed1?apiKey=e485b3dc4b924975b4554885e21242bb"
-                           className="object-contain w-10 aspect-[0.95]"
-                           width={40}
-                           height={38}
+                           src={testimonial.avatar}
+                           className="size-16 rounded-full border-2 border-md-primary-300/40 object-cover"
+                           width={64}
+                           height={64}
                         />
-                        <div className="mt-3.5 text-lg text-yellow-300 max-md:mr-2.5 max-md:max-w-full">
-                           I never thought I'd be able to get a loan, let alone build credit. Moodeng changed that for me. It's not just
-                           about the money - it's about feeling like I have a real shot at my dreams now.
+                        <div>
+                           <div className="text-md-b1 font-semibold text-neutral-100">{testimonial.name}</div>
+                           <div className="mt-1 text-md-b2 text-violet-100/70">{testimonial.role}</div>
                         </div>
-                        <div className="self-start mt-2.5 font-bold text-white">Username: Yolo_Finance2010</div>
-                        <div className="pb-px mt-4 text-slate-300 max-md:max-w-full">Verified Borrower</div>
                      </div>
-                  </div>
-                  <div className="flex flex-col ml-5 w-6/12 max-md:ml-0 max-md:w-full">
-                     <div className="flex overflow-hidden flex-col grow px-6 py-5 w-full text-base bg-neutral-900 rounded-[30px] max-md:px-5 max-md:mt-4 max-md:max-w-full">
-                        <img
-                           alt=""
-                           loading="lazy"
-                           src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/d6b8801ebda8dc89f5b666f8bfef973d25e4cde41aeec54b13eab3fa8a76eed8?apiKey=e485b3dc4b924975b4554885e21242bb"
-                           className="object-contain aspect-[0.94] rounded-[29px] w-[50px]"
-                           width={50}
-                           height={47}
-                        />
-                        <div className="mt-7 text-lg text-yellow-300 max-md:mr-2.5 max-md:max-w-full">
-                           The whole process is so straightforward. No hidden fees, no confusing terms. Just simple, honest lending. It's
-                           refreshing to use this.
-                        </div>
-                        <div className="pb-px mt-7 font-bold text-white max-md:max-w-full">Username: CryptoKween69</div>
-                        <div className="pb-px mt-3 text-slate-300 max-md:max-w-full">Active Lender</div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            <div className="mt-4 max-md:max-w-full">
-               <div className="flex gap-5 max-md:flex-col">
-                  <div className="flex flex-col w-6/12 max-md:ml-0 max-md:w-full">
-                     <div className="flex overflow-hidden flex-col grow items-start py-9 pr-12 pl-6 w-full text-base bg-neutral-900 rounded-[30px] max-md:px-5 max-md:mt-4 max-md:max-w-full">
-                        <img
-                           alt=""
-                           loading="lazy"
-                           src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/fc62e2856040112a83053b382070367b42780c6b193ad74e9509e6fe5efb887d?apiKey=e485b3dc4b924975b4554885e21242bb"
-                           className="object-contain w-10 aspect-[0.95] rounded-[29px]"
-                           width={40}
-                           height={38}
-                        />
-                        <div className="self-stretch mt-3.5 text-lg text-yellow-300 max-md:max-w-full">
-                           As someone who moves around a lot for work, having a credit score that travels with me is incredible. Moodeng has
-                           made my lifestyle so much easier.
-                        </div>
-                        <div className="mt-6 font-bold text-white">Username: WanderLust3000</div>
-                        <div className="mt-3 text-slate-300">Verified Borrower</div>
-                     </div>
-                  </div>
-                  <div className="flex flex-col ml-5 w-6/12 max-md:ml-0 max-md:w-full">
-                     <div className="flex overflow-hidden flex-col grow px-6 py-9 w-full text-base bg-neutral-900 rounded-[30px] max-md:px-5 max-md:mt-4 max-md:max-w-full">
-                        <img
-                           alt=""
-                           loading="lazy"
-                           src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/e3a90231ed083eca5781bd4c04ebae5c17ce482941f5d22a0c3aade634838710?apiKey=e485b3dc4b924975b4554885e21242bb"
-                           className="object-contain aspect-[1.11] rounded-[29px] w-[50px]"
-                           width={50}
-                           height={56}
-                        />
-                        <div className="mt-4 mr-8 text-lg text-yellow-300 max-md:mr-2.5 max-md:max-w-full">
-                           I love being able to help people while earning a bit on the side. Even though it's all digital. It's pretty cool
-                           to see the direct impact on me.
-                        </div>
-                        <div className="pb-px mt-6 font-bold text-white max-md:max-w-full">Username: StonksWizard42</div>
-                        <div className="self-start mt-3 text-slate-300">Active Lender</div>
-                     </div>
-                  </div>
-               </div>
+                     <blockquote className="mt-6 text-xl leading-8 text-violet-100 max-md:text-md-b1">"{testimonial.quote}"</blockquote>
+                  </article>
+               ))}
             </div>
          </div>
-      </div>
+      </section>
    );
 }

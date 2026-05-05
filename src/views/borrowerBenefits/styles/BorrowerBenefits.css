@@ -6,13 +6,175 @@
 }
 
 /* Responsive utilities for borrower benefits */
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
+   #benefits {
+      background: #171420;
+      font-family: 'PP Telegraf-Regular', Inter, sans-serif;
+   }
+
+   #benefits > div {
+      align-items: stretch;
+   }
+
+   #benefits > div > div {
+      width: 100%;
+      max-width: none;
+      margin-top: 0;
+      border-radius: 0;
+   }
+
    .borrower-benefits-container {
       padding: 1rem;
    }
 
    .borrower-benefits-section {
       margin-top: 2.5rem;
+   }
+
+   #benefits > div > div:first-child {
+      padding: 0;
+   }
+
+   #benefits > div > div:first-child > div {
+      width: 100%;
+      max-width: none;
+      padding: 40px 30px 80px;
+      border-radius: 0;
+   }
+
+   #benefits h1,
+   #benefits h2,
+   #benefits [class*='text-5xl'],
+   #benefits [class*='text-6xl'],
+   #benefits [class*='text-7xl'] {
+      font-family: Poppins, Inter, sans-serif;
+      letter-spacing: 0;
+   }
+
+   #benefits [class*='rounded-[60px]'] {
+      border-radius: 0;
+   }
+
+   #benefits [class*='rounded-[30px]'] {
+      border-radius: 30px;
+   }
+
+   #benefits img {
+      max-width: 100%;
+   }
+
+   #benefits .max-md\:flex-col {
+      gap: 16px;
+   }
+
+   .borrower-why-us-section {
+      padding: 48px 20px 0;
+      background: #f7f7f8;
+   }
+
+   .borrower-why-us-section > div:first-child {
+      gap: 14px;
+      align-items: center;
+      font-size: 24px;
+      line-height: 1.1;
+   }
+
+   .borrower-why-us-section > div:first-child img {
+      width: 44px;
+      margin-top: 0;
+   }
+
+   .borrower-benefit-card + .borrower-benefit-card {
+      margin-top: 14px;
+   }
+
+   .borrower-mecha-story {
+      gap: 14px;
+      margin-top: 8px;
+      padding-bottom: 44px;
+   }
+
+   .borrower-mecha-story img {
+      width: min(100%, 520px);
+      height: auto;
+      aspect-ratio: 1 / 0.78;
+      align-self: center;
+      object-fit: contain;
+      border-radius: 30px;
+   }
+
+   .borrower-mecha-caption {
+      align-self: center;
+      width: min(100%, 340px);
+      margin-bottom: 40px;
+      padding: 18px 22px;
+      border-radius: 32px;
+      font-size: 24px;
+      line-height: 1.15;
+   }
+
+   .borrower-fast-global-section {
+      margin-top: 0;
+      padding: 52px 20px 34px;
+      background: #171420;
+   }
+
+   .borrower-fast-global-section > div:first-child {
+      text-align: left;
+      font-size: 38px;
+      line-height: 1.05;
+   }
+
+   .borrower-fast-global-list {
+      padding-right: 0;
+      margin-top: 24px;
+      font-size: 20px;
+      line-height: 1.2;
+   }
+
+   .borrower-fast-global-list > div {
+      display: grid !important;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      justify-items: stretch;
+   }
+
+   .borrower-fast-global-item {
+      width: 100% !important;
+      padding: 14px 16px !important;
+      border: 1px solid rgb(255 255 255 / 0.1);
+      border-radius: 18px;
+      background: rgb(255 255 255 / 0.045);
+   }
+
+   .borrower-fast-global-item img {
+      width: 28px;
+      height: 28px;
+   }
+
+   .borrower-capital-section {
+      background: #171420;
+      padding: 34px 20px 58px;
+   }
+
+   .borrower-capital-section > div {
+      padding: 0;
+   }
+
+   .borrower-capital-section > div:first-child > div {
+      gap: 0;
+   }
+
+   .borrower-roadmap-section {
+      background: #171420;
+   }
+
+   .borrower-credit-section {
+      background: #171420;
+   }
+
+   .borrower-proof-section {
+      background: #171420;
    }
 }
 

@@ -1,39 +1,44 @@
 import { type JSX } from 'react';
 
-import ActionButton from '@/components/ui/ActionButton';
-
-import { verifyIdentityButtons } from '@/config/buttonConfig';
+import { ArrowRight, LockKeyhole, UserCheck } from 'lucide-react';
 
 const listData = [
    {
-      title: 'Blockchain-based identity verification'
-   },
-
-   {
-      title: 'User-controlled data sharing'
+      title: 'World ID helps confirm one real person behind each borrower account.'
    },
    {
-      title: 'Enhances trust in peer-to-peer transactions'
+      title: 'Moodeng can show verification status without storing passport-style documents.'
+   },
+   {
+      title: 'Lenders still evaluate loan terms, history, and repayment behavior before funding.'
    }
 ];
 
 export default function VerifyIdentitySection(): JSX.Element {
    return (
-      <div className="flex flex-col self-center px-10 py-8 mt-9 max-w-full text-white bg-blue-600 rounded-[29px] shadow-[0px_4px_6px_rgba(0,0,0,0.1)] w-[767px] max-md:px-5">
-         <div className="pb-px text-2xl font-extrabold max-md:max-w-full">WorldId: On-Chain Identity Verification</div>
-         <div className="pb-px mt-3.5 text-2xl max-md:max-w-full">
-            WorldId is a decentralized identity company since 2017 that provides secure, on-chain verification of digital identities. As a
-            third-party authenticator, WorldId ensures user privacy while enabling trusted interactions in the digital world.
+      <div className="lender-world-identity mt-9 flex max-w-full flex-col self-center rounded-[32px] px-8 py-8 text-white shadow-[0px_18px_50px_rgba(0,0,0,0.22)] w-[860px] max-md:px-5">
+         <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/70">
+            <UserCheck className="size-5" />
+            Identity layer
          </div>
-         <div className="flex flex-row items-end justify-between mt-3.5 max-md:flex-col">
-            <ul className="flex flex-col pl-5 ml-[5%] text-lg list-disc max-md:max-w-full">
+         <div className="mt-4 text-4xl font-semibold leading-tight max-md:text-3xl">World ID is a trust signal, not a loan guarantee.</div>
+         <div className="mt-4 text-xl leading-8 text-white/82 max-md:text-lg">
+            Verification makes the borrower harder to fake. The credit signal still comes from transparent terms, small USDC loans, and
+            repayment behavior over time.
+         </div>
+         <div className="mt-6 flex flex-row items-end justify-between gap-6 max-md:flex-col max-md:items-start">
+            <ul className="flex flex-col gap-3 text-base leading-6 max-md:max-w-full">
                {listData.map((item) => (
-                  <li key={item.title} className="pb-px w-full max-md:max-w-full">
-                     {item.title}
+                  <li key={item.title} className="flex gap-3">
+                     <LockKeyhole className="mt-1 size-4 shrink-0 text-emerald-300" />
+                     <span>{item.title}</span>
                   </li>
                ))}
             </ul>
-            <ActionButton button={verifyIdentityButtons[0]} />
+            <div className="flex shrink-0 items-center gap-2 rounded-full bg-white px-5 py-3 font-semibold text-zinc-950">
+               World ID first
+               <ArrowRight className="size-4" />
+            </div>
          </div>
       </div>
    );

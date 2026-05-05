@@ -13,11 +13,11 @@ export interface LendingIncentiveItem {
 export const lendingIncentivesData: LendingIncentiveItem[] = [
    {
       id: 'flexible-investment',
-      title: 'Flexible Investment Strategy',
+      title: 'Fund fair USDC loans',
       description: [
-         'Offer USDT or USDC interest rates of 15%+',
-         'Diversify across borrower groups and countries.',
-         'In the future, use predictions market and loan securitization for insurance coverage.'
+         'Moodeng loans are funded in USDC only.',
+         'Borrowers choose the interest they are willing to pay.',
+         'Lenders review the request and fund terms that feel fair.'
       ],
       image: {
          src: 'https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/0bf4df8912f6f18fac9049e4662857220316dc65da028b1a2fdf9e0c000ba7e6?apiKey=054474a0b7744b6389c3319e0a9290c2',
