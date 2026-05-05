@@ -144,6 +144,96 @@ export async function sendNoticeToUsername(username: string, notice: NoticeTempl
    return sentNotice;
 }
 
+export async function logAdminAction(input: {
+   action: string;
+   target_table?: string | null;
+   target_id?: string | null;
+   target_user_id?: string | null;
+   metadata?: Record<string, unknown>;
+}) {
+   const supabase = getSupabaseBrowserClient();
+   const { data: auth } = await supabase.auth.getUser();
+
+   return requireOk(
+      supabase
+         .from('admin_audit_logs')
+         .insert({
+            actor_user_id: auth.user?.id ?? null,
+            action: input.action,
+            target_table: input.target_table ?? null,
+            target_id: input.target_id ?? null,
+            target_user_id: input.target_user_id ?? null,
+            metadata: input.metadata ?? {}
+         })
+         .select()
+         .single()
+   );
+}
+
+export async function createLoanRequestReviewForUsername(input: {
+   username: string;
+   status: 'needs_review' | 'reported' | 'duplicate' | 'kept' | 'deleted';
+   reason: 'spam' | 'duplicate' | 'unsafe' | 'bad_data' | 'manual';
+   risk_level: RiskLevel;
+   evidence_summary?: string | null;
+   admin_note?: string | null;
+   reviewed_by?: string | null;
+}) {
+   const user = await findUserByUsername(input.username);
+
+   return requireOk(
+      getSupabaseBrowserClient()
+         .from('admin_loan_request_reviews')
+         .insert({
+            borrower_user_id: user?.id ?? null,
+            status: input.status,
+            reason: input.reason,
+            risk_level: input.risk_level,
+            evidence_summary: input.evidence_summary ?? null,
+            admin_note: input.admin_note ?? null,
+            reviewed_by: input.reviewed_by ?? null,
+            reviewed_at: new Date().toISOString()
+         })
+         .select()
+         .single()
+   );
+}
+
+export async function upsertRiskProfileByUsername(input: {
+   username: string;
+   score: number;
+   risk_level: RiskLevel;
+   status: 'active' | 'watchlist' | 'blocked';
+   algorithm_note?: string | null;
+   override_reason?: string | null;
+   override_by?: string | null;
+}) {
+   const user = await findUserByUsername(input.username);
+   if (!user) throw new Error(`Could not find user "${input.username}".`);
+
+   return requireOk(
+      getSupabaseBrowserClient()
+         .from('admin_risk_profiles')
+         .upsert(
+            {
+               user_id: user.id,
+               score: input.score,
+               risk_level: input.risk_level,
+               status: input.status,
+               algorithm_version: 'admin_manual_review_v1',
+               algorithm_note: input.algorithm_note ?? null,
+               override_score: input.score,
+               override_reason: input.override_reason ?? null,
+               override_by: input.override_by ?? null,
+               override_at: new Date().toISOString()
+            },
+            { onConflict: 'user_id' }
+         )
+         .select()
+         .single()
+   );
+}
+
 export async function upsertAccountRestrictionByUsername(input: {
    username: string;
    status: RestrictionStatus;
