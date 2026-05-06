@@ -2,6 +2,7 @@ import { useSelector } from 'react-redux';
 import { Navigate, useLocation } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
+import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 import type { RootState } from '@/store/store';
 
 interface ProtectedRouteProps {
@@ -13,6 +14,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
    const username = useSelector((state: RootState) => state.auth.username);
    const isAuthChecked = useSelector((state: RootState) => state.auth.isAuthChecked);
    const location = useLocation();
+   const defaultedBorrower = useDefaultedBorrowerSupport(isAuthChecked ? user?.id : null);
 
    if (!isAuthChecked) {
       return <Loading />;
@@ -24,7 +26,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       return <Navigate to="/sign-in" state={{ from: location }} replace />;
    }
 
-   if ((user.accountStatus === 'blocked' || user.accountStatus === 'banned') && location.pathname !== '/account-restricted') {
+   if (defaultedBorrower.isLoading && location.pathname !== '/account-restricted') {
+      return <Loading />;
+   }
+
+   if (
+      (user.accountStatus === 'blocked' ||
+         user.accountStatus === 'banned' ||
+         defaultedBorrower.support.overdueAmount > 0) &&
+      location.pathname !== '/account-restricted'
+   ) {
       return <Navigate to="/account-restricted" replace />;
    }
 
