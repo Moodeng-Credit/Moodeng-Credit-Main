@@ -82,6 +82,7 @@ export default function App() {
    const defaultedBorrower = useDefaultedBorrowerSupport(isAuthChecked ? user?.id : null);
    const isAccountRestricted = user?.accountStatus === 'blocked' || user?.accountStatus === 'banned';
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
+   const canRepayWhileDefaulted = isDefaultedBorrower && location.pathname === '/repay';
    const shouldShowAccountSupport = isAccountRestricted || isDefaultedBorrower;
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
    const showBottomNav =
@@ -119,11 +120,15 @@ export default function App() {
       posthog.reset();
    }, [isPosthogEnabled, user?.email, user?.id, user?.username, username]);
 
-   if (user?.id && defaultedBorrower.isLoading && location.pathname !== '/account-restricted') {
+   if (user?.id && defaultedBorrower.isLoading && location.pathname !== '/account-restricted' && location.pathname !== '/repay') {
       return <Loading />;
    }
 
-   if (shouldShowAccountSupport && location.pathname !== '/account-restricted') {
+   if (isAccountRestricted && location.pathname !== '/account-restricted') {
+      return <Navigate to="/account-restricted" replace />;
+   }
+
+   if (shouldShowAccountSupport && !canRepayWhileDefaulted && location.pathname !== '/account-restricted') {
       return <Navigate to="/account-restricted" replace />;
    }
 
