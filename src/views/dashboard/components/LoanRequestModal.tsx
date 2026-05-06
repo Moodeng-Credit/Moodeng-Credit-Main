@@ -48,6 +48,14 @@ export type AppliedReferralCode = {
 const inputShellClass =
    'border-md-neutral-600 bg-md-neutral-100 shadow-md-card overflow-hidden rounded-md-input border border-solid';
 
+type TooltipId = 'terms' | 'limit' | 'usdc';
+
+const tooltipCopy: Record<TooltipId, string> = {
+   terms: 'Choose how much you want to borrow, when you will repay, and why you need the loan.',
+   limit: 'Your current maximum borrow amount. Repaying loans on time can help increase this limit.',
+   usdc: 'All requests use USDC, so the amount you borrow and repay stays in the same token.'
+};
+
 const parseIsoDate = (value: string) => {
    if (!value) return undefined;
 
@@ -142,6 +150,54 @@ function EmptyCalendarNav() {
    return null;
 }
 
+function InfoTooltip({
+   id,
+   activeTooltip,
+   setActiveTooltip,
+   label,
+   iconClassName = 'h-5 w-5',
+   panelClassName = 'left-1/2 top-full mt-md-1 -translate-x-1/2',
+   arrowClassName = 'left-1/2 top-[-5px] -translate-x-1/2 rotate-45'
+}: {
+   id: TooltipId;
+   activeTooltip: TooltipId | null;
+   setActiveTooltip: (id: TooltipId | null) => void;
+   label: string;
+   iconClassName?: string;
+   panelClassName?: string;
+   arrowClassName?: string;
+}) {
+   const isOpen = activeTooltip === id;
+
+   return (
+      <span className="relative inline-flex">
+         <button
+            aria-expanded={isOpen}
+            aria-label={label}
+            className="inline-flex shrink-0 items-center justify-center text-md-primary-900"
+            onClick={(event) => {
+               event.stopPropagation();
+               setActiveTooltip(isOpen ? null : id);
+            }}
+            onPointerDown={(event) => event.stopPropagation()}
+            type="button"
+         >
+            <HelpCircle aria-hidden="true" className={iconClassName} strokeWidth={1.75} />
+         </button>
+         {isOpen ? (
+            <span
+               className={`absolute z-50 flex w-[260px] max-w-[calc(100vw-64px)] items-center justify-center rounded-[8px] bg-[#360975] p-[10px] text-center text-md-b2 font-normal leading-[21px] text-md-primary-100 shadow-md-card ${panelClassName}`}
+               onPointerDown={(event) => event.stopPropagation()}
+               role="tooltip"
+            >
+               {tooltipCopy[id]}
+               <span aria-hidden="true" className={`absolute h-3 w-3 bg-[#360975] ${arrowClassName}`} />
+            </span>
+         ) : null}
+      </span>
+   );
+}
+
 const UsdcIcon = () => (
    <svg aria-hidden="true" className="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24">
       <path
@@ -180,6 +236,7 @@ export default function LoanRequestModal({
    const dismissOffsetRef = useRef({ x: 0, y: 0 });
    const [dismissOffset, setDismissOffset] = useState({ x: 0, y: 0 });
    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+   const [activeTooltip, setActiveTooltip] = useState<TooltipId | null>(null);
 
    const isVerified = !showVerify;
    const limitAmount = getEffectiveCreditLimit(user.cs, isVerified);
@@ -208,6 +265,23 @@ export default function LoanRequestModal({
    useEffect(() => {
       if (isOpen) onReferralApplied?.(null);
    }, [isOpen, onReferralApplied]);
+
+   useEffect(() => {
+      if (!isOpen) return undefined;
+
+      const closeTooltip = () => setActiveTooltip(null);
+      const closeTooltipOnEscape = (event: globalThis.KeyboardEvent) => {
+         if (event.key === 'Escape') closeTooltip();
+      };
+
+      document.addEventListener('pointerdown', closeTooltip);
+      document.addEventListener('keydown', closeTooltipOnEscape);
+
+      return () => {
+         document.removeEventListener('pointerdown', closeTooltip);
+         document.removeEventListener('keydown', closeTooltipOnEscape);
+      };
+   }, [isOpen]);
 
    const keepDateCursorInEditablePart = (digits = typedDateDigits) => {
       window.requestAnimationFrame(() => {
@@ -362,7 +436,13 @@ export default function LoanRequestModal({
             >
                <div className="flex items-center gap-md-1">
                   <h2 className="text-md-h6 text-md-heading">Set Your Own Terms</h2>
-                  <HelpCircle aria-hidden="true" className="h-5 w-5 text-md-primary-900" strokeWidth={1.75} />
+                  <InfoTooltip
+                     activeTooltip={activeTooltip}
+                     id="terms"
+                     label="Explain setting loan terms"
+                     panelClassName="left-0 top-full mt-md-1"
+                     setActiveTooltip={setActiveTooltip}
+                  />
                </div>
                <button aria-label="Close loan form" onClick={onClose} className="text-md-neutral-2000 hover:text-md-primary-1200" type="button">
                   <X aria-hidden="true" className="h-8 w-8" strokeWidth={2} />
@@ -402,7 +482,15 @@ export default function LoanRequestModal({
                      </label>
                      <div className="flex items-center gap-md-0 rounded-md-md bg-md-primary-100 px-md-1 py-md-0 text-md-b3 font-normal text-[#3e0a88]">
                         <span>Current Limit: ${limitAmount || '0'}</span>
-                        <HelpCircle aria-hidden="true" className="h-4 w-4" strokeWidth={1.75} />
+                        <InfoTooltip
+                           activeTooltip={activeTooltip}
+                           arrowClassName="bottom-[-5px] left-1/2 -translate-x-1/2 rotate-45"
+                           iconClassName="h-4 w-4"
+                           id="limit"
+                           label="Explain current borrow limit"
+                           panelClassName="right-0 bottom-full mb-md-1"
+                           setActiveTooltip={setActiveTooltip}
+                        />
                      </div>
                   </div>
                   <div className={`flex items-center ${inputShellClass}`}>
@@ -425,7 +513,31 @@ export default function LoanRequestModal({
                      />
                   </div>
                   <div className="flex justify-end gap-md-1 text-md-b3 font-normal text-md-neutral-1200">
-                     <AlertCircle aria-hidden="true" className="h-4 w-4 text-md-primary-900" strokeWidth={2} />
+                     <span className="relative inline-flex">
+                        <button
+                           aria-expanded={activeTooltip === 'usdc'}
+                           aria-label="Explain USDC loans"
+                           className="inline-flex text-md-primary-900"
+                           onClick={(event) => {
+                              event.stopPropagation();
+                              setActiveTooltip(activeTooltip === 'usdc' ? null : 'usdc');
+                           }}
+                           onPointerDown={(event) => event.stopPropagation()}
+                           type="button"
+                        >
+                           <AlertCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
+                        </button>
+                        {activeTooltip === 'usdc' ? (
+                           <span
+                              className="absolute left-0 top-full z-50 mt-md-1 flex w-[260px] max-w-[calc(100vw-64px)] -translate-x-1/2 items-center justify-center rounded-[8px] bg-[#360975] p-[10px] text-center text-md-b2 font-normal leading-[21px] text-md-primary-100 shadow-md-card"
+                              onPointerDown={(event) => event.stopPropagation()}
+                              role="tooltip"
+                           >
+                              {tooltipCopy.usdc}
+                              <span aria-hidden="true" className="absolute left-1/2 top-[-5px] h-3 w-3 -translate-x-1/2 rotate-45 bg-[#360975]" />
+                           </span>
+                        ) : null}
+                     </span>
                      <span>All loans are issued and repaid in USDC.</span>
                   </div>
                </div>
