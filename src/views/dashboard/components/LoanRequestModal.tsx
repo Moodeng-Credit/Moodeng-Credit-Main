@@ -53,7 +53,7 @@ type TooltipId = 'terms' | 'limit' | 'usdc';
 const tooltipCopy: Record<TooltipId, string> = {
    terms: 'Choose how much you want to borrow, when you will repay, and why you need the loan.',
    limit: 'Your current maximum borrow amount. Repaying loans on time can help increase this limit.',
-   usdc: 'All requests use USDC, so the amount you borrow and repay stays in the same token.'
+   usdc: 'USDC is digital dollars accepted by major exchanges, making borrowing and lending easier across countries.'
 };
 
 const parseIsoDate = (value: string) => {
@@ -156,6 +156,7 @@ function InfoTooltip({
    setActiveTooltip,
    label,
    iconClassName = 'h-5 w-5',
+   iconStrokeWidth = 1.35,
    panelClassName = 'left-1/2 top-full mt-md-1 -translate-x-1/2',
    arrowClassName = 'left-1/2 top-[-5px] -translate-x-1/2 rotate-45'
 }: {
@@ -164,6 +165,7 @@ function InfoTooltip({
    setActiveTooltip: (id: TooltipId | null) => void;
    label: string;
    iconClassName?: string;
+   iconStrokeWidth?: number;
    panelClassName?: string;
    arrowClassName?: string;
 }) {
@@ -182,11 +184,11 @@ function InfoTooltip({
             onPointerDown={(event) => event.stopPropagation()}
             type="button"
          >
-            <HelpCircle aria-hidden="true" className={iconClassName} strokeWidth={1.75} />
+            <HelpCircle aria-hidden="true" className={iconClassName} strokeWidth={iconStrokeWidth} />
          </button>
          {isOpen ? (
             <span
-               className={`absolute z-50 flex w-[260px] max-w-[calc(100vw-64px)] items-center justify-center rounded-[8px] bg-[#360975] p-[10px] text-center text-md-b2 font-normal leading-[21px] text-md-primary-100 shadow-md-card ${panelClassName}`}
+               className={`absolute z-50 flex w-[220px] max-w-[calc(100vw-64px)] items-center justify-center rounded-[8px] bg-[#360975] p-[10px] text-center text-md-b3 font-normal leading-[18px] text-md-primary-100 shadow-md-card ${panelClassName}`}
                onPointerDown={(event) => event.stopPropagation()}
                role="tooltip"
             >
@@ -438,9 +440,10 @@ export default function LoanRequestModal({
                   <h2 className="text-md-h6 text-md-heading">Set Your Own Terms</h2>
                   <InfoTooltip
                      activeTooltip={activeTooltip}
+                     arrowClassName="right-[42px] top-[-5px] rotate-45"
                      id="terms"
                      label="Explain setting loan terms"
-                     panelClassName="left-0 top-full mt-md-1"
+                     panelClassName="right-[-40px] top-full mt-md-1"
                      setActiveTooltip={setActiveTooltip}
                   />
                </div>
