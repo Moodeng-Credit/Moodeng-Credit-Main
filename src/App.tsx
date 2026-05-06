@@ -21,6 +21,7 @@ import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay'
 import { AdminGuard } from '@/components/AdminGuard';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { RoleGuard } from '@/components/RoleGuard';
+import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
@@ -77,12 +78,15 @@ const BOTTOM_NAV_ROUTES = ['/request-board', '/repay', '/dashboard', '/lender/da
 export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
-   const { user, username } = useSelector((state: RootState) => state.auth);
+   const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
+   const defaultedBorrower = useDefaultedBorrowerSupport(isAuthChecked ? user?.id : null);
    const isAccountRestricted = user?.accountStatus === 'blocked' || user?.accountStatus === 'banned';
+   const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
+   const shouldShowAccountSupport = isAccountRestricted || isDefaultedBorrower;
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
    const showBottomNav =
       user?.id &&
-      !isAccountRestricted &&
+      !shouldShowAccountSupport &&
       user?.userRole &&
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
          (location.pathname.startsWith('/user/') && !isUserDetailRoute) ||
@@ -115,7 +119,11 @@ export default function App() {
       posthog.reset();
    }, [isPosthogEnabled, user?.email, user?.id, user?.username, username]);
 
-   if (isAccountRestricted && location.pathname !== '/account-restricted') {
+   if (user?.id && defaultedBorrower.isLoading && location.pathname !== '/account-restricted') {
+      return <Loading />;
+   }
+
+   if (shouldShowAccountSupport && location.pathname !== '/account-restricted') {
       return <Navigate to="/account-restricted" replace />;
    }
 
