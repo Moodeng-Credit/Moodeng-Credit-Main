@@ -68,6 +68,7 @@ export default {
                   700: '#314158'
                },
                yellow: {
+                  100: '#fff8e1',
                   700: '#d3aa00'
                },
                red: {

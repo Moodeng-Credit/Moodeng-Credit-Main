@@ -46,6 +46,8 @@ import SupportGuideDetailPage from '@/app/support/guides/[slug]/page';
 import SupportFAQPage from '@/app/support/faq/page';
 import SupportUpdatesPage from '@/app/support/updates/page';
 import SupportUpdateDetailPage from '@/app/support/updates/[slug]/page';
+import LenderDiversityPage from '@/app/lender-diversity/page';
+import MilestonesPage from '@/app/milestones/page';
 import UserLenderDiversityPage from '@/app/user/[username]/lender-diversity/page';
 import UserProfile from '@/app/user/[username]/page';
 import UserProgressHistoryPage from '@/app/user/[username]/progress-history/page';
@@ -134,6 +136,8 @@ export default function App() {
             <Route path="/dashboard" element={<ProtectedRoute><RoleGuard><Dashboard /></RoleGuard></ProtectedRoute>} />
             <Route path="/request-board" element={<RequestBoard />} />
             <Route path="/repay" element={<ProtectedRoute><RoleGuard><Repay /></RoleGuard></ProtectedRoute>} />
+            <Route path="/milestones" element={<ProtectedRoute><RoleGuard><MilestonesPage /></RoleGuard></ProtectedRoute>} />
+            <Route path="/lender-diversity" element={<ProtectedRoute><RoleGuard><LenderDiversityPage /></RoleGuard></ProtectedRoute>} />
 
             {/* Lender */}
             <Route path="/lender/dashboard" element={<ProtectedRoute><RoleGuard><LenderDashboard /></RoleGuard></ProtectedRoute>} />
