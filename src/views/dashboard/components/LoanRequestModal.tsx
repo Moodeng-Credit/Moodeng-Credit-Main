@@ -35,8 +35,15 @@ interface LoanRequestModalProps {
    today: string;
    handleDays: (e: ChangeEvent<HTMLInputElement>) => void;
    handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
+   onReferralApplied?: (referral: AppliedReferralCode | null) => void;
    isSubmitting: boolean;
 }
+
+export type AppliedReferralCode = {
+   id: string;
+   code: string;
+   boostAmount: number;
+};
 
 const inputShellClass =
    'border-md-neutral-600 bg-md-neutral-100 shadow-md-card overflow-hidden rounded-md-input border border-solid';
@@ -163,6 +170,7 @@ export default function LoanRequestModal({
    today,
    handleDays,
    handleSubmit,
+   onReferralApplied,
    isSubmitting
 }: LoanRequestModalProps) {
    const formRef = useRef<HTMLFormElement | null>(null);
@@ -196,6 +204,10 @@ export default function LoanRequestModal({
    useEffect(() => {
       setCalendarMonth(selectedCalendarDate ?? todayDate);
    }, [selectedDate, today]);
+
+   useEffect(() => {
+      if (isOpen) onReferralApplied?.(null);
+   }, [isOpen, onReferralApplied]);
 
    const keepDateCursorInEditablePart = (digits = typedDateDigits) => {
       window.requestAnimationFrame(() => {
