@@ -687,8 +687,8 @@ export default function AdminPanel() {
                {activeTab === 'defaults' ? (
                   <section className="space-y-6">
                      <div><h2 className="break-words text-4xl font-black sm:text-5xl">Default recovery</h2><p className="mt-3 text-2xl text-[#6f627e]">Pick a defaulted loan, then choose a recovery path.</p></div>
-                     <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
-                        <div className="overflow-hidden rounded-3xl border border-[#eadff8] bg-white shadow-sm">
+                     <div className="grid items-start gap-5 xl:grid-cols-[minmax(360px,520px)_minmax(0,1fr)]">
+                        <div className="self-start overflow-hidden rounded-3xl border border-[#eadff8] bg-white shadow-sm">
                            {defaultCases.map((item) => (
                               <button
                                  key={item.id}
@@ -700,22 +700,30 @@ export default function AdminPanel() {
                                        bridgeAmount: formatMoney(Math.max(parseMoney(item.amount) - parseMoney(current.bridgeDepositAmount), 0))
                                     }));
                                  }}
-                                 className={`block w-full border-b border-[#eadff8] p-6 text-left last:border-b-0 ${
+                                 className={`block w-full border-b border-[#eadff8] p-5 text-left transition last:border-b-0 hover:bg-[#fbf8ff] ${
                                     selectedDefaultCaseId === item.id ? 'bg-[#fbf8ff]' : 'bg-white'
                                  }`}
                               >
                                  <div className="flex items-start justify-between gap-4">
-                                    <div><h3 className="text-3xl font-black">{item.borrower}</h3><p className="mt-2 text-xl text-[#6f627e]">Defaulted to {item.lender} · due {item.due}</p></div>
-                                    <strong className="text-4xl font-black">{item.amount}</strong>
+                                    <div><h3 className="text-2xl font-black">{item.borrower}</h3><p className="mt-2 text-lg text-[#6f627e]">Defaulted to {item.lender} · due {item.due}</p></div>
+                                    <strong className="text-3xl font-black">{item.amount}</strong>
                                  </div>
                                  <Badge className={`mt-4 ${statusClasses(item.status)}`}>{item.status}</Badge>
-                                 <p className="mt-4 text-xl text-[#6f627e]">{item.summary}</p>
+                                 <p className="mt-4 text-lg leading-7 text-[#6f627e]">{item.summary}</p>
                               </button>
                            ))}
                         </div>
                         <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
-                           <h3 className="text-3xl font-black">Choose recovery path</h3>
-                           <div className="mt-5 grid gap-4">
+                           <div className="flex flex-wrap items-start justify-between gap-4">
+                              <div>
+                                 <h3 className="text-3xl font-black">Choose recovery path</h3>
+                                 <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                                    Editing {selectedDefaultCase.borrower}'s {selectedDefaultCase.amount} default.
+                                 </p>
+                              </div>
+                              <Badge className={statusClasses(selectedDefaultCase.status)}>{selectedDefaultCase.status}</Badge>
+                           </div>
+                           <div className="mt-5 grid gap-4 lg:grid-cols-2 2xl:grid-cols-4">
                               {recoveryPaths.map((path) => (
                                  <button
                                     key={path.name}
@@ -736,11 +744,25 @@ export default function AdminPanel() {
                               ))}
                            </div>
                            <div className="mt-5 rounded-3xl border border-[#eadff8] bg-[#fbf8ff] p-5">
-                              <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Current selection</p>
-                              <h4 className="mt-2 text-2xl font-black">{selectedRecoveryPath.name}</h4>
-                              <p className="mt-2 text-lg text-[#6f627e]">
-                                 Apply to {selectedDefaultCase.borrower}'s {selectedDefaultCase.amount} default with {selectedDefaultCase.lender}.
-                              </p>
+                              <div className="grid gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+                                 <div>
+                                    <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Current selection</p>
+                                    <h4 className="mt-2 text-3xl font-black">{selectedRecoveryPath.name}</h4>
+                                    <p className="mt-2 text-lg leading-7 text-[#6f627e]">
+                                       Apply to {selectedDefaultCase.borrower}'s {selectedDefaultCase.amount} default with {selectedDefaultCase.lender}.
+                                    </p>
+                                 </div>
+                                 <div className="rounded-2xl border border-[#eadff8] bg-white p-4">
+                                    <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Selected loan</p>
+                                    <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+                                       <div>
+                                          <strong className="block text-2xl font-black">{selectedDefaultCase.borrower}</strong>
+                                          <span className="mt-1 block text-lg font-bold text-[#6f627e]">Due {selectedDefaultCase.due}</span>
+                                       </div>
+                                       <strong className="text-4xl font-black text-[#1c053d]">{selectedDefaultCase.amount}</strong>
+                                    </div>
+                                 </div>
+                              </div>
                               {savedRecoveryPaths[selectedDefaultCase.id] ? (
                                  <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-lg font-black text-emerald-800">
                                     Saved path: {savedRecoveryPaths[selectedDefaultCase.id]}
