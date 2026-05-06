@@ -5,7 +5,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import type { Database } from '@/lib/supabase/types';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
-import { type AuthState, type User, type UserRole, WorldId } from '@/types/authTypes';
+import { type AccountStatus, type AuthState, type User, type UserRole, WorldId } from '@/types/authTypes';
 
 type UpdateUserPayload = {
    username?: string;
@@ -103,6 +103,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    nal: row.nal,
    cs: row.cs,
    creditProgressionPaused: row.credit_progression_paused ?? false,
+   accountStatus: (row as UserRow & { account_status?: AccountStatus | null }).account_status ?? 'active',
    userRole: row.user_role ?? undefined,
    createdAt: row.created_at,
    updatedAt: row.updated_at

@@ -24,6 +24,7 @@ import { RoleGuard } from '@/components/RoleGuard';
 
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
+import AccountRestrictedPage from '@/app/account-restricted/page';
 import Benefits from '@/app/benefits/page';
 import Dashboard from '@/views/dashboard/Dashboard';
 import RequestBoard from '@/views/dashboard/RequestBoard';
@@ -77,9 +78,11 @@ export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
    const { user, username } = useSelector((state: RootState) => state.auth);
+   const isAccountRestricted = user?.accountStatus === 'blocked' || user?.accountStatus === 'banned';
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
    const showBottomNav =
       user?.id &&
+      !isAccountRestricted &&
       user?.userRole &&
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
          (location.pathname.startsWith('/user/') && !isUserDetailRoute) ||
@@ -112,6 +115,10 @@ export default function App() {
       posthog.reset();
    }, [isPosthogEnabled, user?.email, user?.id, user?.username, username]);
 
+   if (isAccountRestricted && location.pathname !== '/account-restricted') {
+      return <Navigate to="/account-restricted" replace />;
+   }
+
    return (
       <>
          <WalletLoadingOverlay />
@@ -121,6 +128,7 @@ export default function App() {
             {/* Auth */}
             <Route path="/sign-in" element={<Login />} />
             <Route path="/sign-up" element={<SignUp />} />
+            <Route path="/account-restricted" element={<AccountRestrictedPage />} />
 
             {/* Onboarding */}
             <Route path="/onboarding/role" element={<ProtectedRoute><RoleSelection /></ProtectedRoute>} />
