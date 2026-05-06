@@ -640,11 +640,13 @@ export default function LoanRequestModal({
                aria-modal="true"
                className="fixed inset-0 z-[90] flex items-center justify-center bg-black/20 px-[21px]"
                onClick={() => setIsCalendarOpen(false)}
+               onMouseDown={(event) => event.stopPropagation()}
                role="dialog"
             >
                <div
                   className="w-[292px] rounded-md-input border border-md-neutral-600 bg-md-neutral-100 p-md-2 shadow-[0_12px_28px_rgba(20,18,24,0.18)]"
                   onClick={(event) => event.stopPropagation()}
+                  onMouseDown={(event) => event.stopPropagation()}
                >
                   <div className="mb-md-1 flex items-center justify-between">
                      <button
