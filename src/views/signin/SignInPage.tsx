@@ -39,7 +39,11 @@ export default function SignInPage() {
       setIsLoading(true);
       try {
          const result = await dispatch(loginUser({ email, password, rememberMe })).unwrap();
-         navigate('/dashboard', { replace: true });
+         const nextPath =
+            result.user.accountStatus === 'blocked' || result.user.accountStatus === 'banned'
+               ? '/account-restricted'
+               : '/dashboard';
+         navigate(nextPath, { replace: true });
       } catch (err) {
          const msg = err instanceof Error ? err.message : 'Authentication failed';
          const errObj = err as { status?: number };
@@ -88,7 +92,11 @@ export default function SignInPage() {
       setIsLoading(true);
       try {
          const result = await dispatch(loginWithGoogle({ googleCredential: credential })).unwrap();
-         navigate('/dashboard', { replace: true });
+         const nextPath =
+            result.user.accountStatus === 'blocked' || result.user.accountStatus === 'banned'
+               ? '/account-restricted'
+               : '/dashboard';
+         navigate(nextPath, { replace: true });
       } catch {
          setErrorType('incorrect_credentials');
          setShowAccount(true);
@@ -103,7 +111,11 @@ export default function SignInPage() {
          const result = await dispatch(
             loginWithTelegram({ telegramAuthData: JSON.stringify(authData) })
          ).unwrap();
-         navigate('/dashboard', { replace: true });
+         const nextPath =
+            result.user.accountStatus === 'blocked' || result.user.accountStatus === 'banned'
+               ? '/account-restricted'
+               : '/dashboard';
+         navigate(nextPath, { replace: true });
       } catch {
          setErrorType('incorrect_credentials');
          setShowAccount(true);
