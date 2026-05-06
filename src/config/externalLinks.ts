@@ -17,7 +17,8 @@ export const EXTERNAL_LINKS = {
       discord: 'https://discord.gg/begfi'
    },
    support: {
-      messenger: 'https://m.me/61589106561061?ref=blocked_account'
+      messenger: 'https://m.me/61589106561061?ref=blocked_account',
+      messengerDefaulted: 'https://m.me/61589106561061?ref=defaulted_loan'
    }
 } as const;
 
