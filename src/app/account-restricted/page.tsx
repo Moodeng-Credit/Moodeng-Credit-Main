@@ -5,24 +5,36 @@ import Loading from '@/components/Loading';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import type { AccountStatus } from '@/types/authTypes';
 
 const SUPPORT_LINK = EXTERNAL_LINKS.support.messenger;
+const isPreviewHost = () =>
+   window.location.hostname === 'localhost' ||
+   window.location.hostname === '127.0.0.1' ||
+   window.location.hostname.endsWith('.vercel.app');
+
+const getMockStatus = (): Extract<AccountStatus, 'blocked' | 'banned'> | null => {
+   const mockStatus = new URLSearchParams(window.location.search).get('mockStatus');
+   if (!isPreviewHost()) return null;
+   return mockStatus === 'blocked' || mockStatus === 'banned' ? mockStatus : null;
+};
 
 export default function AccountRestrictedPage() {
    const dispatch = useDispatch<AppDispatch>();
    const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
-   const status = user?.accountStatus;
+   const mockStatus = getMockStatus();
+   const status = mockStatus ?? user?.accountStatus;
    const isRestricted = status === 'blocked' || status === 'banned';
 
-   if (!isAuthChecked) {
+   if (!mockStatus && !isAuthChecked) {
       return <Loading />;
    }
 
-   if (isAuthChecked && (!user?.id || !username)) {
+   if (!mockStatus && isAuthChecked && (!user?.id || !username)) {
       return <Navigate to="/sign-in" replace />;
    }
 
-   if (isAuthChecked && user?.id && !isRestricted) {
+   if (!mockStatus && isAuthChecked && user?.id && !isRestricted) {
       return <Navigate to="/dashboard" replace />;
    }
 
@@ -58,7 +70,13 @@ export default function AccountRestrictedPage() {
                </a>
                <button
                   type="button"
-                  onClick={() => void dispatch(logoutUser())}
+                  onClick={() => {
+                     if (mockStatus) {
+                        window.location.href = '/sign-in';
+                        return;
+                     }
+                     void dispatch(logoutUser());
+                  }}
                   className="h-12 rounded-2xl border border-[#D8CFDF] bg-white px-4 text-sm font-semibold tracking-[-0.02em] text-[#4D4359] transition-colors hover:bg-[#F7F4FB]"
                >
                   Sign out
