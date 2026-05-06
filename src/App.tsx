@@ -17,7 +17,6 @@ import BottomNav from '@/components/BottomNav';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
 import MarketingPageShell from '@/components/marketing/MarketingPageShell';
-import Loading from '@/components/Loading';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
 import { AdminGuard } from '@/components/AdminGuard';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -121,10 +120,6 @@ export default function App() {
       posthog.reset();
    }, [isPosthogEnabled, user?.email, user?.id, user?.username, username]);
 
-   if (user?.id && defaultedBorrower.isLoading && location.pathname !== '/account-restricted' && location.pathname !== '/repay') {
-      return <Loading />;
-   }
-
    if (isAccountRestricted && location.pathname !== '/account-restricted') {
       return <Navigate to="/account-restricted" replace />;
    }
@@ -192,7 +187,7 @@ export default function App() {
             <Route path="/support/guides/:slug" element={<ProtectedRoute><SupportGuideDetailPage /></ProtectedRoute>} />
             <Route path="/support/faq" element={<ProtectedRoute><SupportFAQPage /></ProtectedRoute>} />
             <Route path="/support/updates" element={<ProtectedRoute><SupportUpdatesPage /></ProtectedRoute>} />
-            <Route path="/support/updates/:slug" element={<ProtectedRoute><SupportUpdateDetailPage /></ProtectedRoute>} />
+            <Route path="/support/updates/:slug" element={<ProtectedRoute><SupportUpdateDetailPage /></Route>} />
 
             {/* Public */}
             <Route path="/faq" element={<Layout><FAQ /></Layout>} />
