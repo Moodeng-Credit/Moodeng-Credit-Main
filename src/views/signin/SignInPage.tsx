@@ -11,10 +11,20 @@ import {
    SocialAuthButtons
 } from '@/components/auth';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
+import { fetchDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 import { Icons } from '@/views/login/components/Icons';
 import { loginUser, loginWithGoogle, loginWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import '@/views/signup/styles/signup.css';
+
+const getPostSignInPath = async (user: { id: string; accountStatus?: string }) => {
+   if (user.accountStatus === 'blocked' || user.accountStatus === 'banned') {
+      return '/account-restricted';
+   }
+
+   const defaultedBorrower = await fetchDefaultedBorrowerSupport(user.id);
+   return defaultedBorrower.overdueAmount > 0 ? '/account-restricted' : '/dashboard';
+};
 
 export default function SignInPage() {
    const navigate = useNavigate();
@@ -39,10 +49,7 @@ export default function SignInPage() {
       setIsLoading(true);
       try {
          const result = await dispatch(loginUser({ email, password, rememberMe })).unwrap();
-         const nextPath =
-            result.user.accountStatus === 'blocked' || result.user.accountStatus === 'banned'
-               ? '/account-restricted'
-               : '/dashboard';
+         const nextPath = await getPostSignInPath(result.user);
          navigate(nextPath, { replace: true });
       } catch (err) {
          const msg = err instanceof Error ? err.message : 'Authentication failed';
@@ -92,10 +99,7 @@ export default function SignInPage() {
       setIsLoading(true);
       try {
          const result = await dispatch(loginWithGoogle({ googleCredential: credential })).unwrap();
-         const nextPath =
-            result.user.accountStatus === 'blocked' || result.user.accountStatus === 'banned'
-               ? '/account-restricted'
-               : '/dashboard';
+         const nextPath = await getPostSignInPath(result.user);
          navigate(nextPath, { replace: true });
       } catch {
          setErrorType('incorrect_credentials');
@@ -111,10 +115,7 @@ export default function SignInPage() {
          const result = await dispatch(
             loginWithTelegram({ telegramAuthData: JSON.stringify(authData) })
          ).unwrap();
-         const nextPath =
-            result.user.accountStatus === 'blocked' || result.user.accountStatus === 'banned'
-               ? '/account-restricted'
-               : '/dashboard';
+         const nextPath = await getPostSignInPath(result.user);
          navigate(nextPath, { replace: true });
       } catch {
          setErrorType('incorrect_credentials');
