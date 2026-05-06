@@ -15,6 +15,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
    const isAuthChecked = useSelector((state: RootState) => state.auth.isAuthChecked);
    const location = useLocation();
    const defaultedBorrower = useDefaultedBorrowerSupport(isAuthChecked ? user?.id : null);
+   const canRepayWhileDefaulted = defaultedBorrower.support.overdueAmount > 0 && location.pathname === '/repay';
 
    if (!isAuthChecked) {
       return <Loading />;
@@ -26,14 +27,17 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       return <Navigate to="/sign-in" state={{ from: location }} replace />;
    }
 
-   if (defaultedBorrower.isLoading && location.pathname !== '/account-restricted') {
+   if (defaultedBorrower.isLoading && location.pathname !== '/account-restricted' && location.pathname !== '/repay') {
       return <Loading />;
    }
 
+   if ((user.accountStatus === 'blocked' || user.accountStatus === 'banned') && location.pathname !== '/account-restricted') {
+      return <Navigate to="/account-restricted" replace />;
+   }
+
    if (
-      (user.accountStatus === 'blocked' ||
-         user.accountStatus === 'banned' ||
-         defaultedBorrower.support.overdueAmount > 0) &&
+      defaultedBorrower.support.overdueAmount > 0 &&
+      !canRepayWhileDefaulted &&
       location.pathname !== '/account-restricted'
    ) {
       return <Navigate to="/account-restricted" replace />;
