@@ -79,6 +79,15 @@ export default function AccountRestrictedPage() {
             </div>
 
             <div className="mt-7 flex flex-col gap-3">
+               {isDefaultedBorrower && (
+                  <a
+                     href="/repay"
+                     className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#16A34A] px-4 text-base font-semibold tracking-[-0.02em] text-white transition-opacity hover:opacity-95"
+                  >
+                     <i className="fas fa-credit-card text-lg" aria-hidden="true" />
+                     Repay Now
+                  </a>
+               )}
                <a
                   href={supportLink}
                   target="_blank"
