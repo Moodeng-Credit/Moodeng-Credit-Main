@@ -17,6 +17,7 @@ import BottomNav from '@/components/BottomNav';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
 import MarketingPageShell from '@/components/marketing/MarketingPageShell';
+import Loading from '@/components/Loading';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
 import { AdminGuard } from '@/components/AdminGuard';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
