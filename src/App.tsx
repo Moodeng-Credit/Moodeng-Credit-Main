@@ -187,7 +187,7 @@ export default function App() {
             <Route path="/support/guides/:slug" element={<ProtectedRoute><SupportGuideDetailPage /></ProtectedRoute>} />
             <Route path="/support/faq" element={<ProtectedRoute><SupportFAQPage /></ProtectedRoute>} />
             <Route path="/support/updates" element={<ProtectedRoute><SupportUpdatesPage /></ProtectedRoute>} />
-            <Route path="/support/updates/:slug" element={<ProtectedRoute><SupportUpdateDetailPage /></Route>} />
+            <Route path="/support/updates/:slug" element={<ProtectedRoute><SupportUpdateDetailPage /></ProtectedRoute>} />
 
             {/* Public */}
             <Route path="/faq" element={<Layout><FAQ /></Layout>} />
