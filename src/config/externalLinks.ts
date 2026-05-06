@@ -15,6 +15,9 @@ export const EXTERNAL_LINKS = {
    social: {
       twitter: 'https://twitter.com/begfi',
       discord: 'https://discord.gg/begfi'
+   },
+   support: {
+      messenger: 'https://m.me/61589106561061?ref=blocked_account'
    }
 } as const;
 
