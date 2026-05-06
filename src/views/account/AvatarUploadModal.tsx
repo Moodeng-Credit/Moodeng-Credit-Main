@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 
 import { X } from 'lucide-react';
 
+import { AVATAR_BACKGROUNDS, DEFAULT_AVATAR_BACKGROUND } from '@/config/avatarBackgrounds';
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PREVIEW_SIZE = 240; // px — circular preview shown in the modal
-const OUTPUT_SIZE = 512;  // px — square canvas used for the JPEG export
+const OUTPUT_SIZE = 512;  // px — square canvas used for the PNG export
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -14,9 +16,10 @@ interface AvatarUploadModalProps {
    isOpen: boolean;
    isSaving: boolean;
    currentAvatar?: string | null;
+   currentAvatarBackground?: string | null;
    onClose: () => void;
-   /** Receives a 512×512 JPEG Blob wrapped in a File. */
-   onSave: (file: File) => Promise<void>;
+   /** Receives a 512×512 PNG Blob wrapped in a File plus the selected frame color. */
+   onSave: (file: File, avatarBackground: string) => Promise<void>;
 }
 
 type Step = 'select' | 'crop';
@@ -27,7 +30,7 @@ type Step = 'select' | 'crop';
  * Two-step modal: file picker → canvas crop.
  *
  * No external crop library required. Uses a single <canvas> for live preview
- * and a separate offscreen canvas to export the final JPEG.
+ * and a separate offscreen canvas to export the final PNG.
  *
  * Offset state is in *natural image pixels* so the math stays consistent
  * regardless of the preview size or the output size.
@@ -36,6 +39,7 @@ export default function AvatarUploadModal({
    isOpen,
    isSaving,
    currentAvatar,
+   currentAvatarBackground,
    onClose,
    onSave,
 }: AvatarUploadModalProps) {
@@ -43,6 +47,7 @@ export default function AvatarUploadModal({
    const [imgEl, setImgEl] = useState<HTMLImageElement | null>(null);
    const [scale, setScale] = useState(1);
    const [offset, setOffset] = useState({ x: 0, y: 0 }); // natural-image-pixel offset from centre
+   const [avatarBackground, setAvatarBackground] = useState(currentAvatarBackground ?? DEFAULT_AVATAR_BACKGROUND);
    const [error, setError] = useState('');
 
    const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -64,19 +69,19 @@ export default function AvatarUploadModal({
       );
       const totalScale = baseScale * scale;
 
-      ctx.clearRect(0, 0, PREVIEW_SIZE, PREVIEW_SIZE);
-
       ctx.save();
       ctx.beginPath();
       ctx.arc(PREVIEW_SIZE / 2, PREVIEW_SIZE / 2, PREVIEW_SIZE / 2, 0, Math.PI * 2);
       ctx.clip();
+      ctx.fillStyle = avatarBackground;
+      ctx.fillRect(0, 0, PREVIEW_SIZE, PREVIEW_SIZE);
 
       // offset is in natural pixels; multiply by totalScale to get canvas pixels
       const drawX = PREVIEW_SIZE / 2 - (imgEl.naturalWidth / 2 - offset.x) * totalScale;
       const drawY = PREVIEW_SIZE / 2 - (imgEl.naturalHeight / 2 - offset.y) * totalScale;
       ctx.drawImage(imgEl, drawX, drawY, imgEl.naturalWidth * totalScale, imgEl.naturalHeight * totalScale);
       ctx.restore();
-   }, [imgEl, scale, offset]);
+   }, [avatarBackground, imgEl, scale, offset]);
 
    // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -85,6 +90,7 @@ export default function AvatarUploadModal({
       setImgEl(null);
       setScale(1);
       setOffset({ x: 0, y: 0 });
+      setAvatarBackground(currentAvatarBackground ?? DEFAULT_AVATAR_BACKGROUND);
       setError('');
       dragRef.current = null;
    };
@@ -156,6 +162,8 @@ export default function AvatarUploadModal({
       ctx.beginPath();
       ctx.arc(OUTPUT_SIZE / 2, OUTPUT_SIZE / 2, OUTPUT_SIZE / 2, 0, Math.PI * 2);
       ctx.clip();
+      ctx.fillStyle = avatarBackground;
+      ctx.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
 
       // Same formula as the preview, scaled up by OUTPUT_SIZE / PREVIEW_SIZE
       const ratio = OUTPUT_SIZE / PREVIEW_SIZE;
@@ -173,14 +181,13 @@ export default function AvatarUploadModal({
                return;
             }
             try {
-               await onSave(new File([blob], 'avatar.jpg', { type: 'image/jpeg' }));
+               await onSave(new File([blob], 'avatar.png', { type: 'image/png' }), avatarBackground);
                reset();
             } catch (err) {
                setError(err instanceof Error ? err.message : 'Failed to save avatar.');
             }
          },
-         'image/jpeg',
-         0.9,
+         'image/png',
       );
    };
 
@@ -220,6 +227,7 @@ export default function AvatarUploadModal({
                         src={currentAvatar}
                         alt="Current profile photo"
                         className="w-16 h-16 rounded-full object-cover border-2 border-md-primary-100 shrink-0"
+                        style={{ backgroundColor: avatarBackground }}
                      />
                   )}
 
@@ -272,7 +280,7 @@ export default function AvatarUploadModal({
                      width={PREVIEW_SIZE}
                      height={PREVIEW_SIZE}
                      className="rounded-full cursor-grab active:cursor-grabbing touch-none shrink-0"
-                     style={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE }}
+                     style={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE, backgroundColor: avatarBackground }}
                      onPointerDown={handlePointerDown}
                      onPointerMove={handlePointerMove}
                      onPointerUp={handlePointerUp}
@@ -297,6 +305,41 @@ export default function AvatarUploadModal({
                   <p className="text-md-b3 text-md-neutral-800 text-center">
                      Drag to reposition · use the slider to zoom
                   </p>
+
+                  <div className="w-full rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 p-3">
+                     <p className="text-md-b3 font-semibold text-md-heading">Avatar background</p>
+                     <div className="mt-3 grid grid-cols-8 gap-2">
+                        {AVATAR_BACKGROUNDS.map((option) => {
+                           const isSelected = avatarBackground === option.value;
+                           return (
+                              <button
+                                 key={option.value}
+                                 type="button"
+                                 onClick={() => setAvatarBackground(option.value)}
+                                 className={`flex aspect-square items-center justify-center rounded-full border bg-white transition ${
+                                    isSelected ? 'border-md-primary-900 shadow-[0_0_0_3px_rgba(131,54,240,0.16)]' : 'border-md-neutral-400'
+                                 }`}
+                                 aria-label={`${option.name} avatar background`}
+                                 aria-pressed={isSelected}
+                              >
+                                 <span
+                                    className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-black/10"
+                                    style={{ backgroundColor: option.value }}
+                                 >
+                                    {isSelected ? (
+                                       <span
+                                          className={`h-3 w-3 rounded-full ${
+                                             option.value === DEFAULT_AVATAR_BACKGROUND || option.name === 'Night' ? 'bg-white' : 'bg-md-primary-1200'
+                                          }`}
+                                          aria-hidden="true"
+                                       />
+                                    ) : null}
+                                 </span>
+                              </button>
+                           );
+                        })}
+                     </div>
+                  </div>
 
                   {error ? (
                      <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p>

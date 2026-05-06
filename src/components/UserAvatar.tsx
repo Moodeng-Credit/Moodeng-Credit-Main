@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
+import { DEFAULT_AVATAR_BACKGROUND } from '@/config/avatarBackgrounds';
 import type { RootState } from '@/store/store';
 
 const PLACEHOLDER_AVATAR = '/icons/avatar-placeholder.png';
@@ -13,6 +14,7 @@ interface UserAvatarProps {
    alt?: string;
    size?: number;
    className?: string;
+   backgroundColor?: string;
    /** Custom click handler. Overrides the default navigate-to-account-settings behaviour. */
    onClick?: () => void;
    /**
@@ -35,12 +37,15 @@ export default function UserAvatar({
    alt = 'Profile',
    size = 48,
    className = '',
+   backgroundColor,
    onClick,
    clickable = true,
 }: UserAvatarProps) {
    const navigate = useNavigate();
    const userAvatarUrl = useSelector((state: RootState) => state.auth.user?.avatarUrl);
+   const userAvatarBackground = useSelector((state: RootState) => state.auth.user?.avatarBackground);
    const resolvedSrc = src ?? userAvatarUrl ?? PLACEHOLDER_AVATAR;
+   const resolvedBackground = backgroundColor ?? (src === undefined ? userAvatarBackground : undefined) ?? DEFAULT_AVATAR_BACKGROUND;
 
    // Only the current user's own avatar gets click behaviour (no explicit src override).
    const isCurrentUser = src === undefined;
@@ -51,7 +56,7 @@ export default function UserAvatar({
          src={resolvedSrc}
          alt={alt}
          className={`rounded-full object-cover shrink-0 ${className}`}
-         style={{ width: size, height: size }}
+         style={{ width: size, height: size, backgroundColor: resolvedBackground }}
          onError={(e) => {
             const target = e.currentTarget as HTMLImageElement;
             if (target.src !== window.location.origin + PLACEHOLDER_AVATAR) {
