@@ -3,12 +3,12 @@ import { Navigate } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
+import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { AccountStatus } from '@/types/authTypes';
 
-const SUPPORT_LINK = EXTERNAL_LINKS.support.messenger;
-type MockStatus = Extract<AccountStatus, 'blocked' | 'banned'> | 'defaulted';
+type MockStatus = Extract<AccountStatus, 'blocked' | 'banned'>;
 const isPreviewHost = () =>
    window.location.hostname === 'localhost' ||
    window.location.hostname === '127.0.0.1' ||
@@ -17,12 +17,14 @@ const isPreviewHost = () =>
 const getMockStatus = (): MockStatus | null => {
    const mockStatus = new URLSearchParams(window.location.search).get('mockStatus');
    if (!isPreviewHost()) return null;
-   return mockStatus === 'blocked' || mockStatus === 'banned' || mockStatus === 'defaulted' ? mockStatus : null;
+   return mockStatus === 'blocked' || mockStatus === 'banned' ? mockStatus : null;
 };
 
-const getMockDefaultAmount = () => {
-   const amount = Number(new URLSearchParams(window.location.search).get('mockAmount'));
-   return Number.isFinite(amount) && amount > 0 ? amount : 37;
+const formatOverdueAmount = (amount: number) => {
+   return amount.toLocaleString(undefined, {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: amount % 1 === 0 ? 0 : 2
+   });
 };
 
 export default function AccountRestrictedPage() {
@@ -31,10 +33,17 @@ export default function AccountRestrictedPage() {
    const mockStatus = getMockStatus();
    const status = mockStatus ?? user?.accountStatus;
    const isRestricted = status === 'blocked' || status === 'banned';
-   const isDefaultedPreview = mockStatus === 'defaulted';
-   const defaultedAmount = getMockDefaultAmount();
+   const defaultedBorrower = useDefaultedBorrowerSupport(!mockStatus && isAuthChecked ? user?.id : null);
+   const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
+   const supportLink = isDefaultedBorrower
+      ? EXTERNAL_LINKS.support.messengerDefaulted
+      : EXTERNAL_LINKS.support.messenger;
 
    if (!mockStatus && !isAuthChecked) {
+      return <Loading />;
+   }
+
+   if (!mockStatus && user?.id && defaultedBorrower.isLoading) {
       return <Loading />;
    }
 
@@ -42,7 +51,7 @@ export default function AccountRestrictedPage() {
       return <Navigate to="/sign-in" replace />;
    }
 
-   if (!mockStatus && isAuthChecked && user?.id && !isRestricted) {
+   if (!mockStatus && isAuthChecked && user?.id && !isRestricted && !isDefaultedBorrower) {
       return <Navigate to="/dashboard" replace />;
    }
 
@@ -58,12 +67,12 @@ export default function AccountRestrictedPage() {
                   Account support
                </p>
                <h1 className="text-[clamp(1.9rem,8vw,2.4rem)] font-semibold leading-[1.1] tracking-[-0.04em] text-[#040033]">
-                  {isDefaultedPreview
-                     ? `You have $${defaultedAmount.toLocaleString()} overdue.`
+                  {isDefaultedBorrower
+                     ? `You have $${formatOverdueAmount(defaultedBorrower.support.overdueAmount)} overdue.`
                      : `Your account is currently ${status === 'banned' ? 'banned' : 'blocked'}.`}
                </h1>
                <p className="mt-4 text-base font-medium leading-6 tracking-[-0.02em] text-[#5F536D]">
-                  {isDefaultedPreview
+                  {isDefaultedBorrower
                      ? 'Your account needs support before you can continue. Message Moodeng Credit on Messenger so we can help resolve this.'
                      : 'If you think this is a mistake, message Moodeng Credit support on Messenger. We can review your account from there.'}
                </p>
@@ -71,7 +80,7 @@ export default function AccountRestrictedPage() {
 
             <div className="mt-7 flex flex-col gap-3">
                <a
-                  href={SUPPORT_LINK}
+                  href={supportLink}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#6010D2] px-4 text-base font-semibold tracking-[-0.02em] text-white transition-opacity hover:opacity-95"
