@@ -19,6 +19,8 @@ import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 
 import { type User } from '@/types/authTypes';
 
+import { termsTooltipIconSrc } from './termsTooltipIcon';
+
 interface LoanRequestModalProps {
    clickOutsideRef: RefObject<HTMLDivElement>;
    isOpen: boolean;
@@ -46,7 +48,7 @@ export type AppliedReferralCode = {
 };
 
 const inputShellClass =
-   'border-md-neutral-600 bg-md-neutral-100 shadow-md-card overflow-hidden rounded-md-input border border-solid';
+   'border-md-neutral-600 bg-md-neutral-100 shadow-md-card overflow-hidden rounded-md-input border border-solid transition duration-150 ease-out focus-within:border-md-primary-900 focus-within:ring-2 focus-within:ring-md-primary-100 focus:border-md-primary-900 focus:ring-2 focus:ring-md-primary-100';
 
 type TooltipId = 'terms' | 'limit' | 'usdc';
 
@@ -155,6 +157,7 @@ function InfoTooltip({
    activeTooltip,
    setActiveTooltip,
    label,
+   iconSrc,
    iconClassName = 'h-5 w-5',
    iconStrokeWidth = 1.35,
    panelClassName = 'left-1/2 top-full mt-md-1 -translate-x-1/2',
@@ -164,6 +167,7 @@ function InfoTooltip({
    activeTooltip: TooltipId | null;
    setActiveTooltip: (id: TooltipId | null) => void;
    label: string;
+   iconSrc?: string;
    iconClassName?: string;
    iconStrokeWidth?: number;
    panelClassName?: string;
@@ -184,7 +188,11 @@ function InfoTooltip({
             onPointerDown={(event) => event.stopPropagation()}
             type="button"
          >
-            <HelpCircle aria-hidden="true" className={iconClassName} strokeWidth={iconStrokeWidth} />
+            {iconSrc ? (
+               <img alt="" aria-hidden="true" className={iconClassName} src={iconSrc} />
+            ) : (
+               <HelpCircle aria-hidden="true" className={iconClassName} strokeWidth={iconStrokeWidth} />
+            )}
          </button>
          {isOpen ? (
             <span
@@ -447,13 +455,24 @@ export default function LoanRequestModal({
                   <InfoTooltip
                      activeTooltip={activeTooltip}
                      arrowClassName="right-[42px] top-[-5px] rotate-45"
+                     iconClassName="h-7 w-7"
+                     iconSrc={termsTooltipIconSrc}
                      id="terms"
                      label="Explain setting loan terms"
                      panelClassName="right-[-40px] top-full mt-md-1"
                      setActiveTooltip={setActiveTooltip}
                   />
                </div>
-               <button aria-label="Close loan form" onClick={onClose} className="text-md-neutral-2000 hover:text-md-primary-1200" type="button">
+               <button
+                  aria-label="Close loan form"
+                  onClick={(event) => {
+                     event.stopPropagation();
+                     onClose();
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  className="rounded-full p-1 text-md-neutral-2000 transition duration-150 ease-out hover:bg-md-primary-100 hover:text-md-primary-1200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                  type="button"
+               >
                   <X aria-hidden="true" className="h-8 w-8" strokeWidth={2} />
                </button>
             </header>
@@ -470,7 +489,7 @@ export default function LoanRequestModal({
                         </div>
                         <button
                            onClick={startVerificationOnboarding}
-                           className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100"
+                           className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
                            type="button"
                         >
                            Get Verified
@@ -592,7 +611,7 @@ export default function LoanRequestModal({
                         />
                         <button
                            aria-label="Open repayment date calendar"
-                           className="absolute inset-y-0 right-0 flex w-[56px] items-center justify-center border-l border-md-neutral-600 text-md-primary-900"
+                           className="absolute inset-y-0 right-0 flex w-[56px] items-center justify-center border-l border-md-primary-1200 bg-md-primary-1200 text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:bg-[#4b00b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
                            onClick={() => setIsCalendarOpen((isOpen) => !isOpen)}
                            type="button"
                         >
@@ -627,7 +646,9 @@ export default function LoanRequestModal({
 
                <button
                   className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
-                     isVerified && !isSubmitting ? 'bg-md-primary-1200' : 'cursor-not-allowed bg-md-neutral-600'
+                     isVerified && !isSubmitting
+                        ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2'
+                        : 'cursor-not-allowed bg-md-neutral-600'
                   }`}
                   type="submit"
                   disabled={!isVerified || isSubmitting}
@@ -653,7 +674,7 @@ export default function LoanRequestModal({
                   <div className="mb-md-1 flex items-center justify-between">
                      <button
                         aria-label="Previous month"
-                        className="rounded-md-md p-md-0 text-md-neutral-1200 hover:bg-md-primary-100 hover:text-md-primary-1200"
+                        className="rounded-md-md p-md-0 text-md-neutral-1200 transition duration-150 ease-out hover:bg-md-primary-100 hover:text-md-primary-1200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
                         onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}
                         type="button"
                      >
@@ -664,7 +685,7 @@ export default function LoanRequestModal({
                      </p>
                      <button
                         aria-label="Next month"
-                        className="rounded-md-md p-md-0 text-md-neutral-1200 hover:bg-md-primary-100 hover:text-md-primary-1200"
+                        className="rounded-md-md p-md-0 text-md-neutral-1200 transition duration-150 ease-out hover:bg-md-primary-100 hover:text-md-primary-1200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
                         onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}
                         type="button"
                      >
@@ -691,7 +712,7 @@ export default function LoanRequestModal({
                         week: 'grid grid-cols-7',
                         day: 'grid place-items-center p-[1px]',
                         day_button:
-                           'grid h-9 w-9 place-items-center rounded-md-md text-md-b3 font-normal text-md-heading hover:bg-md-primary-100 hover:text-md-primary-1200',
+                           'grid h-9 w-9 place-items-center rounded-md-md text-md-b3 font-normal text-md-heading transition duration-150 ease-out hover:bg-md-primary-100 hover:text-md-primary-1200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900',
                         selected: '[&>button]:bg-md-primary-1200 [&>button]:text-md-neutral-100',
                         today: '[&>button]:border [&>button]:border-md-primary-900',
                         outside: '[&>button]:text-md-neutral-600',
