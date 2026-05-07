@@ -11,6 +11,7 @@ export interface AuthState {
    userProfiles: Record<string, User>; // Map of userId -> User profile for batch fetched users
 }
 export type UserRole = 'borrower' | 'lender';
+export type AccountStatus = 'active' | 'blocked' | 'banned';
 
 export interface User {
    id: string;
@@ -18,6 +19,8 @@ export interface User {
    email: string;
    /** Profile picture URL from auth provider metadata (Google, Telegram). Not stored in the DB users table. */
    avatarUrl?: string;
+   /** Soft frame color used behind transparent/background-removed avatars. */
+   avatarBackground?: string;
    /** Display name from Supabase auth user_metadata.name. Not stored in the DB users table. */
    displayName?: string;
    googleId?: string;
@@ -31,6 +34,7 @@ export interface User {
    nal: number;
    cs: number;
    creditProgressionPaused?: boolean;
+   accountStatus?: AccountStatus;
    /** Single source of truth for role-based routing, wallet connect options, and tab bar */
    userRole?: UserRole | null;
    createdAt: string;

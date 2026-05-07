@@ -16,6 +16,15 @@ vi.mock('@/components/worldId/WorldIDVerification', () => ({
       })
 }));
 
+vi.mock('react-router-dom', async () => {
+   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+
+   return {
+      ...actual,
+      useNavigate: () => vi.fn()
+   };
+});
+
 const baseUser: User = {
    id: 'user-1',
    username: 'moodeng',
@@ -142,7 +151,8 @@ describe('LoanRequestModal borrowing gate', () => {
          })
       );
 
-      expect(markup).toContain('Verification Required for Borrowers');
+      expect(markup).toContain('One quick step to request a loan');
+      expect(markup).toContain('Get Verified');
       expect(markup).toContain('disabled');
    });
 

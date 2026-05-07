@@ -7,6 +7,13 @@ export interface AccountFAQItem {
 // Shown to both borrowers and lenders
 export const SHARED_FAQS: AccountFAQItem[] = [
    {
+      id: 'does-moodeng-touch-money',
+      question: 'Does Moodeng touch my money?',
+      answer: `No. Moodeng does not hold, custody, or move user funds for you.
+
+Loans go directly from the lender's wallet to the borrower's wallet. Repayments go directly from the borrower's wallet back to the lender's wallet. Moodeng helps with the request board, verification, repayment status, and record keeping so both sides can see what happened clearly.`
+   },
+   {
       id: 'why-usdc',
       question: 'Why does Moodeng use USDC?',
       answer: `USDC is a stablecoin pegged 1:1 to the US dollar. Issued by Circle, a regulated US financial company, it keeps loan values predictable — a $20 loan today is still $20 at repayment, not $15 or $30. Lenders and borrowers don't take on currency risk just by participating.

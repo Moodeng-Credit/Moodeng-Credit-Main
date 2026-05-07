@@ -407,11 +407,11 @@ export default function AccountSettings() {
       setTimeout(() => setWalletCopied(false), 2000);
    };
 
-   const handleSaveAvatar = async (file: File) => {
+   const handleSaveAvatar = async (file: File, avatarBackground: string) => {
       setIsSavingAvatar(true);
       try {
          const avatarUrl = await uploadAvatarForCurrentUser(file);
-         const result = await dispatch(updateUser({ avatarUrl }));
+         const result = await dispatch(updateUser({ avatarUrl, avatarBackground }));
 
          if (updateUser.fulfilled.match(result)) {
             setShowAvatarModal(false);
@@ -647,6 +647,7 @@ export default function AccountSettings() {
             isOpen={showAvatarModal}
             isSaving={isSavingAvatar}
             currentAvatar={user?.avatarUrl}
+            currentAvatarBackground={user?.avatarBackground}
             onClose={() => setShowAvatarModal(false)}
             onSave={handleSaveAvatar}
          />
