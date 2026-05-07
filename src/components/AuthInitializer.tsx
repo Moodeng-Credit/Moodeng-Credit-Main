@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
+
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
-import { clearAuth, fetchUser, setAuthChecked } from '@/store/slices/authSlice';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
+import { clearAuth, fetchUser, setAuthChecked, setPreviewAuth } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
 export function AuthInitializer() {
@@ -25,6 +27,12 @@ export function AuthInitializer() {
 
    // Subscription + initial session check — runs once.
    useEffect(() => {
+      const previewAuth = new URLSearchParams(window.location.search).get('previewAuth');
+      if (import.meta.env.DEV && previewAuth) {
+         dispatch(setPreviewAuth(previewAuth));
+         return;
+      }
+
       if (!isSupabaseBrowserConfigured()) {
          if (import.meta.env.DEV) {
             console.warn(
@@ -51,11 +59,7 @@ export function AuthInitializer() {
                clearAuthCookieClient();
                dispatch(clearAuth());
 
-               if (
-                  wasAuthenticatedRef.current &&
-                  pathnameRef.current !== '/sign-in' &&
-                  pathnameRef.current !== '/request-board'
-               ) {
+               if (wasAuthenticatedRef.current && pathnameRef.current !== '/sign-in' && pathnameRef.current !== '/request-board') {
                   navigate('/request-board');
                }
             }
@@ -72,7 +76,10 @@ export function AuthInitializer() {
          }
 
          try {
-            const { data: { user: supabaseUser }, error: userError } = await supabase.auth.getUser();
+            const {
+               data: { user: supabaseUser },
+               error: userError
+            } = await supabase.auth.getUser();
 
             if (userError || !supabaseUser) {
                const { error: refreshError } = await supabase.auth.refreshSession();

@@ -1,21 +1,23 @@
 import { useMemo } from 'react';
 
 import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { calculateDaysRemaining } from '@/utils/dateFormatters';
 import { formatCurrency } from '@/utils/decimalHelpers';
+
 import type { RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
 
 interface UpcomingLoanDuesProps {
    activeLoans: Loan[];
    defaultedLoans: Loan[];
+   username?: string;
 }
 
 function LoanDueCard({ loan }: { loan: Loan & { isDefaulted: boolean } }) {
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
-   const lenderName = loan.lenderUser ? userProfiles[loan.lenderUser]?.username ?? 'Unknown' : 'Unknown';
+   const lenderName = loan.lenderUser ? (userProfiles[loan.lenderUser]?.username ?? 'Unknown') : 'Unknown';
    const daysRemaining = calculateDaysRemaining(loan.dueDate);
    const cardBg = loan.isDefaulted ? 'bg-md-red-100' : 'bg-[#fff6d0]';
 
@@ -39,14 +41,15 @@ function LoanDueCard({ loan }: { loan: Loan & { isDefaulted: boolean } }) {
    );
 }
 
-export default function UpcomingLoanDues({ activeLoans, defaultedLoans }: UpcomingLoanDuesProps) {
+export default function UpcomingLoanDues({ activeLoans, defaultedLoans, username }: UpcomingLoanDuesProps) {
+   const [searchParams] = useSearchParams();
    const upcomingLoans = useMemo(() => {
       const defaultedSet = new Set(defaultedLoans.map((l) => l.id));
       const all = [...activeLoans, ...defaultedLoans]
          .filter((loan, i, arr) => arr.findIndex((l) => l.id === loan.id) === i)
          .map((loan) => ({
             ...loan,
-            isDefaulted: defaultedSet.has(loan.id),
+            isDefaulted: defaultedSet.has(loan.id)
          }))
          .sort((a, b) => {
             if (a.isDefaulted && !b.isDefaulted) return -1;
@@ -55,12 +58,14 @@ export default function UpcomingLoanDues({ activeLoans, defaultedLoans }: Upcomi
          });
       return all;
    }, [activeLoans, defaultedLoans]);
+   const isMockRich = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
+   const insightsHref = username ? `/user/${encodeURIComponent(username)}${isMockRich ? '?demo=rich' : ''}` : '/dashboard';
 
    return (
       <div>
          <div className="flex items-center justify-between mb-3">
             <h2 className="text-md-b1 font-semibold text-md-heading">Upcoming Loan Dues</h2>
-            <Link to="/lender-diversity" className="text-md-b3 font-medium text-md-blue-600 underline">
+            <Link to={insightsHref} className="text-md-b3 font-medium text-md-blue-600 underline">
                View Insights
             </Link>
          </div>
