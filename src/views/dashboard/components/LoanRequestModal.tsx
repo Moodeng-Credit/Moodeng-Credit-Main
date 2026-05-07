@@ -11,11 +11,12 @@ import {
    useState
 } from 'react';
 
-import { CalendarDays, ChevronLeft, ChevronRight, HelpCircle, X } from 'lucide-react';
+import { CalendarDays, CheckCircle, ChevronLeft, ChevronRight, HelpCircle, Ticket, X } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import { useNavigate } from 'react-router-dom';
 
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 import { type User } from '@/types/authTypes';
 
@@ -39,12 +40,19 @@ interface LoanRequestModalProps {
    handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
    onReferralApplied?: (referral: AppliedReferralCode | null) => void;
    isSubmitting: boolean;
+   startOnReferralStep?: boolean;
 }
 
 export type AppliedReferralCode = {
    id: string;
    code: string;
    boostAmount: number;
+};
+
+type DismissGestureMode = 'down' | 'side' | 'referral';
+
+const REFERRAL_TEST_CODES: Record<string, AppliedReferralCode> = {
+   BELLE: { id: 'referral-test-belle', code: 'BELLE', boostAmount: 5 }
 };
 
 const inputShellClass =
@@ -237,17 +245,23 @@ export default function LoanRequestModal({
    handleDays,
    handleSubmit,
    onReferralApplied,
-   isSubmitting
+   isSubmitting,
+   startOnReferralStep = true
 }: LoanRequestModalProps) {
    const navigate = useNavigate();
    const formRef = useRef<HTMLFormElement | null>(null);
    const dateInputRef = useRef<HTMLInputElement | null>(null);
    const reasonTextareaRef = useRef<HTMLTextAreaElement | null>(null);
-   const dismissGestureRef = useRef<{ x: number; y: number; mode: 'down' | 'side' } | null>(null);
+   const dismissGestureRef = useRef<{ x: number; y: number; mode: DismissGestureMode } | null>(null);
    const dismissOffsetRef = useRef({ x: 0, y: 0 });
    const [dismissOffset, setDismissOffset] = useState({ x: 0, y: 0 });
    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
    const [activeTooltip, setActiveTooltip] = useState<TooltipId | null>(null);
+   const [showReferralStep, setShowReferralStep] = useState(startOnReferralStep);
+   const [referralCode, setReferralCode] = useState('');
+   const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
+   const [referralCodeError, setReferralCodeError] = useState('');
+   const [isApplyingReferralCode, setIsApplyingReferralCode] = useState(false);
 
    const isVerified = !showVerify;
    const limitAmount = getEffectiveCreditLimit(user.cs, isVerified);
@@ -263,6 +277,12 @@ export default function LoanRequestModal({
    const [typedDate, setTypedDate] = useState(selectedDateLabel);
    const [typedDateDigits, setTypedDateDigits] = useState(selectedDateDigits);
    const [calendarMonth, setCalendarMonth] = useState(selectedCalendarDate ?? todayDate);
+   const hasReferralCode = referralCode.trim().length > 0;
+   const hasAppliedReferralCode = appliedReferral !== null;
+   const hasReferralCodeError = referralCodeError.length > 0;
+   const isReferralTestMode = import.meta.env.DEV && new URLSearchParams(window.location.search).has('referralTest');
+   const referralPrimaryActionText = hasAppliedReferralCode ? 'Continue' : hasReferralCodeError ? 'Try again' : 'Apply code';
+   const shouldShowReferralStep = showReferralStep && isVerified;
 
    const startVerificationOnboarding = () => {
       onClose();
@@ -279,8 +299,15 @@ export default function LoanRequestModal({
    }, [selectedDate, today]);
 
    useEffect(() => {
-      if (isOpen) onReferralApplied?.(null);
-   }, [isOpen, onReferralApplied]);
+      if (!isOpen) return;
+
+      setShowReferralStep(startOnReferralStep && isVerified);
+      setReferralCode('');
+      setAppliedReferral(null);
+      setReferralCodeError('');
+      setIsApplyingReferralCode(false);
+      onReferralApplied?.(null);
+   }, [isOpen, isVerified, onReferralApplied, startOnReferralStep]);
 
    useEffect(() => {
       if (!isOpen) return undefined;
@@ -388,9 +415,103 @@ export default function LoanRequestModal({
       resizeReasonTextarea(reasonTextareaRef.current);
    }, [reason, isOpen]);
 
+   const formatReferralBoost = (boostAmount: number) => {
+      const amount = Number(boostAmount);
+      return Number.isInteger(amount) ? amount.toFixed(0) : amount.toFixed(2);
+   };
+
+   const handleReferralCodeChange = (value: string) => {
+      setReferralCode(value);
+      setReferralCodeError('');
+
+      if (appliedReferral && value.trim().toUpperCase() !== appliedReferral.code) {
+         setAppliedReferral(null);
+         onReferralApplied?.(null);
+      }
+   };
+
+   const applyReferralCode = async (): Promise<boolean> => {
+      const cleanCode = referralCode.trim().toUpperCase();
+      if (!cleanCode) return false;
+
+      setReferralCode(cleanCode);
+      setIsApplyingReferralCode(true);
+
+      try {
+         if (isReferralTestMode) {
+            const testReferral = REFERRAL_TEST_CODES[cleanCode];
+
+            if (!testReferral) {
+               setAppliedReferral(null);
+               onReferralApplied?.(null);
+               setReferralCodeError('Referral code incorrect. If you have issues, contact support.');
+               return false;
+            }
+
+            setAppliedReferral(testReferral);
+            onReferralApplied?.(testReferral);
+            setReferralCodeError('');
+            return true;
+         }
+
+         const supabase = getSupabaseBrowserClient();
+         const { data, error } = await supabase
+            .from('referral_codes')
+            .select('id, code, boost_amount')
+            .eq('code', cleanCode)
+            .maybeSingle();
+
+         if (error) throw error;
+
+         if (!data) {
+            setAppliedReferral(null);
+            onReferralApplied?.(null);
+            setReferralCodeError('Referral code incorrect. If you have issues, contact support.');
+            return false;
+         }
+
+         const nextReferral = {
+            id: data.id,
+            code: data.code,
+            boostAmount: Number(data.boost_amount)
+         };
+
+         setAppliedReferral(nextReferral);
+         onReferralApplied?.(nextReferral);
+         setReferralCodeError('');
+         return true;
+      } catch (error) {
+         console.error('Error validating referral code:', (error as Error).message || error);
+         setAppliedReferral(null);
+         onReferralApplied?.(null);
+         setReferralCodeError("We couldn't check that code. Please try again.");
+         return false;
+      } finally {
+         setIsApplyingReferralCode(false);
+      }
+   };
+
+   const handleReferralPrimaryAction = async () => {
+      if (!hasReferralCode) {
+         return;
+      }
+
+      if (hasAppliedReferralCode) {
+         setShowReferralStep(false);
+         return;
+      }
+
+      await applyReferralCode();
+   };
+
    if (!isOpen) return null;
 
-   const startDismissGesture = (event: PointerEvent<HTMLElement>, mode: 'down' | 'side') => {
+   const isInteractiveReferralTarget = (target: EventTarget | null) =>
+      target instanceof HTMLElement && Boolean(target.closest('input, button, textarea, select, a'));
+
+   const startDismissGesture = (event: PointerEvent<HTMLElement>, mode: DismissGestureMode) => {
+      if (mode === 'referral' && isInteractiveReferralTarget(event.target)) return;
+
       dismissGestureRef.current = { x: event.clientX, y: event.clientY, mode };
       dismissOffsetRef.current = { x: 0, y: 0 };
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -405,6 +526,8 @@ export default function LoanRequestModal({
       const nextOffset =
          gesture.mode === 'down'
             ? { x: 0, y: Math.max(0, deltaY) }
+            : gesture.mode === 'referral'
+              ? { x: Math.max(-120, Math.min(120, deltaX)), y: 0 }
             : { x: Math.max(0, deltaX), y: 0 };
 
       dismissOffsetRef.current = nextOffset;
@@ -419,12 +542,19 @@ export default function LoanRequestModal({
       const shouldClose =
          (gesture.mode === 'down' && dismissOffsetRef.current.y > 88) ||
          (gesture.mode === 'side' && dismissOffsetRef.current.x > 76);
+      const shouldSkipReferral = gesture.mode === 'referral' && dismissOffsetRef.current.x > 88;
+      const shouldCancelReferral = gesture.mode === 'referral' && dismissOffsetRef.current.x < -88;
 
       dismissGestureRef.current = null;
       dismissOffsetRef.current = { x: 0, y: 0 };
       setDismissOffset({ x: 0, y: 0 });
 
-      if (shouldClose) onClose();
+      if (shouldSkipReferral) {
+         setShowReferralStep(false);
+         return;
+      }
+
+      if (shouldClose || shouldCancelReferral) onClose();
    };
 
    return (
@@ -434,15 +564,17 @@ export default function LoanRequestModal({
             className="relative mx-auto flex max-h-[calc(100dvh-42px)] w-full max-w-[398px] flex-col overflow-hidden rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 shadow-md-card transition-transform duration-150 ease-out"
             style={{ transform: `translate(${dismissOffset.x}px, ${dismissOffset.y}px)` }}
          >
-            <div
-               aria-label="Swipe right to close loan form"
-               className="absolute bottom-0 left-0 top-0 z-10 w-8 touch-none cursor-ew-resize select-none"
-               onPointerDown={(event) => startDismissGesture(event, 'side')}
-               onPointerMove={moveDismissGesture}
-               onPointerUp={endDismissGesture}
-               onPointerCancel={endDismissGesture}
-               role="presentation"
-            />
+            {!shouldShowReferralStep ? (
+               <div
+                  aria-label="Swipe right to close loan form"
+                  className="absolute bottom-0 left-0 top-0 z-10 w-8 touch-none cursor-ew-resize select-none"
+                  onPointerDown={(event) => startDismissGesture(event, 'side')}
+                  onPointerMove={moveDismissGesture}
+                  onPointerUp={endDismissGesture}
+                  onPointerCancel={endDismissGesture}
+                  role="presentation"
+               />
+            ) : null}
             <header
                className="flex touch-none cursor-grab select-none items-center justify-between border-b border-md-neutral-400 p-md-3 active:cursor-grabbing"
                onPointerDown={(event) => startDismissGesture(event, 'down')}
@@ -451,17 +583,23 @@ export default function LoanRequestModal({
                onPointerCancel={endDismissGesture}
             >
                <div className="flex items-center gap-md-1">
-                  <h2 className="text-md-h6 text-md-heading">Set Your Own Terms</h2>
-                  <InfoTooltip
-                     activeTooltip={activeTooltip}
-                     arrowClassName="right-[42px] top-[-5px] rotate-45"
-                     iconClassName="h-[18px] w-[18px]"
-                     iconSrc={termsTooltipIconSrc}
-                     id="terms"
-                     label="Explain setting loan terms"
-                     panelClassName="right-[-40px] top-full mt-md-1"
-                     setActiveTooltip={setActiveTooltip}
-                  />
+                  {shouldShowReferralStep ? (
+                     <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
+                  ) : (
+                     <>
+                        <h2 className="text-md-h6 text-md-heading">Set Your Own Terms</h2>
+                        <InfoTooltip
+                           activeTooltip={activeTooltip}
+                           arrowClassName="right-[42px] top-[-5px] rotate-45"
+                           iconClassName="h-[18px] w-[18px]"
+                           iconSrc={termsTooltipIconSrc}
+                           id="terms"
+                           label="Explain setting loan terms"
+                           panelClassName="right-[-40px] top-full mt-md-1"
+                           setActiveTooltip={setActiveTooltip}
+                        />
+                     </>
+                  )}
                </div>
                <button
                   aria-label="Close loan form"
@@ -477,6 +615,90 @@ export default function LoanRequestModal({
                </button>
             </header>
 
+            {shouldShowReferralStep ? (
+               <div
+                  className="flex min-h-0 touch-pan-y flex-col gap-md-3 overflow-y-auto p-md-3 text-md-b2 text-md-heading"
+                  onPointerDown={(event) => startDismissGesture(event, 'referral')}
+                  onPointerMove={moveDismissGesture}
+                  onPointerUp={endDismissGesture}
+                  onPointerCancel={endDismissGesture}
+               >
+                  <div className="flex items-start gap-md-3 rounded-md-lg border border-md-neutral-400 bg-[#faf7ff] p-md-3">
+                     <div className="flex min-w-0 flex-1 flex-col gap-md-1">
+                        <span className="w-fit rounded-full bg-md-primary-100 px-md-2 py-md-0 text-md-b3 font-normal text-md-primary-900">
+                           Optional
+                        </span>
+                        <div>
+                           <h3 className="text-md-h5 font-medium leading-[30px] text-md-heading">Have a referral code?</h3>
+                           <p className="mt-md-0 text-md-b2 font-normal leading-[24px] text-md-neutral-1200">
+                              Add it now for a higher starting limit.
+                           </p>
+                        </div>
+                     </div>
+                     <img alt="" aria-hidden="true" className="h-[108px] w-[108px] shrink-0 object-contain" src="/hippos/referral-boost.png" />
+                  </div>
+
+                  <div className="inline-flex w-fit items-center gap-md-1 rounded-full bg-[#d7f5df] px-md-2 py-md-1 text-md-b2 font-medium text-[#178447]">
+                     <CheckCircle aria-hidden="true" className="h-5 w-5" strokeWidth={2} />
+                     <span>+$5 Credit Limit Boost</span>
+                  </div>
+
+                  <label className="sr-only" htmlFor="referral-code">
+                     Referral code
+                  </label>
+                  <div
+                     className={`flex items-center gap-md-2 rounded-md-input border border-solid bg-md-neutral-100 px-md-3 py-md-2 shadow-md-card transition duration-150 ease-out focus-within:ring-2 ${
+                        hasReferralCodeError
+                           ? 'border-md-red-500 focus-within:ring-md-red-100'
+                           : hasAppliedReferralCode
+                             ? 'border-[#178447] focus-within:ring-[#d7f5df]'
+                             : 'border-md-neutral-600 focus-within:border-md-primary-900 focus-within:ring-md-primary-100'
+                     }`}
+                  >
+                     <Ticket
+                        aria-hidden="true"
+                        className={`h-6 w-6 shrink-0 ${hasReferralCodeError ? 'text-md-red-500' : 'text-md-primary-900'}`}
+                        strokeWidth={1.7}
+                     />
+                     <input
+                        className="min-w-0 flex-1 bg-transparent text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
+                        id="referral-code"
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => handleReferralCodeChange(event.target.value)}
+                        placeholder="Enter code"
+                        type="text"
+                        value={referralCode}
+                     />
+                  </div>
+
+                  {hasReferralCodeError ? (
+                     <div className="rounded-md-md bg-md-red-100 px-md-2 py-md-1 text-md-b3 font-normal text-md-red-500">{referralCodeError}</div>
+                  ) : hasAppliedReferralCode ? (
+                     <div className="flex items-center gap-md-1 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
+                        <CheckCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
+                        <span>
+                           Code {appliedReferral.code} applied: +${formatReferralBoost(appliedReferral.boostAmount)} starting limit
+                        </span>
+                     </div>
+                  ) : null}
+
+                  <button
+                     className="w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 disabled:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                     disabled={isApplyingReferralCode || (!hasReferralCode && !hasAppliedReferralCode)}
+                     onClick={handleReferralPrimaryAction}
+                     type="button"
+                  >
+                     {isApplyingReferralCode ? 'Checking code...' : referralPrimaryActionText}
+                  </button>
+
+                  <button
+                     className="mx-auto w-fit rounded-md-md px-md-2 py-md-0 text-md-b3 font-normal text-md-neutral-1200 transition duration-150 ease-out hover:bg-md-primary-100 hover:text-md-primary-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                     onClick={() => setShowReferralStep(false)}
+                     type="button"
+                  >
+                     No code? Skip and apply as normal.
+                  </button>
+               </div>
+            ) : (
             <form ref={formRef} onSubmit={handleSubmit} className="flex min-h-0 flex-col gap-md-3 overflow-y-auto p-md-3 text-md-b2 text-md-heading">
                {showVerify ? (
                   <div className="flex items-center gap-md-2 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-[#fff6d0] px-md-3 py-md-2">
@@ -645,6 +867,7 @@ export default function LoanRequestModal({
                   {isSubmitting ? 'Submitting...' : 'Make Your Request'}
                </button>
             </form>
+            )}
          </section>
          {isCalendarOpen ? (
             <div
