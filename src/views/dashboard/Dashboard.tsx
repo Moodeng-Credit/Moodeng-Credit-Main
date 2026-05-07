@@ -1,11 +1,15 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useSearchParams } from 'react-router-dom';
 
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 
-import type { RootState } from '@/store/store';
+import type { WalletLivenessData } from '@/utils/diversityScore';
+
+import { getWalletAgeInfo } from '@/lib/web3/walletAge';
+import { fetchUserProfiles } from '@/store/slices/authSlice';
+import type { AppDispatch, RootState } from '@/store/store';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import CreditLevelSection from '@/views/dashboard/components/CreditLevelSection';
 import DashboardHeader from '@/views/dashboard/components/DashboardHeader';
@@ -122,11 +126,13 @@ const buildPreviewLoans = (borrowerUser: string): Loan[] => [
 ];
 
 export default function Dashboard() {
+   const dispatch = useDispatch<AppDispatch>();
    const user = useSelector((state: RootState) => state.auth.user);
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const gloanRequests = useSelector((state: RootState) => state.loans.loans.gloans || []);
    const isBorrower = useIsBorrower();
    const [searchParams] = useSearchParams();
+   const [walletData, setWalletData] = useState<Record<string, WalletLivenessData>>({});
    const { stats, creditLevels, loanArrays } = useDashboardData('borrower');
    const isMockRich = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
    const dashboardStats = isMockRich
@@ -143,15 +149,18 @@ export default function Dashboard() {
    }, [gloanRequests, user.id]);
    const borrowerLoans = useMemo(() => getBorrowerLoans(gloanRequests, user.id), [gloanRequests, user.id]);
    const previewLoans = useMemo(() => buildPreviewLoans(user.id), [user.id]);
-
-   if (!isBorrower) {
-      return <Navigate to="/lender/dashboard" replace />;
-   }
-
    const isVerified = user.isWorldId === 'ACTIVE';
    const milestoneLoans = isMockRich ? previewLoans : borrowerLoans;
-   const displayFundedLoans = isMockRich ? previewLoans.filter((loan) => loan.loanStatus === LoanStatus.LENT) : fundedLoans;
+   const displayFundedLoans = useMemo(
+      () => (isMockRich ? previewLoans.filter((loan) => loan.loanStatus === LoanStatus.LENT) : fundedLoans),
+      [fundedLoans, isMockRich, previewLoans]
+   );
    const displayUserProfiles = isMockRich ? DEMO_LENDER_PROFILES : userProfiles;
+   const lenderIds = useMemo(
+      () => [...new Set(displayFundedLoans.map((loan) => loan.lenderUser).filter(Boolean))] as string[],
+      [displayFundedLoans]
+   );
+   const displayWalletData = Object.keys(walletData).length > 0 ? walletData : undefined;
    const displayLoanArrays = isMockRich
       ? {
            ...loanArrays,
@@ -160,6 +169,70 @@ export default function Dashboard() {
         }
       : loanArrays;
    const milestones = buildReputationMilestones({ creditLevels, borrowerLoans: milestoneLoans, isVerified });
+
+   useEffect(() => {
+      if (!isBorrower || isMockRich || lenderIds.length === 0) return;
+      dispatch(fetchUserProfiles(lenderIds)).catch(() => undefined);
+   }, [dispatch, isBorrower, isMockRich, lenderIds]);
+
+   useEffect(() => {
+      if (!isBorrower || isMockRich) {
+         setWalletData({});
+         return;
+      }
+
+      const lendersWithWallets = lenderIds
+         .map((lenderId) => ({ lenderId, walletAddress: displayUserProfiles[lenderId]?.walletAddress }))
+         .filter(
+            (lender): lender is { lenderId: string; walletAddress: string } =>
+               typeof lender.walletAddress === 'string' && lender.walletAddress.startsWith('0x') && lender.walletAddress.length === 42
+         );
+
+      if (lendersWithWallets.length === 0) {
+         setWalletData({});
+         return;
+      }
+
+      let cancelled = false;
+      const nowSeconds = Date.now() / 1000;
+
+      Promise.all(
+         lendersWithWallets.map(async ({ lenderId, walletAddress }) => {
+            const info = await getWalletAgeInfo(walletAddress);
+            if (!info) return null;
+
+            return {
+               lenderId,
+               data: {
+                  ageInDays: info.ageInDays,
+                  transferCount: info.totalTransferCount,
+                  hasMoreThan100Transfers: info.hasMoreThan100Transfers,
+                  daysSinceLastTx: Math.max(0, (nowSeconds - info.lastTxTimestamp) / 86400),
+                  hasHistory: info.hasHistory
+               }
+            };
+         })
+      )
+         .then((results) => {
+            if (cancelled) return;
+            const nextWalletData: Record<string, WalletLivenessData> = {};
+            results.forEach((result) => {
+               if (result) nextWalletData[result.lenderId] = result.data;
+            });
+            setWalletData(nextWalletData);
+         })
+         .catch(() => {
+            if (!cancelled) setWalletData({});
+         });
+
+      return () => {
+         cancelled = true;
+      };
+   }, [displayUserProfiles, isBorrower, isMockRich, lenderIds]);
+
+   if (!isBorrower) {
+      return <Navigate to="/lender/dashboard" replace />;
+   }
 
    return (
       <div className="min-h-screen bg-md-neutral-200">
@@ -180,6 +253,7 @@ export default function Dashboard() {
                isVerified={isVerified}
                username={user.username}
                userProfiles={displayUserProfiles}
+               walletData={displayWalletData}
                detailSearch={isMockRich ? '?demo=rich' : ''}
             />
             <UpcomingLoanDues

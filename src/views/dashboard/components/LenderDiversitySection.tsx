@@ -4,6 +4,7 @@ import { Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
+import type { WalletLivenessData } from '@/utils/diversityScore';
 
 import type { User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
@@ -13,6 +14,7 @@ interface LenderDiversitySectionProps {
    isVerified: boolean;
    username?: string;
    userProfiles?: Record<string, User>;
+   walletData?: Record<string, WalletLivenessData>;
    detailSearch?: string;
 }
 
@@ -29,9 +31,13 @@ export default function LenderDiversitySection({
    isVerified,
    username,
    userProfiles,
+   walletData,
    detailSearch = ''
 }: LenderDiversitySectionProps) {
-   const lenderDiversity = useMemo(() => calculateLenderDiversity(fundedLoans, userProfiles), [fundedLoans, userProfiles]);
+   const lenderDiversity = useMemo(
+      () => calculateLenderDiversity(fundedLoans, userProfiles, walletData),
+      [fundedLoans, userProfiles, walletData]
+   );
    const statusLabel = useMemo(() => getDiversityStatus(lenderDiversity.score), [lenderDiversity.score]);
    const style = STATUS_STYLES[statusLabel] ?? STATUS_STYLES['Very Low'];
    const hasEnoughHistory = lenderDiversity.hasEnoughHistory;
