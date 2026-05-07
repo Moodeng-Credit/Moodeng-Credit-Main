@@ -65,6 +65,7 @@ const UserProfile = () => {
    const [isDefaultHistorySheetOpen, setIsDefaultHistorySheetOpen] = useState(false);
    const [isRepaymentHistorySheetOpen, setIsRepaymentHistorySheetOpen] = useState(false);
    const [isLenderDiversitySheetOpen, setIsLenderDiversitySheetOpen] = useState(false);
+   const hasScrolledToHashRef = useRef(false);
    const [isDarkMode, setIsDarkMode] = useState(() => {
       if (typeof window === 'undefined') return false;
       return window.localStorage.getItem(BORROWER_INSIGHTS_THEME_KEY) === 'dark';
@@ -77,6 +78,15 @@ const UserProfile = () => {
    const loans = isDemoInsights ? DEMO_BORROWER_INSIGHTS_LOANS : storedLoans;
    const userProfiles = isDemoInsights ? DEMO_LENDER_PROFILES : storedUserProfiles;
    const resolvedUser = isDemoInsights ? DEMO_BORROWER_INSIGHTS_USER : (profileUser ?? user);
+
+   useEffect(() => {
+      if (hasScrolledToHashRef.current || window.location.hash !== '#loan-summary' || !resolvedUser) return;
+
+      hasScrolledToHashRef.current = true;
+      window.requestAnimationFrame(() => {
+         document.getElementById('loan-summary')?.scrollIntoView({ block: 'start' });
+      });
+   }, [resolvedUser]);
 
    useEffect(() => {
       window.scrollTo(0, 0);
@@ -557,7 +567,7 @@ const UserProfile = () => {
                </div>
 
                {/* Loan Summary */}
-               <div className="flex flex-col gap-4">
+               <div id="loan-summary" className="scroll-mt-4 flex flex-col gap-4">
                   <div className="flex items-center gap-4">
                      <span className="text-md-h5 font-semibold text-md-heading">Loan Summary</span>
                      {isGoodStanding ? (
