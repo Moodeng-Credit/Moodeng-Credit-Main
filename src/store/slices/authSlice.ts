@@ -1,8 +1,8 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
 import { type AuthState, type User, type UserRole, WorldId } from '@/types/authTypes';
@@ -126,11 +126,7 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
    // avatar_url = manually uploaded photo (highest priority)
    // picture    = Google OAuth profile photo
    // photo_url  = Telegram profile photo (written by edge function on sign-in)
-   const avatarUrl = (
-      user.user_metadata?.avatar_url ??
-      user.user_metadata?.picture ??
-      user.user_metadata?.photo_url
-   ) as string | undefined;
+   const avatarUrl = (user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? user.user_metadata?.photo_url) as string | undefined;
    const displayName = user.user_metadata?.name as string | undefined;
 
    if (!profile) {
@@ -210,46 +206,47 @@ const initialState: AuthState = {
 export const loginUser = createAsyncThunk(
    'auth/login',
    async ({ email, password, rememberMe = true }: { email: string; password: string; rememberMe?: boolean }) => {
-   const supabase = supabaseClient();
-   const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-      options: { persistSession: rememberMe }
-   });
+      const supabase = supabaseClient();
+      const { error } = await supabase.auth.signInWithPassword({
+         email,
+         password,
+         options: { persistSession: rememberMe }
+      });
 
-   if (error) {
-      if (error.code === 'email_not_confirmed') {
-         // Auto-resend verification email
-         const redirectUrl = getAuthRedirectUrl();
-         const { error: resendError } = await supabase.auth.resend({
-            type: 'signup',
-            email,
-            options: {
-               emailRedirectTo: redirectUrl
+      if (error) {
+         if (error.code === 'email_not_confirmed') {
+            // Auto-resend verification email
+            const redirectUrl = getAuthRedirectUrl();
+            const { error: resendError } = await supabase.auth.resend({
+               type: 'signup',
+               email,
+               options: {
+                  emailRedirectTo: redirectUrl
+               }
+            });
+
+            if (resendError) {
+               console.error('Failed to resend verification email:', resendError);
             }
-         });
 
-         if (resendError) {
-            console.error('Failed to resend verification email:', resendError);
+            const emailNotConfirmedError = new Error(
+               'Please verify your email before signing in. A verification email has been sent to your inbox.'
+            );
+            (emailNotConfirmedError as Error & { code: string }).code = 'email_not_confirmed';
+            throw emailNotConfirmedError;
          }
 
-         const emailNotConfirmedError = new Error(
-            'Please verify your email before signing in. A verification email has been sent to your inbox.'
-         );
-         (emailNotConfirmedError as Error & { code: string }).code = 'email_not_confirmed';
-         throw emailNotConfirmedError;
+         // For other errors, throw as-is
+         throw error;
       }
 
-      // For other errors, throw as-is
-      throw error;
+      const user = await fetchCurrentUserProfile();
+      return {
+         username: user.username,
+         user
+      };
    }
-
-   const user = await fetchCurrentUserProfile();
-   return {
-      username: user.username,
-      user
-   };
-});
+);
 
 export const loginWithGoogle = createAsyncThunk('auth/loginWithGoogle', async ({ googleCredential }: { googleCredential: string }) => {
    const user = await signInWithGoogleCredential(googleCredential);
@@ -479,12 +476,7 @@ export const updateUserRole = createAsyncThunk('auth/updateUserRole', async (rol
       throw sessionError ?? new Error('Not authenticated');
    }
 
-   const { data: updatedRow, error } = await supabase
-      .from('users')
-      .update({ user_role: role })
-      .eq('id', user.id)
-      .select('*')
-      .single();
+   const { data: updatedRow, error } = await supabase.from('users').update({ user_role: role }).eq('id', user.id).select('*').single();
 
    if (error || !updatedRow) {
       throw error ?? new Error('Failed to update user role');
@@ -522,6 +514,26 @@ const authSlice = createSlice({
          state.userProfiles = {};
       },
       setAuthChecked: (state) => {
+         state.isAuthChecked = true;
+      },
+      setPreviewAuth: (state, action) => {
+         const isFilled = action.payload === 'filled';
+         state.user = {
+            ...defaultUser,
+            id: 'preview-borrower',
+            username: 'Cookiemonster1337',
+            displayName: 'Cookiemonster1337',
+            email: 'preview@moodeng.local',
+            walletAddress: '0x71c...9d42',
+            isWorldId: isFilled ? WorldId.ACTIVE : WorldId.INACTIVE,
+            cs: isFilled ? 60 : 0,
+            mal: isFilled ? 1 : 0,
+            nal: isFilled ? 1 : 0,
+            userRole: 'borrower',
+            createdAt: '2026-05-01T00:00:00.000Z',
+            updatedAt: '2026-05-06T00:00:00.000Z'
+         };
+         state.username = state.user.username;
          state.isAuthChecked = true;
       }
    },
@@ -647,11 +659,11 @@ const authSlice = createSlice({
             if (!state.userProfiles) {
                state.userProfiles = {};
             }
-         // Store fetched user profiles in the userProfiles map
-         for (const user of action.payload.users) {
-            state.userProfiles[user.id] = user;
-         }
-      })
+            // Store fetched user profiles in the userProfiles map
+            for (const user of action.payload.users) {
+               state.userProfiles[user.id] = user;
+            }
+         })
          .addCase(logoutUser.fulfilled, (state) => {
             state.user = defaultUser;
             state.username = null;
@@ -672,7 +684,7 @@ const authSlice = createSlice({
    }
 });
 
-export const { clearError, setUsername, clearAuth, setAuthChecked } = authSlice.actions;
+export const { clearError, setUsername, clearAuth, setAuthChecked, setPreviewAuth } = authSlice.actions;
 export const me = fetchUser;
 export const login = loginUser;
 export const register = registerUser;

@@ -1,90 +1,68 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
 
-interface Milestone {
-   id: string;
-   title: string;
-   description: string;
-   status: 'next' | 'unlocked' | 'locked';
-   rewardText?: string;
+import { Link, useSearchParams } from 'react-router-dom';
+
+import { MILESTONE_ICON_CONFIG, MilestoneDetailSheet, MilestoneHelpSheet } from '@/views/dashboard/components/MilestoneSheets';
+import type { DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
+
+interface ReputationMilestonesProps {
+   milestones: DashboardMilestone[];
 }
 
-const DUMMY_MILESTONES: Milestone[] = [
-   {
-      id: 'milestone-next',
-      title: 'Repay a loan on time',
-      description: 'Increase your Trust Score',
-      status: 'next',
-   },
-   {
-      id: 'milestone-unlocked',
-      title: 'On-time repayment completed',
-      description: '',
-      status: 'unlocked',
-      rewardText: 'Trust Score increased · Up to $120',
-   },
-   {
-      id: 'milestone-locked',
-      title: 'Repay one more loan on time',
-      description: 'Complete a full repayment to unlock',
-      status: 'locked',
-   },
-];
-
-const ICON_CONFIG: Record<Milestone['status'], { bg: string; icon: string }> = {
-   next: { bg: 'bg-md-primary-900', icon: '/icons/milestone.svg' },
-   unlocked: { bg: 'bg-[#32de83]', icon: '/icons/milestone_unlocked.svg' },
-   locked: { bg: 'bg-[#9285a0]', icon: '/icons/locked.svg' },
-};
-
-function MilestoneIcon({ status }: { status: Milestone['status'] }) {
-   const { bg, icon } = ICON_CONFIG[status];
+function MilestoneIcon({ status }: { status: DashboardMilestone['status'] }) {
+   const { icon, bg } = MILESTONE_ICON_CONFIG[status];
    return (
-      <div className={`w-10 h-10 rounded-full ${bg} flex items-center justify-center shrink-0`}>
-         <img src={icon} alt="" className="w-5 h-5" />
+      <div className={`flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-[10px] ${bg ?? ''}`}>
+         <img src={icon} alt="" className={status === 'locked' ? 'h-5 w-5' : 'h-8 w-8'} />
       </div>
    );
 }
 
-function MilestoneCard({ milestone }: { milestone: Milestone }) {
+function MilestoneCard({ milestone, onView }: { milestone: DashboardMilestone; onView: (milestone: DashboardMilestone) => void }) {
+   const config = MILESTONE_ICON_CONFIG[milestone.status];
+   const summary =
+      milestone.status === 'next'
+         ? milestone.id === 'first-on-time-repayment'
+            ? 'Increase your Trust Score'
+            : milestone.reward
+         : `${milestone.outcome} · ${milestone.benefit}`;
+
    return (
-      <div className="flex items-start gap-3 bg-md-neutral-200 border border-md-primary-100 rounded-[12px] p-3">
+      <div className="grid min-h-[76px] grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-[10px] rounded-[12px] border border-md-primary-100 bg-md-neutral-200 p-3 antialiased">
          <MilestoneIcon status={milestone.status} />
 
-         <div className="flex-1 min-w-0">
-            {milestone.status === 'next' && (
-               <p className="text-md-b4 text-md-neutral-700 mb-0.5">Next milestone</p>
-            )}
-            {milestone.status === 'unlocked' && (
-               <p className="text-md-b4 text-md-neutral-700 mb-0.5">Trust milestone reached</p>
-            )}
-            <p className="text-md-b2 font-semibold text-md-heading">{milestone.title}</p>
-            {milestone.description && (
-               <p className="text-md-b4 text-md-neutral-700">{milestone.description}</p>
-            )}
-            {milestone.rewardText && (
-               <p className="text-md-b4 text-md-neutral-700 mt-0.5">{milestone.rewardText}</p>
-            )}
+         <div className="min-w-0">
+            {milestone.eyebrow ? (
+               <p className="text-[10px] font-normal leading-[15px] tracking-[-0.2px] text-md-neutral-700">{milestone.eyebrow}</p>
+            ) : null}
+            <p className="truncate text-[16px] font-[510] leading-6 tracking-[-0.32px] text-md-heading">{milestone.title}</p>
+            <p className="truncate text-[12px] font-normal leading-[18px] tracking-[-0.24px] text-md-neutral-700">{summary}</p>
          </div>
 
-         <div className="shrink-0 self-center">
+         <div className="shrink-0">
             {milestone.status === 'next' && (
-               <Link
-                  to="/milestones"
-                  className="inline-flex items-center px-3 py-1.5 rounded-md-md bg-md-primary-900 text-white text-md-b4 font-medium"
+               <button
+                  type="button"
+                  onClick={() => onView(milestone)}
+                  className={`inline-flex h-8 items-center justify-center whitespace-nowrap rounded-[8px] px-3 py-2 text-[10px] font-[590] leading-[15px] tracking-[-0.2px] antialiased ${config.labelClass}`}
                >
                   View Milestone
-               </Link>
+               </button>
             )}
             {milestone.status === 'unlocked' && (
-               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md-md bg-md-green-100 text-md-green-800 text-md-b4 font-medium">
+               <span
+                  className={`inline-flex h-8 items-center justify-center gap-1 whitespace-nowrap rounded-[8px] px-3 py-2 text-[10px] font-[590] leading-[15px] tracking-[-0.2px] antialiased ${config.labelClass}`}
+               >
                   Unlocked
-                  <img src="/icons/unlocked.svg" alt="" className="w-3.5 h-3.5" style={{ filter: 'brightness(0) saturate(100%) invert(38%) sepia(93%) saturate(437%) hue-rotate(101deg) brightness(95%) contrast(92%)' }} />
+                  <img src="/icons/unlocked.svg" alt="" className="h-3.5 w-3.5 invert" />
                </span>
             )}
             {milestone.status === 'locked' && (
-               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md-md bg-md-neutral-300 text-md-neutral-700 text-md-b4 font-medium">
+               <span
+                  className={`inline-flex h-8 items-center justify-center gap-1 whitespace-nowrap rounded-[8px] px-3 py-2 text-[10px] font-[590] leading-[15px] tracking-[-0.2px] antialiased ${config.labelClass}`}
+               >
                   Locked
-                  <img src="/icons/locked.svg" alt="" className="w-3.5 h-3.5" style={{ filter: 'brightness(0) saturate(100%) invert(52%) sepia(8%) saturate(1206%) hue-rotate(236deg) brightness(93%) contrast(87%)' }} />
+                  <img src="/icons/locked.svg" alt="" className="h-3.5 w-3.5 invert" />
                </span>
             )}
          </div>
@@ -92,25 +70,46 @@ function MilestoneCard({ milestone }: { milestone: Milestone }) {
    );
 }
 
-export default function ReputationMilestones() {
+export default function ReputationMilestones({ milestones }: ReputationMilestonesProps) {
+   const [searchParams] = useSearchParams();
+   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
+   const [isHelpOpen, setIsHelpOpen] = useState(false);
+   const previewQuery = searchParams.toString();
+   const milestonesHref = previewQuery ? `/milestones?${previewQuery}` : '/milestones';
+   const selectedMilestone = milestones.find((milestone) => milestone.id === selectedMilestoneId) ?? null;
+
    return (
-      <div className="bg-md-neutral-100 rounded-md-lg p-4 shadow-md-card">
-         <div className="flex items-center justify-between mb-1">
-            <h2 className="text-md-b1 font-semibold text-md-heading">Reputation Milestones</h2>
-            <Link to="/milestones" className="text-md-b3 font-medium text-md-blue-600 underline">
+      <div className="rounded-md-lg bg-md-neutral-100 p-4 shadow-md-card [font-family:'SF_Pro_Display','SF_Pro',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]">
+         <div className="mb-1 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+               <h2 className="text-[18px] font-[590] leading-[1.2] tracking-[-0.72px] text-[#040033]">Reputation Milestones</h2>
+               <button
+                  type="button"
+                  onClick={() => setIsHelpOpen(true)}
+                  className="flex h-6 w-6 items-center justify-center rounded-full"
+                  aria-label="How milestones work"
+               >
+                  <img src="/icons/question_light.svg" alt="" className="h-5 w-5" />
+               </button>
+            </div>
+            <Link
+               to={milestonesHref}
+               className="shrink-0 text-[14px] font-[590] leading-[21px] tracking-[-0.28px] text-md-blue-600 underline"
+            >
                View All Milestones
             </Link>
          </div>
-         <p className="text-md-b4 text-md-neutral-700 mb-2">
+         <p className="mb-3 text-[12px] font-normal leading-[18px] tracking-[-0.24px] text-md-neutral-700">
             Complete milestones to unlock higher loan levels.
          </p>
 
-         <div className="flex flex-col gap-3">
-            {DUMMY_MILESTONES.map((milestone) => (
-               <MilestoneCard key={milestone.id} milestone={milestone} />
+         <div className="flex flex-col gap-2">
+            {milestones.slice(0, 3).map((milestone) => (
+               <MilestoneCard key={milestone.id} milestone={milestone} onView={(item) => setSelectedMilestoneId(item.id)} />
             ))}
          </div>
-
+         <MilestoneDetailSheet milestone={selectedMilestone} previewQuery={previewQuery} onClose={() => setSelectedMilestoneId(null)} />
+         {isHelpOpen && <MilestoneHelpSheet onClose={() => setIsHelpOpen(false)} />}
       </div>
    );
 }
