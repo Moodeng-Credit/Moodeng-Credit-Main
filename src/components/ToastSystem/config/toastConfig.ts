@@ -232,6 +232,14 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       buttonAction: 'view_credit_score'
    },
 
+   repayment_too_low: {
+      toastType: TOAST_TYPES.ERROR,
+      title: 'Repayment Too Low',
+      message: 'Repayment must be at least $1 more than the amount you borrow.',
+      buttonText: 'OK',
+      buttonAction: 'acknowledge'
+   },
+
    loan_limit_reached: {
       toastType: TOAST_TYPES.ERROR,
       title: 'Loan Limit Reached',

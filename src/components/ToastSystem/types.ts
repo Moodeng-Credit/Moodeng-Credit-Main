@@ -33,6 +33,7 @@ export type ToastErrorType =
    | 'network_required'
    | 'invalid_amount'
    | 'amount_exceeds_limit'
+   | 'repayment_too_low'
    | 'loan_limit_reached'
    | 'profile_updated'
    | 'user_update_success'

@@ -1,10 +1,8 @@
 import { type ChangeEvent, type FormEvent, type MouseEvent, type RefObject, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { AlertTriangle, HelpCircle, Search, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAccount } from 'wagmi';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
@@ -16,7 +14,6 @@ import { usePagination } from '@/hooks/usePagination';
 
 import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
-import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import { logoImageSrc } from '@/config/navigationConfig';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
@@ -62,11 +59,8 @@ function RequestBoard$() {
    const pathname = location.pathname;
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
-   const account = useAccount();
 
-   const { isConnected, status } = account;
    const { showToastByConfig } = useToast();
-   const { openConnectModal } = useConnectModal();
 
    const [showModal, setShowModal] = useState(false);
    const [showPurple, setShowPurple] = useState(false);
@@ -170,11 +164,9 @@ function RequestBoard$() {
       e.preventDefault();
       if (isSubmitting) return;
 
-      if (!isConnected) {
-         openConnectModal?.();
-         e.stopPropagation();
-         return;
-      }
+      const borrowerWallet = effectiveUser.walletAddress?.trim();
+      const parsedLoanAmount = Number.parseFloat(loanAmount);
+      const parsedRepaymentAmount = Number.parseFloat(totalRepaymentAmount);
 
       if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
@@ -184,29 +176,31 @@ function RequestBoard$() {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WORLDID_REQUIRED));
          return;
       }
-      if (!effectiveUser.walletAddress || effectiveUser.walletAddress.trim() === '') {
+      if (!borrowerWallet) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
+         setShowModal(false);
+         navigate('/onboarding/wallet');
          return;
       }
-      if (account.chain?.id !== ALLOWED_CHAIN_ID) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
-         return;
-      }
-      if (!loanAmount || parseFloat(loanAmount) <= 0) {
+      if (!loanAmount || Number.isNaN(parsedLoanAmount) || parsedLoanAmount <= 0) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_INVALID_AMOUNT));
          return;
       }
-      if (parseFloat(loanAmount) > effectiveCreditLimit) {
+      if (parsedLoanAmount > effectiveCreditLimit) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
+         return;
+      }
+      if (!totalRepaymentAmount || Number.isNaN(parsedRepaymentAmount) || parsedRepaymentAmount < parsedLoanAmount + 1) {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_REPAYMENT_TOO_LOW));
          return;
       }
 
       const loanData = {
          borrowerUserId: borrowerUserId || '',
-         borrowerWallet: effectiveUser.walletAddress,
+         borrowerWallet,
          lenderUserId,
-         loanAmount: parseFloat(loanAmount),
-         totalRepaymentAmount: parseFloat(totalRepaymentAmount),
+         loanAmount: parsedLoanAmount,
+         totalRepaymentAmount: parsedRepaymentAmount,
          reason,
          dueDate: days,
          referralCodeId: appliedReferral?.id,
@@ -216,9 +210,11 @@ function RequestBoard$() {
 
       if (
          effectiveUser.isWorldId === 'ACTIVE' &&
+         Boolean(borrowerWallet) &&
          (effectiveUser.nal || 0) < (effectiveUser.mal || 0) &&
-         parseFloat(loanAmount) <= effectiveCreditLimit &&
-         parseFloat(loanAmount) > 0
+         parsedLoanAmount <= effectiveCreditLimit &&
+         parsedLoanAmount > 0 &&
+         parsedRepaymentAmount >= parsedLoanAmount + 1
       ) {
          setIsSubmitting(true);
          try {
