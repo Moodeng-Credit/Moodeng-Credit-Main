@@ -11,7 +11,7 @@ import {
    useState
 } from 'react';
 
-import { AlertCircle, CalendarDays, ChevronLeft, ChevronRight, HelpCircle, X } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, HelpCircle, X } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import { useNavigate } from 'react-router-dom';
 
@@ -537,31 +537,15 @@ export default function LoanRequestModal({
                      />
                   </div>
                   <div className="flex justify-end gap-md-1 text-md-b3 font-normal text-md-neutral-1200">
-                     <span className="relative inline-flex">
-                        <button
-                           aria-expanded={activeTooltip === 'usdc'}
-                           aria-label="Explain USDC loans"
-                           className="inline-flex text-md-primary-900"
-                           onClick={(event) => {
-                              event.stopPropagation();
-                              setActiveTooltip(activeTooltip === 'usdc' ? null : 'usdc');
-                           }}
-                           onPointerDown={(event) => event.stopPropagation()}
-                           type="button"
-                        >
-                           <AlertCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
-                        </button>
-                        {activeTooltip === 'usdc' ? (
-                           <span
-                              className="absolute left-0 top-full z-50 mt-md-1 flex w-[260px] max-w-[calc(100vw-64px)] -translate-x-1/2 items-center justify-center rounded-[8px] bg-[#360975] p-[10px] text-center text-md-b2 font-normal leading-[21px] text-md-primary-100 shadow-md-card"
-                              onPointerDown={(event) => event.stopPropagation()}
-                              role="tooltip"
-                           >
-                              {tooltipCopy.usdc}
-                              <span aria-hidden="true" className="absolute left-1/2 top-[-5px] h-3 w-3 -translate-x-1/2 rotate-45 bg-[#360975]" />
-                           </span>
-                        ) : null}
-                     </span>
+                     <InfoTooltip
+                        activeTooltip={activeTooltip}
+                        iconClassName="h-4 w-4"
+                        iconStrokeWidth={1.35}
+                        id="usdc"
+                        label="Explain USDC loans"
+                        panelClassName="left-0 top-full mt-md-1 -translate-x-1/2"
+                        setActiveTooltip={setActiveTooltip}
+                     />
                      <span>All loans are issued and repaid in USDC.</span>
                   </div>
                </div>
