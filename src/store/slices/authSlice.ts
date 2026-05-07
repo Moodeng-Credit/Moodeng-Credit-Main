@@ -5,12 +5,13 @@ import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
-import { type AuthState, type User, type UserRole, WorldId } from '@/types/authTypes';
+import { type AccountStatus, type AuthState, type User, type UserRole, WorldId } from '@/types/authTypes';
 
 type UpdateUserPayload = {
    username?: string;
    displayName?: string;
    avatarUrl?: string | null;
+   avatarBackground?: string | null;
    email?: string | null;
    password?: string;
    telegramUsername?: string | null;
@@ -84,11 +85,12 @@ const ensureUserProfileRow = async (
    return data;
 };
 
-const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: string): User => ({
+const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: string, avatarBackground?: string): User => ({
    id: row.id,
    username: row.username,
    email: row.email,
    avatarUrl,
+   avatarBackground,
    displayName,
    googleId: row.google_id ?? undefined,
    walletAddress: row.wallet_address ?? undefined,
@@ -101,6 +103,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    nal: row.nal,
    cs: row.cs,
    creditProgressionPaused: row.credit_progression_paused ?? false,
+   accountStatus: (row as UserRow & { account_status?: AccountStatus | null }).account_status ?? 'active',
    userRole: row.user_role ?? undefined,
    createdAt: row.created_at,
    updatedAt: row.updated_at
@@ -124,17 +127,19 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
    }
 
    // avatar_url = manually uploaded photo (highest priority)
+   // avatar_background = soft color shown behind transparent/background-removed avatars
    // picture    = Google OAuth profile photo
    // photo_url  = Telegram profile photo (written by edge function on sign-in)
    const avatarUrl = (user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? user.user_metadata?.photo_url) as string | undefined;
+   const avatarBackground = user.user_metadata?.avatar_background as string | undefined;
    const displayName = user.user_metadata?.name as string | undefined;
 
    if (!profile) {
       const ensuredProfile = await ensureUserProfileRow(supabase, user);
-      return mapSupabaseRowToUser(ensuredProfile, avatarUrl, displayName);
+      return mapSupabaseRowToUser(ensuredProfile, avatarUrl, displayName, avatarBackground);
    }
 
-   return mapSupabaseRowToUser(profile, avatarUrl, displayName);
+   return mapSupabaseRowToUser(profile, avatarUrl, displayName, avatarBackground);
 };
 
 const fetchUserProfileByUsername = async (username: string): Promise<User> => {
@@ -180,6 +185,7 @@ const defaultUser: User = {
    username: '',
    email: '',
    walletAddress: undefined,
+   avatarBackground: undefined,
    isWorldId: WorldId.INACTIVE,
    googleId: undefined,
    telegramUsername: undefined,
@@ -424,13 +430,20 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
       throw sessionError ?? new Error('No authenticated user to update');
    }
 
-   if (userData.email || userData.password || userData.displayName !== undefined || userData.avatarUrl !== undefined) {
+   if (
+      userData.email ||
+      userData.password ||
+      userData.displayName !== undefined ||
+      userData.avatarUrl !== undefined ||
+      userData.avatarBackground !== undefined
+   ) {
       const nextMetadata =
-         userData.displayName !== undefined || userData.avatarUrl !== undefined
+         userData.displayName !== undefined || userData.avatarUrl !== undefined || userData.avatarBackground !== undefined
             ? {
                  ...(user.user_metadata ?? {}),
                  ...(userData.displayName !== undefined ? { name: userData.displayName } : {}),
-                 ...(userData.avatarUrl !== undefined ? { avatar_url: userData.avatarUrl } : {})
+                 ...(userData.avatarUrl !== undefined ? { avatar_url: userData.avatarUrl } : {}),
+                 ...(userData.avatarBackground !== undefined ? { avatar_background: userData.avatarBackground } : {})
               }
             : undefined;
 
