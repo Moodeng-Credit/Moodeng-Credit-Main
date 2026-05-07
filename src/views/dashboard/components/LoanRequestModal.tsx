@@ -455,7 +455,7 @@ export default function LoanRequestModal({
                   <InfoTooltip
                      activeTooltip={activeTooltip}
                      arrowClassName="right-[42px] top-[-5px] rotate-45"
-                     iconClassName="h-7 w-7"
+                     iconClassName="h-[18px] w-[18px]"
                      iconSrc={termsTooltipIconSrc}
                      id="terms"
                      label="Explain setting loan terms"
@@ -508,11 +508,11 @@ export default function LoanRequestModal({
                         <span>Current Limit: ${limitAmount || '0'}</span>
                         <InfoTooltip
                            activeTooltip={activeTooltip}
-                           arrowClassName="bottom-[-5px] left-1/2 -translate-x-1/2 rotate-45"
+                           arrowClassName="left-1/2 top-[-5px] -translate-x-1/2 rotate-45"
                            iconClassName="h-4 w-4"
                            id="limit"
                            label="Explain current borrow limit"
-                           panelClassName="right-0 bottom-full mb-md-1"
+                           panelClassName="right-0 top-full mt-md-1"
                            setActiveTooltip={setActiveTooltip}
                         />
                      </div>
@@ -610,8 +610,13 @@ export default function LoanRequestModal({
                            className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 pr-[64px] text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
                         />
                         <button
+                           aria-expanded={isCalendarOpen}
                            aria-label="Open repayment date calendar"
-                           className="absolute inset-y-0 right-0 flex w-[56px] items-center justify-center border-l border-md-primary-1200 bg-md-primary-1200 text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:bg-[#4b00b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                           className={`absolute inset-y-0 right-0 flex w-[56px] items-center justify-center border-l border-md-primary-1200 transition duration-150 ease-out active:bg-[#4b00b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
+                              isCalendarOpen
+                                 ? 'bg-md-primary-1200 text-md-neutral-100 hover:bg-[#5200c8]'
+                                 : 'bg-md-neutral-100 text-md-primary-900 hover:bg-md-primary-100'
+                           }`}
                            onClick={() => setIsCalendarOpen((isOpen) => !isOpen)}
                            type="button"
                         >
