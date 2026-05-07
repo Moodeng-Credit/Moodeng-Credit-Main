@@ -18,13 +18,14 @@ import UserGreeting from '@/views/dashboard/components/UserGreeting';
 import VerificationCTA from '@/views/dashboard/components/VerificationCTA';
 import { buildReputationMilestones, getBorrowerLoans } from '@/views/dashboard/dashboardHelpers';
 import { useDashboardData } from '@/views/profile/components/tabs/useDashboardData';
+import { DEMO_LENDER_PROFILES } from '@/views/user-profile/demoBorrowerInsights';
 
 const buildPreviewLoans = (borrowerUser: string): Loan[] => [
    {
       id: 'mock-paid-1',
       trackingId: 'mock-paid-1',
       borrowerUser,
-      lenderUser: 'mock-lender-a',
+      lenderUser: 'demo-lender-a',
       borrowerWallet: '0x71c...9d42',
       lenderWallet: '0x8a4...19b0',
       loanAmount: 15,
@@ -44,7 +45,7 @@ const buildPreviewLoans = (borrowerUser: string): Loan[] => [
       id: 'mock-paid-2',
       trackingId: 'mock-paid-2',
       borrowerUser,
-      lenderUser: 'mock-lender-b',
+      lenderUser: 'demo-lender-b',
       borrowerWallet: '0x71c...9d42',
       lenderWallet: '0x31d...f6aa',
       loanAmount: 20,
@@ -64,7 +65,7 @@ const buildPreviewLoans = (borrowerUser: string): Loan[] => [
       id: 'mock-active-1',
       trackingId: 'mock-active-1',
       borrowerUser,
-      lenderUser: 'mock-lender-c',
+      lenderUser: 'demo-lender-c',
       borrowerWallet: '0x71c...9d42',
       lenderWallet: '0x9db...7710',
       loanAmount: 60,
@@ -84,7 +85,7 @@ const buildPreviewLoans = (borrowerUser: string): Loan[] => [
       id: 'mock-defaulted-1',
       trackingId: 'mock-defaulted-1',
       borrowerUser,
-      lenderUser: 'mock-lender-a',
+      lenderUser: 'demo-lender-a',
       borrowerWallet: '0x71c...9d42',
       lenderWallet: '0x8a4...19b0',
       loanAmount: 40,
@@ -122,10 +123,11 @@ const buildPreviewLoans = (borrowerUser: string): Loan[] => [
 
 export default function Dashboard() {
    const user = useSelector((state: RootState) => state.auth.user);
+   const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const gloanRequests = useSelector((state: RootState) => state.loans.loans.gloans || []);
    const isBorrower = useIsBorrower();
    const [searchParams] = useSearchParams();
-   const { stats, lenderDiversityScore, creditLevels, loanArrays } = useDashboardData('borrower');
+   const { stats, creditLevels, loanArrays } = useDashboardData('borrower');
    const isMockRich = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
    const dashboardStats = isMockRich
       ? {
@@ -149,7 +151,7 @@ export default function Dashboard() {
    const isVerified = user.isWorldId === 'ACTIVE';
    const milestoneLoans = isMockRich ? previewLoans : borrowerLoans;
    const displayFundedLoans = isMockRich ? previewLoans.filter((loan) => loan.loanStatus === LoanStatus.LENT) : fundedLoans;
-   const displayLenderDiversityScore = isMockRich ? 64 : lenderDiversityScore;
+   const displayUserProfiles = isMockRich ? DEMO_LENDER_PROFILES : userProfiles;
    const displayLoanArrays = isMockRich
       ? {
            ...loanArrays,
@@ -174,10 +176,11 @@ export default function Dashboard() {
             {!isVerified && <VerificationCTA />}
             <LoanSummarySection stats={dashboardStats} />
             <LenderDiversitySection
-               score={displayLenderDiversityScore}
                fundedLoans={displayFundedLoans}
                isVerified={isVerified}
                username={user.username}
+               userProfiles={displayUserProfiles}
+               detailSearch={isMockRich ? '?demo=rich' : ''}
             />
             <UpcomingLoanDues
                activeLoans={displayLoanArrays.activeLoans}
