@@ -56,6 +56,8 @@ const tooltipCopy: Record<TooltipId, string> = {
    usdc: 'USDC is digital dollars accepted by major exchanges, making borrowing and lending easier across countries.'
 };
 
+const termsTooltipIconSrc = 'data:image/png;base64,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';
+
 const parseIsoDate = (value: string) => {
    if (!value) return undefined;
 
@@ -155,6 +157,7 @@ function InfoTooltip({
    activeTooltip,
    setActiveTooltip,
    label,
+   iconSrc,
    iconClassName = 'h-5 w-5',
    iconStrokeWidth = 1.35,
    panelClassName = 'left-1/2 top-full mt-md-1 -translate-x-1/2',
@@ -164,6 +167,7 @@ function InfoTooltip({
    activeTooltip: TooltipId | null;
    setActiveTooltip: (id: TooltipId | null) => void;
    label: string;
+   iconSrc?: string;
    iconClassName?: string;
    iconStrokeWidth?: number;
    panelClassName?: string;
@@ -184,7 +188,11 @@ function InfoTooltip({
             onPointerDown={(event) => event.stopPropagation()}
             type="button"
          >
-            <HelpCircle aria-hidden="true" className={iconClassName} strokeWidth={iconStrokeWidth} />
+            {iconSrc ? (
+               <img alt="" aria-hidden="true" className={iconClassName} src={iconSrc} />
+            ) : (
+               <HelpCircle aria-hidden="true" className={iconClassName} strokeWidth={iconStrokeWidth} />
+            )}
          </button>
          {isOpen ? (
             <span
@@ -447,6 +455,8 @@ export default function LoanRequestModal({
                   <InfoTooltip
                      activeTooltip={activeTooltip}
                      arrowClassName="right-[42px] top-[-5px] rotate-45"
+                     iconClassName="h-7 w-7"
+                     iconSrc={termsTooltipIconSrc}
                      id="terms"
                      label="Explain setting loan terms"
                      panelClassName="right-[-40px] top-full mt-md-1"
