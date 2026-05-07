@@ -39,6 +39,7 @@ interface LoanRequestModalProps {
    handleDays: (e: ChangeEvent<HTMLInputElement>) => void;
    handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
    onReferralApplied?: (referral: AppliedReferralCode | null) => void;
+   onReferralRedeemed?: () => Promise<void>;
    isSubmitting: boolean;
    startOnReferralStep?: boolean;
 }
@@ -245,6 +246,7 @@ export default function LoanRequestModal({
    handleDays,
    handleSubmit,
    onReferralApplied,
+   onReferralRedeemed,
    isSubmitting,
    startOnReferralStep = true
 }: LoanRequestModalProps) {
@@ -457,11 +459,7 @@ export default function LoanRequestModal({
          }
 
          const supabase = getSupabaseBrowserClient();
-         const { data, error } = await supabase
-            .from('referral_codes')
-            .select('id, code, boost_amount')
-            .eq('code', cleanCode)
-            .maybeSingle();
+         const { data, error } = await supabase.rpc('redeem_referral_code', { code_input: cleanCode }).single();
 
          if (error) throw error;
 
@@ -478,15 +476,18 @@ export default function LoanRequestModal({
             boostAmount: Number(data.boost_amount)
          };
 
+         setReferralCode(nextReferral.code);
          setAppliedReferral(nextReferral);
          onReferralApplied?.(nextReferral);
          setReferralCodeError('');
+         await onReferralRedeemed?.();
          return true;
       } catch (error) {
          console.error('Error validating referral code:', (error as Error).message || error);
          setAppliedReferral(null);
          onReferralApplied?.(null);
-         setReferralCodeError("We couldn't check that code. Please try again.");
+         const message = (error as Error).message || '';
+         setReferralCodeError(message.includes('Referral code') ? message : "We couldn't check that code. Please try again.");
          return false;
       } finally {
          setIsApplyingReferralCode(false);

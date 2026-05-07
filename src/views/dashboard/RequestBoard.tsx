@@ -138,6 +138,13 @@ function RequestBoard$() {
    };
 
    const handleCloseModal = useCallback(() => setShowModal(false), []);
+   const handleReferralRedeemed = useCallback(async () => {
+      try {
+         await dispatch(fetchUser()).unwrap();
+      } catch (error) {
+         console.error('Error refreshing user after referral redemption:', (error as Error).message || error);
+      }
+   }, [dispatch]);
 
    useEffect(() => {
       if (!shouldOpenLoanRequest || !isAuthenticated || !isBorrower || !effectiveUser?.id) return;
@@ -555,6 +562,7 @@ function RequestBoard$() {
                   handleDays={handleDays}
                   handleSubmit={handleSubmit}
                   onReferralApplied={setAppliedReferral}
+                  onReferralRedeemed={handleReferralRedeemed}
                   isSubmitting={isSubmitting}
                   clickOutsideRef={loanRequestModalRef}
                />
