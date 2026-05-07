@@ -282,7 +282,8 @@ export default function LoanRequestModal({
    const hasAppliedReferralCode = appliedReferral !== null;
    const hasReferralCodeError = referralCodeError.length > 0;
    const isReferralTestMode = import.meta.env.DEV && new URLSearchParams(window.location.search).has('referralTest');
-   const referralPrimaryActionText = hasAppliedReferralCode ? 'Continue' : hasReferralCodeError ? 'Try again' : 'Apply code';
+   const referralPrimaryActionText =
+      hasAppliedReferralCode || !hasReferralCode ? 'Continue to application' : hasReferralCodeError ? 'Try again' : 'Apply code';
    const shouldShowReferralStep = showReferralStep && isVerified;
 
    const startVerificationOnboarding = () => {
@@ -493,11 +494,7 @@ export default function LoanRequestModal({
    };
 
    const handleReferralPrimaryAction = async () => {
-      if (!hasReferralCode) {
-         return;
-      }
-
-      if (hasAppliedReferralCode) {
+      if (!hasReferralCode || hasAppliedReferralCode) {
          setShowReferralStep(false);
          return;
       }
@@ -618,29 +615,29 @@ export default function LoanRequestModal({
 
             {shouldShowReferralStep ? (
                <div
-                  className="flex min-h-0 touch-pan-y flex-col gap-md-3 overflow-y-auto p-md-3 text-md-b2 text-md-heading"
+                  className="flex min-h-0 touch-pan-y flex-col gap-md-2 overflow-y-auto p-md-2 text-md-b2 text-md-heading"
                   onPointerDown={(event) => startDismissGesture(event, 'referral')}
                   onPointerMove={moveDismissGesture}
                   onPointerUp={endDismissGesture}
                   onPointerCancel={endDismissGesture}
                >
-                  <div className="flex items-start gap-md-3 rounded-md-lg border border-md-neutral-400 bg-[#faf7ff] p-md-3">
+                  <div className="flex items-start gap-md-2 rounded-md-lg border border-md-neutral-400 bg-[#faf7ff] p-md-2">
                      <div className="flex min-w-0 flex-1 flex-col gap-md-1">
                         <span className="w-fit rounded-full bg-md-primary-100 px-md-2 py-md-0 text-md-b3 font-normal text-md-primary-900">
                            Optional
                         </span>
                         <div>
-                           <h3 className="text-md-h5 font-medium leading-[30px] text-md-heading">Have a referral code?</h3>
-                           <p className="mt-md-0 text-md-b2 font-normal leading-[24px] text-md-neutral-1200">
+                           <h3 className="text-md-h6 font-medium leading-[26px] text-md-heading">Have a referral code?</h3>
+                           <p className="mt-md-0 text-md-b3 font-normal leading-[20px] text-md-neutral-1200">
                               Add it now for a higher starting limit.
                            </p>
                         </div>
                      </div>
-                     <img alt="" aria-hidden="true" className="h-[108px] w-[108px] shrink-0 object-contain" src="/hippos/referral-boost.png" />
+                     <img alt="" aria-hidden="true" className="h-[88px] w-[88px] shrink-0 object-contain" src="/hippos/referral-boost.png" />
                   </div>
 
-                  <div className="inline-flex w-fit items-center gap-md-1 rounded-full bg-[#d7f5df] px-md-2 py-md-1 text-md-b2 font-medium text-[#178447]">
-                     <CheckCircle aria-hidden="true" className="h-5 w-5" strokeWidth={2} />
+                  <div className="inline-flex w-fit items-center gap-md-1 rounded-full bg-[#d7f5df] px-md-2 py-md-0 text-md-b3 font-medium text-[#178447]">
+                     <CheckCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
                      <span>+$5 Credit Limit Boost</span>
                   </div>
 
@@ -648,7 +645,7 @@ export default function LoanRequestModal({
                      Referral code
                   </label>
                   <div
-                     className={`flex items-center gap-md-2 rounded-md-input border border-solid bg-md-neutral-100 px-md-3 py-md-2 shadow-md-card transition duration-150 ease-out focus-within:ring-2 ${
+                     className={`flex items-center gap-md-2 rounded-md-input border border-solid bg-md-neutral-100 px-md-3 py-md-1 shadow-md-card transition duration-150 ease-out focus-within:ring-2 ${
                         hasReferralCodeError
                            ? 'border-md-red-500 focus-within:ring-md-red-100'
                            : hasAppliedReferralCode
@@ -683,21 +680,15 @@ export default function LoanRequestModal({
                   ) : null}
 
                   <button
-                     className="w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 disabled:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                     disabled={isApplyingReferralCode || (!hasReferralCode && !hasAppliedReferralCode)}
+                     className="w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-medium text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 disabled:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                     disabled={isApplyingReferralCode}
                      onClick={handleReferralPrimaryAction}
                      type="button"
                   >
                      {isApplyingReferralCode ? 'Checking code...' : referralPrimaryActionText}
                   </button>
 
-                  <button
-                     className="mx-auto w-fit rounded-md-md px-md-2 py-md-0 text-md-b3 font-normal text-md-neutral-1200 transition duration-150 ease-out hover:bg-md-primary-100 hover:text-md-primary-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
-                     onClick={() => setShowReferralStep(false)}
-                     type="button"
-                  >
-                     No code? Skip and apply as normal.
-                  </button>
+                  <p className="text-center text-md-b3 font-normal text-md-neutral-1200">No code needed. You can continue normally.</p>
                </div>
             ) : (
             <form ref={formRef} onSubmit={handleSubmit} className="flex min-h-0 flex-col gap-md-3 overflow-y-auto p-md-3 text-md-b2 text-md-heading">
