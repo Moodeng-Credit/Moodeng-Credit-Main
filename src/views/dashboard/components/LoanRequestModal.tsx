@@ -453,7 +453,16 @@ export default function LoanRequestModal({
                      setActiveTooltip={setActiveTooltip}
                   />
                </div>
-               <button aria-label="Close loan form" onClick={onClose} className="text-md-neutral-2000 hover:text-md-primary-1200" type="button">
+               <button
+                  aria-label="Close loan form"
+                  onClick={(event) => {
+                     event.stopPropagation();
+                     onClose();
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  className="text-md-neutral-2000 hover:text-md-primary-1200"
+                  type="button"
+               >
                   <X aria-hidden="true" className="h-8 w-8" strokeWidth={2} />
                </button>
             </header>
