@@ -13,8 +13,8 @@ import {
 
 import { AlertCircle, CalendarDays, ChevronLeft, ChevronRight, HelpCircle, X } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
+import { useNavigate } from 'react-router-dom';
 
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 
 import { type User } from '@/types/authTypes';
@@ -231,6 +231,7 @@ export default function LoanRequestModal({
    onReferralApplied,
    isSubmitting
 }: LoanRequestModalProps) {
+   const navigate = useNavigate();
    const formRef = useRef<HTMLFormElement | null>(null);
    const dateInputRef = useRef<HTMLInputElement | null>(null);
    const reasonTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -254,6 +255,11 @@ export default function LoanRequestModal({
    const [typedDate, setTypedDate] = useState(selectedDateLabel);
    const [typedDateDigits, setTypedDateDigits] = useState(selectedDateDigits);
    const [calendarMonth, setCalendarMonth] = useState(selectedCalendarDate ?? todayDate);
+
+   const startVerificationOnboarding = () => {
+      onClose();
+      navigate('/verify-world-id');
+   };
 
    useEffect(() => {
       setTypedDate(selectedDateLabel);
@@ -462,17 +468,13 @@ export default function LoanRequestModal({
                               Complete a one-time verification to start building trust with lenders.
                            </p>
                         </div>
-                        <WorldIDVerification>
-                           {({ open }) => (
-                              <button
-                                 onClick={open}
-                                 className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100"
-                                 type="button"
-                              >
-                                 Get Verified
-                              </button>
-                           )}
-                        </WorldIDVerification>
+                        <button
+                           onClick={startVerificationOnboarding}
+                           className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100"
+                           type="button"
+                        >
+                           Get Verified
+                        </button>
                      </div>
                      <img alt="" aria-hidden="true" className="h-[86px] w-[96px] shrink-0 object-contain" src="/hippos/welcome.png" />
                   </div>
