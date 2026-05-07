@@ -164,6 +164,7 @@ function RequestBoard$() {
       e.preventDefault();
       if (isSubmitting) return;
 
+      const borrowerWallet = effectiveUser.walletAddress?.trim();
       const parsedLoanAmount = Number.parseFloat(loanAmount);
       const parsedRepaymentAmount = Number.parseFloat(totalRepaymentAmount);
 
@@ -173,6 +174,12 @@ function RequestBoard$() {
       }
       if (effectiveUser.isWorldId !== 'ACTIVE') {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WORLDID_REQUIRED));
+         return;
+      }
+      if (!borrowerWallet) {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
+         setShowModal(false);
+         navigate('/onboarding/wallet');
          return;
       }
       if (!loanAmount || Number.isNaN(parsedLoanAmount) || parsedLoanAmount <= 0) {
@@ -190,7 +197,7 @@ function RequestBoard$() {
 
       const loanData = {
          borrowerUserId: borrowerUserId || '',
-         borrowerWallet: effectiveUser.walletAddress,
+         borrowerWallet,
          lenderUserId,
          loanAmount: parsedLoanAmount,
          totalRepaymentAmount: parsedRepaymentAmount,
@@ -203,6 +210,7 @@ function RequestBoard$() {
 
       if (
          effectiveUser.isWorldId === 'ACTIVE' &&
+         Boolean(borrowerWallet) &&
          (effectiveUser.nal || 0) < (effectiveUser.mal || 0) &&
          parsedLoanAmount <= effectiveCreditLimit &&
          parsedLoanAmount > 0 &&
