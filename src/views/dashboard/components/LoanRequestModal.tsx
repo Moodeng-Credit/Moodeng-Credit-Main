@@ -277,6 +277,7 @@ export default function LoanRequestModal({
    const [typedDate, setTypedDate] = useState(selectedDateLabel);
    const [typedDateDigits, setTypedDateDigits] = useState(selectedDateDigits);
    const [calendarMonth, setCalendarMonth] = useState(selectedCalendarDate ?? todayDate);
+   const isRepaymentDateFilled = Boolean(inferLoanDate(typedDateDigits, todayDate, maxLoanDate, allowYearEditing));
    const hasReferralCode = referralCode.trim().length > 0;
    const hasAppliedReferralCode = appliedReferral !== null;
    const hasReferralCodeError = referralCodeError.length > 0;
@@ -819,7 +820,7 @@ export default function LoanRequestModal({
                            aria-expanded={isCalendarOpen}
                            aria-label="Open repayment date calendar"
                            className={`absolute inset-y-0 right-0 flex w-[56px] items-center justify-center border-l border-md-primary-1200 transition duration-150 ease-out active:bg-[#4b00b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
-                              isCalendarOpen
+                              isCalendarOpen || isRepaymentDateFilled
                                  ? 'bg-md-primary-1200 text-md-neutral-100 hover:bg-[#5200c8]'
                                  : 'bg-md-neutral-100 text-md-primary-900 hover:bg-md-primary-100'
                            }`}
