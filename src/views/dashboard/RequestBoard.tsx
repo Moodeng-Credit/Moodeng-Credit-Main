@@ -42,6 +42,7 @@ import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 import UserAvatar from '@/components/UserAvatar';
 
 const LENDER_NOTE_STORAGE_KEY = 'moodeng_lender_note_dismissed';
+const IS_BORROWER_BASE_WALLET_GATE_ENABLED = false;
 const VERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT = 5;
 const UNVERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT = 4;
 const DASHBOARD_TOUR_STEP_COUNT = 3;
@@ -163,7 +164,9 @@ function RequestBoard$() {
    const [searchLoan, setSearchLoan] = useState('');
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
    const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, effectiveUser.isWorldId === 'ACTIVE') : 0;
-   const hasBorrowerBaseWallet = Boolean(effectiveUser?.walletAddress?.trim()) && isBaseWalletProvider(effectiveUser?.walletProvider);
+   const hasBorrowerBaseWallet =
+      !IS_BORROWER_BASE_WALLET_GATE_ENABLED ||
+      (Boolean(effectiveUser?.walletAddress?.trim()) && isBaseWalletProvider(effectiveUser?.walletProvider));
    const shouldOpenLoanRequest =
       (location.state as { openLoanRequest?: boolean } | null)?.openLoanRequest === true ||
       new URLSearchParams(location.search).get('applyLoan') === '1';
@@ -421,7 +424,7 @@ function RequestBoard$() {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WORLDID_REQUIRED));
          return;
       }
-      if (!borrowerWallet || !hasBorrowerBaseWallet) {
+      if (!hasBorrowerBaseWallet) {
          setShowModal(false);
          setShowBaseWalletGate(true);
          return;
@@ -454,7 +457,6 @@ function RequestBoard$() {
 
       if (
          effectiveUser.isWorldId === 'ACTIVE' &&
-         Boolean(borrowerWallet) &&
          hasBorrowerBaseWallet &&
          (effectiveUser.nal || 0) < (effectiveUser.mal || 0) &&
          parsedLoanAmount <= effectiveCreditLimit &&
