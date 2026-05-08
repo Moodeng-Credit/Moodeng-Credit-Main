@@ -7,6 +7,7 @@ import type { DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
 
 interface ReputationMilestonesProps {
    milestones: DashboardMilestone[];
+   isLoading?: boolean;
 }
 
 function MilestoneIcon({ status }: { status: DashboardMilestone['status'] }) {
@@ -70,7 +71,21 @@ function MilestoneCard({ milestone, onView }: { milestone: DashboardMilestone; o
    );
 }
 
-export default function ReputationMilestones({ milestones }: ReputationMilestonesProps) {
+function MilestoneSkeletonCard() {
+   return (
+      <div className="grid min-h-[76px] grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-[10px] rounded-[12px] border border-md-primary-100 bg-md-neutral-200 p-3">
+         <div className="h-8 w-8 rounded-[10px] bg-md-neutral-500" />
+         <div className="min-w-0 space-y-2">
+            <div className="h-[10px] w-20 rounded-full bg-md-neutral-500" />
+            <div className="h-4 w-40 rounded-full bg-md-neutral-500" />
+            <div className="h-3 w-32 rounded-full bg-md-neutral-500" />
+         </div>
+         <div className="h-8 w-20 rounded-[8px] bg-md-neutral-500" />
+      </div>
+   );
+}
+
+export default function ReputationMilestones({ milestones, isLoading = false }: ReputationMilestonesProps) {
    const [searchParams] = useSearchParams();
    const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
    const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -104,9 +119,11 @@ export default function ReputationMilestones({ milestones }: ReputationMilestone
          </p>
 
          <div className="flex flex-col gap-2">
-            {milestones.slice(0, 3).map((milestone) => (
-               <MilestoneCard key={milestone.id} milestone={milestone} onView={(item) => setSelectedMilestoneId(item.id)} />
-            ))}
+            {isLoading
+               ? [0, 1, 2].map((item) => <MilestoneSkeletonCard key={item} />)
+               : milestones.slice(0, 3).map((milestone) => (
+                    <MilestoneCard key={milestone.id} milestone={milestone} onView={(item) => setSelectedMilestoneId(item.id)} />
+                 ))}
          </div>
          <MilestoneDetailSheet milestone={selectedMilestone} previewQuery={previewQuery} onClose={() => setSelectedMilestoneId(null)} />
          {isHelpOpen && <MilestoneHelpSheet onClose={() => setIsHelpOpen(false)} />}

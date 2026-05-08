@@ -94,6 +94,20 @@ function MilestoneCard({ milestone, onView }: { milestone: DashboardMilestone; o
    );
 }
 
+function MilestoneSkeletonCard() {
+   return (
+      <article className="grid min-h-[76px] w-full grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-3 rounded-[12px] border border-md-primary-100 bg-md-neutral-200 px-3 py-3">
+         <div className="h-8 w-8 rounded-[8px] bg-md-neutral-500" />
+         <div className="min-w-0 space-y-2">
+            <div className="h-[10px] w-20 rounded-full bg-md-neutral-500" />
+            <div className="h-4 w-40 rounded-full bg-md-neutral-500" />
+            <div className="h-3 w-32 rounded-full bg-md-neutral-500" />
+         </div>
+         <div className="h-8 w-20 rounded-[8px] bg-md-neutral-500" />
+      </article>
+   );
+}
+
 export default function Milestones() {
    const navigate = useNavigate();
    const user = useSelector((state: RootState) => state.auth.user);
@@ -101,8 +115,9 @@ export default function Milestones() {
    const [searchParams] = useSearchParams();
    const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
    const [isHelpOpen, setIsHelpOpen] = useState(false);
-   const { creditLevels } = useDashboardData('borrower');
+   const { creditLevels, isReady: isDashboardDataReady } = useDashboardData('borrower');
    const isPreview = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
+   const isMilestoneDataReady = isPreview || isDashboardDataReady;
    const borrowerLoans = useMemo(() => (isPreview ? PREVIEW_REPAID_LOANS : getBorrowerLoans(loans, user.id)), [isPreview, loans, user.id]);
    const milestones = useMemo(
       () => buildReputationMilestones({ creditLevels, borrowerLoans, isVerified: user.isWorldId === 'ACTIVE' || isPreview }),
@@ -138,16 +153,27 @@ export default function Milestones() {
                </button>
             </div>
 
-            {nextMilestone ? (
+            {isMilestoneDataReady && nextMilestone ? (
                <section className="flex flex-col gap-4">
                   <h2 className="text-[18px] font-[590] leading-[1.2] tracking-[-0.72px] text-md-heading">Upcoming</h2>
                   <MilestoneCard milestone={nextMilestone} onView={(milestone) => setSelectedMilestoneId(milestone.id)} />
+               </section>
+            ) : !isMilestoneDataReady ? (
+               <section className="flex flex-col gap-4">
+                  <h2 className="text-[18px] font-[590] leading-[1.2] tracking-[-0.72px] text-md-heading">Upcoming</h2>
+                  <MilestoneSkeletonCard />
                </section>
             ) : null}
 
             <section className="flex flex-col gap-4">
                <h2 className="text-[18px] font-[590] leading-[1.2] tracking-[-0.72px] text-md-heading">All Milestones</h2>
-               {!hasUnlockedMilestones ? (
+               {!isMilestoneDataReady ? (
+                  <div className="flex flex-col gap-3">
+                     {[0, 1, 2].map((item) => (
+                        <MilestoneSkeletonCard key={item} />
+                     ))}
+                  </div>
+               ) : !hasUnlockedMilestones ? (
                   <div className="flex min-h-[360px] flex-col items-center justify-center px-8 text-center">
                      <h3 className="text-[22px] font-medium leading-tight text-md-heading">No milestones yet</h3>
                      <p className="mt-7 text-[18px] leading-7 text-md-neutral-900">

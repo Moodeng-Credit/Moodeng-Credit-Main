@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -110,15 +110,24 @@ export const useDashboardData = (activeRole: RoleType) => {
    const userId = useSelector((state: RootState) => state.auth.user.id);
    const user = useSelector((state: RootState) => state.auth.user);
    const gloanRequests = useSelector((state: RootState) => state.loans.loans.gloans || []);
+   const [isReady, setIsReady] = useState(false);
 
    useEffect(() => {
       const fetchData = async () => {
-         if (userId) {
+         if (!userId) {
+            setIsReady(false);
+            return;
+         }
+
+         setIsReady(false);
+         try {
             await dispatch(getUserLoans({ userId }));
             await dispatch(fetchUser());
+         } finally {
+            setIsReady(true);
          }
       };
-      fetchData();
+      void fetchData();
    }, [dispatch, userId]);
 
    const userLoans = useMemo(() => {
@@ -169,5 +178,5 @@ export const useDashboardData = (activeRole: RoleType) => {
 
    const creditLevels: CreditLevel[] = useMemo(() => buildCreditLevels({ user, loans: borrowerLoans }), [user, borrowerLoans]);
 
-   return { stats, lenderDiversityScore, creditLevels, loanArrays };
+   return { stats, lenderDiversityScore, creditLevels, loanArrays, isReady };
 };

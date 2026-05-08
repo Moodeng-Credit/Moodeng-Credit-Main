@@ -138,7 +138,7 @@ export default function Dashboard() {
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
    const [walletData, setWalletData] = useState<Record<string, WalletLivenessData>>({});
-   const { stats, creditLevels, loanArrays } = useDashboardData('borrower');
+   const { stats, creditLevels, loanArrays, isReady: isDashboardDataReady } = useDashboardData('borrower');
    const isMockRich = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
    const showTourPreview = import.meta.env.DEV && searchParams.has('tourPreview');
    const dashboardStats = isMockRich
@@ -256,7 +256,7 @@ export default function Dashboard() {
             </div>
 
             <div data-tour-target="dashboard-milestones">
-               <ReputationMilestones milestones={milestones} />
+               <ReputationMilestones milestones={milestones} isLoading={!isMockRich && !isDashboardDataReady} />
             </div>
             {!isVerified && <VerificationCTA />}
             <LoanSummarySection stats={dashboardStats} />
