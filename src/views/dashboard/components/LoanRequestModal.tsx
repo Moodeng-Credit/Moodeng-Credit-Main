@@ -634,7 +634,7 @@ export default function LoanRequestModal({
                            </p>
                         </div>
                      </div>
-                     <img alt="" aria-hidden="true" className="h-[88px] w-[88px] shrink-0 object-contain" src="/hippos/referral-boost.png" />
+                     <img alt="" aria-hidden="true" className="-my-md-1 h-[112px] w-[112px] shrink-0 self-center object-contain" src="/hippos/referral-boost.png" />
                   </div>
 
                   <div className="inline-flex w-fit items-center gap-md-1 rounded-full bg-[#d7f5df] px-md-2 py-md-0 text-md-b3 font-medium text-[#178447]">
