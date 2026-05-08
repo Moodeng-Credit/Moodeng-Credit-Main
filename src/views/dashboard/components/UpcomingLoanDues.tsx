@@ -59,7 +59,7 @@ export default function UpcomingLoanDues({ activeLoans, defaultedLoans, username
       return all;
    }, [activeLoans, defaultedLoans]);
    const isMockRich = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
-   const insightsHref = username ? `/user/${encodeURIComponent(username)}${isMockRich ? '?demo=rich' : ''}` : '/dashboard';
+   const insightsHref = username ? `/user/${encodeURIComponent(username)}${isMockRich ? '?demo=rich' : ''}#loan-summary` : '/dashboard';
 
    return (
       <div>

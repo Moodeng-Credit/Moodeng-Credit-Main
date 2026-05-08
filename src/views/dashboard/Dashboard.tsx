@@ -1,12 +1,16 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
 import GuidedTourPreview from '@/components/GuidedTourPreview';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 
-import type { RootState } from '@/store/store';
+import type { WalletLivenessData } from '@/utils/diversityScore';
+
+import { getWalletAgeInfo } from '@/lib/web3/walletAge';
+import { fetchUserProfiles } from '@/store/slices/authSlice';
+import type { AppDispatch, RootState } from '@/store/store';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import CreditLevelSection from '@/views/dashboard/components/CreditLevelSection';
 import DashboardHeader from '@/views/dashboard/components/DashboardHeader';
@@ -19,6 +23,7 @@ import UserGreeting from '@/views/dashboard/components/UserGreeting';
 import VerificationCTA from '@/views/dashboard/components/VerificationCTA';
 import { buildReputationMilestones, getBorrowerLoans } from '@/views/dashboard/dashboardHelpers';
 import { useDashboardData } from '@/views/profile/components/tabs/useDashboardData';
+import { DEMO_LENDER_PROFILES } from '@/views/user-profile/demoBorrowerInsights';
 
 const REQUEST_BOARD_TOUR_STEP_COUNT = 5;
 const DASHBOARD_TOUR_STEP_COUNT = 3;
@@ -28,7 +33,7 @@ const buildPreviewLoans = (borrowerUser: string): Loan[] => [
       id: 'mock-paid-1',
       trackingId: 'mock-paid-1',
       borrowerUser,
-      lenderUser: 'mock-lender-a',
+      lenderUser: 'demo-lender-a',
       borrowerWallet: '0x71c...9d42',
       lenderWallet: '0x8a4...19b0',
       loanAmount: 15,
@@ -48,7 +53,7 @@ const buildPreviewLoans = (borrowerUser: string): Loan[] => [
       id: 'mock-paid-2',
       trackingId: 'mock-paid-2',
       borrowerUser,
-      lenderUser: 'mock-lender-b',
+      lenderUser: 'demo-lender-b',
       borrowerWallet: '0x71c...9d42',
       lenderWallet: '0x31d...f6aa',
       loanAmount: 20,
@@ -68,7 +73,7 @@ const buildPreviewLoans = (borrowerUser: string): Loan[] => [
       id: 'mock-active-1',
       trackingId: 'mock-active-1',
       borrowerUser,
-      lenderUser: 'mock-lender-c',
+      lenderUser: 'demo-lender-c',
       borrowerWallet: '0x71c...9d42',
       lenderWallet: '0x9db...7710',
       loanAmount: 60,
@@ -88,7 +93,7 @@ const buildPreviewLoans = (borrowerUser: string): Loan[] => [
       id: 'mock-defaulted-1',
       trackingId: 'mock-defaulted-1',
       borrowerUser,
-      lenderUser: 'mock-lender-a',
+      lenderUser: 'demo-lender-a',
       borrowerWallet: '0x71c...9d42',
       lenderWallet: '0x8a4...19b0',
       loanAmount: 40,
@@ -125,12 +130,15 @@ const buildPreviewLoans = (borrowerUser: string): Loan[] => [
 ];
 
 export default function Dashboard() {
+   const dispatch = useDispatch<AppDispatch>();
    const user = useSelector((state: RootState) => state.auth.user);
+   const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const gloanRequests = useSelector((state: RootState) => state.loans.loans.gloans || []);
    const isBorrower = useIsBorrower();
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
-   const { stats, lenderDiversityScore, creditLevels, loanArrays } = useDashboardData('borrower');
+   const [walletData, setWalletData] = useState<Record<string, WalletLivenessData>>({});
+   const { stats, creditLevels, loanArrays } = useDashboardData('borrower');
    const isMockRich = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
    const showTourPreview = import.meta.env.DEV && searchParams.has('tourPreview');
    const dashboardStats = isMockRich
@@ -147,15 +155,18 @@ export default function Dashboard() {
    }, [gloanRequests, user.id]);
    const borrowerLoans = useMemo(() => getBorrowerLoans(gloanRequests, user.id), [gloanRequests, user.id]);
    const previewLoans = useMemo(() => buildPreviewLoans(user.id), [user.id]);
-
-   if (!isBorrower) {
-      return <Navigate to="/lender/dashboard" replace />;
-   }
-
    const isVerified = user.isWorldId === 'ACTIVE';
    const milestoneLoans = isMockRich ? previewLoans : borrowerLoans;
-   const displayFundedLoans = isMockRich ? previewLoans.filter((loan) => loan.loanStatus === LoanStatus.LENT) : fundedLoans;
-   const displayLenderDiversityScore = isMockRich ? 64 : lenderDiversityScore;
+   const displayFundedLoans = useMemo(
+      () => (isMockRich ? previewLoans.filter((loan) => loan.loanStatus === LoanStatus.LENT) : fundedLoans),
+      [fundedLoans, isMockRich, previewLoans]
+   );
+   const displayUserProfiles = isMockRich ? DEMO_LENDER_PROFILES : userProfiles;
+   const lenderIds = useMemo(
+      () => [...new Set(displayFundedLoans.map((loan) => loan.lenderUser).filter(Boolean))] as string[],
+      [displayFundedLoans]
+   );
+   const displayWalletData = Object.keys(walletData).length > 0 ? walletData : undefined;
    const displayLoanArrays = isMockRich
       ? {
            ...loanArrays,
@@ -164,6 +175,70 @@ export default function Dashboard() {
         }
       : loanArrays;
    const milestones = buildReputationMilestones({ creditLevels, borrowerLoans: milestoneLoans, isVerified });
+
+   useEffect(() => {
+      if (!isBorrower || isMockRich || lenderIds.length === 0) return;
+      dispatch(fetchUserProfiles(lenderIds)).catch(() => undefined);
+   }, [dispatch, isBorrower, isMockRich, lenderIds]);
+
+   useEffect(() => {
+      if (!isBorrower || isMockRich) {
+         setWalletData({});
+         return;
+      }
+
+      const lendersWithWallets = lenderIds
+         .map((lenderId) => ({ lenderId, walletAddress: displayUserProfiles[lenderId]?.walletAddress }))
+         .filter(
+            (lender): lender is { lenderId: string; walletAddress: string } =>
+               typeof lender.walletAddress === 'string' && lender.walletAddress.startsWith('0x') && lender.walletAddress.length === 42
+         );
+
+      if (lendersWithWallets.length === 0) {
+         setWalletData({});
+         return;
+      }
+
+      let cancelled = false;
+      const nowSeconds = Date.now() / 1000;
+
+      Promise.all(
+         lendersWithWallets.map(async ({ lenderId, walletAddress }) => {
+            const info = await getWalletAgeInfo(walletAddress);
+            if (!info) return null;
+
+            return {
+               lenderId,
+               data: {
+                  ageInDays: info.ageInDays,
+                  transferCount: info.totalTransferCount,
+                  hasMoreThan100Transfers: info.hasMoreThan100Transfers,
+                  daysSinceLastTx: Math.max(0, (nowSeconds - info.lastTxTimestamp) / 86400),
+                  hasHistory: info.hasHistory
+               }
+            };
+         })
+      )
+         .then((results) => {
+            if (cancelled) return;
+            const nextWalletData: Record<string, WalletLivenessData> = {};
+            results.forEach((result) => {
+               if (result) nextWalletData[result.lenderId] = result.data;
+            });
+            setWalletData(nextWalletData);
+         })
+         .catch(() => {
+            if (!cancelled) setWalletData({});
+         });
+
+      return () => {
+         cancelled = true;
+      };
+   }, [displayUserProfiles, isBorrower, isMockRich, lenderIds]);
+
+   if (!isBorrower) {
+      return <Navigate to="/lender/dashboard" replace />;
+   }
 
    return (
       <div className="min-h-screen bg-md-neutral-200">
@@ -186,10 +261,12 @@ export default function Dashboard() {
             {!isVerified && <VerificationCTA />}
             <LoanSummarySection stats={dashboardStats} />
             <LenderDiversitySection
-               score={displayLenderDiversityScore}
                fundedLoans={displayFundedLoans}
                isVerified={isVerified}
                username={user.username}
+               userProfiles={displayUserProfiles}
+               walletData={displayWalletData}
+               detailSearch={isMockRich ? '?demo=rich' : ''}
             />
             <UpcomingLoanDues
                activeLoans={displayLoanArrays.activeLoans}
