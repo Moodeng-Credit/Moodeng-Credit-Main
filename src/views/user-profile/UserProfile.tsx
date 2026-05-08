@@ -25,6 +25,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
+import GuidedTourPreview from '@/components/GuidedTourPreview';
 import Loading from '@/components/Loading';
 import { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 
@@ -71,6 +72,7 @@ const UserProfile = () => {
       return window.localStorage.getItem(BORROWER_INSIGHTS_THEME_KEY) === 'dark';
    });
    const isDemoInsights = searchParams.get('demo') === 'rich';
+   const showLenderInsightsTour = import.meta.env.DEV && searchParams.has('tourPreview') && searchParams.has('lenderTourPreview');
 
    const user = useSelector((state: RootState) => state.auth.user);
    const storedLoans = useSelector((state: RootState) => state.loans.loans.gloans);
@@ -231,6 +233,44 @@ const UserProfile = () => {
         : creditBuildingCount > trustBuildingCount
           ? 'Credit-Building Focused'
           : 'Balanced Loan Mix';
+   const lenderInsightsTourSteps = [
+      {
+         target: '[data-tour-target="borrower-dark-mode"]',
+         title: 'Change reading mode',
+         body: 'Use dark mode if it makes this profile easier to review. It does not change the borrower data or lending decision.',
+         durationMs: 6000
+      },
+      {
+         target: '[data-tour-target="borrower-credit-level"]',
+         title: 'Check Credit Level',
+         body: 'Credit Level is the borrower tier. It helps you understand how much trust they have already unlocked through prior behavior.',
+         durationMs: 6500
+      },
+      {
+         target: '[data-tour-target="borrower-loan-summary"]',
+         title: 'Read the loan summary',
+         body: 'Look at total borrowed, total loans, repayments, defaults, and standing. Good Standing means there are no unresolved defaults.',
+         durationMs: 7200
+      },
+      {
+         target: '[data-tour-target="borrower-diversity-score"]',
+         title: 'Look at lender diversity',
+         body: 'This shows whether the borrower has earned trust from multiple lenders, not just one repeated relationship.',
+         durationMs: 6800
+      },
+      {
+         target: '[data-tour-target="borrower-insights"]',
+         title: 'Use behavior patterns',
+         body: 'These patterns help you judge risk: how often they borrow, how fast they usually repay, typical loan size, loan term, and repeat lenders.',
+         durationMs: 8200
+      },
+      {
+         target: '[data-tour-target="borrower-recent-loans"]',
+         title: 'Review recent loans',
+         body: 'Use the recent loan table to confirm the borrower has a repayment history that matches the request you are thinking about funding.',
+         durationMs: 7200
+      }
+   ];
 
    return (
       <div className={`borrower-insights-page min-h-screen bg-md-neutral-200 transition-colors duration-200 ${isDarkMode ? 'borrower-insights-dark' : ''}`}>
@@ -462,6 +502,7 @@ const UserProfile = () => {
                      onClick={() => setIsDarkMode((current) => !current)}
                      aria-label={isDarkMode ? 'Switch borrower insights to light mode' : 'Switch borrower insights to dark mode'}
                      aria-pressed={isDarkMode}
+                     data-tour-target="borrower-dark-mode"
                      className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-md-card transition active:scale-95"
                   >
                      {isDarkMode ? (
@@ -484,7 +525,7 @@ const UserProfile = () => {
             {/* Body */}
             <div className="flex flex-col gap-5 px-md-4 py-md-3">
                {/* User Profile */}
-               <div className="borrower-identity-card flex items-center gap-3 rounded-[20px] px-4 py-4 transition-colors duration-200">
+               <div className="borrower-identity-card flex items-center gap-3 rounded-[20px] px-4 py-4 transition-colors duration-200" data-tour-target="borrower-identity">
                   <img src={PLACEHOLDER_AVATAR} alt="Profile" className="h-16 w-16 shrink-0 rounded-full object-cover" />
                   <div className="min-w-0 flex-1 py-1">
                      <p className="truncate text-[20px] font-semibold leading-tight text-md-primary-2000">
@@ -513,7 +554,7 @@ const UserProfile = () => {
                </div>
 
                {/* Credit Level */}
-               <div className="flex flex-col gap-5">
+               <div className="flex flex-col gap-5" data-tour-target="borrower-credit-level">
                   <div className="flex items-center justify-between">
                      <div className="flex items-center gap-2">
                         <span className="text-md-h5 font-semibold text-md-heading">Credit Level</span>
@@ -567,7 +608,7 @@ const UserProfile = () => {
                </div>
 
                {/* Loan Summary */}
-               <div id="loan-summary" className="scroll-mt-4 flex flex-col gap-4">
+               <div id="loan-summary" className="scroll-mt-4 flex flex-col gap-4" data-tour-target="borrower-loan-summary">
                   <div className="flex items-center gap-4">
                      <span className="text-md-h5 font-semibold text-md-heading">Loan Summary</span>
                      {isGoodStanding ? (
@@ -654,7 +695,10 @@ const UserProfile = () => {
                         </div>
                      </SummaryMetricCard>
 
-                     <div className="diversity-score-card relative col-span-2 overflow-hidden rounded-[24px] border border-[#e9d5ff] bg-gradient-to-br from-white to-[#faf5ff] p-5 shadow-[0_6px_24px_rgba(131,54,240,0.12)]">
+                     <div
+                        className="diversity-score-card relative col-span-2 overflow-hidden rounded-[24px] border border-[#e9d5ff] bg-gradient-to-br from-white to-[#faf5ff] p-5 shadow-[0_6px_24px_rgba(131,54,240,0.12)]"
+                        data-tour-target="borrower-diversity-score"
+                     >
                         <div className="absolute right-0 top-0 h-[120px] w-[120px] rounded-full bg-gradient-to-br from-[#f3e8ff] to-transparent opacity-60 blur-2xl" />
                         <div className="relative z-10 flex items-start justify-between gap-3">
                            <div className="min-w-0 flex-1">
@@ -735,7 +779,7 @@ const UserProfile = () => {
                </div>
 
                {/* Borrower Insights */}
-               <div className="flex flex-col gap-4">
+               <div className="flex flex-col gap-4" data-tour-target="borrower-insights">
                   <div className="flex items-center gap-2.5">
                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] shadow-md shadow-purple-200">
                         <BarChart3 className="h-[18px] w-[18px] text-white" strokeWidth={2.5} />
@@ -786,7 +830,7 @@ const UserProfile = () => {
                </div>
 
                {/* Recent Loans */}
-               <div className="flex flex-col gap-2">
+               <div className="flex flex-col gap-2" data-tour-target="borrower-recent-loans">
                   <div className="flex flex-col gap-2">
                      <div className="flex items-center justify-between">
                         <span className="text-md-h5 font-semibold text-md-heading">Recent Loans</span>
@@ -844,6 +888,14 @@ const UserProfile = () => {
             onClose={() => setIsLenderDiversitySheetOpen(false)}
             onOpenDocs={() => window.open(LENDER_DIVERSITY_DOCS_URL, '_blank', 'noopener,noreferrer')}
          />
+         {showLenderInsightsTour && (
+            <GuidedTourPreview
+               stepOffset={3}
+               totalSteps={9}
+               steps={lenderInsightsTourSteps}
+               onFinish={() => navigate('/request-board?lenderTourPreview=1')}
+            />
+         )}
       </div>
    );
 };

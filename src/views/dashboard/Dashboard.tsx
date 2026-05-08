@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
+import GuidedTourPreview from '@/components/GuidedTourPreview';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 
 import type { WalletLivenessData } from '@/utils/diversityScore';
@@ -23,6 +24,9 @@ import VerificationCTA from '@/views/dashboard/components/VerificationCTA';
 import { buildReputationMilestones, getBorrowerLoans } from '@/views/dashboard/dashboardHelpers';
 import { useDashboardData } from '@/views/profile/components/tabs/useDashboardData';
 import { DEMO_LENDER_PROFILES } from '@/views/user-profile/demoBorrowerInsights';
+
+const REQUEST_BOARD_TOUR_STEP_COUNT = 5;
+const DASHBOARD_TOUR_STEP_COUNT = 3;
 
 const buildPreviewLoans = (borrowerUser: string): Loan[] => [
    {
@@ -131,10 +135,12 @@ export default function Dashboard() {
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const gloanRequests = useSelector((state: RootState) => state.loans.loans.gloans || []);
    const isBorrower = useIsBorrower();
+   const navigate = useNavigate();
    const [searchParams] = useSearchParams();
    const [walletData, setWalletData] = useState<Record<string, WalletLivenessData>>({});
    const { stats, creditLevels, loanArrays } = useDashboardData('borrower');
    const isMockRich = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
+   const showTourPreview = import.meta.env.DEV && searchParams.has('tourPreview');
    const dashboardStats = isMockRich
       ? {
            repayments: { count: 3, total: 200 },
@@ -241,11 +247,17 @@ export default function Dashboard() {
             <UserGreeting user={user} />
 
             <div className="bg-md-neutral-100 rounded-md-lg p-4 shadow-md-card flex flex-col gap-4 bg-gradient-to-b from-white to-[#eee6fa]">
-               <TrustScoreSection trustScore={user.cs} />
-               <CreditLevelSection currentCs={user.cs} isVerified={isVerified} />
+               <div data-tour-target="dashboard-trust-score">
+                  <TrustScoreSection trustScore={user.cs} />
+               </div>
+               <div data-tour-target="dashboard-credit-level">
+                  <CreditLevelSection currentCs={user.cs} isVerified={isVerified} />
+               </div>
             </div>
 
-            <ReputationMilestones milestones={milestones} />
+            <div data-tour-target="dashboard-milestones">
+               <ReputationMilestones milestones={milestones} />
+            </div>
             {!isVerified && <VerificationCTA />}
             <LoanSummarySection stats={dashboardStats} />
             <LenderDiversitySection
@@ -262,6 +274,33 @@ export default function Dashboard() {
                username={user.username}
             />
          </div>
+         {showTourPreview && (
+            <GuidedTourPreview
+               onFinish={() => navigate('/request-board')}
+               stepOffset={REQUEST_BOARD_TOUR_STEP_COUNT}
+               totalSteps={REQUEST_BOARD_TOUR_STEP_COUNT + DASHBOARD_TOUR_STEP_COUNT}
+               steps={[
+                  {
+                     target: '[data-tour-target="dashboard-trust-score"]',
+                     title: 'Trust Score',
+                     body: 'Trust is your reputation on Moodeng. Verification, clean repayment, and healthy activity make lenders more confident in you.',
+                     durationMs: 6500
+                  },
+                  {
+                     target: '[data-tour-target="dashboard-credit-level"]',
+                     title: 'Credit Level',
+                     body: 'Credit Level is your borrowing tier. Trust is what you build; Credit Level is what that trust unlocks.',
+                     durationMs: 7200
+                  },
+                  {
+                     target: '[data-tour-target="dashboard-milestones"]',
+                     title: 'Milestones',
+                     body: 'Milestones are extra ways to earn Trust Points. Complete them to strengthen your profile and make lenders more confident in your requests.',
+                     durationMs: 7600
+                  }
+               ]}
+            />
+         )}
       </div>
    );
 }
