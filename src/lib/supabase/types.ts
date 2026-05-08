@@ -259,6 +259,44 @@ export type Database = {
           },
         ]
       }
+      guided_tour_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          shown_count: number | null
+          tour_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          shown_count?: number | null
+          tour_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          shown_count?: number | null
+          tour_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guided_tour_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           chat_id: number | null
@@ -282,6 +320,10 @@ export type Database = {
           user_role: "borrower" | "lender" | null
           username: string
           wallet_address: string | null
+          wallet_chain_id: number | null
+          wallet_connected_at: string | null
+          wallet_connector_name: string | null
+          wallet_provider: string | null
         }
         Insert: {
           chat_id?: number | null
@@ -305,6 +347,10 @@ export type Database = {
           user_role?: "borrower" | "lender" | null
           username: string
           wallet_address?: string | null
+          wallet_chain_id?: number | null
+          wallet_connected_at?: string | null
+          wallet_connector_name?: string | null
+          wallet_provider?: string | null
         }
         Update: {
           chat_id?: number | null
@@ -328,6 +374,10 @@ export type Database = {
           user_role?: "borrower" | "lender" | null
           username?: string
           wallet_address?: string | null
+          wallet_chain_id?: number | null
+          wallet_connected_at?: string | null
+          wallet_connector_name?: string | null
+          wallet_provider?: string | null
         }
         Relationships: [
           {

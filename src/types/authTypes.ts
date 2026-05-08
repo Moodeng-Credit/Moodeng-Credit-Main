@@ -12,6 +12,7 @@ export interface AuthState {
 }
 export type UserRole = 'borrower' | 'lender';
 export type AccountStatus = 'active' | 'blocked' | 'banned';
+export type WalletProvider = 'argent' | 'base_wallet' | 'metamask' | 'phantom' | 'rainbow' | 'trust' | 'walletconnect' | 'unknown';
 
 export interface User {
    id: string;
@@ -25,6 +26,9 @@ export interface User {
    displayName?: string;
    googleId?: string;
    walletAddress?: string;
+   walletChainId?: number;
+   walletConnectorName?: string;
+   walletProvider?: WalletProvider;
    isWorldId: WorldIdStatus;
    nullifierHash?: string;
    telegramUsername?: string;

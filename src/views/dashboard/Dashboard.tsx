@@ -9,6 +9,7 @@ import { useIsBorrower } from '@/hooks/useIsBorrower';
 import type { WalletLivenessData } from '@/utils/diversityScore';
 
 import { getWalletAgeInfo } from '@/lib/web3/walletAge';
+import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { BORROWER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -279,8 +280,16 @@ export default function Dashboard() {
          </div>
          {showTourPreview && (
             <GuidedTourPreview
-               onFinish={() => {
-                  if (!forceTourPreview) markGuidedTourCompleted(BORROWER_GUIDED_TOUR_ID, user.id);
+               onFinish={(reason) => {
+                  if (!forceTourPreview) {
+                     markGuidedTourCompleted(BORROWER_GUIDED_TOUR_ID, user.id);
+                     void recordGuidedTourEvent({
+                        eventType: reason === 'skip' ? 'skipped' : 'completed',
+                        metadata: { path: '/dashboard', role: 'borrower' },
+                        tourId: BORROWER_GUIDED_TOUR_ID,
+                        userId: user.id
+                     });
+                  }
                   navigate('/request-board');
                }}
                stepOffset={REQUEST_BOARD_TOUR_STEP_COUNT}
