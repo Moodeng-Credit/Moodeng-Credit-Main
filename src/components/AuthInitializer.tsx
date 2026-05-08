@@ -92,9 +92,8 @@ export function AuthInitializer() {
             }
 
             await dispatch(fetchUser()).unwrap();
-         } catch {
-            clearAuthCookieClient();
-            dispatch(clearAuth());
+         } catch (error) {
+            console.error('Failed to fetch user profile during auth initialization:', error);
          } finally {
             dispatch(setAuthChecked());
          }
