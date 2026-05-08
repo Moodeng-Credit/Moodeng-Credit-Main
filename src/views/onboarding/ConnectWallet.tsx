@@ -108,7 +108,7 @@ function BorrowerConnectView({ onConnect, isConnecting }: { onConnect: () => voi
             </div>
             <h2 className="text-md-display text-md-heading text-center">Add Your Base Wallet</h2>
             <p className="text-md-b1 font-medium text-md-neutral-700 text-center">
-               Moodeng sends funded loans to your Base wallet. Add it once before requesting a loan.
+               Lenders fund loans directly to your Base wallet. Add it once before requesting a loan.
             </p>
             <button
                type="button"

@@ -51,7 +51,7 @@ const steps: AcademyStep[] = [
       id: 'wallet',
       eyebrow: 'Step 3',
       title: 'Add your Base wallet',
-      body: 'Add your Base wallet once so Moodeng can send funded loans there and track your repayment history.',
+      body: 'Add your Base wallet once so lenders can fund loans directly there and Moodeng can track repayment history.',
       action: 'Add Base Wallet',
       screen: 'wallet'
    },
@@ -178,7 +178,7 @@ const WalletScreen = (): JSX.Element => (
             <img src="/icons/base-wallet.png" alt="" />
          </div>
          <h3>Add Your Base Wallet</h3>
-         <p>Moodeng sends funded loans to your Base wallet and uses it for your repayment history.</p>
+         <p>Lenders fund loans directly to your Base wallet. Moodeng uses it for your repayment history.</p>
          <div className="academy-wallet-network">
             <span>Network</span>
             <strong>Base</strong>

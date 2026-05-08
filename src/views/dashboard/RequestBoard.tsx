@@ -801,8 +801,8 @@ function BaseWalletRequiredModal({
                         <Wallet className="size-5 text-md-primary-900" strokeWidth={1.8} />
                      </div>
                      <p className="text-md-b1 font-medium leading-[1.45] text-md-neutral-900">
-                        Moodeng sends funded loans to your Base wallet. Add it once before requesting a loan. Borrowing on Moodeng
-                        uses USDC on Base, so transfers are free and required.
+                        Lenders fund loans directly to your Base wallet. Add it once before requesting a loan. Borrowing on
+                        Moodeng uses USDC on Base, so transfers are free and required.
                      </p>
                   </div>
                </div>

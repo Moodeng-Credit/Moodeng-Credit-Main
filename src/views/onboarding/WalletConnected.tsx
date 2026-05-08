@@ -60,7 +60,7 @@ export default function WalletConnected() {
             <img src="/icons/check-3d.svg" alt="Success" className="size-[124px]" />
             <h2 className="text-md-display text-md-heading text-center">Base Wallet Added</h2>
             <p className="text-md-b1 font-medium text-md-neutral-700 text-center">
-               Moodeng can now send funded loans to your Base wallet.
+               Lenders can now fund loans directly to your Base wallet.
             </p>
             <button
                type="button"
