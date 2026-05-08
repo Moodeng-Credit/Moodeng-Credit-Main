@@ -9,6 +9,7 @@ import { useIsBorrower } from '@/hooks/useIsBorrower';
 import type { WalletLivenessData } from '@/utils/diversityScore';
 
 import { getWalletAgeInfo } from '@/lib/web3/walletAge';
+import { BORROWER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
@@ -138,9 +139,11 @@ export default function Dashboard() {
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
    const [walletData, setWalletData] = useState<Record<string, WalletLivenessData>>({});
-   const { stats, creditLevels, loanArrays } = useDashboardData('borrower');
+   const { stats, creditLevels, loanArrays, isReady: isDashboardDataReady } = useDashboardData('borrower');
    const isMockRich = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
-   const showTourPreview = import.meta.env.DEV && searchParams.has('tourPreview');
+   const forceTourPreview = import.meta.env.DEV && searchParams.has('tourPreview');
+   const showTourPreview =
+      (forceTourPreview || searchParams.has('tour')) && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, user.id, forceTourPreview);
    const dashboardStats = isMockRich
       ? {
            repayments: { count: 3, total: 200 },
@@ -256,7 +259,7 @@ export default function Dashboard() {
             </div>
 
             <div data-tour-target="dashboard-milestones">
-               <ReputationMilestones milestones={milestones} />
+               <ReputationMilestones milestones={milestones} isLoading={!isMockRich && !isDashboardDataReady} />
             </div>
             {!isVerified && <VerificationCTA />}
             <LoanSummarySection stats={dashboardStats} />
@@ -276,7 +279,10 @@ export default function Dashboard() {
          </div>
          {showTourPreview && (
             <GuidedTourPreview
-               onFinish={() => navigate('/request-board')}
+               onFinish={() => {
+                  if (!forceTourPreview) markGuidedTourCompleted(BORROWER_GUIDED_TOUR_ID, user.id);
+                  navigate('/request-board');
+               }}
                stepOffset={REQUEST_BOARD_TOUR_STEP_COUNT}
                totalSteps={REQUEST_BOARD_TOUR_STEP_COUNT + DASHBOARD_TOUR_STEP_COUNT}
                steps={[

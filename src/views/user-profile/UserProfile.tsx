@@ -35,6 +35,7 @@ import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityS
 
 import { getCreditLevelNumber, getCreditTierKey, isExactCreditTier } from '@/config/creditTiers';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { LENDER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
 import { fetchUserProfiles, getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -72,7 +73,7 @@ const UserProfile = () => {
       return window.localStorage.getItem(BORROWER_INSIGHTS_THEME_KEY) === 'dark';
    });
    const isDemoInsights = searchParams.get('demo') === 'rich';
-   const showLenderInsightsTour = import.meta.env.DEV && searchParams.has('tourPreview') && searchParams.has('lenderTourPreview');
+   const forceTourPreview = import.meta.env.DEV && searchParams.has('tourPreview');
 
    const user = useSelector((state: RootState) => state.auth.user);
    const storedLoans = useSelector((state: RootState) => state.loans.loans.gloans);
@@ -80,6 +81,10 @@ const UserProfile = () => {
    const loans = isDemoInsights ? DEMO_BORROWER_INSIGHTS_LOANS : storedLoans;
    const userProfiles = isDemoInsights ? DEMO_LENDER_PROFILES : storedUserProfiles;
    const resolvedUser = isDemoInsights ? DEMO_BORROWER_INSIGHTS_USER : (profileUser ?? user);
+   const showLenderInsightsTour =
+      forceTourPreview &&
+      searchParams.has('lenderTourPreview') &&
+      shouldShowGuidedTour(LENDER_GUIDED_TOUR_ID, user.id, forceTourPreview);
 
    useEffect(() => {
       if (hasScrolledToHashRef.current || window.location.hash !== '#loan-summary' || !resolvedUser) return;
@@ -893,7 +898,10 @@ const UserProfile = () => {
                stepOffset={3}
                totalSteps={9}
                steps={lenderInsightsTourSteps}
-               onFinish={() => navigate('/request-board?lenderTourPreview=1')}
+               onFinish={() => {
+                  if (!forceTourPreview) markGuidedTourCompleted(LENDER_GUIDED_TOUR_ID, user.id);
+                  navigate('/request-board?lenderTourPreview=1');
+               }}
             />
          )}
       </div>

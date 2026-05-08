@@ -43,7 +43,7 @@ export default function AccountRestrictedPage() {
       return <Loading />;
    }
 
-   if (!mockStatus && user?.id && defaultedBorrower.isLoading) {
+   if (!mockStatus && user?.id && !isRestricted && defaultedBorrower.isLoading) {
       return <Loading />;
    }
 
@@ -76,6 +76,11 @@ export default function AccountRestrictedPage() {
                      ? 'Your account needs support before you can continue. Message Moodeng Credit on Messenger so we can help resolve this.'
                      : 'If you think this is a mistake, message Moodeng Credit support on Messenger. We can review your account from there.'}
                </p>
+               {isRestricted && defaultedBorrower.isLoading && (
+                  <p className="mt-3 text-sm font-medium leading-5 text-[#7B6D8A]">
+                     Checking repayment details...
+                  </p>
+               )}
             </div>
 
             <div className="mt-7 flex flex-col gap-3">

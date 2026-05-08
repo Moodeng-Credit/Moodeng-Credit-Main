@@ -7,6 +7,7 @@ import { useAccount } from 'wagmi';
 
 import UserAvatar from '@/components/UserAvatar';
 import { useAuthProvider } from '@/hooks/useAuthProvider';
+import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { updateUser } from '@/store/slices/authSlice';
@@ -384,6 +385,9 @@ export default function AccountSettings() {
 
    const hasWallet = Boolean(user?.walletAddress);
    const walletSetupLabel = user?.userRole === 'lender' ? 'Connect' : 'Add Base Wallet';
+   const isBorrower = user?.userRole === 'borrower';
+   const connectedWalletName = connector?.name;
+   const borrowerHasNonBaseWallet = isBorrower && Boolean(connectedWalletName) && connectedWalletName !== WALLET_CONNECTOR_NAMES.coinbase;
 
    useEffect(() => {
       localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(notifPrefs));
@@ -429,6 +433,7 @@ export default function AccountSettings() {
       if (addr.length <= 12) return addr;
       return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
    };
+   const walletDisplayName = isBorrower && !borrowerHasNonBaseWallet ? 'Base Wallet' : connectedWalletName || truncateAddress(user?.walletAddress || '');
 
    const toggleNotif = (key: keyof NotificationPrefs) => {
       setNotifPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -555,7 +560,7 @@ export default function AccountSettings() {
                         {hasWallet ? (
                            <>
                               <span className="text-md-b1 text-md-neutral-1200 truncate">
-                                 {connector?.name || truncateAddress(user?.walletAddress || '')}
+                                 {walletDisplayName}
                               </span>
                               <button type="button" onClick={handleCopyWallet} className="shrink-0 ml-2">
                                  <div
@@ -587,6 +592,27 @@ export default function AccountSettings() {
                         </div>
                      ) : null}
                   </div>
+
+                  {borrowerHasNonBaseWallet ? (
+                     <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-primary-900 bg-md-primary-900/10 p-md-3">
+                        <div className="flex items-start gap-md-2">
+                           <img src="/icons/base-wallet.svg" alt="" className="size-9 rounded-md-md shrink-0" />
+                           <div className="flex min-w-0 flex-1 flex-col gap-md-0">
+                              <p className="text-md-b1 font-semibold text-md-heading">Borrowers need Base Wallet</p>
+                              <p className="text-md-b2 font-medium text-md-neutral-1200">
+                                 Your account is using {connectedWalletName}. Add Base Wallet so funded loans go to the right place.
+                              </p>
+                           </div>
+                        </div>
+                        <button
+                           type="button"
+                           onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
+                           className="inline-flex w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
+                        >
+                           Add Base Wallet
+                        </button>
+                     </div>
+                  ) : null}
 
                   {/* Network */}
                   {hasWallet ? (

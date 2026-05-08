@@ -43,6 +43,13 @@ const BASICS: BasicsItem[] = [
       icon: 'book-open.svg',
       bg: 'bg-[#9810fa]',
       path: '/support/guides/how-credit-levels-work'
+   },
+   {
+      title: 'Learn more at the Academy',
+      description: 'Borrowing, Base wallet, Trust Score, and Credit Level',
+      icon: 'book-open.svg',
+      bg: 'bg-md-primary-1200',
+      path: '/guide'
    }
 ];
 

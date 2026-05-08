@@ -1,4 +1,4 @@
-import { type ChangeEvent, type FormEvent, type MouseEvent, type RefObject, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ChangeEvent, type FormEvent, type MouseEvent, type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AlertTriangle, HelpCircle, Search, Wallet, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -17,6 +17,13 @@ import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { logoImageSrc } from '@/config/navigationConfig';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import {
+   BORROWER_GUIDED_TOUR_ID,
+   LENDER_GUIDED_TOUR_ID,
+   markGuidedTourCompleted,
+   recordGuidedTourShown,
+   shouldShowGuidedTour
+} from '@/lib/guidedTourStorage';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -113,7 +120,8 @@ function RequestBoard$() {
    const isLoading = useSelector((state: RootState) => state.loans.isLoading);
    const requestBoardSearchParams = new URLSearchParams(location.search);
    const isReferralTestMode = import.meta.env.DEV && requestBoardSearchParams.has('referralTest');
-   const showTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('tourPreview');
+   const forceTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('tourPreview');
+   const showTourPreview = forceTourPreview || requestBoardSearchParams.has('tour');
    const isLenderTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('lenderTourPreview');
    const shouldForceReferralTestUser = isReferralTestMode && showTourPreview;
    const effectiveUser = isLenderTourPreview
@@ -125,8 +133,18 @@ function RequestBoard$() {
    const showVerify = effectiveUser?.isWorldId !== 'ACTIVE';
    const storeIsBorrower = useIsBorrower();
    const isBorrower = isLenderTourPreview ? false : isReferralTestMode || storeIsBorrower;
-   const shouldShowBorrowerTour = showTourPreview && (!isAuthenticated || isBorrower);
-   const shouldShowLenderTour = showTourPreview && isLenderTourPreview && isAuthenticated && !isBorrower;
+   const tourUserId = effectiveUser?.id;
+   const shouldShowBorrowerTour =
+      showTourPreview &&
+      (!isAuthenticated || isBorrower) &&
+      shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, tourUserId, forceTourPreview);
+   const shouldShowLenderTour =
+      showTourPreview &&
+      isLenderTourPreview &&
+      isAuthenticated &&
+      !isBorrower &&
+      shouldShowGuidedTour(LENDER_GUIDED_TOUR_ID, tourUserId, forceTourPreview);
+   const recordedTourViewsRef = useRef<Set<string>>(new Set());
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
    const [sortedLoans, setSortedLoans] = useState(floanRequests);
@@ -201,13 +219,43 @@ function RequestBoard$() {
    const handleRequestBoardTourStepChange = useCallback((index: number) => {
       if (index >= 2) setShowModal(true);
    }, []);
-   const handleRequestBoardTourFinish = useCallback(() => {
+   useEffect(() => {
+      if (!shouldShowBorrowerTour || forceTourPreview) return;
+
+      const viewKey = `${BORROWER_GUIDED_TOUR_ID}:${tourUserId || 'guest'}`;
+      if (recordedTourViewsRef.current.has(viewKey)) return;
+
+      recordedTourViewsRef.current.add(viewKey);
+      recordGuidedTourShown(BORROWER_GUIDED_TOUR_ID, tourUserId);
+   }, [forceTourPreview, shouldShowBorrowerTour, tourUserId]);
+
+   useEffect(() => {
+      if (!shouldShowLenderTour || forceTourPreview) return;
+
+      const viewKey = `${LENDER_GUIDED_TOUR_ID}:${tourUserId || 'guest'}`;
+      if (recordedTourViewsRef.current.has(viewKey)) return;
+
+      recordedTourViewsRef.current.add(viewKey);
+      recordGuidedTourShown(LENDER_GUIDED_TOUR_ID, tourUserId);
+   }, [forceTourPreview, shouldShowLenderTour, tourUserId]);
+
+   const handleRequestBoardTourFinish = useCallback((reason: 'complete' | 'skip') => {
       setShowModal(false);
-      navigate('/dashboard?mockData=rich&tourPreview=1');
-   }, [navigate]);
-   const handleLenderTourFinish = useCallback(() => {
+      if (reason === 'skip' || !isAuthenticated || !isBorrower) {
+         if (!forceTourPreview) markGuidedTourCompleted(BORROWER_GUIDED_TOUR_ID, tourUserId);
+         return;
+      }
+
+      navigate(import.meta.env.DEV ? '/dashboard?mockData=rich&tourPreview=1' : '/dashboard?tour=1');
+   }, [forceTourPreview, isAuthenticated, isBorrower, navigate, tourUserId]);
+   const handleLenderTourFinish = useCallback((reason: 'complete' | 'skip') => {
+      if (reason === 'skip') {
+         if (!forceTourPreview) markGuidedTourCompleted(LENDER_GUIDED_TOUR_ID, tourUserId);
+         return;
+      }
+
       navigate('/user/maya-demo?demo=rich&lenderTourPreview=1&tourPreview=1');
-   }, [navigate]);
+   }, [forceTourPreview, navigate, tourUserId]);
    const requestBoardTourSteps = showVerify
       ? [
            {

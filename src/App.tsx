@@ -63,12 +63,12 @@ import TransactionDetail from '@/views/transactions/TransactionDetail';
 import TransactionHistory from '@/views/transactions/TransactionHistory';
 import RoleSelection from '@/app/role-selection/page';
 
-function Layout({ children, showFooter = true }: { children: React.ReactNode; showFooter?: boolean }) {
+function Layout({ children }: { children: React.ReactNode }) {
    return (
       <div className="flex flex-col min-h-screen">
          <Header />
          <main className="flex-grow">{children}</main>
-         {showFooter ? <Footer /> : null}
+         <Footer />
       </div>
    );
 }
@@ -133,7 +133,7 @@ export default function App() {
       <>
          <WalletLoadingOverlay />
          <Routes>
-            <Route path="/" element={<Layout showFooter={isAuthChecked && !isAuthenticated}><Home /></Layout>} />
+            <Route path="/" element={<Home />} />
 
             {/* Auth */}
             <Route path="/sign-in" element={<Login />} />
