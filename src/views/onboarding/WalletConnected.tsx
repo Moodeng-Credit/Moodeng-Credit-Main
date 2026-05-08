@@ -48,6 +48,10 @@ export default function WalletConnected() {
          navigate('/request-board', { replace: true, state: { openLoanRequest: true } });
          return;
       }
+      if (returnTo === 'account-settings') {
+         navigate('/account/settings', { replace: true });
+         return;
+      }
       const destination = user.userRole === 'borrower' && hasActiveRequest ? '/dashboard' : '/request-board';
       navigate(destination, { replace: true });
    };
