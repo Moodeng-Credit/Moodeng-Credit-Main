@@ -274,6 +274,8 @@ export type Database = {
           nullifier_hash: string | null
           reset_token: string | null
           reset_token_expiry: string | null
+          redeemed_referral_code_id: string | null
+          referral_boost_amount: number | null
           telegram_id: number | null
           telegram_username: string | null
           updated_at: string | null
@@ -295,6 +297,8 @@ export type Database = {
           nullifier_hash?: string | null
           reset_token?: string | null
           reset_token_expiry?: string | null
+          redeemed_referral_code_id?: string | null
+          referral_boost_amount?: number | null
           telegram_id?: number | null
           telegram_username?: string | null
           updated_at?: string | null
@@ -316,6 +320,8 @@ export type Database = {
           nullifier_hash?: string | null
           reset_token?: string | null
           reset_token_expiry?: string | null
+          redeemed_referral_code_id?: string | null
+          referral_boost_amount?: number | null
           telegram_id?: number | null
           telegram_username?: string | null
           updated_at?: string | null
@@ -323,7 +329,15 @@ export type Database = {
           username?: string
           wallet_address?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "users_redeemed_referral_code_id_fkey"
+            columns: ["redeemed_referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "referral_codes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -348,6 +362,17 @@ export type Database = {
       ensure_email_identity: {
         Args: { email_input: string; user_id_input: string }
         Returns: undefined
+      }
+      redeem_referral_code: {
+        Args: { code_input: string }
+        Returns: {
+          already_redeemed: boolean
+          boost_amount: number
+          code: string
+          id: string
+          new_limit: number
+          previous_limit: number
+        }[]
       }
     }
     Enums: {
