@@ -1,9 +1,12 @@
+import { useEffect, useState } from 'react';
+
 import { useDispatch, useSelector } from 'react-redux';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
-import { logoutUser } from '@/store/slices/authSlice';
+import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
+import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { AccountStatus } from '@/types/authTypes';
 
@@ -29,24 +32,59 @@ const formatOverdueAmount = (amount: number) => {
 export default function AccountRestrictedPage() {
    const dispatch = useDispatch<AppDispatch>();
    const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
+   const [isRecoveringSession, setIsRecoveringSession] = useState(false);
    const mockStatus = getMockStatus();
    const status = mockStatus ?? user?.accountStatus;
    const isRestricted = status === 'blocked' || status === 'banned';
    const defaultedBorrower = useDefaultedBorrowerSupport(!mockStatus && isAuthChecked ? user?.id : null);
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
-   const isCheckingAuth = !mockStatus && !isAuthChecked;
-   const isMissingSession = !mockStatus && isAuthChecked && (!user?.id || !username);
-   const isCheckingDefaultedLoans = !mockStatus && Boolean(user?.id) && !isRestricted && defaultedBorrower.isLoading;
-   const hasDefaultedCheckError = !mockStatus && Boolean(user?.id) && !isRestricted && Boolean(defaultedBorrower.error);
+   const hasProfileSession = Boolean(user?.id && username);
+   const isCheckingAuth = !mockStatus && (!isAuthChecked || isRecoveringSession);
+   const isMissingSession = !mockStatus && isAuthChecked && !isRecoveringSession && !hasProfileSession;
+   const isCheckingDefaultedLoans = !mockStatus && Boolean(user?.id) && defaultedBorrower.isLoading;
+   const hasDefaultedCheckError = !mockStatus && Boolean(user?.id) && Boolean(defaultedBorrower.error);
    const supportLink = isDefaultedBorrower
       ? EXTERNAL_LINKS.support.messengerDefaulted
       : EXTERNAL_LINKS.support.messenger;
 
+   useEffect(() => {
+      if (mockStatus || !isAuthChecked || user?.id || !isSupabaseBrowserConfigured()) {
+         return;
+      }
+
+      let isMounted = true;
+      setIsRecoveringSession(true);
+
+      const recoverSession = async () => {
+         const supabase = getSupabaseBrowserClient();
+         const {
+            data: { session }
+         } = await supabase.auth.getSession();
+
+         if (session?.user) {
+            await dispatch(fetchUser()).unwrap();
+         }
+      };
+
+      recoverSession()
+         .catch((error) => {
+            console.error('Failed to recover account support session:', error);
+         })
+         .finally(() => {
+            if (isMounted) {
+               setIsRecoveringSession(false);
+            }
+         });
+
+      return () => {
+         isMounted = false;
+      };
+   }, [dispatch, isAuthChecked, mockStatus, user?.id]);
+
    if (
       !mockStatus &&
       isAuthChecked &&
-      user?.id &&
-      username &&
+      hasProfileSession &&
       !isRestricted &&
       !isDefaultedBorrower &&
       !isCheckingDefaultedLoans &&
@@ -59,7 +97,7 @@ export default function AccountRestrictedPage() {
       if (isCheckingAuth || isCheckingDefaultedLoans) return 'Checking your account';
       if (isMissingSession) return 'Sign in to view account support';
       if (hasDefaultedCheckError) return 'We could not confirm your account status.';
-      if (isDefaultedBorrower) return `You have $${formatOverdueAmount(defaultedBorrower.support.overdueAmount)} overdue.`;
+      if (isDefaultedBorrower) return `Repay $${formatOverdueAmount(defaultedBorrower.support.overdueAmount)} to continue.`;
       return `Your account is currently ${status === 'banned' ? 'banned' : 'blocked'}.`;
    })();
 
@@ -74,7 +112,7 @@ export default function AccountRestrictedPage() {
          return 'We could not load the repayment details for this account. Message Moodeng Credit support so we can review it.';
       }
       if (isDefaultedBorrower) {
-         return 'Your account needs support before you can continue. Message Moodeng Credit on Messenger so we can help resolve this.';
+         return 'Borrowing is paused while this loan is overdue. You are still signed in, and you can repay now or message support for help.';
       }
       return 'If you think this is a mistake, message Moodeng Credit support on Messenger. We can review your account from there.';
    })();
@@ -105,21 +143,21 @@ export default function AccountRestrictedPage() {
 
             <div className="mt-7 flex flex-col gap-3">
                {isDefaultedBorrower && (
-                  <a
-                     href="/repay"
+                  <Link
+                     to="/repay"
                      className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#16A34A] px-4 text-base font-semibold tracking-[-0.02em] text-white transition-opacity hover:opacity-95"
                   >
                      <i className="fas fa-credit-card text-lg" aria-hidden="true" />
                      Repay Now
-                  </a>
+                  </Link>
                )}
                {isMissingSession && (
-                  <a
-                     href="/sign-in"
+                  <Link
+                     to="/sign-in"
                      className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#6010D2] px-4 text-base font-semibold tracking-[-0.02em] text-white transition-opacity hover:opacity-95"
                   >
                      Sign In
-                  </a>
+                  </Link>
                )}
                <a
                   href={supportLink}
@@ -130,21 +168,6 @@ export default function AccountRestrictedPage() {
                   <i className="fab fa-facebook-messenger text-xl" aria-hidden="true" />
                   Message Support
                </a>
-               {!isMissingSession && (
-                  <button
-                     type="button"
-                     onClick={() => {
-                        if (mockStatus) {
-                           window.location.href = '/sign-in';
-                           return;
-                        }
-                        void dispatch(logoutUser());
-                     }}
-                     className="h-12 rounded-2xl border border-[#D8CFDF] bg-white px-4 text-sm font-semibold tracking-[-0.02em] text-[#4D4359] transition-colors hover:bg-[#F7F4FB]"
-                  >
-                     Sign out
-                  </button>
-               )}
             </div>
          </section>
       </main>

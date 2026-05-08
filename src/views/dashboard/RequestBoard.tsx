@@ -25,6 +25,7 @@ import {
    recordGuidedTourShown,
    shouldShowGuidedTour
 } from '@/lib/guidedTourStorage';
+import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import { isBaseWalletProvider } from '@/lib/walletProvider';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
@@ -42,6 +43,7 @@ import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 import UserAvatar from '@/components/UserAvatar';
 
 const LENDER_NOTE_STORAGE_KEY = 'moodeng_lender_note_dismissed';
+const MAX_ACTIVE_BORROWER_LOANS = 2;
 const VERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT = 5;
 const UNVERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT = 4;
 const DASHBOARD_TOUR_STEP_COUNT = 3;
@@ -116,6 +118,7 @@ function RequestBoard$() {
    const [isSubmitting, setIsSubmitting] = useState(false);
    const [showFilters, setShowFilters] = useState(false);
    const [showLenderNote, setShowLenderNote] = useState(false);
+   const [canBypassBorrowerLoanLimit, setCanBypassBorrowerLoanLimit] = useState(false);
 
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -164,6 +167,18 @@ function RequestBoard$() {
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
    const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, effectiveUser.isWorldId === 'ACTIVE') : 0;
    const hasBorrowerBaseWallet = Boolean(effectiveUser?.walletAddress?.trim()) && isBaseWalletProvider(effectiveUser?.walletProvider);
+   const fetchedActiveLoanCount = useMemo(() => {
+      if (!effectiveUser?.id) return 0;
+      return floanRequests.filter(
+         (loan) =>
+            loan.borrowerUser === effectiveUser.id &&
+            loan.loanStatus === 'Lent' &&
+            loan.repaymentStatus !== 'Paid'
+      ).length;
+   }, [effectiveUser?.id, floanRequests]);
+   const activeLoanCount = Math.max(effectiveUser?.nal || 0, fetchedActiveLoanCount);
+   const hasReachedActiveLoanLimit =
+      isBorrower && !canBypassBorrowerLoanLimit && activeLoanCount >= MAX_ACTIVE_BORROWER_LOANS;
    const shouldOpenLoanRequest =
       (location.state as { openLoanRequest?: boolean } | null)?.openLoanRequest === true ||
       new URLSearchParams(location.search).get('applyLoan') === '1';
@@ -191,6 +206,36 @@ function RequestBoard$() {
       setAppliedReferral(null);
    };
 
+   useEffect(() => {
+      if (!effectiveUser?.id || !isSupabaseBrowserConfigured()) {
+         setCanBypassBorrowerLoanLimit(false);
+         return;
+      }
+
+      let isMounted = true;
+      const supabase = getSupabaseBrowserClient();
+
+      supabase
+         .from('admin_users')
+         .select('id')
+         .eq('user_id', effectiveUser.id)
+         .eq('active', true)
+         .maybeSingle()
+         .then(({ data, error }) => {
+            if (!isMounted) return;
+            if (error) {
+               console.error('Could not check admin loan-limit bypass:', error.message);
+               setCanBypassBorrowerLoanLimit(false);
+               return;
+            }
+            setCanBypassBorrowerLoanLimit(Boolean(data));
+         });
+
+      return () => {
+         isMounted = false;
+      };
+   }, [effectiveUser?.id]);
+
    const handleFiltersChange = (newFilters: Partial<LoanFilters>) => {
       setFilters((prev) => {
          const updated = { ...prev, ...newFilters };
@@ -202,7 +247,7 @@ function RequestBoard$() {
 
    const handleApplyLoanClick = (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
-      if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
+      if (hasReachedActiveLoanLimit) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
@@ -379,7 +424,7 @@ function RequestBoard$() {
 
    useEffect(() => {
       if (!shouldOpenLoanRequest || !isAuthenticated || !isBorrower || !effectiveUser?.id) return;
-      if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
+      if (hasReachedActiveLoanLimit) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          navigate(pathname, { replace: true, state: null });
          return;
@@ -400,9 +445,8 @@ function RequestBoard$() {
       shouldOpenLoanRequest,
       showToastByConfig,
       hasBorrowerBaseWallet,
+      hasReachedActiveLoanLimit,
       effectiveUser?.id,
-      effectiveUser?.mal,
-      effectiveUser?.nal
    ]);
 
    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -413,7 +457,7 @@ function RequestBoard$() {
       const parsedLoanAmount = Number.parseFloat(loanAmount);
       const parsedRepaymentAmount = Number.parseFloat(totalRepaymentAmount);
 
-      if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
+      if (hasReachedActiveLoanLimit) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
@@ -456,7 +500,7 @@ function RequestBoard$() {
          effectiveUser.isWorldId === 'ACTIVE' &&
          Boolean(borrowerWallet) &&
          hasBorrowerBaseWallet &&
-         (effectiveUser.nal || 0) < (effectiveUser.mal || 0) &&
+         !hasReachedActiveLoanLimit &&
          parsedLoanAmount <= effectiveCreditLimit &&
          parsedLoanAmount > 0 &&
          parsedRepaymentAmount >= parsedLoanAmount + 1
