@@ -9,7 +9,7 @@ type GuidedTourStep = {
 
 interface GuidedTourPreviewProps {
    autoAdvanceMs?: number;
-   onFinish?: () => void;
+   onFinish?: (reason: 'complete' | 'skip') => void;
    onStepChange?: (stepIndex: number) => void;
    stepOffset?: number;
    steps: GuidedTourStep[];
@@ -78,19 +78,19 @@ export default function GuidedTourPreview({ autoAdvanceMs = 6000, onFinish, onSt
       };
    }, [updateBounds]);
 
-   const finish = useCallback(() => {
+   const finish = useCallback((reason: 'complete' | 'skip') => {
       setIsVisible(false);
-      onFinish?.();
+      onFinish?.(reason);
    }, [onFinish]);
 
    const next = useCallback(() => {
       if (isLastStep) {
-         finish();
+         finish('complete');
          return;
       }
 
       setStepIndex((index) => index + 1);
-   }, [isLastStep]);
+   }, [finish, isLastStep]);
 
    const back = useCallback(() => {
       if (stepIndex > 0) {
@@ -138,7 +138,7 @@ export default function GuidedTourPreview({ autoAdvanceMs = 6000, onFinish, onSt
                <div className="mt-md-3 flex flex-col-reverse gap-md-1 min-[380px]:flex-row min-[380px]:items-center min-[380px]:justify-between min-[380px]:gap-md-2">
                   <button
                      type="button"
-                     onClick={finish}
+                     onClick={() => finish('skip')}
                      className="rounded-full px-md-2 py-md-1 text-md-b2 font-medium text-md-neutral-1200 transition active:scale-[0.98]"
                   >
                      Skip for now
@@ -159,7 +159,7 @@ export default function GuidedTourPreview({ autoAdvanceMs = 6000, onFinish, onSt
                <p className="mt-md-1 text-md-b2 font-normal text-white/90">{currentStep.body}</p>
                <div className="mt-md-3 flex items-center justify-between gap-md-2">
                   <div className="flex items-center gap-md-2">
-                     <button type="button" onClick={finish} className="rounded-full py-md-1 text-md-b2 font-medium text-white/75 transition active:scale-[0.98]">
+                     <button type="button" onClick={() => finish('skip')} className="rounded-full py-md-1 text-md-b2 font-medium text-white/75 transition active:scale-[0.98]">
                         Skip
                      </button>
                      {globalStepIndex > 0 ? (
