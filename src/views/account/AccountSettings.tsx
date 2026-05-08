@@ -7,9 +7,9 @@ import { useAccount } from 'wagmi';
 
 import UserAvatar from '@/components/UserAvatar';
 import { useAuthProvider } from '@/hooks/useAuthProvider';
-import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getWalletProviderFromConnectorName, isBaseWalletProvider } from '@/lib/walletProvider';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
@@ -387,7 +387,16 @@ export default function AccountSettings() {
    const walletSetupLabel = user?.userRole === 'lender' ? 'Connect' : 'Add Base Wallet';
    const isBorrower = user?.userRole === 'borrower';
    const connectedWalletName = connector?.name;
-   const borrowerHasNonBaseWallet = isBorrower && Boolean(connectedWalletName) && connectedWalletName !== WALLET_CONNECTOR_NAMES.coinbase;
+   const connectedWalletProvider = connectedWalletName ? getWalletProviderFromConnectorName(connectedWalletName) : undefined;
+   const effectiveWalletProvider = user?.walletProvider && user.walletProvider !== 'unknown'
+      ? user.walletProvider
+      : connectedWalletProvider;
+   const borrowerHasNonBaseWallet =
+      isBorrower &&
+      hasWallet &&
+      Boolean(effectiveWalletProvider) &&
+      effectiveWalletProvider !== 'unknown' &&
+      !isBaseWalletProvider(effectiveWalletProvider);
 
    useEffect(() => {
       localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(notifPrefs));
@@ -433,7 +442,9 @@ export default function AccountSettings() {
       if (addr.length <= 12) return addr;
       return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
    };
-   const walletDisplayName = isBorrower && !borrowerHasNonBaseWallet ? 'Base Wallet' : connectedWalletName || truncateAddress(user?.walletAddress || '');
+   const walletDisplayName = isBorrower && !borrowerHasNonBaseWallet
+      ? 'Base Wallet'
+      : user?.walletConnectorName || connectedWalletName || truncateAddress(user?.walletAddress || '');
 
    const toggleNotif = (key: keyof NotificationPrefs) => {
       setNotifPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -600,7 +611,7 @@ export default function AccountSettings() {
                            <div className="flex min-w-0 flex-1 flex-col gap-md-0">
                               <p className="text-md-b1 font-semibold text-md-heading">Borrowers need Base Wallet</p>
                               <p className="text-md-b2 font-medium text-md-neutral-1200">
-                                 Your account is using {connectedWalletName}. Add Base Wallet so funded loans go to the right place.
+                                 Your account is using {user?.walletConnectorName || connectedWalletName || 'another wallet'}. Add Base Wallet so funded loans go to the right place.
                               </p>
                            </div>
                         </div>

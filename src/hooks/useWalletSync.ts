@@ -9,6 +9,7 @@ import { useAccount, useAccountEffect, useDisconnect } from 'wagmi';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
+import { getWalletProviderFromConnectorName } from '@/lib/walletProvider';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
@@ -31,6 +32,9 @@ export function useWalletSync() {
 
    const username = useSelector((state: RootState) => state.auth.username);
    const storedWalletAddress = useSelector((state: RootState) => state.auth.user?.walletAddress);
+   const storedWalletChainId = useSelector((state: RootState) => state.auth.user?.walletChainId);
+   const storedWalletConnectorName = useSelector((state: RootState) => state.auth.user?.walletConnectorName);
+   const storedWalletProvider = useSelector((state: RootState) => state.auth.user?.walletProvider);
    const [hasShownWalletPrompt, setHasShownWalletPrompt] = useState(false);
    const isConnecting = useRef(false);
 
@@ -123,13 +127,28 @@ export function useWalletSync() {
 
       const connectedAddress = account.address.toLowerCase();
       const storedAddress = storedWalletAddress?.toLowerCase();
+      const walletProvider = getWalletProviderFromConnectorName(account.connector?.name);
+      const walletConnectorName = account.connector?.name ?? null;
+      const walletChainId = account.chainId ?? null;
+      const shouldUpdateAddress = connectedAddress !== storedAddress;
+      const shouldUpdateProvider =
+         connectedAddress === storedAddress &&
+         (storedWalletProvider !== walletProvider ||
+            storedWalletConnectorName !== walletConnectorName ||
+            (walletChainId !== null && storedWalletChainId !== walletChainId));
 
-      // Only update if the address is different from what's stored
-      if (connectedAddress !== storedAddress) {
-         dispatch(updateUser({ walletAddress: account.address }))
+      if (shouldUpdateAddress || shouldUpdateProvider) {
+         dispatch(
+            updateUser({
+               walletAddress: account.address,
+               walletChainId,
+               walletConnectorName,
+               walletProvider
+            })
+         )
             .unwrap()
             .then(() => {
-               console.log('Wallet address saved successfully');
+               console.log('Wallet details saved successfully');
             })
             .catch((error) => {
                console.error('Failed to save wallet address:', error);
@@ -164,7 +183,20 @@ export function useWalletSync() {
                disconnect();
             });
       }
-   }, [account.isConnected, account.address, username, storedWalletAddress, dispatch, showToast, disconnect]);
+   }, [
+      account.isConnected,
+      account.address,
+      account.chainId,
+      account.connector?.name,
+      username,
+      storedWalletAddress,
+      storedWalletChainId,
+      storedWalletConnectorName,
+      storedWalletProvider,
+      dispatch,
+      showToast,
+      disconnect
+   ]);
 
    return {
       isWalletConnected: account.isConnected,

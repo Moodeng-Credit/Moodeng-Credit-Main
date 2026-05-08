@@ -5,7 +5,7 @@ import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
-import { type AccountStatus, type AuthState, type User, type UserRole, WorldId } from '@/types/authTypes';
+import { type AccountStatus, type AuthState, type User, type UserRole, type WalletProvider, WorldId } from '@/types/authTypes';
 
 type UpdateUserPayload = {
    username?: string;
@@ -16,6 +16,9 @@ type UpdateUserPayload = {
    password?: string;
    telegramUsername?: string | null;
    walletAddress?: string;
+   walletChainId?: number | null;
+   walletConnectorName?: string | null;
+   walletProvider?: WalletProvider | null;
 };
 
 const supabaseClient = () => getSupabaseBrowserClient();
@@ -94,6 +97,9 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    displayName,
    googleId: row.google_id ?? undefined,
    walletAddress: row.wallet_address ?? undefined,
+   walletChainId: (row as UserRow & { wallet_chain_id?: number | null }).wallet_chain_id ?? undefined,
+   walletConnectorName: (row as UserRow & { wallet_connector_name?: string | null }).wallet_connector_name ?? undefined,
+   walletProvider: (row as UserRow & { wallet_provider?: WalletProvider | null }).wallet_provider ?? undefined,
    isWorldId: row.is_world_id,
    nullifierHash: row.nullifier_hash ?? undefined,
    telegramUsername: row.telegram_username ?? undefined,
@@ -189,6 +195,9 @@ const defaultUser: User = {
    username: '',
    email: '',
    walletAddress: undefined,
+   walletChainId: undefined,
+   walletConnectorName: undefined,
+   walletProvider: undefined,
    avatarBackground: undefined,
    isWorldId: WorldId.INACTIVE,
    googleId: undefined,
@@ -466,6 +475,12 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
    if (userData.username) updates.username = userData.username;
    if (userData.email) updates.email = userData.email;
    if (userData.walletAddress) updates.wallet_address = userData.walletAddress;
+   if (userData.walletChainId !== undefined) updates.wallet_chain_id = userData.walletChainId;
+   if (userData.walletConnectorName !== undefined) updates.wallet_connector_name = userData.walletConnectorName;
+   if (userData.walletProvider !== undefined) updates.wallet_provider = userData.walletProvider;
+   if (userData.walletAddress || userData.walletProvider !== undefined || userData.walletConnectorName !== undefined) {
+      updates.wallet_connected_at = new Date().toISOString();
+   }
    if (userData.telegramUsername !== undefined) updates.telegram_username = userData.telegramUsername;
 
    if (Object.keys(updates).length === 0) {

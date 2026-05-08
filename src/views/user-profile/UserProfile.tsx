@@ -35,6 +35,7 @@ import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityS
 
 import { getCreditLevelNumber, getCreditTierKey, isExactCreditTier } from '@/config/creditTiers';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { LENDER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
 import { fetchUserProfiles, getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
@@ -898,8 +899,16 @@ const UserProfile = () => {
                stepOffset={3}
                totalSteps={9}
                steps={lenderInsightsTourSteps}
-               onFinish={() => {
-                  if (!forceTourPreview) markGuidedTourCompleted(LENDER_GUIDED_TOUR_ID, user.id);
+               onFinish={(reason) => {
+                  if (!forceTourPreview) {
+                     markGuidedTourCompleted(LENDER_GUIDED_TOUR_ID, user.id);
+                     void recordGuidedTourEvent({
+                        eventType: reason === 'skip' ? 'skipped' : 'completed',
+                        metadata: { path: '/user/:username', role: 'lender' },
+                        tourId: LENDER_GUIDED_TOUR_ID,
+                        userId: user.id
+                     });
+                  }
                   navigate('/request-board?lenderTourPreview=1');
                }}
             />

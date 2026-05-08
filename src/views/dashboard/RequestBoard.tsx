@@ -17,6 +17,7 @@ import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { logoImageSrc } from '@/config/navigationConfig';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import {
    BORROWER_GUIDED_TOUR_ID,
    LENDER_GUIDED_TOUR_ID,
@@ -24,6 +25,7 @@ import {
    recordGuidedTourShown,
    shouldShowGuidedTour
 } from '@/lib/guidedTourStorage';
+import { isBaseWalletProvider } from '@/lib/walletProvider';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -48,6 +50,7 @@ const REFERRAL_TEST_USER: User = {
    username: 'referral-test',
    email: 'referral-test@moodeng.local',
    walletAddress: '0x0000000000000000000000000000000000000000',
+   walletProvider: 'base_wallet',
    isWorldId: 'ACTIVE',
    mal: 3,
    nal: 0,
@@ -160,7 +163,7 @@ function RequestBoard$() {
    const [searchLoan, setSearchLoan] = useState('');
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
    const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, effectiveUser.isWorldId === 'ACTIVE') : 0;
-   const hasBorrowerBaseWallet = Boolean(effectiveUser?.walletAddress?.trim());
+   const hasBorrowerBaseWallet = Boolean(effectiveUser?.walletAddress?.trim()) && isBaseWalletProvider(effectiveUser?.walletProvider);
    const shouldOpenLoanRequest =
       (location.state as { openLoanRequest?: boolean } | null)?.openLoanRequest === true ||
       new URLSearchParams(location.search).get('applyLoan') === '1';
@@ -226,8 +229,15 @@ function RequestBoard$() {
       if (recordedTourViewsRef.current.has(viewKey)) return;
 
       recordedTourViewsRef.current.add(viewKey);
-      recordGuidedTourShown(BORROWER_GUIDED_TOUR_ID, tourUserId);
-   }, [forceTourPreview, shouldShowBorrowerTour, tourUserId]);
+      const shownCount = recordGuidedTourShown(BORROWER_GUIDED_TOUR_ID, tourUserId);
+      void recordGuidedTourEvent({
+         eventType: 'shown',
+         metadata: { path: location.pathname, role: isBorrower ? 'borrower' : 'guest' },
+         shownCount,
+         tourId: BORROWER_GUIDED_TOUR_ID,
+         userId: tourUserId
+      });
+   }, [forceTourPreview, isBorrower, location.pathname, shouldShowBorrowerTour, tourUserId]);
 
    useEffect(() => {
       if (!shouldShowLenderTour || forceTourPreview) return;
@@ -236,26 +246,49 @@ function RequestBoard$() {
       if (recordedTourViewsRef.current.has(viewKey)) return;
 
       recordedTourViewsRef.current.add(viewKey);
-      recordGuidedTourShown(LENDER_GUIDED_TOUR_ID, tourUserId);
-   }, [forceTourPreview, shouldShowLenderTour, tourUserId]);
+      const shownCount = recordGuidedTourShown(LENDER_GUIDED_TOUR_ID, tourUserId);
+      void recordGuidedTourEvent({
+         eventType: 'shown',
+         metadata: { path: location.pathname, role: 'lender' },
+         shownCount,
+         tourId: LENDER_GUIDED_TOUR_ID,
+         userId: tourUserId
+      });
+   }, [forceTourPreview, location.pathname, shouldShowLenderTour, tourUserId]);
 
    const handleRequestBoardTourFinish = useCallback((reason: 'complete' | 'skip') => {
       setShowModal(false);
       if (reason === 'skip' || !isAuthenticated || !isBorrower) {
-         if (!forceTourPreview) markGuidedTourCompleted(BORROWER_GUIDED_TOUR_ID, tourUserId);
+         if (!forceTourPreview) {
+            markGuidedTourCompleted(BORROWER_GUIDED_TOUR_ID, tourUserId);
+            void recordGuidedTourEvent({
+               eventType: 'skipped',
+               metadata: { path: location.pathname, role: isBorrower ? 'borrower' : 'guest' },
+               tourId: BORROWER_GUIDED_TOUR_ID,
+               userId: tourUserId
+            });
+         }
          return;
       }
 
       navigate(import.meta.env.DEV ? '/dashboard?mockData=rich&tourPreview=1' : '/dashboard?tour=1');
-   }, [forceTourPreview, isAuthenticated, isBorrower, navigate, tourUserId]);
+   }, [forceTourPreview, isAuthenticated, isBorrower, location.pathname, navigate, tourUserId]);
    const handleLenderTourFinish = useCallback((reason: 'complete' | 'skip') => {
       if (reason === 'skip') {
-         if (!forceTourPreview) markGuidedTourCompleted(LENDER_GUIDED_TOUR_ID, tourUserId);
+         if (!forceTourPreview) {
+            markGuidedTourCompleted(LENDER_GUIDED_TOUR_ID, tourUserId);
+            void recordGuidedTourEvent({
+               eventType: 'skipped',
+               metadata: { path: location.pathname, role: 'lender' },
+               tourId: LENDER_GUIDED_TOUR_ID,
+               userId: tourUserId
+            });
+         }
          return;
       }
 
       navigate('/user/maya-demo?demo=rich&lenderTourPreview=1&tourPreview=1');
-   }, [forceTourPreview, navigate, tourUserId]);
+   }, [forceTourPreview, location.pathname, navigate, tourUserId]);
    const requestBoardTourSteps = showVerify
       ? [
            {
@@ -388,7 +421,7 @@ function RequestBoard$() {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WORLDID_REQUIRED));
          return;
       }
-      if (!borrowerWallet) {
+      if (!borrowerWallet || !hasBorrowerBaseWallet) {
          setShowModal(false);
          setShowBaseWalletGate(true);
          return;
@@ -422,6 +455,7 @@ function RequestBoard$() {
       if (
          effectiveUser.isWorldId === 'ACTIVE' &&
          Boolean(borrowerWallet) &&
+         hasBorrowerBaseWallet &&
          (effectiveUser.nal || 0) < (effectiveUser.mal || 0) &&
          parsedLoanAmount <= effectiveCreditLimit &&
          parsedLoanAmount > 0 &&
