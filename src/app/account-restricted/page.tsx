@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
-import { fetchUser } from '@/store/slices/authSlice';
+import { fetchUser, logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { AccountStatus } from '@/types/authTypes';
 
@@ -31,8 +31,10 @@ const formatOverdueAmount = (amount: number) => {
 
 export default function AccountRestrictedPage() {
    const dispatch = useDispatch<AppDispatch>();
+   const navigate = useNavigate();
    const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
    const [isRecoveringSession, setIsRecoveringSession] = useState(false);
+   const [isSigningOut, setIsSigningOut] = useState(false);
    const mockStatus = getMockStatus();
    const status = mockStatus ?? user?.accountStatus;
    const isRestricted = status === 'blocked' || status === 'banned';
@@ -46,6 +48,12 @@ export default function AccountRestrictedPage() {
    const supportLink = isDefaultedBorrower
       ? EXTERNAL_LINKS.support.messengerDefaulted
       : EXTERNAL_LINKS.support.messenger;
+
+   const handleSignOut = async () => {
+      setIsSigningOut(true);
+      await dispatch(logoutUser());
+      navigate('/sign-in', { replace: true });
+   };
 
    useEffect(() => {
       if (mockStatus || !isAuthChecked || user?.id || !isSupabaseBrowserConfigured()) {
@@ -168,6 +176,16 @@ export default function AccountRestrictedPage() {
                   <i className="fab fa-facebook-messenger text-xl" aria-hidden="true" />
                   Message Support
                </a>
+               {hasProfileSession && (
+                  <button
+                     type="button"
+                     onClick={handleSignOut}
+                     disabled={isSigningOut}
+                     className="inline-flex h-14 w-full items-center justify-center rounded-2xl border border-[#D9CFE5] bg-[#FBF8FF] px-4 text-base font-semibold tracking-[-0.02em] text-[#5F536D] transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                     {isSigningOut ? 'Signing out...' : 'Sign out'}
+                  </button>
+               )}
             </div>
          </section>
       </main>
