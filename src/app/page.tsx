@@ -10,7 +10,7 @@ export default function Home() {
    const isAuthChecked = useSelector((state: RootState) => state.auth.isAuthChecked);
 
    if (!isAuthChecked) {
-      return <MainLandingPage />;
+      return <div className="min-h-screen bg-md-neutral-200" />;
    }
 
    const isAuthenticated = !!(user?.id && username);

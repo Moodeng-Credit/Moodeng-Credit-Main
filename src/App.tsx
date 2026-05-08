@@ -63,10 +63,10 @@ import TransactionDetail from '@/views/transactions/TransactionDetail';
 import TransactionHistory from '@/views/transactions/TransactionHistory';
 import RoleSelection from '@/app/role-selection/page';
 
-function Layout({ children, showFooter = true }: { children: React.ReactNode; showFooter?: boolean }) {
+function Layout({ children, showHeader = true, showFooter = true }: { children: React.ReactNode; showHeader?: boolean; showFooter?: boolean }) {
    return (
       <div className="flex flex-col min-h-screen">
-         <Header />
+         {showHeader ? <Header /> : null}
          <main className="flex-grow">{children}</main>
          {showFooter ? <Footer /> : null}
       </div>
@@ -86,6 +86,7 @@ export default function App() {
    const canRepayWhileDefaulted = isDefaultedBorrower && location.pathname === '/repay';
    const shouldShowAccountSupport = isAccountRestricted || isDefaultedBorrower;
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
+   const showPublicRootChrome = isAuthChecked && !isAuthenticated;
    const showBottomNav =
       user?.id &&
       !shouldShowAccountSupport &&
@@ -133,7 +134,7 @@ export default function App() {
       <>
          <WalletLoadingOverlay />
          <Routes>
-            <Route path="/" element={<Layout showFooter={isAuthChecked && !isAuthenticated}><Home /></Layout>} />
+            <Route path="/" element={<Layout showHeader={showPublicRootChrome} showFooter={showPublicRootChrome}><Home /></Layout>} />
 
             {/* Auth */}
             <Route path="/sign-in" element={<Login />} />
