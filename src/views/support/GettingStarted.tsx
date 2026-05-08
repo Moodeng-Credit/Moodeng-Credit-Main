@@ -17,13 +17,6 @@ interface BasicsItem {
 
 const BASICS: BasicsItem[] = [
    {
-      title: 'Moodeng Academy',
-      description: 'Interactive guide for borrowing, Base wallet, Trust Score, and Credit Level',
-      icon: 'book-open.svg',
-      bg: 'bg-[#9810fa]',
-      path: '/guide'
-   },
-   {
       title: 'Browse Guides',
       description: 'Quick Start for New Users',
       icon: 'trend-up.svg',
@@ -48,7 +41,7 @@ const BASICS: BasicsItem[] = [
       title: 'Learn Credit Leveling System',
       description: 'Grow Limits, Build Trust',
       icon: 'book-open.svg',
-      bg: 'bg-[#7c3aed]',
+      bg: 'bg-[#9810fa]',
       path: '/support/guides/how-credit-levels-work'
    }
 ];

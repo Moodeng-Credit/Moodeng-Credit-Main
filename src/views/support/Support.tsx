@@ -56,6 +56,19 @@ function CategoryIcon({ icon }: { icon: string }) {
    );
 }
 
+function ChevronRight() {
+   return (
+      <div
+         className="w-6 h-6 bg-md-primary-900 shrink-0"
+         style={{
+            ...ICON_MASK_BASE,
+            WebkitMaskImage: "url('/icons/chevron-right.svg')",
+            maskImage: "url('/icons/chevron-right.svg')"
+         }}
+      />
+   );
+}
+
 export default function Support() {
    const navigate = useNavigate();
    const user = useSelector((state: RootState) => state.auth.user);
@@ -112,6 +125,28 @@ export default function Support() {
                </div>
 
                <NeedMoreHelp />
+
+               <button
+                  type="button"
+                  onClick={() => navigate('/guide')}
+                  className="flex items-center gap-md-2 py-md-2 text-left bg-transparent border-b border-md-neutral-600 transition-colors duration-150 hover:bg-md-primary-100/45 active:bg-md-primary-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
+               >
+                  <div className="bg-md-primary-1200 rounded-[10px] w-8 h-8 shrink-0 flex items-center justify-center">
+                     <div
+                        className="w-5 h-5 bg-white"
+                        style={{
+                           ...ICON_MASK_BASE,
+                           WebkitMaskImage: "url('/icons/book-open.svg')",
+                           maskImage: "url('/icons/book-open.svg')"
+                        }}
+                     />
+                  </div>
+                  <div className="flex flex-col flex-1 min-w-0">
+                     <span className="text-md-b1 font-medium text-md-neutral-1900">Learn more at the Academy</span>
+                     <span className="text-md-b3 text-md-neutral-1200">Borrowing, Base wallet, Trust Score, and Credit Level</span>
+                  </div>
+                  <ChevronRight />
+               </button>
 
                {/* Join community */}
                <div className="bg-md-neutral-300 border border-md-primary-900 rounded-md-input flex flex-col items-center gap-md-1 p-md-3">
