@@ -104,7 +104,7 @@ function BorrowerConnectView({ onConnect, isConnecting }: { onConnect: () => voi
 
          <div className="flex flex-col flex-1 items-center justify-center px-md-4 gap-md-4">
             <div className="size-16 rounded-md-xl bg-md-blue-700 inline-flex items-center justify-center">
-               <img src="/icons/base-wallet.png" alt="Base Wallet" className="size-10" />
+               <img src="/icons/base-wallet.svg" alt="Base Wallet" className="size-10" />
             </div>
             <h2 className="text-md-display text-md-heading text-center">Add Your Base Wallet</h2>
             <p className="text-md-b1 font-medium text-md-neutral-700 text-center">

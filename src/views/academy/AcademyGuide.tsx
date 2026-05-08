@@ -175,7 +175,7 @@ const WalletScreen = (): JSX.Element => (
       <ProgressDots active={2} />
       <div className="academy-wallet-card">
          <div className="academy-wallet-card__icon">
-            <img src="/icons/base-wallet.png" alt="" />
+            <img src="/icons/base-wallet.svg" alt="" />
          </div>
          <h3>Add Your Base Wallet</h3>
          <p>Lenders fund loans directly to your Base wallet. Moodeng uses it for your repayment history.</p>

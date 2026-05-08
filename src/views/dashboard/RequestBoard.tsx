@@ -780,7 +780,7 @@ function BaseWalletRequiredModal({
             <div className="flex items-center justify-between border-b border-md-neutral-400 px-md-4 py-md-3">
                <div className="flex items-center gap-md-2">
                   <div className="size-11 rounded-md-lg bg-md-blue-700 inline-flex items-center justify-center">
-                     <img src="/icons/base-wallet.png" alt="" className="size-7" />
+                     <img src="/icons/base-wallet.svg" alt="" className="size-7" />
                   </div>
                   <h2 className="text-md-h4 font-semibold text-md-heading">Add Base Wallet</h2>
                </div>
