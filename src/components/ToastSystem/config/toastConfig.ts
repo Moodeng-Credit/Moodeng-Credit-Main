@@ -243,7 +243,7 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
    loan_limit_reached: {
       toastType: TOAST_TYPES.ERROR,
       title: 'Loan Limit Reached',
-      message: 'You have reached your maximum number of active loans.',
+      message: 'You already have 2 active loans. Repay one before requesting another.',
       buttonText: 'View Profile',
       buttonAction: 'view_profile',
       route: '/profile'
