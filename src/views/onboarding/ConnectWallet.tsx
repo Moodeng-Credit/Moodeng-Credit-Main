@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useSelector } from 'react-redux';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -16,6 +16,7 @@ import { LENDER_WALLET_OPTIONS } from '@/views/onboarding/walletPickerOptions';
 export default function ConnectWallet() {
    const user = useSelector((state: RootState) => state.auth.user);
    const navigate = useNavigate();
+   const location = useLocation();
    const { isConnected } = useAccount();
    const { connect, connectors, status, error } = useConnect();
    const { openConnectModal } = useConnectModal();
@@ -23,6 +24,10 @@ export default function ConnectWallet() {
    const [pendingKey, setPendingKey] = useState<WalletConnectorKey | null>(null);
    const [selectedKey, setSelectedKey] = useState<WalletConnectorKey | null>(null);
    const [userInitiatedConnection, setUserInitiatedConnection] = useState(false);
+   const returnTo =
+      (location.state as { returnTo?: string } | null)?.returnTo ||
+      new URLSearchParams(location.search).get('returnTo') ||
+      undefined;
 
    const connectorsByName = useMemo(() => {
       const map = new Map<string, (typeof connectors)[number]>();
@@ -47,9 +52,9 @@ export default function ConnectWallet() {
    useEffect(() => {
       if (isConnected && userInitiatedConnection) {
          setPendingKey(null);
-         navigate('/onboarding/wallet/connected', { replace: true });
+         navigate('/onboarding/wallet/connected', { replace: true, state: { returnTo } });
       }
-   }, [isConnected, userInitiatedConnection, navigate]);
+   }, [isConnected, userInitiatedConnection, navigate, returnTo]);
 
    useEffect(() => {
       if (status === 'error' && error) {
@@ -95,15 +100,15 @@ export default function ConnectWallet() {
 function BorrowerConnectView({ onConnect, isConnecting }: { onConnect: () => void; isConnecting: boolean }) {
    return (
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
-         <OnboardingHeader title="Connect Wallet" />
+         <OnboardingHeader title="Add Base Wallet" />
 
          <div className="flex flex-col flex-1 items-center justify-center px-md-4 gap-md-4">
             <div className="size-16 rounded-md-xl bg-md-blue-700 inline-flex items-center justify-center">
                <img src="/icons/base-wallet.png" alt="Base Wallet" className="size-10" />
             </div>
-            <h2 className="text-md-display text-md-heading text-center">Connect Your Coinbase Wallet</h2>
+            <h2 className="text-md-display text-md-heading text-center">Add Your Base Wallet</h2>
             <p className="text-md-b1 font-medium text-md-neutral-700 text-center">
-               Your wallet is used to build your Trust Score and receive USDC loans.
+               Moodeng sends funded loans to your Base wallet. Add it once before requesting a loan.
             </p>
             <button
                type="button"
@@ -111,7 +116,7 @@ function BorrowerConnectView({ onConnect, isConnecting }: { onConnect: () => voi
                disabled={isConnecting}
                className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
             >
-               {isConnecting ? 'Connecting…' : 'Connect Wallet'}
+               {isConnecting ? 'Adding…' : 'Add Base Wallet'}
                {!isConnecting && (
                   <span
                      className="block size-6 bg-md-neutral-100"

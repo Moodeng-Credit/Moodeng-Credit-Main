@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useDisconnect } from 'wagmi';
 
 import { getUserLoans } from '@/store/slices/loanSlice';
@@ -11,12 +11,14 @@ import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
 export default function WalletConnected() {
    const navigate = useNavigate();
+   const location = useLocation();
    const dispatch = useDispatch<AppDispatch>();
    const user = useSelector((state: RootState) => state.auth.user);
    const gloans = useSelector((state: RootState) => state.loans.loans.gloans);
    const { isConnected, status } = useAccount();
    const { disconnect } = useDisconnect();
    const [loansLoading, setLoansLoading] = useState(true);
+   const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
 
    useEffect(() => {
       if (!user?.id) {
@@ -42,6 +44,10 @@ export default function WalletConnected() {
    );
 
    const handleNext = () => {
+      if (returnTo === 'loan-request') {
+         navigate('/request-board', { replace: true, state: { openLoanRequest: true } });
+         return;
+      }
       const destination = user.userRole === 'borrower' && hasActiveRequest ? '/dashboard' : '/request-board';
       navigate(destination, { replace: true });
    };
@@ -52,9 +58,9 @@ export default function WalletConnected() {
 
          <div className="flex flex-col flex-1 items-center justify-center px-md-4 gap-md-4">
             <img src="/icons/check-3d.svg" alt="Success" className="size-[124px]" />
-            <h2 className="text-md-display text-md-heading text-center">Wallet Connected</h2>
+            <h2 className="text-md-display text-md-heading text-center">Base Wallet Added</h2>
             <p className="text-md-b1 font-medium text-md-neutral-700 text-center">
-               Your wallet is used to build your Trust Score and receive USDC loans.
+               Moodeng can now send funded loans to your Base wallet.
             </p>
             <button
                type="button"
@@ -62,7 +68,7 @@ export default function WalletConnected() {
                disabled={loansLoading}
                className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
             >
-               {loansLoading ? 'Loading…' : 'Next'}
+               {loansLoading ? 'Loading…' : returnTo === 'loan-request' ? 'Continue Application' : 'Next'}
                {!loansLoading && (
                   <span
                      className="block size-6 bg-md-neutral-100"
@@ -115,9 +121,9 @@ function FailureView({ onRetry }: { onRetry: () => void }) {
                   }}
                />
             </div>
-            <h2 className="text-md-display text-md-heading text-center">Wallet Not Connected</h2>
+            <h2 className="text-md-display text-md-heading text-center">Base Wallet Not Added</h2>
             <p className="text-md-b1 font-medium text-md-neutral-700 text-center">
-               We couldn't detect a connected wallet. Please try again to continue onboarding.
+               We couldn't detect a Base wallet. Please try again to continue.
             </p>
             <button
                type="button"

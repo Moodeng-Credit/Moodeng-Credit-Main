@@ -102,6 +102,7 @@ export default function Account() {
    const iouPoints = user?.cs?.toLocaleString() ?? '0';
    const hasWallet = Boolean(user?.walletAddress);
    const isLender = user?.userRole === 'lender';
+   const walletSetupLabel = isLender ? 'Connect Wallet' : 'Add Base Wallet';
 
    const sharedFaqs = isLender ? SHARED_FAQS.filter((item) => item.id !== 'how-to-get-verified') : SHARED_FAQS;
    const roleFaqs = isLender ? LENDER_FAQS : BORROWER_FAQS;
@@ -153,7 +154,7 @@ export default function Account() {
                            maskImage: "url('/icons/wallet.png')",
                         }}
                      />
-                     <span className="text-md-b2 font-semibold text-md-blue-400">Connect Wallet</span>
+                     <span className="text-md-b2 font-semibold text-md-blue-400">{walletSetupLabel}</span>
                   </button>
                ) : null}
             </div>

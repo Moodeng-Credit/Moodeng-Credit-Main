@@ -50,9 +50,9 @@ const steps: AcademyStep[] = [
    {
       id: 'wallet',
       eyebrow: 'Step 3',
-      title: 'Connect your Base wallet',
-      body: 'Connect Coinbase Wallet on Base so Moodeng can track your onchain reputation and handle USDC loans.',
-      action: 'Connect wallet',
+      title: 'Add your Base wallet',
+      body: 'Add your Base wallet once so Moodeng can send funded loans there and track your repayment history.',
+      action: 'Add Base Wallet',
       screen: 'wallet'
    },
    {
@@ -177,8 +177,8 @@ const WalletScreen = (): JSX.Element => (
          <div className="academy-wallet-card__icon">
             <img src="/icons/base-wallet.png" alt="" />
          </div>
-         <h3>Connect Your Coinbase Wallet</h3>
-         <p>Your wallet is used to build your Trust Score and receive USDC loans on Base.</p>
+         <h3>Add Your Base Wallet</h3>
+         <p>Moodeng sends funded loans to your Base wallet and uses it for your repayment history.</p>
          <div className="academy-wallet-network">
             <span>Network</span>
             <strong>Base</strong>

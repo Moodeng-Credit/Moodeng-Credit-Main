@@ -1,6 +1,6 @@
 import { type ChangeEvent, type FormEvent, type MouseEvent, type RefObject, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { AlertTriangle, HelpCircle, Search, X } from 'lucide-react';
+import { AlertTriangle, HelpCircle, Search, Wallet, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
@@ -102,6 +102,7 @@ function RequestBoard$() {
 
    const [showModal, setShowModal] = useState(false);
    const [showPurple, setShowPurple] = useState(false);
+   const [showBaseWalletGate, setShowBaseWalletGate] = useState(false);
    const [isSubmitting, setIsSubmitting] = useState(false);
    const [showFilters, setShowFilters] = useState(false);
    const [showLenderNote, setShowLenderNote] = useState(false);
@@ -141,12 +142,14 @@ function RequestBoard$() {
    const [searchLoan, setSearchLoan] = useState('');
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
    const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, effectiveUser.isWorldId === 'ACTIVE') : 0;
+   const hasBorrowerBaseWallet = Boolean(effectiveUser?.walletAddress?.trim());
    const shouldOpenLoanRequest =
       (location.state as { openLoanRequest?: boolean } | null)?.openLoanRequest === true ||
       new URLSearchParams(location.search).get('applyLoan') === '1';
 
    const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
    const successModalRef = useClickOutside<HTMLDivElement>(() => setShowPurple(false), showPurple) as RefObject<HTMLDivElement>;
+   const baseWalletGateRef = useClickOutside<HTMLDivElement>(() => setShowBaseWalletGate(false), showBaseWalletGate) as RefObject<HTMLDivElement>;
 
    const [filters, setFilters] = useState<LoanFilters>({
       amount: '',
@@ -182,10 +185,19 @@ function RequestBoard$() {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
+      if (!hasBorrowerBaseWallet) {
+         setShowModal(false);
+         setShowBaseWalletGate(true);
+         return;
+      }
       setShowModal(true);
    };
 
    const handleCloseModal = useCallback(() => setShowModal(false), []);
+   const handleAddBaseWallet = useCallback(() => {
+      setShowBaseWalletGate(false);
+      navigate('/onboarding/wallet', { state: { returnTo: 'loan-request' } });
+   }, [navigate]);
    const handleRequestBoardTourStepChange = useCallback((index: number) => {
       if (index >= 2) setShowModal(true);
    }, []);
@@ -291,6 +303,12 @@ function RequestBoard$() {
          navigate(pathname, { replace: true, state: null });
          return;
       }
+      if (!hasBorrowerBaseWallet) {
+         setShowModal(false);
+         setShowBaseWalletGate(true);
+         navigate(pathname, { replace: true, state: null });
+         return;
+      }
       setShowModal(true);
       navigate(pathname, { replace: true, state: null });
    }, [
@@ -300,6 +318,7 @@ function RequestBoard$() {
       pathname,
       shouldOpenLoanRequest,
       showToastByConfig,
+      hasBorrowerBaseWallet,
       effectiveUser?.id,
       effectiveUser?.mal,
       effectiveUser?.nal
@@ -322,9 +341,8 @@ function RequestBoard$() {
          return;
       }
       if (!borrowerWallet) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
          setShowModal(false);
-         navigate('/onboarding/wallet');
+         setShowBaseWalletGate(true);
          return;
       }
       if (!loanAmount || Number.isNaN(parsedLoanAmount) || parsedLoanAmount <= 0) {
@@ -697,6 +715,12 @@ function RequestBoard$() {
 
          {isAuthenticated && isBorrower && (
             <>
+               <BaseWalletRequiredModal
+                  isOpen={showBaseWalletGate}
+                  clickOutsideRef={baseWalletGateRef}
+                  onClose={() => setShowBaseWalletGate(false)}
+                  onAddBaseWallet={handleAddBaseWallet}
+               />
                <LoanRequestModal
                   isOpen={showModal}
                   onClose={handleCloseModal}
@@ -731,5 +755,74 @@ function RequestBoard$() {
          )}
          {shouldShowLenderTour && <GuidedTourPreview onFinish={handleLenderTourFinish} totalSteps={9} steps={lenderTourSteps} />}
       </>
+   );
+}
+
+function BaseWalletRequiredModal({
+   isOpen,
+   clickOutsideRef,
+   onClose,
+   onAddBaseWallet
+}: {
+   isOpen: boolean;
+   clickOutsideRef: RefObject<HTMLDivElement>;
+   onClose: () => void;
+   onAddBaseWallet: () => void;
+}) {
+   if (!isOpen) return null;
+
+   return (
+      <div className="fixed inset-0 z-[100] bg-black/40 flex items-end sm:items-center justify-center px-md-3 py-md-4">
+         <div
+            ref={clickOutsideRef}
+            className="w-full max-w-[408px] rounded-t-[32px] sm:rounded-[32px] bg-white shadow-md-overlay overflow-hidden"
+         >
+            <div className="flex items-center justify-between border-b border-md-neutral-400 px-md-4 py-md-3">
+               <div className="flex items-center gap-md-2">
+                  <div className="size-11 rounded-md-lg bg-md-blue-700 inline-flex items-center justify-center">
+                     <img src="/icons/base-wallet.png" alt="" className="size-7" />
+                  </div>
+                  <h2 className="text-md-h4 font-semibold text-md-heading">Add Base Wallet</h2>
+               </div>
+               <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Close add Base wallet"
+                  className="size-11 rounded-full inline-flex items-center justify-center text-md-heading active:bg-md-neutral-300"
+               >
+                  <X className="size-7" strokeWidth={2.25} />
+               </button>
+            </div>
+
+            <div className="flex flex-col gap-md-4 px-md-4 py-md-5">
+               <div className="rounded-md-lg border border-md-primary-300 bg-md-primary-100 px-md-4 py-md-4">
+                  <div className="flex items-start gap-md-3">
+                     <div className="mt-0.5 size-10 rounded-full bg-md-primary-900/10 inline-flex items-center justify-center shrink-0">
+                        <Wallet className="size-5 text-md-primary-900" strokeWidth={1.8} />
+                     </div>
+                     <p className="text-md-b1 font-medium leading-[1.45] text-md-neutral-900">
+                        Moodeng sends funded loans to your Base wallet. Add it once before requesting a loan. Borrowing on Moodeng
+                        uses USDC on Base, so transfers are free and required.
+                     </p>
+                  </div>
+               </div>
+
+               <button
+                  type="button"
+                  onClick={onAddBaseWallet}
+                  className="w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
+               >
+                  Add Base Wallet
+               </button>
+               <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full rounded-md-lg border border-md-neutral-500 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-1200 active:bg-md-neutral-200"
+               >
+                  Not now
+               </button>
+            </div>
+         </div>
+      </div>
    );
 }
