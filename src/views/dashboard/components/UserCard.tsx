@@ -196,7 +196,7 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenti
                      </span>
                   </div>
                   {/* Network Badge */}
-                  <img src="/icons/base-wallet.png" alt="Base" className="w-6 h-6 rounded-[3.4px]" />
+                  <img src="/icons/base-wallet.svg" alt="Base" className="w-6 h-6 rounded-[3.4px]" />
                   {/* Due Date */}
                   <div className="flex items-center gap-1 text-md-b2 font-semibold">
                      <span className="text-[#585858]">Due On</span>

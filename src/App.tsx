@@ -63,12 +63,12 @@ import TransactionDetail from '@/views/transactions/TransactionDetail';
 import TransactionHistory from '@/views/transactions/TransactionHistory';
 import RoleSelection from '@/app/role-selection/page';
 
-function Layout({ children }: { children: React.ReactNode }) {
+function Layout({ children, showFooter = true }: { children: React.ReactNode; showFooter?: boolean }) {
    return (
       <div className="flex flex-col min-h-screen">
          <Header />
          <main className="flex-grow">{children}</main>
-         <Footer />
+         {showFooter ? <Footer /> : null}
       </div>
    );
 }
@@ -79,6 +79,7 @@ export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
    const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
+   const isAuthenticated = Boolean(user?.id && username);
    const defaultedBorrower = useDefaultedBorrowerSupport(isAuthChecked ? user?.id : null);
    const isAccountRestricted = user?.accountStatus === 'blocked' || user?.accountStatus === 'banned';
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
@@ -132,7 +133,7 @@ export default function App() {
       <>
          <WalletLoadingOverlay />
          <Routes>
-            <Route path="/" element={<Layout><Home /></Layout>} />
+            <Route path="/" element={<Layout showFooter={isAuthChecked && !isAuthenticated}><Home /></Layout>} />
 
             {/* Auth */}
             <Route path="/sign-in" element={<Login />} />

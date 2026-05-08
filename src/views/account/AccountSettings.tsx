@@ -383,6 +383,7 @@ export default function AccountSettings() {
    const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
 
    const hasWallet = Boolean(user?.walletAddress);
+   const walletSetupLabel = user?.userRole === 'lender' ? 'Connect' : 'Add Base Wallet';
 
    useEffect(() => {
       localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(notifPrefs));
@@ -575,7 +576,7 @@ export default function AccountSettings() {
                                  onClick={() => navigate('/onboarding/wallet')}
                                  className="text-md-b1 text-md-primary-900 shrink-0 ml-2"
                               >
-                                 Connect
+                                 {walletSetupLabel}
                               </button>
                            </>
                         )}

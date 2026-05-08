@@ -51,6 +51,7 @@ export function OnboardingHeader({ title, onBack, hideBack = false }: Onboarding
          <button
             type="button"
             aria-label="Help"
+            onClick={() => navigate('/support')}
             className="h-12 w-12 inline-flex items-center justify-center bg-white rounded-md-pill shadow-md-card shrink-0"
          >
             <span
