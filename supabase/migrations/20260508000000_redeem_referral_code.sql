@@ -112,4 +112,13 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.redeem_referral_code(TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.redeem_referral_code(TEXT) FROM anon;
 GRANT EXECUTE ON FUNCTION public.redeem_referral_code(TEXT) TO authenticated;
+
+INSERT INTO public.referral_codes (code, boost_amount)
+VALUES ('BELLE', 5)
+ON CONFLICT (code) DO UPDATE
+SET
+  boost_amount = EXCLUDED.boost_amount,
+  is_active = true,
+  updated_at = NOW();
