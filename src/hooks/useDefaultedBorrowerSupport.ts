@@ -11,6 +11,7 @@ type DefaultedBorrowerSupportState = {
    support: DefaultedBorrowerSupport;
    isLoading: boolean;
    error: string | null;
+   checkedUserId: string | null;
 };
 
 export async function fetchDefaultedBorrowerSupport(userId: string): Promise<DefaultedBorrowerSupport> {
@@ -38,7 +39,8 @@ export function useDefaultedBorrowerSupport(userId?: string | null): DefaultedBo
    const [state, setState] = useState<DefaultedBorrowerSupportState>({
       support: EMPTY_DEFAULTED_BORROWER_SUPPORT,
       isLoading: false,
-      error: null
+      error: null,
+      checkedUserId: null
    });
 
    useEffect(() => {
@@ -48,7 +50,8 @@ export function useDefaultedBorrowerSupport(userId?: string | null): DefaultedBo
          setState({
             support: EMPTY_DEFAULTED_BORROWER_SUPPORT,
             isLoading: false,
-            error: null
+            error: null,
+            checkedUserId: null
          });
          return () => {
             isMounted = false;
@@ -59,7 +62,8 @@ export function useDefaultedBorrowerSupport(userId?: string | null): DefaultedBo
          setState({
             support: EMPTY_DEFAULTED_BORROWER_SUPPORT,
             isLoading: false,
-            error: 'Supabase is not configured.'
+            error: 'Supabase is not configured.',
+            checkedUserId: userId
          });
          return () => {
             isMounted = false;
@@ -83,7 +87,8 @@ export function useDefaultedBorrowerSupport(userId?: string | null): DefaultedBo
             setState({
                support,
                isLoading: false,
-               error: null
+               error: null,
+               checkedUserId: userId
             });
          } catch (error) {
             if (!isMounted) {
@@ -93,7 +98,8 @@ export function useDefaultedBorrowerSupport(userId?: string | null): DefaultedBo
             setState({
                support: EMPTY_DEFAULTED_BORROWER_SUPPORT,
                isLoading: false,
-               error: error instanceof Error ? error.message : 'Unable to check overdue loans.'
+               error: error instanceof Error ? error.message : 'Unable to check overdue loans.',
+               checkedUserId: userId
             });
          }
       };
@@ -105,5 +111,17 @@ export function useDefaultedBorrowerSupport(userId?: string | null): DefaultedBo
       };
    }, [userId]);
 
-   return state;
+   if (userId && state.checkedUserId !== userId) {
+      return {
+         support: EMPTY_DEFAULTED_BORROWER_SUPPORT,
+         isLoading: true,
+         error: null
+      };
+   }
+
+   return {
+      support: state.support,
+      isLoading: state.isLoading,
+      error: state.error
+   };
 }
