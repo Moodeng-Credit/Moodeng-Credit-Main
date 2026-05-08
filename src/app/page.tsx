@@ -1,7 +1,6 @@
 import { useSelector } from 'react-redux';
 import { Navigate } from 'react-router-dom';
 
-import MainLandingPage from '@/views/landing/MainLandingPage';
 import type { RootState } from '@/store/store';
 
 export default function Home() {
@@ -19,5 +18,5 @@ export default function Home() {
       return <Navigate to={target} replace />;
    }
 
-   return <MainLandingPage />;
+   return <Navigate to="/request-board" replace />;
 }
