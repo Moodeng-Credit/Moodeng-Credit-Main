@@ -4,6 +4,7 @@ import { AlertTriangle, HelpCircle, Search, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
+import GuidedTourPreview from '@/components/GuidedTourPreview';
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -32,6 +33,9 @@ import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 import UserAvatar from '@/components/UserAvatar';
 
 const LENDER_NOTE_STORAGE_KEY = 'moodeng_lender_note_dismissed';
+const VERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT = 5;
+const UNVERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT = 4;
+const DASHBOARD_TOUR_STEP_COUNT = 3;
 const REFERRAL_TEST_USER: User = {
    id: 'referral-test-user',
    username: 'referral-test',
@@ -45,6 +49,40 @@ const REFERRAL_TEST_USER: User = {
    createdAt: new Date(0).toISOString(),
    updatedAt: new Date(0).toISOString()
 };
+const LENDER_TOUR_USER: User = {
+   id: 'lender-tour-user',
+   username: 'lender-tour',
+   email: 'lender-tour@moodeng.local',
+   walletAddress: '0x1111111111111111111111111111111111111111',
+   isWorldId: 'ACTIVE',
+   mal: 0,
+   nal: 0,
+   cs: 320,
+   userRole: 'lender',
+   createdAt: new Date(0).toISOString(),
+   updatedAt: new Date(0).toISOString()
+};
+const LENDER_TOUR_LOANS: Loan[] = [
+   {
+      id: 'lender-tour-loan-1',
+      trackingId: 'LENDER-TOUR-001',
+      borrowerWallet: '0x71c4000000000000000000000000000000009d42',
+      lenderWallet: '',
+      borrowerUser: 'lender-tour-borrower',
+      lenderUser: '',
+      loanAmount: 15,
+      repaidAmount: 0,
+      totalRepaymentAmount: 17,
+      reason: 'Emergency groceries',
+      loanStatus: 'Requested',
+      repaymentStatus: 'Unpaid',
+      dueDate: '2026-05-16T00:00:00.000Z',
+      coin: 'USDC',
+      hash: [],
+      createdAt: '2026-05-08T00:00:00.000Z',
+      updatedAt: '2026-05-08T00:00:00.000Z'
+   }
+];
 
 export default function RequestBoard() {
    return (
@@ -72,12 +110,22 @@ function RequestBoard$() {
    const username = useSelector((state: RootState) => state.auth.username);
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const isLoading = useSelector((state: RootState) => state.loans.isLoading);
-   const isReferralTestMode = import.meta.env.DEV && new URLSearchParams(location.search).has('referralTest');
-   const effectiveUser = isReferralTestMode && !(user?.id && username) ? REFERRAL_TEST_USER : user;
-   const isAuthenticated = !!(effectiveUser?.id && (username || isReferralTestMode));
+   const requestBoardSearchParams = new URLSearchParams(location.search);
+   const isReferralTestMode = import.meta.env.DEV && requestBoardSearchParams.has('referralTest');
+   const showTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('tourPreview');
+   const isLenderTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('lenderTourPreview');
+   const shouldForceReferralTestUser = isReferralTestMode && showTourPreview;
+   const effectiveUser = isLenderTourPreview
+      ? LENDER_TOUR_USER
+      : isReferralTestMode && (shouldForceReferralTestUser || !(user?.id && username))
+        ? REFERRAL_TEST_USER
+        : user;
+   const isAuthenticated = !!(effectiveUser?.id && (username || isReferralTestMode || isLenderTourPreview));
    const showVerify = effectiveUser?.isWorldId !== 'ACTIVE';
    const storeIsBorrower = useIsBorrower();
-   const isBorrower = isReferralTestMode || storeIsBorrower;
+   const isBorrower = isLenderTourPreview ? false : isReferralTestMode || storeIsBorrower;
+   const shouldShowBorrowerTour = showTourPreview && (!isAuthenticated || isBorrower);
+   const shouldShowLenderTour = showTourPreview && isLenderTourPreview && isAuthenticated && !isBorrower;
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
    const [sortedLoans, setSortedLoans] = useState(floanRequests);
@@ -138,6 +186,96 @@ function RequestBoard$() {
    };
 
    const handleCloseModal = useCallback(() => setShowModal(false), []);
+   const handleRequestBoardTourStepChange = useCallback((index: number) => {
+      if (index >= 2) setShowModal(true);
+   }, []);
+   const handleRequestBoardTourFinish = useCallback(() => {
+      setShowModal(false);
+      navigate('/dashboard?mockData=rich&tourPreview=1');
+   }, [navigate]);
+   const handleLenderTourFinish = useCallback(() => {
+      navigate('/user/maya-demo?demo=rich&lenderTourPreview=1&tourPreview=1');
+   }, [navigate]);
+   const requestBoardTourSteps = showVerify
+      ? [
+           {
+              target: '[data-tour-target="request-latest-list"]',
+              title: 'Request Board',
+              body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
+              durationMs: 6000
+           },
+           {
+              target: '[data-tour-target="request-apply-card"]',
+              title: 'Apply for a loan',
+              body: 'When you are ready to borrow, this card opens the loan request form.',
+              durationMs: 6000
+           },
+           {
+              target: '[data-tour-target="loan-verification-card"]',
+              title: 'Verify first',
+              body: 'Before an unverified borrower can request a loan, Moodeng asks for one quick verification step so lenders know they are funding a real person.',
+              durationMs: 6500
+           },
+           {
+              target: '[data-tour-target="loan-borrow-amount"]',
+              title: 'Loan terms preview',
+              body: 'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.',
+              durationMs: 6000
+           }
+        ]
+      : [
+           {
+              target: '[data-tour-target="request-latest-list"]',
+              title: 'Request Board',
+              body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
+              durationMs: 6000
+           },
+           {
+              target: '[data-tour-target="request-apply-card"]',
+              title: 'Apply for a loan',
+              body: 'When you are ready to borrow, this card opens the loan request form.',
+              durationMs: 6000
+           },
+           {
+              target: '[data-tour-target="loan-borrow-amount"]',
+              title: 'Trust-building vs credit-building',
+              body: 'Borrowing below your limit can build trust history. Borrowing your full limit and repaying on time is what raises your Credit Level.',
+              durationMs: 7800
+           },
+           {
+              target: '[data-tour-target="loan-repayment-amount"]',
+              title: 'Set a clear repayment',
+              body: 'Your repayment must be at least $1 more than what you borrow. Lenders use this to decide if the request is worth funding.',
+              durationMs: 6400
+           },
+           {
+              target: '[data-tour-target="loan-reason"]',
+              title: 'Explain the reason',
+              body: 'A short, specific reason helps lenders understand the request and builds trust before they fund it.',
+              durationMs: 6000
+           }
+        ];
+   const requestBoardTourStepCount = showVerify ? UNVERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT : VERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT;
+   const lenderTourSteps = [
+      {
+         target: '[data-tour-target="request-latest-list"]',
+         title: 'Find open requests',
+         body: 'As a lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.',
+         durationMs: 6500
+      },
+      {
+         target: '[data-tour-target="lender-request-card"]',
+         title: 'Review the request',
+         body: 'Each card shows what the borrower needs, what they plan to repay, and whether their account is in good standing.',
+         durationMs: 6200
+      },
+      {
+         target: '[data-tour-target="lender-borrower-details-link"]',
+         title: 'Check Borrower Insights',
+         body: 'Before funding, open Borrower Details to review repayment behavior, credit level, and trust signals. The tour continues there next.',
+         durationMs: 6500
+      }
+   ];
    const handleReferralRedeemed = useCallback(async () => {
       try {
          await dispatch(fetchUser()).unwrap();
@@ -313,6 +451,9 @@ function RequestBoard$() {
    const handleSuccessModalClose = useCallback(() => setShowPurple(false), []);
 
    const firstName = user?.username?.split(' ')[0] || user?.username || 'there';
+   const displayFirstName = effectiveUser?.username?.split(' ')[0] || effectiveUser?.username || firstName;
+   const visibleLoans = shouldShowLenderTour && displayedLoans.length === 0 ? LENDER_TOUR_LOANS : displayedLoans;
+   const isListLoading = isLoading && !shouldShowLenderTour;
 
    return (
       <>
@@ -324,7 +465,7 @@ function RequestBoard$() {
                      <div className="flex items-center gap-3">
                         <UserAvatar size={48} />
                         <div className="flex flex-col gap-1">
-                           <p className="text-md-h5 font-semibold text-md-primary-2000">Hello, {firstName}</p>
+                           <p className="text-md-h5 font-semibold text-md-primary-2000">Hello, {displayFirstName}</p>
                            {isBorrower ? (
                               <div className="flex items-center gap-2">
                                  {showVerify ? (
@@ -355,7 +496,7 @@ function RequestBoard$() {
                            ) : (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-md-primary-900 rounded-md-sm w-fit">
                                  <span className="text-md-b3 font-semibold text-md-neutral-100 capitalize whitespace-nowrap">
-                                    IOU {user?.cs?.toLocaleString() ?? '0'}
+                                    IOU {effectiveUser?.cs?.toLocaleString() ?? '0'}
                                  </span>
                               </span>
                            )}
@@ -383,7 +524,7 @@ function RequestBoard$() {
                {/* Content */}
                <div className="flex flex-col gap-5 px-md-4 py-md-3">
                   {/* Title */}
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-1" data-tour-target="request-board-title">
                      <h1 className="text-md-h3 font-semibold text-md-heading">Microloan Request Board</h1>
                      <p className="text-md-b2 font-medium text-md-neutral-700">
                         {isAuthenticated
@@ -394,7 +535,10 @@ function RequestBoard$() {
 
                   {/* Apply Loan Card — visible for authenticated borrowers, or as CTA for public */}
                   {isAuthenticated && isBorrower ? (
-                     <div className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3">
+                     <div
+                        className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3"
+                        data-tour-target="request-apply-card"
+                     >
                         <div className="flex flex-col gap-4 relative z-10">
                            <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
                               <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Need short-term support?</p>
@@ -409,6 +553,7 @@ function RequestBoard$() {
                            </div>
                            <button
                               onClick={handleApplyLoanClick}
+                              data-tour-target="request-apply-button"
                               className="bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold px-md-4 py-md-3 rounded-md-lg w-fit max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
                            >
                               Apply For A Loan
@@ -450,7 +595,7 @@ function RequestBoard$() {
                   ) : null}
 
                   {/* Browse Section */}
-                  <div className="flex flex-col gap-5">
+                  <div className="flex flex-col gap-5" data-tour-target="request-latest-list">
                      <div className="flex flex-col gap-4">
                         <p className="text-md-h5 font-semibold text-md-heading">Browse Latest Requests</p>
                         <div className="flex items-center gap-4">
@@ -505,20 +650,26 @@ function RequestBoard$() {
 
                      {/* Request Cards */}
                      <div className="flex flex-col gap-5">
-                        {isLoading ? (
+                        {isListLoading ? (
                            <div className="flex justify-center py-20">
                               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-md-primary-900" />
                            </div>
-                        ) : displayedLoans && displayedLoans.length > 0 ? (
-                           displayedLoans.map((loan) => (
-                              <UserCard key={loan.id} {...loan} isBorrower={isBorrower} isAuthenticated={isAuthenticated} />
+                        ) : visibleLoans && visibleLoans.length > 0 ? (
+                           visibleLoans.map((loan) => (
+                              <UserCard
+                                 key={loan.id}
+                                 {...loan}
+                                 isBorrower={isBorrower}
+                                 isAuthenticated={isAuthenticated}
+                                 tourBorrowerUsername={loan.id.startsWith('lender-tour') ? 'maya-demo' : undefined}
+                              />
                            ))
                         ) : (
                            <div className="text-center py-20 text-md-neutral-1200 text-md-b2">No loan requests found.</div>
                         )}
                      </div>
 
-                     {!isLoading && <LoadMoreButton currentCount={displayedCount} totalCount={totalCount} onLoadMore={handleLoadMore} />}
+                     {!isListLoading && !shouldShowLenderTour && <LoadMoreButton currentCount={displayedCount} totalCount={totalCount} onLoadMore={handleLoadMore} />}
                   </div>
                </div>
             </div>
@@ -564,11 +715,21 @@ function RequestBoard$() {
                   onReferralApplied={setAppliedReferral}
                   onReferralRedeemed={handleReferralRedeemed}
                   isSubmitting={isSubmitting}
+                  startOnReferralStep={!shouldShowBorrowerTour}
                   clickOutsideRef={loanRequestModalRef}
                />
                <SuccessModal isOpen={showPurple} onClose={handleSuccessModalClose} clickOutsideRef={successModalRef} />
             </>
          )}
+         {shouldShowBorrowerTour && (
+            <GuidedTourPreview
+               onFinish={handleRequestBoardTourFinish}
+               onStepChange={handleRequestBoardTourStepChange}
+               totalSteps={requestBoardTourStepCount + DASHBOARD_TOUR_STEP_COUNT}
+               steps={requestBoardTourSteps}
+            />
+         )}
+         {shouldShowLenderTour && <GuidedTourPreview onFinish={handleLenderTourFinish} totalSteps={9} steps={lenderTourSteps} />}
       </>
    );
 }

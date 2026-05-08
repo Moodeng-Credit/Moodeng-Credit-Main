@@ -77,6 +77,7 @@ function ImageIconBadge({ src }: { src: string }) {
 export default function Congratulations() {
    const navigate = useNavigate();
    const openExternal = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
+   const requestBoardTourPath = import.meta.env.DEV ? '/request-board?referralTest=1&tourPreview=1' : '/request-board?tour=1';
 
    return (
       <div className="mx-auto flex min-h-screen w-full max-w-[440px] flex-col overflow-hidden rounded-[20px] bg-gradient-to-b from-[#fbfafd] to-white">
@@ -126,7 +127,7 @@ export default function Congratulations() {
             <section className="flex flex-col gap-2">
                <button
                   type="button"
-                  onClick={() => navigate('/request-board')}
+                  onClick={() => navigate(requestBoardTourPath)}
                   className="flex w-full items-center justify-center gap-2 rounded-[16px] bg-[#6010d2] px-5 py-4 text-[16px] font-[590] leading-6 tracking-[-0.02em] text-[#fdfcfd] active:scale-[0.99]"
                >
                   Explore the Request Board

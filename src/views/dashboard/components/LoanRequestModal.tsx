@@ -314,6 +314,16 @@ export default function LoanRequestModal({
    }, [isOpen, isVerified, onReferralApplied, startOnReferralStep]);
 
    useEffect(() => {
+      if (!isOpen || shouldShowReferralStep) return;
+
+      window.requestAnimationFrame(() => {
+         if (!formRef.current) return;
+
+         formRef.current.scrollTop = 0;
+      });
+   }, [isOpen, shouldShowReferralStep, showVerify]);
+
+   useEffect(() => {
       if (!isOpen) return undefined;
 
       const closeTooltip = () => setActiveTooltip(null);
@@ -694,7 +704,10 @@ export default function LoanRequestModal({
             ) : (
             <form ref={formRef} onSubmit={handleSubmit} className="flex min-h-0 flex-col gap-md-3 overflow-y-auto p-md-3 text-md-b2 text-md-heading">
                {showVerify ? (
-                  <div className="flex items-center gap-md-2 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-[#fff6d0] px-md-3 py-md-2">
+                  <div
+                     className="flex items-center gap-md-2 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-[#fff6d0] px-md-3 py-md-2"
+                     data-tour-target="loan-verification-card"
+                  >
                      <div className="flex min-w-0 max-w-[220px] flex-1 flex-col gap-md-1">
                         <div className="flex flex-col gap-md-0">
                            <p className="whitespace-nowrap text-md-b2 font-medium text-md-primary-2000">One quick step to request a loan</p>
@@ -714,7 +727,7 @@ export default function LoanRequestModal({
                   </div>
                ) : null}
 
-               <div className="flex flex-col gap-md-1">
+               <div className="flex flex-col gap-md-1" data-tour-target="loan-borrow-amount">
                   <div className="flex items-center justify-between gap-md-2">
                      <label className="text-md-b2 font-normal text-md-heading" htmlFor="borrow-amount">
                         Borrow Amount
@@ -765,7 +778,7 @@ export default function LoanRequestModal({
                   </div>
                </div>
 
-               <div className="flex flex-col gap-md-1">
+               <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-amount">
                   <label className="text-md-b2 font-normal text-md-heading" htmlFor="repayment-amount">
                      Set Repayment Amount
                   </label>
@@ -781,7 +794,7 @@ export default function LoanRequestModal({
                   />
                </div>
 
-               <div className="flex flex-col gap-md-1">
+               <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-date">
                   <label className="text-md-b2 font-normal text-md-heading" htmlFor="repaymentDate">
                      Set Repayment Date
                   </label>
@@ -825,7 +838,7 @@ export default function LoanRequestModal({
                   </div>
                </div>
 
-               <div className="flex flex-col gap-md-1">
+               <div className="flex flex-col gap-md-1" data-tour-target="loan-reason">
                   <label className="text-md-b2 font-normal text-md-heading" htmlFor="reason">
                      Reason For Borrowing
                   </label>
