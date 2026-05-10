@@ -75,42 +75,6 @@ function Layout({ children }: { children: React.ReactNode }) {
 
 const BOTTOM_NAV_ROUTES = ['/request-board', '/repay', '/dashboard', '/lender/dashboard', '/lender/transactions', '/history', '/account', '/account/settings'];
 
-function AccountAccessChecking() {
-   return (
-      <main className="min-h-screen bg-[#F7F4FB] px-4 py-8 flex items-center justify-center">
-         <section className="w-full max-w-[440px] rounded-[24px] bg-white px-6 py-8 shadow-[0_18px_50px_rgba(44,19,82,0.12)]">
-            <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-full bg-[#EFE7FF] text-[#8336F0]">
-               <i className="fas fa-clock text-2xl" aria-hidden="true" />
-            </div>
-            <div className="text-center">
-               <p className="mb-3 text-sm font-bold uppercase tracking-[0.08em] text-[#8336F0]">
-                  Account check
-               </p>
-               <h1 className="text-[clamp(1.9rem,8vw,2.4rem)] font-semibold leading-[1.1] tracking-[-0.04em] text-[#040033]">
-                  Checking your account
-               </h1>
-               <p className="mt-4 text-base font-medium leading-6 tracking-[-0.02em] text-[#5F536D]">
-                  We are checking your repayment details before opening the app.
-               </p>
-            </div>
-            <div className="mt-7 space-y-3">
-               {['Signed in', 'Checking repayment status', 'Opening the right screen'].map((label, index) => (
-                  <div
-                     key={label}
-                     className="flex items-center gap-3 rounded-2xl border border-[#E6DDEC] bg-[#FBF9FE] px-4 py-3 text-left"
-                  >
-                     <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#EFE7FF] text-sm font-semibold text-[#6010D2]">
-                        {index + 1}
-                     </span>
-                     <span className="text-sm font-semibold tracking-[-0.02em] text-[#4D4359]">{label}</span>
-                  </div>
-               ))}
-            </div>
-         </section>
-      </main>
-   );
-}
-
 export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
@@ -121,11 +85,6 @@ export default function App() {
    const isAccountRestricted = user?.accountStatus === 'blocked' || user?.accountStatus === 'banned';
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
    const canRepayWhileDefaulted = isDefaultedBorrower && location.pathname === '/repay';
-   const isCheckingDefaultedAccess =
-      shouldCheckDefaultedBorrower &&
-      defaultedBorrower.isLoading &&
-      location.pathname !== '/account-restricted' &&
-      location.pathname !== '/repay';
    const shouldShowAccountSupport = isAccountRestricted || isDefaultedBorrower;
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
    const showBottomNav =
@@ -165,15 +124,6 @@ export default function App() {
 
    if (isAccountRestricted && location.pathname !== '/account-restricted') {
       return <Navigate to="/account-restricted" replace />;
-   }
-
-   if (isCheckingDefaultedAccess) {
-      return (
-         <>
-            <WalletLoadingOverlay />
-            <AccountAccessChecking />
-         </>
-      );
    }
 
    if (shouldShowAccountSupport && !canRepayWhileDefaulted && location.pathname !== '/account-restricted') {
