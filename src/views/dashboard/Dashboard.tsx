@@ -160,6 +160,7 @@ export default function Dashboard() {
    const borrowerLoans = useMemo(() => getBorrowerLoans(gloanRequests, user.id), [gloanRequests, user.id]);
    const previewLoans = useMemo(() => buildPreviewLoans(user.id), [user.id]);
    const isVerified = user.isWorldId === 'ACTIVE';
+   const displayTrustScore = isVerified ? user.cs : 0;
    const milestoneLoans = isMockRich ? previewLoans : borrowerLoans;
    const displayFundedLoans = useMemo(
       () => (isMockRich ? previewLoans.filter((loan) => loan.loanStatus === LoanStatus.LENT) : fundedLoans),
@@ -252,7 +253,7 @@ export default function Dashboard() {
 
             <div className="bg-md-neutral-100 rounded-md-lg p-4 shadow-md-card flex flex-col gap-4 bg-gradient-to-b from-white to-[#eee6fa]">
                <div data-tour-target="dashboard-trust-score">
-                  <TrustScoreSection trustScore={user.cs} />
+                  <TrustScoreSection trustScore={displayTrustScore} />
                </div>
                <div data-tour-target="dashboard-credit-level">
                   <CreditLevelSection currentCs={user.cs} isVerified={isVerified} />

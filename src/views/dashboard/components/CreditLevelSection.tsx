@@ -64,6 +64,7 @@ export default function CreditLevelSection({ currentCs, isVerified }: CreditLeve
    const effectiveLimit = useMemo(() => getEffectiveCreditLimit(currentCs, isVerified), [currentCs, isVerified]);
    const levelNumber = useMemo(() => (effectiveLimit > 0 ? getCreditLevelNumber(effectiveLimit) : 0), [effectiveLimit]);
    const progress = effectiveLimit / MAX_CREDIT_LIMIT;
+   const isLocked = !isVerified || levelNumber === 0;
 
    return (
       <>
@@ -86,17 +87,23 @@ export default function CreditLevelSection({ currentCs, isVerified }: CreditLeve
 
          <div className="flex items-center justify-between">
             <LvlBadge level={levelNumber} />
-            <span className="text-md-b2 font-semibold">
-               <span className="text-md-primary-800">${effectiveLimit}</span>
-               <span className="text-md-neutral-700"> / ${MAX_CREDIT_LIMIT}</span>
-            </span>
+            {isLocked ? (
+               <span className="text-md-b2 font-semibold text-md-neutral-700">Verify to unlock</span>
+            ) : (
+               <span className="text-md-b2 font-semibold">
+                  <span className="text-md-primary-800">${effectiveLimit}</span>
+                  <span className="text-md-neutral-700"> / ${MAX_CREDIT_LIMIT}</span>
+               </span>
+            )}
          </div>
 
          <div className="w-full h-2 bg-md-neutral-300 rounded-full overflow-hidden">
-            <div
-               className="h-full bg-md-primary-900 rounded-full transition-all duration-500"
-               style={{ width: `${Math.max(progress * 100, 2)}%` }}
-            />
+            {!isLocked && (
+               <div
+                  className="h-full bg-md-primary-900 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(Math.max(progress * 100, 0), 100)}%` }}
+               />
+            )}
          </div>
       </>
    );

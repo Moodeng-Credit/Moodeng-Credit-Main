@@ -93,8 +93,11 @@ export default function AccountRestrictedPage() {
       return <Navigate to="/dashboard" replace />;
    }
 
+   if (isCheckingAuth || isCheckingDefaultedLoans) {
+      return <main className="min-h-screen bg-[#F7F4FB]" aria-label="Loading account support" />;
+   }
+
    const title = (() => {
-      if (isCheckingAuth || isCheckingDefaultedLoans) return 'Checking your account';
       if (isMissingSession) return 'Sign in to view account support';
       if (hasDefaultedCheckError) return 'We could not confirm your account status.';
       if (isDefaultedBorrower) return `Repay $${formatOverdueAmount(defaultedBorrower.support.overdueAmount)} to continue.`;
@@ -102,9 +105,6 @@ export default function AccountRestrictedPage() {
    })();
 
    const description = (() => {
-      if (isCheckingAuth || isCheckingDefaultedLoans) {
-         return 'We are checking your account details. If this takes more than a few seconds, message Moodeng Credit support.';
-      }
       if (isMissingSession) {
          return 'Your session is not active in this browser. Sign in again, or message Moodeng Credit support if you need help.';
       }
@@ -134,11 +134,6 @@ export default function AccountRestrictedPage() {
                <p className="mt-4 text-base font-medium leading-6 tracking-[-0.02em] text-[#5F536D]">
                   {description}
                </p>
-               {(isCheckingAuth || isCheckingDefaultedLoans) && (
-                  <p className="mt-3 text-sm font-medium leading-5 text-[#7B6D8A]">
-                     Checking repayment details...
-                  </p>
-               )}
             </div>
 
             <div className="mt-7 flex flex-col gap-3">
