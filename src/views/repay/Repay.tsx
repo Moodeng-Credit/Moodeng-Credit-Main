@@ -419,7 +419,7 @@ export default function Repay() {
                               aria-pressed={isQuickSelected}
                               className={`min-h-10 rounded-md-input border px-2 text-md-b2 font-semibold transition focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
                                  isQuickSelected
-                                    ? 'border-md-primary-400 bg-md-primary-1200 text-md-neutral-50 shadow-[0_8px_16px_rgba(96,16,210,0.18)]'
+                                    ? 'border-md-primary-1200 bg-md-primary-1200 text-md-neutral-50'
                                     : 'border-md-primary-100 bg-md-primary-100/45 text-md-primary-1200 hover:border-md-primary-400 hover:bg-md-primary-100'
                               }`}
                            >
