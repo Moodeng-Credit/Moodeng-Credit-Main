@@ -82,6 +82,8 @@ const getDueTimeUtcCopy = (loan: Loan): string => {
    return `${displayHours}:${minutes} ${ampm} UTC`;
 };
 
+const isLoanOverdue = (loan: Loan): boolean => parseDateSafely(loan.dueDate).getTime() <= Date.now();
+
 const getBorrowerInitial = (value?: string): string => {
    if (!value?.trim()) return 'M';
    return value.trim().charAt(0).toUpperCase();
@@ -321,19 +323,37 @@ export default function Repay() {
                      </div>
                   </div>
 
-                  <div className="mt-3 flex flex-col gap-3 rounded-md-input border border-md-neutral-300 bg-md-neutral-100 px-3 py-2.5 min-[390px]:flex-row min-[390px]:items-center min-[390px]:justify-between">
+                  <div
+                     className={`mt-3 flex items-center justify-between gap-3 rounded-md-input border px-3 py-3 ${
+                        isLoanOverdue(selectedLoan)
+                           ? 'border-[#f4d2d2] bg-[#fff7f7]'
+                           : 'border-md-neutral-300 bg-md-neutral-100'
+                     }`}
+                  >
                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md-pill bg-md-primary-100">
-                           <Clock3 className="h-4 w-4 text-md-primary-1100" aria-hidden="true" />
+                        <span
+                           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md-pill ${
+                              isLoanOverdue(selectedLoan) ? 'bg-[#ffe6e6]' : 'bg-md-primary-100'
+                           }`}
+                        >
+                           <Clock3
+                              className={`h-4 w-4 ${isLoanOverdue(selectedLoan) ? 'text-md-red-600' : 'text-md-primary-1100'}`}
+                              aria-hidden="true"
+                           />
                         </span>
                         <div className="min-w-0">
-                           <p className="text-md-b3 text-md-neutral-1200">Due date</p>
-                           <p className="truncate text-md-b2 font-semibold text-md-heading">
-                              {getDueDateShortCopy(selectedLoan)} at {getDueTimeUtcCopy(selectedLoan)}
-                           </p>
+                           <p className="text-md-b3 font-medium text-md-neutral-1200">Due</p>
+                           <p className="truncate text-md-b2 font-semibold text-md-heading">{getDueDateShortCopy(selectedLoan)}</p>
+                           <p className="text-md-b3 text-md-neutral-1200">{getDueTimeUtcCopy(selectedLoan)}</p>
                         </div>
                      </div>
-                     <span className="self-start rounded-md-pill bg-md-primary-100 px-2.5 py-1 text-md-b3 font-semibold text-md-primary-1200 min-[390px]:shrink-0">
+                     <span
+                        className={`shrink-0 rounded-md-pill px-2.5 py-1 text-md-b3 font-semibold ${
+                           isLoanOverdue(selectedLoan)
+                              ? 'bg-[#ffe6e6] text-md-red-600'
+                              : 'bg-md-primary-100 text-md-primary-1200'
+                        }`}
+                     >
                         {getDueCountdownCopy(selectedLoan)}
                      </span>
                   </div>
