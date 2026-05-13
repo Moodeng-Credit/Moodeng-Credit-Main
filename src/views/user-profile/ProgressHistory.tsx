@@ -434,8 +434,9 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
       events.push({
          id: `${borrower.id}-trust-pattern`,
          type: 'trust_building_focused_pattern',
-         title: 'Trust-Building Focused Pattern',
-         description: 'Multiple smaller trust-building loans suggest reliability-building behavior.',
+         title: 'More Trust-Building Loans',
+         description:
+            'This borrower has more smaller trust-building loans than full-limit credit-building loans. These help show repayment history, but they do not raise credit level.',
          date: latestLoan.updatedAt || latestLoan.fundedAt || latestLoan.createdAt,
          badgeLabel: 'Insight',
          badgeTone: 'purple',
