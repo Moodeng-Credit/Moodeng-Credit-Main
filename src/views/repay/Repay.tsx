@@ -325,38 +325,41 @@ export default function Repay() {
                   </div>
 
                   <div
-                     className={`mt-3 flex items-center justify-between gap-3 rounded-md-input border px-3 py-3 ${
+                     className={`mt-3 flex items-center justify-between gap-3 rounded-md-input border px-3 py-3.5 ${
                         isLoanOverdue(selectedLoan)
                            ? 'border-[#f4d2d2] bg-[#fff7f7]'
                            : 'border-md-neutral-300 bg-md-neutral-100'
                      }`}
                   >
-                     <div className="flex min-w-0 items-center gap-2">
+                     <div className="flex min-w-0 items-center gap-3">
                         <span
-                           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md-pill ${
+                           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md-pill ${
                               isLoanOverdue(selectedLoan) ? 'bg-[#ffe6e6]' : 'bg-md-primary-100'
                            }`}
                         >
                            <Clock3
-                              className={`h-4 w-4 ${isLoanOverdue(selectedLoan) ? 'text-md-red-600' : 'text-md-primary-1100'}`}
+                              className={`h-5 w-5 ${isLoanOverdue(selectedLoan) ? 'text-md-red-600' : 'text-md-primary-1100'}`}
                               aria-hidden="true"
                            />
                         </span>
                         <div className="min-w-0">
-                           <p className="text-md-b3 font-medium text-md-neutral-1200">Due</p>
-                           <p className="truncate text-md-b2 font-semibold text-md-heading">{getDueDateShortCopy(selectedLoan)}</p>
-                           <p className="text-md-b3 text-md-neutral-1200">{getDueTimeUtcCopy(selectedLoan)}</p>
+                           <p className="text-md-b3 font-medium text-md-neutral-1200">
+                              {isLoanOverdue(selectedLoan) ? 'Past due' : 'Time left'}
+                           </p>
+                           <p
+                              className={`truncate text-[20px] font-[680] leading-6 ${
+                                 isLoanOverdue(selectedLoan) ? 'text-md-red-600' : 'text-md-primary-1200'
+                              }`}
+                           >
+                              {getDueCountdownCopy(selectedLoan)}
+                           </p>
                         </div>
                      </div>
-                     <span
-                        className={`shrink-0 rounded-md-pill px-2.5 py-1 text-md-b3 font-semibold ${
-                           isLoanOverdue(selectedLoan)
-                              ? 'bg-[#ffe6e6] text-md-red-600'
-                              : 'bg-md-primary-100 text-md-primary-1200'
-                        }`}
-                     >
-                        {getDueCountdownCopy(selectedLoan)}
-                     </span>
+                     <div className="shrink-0 text-right">
+                        <p className="text-md-b3 font-medium text-md-neutral-1200">Due date</p>
+                        <p className="text-md-b2 font-semibold text-md-heading">{getDueDateShortCopy(selectedLoan)}</p>
+                        <p className="text-md-b3 text-md-neutral-1200">{getDueTimeUtcCopy(selectedLoan)}</p>
+                     </div>
                   </div>
 
                   <div className={`mt-4 grid gap-2 ${hasExistingRepayment ? 'grid-cols-2' : 'grid-cols-1'}`}>
