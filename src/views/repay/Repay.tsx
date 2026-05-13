@@ -327,6 +327,12 @@ export default function Repay() {
                         <p className="text-md-b3 font-semibold uppercase text-md-neutral-1200">You’re paying</p>
                         <h2 className="mt-1 truncate text-md-h5 text-md-heading">{selectedLoan.reason || 'Active loan'}</h2>
                      </div>
+                     {!hasExistingRepayment ? (
+                        <div className="shrink-0 text-right">
+                           <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
+                           <p className="text-[24px] font-[720] leading-none text-md-heading">${formatCurrency(selectedRemaining)}</p>
+                        </div>
+                     ) : null}
                   </div>
 
                   <div
@@ -369,22 +375,22 @@ export default function Repay() {
                      </div>
                   </div>
 
-                  <div className={`mt-4 grid gap-2 ${hasExistingRepayment ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                     <div className="rounded-md-input bg-md-neutral-100 p-3">
-                        <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
-                        <p className="mt-1 text-[32px] font-[720] leading-none text-md-heading">${formatCurrency(selectedRemaining)}</p>
-                     </div>
-                     {hasExistingRepayment ? (
+                  {hasExistingRepayment ? (
+                     <div className="mt-4 grid grid-cols-2 gap-2">
+                        <div className="rounded-md-input bg-md-neutral-100 p-3">
+                           <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
+                           <p className="mt-1 text-[32px] font-[720] leading-none text-md-heading">${formatCurrency(selectedRemaining)}</p>
+                        </div>
                         <div className="rounded-md-input bg-md-neutral-100 p-3 text-right">
                            <p className="text-md-b3 text-md-neutral-1200">Paid so far</p>
                            <p className="mt-1 text-[24px] font-[680] leading-none text-md-primary-1200">
                               ${formatNumber(selectedLoan.repaidAmount)}
                            </p>
                         </div>
-                     ) : null}
-                  </div>
+                     </div>
+                  ) : null}
 
-                  <div className="mt-4">
+                  <div className={hasExistingRepayment ? 'mt-4' : 'mt-3'}>
                      <label htmlFor="repayment-amount" className="text-sm font-semibold text-md-heading">
                         Amount to pay now
                      </label>
@@ -446,9 +452,11 @@ export default function Repay() {
                                  : 'Enter an amount to preview what changes.'}
                            </p>
                         </div>
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-md-pill bg-md-green-100 px-2.5 py-1 text-md-b3 font-semibold text-md-green-900">
-                           <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />+{estimatedTrustPoints} Trust Points
-                        </span>
+                        {validPreviewPayment > 0 ? (
+                           <span className="inline-flex shrink-0 items-center gap-1 rounded-md-pill bg-md-green-100 px-2.5 py-1 text-md-b3 font-semibold text-md-green-900">
+                              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />+{estimatedTrustPoints} Trust Points
+                           </span>
+                        ) : null}
                      </div>
                      <div className="relative mt-3 h-2.5 overflow-hidden rounded-md-pill bg-[#e3dde9]">
                         <div
