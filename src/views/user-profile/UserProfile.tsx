@@ -3,8 +3,8 @@ import type { PointerEvent, ReactNode } from 'react';
 
 import {
    AlertCircle,
-   BarChart3,
    Award,
+   BarChart3,
    CalendarDays,
    Check,
    ChevronLeft,
@@ -42,6 +42,7 @@ import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type User, WorldId } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
+
 import { DEMO_BORROWER_INSIGHTS_LOANS, DEMO_BORROWER_INSIGHTS_USER, DEMO_LENDER_PROFILES } from './demoBorrowerInsights';
 
 const DIVERSITY_STYLES: Record<string, { border: string; text: string; bg: string }> = {
@@ -235,9 +236,9 @@ const UserProfile = () => {
    const loanMixLabel = !hasLoanHistory
       ? 'No loan mix yet'
       : trustBuildingCount > creditBuildingCount
-        ? 'Trust-Building Focused'
+        ? 'More Trust-Building Loans'
         : creditBuildingCount > trustBuildingCount
-          ? 'Credit-Building Focused'
+          ? 'More Credit-Building Loans'
           : 'Balanced Loan Mix';
    const lenderInsightsTourSteps = [
       {
@@ -738,7 +739,7 @@ const UserProfile = () => {
                                     </div>
                                     {isEarlyLenderDiversityScore ? (
                                        <p className="mb-3 text-[13px] leading-5 text-[#6b7280]">
-                                          Limited history: this score is blended toward 50 until more loans build up.
+                                          Early estimate: needs 8 funded loans before the score is fully weighted.
                                        </p>
                                     ) : null}
                                     <button
@@ -1342,9 +1343,7 @@ const CreditLevelBottomSheet = ({ isOpen, onClose }: { isOpen: boolean; onClose:
                      <span className="flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-full bg-[#ede9fe] text-md-primary-900">
                         <Award className="h-8 w-8" strokeWidth={2.2} />
                      </span>
-                     <h3 className="text-[26px] font-bold leading-tight tracking-[-0.01em] text-[#1f2937]">
-                        How Credit Level Works
-                     </h3>
+                     <h3 className="text-[26px] font-bold leading-tight tracking-[-0.01em] text-[#1f2937]">How Credit Level Works</h3>
                   </div>
                   <button
                      type="button"
@@ -1637,7 +1636,7 @@ const LoanMixBottomSheet = ({
                      <p className="mt-2 text-[15px] leading-6 text-[#4b5563]">
                         {trustBuildingCount + creditBuildingCount === 0
                            ? 'This borrower does not have enough loan history for a loan mix yet.'
-                           : `This borrower has ${trustBuildingCount} trust-building ${trustBuildingCount === 1 ? 'loan' : 'loans'} and ${creditBuildingCount} credit-building ${creditBuildingCount === 1 ? 'loan' : 'loans'}.`}
+                           : `This borrower has ${trustBuildingCount} smaller trust-building ${trustBuildingCount === 1 ? 'loan' : 'loans'} and ${creditBuildingCount} full-limit credit-building ${creditBuildingCount === 1 ? 'loan' : 'loans'}.`}
                      </p>
                   </div>
                   <button
@@ -1659,8 +1658,8 @@ const LoanMixBottomSheet = ({
                <div className="mt-5 rounded-[18px] bg-[#f9fafb] p-4">
                   <p className="mb-2 text-[14px] font-bold text-[#8b5cf6]">Why lenders care</p>
                   <p className="text-[14px] leading-6 text-[#6b7280]">
-                     Loan mix shows whether this borrower is mostly proving reliability with smaller loans, or actively growing their borrowing
-                     limit with full-limit repayments.
+                     Loan mix shows whether this borrower is mostly building repayment history with smaller loans, or raising their credit
+                     level with full-limit repayments.
                   </p>
                </div>
 
@@ -1669,15 +1668,15 @@ const LoanMixBottomSheet = ({
                      icon={<ShieldCheck className="h-4 w-4 text-[#3b82f6]" strokeWidth={2.5} />}
                      iconClassName="bg-[#eff6ff]"
                      title="Trust Building"
-                     label="Relationship signal"
-                     description="Smaller repeat loans under the current limit. They help show the borrower can repay consistently."
+                     label="Repayment-history signal"
+                     description="Smaller loans below the current limit. They help show the borrower can repay, but they do not raise credit level."
                      example="Example: $8 or $10 when the borrower can already request $20."
                   />
                   <LoanMixType
                      icon={<TrendingUp className="h-4 w-4 text-[#10b981]" strokeWidth={2.5} />}
                      iconClassName="bg-[#f0fdf4]"
                      title="Credit Building"
-                     label="Limit-growth signal"
+                     label="Credit-level signal"
                      description="A full-limit loan. If it is repaid successfully, it can unlock the borrower’s next credit level."
                      example="Example: borrowing the full $20 limit to unlock the $40 level."
                   />
@@ -1688,7 +1687,7 @@ const LoanMixBottomSheet = ({
                      <Sparkles className="h-5 w-5 text-[#8b5cf6]" strokeWidth={2.2} />
                   </span>
                   <p className="text-[13px] leading-5 text-[#6b7280]">
-                     A healthy borrower can have both: trust loans for repayment history, credit loans for higher future limits.
+                     A healthy borrower can have both: smaller loans for repayment history and full-limit loans for higher future limits.
                   </p>
                </div>
             </div>

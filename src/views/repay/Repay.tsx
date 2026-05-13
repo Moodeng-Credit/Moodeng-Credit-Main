@@ -82,6 +82,13 @@ const getDueTimeUtcCopy = (loan: Loan): string => {
    return `${displayHours}:${minutes} ${ampm} UTC`;
 };
 
+const isLoanOverdue = (loan: Loan): boolean => parseDateSafely(loan.dueDate).getTime() <= Date.now();
+
+const isLoanDueSoon = (loan: Loan): boolean => {
+   const totalHours = (parseDateSafely(loan.dueDate).getTime() - Date.now()) / (1000 * 60 * 60);
+   return totalHours > 0 && totalHours < 24;
+};
+
 const getBorrowerInitial = (value?: string): string => {
    if (!value?.trim()) return 'M';
    return value.trim().charAt(0).toUpperCase();
@@ -135,6 +142,7 @@ export default function Repay() {
    const parsedRepaymentAmount = toNumber(repaymentAmount);
    const validPreviewPayment = selectedLoan && parsedRepaymentAmount > 0 ? Math.min(parsedRepaymentAmount, selectedRemaining) : 0;
    const currentProgressPercent = selectedLoan ? getProgressPercent(selectedLoan) : 0;
+   const hasExistingRepayment = selectedLoan ? toNumber(selectedLoan.repaidAmount) > 0 : false;
    const previewProgressPercent = selectedLoan ? getPreviewProgressPercent(selectedLoan, validPreviewPayment) : 0;
    const repaymentSharePercent = selectedRemaining > 0 ? Math.min(100, Math.round((validPreviewPayment / selectedRemaining) * 100)) : 0;
    const remainingAfterPayment = Math.max(0, selectedRemaining - validPreviewPayment);
@@ -319,39 +327,70 @@ export default function Repay() {
                         <p className="text-md-b3 font-semibold uppercase text-md-neutral-1200">You’re paying</p>
                         <h2 className="mt-1 truncate text-md-h5 text-md-heading">{selectedLoan.reason || 'Active loan'}</h2>
                      </div>
+                     {!hasExistingRepayment ? (
+                        <div className="shrink-0 text-right">
+                           <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
+                           <p className="text-[24px] font-[720] leading-none text-md-heading">${formatCurrency(selectedRemaining)}</p>
+                        </div>
+                     ) : null}
                   </div>
 
-                  <div className="mt-3 flex flex-col gap-3 rounded-md-input border border-md-neutral-300 bg-md-neutral-100 px-3 py-2.5 min-[390px]:flex-row min-[390px]:items-center min-[390px]:justify-between">
-                     <div className="flex min-w-0 items-center gap-2">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md-pill bg-md-primary-100">
-                           <Clock3 className="h-4 w-4 text-md-primary-1100" aria-hidden="true" />
+                  <div
+                     className={`mt-3 flex items-center justify-between gap-3 rounded-md-input border px-3 py-3.5 ${
+                        isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan)
+                           ? 'border-[#f4d2d2] bg-[#fff7f7]'
+                           : 'border-md-neutral-300 bg-md-neutral-100'
+                     }`}
+                  >
+                     <div className="flex min-w-0 items-center gap-3">
+                        <span
+                           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md-pill ${
+                              isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan) ? 'bg-[#ffe6e6]' : 'bg-md-primary-100'
+                           }`}
+                        >
+                           <Clock3
+                              className={`h-5 w-5 ${
+                                 isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan) ? 'text-md-red-600' : 'text-md-primary-1100'
+                              }`}
+                              aria-hidden="true"
+                           />
                         </span>
                         <div className="min-w-0">
-                           <p className="text-md-b3 text-md-neutral-1200">Due date</p>
-                           <p className="truncate text-md-b2 font-semibold text-md-heading">
-                              {getDueDateShortCopy(selectedLoan)} at {getDueTimeUtcCopy(selectedLoan)}
+                           <p className="text-md-b3 font-medium text-md-neutral-1200">
+                              {isLoanOverdue(selectedLoan) ? 'Past due' : 'Time left'}
+                           </p>
+                           <p
+                              className={`truncate text-[20px] font-[680] leading-6 ${
+                                 isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan) ? 'text-md-red-600' : 'text-md-primary-1200'
+                              }`}
+                           >
+                              {getDueCountdownCopy(selectedLoan)}
                            </p>
                         </div>
                      </div>
-                     <span className="self-start rounded-md-pill bg-md-primary-100 px-2.5 py-1 text-md-b3 font-semibold text-md-primary-1200 min-[390px]:shrink-0">
-                        {getDueCountdownCopy(selectedLoan)}
-                     </span>
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-                     <div className="rounded-md-input bg-md-neutral-100 p-3">
-                        <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
-                        <p className="mt-1 text-[32px] font-[720] leading-none text-md-heading">${formatCurrency(selectedRemaining)}</p>
-                     </div>
-                     <div className="rounded-md-input bg-md-neutral-100 p-3 text-right">
-                        <p className="text-md-b3 text-md-neutral-1200">Paid so far</p>
-                        <p className="mt-1 text-[24px] font-[680] leading-none text-md-primary-1200">
-                           ${formatNumber(selectedLoan.repaidAmount)}
-                        </p>
+                     <div className="shrink-0 text-right">
+                        <p className="text-md-b3 font-medium text-md-neutral-1200">Due date</p>
+                        <p className="text-md-b2 font-semibold text-md-heading">{getDueDateShortCopy(selectedLoan)}</p>
+                        <p className="text-md-b3 text-md-neutral-1200">{getDueTimeUtcCopy(selectedLoan)}</p>
                      </div>
                   </div>
 
-                  <div className="mt-4">
+                  {hasExistingRepayment ? (
+                     <div className="mt-4 grid grid-cols-2 gap-2">
+                        <div className="rounded-md-input bg-md-neutral-100 p-3">
+                           <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
+                           <p className="mt-1 text-[32px] font-[720] leading-none text-md-heading">${formatCurrency(selectedRemaining)}</p>
+                        </div>
+                        <div className="rounded-md-input bg-md-neutral-100 p-3 text-right">
+                           <p className="text-md-b3 text-md-neutral-1200">Paid so far</p>
+                           <p className="mt-1 text-[24px] font-[680] leading-none text-md-primary-1200">
+                              ${formatNumber(selectedLoan.repaidAmount)}
+                           </p>
+                        </div>
+                     </div>
+                  ) : null}
+
+                  <div className={hasExistingRepayment ? 'mt-4' : 'mt-3'}>
                      <label htmlFor="repayment-amount" className="text-sm font-semibold text-md-heading">
                         Amount to pay now
                      </label>
@@ -393,7 +432,7 @@ export default function Repay() {
                               aria-pressed={isQuickSelected}
                               className={`min-h-10 rounded-md-input border px-2 text-md-b2 font-semibold transition focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
                                  isQuickSelected
-                                    ? 'border-md-primary-400 bg-md-primary-1200 text-md-neutral-50 shadow-[0_8px_16px_rgba(96,16,210,0.18)]'
+                                    ? 'border-md-primary-1200 bg-md-primary-1200 text-md-neutral-50'
                                     : 'border-md-primary-100 bg-md-primary-100/45 text-md-primary-1200 hover:border-md-primary-400 hover:bg-md-primary-100'
                               }`}
                            >
@@ -413,9 +452,11 @@ export default function Repay() {
                                  : 'Enter an amount to preview what changes.'}
                            </p>
                         </div>
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-md-pill bg-md-green-100 px-2.5 py-1 text-md-b3 font-semibold text-md-green-900">
-                           <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />+{estimatedTrustPoints} Trust Points
-                        </span>
+                        {validPreviewPayment > 0 ? (
+                           <span className="inline-flex shrink-0 items-center gap-1 rounded-md-pill bg-md-green-100 px-2.5 py-1 text-md-b3 font-semibold text-md-green-900">
+                              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />+{estimatedTrustPoints} Trust Points
+                           </span>
+                        ) : null}
                      </div>
                      <div className="relative mt-3 h-2.5 overflow-hidden rounded-md-pill bg-[#e3dde9]">
                         <div
@@ -432,26 +473,30 @@ export default function Repay() {
                            />
                         ) : null}
                      </div>
-                     <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-md-b3 text-md-neutral-1200">
-                        <div className="flex flex-wrap items-center gap-2">
-                           <span className="inline-flex items-center gap-1">
-                              <span className="h-2.5 w-2.5 rounded-md-pill bg-md-primary-1100" aria-hidden="true" />
-                              {currentProgressPercent}% already paid
-                           </span>
+                     {hasExistingRepayment || validPreviewPayment > 0 ? (
+                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-md-b3 text-md-neutral-1200">
+                           <div className="flex flex-wrap items-center gap-2">
+                              {hasExistingRepayment ? (
+                                 <span className="inline-flex items-center gap-1">
+                                    <span className="h-2.5 w-2.5 rounded-md-pill bg-md-primary-1100" aria-hidden="true" />
+                                    {currentProgressPercent}% already paid
+                                 </span>
+                              ) : null}
+                              {validPreviewPayment > 0 ? (
+                                 <span className="inline-flex items-center gap-1">
+                                    <span className="h-2.5 w-2.5 rounded-md-pill bg-md-primary-400" aria-hidden="true" />
+                                    today
+                                 </span>
+                              ) : null}
+                           </div>
                            {validPreviewPayment > 0 ? (
-                              <span className="inline-flex items-center gap-1">
-                                 <span className="h-2.5 w-2.5 rounded-md-pill bg-md-primary-400" aria-hidden="true" />
-                                 today
+                              <span className="inline-flex items-center gap-1 font-semibold text-md-heading">
+                                 <span className="h-2.5 w-2.5 rounded-md-pill bg-[#d8d0df]" aria-hidden="true" />
+                                 {`$${formatCurrency(remainingAfterPayment)} left after payment`}
                               </span>
                            ) : null}
                         </div>
-                        <span className="inline-flex items-center gap-1 font-semibold text-md-heading">
-                           <span className="h-2.5 w-2.5 rounded-md-pill bg-[#d8d0df]" aria-hidden="true" />
-                           {validPreviewPayment > 0
-                              ? `$${formatCurrency(remainingAfterPayment)} left after payment`
-                              : 'Preview after payment'}
-                        </span>
-                     </div>
+                     ) : null}
                   </div>
 
                   <button

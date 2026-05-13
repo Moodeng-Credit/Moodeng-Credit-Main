@@ -346,7 +346,7 @@ export default function LenderDiversityHistory() {
                               </span>
                               {isEarlyLenderDiversityScore ? (
                                  <p className="mb-3 max-w-[210px] text-[13px] leading-5 text-md-neutral-1400">
-                                    Limited history: this score is blended toward 50 until more loans build up.
+                                    Early estimate: needs 8 funded loans before the score is fully weighted.
                                  </p>
                               ) : null}
                            </>
