@@ -137,6 +137,7 @@ export default function Repay() {
    const parsedRepaymentAmount = toNumber(repaymentAmount);
    const validPreviewPayment = selectedLoan && parsedRepaymentAmount > 0 ? Math.min(parsedRepaymentAmount, selectedRemaining) : 0;
    const currentProgressPercent = selectedLoan ? getProgressPercent(selectedLoan) : 0;
+   const hasExistingRepayment = selectedLoan ? toNumber(selectedLoan.repaidAmount) > 0 : false;
    const previewProgressPercent = selectedLoan ? getPreviewProgressPercent(selectedLoan, validPreviewPayment) : 0;
    const repaymentSharePercent = selectedRemaining > 0 ? Math.min(100, Math.round((validPreviewPayment / selectedRemaining) * 100)) : 0;
    const remainingAfterPayment = Math.max(0, selectedRemaining - validPreviewPayment);
@@ -358,17 +359,19 @@ export default function Repay() {
                      </span>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className={`mt-4 grid gap-2 ${hasExistingRepayment ? 'grid-cols-2' : 'grid-cols-1'}`}>
                      <div className="rounded-md-input bg-md-neutral-100 p-3">
                         <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
                         <p className="mt-1 text-[32px] font-[720] leading-none text-md-heading">${formatCurrency(selectedRemaining)}</p>
                      </div>
-                     <div className="rounded-md-input bg-md-neutral-100 p-3 text-right">
-                        <p className="text-md-b3 text-md-neutral-1200">Paid so far</p>
-                        <p className="mt-1 text-[24px] font-[680] leading-none text-md-primary-1200">
-                           ${formatNumber(selectedLoan.repaidAmount)}
-                        </p>
-                     </div>
+                     {hasExistingRepayment ? (
+                        <div className="rounded-md-input bg-md-neutral-100 p-3 text-right">
+                           <p className="text-md-b3 text-md-neutral-1200">Paid so far</p>
+                           <p className="mt-1 text-[24px] font-[680] leading-none text-md-primary-1200">
+                              ${formatNumber(selectedLoan.repaidAmount)}
+                           </p>
+                        </div>
+                     ) : null}
                   </div>
 
                   <div className="mt-4">
@@ -452,26 +455,30 @@ export default function Repay() {
                            />
                         ) : null}
                      </div>
-                     <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-md-b3 text-md-neutral-1200">
-                        <div className="flex flex-wrap items-center gap-2">
-                           <span className="inline-flex items-center gap-1">
-                              <span className="h-2.5 w-2.5 rounded-md-pill bg-md-primary-1100" aria-hidden="true" />
-                              {currentProgressPercent}% already paid
-                           </span>
+                     {hasExistingRepayment || validPreviewPayment > 0 ? (
+                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-md-b3 text-md-neutral-1200">
+                           <div className="flex flex-wrap items-center gap-2">
+                              {hasExistingRepayment ? (
+                                 <span className="inline-flex items-center gap-1">
+                                    <span className="h-2.5 w-2.5 rounded-md-pill bg-md-primary-1100" aria-hidden="true" />
+                                    {currentProgressPercent}% already paid
+                                 </span>
+                              ) : null}
+                              {validPreviewPayment > 0 ? (
+                                 <span className="inline-flex items-center gap-1">
+                                    <span className="h-2.5 w-2.5 rounded-md-pill bg-md-primary-400" aria-hidden="true" />
+                                    today
+                                 </span>
+                              ) : null}
+                           </div>
                            {validPreviewPayment > 0 ? (
-                              <span className="inline-flex items-center gap-1">
-                                 <span className="h-2.5 w-2.5 rounded-md-pill bg-md-primary-400" aria-hidden="true" />
-                                 today
+                              <span className="inline-flex items-center gap-1 font-semibold text-md-heading">
+                                 <span className="h-2.5 w-2.5 rounded-md-pill bg-[#d8d0df]" aria-hidden="true" />
+                                 {`$${formatCurrency(remainingAfterPayment)} left after payment`}
                               </span>
                            ) : null}
                         </div>
-                        <span className="inline-flex items-center gap-1 font-semibold text-md-heading">
-                           <span className="h-2.5 w-2.5 rounded-md-pill bg-[#d8d0df]" aria-hidden="true" />
-                           {validPreviewPayment > 0
-                              ? `$${formatCurrency(remainingAfterPayment)} left after payment`
-                              : 'Preview after payment'}
-                        </span>
-                     </div>
+                     ) : null}
                   </div>
 
                   <button
