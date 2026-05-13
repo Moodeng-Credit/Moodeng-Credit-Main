@@ -84,6 +84,11 @@ const getDueTimeUtcCopy = (loan: Loan): string => {
 
 const isLoanOverdue = (loan: Loan): boolean => parseDateSafely(loan.dueDate).getTime() <= Date.now();
 
+const isLoanDueSoon = (loan: Loan): boolean => {
+   const totalHours = (parseDateSafely(loan.dueDate).getTime() - Date.now()) / (1000 * 60 * 60);
+   return totalHours > 0 && totalHours < 24;
+};
+
 const getBorrowerInitial = (value?: string): string => {
    if (!value?.trim()) return 'M';
    return value.trim().charAt(0).toUpperCase();
@@ -326,7 +331,7 @@ export default function Repay() {
 
                   <div
                      className={`mt-3 flex items-center justify-between gap-3 rounded-md-input border px-3 py-3.5 ${
-                        isLoanOverdue(selectedLoan)
+                        isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan)
                            ? 'border-[#f4d2d2] bg-[#fff7f7]'
                            : 'border-md-neutral-300 bg-md-neutral-100'
                      }`}
@@ -334,11 +339,13 @@ export default function Repay() {
                      <div className="flex min-w-0 items-center gap-3">
                         <span
                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md-pill ${
-                              isLoanOverdue(selectedLoan) ? 'bg-[#ffe6e6]' : 'bg-md-primary-100'
+                              isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan) ? 'bg-[#ffe6e6]' : 'bg-md-primary-100'
                            }`}
                         >
                            <Clock3
-                              className={`h-5 w-5 ${isLoanOverdue(selectedLoan) ? 'text-md-red-600' : 'text-md-primary-1100'}`}
+                              className={`h-5 w-5 ${
+                                 isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan) ? 'text-md-red-600' : 'text-md-primary-1100'
+                              }`}
                               aria-hidden="true"
                            />
                         </span>
@@ -348,7 +355,7 @@ export default function Repay() {
                            </p>
                            <p
                               className={`truncate text-[20px] font-[680] leading-6 ${
-                                 isLoanOverdue(selectedLoan) ? 'text-md-red-600' : 'text-md-primary-1200'
+                                 isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan) ? 'text-md-red-600' : 'text-md-primary-1200'
                               }`}
                            >
                               {getDueCountdownCopy(selectedLoan)}
