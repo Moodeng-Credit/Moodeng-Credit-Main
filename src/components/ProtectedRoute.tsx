@@ -24,5 +24,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       return <Navigate to="/sign-in" state={{ from: location }} replace />;
    }
 
+   if ((user.accountStatus === 'blocked' || user.accountStatus === 'banned') && location.pathname !== '/account-restricted') {
+      return <Navigate to="/account-restricted" replace />;
+   }
+
    return <>{children}</>;
 }

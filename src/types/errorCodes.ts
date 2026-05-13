@@ -31,6 +31,7 @@ export const ERROR_CODES = {
    LOAN_LIMIT_REACHED: 'LOAN_LIMIT_REACHED',
    LOAN_AMOUNT_EXCEEDS_LIMIT: 'LOAN_AMOUNT_EXCEEDS_LIMIT',
    LOAN_INVALID_AMOUNT: 'LOAN_INVALID_AMOUNT',
+   LOAN_REPAYMENT_TOO_LOW: 'LOAN_REPAYMENT_TOO_LOW',
    LOAN_UNAUTHORIZED: 'LOAN_UNAUTHORIZED',
    LOAN_SELF_LENDING_NOT_ALLOWED: 'LOAN_SELF_LENDING_NOT_ALLOWED',
 
@@ -92,6 +93,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
    [ERROR_CODES.LOAN_LIMIT_REACHED]: 'You have reached your maximum number of active loans.',
    [ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT]: 'The loan amount exceeds your credit score limit.',
    [ERROR_CODES.LOAN_INVALID_AMOUNT]: 'Please enter a valid loan amount greater than 0.',
+   [ERROR_CODES.LOAN_REPAYMENT_TOO_LOW]: 'Repayment amount must be at least $1 more than the borrowed amount.',
    [ERROR_CODES.LOAN_UNAUTHORIZED]: 'You are not authorized to perform this action on this loan.',
    [ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED]: 'You cannot lend to yourself. Please lend to other users.',
 

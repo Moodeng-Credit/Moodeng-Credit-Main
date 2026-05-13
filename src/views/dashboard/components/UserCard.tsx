@@ -21,8 +21,8 @@ import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
 
-export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenticated?: boolean }) {
-   const { isBorrower = true, isAuthenticated = true, ...loanData } = loan;
+export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenticated?: boolean; tourBorrowerUsername?: string }) {
+   const { isBorrower = true, isAuthenticated = true, tourBorrowerUsername, ...loanData } = loan;
    const borrowerUserId = loanData.borrowerUser || '';
 
    const dispatch = useDispatch<AppDispatch>();
@@ -38,7 +38,11 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenti
    const userId = useSelector((state: RootState) => state.auth.user.id);
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const borrowerProfile = borrowerUserId ? userProfiles[borrowerUserId] : undefined;
-   const borrowerUsername = borrowerProfile?.username ?? '';
+   const borrowerUsername = borrowerProfile?.username ?? tourBorrowerUsername ?? '';
+   const borrowerDetailsHref =
+      tourBorrowerUsername && import.meta.env.DEV
+         ? `/user/${borrowerUsername}?demo=rich&lenderTourPreview=1&tourPreview=1`
+         : `/user/${borrowerUsername}`;
    const borrowerDisplayName = borrowerUsername || 'Unknown user';
    const due = parseISO(loanData.dueDate);
 
@@ -166,7 +170,7 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenti
 
    return (
       <>
-         <div className="bg-white border border-[#f0f0f0] rounded-[24px] shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)] flex flex-col gap-4 p-md-4">
+         <div className="bg-white border border-[#f0f0f0] rounded-[24px] shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)] flex flex-col gap-4 p-md-4" data-tour-target="lender-request-card">
             {/* Top: Loan Info + Amount Card */}
             <div className="flex gap-4 items-center">
                {/* Left: Loan Details */}
@@ -177,7 +181,7 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenti
                         <span>by </span>
                         {borrowerUsername ? (
                            isAuthenticated ? (
-                              <Link to={`/user/${borrowerUsername}`} className="text-[#d0588b] underline">
+                              <Link to={borrowerDetailsHref} className="text-[#d0588b] underline">
                                  {borrowerDisplayName}
                               </Link>
                            ) : (
@@ -192,7 +196,7 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenti
                      </span>
                   </div>
                   {/* Network Badge */}
-                  <img src="/icons/base-wallet.png" alt="Base" className="w-6 h-6 rounded-[3.4px]" />
+                  <img src="/icons/base-wallet.svg" alt="Base" className="w-6 h-6 rounded-[3.4px]" />
                   {/* Due Date */}
                   <div className="flex items-center gap-1 text-md-b2 font-semibold">
                      <span className="text-[#585858]">Due On</span>
@@ -248,6 +252,7 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenti
                      onClick={handleLend}
                      disabled={isProcessing}
                      type="button"
+                     data-tour-target="lender-send-help-button"
                      className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                      {isProcessing ? 'Processing...' : 'Send Your Help'}
@@ -259,7 +264,8 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenti
                {isAuthenticated && (
                   borrowerUsername ? (
                      <Link
-                        to={`/user/${borrowerUsername}`}
+                        to={borrowerDetailsHref}
+                        data-tour-target="lender-borrower-details-link"
                         className="flex items-center justify-center gap-2 text-md-b2 font-semibold text-[#2154e8]"
                      >
                         View Borrower Details

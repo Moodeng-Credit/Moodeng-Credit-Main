@@ -16,19 +16,23 @@ import CongratulationsPage from '@/app/onboarding/congratulations/page';
 import BottomNav from '@/components/BottomNav';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
+import MarketingPageShell from '@/components/marketing/MarketingPageShell';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
 import { AdminGuard } from '@/components/AdminGuard';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { RoleGuard } from '@/components/RoleGuard';
+import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
+import AccountRestrictedPage from '@/app/account-restricted/page';
 import Benefits from '@/app/benefits/page';
 import Dashboard from '@/views/dashboard/Dashboard';
 import RequestBoard from '@/views/dashboard/RequestBoard';
 import FAQ from '@/app/faq/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
+import CreditLevelingGuidePage from '@/app/credit-leveling-guide/page';
 import Login from '@/app/login/page';
 // Import pages
 import Home from '@/app/page';
@@ -44,6 +48,8 @@ import SupportGuideDetailPage from '@/app/support/guides/[slug]/page';
 import SupportFAQPage from '@/app/support/faq/page';
 import SupportUpdatesPage from '@/app/support/updates/page';
 import SupportUpdateDetailPage from '@/app/support/updates/[slug]/page';
+import LenderDiversityPage from '@/app/lender-diversity/page';
+import MilestonesPage from '@/app/milestones/page';
 import UserLenderDiversityPage from '@/app/user/[username]/lender-diversity/page';
 import UserProfile from '@/app/user/[username]/page';
 import UserProgressHistoryPage from '@/app/user/[username]/progress-history/page';
@@ -72,10 +78,18 @@ const BOTTOM_NAV_ROUTES = ['/request-board', '/repay', '/dashboard', '/lender/da
 export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
-   const { user, username } = useSelector((state: RootState) => state.auth);
+   const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
+   const isAuthenticated = Boolean(user?.id && username);
+   const shouldCheckDefaultedBorrower = isAuthChecked && isAuthenticated;
+   const defaultedBorrower = useDefaultedBorrowerSupport(shouldCheckDefaultedBorrower ? user.id : null);
+   const isAccountRestricted = user?.accountStatus === 'blocked' || user?.accountStatus === 'banned';
+   const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
+   const canRepayWhileDefaulted = isDefaultedBorrower && location.pathname === '/repay';
+   const shouldShowAccountSupport = isAccountRestricted || isDefaultedBorrower;
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
    const showBottomNav =
       user?.id &&
+      !shouldShowAccountSupport &&
       user?.userRole &&
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
          (location.pathname.startsWith('/user/') && !isUserDetailRoute) ||
@@ -108,15 +122,24 @@ export default function App() {
       posthog.reset();
    }, [isPosthogEnabled, user?.email, user?.id, user?.username, username]);
 
+   if (isAccountRestricted && location.pathname !== '/account-restricted') {
+      return <Navigate to="/account-restricted" replace />;
+   }
+
+   if (shouldShowAccountSupport && !canRepayWhileDefaulted && location.pathname !== '/account-restricted') {
+      return <Navigate to="/account-restricted" replace />;
+   }
+
    return (
       <>
          <WalletLoadingOverlay />
          <Routes>
-            <Route path="/" element={<Layout><Home /></Layout>} />
+            <Route path="/" element={<Home />} />
 
             {/* Auth */}
             <Route path="/sign-in" element={<Login />} />
             <Route path="/sign-up" element={<SignUp />} />
+            <Route path="/account-restricted" element={<AccountRestrictedPage />} />
 
             {/* Onboarding */}
             <Route path="/onboarding/role" element={<ProtectedRoute><RoleSelection /></ProtectedRoute>} />
@@ -132,6 +155,8 @@ export default function App() {
             <Route path="/dashboard" element={<ProtectedRoute><RoleGuard><Dashboard /></RoleGuard></ProtectedRoute>} />
             <Route path="/request-board" element={<RequestBoard />} />
             <Route path="/repay" element={<ProtectedRoute><RoleGuard><Repay /></RoleGuard></ProtectedRoute>} />
+            <Route path="/milestones" element={<ProtectedRoute><RoleGuard><MilestonesPage /></RoleGuard></ProtectedRoute>} />
+            <Route path="/lender-diversity" element={<ProtectedRoute><RoleGuard><LenderDiversityPage /></RoleGuard></ProtectedRoute>} />
 
             {/* Lender */}
             <Route path="/lender/dashboard" element={<ProtectedRoute><RoleGuard><LenderDashboard /></RoleGuard></ProtectedRoute>} />
@@ -168,9 +193,10 @@ export default function App() {
 
             {/* Public */}
             <Route path="/faq" element={<Layout><FAQ /></Layout>} />
-            <Route path="/guide" element={<Layout><Guide /></Layout>} />
-            <Route path="/benefits" element={<Layout><Benefits /></Layout>} />
-            <Route path="/whylend" element={<Layout><WhyLend /></Layout>} />
+            <Route path="/guide" element={<MarketingPageShell><Guide /></MarketingPageShell>} />
+            <Route path="/credit-leveling-guide" element={<MarketingPageShell><CreditLevelingGuidePage /></MarketingPageShell>} />
+            <Route path="/benefits" element={<MarketingPageShell><Benefits /></MarketingPageShell>} />
+            <Route path="/whylend" element={<MarketingPageShell><WhyLend /></MarketingPageShell>} />
             <Route path="/simple" element={<Layout><Simple /></Layout>} />
             <Route path="/test" element={<Layout><Test /></Layout>} />
             <Route path="/user/:username/lender-diversity" element={<UserLenderDiversityPage />} />

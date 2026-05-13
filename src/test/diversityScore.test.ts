@@ -50,12 +50,34 @@ describe('calculateLenderDiversity', () => {
       vi.useRealTimers();
    });
 
+   it('marks lender diversity as not enough history with fewer than two funded loans', () => {
+      const empty = calculateLenderDiversity([], userProfiles);
+      const singleLoan = calculateLenderDiversity([makeLoan('loan-1', 'lender-a')], userProfiles);
+
+      expect(empty.hasEnoughHistory).toBe(false);
+      expect(empty.score).toBe(0);
+      expect(singleLoan.hasEnoughHistory).toBe(false);
+      expect(singleLoan.score).toBe(0);
+      expect(singleLoan.confidence).toBe(0);
+      expect(singleLoan.uniqueLenders).toBe(1);
+   });
+
+   it('blends early scores toward the middle until more history exists', () => {
+      const early = calculateLenderDiversity([makeLoan('loan-1', 'lender-a'), makeLoan('loan-2', 'lender-a')], userProfiles);
+
+      expect(early.hasEnoughHistory).toBe(true);
+      expect(early.confidence).toBe(0.35);
+      expect(early.score).not.toBe(early.rawScore);
+      expect(Math.abs(early.score - 50)).toBeLessThan(Math.abs(early.rawScore - 50));
+   });
+
    it('counts distinct lenders as unique lenders', () => {
       const result = calculateLenderDiversity(
          [makeLoan('loan-1', 'lender-a'), makeLoan('loan-2', 'lender-a'), makeLoan('loan-3', 'lender-b')],
          userProfiles
       );
 
+      expect(result.hasEnoughHistory).toBe(true);
       expect(result.uniqueLenders).toBe(2);
       expect(result.repeatLenders).toBe(1);
       expect(result.distribution).toEqual([
@@ -97,12 +119,17 @@ describe('calculateLenderDiversity', () => {
             makeLoan('loan-2', 'lender-b'),
             makeLoan('loan-3', 'lender-c'),
             makeLoan('loan-4', 'lender-d'),
-            makeLoan('loan-5', 'lender-e')
+            makeLoan('loan-5', 'lender-e'),
+            makeLoan('loan-6', 'lender-a'),
+            makeLoan('loan-7', 'lender-b'),
+            makeLoan('loan-8', 'lender-c')
          ],
          userProfiles
       );
 
-      expect(spread.score).toBeGreaterThanOrEqual(90);
+      expect(spread.confidence).toBe(1);
+      expect(spread.score).toBe(spread.rawScore);
+      expect(spread.hasEnoughHistory).toBe(true);
    });
 
    it('lowers points when lenders are brand new and coordinated', () => {

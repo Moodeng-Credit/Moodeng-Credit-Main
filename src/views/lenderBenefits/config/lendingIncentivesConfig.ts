@@ -3,6 +3,11 @@ export interface LendingIncentiveItem {
    title: string;
    titleHighlight?: string;
    description: string[];
+   imageNote?: string;
+   docsLink?: {
+      href: string;
+      label: string;
+   };
    image: {
       src: string;
       alt: string;
@@ -13,11 +18,11 @@ export interface LendingIncentiveItem {
 export const lendingIncentivesData: LendingIncentiveItem[] = [
    {
       id: 'flexible-investment',
-      title: 'Flexible Investment Strategy',
+      title: 'Back real requests with USDC',
       description: [
-         'Offer USDT or USDC interest rates of 15%+',
-         'Diversify across borrower groups and countries.',
-         'In the future, use predictions market and loan securitization for insurance coverage.'
+         'Every request is settled in USDC, so terms stay simple.',
+         'Borrowers set the repayment offer before posting.',
+         'You review the story, timeline, and return before choosing to help.'
       ],
       image: {
          src: 'https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/0bf4df8912f6f18fac9049e4662857220316dc65da028b1a2fdf9e0c000ba7e6?apiKey=054474a0b7744b6389c3319e0a9290c2',
@@ -34,6 +39,11 @@ export const lendingIncentivesData: LendingIncentiveItem[] = [
          'Lend to 2nd-time borrowers, get 20 IOU tokens, etc.',
          'Lend 5 times, be invited to the Moodeng Credit DAO.'
       ],
+      imageNote: 'These show as IOU points for now. When the airdrop happens, those points help determine token rewards.',
+      docsLink: {
+         href: 'https://moodeng-credit.gitbook.io/moodeng-credit/strategy/iou-tokenomics-and-utility',
+         label: 'Read IOU docs'
+      },
       image: {
          src: 'https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/670ee6d330b0fb68d0f19039d4d0ea038713f28b20b19e78c3f5f1bf1f087761?apiKey=e485b3dc4b924975b4554885e21242bb',
          alt: 'IOU Tokens'

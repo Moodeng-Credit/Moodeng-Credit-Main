@@ -72,6 +72,9 @@ export type Database = {
           repayment_status:
             | Database["public"]["Enums"]["repayment_status"]
             | null
+          referral_boost_amount: number | null
+          referral_code: string | null
+          referral_code_id: string | null
           total_repayment_amount: number
           tracking_id: string
           updated_at: string | null
@@ -94,6 +97,9 @@ export type Database = {
           repayment_status?:
             | Database["public"]["Enums"]["repayment_status"]
             | null
+          referral_boost_amount?: number | null
+          referral_code?: string | null
+          referral_code_id?: string | null
           total_repayment_amount: number
           tracking_id: string
           updated_at?: string | null
@@ -116,11 +122,21 @@ export type Database = {
           repayment_status?:
             | Database["public"]["Enums"]["repayment_status"]
             | null
+          referral_boost_amount?: number | null
+          referral_code?: string | null
+          referral_code_id?: string | null
           total_repayment_amount?: number
           tracking_id?: string
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "loans_referral_code_id_fkey"
+            columns: ["referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "referral_codes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "loans_borrower_user_id_fkey"
             columns: ["borrower_user_id"]
@@ -136,6 +152,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referral_codes: {
+        Row: {
+          boost_amount: number
+          code: string
+          created_at: string
+          current_uses: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          updated_at: string
+        }
+        Insert: {
+          boost_amount?: number
+          code: string
+          created_at?: string
+          current_uses?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          updated_at?: string
+        }
+        Update: {
+          boost_amount?: number
+          code?: string
+          created_at?: string
+          current_uses?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       point_events: {
         Row: {
@@ -207,6 +259,44 @@ export type Database = {
           },
         ]
       }
+      guided_tour_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          shown_count: number | null
+          tour_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          shown_count?: number | null
+          tour_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          shown_count?: number | null
+          tour_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guided_tour_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           chat_id: number | null
@@ -222,12 +312,18 @@ export type Database = {
           nullifier_hash: string | null
           reset_token: string | null
           reset_token_expiry: string | null
+          redeemed_referral_code_id: string | null
+          referral_boost_amount: number | null
           telegram_id: number | null
           telegram_username: string | null
           updated_at: string | null
           user_role: "borrower" | "lender" | null
           username: string
           wallet_address: string | null
+          wallet_chain_id: number | null
+          wallet_connected_at: string | null
+          wallet_connector_name: string | null
+          wallet_provider: string | null
         }
         Insert: {
           chat_id?: number | null
@@ -243,12 +339,18 @@ export type Database = {
           nullifier_hash?: string | null
           reset_token?: string | null
           reset_token_expiry?: string | null
+          redeemed_referral_code_id?: string | null
+          referral_boost_amount?: number | null
           telegram_id?: number | null
           telegram_username?: string | null
           updated_at?: string | null
           user_role?: "borrower" | "lender" | null
           username: string
           wallet_address?: string | null
+          wallet_chain_id?: number | null
+          wallet_connected_at?: string | null
+          wallet_connector_name?: string | null
+          wallet_provider?: string | null
         }
         Update: {
           chat_id?: number | null
@@ -264,14 +366,28 @@ export type Database = {
           nullifier_hash?: string | null
           reset_token?: string | null
           reset_token_expiry?: string | null
+          redeemed_referral_code_id?: string | null
+          referral_boost_amount?: number | null
           telegram_id?: number | null
           telegram_username?: string | null
           updated_at?: string | null
           user_role?: "borrower" | "lender" | null
           username?: string
           wallet_address?: string | null
+          wallet_chain_id?: number | null
+          wallet_connected_at?: string | null
+          wallet_connector_name?: string | null
+          wallet_provider?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "users_redeemed_referral_code_id_fkey"
+            columns: ["redeemed_referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "referral_codes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -296,6 +412,17 @@ export type Database = {
       ensure_email_identity: {
         Args: { email_input: string; user_id_input: string }
         Returns: undefined
+      }
+      redeem_referral_code: {
+        Args: { code_input: string }
+        Returns: {
+          already_redeemed: boolean
+          boost_amount: number
+          code: string
+          id: string
+          new_limit: number
+          previous_limit: number
+        }[]
       }
     }
     Enums: {

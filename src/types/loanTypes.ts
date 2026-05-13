@@ -20,6 +20,9 @@ export interface Loan {
    createdAt: string;
    updatedAt: string;
    fundedAt?: string; // Timestamp when loan was funded (transitioned to 'Lent' status)
+   referralCodeId?: string;
+   referralCode?: string;
+   referralBoostAmount?: number;
 }
 
 export interface CreateLoanData {
@@ -30,6 +33,9 @@ export interface CreateLoanData {
    totalRepaymentAmount: number;
    reason: string;
    dueDate: string; // ISO 8601 datetime string in UTC
+   referralCodeId?: string;
+   referralCode?: string;
+   referralBoostAmount?: number;
 }
 
 export interface LoanState {

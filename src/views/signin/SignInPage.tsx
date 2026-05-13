@@ -11,10 +11,20 @@ import {
    SocialAuthButtons
 } from '@/components/auth';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
+import { fetchDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 import { Icons } from '@/views/login/components/Icons';
 import { loginUser, loginWithGoogle, loginWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import '@/views/signup/styles/signup.css';
+
+const getPostSignInPath = async (user: { id: string; accountStatus?: string }) => {
+   if (user.accountStatus === 'blocked' || user.accountStatus === 'banned') {
+      return '/account-restricted';
+   }
+
+   const defaultedBorrower = await fetchDefaultedBorrowerSupport(user.id);
+   return defaultedBorrower.overdueAmount > 0 ? '/account-restricted' : '/dashboard';
+};
 
 export default function SignInPage() {
    const navigate = useNavigate();
@@ -39,7 +49,8 @@ export default function SignInPage() {
       setIsLoading(true);
       try {
          const result = await dispatch(loginUser({ email, password, rememberMe })).unwrap();
-         navigate('/dashboard', { replace: true });
+         const nextPath = await getPostSignInPath(result.user);
+         navigate(nextPath, { replace: true });
       } catch (err) {
          const msg = err instanceof Error ? err.message : 'Authentication failed';
          const errObj = err as { status?: number };
@@ -88,7 +99,8 @@ export default function SignInPage() {
       setIsLoading(true);
       try {
          const result = await dispatch(loginWithGoogle({ googleCredential: credential })).unwrap();
-         navigate('/dashboard', { replace: true });
+         const nextPath = await getPostSignInPath(result.user);
+         navigate(nextPath, { replace: true });
       } catch {
          setErrorType('incorrect_credentials');
          setShowAccount(true);
@@ -103,7 +115,8 @@ export default function SignInPage() {
          const result = await dispatch(
             loginWithTelegram({ telegramAuthData: JSON.stringify(authData) })
          ).unwrap();
-         navigate('/dashboard', { replace: true });
+         const nextPath = await getPostSignInPath(result.user);
+         navigate(nextPath, { replace: true });
       } catch {
          setErrorType('incorrect_credentials');
          setShowAccount(true);

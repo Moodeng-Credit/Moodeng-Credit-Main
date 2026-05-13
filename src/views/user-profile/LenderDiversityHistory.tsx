@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { ChevronLeft, HelpCircle, Users } from 'lucide-react';
+import { ChevronLeft, HelpCircle, Moon, Sun, Users } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
@@ -21,6 +21,7 @@ import type { Loan } from '@/types/loanTypes';
 import { DEMO_BORROWER_INSIGHTS_LOANS, DEMO_BORROWER_INSIGHTS_USER, DEMO_LENDER_PROFILES } from './demoBorrowerInsights';
 
 const CHART_COLORS = ['#5b21b6', '#7c3aed', '#3b82f6', '#60a5fa', '#c4b5fd', '#a78bfa', '#93c5fd'];
+const BORROWER_INSIGHTS_THEME_KEY = 'borrower-insights-theme';
 
 type LenderDistributionDatum = {
    id: string;
@@ -108,6 +109,10 @@ export default function LenderDiversityHistory() {
    const [profileUser, setProfileUser] = useState<User | null>(null);
    const [activeIndex, setActiveIndex] = useState<number | null>(null);
    const [walletData, setWalletData] = useState<Record<string, WalletLivenessData>>({});
+   const [isDarkMode, setIsDarkMode] = useState(() => {
+      if (typeof window === 'undefined') return false;
+      return window.localStorage.getItem(BORROWER_INSIGHTS_THEME_KEY) === 'dark';
+   });
    const isDemoInsights = searchParams.get('demo') === 'rich';
 
    const user = useSelector((state: RootState) => state.auth.user);
@@ -120,6 +125,10 @@ export default function LenderDiversityHistory() {
    useEffect(() => {
       window.scrollTo(0, 0);
    }, []);
+
+   useEffect(() => {
+      window.localStorage.setItem(BORROWER_INSIGHTS_THEME_KEY, isDarkMode ? 'dark' : 'light');
+   }, [isDarkMode]);
 
    useEffect(() => {
       if (!username || isDemoInsights) return;
@@ -203,12 +212,85 @@ export default function LenderDiversityHistory() {
    const distribution = useMemo(() => buildLenderDistribution(fundedLoans, userProfiles), [fundedLoans, userProfiles]);
    const diversityStatus = getDiversityStatus(lenderDiversity.score);
    const borrowerName = borrower?.displayName || borrower?.username || username || 'Borrower';
-   const hasLenderHistory = fundedLoans.length > 0;
+   const hasEnoughLenderHistory = lenderDiversity.hasEnoughHistory;
+   const isEarlyLenderDiversityScore = hasEnoughLenderHistory && lenderDiversity.confidence < 1;
 
    if (!borrower) return <Loading />;
 
    return (
-      <div className="min-h-screen bg-[#f7f3ff]">
+      <div className={`lender-diversity-page min-h-screen bg-[#f7f3ff] transition-colors duration-200 ${isDarkMode ? 'lender-diversity-dark' : ''}`}>
+         <style>{`
+            .lender-diversity-dark {
+               background: #0f1117;
+               color: #eef2ff;
+            }
+
+            .lender-diversity-dark .bg-white {
+               background-color: #171a23 !important;
+            }
+
+            .lender-diversity-dark .bg-\\[\\#f7f3ff\\],
+            .lender-diversity-dark .bg-\\[\\#f5f3ff\\] {
+               background-color: #202532 !important;
+            }
+
+            .lender-diversity-dark .text-md-primary-2000,
+            .lender-diversity-dark .text-\\[\\#1f2937\\] {
+               color: #eef2ff !important;
+            }
+
+            .lender-diversity-dark .text-md-neutral-1400,
+            .lender-diversity-dark .text-md-neutral-1200,
+            .lender-diversity-dark .text-\\[\\#6b7280\\] {
+               color: #a8b0c3 !important;
+            }
+
+            .lender-diversity-dark .shadow-md-card,
+            .lender-diversity-dark .shadow-\\[0_12px_32px_rgba\\(48\\,24\\,92\\,0\\.08\\)\\] {
+               box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24) !important;
+            }
+
+            .lender-diversity-dark .lender-diversity-hero {
+               background: radial-gradient(circle at 82% 22%, rgba(139, 92, 246, 0.22), transparent 34%),
+                  linear-gradient(135deg, #171a23 0%, #1d2230 100%) !important;
+               border: 1px solid #3a2f58;
+            }
+
+            .lender-diversity-dark .lender-diversity-hero-glow {
+               background: linear-gradient(135deg, rgba(139, 92, 246, 0.24), rgba(59, 130, 246, 0.08)) !important;
+            }
+
+            .lender-diversity-dark .lender-chart-card {
+               background-color: #171a23 !important;
+               border: 1px solid #2d3546;
+            }
+
+            .lender-diversity-dark .divide-md-neutral-300 > :not([hidden]) ~ :not([hidden]) {
+               border-color: #2d3546 !important;
+            }
+
+            .lender-diversity-dark .recharts-label-list rect,
+            .lender-diversity-dark .recharts-layer rect {
+               fill: #202532 !important;
+            }
+
+            .lender-diversity-dark * {
+               scrollbar-color: #4a5265 #151922;
+            }
+
+            .lender-diversity-dark *::-webkit-scrollbar {
+               width: 8px;
+            }
+
+            .lender-diversity-dark *::-webkit-scrollbar-track {
+               background: #151922;
+            }
+
+            .lender-diversity-dark *::-webkit-scrollbar-thumb {
+               background: #4a5265;
+               border-radius: 999px;
+            }
+         `}</style>
          <div className="mx-auto min-h-screen max-w-[440px] pb-10">
             <div className="flex items-center justify-between px-4 py-4">
                <div className="flex items-center gap-2">
@@ -222,25 +304,36 @@ export default function LenderDiversityHistory() {
                   </button>
                   <h1 className="text-[18px] font-semibold text-md-primary-2000">Lender Diversity</h1>
                </div>
-               <button
-                  type="button"
-                  onClick={() => navigate('/support')}
-                  aria-label="Open help and support center"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#eadfff] text-md-primary-900 active:scale-95"
-               >
-                  <HelpCircle className="h-5 w-5" strokeWidth={2.2} />
-               </button>
+               <div className="flex items-center gap-2">
+                  <button
+                     type="button"
+                     onClick={() => setIsDarkMode((current) => !current)}
+                     aria-label={isDarkMode ? 'Switch lender diversity to light mode' : 'Switch lender diversity to dark mode'}
+                     aria-pressed={isDarkMode}
+                     className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-md-primary-900 shadow-md-card active:scale-95"
+                  >
+                     {isDarkMode ? <Sun className="h-4 w-4 text-[#facc15]" strokeWidth={2.2} /> : <Moon className="h-4 w-4" strokeWidth={2.2} />}
+                  </button>
+                  <button
+                     type="button"
+                     onClick={() => navigate('/support')}
+                     aria-label="Open help and support center"
+                     className="flex h-9 w-9 items-center justify-center rounded-full bg-[#eadfff] text-md-primary-900 active:scale-95"
+                  >
+                     <HelpCircle className="h-5 w-5" strokeWidth={2.2} />
+                  </button>
+               </div>
             </div>
 
             <section className="px-4 pb-4">
-               <div className="relative overflow-hidden rounded-[24px] bg-white p-5 shadow-[0_12px_32px_rgba(48,24,92,0.08)]">
-                  <div className="absolute bottom-0 right-0 h-[176px] w-[176px] rounded-tl-[90px] bg-gradient-to-br from-[#f5f3ff] via-[#ede9fe] to-[#f8f5ff]" />
+               <div className="lender-diversity-hero relative overflow-hidden rounded-[24px] bg-white p-5 shadow-[0_12px_32px_rgba(48,24,92,0.08)]">
+                  <div className="lender-diversity-hero-glow absolute bottom-0 right-0 h-[176px] w-[176px] rounded-tl-[90px] bg-gradient-to-br from-[#f5f3ff] via-[#ede9fe] to-[#f8f5ff]" />
                   <div className="absolute right-8 top-10 text-[24px] font-bold leading-none text-[#a78bfa]">✦</div>
                   <div className="absolute bottom-8 right-3 text-[18px] font-bold leading-none text-[#c4b5fd]">✦</div>
                   <div className="relative z-10 flex items-start justify-between gap-2">
                      <div className="min-w-0 flex-1 pt-1 pr-1">
                         <p className="mb-1.5 text-[13px] font-semibold text-md-neutral-1400">Lender Diversity Score</p>
-                        {hasLenderHistory ? (
+                        {hasEnoughLenderHistory ? (
                            <>
                               <div className="mb-3 flex items-end gap-2">
                                  <span className="text-[56px] font-bold leading-none text-md-primary-900">{lenderDiversity.score}</span>
@@ -249,17 +342,22 @@ export default function LenderDiversityHistory() {
                               <span
                                  className={`mb-3 inline-flex rounded-full border px-3 py-1.5 text-[12px] font-semibold ${getDiversityBadgeClassName(diversityStatus)}`}
                               >
-                                 {diversityStatus} Diversity
+                                 {isEarlyLenderDiversityScore ? 'Early Score' : `${diversityStatus} Diversity`}
                               </span>
+                              {isEarlyLenderDiversityScore ? (
+                                 <p className="mb-3 max-w-[210px] text-[13px] leading-5 text-md-neutral-1400">
+                                    Early estimate: needs 8 funded loans before the score is fully weighted.
+                                 </p>
+                              ) : null}
                            </>
                         ) : (
                            <>
-                              <p className="mb-3 mt-5 text-[28px] font-bold leading-tight text-md-primary-2000">No score yet</p>
+                              <p className="mb-3 mt-5 text-[28px] font-bold leading-tight text-md-primary-2000">Not enough history</p>
                               <span className="mb-3 inline-flex rounded-full border border-[#e3d4ff] bg-[#f5f3ff] px-3 py-1.5 text-[12px] font-semibold text-md-primary-900">
-                                 Not enough history yet
+                                 Need at least 2 funded loans
                               </span>
                               <p className="mb-3 max-w-[190px] text-[13px] leading-5 text-md-neutral-1400">
-                                 This becomes useful after the borrower receives funded loans.
+                                 A lender diversity score appears once there is enough borrower history to compare.
                               </p>
                            </>
                         )}
@@ -287,7 +385,7 @@ export default function LenderDiversityHistory() {
                   </p>
                </div>
 
-               <div className="rounded-[24px] bg-white px-4 pb-3 pt-4 shadow-[0_12px_32px_rgba(48,24,92,0.08)]">
+               <div className="lender-chart-card rounded-[24px] bg-white px-4 pb-3 pt-4 shadow-[0_12px_32px_rgba(48,24,92,0.08)]">
                   {distribution.length > 0 ? (
                      <>
                         <div className="lender-diversity-chart relative mb-3 flex h-[288px] items-center justify-center">
@@ -374,14 +472,14 @@ export default function LenderDiversityHistory() {
                                              style={{ boxShadow: isActive ? `0 0 0 2px ${lender.color}` : 'none' }}
                                           />
                                           <span
-                                             className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white"
+                                             className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 ${isDarkMode ? 'border-[#171a23]' : 'border-white'}`}
                                              style={{ backgroundColor: lender.color }}
                                           />
                                        </span>
                                        <span className="min-w-0">
                                           <span
                                              className="block truncate text-[14px] font-semibold"
-                                             style={{ color: isActive ? lender.color : '#1f2937' }}
+                                             style={{ color: isActive ? lender.color : isDarkMode ? '#eef2ff' : '#1f2937' }}
                                           >
                                              {lender.name}
                                           </span>

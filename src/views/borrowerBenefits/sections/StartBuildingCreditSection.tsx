@@ -1,113 +1,99 @@
 import { type JSX } from 'react';
 
+import { Link } from 'react-router-dom';
 
+const creditSteps = [
+   {
+      title: 'Request a small loan',
+      description: 'Choose an amount you can realistically repay. Loan terms are shown before you commit.'
+   },
+   {
+      title: 'Repay on schedule',
+      description: 'On-time repayments create a clear record tied to your wallet activity.'
+   },
+   {
+      title: 'Build portable trust',
+      description: 'Your repayment history can help future lenders understand your reliability.'
+   }
+];
 
-import ActionButton from '@/components/ui/ActionButton';
-
-import { heroSectionButtons } from '@/config/buttonConfig';
+const firstLoanVideoUrl = 'https://youtu.be/VoFcPS124HE';
+const firstLoanEmbedUrl = 'https://www.youtube.com/embed/VoFcPS124HE';
 
 export default function StartBuildingCreditSection(): JSX.Element {
-   const buttons = heroSectionButtons.slice(0, 2);
    return (
-      <div className="flex overflow-hidden flex-col items-center px-20 pb-16 mt-20 max-w-full w-[1440px] max-md:px-5 max-md:mt-10">
-         <div className="flex flex-col items-center max-w-full w-[1056px]">
-            <img
-               alt=""
-               loading="lazy"
-               src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/63818c0d2e2c11f8d3d69636d4fb34a5c246fd06e7e66b3cd3116ca7901b3ba5?apiKey=e485b3dc4b924975b4554885e21242bb"
-               className="object-contain z-10 max-w-full aspect-[0.87] w-[138px]"
-               width={138}
-               height={120}
-            />
-            <div className="mt-0 ml-3 text-5xl leading-none text-center text-neutral-100 max-md:max-w-full max-md:text-4xl">
-               START BUILDING CREDIT
+      <section className="borrower-credit-section flex overflow-hidden flex-col items-center px-20 py-20 mt-20 max-w-full w-[1440px] max-md:px-5 max-md:py-14 max-md:mt-0">
+         <div className="flex w-full max-w-[1056px] flex-col">
+            <div className="max-w-[760px]">
+               <div className="text-md-b2 font-semibold uppercase tracking-[0.16em] text-md-primary-300">Borrower credit</div>
+               <h2 className="mt-4 text-5xl font-semibold leading-tight text-neutral-100 max-md:text-4xl">
+                  Build a repayment history one small loan at a time
+               </h2>
+               <p className="mt-5 max-w-[680px] text-xl leading-8 text-violet-100 max-md:text-md-b1">
+                  Moodeng is not a magic credit score or a guaranteed approval engine. It is a transparent way to request small loans, repay
+                  them, and make that record easier for future lenders to evaluate.
+               </p>
             </div>
-            <div className="mt-4 text-5xl leading-none text-center text-neutral-100 max-md:max-w-full max-md:text-4xl">WITH MICROLOANS</div>
-            <div className="flex flex-wrap gap-5 justify-between items-start self-stretch mt-10 w-full text-violet-100 max-md:mt-10 max-md:max-w-full">
-               <div className="flex flex-col">
-                  <div className="flex gap-2.5 text-2xl leading-none">
-                     <img
-                        alt=""
-                        loading="lazy"
-                        src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/fb0a54689529c92feb9f23e7cec346c010963c77da9fe1c12675fbe0bc91d8dc?apiKey=e485b3dc4b924975b4554885e21242bb"
-                        className="object-contain shrink-0 aspect-square w-[27px]"
-                        width={100}
-                        height={100}
-                     />
-                     <div className="grow shrink my-auto w-full">Small Loans</div>
-                  </div>
-                  <div className="self-start mt-2 ml-9 text-sm leading-none max-md:ml-2.5">Start</div>
+
+            <div className="borrower-loan-video mt-10">
+               <div className="borrower-loan-video__copy">
+                  <div className="text-md-b2 font-semibold uppercase tracking-[0.16em] text-md-primary-300">Video walkthrough</div>
+                  <h3>How to request your first loan</h3>
+                  <p>
+                     Watch the blackboard walkthrough before you post. It explains what to enter, how terms work, and what happens after
+                     your request appears on the board.
+                  </p>
+                  <a href={firstLoanVideoUrl} target="_blank" rel="noreferrer">
+                     Open on YouTube
+                  </a>
                </div>
-               <div className="flex flex-col">
-                  <div className="flex gap-2 text-2xl leading-none">
-                     <img
-                        alt=""
-                        loading="lazy"
-                        src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/464d7c692f5705b7d3eaf8f170b12897ccc91a586d121e3dcec1e8498d0a8405?apiKey=e485b3dc4b924975b4554885e21242bb"
-                        className="object-contain shrink-0 aspect-square w-[27px]"
-                        width={100}
-                        height={100}
-                     />
-                     <div className="grow shrink my-auto w-full">Gradual Growth</div>
-                  </div>
-                  <div className="self-start mt-2 ml-9 text-sm leading-none max-md:ml-2.5">Build</div>
-               </div>
-               <div className="flex flex-col">
-                  <div className="flex gap-2.5 text-2xl leading-none">
-                     <img
-                        alt=""
-                        loading="lazy"
-                        src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/fb0a54689529c92feb9f23e7cec346c010963c77da9fe1c12675fbe0bc91d8dc?apiKey=e485b3dc4b924975b4554885e21242bb"
-                        className="object-contain shrink-0 aspect-square w-[27px]"
-                        width={100}
-                        height={100}
-                     />
-                     <div className="grow shrink my-auto w-full">No Deposit</div>
-                  </div>
-                  <div className="self-start mt-2 ml-9 text-sm leading-none max-md:ml-2.5">Enable</div>
-               </div>
-               <div className="flex flex-col">
-                  <div className="flex gap-2.5 text-2xl leading-none">
-                     <img
-                        alt=""
-                        loading="lazy"
-                        src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/fb0a54689529c92feb9f23e7cec346c010963c77da9fe1c12675fbe0bc91d8dc?apiKey=e485b3dc4b924975b4554885e21242bb"
-                        className="object-contain shrink-0 aspect-square w-[27px]"
-                        width={100}
-                        height={100}
-                     />
-                     <div className="grow shrink my-auto w-full">No Collateral</div>
-                  </div>
-                  <div className="self-start mt-2 ml-9 text-sm leading-none max-md:ml-2.5">Trust</div>
-               </div>
-               <div className="flex flex-col">
-                  <div className="flex gap-2.5 text-2xl leading-none">
-                     <img
-                        alt=""
-                        loading="lazy"
-                        src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/fb0a54689529c92feb9f23e7cec346c010963c77da9fe1c12675fbe0bc91d8dc?apiKey=e485b3dc4b924975b4554885e21242bb"
-                        className="object-contain shrink-0 aspect-square w-[27px]"
-                        width={100}
-                        height={100}
-                     />
-                     <div className="grow shrink my-auto w-full">Trust Building</div>
-                  </div>
-                  <div className="self-start mt-2 ml-9 text-sm leading-none max-md:ml-2.5">Grow</div>
+               <div className="borrower-loan-video__frame">
+                  <iframe
+                     src={firstLoanEmbedUrl}
+                     title="How to request your first loan"
+                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                     allowFullScreen
+                  />
                </div>
             </div>
-            <div className="flex gap-3 items-center mt-10 max-w-full text-2xl leading-none text-center whitespace-nowrap w-[398px]">
-               <img
-                  className="w-[46px] h-[46px]"
-                  alt="Background"
-                  src="https://c.animaapp.com/VPWnEuWR/img/background.svg"
-                  width={46}
-                  height={46}
-               />
-               {buttons.map((button) => (
-                  <ActionButton key={button.text} button={button} />
+
+            <div className="mt-10 grid grid-cols-3 gap-4 max-md:grid-cols-1">
+               {creditSteps.map((step, index) => (
+                  <div
+                     key={step.title}
+                     className="rounded-[24px] border border-white/10 bg-white/[0.045] p-6 text-violet-100 shadow-md-card"
+                  >
+                     <div className="flex size-10 items-center justify-center rounded-full bg-md-primary-300 text-md-b1 font-semibold text-[#171420]">
+                        {index + 1}
+                     </div>
+                     <h3 className="mt-8 text-2xl font-semibold leading-tight text-neutral-100">{step.title}</h3>
+                     <p className="mt-3 text-md-b1 leading-7 text-violet-100/85">{step.description}</p>
+                  </div>
                ))}
             </div>
+
+            <div className="mt-8 rounded-[24px] border border-md-primary-300/30 bg-md-primary-300/10 p-6 text-md-b1 leading-7 text-violet-100">
+               Keep it honest: only borrow what you can repay. Your repayment history helps build trust, but it does not erase lending risk
+               or promise instant credit.
+            </div>
+
+            <div className="mt-8 flex flex-wrap gap-3 max-md:flex-col">
+               <Link
+                  to="/request-board"
+                  className="inline-flex h-14 min-w-[220px] items-center justify-center rounded-md-pill bg-md-primary-1200 px-md-5 text-md-b1 font-semibold text-white shadow-md-card max-md:w-full"
+               >
+                  Explore loans
+               </Link>
+               <a
+                  href="https://moodeng-credit.gitbook.io/moodeng-credit"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-14 min-w-[180px] items-center justify-center rounded-md-pill border border-md-primary-300/50 bg-transparent px-md-5 text-md-b1 font-semibold text-violet-100 max-md:w-full"
+               >
+                  Read the guide
+               </a>
+            </div>
          </div>
-      </div>
+      </section>
    );
 }

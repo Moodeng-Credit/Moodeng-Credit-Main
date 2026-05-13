@@ -1,20 +1,24 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
-import { type AuthState, type User, type UserRole, WorldId } from '@/types/authTypes';
+import { type AccountStatus, type AuthState, type User, type UserRole, type WalletProvider, WorldId } from '@/types/authTypes';
 
 type UpdateUserPayload = {
    username?: string;
    displayName?: string;
    avatarUrl?: string | null;
+   avatarBackground?: string | null;
    email?: string | null;
    password?: string;
    telegramUsername?: string | null;
    walletAddress?: string;
+   walletChainId?: number | null;
+   walletConnectorName?: string | null;
+   walletProvider?: WalletProvider | null;
 };
 
 const supabaseClient = () => getSupabaseBrowserClient();
@@ -84,14 +88,18 @@ const ensureUserProfileRow = async (
    return data;
 };
 
-const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: string): User => ({
+const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: string, avatarBackground?: string): User => ({
    id: row.id,
    username: row.username,
    email: row.email,
    avatarUrl,
+   avatarBackground,
    displayName,
    googleId: row.google_id ?? undefined,
    walletAddress: row.wallet_address ?? undefined,
+   walletChainId: (row as UserRow & { wallet_chain_id?: number | null }).wallet_chain_id ?? undefined,
+   walletConnectorName: (row as UserRow & { wallet_connector_name?: string | null }).wallet_connector_name ?? undefined,
+   walletProvider: (row as UserRow & { wallet_provider?: WalletProvider | null }).wallet_provider ?? undefined,
    isWorldId: row.is_world_id,
    nullifierHash: row.nullifier_hash ?? undefined,
    telegramUsername: row.telegram_username ?? undefined,
@@ -101,6 +109,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    nal: row.nal,
    cs: row.cs,
    creditProgressionPaused: row.credit_progression_paused ?? false,
+   accountStatus: (row as UserRow & { account_status?: AccountStatus | null }).account_status ?? 'active',
    userRole: row.user_role ?? undefined,
    createdAt: row.created_at,
    updatedAt: row.updated_at
@@ -124,6 +133,7 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
    }
 
    // avatar_url = manually uploaded photo (highest priority)
+   // avatar_background = soft color shown behind transparent/background-removed avatars
    // picture    = Google OAuth profile photo
    // photo_url  = Telegram profile photo (written by edge function on sign-in)
    const avatarUrl = (
@@ -131,14 +141,15 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
       user.user_metadata?.picture ??
       user.user_metadata?.photo_url
    ) as string | undefined;
+   const avatarBackground = user.user_metadata?.avatar_background as string | undefined;
    const displayName = user.user_metadata?.name as string | undefined;
 
    if (!profile) {
       const ensuredProfile = await ensureUserProfileRow(supabase, user);
-      return mapSupabaseRowToUser(ensuredProfile, avatarUrl, displayName);
+      return mapSupabaseRowToUser(ensuredProfile, avatarUrl, displayName, avatarBackground);
    }
 
-   return mapSupabaseRowToUser(profile, avatarUrl, displayName);
+   return mapSupabaseRowToUser(profile, avatarUrl, displayName, avatarBackground);
 };
 
 const fetchUserProfileByUsername = async (username: string): Promise<User> => {
@@ -184,6 +195,10 @@ const defaultUser: User = {
    username: '',
    email: '',
    walletAddress: undefined,
+   walletChainId: undefined,
+   walletConnectorName: undefined,
+   walletProvider: undefined,
+   avatarBackground: undefined,
    isWorldId: WorldId.INACTIVE,
    googleId: undefined,
    telegramUsername: undefined,
@@ -210,46 +225,47 @@ const initialState: AuthState = {
 export const loginUser = createAsyncThunk(
    'auth/login',
    async ({ email, password, rememberMe = true }: { email: string; password: string; rememberMe?: boolean }) => {
-   const supabase = supabaseClient();
-   const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-      options: { persistSession: rememberMe }
-   });
+      const supabase = supabaseClient();
+      const { error } = await supabase.auth.signInWithPassword({
+         email,
+         password,
+         options: { persistSession: rememberMe }
+      });
 
-   if (error) {
-      if (error.code === 'email_not_confirmed') {
-         // Auto-resend verification email
-         const redirectUrl = getAuthRedirectUrl();
-         const { error: resendError } = await supabase.auth.resend({
-            type: 'signup',
-            email,
-            options: {
-               emailRedirectTo: redirectUrl
+      if (error) {
+         if (error.code === 'email_not_confirmed') {
+            // Auto-resend verification email
+            const redirectUrl = getAuthRedirectUrl();
+            const { error: resendError } = await supabase.auth.resend({
+               type: 'signup',
+               email,
+               options: {
+                  emailRedirectTo: redirectUrl
+               }
+            });
+
+            if (resendError) {
+               console.error('Failed to resend verification email:', resendError);
             }
-         });
 
-         if (resendError) {
-            console.error('Failed to resend verification email:', resendError);
+            const emailNotConfirmedError = new Error(
+               'Please verify your email before signing in. A verification email has been sent to your inbox.'
+            );
+            (emailNotConfirmedError as Error & { code: string }).code = 'email_not_confirmed';
+            throw emailNotConfirmedError;
          }
 
-         const emailNotConfirmedError = new Error(
-            'Please verify your email before signing in. A verification email has been sent to your inbox.'
-         );
-         (emailNotConfirmedError as Error & { code: string }).code = 'email_not_confirmed';
-         throw emailNotConfirmedError;
+         // For other errors, throw as-is
+         throw error;
       }
 
-      // For other errors, throw as-is
-      throw error;
+      const user = await fetchCurrentUserProfile();
+      return {
+         username: user.username,
+         user
+      };
    }
-
-   const user = await fetchCurrentUserProfile();
-   return {
-      username: user.username,
-      user
-   };
-});
+);
 
 export const loginWithGoogle = createAsyncThunk('auth/loginWithGoogle', async ({ googleCredential }: { googleCredential: string }) => {
    const user = await signInWithGoogleCredential(googleCredential);
@@ -427,13 +443,20 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
       throw sessionError ?? new Error('No authenticated user to update');
    }
 
-   if (userData.email || userData.password || userData.displayName !== undefined || userData.avatarUrl !== undefined) {
+   if (
+      userData.email ||
+      userData.password ||
+      userData.displayName !== undefined ||
+      userData.avatarUrl !== undefined ||
+      userData.avatarBackground !== undefined
+   ) {
       const nextMetadata =
-         userData.displayName !== undefined || userData.avatarUrl !== undefined
+         userData.displayName !== undefined || userData.avatarUrl !== undefined || userData.avatarBackground !== undefined
             ? {
                  ...(user.user_metadata ?? {}),
                  ...(userData.displayName !== undefined ? { name: userData.displayName } : {}),
-                 ...(userData.avatarUrl !== undefined ? { avatar_url: userData.avatarUrl } : {})
+                 ...(userData.avatarUrl !== undefined ? { avatar_url: userData.avatarUrl } : {}),
+                 ...(userData.avatarBackground !== undefined ? { avatar_background: userData.avatarBackground } : {})
               }
             : undefined;
 
@@ -452,6 +475,12 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
    if (userData.username) updates.username = userData.username;
    if (userData.email) updates.email = userData.email;
    if (userData.walletAddress) updates.wallet_address = userData.walletAddress;
+   if (userData.walletChainId !== undefined) updates.wallet_chain_id = userData.walletChainId;
+   if (userData.walletConnectorName !== undefined) updates.wallet_connector_name = userData.walletConnectorName;
+   if (userData.walletProvider !== undefined) updates.wallet_provider = userData.walletProvider;
+   if (userData.walletAddress || userData.walletProvider !== undefined || userData.walletConnectorName !== undefined) {
+      updates.wallet_connected_at = new Date().toISOString();
+   }
    if (userData.telegramUsername !== undefined) updates.telegram_username = userData.telegramUsername;
 
    if (Object.keys(updates).length === 0) {
@@ -479,12 +508,7 @@ export const updateUserRole = createAsyncThunk('auth/updateUserRole', async (rol
       throw sessionError ?? new Error('Not authenticated');
    }
 
-   const { data: updatedRow, error } = await supabase
-      .from('users')
-      .update({ user_role: role })
-      .eq('id', user.id)
-      .select('*')
-      .single();
+   const { data: updatedRow, error } = await supabase.from('users').update({ user_role: role }).eq('id', user.id).select('*').single();
 
    if (error || !updatedRow) {
       throw error ?? new Error('Failed to update user role');
@@ -522,6 +546,26 @@ const authSlice = createSlice({
          state.userProfiles = {};
       },
       setAuthChecked: (state) => {
+         state.isAuthChecked = true;
+      },
+      setPreviewAuth: (state, action) => {
+         const isFilled = action.payload === 'filled';
+         state.user = {
+            ...defaultUser,
+            id: 'preview-borrower',
+            username: 'Cookiemonster1337',
+            displayName: 'Cookiemonster1337',
+            email: 'preview@moodeng.local',
+            walletAddress: '0x71c...9d42',
+            isWorldId: isFilled ? WorldId.ACTIVE : WorldId.INACTIVE,
+            cs: isFilled ? 60 : 0,
+            mal: isFilled ? 1 : 0,
+            nal: isFilled ? 1 : 0,
+            userRole: 'borrower',
+            createdAt: '2026-05-01T00:00:00.000Z',
+            updatedAt: '2026-05-06T00:00:00.000Z'
+         };
+         state.username = state.user.username;
          state.isAuthChecked = true;
       }
    },
@@ -647,11 +691,11 @@ const authSlice = createSlice({
             if (!state.userProfiles) {
                state.userProfiles = {};
             }
-         // Store fetched user profiles in the userProfiles map
-         for (const user of action.payload.users) {
-            state.userProfiles[user.id] = user;
-         }
-      })
+            // Store fetched user profiles in the userProfiles map
+            for (const user of action.payload.users) {
+               state.userProfiles[user.id] = user;
+            }
+         })
          .addCase(logoutUser.fulfilled, (state) => {
             state.user = defaultUser;
             state.username = null;
@@ -672,7 +716,7 @@ const authSlice = createSlice({
    }
 });
 
-export const { clearError, setUsername, clearAuth, setAuthChecked } = authSlice.actions;
+export const { clearError, setUsername, clearAuth, setAuthChecked, setPreviewAuth } = authSlice.actions;
 export const me = fetchUser;
 export const login = loginUser;
 export const register = registerUser;

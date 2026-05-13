@@ -3,9 +3,17 @@ import type { ActionButtonConfig } from '@/types/actionButtonTypes';
 
 export interface CardData {
    id: string;
-   icon: string;
+   regionLabel: string;
+   regionDetail: string;
+   regionSymbols: {
+      label: string;
+      value: string;
+      type?: 'image' | 'text';
+   }[];
    title: string;
    titleColor: string;
+   accentColor: string;
+   accentSoftColor: string;
    mainNumber: string;
    mainNumberColor: string;
    subtitle?: string;
@@ -21,161 +29,135 @@ export interface CardData {
          description?: string;
       }[];
    };
-   ctaButtonConfig?: ActionButtonConfig[]; // Reference to button config section name
+   ctaButtonConfig?: ActionButtonConfig[];
 }
 
 export const mostNeededCards: CardData[] = [
    {
-      id: 'indian-crypto',
-      icon: 'https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/6b790ac2aaa0e8d3b5376bf28b32e3fdafad129768457ad5444c768a26b9e3c0?apiKey=e485b3dc4b924975b4554885e21242bb',
-      title: 'Indian crypto enthusiasts',
+      id: 'overseas-filipinos',
+      regionLabel: 'PH',
+      regionDetail: 'first corridor',
+      regionSymbols: [{ label: 'Philippines', value: '🇵🇭' }],
+      title: 'Overseas Filipino workers',
       titleColor: 'text-emerald-500',
-      mainNumber: '150 million',
+      accentColor: '#10b981',
+      accentSoftColor: '#ecfdf5',
+      mainNumber: 'First',
       mainNumberColor: 'text-zinc-900',
+      subtitle: 'market',
       features: [
          {
-            title: 'Top 5 out of 10 on Play Store',
-            description: 'Are Cash Advance or "Small" Loan Apps'
+            title: 'Working abroad',
+            description: 'Filipinos and Southeast Asians often earn away from home in Korea, Taiwan, Japan, Singapore, and beyond.'
          },
          {
-            title: 'People do not want Rupee',
-            description: 'loans/assets, they want dollars or gold instead'
+            title: 'Small urgent gaps',
+            description: 'A loan may be for a bill, transport, family support, or a short emergency before payday.'
          },
          {
-            title: 'Local Indian banks charge',
-            description: 'very high interest rates of 32% and higher'
-         },
-         {
-            title: 'Their credit scores do not travel',
-            description: 'though 2 out of 5 people in the world are Indian'
-         },
-         {
-            title: '20% of Indians have 750+',
-            description: 'credit score at local banks, very high credit'
-         },
-         {
-            title: 'India processes 100+ billion UPI transactions',
-            description: "annually, world's largest real-time payment system"
+            title: 'Credit does not follow',
+            description: 'Repayment discipline abroad rarely becomes a portable credit record they can use later.'
          }
       ],
       opportunitySection: {
-         title: 'Opportunity?',
+         title: 'What lenders fund',
          titleColor: 'text-emerald-500',
          items: [
             {
-               title: 'Kucoin estimates 150 million',
-               description: 'Indians are actively in crypto'
+               title: 'USDC microloans',
+               description: 'Small amounts with transparent borrower-proposed terms.'
             },
             {
-               title: 'Many are highly-paid Indian ',
-               description: 'workers, e.g. devs, etc.'
-            },
-            {
-               title: 'Many want to build credit ',
-               description: 'that they can take anywhere'
+               title: 'Real repayment history',
+               description: 'Each repayment helps create a record the borrower can keep building.'
             }
          ]
       }
    },
    {
-      id: 'swahili-mkopo',
-      icon: 'https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/8863e3289df8e873f486617995f6c5cd4fc7e36e2b81e139b905be92e7536b39?apiKey=e485b3dc4b924975b4554885e21242bb',
-      title: 'Swahili MKopo APPS',
+      id: 'world-id-corridors',
+      regionLabel: 'ORB',
+      regionDetail: 'Korea, Taiwan, Japan',
+      regionSymbols: [
+         { label: 'South Korea', value: '🇰🇷' },
+         { label: 'Taiwan', value: '🇹🇼' },
+         { label: 'Japan', value: '🇯🇵' },
+         { label: 'Singapore', value: '🇸🇬' }
+      ],
+      title: 'Orb-ready corridors',
       titleColor: 'text-indigo-500',
-      mainNumber: '30',
+      accentColor: '#6366f1',
+      accentSoftColor: '#eef2ff',
+      mainNumber: 'SEA',
       mainNumberColor: 'text-zinc-900',
-      subtitle: 'million users',
+      subtitle: 'abroad',
       features: [
          {
-            title: 'Mkopo means "Credit" in Swahili',
-            description: 'are a type of loan shark app seven African nations'
+            title: 'World ID access first',
+            description: 'We focus where borrowers can verify with World ID through nearby Orb locations.'
          },
          {
-            title: 'Mkopo offers easy, instant credit',
-            description: 'But traps users in debt cycles'
+            title: 'Korea, Taiwan, Japan',
+            description: 'Early borrower communities are likely to be in East and Southeast Asian worker hubs.'
          },
          {
-            title: 'Mkopo apps are local cash-only',
-            description: 'No USDT loans, limiting options'
-         },
-         {
-            title: 'Mkopo apps are used for',
-            description: 'buying phones, medical emergenies, etc.'
-         },
-         {
-            title: 'Many apps enable to buy USDT',
-            description: 'so popular alternatives to physical cash exist'
-         },
-         {
-            title: 'Mkopo not built for USDT',
-            description: 'Missing out on stablecoin benefits'
+            title: 'Singapore and beyond',
+            description: 'Orb availability helps us start with users who can prove they are unique, real borrowers.'
          }
       ],
       opportunitySection: {
-         title: 'Objective',
+         title: 'Why this matters',
          titleColor: 'text-indigo-500',
          items: [
             {
-               title: 'Replace Mkopo with USDT loans',
-               description: 'Leverage existing app popularity'
+               title: 'Lower trust friction',
+               description: 'Verification helps lenders evaluate people they have never met.'
             },
             {
-               title: 'Stablecoins bring transparency',
-               description: 'Lower costs benefit high-quality borrowers'
-            },
-            {
-               title: 'High-value Mkopo users exist',
-               description: 'Stablecoin loans preferred over cash'
+               title: 'Better than quick-loan apps',
+               description: 'Transparent loans can help borrowers avoid predatory emergency options.'
             }
          ]
       },
       ctaButtonConfig: mostNeededLendingButtons
    },
    {
-      id: 'argentine-peso',
-      icon: 'https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/5e5843576620302489bc3694ee17584a77169668c089040f311a2c9db566862c?apiKey=e485b3dc4b924975b4554885e21242bb',
-      title: 'Argentine PESO ESCAPERS',
-      titleColor: 'text-emerald-500',
-
-      mainNumber: '13 Million',
+      id: 'portable-credit',
+      regionLabel: 'USDC',
+      regionDetail: 'small emergency loans',
+      regionSymbols: [{ label: 'USDC', value: '/icons/usdc-logo.png', type: 'image' }],
+      title: 'Portable credit builders',
+      titleColor: 'text-amber-500',
+      accentColor: '#f59e0b',
+      accentSoftColor: '#fffbeb',
+      mainNumber: 'Small',
       mainNumberColor: 'text-zinc-900',
+      subtitle: 'steps',
       features: [
          {
-            title: 'Cash-only economy persists',
-            description: 'Credit access severely limited for many'
+            title: 'Not huge money',
+            description: 'The first loans are intentionally small, useful, and easier to repay responsibly.'
          },
          {
-            title: 'Dollarization trend accelerates',
-            description: 'Stablecoins gaining traction as solution'
+            title: 'Emergency plus progress',
+            description: 'A borrower can solve a near-term problem while building a repayment record.'
          },
          {
-            title: 'Crypto wallets getting adoption',
-            description: 'Metamask popular among tech-savvy users'
-         },
-         {
-            title: 'Binance, the app, 40% of the',
-            description: '18-40 year old population, use it'
-         },
-         {
-            title: 'Loansharks prey on people',
-            description: 'with worthless Peso loans and 300%+ APR loans'
-         },
-         {
-            title: 'Stablecoin unlocks a lot',
-            description: 'New opportunities emerge for all Argentinians'
+            title: 'Independent credit',
+            description: 'The long-term goal is credit the borrower owns, not a score trapped in one country.'
          }
       ],
       opportunitySection: {
-         title: 'Build',
-         titleColor: 'text-emerald-500',
+         title: 'Lender upside',
+         titleColor: 'text-amber-500',
          items: [
             {
-               title: 'Enable USD loans for an',
-               description: 'underserved population'
+               title: 'Fund useful moments',
+               description: 'Support real needs without pretending every loan is life-changing.'
             },
             {
-               title: 'Propel young Argentinians',
-               description: 'to build an on-chain economy'
+               title: 'Back repeat borrowers',
+               description: 'Good repayment can become a signal for better future access.'
             }
          ]
       }

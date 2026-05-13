@@ -61,6 +61,12 @@ export const updateUserSchema = z.object({
    email: emailSchema.optional(),
    password: strongPasswordSchema.optional(),
    walletAddress: optionalWalletAddress,
+   walletChainId: z.number().int().positive().nullable().optional(),
+   walletConnectorName: z.string().max(80).nullable().optional(),
+   walletProvider: z
+      .enum(['argent', 'base_wallet', 'metamask', 'phantom', 'rainbow', 'trust', 'walletconnect', 'unknown'])
+      .nullable()
+      .optional(),
    telegramUsername: optionalTelegramUsername,
    isWorldId: z.enum([WorldId.INACTIVE, WorldId.ACTIVE]).optional(),
    googleId: optionalGoogleId,
@@ -132,6 +138,9 @@ export const userResponseSchema = z.object({
    username: z.string(),
    email: z.string(),
    walletAddress: z.string().optional(),
+   walletChainId: z.number().optional(),
+   walletConnectorName: z.string().optional(),
+   walletProvider: z.string().optional(),
    isWorldId: z.string(),
    telegramUsername: z.string().optional(),
    googleId: z.string().optional(),

@@ -9,6 +9,7 @@ const TUTORIAL_URL = 'https://youtube.com/shorts/fKpBC9zD6Hk';
 export default function Welcome() {
    const navigate = useNavigate();
    const user = useSelector((state: RootState) => state.auth.user);
+   const requestBoardTourPath = import.meta.env.DEV ? '/request-board?tourPreview=1' : '/request-board?tour=1';
 
    return (
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
@@ -158,7 +159,7 @@ export default function Welcome() {
 
                <button
                   type="button"
-                  onClick={() => navigate('/request-board')}
+                  onClick={() => navigate(requestBoardTourPath)}
                   className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg border border-md-blue-600 text-md-b1 font-semibold text-md-blue-600"
                >
                   Explore Moodeng

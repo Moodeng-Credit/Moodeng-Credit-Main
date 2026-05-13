@@ -1,11 +1,26 @@
+import {
+   type ChangeEvent,
+   type ClipboardEvent,
+   type FocusEvent,
+   type FormEvent,
+   type KeyboardEvent,
+   type PointerEvent,
+   type RefObject,
+   useEffect,
+   useRef,
+   useState
+} from 'react';
 
+import { CalendarDays, CheckCircle, ChevronLeft, ChevronRight, HelpCircle, Ticket, X } from 'lucide-react';
+import { DayPicker } from 'react-day-picker';
+import { useNavigate } from 'react-router-dom';
 
-import { type ChangeEvent, type FormEvent, type PointerEvent, type RefObject, useRef, useState } from 'react';
-
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 import { type User } from '@/types/authTypes';
+
+import { termsTooltipIconSrc } from './termsTooltipIcon';
 
 interface LoanRequestModalProps {
    clickOutsideRef: RefObject<HTMLDivElement>;
@@ -23,8 +38,196 @@ interface LoanRequestModalProps {
    today: string;
    handleDays: (e: ChangeEvent<HTMLInputElement>) => void;
    handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
+   onReferralApplied?: (referral: AppliedReferralCode | null) => void;
+   onReferralRedeemed?: () => Promise<void>;
    isSubmitting: boolean;
+   startOnReferralStep?: boolean;
 }
+
+export type AppliedReferralCode = {
+   id: string;
+   code: string;
+   boostAmount: number;
+};
+
+type DismissGestureMode = 'down' | 'side' | 'referral';
+
+const REFERRAL_TEST_CODES: Record<string, AppliedReferralCode> = {
+   BELLE: { id: 'referral-test-belle', code: 'BELLE', boostAmount: 5 }
+};
+
+const inputShellClass =
+   'border-md-neutral-600 bg-md-neutral-100 shadow-md-card overflow-hidden rounded-md-input border border-solid transition duration-150 ease-out focus-within:border-md-primary-900 focus-within:ring-2 focus-within:ring-md-primary-100 focus:border-md-primary-900 focus:ring-2 focus:ring-md-primary-100';
+
+type TooltipId = 'terms' | 'limit' | 'usdc';
+
+const tooltipCopy: Record<TooltipId, string> = {
+   terms: 'Choose how much you want to borrow, when you will repay, and why you need the loan.',
+   limit: 'Your current maximum borrow amount. Repaying loans on time can help increase this limit.',
+   usdc: 'USDC is digital dollars accepted by major exchanges, making borrowing and lending easier across countries.'
+};
+
+const parseIsoDate = (value: string) => {
+   if (!value) return undefined;
+
+   const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+   if (!year || !month || !day) return undefined;
+
+   return new Date(year, month - 1, day);
+};
+
+const formatDateInputValue = (date: Date) => {
+   const year = date.getFullYear();
+   const month = String(date.getMonth() + 1).padStart(2, '0');
+   const day = String(date.getDate()).padStart(2, '0');
+   return `${year}-${month}-${day}`;
+};
+
+const shouldAllowDateYearEditing = (todayDate: Date) => todayDate.getMonth() >= 9;
+
+const formatDateLabel = (date: Date) => {
+   const day = String(date.getDate()).padStart(2, '0');
+   const month = String(date.getMonth() + 1).padStart(2, '0');
+   return `${day}/${month}/${date.getFullYear()}`;
+};
+
+const formatDateDigits = (date: Date, allowYearEditing: boolean) => {
+   const day = String(date.getDate()).padStart(2, '0');
+   const month = String(date.getMonth() + 1).padStart(2, '0');
+   return allowYearEditing ? `${day}${month}${date.getFullYear()}` : `${day}${month}`;
+};
+
+const getTypedDateDigits = (value: string, allowYearEditing: boolean, assumedYear: number) => {
+   if (allowYearEditing) return value.replace(/\D/g, '').slice(0, 8);
+
+   const [dayPart = '', monthPart = ''] = value.replace(new RegExp(`/${assumedYear}$`), '').split('/');
+   return `${dayPart}${monthPart}`.replace(/\D/g, '').slice(0, 4);
+};
+
+const formatDateMask = (digits: string, allowYearEditing: boolean, assumedYear: number) => {
+   if (!digits) return '';
+
+   if (digits.length < 2) return allowYearEditing ? `${digits}/MM/YYYY` : `${digits}/MM/${assumedYear}`;
+   if (digits.length === 2) return allowYearEditing ? `${digits}/MM/YYYY` : `${digits}/MM/${assumedYear}`;
+   if (digits.length < 4) {
+      const value = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+      return allowYearEditing ? `${value}/YYYY` : `${value}/${assumedYear}`;
+   }
+
+   const day = digits.slice(0, 2);
+   const month = digits.slice(2, 4);
+   if (!allowYearEditing) return `${day}/${month}/${assumedYear}`;
+
+   const year = digits.slice(4, 8);
+   if (!year) return `${day}/${month}/`;
+   return `${day}/${month}/${year}`;
+};
+
+const getDateCaretPosition = (digits: string, allowYearEditing: boolean) => {
+   if (allowYearEditing) {
+      if (digits.length <= 2) return digits.length;
+      if (digits.length <= 4) return digits.length + 1;
+      return digits.length + 2;
+   }
+
+   if (digits.length <= 2) return digits.length;
+   return Math.min(digits.length + 1, 5);
+};
+
+const addDays = (date: Date, days: number) => {
+   const nextDate = new Date(date);
+   nextDate.setDate(nextDate.getDate() + days);
+   return nextDate;
+};
+
+const inferLoanDate = (digits: string, todayDate: Date, maxDate: Date, allowYearEditing: boolean) => {
+   if (digits.length !== (allowYearEditing ? 8 : 4)) return undefined;
+
+   const day = Number(digits.slice(0, 2));
+   const month = Number(digits.slice(2, 4));
+   if (!day || !month) return undefined;
+
+   const year = allowYearEditing ? Number(digits.slice(4, 8)) : todayDate.getFullYear();
+   if (!year) return undefined;
+
+   const candidate = new Date(year, month - 1, day);
+   if (candidate.getMonth() !== month - 1 || candidate.getDate() !== day) return undefined;
+
+   if (candidate < todayDate || candidate > maxDate) return undefined;
+   return candidate;
+};
+
+function EmptyCalendarNav() {
+   return null;
+}
+
+function InfoTooltip({
+   id,
+   activeTooltip,
+   setActiveTooltip,
+   label,
+   iconSrc,
+   iconClassName = 'h-5 w-5',
+   iconStrokeWidth = 1.35,
+   panelClassName = 'left-1/2 top-full mt-md-1 -translate-x-1/2',
+   arrowClassName = 'left-1/2 top-[-5px] -translate-x-1/2 rotate-45'
+}: {
+   id: TooltipId;
+   activeTooltip: TooltipId | null;
+   setActiveTooltip: (id: TooltipId | null) => void;
+   label: string;
+   iconSrc?: string;
+   iconClassName?: string;
+   iconStrokeWidth?: number;
+   panelClassName?: string;
+   arrowClassName?: string;
+}) {
+   const isOpen = activeTooltip === id;
+
+   return (
+      <span className="relative inline-flex">
+         <button
+            aria-expanded={isOpen}
+            aria-label={label}
+            className="inline-flex shrink-0 items-center justify-center text-md-primary-900"
+            onClick={(event) => {
+               event.stopPropagation();
+               setActiveTooltip(isOpen ? null : id);
+            }}
+            onPointerDown={(event) => event.stopPropagation()}
+            type="button"
+         >
+            {iconSrc ? (
+               <img alt="" aria-hidden="true" className={iconClassName} src={iconSrc} />
+            ) : (
+               <HelpCircle aria-hidden="true" className={iconClassName} strokeWidth={iconStrokeWidth} />
+            )}
+         </button>
+         {isOpen ? (
+            <span
+               className={`absolute z-50 flex w-[220px] max-w-[calc(100vw-64px)] items-center justify-center rounded-[8px] bg-[#360975] p-[10px] text-center text-md-b3 font-normal leading-[18px] text-md-primary-100 shadow-md-card ${panelClassName}`}
+               onPointerDown={(event) => event.stopPropagation()}
+               role="tooltip"
+            >
+               {tooltipCopy[id]}
+               <span aria-hidden="true" className={`absolute h-3 w-3 bg-[#360975] ${arrowClassName}`} />
+            </span>
+         ) : null}
+      </span>
+   );
+}
+
+const UsdcIcon = () => (
+   <svg aria-hidden="true" className="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24">
+      <path
+         d="M9.75 4.75C6.72 5.63 4.5 8.44 4.5 11.75s2.22 6.12 5.25 7M14.25 4.75c3.03.88 5.25 3.69 5.25 7s-2.22 6.12-5.25 7M12 7.75v8M14.25 9.75c-.35-.62-1.08-1-2.04-1-1.11 0-1.96.53-1.96 1.38 0 .89.81 1.17 2.02 1.47 1.33.33 2.23.73 2.23 1.75 0 .93-.91 1.65-2.18 1.65-1.06 0-1.91-.39-2.32-1.08"
+         stroke="currentColor"
+         strokeLinecap="round"
+         strokeLinejoin="round"
+         strokeWidth="1.8"
+      />
+   </svg>
+);
 
 export default function LoanRequestModal({
    clickOutsideRef,
@@ -42,29 +245,282 @@ export default function LoanRequestModal({
    today,
    handleDays,
    handleSubmit,
-   isSubmitting
+   onReferralApplied,
+   onReferralRedeemed,
+   isSubmitting,
+   startOnReferralStep = true
 }: LoanRequestModalProps) {
+   const navigate = useNavigate();
+   const formRef = useRef<HTMLFormElement | null>(null);
    const dateInputRef = useRef<HTMLInputElement | null>(null);
-   const dismissGestureRef = useRef<{ x: number; y: number; mode: 'down' | 'side' } | null>(null);
+   const reasonTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+   const dismissGestureRef = useRef<{ x: number; y: number; mode: DismissGestureMode } | null>(null);
    const dismissOffsetRef = useRef({ x: 0, y: 0 });
    const [dismissOffset, setDismissOffset] = useState({ x: 0, y: 0 });
+   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+   const [activeTooltip, setActiveTooltip] = useState<TooltipId | null>(null);
+   const [showReferralStep, setShowReferralStep] = useState(startOnReferralStep);
+   const [referralCode, setReferralCode] = useState('');
+   const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
+   const [referralCodeError, setReferralCodeError] = useState('');
+   const [isApplyingReferralCode, setIsApplyingReferralCode] = useState(false);
+
+   const isVerified = !showVerify;
+   const limitAmount = getEffectiveCreditLimit(user.cs, isVerified);
+   const selectedDate = days ? days.slice(0, 10) : '';
+   const selectedCalendarDate = parseIsoDate(selectedDate);
+   const todayDate = parseIsoDate(today) ?? new Date();
+   const maxLoanDate = addDays(todayDate, 120);
+   const allowYearEditing = shouldAllowDateYearEditing(todayDate);
+   const assumedYear = todayDate.getFullYear();
+   const datePlaceholder = allowYearEditing ? 'DD/MM/YYYY' : `DD/MM/${assumedYear}`;
+   const selectedDateLabel = selectedCalendarDate ? formatDateLabel(selectedCalendarDate) : '';
+   const selectedDateDigits = selectedCalendarDate ? formatDateDigits(selectedCalendarDate, allowYearEditing) : '';
+   const [typedDate, setTypedDate] = useState(selectedDateLabel);
+   const [typedDateDigits, setTypedDateDigits] = useState(selectedDateDigits);
+   const [calendarMonth, setCalendarMonth] = useState(selectedCalendarDate ?? todayDate);
+   const isRepaymentDateFilled = Boolean(inferLoanDate(typedDateDigits, todayDate, maxLoanDate, allowYearEditing));
+   const hasReferralCode = referralCode.trim().length > 0;
+   const hasAppliedReferralCode = appliedReferral !== null;
+   const hasReferralCodeError = referralCodeError.length > 0;
+   const isReferralTestMode = import.meta.env.DEV && new URLSearchParams(window.location.search).has('referralTest');
+   const referralPrimaryActionText =
+      hasAppliedReferralCode || !hasReferralCode ? 'Continue to application' : hasReferralCodeError ? 'Try again' : 'Apply code';
+   const shouldShowReferralStep = showReferralStep && isVerified;
+
+   const startVerificationOnboarding = () => {
+      onClose();
+      navigate('/verify-world-id');
+   };
+
+   useEffect(() => {
+      setTypedDate(selectedDateLabel);
+      setTypedDateDigits(selectedDateDigits);
+   }, [selectedDateLabel, selectedDateDigits]);
+
+   useEffect(() => {
+      setCalendarMonth(selectedCalendarDate ?? todayDate);
+   }, [selectedDate, today]);
+
+   useEffect(() => {
+      if (!isOpen) return;
+
+      setShowReferralStep(startOnReferralStep && isVerified);
+      setReferralCode('');
+      setAppliedReferral(null);
+      setReferralCodeError('');
+      setIsApplyingReferralCode(false);
+      onReferralApplied?.(null);
+   }, [isOpen, isVerified, onReferralApplied, startOnReferralStep]);
+
+   useEffect(() => {
+      if (!isOpen || shouldShowReferralStep) return;
+
+      window.requestAnimationFrame(() => {
+         if (!formRef.current) return;
+
+         formRef.current.scrollTop = 0;
+      });
+   }, [isOpen, shouldShowReferralStep, showVerify]);
+
+   useEffect(() => {
+      if (!isOpen) return undefined;
+
+      const closeTooltip = () => setActiveTooltip(null);
+      const closeTooltipOnEscape = (event: globalThis.KeyboardEvent) => {
+         if (event.key === 'Escape') closeTooltip();
+      };
+
+      document.addEventListener('pointerdown', closeTooltip);
+      document.addEventListener('keydown', closeTooltipOnEscape);
+
+      return () => {
+         document.removeEventListener('pointerdown', closeTooltip);
+         document.removeEventListener('keydown', closeTooltipOnEscape);
+      };
+   }, [isOpen]);
+
+   const keepDateCursorInEditablePart = (digits = typedDateDigits) => {
+      window.requestAnimationFrame(() => {
+         const input = dateInputRef.current;
+         if (!input) return;
+
+         const caretPosition = getDateCaretPosition(digits, allowYearEditing);
+         input.setSelectionRange(caretPosition, caretPosition);
+      });
+   };
+
+   const applyTypedDateDigits = (digits: string) => {
+      const maxLength = allowYearEditing ? 8 : 4;
+      const cleanDigits = digits.replace(/\D/g, '').slice(0, maxLength);
+      const value = formatDateMask(cleanDigits, allowYearEditing, assumedYear);
+      setTypedDateDigits(cleanDigits);
+      setTypedDate(value);
+      keepDateCursorInEditablePart(cleanDigits);
+
+      const inferredDate = inferLoanDate(cleanDigits, todayDate, maxLoanDate, allowYearEditing);
+      if (!inferredDate) return;
+
+      const normalizedDate = formatDateInputValue(inferredDate);
+      handleDays({ target: { value: normalizedDate } } as ChangeEvent<HTMLInputElement>);
+   };
+
+   const handleTypedDate = (event: ChangeEvent<HTMLInputElement>) => {
+      const digits = getTypedDateDigits(event.target.value, allowYearEditing, assumedYear);
+      applyTypedDateDigits(digits);
+   };
+
+   const handleDateKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+      if (/^\d$/.test(event.key)) {
+         event.preventDefault();
+         applyTypedDateDigits(`${typedDateDigits}${event.key}`);
+         return;
+      }
+
+      if (event.key === 'Backspace' || event.key === 'Delete') {
+         event.preventDefault();
+         applyTypedDateDigits(typedDateDigits.slice(0, -1));
+      }
+   };
+
+   const handleDatePaste = (event: ClipboardEvent<HTMLInputElement>) => {
+      const pastedDigits = event.clipboardData.getData('text').replace(/\D/g, '');
+      if (!pastedDigits) return;
+
+      event.preventDefault();
+      applyTypedDateDigits(`${typedDateDigits}${pastedDigits}`);
+   };
+
+   const selectCalendarDate = (date: Date | undefined) => {
+      if (!date) return;
+
+      const normalizedDate = formatDateInputValue(date);
+      setTypedDate(formatDateLabel(date));
+      setTypedDateDigits(formatDateDigits(date, allowYearEditing));
+      handleDays({ target: { value: normalizedDate } } as ChangeEvent<HTMLInputElement>);
+      setIsCalendarOpen(false);
+   };
+
+   const scrollFieldIntoView = (event: FocusEvent<HTMLElement>) => {
+      const field = event.currentTarget;
+
+      window.setTimeout(() => {
+         const form = formRef.current;
+         if (form) {
+            const fieldRect = field.getBoundingClientRect();
+            const formRect = form.getBoundingClientRect();
+            const nextTop = form.scrollTop + fieldRect.top - formRect.top - form.clientHeight / 2 + fieldRect.height / 2;
+
+            form.scrollTo({ behavior: 'smooth', top: Math.max(0, nextTop) });
+         }
+
+         field.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      }, 90);
+   };
+
+   const resizeReasonTextarea = (textarea: HTMLTextAreaElement | null) => {
+      if (!textarea) return;
+
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+   };
+
+   useEffect(() => {
+      resizeReasonTextarea(reasonTextareaRef.current);
+   }, [reason, isOpen]);
+
+   const formatReferralBoost = (boostAmount: number) => {
+      const amount = Number(boostAmount);
+      return Number.isInteger(amount) ? amount.toFixed(0) : amount.toFixed(2);
+   };
+
+   const handleReferralCodeChange = (value: string) => {
+      setReferralCode(value);
+      setReferralCodeError('');
+
+      if (appliedReferral && value.trim().toUpperCase() !== appliedReferral.code) {
+         setAppliedReferral(null);
+         onReferralApplied?.(null);
+      }
+   };
+
+   const applyReferralCode = async (): Promise<boolean> => {
+      const cleanCode = referralCode.trim().toUpperCase();
+      if (!cleanCode) return false;
+
+      setReferralCode(cleanCode);
+      setIsApplyingReferralCode(true);
+
+      try {
+         if (isReferralTestMode) {
+            const testReferral = REFERRAL_TEST_CODES[cleanCode];
+
+            if (!testReferral) {
+               setAppliedReferral(null);
+               onReferralApplied?.(null);
+               setReferralCodeError('Referral code incorrect. If you have issues, contact support.');
+               return false;
+            }
+
+            setAppliedReferral(testReferral);
+            onReferralApplied?.(testReferral);
+            setReferralCodeError('');
+            return true;
+         }
+
+         const supabase = getSupabaseBrowserClient();
+         const { data, error } = await supabase.rpc('redeem_referral_code', { code_input: cleanCode }).single();
+
+         if (error) throw error;
+
+         if (!data) {
+            setAppliedReferral(null);
+            onReferralApplied?.(null);
+            setReferralCodeError('Referral code incorrect. If you have issues, contact support.');
+            return false;
+         }
+
+         const nextReferral = {
+            id: data.id,
+            code: data.code,
+            boostAmount: Number(data.boost_amount)
+         };
+
+         setReferralCode(nextReferral.code);
+         setAppliedReferral(nextReferral);
+         onReferralApplied?.(nextReferral);
+         setReferralCodeError('');
+         await onReferralRedeemed?.();
+         return true;
+      } catch (error) {
+         console.error('Error validating referral code:', (error as Error).message || error);
+         setAppliedReferral(null);
+         onReferralApplied?.(null);
+         const message = (error as Error).message || '';
+         setReferralCodeError(message.includes('Referral code') ? message : "We couldn't check that code. Please try again.");
+         return false;
+      } finally {
+         setIsApplyingReferralCode(false);
+      }
+   };
+
+   const handleReferralPrimaryAction = async () => {
+      if (!hasReferralCode || hasAppliedReferralCode) {
+         setShowReferralStep(false);
+         return;
+      }
+
+      await applyReferralCode();
+   };
 
    if (!isOpen) return null;
 
-   const isVerified = !showVerify;
-   const modalWidth = isVerified ? '400px' : '320px';
-   const limitAmount = getEffectiveCreditLimit(user.cs, isVerified);
-   const selectedDate = days ? days.slice(0, 10) : '';
+   const isInteractiveReferralTarget = (target: EventTarget | null) =>
+      target instanceof HTMLElement && Boolean(target.closest('input, button, textarea, select, a'));
 
-   const openDatePicker = () => {
-      const input = dateInputRef.current;
-      if (!input) return;
+   const startDismissGesture = (event: PointerEvent<HTMLElement>, mode: DismissGestureMode) => {
+      if (mode === 'referral' && isInteractiveReferralTarget(event.target)) return;
 
-      input.focus();
-      input.showPicker?.();
-   };
-
-   const startDismissGesture = (event: PointerEvent<HTMLElement>, mode: 'down' | 'side') => {
       dismissGestureRef.current = { x: event.clientX, y: event.clientY, mode };
       dismissOffsetRef.current = { x: 0, y: 0 };
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -79,6 +535,8 @@ export default function LoanRequestModal({
       const nextOffset =
          gesture.mode === 'down'
             ? { x: 0, y: Math.max(0, deltaY) }
+            : gesture.mode === 'referral'
+              ? { x: Math.max(-120, Math.min(120, deltaX)), y: 0 }
             : { x: Math.max(0, deltaX), y: 0 };
 
       dismissOffsetRef.current = nextOffset;
@@ -93,160 +551,395 @@ export default function LoanRequestModal({
       const shouldClose =
          (gesture.mode === 'down' && dismissOffsetRef.current.y > 88) ||
          (gesture.mode === 'side' && dismissOffsetRef.current.x > 76);
+      const shouldSkipReferral = gesture.mode === 'referral' && dismissOffsetRef.current.x > 88;
+      const shouldCancelReferral = gesture.mode === 'referral' && dismissOffsetRef.current.x < -88;
 
       dismissGestureRef.current = null;
       dismissOffsetRef.current = { x: 0, y: 0 };
       setDismissOffset({ x: 0, y: 0 });
 
-      if (shouldClose) onClose();
+      if (shouldSkipReferral) {
+         setShowReferralStep(false);
+         return;
+      }
+
+      if (shouldClose || shouldCancelReferral) onClose();
    };
 
    return (
-      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-50">
+      <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/20 px-[21px] py-[64px] sm:items-center sm:py-6">
          <section
             ref={clickOutsideRef}
-            className="bg-white rounded-2xl shadow-md max-w-md mx-auto flex flex-col relative transition-transform duration-150 ease-out"
-            style={{
-               minWidth: modalWidth,
-               transform: `translate(${dismissOffset.x}px, ${dismissOffset.y}px)`
-            }}
+            className="relative mx-auto flex max-h-[calc(100dvh-42px)] w-full max-w-[398px] flex-col overflow-hidden rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 shadow-md-card transition-transform duration-150 ease-out"
+            style={{ transform: `translate(${dismissOffset.x}px, ${dismissOffset.y}px)` }}
          >
-            <div
-               aria-label="Swipe right to close loan form"
-               className="absolute bottom-0 left-0 top-0 z-10 w-8 touch-none cursor-ew-resize select-none"
-               onPointerDown={(event) => startDismissGesture(event, 'side')}
-               onPointerMove={moveDismissGesture}
-               onPointerUp={endDismissGesture}
-               onPointerCancel={endDismissGesture}
-               role="presentation"
-            />
-            <button onClick={onClose} className="absolute top-3 right-4 text-white hover:text-gray-800 z-10 text-2xl">
-               ✖
-            </button>
+            {!shouldShowReferralStep ? (
+               <div
+                  aria-label="Swipe right to close loan form"
+                  className="absolute bottom-0 left-0 top-0 z-10 w-8 touch-none cursor-ew-resize select-none"
+                  onPointerDown={(event) => startDismissGesture(event, 'side')}
+                  onPointerMove={moveDismissGesture}
+                  onPointerUp={endDismissGesture}
+                  onPointerCancel={endDismissGesture}
+                  role="presentation"
+               />
+            ) : null}
             <header
-               className="bg-[#1E56FF] rounded-t-2xl px-6 py-4 flex touch-none cursor-grab select-none items-center justify-center gap-2 active:cursor-grabbing"
+               className="flex touch-none cursor-grab select-none items-center justify-between border-b border-md-neutral-400 p-md-3 active:cursor-grabbing"
                onPointerDown={(event) => startDismissGesture(event, 'down')}
                onPointerMove={moveDismissGesture}
                onPointerUp={endDismissGesture}
                onPointerCancel={endDismissGesture}
             >
-               <h2 className="text-white font-extrabold text-lg leading-6">Set Your Own Terms</h2>
-               <button aria-label="Help info" className="text-white text-sm font-semibold focus:outline-none" type="button">
-                  <i className="fas fa-question-circle"></i>
+               <div className="flex items-center gap-md-1">
+                  {shouldShowReferralStep ? (
+                     <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
+                  ) : (
+                     <>
+                        <h2 className="text-md-h6 text-md-heading">Set Your Own Terms</h2>
+                        <InfoTooltip
+                           activeTooltip={activeTooltip}
+                           arrowClassName="right-[42px] top-[-5px] rotate-45"
+                           iconClassName="h-[18px] w-[18px]"
+                           iconSrc={termsTooltipIconSrc}
+                           id="terms"
+                           label="Explain setting loan terms"
+                           panelClassName="right-[-40px] top-full mt-md-1"
+                           setActiveTooltip={setActiveTooltip}
+                        />
+                     </>
+                  )}
+               </div>
+               <button
+                  aria-label="Close loan form"
+                  onClick={(event) => {
+                     event.stopPropagation();
+                     onClose();
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  className="rounded-full p-1 text-md-neutral-2000 transition duration-150 ease-out hover:bg-md-primary-100 hover:text-md-primary-1200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                  type="button"
+               >
+                  <X aria-hidden="true" className="h-8 w-8" strokeWidth={2} />
                </button>
             </header>
 
-            {showVerify ? (
-               <div className="flex items-center justify-between gap-2 rounded-b-md bg-[#FFD7DD] px-4 py-2 text-[13px] font-semibold leading-tight text-[#D94A5B] select-none">
-                  <div className="flex min-w-0 items-center gap-2">
-                     <i className="fas fa-id-card"></i>
-                     <span>Verification Required for Borrowers</span>
+            {shouldShowReferralStep ? (
+               <div
+                  className="flex min-h-0 touch-pan-y flex-col gap-md-2 overflow-y-auto p-md-2 text-md-b2 text-md-heading"
+                  onPointerDown={(event) => startDismissGesture(event, 'referral')}
+                  onPointerMove={moveDismissGesture}
+                  onPointerUp={endDismissGesture}
+                  onPointerCancel={endDismissGesture}
+               >
+                  <div className="flex items-start gap-md-2 rounded-md-lg border border-md-neutral-400 bg-[#faf7ff] p-md-2">
+                     <div className="flex min-w-0 flex-1 flex-col gap-md-1">
+                        <span className="w-fit rounded-full bg-md-primary-100 px-md-2 py-md-0 text-md-b3 font-normal text-md-primary-900">
+                           Optional
+                        </span>
+                        <div>
+                           <h3 className="text-md-h6 font-medium leading-[26px] text-md-heading">Have a referral code?</h3>
+                           <p className="mt-md-0 text-md-b3 font-normal leading-[20px] text-md-neutral-1200">
+                              Add it now for a higher starting limit.
+                           </p>
+                        </div>
+                     </div>
+                     <img alt="" aria-hidden="true" className="-my-md-1 h-[112px] w-[112px] shrink-0 self-center object-contain" src="/hippos/referral-boost.png" />
                   </div>
-                  <WorldIDVerification>
-                     {({ open }) => (
-                        <button
-                           onClick={open}
-                           className="shrink-0 cursor-pointer whitespace-nowrap rounded-md bg-[#FF5A6E] px-3 py-1 text-xs font-extrabold text-white"
-                        >
-                           Click Here
-                        </button>
-                     )}
-                  </WorldIDVerification>
-               </div>
-            ) : null}
 
-            <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 text-gray-800 text-sm font-semibold">
-               <div className="flex justify-between items-center">
-                  <label className="text-gray-800 font-semibold text-sm" htmlFor="borrow-amount">
-                     Borrow amount
+                  <div className="inline-flex w-fit items-center gap-md-1 rounded-full bg-[#d7f5df] px-md-2 py-md-0 text-md-b3 font-medium text-[#178447]">
+                     <CheckCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
+                     <span>+$5 Credit Limit Boost</span>
+                  </div>
+
+                  <label className="sr-only" htmlFor="referral-code">
+                     Referral code
                   </label>
-                  <div className="flex items-center gap-1 bg-[#E6E9FF] text-[#1E56FF] text-xs font-semibold rounded-md px-2 py-1 select-none">
-                     <button aria-label="Limit info" className="focus:outline-none" type="button">
-                        <i className="fas fa-question-circle"></i>
-                     </button>
-                     <span>Limit: ${limitAmount || '0'}</span>
+                  <div
+                     className={`flex items-center gap-md-2 rounded-md-input border border-solid bg-md-neutral-100 px-md-3 py-md-1 shadow-md-card transition duration-150 ease-out focus-within:ring-2 ${
+                        hasReferralCodeError
+                           ? 'border-md-red-500 focus-within:ring-md-red-100'
+                           : hasAppliedReferralCode
+                             ? 'border-[#178447] focus-within:ring-[#d7f5df]'
+                             : 'border-md-neutral-600 focus-within:border-md-primary-900 focus-within:ring-md-primary-100'
+                     }`}
+                  >
+                     <Ticket
+                        aria-hidden="true"
+                        className={`h-6 w-6 shrink-0 ${hasReferralCodeError ? 'text-md-red-500' : 'text-md-primary-900'}`}
+                        strokeWidth={1.7}
+                     />
+                     <input
+                        className="min-w-0 flex-1 bg-transparent text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
+                        id="referral-code"
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => handleReferralCodeChange(event.target.value)}
+                        placeholder="Enter code"
+                        type="text"
+                        value={referralCode}
+                     />
+                  </div>
+
+                  {hasReferralCodeError ? (
+                     <div className="rounded-md-md bg-md-red-100 px-md-2 py-md-1 text-md-b3 font-normal text-md-red-500">{referralCodeError}</div>
+                  ) : hasAppliedReferralCode ? (
+                     <div className="flex items-center gap-md-1 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
+                        <CheckCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
+                        <span>
+                           Code {appliedReferral.code} applied: +${formatReferralBoost(appliedReferral.boostAmount)} starting limit
+                        </span>
+                     </div>
+                  ) : null}
+
+                  <button
+                     className="w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-medium text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 disabled:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                     disabled={isApplyingReferralCode}
+                     onClick={handleReferralPrimaryAction}
+                     type="button"
+                  >
+                     {isApplyingReferralCode ? 'Checking code...' : referralPrimaryActionText}
+                  </button>
+
+                  <p className="text-center text-md-b3 font-normal text-md-neutral-1200">No code needed. You can continue normally.</p>
+               </div>
+            ) : (
+            <form ref={formRef} onSubmit={handleSubmit} className="flex min-h-0 flex-col gap-md-3 overflow-y-auto p-md-3 text-md-b2 text-md-heading">
+               {showVerify ? (
+                  <div
+                     className="flex items-center gap-md-2 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-[#fff6d0] px-md-3 py-md-2"
+                     data-tour-target="loan-verification-card"
+                  >
+                     <div className="flex min-w-0 max-w-[220px] flex-1 flex-col gap-md-1">
+                        <div className="flex flex-col gap-md-0">
+                           <p className="whitespace-nowrap text-md-b2 font-medium text-md-primary-2000">One quick step to request a loan</p>
+                           <p className="text-md-b3 font-normal text-md-neutral-1400">
+                              Complete a one-time verification to start building trust with lenders.
+                           </p>
+                        </div>
+                        <button
+                           onClick={startVerificationOnboarding}
+                           className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                           type="button"
+                        >
+                           Get Verified
+                        </button>
+                     </div>
+                     <img alt="" aria-hidden="true" className="h-[86px] w-[96px] shrink-0 object-contain" src="/hippos/welcome.png" />
+                  </div>
+               ) : null}
+
+               <div className="flex flex-col gap-md-1" data-tour-target="loan-borrow-amount">
+                  <div className="flex items-center justify-between gap-md-2">
+                     <label className="text-md-b2 font-normal text-md-heading" htmlFor="borrow-amount">
+                        Borrow Amount
+                     </label>
+                     <div className="flex items-center gap-md-0 rounded-md-md bg-md-primary-100 px-md-1 py-md-0 text-md-b3 font-normal text-[#3e0a88]">
+                        <span>Current Limit: ${limitAmount || '0'}</span>
+                        <InfoTooltip
+                           activeTooltip={activeTooltip}
+                           arrowClassName="left-1/2 top-[-5px] -translate-x-1/2 rotate-45"
+                           iconClassName="h-4 w-4"
+                           id="limit"
+                           label="Explain current borrow limit"
+                           panelClassName="right-0 top-full mt-md-1"
+                           setActiveTooltip={setActiveTooltip}
+                        />
+                     </div>
+                  </div>
+                  <div className={`flex items-center ${inputShellClass}`}>
+                     <span
+                        aria-hidden="true"
+                        className="flex min-w-[112px] items-center justify-center gap-md-1 self-stretch border-r border-md-neutral-600 bg-[#2775ca] px-md-3 py-md-2 text-md-b1 font-normal text-md-neutral-100"
+                     >
+                        <UsdcIcon />
+                        USDC
+                     </span>
+                     <input
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => setLoanAmount(e.target.value)}
+                        onFocus={scrollFieldIntoView}
+                        className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
+                        id="borrow-amount"
+                        inputMode="decimal"
+                        placeholder="Set your desired amount"
+                        type="text"
+                        value={loanAmount}
+                     />
+                  </div>
+                  <div className="flex justify-end gap-md-1 text-md-b3 font-normal text-md-neutral-1200">
+                     <InfoTooltip
+                        activeTooltip={activeTooltip}
+                        iconClassName="h-4 w-4"
+                        iconStrokeWidth={1.35}
+                        id="usdc"
+                        label="Explain USDC loans"
+                        panelClassName="left-0 top-full mt-md-1 -translate-x-1/2"
+                        setActiveTooltip={setActiveTooltip}
+                     />
+                     <span>All loans are issued and repaid in USDC.</span>
                   </div>
                </div>
-               <div className="flex border-solid border border-gray-300 rounded-md overflow-hidden">
-                  <span aria-hidden="true" className="flex items-center justify-center bg-[#E6E9FF] text-[#1E56FF] px-4 text-base">
-                     <i className="fas fa-dollar-sign"></i>
-                     USD
-                  </span>
+
+               <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-amount">
+                  <label className="text-md-b2 font-normal text-md-heading" htmlFor="repayment-amount">
+                     Set Repayment Amount
+                  </label>
                   <input
-                     onChange={(e: ChangeEvent<HTMLInputElement>) => setLoanAmount(e.target.value)}
-                     className="flex-1 px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
-                     id="borrow-amount"
-                     placeholder="Set your desired amount"
+                     onChange={(e: ChangeEvent<HTMLInputElement>) => setTotalRepaymentAmount(e.target.value)}
+                     onFocus={scrollFieldIntoView}
+                     className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none`}
+                     id="repayment-amount"
+                     inputMode="decimal"
+                     placeholder="Must be more than the borrowed amount"
                      type="text"
-                     value={loanAmount}
+                     value={totalRepaymentAmount}
                   />
                </div>
-               <label className="font-semibold text-gray-800 text-sm" htmlFor="repayment-amount">
-                  Set Repayment amount
-               </label>
-               <input
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setTotalRepaymentAmount(e.target.value)}
-                  className="border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
-                  id="repayment-amount"
-                  placeholder="Must be more than Borrowed amount..."
-                  type="text"
-                  value={totalRepaymentAmount}
-               />
-               <label className="font-semibold text-gray-800 text-sm">Repayment Date</label>
-               <div className="flex flex-col gap-2">
-                  <div className="flex gap-3">
-                     <button className="bg-[#D6E1FF] text-[#1E56FF] font-semibold rounded-md px-5 py-2 text-sm select-none" type="button">
-                        {isVerified && days
-                           ? `${Math.ceil((new Date(days).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} Days`
-                           : '5 Days'}
-                     </button>
-                     <div className="flex flex-1 overflow-hidden rounded-md border border-gray-300">
+
+               <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-date">
+                  <label className="text-md-b2 font-normal text-md-heading" htmlFor="repaymentDate">
+                     Set Repayment Date
+                  </label>
+                  <div className="relative">
+                     <div className={`relative flex items-center ${inputShellClass}`}>
                         <input
                            ref={dateInputRef}
-                           onChange={handleDays}
-                           placeholder="DD/MM/YY"
-                           type="date"
-                           min={today}
-                           value={selectedDate}
+                           aria-label="Selected repayment date"
+                           onChange={handleTypedDate}
+                           onClick={() => keepDateCursorInEditablePart()}
+                           onBlur={() => {
+                              if (!typedDate.replace(/\D/g, '')) setTypedDate('');
+                           }}
+                           onFocus={(event) => {
+                              scrollFieldIntoView(event);
+                              keepDateCursorInEditablePart();
+                           }}
+                           onKeyDown={handleDateKeyDown}
+                           onPaste={handleDatePaste}
+                           onSelect={() => keepDateCursorInEditablePart()}
+                           placeholder={datePlaceholder}
+                           type="text"
+                           value={typedDate}
                            id="repaymentDate"
-                           className="min-w-0 flex-1 px-4 py-2 text-gray-700 text-sm font-normal focus:outline-none"
+                           className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 pr-[64px] text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
                         />
                         <button
+                           aria-expanded={isCalendarOpen}
                            aria-label="Open repayment date calendar"
-                           className="flex items-center justify-center border-l border-gray-300 px-3 text-gray-700"
+                           className={`absolute inset-y-0 right-0 flex w-[56px] items-center justify-center border-l border-md-primary-1200 transition duration-150 ease-out active:bg-[#4b00b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
+                              isCalendarOpen || isRepaymentDateFilled
+                                 ? 'bg-md-primary-1200 text-md-neutral-100 hover:bg-[#5200c8]'
+                                 : 'bg-md-neutral-100 text-md-primary-900 hover:bg-md-primary-100'
+                           }`}
+                           onClick={() => setIsCalendarOpen((isOpen) => !isOpen)}
                            type="button"
-                           onClick={openDatePicker}
                         >
-                           <i className="far fa-calendar-alt"></i>
+                           <CalendarDays aria-hidden="true" className="h-6 w-6" strokeWidth={1.6} />
                         </button>
                      </div>
                   </div>
-                  <p className="text-xs text-gray-500">Date will be set to midnight UTC+00</p>
                </div>
-               <label className="font-semibold text-gray-800 text-sm" htmlFor="reason">
-                  Reason for Borrowing
-               </label>
-               <div className="flex flex-col gap-2">
-                  <textarea
-                     maxLength={40}
-                     onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}
-                     className="resize-none rounded-md border border-gray-300 px-4 py-2 text-sm font-normal text-gray-700 focus:outline-none"
-                     id="reason"
-                     placeholder="My car broke down I need help..."
-                     rows={3}
-                     value={reason}
-                  ></textarea>
-                  <div className="text-right text-xs font-normal text-gray-400 select-none">{reason.length} / 40</div>
+
+               <div className="flex flex-col gap-md-1" data-tour-target="loan-reason">
+                  <label className="text-md-b2 font-normal text-md-heading" htmlFor="reason">
+                     Reason For Borrowing
+                  </label>
+                  <div className={`${inputShellClass} flex flex-col px-md-3 py-md-2`}>
+                     <textarea
+                        ref={reasonTextareaRef}
+                        maxLength={40}
+                        onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
+                           setReason(e.target.value);
+                           resizeReasonTextarea(e.target);
+                        }}
+                        onFocus={scrollFieldIntoView}
+                        className="min-h-[48px] resize-none overflow-hidden bg-transparent text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
+                        id="reason"
+                        placeholder="Text"
+                        rows={1}
+                        value={reason}
+                     />
+                     <div className="text-right text-md-b3 font-normal text-md-neutral-1200 select-none">{reason.length}/40</div>
+                  </div>
                </div>
+
                <button
-                  className={`${isVerified && !isSubmitting ? 'bg-[#1E56FF]' : 'bg-gray-400 cursor-not-allowed'} w-full rounded-md py-3 text-sm font-extrabold text-white`}
+                  className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
+                     isVerified && !isSubmitting
+                        ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2'
+                        : 'cursor-not-allowed bg-md-neutral-600'
+                  }`}
                   type="submit"
                   disabled={!isVerified || isSubmitting}
                >
                   {isSubmitting ? 'Submitting...' : 'Make Your Request'}
                </button>
             </form>
+            )}
          </section>
+         {isCalendarOpen ? (
+            <div
+               aria-label="Choose repayment date"
+               aria-modal="true"
+               className="fixed inset-0 z-[90] flex items-center justify-center bg-black/20 px-[21px]"
+               onClick={() => setIsCalendarOpen(false)}
+               onMouseDown={(event) => event.stopPropagation()}
+               role="dialog"
+            >
+               <div
+                  className="w-[292px] rounded-md-input border border-md-neutral-600 bg-md-neutral-100 p-md-2 shadow-[0_12px_28px_rgba(20,18,24,0.18)]"
+                  onClick={(event) => event.stopPropagation()}
+                  onMouseDown={(event) => event.stopPropagation()}
+               >
+                  <div className="mb-md-1 flex items-center justify-between">
+                     <button
+                        aria-label="Previous month"
+                        className="rounded-md-md p-md-0 text-md-neutral-1200 transition duration-150 ease-out hover:bg-md-primary-100 hover:text-md-primary-1200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                        onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}
+                        type="button"
+                     >
+                        <ChevronLeft aria-hidden="true" className="h-5 w-5" />
+                     </button>
+                     <p className="text-md-b2 font-medium text-md-heading">
+                        {calendarMonth.toLocaleString(undefined, { month: 'long', year: 'numeric' })}
+                     </p>
+                     <button
+                        aria-label="Next month"
+                        className="rounded-md-md p-md-0 text-md-neutral-1200 transition duration-150 ease-out hover:bg-md-primary-100 hover:text-md-primary-1200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                        onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}
+                        type="button"
+                     >
+                        <ChevronRight aria-hidden="true" className="h-5 w-5" />
+                     </button>
+                  </div>
+                  <DayPicker
+                     mode="single"
+                     month={calendarMonth}
+                     onMonthChange={setCalendarMonth}
+                     selected={selectedCalendarDate}
+                     onSelect={selectCalendarDate}
+                     disabled={{ before: todayDate, after: maxLoanDate }}
+                     fixedWeeks
+                     showOutsideDays
+                     components={{ Nav: EmptyCalendarNav }}
+                     classNames={{
+                        root: 'text-md-heading',
+                        month_caption: 'hidden',
+                        nav: 'hidden',
+                        month_grid: 'w-full border-collapse',
+                        weekdays: 'grid grid-cols-7',
+                        weekday: 'py-md-0 text-center text-md-b4 font-normal text-md-neutral-1200',
+                        week: 'grid grid-cols-7',
+                        day: 'grid place-items-center p-[1px]',
+                        day_button:
+                           'grid h-9 w-9 place-items-center rounded-md-md text-md-b3 font-normal text-md-heading transition duration-150 ease-out hover:bg-md-primary-100 hover:text-md-primary-1200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900',
+                        selected: '[&>button]:bg-md-primary-1200 [&>button]:text-md-neutral-100',
+                        today: '[&>button]:border [&>button]:border-md-primary-900',
+                        outside: '[&>button]:text-md-neutral-600',
+                        disabled: '[&>button]:cursor-not-allowed [&>button]:text-md-neutral-600 [&>button]:opacity-40'
+                     }}
+                  />
+               </div>
+            </div>
+         ) : null}
       </div>
    );
 }

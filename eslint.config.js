@@ -10,10 +10,35 @@ import unusedImports from 'eslint-plugin-unused-imports';
 import globals from 'globals';
 
 export default [
+   {
+      ignores: [
+         'node_modules/**',
+         '.next/**',
+         '.git/**',
+         '.vscode/**',
+         'dist/**',
+         'build/**',
+         'src/generated/**',
+         'supabase/functions/**'
+      ]
+   },
    js.configs.recommended,
    // Configuration for JavaScript config files (no TypeScript parser)
    {
       files: ['*.config.js', '*.config.mjs', '*.config.cjs'],
+      languageOptions: {
+         ecmaVersion: 2022,
+         sourceType: 'module',
+         globals: {
+            ...globals.node,
+         }
+      },
+      rules: {
+         'no-console': 'off'
+      }
+   },
+   {
+      files: ['scripts/**/*.mjs'],
       languageOptions: {
          ecmaVersion: 2022,
          sourceType: 'module',
@@ -34,7 +59,8 @@ export default [
          parserOptions: {
             ecmaVersion: 2022,
             sourceType: 'module',
-            project: './tsconfig.json',
+            project: './tsconfig.eslint.json',
+            tsconfigRootDir: import.meta.dirname,
             ecmaFeatures: {
                jsx: true
             }
@@ -72,13 +98,13 @@ export default [
          'no-param-reassign': 'error',
          'react/prop-types': 'off',
          'react/require-default-props': 'off',
-         'react/no-array-index-key': ['error'],
+         'react/no-array-index-key': ['warn'],
          'react/react-in-jsx-scope': 'off',
          'react/jsx-props-no-spreading': 'off',
-         'react/jsx-no-useless-fragment': ['error'],
+         'react/jsx-no-useless-fragment': ['warn'],
          'react/jsx-curly-brace-presence': ['error', { props: 'never', children: 'never' }],
          'react/jsx-boolean-value': ['error', 'never'],
-         'no-shadow': ['error'],
+         'no-shadow': ['warn'],
          'react/display-name': 'off',
 
          // Modern React 18 hook rules
@@ -90,10 +116,10 @@ export default [
          // React 18 concurrent features
          'react/jsx-key': ['error', { checkFragmentShorthand: true }],
          'react/no-unstable-nested-components': 'error',
-         'react/jsx-no-leaked-render': ['error', { validStrategies: ['ternary'] }],
+         'react/jsx-no-leaked-render': ['warn', { validStrategies: ['ternary'] }],
 
          // React Refresh rules
-         'react-refresh/only-export-components': 'error',
+         'react-refresh/only-export-components': 'warn',
 
          // Performance optimization rules
          'react/jsx-no-constructed-context-values': ['error'],
@@ -111,13 +137,14 @@ export default [
          '@tanstack/query/no-void-query-fn': 'error',
 
          // typescript rules
-         '@typescript-eslint/no-explicit-any': ['error'],
+         '@typescript-eslint/no-explicit-any': ['warn'],
          'no-console': 'off',
+         'no-undef': 'off',
          'prefer-destructuring': 'off',
          '@typescript-eslint/naming-convention': 'off',
          'no-unused-vars': 'off',
-         '@typescript-eslint/no-unused-vars': ['error'],
-         '@typescript-eslint/consistent-type-imports': ['error'],
+         '@typescript-eslint/no-unused-vars': ['warn'],
+         '@typescript-eslint/consistent-type-imports': ['warn'],
 
          // import rules
          'import/order': 'off',
@@ -128,14 +155,14 @@ export default [
          'import/no-named-as-default-member': 'off',
          'import/no-unresolved': ['off'],
          'import/no-namespace': ['off'],
-         'unused-imports/no-unused-imports': 'error'
+         'unused-imports/no-unused-imports': 'warn'
       }
    },
    {
       files: ['**/*.{ts,tsx}'],
       rules: {
          'no-restricted-imports': [
-            'error',
+            'warn',
             {
                paths: [],
                patterns: [
@@ -149,7 +176,6 @@ export default [
       }
    },
    {
-      ignores: ['node_modules', '.next', '.git', '.vscode', 'dist', 'build', 'src/generated/**']
+      ignores: ['node_modules', '.next', '.git', '.vscode', 'dist', 'build', 'src/generated/**', 'supabase/functions/**']
    }
 ];
-

@@ -9,6 +9,7 @@ import UserAvatar from '@/components/UserAvatar';
 import { useAuthProvider } from '@/hooks/useAuthProvider';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getWalletProviderFromConnectorName, isBaseWalletProvider } from '@/lib/walletProvider';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
@@ -383,6 +384,19 @@ export default function AccountSettings() {
    const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
 
    const hasWallet = Boolean(user?.walletAddress);
+   const walletSetupLabel = user?.userRole === 'lender' ? 'Connect' : 'Add Base Wallet';
+   const isBorrower = user?.userRole === 'borrower';
+   const connectedWalletName = connector?.name;
+   const connectedWalletProvider = connectedWalletName ? getWalletProviderFromConnectorName(connectedWalletName) : undefined;
+   const effectiveWalletProvider = user?.walletProvider && user.walletProvider !== 'unknown'
+      ? user.walletProvider
+      : connectedWalletProvider;
+   const borrowerHasNonBaseWallet =
+      isBorrower &&
+      hasWallet &&
+      Boolean(effectiveWalletProvider) &&
+      effectiveWalletProvider !== 'unknown' &&
+      !isBaseWalletProvider(effectiveWalletProvider);
 
    useEffect(() => {
       localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(notifPrefs));
@@ -407,11 +421,11 @@ export default function AccountSettings() {
       setTimeout(() => setWalletCopied(false), 2000);
    };
 
-   const handleSaveAvatar = async (file: File) => {
+   const handleSaveAvatar = async (file: File, avatarBackground: string) => {
       setIsSavingAvatar(true);
       try {
          const avatarUrl = await uploadAvatarForCurrentUser(file);
-         const result = await dispatch(updateUser({ avatarUrl }));
+         const result = await dispatch(updateUser({ avatarUrl, avatarBackground }));
 
          if (updateUser.fulfilled.match(result)) {
             setShowAvatarModal(false);
@@ -428,6 +442,9 @@ export default function AccountSettings() {
       if (addr.length <= 12) return addr;
       return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
    };
+   const walletDisplayName = isBorrower && !borrowerHasNonBaseWallet
+      ? 'Base Wallet'
+      : user?.walletConnectorName || connectedWalletName || truncateAddress(user?.walletAddress || '');
 
    const toggleNotif = (key: keyof NotificationPrefs) => {
       setNotifPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -554,7 +571,7 @@ export default function AccountSettings() {
                         {hasWallet ? (
                            <>
                               <span className="text-md-b1 text-md-neutral-1200 truncate">
-                                 {connector?.name || truncateAddress(user?.walletAddress || '')}
+                                 {walletDisplayName}
                               </span>
                               <button type="button" onClick={handleCopyWallet} className="shrink-0 ml-2">
                                  <div
@@ -575,7 +592,7 @@ export default function AccountSettings() {
                                  onClick={() => navigate('/onboarding/wallet')}
                                  className="text-md-b1 text-md-primary-900 shrink-0 ml-2"
                               >
-                                 Connect
+                                 {walletSetupLabel}
                               </button>
                            </>
                         )}
@@ -586,6 +603,27 @@ export default function AccountSettings() {
                         </div>
                      ) : null}
                   </div>
+
+                  {borrowerHasNonBaseWallet ? (
+                     <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-primary-900 bg-md-primary-900/10 p-md-3">
+                        <div className="flex items-start gap-md-2">
+                           <img src="/icons/base-wallet.svg" alt="" className="size-9 rounded-md-md shrink-0" />
+                           <div className="flex min-w-0 flex-1 flex-col gap-md-0">
+                              <p className="text-md-b1 font-semibold text-md-heading">Borrowers need Base Wallet</p>
+                              <p className="text-md-b2 font-medium text-md-neutral-1200">
+                                 Your account is using {user?.walletConnectorName || connectedWalletName || 'another wallet'}. Add Base Wallet so funded loans go to the right place.
+                              </p>
+                           </div>
+                        </div>
+                        <button
+                           type="button"
+                           onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
+                           className="inline-flex w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
+                        >
+                           Add Base Wallet
+                        </button>
+                     </div>
+                  ) : null}
 
                   {/* Network */}
                   {hasWallet ? (
@@ -647,6 +685,7 @@ export default function AccountSettings() {
             isOpen={showAvatarModal}
             isSaving={isSavingAvatar}
             currentAvatar={user?.avatarUrl}
+            currentAvatarBackground={user?.avatarBackground}
             onClose={() => setShowAvatarModal(false)}
             onSave={handleSaveAvatar}
          />
