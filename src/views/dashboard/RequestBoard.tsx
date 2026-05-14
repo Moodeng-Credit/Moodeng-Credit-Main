@@ -667,7 +667,13 @@ function RequestBoard$() {
                      <div className="flex items-center gap-3">
                         <UserAvatar size={48} />
                         <div className="flex flex-col gap-1">
-                           <p className="text-md-h5 font-semibold text-md-primary-2000">Hello, {displayFirstName}</p>
+                           <button
+                              type="button"
+                              onClick={() => navigate('/account/settings')}
+                              className="w-fit rounded-md-sm text-left text-md-h5 font-semibold text-md-primary-2000 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                           >
+                              Hello, {displayFirstName}
+                           </button>
                            {isBorrower ? (
                               <div className="flex items-center gap-2">
                                  {showVerify ? (
