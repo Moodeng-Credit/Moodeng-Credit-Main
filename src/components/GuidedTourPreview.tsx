@@ -9,7 +9,6 @@ type GuidedTourStep = {
 };
 
 interface GuidedTourPreviewProps {
-   autoAdvanceMs?: number;
    startImmediately?: boolean;
    onFinish?: (reason: 'complete' | 'skip') => void;
    onStepChange?: (stepIndex: number) => void;
@@ -28,7 +27,6 @@ type SpotlightBounds = {
 const SPOTLIGHT_INSET = 6;
 
 export default function GuidedTourPreview({
-   autoAdvanceMs = 6000,
    startImmediately = false,
    onFinish,
    onStepChange,
@@ -112,13 +110,6 @@ export default function GuidedTourPreview({
 
       window.history.back();
    }, [stepIndex]);
-
-   useEffect(() => {
-      if (!hasStarted || isLastStep) return undefined;
-
-      const timer = window.setTimeout(next, currentStep.durationMs ?? autoAdvanceMs);
-      return () => window.clearTimeout(timer);
-   }, [autoAdvanceMs, currentStep.durationMs, hasStarted, isLastStep, next, stepIndex]);
 
    const stepLabel = useMemo(() => `Step ${globalStepIndex + 1} of ${totalSteps ?? steps.length}`, [globalStepIndex, steps.length, totalSteps]);
 
