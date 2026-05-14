@@ -12,7 +12,7 @@ interface SocialAuthButtonsProps {
 }
 
 const btnBase =
-   'w-full flex flex-row justify-center items-center gap-2.5 px-5 py-4 h-[56px] min-h-[56px] rounded-xl transition-opacity hover:opacity-95 cursor-pointer';
+   'w-full min-w-0 flex flex-row justify-center items-center gap-2.5 px-4 py-4 h-[56px] min-h-[56px] rounded-xl transition-opacity hover:opacity-95 cursor-pointer overflow-hidden';
 
 const GoogleLogo = () => (
    <svg width="20" height="20" viewBox="0 0 24 24" className="shrink-0">
@@ -67,7 +67,7 @@ export function SocialAuthButtons({
    };
 
    return (
-      <div className="flex flex-col gap-4 w-full max-w-[400px]">
+      <div className="flex w-full max-w-[400px] min-w-0 flex-col gap-4">
          {/* Google: uses Supabase OAuth redirect flow */}
          {clientId && (
             <button
@@ -80,7 +80,7 @@ export function SocialAuthButtons({
             >
                <GoogleLogo />
                <span
-                  className="text-base font-medium tracking-[-0.02em] text-[#141218]"
+                  className="min-w-0 truncate text-base font-medium tracking-[-0.02em] text-[#141218]"
                   style={{ fontFamily: 'SF Pro Display, sans-serif' }}
                >
                   {isGoogleLoading ? 'Redirecting...' : googleLabel}
@@ -91,7 +91,7 @@ export function SocialAuthButtons({
 
          {/* Telegram: show the real Telegram widget directly */}
          {botUsername && (
-            <div className="w-full flex justify-center rounded-xl bg-[#1A8DFF] p-2 shadow-[0px_2px_4px_rgba(27,28,29,0.04)]">
+            <div className="flex min-h-[56px] w-full min-w-0 items-center justify-center overflow-hidden rounded-xl bg-[#1A8DFF] px-3 py-2 shadow-[0px_2px_4px_rgba(27,28,29,0.04)]">
                <TelegramAuthButton onAuth={onTelegramAuth} buttonSize="large" />
             </div>
          )}

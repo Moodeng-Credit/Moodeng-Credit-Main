@@ -62,10 +62,16 @@ export default function WalletConnected() {
 
          <div className="flex flex-col flex-1 items-center justify-center px-md-4 gap-md-4">
             <img src="/icons/check-3d.svg" alt="Success" className="size-[124px]" />
-            <h2 className="text-md-display text-md-heading text-center">Base Wallet Added</h2>
+            <h2 className="text-md-display text-md-heading text-center">Base Wallet Locked In</h2>
             <p className="text-md-b1 font-medium text-md-neutral-700 text-center">
-               Lenders can now fund loans directly to your Base wallet.
+               Lenders can fund loans to this wallet, and repayments should come from the same wallet.
             </p>
+            <div className="w-full rounded-md-lg border border-md-primary-100 bg-md-primary-900/5 p-md-3">
+               <p className="text-md-b2 font-semibold text-md-heading">Why this matters</p>
+               <p className="mt-1 text-md-b2 font-medium text-md-neutral-1200">
+                  Your Base wallet is part of your borrower record. Change it only if you need to use a different wallet going forward.
+               </p>
+            </div>
             <button
                type="button"
                onClick={handleNext}
@@ -97,7 +103,7 @@ export default function WalletConnected() {
                }}
                className="text-md-b2 font-semibold text-md-neutral-1500"
             >
-               Use a different wallet
+               Change Base wallet
             </button>
          </div>
       </div>

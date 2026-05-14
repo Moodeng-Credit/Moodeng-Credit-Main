@@ -104,17 +104,31 @@ function BorrowerConnectView({ onConnect, isConnecting }: { onConnect: () => voi
 
          <div className="flex flex-col flex-1 items-center justify-center px-md-4 gap-md-4">
             <img src="/icons/base-wallet.svg" alt="Base Wallet" className="size-16 rounded-md-xl" />
-            <h2 className="text-md-display text-md-heading text-center">Add Your Base Wallet</h2>
+            <h2 className="text-md-display text-md-heading text-center">Confirm Your Base Wallet</h2>
             <p className="text-md-b1 font-medium text-md-neutral-700 text-center">
-               Lenders fund loans directly to your Base wallet. Add it once before requesting a loan.
+               Loans are sent to this wallet and repayments come from it. Use the Base wallet you want tied to your Moodeng account.
             </p>
+            <div className="grid w-full gap-md-2 rounded-md-lg border border-md-primary-100 bg-md-primary-900/5 p-md-3 text-left">
+               <div className="flex items-start gap-md-2">
+                  <span className="mt-1 size-2 rounded-full bg-md-primary-900" />
+                  <p className="text-md-b2 font-medium text-md-neutral-1200">Already have a Base wallet? Connect it here.</p>
+               </div>
+               <div className="flex items-start gap-md-2">
+                  <span className="mt-1 size-2 rounded-full bg-md-primary-900" />
+                  <p className="text-md-b2 font-medium text-md-neutral-1200">Need one? Choose the Coinbase/Base wallet option when the wallet picker opens.</p>
+               </div>
+               <div className="flex items-start gap-md-2">
+                  <span className="mt-1 size-2 rounded-full bg-md-primary-900" />
+                  <p className="text-md-b2 font-medium text-md-neutral-1200">You can change it later, but your active loan history stays tied to the wallet you lock in.</p>
+               </div>
+            </div>
             <button
                type="button"
                onClick={onConnect}
                disabled={isConnecting}
                className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
             >
-               {isConnecting ? 'Adding…' : 'Add Base Wallet'}
+               {isConnecting ? 'Connecting...' : 'Connect Base Wallet'}
                {!isConnecting && (
                   <span
                      className="block size-6 bg-md-neutral-100"

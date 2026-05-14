@@ -4,11 +4,13 @@ type GuidedTourStep = {
    target: string;
    title: string;
    body: string;
+   cardPlacement?: 'top' | 'bottom';
    durationMs?: number;
 };
 
 interface GuidedTourPreviewProps {
    autoAdvanceMs?: number;
+   startImmediately?: boolean;
    onFinish?: (reason: 'complete' | 'skip') => void;
    onStepChange?: (stepIndex: number) => void;
    stepOffset?: number;
@@ -25,14 +27,24 @@ type SpotlightBounds = {
 
 const SPOTLIGHT_INSET = 6;
 
-export default function GuidedTourPreview({ autoAdvanceMs = 6000, onFinish, onStepChange, stepOffset = 0, steps, totalSteps }: GuidedTourPreviewProps) {
+export default function GuidedTourPreview({
+   autoAdvanceMs = 6000,
+   startImmediately = false,
+   onFinish,
+   onStepChange,
+   stepOffset = 0,
+   steps,
+   totalSteps
+}: GuidedTourPreviewProps) {
    const [isVisible, setIsVisible] = useState(true);
-   const [hasStarted, setHasStarted] = useState(false);
+   const [hasStarted, setHasStarted] = useState(startImmediately);
    const [stepIndex, setStepIndex] = useState(0);
    const [bounds, setBounds] = useState<SpotlightBounds | null>(null);
    const currentStep = steps[stepIndex];
    const isLastStep = stepIndex === steps.length - 1;
    const globalStepIndex = stepOffset + stepIndex;
+   const isFinalGlobalStep = globalStepIndex === (totalSteps ?? steps.length) - 1;
+   const stepCardPosition = currentStep?.cardPlacement === 'top' ? 'top-[88px]' : 'bottom-[104px]';
 
    const updateBounds = useCallback(() => {
       if (!hasStarted || !currentStep) return;
@@ -153,7 +165,9 @@ export default function GuidedTourPreview({ autoAdvanceMs = 6000, onFinish, onSt
                </div>
             </article>
          ) : (
-            <article className="pointer-events-auto fixed bottom-[104px] left-1/2 w-[calc(100vw-64px)] max-w-[340px] -translate-x-1/2 rounded-[22px] bg-[#3b087b] p-md-3 text-md-neutral-100 shadow-md-card">
+            <article
+               className={`pointer-events-auto fixed ${stepCardPosition} left-1/2 w-[calc(100vw-64px)] max-w-[340px] -translate-x-1/2 rounded-[22px] bg-[#3b087b] p-md-3 text-md-neutral-100 shadow-md-card`}
+            >
                <div className="text-[11px] font-semibold uppercase leading-4 tracking-[0.08em] text-white/70">{stepLabel}</div>
                <h2 className="mt-1 text-md-h5 font-semibold text-white">{currentStep.title}</h2>
                <p className="mt-md-1 text-md-b2 font-normal text-white/90">{currentStep.body}</p>
@@ -174,7 +188,7 @@ export default function GuidedTourPreview({ autoAdvanceMs = 6000, onFinish, onSt
                      className="min-w-[112px] rounded-full border-2 border-[#d99800] bg-white px-md-3 py-md-1 text-md-b2 font-semibold shadow-sm transition active:scale-[0.98]"
                      style={{ color: '#3b087b' }}
                   >
-                     {isLastStep ? 'Finished' : 'Next'}
+                     {isFinalGlobalStep ? 'Finished' : 'Next'}
                   </button>
                </div>
             </article>

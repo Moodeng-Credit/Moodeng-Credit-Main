@@ -39,13 +39,13 @@ const SheetShell = ({
    children: ReactNode;
    onClose: () => void;
 }) => (
-   <div className="fixed inset-0 z-[80] flex items-end">
-      <button type="button" aria-label={`Close ${title}`} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+   <div className="fixed inset-0 z-[80] flex items-center justify-center px-5 py-6">
+      <button type="button" aria-label={`Close ${title}`} className="absolute inset-0 bg-[#12071f]/40 backdrop-blur-sm" onClick={onClose} />
       <section
          role="dialog"
          aria-modal="true"
          aria-labelledby={labelledBy}
-         className="relative mx-auto max-h-[88dvh] w-full max-w-[440px] overflow-y-auto rounded-t-[28px] bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.15)]"
+         className="relative mx-auto max-h-[88dvh] w-full max-w-[440px] overflow-y-auto rounded-[28px] bg-white shadow-[0_18px_60px_rgba(20,18,24,0.22)]"
       >
          <div className="pb-2 pt-3">
             <div className="mx-auto h-1 w-12 rounded-full bg-[#c9c3d4]" />
@@ -111,10 +111,10 @@ export const MilestoneDetailSheet = ({
             {isLocked ? (
                <button
                   type="button"
-                  disabled
-                  className="rounded-md-lg bg-[#9285a0] px-4 py-3 text-md-b2 font-semibold text-white opacity-80"
+                  onClick={onClose}
+                  className="rounded-md-lg bg-md-neutral-500 px-4 py-3 text-md-b2 font-semibold text-md-heading active:scale-[0.99]"
                >
-                  Complete earlier milestones first
+                  Finish earlier milestones first
                </button>
             ) : (
                <Link to={actionHref} className="rounded-md-lg bg-md-primary-900 px-4 py-3 text-center text-md-b2 font-semibold text-white">
@@ -127,12 +127,12 @@ export const MilestoneDetailSheet = ({
 };
 
 export const MilestoneHelpSheet = ({ onClose }: { onClose: () => void }) => (
-   <div className="fixed inset-0 z-[80] flex items-start justify-center px-5 pt-[120px] [font-family:'SF_Pro_Display','SF_Pro',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]">
-      <button type="button" aria-label="Close milestone help" className="absolute inset-0 bg-black/20" onClick={onClose} />
+   <div className="fixed inset-0 z-[80] flex items-center justify-center px-5 [font-family:'SF_Pro_Display','SF_Pro',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]">
+      <button type="button" aria-label="Close milestone help" className="absolute inset-0 bg-[#12071f]/20" onClick={onClose} />
       <section
          role="tooltip"
          aria-label="Milestone help"
-         className="relative w-[300px] rounded-[8px] bg-[#360975] p-[10px] shadow-[0_8px_24px_rgba(20,18,24,0.18)] before:absolute before:right-[34px] before:top-[-6px] before:h-0 before:w-0 before:border-x-[6px] before:border-b-[6px] before:border-x-transparent before:border-b-[#360975]"
+         className="relative w-[300px] rounded-[12px] bg-[#360975] p-3 shadow-[0_8px_24px_rgba(20,18,24,0.18)]"
       >
          <p className="text-center text-[14px] font-normal leading-[21px] tracking-[-0.28px] text-[#f1e9fd]">
             Reputation milestones track how you build trust and credit over time through on-time repayments.

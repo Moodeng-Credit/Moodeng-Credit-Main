@@ -1,6 +1,6 @@
 import { type ChangeEvent, type FormEvent, type MouseEvent, type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { AlertTriangle, HelpCircle, Search, Wallet, X } from 'lucide-react';
+import { AlertTriangle, HelpCircle, Menu, Search, Wallet, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
@@ -9,6 +9,9 @@ import FilterSidebar from '@/components/filters/FilterSidebar';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import { ModalNote } from '@/components/worldId/modal/ModalNote';
+import { VerificationModalBody } from '@/components/worldId/modal/VerificationModalBody';
+import { VerificationModalHeader } from '@/components/worldId/modal/VerificationModalHeader';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { usePagination } from '@/hooks/usePagination';
@@ -38,14 +41,18 @@ import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
+import { FAQS } from '@/views/support/data/faqs';
 
 import UserAvatar from '@/components/UserAvatar';
 
 const LENDER_NOTE_STORAGE_KEY = 'moodeng_lender_note_dismissed';
-const IS_BORROWER_BASE_WALLET_GATE_ENABLED = false;
+const IS_BORROWER_BASE_WALLET_GATE_ENABLED = true;
 const VERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT = 5;
 const UNVERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT = 4;
+const GUEST_REQUEST_BOARD_TOUR_STEP_COUNT = 7;
 const DASHBOARD_TOUR_STEP_COUNT = 3;
+const TOUR_STEP_EXTRA_DURATION_MS = 3500;
+const PUBLIC_COMMON_QUESTIONS = FAQS;
 const REFERRAL_TEST_USER: User = {
    id: 'referral-test-user',
    username: 'referral-test',
@@ -60,6 +67,19 @@ const REFERRAL_TEST_USER: User = {
    createdAt: new Date(0).toISOString(),
    updatedAt: new Date(0).toISOString()
 };
+
+type RequestBoardTourStep = {
+   target: string;
+   title: string;
+   body: string;
+   cardPlacement?: 'top' | 'bottom';
+   durationMs?: number;
+};
+
+const slowTourStep = (step: RequestBoardTourStep): RequestBoardTourStep => ({
+   ...step,
+   durationMs: (step.durationMs ?? 6000) + TOUR_STEP_EXTRA_DURATION_MS
+});
 const LENDER_TOUR_USER: User = {
    id: 'lender-tour-user',
    username: 'lender-tour',
@@ -117,6 +137,8 @@ function RequestBoard$() {
    const [isSubmitting, setIsSubmitting] = useState(false);
    const [showFilters, setShowFilters] = useState(false);
    const [showLenderNote, setShowLenderNote] = useState(false);
+   const [showPublicQuestions, setShowPublicQuestions] = useState(false);
+   const [showGuestWorldIdPreview, setShowGuestWorldIdPreview] = useState(false);
 
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -126,6 +148,7 @@ function RequestBoard$() {
    const isReferralTestMode = import.meta.env.DEV && requestBoardSearchParams.has('referralTest');
    const forceTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('tourPreview');
    const showTourPreview = forceTourPreview || requestBoardSearchParams.has('tour');
+   const shouldStartTourImmediately = requestBoardSearchParams.get('startTour') === '1';
    const isLenderTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('lenderTourPreview');
    const shouldForceReferralTestUser = isReferralTestMode && showTourPreview;
    const effectiveUser = isLenderTourPreview
@@ -141,13 +164,14 @@ function RequestBoard$() {
    const shouldShowBorrowerTour =
       showTourPreview &&
       (!isAuthenticated || isBorrower) &&
-      shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, tourUserId, forceTourPreview);
+      (shouldStartTourImmediately || shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, tourUserId, forceTourPreview));
    const shouldShowLenderTour =
       showTourPreview &&
       isLenderTourPreview &&
       isAuthenticated &&
       !isBorrower &&
       shouldShowGuidedTour(LENDER_GUIDED_TOUR_ID, tourUserId, forceTourPreview);
+   const isGuestBorrowerTour = shouldShowBorrowerTour && !isAuthenticated;
    const recordedTourViewsRef = useRef<Set<string>>(new Set());
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
@@ -174,6 +198,10 @@ function RequestBoard$() {
    const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
    const successModalRef = useClickOutside<HTMLDivElement>(() => setShowPurple(false), showPurple) as RefObject<HTMLDivElement>;
    const baseWalletGateRef = useClickOutside<HTMLDivElement>(() => setShowBaseWalletGate(false), showBaseWalletGate) as RefObject<HTMLDivElement>;
+   const publicQuestionsRef = useClickOutside<HTMLDivElement>(
+      () => setShowPublicQuestions(false),
+      showPublicQuestions
+   ) as RefObject<HTMLDivElement>;
 
    const [filters, setFilters] = useState<LoanFilters>({
       amount: '',
@@ -223,8 +251,22 @@ function RequestBoard$() {
       navigate('/onboarding/wallet', { state: { returnTo: 'loan-request' } });
    }, [navigate]);
    const handleRequestBoardTourStepChange = useCallback((index: number) => {
+      if (!isAuthenticated) {
+         setShowGuestWorldIdPreview(index === 2);
+         setShowModal(index === 3);
+         setShowPublicQuestions(index === 5);
+
+         if (index === 5) {
+            window.setTimeout(() => {
+               const questionsPanel = document.querySelector<HTMLElement>('[data-tour-target="request-common-questions-panel"]');
+               questionsPanel?.scrollTo({ top: questionsPanel.scrollHeight, behavior: 'smooth' });
+            }, 180);
+         }
+         return;
+      }
+
       if (index >= 2) setShowModal(true);
-   }, []);
+   }, [isAuthenticated]);
    useEffect(() => {
       if (!shouldShowBorrowerTour || forceTourPreview) return;
 
@@ -292,8 +334,57 @@ function RequestBoard$() {
 
       navigate('/user/maya-demo?demo=rich&lenderTourPreview=1&tourPreview=1');
    }, [forceTourPreview, location.pathname, navigate, tourUserId]);
-   const requestBoardTourSteps = showVerify
-      ? [
+   const requestBoardTourSteps = useMemo(() => {
+      if (!isAuthenticated) {
+         return [
+            {
+               target: '[data-tour-target="request-first-card"]',
+               title: 'Request Board',
+               body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
+               durationMs: 6000
+            },
+            {
+               target: '[data-tour-target="request-apply-card"]',
+               title: 'Apply for a loan',
+               body: 'When you are ready to borrow, this card opens the loan request flow.',
+               durationMs: 6000
+            },
+            {
+               target: '[data-tour-target="guest-world-id-preview"]',
+               title: 'Verify first',
+               body: 'Borrowers complete this one-time World ID step before requesting a loan. It helps lenders know they are funding a real person.',
+               cardPlacement: 'top',
+               durationMs: 6500
+            },
+            {
+               target: '[data-tour-target="loan-borrow-amount"]',
+               title: 'Set your terms',
+               body: 'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.',
+               durationMs: 6000
+            },
+            {
+               target: '[data-tour-target="request-first-card"]',
+               title: 'Browse open requests',
+               body: 'You can look through current requests before creating an account. Each card shows the amount, repayment, borrower, and reason.',
+               durationMs: 6400
+            },
+            {
+               target: '[data-tour-target="request-common-questions-panel"]',
+               title: 'Common questions',
+               body: 'The hamburger opens Help and Support questions here. Scroll the list to browse more answers without leaving the board.',
+               durationMs: 5600
+            },
+            {
+               target: '[data-tour-target="request-auth-actions"]',
+               title: 'Continue when ready',
+               body: 'Sign up to request or fund a loan. Sign in if you already have a Moodeng account.',
+               durationMs: 5600
+            }
+         ].map(slowTourStep);
+      }
+
+      const baseSteps = showVerify
+         ? [
            {
               target: '[data-tour-target="request-latest-list"]',
               title: 'Request Board',
@@ -318,8 +409,8 @@ function RequestBoard$() {
               body: 'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.',
               durationMs: 6000
            }
-        ]
-      : [
+        ].map(slowTourStep)
+         : [
            {
               target: '[data-tour-target="request-latest-list"]',
               title: 'Request Board',
@@ -350,8 +441,17 @@ function RequestBoard$() {
               body: 'A short, specific reason helps lenders understand the request and builds trust before they fund it.',
               durationMs: 6000
            }
-        ];
-   const requestBoardTourStepCount = showVerify ? UNVERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT : VERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT;
+        ].map(slowTourStep);
+
+      return baseSteps;
+   }, [isAuthenticated, showVerify]);
+   const requestBoardTourStepCount = !isAuthenticated
+      ? GUEST_REQUEST_BOARD_TOUR_STEP_COUNT
+      : showVerify
+        ? UNVERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT
+        : VERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT;
+   const borrowerTourTotalSteps =
+      isAuthenticated && isBorrower ? requestBoardTourStepCount + DASHBOARD_TOUR_STEP_COUNT : requestBoardTourStepCount;
    const lenderTourSteps = [
       {
          target: '[data-tour-target="request-latest-list"]',
@@ -614,12 +714,28 @@ function RequestBoard$() {
                      </button>
                   </div>
                ) : (
-                  /* Public header — logo + wordmark only */
-                  <div className="flex items-center gap-2 px-md-5 py-md-3">
-                     <div className="w-10 h-10 rounded-full bg-md-primary-1200 flex items-center justify-center overflow-hidden">
-                        <img src={logoImageSrc} alt="Moodeng" className="w-8 h-8 object-contain" />
+                  <div className="relative flex items-center justify-between px-md-5 py-md-3">
+                     <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-full bg-md-primary-1200 flex items-center justify-center overflow-hidden">
+                           <img src={logoImageSrc} alt="Moodeng" className="w-8 h-8 object-contain" />
+                        </div>
+                        <span className="text-md-h5 font-semibold text-md-heading">Moodeng</span>
                      </div>
-                     <span className="text-md-h5 font-semibold text-md-heading">Moodeng</span>
+                     <button
+                        type="button"
+                        onClick={() => setShowPublicQuestions((isOpen) => !isOpen)}
+                        data-tour-target="request-common-questions"
+                        aria-label={showPublicQuestions ? 'Close common questions' : 'Open common questions'}
+                        aria-expanded={showPublicQuestions}
+                        className="size-11 rounded-full border border-md-primary-200 bg-white text-md-primary-1200 shadow-md-card inline-flex items-center justify-center active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
+                     >
+                        {showPublicQuestions ? <X className="size-5" strokeWidth={2.25} /> : <Menu className="size-5" strokeWidth={2.25} />}
+                     </button>
+                     <PublicQuestionsMenu
+                        isOpen={showPublicQuestions}
+                        clickOutsideRef={publicQuestionsRef}
+                        onClose={() => setShowPublicQuestions(false)}
+                     />
                   </div>
                )}
 
@@ -668,7 +784,10 @@ function RequestBoard$() {
                         />
                      </div>
                   ) : !isAuthenticated ? (
-                     <div className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3">
+                     <div
+                        className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3"
+                        data-tour-target="request-apply-card"
+                     >
                         <div className="flex flex-col gap-4 relative z-10">
                            <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
                               <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Need short-term support?</p>
@@ -754,17 +873,18 @@ function RequestBoard$() {
                      <div className="flex flex-col gap-5">
                         {isListLoading ? (
                            <div className="flex justify-center py-20">
-                              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-md-primary-900" />
+                              <div className="h-12 w-12 animate-spin rounded-full border-2 border-md-primary-100 border-t-md-primary-900" />
                            </div>
                         ) : visibleLoans && visibleLoans.length > 0 ? (
                            visibleLoans.map((loan) => (
-                              <UserCard
-                                 key={loan.id}
-                                 {...loan}
-                                 isBorrower={isBorrower}
-                                 isAuthenticated={isAuthenticated}
-                                 tourBorrowerUsername={loan.id.startsWith('lender-tour') ? 'maya-demo' : undefined}
-                              />
+                              <div key={loan.id} data-tour-target={visibleLoans[0]?.id === loan.id ? 'request-first-card' : undefined}>
+                                 <UserCard
+                                    {...loan}
+                                    isBorrower={isBorrower}
+                                    isAuthenticated={isAuthenticated}
+                                    tourBorrowerUsername={loan.id.startsWith('lender-tour') ? 'maya-demo' : undefined}
+                                 />
+                              </div>
                            ))
                         ) : (
                            <div className="text-center py-20 text-md-neutral-1200 text-md-b2">No loan requests found.</div>
@@ -779,7 +899,7 @@ function RequestBoard$() {
 
          {/* Bottom auth bar for logged-out users */}
          {!isAuthenticated && (
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-md-neutral-400 py-4 px-5">
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-md-neutral-400 py-4 px-5" data-tour-target="request-auth-actions">
                <div className="max-w-[440px] mx-auto flex items-center gap-3">
                   <Link
                      to="/sign-in"
@@ -797,7 +917,7 @@ function RequestBoard$() {
             </div>
          )}
 
-         {isAuthenticated && isBorrower && (
+         {((isAuthenticated && isBorrower) || isGuestBorrowerTour) && (
             <>
                <BaseWalletRequiredModal
                   isOpen={showBaseWalletGate}
@@ -808,8 +928,8 @@ function RequestBoard$() {
                <LoanRequestModal
                   isOpen={showModal}
                   onClose={handleCloseModal}
-                  showVerify={showVerify}
-                  user={effectiveUser}
+                  showVerify={isGuestBorrowerTour ? false : showVerify}
+                  user={effectiveUser || REFERRAL_TEST_USER}
                   loanAmount={loanAmount}
                   setLoanAmount={setLoanAmount}
                   totalRepaymentAmount={totalRepaymentAmount}
@@ -829,16 +949,98 @@ function RequestBoard$() {
                <SuccessModal isOpen={showPurple} onClose={handleSuccessModalClose} clickOutsideRef={successModalRef} />
             </>
          )}
+         {isGuestBorrowerTour && showGuestWorldIdPreview && <GuestWorldIdTourPreview />}
          {shouldShowBorrowerTour && (
             <GuidedTourPreview
+               key={`borrower-tour-${location.search}`}
+               startImmediately={shouldStartTourImmediately}
                onFinish={handleRequestBoardTourFinish}
                onStepChange={handleRequestBoardTourStepChange}
-               totalSteps={requestBoardTourStepCount + DASHBOARD_TOUR_STEP_COUNT}
+               totalSteps={borrowerTourTotalSteps}
                steps={requestBoardTourSteps}
             />
          )}
-         {shouldShowLenderTour && <GuidedTourPreview onFinish={handleLenderTourFinish} totalSteps={9} steps={lenderTourSteps} />}
+         {shouldShowLenderTour && (
+            <GuidedTourPreview key={`lender-tour-${location.search}`} onFinish={handleLenderTourFinish} totalSteps={9} steps={lenderTourSteps} />
+         )}
       </>
+   );
+}
+
+function GuestWorldIdTourPreview() {
+   return (
+      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#12071f]/40 px-[21px] py-md-4">
+         <div data-tour-target="guest-world-id-preview" className="w-full max-w-[398px] overflow-hidden rounded-[20px] bg-white shadow-2xl">
+            <VerificationModalHeader onClose={() => undefined} />
+            <VerificationModalBody onVerify={() => undefined} onCheckStatus={() => undefined} />
+            <ModalNote />
+         </div>
+      </div>
+   );
+}
+
+function PublicQuestionsMenu({
+   isOpen,
+   clickOutsideRef,
+   onClose
+}: {
+   isOpen: boolean;
+   clickOutsideRef: RefObject<HTMLDivElement>;
+   onClose: () => void;
+}) {
+   if (!isOpen) return null;
+
+   return (
+      <div
+         ref={clickOutsideRef}
+         className="absolute left-md-4 right-md-4 top-[calc(100%+4px)] z-[70] rounded-[22px] border border-md-primary-100 bg-white p-md-4 shadow-[0_18px_46px_rgba(44,19,82,0.16)]"
+      >
+         <div className="mb-md-3 flex items-start justify-between gap-md-3">
+            <div>
+               <p className="text-md-h5 font-semibold text-md-heading">Common questions</p>
+               <p className="mt-1 text-md-b3 font-medium text-md-neutral-800">Quick answers before you sign up.</p>
+            </div>
+            <button
+               type="button"
+               onClick={onClose}
+               aria-label="Close common questions"
+               className="size-9 shrink-0 rounded-full bg-md-neutral-200 text-md-neutral-1000 inline-flex items-center justify-center active:bg-md-neutral-300"
+            >
+               <X className="size-5" strokeWidth={2.25} />
+            </button>
+         </div>
+
+         <div
+            className="max-h-[56vh] overflow-y-auto overscroll-contain flex flex-col divide-y divide-md-neutral-400 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100"
+            data-tour-target="request-common-questions-panel"
+         >
+            {PUBLIC_COMMON_QUESTIONS.map((item) => (
+               <div key={item.question} className="px-md-3 py-md-3">
+                  <p className="text-md-b2 font-semibold text-md-heading">{item.question}</p>
+                  <p className="mt-1 line-clamp-3 whitespace-pre-line text-md-b3 font-medium leading-[1.45] text-md-neutral-800">
+                     {item.answer}
+                  </p>
+               </div>
+            ))}
+         </div>
+
+         <div className="mt-md-3 grid grid-cols-2 gap-md-2">
+            <Link
+               to={`/request-board?tour=1&startTour=1&tourRun=${Date.now()}`}
+               onClick={onClose}
+               className="rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-center text-md-b2 font-semibold text-md-neutral-100"
+            >
+               Take tour
+            </Link>
+            <Link
+               to="/support/faq"
+               onClick={onClose}
+               className="rounded-md-lg border border-md-primary-200 bg-md-primary-100 px-md-3 py-md-3 text-center text-md-b2 font-semibold text-md-primary-1200"
+            >
+               View FAQ
+            </Link>
+         </div>
+      </div>
    );
 }
 
@@ -856,7 +1058,7 @@ function BaseWalletRequiredModal({
    if (!isOpen) return null;
 
    return (
-      <div className="fixed inset-0 z-[100] bg-black/40 flex items-end sm:items-center justify-center px-md-3 py-md-4">
+      <div className="fixed inset-0 z-[100] bg-[#12071f]/40 flex items-end sm:items-center justify-center px-md-3 py-md-4">
          <div
             ref={clickOutsideRef}
             className="w-full max-w-[408px] rounded-t-[32px] sm:rounded-[32px] bg-white shadow-md-overlay overflow-hidden"
@@ -864,12 +1066,12 @@ function BaseWalletRequiredModal({
             <div className="flex items-center justify-between border-b border-md-neutral-400 px-md-4 py-md-3">
                <div className="flex items-center gap-md-2">
                   <img src="/icons/base-wallet.svg" alt="" className="size-11 rounded-md-lg" />
-                  <h2 className="text-md-h4 font-semibold text-md-heading">Add Base Wallet</h2>
+                  <h2 className="text-md-h4 font-semibold text-md-heading">Connect Base Wallet</h2>
                </div>
                <button
                   type="button"
                   onClick={onClose}
-                  aria-label="Close add Base wallet"
+                  aria-label="Close connect Base wallet"
                   className="size-11 rounded-full inline-flex items-center justify-center text-md-heading active:bg-md-neutral-300"
                >
                   <X className="size-7" strokeWidth={2.25} />
@@ -883,8 +1085,8 @@ function BaseWalletRequiredModal({
                         <Wallet className="size-5 text-md-primary-900" strokeWidth={1.8} />
                      </div>
                      <p className="text-md-b1 font-medium leading-[1.45] text-md-neutral-900">
-                        Lenders fund loans directly to your Base wallet. Add it once before requesting a loan. Borrowing on
-                        Moodeng uses USDC on Base, so transfers are free and required.
+                        Borrowers need a confirmed Base wallet before requesting a loan. Connect the Base wallet you want
+                        tied to funding, repayment, and your public trust record.
                      </p>
                   </div>
                </div>
@@ -894,7 +1096,7 @@ function BaseWalletRequiredModal({
                   onClick={onAddBaseWallet}
                   className="w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
                >
-                  Add Base Wallet
+                  Connect Base Wallet
                </button>
                <button
                   type="button"

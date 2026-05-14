@@ -490,6 +490,23 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
    const { error: updateError } = await supabase.from('users').update(updates).eq('id', user.id);
 
    if (updateError) {
+      const isWalletMetadataSchemaMismatch =
+         updateError.code === '42703' &&
+         (userData.walletProvider !== undefined ||
+            userData.walletConnectorName !== undefined ||
+            userData.walletChainId !== undefined);
+
+      if (isWalletMetadataSchemaMismatch && userData.walletAddress) {
+         const fallbackUpdates: Database['public']['Tables']['users']['Update'] = {
+            wallet_address: userData.walletAddress
+         };
+         const { error: fallbackError } = await supabase.from('users').update(fallbackUpdates).eq('id', user.id);
+
+         if (!fallbackError) {
+            return await fetchCurrentUserProfile();
+         }
+      }
+
       throw updateError;
    }
 

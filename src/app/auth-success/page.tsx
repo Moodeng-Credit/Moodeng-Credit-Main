@@ -10,7 +10,7 @@ function AccountCreatedView(): JSX.Element {
    return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-white px-6 py-12">
          <Link
-            to="/faq"
+            to="/support/faq"
             className="absolute top-6 right-6 w-10 h-10 rounded-full border border-[#8336F0] flex items-center justify-center text-[#8336F0] hover:bg-purple-50"
             aria-label="Help"
          >

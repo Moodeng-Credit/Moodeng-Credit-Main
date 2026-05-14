@@ -13,4 +13,12 @@ describe('walletProvider', () => {
       expect(getWalletProviderFromConnectorName('WalletConnect')).toBe('walletconnect');
       expect(isBaseWalletProvider('metamask')).toBe(false);
    });
+
+   it('does not treat missing or unknown wallet providers as Base', () => {
+      expect(getWalletProviderFromConnectorName(undefined)).toBe('unknown');
+      expect(getWalletProviderFromConnectorName('Injected')).toBe('unknown');
+      expect(isBaseWalletProvider(undefined)).toBe(false);
+      expect(isBaseWalletProvider(null)).toBe(false);
+      expect(isBaseWalletProvider('unknown')).toBe(false);
+   });
 });

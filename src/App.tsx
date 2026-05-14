@@ -29,7 +29,6 @@ import AccountRestrictedPage from '@/app/account-restricted/page';
 import Benefits from '@/app/benefits/page';
 import Dashboard from '@/views/dashboard/Dashboard';
 import RequestBoard from '@/views/dashboard/RequestBoard';
-import FAQ from '@/app/faq/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
 import CreditLevelingGuidePage from '@/app/credit-leveling-guide/page';
@@ -187,12 +186,12 @@ export default function App() {
             <Route path="/support/getting-started" element={<ProtectedRoute><SupportGettingStartedPage /></ProtectedRoute>} />
             <Route path="/support/guides" element={<ProtectedRoute><SupportGuidesPage /></ProtectedRoute>} />
             <Route path="/support/guides/:slug" element={<ProtectedRoute><SupportGuideDetailPage /></ProtectedRoute>} />
-            <Route path="/support/faq" element={<ProtectedRoute><SupportFAQPage /></ProtectedRoute>} />
+            <Route path="/support/faq" element={<SupportFAQPage />} />
             <Route path="/support/updates" element={<ProtectedRoute><SupportUpdatesPage /></ProtectedRoute>} />
             <Route path="/support/updates/:slug" element={<ProtectedRoute><SupportUpdateDetailPage /></ProtectedRoute>} />
 
             {/* Public */}
-            <Route path="/faq" element={<Layout><FAQ /></Layout>} />
+            <Route path="/faq" element={<Navigate to="/support/faq" replace />} />
             <Route path="/guide" element={<MarketingPageShell><Guide /></MarketingPageShell>} />
             <Route path="/credit-leveling-guide" element={<MarketingPageShell><CreditLevelingGuidePage /></MarketingPageShell>} />
             <Route path="/benefits" element={<MarketingPageShell><Benefits /></MarketingPageShell>} />
