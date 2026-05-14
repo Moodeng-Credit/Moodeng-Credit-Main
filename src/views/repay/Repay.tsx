@@ -7,6 +7,7 @@ import { useAccount, useConnect } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
+import UserAvatar from '@/components/UserAvatar';
 
 import { useLoanData } from '@/hooks/useLoanData';
 import useWallet from '@/hooks/useWallet';
@@ -88,11 +89,6 @@ const isLoanOverdue = (loan: Loan): boolean => parseDateSafely(loan.dueDate).get
 const isLoanDueSoon = (loan: Loan): boolean => {
    const totalHours = (parseDateSafely(loan.dueDate).getTime() - Date.now()) / (1000 * 60 * 60);
    return totalHours > 0 && totalHours < 24;
-};
-
-const getBorrowerInitial = (value?: string): string => {
-   if (!value?.trim()) return 'M';
-   return value.trim().charAt(0).toUpperCase();
 };
 
 const getEstimatedTrustPoints = (loan: Loan, repaymentAmount: number): number => {
@@ -301,9 +297,7 @@ export default function Repay() {
                      <p className="mt-1 text-md-b2 text-md-neutral-1200">Choose a loan, enter an amount, and confirm.</p>
                   </div>
                </div>
-               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md-pill bg-md-primary-100 text-lg font-semibold text-md-primary-1200 shadow-md-card">
-                  {getBorrowerInitial(user.displayName ?? user.username)}
-               </div>
+               <UserAvatar alt={user.displayName ?? user.username ?? 'Profile'} size={48} className="shadow-md-card" />
             </header>
 
             {activeLoans.length > 1 ? (
