@@ -444,7 +444,7 @@ export default function Repay() {
                            );
                         })}
 
-                        <div className="col-span-4 min-w-0 min-[430px]:col-span-3">
+                        <div className="col-span-3 min-w-0">
                            <label htmlFor="repayment-amount" className="sr-only">
                               Repay amount
                            </label>
@@ -474,7 +474,7 @@ export default function Repay() {
                            {amountError ? <p className="mt-2 text-md-b3 font-semibold text-md-red-600">{amountError}</p> : null}
                         </div>
 
-                        <div className="col-span-4 flex items-center justify-center min-[430px]:col-span-1 min-[430px]:justify-end">
+                        <div className="col-span-1 flex items-center justify-end">
                            <div className="flex w-full max-w-[104px] flex-col items-center gap-2">
                               <button
                                  type="button"
