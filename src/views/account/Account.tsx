@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import UserAvatar from '@/components/UserAvatar';
+import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { SHARED_FAQS, BORROWER_FAQS, LENDER_FAQS } from '@/views/account/data/accountFaqs';
 import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -102,6 +103,7 @@ export default function Account() {
    const iouPoints = user?.cs?.toLocaleString() ?? '0';
    const hasWallet = Boolean(user?.walletAddress);
    const isLender = user?.userRole === 'lender';
+   const isVerified = user?.isWorldId === 'ACTIVE';
    const walletSetupLabel = isLender ? 'Connect Wallet' : 'Add Base Wallet';
 
    const sharedFaqs = isLender ? SHARED_FAQS.filter((item) => item.id !== 'how-to-get-verified') : SHARED_FAQS;
@@ -132,11 +134,29 @@ export default function Account() {
                   </button>
                   <div className="flex flex-col gap-1">
                      <p className="text-md-h6 font-semibold text-md-heading">{displayName}</p>
-                     <div className="bg-md-primary-900 rounded-md-sm px-2 py-1 self-start">
-                        <p className="text-md-b3 font-semibold text-md-neutral-100 capitalize">
-                           IOU {iouPoints}
-                        </p>
-                     </div>
+                     {isLender && isVerified ? (
+                        <div className="bg-md-primary-900 rounded-md-sm px-2 py-1 self-start">
+                           <p className="text-md-b3 font-semibold text-md-neutral-100 capitalize">
+                              IOU {iouPoints}
+                           </p>
+                        </div>
+                     ) : isVerified ? (
+                        <span className="inline-flex w-fit items-center gap-1 rounded-md-sm bg-md-green-100 px-2 py-1 text-md-b3 font-semibold text-md-green-900">
+                           Verified
+                        </span>
+                     ) : (
+                        <WorldIDVerification>
+                           {({ open }) => (
+                              <button
+                                 type="button"
+                                 onClick={open}
+                                 className="w-fit rounded-md-sm bg-md-red-100 px-2 py-1 text-md-b3 font-semibold text-md-red-800 underline underline-offset-2"
+                              >
+                                 Verify to unlock
+                              </button>
+                           )}
+                        </WorldIDVerification>
+                     )}
                   </div>
                </div>
 
