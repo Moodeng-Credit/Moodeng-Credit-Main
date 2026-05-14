@@ -82,6 +82,72 @@
    cursor: pointer;
 }
 
+.academy-mecha-overlay {
+   position: fixed;
+   inset: 0;
+   z-index: 70;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   background: rgba(8, 5, 18, 0.48);
+   padding: 18px;
+}
+
+.academy-mecha-modal {
+   display: grid;
+   width: min(420px, 100%);
+   gap: 14px;
+   border: 1px solid #e8ddff;
+   border-radius: 24px;
+   background: #ffffff;
+   padding: 22px;
+   color: #171420;
+   box-shadow: 0 24px 60px rgba(8, 5, 18, 0.26);
+}
+
+.academy-mecha-modal img {
+   width: 84px;
+   height: 84px;
+   object-fit: contain;
+}
+
+.academy-mecha-modal__eyebrow {
+   margin: 0 0 4px;
+   color: #6d37e6;
+   font-size: 0.78rem;
+   font-weight: 950;
+   letter-spacing: 0.12em;
+   text-transform: uppercase;
+}
+
+.academy-mecha-modal h3 {
+   margin: 0;
+   color: #040033;
+   font-size: 1.55rem;
+   font-weight: 950;
+   line-height: 1.05;
+}
+
+.academy-mecha-modal p {
+   margin: 8px 0 0;
+   color: #4c4a55;
+   font-size: 0.98rem;
+   font-weight: 650;
+   line-height: 1.5;
+}
+
+.academy-mecha-modal button {
+   border: 0;
+   border-radius: 16px;
+   background: #6010d2;
+   padding: 13px 16px;
+   color: #ffffff;
+   font: inherit;
+   font-size: 0.95rem;
+   font-weight: 900;
+   cursor: pointer;
+}
+
 .academy-hero,
 .academy-steps {
    width: min(1120px, calc(100% - 32px));
@@ -777,19 +843,52 @@
    margin-top: 10px;
 }
 
-.academy-chips span,
+.academy-chips button,
 .academy-filter-row span {
+   border: 0;
    border-radius: 9px;
    background: #f1f1f1;
    padding: 7px 10px;
    color: #585858;
+   font: inherit;
    font-size: 0.82rem;
    font-weight: 800;
+   cursor: pointer;
 }
 
 .academy-chips .is-active {
    background: #d6e1ff;
    color: #1e56ff;
+}
+
+.academy-input-label {
+   display: grid;
+   gap: 6px;
+   margin-top: 10px;
+}
+
+.academy-input-label span {
+   color: #4c4a55;
+   font-size: 0.75rem;
+   font-weight: 900;
+}
+
+.academy-input-label input,
+.academy-input-label textarea {
+   width: 100%;
+   border: 1px solid #d8d6e3;
+   border-radius: 12px;
+   background: #ffffff;
+   padding: 10px 11px;
+   color: #040033;
+   font: inherit;
+   font-size: 0.88rem;
+   font-weight: 750;
+   outline: none;
+}
+
+.academy-input-label textarea {
+   resize: none;
 }
 
 .academy-board-top {
@@ -914,6 +1013,10 @@
    color: #2563eb;
    font-size: 2rem;
    line-height: 1;
+}
+
+.academy-grow-action {
+   margin-top: 14px;
 }
 
 .academy-quiz {

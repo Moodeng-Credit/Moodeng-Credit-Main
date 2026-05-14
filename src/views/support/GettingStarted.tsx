@@ -92,7 +92,7 @@ export default function GettingStarted() {
 
             <div className="flex flex-col gap-md-4 p-md-4">
                <div className="flex flex-col">
-                  <h2 className="text-md-h4 font-semibold text-md-heading tracking-[-0.96px] pb-md-2">Learn the Moodeng basics</h2>
+                  <h2 className="text-md-h4 font-semibold text-md-heading tracking-[-0.96px] pb-md-2">Learn the Moodeng Basics</h2>
                   {basics.map((item, idx) => (
                      <button
                         key={item.title}
