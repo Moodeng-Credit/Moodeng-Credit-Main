@@ -43,21 +43,21 @@ function PrimaryActionSlot({ action }: { action: BottomNavPrimaryAction }) {
 
    return (
       <div className="relative flex flex-1 flex-col items-center self-stretch">
-         <span className="pointer-events-none absolute -top-7 left-1/2 h-[70px] w-[88px] -translate-x-1/2 rounded-t-[52px] bg-md-neutral-100" />
+         <span className="pointer-events-none absolute -top-9 left-1/2 h-[82px] w-[104px] -translate-x-1/2 rounded-t-[60px] bg-md-neutral-100" />
          <button
             type="button"
             onClick={action.onClick}
             disabled={isDisabled}
             aria-label={action.ariaLabel}
             className={[
-               'relative z-10 -mt-6 flex h-14 w-14 items-center justify-center rounded-md-pill border-[5px] border-md-neutral-100 transition focus:outline-none focus:ring-2 focus:ring-md-primary-300',
+               'relative z-10 -mt-8 flex h-16 w-16 items-center justify-center rounded-md-pill border-[6px] border-md-neutral-100 shadow-none transition focus:outline-none focus:ring-2 focus:ring-md-primary-300',
                isDisabled
                   ? 'cursor-not-allowed bg-md-neutral-600 text-md-neutral-50'
-                  : 'bg-md-primary-1200 text-md-neutral-50 shadow-[0_14px_26px_rgba(96,16,210,0.28)] hover:bg-md-primary-1500 active:translate-y-0.5'
+                  : 'bg-md-primary-1200 text-md-neutral-50 hover:bg-md-primary-1500 active:translate-y-0.5'
             ].join(' ')}
          >
             <span
-               className="h-6 w-6 bg-current"
+               className="h-7 w-7 bg-current"
                aria-hidden="true"
                style={{
                   ...MASK_BASE,
@@ -68,7 +68,7 @@ function PrimaryActionSlot({ action }: { action: BottomNavPrimaryAction }) {
          </button>
          <span
             className={[
-               'relative z-10 mt-1 text-center text-[11px] font-semibold leading-none',
+               'relative z-10 mt-1 text-center text-xs font-semibold leading-none',
                isDisabled ? 'text-md-neutral-1000' : 'text-md-primary-1200'
             ].join(' ')}
          >
