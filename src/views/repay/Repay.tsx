@@ -1,7 +1,7 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { ArrowLeft, CheckCircle2, Clock3, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
@@ -161,6 +161,7 @@ export default function Repay() {
          : null;
 
    const paymentCtaAmount = repaymentAmount ? `$${formatCurrency(parsedRepaymentAmount)}` : 'loan';
+   const isRepayDisabled = isProcessing || !repaymentAmount || Boolean(amountError) || parsedRepaymentAmount <= 0;
 
    const handleSelectLoan = (loanId: string) => {
       setSelectedLoanId(loanId);
@@ -281,7 +282,7 @@ export default function Repay() {
                         Pick a loan
                      </h2>
                   </div>
-                  <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2">
+                  <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                      {activeLoans.map((loan) => {
                         const isSelected = loan.id === selectedLoan?.id;
 
@@ -291,9 +292,9 @@ export default function Repay() {
                               key={loan.id}
                               onClick={() => handleSelectLoan(loan.id)}
                               aria-pressed={isSelected}
-                              className={`min-h-[86px] rounded-md-input border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
+                              className={`min-h-[74px] w-[178px] shrink-0 rounded-md-input border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
                                  isSelected
-                                    ? 'border-md-primary-900 bg-md-primary-100 text-md-heading shadow-[0_8px_20px_rgba(96,16,210,0.12)]'
+                                    ? 'border-md-primary-900 bg-md-primary-100 text-md-heading'
                                     : 'border-md-neutral-300 bg-white text-md-heading shadow-md-card hover:border-md-primary-300'
                               }`}
                            >
@@ -306,12 +307,14 @@ export default function Repay() {
                                     aria-hidden="true"
                                  />
                               </div>
-                              <div className="mt-4 flex items-end justify-between gap-2">
+                              <div className="mt-3 flex items-end justify-between gap-2">
                                  <div className="min-w-0">
                                     <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
                                     <p className="text-md-b1 font-semibold text-md-heading">${formatCurrency(getRemainingAmount(loan))}</p>
                                  </div>
-                                 <span className="text-md-b3 font-semibold text-md-primary-1200">{getProgressPercent(loan)}% paid</span>
+                                 {getProgressPercent(loan) > 0 ? (
+                                    <span className="text-md-b3 font-semibold text-md-primary-1200">{getProgressPercent(loan)}% paid</span>
+                                 ) : null}
                               </div>
                            </button>
                         );
@@ -323,7 +326,7 @@ export default function Repay() {
             {selectedLoan ? (
                <section className="rounded-md-xl border border-md-neutral-300 bg-white p-4 shadow-[0_10px_28px_rgba(31,28,37,0.05)]">
                   <div className="flex items-start justify-between gap-4">
-                     <div className="min-w-0">
+                     <div className="min-w-0 self-start">
                         <p className="text-md-b3 font-semibold uppercase text-md-neutral-1200">You’re paying</p>
                         <h2 className="mt-1 truncate text-md-h5 text-md-heading">{selectedLoan.reason || 'Active loan'}</h2>
                      </div>
@@ -336,41 +339,25 @@ export default function Repay() {
                   </div>
 
                   <div
-                     className={`mt-3 flex items-center justify-between gap-3 rounded-md-input border px-3 py-3.5 ${
+                     className={`mt-3 grid grid-cols-2 gap-x-3 gap-y-1 rounded-md-input border px-3 py-3.5 ${
                         isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan)
                            ? 'border-[#f4d2d2] bg-[#fff7f7]'
                            : 'border-md-neutral-300 bg-md-neutral-100'
                      }`}
                   >
-                     <div className="flex min-w-0 items-center gap-3">
-                        <span
-                           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md-pill ${
-                              isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan) ? 'bg-[#ffe6e6]' : 'bg-md-primary-100'
-                           }`}
-                        >
-                           <Clock3
-                              className={`h-5 w-5 ${
-                                 isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan) ? 'text-md-red-600' : 'text-md-primary-1100'
-                              }`}
-                              aria-hidden="true"
-                           />
-                        </span>
-                        <div className="min-w-0">
-                           <p className="text-md-b3 font-medium text-md-neutral-1200">
-                              {isLoanOverdue(selectedLoan) ? 'Past due' : 'Time left'}
-                           </p>
-                           <p
-                              className={`truncate text-[20px] font-[680] leading-6 ${
-                                 isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan) ? 'text-md-red-600' : 'text-md-primary-1200'
-                              }`}
-                           >
-                              {getDueCountdownCopy(selectedLoan)}
-                           </p>
-                        </div>
-                     </div>
-                     <div className="shrink-0 text-right">
-                        <p className="text-md-b3 font-medium text-md-neutral-1200">Due date</p>
-                        <p className="text-md-b2 font-semibold text-md-heading">{getDueDateShortCopy(selectedLoan)}</p>
+                     <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
+                        {isLoanOverdue(selectedLoan) ? 'Past due' : 'Time left'}
+                     </p>
+                     <p className="text-right text-md-b3 font-medium leading-5 text-md-neutral-1200">Due date</p>
+                     <p
+                        className={`min-w-0 truncate text-[20px] font-[680] leading-6 ${
+                           isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan) ? 'text-md-red-600' : 'text-md-primary-1200'
+                        }`}
+                     >
+                        {getDueCountdownCopy(selectedLoan)}
+                     </p>
+                     <div className="text-right">
+                        <p className="text-md-b2 font-semibold leading-6 text-md-heading">{getDueDateShortCopy(selectedLoan)}</p>
                         <p className="text-md-b3 text-md-neutral-1200">{getDueTimeUtcCopy(selectedLoan)}</p>
                      </div>
                   </div>
@@ -391,66 +378,94 @@ export default function Repay() {
                   ) : null}
 
                   <div className={hasExistingRepayment ? 'mt-4' : 'mt-3'}>
-                     <label htmlFor="repayment-amount" className="text-sm font-semibold text-md-heading">
-                        Amount to pay now
-                     </label>
-                     <div className="mt-2 flex min-h-[56px] items-stretch overflow-hidden rounded-md-input border border-md-neutral-500 bg-md-neutral-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition focus-within:border-md-primary-900 focus-within:ring-2 focus-within:ring-md-primary-100">
-                        <div className="flex min-w-[104px] items-center justify-center gap-2 bg-[#2f7fd1] px-3 text-md-b1 font-semibold text-md-neutral-50">
-                           <span
-                              className="flex h-6 w-6 items-center justify-center text-[16px] font-[800] leading-none"
-                              aria-hidden="true"
-                           >
-                              ($)
-                           </span>
-                           {selectedLoan.coin || 'USDC'}
+                     <div className="grid grid-cols-4 gap-2">
+                        <div className="col-span-4">
+                           <p className="text-md-b1 font-semibold text-md-heading">Repay amount</p>
+                           <p className="mt-1 text-md-b3 text-md-neutral-1200">Use quick select, then continue.</p>
                         </div>
-                        <div className="flex min-w-0 flex-1 items-center gap-2 px-4 py-2">
-                           <input
-                              id="repayment-amount"
-                              type="text"
-                              inputMode="decimal"
-                              value={repaymentAmount}
-                              onChange={handleAmountChange}
-                              placeholder="0.00"
-                              aria-label="Amount to pay now"
-                              className="w-[8ch] bg-transparent text-[28px] font-normal leading-none text-md-heading outline-none placeholder:text-md-neutral-1000"
-                           />
+
+                        {quickRepaymentFractions.map((option) => {
+                           const isQuickSelected = selectedQuickFraction === option.value;
+                           const quickAmount = selectedRemaining * option.value;
+
+                           return (
+                              <button
+                                 type="button"
+                                 key={option.label}
+                                 onClick={() => setQuickAmount(option.value)}
+                                 aria-pressed={isQuickSelected}
+                                 className={`relative min-h-13 rounded-md-input border px-2 text-md-b2 font-semibold transition focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
+                                    isQuickSelected
+                                       ? 'border-md-primary-500 bg-md-primary-100 text-md-primary-1200'
+                                       : 'border-md-primary-100 bg-md-primary-100/45 text-md-primary-1200 hover:border-md-primary-400 hover:bg-md-primary-100'
+                                 }`}
+                              >
+                                 {isQuickSelected ? (
+                                    <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-md-pill border border-md-primary-500 bg-white text-md-primary-1200 shadow-md-card">
+                                       <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                                    </span>
+                                 ) : null}
+                                 <span className="block">{option.label}</span>
+                                 <span className="mt-0.5 block text-md-b3 font-medium text-md-neutral-1200">
+                                    ${formatCurrency(quickAmount)}
+                                 </span>
+                              </button>
+                           );
+                        })}
+
+                        <div className="col-span-4 min-w-0 min-[430px]:col-span-3">
+                           <label htmlFor="repayment-amount" className="sr-only">
+                              Repay amount
+                           </label>
+                           <div className="mt-3 flex min-h-[56px] items-stretch overflow-hidden rounded-md-input border border-md-neutral-500 bg-md-neutral-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition focus-within:border-md-primary-900 focus-within:ring-2 focus-within:ring-md-primary-100">
+                              <div className="flex min-w-[104px] items-center justify-center gap-2 bg-[#2f7fd1] px-3 text-md-b1 font-semibold text-md-neutral-50">
+                                 <span
+                                    className="flex h-6 w-6 items-center justify-center text-[16px] font-[800] leading-none"
+                                    aria-hidden="true"
+                                 >
+                                    ($)
+                                 </span>
+                                 {selectedLoan.coin || 'USDC'}
+                              </div>
+                              <div className="flex min-w-0 flex-1 items-center gap-2 px-4 py-2">
+                                 <input
+                                    id="repayment-amount"
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={repaymentAmount}
+                                    onChange={handleAmountChange}
+                                    placeholder="0.00"
+                                    aria-label="Repay amount"
+                                    className="w-full min-w-0 bg-transparent text-[28px] font-normal leading-none text-md-heading outline-none placeholder:text-md-neutral-1000"
+                                 />
+                              </div>
+                           </div>
+                           {amountError ? <p className="mt-2 text-md-b3 font-semibold text-md-red-600">{amountError}</p> : null}
+                        </div>
+
+                        <div className="col-span-4 flex items-center justify-center min-[430px]:col-span-1 min-[430px]:justify-end">
+                           <div className="flex w-full max-w-[104px] flex-col items-center gap-2">
+                              <button
+                                 type="button"
+                                 onClick={handleRepay}
+                                 disabled={isRepayDisabled}
+                                 aria-label={account.isConnected ? `Continue to repay ${paymentCtaAmount}` : 'Connect wallet to repay'}
+                                 className="flex aspect-square w-full max-w-[78px] flex-col items-center justify-center rounded-md-pill bg-md-primary-1200 text-md-neutral-50 shadow-[0_10px_20px_rgba(96,16,210,0.2)] transition hover:bg-md-primary-1500 focus:outline-none focus:ring-2 focus:ring-md-primary-300 disabled:cursor-not-allowed disabled:bg-md-neutral-500 disabled:shadow-none"
+                              >
+                                 <ArrowRight className="h-6 w-6" aria-hidden="true" />
+                                 <span className="mt-0.5 text-[11px] font-semibold leading-none">
+                                    {isProcessing ? 'Wait' : 'Continue'}
+                                 </span>
+                              </button>
+                           </div>
                         </div>
                      </div>
-                     {amountError ? <p className="mt-2 text-md-b3 font-semibold text-md-red-600">{amountError}</p> : null}
-                  </div>
-
-                  <div className="mt-3 grid grid-cols-4 gap-2">
-                     {quickRepaymentFractions.map((option) => {
-                        const isQuickSelected = selectedQuickFraction === option.value;
-
-                        return (
-                           <button
-                              type="button"
-                              key={option.label}
-                              onClick={() => setQuickAmount(option.value)}
-                              aria-pressed={isQuickSelected}
-                              className={`min-h-10 rounded-md-input border px-2 text-md-b2 font-semibold transition focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
-                                 isQuickSelected
-                                    ? 'border-md-primary-1200 bg-md-primary-1200 text-md-neutral-50'
-                                    : 'border-md-primary-100 bg-md-primary-100/45 text-md-primary-1200 hover:border-md-primary-400 hover:bg-md-primary-100'
-                              }`}
-                           >
-                              {option.label}
-                           </button>
-                        );
-                     })}
                   </div>
 
                   <div className="mt-4 rounded-md-input border border-md-primary-100 bg-md-primary-100/35 p-3">
                      <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                            <p className="text-md-b3 font-semibold text-md-heading">Repayment progress</p>
-                           <p className="mt-0.5 text-md-b3 text-md-neutral-1200">
-                              {validPreviewPayment > 0
-                                 ? `This payment covers ${repaymentSharePercent}% of what is left.`
-                                 : 'Enter an amount to preview what changes.'}
-                           </p>
                         </div>
                         {validPreviewPayment > 0 ? (
                            <span className="inline-flex shrink-0 items-center gap-1 rounded-md-pill bg-md-green-100 px-2.5 py-1 text-md-b3 font-semibold text-md-green-900">
@@ -489,28 +504,16 @@ export default function Repay() {
                                  </span>
                               ) : null}
                            </div>
-                           {validPreviewPayment > 0 ? (
+                           {validPreviewPayment > 0 && remainingAfterPayment > 0 ? (
                               <span className="inline-flex items-center gap-1 font-semibold text-md-heading">
                                  <span className="h-2.5 w-2.5 rounded-md-pill bg-[#d8d0df]" aria-hidden="true" />
-                                 {`$${formatCurrency(remainingAfterPayment)} left after payment`}
+                                 {`$${formatCurrency(remainingAfterPayment)} remaining after this payment`}
                               </span>
                            ) : null}
                         </div>
                      ) : null}
                   </div>
 
-                  <button
-                     type="button"
-                     onClick={handleRepay}
-                     disabled={isProcessing || !repaymentAmount || Boolean(amountError) || parsedRepaymentAmount <= 0}
-                     className="mt-3 flex min-h-13 w-full items-center justify-center rounded-md-input bg-md-primary-1200 px-5 py-3.5 text-md-b1 font-semibold text-md-neutral-50 shadow-[0_10px_22px_rgba(96,16,210,0.2)] transition hover:bg-md-primary-1500 focus:outline-none focus:ring-2 focus:ring-md-primary-300 disabled:cursor-not-allowed disabled:bg-md-neutral-500 disabled:shadow-none"
-                  >
-                     {isProcessing
-                        ? 'Processing repayment...'
-                        : account.isConnected
-                          ? `Repay ${paymentCtaAmount}`
-                          : 'Connect wallet to repay'}
-                  </button>
                </section>
             ) : (
                <section className="rounded-md-xl border border-md-green-100 bg-md-neutral-50 p-6 text-center shadow-md-card">
