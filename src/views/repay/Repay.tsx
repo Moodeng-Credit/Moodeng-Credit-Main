@@ -145,7 +145,6 @@ export default function Repay() {
    const currentProgressPercent = selectedLoan ? getProgressPercent(selectedLoan) : 0;
    const hasExistingRepayment = selectedLoan ? toNumber(selectedLoan.repaidAmount) > 0 : false;
    const previewProgressPercent = selectedLoan ? getPreviewProgressPercent(selectedLoan, validPreviewPayment) : 0;
-   const repaymentSharePercent = selectedRemaining > 0 ? Math.min(100, Math.round((validPreviewPayment / selectedRemaining) * 100)) : 0;
    const remainingAfterPayment = Math.max(0, selectedRemaining - validPreviewPayment);
    const estimatedTrustPoints = selectedLoan ? getEstimatedTrustPoints(selectedLoan, validPreviewPayment) : 0;
    const selectedQuickFraction =
