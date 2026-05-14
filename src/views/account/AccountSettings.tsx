@@ -382,6 +382,7 @@ export default function AccountSettings() {
    const [isSavingAvatar, setIsSavingAvatar] = useState(false);
    const [walletCopied, setWalletCopied] = useState(false);
    const [showWalletAddress, setShowWalletAddress] = useState(false);
+   const [showWalletActions, setShowWalletActions] = useState(false);
    const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
 
    const hasWallet = Boolean(user?.walletAddress);
@@ -448,9 +449,9 @@ export default function AccountSettings() {
       if (addr.length <= 12) return addr;
       return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
    };
-   const walletLabel = borrowerHasConfirmedBaseWallet
+   const walletLabel = isBorrower && hasWallet
       ? 'Base Wallet'
-      : user?.walletConnectorName || connectedWalletName || truncateAddress(user?.walletAddress || '');
+      : user?.walletConnectorName || connectedWalletName || 'Wallet';
 
    const toggleNotif = (key: keyof NotificationPrefs) => {
       setNotifPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -578,14 +579,17 @@ export default function AccountSettings() {
                            <>
                               <button
                                  type="button"
-                                 onClick={() => setShowWalletAddress((current) => !current)}
-                                 className="flex min-w-0 flex-1 items-center gap-md-2 text-left"
+                                 onClick={() => {
+                                    setShowWalletAddress((current) => !current);
+                                    setShowWalletActions((current) => !current);
+                                 }}
+                                 className="flex min-w-0 flex-1 items-center justify-between gap-md-2 text-left"
                                  aria-expanded={showWalletAddress}
                               >
                                  <span className="shrink-0 text-md-b1 text-md-neutral-1200">{walletLabel}</span>
-                                 <span className="h-6 w-px shrink-0 bg-md-neutral-600" aria-hidden="true" />
-                                 <span className="min-w-0 truncate text-md-b2 font-medium text-md-neutral-900">
-                                    {showWalletAddress ? user?.walletAddress : 'Show address'}
+                                 <span className="mx-md-2 h-6 w-px shrink-0 bg-md-neutral-600" aria-hidden="true" />
+                                 <span className="min-w-0 flex-1 truncate text-right text-md-b2 font-medium text-md-neutral-900">
+                                    {showWalletAddress ? user?.walletAddress : truncateAddress(user?.walletAddress || '')}
                                  </span>
                               </button>
                               <button type="button" onClick={handleCopyWallet} className="shrink-0 ml-2" aria-label="Copy wallet address">
@@ -619,7 +623,7 @@ export default function AccountSettings() {
                      ) : null}
                   </div>
 
-                  {borrowerNeedsBaseWallet && hasWallet ? (
+                  {borrowerNeedsBaseWallet && hasWallet && showWalletActions ? (
                      <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-primary-900 bg-md-primary-900/10 p-md-3">
                         <div className="flex items-start gap-md-2">
                            <img src="/icons/base-wallet.svg" alt="" className="size-9 rounded-md-md shrink-0" />
@@ -642,7 +646,7 @@ export default function AccountSettings() {
                       </div>
                   ) : null}
 
-                  {borrowerHasConfirmedBaseWallet ? (
+                  {borrowerHasConfirmedBaseWallet && showWalletActions ? (
                      <div className="flex items-start gap-md-2 rounded-md-lg border border-md-primary-100 bg-md-primary-900/5 p-md-3">
                         <img src="/icons/base-wallet.svg" alt="" className="size-8 rounded-md-md shrink-0" />
                         <div className="min-w-0">
