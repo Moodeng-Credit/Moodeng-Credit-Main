@@ -1,5 +1,5 @@
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import type { RootState } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
@@ -8,7 +8,9 @@ const TUTORIAL_URL = 'https://youtube.com/shorts/fKpBC9zD6Hk';
 
 export default function Welcome() {
    const navigate = useNavigate();
+   const location = useLocation();
    const user = useSelector((state: RootState) => state.auth.user);
+   const isPreview = import.meta.env.DEV && location.pathname.includes('start-preview');
    const requestBoardTourPath = import.meta.env.DEV ? '/request-board?tourPreview=1' : '/request-board?tour=1';
 
    return (
@@ -77,7 +79,7 @@ export default function Welcome() {
                <div className="flex flex-col gap-md-3 w-full">
                   <button
                      type="button"
-                     onClick={() => navigate('/onboarding/wallet')}
+                     onClick={() => navigate(isPreview ? '/onboarding/wallet-preview' : '/onboarding/wallet')}
                      className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100"
                   >
                      <span

@@ -1,12 +1,14 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 export default function WorldIdVerification() {
    const navigate = useNavigate();
+   const location = useLocation();
+   const isPreview = import.meta.env.DEV && location.pathname.includes('preview');
 
    const handleVerified = () => {
-      navigate('/onboarding/congratulations', { replace: true });
+      navigate(isPreview ? '/onboarding/congratulations-preview' : '/onboarding/congratulations', { replace: true });
    };
 
    return (
@@ -24,7 +26,7 @@ export default function WorldIdVerification() {
                {({ open }) => (
                   <button
                      type="button"
-                     onClick={open}
+                     onClick={isPreview ? handleVerified : open}
                      className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100"
                   >
                      Verify with World ID

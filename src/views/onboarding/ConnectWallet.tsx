@@ -17,6 +17,7 @@ export default function ConnectWallet() {
    const user = useSelector((state: RootState) => state.auth.user);
    const navigate = useNavigate();
    const location = useLocation();
+   const isPreview = import.meta.env.DEV && location.pathname.includes('wallet-preview');
    const { isConnected } = useAccount();
    const { connect, connectors, status, error } = useConnect();
    const { openConnectModal } = useConnectModal();
@@ -37,6 +38,11 @@ export default function ConnectWallet() {
 
    const handleConnect = useCallback(
       (key: WalletConnectorKey) => {
+         if (isPreview) {
+            navigate('/onboarding/wallet-connected-preview');
+            return;
+         }
+
          const connector = connectorsByName.get(WALLET_CONNECTOR_NAMES[key]);
          if (!connector) {
             showToast(TOAST_TYPES.ERROR, 'Wallet unavailable', `${WALLET_CONNECTOR_NAMES[key]} is not available right now.`);
@@ -46,7 +52,7 @@ export default function ConnectWallet() {
          setUserInitiatedConnection(true);
          connect({ connector });
       },
-      [connect, connectorsByName, showToast]
+      [connect, connectorsByName, isPreview, navigate, showToast]
    );
 
    useEffect(() => {
@@ -67,11 +73,12 @@ export default function ConnectWallet() {
       }
    }, [status, error, showToast]);
 
-   if (!user?.userRole) {
+   const previewRole = new URLSearchParams(location.search).get('role') === 'lender' ? 'lender' : 'borrower';
+   const role = user?.userRole || (isPreview ? previewRole : undefined);
+
+   if (!role) {
       return <Navigate to="/onboarding/role" replace />;
    }
-
-   const role = user.userRole;
 
    if (role === 'borrower') {
       return (
