@@ -24,7 +24,7 @@ type QuizQuestion = {
 
 const quizSecondsPerQuestion = 12;
 const quizPointsPerAnswer = 2;
-const tutorialVideoUrl = 'https://youtube.com/shorts/fKpBC9zD6Hk?feature=share';
+const tutorialVideoEmbedUrl = 'https://www.youtube.com/embed/fKpBC9zD6Hk';
 const quizPassingScore = 4;
 const baseWalletCreateUrl = 'https://wallet.coinbase.com/';
 const worldIdOrbUrl = 'https://world.org/find-orb';
@@ -376,6 +376,7 @@ export default function AcademyGuide(): JSX.Element {
    const [quizSubmitted, setQuizSubmitted] = useState(false);
    const [quizTimer, setQuizTimer] = useState(quizSecondsPerQuestion);
    const [lockedMessage, setLockedMessage] = useState('');
+   const [showTutorialVideo, setShowTutorialVideo] = useState(false);
 
    const quizScore = useMemo(() => {
       return quizQuestions.reduce((score, question) => {
@@ -598,19 +599,30 @@ export default function AcademyGuide(): JSX.Element {
                <div className="academy-hero__actions">
                   <Link to="/request-board">See Request Board</Link>
                </div>
-               <a
+               <button
+                  type="button"
                   className="academy-video-callout"
                   id="academy-tutorial-video"
-                  href={tutorialVideoUrl}
-                  target="_blank"
-                  rel="noreferrer"
+                  aria-expanded={showTutorialVideo}
+                  aria-controls="academy-tutorial-embed"
+                  onClick={() => setShowTutorialVideo((isOpen) => !isOpen)}
                >
                   <div className="academy-video-callout__play" aria-hidden="true" />
                   <div>
-                     <strong>Tutorial video</strong>
+                     <strong>Tutorial Video</strong>
                      <span>Watch the quick Moodeng walkthrough.</span>
                   </div>
-               </a>
+               </button>
+               {showTutorialVideo ? (
+                  <div className="academy-video-embed" id="academy-tutorial-embed">
+                     <iframe
+                        src={tutorialVideoEmbedUrl}
+                        title="Moodeng Academy tutorial video"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                     />
+                  </div>
+               ) : null}
             </div>
             <div className="academy-hero__visual" aria-hidden="true">
                <div className="academy-mecha-card">
