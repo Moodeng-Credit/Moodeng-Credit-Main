@@ -381,6 +381,7 @@ export default function AccountSettings() {
    const [showAvatarModal, setShowAvatarModal] = useState(false);
    const [isSavingAvatar, setIsSavingAvatar] = useState(false);
    const [walletCopied, setWalletCopied] = useState(false);
+   const [showWalletAddress, setShowWalletAddress] = useState(false);
    const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
 
    const hasWallet = Boolean(user?.walletAddress);
@@ -447,7 +448,7 @@ export default function AccountSettings() {
       if (addr.length <= 12) return addr;
       return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
    };
-   const walletDisplayName = borrowerHasConfirmedBaseWallet
+   const walletLabel = borrowerHasConfirmedBaseWallet
       ? 'Base Wallet'
       : user?.walletConnectorName || connectedWalletName || truncateAddress(user?.walletAddress || '');
 
@@ -575,10 +576,19 @@ export default function AccountSettings() {
                      <div className="flex items-center justify-between bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
                         {hasWallet ? (
                            <>
-                              <span className="text-md-b1 text-md-neutral-1200 truncate">
-                                 {walletDisplayName}
-                              </span>
-                              <button type="button" onClick={handleCopyWallet} className="shrink-0 ml-2">
+                              <button
+                                 type="button"
+                                 onClick={() => setShowWalletAddress((current) => !current)}
+                                 className="flex min-w-0 flex-1 items-center gap-md-2 text-left"
+                                 aria-expanded={showWalletAddress}
+                              >
+                                 <span className="shrink-0 text-md-b1 text-md-neutral-1200">{walletLabel}</span>
+                                 <span className="h-6 w-px shrink-0 bg-md-neutral-600" aria-hidden="true" />
+                                 <span className="min-w-0 truncate text-md-b2 font-medium text-md-neutral-900">
+                                    {showWalletAddress ? user?.walletAddress : 'Show address'}
+                                 </span>
+                              </button>
+                              <button type="button" onClick={handleCopyWallet} className="shrink-0 ml-2" aria-label="Copy wallet address">
                                  <div
                                     className="w-5 h-5 bg-md-primary-900"
                                     style={{
