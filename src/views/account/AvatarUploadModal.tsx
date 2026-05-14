@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { X } from 'lucide-react';
+import { useDispatch } from 'react-redux';
 
+import { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 import { AVATAR_BACKGROUNDS, DEFAULT_AVATAR_BACKGROUND } from '@/config/avatarBackgrounds';
+import { updateUser } from '@/store/slices/authSlice';
+import type { AppDispatch } from '@/store/store';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -43,11 +47,13 @@ export default function AvatarUploadModal({
    onClose,
    onSave,
 }: AvatarUploadModalProps) {
+   const dispatch = useDispatch<AppDispatch>();
    const [step, setStep] = useState<Step>('select');
    const [imgEl, setImgEl] = useState<HTMLImageElement | null>(null);
    const [scale, setScale] = useState(1);
    const [offset, setOffset] = useState({ x: 0, y: 0 }); // natural-image-pixel offset from centre
    const [avatarBackground, setAvatarBackground] = useState(currentAvatarBackground ?? DEFAULT_AVATAR_BACKGROUND);
+   const [isSavingBackground, setIsSavingBackground] = useState(false);
    const [error, setError] = useState('');
 
    const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -191,6 +197,25 @@ export default function AvatarUploadModal({
       );
    };
 
+   const handleSaveBackground = async () => {
+      setError('');
+      setIsSavingBackground(true);
+      try {
+         const result = await dispatch(updateUser({ avatarBackground }));
+
+         if (!updateUser.fulfilled.match(result)) {
+            throw new Error(result.error?.message || 'Failed to save avatar background.');
+         }
+
+         reset();
+         onClose();
+      } catch (err) {
+         setError(err instanceof Error ? err.message : 'Failed to save avatar background.');
+      } finally {
+         setIsSavingBackground(false);
+      }
+   };
+
    // ─── Render ───────────────────────────────────────────────────────────────
 
    if (!isOpen) return null;
@@ -222,14 +247,55 @@ export default function AvatarUploadModal({
             {/* ── Step 1 — file select ── */}
             {step === 'select' && (
                <>
-                  {currentAvatar && (
-                     <img
-                        src={currentAvatar}
-                        alt="Current profile photo"
-                        className="w-16 h-16 rounded-full object-cover border-2 border-md-primary-100 shrink-0"
-                        style={{ backgroundColor: avatarBackground }}
-                     />
-                  )}
+                  <img
+                     src={currentAvatar || PLACEHOLDER_AVATAR}
+                     alt="Current profile photo"
+                     className="w-16 h-16 rounded-full object-cover border-2 border-md-primary-100 shrink-0"
+                     style={{ backgroundColor: avatarBackground }}
+                  />
+
+                  <div className="w-full rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 p-3">
+                     <p className="text-md-b3 font-semibold text-md-heading">Change background only</p>
+                     <div className="mt-3 grid grid-cols-8 gap-2">
+                        {AVATAR_BACKGROUNDS.map((option) => {
+                           const isSelected = avatarBackground === option.value;
+                           return (
+                              <button
+                                 key={option.value}
+                                 type="button"
+                                 onClick={() => setAvatarBackground(option.value)}
+                                 className={`flex aspect-square items-center justify-center rounded-full border bg-white transition ${
+                                    isSelected ? 'border-md-primary-900 shadow-[0_0_0_3px_rgba(131,54,240,0.16)]' : 'border-md-neutral-400'
+                                 }`}
+                                 aria-label={`${option.name} avatar background`}
+                                 aria-pressed={isSelected}
+                              >
+                                 <span
+                                    className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-black/10"
+                                    style={{ backgroundColor: option.value }}
+                                 >
+                                    {isSelected ? (
+                                       <span
+                                          className={`h-3 w-3 rounded-full ${
+                                             option.value === DEFAULT_AVATAR_BACKGROUND || option.name === 'Night' ? 'bg-white' : 'bg-md-primary-1200'
+                                          }`}
+                                          aria-hidden="true"
+                                       />
+                                    ) : null}
+                                 </span>
+                              </button>
+                           );
+                        })}
+                     </div>
+                     <button
+                        type="button"
+                        disabled={isSaving || isSavingBackground || avatarBackground === (currentAvatarBackground ?? DEFAULT_AVATAR_BACKGROUND)}
+                        onClick={handleSaveBackground}
+                        className="mt-3 w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-50"
+                     >
+                        {isSavingBackground ? 'Saving…' : 'Save Background'}
+                     </button>
+                  </div>
 
                   <label
                      className="w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed border-md-neutral-600 rounded-md-lg p-6 cursor-pointer hover:border-md-primary-900 transition-colors"
