@@ -14,7 +14,7 @@ export default function WorldIdVerification() {
    return (
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col items-center justify-center max-w-modal mx-auto w-full px-md-4 py-md-5">
          <div className="flex flex-col items-center gap-md-3 text-center w-full">
-            <img src="/world-id.png" alt="" aria-hidden="true" className="w-40" />
+            <img src="/hippos/hippo-with-id-card.png" alt="" aria-hidden="true" className="w-40" />
             <div className="flex flex-col gap-md-1">
                <h1 className="text-md-display text-md-heading">Verify You&rsquo;re Human</h1>
                <p className="text-md-b1 font-medium text-md-neutral-700">
