@@ -593,14 +593,18 @@ export default function AccountSettings() {
                                  </span>
                               </button>
                               <button type="button" onClick={handleCopyWallet} className="shrink-0 ml-2" aria-label="Copy wallet address">
-                                 <div
-                                    className="w-5 h-5 bg-md-primary-900"
-                                    style={{
-                                       ...ICON_MASK,
-                                       WebkitMaskImage: "url('/icons/copy.svg')",
-                                       maskImage: "url('/icons/copy.svg')",
-                                    }}
-                                 />
+                                 {walletCopied ? (
+                                    <span className="text-md-b2 font-semibold text-md-primary-900">Copied</span>
+                                 ) : (
+                                    <div
+                                       className="w-5 h-5 bg-md-primary-900"
+                                       style={{
+                                          ...ICON_MASK,
+                                          WebkitMaskImage: "url('/icons/copy.svg')",
+                                          maskImage: "url('/icons/copy.svg')",
+                                       }}
+                                    />
+                                 )}
                               </button>
                            </>
                         ) : (
@@ -616,11 +620,6 @@ export default function AccountSettings() {
                            </>
                         )}
                      </div>
-                     {walletCopied ? (
-                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-md-heading text-md-neutral-100 text-md-b3 px-3 py-1 rounded-md-md whitespace-nowrap">
-                           Wallet Address Copied
-                        </div>
-                     ) : null}
                   </div>
 
                   {borrowerNeedsBaseWallet && hasWallet && showWalletActions ? (
