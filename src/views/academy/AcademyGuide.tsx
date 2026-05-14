@@ -26,8 +26,7 @@ const quizSecondsPerQuestion = 12;
 const quizPointsPerAnswer = 2;
 const tutorialVideoUrl = 'https://youtube.com/shorts/fKpBC9zD6Hk?feature=share';
 const quizPassingScore = 4;
-const baseWalletAndroidUrl = 'https://play.google.com/store/apps/details?id=org.toshi&hl=en';
-const baseWalletIosUrl = 'https://apps.apple.com/th/app/base-formerly-coinbase-wallet/id1278383455';
+const baseWalletCreateUrl = 'https://keys.coinbase.com/connect?sdkName=%40base-org%2Faccount&sdkVersion=2.4.0&origin=https%3A%2F%2Fhome.moodeng.app&coop=undefined';
 const worldIdOrbUrl = 'https://world.org/find-orb';
 
 const steps: AcademyStep[] = [
@@ -184,11 +183,8 @@ const WalletScreen = (): JSX.Element => (
             <strong>Base</strong>
          </div>
          <div className="academy-wallet-actions">
-            <a className="academy-primary academy-primary--dark" href={baseWalletAndroidUrl} target="_blank" rel="noreferrer">
-               Android
-            </a>
-            <a className="academy-primary" href={baseWalletIosUrl} target="_blank" rel="noreferrer">
-               iOS
+            <a className="academy-primary academy-primary--dark" href={baseWalletCreateUrl} target="_blank" rel="noreferrer">
+               Create Base Wallet
             </a>
          </div>
          <small>Gasless transactions are supported on Base.</small>
@@ -403,6 +399,28 @@ export default function AcademyGuide(): JSX.Element {
       setQuizStatus('playing');
    };
 
+   const hasQuizProgress = quizStatus !== 'start' || Object.keys(quizAnswers).length > 0 || quizIndex > 0 || quizSubmitted;
+
+   const handleQuizRoleChange = (nextRole: QuizRole) => {
+      if (nextRole === quizRole) {
+         return;
+      }
+
+      if (!hasQuizProgress) {
+         setQuizRole(nextRole);
+         return;
+      }
+
+      const shouldRestart = window.confirm('Switching reward type will restart the quiz from question 1. Continue?');
+
+      if (!shouldRestart) {
+         return;
+      }
+
+      setQuizRole(nextRole);
+      resetQuiz();
+   };
+
    const handleQuizPrimary = () => {
       if (!activeQuestion) {
          return;
@@ -505,6 +523,14 @@ export default function AcademyGuide(): JSX.Element {
       if (step.id === 'verify') {
          return (
             <a className="academy-step__action" href={worldIdOrbUrl} target="_blank" rel="noreferrer">
+               {step.action}
+            </a>
+         );
+      }
+
+      if (step.id === 'wallet') {
+         return (
+            <a className="academy-step__action" href={baseWalletCreateUrl} target="_blank" rel="noreferrer">
                {step.action}
             </a>
          );
@@ -625,14 +651,14 @@ export default function AcademyGuide(): JSX.Element {
                      <button
                         className={quizRole === 'borrower' ? 'is-active' : undefined}
                         type="button"
-                        onClick={() => setQuizRole('borrower')}
+                        onClick={() => handleQuizRoleChange('borrower')}
                      >
                         Borrower
                      </button>
                      <button
                         className={quizRole === 'lender' ? 'is-active' : undefined}
                         type="button"
-                        onClick={() => setQuizRole('lender')}
+                        onClick={() => handleQuizRoleChange('lender')}
                      >
                         Lender
                      </button>

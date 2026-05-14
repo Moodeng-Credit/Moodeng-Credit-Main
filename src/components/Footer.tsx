@@ -72,7 +72,7 @@ export default function Footer() {
                         <Link to="/benefits" className="mt-3 hover:text-blue-300 transition-colors">
                            Benefits
                         </Link>
-                        <Link to="/guide" className="mt-3 hover:text-blue-300 transition-colors">
+                        <Link to="/academy" className="mt-3 hover:text-blue-300 transition-colors">
                            Guide
                         </Link>
                         <Link to="/whylend" className="mt-3 hover:text-blue-300 transition-colors">

@@ -26,7 +26,7 @@ export default function SimplePage() {
                            </Link>
                         </div>
                         <div className="inline-flex items-center justify-center gap-[34px] relative flex-[0_0_auto]">
-                           <Link to="/guide"
+                           <Link to="/academy"
                               className="relative w-[100px] h-10 mt-[-1.00px] [font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-white text-xl text-center tracking-[-0.20px] leading-10 whitespace-nowrap"
                            >
                               Guide

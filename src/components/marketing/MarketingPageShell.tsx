@@ -13,7 +13,7 @@ interface MarketingPageShellProps {
 const navItems = [
    { label: 'Borrow', href: '/benefits' },
    { label: 'Lend', href: '/whylend' },
-   { label: 'Academy', href: '/guide' }
+   { label: 'Academy', href: '/academy' }
 ];
 
 const LogoMark = ({ className = 'size-12' }: { className?: string }) => (
@@ -133,7 +133,7 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                      <Link to="/whylend" className="hover:text-md-primary-1200">
                         Why lend
                      </Link>
-                     <Link to="/guide" className="hover:text-md-primary-1200">
+                     <Link to="/academy" className="hover:text-md-primary-1200">
                         Academy
                      </Link>
                   </nav>

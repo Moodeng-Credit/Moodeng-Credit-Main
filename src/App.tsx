@@ -192,7 +192,8 @@ export default function App() {
 
             {/* Public */}
             <Route path="/faq" element={<Navigate to="/support/faq" replace />} />
-            <Route path="/guide" element={<MarketingPageShell><Guide /></MarketingPageShell>} />
+            <Route path="/academy" element={<MarketingPageShell><Guide /></MarketingPageShell>} />
+            <Route path="/guide" element={<Navigate to="/academy" replace />} />
             <Route path="/credit-leveling-guide" element={<MarketingPageShell><CreditLevelingGuidePage /></MarketingPageShell>} />
             <Route path="/benefits" element={<MarketingPageShell><Benefits /></MarketingPageShell>} />
             <Route path="/whylend" element={<MarketingPageShell><WhyLend /></MarketingPageShell>} />

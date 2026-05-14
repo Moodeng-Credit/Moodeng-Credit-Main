@@ -49,7 +49,7 @@ const BASICS: BasicsItem[] = [
       description: 'Borrowing, Base wallet, Trust Score, and Credit Level',
       icon: 'book-open.svg',
       bg: 'bg-md-primary-1200',
-      path: '/guide'
+      path: '/academy'
    }
 ];
 
