@@ -72,7 +72,7 @@ export default function Footer() {
                         <Link to="/benefits" className="mt-3 hover:text-blue-300 transition-colors">
                            Benefits
                         </Link>
-                        <Link to="/guide" className="mt-3 hover:text-blue-300 transition-colors">
+                        <Link to="/academy" className="mt-3 hover:text-blue-300 transition-colors">
                            Guide
                         </Link>
                         <Link to="/whylend" className="mt-3 hover:text-blue-300 transition-colors">
@@ -109,7 +109,7 @@ export default function Footer() {
                         <a href="mailto:support@moodeng.app" className="hover:text-blue-300 transition-colors">
                            Contact Support
                         </a>
-                        <Link to="/faq" className="mt-3 hover:text-blue-300 transition-colors">
+                        <Link to="/support/faq" className="mt-3 hover:text-blue-300 transition-colors">
                            FAQ
                         </Link>
                         <a href="#" className="mt-3 hover:text-blue-300 transition-colors">

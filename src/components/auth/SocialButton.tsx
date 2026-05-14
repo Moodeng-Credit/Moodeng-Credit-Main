@@ -30,7 +30,7 @@ export function SocialButton({
 }: SocialButtonProps) {
    const isSolid = variant === 'solid';
    const baseClasses =
-      'flex items-center justify-center gap-3 w-full py-3 px-4 rounded-xl text-base font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed';
+      'flex min-w-0 items-center justify-center gap-3 w-full py-3 px-4 rounded-xl text-base font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden';
    const outlineClasses = 'bg-white border border-neutral-200 text-black hover:bg-neutral-50 hover:border-neutral-300';
    const solidClasses = textColor ?? 'text-white';
 
@@ -56,7 +56,7 @@ export function SocialButton({
          style={style}
       >
          <span className="shrink-0 w-5 h-5 flex items-center justify-center">{icon}</span>
-         <span>{text}</span>
+         <span className="min-w-0 truncate">{text}</span>
       </button>
    );
 }

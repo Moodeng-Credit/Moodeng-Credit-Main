@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
-import { fetchUser } from '@/store/slices/authSlice';
+import { fetchUser, logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { AccountStatus } from '@/types/authTypes';
 
@@ -31,8 +31,10 @@ const formatOverdueAmount = (amount: number) => {
 
 export default function AccountRestrictedPage() {
    const dispatch = useDispatch<AppDispatch>();
+   const navigate = useNavigate();
    const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
    const [isRecoveringSession, setIsRecoveringSession] = useState(false);
+   const [isSigningOut, setIsSigningOut] = useState(false);
    const mockStatus = getMockStatus();
    const status = mockStatus ?? user?.accountStatus;
    const isRestricted = status === 'blocked' || status === 'banned';
@@ -46,6 +48,13 @@ export default function AccountRestrictedPage() {
    const supportLink = isDefaultedBorrower
       ? EXTERNAL_LINKS.support.messengerDefaulted
       : EXTERNAL_LINKS.support.messenger;
+
+   const handleSignOut = async () => {
+      if (isSigningOut) return;
+      setIsSigningOut(true);
+      await dispatch(logoutUser());
+      navigate('/sign-in', { replace: true });
+   };
 
    useEffect(() => {
       if (mockStatus || !isAuthChecked || user?.id || !isSupabaseBrowserConfigured()) {
@@ -118,7 +127,17 @@ export default function AccountRestrictedPage() {
    })();
 
    return (
-      <main className="min-h-screen bg-[#F7F4FB] px-4 py-8 flex items-center justify-center">
+      <main className="relative min-h-screen bg-[#F7F4FB] px-4 py-8 flex items-center justify-center">
+         {hasProfileSession ? (
+            <button
+               type="button"
+               onClick={handleSignOut}
+               disabled={isSigningOut}
+               className="absolute right-4 top-4 inline-flex min-h-11 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold tracking-[-0.02em] text-[#6010D2] shadow-[0_8px_24px_rgba(44,19,82,0.10)] transition-opacity hover:opacity-90 disabled:opacity-60"
+            >
+               {isSigningOut ? 'Signing out...' : 'Log out'}
+            </button>
+         ) : null}
          <section className="w-full max-w-[440px] rounded-[24px] bg-white px-6 py-8 shadow-[0_18px_50px_rgba(44,19,82,0.12)]">
             <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-full bg-[#EFE7FF] text-[#8336F0]">
                <i className="fas fa-lock text-2xl" aria-hidden="true" />

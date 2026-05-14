@@ -38,7 +38,7 @@ export const financialInclusionButtons: ActionButtonConfig[] = [
       text: 'See How it Works',
       bgColor: 'bg-[#171420]',
       textColor: 'text-[#f6f6f6]',
-      href: '/guide#guide',
+      href: '/academy#academy-steps',
       width: 'w-[209px]'
    }
 ];
@@ -133,7 +133,7 @@ export const navigationButtons: ActionButtonConfig[] = [
       text: 'Guide',
       bgColor: 'bg-transparent',
       textColor: 'text-white',
-      href: '/guide',
+      href: '/academy',
       width: 'w-auto'
    },
    {

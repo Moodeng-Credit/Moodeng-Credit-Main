@@ -15,7 +15,7 @@ export type WalletOption = {
 export const LENDER_WALLET_OPTIONS: WalletOption[] = [
    {
       key: 'coinbase',
-      name: 'Coinbase',
+      name: 'Base Account',
       iconSrc: '/icons/base-wallet.svg',
       iconBg: 'bg-transparent',
       iconPadding: 'p-0',

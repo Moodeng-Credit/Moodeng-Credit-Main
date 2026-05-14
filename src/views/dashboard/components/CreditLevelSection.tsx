@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 
 import { Link } from 'react-router-dom';
 
+import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+
 import { getCreditLevelNumber, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 
@@ -88,7 +90,17 @@ export default function CreditLevelSection({ currentCs, isVerified }: CreditLeve
          <div className="flex items-center justify-between">
             <LvlBadge level={levelNumber} />
             {isLocked ? (
-               <span className="text-md-b2 font-semibold text-md-neutral-700">Verify to unlock</span>
+               <WorldIDVerification>
+                  {({ open }) => (
+                     <button
+                        type="button"
+                        onClick={open}
+                        className="text-md-b2 font-semibold text-md-neutral-700 underline decoration-md-primary-900/40 underline-offset-4 active:text-md-primary-900"
+                     >
+                        Verify to unlock
+                     </button>
+                  )}
+               </WorldIDVerification>
             ) : (
                <span className="text-md-b2 font-semibold">
                   <span className="text-md-primary-800">${effectiveLimit}</span>

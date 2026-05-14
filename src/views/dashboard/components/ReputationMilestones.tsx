@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { Link, useSearchParams } from 'react-router-dom';
 
-import { MILESTONE_ICON_CONFIG, MilestoneDetailSheet, MilestoneHelpSheet } from '@/views/dashboard/components/MilestoneSheets';
+import { MILESTONE_ICON_CONFIG, MilestoneDetailSheet } from '@/views/dashboard/components/MilestoneSheets';
 import type { DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
 
 interface ReputationMilestonesProps {
@@ -59,12 +59,14 @@ function MilestoneCard({ milestone, onView }: { milestone: DashboardMilestone; o
                </span>
             )}
             {milestone.status === 'locked' && (
-               <span
-                  className={`inline-flex h-8 items-center justify-center gap-1 whitespace-nowrap rounded-[8px] px-3 py-2 text-[10px] font-[590] leading-[15px] tracking-[-0.2px] antialiased ${config.labelClass}`}
+               <button
+                  type="button"
+                  onClick={() => onView(milestone)}
+                  className={`inline-flex h-8 items-center justify-center gap-1 whitespace-nowrap rounded-[8px] px-3 py-2 text-[10px] font-[590] leading-[15px] tracking-[-0.2px] antialiased transition-transform active:scale-[0.98] ${config.labelClass}`}
                >
                   Locked
                   <img src="/icons/locked.svg" alt="" className="h-3.5 w-3.5 invert" />
-               </span>
+               </button>
             )}
          </div>
       </div>
@@ -95,7 +97,7 @@ export default function ReputationMilestones({ milestones, isLoading = false }: 
 
    return (
       <div className="rounded-md-lg bg-md-neutral-100 p-4 shadow-md-card [font-family:'SF_Pro_Display','SF_Pro',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]">
-         <div className="mb-1 flex items-center justify-between gap-3">
+         <div className="relative mb-1 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
                <h2 className="text-[18px] font-[590] leading-[1.2] tracking-[-0.72px] text-[#040033]">Reputation Milestones</h2>
                <button
@@ -106,6 +108,22 @@ export default function ReputationMilestones({ milestones, isLoading = false }: 
                >
                   <img src="/icons/question_light.svg" alt="" className="h-5 w-5" />
                </button>
+               {isHelpOpen && (
+                  <div
+                     role="tooltip"
+                     className="absolute left-0 top-8 z-20 w-[300px] rounded-[10px] bg-[#360975] px-3 py-2 shadow-[0_8px_24px_rgba(20,18,24,0.18)] before:absolute before:left-[202px] before:top-[-6px] before:h-0 before:w-0 before:border-x-[6px] before:border-b-[6px] before:border-x-transparent before:border-b-[#360975]"
+                  >
+                     <button
+                        type="button"
+                        aria-label="Close milestone help"
+                        className="absolute inset-0"
+                        onClick={() => setIsHelpOpen(false)}
+                     />
+                     <p className="relative text-center text-[14px] font-normal leading-[21px] tracking-[-0.28px] text-[#f1e9fd]">
+                        Milestones show what to do next to build trust with lenders.
+                     </p>
+                  </div>
+               )}
             </div>
             <Link
                to={milestonesHref}
@@ -126,7 +144,6 @@ export default function ReputationMilestones({ milestones, isLoading = false }: 
                  ))}
          </div>
          <MilestoneDetailSheet milestone={selectedMilestone} previewQuery={previewQuery} onClose={() => setSelectedMilestoneId(null)} />
-         {isHelpOpen && <MilestoneHelpSheet onClose={() => setIsHelpOpen(false)} />}
       </div>
    );
 }

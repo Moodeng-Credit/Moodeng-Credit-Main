@@ -31,6 +31,8 @@ export function useWalletSync() {
    const { showToast } = useToast();
 
    const username = useSelector((state: RootState) => state.auth.username);
+   const userId = useSelector((state: RootState) => state.auth.user?.id);
+   const isAuthChecked = useSelector((state: RootState) => state.auth.isAuthChecked);
    const storedWalletAddress = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const storedWalletChainId = useSelector((state: RootState) => state.auth.user?.walletChainId);
    const storedWalletConnectorName = useSelector((state: RootState) => state.auth.user?.walletConnectorName);
@@ -84,7 +86,7 @@ export function useWalletSync() {
          connector: account.connector?.name
       });
 
-      if (!username || !account.isConnected || !account.address) {
+      if (!isAuthChecked || !username || !userId || !account.isConnected || !account.address) {
          if (account.status === 'reconnecting') {
             console.log('[WalletSync] Still reconnecting...');
          }
@@ -106,7 +108,7 @@ export function useWalletSync() {
          }
       }
       // If no stored wallet, allow the connection (initial connection scenario)
-   }, [username, storedWalletAddress, account.isConnected, account.address, disconnect]);
+   }, [isAuthChecked, username, userId, storedWalletAddress, account.isConnected, account.address, account.status, disconnect]);
 
    // Show wallet connection reminder if user has stored wallet but not connected
    useEffect(() => {
@@ -123,7 +125,7 @@ export function useWalletSync() {
 
    // Save wallet address when user connects a wallet
    useEffect(() => {
-      if (!username || !account.isConnected || !account.address) return;
+      if (!isAuthChecked || !username || !userId || !account.isConnected || !account.address) return;
 
       const connectedAddress = account.address.toLowerCase();
       const storedAddress = storedWalletAddress?.toLowerCase();
@@ -166,6 +168,14 @@ export function useWalletSync() {
                      undefined,
                      undefined
                   );
+               } else if (/auth|session|jwt|authenticated/i.test(errorMessage)) {
+                  showToast(
+                     TOAST_TYPES.ERROR,
+                     'Sign in again',
+                     'Your login session expired before Moodeng could lock this wallet. Please sign in again, then connect your Base wallet.',
+                     undefined,
+                     undefined
+                  );
                } else {
                   // Generic error with logs
                   const errorDetails = `Code: ${errorCode}\nMessage: ${errorMessage}`;
@@ -188,7 +198,9 @@ export function useWalletSync() {
       account.address,
       account.chainId,
       account.connector?.name,
+      isAuthChecked,
       username,
+      userId,
       storedWalletAddress,
       storedWalletChainId,
       storedWalletConnectorName,

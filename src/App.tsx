@@ -29,7 +29,6 @@ import AccountRestrictedPage from '@/app/account-restricted/page';
 import Benefits from '@/app/benefits/page';
 import Dashboard from '@/views/dashboard/Dashboard';
 import RequestBoard from '@/views/dashboard/RequestBoard';
-import FAQ from '@/app/faq/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
 import CreditLevelingGuidePage from '@/app/credit-leveling-guide/page';
@@ -147,9 +146,14 @@ export default function App() {
             <Route path="/onboarding/wallet" element={<ProtectedRoute><WalletConnect /></ProtectedRoute>} />
             <Route path="/onboarding/wallet/connected" element={<ProtectedRoute><WalletConnected /></ProtectedRoute>} />
             <Route path="/onboarding/congratulations" element={<ProtectedRoute><CongratulationsPage /></ProtectedRoute>} />
+            {import.meta.env.DEV ? <Route path="/onboarding/start-preview" element={<OnboardingWelcome />} /> : null}
+            {import.meta.env.DEV ? <Route path="/onboarding/wallet-preview" element={<WalletConnect />} /> : null}
+            {import.meta.env.DEV ? <Route path="/onboarding/wallet-connected-preview" element={<WalletConnected />} /> : null}
+            {import.meta.env.DEV ? <Route path="/onboarding/congratulations-preview" element={<CongratulationsPage />} /> : null}
 
             {/* Verification */}
             <Route path="/verify-world-id" element={<ProtectedRoute><RoleGuard><WorldIdVerification /></RoleGuard></ProtectedRoute>} />
+            {import.meta.env.DEV ? <Route path="/verify-world-id-preview" element={<WorldIdVerification />} /> : null}
 
             {/* Borrower */}
             <Route path="/dashboard" element={<ProtectedRoute><RoleGuard><Dashboard /></RoleGuard></ProtectedRoute>} />
@@ -187,13 +191,14 @@ export default function App() {
             <Route path="/support/getting-started" element={<ProtectedRoute><SupportGettingStartedPage /></ProtectedRoute>} />
             <Route path="/support/guides" element={<ProtectedRoute><SupportGuidesPage /></ProtectedRoute>} />
             <Route path="/support/guides/:slug" element={<ProtectedRoute><SupportGuideDetailPage /></ProtectedRoute>} />
-            <Route path="/support/faq" element={<ProtectedRoute><SupportFAQPage /></ProtectedRoute>} />
+            <Route path="/support/faq" element={<SupportFAQPage />} />
             <Route path="/support/updates" element={<ProtectedRoute><SupportUpdatesPage /></ProtectedRoute>} />
             <Route path="/support/updates/:slug" element={<ProtectedRoute><SupportUpdateDetailPage /></ProtectedRoute>} />
 
             {/* Public */}
-            <Route path="/faq" element={<Layout><FAQ /></Layout>} />
-            <Route path="/guide" element={<MarketingPageShell><Guide /></MarketingPageShell>} />
+            <Route path="/faq" element={<Navigate to="/support/faq" replace />} />
+            <Route path="/academy" element={<MarketingPageShell><Guide /></MarketingPageShell>} />
+            <Route path="/guide" element={<Navigate to="/academy" replace />} />
             <Route path="/credit-leveling-guide" element={<MarketingPageShell><CreditLevelingGuidePage /></MarketingPageShell>} />
             <Route path="/benefits" element={<MarketingPageShell><Benefits /></MarketingPageShell>} />
             <Route path="/whylend" element={<MarketingPageShell><WhyLend /></MarketingPageShell>} />

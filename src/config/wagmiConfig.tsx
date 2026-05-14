@@ -3,7 +3,7 @@ import { type ReactNode } from 'react';
 import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import {
    argentWallet,
-   coinbaseWallet,
+   baseAccount,
    metaMaskWallet,
    phantomWallet,
    rainbowWallet,
@@ -230,7 +230,7 @@ export const ALLOWED_CHAIN_ID = allowedChainEntry ? parseInt(allowedChainEntry[0
 export const chainsWithIcons = [chainConfig[ALLOWED_CHAIN_ID]];
 
 export const WALLET_CONNECTOR_NAMES = {
-   coinbase: 'Coinbase Wallet',
+   coinbase: 'Base Account',
    metaMask: 'MetaMask',
    phantom: 'Phantom',
    walletConnect: 'WalletConnect'
@@ -244,7 +244,7 @@ const connectors = connectorsForWallets(
    [
       {
          groupName: 'Recommended',
-         wallets: [coinbaseWallet, metaMaskWallet, phantomWallet, walletConnectWallet]
+         wallets: [baseAccount, metaMaskWallet, phantomWallet, walletConnectWallet]
       },
       {
          groupName: 'Other',

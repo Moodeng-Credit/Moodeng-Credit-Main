@@ -102,6 +102,7 @@ export default function Account() {
    const iouPoints = user?.cs?.toLocaleString() ?? '0';
    const hasWallet = Boolean(user?.walletAddress);
    const isLender = user?.userRole === 'lender';
+   const isVerified = user?.isWorldId === 'ACTIVE';
    const walletSetupLabel = isLender ? 'Connect Wallet' : 'Add Base Wallet';
 
    const sharedFaqs = isLender ? SHARED_FAQS.filter((item) => item.id !== 'how-to-get-verified') : SHARED_FAQS;
@@ -132,11 +133,21 @@ export default function Account() {
                   </button>
                   <div className="flex flex-col gap-1">
                      <p className="text-md-h6 font-semibold text-md-heading">{displayName}</p>
-                     <div className="bg-md-primary-900 rounded-md-sm px-2 py-1 self-start">
-                        <p className="text-md-b3 font-semibold text-md-neutral-100 capitalize">
-                           IOU {iouPoints}
-                        </p>
-                     </div>
+                     {isLender ? (
+                        <div className="bg-md-primary-900 rounded-md-sm px-2 py-1 self-start">
+                           <p className="text-md-b3 font-semibold text-md-neutral-100 capitalize">
+                              IOU {isVerified ? iouPoints : '0'}
+                           </p>
+                        </div>
+                     ) : isVerified ? (
+                        <span className="inline-flex w-fit items-center gap-1 rounded-md-sm bg-md-green-100 px-2 py-1 text-md-b3 font-semibold text-md-green-900">
+                           Verified
+                        </span>
+                     ) : (
+                        <span className="inline-flex w-fit items-center rounded-md-sm bg-md-primary-900 px-2 py-1 text-md-b3 font-semibold text-md-neutral-100">
+                           IOU 0
+                        </span>
+                     )}
                   </div>
                </div>
 

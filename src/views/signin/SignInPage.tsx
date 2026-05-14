@@ -256,6 +256,12 @@ export default function SignInPage() {
                            Sign Up
                         </Link>
                      </p>
+                     <Link
+                        to="/request-board?tour=1"
+                        className="text-center text-base font-semibold tracking-[-0.02em] text-[#8336F0] hover:underline"
+                     >
+                        Take a tour first
+                     </Link>
                   </form>
                </div>
             </div>

@@ -128,7 +128,7 @@ export default function TelegramAuthButton({
    }
 
    return (
-      <div>
+      <div className="w-full min-w-0">
          {!hideLoading && isLoading && (
             <div className="flex justify-center py-4">
                <div className="flex flex-col items-center gap-3 w-full px-4">
@@ -162,7 +162,7 @@ export default function TelegramAuthButton({
          )}
          <div
             ref={containerRef}
-            className="flex justify-center min-w-0 min-h-0"
+            className="flex w-full min-w-0 min-h-0 justify-center overflow-hidden [&>iframe]:max-w-full"
             style={{ display: hideLoading || !isLoading ? 'flex' : 'none' }}
          />
       </div>

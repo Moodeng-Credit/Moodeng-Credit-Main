@@ -22,12 +22,16 @@ type QuizQuestion = {
    answer: string;
 };
 
+type MechaMessage = {
+   title: string;
+   body: string;
+};
+
 const quizSecondsPerQuestion = 12;
 const quizPointsPerAnswer = 2;
-const tutorialVideoUrl = 'https://youtube.com/shorts/fKpBC9zD6Hk?feature=share';
+const tutorialVideoEmbedUrl = 'https://www.youtube.com/embed/fKpBC9zD6Hk';
 const quizPassingScore = 4;
-const baseWalletAndroidUrl = 'https://play.google.com/store/apps/details?id=org.toshi&hl=en';
-const baseWalletIosUrl = 'https://apps.apple.com/th/app/base-formerly-coinbase-wallet/id1278383455';
+const baseWalletCreateUrl = 'https://wallet.coinbase.com/';
 const worldIdOrbUrl = 'https://world.org/find-orb';
 
 const steps: AcademyStep[] = [
@@ -184,11 +188,8 @@ const WalletScreen = (): JSX.Element => (
             <strong>Base</strong>
          </div>
          <div className="academy-wallet-actions">
-            <a className="academy-primary academy-primary--dark" href={baseWalletAndroidUrl} target="_blank" rel="noreferrer">
-               Android
-            </a>
-            <a className="academy-primary" href={baseWalletIosUrl} target="_blank" rel="noreferrer">
-               iOS
+            <a className="academy-primary academy-primary--dark" href={baseWalletCreateUrl} target="_blank" rel="noreferrer">
+               Create Base Wallet
             </a>
          </div>
          <small>Gasless transactions are supported on Base.</small>
@@ -247,33 +248,63 @@ const LoanChoiceScreen = (): JSX.Element => (
    </div>
 );
 
-const RequestScreen = ({ onLockedAction }: { onLockedAction: (message: string) => void }): JSX.Element => (
-   <div className="academy-screen academy-screen--request">
-      <div className="academy-request-modal">
-         <div className="academy-request-header">Set Your Own Terms</div>
-         <div className="academy-request-body">
-            <div className="academy-limit">Your available credit limit: $15</div>
-            <div className="academy-field">How much do you need today? i.e. $15</div>
-            <div className="academy-chips">
-               <span>$10</span>
-               <span className="is-active">$15</span>
-               <span>$20</span>
-               <span>$40</span>
+const RequestScreen = ({ onMechaAction }: { onMechaAction: (message: MechaMessage) => void }): JSX.Element => {
+   const [amount, setAmount] = useState('15');
+   const [timeline, setTimeline] = useState('2 days');
+   const [payback, setPayback] = useState('17');
+   const [reason, setReason] = useState('groceries before payday');
+
+   return (
+      <div className="academy-screen academy-screen--request">
+         <div className="academy-request-modal">
+            <div className="academy-request-header">Set Your Own Terms</div>
+            <div className="academy-request-body">
+               <div className="academy-limit">Your available credit limit: $15</div>
+               <label className="academy-input-label">
+                  <span>Borrow amount</span>
+                  <input value={amount} onChange={(event) => setAmount(event.target.value)} inputMode="decimal" aria-label="Borrow amount" />
+               </label>
+               <div className="academy-chips">
+                  {['10', '15', '20', '40'].map((value) => (
+                     <button
+                        className={amount === value ? 'is-active' : undefined}
+                        key={value}
+                        type="button"
+                        onClick={() => setAmount(value)}
+                     >
+                        ${value}
+                     </button>
+                  ))}
+               </div>
+               <label className="academy-input-label">
+                  <span>Repayment timeline</span>
+                  <input value={timeline} onChange={(event) => setTimeline(event.target.value)} aria-label="Repayment timeline" />
+               </label>
+               <label className="academy-input-label">
+                  <span>Payback amount</span>
+                  <input value={payback} onChange={(event) => setPayback(event.target.value)} inputMode="decimal" aria-label="Payback amount" />
+               </label>
+               <label className="academy-input-label">
+                  <span>Reason</span>
+                  <textarea value={reason} onChange={(event) => setReason(event.target.value)} aria-label="Reason" rows={2} />
+               </label>
+               <button
+                  className="academy-primary"
+                  type="button"
+                  onClick={() =>
+                     onMechaAction({
+                        title: 'Nice practice request.',
+                        body: `Nice! Although you will need to verify and submit the real loan application in the app, it is great to see you try the flow. Mecha likes the practice: $${amount || '0'} for ${timeline || 'your timeline'}, with $${payback || '0'} paid back.`
+                     })
+                  }
+               >
+                  Submit Request
+               </button>
             </div>
-            <div className="academy-field">Repayment timeline: 2 days</div>
-            <div className="academy-field">Payback amount: $17</div>
-            <div className="academy-field">Reason: groceries before payday</div>
-            <button
-               className="academy-primary"
-               type="button"
-               onClick={() => onLockedAction('Please join and verify to submit a request.')}
-            >
-               Submit Request
-            </button>
          </div>
       </div>
-   </div>
-);
+   );
+};
 
 const BoardScreen = (): JSX.Element => (
    <div className="academy-screen academy-screen--board">
@@ -305,7 +336,7 @@ const BoardScreen = (): JSX.Element => (
    </div>
 );
 
-const RepayScreen = ({ onLockedAction }: { onLockedAction: (message: string) => void }): JSX.Element => (
+const RepayScreen = ({ onMechaAction }: { onMechaAction: (message: MechaMessage) => void }): JSX.Element => (
    <div className="academy-screen academy-screen--repay">
       <h3>Loan Repayment</h3>
       <div className="academy-repay-total">$18.00</div>
@@ -317,14 +348,19 @@ const RepayScreen = ({ onLockedAction }: { onLockedAction: (message: string) => 
       <button
          className="academy-primary"
          type="button"
-         onClick={() => onLockedAction('Please join and verify to repay a loan.')}
+         onClick={() =>
+            onMechaAction({
+               title: 'Strong repayment move.',
+               body: 'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps lenders confident, and can unlock better borrowing limits over time.'
+            })
+         }
       >
          Repay Now
       </button>
    </div>
 );
 
-const GrowScreen = (): JSX.Element => (
+const GrowScreen = ({ onMechaAction }: { onMechaAction: (message: MechaMessage) => void }): JSX.Element => (
    <div className="academy-screen academy-screen--grow">
       <h3>Borrower Insights</h3>
       <div className="academy-insight-row">
@@ -339,15 +375,27 @@ const GrowScreen = (): JSX.Element => (
          <span>Credit Level</span>
          <b>Level 2</b>
       </div>
+      <button
+         className="academy-primary academy-grow-action"
+         type="button"
+         onClick={() =>
+            onMechaAction({
+               title: 'This is how you grow.',
+               body: 'Mecha says: full-limit loans repaid on time are how borrowers build a stronger credit record. Keep repayment clean, and your next limit can grow.'
+            })
+         }
+      >
+         See How Growth Works
+      </button>
    </div>
 );
 
 const StepScreen = ({
    screen,
-   onLockedAction
+   onMechaAction
 }: {
    screen: AcademyStep['screen'];
-   onLockedAction: (message: string) => void;
+   onMechaAction: (message: MechaMessage) => void;
 }): JSX.Element => {
    switch (screen) {
       case 'signup':
@@ -359,13 +407,13 @@ const StepScreen = ({
       case 'choose':
          return <LoanChoiceScreen />;
       case 'request':
-         return <RequestScreen onLockedAction={onLockedAction} />;
+         return <RequestScreen onMechaAction={onMechaAction} />;
       case 'board':
          return <BoardScreen />;
       case 'repay':
-         return <RepayScreen onLockedAction={onLockedAction} />;
+         return <RepayScreen onMechaAction={onMechaAction} />;
       case 'grow':
-         return <GrowScreen />;
+         return <GrowScreen onMechaAction={onMechaAction} />;
       default:
          return <SignupScreen />;
    }
@@ -380,6 +428,8 @@ export default function AcademyGuide(): JSX.Element {
    const [quizSubmitted, setQuizSubmitted] = useState(false);
    const [quizTimer, setQuizTimer] = useState(quizSecondsPerQuestion);
    const [lockedMessage, setLockedMessage] = useState('');
+   const [mechaMessage, setMechaMessage] = useState<MechaMessage | null>(null);
+   const [showTutorialVideo, setShowTutorialVideo] = useState(false);
 
    const quizScore = useMemo(() => {
       return quizQuestions.reduce((score, question) => {
@@ -401,6 +451,28 @@ export default function AcademyGuide(): JSX.Element {
       setQuizSubmitted(false);
       setQuizTimer(quizSecondsPerQuestion);
       setQuizStatus('playing');
+   };
+
+   const hasQuizProgress = quizStatus !== 'start' || Object.keys(quizAnswers).length > 0 || quizIndex > 0 || quizSubmitted;
+
+   const handleQuizRoleChange = (nextRole: QuizRole) => {
+      if (nextRole === quizRole) {
+         return;
+      }
+
+      if (!hasQuizProgress) {
+         setQuizRole(nextRole);
+         return;
+      }
+
+      const shouldRestart = window.confirm('Switching reward type will restart the quiz from question 1. Continue?');
+
+      if (!shouldRestart) {
+         return;
+      }
+
+      setQuizRole(nextRole);
+      resetQuiz();
    };
 
    const handleQuizPrimary = () => {
@@ -493,6 +565,22 @@ export default function AcademyGuide(): JSX.Element {
       setLockedMessage(message);
    };
 
+   const showMechaMessage = (message: MechaMessage) => {
+      setMechaMessage(message);
+   };
+
+   const scrollToAcademyStep = (stepId: string) => {
+      const step = document.getElementById(`academy-step-${stepId}`);
+
+      if (!step) {
+         return;
+      }
+
+      const targetTop = step.getBoundingClientRect().top + window.scrollY - 116;
+      window.history.pushState(null, '', `#academy-step-${stepId}`);
+      window.scrollTo({ top: targetTop, behavior: 'smooth' });
+   };
+
    const renderStepAction = (step: AcademyStep) => {
       if (step.id === 'signup') {
          return (
@@ -510,12 +598,32 @@ export default function AcademyGuide(): JSX.Element {
          );
       }
 
+      if (step.id === 'wallet') {
+         return (
+            <a className="academy-step__action" href={baseWalletCreateUrl} target="_blank" rel="noreferrer">
+               {step.action}
+            </a>
+         );
+      }
+
       if (step.id === 'request') {
          return (
             <button
                className="academy-step__action"
                type="button"
-               onClick={() => showLockedMessage('Please join and verify to submit a request.')}
+               onClick={() => scrollToAcademyStep('request')}
+            >
+               {step.action}
+            </button>
+         );
+      }
+
+      if (step.id === 'board') {
+         return (
+            <button
+               className="academy-step__action"
+               type="button"
+               onClick={() => scrollToAcademyStep('board')}
             >
                {step.action}
             </button>
@@ -527,7 +635,29 @@ export default function AcademyGuide(): JSX.Element {
             <button
                className="academy-step__action"
                type="button"
-               onClick={() => showLockedMessage('Please join and verify to repay a loan.')}
+               onClick={() =>
+                  showMechaMessage({
+                     title: 'Strong repayment move.',
+                     body: 'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps lenders confident, and can unlock better borrowing limits over time.'
+                  })
+               }
+            >
+               {step.action}
+            </button>
+         );
+      }
+
+      if (step.id === 'grow') {
+         return (
+            <button
+               className="academy-step__action"
+               type="button"
+               onClick={() =>
+                  showMechaMessage({
+                     title: 'This is how you grow.',
+                     body: 'Mecha says: full-limit loans repaid on time are how borrowers build a stronger credit record. Keep repayment clean, and your next limit can grow.'
+                  })
+               }
             >
                {step.action}
             </button>
@@ -545,6 +675,24 @@ export default function AcademyGuide(): JSX.Element {
                <button type="button" onClick={() => setLockedMessage('')} aria-label="Close message">
                   ×
                </button>
+            </div>
+         ) : null}
+         {mechaMessage ? (
+            <div className="academy-mecha-overlay" role="dialog" aria-modal="true" aria-labelledby="academy-mecha-title">
+               <div className="academy-mecha-modal">
+                  <img
+                     src="https://c.animaapp.com/wawSHnKX/img/screenshot-2024-09-19-at-15-51-16-removebg-preview-3.png"
+                     alt=""
+                  />
+                  <div>
+                     <p className="academy-mecha-modal__eyebrow">Mecha says</p>
+                     <h3 id="academy-mecha-title">{mechaMessage.title}</h3>
+                     <p>{mechaMessage.body}</p>
+                  </div>
+                  <button type="button" onClick={() => setMechaMessage(null)}>
+                     Got it
+                  </button>
+               </div>
             </div>
          ) : null}
          <div className="academy-reading-progress" style={progressStyle} aria-label={`Guide progress ${readingProgress}%`}>
@@ -572,19 +720,30 @@ export default function AcademyGuide(): JSX.Element {
                <div className="academy-hero__actions">
                   <Link to="/request-board">See Request Board</Link>
                </div>
-               <a
+               <button
+                  type="button"
                   className="academy-video-callout"
                   id="academy-tutorial-video"
-                  href={tutorialVideoUrl}
-                  target="_blank"
-                  rel="noreferrer"
+                  aria-expanded={showTutorialVideo}
+                  aria-controls="academy-tutorial-embed"
+                  onClick={() => setShowTutorialVideo((isOpen) => !isOpen)}
                >
                   <div className="academy-video-callout__play" aria-hidden="true" />
                   <div>
-                     <strong>Tutorial video</strong>
+                     <strong>Tutorial Video</strong>
                      <span>Watch the quick Moodeng walkthrough.</span>
                   </div>
-               </a>
+               </button>
+               {showTutorialVideo ? (
+                  <div className="academy-video-embed" id="academy-tutorial-embed">
+                     <iframe
+                        src={tutorialVideoEmbedUrl}
+                        title="Moodeng Academy tutorial video"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                     />
+                  </div>
+               ) : null}
             </div>
             <div className="academy-hero__visual" aria-hidden="true">
                <div className="academy-mecha-card">
@@ -609,7 +768,7 @@ export default function AcademyGuide(): JSX.Element {
                      {renderStepAction(step)}
                   </div>
                   <div className="academy-step__screen">
-                     <StepScreen screen={step.screen} onLockedAction={showLockedMessage} />
+                     <StepScreen screen={step.screen} onMechaAction={showMechaMessage} />
                   </div>
                </article>
             ))}
@@ -625,14 +784,14 @@ export default function AcademyGuide(): JSX.Element {
                      <button
                         className={quizRole === 'borrower' ? 'is-active' : undefined}
                         type="button"
-                        onClick={() => setQuizRole('borrower')}
+                        onClick={() => handleQuizRoleChange('borrower')}
                      >
                         Borrower
                      </button>
                      <button
                         className={quizRole === 'lender' ? 'is-active' : undefined}
                         type="button"
-                        onClick={() => setQuizRole('lender')}
+                        onClick={() => handleQuizRoleChange('lender')}
                      >
                         Lender
                      </button>

@@ -1,12 +1,13 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { useAccount } from 'wagmi';
+import { useAccount, useConnect } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
+import { TOAST_TYPES } from '@/components/ToastSystem/types';
+import UserAvatar from '@/components/UserAvatar';
 
 import { useLoanData } from '@/hooks/useLoanData';
 import useWallet from '@/hooks/useWallet';
@@ -14,7 +15,8 @@ import useWallet from '@/hooks/useWallet';
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatCurrency, formatNumber, toNumber } from '@/utils/decimalHelpers';
 
-import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
+import { ALLOWED_CHAIN_ID, WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
+import { getWalletProviderFromConnectorName, isBaseWalletProvider } from '@/lib/walletProvider';
 import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -89,11 +91,6 @@ const isLoanDueSoon = (loan: Loan): boolean => {
    return totalHours > 0 && totalHours < 24;
 };
 
-const getBorrowerInitial = (value?: string): string => {
-   if (!value?.trim()) return 'M';
-   return value.trim().charAt(0).toUpperCase();
-};
-
 const getEstimatedTrustPoints = (loan: Loan, repaymentAmount: number): number => {
    if (repaymentAmount <= 0) return 0;
 
@@ -106,10 +103,10 @@ const getEstimatedTrustPoints = (loan: Loan, repaymentAmount: number): number =>
 export default function Repay() {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
-   const { showToastByConfig } = useToast();
+   const { showToast, showToastByConfig } = useToast();
    const { Transfer } = useWallet();
    const account = useAccount();
-   const { openConnectModal } = useConnectModal();
+   const { connect, connectors } = useConnect();
 
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
@@ -182,7 +179,35 @@ export default function Repay() {
       }
 
       if (!account.isConnected) {
-         openConnectModal?.();
+         const baseConnector = connectors.find(
+            (connector) =>
+               connector.name === WALLET_CONNECTOR_NAMES.coinbase ||
+               connector.id === 'baseAccount' ||
+               /base account|coinbase wallet/i.test(connector.name)
+         );
+
+         if (baseConnector) {
+            connect({ connector: baseConnector });
+         } else {
+            showToast(
+               TOAST_TYPES.ERROR,
+               'Base wallet unavailable',
+               'Moodeng only supports Base Account for borrower repayments. Please refresh and try again.',
+               undefined,
+               undefined
+            );
+         }
+         return;
+      }
+
+      if (!isBaseWalletProvider(getWalletProviderFromConnectorName(account.connector?.name))) {
+         showToast(
+            TOAST_TYPES.ERROR,
+            'Use your Base wallet',
+            'Borrower repayments must come from your locked Base Account so your repayment history stays tied to the right wallet.',
+            undefined,
+            undefined
+         );
          return;
       }
 
@@ -231,8 +256,11 @@ export default function Repay() {
       amountError,
       parsedRepaymentAmount,
       account.isConnected,
+      account.connector?.name,
       account.chain?.id,
-      openConnectModal,
+      connectors,
+      connect,
+      showToast,
       showToastByConfig,
       Transfer,
       dispatch,
@@ -269,9 +297,7 @@ export default function Repay() {
                      <p className="mt-1 text-md-b2 text-md-neutral-1200">Choose a loan, enter an amount, and confirm.</p>
                   </div>
                </div>
-               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md-pill bg-md-primary-100 text-lg font-semibold text-md-primary-1200 shadow-md-card">
-                  {getBorrowerInitial(user.displayName ?? user.username)}
-               </div>
+               <UserAvatar alt={user.displayName ?? user.username ?? 'Profile'} size={48} className="shadow-md-card" />
             </header>
 
             {activeLoans.length > 1 ? (
@@ -412,7 +438,7 @@ export default function Repay() {
                            );
                         })}
 
-                        <div className="col-span-4 min-w-0 min-[430px]:col-span-3">
+                        <div className="col-span-3 min-w-0">
                            <label htmlFor="repayment-amount" className="sr-only">
                               Repay amount
                            </label>
@@ -442,7 +468,7 @@ export default function Repay() {
                            {amountError ? <p className="mt-2 text-md-b3 font-semibold text-md-red-600">{amountError}</p> : null}
                         </div>
 
-                        <div className="col-span-4 flex items-center justify-center min-[430px]:col-span-1 min-[430px]:justify-end">
+                        <div className="col-span-1 flex items-center justify-end">
                            <div className="flex w-full max-w-[104px] flex-col items-center gap-2">
                               <button
                                  type="button"

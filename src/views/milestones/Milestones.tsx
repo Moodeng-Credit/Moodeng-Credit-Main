@@ -82,12 +82,21 @@ function MilestoneCard({ milestone, onView }: { milestone: DashboardMilestone; o
             >
                {config.label}
             </button>
+         ) : milestone.status === 'locked' ? (
+            <button
+               type="button"
+               onClick={() => onView(milestone)}
+               className={`flex h-8 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-[8px] px-3 py-2 text-center text-[10px] font-[590] leading-[15px] tracking-[-0.2px] antialiased transition-transform active:scale-[0.98] ${config.labelClass}`}
+            >
+               {config.label}
+               <img src="/icons/locked.svg" alt="" className="h-4 w-4 invert" />
+            </button>
          ) : (
             <span
                className={`flex h-8 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-[8px] px-3 py-2 text-center text-[10px] font-[590] leading-[15px] tracking-[-0.2px] antialiased ${config.labelClass}`}
             >
                {config.label}
-               <img src={milestone.status === 'unlocked' ? '/icons/unlocked.svg' : '/icons/locked.svg'} alt="" className="h-4 w-4 invert" />
+               <img src="/icons/unlocked.svg" alt="" className="h-4 w-4 invert" />
             </span>
          )}
       </article>
@@ -127,6 +136,7 @@ export default function Milestones() {
    const selectedMilestone = milestones.find((milestone) => milestone.id === selectedMilestoneId) ?? null;
    const previewQuery = searchParams.toString();
    const hasUnlockedMilestones = milestones.some((milestone) => milestone.status === 'unlocked');
+   const isVerified = user.isWorldId === 'ACTIVE' || isPreview;
 
    return (
       <div className="min-h-screen bg-md-neutral-200 [font-family:'SF_Pro_Display','SF_Pro',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]">
@@ -177,14 +187,16 @@ export default function Milestones() {
                   <div className="flex min-h-[360px] flex-col items-center justify-center px-8 text-center">
                      <h3 className="text-[22px] font-medium leading-tight text-md-heading">No milestones yet</h3>
                      <p className="mt-7 text-[18px] leading-7 text-md-neutral-900">
-                        Your reputation milestones will appear here as you repay loans on time.
+                        {isVerified
+                           ? 'Your reputation milestones will appear here as you repay loans on time.'
+                           : 'Verify your identity to unlock borrowing and start building your public trust record.'}
                      </p>
                      <button
                         type="button"
-                        onClick={() => navigate('/request-board')}
+                        onClick={() => navigate(isVerified ? '/request-board' : '/verify-world-id')}
                         className="mt-8 rounded-[16px] bg-md-primary-900 px-8 py-4 text-[18px] font-medium text-white"
                      >
-                        Request a loan
+                        {isVerified ? 'Request a loan' : 'Verify identity'}
                      </button>
                   </div>
                ) : (

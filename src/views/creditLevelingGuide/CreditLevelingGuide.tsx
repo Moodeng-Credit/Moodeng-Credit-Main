@@ -91,7 +91,7 @@ export default function CreditLevelingGuide(): JSX.Element {
                </p>
                <div className="credit-leveling-hero__actions">
                   <Link to="/request-board">See Request Board</Link>
-                  <Link to="/guide">Back to Academy</Link>
+                  <Link to="/academy">Back to Academy</Link>
                </div>
             </div>
 
