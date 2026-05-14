@@ -4,6 +4,7 @@ import {
    areWalletAddressesEqual,
    getBaseAccountConnector,
    getBaseWalletLockStatus,
+   getWalletProviderLabel,
    getWalletProviderFromConnectorName,
    isBaseWalletProvider,
    isConnectedToLockedBaseWallet
@@ -20,6 +21,16 @@ describe('walletProvider', () => {
       expect(getWalletProviderFromConnectorName('WalletConnect')).toBe('walletconnect');
       expect(getWalletProviderFromConnectorName('Coinbase Wallet')).toBe('unknown');
       expect(isBaseWalletProvider('metamask')).toBe(false);
+   });
+
+   it('shows friendly labels from stored wallet provider metadata', () => {
+      expect(getWalletProviderLabel({ provider: 'base_wallet' })).toBe('Base Account');
+      expect(getWalletProviderLabel({ provider: 'metamask' })).toBe('MetaMask');
+      expect(getWalletProviderLabel({ connectorName: 'Coinbase Wallet' })).toBe('Coinbase Wallet');
+   });
+
+   it('can show Base Account for borrower rows that predate wallet metadata', () => {
+      expect(getWalletProviderLabel({ assumeBaseAccount: true })).toBe('Base Account');
    });
 
    it('does not treat missing or unknown wallet providers as Base', () => {

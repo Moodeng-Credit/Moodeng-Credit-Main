@@ -16,6 +16,42 @@ export const getWalletProviderFromConnectorName = (connectorName?: string | null
 
 export const isBaseWalletProvider = (provider?: string | null) => provider === 'base_wallet';
 
+export const getWalletProviderLabel = ({
+   connectorName,
+   provider,
+   assumeBaseAccount = false
+}: {
+   connectorName?: string | null;
+   provider?: string | null;
+   assumeBaseAccount?: boolean;
+}) => {
+   const resolvedProvider =
+      provider && provider !== 'unknown'
+         ? provider
+         : connectorName
+           ? getWalletProviderFromConnectorName(connectorName)
+           : null;
+
+   if (isBaseWalletProvider(resolvedProvider) || assumeBaseAccount) return 'Base Account';
+
+   switch (resolvedProvider) {
+      case 'argent':
+         return 'Argent';
+      case 'metamask':
+         return 'MetaMask';
+      case 'phantom':
+         return 'Phantom';
+      case 'rainbow':
+         return 'Rainbow';
+      case 'trust':
+         return 'Trust Wallet';
+      case 'walletconnect':
+         return 'WalletConnect';
+      default:
+         return connectorName?.trim() || 'Wallet';
+   }
+};
+
 export const normalizeWalletAddress = (address?: string | null) => {
    const trimmed = address?.trim();
    return trimmed ? trimmed.toLowerCase() : null;

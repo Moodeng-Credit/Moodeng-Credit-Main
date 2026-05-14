@@ -1,10 +1,11 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
 
+import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import UserAvatar from '@/components/UserAvatar';
@@ -292,6 +293,25 @@ export default function Repay() {
       user.id
    ]);
 
+   const bottomNavRepayAction = useMemo(
+      () =>
+         selectedLoan
+            ? {
+                 ariaLabel: account.isConnected ? `Pay now ${paymentCtaAmount}` : 'Connect wallet to repay',
+                 disabled: isRepayDisabled,
+                 icon: 'dollar-circle.svg',
+                 id: 'repay-pay-now',
+                 isProcessing,
+                 label: 'Pay Now',
+                 onClick: handleRepay,
+                 path: '/repay'
+              }
+            : null,
+      [account.isConnected, handleRepay, isProcessing, isRepayDisabled, paymentCtaAmount, selectedLoan]
+   );
+
+   useBottomNavPrimaryAction(bottomNavRepayAction);
+
    if (isLoading && activeLoans.length === 0) {
       return (
          <main className="min-h-screen bg-md-neutral-200 px-5 pb-28 pt-8">
@@ -305,7 +325,7 @@ export default function Repay() {
    }
 
    return (
-      <main className="min-h-screen bg-[linear-gradient(180deg,#fbfafd_0%,#ffffff_44%,#fbfafd_100%)] px-4 pb-24 pt-5 text-md-heading sm:px-6">
+      <main className="min-h-screen bg-[linear-gradient(180deg,#fbfafd_0%,#ffffff_44%,#fbfafd_100%)] px-4 pb-32 pt-5 text-md-heading sm:px-6">
          <div className="mx-auto flex w-full max-w-[470px] flex-col gap-3">
             <header className="flex items-start justify-between gap-4">
                <div className="flex items-start gap-3">
@@ -431,7 +451,7 @@ export default function Repay() {
                      <div className="grid grid-cols-4 gap-2">
                         <div className="col-span-4">
                            <p className="text-md-b1 font-semibold text-md-heading">Repay amount</p>
-                           <p className="mt-1 text-md-b3 text-md-neutral-1200">Use quick select, then continue.</p>
+                           <p className="mt-1 text-md-b3 text-md-neutral-1200">Select an amount or enter your own.</p>
                         </div>
 
                         {quickRepaymentFractions.map((option) => {
@@ -463,7 +483,7 @@ export default function Repay() {
                            );
                         })}
 
-                        <div className="col-span-3 min-w-0">
+                        <div className="col-span-4 min-w-0">
                            <label htmlFor="repayment-amount" className="sr-only">
                               Repay amount
                            </label>
@@ -491,21 +511,6 @@ export default function Repay() {
                               </div>
                            </div>
                            {amountError ? <p className="mt-2 text-md-b3 font-semibold text-md-red-600">{amountError}</p> : null}
-                        </div>
-
-                        <div className="col-span-1 flex items-center justify-end">
-                           <div className="flex w-full max-w-[104px] flex-col items-center gap-2">
-                              <button
-                                 type="button"
-                                 onClick={handleRepay}
-                                 disabled={isRepayDisabled}
-                                 aria-label={account.isConnected ? `Continue to repay ${paymentCtaAmount}` : 'Connect wallet to repay'}
-                                 className="flex aspect-square w-full max-w-[78px] flex-col items-center justify-center rounded-md-pill bg-md-primary-1200 text-md-neutral-50 shadow-[0_10px_20px_rgba(96,16,210,0.2)] transition hover:bg-md-primary-1500 focus:outline-none focus:ring-2 focus:ring-md-primary-300 disabled:cursor-not-allowed disabled:bg-md-neutral-500 disabled:shadow-none"
-                              >
-                                 <ArrowRight className="h-6 w-6" aria-hidden="true" />
-                                 <span className="mt-0.5 text-[11px] font-semibold leading-none">{isProcessing ? 'Wait' : 'Continue'}</span>
-                              </button>
-                           </div>
                         </div>
                      </div>
                   </div>

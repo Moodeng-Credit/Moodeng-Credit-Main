@@ -11,7 +11,7 @@ import { useAuthProvider } from '@/hooks/useAuthProvider';
 
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { getBaseWalletLockStatus } from '@/lib/walletProvider';
+import { getBaseWalletLockStatus, getWalletProviderLabel } from '@/lib/walletProvider';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
@@ -407,7 +407,7 @@ export default function AccountSettings() {
    const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
 
    const hasWallet = Boolean(user?.walletAddress);
-   const walletSetupLabel = user?.userRole === 'lender' ? 'Connect' : 'Connect Base Wallet';
+   const walletSetupLabel = user?.userRole === 'lender' ? 'Connect' : 'Connect Base Account';
    const isBorrower = user?.userRole === 'borrower';
    const connectedWalletName = connector?.name;
    const baseWalletLock = getBaseWalletLockStatus(user);
@@ -464,7 +464,11 @@ export default function AccountSettings() {
       if (addr.length <= 12) return addr;
       return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
    };
-   const walletLabel = borrowerHasConfirmedBaseWallet ? 'Base Wallet' : user?.walletConnectorName || connectedWalletName || 'Wallet';
+   const walletLabel = getWalletProviderLabel({
+      connectorName: user?.walletConnectorName || connectedWalletName,
+      provider: user?.walletProvider,
+      assumeBaseAccount: isBorrower && hasWallet && !borrowerHasNonBaseWallet
+   });
 
    const toggleNotif = (key: keyof NotificationPrefs) => {
       setNotifPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -633,11 +637,11 @@ export default function AccountSettings() {
                         <div className="flex items-start gap-md-2">
                            <img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md shrink-0" />
                            <div className="flex min-w-0 flex-1 flex-col gap-md-0">
-                              <p className="text-md-b1 font-semibold text-md-heading">Confirm your Base wallet</p>
+                              <p className="text-md-b1 font-semibold text-md-heading">Confirm your Base Account</p>
                               <p className="text-md-b2 font-medium text-md-neutral-1200">
                                  {borrowerHasNonBaseWallet
-                                    ? `Your account is using ${user?.walletConnectorName || connectedWalletName || 'another wallet'}. Connect a Base wallet so funded loans and repayments use the right wallet.`
-                                    : 'Reconnect and confirm this is a Base wallet before you borrow or repay.'}
+                                    ? `Your account is using ${walletLabel}. Connect a Base Account so funded loans and repayments use the right wallet.`
+                                    : 'Reconnect and confirm this is a Base Account before you borrow or repay.'}
                               </p>
                            </div>
                         </div>
@@ -646,7 +650,7 @@ export default function AccountSettings() {
                            onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
                            className="inline-flex w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
                         >
-                           Connect Base Wallet
+                           Connect Base Account
                         </button>
                      </div>
                   ) : null}
@@ -655,17 +659,17 @@ export default function AccountSettings() {
                      <div className="flex items-start gap-md-2 rounded-md-lg border border-md-primary-100 bg-md-primary-900/5 p-md-3">
                         <img src="/icons/base-account.svg" alt="" className="size-8 rounded-md-md shrink-0" />
                         <div className="min-w-0">
-                           <p className="text-md-b2 font-semibold text-md-heading">Base wallet locked</p>
+                           <p className="text-md-b2 font-semibold text-md-heading">Base Account locked</p>
                            <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
                               This wallet receives funded loans and is used for repayment history. Change it only if this is no longer your
-                              Base wallet.
+                              Base Account.
                            </p>
                            <button
                               type="button"
                               onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
                               className="mt-2 text-md-b2 font-semibold text-md-primary-900"
                            >
-                              Change Base wallet
+                              Change Base Account
                            </button>
                         </div>
                      </div>

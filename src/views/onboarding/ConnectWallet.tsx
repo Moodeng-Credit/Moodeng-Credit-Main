@@ -126,7 +126,9 @@ function BorrowerConnectView({ onConnect, isConnecting }: { onConnect: () => voi
                </div>
                <div className="flex items-start gap-md-2">
                   <span className="mt-1 size-2 rounded-full bg-md-primary-900" />
-                  <p className="text-md-b2 font-medium text-md-neutral-1200">Need one? Choose the Base Account option when the wallet picker opens.</p>
+                  <p className="text-md-b2 font-medium text-md-neutral-1200">
+                     Need one? Choose the Base Account option when the wallet picker opens.
+                  </p>
                </div>
                <div className="flex items-start gap-md-2">
                   <span className="mt-1 size-2 rounded-full bg-md-primary-900" />
