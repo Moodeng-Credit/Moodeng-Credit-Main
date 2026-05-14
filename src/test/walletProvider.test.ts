@@ -68,6 +68,20 @@ describe('walletProvider', () => {
       });
    });
 
+   it('does not trust old Coinbase Wallet connector rows as confirmed Base Account rows', () => {
+      expect(
+         getBaseWalletLockStatus({
+            walletAddress: '0xC1022456DFd3BF36af1dA553cd5631F9e76ca8D6',
+            walletConnectorName: 'Coinbase Wallet',
+            walletProvider: 'base_wallet'
+         })
+      ).toMatchObject({
+         hasStoredWallet: true,
+         isConfirmedBase: false,
+         needsConfirmation: true
+      });
+   });
+
    it('requires the connected Base Account address to match the locked address', () => {
       expect(
          isConnectedToLockedBaseWallet({

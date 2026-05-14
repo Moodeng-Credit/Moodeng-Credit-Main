@@ -72,8 +72,14 @@ type WalletRecord = {
 
 export const getStoredWalletProvider = (wallet?: WalletRecord | null): WalletProvider | null => {
    if (!wallet) return null;
+   const connectorProvider = wallet.walletConnectorName ? getWalletProviderFromConnectorName(wallet.walletConnectorName) : null;
+
+   if (connectorProvider) {
+      if (connectorProvider !== 'unknown') return connectorProvider;
+      if (wallet.walletProvider === 'base_wallet') return 'unknown';
+   }
+
    if (wallet.walletProvider && wallet.walletProvider !== 'unknown') return wallet.walletProvider as WalletProvider;
-   if (wallet.walletConnectorName) return getWalletProviderFromConnectorName(wallet.walletConnectorName);
    return null;
 };
 
