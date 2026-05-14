@@ -26,7 +26,7 @@ const quizSecondsPerQuestion = 12;
 const quizPointsPerAnswer = 2;
 const tutorialVideoUrl = 'https://youtube.com/shorts/fKpBC9zD6Hk?feature=share';
 const quizPassingScore = 4;
-const baseWalletCreateUrl = 'https://keys.coinbase.com/connect?sdkName=%40base-org%2Faccount&sdkVersion=2.4.0&origin=https%3A%2F%2Fhome.moodeng.app&coop=undefined';
+const baseWalletCreateUrl = 'https://wallet.coinbase.com/';
 const worldIdOrbUrl = 'https://world.org/find-orb';
 
 const steps: AcademyStep[] = [
