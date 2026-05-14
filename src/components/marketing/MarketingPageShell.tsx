@@ -28,7 +28,7 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
    const username = useSelector((state: RootState) => state.auth.username);
    const isSignedIn = Boolean(user?.id && username);
    const appHref = user?.id && username ? (user.userRole === 'lender' ? '/lender/dashboard' : '/dashboard') : '/sign-up';
-   const appLabel = isSignedIn ? 'Open app' : 'Sign up';
+   const appLabel = isSignedIn ? 'Open App' : 'Sign up';
 
    return (
       <div className="min-h-screen bg-[#fbfafd] text-md-heading">
