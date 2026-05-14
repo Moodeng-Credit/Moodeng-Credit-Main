@@ -4,18 +4,19 @@ import { type ChangeEvent, type MouseEvent, useCallback, useEffect, useState } f
 
 
 
-import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
-import { useAccount } from 'wagmi';
+import { useAccount, useConnect } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
+import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
 import useWallet from '@/hooks/useWallet';
 
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
-import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
+import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID, WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
+import { getWalletProviderFromConnectorName, isBaseWalletProvider } from '@/lib/walletProvider';
 import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -30,10 +31,10 @@ function UserPay({ loan }: { loan: Loan }) {
    const time = parseDateSafely(loan.createdAt).toISOString();
    const { Transfer } = useWallet();
    const dispatch = useDispatch<AppDispatch>();
-   const { showToastByConfig } = useToast();
+   const { showToast, showToastByConfig } = useToast();
    const account = useAccount();
    const { isConnected, status } = account;
-   const { openConnectModal } = useConnectModal();
+   const { connect, connectors } = useConnect();
 
    const executeRepayment = useCallback(
       async (amount: string) => {
@@ -121,7 +122,35 @@ function UserPay({ loan }: { loan: Loan }) {
       e.preventDefault();
 
       if (!isConnected) {
-         openConnectModal?.();
+         const baseConnector = connectors.find(
+            (connector) =>
+               connector.name === WALLET_CONNECTOR_NAMES.coinbase ||
+               connector.id === 'baseAccount' ||
+               /base account|coinbase wallet/i.test(connector.name)
+         );
+
+         if (baseConnector) {
+            connect({ connector: baseConnector });
+         } else {
+            showToast(
+               TOAST_TYPES.ERROR,
+               'Base wallet unavailable',
+               'Moodeng only supports Base Account for borrower repayments. Please refresh and try again.',
+               undefined,
+               undefined
+            );
+         }
+         return;
+      }
+
+      if (!isBaseWalletProvider(getWalletProviderFromConnectorName(account.connector?.name))) {
+         showToast(
+            TOAST_TYPES.ERROR,
+            'Use your Base wallet',
+            'Borrower repayments must come from your locked Base Account so your repayment history stays tied to the right wallet.',
+            undefined,
+            undefined
+         );
          return;
       }
 
