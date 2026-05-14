@@ -1,10 +1,7 @@
-
-
 import { type ChangeEvent, type MouseEvent, useCallback, useEffect, useState } from 'react';
 
-
-
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -15,8 +12,13 @@ import useWallet from '@/hooks/useWallet';
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
-import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID, WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
-import { getWalletProviderFromConnectorName, isBaseWalletProvider } from '@/lib/walletProvider';
+import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
+import {
+   formatWalletAddressShort,
+   getBaseAccountConnector,
+   getBaseWalletLockStatus,
+   isConnectedToLockedBaseWallet
+} from '@/lib/walletProvider';
 import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -24,8 +26,9 @@ import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
 
 function UserPay({ loan }: { loan: Loan }) {
-   const userId = useSelector((state: RootState) => state.auth.user.id);
-   const storedWalletAddress = useSelector((state: RootState) => state.auth.user?.walletAddress);
+   const navigate = useNavigate();
+   const user = useSelector((state: RootState) => state.auth.user);
+   const userId = user.id;
    const [repaidAmountToAdd, setRepaidAmountToAdd] = useState('');
    const [isProcessing, setIsProcessing] = useState(false);
    const time = parseDateSafely(loan.createdAt).toISOString();
@@ -35,6 +38,12 @@ function UserPay({ loan }: { loan: Loan }) {
    const account = useAccount();
    const { isConnected, status } = account;
    const { connect, connectors } = useConnect();
+   const baseWalletLock = getBaseWalletLockStatus(user);
+   const isUsingLockedBaseWallet = isConnectedToLockedBaseWallet({
+      connectedAddress: account.address,
+      connectorName: account.connector?.name,
+      lockedAddress: baseWalletLock.address
+   });
 
    const executeRepayment = useCallback(
       async (amount: string) => {
@@ -121,13 +130,22 @@ function UserPay({ loan }: { loan: Loan }) {
    const handleBorrow = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
 
-      if (!isConnected) {
-         const baseConnector = connectors.find(
-            (connector) =>
-               connector.name === WALLET_CONNECTOR_NAMES.coinbase ||
-               connector.id === 'baseAccount' ||
-               /base account|coinbase wallet/i.test(connector.name)
+      if (!baseWalletLock.isConfirmedBase) {
+         showToast(
+            TOAST_TYPES.ERROR,
+            'Confirm your Base wallet',
+            baseWalletLock.hasStoredWallet
+               ? 'Reconnect this wallet with Base Account so Moodeng can confirm it before repayment.'
+               : 'Add a Base Account before repaying so your repayment history stays tied to the right wallet.',
+            undefined,
+            undefined
          );
+         navigate('/onboarding/wallet', { state: { returnTo: 'repay' } });
+         return;
+      }
+
+      if (!isConnected) {
+         const baseConnector = getBaseAccountConnector(connectors);
 
          if (baseConnector) {
             connect({ connector: baseConnector });
@@ -143,11 +161,11 @@ function UserPay({ loan }: { loan: Loan }) {
          return;
       }
 
-      if (!isBaseWalletProvider(getWalletProviderFromConnectorName(account.connector?.name))) {
+      if (!isUsingLockedBaseWallet) {
          showToast(
             TOAST_TYPES.ERROR,
-            'Use your Base wallet',
-            'Borrower repayments must come from your locked Base Account so your repayment history stays tied to the right wallet.',
+            'Connect your locked Base wallet',
+            `Repayments must come from ${formatWalletAddressShort(baseWalletLock.address)} so your repayment history stays tied to the right wallet.`,
             undefined,
             undefined
          );

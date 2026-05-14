@@ -1,5 +1,3 @@
-
-
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
@@ -9,7 +7,12 @@ import { useAccount, useAccountEffect, useDisconnect } from 'wagmi';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
-import { getWalletProviderFromConnectorName } from '@/lib/walletProvider';
+import {
+   areWalletAddressesEqual,
+   formatWalletAddressShort,
+   getWalletProviderFromConnectorName,
+   isBaseWalletProvider
+} from '@/lib/walletProvider';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
@@ -37,6 +40,7 @@ export function useWalletSync() {
    const storedWalletChainId = useSelector((state: RootState) => state.auth.user?.walletChainId);
    const storedWalletConnectorName = useSelector((state: RootState) => state.auth.user?.walletConnectorName);
    const storedWalletProvider = useSelector((state: RootState) => state.auth.user?.walletProvider);
+   const userRole = useSelector((state: RootState) => state.auth.user?.userRole);
    const [hasShownWalletPrompt, setHasShownWalletPrompt] = useState(false);
    const isConnecting = useRef(false);
 
@@ -94,21 +98,51 @@ export function useWalletSync() {
       }
 
       const connectedAddress = account.address.toLowerCase();
+      const walletProvider = getWalletProviderFromConnectorName(account.connector?.name);
+
+      if (userRole === 'borrower' && !isBaseWalletProvider(walletProvider)) {
+         showToast(
+            TOAST_TYPES.ERROR,
+            'Use Base Account',
+            'Borrowers must lock a Base Account so loans and repayments stay tied to one public record.',
+            undefined,
+            undefined
+         );
+         disconnect();
+         return;
+      }
 
       // If user has a stored wallet that doesn't match the connected one
       if (storedWalletAddress) {
-         const storedAddress = storedWalletAddress.toLowerCase();
-
-         if (connectedAddress !== storedAddress) {
+         if (!areWalletAddressesEqual(connectedAddress, storedWalletAddress)) {
             // Wallet mismatch - account switch detected, disconnect it
             console.log(
-               `Wallet mismatch detected - disconnecting wallet (connected: ${connectedAddress.slice(0, 6)}..., stored: ${storedAddress.slice(0, 6)}...)`
+               `Wallet mismatch detected - disconnecting wallet (connected: ${formatWalletAddressShort(connectedAddress)}, stored: ${formatWalletAddressShort(storedWalletAddress)})`
+            );
+            showToast(
+               TOAST_TYPES.ERROR,
+               'Wrong wallet connected',
+               `Connect ${formatWalletAddressShort(storedWalletAddress)} to continue with this Moodeng account.`,
+               undefined,
+               undefined
             );
             disconnect();
          }
       }
       // If no stored wallet, allow the connection (initial connection scenario)
-   }, [isAuthChecked, username, userId, storedWalletAddress, account.isConnected, account.address, account.status, disconnect]);
+   }, [
+      account.address,
+      account.connector?.name,
+      account.isConnected,
+      account.status,
+      disconnect,
+      isAuthChecked,
+      showToast,
+      storedWalletAddress,
+      userId,
+      username,
+      userRole
+   ]);
 
    // Show wallet connection reminder if user has stored wallet but not connected
    useEffect(() => {
@@ -132,6 +166,11 @@ export function useWalletSync() {
       const walletProvider = getWalletProviderFromConnectorName(account.connector?.name);
       const walletConnectorName = account.connector?.name ?? null;
       const walletChainId = account.chainId ?? null;
+
+      if (userRole === 'borrower' && !isBaseWalletProvider(walletProvider)) {
+         return;
+      }
+
       const shouldUpdateAddress = connectedAddress !== storedAddress;
       const shouldUpdateProvider =
          connectedAddress === storedAddress &&
@@ -205,6 +244,7 @@ export function useWalletSync() {
       storedWalletChainId,
       storedWalletConnectorName,
       storedWalletProvider,
+      userRole,
       dispatch,
       showToast,
       disconnect

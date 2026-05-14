@@ -4,6 +4,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useDisconnect } from 'wagmi';
 
+import {
+   areWalletAddressesEqual,
+   formatWalletAddressShort,
+   getBaseWalletLockStatus,
+   getWalletProviderFromConnectorName,
+   isBaseWalletProvider
+} from '@/lib/walletProvider';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { LoanStatus } from '@/types/loanTypes';
@@ -16,10 +23,16 @@ export default function WalletConnected() {
    const dispatch = useDispatch<AppDispatch>();
    const user = useSelector((state: RootState) => state.auth.user);
    const gloans = useSelector((state: RootState) => state.loans.loans.gloans);
-   const { isConnected, status } = useAccount();
+   const { address, connector, isConnected, status } = useAccount();
    const { disconnect } = useDisconnect();
    const [loansLoading, setLoansLoading] = useState(true);
    const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+   const baseWalletLock = getBaseWalletLockStatus(user);
+   const connectedProvider = getWalletProviderFromConnectorName(connector?.name);
+   const isConnectedBaseAccount = isConnected && isBaseWalletProvider(connectedProvider);
+   const isConnectedWrongProvider = isConnected && !isConnectedBaseAccount;
+   const isConnectedWrongWallet =
+      isConnectedBaseAccount && Boolean(baseWalletLock.address) && !areWalletAddressesEqual(address, baseWalletLock.address);
 
    useEffect(() => {
       if (!user?.id) {
@@ -34,14 +47,47 @@ export default function WalletConnected() {
       return <Navigate to="/onboarding/role" replace />;
    }
 
-   if (!isPreview && !isConnected && status !== 'reconnecting') {
-      return <FailureView onRetry={() => navigate('/onboarding/wallet')} />;
+   if (!isPreview && status !== 'reconnecting') {
+      if (isConnectedWrongProvider) {
+         return (
+            <FailureView
+               title="Use Base Account"
+               body="Borrowers need to connect with the Base Account option. Other wallet connectors cannot be locked for Moodeng borrowing."
+               onRetry={() => navigate('/onboarding/wallet')}
+            />
+         );
+      }
+
+      if (isConnectedWrongWallet) {
+         return (
+            <FailureView
+               title="Wrong Wallet Connected"
+               body={`Connect ${formatWalletAddressShort(baseWalletLock.address)}. Moodeng only lets you borrow and repay with the Base wallet locked to this account.`}
+               onRetry={() => {
+                  disconnect();
+                  navigate('/onboarding/wallet');
+               }}
+            />
+         );
+      }
+
+      if (!baseWalletLock.isConfirmedBase && !isConnectedBaseAccount) {
+         return (
+            <FailureView
+               title={baseWalletLock.hasStoredWallet ? 'Confirm Your Base Wallet' : 'Base Wallet Not Added'}
+               body={
+                  baseWalletLock.hasStoredWallet
+                     ? 'This account has a saved wallet, but Moodeng still needs to confirm it is a Base Account before borrowing or repayment.'
+                     : "We couldn't detect a Base wallet. Please connect a Base Account to continue."
+               }
+               onRetry={() => navigate('/onboarding/wallet')}
+            />
+         );
+      }
    }
 
    const hasActiveRequest = gloans.some(
-      (loan) =>
-         loan.borrowerUser === user.id &&
-         (loan.loanStatus === LoanStatus.REQUESTED || loan.loanStatus === LoanStatus.LENT)
+      (loan) => loan.borrowerUser === user.id && (loan.loanStatus === LoanStatus.REQUESTED || loan.loanStatus === LoanStatus.LENT)
    );
 
    const handleNext = () => {
@@ -55,6 +101,10 @@ export default function WalletConnected() {
       }
       if (returnTo === 'account-settings') {
          navigate('/account/settings', { replace: true });
+         return;
+      }
+      if (returnTo === 'repay') {
+         navigate('/repay', { replace: true });
          return;
       }
       const destination = user?.userRole === 'borrower' && hasActiveRequest ? '/dashboard' : '/request-board';
@@ -115,7 +165,7 @@ export default function WalletConnected() {
    );
 }
 
-function FailureView({ onRetry }: { onRetry: () => void }) {
+function FailureView({ title, body, onRetry }: { title: string; body: string; onRetry: () => void }) {
    return (
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
          <OnboardingHeader title="Connection Failed" />
@@ -136,10 +186,8 @@ function FailureView({ onRetry }: { onRetry: () => void }) {
                   }}
                />
             </div>
-            <h2 className="text-md-display text-md-heading text-center">Base Wallet Not Added</h2>
-            <p className="text-md-b1 font-medium text-md-neutral-700 text-center">
-               We couldn't detect a Base wallet. Please try again to continue.
-            </p>
+            <h2 className="text-md-display text-md-heading text-center">{title}</h2>
+            <p className="text-md-b1 font-medium text-md-neutral-700 text-center">{body}</p>
             <button
                type="button"
                onClick={onRetry}

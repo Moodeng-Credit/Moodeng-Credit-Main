@@ -1,10 +1,11 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
 
+import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import UserAvatar from '@/components/UserAvatar';
@@ -15,8 +16,13 @@ import useWallet from '@/hooks/useWallet';
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatCurrency, formatNumber, toNumber } from '@/utils/decimalHelpers';
 
-import { ALLOWED_CHAIN_ID, WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
-import { getWalletProviderFromConnectorName, isBaseWalletProvider } from '@/lib/walletProvider';
+import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
+import {
+   formatWalletAddressShort,
+   getBaseAccountConnector,
+   getBaseWalletLockStatus,
+   isConnectedToLockedBaseWallet
+} from '@/lib/walletProvider';
 import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -158,6 +164,12 @@ export default function Repay() {
 
    const paymentCtaAmount = repaymentAmount ? `$${formatCurrency(parsedRepaymentAmount)}` : 'loan';
    const isRepayDisabled = isProcessing || !repaymentAmount || Boolean(amountError) || parsedRepaymentAmount <= 0;
+   const baseWalletLock = getBaseWalletLockStatus(user);
+   const isUsingLockedBaseWallet = isConnectedToLockedBaseWallet({
+      connectedAddress: account.address,
+      connectorName: account.connector?.name,
+      lockedAddress: baseWalletLock.address
+   });
 
    const handleSelectLoan = (loanId: string) => {
       setSelectedLoanId(loanId);
@@ -178,14 +190,22 @@ export default function Repay() {
          return;
       }
 
-      if (!account.isConnected) {
-         const baseConnector = connectors.find(
-            (connector) =>
-               connector.name === WALLET_CONNECTOR_NAMES.coinbase ||
-               connector.id === 'baseAccount' ||
-               /base account|coinbase wallet/i.test(connector.name)
+      if (!baseWalletLock.isConfirmedBase) {
+         showToast(
+            TOAST_TYPES.ERROR,
+            'Confirm your Base wallet',
+            baseWalletLock.hasStoredWallet
+               ? 'Reconnect this wallet with Base Account so Moodeng can confirm it before repayment.'
+               : 'Add a Base Account before repaying so your repayment history stays tied to the right wallet.',
+            undefined,
+            undefined
          );
+         navigate('/onboarding/wallet', { state: { returnTo: 'repay' } });
+         return;
+      }
 
+      if (!account.isConnected) {
+         const baseConnector = getBaseAccountConnector(connectors);
          if (baseConnector) {
             connect({ connector: baseConnector });
          } else {
@@ -200,11 +220,11 @@ export default function Repay() {
          return;
       }
 
-      if (!isBaseWalletProvider(getWalletProviderFromConnectorName(account.connector?.name))) {
+      if (!isUsingLockedBaseWallet) {
          showToast(
             TOAST_TYPES.ERROR,
-            'Use your Base wallet',
-            'Borrower repayments must come from your locked Base Account so your repayment history stays tied to the right wallet.',
+            'Connect your locked Base wallet',
+            `Repayments must come from ${formatWalletAddressShort(baseWalletLock.address)} so your repayment history stays tied to the right wallet.`,
             undefined,
             undefined
          );
@@ -257,15 +277,40 @@ export default function Repay() {
       parsedRepaymentAmount,
       account.isConnected,
       account.connector?.name,
+      account.address,
       account.chain?.id,
       connectors,
       connect,
+      navigate,
+      baseWalletLock.address,
+      baseWalletLock.hasStoredWallet,
+      baseWalletLock.isConfirmedBase,
+      isUsingLockedBaseWallet,
       showToast,
       showToastByConfig,
       Transfer,
       dispatch,
       user.id
    ]);
+
+   const bottomNavRepayAction = useMemo(
+      () =>
+         selectedLoan
+            ? {
+                 ariaLabel: account.isConnected ? `Pay now ${paymentCtaAmount}` : 'Connect wallet to repay',
+                 disabled: isRepayDisabled,
+                 icon: 'dollar-circle.svg',
+                 id: 'repay-pay-now',
+                 isProcessing,
+                 label: 'Pay Now',
+                 onClick: handleRepay,
+                 path: '/repay'
+              }
+            : null,
+      [account.isConnected, handleRepay, isProcessing, isRepayDisabled, paymentCtaAmount, selectedLoan]
+   );
+
+   useBottomNavPrimaryAction(bottomNavRepayAction);
 
    if (isLoading && activeLoans.length === 0) {
       return (
@@ -280,7 +325,7 @@ export default function Repay() {
    }
 
    return (
-      <main className="min-h-screen bg-[linear-gradient(180deg,#fbfafd_0%,#ffffff_44%,#fbfafd_100%)] px-4 pb-24 pt-5 text-md-heading sm:px-6">
+      <main className="min-h-screen bg-[linear-gradient(180deg,#fbfafd_0%,#ffffff_44%,#fbfafd_100%)] px-4 pb-32 pt-5 text-md-heading sm:px-6">
          <div className="mx-auto flex w-full max-w-[470px] flex-col gap-3">
             <header className="flex items-start justify-between gap-4">
                <div className="flex items-start gap-3">
@@ -406,7 +451,7 @@ export default function Repay() {
                      <div className="grid grid-cols-4 gap-2">
                         <div className="col-span-4">
                            <p className="text-md-b1 font-semibold text-md-heading">Repay amount</p>
-                           <p className="mt-1 text-md-b3 text-md-neutral-1200">Use quick select, then continue.</p>
+                           <p className="mt-1 text-md-b3 text-md-neutral-1200">Select an amount or enter your own.</p>
                         </div>
 
                         {quickRepaymentFractions.map((option) => {
@@ -438,7 +483,7 @@ export default function Repay() {
                            );
                         })}
 
-                        <div className="col-span-3 min-w-0">
+                        <div className="col-span-4 min-w-0">
                            <label htmlFor="repayment-amount" className="sr-only">
                               Repay amount
                            </label>
@@ -466,23 +511,6 @@ export default function Repay() {
                               </div>
                            </div>
                            {amountError ? <p className="mt-2 text-md-b3 font-semibold text-md-red-600">{amountError}</p> : null}
-                        </div>
-
-                        <div className="col-span-1 flex items-center justify-end">
-                           <div className="flex w-full max-w-[104px] flex-col items-center gap-2">
-                              <button
-                                 type="button"
-                                 onClick={handleRepay}
-                                 disabled={isRepayDisabled}
-                                 aria-label={account.isConnected ? `Continue to repay ${paymentCtaAmount}` : 'Connect wallet to repay'}
-                                 className="flex aspect-square w-full max-w-[78px] flex-col items-center justify-center rounded-md-pill bg-md-primary-1200 text-md-neutral-50 shadow-[0_10px_20px_rgba(96,16,210,0.2)] transition hover:bg-md-primary-1500 focus:outline-none focus:ring-2 focus:ring-md-primary-300 disabled:cursor-not-allowed disabled:bg-md-neutral-500 disabled:shadow-none"
-                              >
-                                 <ArrowRight className="h-6 w-6" aria-hidden="true" />
-                                 <span className="mt-0.5 text-[11px] font-semibold leading-none">
-                                    {isProcessing ? 'Wait' : 'Continue'}
-                                 </span>
-                              </button>
-                           </div>
                         </div>
                      </div>
                   </div>
@@ -538,7 +566,6 @@ export default function Repay() {
                         </div>
                      ) : null}
                   </div>
-
                </section>
             ) : (
                <section className="rounded-md-xl border border-md-green-100 bg-md-neutral-50 p-6 text-center shadow-md-card">

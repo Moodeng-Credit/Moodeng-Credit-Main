@@ -14,6 +14,7 @@ import OnboardingWelcome from '@/app/onboarding/welcome/page';
 import WorldIdVerification from '@/app/verify-world-id/page';
 import CongratulationsPage from '@/app/onboarding/congratulations/page';
 import BottomNav from '@/components/BottomNav';
+import { BottomNavActionProvider } from '@/components/BottomNavActionContext';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
 import MarketingPageShell from '@/components/marketing/MarketingPageShell';
@@ -130,7 +131,7 @@ export default function App() {
    }
 
    return (
-      <>
+      <BottomNavActionProvider>
          <WalletLoadingOverlay />
          <Routes>
             <Route path="/" element={<Home />} />
@@ -213,6 +214,6 @@ export default function App() {
             <Route path="*" element={<Navigate to={user?.id && username ? '/' : '/request-board'} replace />} />
          </Routes>
          {showBottomNav && <BottomNav />}
-      </>
+      </BottomNavActionProvider>
    );
 }

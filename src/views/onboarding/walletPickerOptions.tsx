@@ -16,7 +16,7 @@ export const LENDER_WALLET_OPTIONS: WalletOption[] = [
    {
       key: 'coinbase',
       name: 'Base Account',
-      iconSrc: '/icons/base-wallet.svg',
+      iconSrc: '/icons/base-account.svg',
       iconBg: 'bg-transparent',
       iconPadding: 'p-0',
       tag: { label: 'Top Pick', bgClass: 'bg-md-primary-300', textClass: 'text-md-primary-1200' },

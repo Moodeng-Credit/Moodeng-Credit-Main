@@ -6,10 +6,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
 import UserAvatar from '@/components/UserAvatar';
+
 import { useAuthProvider } from '@/hooks/useAuthProvider';
+
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { getWalletProviderFromConnectorName, isBaseWalletProvider } from '@/lib/walletProvider';
+import { getBaseWalletLockStatus, getWalletProviderLabel } from '@/lib/walletProvider';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
@@ -20,7 +22,7 @@ const ICON_MASK: React.CSSProperties = {
    WebkitMaskRepeat: 'no-repeat',
    maskRepeat: 'no-repeat',
    WebkitMaskPosition: 'center',
-   maskPosition: 'center',
+   maskPosition: 'center'
 };
 
 const NOTIFICATION_STORAGE_KEY = 'md_notification_prefs';
@@ -48,7 +50,11 @@ function EditableAvatar({ size = 64, onClick }: { size?: number; onClick?: () =>
          aria-label="Change profile photo"
       >
          {/* clickable=false: this button already handles the click; we don't want a nested button */}
-         <UserAvatar size={size} clickable={false} className="border-2 border-md-primary-100 transition-colors group-hover:border-md-primary-900" />
+         <UserAvatar
+            size={size}
+            clickable={false}
+            className="border-2 border-md-primary-100 transition-colors group-hover:border-md-primary-900"
+         />
          <div className="absolute inset-0 rounded-full bg-[#12071f]/0 transition-colors group-hover:bg-[#12071f]/15 group-active:bg-[#12071f]/15" />
          <div className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-md-primary-900 shadow-md-card transition-colors group-hover:bg-md-primary-1200">
             <Camera size={14} className="text-white" />
@@ -59,7 +65,12 @@ function EditableAvatar({ size = 64, onClick }: { size?: number; onClick?: () =>
 
 // ─── Reusable field ───
 
-function ReadOnlyField({ label, value, actionLabel, onAction }: {
+function ReadOnlyField({
+   label,
+   value,
+   actionLabel,
+   onAction
+}: {
    label: string;
    value: string;
    actionLabel?: string;
@@ -104,7 +115,12 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 
 // ─── Password Input with show/hide ───
 
-function PasswordInput({ label, value, onChange, placeholder }: {
+function PasswordInput({
+   label,
+   value,
+   onChange,
+   placeholder
+}: {
    label: string;
    value: string;
    onChange: (v: string) => void;
@@ -128,7 +144,7 @@ function PasswordInput({ label, value, onChange, placeholder }: {
                   style={{
                      ...ICON_MASK,
                      WebkitMaskImage: `url('/icons/${visible ? 'eye-off' : 'eye'}.svg')`,
-                     maskImage: `url('/icons/${visible ? 'eye-off' : 'eye'}.svg')`,
+                     maskImage: `url('/icons/${visible ? 'eye-off' : 'eye'}.svg')`
                   }}
                />
             </button>
@@ -219,7 +235,12 @@ function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                <div className="flex flex-col gap-md-5 w-full">
                   <PasswordInput label="Enter your old password" value={oldPassword} onChange={setOldPassword} placeholder="******" />
                   <PasswordInput label="Enter your new password" value={newPassword} onChange={setNewPassword} placeholder="******" />
-                  <PasswordInput label="Confirm your new password" value={confirmPassword} onChange={setConfirmPassword} placeholder="******" />
+                  <PasswordInput
+                     label="Confirm your new password"
+                     value={confirmPassword}
+                     onChange={setConfirmPassword}
+                     placeholder="******"
+                  />
                </div>
             </div>
             {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
@@ -236,7 +257,7 @@ function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                      style={{
                         ...ICON_MASK,
                         WebkitMaskImage: "url('/icons/chevron-right.svg')",
-                        maskImage: "url('/icons/chevron-right.svg')",
+                        maskImage: "url('/icons/chevron-right.svg')"
                      }}
                   />
                )}
@@ -345,7 +366,7 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                         style={{
                            ...ICON_MASK,
                            WebkitMaskImage: "url('/icons/chevron-right.svg')",
-                           maskImage: "url('/icons/chevron-right.svg')",
+                           maskImage: "url('/icons/chevron-right.svg')"
                         }}
                      />
                   )}
@@ -386,24 +407,18 @@ export default function AccountSettings() {
    const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
 
    const hasWallet = Boolean(user?.walletAddress);
-   const walletSetupLabel = user?.userRole === 'lender' ? 'Connect' : 'Connect Base Wallet';
+   const walletSetupLabel = user?.userRole === 'lender' ? 'Connect' : 'Connect Base Account';
    const isBorrower = user?.userRole === 'borrower';
    const connectedWalletName = connector?.name;
-   const connectedWalletProvider = connectedWalletName ? getWalletProviderFromConnectorName(connectedWalletName) : undefined;
-   const storedWalletProvider = user?.walletProvider;
-   const effectiveWalletProvider = storedWalletProvider && storedWalletProvider !== 'unknown'
-      ? storedWalletProvider
-      : connectedWalletProvider;
-   const borrowerHasConfirmedBaseWallet = isBorrower && hasWallet && isBaseWalletProvider(effectiveWalletProvider);
+   const baseWalletLock = getBaseWalletLockStatus(user);
+   const borrowerHasConfirmedBaseWallet = isBorrower && baseWalletLock.isConfirmedBase;
    const borrowerHasNonBaseWallet =
       isBorrower &&
       hasWallet &&
-      Boolean(effectiveWalletProvider) &&
-      effectiveWalletProvider !== 'unknown' &&
-      !isBaseWalletProvider(effectiveWalletProvider);
-   const borrowerNeedsBaseWallet =
-      isBorrower &&
-      (!hasWallet || !borrowerHasConfirmedBaseWallet);
+      Boolean(baseWalletLock.provider) &&
+      baseWalletLock.provider !== 'unknown' &&
+      !baseWalletLock.isConfirmedBase;
+   const borrowerNeedsBaseWallet = isBorrower && !baseWalletLock.isConfirmedBase;
 
    useEffect(() => {
       localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(notifPrefs));
@@ -449,9 +464,11 @@ export default function AccountSettings() {
       if (addr.length <= 12) return addr;
       return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
    };
-   const walletLabel = isBorrower && hasWallet
-      ? 'Base Wallet'
-      : user?.walletConnectorName || connectedWalletName || 'Wallet';
+   const walletLabel = getWalletProviderLabel({
+      connectorName: user?.walletConnectorName || connectedWalletName,
+      provider: user?.walletProvider,
+      assumeBaseAccount: isBorrower && hasWallet && !borrowerHasNonBaseWallet
+   });
 
    const toggleNotif = (key: keyof NotificationPrefs) => {
       setNotifPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -468,7 +485,7 @@ export default function AccountSettings() {
                      style={{
                         ...ICON_MASK,
                         WebkitMaskImage: "url('/icons/arrow-left.svg')",
-                        maskImage: "url('/icons/arrow-left.svg')",
+                        maskImage: "url('/icons/arrow-left.svg')"
                      }}
                   />
                </button>
@@ -479,7 +496,9 @@ export default function AccountSettings() {
             <div className="flex items-center gap-md-5 px-md-5 py-md-3">
                <div className="flex flex-col gap-md-1 items-center shrink-0">
                   <EditableAvatar onClick={() => setShowAvatarModal(true)} />
-                  <button type="button" onClick={() => setShowAvatarModal(true)} className="text-md-b1 text-md-primary-900">Change</button>
+                  <button type="button" onClick={() => setShowAvatarModal(true)} className="text-md-b1 text-md-primary-900">
+                     Change
+                  </button>
                </div>
                <div className="flex flex-col gap-md-1 flex-1 min-w-0">
                   <p className="text-md-b2 font-semibold text-md-heading">Display Name</p>
@@ -533,11 +552,7 @@ export default function AccountSettings() {
                      value={user?.telegramUsername || 'Not Connected'}
                      actionLabel={!user?.telegramUsername ? 'Connect' : undefined}
                   />
-                  <ReadOnlyField
-                     label="WhatsApp"
-                     value="Not Connected"
-                     actionLabel="Connect"
-                  />
+                  <ReadOnlyField label="WhatsApp" value="Not Connected" actionLabel="Connect" />
                </div>
 
                {/* Security */}
@@ -548,12 +563,7 @@ export default function AccountSettings() {
                   </p>
 
                   {isEmailPasswordUser ? (
-                     <ReadOnlyField
-                        label="Password"
-                        value="******"
-                        actionLabel="Change"
-                        onAction={() => setShowPasswordModal(true)}
-                     />
+                     <ReadOnlyField label="Password" value="******" actionLabel="Change" onAction={() => setShowPasswordModal(true)} />
                   ) : null}
 
                   {/* World ID */}
@@ -601,7 +611,7 @@ export default function AccountSettings() {
                                        style={{
                                           ...ICON_MASK,
                                           WebkitMaskImage: "url('/icons/copy.svg')",
-                                          maskImage: "url('/icons/copy.svg')",
+                                          maskImage: "url('/icons/copy.svg')"
                                        }}
                                     />
                                  )}
@@ -625,13 +635,13 @@ export default function AccountSettings() {
                   {borrowerNeedsBaseWallet && hasWallet && showWalletActions ? (
                      <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-primary-900 bg-md-primary-900/10 p-md-3">
                         <div className="flex items-start gap-md-2">
-                           <img src="/icons/base-wallet.svg" alt="" className="size-9 rounded-md-md shrink-0" />
+                           <img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md shrink-0" />
                            <div className="flex min-w-0 flex-1 flex-col gap-md-0">
-                              <p className="text-md-b1 font-semibold text-md-heading">Confirm your Base wallet</p>
+                              <p className="text-md-b1 font-semibold text-md-heading">Confirm your Base Account</p>
                               <p className="text-md-b2 font-medium text-md-neutral-1200">
                                  {borrowerHasNonBaseWallet
-                                    ? `Your account is using ${user?.walletConnectorName || connectedWalletName || 'another wallet'}. Connect a Base wallet so funded loans and repayments use the right wallet.`
-                                    : 'Reconnect and confirm this is a Base wallet before you borrow or repay.'}
+                                    ? `Your account is using ${walletLabel}. Connect a Base Account so funded loans and repayments use the right wallet.`
+                                    : 'Reconnect and confirm this is a Base Account before you borrow or repay.'}
                               </p>
                            </div>
                         </div>
@@ -640,25 +650,26 @@ export default function AccountSettings() {
                            onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
                            className="inline-flex w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
                         >
-                           Connect Base Wallet
+                           Connect Base Account
                         </button>
-                      </div>
+                     </div>
                   ) : null}
 
                   {borrowerHasConfirmedBaseWallet && showWalletActions ? (
                      <div className="flex items-start gap-md-2 rounded-md-lg border border-md-primary-100 bg-md-primary-900/5 p-md-3">
-                        <img src="/icons/base-wallet.svg" alt="" className="size-8 rounded-md-md shrink-0" />
+                        <img src="/icons/base-account.svg" alt="" className="size-8 rounded-md-md shrink-0" />
                         <div className="min-w-0">
-                           <p className="text-md-b2 font-semibold text-md-heading">Base wallet locked</p>
+                           <p className="text-md-b2 font-semibold text-md-heading">Base Account locked</p>
                            <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                              This wallet receives funded loans and is used for repayment history. Change it only if this is no longer your Base wallet.
+                              This wallet receives funded loans and is used for repayment history. Change it only if this is no longer your
+                              Base Account.
                            </p>
                            <button
                               type="button"
                               onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
                               className="mt-2 text-md-b2 font-semibold text-md-primary-900"
                            >
-                              Change Base wallet
+                              Change Base Account
                            </button>
                         </div>
                      </div>
@@ -700,9 +711,7 @@ export default function AccountSettings() {
                            <p className="text-md-b2 font-semibold text-md-heading">Transaction Activity</p>
                            <Toggle checked={notifPrefs.transactionActivity} onChange={() => toggleNotif('transactionActivity')} />
                         </div>
-                        <p className="text-md-b3 font-medium text-md-neutral-1400">
-                           Get important notifications about your transactions
-                        </p>
+                        <p className="text-md-b3 font-medium text-md-neutral-1400">Get important notifications about your transactions</p>
                      </div>
 
                      {/* Moodeng Blogs */}
@@ -711,9 +720,7 @@ export default function AccountSettings() {
                            <p className="text-md-b2 font-semibold text-md-heading">Moodeng Blogs</p>
                            <Toggle checked={notifPrefs.moodengBlogs} onChange={() => toggleNotif('moodengBlogs')} />
                         </div>
-                        <p className="text-md-b3 font-medium text-md-neutral-1400">
-                           Get updated with our latest news, updates and blogs
-                        </p>
+                        <p className="text-md-b3 font-medium text-md-neutral-1400">Get updated with our latest news, updates and blogs</p>
                      </div>
                   </div>
                </div>
