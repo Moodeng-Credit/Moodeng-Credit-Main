@@ -1101,7 +1101,7 @@ function BaseWalletRequiredModal({
          >
             <div className="flex items-center justify-between border-b border-md-neutral-400 px-md-4 py-md-3">
                <div className="flex items-center gap-md-2">
-                  <img src="/icons/base-wallet.svg" alt="" className="size-11 rounded-md-lg" />
+                  <img src="/icons/base-account.svg" alt="" className="size-11 rounded-md-lg" />
                   <h2 className="text-md-h4 font-semibold text-md-heading">Connect Base Wallet</h2>
                </div>
                <button

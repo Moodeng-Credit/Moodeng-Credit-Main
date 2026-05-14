@@ -631,7 +631,7 @@ export default function AccountSettings() {
                   {borrowerNeedsBaseWallet && hasWallet && showWalletActions ? (
                      <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-primary-900 bg-md-primary-900/10 p-md-3">
                         <div className="flex items-start gap-md-2">
-                           <img src="/icons/base-wallet.svg" alt="" className="size-9 rounded-md-md shrink-0" />
+                           <img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md shrink-0" />
                            <div className="flex min-w-0 flex-1 flex-col gap-md-0">
                               <p className="text-md-b1 font-semibold text-md-heading">Confirm your Base wallet</p>
                               <p className="text-md-b2 font-medium text-md-neutral-1200">
@@ -653,7 +653,7 @@ export default function AccountSettings() {
 
                   {borrowerHasConfirmedBaseWallet && showWalletActions ? (
                      <div className="flex items-start gap-md-2 rounded-md-lg border border-md-primary-100 bg-md-primary-900/5 p-md-3">
-                        <img src="/icons/base-wallet.svg" alt="" className="size-8 rounded-md-md shrink-0" />
+                        <img src="/icons/base-account.svg" alt="" className="size-8 rounded-md-md shrink-0" />
                         <div className="min-w-0">
                            <p className="text-md-b2 font-semibold text-md-heading">Base wallet locked</p>
                            <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
