@@ -668,7 +668,7 @@ function RequestBoard$() {
                         <UserAvatar size={48} />
                         <div className="flex flex-col gap-1">
                            <p className="text-md-h5 font-semibold text-md-primary-2000">Hello, {displayFirstName}</p>
-                           {isBorrower || showVerify ? (
+                           {isBorrower ? (
                               <div className="flex items-center gap-2">
                                  {showVerify ? (
                                     <>

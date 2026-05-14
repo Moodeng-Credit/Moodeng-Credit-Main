@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import UserAvatar from '@/components/UserAvatar';
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { SHARED_FAQS, BORROWER_FAQS, LENDER_FAQS } from '@/views/account/data/accountFaqs';
 import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -134,10 +133,10 @@ export default function Account() {
                   </button>
                   <div className="flex flex-col gap-1">
                      <p className="text-md-h6 font-semibold text-md-heading">{displayName}</p>
-                     {isLender && isVerified ? (
+                     {isLender ? (
                         <div className="bg-md-primary-900 rounded-md-sm px-2 py-1 self-start">
                            <p className="text-md-b3 font-semibold text-md-neutral-100 capitalize">
-                              IOU {iouPoints}
+                              IOU {isVerified ? iouPoints : '0'}
                            </p>
                         </div>
                      ) : isVerified ? (
@@ -145,17 +144,9 @@ export default function Account() {
                            Verified
                         </span>
                      ) : (
-                        <WorldIDVerification>
-                           {({ open }) => (
-                              <button
-                                 type="button"
-                                 onClick={open}
-                                 className="w-fit rounded-md-sm bg-md-red-100 px-2 py-1 text-md-b3 font-semibold text-md-red-800 underline underline-offset-2"
-                              >
-                                 Verify to unlock
-                              </button>
-                           )}
-                        </WorldIDVerification>
+                        <span className="inline-flex w-fit items-center rounded-md-sm bg-md-primary-900 px-2 py-1 text-md-b3 font-semibold text-md-neutral-100">
+                           IOU 0
+                        </span>
                      )}
                   </div>
                </div>
