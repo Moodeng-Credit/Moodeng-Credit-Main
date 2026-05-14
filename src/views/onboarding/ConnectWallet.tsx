@@ -33,6 +33,10 @@ export default function ConnectWallet() {
    const connectorsByName = useMemo(() => {
       const map = new Map<string, (typeof connectors)[number]>();
       connectors.forEach((c) => map.set(c.name, c));
+      if (!map.has(WALLET_CONNECTOR_NAMES.coinbase)) {
+         const baseConnector = connectors.find((c) => c.id === 'baseAccount' || /base account|coinbase wallet/i.test(c.name));
+         if (baseConnector) map.set(WALLET_CONNECTOR_NAMES.coinbase, baseConnector);
+      }
       return map;
    }, [connectors]);
 
