@@ -1,19 +1,30 @@
-import { type ChangeEvent, type FormEvent, type MouseEvent, type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+   type ChangeEvent,
+   type FormEvent,
+   type MouseEvent,
+   type RefObject,
+   useCallback,
+   useEffect,
+   useMemo,
+   useRef,
+   useState
+} from 'react';
 
 import { AlertTriangle, HelpCircle, Menu, Search, Wallet, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import GuidedTourPreview from '@/components/GuidedTourPreview';
 import FilterSidebar from '@/components/filters/FilterSidebar';
-import { useIsBorrower } from '@/hooks/useIsBorrower';
+import GuidedTourPreview from '@/components/GuidedTourPreview';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import UserAvatar from '@/components/UserAvatar';
 import { ModalNote } from '@/components/worldId/modal/ModalNote';
 import { VerificationModalBody } from '@/components/worldId/modal/VerificationModalBody';
 import { VerificationModalHeader } from '@/components/worldId/modal/VerificationModalHeader';
+import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { usePagination } from '@/hooks/usePagination';
 
 import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
@@ -28,7 +39,7 @@ import {
    recordGuidedTourShown,
    shouldShowGuidedTour
 } from '@/lib/guidedTourStorage';
-import { isBaseWalletProvider } from '@/lib/walletProvider';
+import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -42,8 +53,6 @@ import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 import { FAQS } from '@/views/support/data/faqs';
-
-import UserAvatar from '@/components/UserAvatar';
 
 const LENDER_NOTE_STORAGE_KEY = 'moodeng_lender_note_dismissed';
 const IS_BORROWER_BASE_WALLET_GATE_ENABLED = true;
@@ -188,16 +197,18 @@ function RequestBoard$() {
    const [searchLoan, setSearchLoan] = useState('');
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
    const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, effectiveUser.isWorldId === 'ACTIVE') : 0;
-   const hasBorrowerBaseWallet =
-      !IS_BORROWER_BASE_WALLET_GATE_ENABLED ||
-      (Boolean(effectiveUser?.walletAddress?.trim()) && isBaseWalletProvider(effectiveUser?.walletProvider));
+   const baseWalletLock = getBaseWalletLockStatus(effectiveUser);
+   const hasBorrowerBaseWallet = !IS_BORROWER_BASE_WALLET_GATE_ENABLED || baseWalletLock.isConfirmedBase;
    const shouldOpenLoanRequest =
       (location.state as { openLoanRequest?: boolean } | null)?.openLoanRequest === true ||
       new URLSearchParams(location.search).get('applyLoan') === '1';
 
    const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
    const successModalRef = useClickOutside<HTMLDivElement>(() => setShowPurple(false), showPurple) as RefObject<HTMLDivElement>;
-   const baseWalletGateRef = useClickOutside<HTMLDivElement>(() => setShowBaseWalletGate(false), showBaseWalletGate) as RefObject<HTMLDivElement>;
+   const baseWalletGateRef = useClickOutside<HTMLDivElement>(
+      () => setShowBaseWalletGate(false),
+      showBaseWalletGate
+   ) as RefObject<HTMLDivElement>;
    const publicQuestionsRef = useClickOutside<HTMLDivElement>(
       () => setShowPublicQuestions(false),
       showPublicQuestions
@@ -250,23 +261,26 @@ function RequestBoard$() {
       setShowBaseWalletGate(false);
       navigate('/onboarding/wallet', { state: { returnTo: 'loan-request' } });
    }, [navigate]);
-   const handleRequestBoardTourStepChange = useCallback((index: number) => {
-      if (!isAuthenticated) {
-         setShowGuestWorldIdPreview(index === 2);
-         setShowModal(index === 3);
-         setShowPublicQuestions(index === 5);
+   const handleRequestBoardTourStepChange = useCallback(
+      (index: number) => {
+         if (!isAuthenticated) {
+            setShowGuestWorldIdPreview(index === 2);
+            setShowModal(index === 3);
+            setShowPublicQuestions(index === 5);
 
-         if (index === 5) {
-            window.setTimeout(() => {
-               const questionsPanel = document.querySelector<HTMLElement>('[data-tour-target="request-common-questions-panel"]');
-               questionsPanel?.scrollTo({ top: questionsPanel.scrollHeight, behavior: 'smooth' });
-            }, 180);
+            if (index === 5) {
+               window.setTimeout(() => {
+                  const questionsPanel = document.querySelector<HTMLElement>('[data-tour-target="request-common-questions-panel"]');
+                  questionsPanel?.scrollTo({ top: questionsPanel.scrollHeight, behavior: 'smooth' });
+               }, 180);
+            }
+            return;
          }
-         return;
-      }
 
-      if (index >= 2) setShowModal(true);
-   }, [isAuthenticated]);
+         if (index >= 2) setShowModal(true);
+      },
+      [isAuthenticated]
+   );
    useEffect(() => {
       if (!shouldShowBorrowerTour || forceTourPreview) return;
 
@@ -301,39 +315,45 @@ function RequestBoard$() {
       });
    }, [forceTourPreview, location.pathname, shouldShowLenderTour, tourUserId]);
 
-   const handleRequestBoardTourFinish = useCallback((reason: 'complete' | 'skip') => {
-      setShowModal(false);
-      if (reason === 'skip' || !isAuthenticated || !isBorrower) {
-         if (!forceTourPreview) {
-            markGuidedTourCompleted(BORROWER_GUIDED_TOUR_ID, tourUserId);
-            void recordGuidedTourEvent({
-               eventType: 'skipped',
-               metadata: { path: location.pathname, role: isBorrower ? 'borrower' : 'guest' },
-               tourId: BORROWER_GUIDED_TOUR_ID,
-               userId: tourUserId
-            });
+   const handleRequestBoardTourFinish = useCallback(
+      (reason: 'complete' | 'skip') => {
+         setShowModal(false);
+         if (reason === 'skip' || !isAuthenticated || !isBorrower) {
+            if (!forceTourPreview) {
+               markGuidedTourCompleted(BORROWER_GUIDED_TOUR_ID, tourUserId);
+               void recordGuidedTourEvent({
+                  eventType: 'skipped',
+                  metadata: { path: location.pathname, role: isBorrower ? 'borrower' : 'guest' },
+                  tourId: BORROWER_GUIDED_TOUR_ID,
+                  userId: tourUserId
+               });
+            }
+            return;
          }
-         return;
-      }
 
-      navigate(import.meta.env.DEV ? '/dashboard?mockData=rich&tourPreview=1' : '/dashboard?tour=1');
-   }, [forceTourPreview, isAuthenticated, isBorrower, location.pathname, navigate, tourUserId]);
-   const handleLenderTourFinish = useCallback((reason: 'complete' | 'skip') => {
-      if (reason === 'skip') {
-         if (!forceTourPreview) {
-            markGuidedTourCompleted(LENDER_GUIDED_TOUR_ID, tourUserId);
-            void recordGuidedTourEvent({
-               eventType: 'skipped',
-               metadata: { path: location.pathname, role: 'lender' },
-               tourId: LENDER_GUIDED_TOUR_ID,
-               userId: tourUserId
-            });
+         navigate(import.meta.env.DEV ? '/dashboard?mockData=rich&tourPreview=1' : '/dashboard?tour=1');
+      },
+      [forceTourPreview, isAuthenticated, isBorrower, location.pathname, navigate, tourUserId]
+   );
+   const handleLenderTourFinish = useCallback(
+      (reason: 'complete' | 'skip') => {
+         if (reason === 'skip') {
+            if (!forceTourPreview) {
+               markGuidedTourCompleted(LENDER_GUIDED_TOUR_ID, tourUserId);
+               void recordGuidedTourEvent({
+                  eventType: 'skipped',
+                  metadata: { path: location.pathname, role: 'lender' },
+                  tourId: LENDER_GUIDED_TOUR_ID,
+                  userId: tourUserId
+               });
+            }
+            return;
          }
-         return;
-      }
 
-      navigate('/user/maya-demo?demo=rich&lenderTourPreview=1&tourPreview=1');
-   }, [forceTourPreview, location.pathname, navigate, tourUserId]);
+         navigate('/user/maya-demo?demo=rich&lenderTourPreview=1&tourPreview=1');
+      },
+      [forceTourPreview, location.pathname, navigate, tourUserId]
+   );
    const requestBoardTourSteps = useMemo(() => {
       if (!isAuthenticated) {
          return [
@@ -385,63 +405,63 @@ function RequestBoard$() {
 
       const baseSteps = showVerify
          ? [
-           {
-              target: '[data-tour-target="request-latest-list"]',
-              title: 'Request Board',
-              body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
-              durationMs: 6000
-           },
-           {
-              target: '[data-tour-target="request-apply-card"]',
-              title: 'Apply for a loan',
-              body: 'When you are ready to borrow, this card opens the loan request form.',
-              durationMs: 6000
-           },
-           {
-              target: '[data-tour-target="loan-verification-card"]',
-              title: 'Verify first',
-              body: 'Before an unverified borrower can request a loan, Moodeng asks for one quick verification step so lenders know they are funding a real person.',
-              durationMs: 6500
-           },
-           {
-              target: '[data-tour-target="loan-borrow-amount"]',
-              title: 'Loan terms preview',
-              body: 'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.',
-              durationMs: 6000
-           }
-        ].map(slowTourStep)
+              {
+                 target: '[data-tour-target="request-latest-list"]',
+                 title: 'Request Board',
+                 body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
+                 durationMs: 6000
+              },
+              {
+                 target: '[data-tour-target="request-apply-card"]',
+                 title: 'Apply for a loan',
+                 body: 'When you are ready to borrow, this card opens the loan request form.',
+                 durationMs: 6000
+              },
+              {
+                 target: '[data-tour-target="loan-verification-card"]',
+                 title: 'Verify first',
+                 body: 'Before an unverified borrower can request a loan, Moodeng asks for one quick verification step so lenders know they are funding a real person.',
+                 durationMs: 6500
+              },
+              {
+                 target: '[data-tour-target="loan-borrow-amount"]',
+                 title: 'Loan terms preview',
+                 body: 'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.',
+                 durationMs: 6000
+              }
+           ].map(slowTourStep)
          : [
-           {
-              target: '[data-tour-target="request-latest-list"]',
-              title: 'Request Board',
-              body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
-              durationMs: 6000
-           },
-           {
-              target: '[data-tour-target="request-apply-card"]',
-              title: 'Apply for a loan',
-              body: 'When you are ready to borrow, this card opens the loan request form.',
-              durationMs: 6000
-           },
-           {
-              target: '[data-tour-target="loan-borrow-amount"]',
-              title: 'Trust-building vs credit-building',
-              body: 'Borrowing below your limit can build trust history. Borrowing your full limit and repaying on time is what raises your Credit Level.',
-              durationMs: 7800
-           },
-           {
-              target: '[data-tour-target="loan-repayment-amount"]',
-              title: 'Set a clear repayment',
-              body: 'Your repayment must be at least $1 more than what you borrow. Lenders use this to decide if the request is worth funding.',
-              durationMs: 6400
-           },
-           {
-              target: '[data-tour-target="loan-reason"]',
-              title: 'Explain the reason',
-              body: 'A short, specific reason helps lenders understand the request and builds trust before they fund it.',
-              durationMs: 6000
-           }
-        ].map(slowTourStep);
+              {
+                 target: '[data-tour-target="request-latest-list"]',
+                 title: 'Request Board',
+                 body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
+                 durationMs: 6000
+              },
+              {
+                 target: '[data-tour-target="request-apply-card"]',
+                 title: 'Apply for a loan',
+                 body: 'When you are ready to borrow, this card opens the loan request form.',
+                 durationMs: 6000
+              },
+              {
+                 target: '[data-tour-target="loan-borrow-amount"]',
+                 title: 'Trust-building vs credit-building',
+                 body: 'Borrowing below your limit can build trust history. Borrowing your full limit and repaying on time is what raises your Credit Level.',
+                 durationMs: 7800
+              },
+              {
+                 target: '[data-tour-target="loan-repayment-amount"]',
+                 title: 'Set a clear repayment',
+                 body: 'Your repayment must be at least $1 more than what you borrow. Lenders use this to decide if the request is worth funding.',
+                 durationMs: 6400
+              },
+              {
+                 target: '[data-tour-target="loan-reason"]',
+                 title: 'Explain the reason',
+                 body: 'A short, specific reason helps lenders understand the request and builds trust before they fund it.',
+                 durationMs: 6000
+              }
+           ].map(slowTourStep);
 
       return baseSteps;
    }, [isAuthenticated, showVerify]);
@@ -897,7 +917,9 @@ function RequestBoard$() {
                         )}
                      </div>
 
-                     {!isListLoading && !shouldShowLenderTour && <LoadMoreButton currentCount={displayedCount} totalCount={totalCount} onLoadMore={handleLoadMore} />}
+                     {!isListLoading && !shouldShowLenderTour && (
+                        <LoadMoreButton currentCount={displayedCount} totalCount={totalCount} onLoadMore={handleLoadMore} />
+                     )}
                   </div>
                </div>
             </div>
@@ -905,7 +927,10 @@ function RequestBoard$() {
 
          {/* Bottom auth bar for logged-out users */}
          {!isAuthenticated && (
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-md-neutral-400 py-4 px-5" data-tour-target="request-auth-actions">
+            <div
+               className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-md-neutral-400 py-4 px-5"
+               data-tour-target="request-auth-actions"
+            >
                <div className="max-w-[440px] mx-auto flex items-center gap-3">
                   <Link
                      to="/sign-in"
@@ -967,7 +992,12 @@ function RequestBoard$() {
             />
          )}
          {shouldShowLenderTour && (
-            <GuidedTourPreview key={`lender-tour-${location.search}`} onFinish={handleLenderTourFinish} totalSteps={9} steps={lenderTourSteps} />
+            <GuidedTourPreview
+               key={`lender-tour-${location.search}`}
+               onFinish={handleLenderTourFinish}
+               totalSteps={9}
+               steps={lenderTourSteps}
+            />
          )}
       </>
    );
@@ -1091,8 +1121,8 @@ function BaseWalletRequiredModal({
                         <Wallet className="size-5 text-md-primary-900" strokeWidth={1.8} />
                      </div>
                      <p className="text-md-b1 font-medium leading-[1.45] text-md-neutral-900">
-                        Borrowers need a confirmed Base wallet before requesting a loan. Connect the Base wallet you want
-                        tied to funding, repayment, and your public trust record.
+                        Borrowers need a confirmed Base wallet before requesting a loan. Connect the Base wallet you want tied to funding,
+                        repayment, and your public trust record.
                      </p>
                   </div>
                </div>

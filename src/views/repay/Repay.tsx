@@ -15,8 +15,13 @@ import useWallet from '@/hooks/useWallet';
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatCurrency, formatNumber, toNumber } from '@/utils/decimalHelpers';
 
-import { ALLOWED_CHAIN_ID, WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
-import { getWalletProviderFromConnectorName, isBaseWalletProvider } from '@/lib/walletProvider';
+import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
+import {
+   formatWalletAddressShort,
+   getBaseAccountConnector,
+   getBaseWalletLockStatus,
+   isConnectedToLockedBaseWallet
+} from '@/lib/walletProvider';
 import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -158,6 +163,12 @@ export default function Repay() {
 
    const paymentCtaAmount = repaymentAmount ? `$${formatCurrency(parsedRepaymentAmount)}` : 'loan';
    const isRepayDisabled = isProcessing || !repaymentAmount || Boolean(amountError) || parsedRepaymentAmount <= 0;
+   const baseWalletLock = getBaseWalletLockStatus(user);
+   const isUsingLockedBaseWallet = isConnectedToLockedBaseWallet({
+      connectedAddress: account.address,
+      connectorName: account.connector?.name,
+      lockedAddress: baseWalletLock.address
+   });
 
    const handleSelectLoan = (loanId: string) => {
       setSelectedLoanId(loanId);
@@ -178,14 +189,22 @@ export default function Repay() {
          return;
       }
 
-      if (!account.isConnected) {
-         const baseConnector = connectors.find(
-            (connector) =>
-               connector.name === WALLET_CONNECTOR_NAMES.coinbase ||
-               connector.id === 'baseAccount' ||
-               /base account|coinbase wallet/i.test(connector.name)
+      if (!baseWalletLock.isConfirmedBase) {
+         showToast(
+            TOAST_TYPES.ERROR,
+            'Confirm your Base wallet',
+            baseWalletLock.hasStoredWallet
+               ? 'Reconnect this wallet with Base Account so Moodeng can confirm it before repayment.'
+               : 'Add a Base Account before repaying so your repayment history stays tied to the right wallet.',
+            undefined,
+            undefined
          );
+         navigate('/onboarding/wallet', { state: { returnTo: 'repay' } });
+         return;
+      }
 
+      if (!account.isConnected) {
+         const baseConnector = getBaseAccountConnector(connectors);
          if (baseConnector) {
             connect({ connector: baseConnector });
          } else {
@@ -200,11 +219,11 @@ export default function Repay() {
          return;
       }
 
-      if (!isBaseWalletProvider(getWalletProviderFromConnectorName(account.connector?.name))) {
+      if (!isUsingLockedBaseWallet) {
          showToast(
             TOAST_TYPES.ERROR,
-            'Use your Base wallet',
-            'Borrower repayments must come from your locked Base Account so your repayment history stays tied to the right wallet.',
+            'Connect your locked Base wallet',
+            `Repayments must come from ${formatWalletAddressShort(baseWalletLock.address)} so your repayment history stays tied to the right wallet.`,
             undefined,
             undefined
          );
@@ -257,9 +276,15 @@ export default function Repay() {
       parsedRepaymentAmount,
       account.isConnected,
       account.connector?.name,
+      account.address,
       account.chain?.id,
       connectors,
       connect,
+      navigate,
+      baseWalletLock.address,
+      baseWalletLock.hasStoredWallet,
+      baseWalletLock.isConfirmedBase,
+      isUsingLockedBaseWallet,
       showToast,
       showToastByConfig,
       Transfer,
@@ -478,9 +503,7 @@ export default function Repay() {
                                  className="flex aspect-square w-full max-w-[78px] flex-col items-center justify-center rounded-md-pill bg-md-primary-1200 text-md-neutral-50 shadow-[0_10px_20px_rgba(96,16,210,0.2)] transition hover:bg-md-primary-1500 focus:outline-none focus:ring-2 focus:ring-md-primary-300 disabled:cursor-not-allowed disabled:bg-md-neutral-500 disabled:shadow-none"
                               >
                                  <ArrowRight className="h-6 w-6" aria-hidden="true" />
-                                 <span className="mt-0.5 text-[11px] font-semibold leading-none">
-                                    {isProcessing ? 'Wait' : 'Continue'}
-                                 </span>
+                                 <span className="mt-0.5 text-[11px] font-semibold leading-none">{isProcessing ? 'Wait' : 'Continue'}</span>
                               </button>
                            </div>
                         </div>
@@ -538,7 +561,6 @@ export default function Repay() {
                         </div>
                      ) : null}
                   </div>
-
                </section>
             ) : (
                <section className="rounded-md-xl border border-md-green-100 bg-md-neutral-50 p-6 text-center shadow-md-card">

@@ -7,8 +7,10 @@ import { useAccount, useConnect } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
+
 import type { WalletConnectorKey } from '@/config/wagmiConfig';
 import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
+import { getBaseAccountConnector } from '@/lib/walletProvider';
 import type { RootState } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 import { LENDER_WALLET_OPTIONS } from '@/views/onboarding/walletPickerOptions';
@@ -26,15 +28,13 @@ export default function ConnectWallet() {
    const [selectedKey, setSelectedKey] = useState<WalletConnectorKey | null>(null);
    const [userInitiatedConnection, setUserInitiatedConnection] = useState(false);
    const returnTo =
-      (location.state as { returnTo?: string } | null)?.returnTo ||
-      new URLSearchParams(location.search).get('returnTo') ||
-      undefined;
+      (location.state as { returnTo?: string } | null)?.returnTo || new URLSearchParams(location.search).get('returnTo') || undefined;
 
    const connectorsByName = useMemo(() => {
       const map = new Map<string, (typeof connectors)[number]>();
       connectors.forEach((c) => map.set(c.name, c));
       if (!map.has(WALLET_CONNECTOR_NAMES.coinbase)) {
-         const baseConnector = connectors.find((c) => c.id === 'baseAccount' || /base account|coinbase wallet/i.test(c.name));
+         const baseConnector = getBaseAccountConnector(connectors);
          if (baseConnector) map.set(WALLET_CONNECTOR_NAMES.coinbase, baseConnector);
       }
       return map;
@@ -114,7 +114,7 @@ function BorrowerConnectView({ onConnect, isConnecting }: { onConnect: () => voi
          <OnboardingHeader title="Add Base Wallet" />
 
          <div className="flex flex-col flex-1 items-center justify-center px-md-4 gap-md-4">
-            <img src="/icons/base-wallet.svg" alt="Base Wallet" className="size-16 rounded-md-xl" />
+            <img src="/icons/base-wallet.svg" alt="Base Account" className="size-16 rounded-md-xl" />
             <h2 className="text-md-display text-md-heading text-center">Confirm Your Base Wallet</h2>
             <p className="text-md-b1 font-medium text-md-neutral-700 text-center">
                Loans are sent to this wallet and repayments come from it. Use the Base wallet you want tied to your Moodeng account.
@@ -126,11 +126,15 @@ function BorrowerConnectView({ onConnect, isConnecting }: { onConnect: () => voi
                </div>
                <div className="flex items-start gap-md-2">
                   <span className="mt-1 size-2 rounded-full bg-md-primary-900" />
-                  <p className="text-md-b2 font-medium text-md-neutral-1200">Need one? Choose the Coinbase/Base wallet option when the wallet picker opens.</p>
+                  <p className="text-md-b2 font-medium text-md-neutral-1200">
+                     Need one? Choose the Base Account option when the wallet picker opens.
+                  </p>
                </div>
                <div className="flex items-start gap-md-2">
                   <span className="mt-1 size-2 rounded-full bg-md-primary-900" />
-                  <p className="text-md-b2 font-medium text-md-neutral-1200">You can change it later, but your active loan history stays tied to the wallet you lock in.</p>
+                  <p className="text-md-b2 font-medium text-md-neutral-1200">
+                     You can change it later, but your active loan history stays tied to the wallet you lock in.
+                  </p>
                </div>
             </div>
             <button
@@ -181,11 +185,7 @@ function LenderConnectView({
          <OnboardingHeader title="Connect Wallet" />
 
          <div className="flex flex-col gap-md-4 p-md-4">
-            <img
-               src="/hippos/role-selection.png"
-               alt="Moodeng hippo"
-               className="w-[110px] h-[96px] object-cover"
-            />
+            <img src="/hippos/role-selection.png" alt="Moodeng hippo" className="w-[110px] h-[96px] object-cover" />
 
             <div className="flex flex-col gap-md-0">
                <h2 className="text-md-display text-md-heading">Connect Your Wallet</h2>
@@ -202,9 +202,7 @@ function LenderConnectView({
                         onClick={() => onSelect(option.key)}
                         className={[
                            'flex flex-col gap-md-3 items-start p-md-3 rounded-[12px] border text-left transition-colors',
-                           isSelected
-                              ? 'bg-md-primary-900/10 border-md-primary-900'
-                              : 'bg-white border-md-neutral-600'
+                           isSelected ? 'bg-md-primary-900/10 border-md-primary-900' : 'bg-white border-md-neutral-600'
                         ].join(' ')}
                      >
                         <div className="size-8 rounded-md-xs inline-flex items-center justify-center overflow-hidden shrink-0">
@@ -257,9 +255,7 @@ function LenderConnectView({
                </div>
                <div className="flex flex-col gap-md-0 flex-1 min-w-0">
                   <span className="text-md-h5 text-md-heading">Other Wallets</span>
-                  <span className="text-md-b2 font-medium text-md-slate-700">
-                     Trust, Rainbow, Argent &amp; more supported wallets
-                  </span>
+                  <span className="text-md-b2 font-medium text-md-slate-700">Trust, Rainbow, Argent &amp; more supported wallets</span>
                </div>
             </button>
 
@@ -287,9 +283,7 @@ function LenderConnectView({
                      />
                   )}
                </button>
-               <p className="text-md-b3 text-md-slate-500 text-center">
-                  All wallets support gasless transactions on Base network
-               </p>
+               <p className="text-md-b3 text-md-slate-500 text-center">All wallets support gasless transactions on Base network</p>
             </div>
          </div>
       </div>
