@@ -13,9 +13,12 @@ import {
 import { createConfig, http } from 'wagmi';
 import { arbitrum, base, baseSepolia, bsc, type Chain, optimism, polygon, sepolia } from 'wagmi/chains';
 
+import { installBaseAccountPopupSizePatch } from '@/lib/baseAccountPopup';
 import { type CustomChainConfig } from '@/types/wagmiTypes';
 
 export type { CustomChainConfig };
+
+installBaseAccountPopupSizePatch();
 
 export const getNetworkSvg = (networkId: number) => {
    const colors: Record<number, ReactNode> = {

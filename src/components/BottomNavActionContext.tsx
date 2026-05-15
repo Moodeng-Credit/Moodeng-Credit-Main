@@ -1,4 +1,5 @@
 import { createContext, type Dispatch, type ReactNode, type SetStateAction, useContext, useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export type BottomNavPrimaryAction = {
    ariaLabel: string;
@@ -20,16 +21,24 @@ const BottomNavActionContext = createContext<BottomNavActionContextValue | null>
 
 export function BottomNavActionProvider({ children }: { children: ReactNode }) {
    const [primaryAction, setPrimaryAction] = useState<BottomNavPrimaryAction | null>(null);
+   const location = useLocation();
    const value = useMemo(() => ({ primaryAction, setPrimaryAction }), [primaryAction]);
+
+   useEffect(() => {
+      setPrimaryAction((current) => {
+         if (!current || current.path === location.pathname) return current;
+         return null;
+      });
+   }, [location.pathname]);
 
    return <BottomNavActionContext.Provider value={value}>{children}</BottomNavActionContext.Provider>;
 }
 
 export function useBottomNavActionState() {
    const context = useContext(BottomNavActionContext);
-   if (!context) return { primaryAction: null };
+   if (!context) return { primaryAction: null, setPrimaryAction: () => undefined };
 
-   return { primaryAction: context.primaryAction };
+   return { primaryAction: context.primaryAction, setPrimaryAction: context.setPrimaryAction };
 }
 
 export function useBottomNavPrimaryAction(action: BottomNavPrimaryAction | null) {

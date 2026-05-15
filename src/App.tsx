@@ -133,7 +133,7 @@ export default function App() {
    return (
       <BottomNavActionProvider>
          <WalletLoadingOverlay />
-         <Routes>
+         <Routes key={location.pathname}>
             <Route path="/" element={<Home />} />
 
             {/* Auth */}
