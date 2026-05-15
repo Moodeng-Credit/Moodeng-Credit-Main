@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { useConnectModal, WalletButton } from '@rainbow-me/rainbowkit';
 import { useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
@@ -29,6 +29,8 @@ export default function ConnectWallet() {
    const [userInitiatedConnection, setUserInitiatedConnection] = useState(false);
    const returnTo =
       (location.state as { returnTo?: string } | null)?.returnTo || new URLSearchParams(location.search).get('returnTo') || undefined;
+   const previewRole = new URLSearchParams(location.search).get('role') === 'lender' ? 'lender' : 'borrower';
+   const role = user?.userRole || (isPreview ? previewRole : undefined);
 
    const connectorsByName = useMemo(() => {
       const map = new Map<string, (typeof connectors)[number]>();
@@ -60,11 +62,11 @@ export default function ConnectWallet() {
    );
 
    useEffect(() => {
-      if (isConnected && userInitiatedConnection) {
+      if (isConnected && (role === 'borrower' || userInitiatedConnection)) {
          setPendingKey(null);
          navigate('/onboarding/wallet/connected', { replace: true, state: { returnTo } });
       }
-   }, [isConnected, userInitiatedConnection, navigate, returnTo]);
+   }, [isConnected, role, userInitiatedConnection, navigate, returnTo]);
 
    useEffect(() => {
       if (status === 'error' && error) {
@@ -77,9 +79,6 @@ export default function ConnectWallet() {
       }
    }, [status, error, showToast]);
 
-   const previewRole = new URLSearchParams(location.search).get('role') === 'lender' ? 'lender' : 'borrower';
-   const role = user?.userRole || (isPreview ? previewRole : undefined);
-
    if (!role) {
       return <Navigate to="/onboarding/role" replace />;
    }
@@ -87,7 +86,8 @@ export default function ConnectWallet() {
    if (role === 'borrower') {
       return (
          <BorrowerConnectView
-            onConnect={() => handleConnect('coinbase')}
+            onPreviewConnect={() => navigate('/onboarding/wallet-connected-preview')}
+            isPreview={isPreview}
             isConnecting={pendingKey === 'coinbase' || status === 'pending'}
          />
       );
@@ -108,7 +108,15 @@ export default function ConnectWallet() {
    );
 }
 
-function BorrowerConnectView({ onConnect, isConnecting }: { onConnect: () => void; isConnecting: boolean }) {
+function BorrowerConnectView({
+   onPreviewConnect,
+   isPreview,
+   isConnecting
+}: {
+   onPreviewConnect: () => void;
+   isPreview: boolean;
+   isConnecting: boolean;
+}) {
    return (
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
          <OnboardingHeader title="Add Base Wallet" />
@@ -137,31 +145,43 @@ function BorrowerConnectView({ onConnect, isConnecting }: { onConnect: () => voi
                   </p>
                </div>
             </div>
-            <button
-               type="button"
-               onClick={onConnect}
-               disabled={isConnecting}
-               className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
-            >
-               {isConnecting ? 'Connecting...' : 'Connect Base Account'}
-               {!isConnecting && (
-                  <span
-                     className="block size-6 bg-md-neutral-100"
-                     style={{
-                        WebkitMaskImage: "url('/icons/chevron-right.svg')",
-                        maskImage: "url('/icons/chevron-right.svg')",
-                        WebkitMaskRepeat: 'no-repeat',
-                        maskRepeat: 'no-repeat',
-                        WebkitMaskPosition: 'center',
-                        maskPosition: 'center',
-                        WebkitMaskSize: 'contain',
-                        maskSize: 'contain'
-                     }}
-                  />
-               )}
-            </button>
+            {isPreview ? (
+               <ConnectBaseAccountButton onClick={onPreviewConnect} isDisabled={isConnecting} />
+            ) : (
+               <WalletButton.Custom wallet="base">
+                  {({ ready, connect }) => <ConnectBaseAccountButton onClick={connect} isDisabled={!ready || isConnecting} />}
+               </WalletButton.Custom>
+            )}
          </div>
       </div>
+   );
+}
+
+function ConnectBaseAccountButton({ onClick, isDisabled }: { onClick: () => void; isDisabled: boolean }) {
+   return (
+      <button
+         type="button"
+         onClick={onClick}
+         disabled={isDisabled}
+         className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
+      >
+         {isDisabled ? 'Connecting...' : 'Connect Base Account'}
+         {!isDisabled && (
+            <span
+               className="block size-6 bg-md-neutral-100"
+               style={{
+                  WebkitMaskImage: "url('/icons/chevron-right.svg')",
+                  maskImage: "url('/icons/chevron-right.svg')",
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskRepeat: 'no-repeat',
+                  WebkitMaskPosition: 'center',
+                  maskPosition: 'center',
+                  WebkitMaskSize: 'contain',
+                  maskSize: 'contain'
+               }}
+            />
+         )}
+      </button>
    );
 }
 
