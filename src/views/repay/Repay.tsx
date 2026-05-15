@@ -149,6 +149,21 @@ const previewLoans: Loan[] = [
    })
 ];
 
+const shouldUseLocalPreviewLoans = (search: string): boolean => {
+   if (typeof window === 'undefined') return false;
+
+   const isLocalPreviewHost = ['127.0.0.1', 'localhost'].includes(window.location.hostname);
+   if (!isLocalPreviewHost) return false;
+
+   const params = new URLSearchParams(search);
+   if (params.get('previewLoans') === '1') {
+      window.sessionStorage.setItem('moodeng-repay-preview-loans', '1');
+      return true;
+   }
+
+   return window.sessionStorage.getItem('moodeng-repay-preview-loans') === '1';
+};
+
 export default function Repay() {
    const navigate = useNavigate();
    const location = useLocation();
@@ -161,7 +176,7 @@ export default function Repay() {
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
    const isLoading = useSelector((state: RootState) => state.loans.isLoading);
-   const usePreviewLoans = import.meta.env.DEV && new URLSearchParams(location.search).get('previewLoans') === '1';
+   const usePreviewLoans = shouldUseLocalPreviewLoans(location.search);
    const repayLoans = usePreviewLoans ? previewLoans : loans;
    useLoanData({ userId: user.id, enabled: Boolean(user.id) });
 
