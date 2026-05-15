@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { type BottomNavPrimaryAction, useBottomNavActionState } from '@/components/BottomNavActionContext';
 
@@ -78,45 +78,53 @@ function PrimaryActionSlot({ action }: { action: BottomNavPrimaryAction }) {
    );
 }
 
-function StandardTab({ tab, isBorrower, onNavigate }: { tab: NavTab; isBorrower: boolean; onNavigate: () => void }) {
-   return (
-      <NavLink
-         key={tab.path}
-         to={tab.path}
-         end={tab.path !== '/account' && tab.path !== '/history'}
-         onClick={onNavigate}
-         className="relative z-20 flex flex-1 flex-col items-center gap-1 self-stretch"
-      >
-         {({ isActive }) => {
-            const showBg = isActive && isBorrower;
+function isActiveTab(pathname: string, tabPath: string) {
+   if (tabPath === '/account' || tabPath === '/history') return pathname === tabPath || pathname.startsWith(`${tabPath}/`);
+   return pathname === tabPath;
+}
 
-            return (
-               <>
-                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center ${showBg ? 'rounded-md-md bg-md-primary-900' : ''}`}>
-                     <div
-                        className={`h-6 w-6 shrink-0 ${showBg ? 'bg-white' : isActive ? 'bg-md-primary-900' : 'bg-md-neutral-1000'}`}
-                        style={{
-                           ...MASK_BASE,
-                           WebkitMaskImage: `url('/icons/${tab.icon}')`,
-                           maskImage: `url('/icons/${tab.icon}')`
-                        }}
-                     />
-                  </div>
-                  <span
-                     className={`w-full text-center text-md-b4 font-medium ${isActive ? 'text-md-primary-900' : 'text-md-neutral-1000'}`}
-                  >
-                     {tab.label}
-                  </span>
-               </>
-            );
-         }}
-      </NavLink>
+function StandardTab({
+   tab,
+   isActive,
+   isBorrower,
+   onNavigate
+}: {
+   tab: NavTab;
+   isActive: boolean;
+   isBorrower: boolean;
+   onNavigate: () => void;
+}) {
+   const showBg = isActive && isBorrower;
+
+   return (
+      <button
+         key={tab.path}
+         type="button"
+         onClick={onNavigate}
+         aria-current={isActive ? 'page' : undefined}
+         className="relative z-20 flex flex-1 flex-col items-center gap-1 self-stretch border-0 bg-transparent p-0"
+      >
+         <div className={`flex h-9 w-9 shrink-0 items-center justify-center ${showBg ? 'rounded-md-md bg-md-primary-900' : ''}`}>
+            <div
+               className={`h-6 w-6 shrink-0 ${showBg ? 'bg-white' : isActive ? 'bg-md-primary-900' : 'bg-md-neutral-1000'}`}
+               style={{
+                  ...MASK_BASE,
+                  WebkitMaskImage: `url('/icons/${tab.icon}')`,
+                  maskImage: `url('/icons/${tab.icon}')`
+               }}
+            />
+         </div>
+         <span className={`w-full text-center text-md-b4 font-medium ${isActive ? 'text-md-primary-900' : 'text-md-neutral-1000'}`}>
+            {tab.label}
+         </span>
+      </button>
    );
 }
 
 export default function BottomNav() {
    const isBorrower = useIsBorrower();
    const location = useLocation();
+   const navigate = useNavigate();
    const { primaryAction, setPrimaryAction } = useBottomNavActionState();
    const activePrimaryAction = isBorrower && location.pathname === '/repay' && primaryAction?.path === location.pathname ? primaryAction : null;
    const navItems: NavItem[] = activePrimaryAction ? REPAY_ACTION_TABS : isBorrower ? BORROWER_TABS : LENDER_TABS;
@@ -133,9 +141,11 @@ export default function BottomNav() {
                   <StandardTab
                      key={item.path}
                      tab={item}
+                     isActive={isActiveTab(location.pathname, item.path)}
                      isBorrower={isBorrower}
                      onNavigate={() => {
-                        if (item.path !== location.pathname) setPrimaryAction(null);
+                        setPrimaryAction(null);
+                        if (item.path !== location.pathname) navigate(item.path);
                      }}
                   />
                );
