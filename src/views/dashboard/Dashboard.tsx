@@ -139,6 +139,11 @@ export default function Dashboard() {
    const isBorrower = useIsBorrower();
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
+   const requestBoardTourStepCountParam = Number(searchParams.get('requestBoardTourSteps'));
+   const requestBoardTourStepCount =
+      Number.isInteger(requestBoardTourStepCountParam) && requestBoardTourStepCountParam > 0
+         ? requestBoardTourStepCountParam
+         : REQUEST_BOARD_TOUR_STEP_COUNT;
    const [walletData, setWalletData] = useState<Record<string, WalletLivenessData>>({});
    const { stats, creditLevels, loanArrays, isReady: isDashboardDataReady } = useDashboardData('borrower');
    const isMockRich = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
@@ -293,11 +298,11 @@ export default function Dashboard() {
                   }
                   navigate('/request-board');
                }}
-               stepOffset={REQUEST_BOARD_TOUR_STEP_COUNT}
-               totalSteps={REQUEST_BOARD_TOUR_STEP_COUNT + DASHBOARD_TOUR_STEP_COUNT}
+               stepOffset={requestBoardTourStepCount}
+               totalSteps={requestBoardTourStepCount + DASHBOARD_TOUR_STEP_COUNT}
                steps={[
                   {
-                     target: '[data-tour-target="dashboard-trust-score"]',
+                     target: '[data-tour-target="dashboard-trust-score-heading"]',
                      title: 'Trust Score',
                      body: 'Trust is your reputation on Moodeng. Verification, clean repayment, and healthy activity make lenders more confident in you.',
                      durationMs: 6500

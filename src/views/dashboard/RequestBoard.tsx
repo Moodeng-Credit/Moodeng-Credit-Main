@@ -277,9 +277,14 @@ function RequestBoard$() {
             return;
          }
 
+         if (showVerify) {
+            setShowModal(index >= 3);
+            return;
+         }
+
          if (index >= 2) setShowModal(true);
       },
-      [isAuthenticated]
+      [isAuthenticated, showVerify]
    );
    useEffect(() => {
       if (!shouldShowBorrowerTour || forceTourPreview) return;
@@ -315,6 +320,14 @@ function RequestBoard$() {
       });
    }, [forceTourPreview, location.pathname, shouldShowLenderTour, tourUserId]);
 
+   const requestBoardTourStepCount = !isAuthenticated
+      ? GUEST_REQUEST_BOARD_TOUR_STEP_COUNT
+      : showVerify
+        ? UNVERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT
+        : VERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT;
+   const borrowerTourTotalSteps =
+      isAuthenticated && isBorrower ? requestBoardTourStepCount + DASHBOARD_TOUR_STEP_COUNT : requestBoardTourStepCount;
+
    const handleRequestBoardTourFinish = useCallback(
       (reason: 'complete' | 'skip') => {
          setShowModal(false);
@@ -331,9 +344,31 @@ function RequestBoard$() {
             return;
          }
 
-         navigate(import.meta.env.DEV ? '/dashboard?mockData=rich&tourPreview=1' : '/dashboard?tour=1');
+         const dashboardTourSearch = new URLSearchParams({
+            requestBoardTourSteps: String(requestBoardTourStepCount),
+            tour: '1'
+         });
+
+         if (import.meta.env.DEV) {
+            dashboardTourSearch.set('mockData', 'rich');
+            dashboardTourSearch.set('tourPreview', '1');
+         }
+
+         navigate(`/dashboard?${dashboardTourSearch.toString()}`);
       },
-      [forceTourPreview, isAuthenticated, isBorrower, location.pathname, navigate, tourUserId]
+      [forceTourPreview, isAuthenticated, isBorrower, location.pathname, navigate, requestBoardTourStepCount, tourUserId]
+   );
+   const handleRequestBoardTourStepNext = useCallback(
+      (index: number) => {
+         if (!isAuthenticated || !isBorrower || !showVerify || index !== 2) {
+            return false;
+         }
+
+         setShowModal(false);
+         navigate('/verify-world-id', { state: { returnTo: 'request-board-tour' } });
+         return true;
+      },
+      [isAuthenticated, isBorrower, navigate, showVerify]
    );
    const handleLenderTourFinish = useCallback(
       (reason: 'complete' | 'skip') => {
@@ -418,9 +453,9 @@ function RequestBoard$() {
                  durationMs: 6000
               },
               {
-                 target: '[data-tour-target="loan-verification-card"]',
+                 target: '[data-tour-target="request-verify-world-id-link"]',
                  title: 'Verify first',
-                 body: 'Before an unverified borrower can request a loan, Moodeng asks for one quick verification step so lenders know they are funding a real person.',
+                 body: 'Before an unverified borrower can request a loan, Moodeng sends them through the World ID verification screen.',
                  durationMs: 6500
               },
               {
@@ -465,13 +500,6 @@ function RequestBoard$() {
 
       return baseSteps;
    }, [isAuthenticated, showVerify]);
-   const requestBoardTourStepCount = !isAuthenticated
-      ? GUEST_REQUEST_BOARD_TOUR_STEP_COUNT
-      : showVerify
-        ? UNVERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT
-        : VERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT;
-   const borrowerTourTotalSteps =
-      isAuthenticated && isBorrower ? requestBoardTourStepCount + DASHBOARD_TOUR_STEP_COUNT : requestBoardTourStepCount;
    const lenderTourSteps = [
       {
          target: '[data-tour-target="request-latest-list"]',
@@ -706,7 +734,11 @@ function RequestBoard$() {
                                        </span>
                                        <WorldIDVerification>
                                           {({ open }) => (
-                                             <button onClick={open} className="text-md-b3 font-semibold text-md-primary-900 underline">
+                                             <button
+                                                onClick={open}
+                                                className="text-md-b3 font-semibold text-md-primary-900 underline"
+                                                data-tour-target="request-verify-world-id-link"
+                                             >
                                                 {'Verify World ID >'}
                                              </button>
                                           )}
@@ -987,6 +1019,7 @@ function RequestBoard$() {
                startImmediately={shouldStartTourImmediately}
                onFinish={handleRequestBoardTourFinish}
                onStepChange={handleRequestBoardTourStepChange}
+               onStepNext={handleRequestBoardTourStepNext}
                totalSteps={borrowerTourTotalSteps}
                steps={requestBoardTourSteps}
             />
