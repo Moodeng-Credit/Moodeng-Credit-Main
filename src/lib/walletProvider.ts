@@ -107,6 +107,26 @@ export const isConnectedToLockedBaseWallet = ({
    lockedAddress?: string | null;
 }) => isBaseWalletProvider(getWalletProviderFromConnectorName(connectorName)) && areWalletAddressesEqual(connectedAddress, lockedAddress);
 
+export const isBaseWalletReadyForRepayment = ({
+   connectedAddress,
+   connectorName,
+   wallet
+}: {
+   connectedAddress?: string | null;
+   connectorName?: string | null;
+   wallet?: WalletRecord | null;
+}) => {
+   const lockStatus = getBaseWalletLockStatus(wallet);
+   return (
+      lockStatus.isConfirmedBase ||
+      isConnectedToLockedBaseWallet({
+         connectedAddress,
+         connectorName,
+         lockedAddress: lockStatus.address
+      })
+   );
+};
+
 export const getBaseAccountConnector = <T extends { id?: string; name?: string }>(connectors: T[]) =>
    connectors.find((connector) => connector.id === 'baseAccount' || connector.name === 'Base Account');
 

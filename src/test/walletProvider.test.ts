@@ -6,6 +6,7 @@ import {
    getBaseWalletLockStatus,
    getWalletProviderLabel,
    getWalletProviderFromConnectorName,
+   isBaseWalletReadyForRepayment,
    isBaseWalletProvider,
    isConnectedToLockedBaseWallet
 } from '@/lib/walletProvider';
@@ -102,6 +103,32 @@ describe('walletProvider', () => {
             connectedAddress: '0xC1022456DFd3BF36af1dA553cd5631F9e76ca8D6',
             connectorName: 'MetaMask',
             lockedAddress: '0xc1022456dfd3bf36af1da553cd5631f9e76ca8d6'
+         })
+      ).toBe(false);
+   });
+
+   it('allows repayment when a matching Base Account is connected even if stored provider metadata is stale', () => {
+      expect(
+         isBaseWalletReadyForRepayment({
+            connectedAddress: '0xC1022456DFd3BF36af1dA553cd5631F9e76ca8D6',
+            connectorName: 'Base Account',
+            wallet: {
+               walletAddress: '0xc1022456dfd3bf36af1da553cd5631f9e76ca8d6',
+               walletProvider: null
+            }
+         })
+      ).toBe(true);
+   });
+
+   it('does not allow repayment when the connected wallet matches but is not Base Account', () => {
+      expect(
+         isBaseWalletReadyForRepayment({
+            connectedAddress: '0xC1022456DFd3BF36af1dA553cd5631F9e76ca8D6',
+            connectorName: 'MetaMask',
+            wallet: {
+               walletAddress: '0xc1022456dfd3bf36af1da553cd5631f9e76ca8d6',
+               walletProvider: null
+            }
          })
       ).toBe(false);
    });
