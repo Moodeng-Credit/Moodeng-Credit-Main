@@ -12,6 +12,7 @@ import { useAuthProvider } from '@/hooks/useAuthProvider';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getBaseWalletLockStatus, getWalletProviderLabel } from '@/lib/walletProvider';
+import { getWorldIdVerificationLabel } from '@/lib/worldIdVerificationLabel';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
@@ -582,7 +583,12 @@ export default function AccountSettings() {
                         {user?.isWorldId === 'ACTIVE' ? (
                            <>
                               <img src="/icons/check-fill.svg" alt="" className="w-4 h-4 shrink-0" />
-                              <span className="text-md-b1 font-medium text-md-green-900">Verified Lender</span>
+                              <span className="text-md-b1 font-medium text-md-green-900">
+                                 {getWorldIdVerificationLabel({
+                                    isWorldId: user?.isWorldId,
+                                    userRole: user?.userRole
+                                 })}
+                              </span>
                            </>
                         ) : (
                            <span className="text-md-b1 text-md-neutral-1200">Not Verified</span>
