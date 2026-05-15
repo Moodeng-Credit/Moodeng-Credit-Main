@@ -20,6 +20,7 @@ import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import {
    formatWalletAddressShort,
    getBaseWalletLockStatus,
+   isBaseWalletReadyForRepayment,
    isConnectedToLockedBaseWallet
 } from '@/lib/walletProvider';
 import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
@@ -229,6 +230,11 @@ export default function Repay() {
       connectorName: account.connector?.name,
       lockedAddress: baseWalletLock.address
    });
+   const canRepayWithConnectedBaseWallet = isBaseWalletReadyForRepayment({
+      connectedAddress: account.address,
+      connectorName: account.connector?.name,
+      wallet: user
+   });
 
    const handleSelectLoan = (loanId: string) => {
       setSelectedLoanId(loanId);
@@ -249,29 +255,21 @@ export default function Repay() {
          return;
       }
 
-      if (!baseWalletLock.isConfirmedBase) {
-         showToast(
-            TOAST_TYPES.ERROR,
-            'Confirm your Base wallet',
-            baseWalletLock.hasStoredWallet
-               ? 'Reconnect this wallet with Base Account so Moodeng can confirm it before repayment.'
-               : 'Add a Base Account before repaying so your repayment history stays tied to the right wallet.',
-            undefined,
-            undefined
-         );
+      if (!account.isConnected) {
          navigate('/onboarding/wallet', { state: { returnTo: 'repay' } });
          return;
       }
 
-      if (!account.isConnected) {
+      if (!canRepayWithConnectedBaseWallet) {
          showToast(
             TOAST_TYPES.ERROR,
-            'Connect your Base Account',
-            'Reconnect your locked Base Account before repaying.',
+            baseWalletLock.hasStoredWallet ? 'Connect your locked Base wallet' : 'Add a Base Account',
+            baseWalletLock.hasStoredWallet
+               ? `Repayments must come from ${formatWalletAddressShort(baseWalletLock.address)} so your repayment history stays tied to the right wallet.`
+               : 'Add a Base Account before repaying so your repayment history stays tied to the right wallet.',
             undefined,
             undefined
          );
-         navigate('/onboarding/wallet', { state: { returnTo: 'repay' } });
          return;
       }
 
@@ -338,6 +336,7 @@ export default function Repay() {
       baseWalletLock.address,
       baseWalletLock.hasStoredWallet,
       baseWalletLock.isConfirmedBase,
+      canRepayWithConnectedBaseWallet,
       isUsingLockedBaseWallet,
       showToast,
       showToastByConfig,
