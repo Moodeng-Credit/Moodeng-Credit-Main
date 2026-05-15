@@ -2,7 +2,7 @@ import { type ChangeEvent, type MouseEvent, useCallback, useEffect, useState } f
 
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { useAccount, useConnect } from 'wagmi';
+import { useAccount } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
@@ -15,7 +15,6 @@ import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import {
    formatWalletAddressShort,
-   getBaseAccountConnector,
    getBaseWalletLockStatus,
    isConnectedToLockedBaseWallet
 } from '@/lib/walletProvider';
@@ -36,8 +35,7 @@ function UserPay({ loan }: { loan: Loan }) {
    const dispatch = useDispatch<AppDispatch>();
    const { showToast, showToastByConfig } = useToast();
    const account = useAccount();
-   const { isConnected, status } = account;
-   const { connect, connectors } = useConnect();
+   const { isConnected } = account;
    const baseWalletLock = getBaseWalletLockStatus(user);
    const isUsingLockedBaseWallet = isConnectedToLockedBaseWallet({
       connectedAddress: account.address,
@@ -145,19 +143,14 @@ function UserPay({ loan }: { loan: Loan }) {
       }
 
       if (!isConnected) {
-         const baseConnector = getBaseAccountConnector(connectors);
-
-         if (baseConnector) {
-            connect({ connector: baseConnector });
-         } else {
-            showToast(
-               TOAST_TYPES.ERROR,
-               'Base wallet unavailable',
-               'Moodeng only supports Base Account for borrower repayments. Please refresh and try again.',
-               undefined,
-               undefined
-            );
-         }
+         showToast(
+            TOAST_TYPES.ERROR,
+            'Connect your Base Account',
+            'Reconnect your locked Base Account before repaying.',
+            undefined,
+            undefined
+         );
+         navigate('/onboarding/wallet', { state: { returnTo: 'repay' } });
          return;
       }
 

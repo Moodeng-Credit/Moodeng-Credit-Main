@@ -3,7 +3,7 @@ import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'rea
 import { ArrowLeft, Check, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAccount, useConnect } from 'wagmi';
+import { useAccount } from 'wagmi';
 
 import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -19,7 +19,6 @@ import { formatCurrency, formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import {
    formatWalletAddressShort,
-   getBaseAccountConnector,
    getBaseWalletLockStatus,
    isConnectedToLockedBaseWallet
 } from '@/lib/walletProvider';
@@ -171,7 +170,6 @@ export default function Repay() {
    const { showToast, showToastByConfig } = useToast();
    const { Transfer } = useWallet();
    const account = useAccount();
-   const { connect, connectors } = useConnect();
 
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
@@ -266,18 +264,14 @@ export default function Repay() {
       }
 
       if (!account.isConnected) {
-         const baseConnector = getBaseAccountConnector(connectors);
-         if (baseConnector) {
-            connect({ connector: baseConnector });
-         } else {
-            showToast(
-               TOAST_TYPES.ERROR,
-               'Base wallet unavailable',
-               'Moodeng only supports Base Account for borrower repayments. Please refresh and try again.',
-               undefined,
-               undefined
-            );
-         }
+         showToast(
+            TOAST_TYPES.ERROR,
+            'Connect your Base Account',
+            'Reconnect your locked Base Account before repaying.',
+            undefined,
+            undefined
+         );
+         navigate('/onboarding/wallet', { state: { returnTo: 'repay' } });
          return;
       }
 
@@ -340,8 +334,6 @@ export default function Repay() {
       account.connector?.name,
       account.address,
       account.chain?.id,
-      connectors,
-      connect,
       navigate,
       baseWalletLock.address,
       baseWalletLock.hasStoredWallet,
