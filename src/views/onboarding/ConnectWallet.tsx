@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useConnectModal, WalletButton } from '@rainbow-me/rainbowkit';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
@@ -87,6 +87,7 @@ export default function ConnectWallet() {
       return (
          <BorrowerConnectView
             onPreviewConnect={() => navigate('/onboarding/wallet-connected-preview')}
+            onConnectBaseAccount={() => handleConnect('coinbase')}
             isPreview={isPreview}
             isConnecting={pendingKey === 'coinbase' || status === 'pending'}
          />
@@ -110,10 +111,12 @@ export default function ConnectWallet() {
 
 function BorrowerConnectView({
    onPreviewConnect,
+   onConnectBaseAccount,
    isPreview,
    isConnecting
 }: {
    onPreviewConnect: () => void;
+   onConnectBaseAccount: () => void;
    isPreview: boolean;
    isConnecting: boolean;
 }) {
@@ -148,9 +151,7 @@ function BorrowerConnectView({
             {isPreview ? (
                <ConnectBaseAccountButton onClick={onPreviewConnect} isDisabled={isConnecting} />
             ) : (
-               <WalletButton.Custom wallet="base">
-                  {({ ready, connect }) => <ConnectBaseAccountButton onClick={connect} isDisabled={!ready || isConnecting} />}
-               </WalletButton.Custom>
+               <ConnectBaseAccountButton onClick={onConnectBaseAccount} isDisabled={isConnecting} />
             )}
          </div>
       </div>
