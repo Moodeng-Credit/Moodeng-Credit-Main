@@ -2,7 +2,7 @@ import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'rea
 
 import { ArrowLeft, Check, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
 
 import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
@@ -106,8 +106,52 @@ const getEstimatedTrustPoints = (loan: Loan, repaymentAmount: number): number =>
    return Math.max(1, Math.round((Math.min(repaymentAmount, remainingAmount) / remainingAmount) * 10));
 };
 
+const createPreviewLoan = (overrides: Partial<Loan>): Loan => ({
+   id: 'preview-loan-1',
+   trackingId: 'PREVIEW-001',
+   borrowerWallet: '0x0000000000000000000000000000000000000000',
+   lenderWallet: '0x0000000000000000000000000000000000000000',
+   borrowerUser: 'preview-borrower',
+   lenderUser: 'preview-lender',
+   loanAmount: 100,
+   repaidAmount: 0,
+   totalRepaymentAmount: 120,
+   reason: 'Medical appointment',
+   loanStatus: 'Lent',
+   repaymentStatus: 'Unpaid',
+   dueDate: new Date(Date.now() + 36 * 60 * 60 * 1000).toISOString(),
+   coin: 'USDC',
+   hash: [],
+   createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
+   updatedAt: new Date().toISOString(),
+   fundedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+   ...overrides
+});
+
+const previewLoans: Loan[] = [
+   createPreviewLoan({
+      id: 'preview-loan-1',
+      trackingId: 'PREVIEW-001',
+      reason: 'Medical appointment',
+      loanAmount: 100,
+      repaidAmount: 0,
+      totalRepaymentAmount: 121,
+      dueDate: new Date(Date.now() + 36 * 60 * 60 * 1000).toISOString()
+   }),
+   createPreviewLoan({
+      id: 'preview-loan-2',
+      trackingId: 'PREVIEW-002',
+      reason: 'Vaccination bills',
+      loanAmount: 100,
+      repaidAmount: 40,
+      totalRepaymentAmount: 120,
+      dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString()
+   })
+];
+
 export default function Repay() {
    const navigate = useNavigate();
+   const location = useLocation();
    const dispatch = useDispatch<AppDispatch>();
    const { showToast, showToastByConfig } = useToast();
    const { Transfer } = useWallet();
@@ -117,14 +161,16 @@ export default function Repay() {
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
    const isLoading = useSelector((state: RootState) => state.loans.isLoading);
+   const usePreviewLoans = import.meta.env.DEV && new URLSearchParams(location.search).get('previewLoans') === '1';
+   const repayLoans = usePreviewLoans ? previewLoans : loans;
    useLoanData({ userId: user.id, enabled: Boolean(user.id) });
 
    const activeLoans = useMemo(
       () =>
-         loans
+         repayLoans
             .filter((loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus !== 'Paid' && getRemainingAmount(loan) > 0)
             .sort((a, b) => parseDateSafely(a.dueDate).getTime() - parseDateSafely(b.dueDate).getTime()),
-      [loans]
+      [repayLoans]
    );
 
    const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
