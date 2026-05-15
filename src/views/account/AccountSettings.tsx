@@ -582,7 +582,13 @@ export default function AccountSettings() {
                         {user?.isWorldId === 'ACTIVE' ? (
                            <>
                               <img src="/icons/check-fill.svg" alt="" className="w-4 h-4 shrink-0" />
-                              <span className="text-md-b1 font-medium text-md-green-900">Verified Lender</span>
+                              <span className="text-md-b1 font-medium text-md-green-900">
+                                 {user?.userRole === 'lender'
+                                    ? 'Verified Lender'
+                                    : user?.userRole === 'borrower'
+                                      ? 'Verified Borrower'
+                                      : 'Verified'}
+                              </span>
                            </>
                         ) : (
                            <span className="text-md-b1 text-md-neutral-1200">Not Verified</span>
