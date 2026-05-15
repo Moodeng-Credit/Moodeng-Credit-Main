@@ -16,6 +16,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
+import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar from '@/components/UserAvatar';
 import { ModalNote } from '@/components/worldId/modal/ModalNote';
@@ -138,7 +139,7 @@ function RequestBoard$() {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
 
-   const { showToastByConfig } = useToast();
+   const { showToast, showToastByConfig } = useToast();
 
    const [showModal, setShowModal] = useState(false);
    const [showPurple, setShowPurple] = useState(false);
@@ -533,8 +534,10 @@ function RequestBoard$() {
       if (isSubmitting) return;
 
       const borrowerWallet = effectiveUser.walletAddress?.trim();
+      const trimmedReason = reason.trim();
       const parsedLoanAmount = Number.parseFloat(loanAmount);
       const parsedRepaymentAmount = Number.parseFloat(totalRepaymentAmount);
+      const parsedDueDate = days ? new Date(days) : null;
 
       if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
@@ -561,6 +564,20 @@ function RequestBoard$() {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_REPAYMENT_TOO_LOW));
          return;
       }
+      if (!parsedDueDate || Number.isNaN(parsedDueDate.getTime())) {
+         showToast(
+            TOAST_TYPES.ERROR,
+            'Repayment date required',
+            'Choose a repayment date before making your request.',
+            'OK',
+            'acknowledge'
+         );
+         return;
+      }
+      if (!trimmedReason) {
+         showToast(TOAST_TYPES.ERROR, 'Reason required', 'Add a short reason so lenders know what the loan is for.', 'OK', 'acknowledge');
+         return;
+      }
 
       const loanData = {
          borrowerUserId: borrowerUserId || '',
@@ -568,7 +585,7 @@ function RequestBoard$() {
          lenderUserId,
          loanAmount: parsedLoanAmount,
          totalRepaymentAmount: parsedRepaymentAmount,
-         reason,
+         reason: trimmedReason,
          dueDate: days,
          referralCodeId: appliedReferral?.id,
          referralCode: appliedReferral?.code,
@@ -596,6 +613,13 @@ function RequestBoard$() {
             }
          } catch (error) {
             console.error('Error creating loan:', (error as Error).message || error);
+            showToast(
+               TOAST_TYPES.ERROR,
+               "Request wasn't saved",
+               "We couldn't save this loan request. Please try again.",
+               'Try Again',
+               'retry_loan_request'
+            );
          } finally {
             setIsSubmitting(false);
          }
