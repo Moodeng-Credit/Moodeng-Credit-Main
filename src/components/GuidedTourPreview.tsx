@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type GuidedTourStep = {
    target: string;
@@ -11,6 +11,7 @@ type GuidedTourStep = {
 interface GuidedTourPreviewProps {
    startImmediately?: boolean;
    onFinish?: (reason: 'complete' | 'skip') => void;
+   onStepNext?: (stepIndex: number) => boolean | void;
    onStepChange?: (stepIndex: number) => void;
    stepOffset?: number;
    steps: GuidedTourStep[];
@@ -25,10 +26,15 @@ type SpotlightBounds = {
 };
 
 const SPOTLIGHT_INSET = 6;
+const CARD_GAP = 16;
+const CARD_TOP_MARGIN = 72;
+const CARD_BOTTOM_MARGIN = 112;
+const FALLBACK_CARD_HEIGHT = 280;
 
 export default function GuidedTourPreview({
    startImmediately = false,
    onFinish,
+   onStepNext,
    onStepChange,
    stepOffset = 0,
    steps,
@@ -38,11 +44,33 @@ export default function GuidedTourPreview({
    const [hasStarted, setHasStarted] = useState(startImmediately);
    const [stepIndex, setStepIndex] = useState(0);
    const [bounds, setBounds] = useState<SpotlightBounds | null>(null);
+   const cardRef = useRef<HTMLElement>(null);
    const currentStep = steps[stepIndex];
    const isLastStep = stepIndex === steps.length - 1;
    const globalStepIndex = stepOffset + stepIndex;
    const isFinalGlobalStep = globalStepIndex === (totalSteps ?? steps.length) - 1;
-   const stepCardPosition = currentStep?.cardPlacement === 'top' ? 'top-[88px]' : 'bottom-[104px]';
+   const cardTop = useMemo(() => {
+      if (!bounds || typeof window === 'undefined') return undefined;
+
+      const cardHeight = cardRef.current?.offsetHeight || FALLBACK_CARD_HEIGHT;
+      const viewportHeight = window.innerHeight;
+      const belowTarget = bounds.top + bounds.height + CARD_GAP;
+      const aboveTarget = bounds.top - cardHeight - CARD_GAP;
+
+      if (currentStep?.cardPlacement === 'top' && aboveTarget >= CARD_TOP_MARGIN) {
+         return aboveTarget;
+      }
+
+      if (belowTarget + cardHeight <= viewportHeight - CARD_BOTTOM_MARGIN) {
+         return belowTarget;
+      }
+
+      if (aboveTarget >= CARD_TOP_MARGIN) {
+         return aboveTarget;
+      }
+
+      return Math.max(CARD_TOP_MARGIN, viewportHeight - CARD_BOTTOM_MARGIN - cardHeight);
+   }, [bounds, currentStep?.cardPlacement]);
 
    const updateBounds = useCallback(() => {
       if (!hasStarted || !currentStep) return;
@@ -53,7 +81,10 @@ export default function GuidedTourPreview({
          return;
       }
 
-      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      target.scrollIntoView({
+         block: 'nearest',
+         behavior: 'auto'
+      });
 
       window.requestAnimationFrame(() => {
          const rect = target.getBoundingClientRect();
@@ -94,21 +125,21 @@ export default function GuidedTourPreview({
    }, [onFinish]);
 
    const next = useCallback(() => {
+      if (onStepNext?.(stepIndex)) {
+         setIsVisible(false);
+         return;
+      }
+
       if (isLastStep) {
          finish('complete');
          return;
       }
 
       setStepIndex((index) => index + 1);
-   }, [finish, isLastStep]);
+   }, [finish, isLastStep, onStepNext, stepIndex]);
 
    const back = useCallback(() => {
-      if (stepIndex > 0) {
-         setStepIndex((index) => index - 1);
-         return;
-      }
-
-      window.history.back();
+      setStepIndex((index) => Math.max(0, index - 1));
    }, [stepIndex]);
 
    const stepLabel = useMemo(() => `Step ${globalStepIndex + 1} of ${totalSteps ?? steps.length}`, [globalStepIndex, steps.length, totalSteps]);
@@ -122,7 +153,7 @@ export default function GuidedTourPreview({
          {hasStarted && bounds ? (
             <div
                aria-hidden="true"
-               className="absolute rounded-[20px] border-[3px] border-md-primary-900 bg-transparent shadow-[0_0_0_9999px_rgba(8,5,18,0.45),0_12px_34px_rgba(20,18,24,0.22)] transition-all duration-150"
+               className="absolute rounded-[20px] border-[3px] border-md-primary-900 bg-transparent shadow-[0_0_0_9999px_rgba(8,5,18,0.45),0_12px_34px_rgba(20,18,24,0.22)]"
                style={{
                   height: bounds.height,
                   left: bounds.left,
@@ -157,7 +188,9 @@ export default function GuidedTourPreview({
             </article>
          ) : (
             <article
-               className={`pointer-events-auto fixed ${stepCardPosition} left-1/2 w-[calc(100vw-64px)] max-w-[340px] -translate-x-1/2 rounded-[22px] bg-[#3b087b] p-md-3 text-md-neutral-100 shadow-md-card`}
+               ref={cardRef}
+               className="pointer-events-auto fixed left-1/2 w-[calc(100vw-64px)] max-w-[340px] -translate-x-1/2 rounded-[22px] bg-[#3b087b] p-md-3 text-md-neutral-100 shadow-md-card"
+               style={cardTop === undefined ? { bottom: CARD_BOTTOM_MARGIN } : { top: cardTop }}
             >
                <div className="text-[11px] font-semibold uppercase leading-4 tracking-[0.08em] text-white/70">{stepLabel}</div>
                <h2 className="mt-1 text-md-h5 font-semibold text-white">{currentStep.title}</h2>
@@ -167,7 +200,7 @@ export default function GuidedTourPreview({
                      <button type="button" onClick={() => finish('skip')} className="rounded-full py-md-1 text-md-b2 font-medium text-white/75 transition active:scale-[0.98]">
                         Skip
                      </button>
-                     {globalStepIndex > 0 ? (
+                     {stepIndex > 0 ? (
                         <button type="button" onClick={back} className="rounded-full py-md-1 text-md-b2 font-medium text-white transition active:scale-[0.98]">
                            Back
                         </button>

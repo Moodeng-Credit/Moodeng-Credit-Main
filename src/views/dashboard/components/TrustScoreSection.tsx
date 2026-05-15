@@ -69,7 +69,7 @@ export default function TrustScoreSection({ trustScore }: TrustScoreSectionProps
 
    return (
       <>
-         <div className="flex items-center gap-1.5">
+         <div className="flex items-center gap-1.5" data-tour-target="dashboard-trust-score-heading">
             <h2 className="text-md-h5 font-semibold text-md-heading">Trust Score</h2>
             <img src="/icons/question_light.svg" alt="Info" className="w-5 h-5" />
          </div>
