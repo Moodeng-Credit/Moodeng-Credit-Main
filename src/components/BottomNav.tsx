@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 import { type BottomNavPrimaryAction, useBottomNavActionState } from '@/components/BottomNavActionContext';
 
@@ -97,9 +97,9 @@ function StandardTab({
    const showBg = isActive && isBorrower;
 
    return (
-      <button
+      <a
          key={tab.path}
-         type="button"
+         href={tab.path}
          onClick={onNavigate}
          aria-current={isActive ? 'page' : undefined}
          className="relative z-20 flex flex-1 flex-col items-center gap-1 self-stretch border-0 bg-transparent p-0"
@@ -117,14 +117,13 @@ function StandardTab({
          <span className={`w-full text-center text-md-b4 font-medium ${isActive ? 'text-md-primary-900' : 'text-md-neutral-1000'}`}>
             {tab.label}
          </span>
-      </button>
+      </a>
    );
 }
 
 export default function BottomNav() {
    const isBorrower = useIsBorrower();
    const location = useLocation();
-   const navigate = useNavigate();
    const { primaryAction, setPrimaryAction } = useBottomNavActionState();
    const activePrimaryAction = isBorrower && location.pathname === '/repay' && primaryAction?.path === location.pathname ? primaryAction : null;
    const navItems: NavItem[] = activePrimaryAction ? REPAY_ACTION_TABS : isBorrower ? BORROWER_TABS : LENDER_TABS;
@@ -145,7 +144,6 @@ export default function BottomNav() {
                      isBorrower={isBorrower}
                      onNavigate={() => {
                         setPrimaryAction(null);
-                        if (item.path !== location.pathname) navigate(item.path);
                      }}
                   />
                );
