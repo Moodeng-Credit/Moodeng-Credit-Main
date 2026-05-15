@@ -5,6 +5,7 @@ import {
    getBaseAccountConnector,
    getBaseWalletLockStatus,
    getWalletProviderLabel,
+   getWalletProviderFromConnector,
    getWalletProviderFromConnectorName,
    isBaseWalletReadyForRepayment,
    isBaseWalletProvider,
@@ -14,6 +15,8 @@ import {
 describe('walletProvider', () => {
    it('normalizes the borrower Base wallet connector', () => {
       expect(getWalletProviderFromConnectorName('Base Account')).toBe('base_wallet');
+      expect(getWalletProviderFromConnector({ connectorId: 'baseAccount', connectorName: 'Coinbase Wallet' })).toBe('base_wallet');
+      expect(getWalletProviderFromConnector({ connectorId: 'baseAccountSDK', connectorName: 'Coinbase Wallet' })).toBe('base_wallet');
       expect(isBaseWalletProvider('base_wallet')).toBe(true);
    });
 
@@ -87,6 +90,14 @@ describe('walletProvider', () => {
       expect(
          isConnectedToLockedBaseWallet({
             connectedAddress: '0xC1022456DFd3BF36af1dA553cd5631F9e76ca8D6',
+            connectorId: 'baseAccount',
+            connectorName: 'Coinbase Wallet',
+            lockedAddress: '0xc1022456dfd3bf36af1da553cd5631f9e76ca8d6'
+         })
+      ).toBe(true);
+      expect(
+         isConnectedToLockedBaseWallet({
+            connectedAddress: '0xC1022456DFd3BF36af1dA553cd5631F9e76ca8D6',
             connectorName: 'Base Account',
             lockedAddress: '0xc1022456dfd3bf36af1da553cd5631f9e76ca8d6'
          })
@@ -108,6 +119,17 @@ describe('walletProvider', () => {
    });
 
    it('allows repayment when a matching Base Account is connected even if stored provider metadata is stale', () => {
+      expect(
+         isBaseWalletReadyForRepayment({
+            connectedAddress: '0xC1022456DFd3BF36af1dA553cd5631F9e76ca8D6',
+            connectorId: 'baseAccount',
+            connectorName: 'Coinbase Wallet',
+            wallet: {
+               walletAddress: '0xc1022456dfd3bf36af1da553cd5631f9e76ca8d6',
+               walletProvider: null
+            }
+         })
+      ).toBe(true);
       expect(
          isBaseWalletReadyForRepayment({
             connectedAddress: '0xC1022456DFd3BF36af1dA553cd5631F9e76ca8D6',
@@ -137,10 +159,10 @@ describe('walletProvider', () => {
       expect(
          getBaseAccountConnector([
             { id: 'metaMask', name: 'MetaMask' },
-            { id: 'baseAccount', name: 'Base Account' }
+            { id: 'baseAccountSDK', name: 'Coinbase Wallet' }
          ])
       ).toMatchObject({
-         id: 'baseAccount'
+         id: 'baseAccountSDK'
       });
       expect(getBaseAccountConnector([{ id: 'coinbaseWallet', name: 'Coinbase Wallet' }])).toBeUndefined();
    });
