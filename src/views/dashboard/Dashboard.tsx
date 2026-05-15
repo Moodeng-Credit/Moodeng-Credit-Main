@@ -139,6 +139,11 @@ export default function Dashboard() {
    const isBorrower = useIsBorrower();
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
+   const requestBoardTourStepCountParam = Number(searchParams.get('requestBoardTourSteps'));
+   const requestBoardTourStepCount =
+      Number.isInteger(requestBoardTourStepCountParam) && requestBoardTourStepCountParam > 0
+         ? requestBoardTourStepCountParam
+         : REQUEST_BOARD_TOUR_STEP_COUNT;
    const [walletData, setWalletData] = useState<Record<string, WalletLivenessData>>({});
    const { stats, creditLevels, loanArrays, isReady: isDashboardDataReady } = useDashboardData('borrower');
    const isMockRich = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
@@ -179,6 +184,10 @@ export default function Dashboard() {
            defaultedLoans: previewLoans.filter((loan) => loan.id === 'mock-defaulted-1')
         }
       : loanArrays;
+   const outstandingBorrowedAmount = useMemo(
+      () => [...displayLoanArrays.activeLoans, ...displayLoanArrays.defaultedLoans].reduce((sum, loan) => sum + Number(loan.loanAmount || 0), 0),
+      [displayLoanArrays.activeLoans, displayLoanArrays.defaultedLoans]
+   );
    const milestones = buildReputationMilestones({ creditLevels, borrowerLoans: milestoneLoans, isVerified });
 
    useEffect(() => {
@@ -256,7 +265,7 @@ export default function Dashboard() {
                   <TrustScoreSection trustScore={displayTrustScore} />
                </div>
                <div data-tour-target="dashboard-credit-level">
-                  <CreditLevelSection currentCs={user.cs} isVerified={isVerified} />
+                  <CreditLevelSection currentBorrowedAmount={outstandingBorrowedAmount} currentCs={user.cs} isVerified={isVerified} />
                </div>
             </div>
 
@@ -293,11 +302,11 @@ export default function Dashboard() {
                   }
                   navigate('/request-board');
                }}
-               stepOffset={REQUEST_BOARD_TOUR_STEP_COUNT}
-               totalSteps={REQUEST_BOARD_TOUR_STEP_COUNT + DASHBOARD_TOUR_STEP_COUNT}
+               stepOffset={requestBoardTourStepCount}
+               totalSteps={requestBoardTourStepCount + DASHBOARD_TOUR_STEP_COUNT}
                steps={[
                   {
-                     target: '[data-tour-target="dashboard-trust-score"]',
+                     target: '[data-tour-target="dashboard-trust-score-heading"]',
                      title: 'Trust Score',
                      body: 'Trust is your reputation on Moodeng. Verification, clean repayment, and healthy activity make lenders more confident in you.',
                      durationMs: 6500
