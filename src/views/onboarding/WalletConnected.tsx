@@ -8,7 +8,7 @@ import {
    areWalletAddressesEqual,
    formatWalletAddressShort,
    getBaseWalletLockStatus,
-   getWalletProviderFromConnectorName,
+   getWalletProviderFromConnector,
    isBaseWalletProvider
 } from '@/lib/walletProvider';
 import { getUserLoans } from '@/store/slices/loanSlice';
@@ -28,7 +28,10 @@ export default function WalletConnected() {
    const [loansLoading, setLoansLoading] = useState(true);
    const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
    const baseWalletLock = getBaseWalletLockStatus(user);
-   const connectedProvider = getWalletProviderFromConnectorName(connector?.name);
+   const connectedProvider = getWalletProviderFromConnector({
+      connectorId: connector?.id,
+      connectorName: connector?.name
+   });
    const isConnectedBaseAccount = isConnected && isBaseWalletProvider(connectedProvider);
    const isConnectedWrongProvider = isConnected && !isConnectedBaseAccount;
    const isConnectedWrongWallet =

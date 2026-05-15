@@ -3,7 +3,7 @@ import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'rea
 import { ArrowLeft, Check, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAccount } from 'wagmi';
+import { useAccount, useConnect } from 'wagmi';
 
 import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -19,6 +19,7 @@ import { formatCurrency, formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import {
    formatWalletAddressShort,
+   getBaseAccountConnector,
    getBaseWalletLockStatus,
    isBaseWalletReadyForRepayment,
    isConnectedToLockedBaseWallet
@@ -171,6 +172,7 @@ export default function Repay() {
    const { showToast, showToastByConfig } = useToast();
    const { Transfer } = useWallet();
    const account = useAccount();
+   const { connect, connectors, status: connectStatus } = useConnect();
 
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
@@ -223,15 +225,19 @@ export default function Repay() {
          : null;
 
    const paymentCtaAmount = repaymentAmount ? `$${formatCurrency(parsedRepaymentAmount)}` : 'loan';
-   const isRepayDisabled = isProcessing || !repaymentAmount || Boolean(amountError) || parsedRepaymentAmount <= 0;
+   const isRepayDisabled =
+      isProcessing || connectStatus === 'pending' || !repaymentAmount || Boolean(amountError) || parsedRepaymentAmount <= 0;
    const baseWalletLock = getBaseWalletLockStatus(user);
+   const baseAccountConnector = useMemo(() => getBaseAccountConnector(connectors), [connectors]);
    const isUsingLockedBaseWallet = isConnectedToLockedBaseWallet({
       connectedAddress: account.address,
+      connectorId: account.connector?.id,
       connectorName: account.connector?.name,
       lockedAddress: baseWalletLock.address
    });
    const canRepayWithConnectedBaseWallet = isBaseWalletReadyForRepayment({
       connectedAddress: account.address,
+      connectorId: account.connector?.id,
       connectorName: account.connector?.name,
       wallet: user
    });
@@ -256,7 +262,23 @@ export default function Repay() {
       }
 
       if (!account.isConnected) {
-         navigate('/onboarding/wallet', { state: { returnTo: 'repay' } });
+         if (!baseWalletLock.hasStoredWallet) {
+            navigate('/onboarding/wallet', { state: { returnTo: 'repay' } });
+            return;
+         }
+
+         if (!baseAccountConnector) {
+            showToast(
+               TOAST_TYPES.ERROR,
+               'Base Account unavailable',
+               'Moodeng could not open Base Account. Refresh and try again.',
+               undefined,
+               undefined
+            );
+            return;
+         }
+
+         connect({ connector: baseAccountConnector });
          return;
       }
 
@@ -329,14 +351,17 @@ export default function Repay() {
       amountError,
       parsedRepaymentAmount,
       account.isConnected,
+      account.connector?.id,
       account.connector?.name,
       account.address,
       account.chain?.id,
+      baseAccountConnector,
       navigate,
       baseWalletLock.address,
       baseWalletLock.hasStoredWallet,
       baseWalletLock.isConfirmedBase,
       canRepayWithConnectedBaseWallet,
+      connect,
       isUsingLockedBaseWallet,
       showToast,
       showToastByConfig,
@@ -354,12 +379,12 @@ export default function Repay() {
                  icon: 'dollar-circle.svg',
                  id: 'repay-pay-now',
                  isProcessing,
-                 label: 'Pay Now',
+                 label: connectStatus === 'pending' ? 'Connecting' : 'Pay Now',
                  onClick: handleRepay,
                  path: '/repay'
               }
             : null,
-      [account.isConnected, handleRepay, isProcessing, isRepayDisabled, paymentCtaAmount, selectedLoan]
+      [account.isConnected, connectStatus, handleRepay, isProcessing, isRepayDisabled, paymentCtaAmount, selectedLoan]
    );
 
    useBottomNavPrimaryAction(bottomNavRepayAction);

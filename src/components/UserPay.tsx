@@ -2,7 +2,7 @@ import { type ChangeEvent, type MouseEvent, useCallback, useEffect, useState } f
 
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { useAccount } from 'wagmi';
+import { useAccount, useConnect } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
@@ -15,6 +15,7 @@ import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import {
    formatWalletAddressShort,
+   getBaseAccountConnector,
    getBaseWalletLockStatus,
    isBaseWalletReadyForRepayment,
    isConnectedToLockedBaseWallet
@@ -36,15 +37,19 @@ function UserPay({ loan }: { loan: Loan }) {
    const dispatch = useDispatch<AppDispatch>();
    const { showToast, showToastByConfig } = useToast();
    const account = useAccount();
+   const { connect, connectors } = useConnect();
    const { isConnected } = account;
    const baseWalletLock = getBaseWalletLockStatus(user);
+   const baseAccountConnector = getBaseAccountConnector(connectors);
    const isUsingLockedBaseWallet = isConnectedToLockedBaseWallet({
       connectedAddress: account.address,
+      connectorId: account.connector?.id,
       connectorName: account.connector?.name,
       lockedAddress: baseWalletLock.address
    });
    const canRepayWithConnectedBaseWallet = isBaseWalletReadyForRepayment({
       connectedAddress: account.address,
+      connectorId: account.connector?.id,
       connectorName: account.connector?.name,
       wallet: user
    });
@@ -135,7 +140,23 @@ function UserPay({ loan }: { loan: Loan }) {
       e.preventDefault();
 
       if (!isConnected) {
-         navigate('/onboarding/wallet', { state: { returnTo: 'repay' } });
+         if (!baseWalletLock.hasStoredWallet) {
+            navigate('/onboarding/wallet', { state: { returnTo: 'repay' } });
+            return;
+         }
+
+         if (!baseAccountConnector) {
+            showToast(
+               TOAST_TYPES.ERROR,
+               'Base Account unavailable',
+               'Moodeng could not open Base Account. Refresh and try again.',
+               undefined,
+               undefined
+            );
+            return;
+         }
+
+         connect({ connector: baseAccountConnector });
          return;
       }
 

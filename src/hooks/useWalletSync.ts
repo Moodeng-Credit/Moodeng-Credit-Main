@@ -10,7 +10,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import {
    areWalletAddressesEqual,
    formatWalletAddressShort,
-   getWalletProviderFromConnectorName,
+   getWalletProviderFromConnector,
    isBaseWalletProvider
 } from '@/lib/walletProvider';
 import { updateUser } from '@/store/slices/authSlice';
@@ -98,7 +98,10 @@ export function useWalletSync() {
       }
 
       const connectedAddress = account.address.toLowerCase();
-      const walletProvider = getWalletProviderFromConnectorName(account.connector?.name);
+      const walletProvider = getWalletProviderFromConnector({
+         connectorId: account.connector?.id,
+         connectorName: account.connector?.name
+      });
 
       if (userRole === 'borrower' && !isBaseWalletProvider(walletProvider)) {
          showToast(
@@ -132,6 +135,7 @@ export function useWalletSync() {
       // If no stored wallet, allow the connection (initial connection scenario)
    }, [
       account.address,
+      account.connector?.id,
       account.connector?.name,
       account.isConnected,
       account.status,
@@ -163,7 +167,10 @@ export function useWalletSync() {
 
       const connectedAddress = account.address.toLowerCase();
       const storedAddress = storedWalletAddress?.toLowerCase();
-      const walletProvider = getWalletProviderFromConnectorName(account.connector?.name);
+      const walletProvider = getWalletProviderFromConnector({
+         connectorId: account.connector?.id,
+         connectorName: account.connector?.name
+      });
       const walletConnectorName = account.connector?.name ?? null;
       const walletChainId = account.chainId ?? null;
 
@@ -236,6 +243,7 @@ export function useWalletSync() {
       account.isConnected,
       account.address,
       account.chainId,
+      account.connector?.id,
       account.connector?.name,
       isAuthChecked,
       username,

@@ -1,7 +1,9 @@
 export type WalletProvider = 'argent' | 'base_wallet' | 'metamask' | 'phantom' | 'rainbow' | 'trust' | 'walletconnect' | 'unknown';
 
+const normalizeConnectorValue = (value?: string | null) => (value ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
 export const getWalletProviderFromConnectorName = (connectorName?: string | null): WalletProvider => {
-   const normalized = (connectorName ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+   const normalized = normalizeConnectorValue(connectorName);
 
    if (normalized === 'baseaccount' || normalized === 'basewallet') return 'base_wallet';
    if (normalized.includes('metamask')) return 'metamask';
@@ -12,6 +14,17 @@ export const getWalletProviderFromConnectorName = (connectorName?: string | null
    if (normalized.includes('argent')) return 'argent';
 
    return 'unknown';
+};
+
+export const getWalletProviderFromConnector = ({
+   connectorId,
+   connectorName
+}: {
+   connectorId?: string | null;
+   connectorName?: string | null;
+}): WalletProvider => {
+   if (normalizeConnectorValue(connectorId).includes('baseaccount')) return 'base_wallet';
+   return getWalletProviderFromConnectorName(connectorName);
 };
 
 export const isBaseWalletProvider = (provider?: string | null) => provider === 'base_wallet';
@@ -99,20 +112,26 @@ export const getBaseWalletLockStatus = (wallet?: WalletRecord | null) => {
 
 export const isConnectedToLockedBaseWallet = ({
    connectedAddress,
+   connectorId,
    connectorName,
    lockedAddress
 }: {
    connectedAddress?: string | null;
+   connectorId?: string | null;
    connectorName?: string | null;
    lockedAddress?: string | null;
-}) => isBaseWalletProvider(getWalletProviderFromConnectorName(connectorName)) && areWalletAddressesEqual(connectedAddress, lockedAddress);
+}) =>
+   isBaseWalletProvider(getWalletProviderFromConnector({ connectorId, connectorName })) &&
+   areWalletAddressesEqual(connectedAddress, lockedAddress);
 
 export const isBaseWalletReadyForRepayment = ({
    connectedAddress,
+   connectorId,
    connectorName,
    wallet
 }: {
    connectedAddress?: string | null;
+   connectorId?: string | null;
    connectorName?: string | null;
    wallet?: WalletRecord | null;
 }) => {
@@ -121,6 +140,7 @@ export const isBaseWalletReadyForRepayment = ({
       lockStatus.isConfirmedBase ||
       isConnectedToLockedBaseWallet({
          connectedAddress,
+         connectorId,
          connectorName,
          lockedAddress: lockStatus.address
       })
@@ -128,7 +148,11 @@ export const isBaseWalletReadyForRepayment = ({
 };
 
 export const getBaseAccountConnector = <T extends { id?: string; name?: string }>(connectors: T[]) =>
-   connectors.find((connector) => connector.id === 'baseAccount' || connector.name === 'Base Account');
+   connectors.find((connector) => {
+      const normalizedId = normalizeConnectorValue(connector.id);
+      const normalizedName = normalizeConnectorValue(connector.name);
+      return normalizedId.includes('baseaccount') || normalizedName === 'baseaccount' || normalizedName === 'basewallet';
+   });
 
 export const formatWalletAddressShort = (address?: string | null) => {
    const trimmed = address?.trim();
