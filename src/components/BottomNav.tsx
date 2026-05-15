@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 import { type BottomNavPrimaryAction, useBottomNavActionState } from '@/components/BottomNavActionContext';
 
@@ -42,7 +42,7 @@ function PrimaryActionSlot({ action }: { action: BottomNavPrimaryAction }) {
    const isDisabled = Boolean(action.disabled);
 
    return (
-      <div className="relative flex flex-1 flex-col items-center self-stretch">
+      <div className="pointer-events-none relative flex flex-1 flex-col items-center self-stretch">
          <span className="pointer-events-none absolute -top-9 left-1/2 h-[82px] w-[104px] -translate-x-1/2 rounded-t-[60px] bg-md-neutral-100" />
          <button
             type="button"
@@ -50,10 +50,10 @@ function PrimaryActionSlot({ action }: { action: BottomNavPrimaryAction }) {
             disabled={isDisabled}
             aria-label={action.ariaLabel}
             className={[
-               'relative z-10 -mt-8 flex h-16 w-16 items-center justify-center rounded-md-pill border-[6px] border-md-neutral-100 shadow-none transition focus:outline-none focus:ring-2 focus:ring-md-primary-300',
+               'relative z-30 -mt-8 flex h-16 w-16 items-center justify-center rounded-md-pill border-[6px] border-md-neutral-100 shadow-none transition focus:outline-none focus:ring-2 focus:ring-md-primary-300',
                isDisabled
-                  ? 'cursor-not-allowed bg-md-neutral-600 text-md-neutral-50'
-                  : 'bg-md-primary-1200 text-md-neutral-50 hover:bg-md-primary-1500 active:translate-y-0.5'
+                  ? 'pointer-events-none cursor-not-allowed bg-md-neutral-600 text-md-neutral-50'
+                  : 'pointer-events-auto bg-md-primary-1200 text-md-neutral-50 hover:bg-md-primary-1500 active:translate-y-0.5'
             ].join(' ')}
          >
             <span
@@ -78,46 +78,54 @@ function PrimaryActionSlot({ action }: { action: BottomNavPrimaryAction }) {
    );
 }
 
-function StandardTab({ tab, isBorrower }: { tab: NavTab; isBorrower: boolean }) {
-   return (
-      <NavLink
-         key={tab.path}
-         to={tab.path}
-         end={tab.path !== '/account' && tab.path !== '/history'}
-         className="flex flex-1 flex-col items-center gap-1 self-stretch"
-      >
-         {({ isActive }) => {
-            const showBg = isActive && isBorrower;
+function isActiveTab(pathname: string, tabPath: string) {
+   if (tabPath === '/account' || tabPath === '/history') return pathname === tabPath || pathname.startsWith(`${tabPath}/`);
+   return pathname === tabPath;
+}
 
-            return (
-               <>
-                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center ${showBg ? 'rounded-md-md bg-md-primary-900' : ''}`}>
-                     <div
-                        className={`h-6 w-6 shrink-0 ${showBg ? 'bg-white' : isActive ? 'bg-md-primary-900' : 'bg-md-neutral-1000'}`}
-                        style={{
-                           ...MASK_BASE,
-                           WebkitMaskImage: `url('/icons/${tab.icon}')`,
-                           maskImage: `url('/icons/${tab.icon}')`
-                        }}
-                     />
-                  </div>
-                  <span
-                     className={`w-full text-center text-md-b4 font-medium ${isActive ? 'text-md-primary-900' : 'text-md-neutral-1000'}`}
-                  >
-                     {tab.label}
-                  </span>
-               </>
-            );
-         }}
-      </NavLink>
+function StandardTab({
+   tab,
+   isActive,
+   isBorrower,
+   onNavigate
+}: {
+   tab: NavTab;
+   isActive: boolean;
+   isBorrower: boolean;
+   onNavigate: () => void;
+}) {
+   const showBg = isActive && isBorrower;
+
+   return (
+      <a
+         key={tab.path}
+         href={tab.path}
+         onClick={onNavigate}
+         aria-current={isActive ? 'page' : undefined}
+         className="relative z-20 flex flex-1 flex-col items-center gap-1 self-stretch border-0 bg-transparent p-0"
+      >
+         <div className={`flex h-9 w-9 shrink-0 items-center justify-center ${showBg ? 'rounded-md-md bg-md-primary-900' : ''}`}>
+            <div
+               className={`h-6 w-6 shrink-0 ${showBg ? 'bg-white' : isActive ? 'bg-md-primary-900' : 'bg-md-neutral-1000'}`}
+               style={{
+                  ...MASK_BASE,
+                  WebkitMaskImage: `url('/icons/${tab.icon}')`,
+                  maskImage: `url('/icons/${tab.icon}')`
+               }}
+            />
+         </div>
+         <span className={`w-full text-center text-md-b4 font-medium ${isActive ? 'text-md-primary-900' : 'text-md-neutral-1000'}`}>
+            {tab.label}
+         </span>
+      </a>
    );
 }
 
 export default function BottomNav() {
    const isBorrower = useIsBorrower();
    const location = useLocation();
-   const { primaryAction } = useBottomNavActionState();
-   const activePrimaryAction = isBorrower && primaryAction?.path === location.pathname ? primaryAction : null;
+   const { primaryAction, setPrimaryAction } = useBottomNavActionState();
+   const activePrimaryAction = isBorrower && location.pathname === '/repay' && primaryAction?.path === location.pathname ? primaryAction : null;
    const navItems: NavItem[] = activePrimaryAction ? REPAY_ACTION_TABS : isBorrower ? BORROWER_TABS : LENDER_TABS;
 
    return (
@@ -128,7 +136,17 @@ export default function BottomNav() {
                   return activePrimaryAction ? <PrimaryActionSlot key="bottom-nav-primary-action" action={activePrimaryAction} /> : null;
                }
 
-               return <StandardTab key={item.path} tab={item} isBorrower={isBorrower} />;
+               return (
+                  <StandardTab
+                     key={item.path}
+                     tab={item}
+                     isActive={isActiveTab(location.pathname, item.path)}
+                     isBorrower={isBorrower}
+                     onNavigate={() => {
+                        setPrimaryAction(null);
+                     }}
+                  />
+               );
             })}
          </div>
       </nav>

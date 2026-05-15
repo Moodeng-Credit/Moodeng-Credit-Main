@@ -41,6 +41,10 @@ function loadNotificationPrefs(): NotificationPrefs {
    return { accountActivity: true, transactionActivity: true, moodengBlogs: false };
 }
 
+function isTelegramPlaceholderEmail(email?: string | null) {
+   return /^telegram_\d+@moodeng\.(app|credit)$/i.test(email ?? '');
+}
+
 function EditableAvatar({ size = 64, onClick }: { size?: number; onClick?: () => void }) {
    return (
       <button
@@ -419,6 +423,13 @@ export default function AccountSettings() {
       baseWalletLock.provider !== 'unknown' &&
       !baseWalletLock.isConfirmedBase;
    const borrowerNeedsBaseWallet = isBorrower && !baseWalletLock.isConfirmedBase;
+   const hasTelegramPlaceholderEmail = isTelegramPlaceholderEmail(user?.email);
+   const emailFieldValue = hasTelegramPlaceholderEmail ? 'No email added' : user?.email || 'No email added';
+   const emailActionLabel = hasTelegramPlaceholderEmail ? 'Add' : isEmailPasswordUser ? 'Change' : undefined;
+   const canEditEmail = isEmailPasswordUser || hasTelegramPlaceholderEmail;
+   const emailHelpCopy = hasTelegramPlaceholderEmail
+      ? 'Telegram sign-in does not provide a real email. Add one for account recovery and notifications.'
+      : 'Having an up-to-date email address attached to your account is a great step towards improving account security.';
 
    useEffect(() => {
       localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(notifPrefs));
@@ -538,14 +549,12 @@ export default function AccountSettings() {
                {/* Basic Information */}
                <div className="flex flex-col gap-3">
                   <h2 className="text-md-h5 font-semibold text-md-heading">Basic Information</h2>
-                  <p className="text-md-b2 font-medium text-md-neutral-700">
-                     Having an up-to-date email address attached to your account is a great step towards improving account security.
-                  </p>
+                  <p className="text-md-b2 font-medium text-md-neutral-700">{emailHelpCopy}</p>
                   <ReadOnlyField
                      label="Email Address"
-                     value={user?.email || ''}
-                     actionLabel={isEmailPasswordUser ? 'Change' : undefined}
-                     onAction={isEmailPasswordUser ? () => setShowEmailModal(true) : undefined}
+                     value={emailFieldValue}
+                     actionLabel={emailActionLabel}
+                     onAction={canEditEmail ? () => setShowEmailModal(true) : undefined}
                   />
                   <ReadOnlyField
                      label="Telegram"
@@ -690,7 +699,9 @@ export default function AccountSettings() {
                <div className="flex flex-col gap-3">
                   <h2 className="text-md-h5 font-semibold text-md-heading">Notifications</h2>
                   <p className="text-md-b2 font-medium text-md-neutral-700">
-                     Get notified of activity going on with your account. Notifications will be sent to the email that you have provided.
+                     {hasTelegramPlaceholderEmail
+                        ? 'Add a real email address before turning on email notifications.'
+                        : 'Get notified of activity going on with your account. Notifications will be sent to the email that you have provided.'}
                   </p>
 
                   <div className="flex flex-col gap-2">
