@@ -122,7 +122,7 @@ export function Providers({ children }: { children: ReactNode }) {
       <Provider store={store}>
          <PersistGate loading={<Loading />} persistor={persistor}>
             <StoreInitializer />
-            <WagmiProvider config={config}>
+            <WagmiProvider config={config} reconnectOnMount={false}>
                <QueryClientProvider client={queryClient}>
                   <RainbowKitProvider theme={darkTheme()} initialChain={ALLOWED_CHAIN_ID}>
                      <WalletConnectionLogger />
