@@ -102,8 +102,6 @@ Once verified, you're eligible to request loans and build your Trust Score.`
       lastUpdated: 'Jan 18, 2024 1:00 A.M.',
       body: `Your account is tied to your wallet, so wallet security is account security.
 
-From the Account screen, you can update your display name, manage your email, change your password, and sign out.
-
-Always keep your wallet recovery phrase offline and never share it. Losing wallet access means losing your Trust Score and funds.`
+From the Account screen, you can update your display name, manage your email, change your password, and sign out.`
    }
 ];
