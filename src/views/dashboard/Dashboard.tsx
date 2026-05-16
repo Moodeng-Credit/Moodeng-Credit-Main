@@ -292,6 +292,20 @@ export default function Dashboard() {
          {showTourPreview && (
             <GuidedTourPreview
                startImmediately={shouldStartTourImmediately}
+               onStepBack={() => {
+                  const previousTourSearch = new URLSearchParams({
+                     startTour: '1',
+                     tour: '1',
+                     tourStep: String(Math.max(requestBoardTourStepCount - 1, 0))
+                  });
+
+                  if (forceTourPreview) {
+                     previousTourSearch.set('tourPreview', '1');
+                  }
+
+                  navigate(`/request-board?${previousTourSearch.toString()}`);
+                  return true;
+               }}
                onFinish={(reason) => {
                   if (!forceTourPreview) {
                      markGuidedTourCompleted(BORROWER_GUIDED_TOUR_ID, user.id);
