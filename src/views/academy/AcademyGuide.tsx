@@ -742,6 +742,9 @@ export default function AcademyGuide(): JSX.Element {
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         allowFullScreen
                      />
+                     <Link to="/credit-leveling-guide" className="academy-video-embed__learn-more">
+                        Want to learn more? Open the step-by-step credit guide.
+                     </Link>
                   </div>
                ) : null}
             </div>
