@@ -68,9 +68,10 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                   ) : null}
                   <Link
                      to={appHref}
-                     className="inline-flex h-11 items-center justify-center rounded-md-pill bg-md-primary-1200 px-md-3 text-md-b2 font-semibold text-white shadow-md-card"
+                     className="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-md-pill bg-md-primary-1200 px-md-3 text-md-b2 font-semibold text-white shadow-md-card"
                   >
-                     {appLabel}
+                     <span className="hidden sm:inline">{appLabel}</span>
+                     <span className="sm:hidden">{isSignedIn ? 'App' : 'Join'}</span>
                   </Link>
                   <button
                      type="button"
