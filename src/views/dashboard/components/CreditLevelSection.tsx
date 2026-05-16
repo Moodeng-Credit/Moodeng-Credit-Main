@@ -4,11 +4,12 @@ import { Link } from 'react-router-dom';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
-import { getCreditLevelNumber, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
+import { getCreditLevelNumber } from '@/config/creditTiers';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 
 interface CreditLevelSectionProps {
    currentCs: number;
+   usedCreditAmount: number;
    isVerified: boolean;
 }
 
@@ -62,10 +63,12 @@ function LvlBadge({ level }: { level: number }) {
    );
 }
 
-export default function CreditLevelSection({ currentCs, isVerified }: CreditLevelSectionProps) {
+export default function CreditLevelSection({ currentCs, usedCreditAmount, isVerified }: CreditLevelSectionProps) {
    const effectiveLimit = useMemo(() => getEffectiveCreditLimit(currentCs, isVerified), [currentCs, isVerified]);
    const levelNumber = useMemo(() => (effectiveLimit > 0 ? getCreditLevelNumber(effectiveLimit) : 0), [effectiveLimit]);
-   const progress = effectiveLimit / MAX_CREDIT_LIMIT;
+   const usedCredit = Math.min(Math.max(usedCreditAmount, 0), effectiveLimit);
+   const availableCredit = Math.max(effectiveLimit - usedCredit, 0);
+   const progress = effectiveLimit > 0 ? availableCredit / effectiveLimit : 0;
    const isLocked = !isVerified || levelNumber === 0;
 
    return (
@@ -103,8 +106,8 @@ export default function CreditLevelSection({ currentCs, isVerified }: CreditLeve
                </WorldIDVerification>
             ) : (
                <span className="text-md-b2 font-semibold">
-                  <span className="text-md-primary-800">${effectiveLimit}</span>
-                  <span className="text-md-neutral-700"> / ${MAX_CREDIT_LIMIT}</span>
+                  <span className="text-md-primary-800">${availableCredit}</span>
+                  <span className="text-md-neutral-700"> / ${effectiveLimit}</span>
                </span>
             )}
          </div>
