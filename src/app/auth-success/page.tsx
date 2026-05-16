@@ -80,11 +80,19 @@ export default function AuthSuccessPage(): JSX.Element {
                      <p className="text-gray-600 leading-relaxed">
                         {isLinkFlow
                            ? "An account with this email already exists (likely via Google). We've sent a password reset link to your email. Please use it to set a password and link your email login."
-                           : "We've sent a verification link to your email address. Please check your inbox and follow the instructions to complete your registration."}
+                           : "We've sent a verification email. Click the link or enter the code to finish creating your account."}
                      </p>
                   </div>
 
                   <div className="w-full pt-4">
+                     {!isLinkFlow && (
+                        <Link
+                           to="/auth/verify-code"
+                           className="mb-3 flex justify-center items-center px-6 py-3 w-full text-[#6010D2] font-bold bg-[#F2EAFE] rounded-xl hover:bg-[#E9D8FF] transition-colors"
+                        >
+                           Enter code
+                        </Link>
+                     )}
                      <Link
                         to="/sign-in#login"
                         className="flex justify-center items-center px-6 py-3 w-full text-white font-bold bg-emerald-500 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"

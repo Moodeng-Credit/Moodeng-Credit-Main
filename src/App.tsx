@@ -26,6 +26,7 @@ import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport
 
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
+import AuthVerifyCode from '@/app/auth/verify-code/page';
 import AccountRestrictedPage from '@/app/account-restricted/page';
 import Benefits from '@/app/benefits/page';
 import Dashboard from '@/views/dashboard/Dashboard';
@@ -186,6 +187,7 @@ export default function App() {
             <Route path="/reset-password" element={<Layout><ResetPassword /></Layout>} />
             <Route path="/auth-success" element={<AuthSuccess />} />
             <Route path="/auth/confirm" element={<AuthConfirm />} />
+            <Route path="/auth/verify-code" element={<AuthVerifyCode />} />
 
             {/* Help & Support */}
             <Route path="/support" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />

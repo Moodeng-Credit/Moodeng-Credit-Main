@@ -12,6 +12,7 @@ import {
 } from '@/components/auth';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { fetchDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { Icons } from '@/views/login/components/Icons';
 import { loginUser, loginWithGoogle, loginWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
@@ -35,10 +36,18 @@ export default function SignInPage() {
    const [isLoading, setIsLoading] = useState(false);
    const [showAccount, setShowAccount] = useState(false);
    const [errorType, setErrorType] = useState<
-      'incorrect_credentials' | 'email_not_found' | 'too_many_attempts' | null
+      'incorrect_credentials' | 'email_not_found' | 'new_user' | 'too_many_attempts' | null
    >(null);
    const [attemptsRemaining, setAttemptsRemaining] = useState(5);
    const [rememberMe, setRememberMe] = useState(true);
+
+   const getEmailHasProfile = async (value: string) => {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase.from('users').select('id').eq('email', value).maybeSingle();
+
+      if (error) return true;
+      return !!data?.id;
+   };
 
    const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -78,6 +87,9 @@ export default function SignInPage() {
             setErrorType('too_many_attempts');
          } else if (isEmailNotFound) {
             setErrorType('email_not_found');
+         } else if (lower.includes('invalid login') || lower.includes('invalid credentials')) {
+            const hasProfile = await getEmailHasProfile(email.trim().toLowerCase());
+            setErrorType(hasProfile ? 'incorrect_credentials' : 'new_user');
          } else {
             const nextAttempts = Math.max(0, attemptsRemaining - 1);
             setAttemptsRemaining(nextAttempts);
@@ -174,6 +186,8 @@ export default function SignInPage() {
                            errorMessage={
                               showAccount && errorType === 'too_many_attempts'
                                  ? 'Too many attempts detected'
+                                 : showAccount && errorType === 'new_user'
+                                   ? 'New account needed'
                                  : showAccount && errorType === 'email_not_found'
                                    ? 'Email not found'
                                    : showAccount && errorType === 'incorrect_credentials'
@@ -199,10 +213,11 @@ export default function SignInPage() {
                            type={errorType}
                            attemptsRemaining={attemptsRemaining}
                            onRetry={
-                              errorType === 'incorrect_credentials' || errorType === 'email_not_found'
+                              errorType === 'incorrect_credentials' || errorType === 'email_not_found' || errorType === 'new_user'
                                  ? handleRetry
                                  : undefined
                            }
+                           signupHref={`/sign-up?email=${encodeURIComponent(email.trim())}`}
                         />
                      )}
 
