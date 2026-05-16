@@ -355,6 +355,11 @@ function RequestBoard$() {
         : VERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT;
    const borrowerTourTotalSteps =
       isAuthenticated && isBorrower ? requestBoardTourStepCount + DASHBOARD_TOUR_STEP_COUNT : requestBoardTourStepCount;
+   const requestedTourStepIndex = Number(requestBoardSearchParams.get('tourStep'));
+   const initialBorrowerTourStepIndex =
+      Number.isInteger(requestedTourStepIndex) && requestedTourStepIndex >= 0
+         ? Math.min(requestedTourStepIndex, Math.max(requestBoardTourStepCount - 1, 0))
+         : 0;
 
    const handleRequestBoardTourFinish = useCallback(
       (reason: 'complete' | 'skip') => {
@@ -1069,6 +1074,7 @@ function RequestBoard$() {
          {shouldShowBorrowerTour && (
             <GuidedTourPreview
                key={`borrower-tour-${location.search}`}
+               initialStepIndex={initialBorrowerTourStepIndex}
                startImmediately={shouldStartTourImmediately}
                onFinish={handleRequestBoardTourFinish}
                onStepChange={handleRequestBoardTourStepChange}

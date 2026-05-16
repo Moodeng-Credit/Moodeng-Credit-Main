@@ -97,7 +97,7 @@ export default function ReputationMilestones({ milestones, isLoading = false }: 
 
    return (
       <div className="rounded-md-lg bg-md-neutral-100 p-4 shadow-md-card [font-family:'SF_Pro_Display','SF_Pro',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]">
-         <div className="relative mb-1 flex items-center justify-between gap-3">
+         <div className="relative mb-1 flex items-center justify-between gap-3" data-tour-target="dashboard-milestones-heading">
             <div className="flex items-center gap-2">
                <h2 className="text-[18px] font-[590] leading-[1.2] tracking-[-0.72px] text-[#040033]">Reputation Milestones</h2>
                <button

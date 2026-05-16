@@ -150,6 +150,7 @@ export default function Dashboard() {
    const forceTourPreview = import.meta.env.DEV && searchParams.has('tourPreview');
    const showTourPreview =
       (forceTourPreview || searchParams.has('tour')) && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, user.id, forceTourPreview);
+   const shouldStartTourImmediately = searchParams.get('tour') === '1' || searchParams.get('startTour') === '1';
    const dashboardStats = isMockRich
       ? {
            repayments: { count: 3, total: 200 },
@@ -290,6 +291,21 @@ export default function Dashboard() {
          </div>
          {showTourPreview && (
             <GuidedTourPreview
+               startImmediately={shouldStartTourImmediately}
+               onStepBack={() => {
+                  const previousTourSearch = new URLSearchParams({
+                     startTour: '1',
+                     tour: '1',
+                     tourStep: String(Math.max(requestBoardTourStepCount - 1, 0))
+                  });
+
+                  if (forceTourPreview) {
+                     previousTourSearch.set('tourPreview', '1');
+                  }
+
+                  navigate(`/request-board?${previousTourSearch.toString()}`);
+                  return true;
+               }}
                onFinish={(reason) => {
                   if (!forceTourPreview) {
                      markGuidedTourCompleted(BORROWER_GUIDED_TOUR_ID, user.id);
@@ -318,7 +334,7 @@ export default function Dashboard() {
                      durationMs: 7200
                   },
                   {
-                     target: '[data-tour-target="dashboard-milestones"]',
+                     target: '[data-tour-target="dashboard-milestones-heading"]',
                      title: 'Milestones',
                      body: 'Milestones are extra ways to earn Trust Points. Complete them to strengthen your profile and make lenders more confident in your requests.',
                      durationMs: 7600
