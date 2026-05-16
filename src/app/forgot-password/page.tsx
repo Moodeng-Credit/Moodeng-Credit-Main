@@ -5,11 +5,19 @@ import { ArrowLeft, CheckCircle2, HelpCircle, KeyRound, Mail } from 'lucide-reac
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
+function normalizeCode(value: string): string {
+   return value.replace(/\D/g, '').slice(0, 6);
+}
+
 export default function ForgotPasswordPage(): JSX.Element {
    const [email, setEmail] = useState('');
+   const [code, setCode] = useState('');
+   const [password, setPassword] = useState('');
+   const [confirmPassword, setConfirmPassword] = useState('');
    const [message, setMessage] = useState('');
    const [error, setError] = useState('');
    const [loading, setLoading] = useState(false);
+   const [hasRequestedReset, setHasRequestedReset] = useState(false);
 
    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -35,13 +43,79 @@ export default function ForgotPasswordPage(): JSX.Element {
          });
 
          if (resetError) {
-            setError(resetError.message || 'Could not send a reset link. Try again in a moment.');
+            setError(resetError.message || 'Could not send a reset code. Try again in a moment.');
             return;
          }
 
-         setMessage('If that email has a Moodeng account, a reset link is on the way.');
+         setMessage('Check your email for the reset code, then enter it here.');
+         setHasRequestedReset(true);
       } catch (resetRequestError) {
-         setError(resetRequestError instanceof Error ? resetRequestError.message : 'Could not send a reset link. Try again in a moment.');
+         setError(resetRequestError instanceof Error ? resetRequestError.message : 'Could not send a reset code. Try again in a moment.');
+      } finally {
+         setLoading(false);
+      }
+   };
+
+   const handleCodeReset = async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      setMessage('');
+      setError('');
+
+      const trimmedEmail = email.trim();
+      if (!trimmedEmail) {
+         setError('Enter the email address on your Moodeng account.');
+         return;
+      }
+
+      if (code.length !== 6) {
+         setError('Enter the 6-digit code from your email.');
+         return;
+      }
+
+      if (password.length < 6) {
+         setError('Use at least 6 characters for your new password.');
+         return;
+      }
+
+      if (password !== confirmPassword) {
+         setError('Passwords do not match.');
+         return;
+      }
+
+      if (!isSupabaseBrowserConfigured()) {
+         setError('Password reset is not configured in this local app.');
+         return;
+      }
+
+      setLoading(true);
+      try {
+         const supabase = getSupabaseBrowserClient();
+         const { error: verifyError } = await supabase.auth.verifyOtp({
+            email: trimmedEmail,
+            token: code,
+            type: 'recovery'
+         });
+
+         if (verifyError) {
+            setError(verifyError.message || 'That reset code did not work. Use the latest email from Moodeng and try again.');
+            return;
+         }
+
+         const { error: updateError } = await supabase.auth.updateUser({ password });
+         if (updateError) {
+            setError(updateError.message || 'Could not update your password. Try again in a moment.');
+            return;
+         }
+
+         setMessage('Password updated. You can sign in with the new password now.');
+         setCode('');
+         setPassword('');
+         setConfirmPassword('');
+         window.setTimeout(() => {
+            window.location.assign('/sign-in');
+         }, 1800);
+      } catch (resetError) {
+         setError(resetError instanceof Error ? resetError.message : 'Could not update your password. Try again in a moment.');
       } finally {
          setLoading(false);
       }
@@ -80,7 +154,7 @@ export default function ForgotPasswordPage(): JSX.Element {
                         Reset your password
                      </h1>
                      <p className="mt-3 max-w-[340px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F]">
-                        Enter your email and Moodeng will send a secure link to set a new password.
+                        Enter your email and Moodeng will send a reset code to set a new password.
                      </p>
                   </div>
 
@@ -99,6 +173,7 @@ export default function ForgotPasswordPage(): JSX.Element {
                                  setEmail(event.target.value);
                                  setError('');
                                  setMessage('');
+                                 setHasRequestedReset(false);
                               }}
                               placeholder="you@example.com"
                               autoComplete="email"
@@ -125,9 +200,76 @@ export default function ForgotPasswordPage(): JSX.Element {
                         disabled={loading || !email.trim()}
                         className="h-14 w-full rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95 disabled:bg-[#BDB5C7] disabled:text-[#FDFCFD]"
                      >
-                        {loading ? 'Sending...' : 'Send reset link'}
+                        {loading ? 'Sending...' : hasRequestedReset ? 'Send a new code' : 'Send reset code'}
                      </button>
                   </form>
+
+                  {hasRequestedReset ? (
+                     <form onSubmit={handleCodeReset} className="mt-5 space-y-5 rounded-3xl border border-[#E7D8FF] bg-[#F8F4FC] p-4">
+                        <div className="space-y-2">
+                           <label htmlFor="reset-code" className="text-base font-semibold tracking-[-0.02em] text-[#040033]">
+                              Reset code
+                           </label>
+                           <input
+                              id="reset-code"
+                              type="text"
+                              inputMode="numeric"
+                              autoComplete="one-time-code"
+                              value={code}
+                              onChange={(event) => {
+                                 setCode(normalizeCode(event.target.value));
+                                 setError('');
+                              }}
+                              placeholder="000000"
+                              className="h-16 w-full rounded-2xl border border-[#B5ACBE] bg-[#FDFCFD] px-5 text-center text-[30px] font-semibold tracking-[0.18em] text-[#040033] shadow-[0_2px_4px_rgba(27,28,29,0.04)] outline-none placeholder:text-[#A99CB4] focus:border-[#8336F0] focus:ring-4 focus:ring-[#E9D8FF]"
+                           />
+                        </div>
+
+                        <div className="space-y-2">
+                           <label htmlFor="new-password" className="text-base font-semibold tracking-[-0.02em] text-[#040033]">
+                              New password
+                           </label>
+                           <input
+                              id="new-password"
+                              type="password"
+                              value={password}
+                              onChange={(event) => {
+                                 setPassword(event.target.value);
+                                 setError('');
+                              }}
+                              placeholder="Enter new password"
+                              autoComplete="new-password"
+                              className="h-14 w-full rounded-2xl border border-[#B5ACBE] bg-[#FDFCFD] px-4 text-base text-[#040033] shadow-[0_2px_4px_rgba(27,28,29,0.04)] outline-none placeholder:text-[#70617F] focus:border-[#8336F0] focus:ring-4 focus:ring-[#E9D8FF]"
+                           />
+                        </div>
+
+                        <div className="space-y-2">
+                           <label htmlFor="confirm-new-password" className="text-base font-semibold tracking-[-0.02em] text-[#040033]">
+                              Confirm password
+                           </label>
+                           <input
+                              id="confirm-new-password"
+                              type="password"
+                              value={confirmPassword}
+                              onChange={(event) => {
+                                 setConfirmPassword(event.target.value);
+                                 setError('');
+                              }}
+                              placeholder="Re-enter new password"
+                              autoComplete="new-password"
+                              className="h-14 w-full rounded-2xl border border-[#B5ACBE] bg-[#FDFCFD] px-4 text-base text-[#040033] shadow-[0_2px_4px_rgba(27,28,29,0.04)] outline-none placeholder:text-[#70617F] focus:border-[#8336F0] focus:ring-4 focus:ring-[#E9D8FF]"
+                           />
+                        </div>
+
+                        <button
+                           type="submit"
+                           disabled={loading || code.length !== 6 || password.length < 6 || !confirmPassword}
+                           className="h-14 w-full rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95 disabled:bg-[#BDB5C7] disabled:text-[#FDFCFD]"
+                        >
+                           {loading ? 'Updating...' : 'Change password'}
+                        </button>
+                     </form>
+                  ) : null}
 
                   <Link
                      to="/sign-in"
