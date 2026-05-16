@@ -4,25 +4,29 @@ const borrowerBenefits = [
    {
       eyebrow: '01 / No collateral',
       title: '0% collateral',
-      description: 'Request small USDC loans without pledging assets. Your access starts with verification, clear terms, and repayment behavior.',
+      description:
+         'Start without a deposit, asset pledge, or bank-file gatekeeping. Verification and repayment behavior are what move you forward.',
       color: 'bg-blue-400'
    },
    {
       eyebrow: '02 / Reputation',
       title: '100% reputation',
-      description: 'Build trust through loans you repay. Your standing comes from repayment history, not pressure tactics or hidden phone data.',
+      description:
+         'Your standing comes from loans you repay in Moodeng, not contact-list pressure, hidden phone data, or who you already know.',
       color: 'bg-fuchsia-300'
    },
    {
       eyebrow: '03 / Control',
       title: '100% borrower control',
-      description: 'Define your amount, repayment date, and reason upfront. Your dashboard keeps the loan terms transparent from request to repayment.',
+      description:
+         'Set your amount, repayment date, and reason upfront so lenders see the same terms you agreed to before anyone funds the request.',
       color: 'bg-amber-300'
    },
    {
       eyebrow: '04 / Portability',
       title: '100% portable credit history',
-      description: 'Carry a wallet-based repayment record that lenders can review, instead of rebuilding your credit story from zero each time.',
+      description:
+         'Build a wallet-based repayment record you can keep using, instead of rebuilding your credit story from zero with each new lender.',
       color: 'bg-emerald-400'
    }
 ];

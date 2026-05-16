@@ -4,16 +4,16 @@ import { Link } from 'react-router-dom';
 
 const creditSteps = [
    {
-      title: 'Request a small loan',
-      description: 'Choose an amount you can realistically repay. Loan terms are shown before you commit.'
+      title: 'Start with a small request',
+      description: 'Post a realistic amount and reason so lenders can understand what the loan is for.'
    },
    {
-      title: 'Repay on schedule',
-      description: 'On-time repayments create a clear record tied to your wallet activity.'
+      title: 'Repay what you promised',
+      description: 'On-time repayment strengthens the record lenders see the next time you ask for support.'
    },
    {
-      title: 'Build portable trust',
-      description: 'Your repayment history can help future lenders understand your reliability.'
+      title: 'Unlock the next step',
+      description: 'Credit-building loans can raise your limit after full repayment, while smaller loans still help build trust.'
    }
 ];
 
@@ -27,11 +27,11 @@ export default function StartBuildingCreditSection(): JSX.Element {
             <div className="max-w-[760px]">
                <div className="text-md-b2 font-semibold uppercase tracking-[0.16em] text-md-primary-300">Borrower credit</div>
                <h2 className="mt-4 text-5xl font-semibold leading-tight text-neutral-100 max-md:text-4xl">
-                  Build a repayment history one small loan at a time
+                  Borrow, repay, and unlock more room over time
                </h2>
                <p className="mt-5 max-w-[680px] text-xl leading-8 text-violet-100 max-md:text-md-b1">
-                  Moodeng is not a magic credit score or a guaranteed approval engine. It is a transparent way to request small loans, repay
-                  them, and make that record easier for future lenders to evaluate.
+                  The point is not to look rich on day one. Moodeng gives borrowers a way to start with small direct loans, prove repayment,
+                  and make future requests easier for lenders to understand.
                </p>
             </div>
 
@@ -73,8 +73,8 @@ export default function StartBuildingCreditSection(): JSX.Element {
             </div>
 
             <div className="mt-8 rounded-[24px] border border-md-primary-300/30 bg-md-primary-300/10 p-6 text-md-b1 leading-7 text-violet-100">
-               Keep it honest: only borrow what you can repay. Your repayment history helps build trust, but it does not erase lending risk
-               or promise instant credit.
+               Keep it honest: only borrow what you can repay. Moodeng can make your record clearer and more useful, but every lender still
+               decides whether a request is worth funding.
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3 max-md:flex-col">

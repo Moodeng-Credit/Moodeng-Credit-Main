@@ -2,7 +2,7 @@ import { type JSX } from 'react';
 
 import { Link } from 'react-router-dom';
 
-const benefits = ['Clear loan terms', 'Repayment record', 'Portable history'];
+const benefits = ['Small loans', 'Gradual growth', 'No bank file'];
 
 export default function YourCapitalSection(): JSX.Element {
    return (
@@ -10,11 +10,11 @@ export default function YourCapitalSection(): JSX.Element {
          <div className="flex overflow-hidden flex-col items-center px-20 pt-2 w-full max-md:px-5">
             <div className="flex flex-col max-w-full w-[1079px]">
                <div className="self-center text-5xl font-semibold leading-tight text-center text-neutral-100 max-md:max-w-full max-md:text-4xl">
-                  Your Credit History, Built by Repayment
+                  Start Small. Grow by Repaying.
                </div>
                <p className="mx-auto mt-5 max-w-[680px] text-center text-xl leading-8 text-violet-100 max-md:text-left max-md:text-md-b1">
-                  Borrowers do not need to pretend they already have capital. Start with a small request, repay clearly, and let each
-                  successful loan add to a record you can keep using.
+                  Moodeng starts with manageable microloans. Repay clearly, unlock more room over time, and show future lenders a record
+                  built from real behavior instead of paperwork.
                </p>
                <div className="mx-auto grid max-w-[760px] grid-cols-3 gap-3 mt-9 w-full text-md-b1 leading-6 text-violet-100 max-md:grid-cols-1">
                   {benefits.map((benefit) => (
