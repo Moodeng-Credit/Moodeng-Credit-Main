@@ -15,7 +15,7 @@ type UpdateUserPayload = {
    email?: string | null;
    password?: string;
    telegramUsername?: string | null;
-   walletAddress?: string;
+   walletAddress?: string | null;
    walletChainId?: number | null;
    walletConnectorName?: string | null;
    walletProvider?: WalletProvider | null;
@@ -474,12 +474,12 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
    const updates: Database['public']['Tables']['users']['Update'] = {};
    if (userData.username) updates.username = userData.username;
    if (userData.email) updates.email = userData.email;
-   if (userData.walletAddress) updates.wallet_address = userData.walletAddress;
+   if (userData.walletAddress !== undefined) updates.wallet_address = userData.walletAddress;
    if (userData.walletChainId !== undefined) updates.wallet_chain_id = userData.walletChainId;
    if (userData.walletConnectorName !== undefined) updates.wallet_connector_name = userData.walletConnectorName;
    if (userData.walletProvider !== undefined) updates.wallet_provider = userData.walletProvider;
-   if (userData.walletAddress || userData.walletProvider !== undefined || userData.walletConnectorName !== undefined) {
-      updates.wallet_connected_at = new Date().toISOString();
+   if (userData.walletAddress !== undefined || userData.walletProvider !== undefined || userData.walletConnectorName !== undefined) {
+      updates.wallet_connected_at = userData.walletAddress === null ? null : new Date().toISOString();
    }
    if (userData.telegramUsername !== undefined) updates.telegram_username = userData.telegramUsername;
 

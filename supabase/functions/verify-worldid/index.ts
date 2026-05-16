@@ -7,6 +7,9 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+const WORLD_ID_APP_ID = 'app_9af81594e3d8c3c1010a94f0d553af24'
+const WORLD_ID_ACTION_ID = 'verify-borrower'
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -14,29 +17,23 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { userId, ...proof } = body
+    const proof = body
     const authHeader = req.headers.get('Authorization')
 
-    let user: any = null;
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), { status: 401, headers: corsHeaders })
+    }
 
-    if (authHeader) {
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-        { global: { headers: { Authorization: authHeader } } }
-      )
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    )
 
-      // Get user from token
-      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser()
-      if (userError || !authUser) {
-        return new Response(JSON.stringify({ error: 'Invalid Authorization token' }), { status: 401, headers: corsHeaders })
-      }
-      user = authUser
-    } else if (userId) {
-      // If no auth header, we use the userId from body (less secure, but allowed if requested)
-      user = { id: userId }
-    } else {
-      return new Response(JSON.stringify({ error: 'Missing Authorization header or userId in body' }), { status: 401, headers: corsHeaders })
+    // Get user from token
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Invalid Authorization token' }), { status: 401, headers: corsHeaders })
     }
 
     const adminSupabase = createClient(
@@ -44,8 +41,8 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const app_id = Deno.env.get('WORLD_ID_APP_ID') || Deno.env.get('VITE_WORLD_ID_APP_ID')
-    const action = Deno.env.get('WORLD_ID_ACTION_ID') || Deno.env.get('VITE_WORLD_ID_ACTION_ID')
+    const app_id = WORLD_ID_APP_ID
+    const action = Deno.env.get('WORLD_ID_ACTION_ID') || Deno.env.get('VITE_WORLD_ID_ACTION_ID') || WORLD_ID_ACTION_ID
 
     if (!app_id) {
         return new Response(JSON.stringify({ error: 'WORLD_ID_APP_ID not configured' }), { status: 500, headers: corsHeaders })

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Camera } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { useAccount } from 'wagmi';
+import { useAccount, useDisconnect } from 'wagmi';
 
 import UserAvatar from '@/components/UserAvatar';
 
@@ -396,6 +396,7 @@ export default function AccountSettings() {
    const dispatch = useDispatch<AppDispatch>();
    const user = useSelector((state: RootState) => state.auth.user);
    const { connector, chain } = useAccount();
+   const { disconnect } = useDisconnect();
    const { isEmailPasswordUser } = useAuthProvider();
 
    const currentDisplayName = user?.displayName ?? user?.username ?? '';
@@ -409,6 +410,11 @@ export default function AccountSettings() {
    const [walletCopied, setWalletCopied] = useState(false);
    const [showWalletAddress, setShowWalletAddress] = useState(false);
    const [showWalletActions, setShowWalletActions] = useState(false);
+   const [isEditingWallet, setIsEditingWallet] = useState(false);
+   const [isChangeWalletPending, setIsChangeWalletPending] = useState(false);
+   const [isDisconnectWalletPending, setIsDisconnectWalletPending] = useState(false);
+   const [isSavingWallet, setIsSavingWallet] = useState(false);
+   const [walletError, setWalletError] = useState('');
    const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
 
    const hasWallet = Boolean(user?.walletAddress);
@@ -436,6 +442,13 @@ export default function AccountSettings() {
       localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(notifPrefs));
    }, [notifPrefs]);
 
+   useEffect(() => {
+      setIsEditingWallet(false);
+      setIsChangeWalletPending(false);
+      setIsDisconnectWalletPending(false);
+      setWalletError('');
+   }, [user?.walletAddress]);
+
    const handleSaveName = async () => {
       const trimmed = editName.trim();
       if (!trimmed || trimmed === currentDisplayName) {
@@ -453,6 +466,44 @@ export default function AccountSettings() {
       await navigator.clipboard.writeText(user.walletAddress);
       setWalletCopied(true);
       setTimeout(() => setWalletCopied(false), 2000);
+   };
+
+   const handleRevertWalletChanges = () => {
+      setIsEditingWallet(false);
+      setIsChangeWalletPending(false);
+      setIsDisconnectWalletPending(false);
+      setWalletError('');
+   };
+
+   const handleSaveWalletChanges = async () => {
+      if (!isDisconnectWalletPending) {
+         handleRevertWalletChanges();
+         return;
+      }
+
+      setIsSavingWallet(true);
+      setWalletError('');
+      try {
+         const result = await dispatch(
+            updateUser({
+               walletAddress: null,
+               walletChainId: null,
+               walletConnectorName: null,
+               walletProvider: null
+            })
+         );
+
+         if (!updateUser.fulfilled.match(result)) {
+            throw new Error(result.error?.message || 'Failed to update wallet.');
+         }
+
+         disconnect();
+         handleRevertWalletChanges();
+      } catch (err) {
+         setWalletError(err instanceof Error ? err.message : 'Failed to update wallet.');
+      } finally {
+         setIsSavingWallet(false);
+      }
    };
 
    const handleSaveAvatar = async (file: File, avatarBackground: string) => {
@@ -611,11 +662,33 @@ export default function AccountSettings() {
                                  className="flex min-w-0 flex-1 items-center justify-between gap-md-2 text-left"
                                  aria-expanded={showWalletAddress}
                               >
-                                 <span className="shrink-0 text-md-b1 text-md-neutral-1200">{walletLabel}</span>
+                                 <span className="flex min-w-0 shrink-0 items-center gap-2 text-md-b1 text-md-neutral-1200">
+                                    <span
+                                       className="block size-4 bg-md-primary-900"
+                                       style={{
+                                          ...ICON_MASK,
+                                          WebkitMaskImage: "url('/icons/locked.svg')",
+                                          maskImage: "url('/icons/locked.svg')"
+                                       }}
+                                    />
+                                    <span className="truncate">{walletLabel}</span>
+                                 </span>
                                  <span className="mx-md-2 h-6 w-px shrink-0 bg-md-neutral-600" aria-hidden="true" />
                                  <span className="min-w-0 flex-1 truncate text-right text-md-b2 font-medium text-md-neutral-900">
                                     {showWalletAddress ? user?.walletAddress : truncateAddress(user?.walletAddress || '')}
                                  </span>
+                              </button>
+                              <button
+                                 type="button"
+                                 onClick={() => {
+                                    setShowWalletActions(true);
+                                    setIsEditingWallet(true);
+                                    setIsChangeWalletPending(true);
+                                    setIsDisconnectWalletPending(false);
+                                 }}
+                                 className="ml-2 shrink-0 text-md-b2 font-semibold text-md-primary-900"
+                              >
+                                 Change
                               </button>
                               <button type="button" onClick={handleCopyWallet} className="shrink-0 ml-2" aria-label="Copy wallet address">
                                  {walletCopied ? (
@@ -649,44 +722,190 @@ export default function AccountSettings() {
 
                   {borrowerNeedsBaseWallet && hasWallet && showWalletActions ? (
                      <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-primary-900 bg-md-primary-900/10 p-md-3">
-                        <div className="flex items-start gap-md-2">
-                           <img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md shrink-0" />
-                           <div className="flex min-w-0 flex-1 flex-col gap-md-0">
-                              <p className="text-md-b1 font-semibold text-md-heading">Confirm your Base Account</p>
-                              <p className="text-md-b2 font-medium text-md-neutral-1200">
-                                 {borrowerHasNonBaseWallet
-                                    ? `Your account is using ${walletLabel}. Connect a Base Account so funded loans and repayments use the right wallet.`
-                                    : 'Reconnect and confirm this is a Base Account before you borrow or repay.'}
+                        {isChangeWalletPending ? (
+                           <div className="flex flex-col gap-md-2 rounded-md-md border border-md-primary-100 bg-md-neutral-100 p-md-2">
+                              <p className="text-md-b2 font-semibold text-md-heading">Change Base Account?</p>
+                              <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
+                                 Future funded loans and repayments will use the new Base Account. Your existing repayment history stays tied to
+                                 this account.
                               </p>
+                              <div className="grid grid-cols-2 gap-md-2">
+                                 <button
+                                    type="button"
+                                    onClick={handleRevertWalletChanges}
+                                    className="rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900"
+                                 >
+                                    Cancel
+                                 </button>
+                                 <button
+                                    type="button"
+                                    onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
+                                    className="rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100"
+                                 >
+                                    Continue to change
+                                 </button>
+                              </div>
                            </div>
-                        </div>
-                        <button
-                           type="button"
-                           onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
-                           className="inline-flex w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
-                        >
-                           Connect Base Account
-                        </button>
+                        ) : isDisconnectWalletPending ? (
+                           <div className="flex flex-col gap-md-2 rounded-md-md border border-md-red-100 bg-md-red-100/60 p-md-2">
+                              <p className="text-md-b2 font-semibold text-md-heading">Disconnect wallet?</p>
+                              <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
+                                 Save changes to remove this wallet from your account. You can reconnect a Base Account after.
+                              </p>
+                              {walletError ? <p className="text-md-b3 font-medium text-md-red-500">{walletError}</p> : null}
+                              <div className="grid grid-cols-2 gap-md-2">
+                                 <button
+                                    type="button"
+                                    onClick={handleRevertWalletChanges}
+                                    disabled={isSavingWallet}
+                                    className="rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900 disabled:opacity-60"
+                                 >
+                                    Cancel
+                                 </button>
+                                 <button
+                                    type="button"
+                                    onClick={handleSaveWalletChanges}
+                                    disabled={isSavingWallet}
+                                    className="rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100 disabled:opacity-60"
+                                 >
+                                    {isSavingWallet ? 'Saving...' : 'Disconnect'}
+                                 </button>
+                              </div>
+                           </div>
+                        ) : (
+                           <>
+                              <div className="flex items-start gap-md-2">
+                                 <img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md shrink-0" />
+                                 <div className="flex min-w-0 flex-1 flex-col gap-md-0">
+                                    <p className="text-md-b1 font-semibold text-md-heading">Confirm your Base Account</p>
+                                    <p className="text-md-b2 font-medium text-md-neutral-1200">
+                                       {borrowerHasNonBaseWallet
+                                          ? `Your account is using ${walletLabel}. Connect a Base Account so funded loans and repayments use the right wallet.`
+                                          : 'Reconnect and confirm this is a Base Account before you borrow or repay.'}
+                                    </p>
+                                 </div>
+                              </div>
+                              <button
+                                 type="button"
+                                 onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
+                                 className="inline-flex w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
+                              >
+                                 Confirm Base Account
+                              </button>
+                              <button
+                                 type="button"
+                                 onClick={() => {
+                                    setIsEditingWallet(true);
+                                    setIsChangeWalletPending(false);
+                                    setIsDisconnectWalletPending(true);
+                                 }}
+                                 className="self-start text-md-b2 font-semibold text-md-red-500"
+                              >
+                                 Disconnect wallet
+                              </button>
+                           </>
+                        )}
                      </div>
                   ) : null}
 
                   {borrowerHasConfirmedBaseWallet && showWalletActions ? (
-                     <div className="flex items-start gap-md-2 rounded-md-lg border border-md-primary-100 bg-md-primary-900/5 p-md-3">
-                        <img src="/icons/base-account.svg" alt="" className="size-8 rounded-md-md shrink-0" />
-                        <div className="min-w-0">
-                           <p className="text-md-b2 font-semibold text-md-heading">Base Account locked</p>
-                           <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                              This wallet receives funded loans and is used for repayment history. Change it only if this is no longer your
-                              Base Account.
-                           </p>
+                     <div className="flex flex-col gap-md-3 rounded-md-lg border border-md-primary-100 bg-md-primary-900/5 p-md-3">
+                        <div className="flex items-start gap-md-2">
+                           <img src="/icons/base-account.svg" alt="" className="size-8 rounded-md-md shrink-0" />
+                           <div className="min-w-0">
+                              <p className="text-md-b2 font-semibold text-md-heading">Base Account locked</p>
+                              <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
+                                 This wallet receives funded loans and is used for repayment history. Change it only if this is no longer your
+                                 Base Account.
+                              </p>
+                           </div>
+                        </div>
+
+                        {isEditingWallet ? (
+                           <div className="flex flex-col gap-md-2">
+                              {isChangeWalletPending ? (
+                                 <div className="flex flex-col gap-md-2 rounded-md-md border border-md-primary-100 bg-md-neutral-100 p-md-2">
+                                    <p className="text-md-b2 font-semibold text-md-heading">Change Base Account?</p>
+                                    <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
+                                       Future funded loans and repayments will use the new Base Account. Your existing repayment history stays
+                                       tied to this account.
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-md-2">
+                                       <button
+                                          type="button"
+                                          onClick={handleRevertWalletChanges}
+                                          className="rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900"
+                                       >
+                                          Cancel
+                                       </button>
+                                       <button
+                                          type="button"
+                                          onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
+                                          className="rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100"
+                                       >
+                                          Continue to change
+                                       </button>
+                                    </div>
+                                 </div>
+                              ) : isDisconnectWalletPending ? (
+                                 <div className="flex flex-col gap-md-2 rounded-md-md border border-md-red-100 bg-md-red-100/60 p-md-2">
+                                    <p className="text-md-b2 font-semibold text-md-heading">Disconnect wallet?</p>
+                                    <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
+                                       Save changes to remove this wallet from your account. You will need to connect a Base Account again before
+                                       borrowing or repaying.
+                                    </p>
+                                    {walletError ? <p className="text-md-b3 font-medium text-md-red-500">{walletError}</p> : null}
+                                    <div className="grid grid-cols-2 gap-md-2">
+                                       <button
+                                          type="button"
+                                          onClick={handleRevertWalletChanges}
+                                          disabled={isSavingWallet}
+                                          className="rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900 disabled:opacity-60"
+                                       >
+                                          Cancel
+                                       </button>
+                                       <button
+                                          type="button"
+                                          onClick={handleSaveWalletChanges}
+                                          disabled={isSavingWallet}
+                                          className="rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100 disabled:opacity-60"
+                                       >
+                                          {isSavingWallet ? 'Saving...' : 'Disconnect'}
+                                       </button>
+                                    </div>
+                                 </div>
+                              ) : (
+                                 <div className="grid grid-cols-2 gap-md-2">
+                                    <button
+                                       type="button"
+                                       onClick={() => {
+                                          setIsChangeWalletPending(true);
+                                          setIsDisconnectWalletPending(false);
+                                       }}
+                                       className="rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900 active:scale-[0.99]"
+                                    >
+                                       Change wallet
+                                    </button>
+                                    <button
+                                       type="button"
+                                       onClick={() => setIsDisconnectWalletPending(true)}
+                                       className="rounded-md-lg border border-md-red-100 bg-md-red-100/60 px-md-3 py-md-2 text-md-b2 font-semibold text-md-red-500 active:scale-[0.99]"
+                                    >
+                                       Disconnect wallet
+                                    </button>
+                                 </div>
+                              )}
+
+                           </div>
+                        ) : (
                            <button
                               type="button"
-                              onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
-                              className="mt-2 text-md-b2 font-semibold text-md-primary-900"
+                              onClick={() => setIsEditingWallet(true)}
+                              className="self-start text-md-b2 font-semibold text-md-primary-900"
                            >
-                              Change Base Account
+                              Change wallet
                            </button>
-                        </div>
+                        )}
                      </div>
                   ) : null}
 

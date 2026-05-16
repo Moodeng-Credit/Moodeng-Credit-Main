@@ -13,6 +13,7 @@ import {
 } from '@/lib/walletProvider';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import { WorldId } from '@/types/authTypes';
 import { LoanStatus } from '@/types/loanTypes';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
@@ -96,6 +97,10 @@ export default function WalletConnected() {
    const handleNext = () => {
       if (isPreview) {
          navigate('/verify-world-id-preview', { replace: true });
+         return;
+      }
+      if (user?.userRole === 'borrower' && user.isWorldId !== WorldId.ACTIVE) {
+         navigate('/verify-world-id', { replace: true, state: { returnTo } });
          return;
       }
       if (returnTo === 'loan-request') {

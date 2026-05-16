@@ -20,13 +20,16 @@ interface WorldIDVerificationProps {
    className?: string;
 }
 
+const WORLD_ID_APP_ID = 'app_9af81594e3d8c3c1010a94f0d553af24';
+const WORLD_ID_ACTION_ID = 'verify-borrower';
+
 export default function WorldIDVerification({ children, onSuccess, className = '' }: WorldIDVerificationProps) {
    const dispatch = useDispatch<AppDispatch>();
    const { showToastByConfig } = useToast();
    const [isModalOpen, setIsModalOpen] = useState(false);
 
-   const action = import.meta.env.VITE_WORLD_ID_ACTION_ID as string;
-   const app_id = import.meta.env.VITE_WORLD_ID_APP_ID as `app_${string}`;
+   const action = (import.meta.env.VITE_WORLD_ID_ACTION_ID || WORLD_ID_ACTION_ID) as string;
+   const app_id = WORLD_ID_APP_ID as `app_${string}`;
 
    const handleVerify = async (proof: ISuccessResult) => {
       try {

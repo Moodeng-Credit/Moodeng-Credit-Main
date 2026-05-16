@@ -6,8 +6,22 @@ export default function WorldIdVerification() {
    const navigate = useNavigate();
    const location = useLocation();
    const isPreview = import.meta.env.DEV && location.pathname.includes('preview');
+   const returnTo =
+      (location.state as { returnTo?: string } | null)?.returnTo || new URLSearchParams(location.search).get('returnTo') || undefined;
 
    const handleVerified = () => {
+      if (!isPreview && returnTo === 'loan-request') {
+         navigate('/request-board', { replace: true, state: { openLoanRequest: true } });
+         return;
+      }
+      if (!isPreview && returnTo === 'account-settings') {
+         navigate('/account/settings', { replace: true });
+         return;
+      }
+      if (!isPreview && returnTo === 'repay') {
+         navigate('/repay', { replace: true });
+         return;
+      }
       navigate(isPreview ? '/onboarding/congratulations-preview' : '/onboarding/congratulations', { replace: true });
    };
 
