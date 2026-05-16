@@ -204,10 +204,16 @@ const loanSlice = createSlice({
             state.isLoading = false;
             state.error = (action.error.message as string) || 'Failed to fetch loans';
          })
+         .addCase(getUserLoans.pending, (state) => {
+            state.isLoading = true;
+            state.error = null;
+         })
          .addCase(getUserLoans.fulfilled, (state, action) => {
+            state.isLoading = false;
             state.loans.gloans = action.payload;
          })
          .addCase(getUserLoans.rejected, (state, action) => {
+            state.isLoading = false;
             state.error = (action.error.message as string) || 'Failed to fetch user loans';
          })
          .addCase(updateLoanStatus.fulfilled, (state, action) => {

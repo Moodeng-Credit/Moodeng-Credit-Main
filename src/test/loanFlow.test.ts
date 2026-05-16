@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { configureStore } from '@reduxjs/toolkit';
-import loanReducer, { updateLoanStatus } from '@/store/slices/loanSlice';
+import loanReducer, { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import authReducer from '@/store/slices/authSlice';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
@@ -30,6 +30,8 @@ describe('Loan Flow Trigger Integration', () => {
          update: vi.fn().mockReturnThis(),
          select: vi.fn().mockReturnThis(),
          eq: vi.fn().mockReturnThis(),
+         or: vi.fn().mockReturnThis(),
+         order: vi.fn().mockResolvedValue({ data: [], error: null }),
          single: vi.fn().mockResolvedValue({
             data: {
                id: 'loan-123',
@@ -51,6 +53,23 @@ describe('Loan Flow Trigger Integration', () => {
       };
 
       (getSupabaseBrowserClient as any).mockReturnValue(mockSupabase);
+   });
+
+   it('marks user loans as loading while the repay loan fetch is pending', async () => {
+      let resolveLoans: (value: { data: any[]; error: null }) => void = () => undefined;
+      const loansPromise = new Promise<{ data: any[]; error: null }>((resolve) => {
+         resolveLoans = resolve;
+      });
+      mockSupabase.order.mockReturnValueOnce(loansPromise);
+
+      const pendingFetch = store.dispatch(getUserLoans({ userId: 'borrower-123' }));
+
+      expect(store.getState().loans.isLoading).toBe(true);
+
+      resolveLoans({ data: [], error: null });
+      await pendingFetch;
+
+      expect(store.getState().loans.isLoading).toBe(false);
    });
 
    it('should trigger the "loan-funded-notification" edge function when a loan status is updated to "Lent"', async () => {
