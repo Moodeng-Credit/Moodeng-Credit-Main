@@ -307,7 +307,7 @@ export const registerUser = createAsyncThunk(
       if (existingProfile) {
          // Trigger password reset to allow them to "link" their email/password to the existing account
          const { error: resetError } = await supabase.auth.resetPasswordForEmail(userData.email, {
-            redirectTo: `${window.location.origin}/reset-password`
+            redirectTo: getAuthRedirectUrl('/reset-password')
          });
 
          if (resetError) throw resetError;
@@ -339,7 +339,7 @@ export const registerUser = createAsyncThunk(
          // If user already exists (e.g. signed up with Google), trigger password reset to "link" accounts
          if (error.message.toLowerCase().includes('already registered') || error.status === 422) {
             const { error: resetError } = await supabase.auth.resetPasswordForEmail(userData.email, {
-               redirectTo: `${window.location.origin}/reset-password`
+               redirectTo: getAuthRedirectUrl('/reset-password')
             });
 
             if (resetError) throw resetError;
