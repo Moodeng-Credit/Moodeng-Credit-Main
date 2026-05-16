@@ -325,14 +325,32 @@
    border: 1px solid rgba(255, 255, 255, 0.14);
    border-radius: 18px;
    background: #050712;
-   aspect-ratio: 16 / 9;
 }
 
 .academy-video-embed iframe {
    display: block;
    width: 100%;
-   height: 100%;
+   height: auto;
+   aspect-ratio: 16 / 9;
    border: 0;
+}
+
+.academy-video-embed__learn-more {
+   display: block;
+   border-top: 1px solid rgba(255, 255, 255, 0.12);
+   padding: 13px 14px 14px;
+   color: rgba(255, 255, 255, 0.86);
+   font-size: 0.9rem;
+   font-weight: 800;
+   line-height: 1.35;
+   text-decoration: none;
+}
+
+.academy-video-embed__learn-more:hover,
+.academy-video-embed__learn-more:focus-visible {
+   color: #ffffff;
+   text-decoration: underline;
+   text-underline-offset: 3px;
 }
 
 .academy-hero__visual {

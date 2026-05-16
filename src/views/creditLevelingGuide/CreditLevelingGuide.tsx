@@ -4,8 +4,6 @@ import { Link } from 'react-router-dom';
 import '@/views/academy/AcademyGuide.css';
 import '@/views/creditLevelingGuide/CreditLevelingGuide.css';
 
-const referenceVideoUrl = 'https://youtube.com/shorts/CLYSLbooJfs?feature=share';
-
 const levels = [
    { level: 'Level 1', limit: '$15', note: 'Start here', unlock: 'Verify and make your first request', state: 'Current' },
    { level: 'Level 2', limit: '$20', note: 'Next unlock', unlock: 'Borrow $15 and repay funded terms on time', state: 'Next' },
@@ -42,6 +40,24 @@ const rules = [
    'Borrowing your full current limit is what can unlock the next level.',
    'You still need to repay the accepted terms clearly and on time.',
    'Paying extra does not skip levels. Moodeng moves one level at a time.'
+];
+
+const howItWorks = [
+   {
+      step: '01',
+      title: 'Use the full current limit',
+      body: 'If your current level allows $15, the credit-building request is $15.'
+   },
+   {
+      step: '02',
+      title: 'Repay the accepted terms on time',
+      body: 'The repayment has to match the funded loan and land before the due date.'
+   },
+   {
+      step: '03',
+      title: 'Unlock the next level',
+      body: 'A clean repayment can move you to the next borrowing limit. Smaller loans still build trust.'
+   }
 ];
 
 export default function CreditLevelingGuide(): JSX.Element {
@@ -108,19 +124,23 @@ export default function CreditLevelingGuide(): JSX.Element {
             </div>
          </section>
 
-         <section className="credit-leveling-section credit-leveling-video-section">
-            <div>
-               <div className="credit-leveling-kicker">Video guide</div>
-               <h2>Use this slot for the credit leveling video</h2>
-               <p>
-                  The page is ready for a final walkthrough video. For now, this points to your reference short so the placement is clear.
-               </p>
+         <section className="credit-leveling-section credit-leveling-how-section">
+            <div className="credit-leveling-section__header">
+               <div className="credit-leveling-kicker">How it works</div>
+               <h2>The level-up path is simple</h2>
+               <p>Credit Leveling rewards one specific pattern: a full-limit request followed by a clean repayment.</p>
             </div>
-            <a className="credit-leveling-video-card" href={referenceVideoUrl} target="_blank" rel="noreferrer">
-               <span aria-hidden="true">▶</span>
-               <strong>Credit leveling walkthrough</strong>
-               <small>Open video reference</small>
-            </a>
+            <div className="credit-leveling-how-list" aria-label="How credit leveling works">
+               {howItWorks.map((item) => (
+                  <article key={item.step}>
+                     <span>{item.step}</span>
+                     <div>
+                        <h3>{item.title}</h3>
+                        <p>{item.body}</p>
+                     </div>
+                  </article>
+               ))}
+            </div>
          </section>
 
          <section className="credit-leveling-section">
