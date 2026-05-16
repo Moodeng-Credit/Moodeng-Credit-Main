@@ -91,7 +91,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
    [ERROR_CODES.LOAN_UPDATE_FAILED]: 'Failed to update loan.',
    [ERROR_CODES.LOAN_DELETE_FAILED]: 'Failed to delete loan.',
    [ERROR_CODES.LOAN_LIMIT_REACHED]: 'You have reached your maximum number of active loans.',
-   [ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT]: 'The loan amount exceeds your credit score limit.',
+   [ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT]: 'The loan amount exceeds your available credit limit.',
    [ERROR_CODES.LOAN_INVALID_AMOUNT]: 'Please enter a valid loan amount greater than 0.',
    [ERROR_CODES.LOAN_REPAYMENT_TOO_LOW]: 'Repayment amount must be at least $1 more than the borrowed amount.',
    [ERROR_CODES.LOAN_UNAUTHORIZED]: 'You are not authorized to perform this action on this loan.',

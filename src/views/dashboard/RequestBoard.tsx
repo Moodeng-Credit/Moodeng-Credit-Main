@@ -29,6 +29,7 @@ import { usePagination } from '@/hooks/usePagination';
 
 import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
+import { STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 import { logoImageSrc } from '@/config/navigationConfig';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
@@ -46,7 +47,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
-import type { Loan } from '@/types/loanTypes';
+import { LoanStatus, RepaymentStatus, type Loan } from '@/types/loanTypes';
 import LoanRequestModal, { type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
@@ -197,6 +198,28 @@ function RequestBoard$() {
    const [searchLoan, setSearchLoan] = useState('');
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
    const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, effectiveUser.isWorldId === 'ACTIVE') : 0;
+   const borrowerCreditLoans = useMemo(() => {
+      if (!borrowerUserId) return [];
+
+      return floanRequests.filter((loan) => loan.borrowerUser === borrowerUserId);
+   }, [borrowerUserId, floanRequests]);
+   const usedCreditAmount = useMemo(() => {
+      return borrowerCreditLoans
+         .filter(
+            (loan) =>
+               loan.loanStatus === LoanStatus.REQUESTED ||
+               (loan.loanStatus === LoanStatus.LENT && loan.repaymentStatus !== RepaymentStatus.PAID)
+         )
+         .reduce((sum, loan) => sum + Number(loan.loanAmount || 0), 0);
+   }, [borrowerCreditLoans]);
+   const availableCreditLimit = Math.max(effectiveCreditLimit - usedCreditAmount, 0);
+   const canUseReferralBoost =
+      isReferralTestMode ||
+      (isAuthenticated &&
+         isBorrower &&
+         effectiveUser.isWorldId === 'ACTIVE' &&
+         effectiveCreditLimit <= STARTING_CREDIT_LIMIT &&
+         borrowerCreditLoans.length === 0);
    const baseWalletLock = getBaseWalletLockStatus(effectiveUser);
    const hasBorrowerBaseWallet = !IS_BORROWER_BASE_WALLET_GATE_ENABLED || baseWalletLock.isConfirmedBase;
    const shouldOpenLoanRequest =
@@ -251,6 +274,10 @@ function RequestBoard$() {
       if (!hasBorrowerBaseWallet) {
          setShowModal(false);
          setShowBaseWalletGate(true);
+         return;
+      }
+      if (availableCreditLimit <= 0) {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
          return;
       }
       setShowModal(true);
@@ -581,7 +608,7 @@ function RequestBoard$() {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_INVALID_AMOUNT));
          return;
       }
-      if (parsedLoanAmount > effectiveCreditLimit) {
+      if (parsedLoanAmount > availableCreditLimit) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
          return;
       }
@@ -607,7 +634,7 @@ function RequestBoard$() {
          effectiveUser.isWorldId === 'ACTIVE' &&
          hasBorrowerBaseWallet &&
          (effectiveUser.nal || 0) < (effectiveUser.mal || 0) &&
-         parsedLoanAmount <= effectiveCreditLimit &&
+         parsedLoanAmount <= availableCreditLimit &&
          parsedLoanAmount > 0 &&
          parsedRepaymentAmount >= parsedLoanAmount + 1
       ) {
@@ -1006,7 +1033,9 @@ function RequestBoard$() {
                   onReferralApplied={setAppliedReferral}
                   onReferralRedeemed={handleReferralRedeemed}
                   isSubmitting={isSubmitting}
-                  startOnReferralStep={!shouldShowBorrowerTour}
+                  availableCreditLimit={availableCreditLimit}
+                  canUseReferralBoost={canUseReferralBoost}
+                  startOnReferralStep={!shouldShowBorrowerTour && canUseReferralBoost}
                   clickOutsideRef={loanRequestModalRef}
                />
                <SuccessModal isOpen={showPurple} onClose={handleSuccessModalClose} clickOutsideRef={successModalRef} />

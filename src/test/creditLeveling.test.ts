@@ -139,7 +139,8 @@ describe('LoanRequestModal borrowing gate', () => {
       handleDays: () => undefined,
       handleSubmit: () => undefined,
       onReferralApplied: () => undefined,
-      isSubmitting: false
+      isSubmitting: false,
+      availableCreditLimit: 0
    };
 
    it('shows verification-required state for unverified users', () => {
@@ -162,11 +163,26 @@ describe('LoanRequestModal borrowing gate', () => {
             ...sharedProps,
             showVerify: false,
             user: { ...baseUser, cs: 40 },
+            availableCreditLimit: 40,
             startOnReferralStep: false
          })
       );
 
       expect(markup).toContain('Limit: $40');
+   });
+
+   it('shows remaining available credit after the current limit is used', () => {
+      const markup = renderToStaticMarkup(
+         createElement(LoanRequestModal, {
+            ...sharedProps,
+            showVerify: false,
+            user: { ...baseUser, cs: 20 },
+            availableCreditLimit: 0,
+            startOnReferralStep: false
+         })
+      );
+
+      expect(markup).toContain('Limit: $0');
    });
 });
 

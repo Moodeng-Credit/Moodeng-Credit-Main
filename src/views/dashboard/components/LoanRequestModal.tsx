@@ -15,7 +15,6 @@ import { CalendarDays, CheckCircle, ChevronLeft, ChevronRight, HelpCircle, Ticke
 import { DayPicker } from 'react-day-picker';
 import { useNavigate } from 'react-router-dom';
 
-import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 import { type User } from '@/types/authTypes';
@@ -41,6 +40,8 @@ interface LoanRequestModalProps {
    onReferralApplied?: (referral: AppliedReferralCode | null) => void;
    onReferralRedeemed?: () => Promise<void>;
    isSubmitting: boolean;
+   availableCreditLimit: number;
+   canUseReferralBoost?: boolean;
    startOnReferralStep?: boolean;
 }
 
@@ -248,6 +249,8 @@ export default function LoanRequestModal({
    onReferralApplied,
    onReferralRedeemed,
    isSubmitting,
+   availableCreditLimit,
+   canUseReferralBoost = true,
    startOnReferralStep = true
 }: LoanRequestModalProps) {
    const navigate = useNavigate();
@@ -266,7 +269,7 @@ export default function LoanRequestModal({
    const [isApplyingReferralCode, setIsApplyingReferralCode] = useState(false);
 
    const isVerified = !showVerify;
-   const limitAmount = getEffectiveCreditLimit(user.cs, isVerified);
+   const limitAmount = Math.max(availableCreditLimit, 0);
    const selectedDate = days ? days.slice(0, 10) : '';
    const selectedCalendarDate = parseIsoDate(selectedDate);
    const todayDate = parseIsoDate(today) ?? new Date();
@@ -286,7 +289,7 @@ export default function LoanRequestModal({
    const isReferralTestMode = import.meta.env.DEV && new URLSearchParams(window.location.search).has('referralTest');
    const referralPrimaryActionText =
       hasAppliedReferralCode || !hasReferralCode ? 'Continue to application' : hasReferralCodeError ? 'Try again' : 'Apply code';
-   const shouldShowReferralStep = showReferralStep && isVerified;
+   const shouldShowReferralStep = showReferralStep && isVerified && canUseReferralBoost;
 
    const startVerificationOnboarding = () => {
       onClose();
@@ -305,13 +308,13 @@ export default function LoanRequestModal({
    useEffect(() => {
       if (!isOpen) return;
 
-      setShowReferralStep(startOnReferralStep && isVerified);
+      setShowReferralStep(startOnReferralStep && isVerified && canUseReferralBoost);
       setReferralCode('');
       setAppliedReferral(null);
       setReferralCodeError('');
       setIsApplyingReferralCode(false);
       onReferralApplied?.(null);
-   }, [isOpen, isVerified, onReferralApplied, startOnReferralStep]);
+   }, [canUseReferralBoost, isOpen, isVerified, onReferralApplied, startOnReferralStep]);
 
    useEffect(() => {
       if (!isOpen || shouldShowReferralStep) return;
