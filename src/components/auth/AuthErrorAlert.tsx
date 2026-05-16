@@ -1,16 +1,17 @@
 import { Link } from 'react-router-dom';
 
-type AuthErrorAlertType = 'incorrect_credentials' | 'email_not_found' | 'too_many_attempts';
+type AuthErrorAlertType = 'incorrect_credentials' | 'email_not_found' | 'new_user' | 'too_many_attempts';
 
 interface AuthErrorAlertProps {
    type: AuthErrorAlertType;
    attemptsRemaining?: number;
    onRetry?: () => void;
+   signupHref?: string;
 }
 
 const DOCS_URL = 'https://moodeng-credit.gitbook.io/moodeng-credit';
 
-export function AuthErrorAlert({ type, attemptsRemaining = 3, onRetry }: AuthErrorAlertProps) {
+export function AuthErrorAlert({ type, attemptsRemaining = 3, onRetry, signupHref = '/sign-up' }: AuthErrorAlertProps) {
    if (type === 'too_many_attempts') {
       return (
          <div className="w-full rounded-[10px] border border-red-200 bg-red-50/80 px-4 py-4">
@@ -61,6 +62,29 @@ export function AuthErrorAlert({ type, attemptsRemaining = 3, onRetry }: AuthErr
                   .
                </p>
             )}
+         </div>
+      );
+   }
+
+   if (type === 'new_user') {
+      return (
+         <div className="w-full rounded-[10px] border border-[#D8C7FF] bg-[#F5EFFF] px-4 py-4">
+            <p className="text-sm font-semibold text-[#250650] tracking-[-0.02em]">
+               Looks like you are new to Moodeng.
+            </p>
+            <p className="mt-2 text-sm text-[#4D4359] tracking-[-0.02em]">
+               Create an account first, then verify the email code Moodeng sends you.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+               <Link to={signupHref} className="text-sm font-semibold text-[#8336F0] hover:underline">
+                  Create account
+               </Link>
+               {onRetry && (
+                  <button type="button" onClick={onRetry} className="text-sm font-semibold text-[#8336F0] hover:underline">
+                     Use a different email
+                  </button>
+               )}
+            </div>
          </div>
       );
    }

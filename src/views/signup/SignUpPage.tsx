@@ -1,5 +1,5 @@
 import { type ChangeEvent, type FormEvent, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 
 import { Mail } from 'lucide-react';
@@ -26,6 +26,7 @@ import '@/views/signup/styles/signup.css';
 
 const LINK_PURPLE = '#8336F0';
 const DOCS_URL = 'https://moodeng-credit.gitbook.io/moodeng-credit';
+const VERIFY_EMAIL_STORAGE_KEY = 'moodeng_pending_verification_email';
 
 type SignUpErrorType = 'account_linked' | 'account_exist' | 'email_taken' | null;
 
@@ -41,11 +42,13 @@ function slugify(text: string): string {
 
 export default function SignUpPage() {
    const navigate = useNavigate();
+   const [searchParams] = useSearchParams();
    const dispatch = useDispatch<AppDispatch>();
    const toast = useToast();
-   const [showEmailForm, setShowEmailForm] = useState(false);
+   const initialEmail = searchParams.get('email')?.trim() ?? '';
+   const [showEmailForm, setShowEmailForm] = useState(!!initialEmail);
    const [fullName, setFullName] = useState('');
-   const [email, setEmail] = useState('');
+   const [email, setEmail] = useState(initialEmail);
    const [password, setPassword] = useState('');
    const [confirm, setConfirm] = useState('');
    const [isLoading, setIsLoading] = useState(false);
@@ -53,6 +56,14 @@ export default function SignUpPage() {
    const [showConfirmMismatch, setShowConfirmMismatch] = useState(false);
    const [accountErrorType, setAccountErrorType] = useState<SignUpErrorType>(null);
    const isWorldId = WorldId.INACTIVE;
+
+   const navigateToVerifyCode = (nextEmail: string) => {
+      const trimmedEmail = nextEmail.trim();
+      if (trimmedEmail) {
+         sessionStorage.setItem(VERIFY_EMAIL_STORAGE_KEY, trimmedEmail);
+      }
+      navigate(`/auth/verify-code${trimmedEmail ? `?email=${encodeURIComponent(trimmedEmail)}` : ''}`);
+   };
 
    const processAuthResult = (result: unknown) => {
       const data = result as {
@@ -70,14 +81,14 @@ export default function SignUpPage() {
       }
       if (data?.isNewUser) {
          if (data.needsEmailVerification) {
-            navigate('/auth-success?type=verify');
+            navigateToVerifyCode(email);
             return;
          }
          if (data.user?.id) {
             navigate('/dashboard');
             return;
          }
-         navigate('/auth-success?type=verify');
+         navigateToVerifyCode(email);
          return;
       }
       if (data?.user) {

@@ -543,6 +543,28 @@ export default function AcademyGuide(): JSX.Element {
       return () => window.clearTimeout(timer);
    }, [quizStatus, quizSubmitted, quizTimer]);
 
+   useEffect(() => {
+      if (!showTutorialVideo) {
+         return undefined;
+      }
+
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      const handleKeyDown = (event: KeyboardEvent) => {
+         if (event.key === 'Escape') {
+            setShowTutorialVideo(false);
+         }
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+         document.body.style.overflow = originalOverflow;
+         window.removeEventListener('keydown', handleKeyDown);
+      };
+   }, [showTutorialVideo]);
+
    const progressStyle = useMemo(
       () => ({ '--academy-reading-progress': `${readingProgress}%` }) as CSSProperties,
       [readingProgress]
@@ -725,8 +747,8 @@ export default function AcademyGuide(): JSX.Element {
                   className="academy-video-callout"
                   id="academy-tutorial-video"
                   aria-expanded={showTutorialVideo}
-                  aria-controls="academy-tutorial-embed"
-                  onClick={() => setShowTutorialVideo((isOpen) => !isOpen)}
+                  aria-haspopup="dialog"
+                  onClick={() => setShowTutorialVideo(true)}
                >
                   <div className="academy-video-callout__play" aria-hidden="true" />
                   <div>
@@ -734,19 +756,6 @@ export default function AcademyGuide(): JSX.Element {
                      <span>Watch the quick Moodeng walkthrough.</span>
                   </div>
                </button>
-               {showTutorialVideo ? (
-                  <div className="academy-video-embed" id="academy-tutorial-embed">
-                     <iframe
-                        src={tutorialVideoEmbedUrl}
-                        title="Moodeng Academy tutorial video"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                     />
-                     <Link to="/credit-leveling-guide" className="academy-video-embed__learn-more">
-                        Want to learn more? Open the step-by-step credit guide.
-                     </Link>
-                  </div>
-               ) : null}
             </div>
             <div className="academy-hero__visual" aria-hidden="true">
                <div className="academy-mecha-card">
@@ -760,6 +769,48 @@ export default function AcademyGuide(): JSX.Element {
                </div>
             </div>
          </section>
+
+         {showTutorialVideo ? (
+            <div className="academy-video-window" role="dialog" aria-modal="true" aria-labelledby="academy-video-window-title">
+               <button
+                  type="button"
+                  className="academy-video-window__backdrop"
+                  aria-label="Close tutorial video"
+                  onClick={() => setShowTutorialVideo(false)}
+               />
+               <div className="academy-video-window__panel">
+                  <div className="academy-video-window__header">
+                     <div>
+                        <span>Video guide</span>
+                        <h2 id="academy-video-window-title">Tutorial Video</h2>
+                     </div>
+                     <button
+                        type="button"
+                        className="academy-video-window__close"
+                        aria-label="Close tutorial video"
+                        onClick={() => setShowTutorialVideo(false)}
+                     >
+                        x
+                     </button>
+                  </div>
+                  <div className="academy-video-window__frame">
+                     <iframe
+                        src={tutorialVideoEmbedUrl}
+                        title="Moodeng Academy tutorial video"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                     />
+                  </div>
+                  <Link
+                     to="/credit-leveling-guide"
+                     className="academy-video-window__learn-more"
+                     onClick={() => setShowTutorialVideo(false)}
+                  >
+                     Want to learn more? Open the step-by-step credit guide.
+                  </Link>
+               </div>
+            </div>
+         ) : null}
 
          <section id="academy-steps" className="academy-steps" aria-label="Moodeng Credit steps">
             {steps.map((step) => (

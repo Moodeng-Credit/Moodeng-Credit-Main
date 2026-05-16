@@ -128,10 +128,10 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                   <p className="text-md-b2 font-semibold uppercase tracking-[0.12em] text-md-neutral-700">Explore</p>
                   <nav className="mt-md-2 flex flex-col gap-md-1 text-md-b2 font-semibold text-md-heading">
                      <Link to="/benefits" className="hover:text-md-primary-1200">
-                        Borrower benefits
+                        Borrower Benefits
                      </Link>
                      <Link to="/whylend" className="hover:text-md-primary-1200">
-                        Why lend
+                        Why Lend
                      </Link>
                      <Link to="/academy" className="hover:text-md-primary-1200">
                         Academy
