@@ -8,19 +8,40 @@ export interface GuideArticle {
 export const GUIDES: GuideArticle[] = [
    {
       slug: 'how-to-request-your-first-loan',
-      title: 'How to request your first loan',
+      title: 'How to Request Your First Loan',
       lastUpdated: 'Jan 18, 2024 1:00 A.M.',
-      body: `Everyone starts with a $15 borrowing limit, and can make one request at a time.
+      body: `Follow these streamlined steps to initiate your first loan request on Moodeng Credit. You can also view a video walkthrough of this process here: https://youtube.com/shorts/fKpBC9zD6Hk?si=KoU6NRuIguzLw-Hh.
 
-To move up, you must borrow and fully repay your entire limit, not just part of it.
+Step 1: Create Your Account
+Register on the Moodeng platform by entering your preferred username, email, and password. Click "Create Account" to proceed.
 
-For example: if your limit is $15 but you only borrow $12 and repay $15, that doesn't unlock the next level. You need to borrow and repay the full $15 — including any small interest or repayment amount above what you borrowed, depending on what you offered and what a lender accepted and funded you for.
+Step 2: Initialize BASE Application
+Once logged in, tap the "Apply for a Loan" button to start the process.
 
-Each successful full repayment increases your limit step by step — $15 → $20 → $40 → $60, and beyond — while also building your trust record with lenders.
+Step 3: Set Up Your BASE Wallet
+Secure transactions on Moodeng require a BASE Wallet. Visit https://account.base.app and follow the registration instructions.
+Refer to How to Create Base Acc 1.jpg and How to Create Base Acc 2.jpg for a visual guide on account setup.
 
-There are two loan types:
-• Credit Growth Loans – full-limit loans that raise your limit once repaid.
-• Trust Loans – smaller loans that build your repayment history but don't increase your limit.`
+Step 4: Connect Your Wallet
+Return to the Moodeng platform and tap "Connect Wallet" to securely link your new BASE Wallet to your Moodeng account.
+
+Step 5: Verify Your Identity
+To ensure community safety, download the World App and complete your human identity verification at a physical World Orb location.
+
+Step 6: Link World ID
+After verifying at an Orb, return to Moodeng and tap "Verify with World ID." Scan the provided QR code to finalize the link between your World ID and your Moodeng account.
+
+Step 7: Submit Your Request
+Tap "Explore the Request Board" to set your specific loan terms. You will need to define:
+- The desired loan amount.
+- The repayment amount and date.
+- A clear reason for your borrowing request to help build trust with potential lenders.
+
+Important Notes on Your Credit Limit
+- Starting Limit: Every new borrower begins with an initial borrowing limit of $15.
+- Credit-Building Loans: This is a full-limit loan that maxes out your current credit limit (e.g., requesting the full $15). Successfully repaying this type of loan is the only way to increase your limit to the next level (e.g., moving from $15 --> $20 --> $40 --> $60 and beyond). You may only have one credit-building loan request active at a time.
+- Trust-Building Loans: These are smaller loans requested for amounts under your current credit limit. While these build your Trust Score with lenders, they do not increase your overall credit limit. You are permitted to have multiple trust-building loan requests active simultaneously, provided the total stays under your current limit.
+- Unlocking the Next Level: To move up, you must borrow and fully repay your entire limit. For example, if your limit is $15 and you only request a trust-building loan of $12 and repay $15, your limit will not increase. You must borrow the full $15 and repay the total agreed amount, including any small interest or additional repayment amount you offered that a lender accepted, to unlock the next level.`
    },
    {
       slug: 'understanding-your-trust-score',
