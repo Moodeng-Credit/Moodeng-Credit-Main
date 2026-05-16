@@ -9,8 +9,10 @@ type GuidedTourStep = {
 };
 
 interface GuidedTourPreviewProps {
+   initialStepIndex?: number;
    startImmediately?: boolean;
    onFinish?: (reason: 'complete' | 'skip') => void;
+   onStepBack?: (stepIndex: number) => boolean | void;
    onStepNext?: (stepIndex: number) => boolean | void;
    onStepChange?: (stepIndex: number) => void;
    stepOffset?: number;
@@ -32,8 +34,10 @@ const CARD_BOTTOM_MARGIN = 112;
 const FALLBACK_CARD_HEIGHT = 280;
 
 export default function GuidedTourPreview({
+   initialStepIndex = 0,
    startImmediately = false,
    onFinish,
+   onStepBack,
    onStepNext,
    onStepChange,
    stepOffset = 0,
@@ -42,13 +46,14 @@ export default function GuidedTourPreview({
 }: GuidedTourPreviewProps) {
    const [isVisible, setIsVisible] = useState(true);
    const [hasStarted, setHasStarted] = useState(startImmediately);
-   const [stepIndex, setStepIndex] = useState(0);
+   const [stepIndex, setStepIndex] = useState(() => Math.min(Math.max(initialStepIndex, 0), Math.max(steps.length - 1, 0)));
    const [bounds, setBounds] = useState<SpotlightBounds | null>(null);
    const cardRef = useRef<HTMLElement>(null);
    const currentStep = steps[stepIndex];
    const isLastStep = stepIndex === steps.length - 1;
    const globalStepIndex = stepOffset + stepIndex;
    const isFinalGlobalStep = globalStepIndex === (totalSteps ?? steps.length) - 1;
+   const canGoBack = stepIndex > 0 || Boolean(onStepBack && globalStepIndex > 0);
    const cardTop = useMemo(() => {
       if (!bounds || typeof window === 'undefined') return undefined;
 
@@ -139,8 +144,13 @@ export default function GuidedTourPreview({
    }, [finish, isLastStep, onStepNext, stepIndex]);
 
    const back = useCallback(() => {
+      if (stepIndex === 0 && onStepBack?.(stepIndex)) {
+         setIsVisible(false);
+         return;
+      }
+
       setStepIndex((index) => Math.max(0, index - 1));
-   }, [stepIndex]);
+   }, [onStepBack, stepIndex]);
 
    const stepLabel = useMemo(() => `Step ${globalStepIndex + 1} of ${totalSteps ?? steps.length}`, [globalStepIndex, steps.length, totalSteps]);
 
@@ -200,7 +210,7 @@ export default function GuidedTourPreview({
                      <button type="button" onClick={() => finish('skip')} className="rounded-full py-md-1 text-md-b2 font-medium text-white/75 transition active:scale-[0.98]">
                         Skip
                      </button>
-                     {stepIndex > 0 ? (
+                     {canGoBack ? (
                         <button type="button" onClick={back} className="rounded-full py-md-1 text-md-b2 font-medium text-white transition active:scale-[0.98]">
                            Back
                         </button>
