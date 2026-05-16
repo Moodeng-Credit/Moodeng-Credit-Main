@@ -1,99 +1,142 @@
-import { useState } from 'react';
+import { type FormEvent, type JSX, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft, CheckCircle2, HelpCircle, KeyRound, Mail } from 'lucide-react';
 
-import { useNavigate } from 'react-router-dom';
+import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
-export default function ForgotPasswordPage() {
+export default function ForgotPasswordPage(): JSX.Element {
    const [email, setEmail] = useState('');
    const [message, setMessage] = useState('');
    const [error, setError] = useState('');
    const [loading, setLoading] = useState(false);
-   const navigate = useNavigate();
 
-   const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
+   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
       setMessage('');
       setError('');
-      setLoading(true);
 
+      const trimmedEmail = email.trim();
+      if (!trimmedEmail) {
+         setError('Enter the email address on your Moodeng account.');
+         return;
+      }
+
+      if (!isSupabaseBrowserConfigured()) {
+         setError('Password reset is not configured in this local app.');
+         return;
+      }
+
+      setLoading(true);
       try {
-         const response = await fetch(import.meta.env.VITE_API_URL + '/forgot-password', {
-            method: 'POST',
-            headers: {
-               'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email })
+         const supabase = getSupabaseBrowserClient();
+         const { error: resetError } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+            redirectTo: getAuthRedirectUrl('/reset-password')
          });
 
-         const data = await response.json();
-
-         if (response.ok) {
-            setMessage(data.message || 'Password reset email sent! Please check your inbox.');
-            setEmail('');
-         } else {
-            setError(data.message || 'Failed to send reset email. Please try again.');
+         if (resetError) {
+            setError(resetError.message || 'Could not send a reset link. Try again in a moment.');
+            return;
          }
-      } catch {
-         setError('An error occurred. Please try again.');
+
+         setMessage('If that email has a Moodeng account, a reset link is on the way.');
+      } catch (resetRequestError) {
+         setError(resetRequestError instanceof Error ? resetRequestError.message : 'Could not send a reset link. Try again in a moment.');
       } finally {
          setLoading(false);
       }
    };
 
    return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-100 px-4">
-         <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-lg shadow-md">
-            <div>
-               <h2 className="text-center text-3xl font-bold text-gray-900">Reset Your Password</h2>
-               <p className="mt-2 text-center text-sm text-gray-600">
-                  Enter your email address and we'll send you a link to reset your password.
-               </p>
+      <div className="min-h-screen bg-[#FBFAFD] px-4 py-6 text-[#040033] sm:px-6 sm:py-10">
+         <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-[480px] flex-col">
+            <div className="mb-5 flex items-center justify-between">
+               <Link
+                  to="/sign-in"
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FDFCFD] text-[#6010D2] shadow-[0_8px_24px_rgba(36,14,62,0.08)] transition hover:bg-[#F2EAFE]"
+                  aria-label="Back to sign in"
+               >
+                  <ArrowLeft className="h-6 w-6" />
+               </Link>
+               <Link
+                  to="/support/faq"
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FDFCFD] text-[#6010D2] shadow-[0_8px_24px_rgba(36,14,62,0.08)] transition hover:bg-[#F2EAFE]"
+                  aria-label="Help"
+               >
+                  <HelpCircle className="h-6 w-6" />
+               </Link>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-               <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                     Email address
-                  </label>
-                  <input
-                     id="email"
-                     name="email"
-                     type="email"
-                     required
-                     value={email}
-                     onChange={(e) => setEmail(e.target.value)}
-                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                     placeholder="your@email.com"
-                  />
-               </div>
-
-               {message ? (
-                  <div className="rounded-md bg-green-50 p-4">
-                     <p className="text-sm text-green-800">{message}</p>
+            <main className="flex flex-1 flex-col justify-center">
+               <section className="rounded-[28px] border border-[#E7D8FF] bg-[#FDFCFD] px-5 py-7 shadow-[0_18px_50px_rgba(36,14,62,0.08)] sm:px-7">
+                  <div className="mb-7 flex flex-col items-center text-center">
+                     <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-[26px] bg-[#F1E7FF] text-[#8336F0]">
+                        <KeyRound className="h-10 w-10" strokeWidth={1.8} />
+                     </div>
+                     <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0]">
+                        Account access
+                     </p>
+                     <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.04em] text-[#040033]">
+                        Reset your password
+                     </h1>
+                     <p className="mt-3 max-w-[340px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F]">
+                        Enter your email and Moodeng will send a secure link to set a new password.
+                     </p>
                   </div>
-               ) : null}
 
-               {error ? (
-                  <div className="rounded-md bg-red-50 p-4">
-                     <p className="text-sm text-red-800">{error}</p>
-                  </div>
-               ) : null}
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                     <div className="space-y-2">
+                        <label htmlFor="reset-email" className="text-base font-semibold tracking-[-0.02em] text-[#040033]">
+                           Email address
+                        </label>
+                        <div className="flex h-14 items-center gap-3 rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] px-4 shadow-[0_2px_4px_rgba(27,28,29,0.04)] focus-within:border-[#8336F0] focus-within:ring-4 focus-within:ring-[#E9D8FF]">
+                           <Mail className="h-5 w-5 shrink-0 text-[#8336F0]" strokeWidth={1.8} />
+                           <input
+                              id="reset-email"
+                              type="email"
+                              value={email}
+                              onChange={(event) => {
+                                 setEmail(event.target.value);
+                                 setError('');
+                                 setMessage('');
+                              }}
+                              placeholder="you@example.com"
+                              autoComplete="email"
+                              className="min-w-0 flex-1 bg-transparent text-base text-[#040033] outline-none placeholder:text-[#70617F]"
+                              required
+                           />
+                        </div>
+                     </div>
 
-               <div>
-                  <button
-                     type="submit"
-                     disabled={loading}
-                     className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                     {error ? (
+                        <p className="rounded-2xl border border-[#FFD2D8] bg-[#FFF0F2] px-4 py-3 text-sm font-semibold leading-5 text-[#B60413]">
+                           {error}
+                        </p>
+                     ) : null}
+                     {message ? (
+                        <p className="flex items-start gap-3 rounded-2xl border border-[#BCEFD0] bg-[#EDFFF4] px-4 py-3 text-sm font-semibold leading-5 text-[#0D7A3C]">
+                           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                           {message}
+                        </p>
+                     ) : null}
+
+                     <button
+                        type="submit"
+                        disabled={loading || !email.trim()}
+                        className="h-14 w-full rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95 disabled:bg-[#BDB5C7] disabled:text-[#FDFCFD]"
+                     >
+                        {loading ? 'Sending...' : 'Send reset link'}
+                     </button>
+                  </form>
+
+                  <Link
+                     to="/sign-in"
+                     className="mt-5 flex h-12 items-center justify-center rounded-2xl border border-[#E0D7E8] text-sm font-semibold text-[#4D4359] transition hover:bg-[#F8F4FC]"
                   >
-                     {loading ? 'Sending...' : 'Send Reset Link'}
-                  </button>
-               </div>
-
-               <div className="text-center">
-                  <button type="button" onClick={() => navigate('/sign-in')} className="text-sm text-blue-600 hover:underline">
-                     Back to Login
-                  </button>
-               </div>
-            </form>
+                     Back to sign in
+                  </Link>
+               </section>
+            </main>
          </div>
       </div>
    );
