@@ -56,13 +56,25 @@ Most borrowers use both — trust loans to keep activity healthy, credit loans t
    },
    {
       slug: 'how-repayments-affect-your-trust-score',
-      title: 'How repayments affect your Trust Score',
+      title: 'How Repayments Affect Your Trust Score',
       lastUpdated: 'Jan 18, 2024 1:00 A.M.',
-      body: `Every repayment you make changes your Trust Score.
+      body: `Every repayment for either Credit-Building or Trust-Building loans directly impacts your Trust Score (TS), which serves as your reputation on the platform. Our system is designed to reward consistent, reliable, and honest behavior; small loans repaid cleanly are more valuable for your reputation than large loans repaid sloppily.
 
-On-time, in-full repayments strengthen it. Late or partial repayments weaken it. Defaults leave a permanent mark that future lenders can see.
+Scoring Breakdown
 
-The system is designed to reward consistent, honest behaviour — small loans repaid cleanly beat large loans repaid sloppily.`
+- On-Time, Full Repayments: Completing a 100% repayment on or before the due date maximizes your score (10 TS).
+
+- Partial Repayments: Failing to repay the full amount reduces your score proportionally:
+
+75% Repayment = 7 TS.
+
+50% Repayment = 5 TS.
+
+25% Repayment = 3 TS.
+
+- Late Repayments: Any payment received after the agreed-upon deadline results in a 0 TS for that transaction.
+
+- Defaults: Unpaid loans leave a permanent mark on your profile that is visible to all future lenders.`
    },
    {
       slug: 'what-happens-when-you-repay-a-loan-on-time',
