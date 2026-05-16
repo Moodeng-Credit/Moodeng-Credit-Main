@@ -320,7 +320,7 @@ export default function Dashboard() {
                      durationMs: 7200
                   },
                   {
-                     target: '[data-tour-target="dashboard-milestones"]',
+                     target: '[data-tour-target="dashboard-milestones-heading"]',
                      title: 'Milestones',
                      body: 'Milestones are extra ways to earn Trust Points. Complete them to strengthen your profile and make lenders more confident in your requests.',
                      durationMs: 7600
