@@ -130,13 +130,29 @@ We recommend Coinbase Wallet on Base, where USDC transfers are gasless — you p
    },
    {
       slug: 'verification-and-why-its-required',
-      title: 'Verification and why it\'s required',
+      title: 'Verification & Security',
       lastUpdated: 'Jan 18, 2024 1:00 A.M.',
-      body: `Before borrowing, every user verifies their humanity using World ID.
+      body: `To maintain a secure and fair environment, Moodeng Credit requires all borrowers to verify their unique human identity via World ID. This process protects our community from automated bots and duplicate accounts without requiring you to upload sensitive personal documents.
 
-This keeps the platform safe from bots and duplicate accounts. Verification costs a small one-time fee and doesn't require uploading personal documents.
+Why Verify?
+- Security: Ensures every request comes from a real person, preventing fraud.
 
-Once verified, you're eligible to request loans and build your Trust Score.`
+- Rewards: New users can claim approximately $10 in Worldcoin rewards upon successful verification.
+
+- Access: Completed verification enables you to request loans and begin building your community trust score.
+
+Step-by-Step Guide
+1. Download the World App
+Install the official app via the Apple App Store or Google Play Store.
+
+2. Locate an Orb
+Inside the World App, go to Settings, select "Find an Orb," and enable "Allow Location" to find the verification center nearest to you (see How to Find Orb.jpg).
+
+3. Complete In-Person Verification
+Visit your chosen Orb location and follow the on-screen instructions in the app to complete the one-time verification process.
+
+4. Connect to Moodeng
+Once verified, return to the Moodeng platform. Navigate to "Verification," and select "Connect World ID" to link your account and finalize your eligibility (see How to Verify with World ID.jpg).`
    },
    {
       slug: 'managing-your-account-and-security-settings',
