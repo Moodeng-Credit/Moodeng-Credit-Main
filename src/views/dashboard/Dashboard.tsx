@@ -184,6 +184,10 @@ export default function Dashboard() {
            defaultedLoans: previewLoans.filter((loan) => loan.id === 'mock-defaulted-1')
         }
       : loanArrays;
+   const usedCreditAmount = useMemo(
+      () => [...displayLoanArrays.activeLoans, ...displayLoanArrays.defaultedLoans].reduce((sum, loan) => sum + Number(loan.loanAmount || 0), 0),
+      [displayLoanArrays.activeLoans, displayLoanArrays.defaultedLoans]
+   );
    const milestones = buildReputationMilestones({ creditLevels, borrowerLoans: milestoneLoans, isVerified });
 
    useEffect(() => {
@@ -261,7 +265,7 @@ export default function Dashboard() {
                   <TrustScoreSection trustScore={displayTrustScore} />
                </div>
                <div data-tour-target="dashboard-credit-level">
-                  <CreditLevelSection currentCs={user.cs} isVerified={isVerified} />
+                  <CreditLevelSection currentCs={user.cs} usedCreditAmount={usedCreditAmount} isVerified={isVerified} />
                </div>
             </div>
 
