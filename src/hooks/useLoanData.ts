@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useDispatch } from 'react-redux';
 
@@ -17,9 +17,22 @@ interface UseLoanDataOptions {
  */
 export function useLoanData({ userId, enabled = true }: UseLoanDataOptions) {
    const dispatch = useDispatch<AppDispatch>();
+   const [isLoading, setIsLoading] = useState(false);
+   const [hasFetched, setHasFetched] = useState(false);
+   const [error, setError] = useState<string | null>(null);
 
    useEffect(() => {
-      if (!enabled || !userId) return;
+      if (!enabled || !userId) {
+         setIsLoading(false);
+         setHasFetched(false);
+         setError(null);
+         return;
+      }
+
+      let isMounted = true;
+      setIsLoading(true);
+      setHasFetched(false);
+      setError(null);
 
       const fetchLoans = async () => {
          await dispatch(getUserLoans({ userId }))
@@ -29,9 +42,21 @@ export function useLoanData({ userId, enabled = true }: UseLoanDataOptions) {
             })
             .catch((error: Error) => {
                console.error('Error fetching loan:', error.message || error);
+               if (isMounted) setError(error.message || 'Failed to fetch loans');
+            })
+            .finally(() => {
+               if (!isMounted) return;
+               setIsLoading(false);
+               setHasFetched(true);
             });
       };
 
       fetchLoans();
+
+      return () => {
+         isMounted = false;
+      };
    }, [dispatch, userId, enabled]);
+
+   return { error, hasFetched, isLoading };
 }
