@@ -176,10 +176,12 @@ export default function Repay() {
 
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
-   const isLoading = useSelector((state: RootState) => state.loans.isLoading);
    const usePreviewLoans = shouldUseLocalPreviewLoans(location.search);
    const repayLoans = usePreviewLoans ? previewLoans : loans;
-   useLoanData({ userId: user.id, enabled: Boolean(user.id) });
+   const { hasFetched: hasCheckedRepayLoans, isLoading: isCheckingRepayLoans } = useLoanData({
+      userId: user.id,
+      enabled: Boolean(user.id) && !usePreviewLoans
+   });
 
    const activeLoans = useMemo(
       () =>
@@ -389,7 +391,9 @@ export default function Repay() {
 
    useBottomNavPrimaryAction(bottomNavRepayAction);
 
-   if (isLoading && activeLoans.length === 0) {
+   const shouldShowLoanCheckLoading = !usePreviewLoans && Boolean(user.id) && activeLoans.length === 0 && (!hasCheckedRepayLoans || isCheckingRepayLoans);
+
+   if (shouldShowLoanCheckLoading) {
       return (
          <main className="min-h-screen bg-md-neutral-200 px-5 pb-28 pt-8">
             <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4">
