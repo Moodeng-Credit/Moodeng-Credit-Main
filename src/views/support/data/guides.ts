@@ -66,15 +66,24 @@ The system is designed to reward consistent, honest behaviour — small loans re
    },
    {
       slug: 'what-happens-when-you-repay-a-loan-on-time',
-      title: 'What happens when you repay a loan on time',
+      title: 'The Benefits of On-Time Repayments',
       lastUpdated: 'Jan 18, 2024 1:00 A.M.',
-      body: `When you repay on time, three things happen:
+      body: `Submitting your repayment on or before the scheduled deadline is the most effective way to strengthen your standing within the Moodeng Credit ecosystem. All repayments are confirmed on-chain; once the USDC transfer settles, your loan status is automatically updated to "Successfully Repaid."
 
-1. Your Trust Score goes up.
-2. If it was a Credit-Building loan, your limit increases and you unlock the next level.
-3. Your repayment history becomes visible to lenders, making future funding easier.
+When you repay on time, the following benefits are applied to your profile:
 
-Repayments are confirmed on-chain — once the USDC transfer settles, your loan is automatically marked repaid.`
+- Trust Score Enhancement: Your Trust Score increases for either Credit-Building or Trust-Building loans, reflecting your reliability to the community.
+- Credit Limit Progression: For Credit-Building loans, your current borrowing limit increases, successfully unlocking the next credit level (e.g., advancing from $15 --> $20).
+- Verified Lending History: Your successful repayment history becomes visible to potential lenders, significantly streamlining the funding process for your future requests.
+
+Repayment Scoring Breakdown
+
+Your Trust Score (TS) reflects your reliability and determines your future funding success:
+
+- On-Time, Full Repayment: Awards the maximum 10 TS.
+- Partial Repayment: Your score is reduced proportionally based on the amount paid (e.g., 75% = 7 TS; 50% = 5 TS).
+- Late Repayment: Any payment made after the deadline results in 0 TS, regardless of the amount.
+- Default: Unpaid loans result in a permanent mark on your public on-chain profile.`
    },
    {
       slug: 'using-usdc-on-moodeng-credit',
