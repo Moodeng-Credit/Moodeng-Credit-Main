@@ -31,7 +31,7 @@ const quizSecondsPerQuestion = 12;
 const quizPointsPerAnswer = 2;
 const tutorialVideoEmbedUrl = 'https://www.youtube.com/embed/fKpBC9zD6Hk';
 const quizPassingScore = 4;
-const baseWalletCreateUrl = 'https://wallet.coinbase.com/';
+const baseWalletOnboardingPath = '/onboarding/wallet?returnTo=academy';
 const worldIdOrbUrl = 'https://world.org/find-orb';
 
 const steps: AcademyStep[] = [
@@ -54,9 +54,9 @@ const steps: AcademyStep[] = [
    {
       id: 'wallet',
       eyebrow: 'Step 3',
-      title: 'Add your Base wallet',
-      body: 'Add your Base wallet once so lenders can fund loans directly there and Moodeng can track repayment history.',
-      action: 'Add Base Wallet',
+      title: 'Add your Base Account',
+      body: 'Create or connect your Base Account once so lenders can fund loans directly there and Moodeng can track repayment history.',
+      action: 'Create or connect',
       screen: 'wallet'
    },
    {
@@ -181,16 +181,16 @@ const WalletScreen = (): JSX.Element => (
          <div className="academy-wallet-card__icon">
             <img src="/icons/base-account.svg" alt="" />
          </div>
-         <h3>Add Your Base Wallet</h3>
-         <p>Lenders fund loans directly to your Base wallet. Moodeng uses it for your repayment history.</p>
+         <h3>Add Your Base Account</h3>
+         <p>Create one or connect the Base Account you already use. Moodeng keeps the flow inside the app.</p>
          <div className="academy-wallet-network">
             <span>Network</span>
             <strong>Base</strong>
          </div>
          <div className="academy-wallet-actions">
-            <a className="academy-primary academy-primary--dark" href={baseWalletCreateUrl} target="_blank" rel="noreferrer">
-               Create Base Wallet
-            </a>
+            <Link className="academy-primary academy-primary--dark" to={baseWalletOnboardingPath}>
+               Create or Connect Base Account
+            </Link>
          </div>
          <small>Gasless transactions are supported on Base.</small>
       </div>
@@ -600,9 +600,9 @@ export default function AcademyGuide(): JSX.Element {
 
       if (step.id === 'wallet') {
          return (
-            <a className="academy-step__action" href={baseWalletCreateUrl} target="_blank" rel="noreferrer">
+            <Link className="academy-step__action" to={baseWalletOnboardingPath}>
                {step.action}
-            </a>
+            </Link>
          );
       }
 
