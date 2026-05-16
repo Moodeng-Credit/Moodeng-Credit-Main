@@ -2,21 +2,27 @@ import { type JSX } from 'react';
 
 const borrowerBenefits = [
    {
-      eyebrow: '01 / Access',
-      title: 'Start with smaller loans',
-      description: 'Request practical amounts with terms shown upfront, so borrowing feels clear instead of intimidating.',
+      eyebrow: '01 / No collateral',
+      title: '0% collateral',
+      description: 'Request small USDC loans without pledging assets. Your access starts with verification, clear terms, and repayment behavior.',
       color: 'bg-blue-400'
    },
    {
-      eyebrow: '02 / Privacy',
-      title: 'Keep your data safer',
-      description: 'Build a repayment record from wallet activity without relying on contact-list pressure or hidden app permissions.',
+      eyebrow: '02 / Reputation',
+      title: '100% reputation',
+      description: 'Build trust through loans you repay. Your standing comes from repayment history, not pressure tactics or hidden phone data.',
       color: 'bg-fuchsia-300'
    },
    {
-      eyebrow: '03 / Portability',
-      title: 'Carry your history forward',
-      description: 'A reliable repayment trail should be easier to reuse than a score trapped inside one app, lender, or country.',
+      eyebrow: '03 / Control',
+      title: '100% borrower control',
+      description: 'Define your amount, repayment date, and reason upfront. Your dashboard keeps the loan terms transparent from request to repayment.',
+      color: 'bg-amber-300'
+   },
+   {
+      eyebrow: '04 / Portability',
+      title: '100% portable credit history',
+      description: 'Carry a wallet-based repayment record that lenders can review, instead of rebuilding your credit story from zero each time.',
       color: 'bg-emerald-400'
    }
 ];
