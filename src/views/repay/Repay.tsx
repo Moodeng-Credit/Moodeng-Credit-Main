@@ -484,7 +484,9 @@ export default function Repay() {
                      {!hasExistingRepayment ? (
                         <div className="shrink-0 text-right">
                            <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
-                           <p className="text-[24px] font-[720] leading-none text-md-heading">${formatCurrency(selectedRemaining)}</p>
+                           <p className="text-[20px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading">
+                              ${formatCurrency(selectedRemaining)}
+                           </p>
                         </div>
                      ) : null}
                   </div>
@@ -517,7 +519,9 @@ export default function Repay() {
                      <div className="mt-4 grid grid-cols-2 gap-2">
                         <div className="rounded-md-input bg-md-neutral-100 p-3">
                            <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
-                           <p className="mt-1 text-[32px] font-[720] leading-none text-md-heading">${formatCurrency(selectedRemaining)}</p>
+                           <p className="mt-1 text-[20px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading">
+                              ${formatCurrency(selectedRemaining)}
+                           </p>
                         </div>
                         <div className="rounded-md-input bg-md-neutral-100 p-3 text-right">
                            <p className="text-md-b3 text-md-neutral-1200">Paid so far</p>
