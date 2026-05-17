@@ -11,6 +11,7 @@
    --blog-line: oklch(90% 0.015 220);
    --blog-orange: oklch(63% 0.18 51);
    --blog-orange-dark: oklch(54% 0.17 48);
+   --blog-pink: oklch(67% 0.24 2);
    --blog-green: oklch(61% 0.17 144);
    --blog-green-soft: oklch(90% 0.08 148);
    --blog-violet: oklch(51% 0.24 292);
@@ -39,10 +40,26 @@
    position: absolute;
    inset: 0 0 auto;
    height: 28rem;
+   z-index: 0;
    pointer-events: none;
    background:
+      radial-gradient(circle at -7rem -11rem, oklch(99% 0.004 230 / 0.38) 0 22rem, oklch(99% 0.004 230 / 0) 22.2rem),
+      radial-gradient(circle at calc(100% + 8rem) -9rem, oklch(99% 0.004 230 / 0.34) 0 22rem, oklch(99% 0.004 230 / 0) 22.2rem),
       radial-gradient(circle at 88% 18%, oklch(89% 0.055 202 / 0.72) 0 12rem, oklch(99% 0.004 230 / 0) 19rem),
       linear-gradient(90deg, oklch(94% 0.034 205 / 0.7), oklch(98% 0.006 230 / 0.14));
+   content: '';
+}
+
+.moodeng-blogs::after {
+   position: absolute;
+   inset: 0 0 auto;
+   height: 44rem;
+   z-index: 0;
+   pointer-events: none;
+   background:
+      radial-gradient(circle at 13.5% 14rem, var(--blog-orange) 0 5px, oklch(99% 0.004 230 / 0) 5.5px),
+      radial-gradient(circle at calc(100% - 4rem) 19rem, var(--blog-pink) 0 9px, oklch(99% 0.004 230 / 0) 9.5px),
+      radial-gradient(circle at 7rem 31rem, var(--blog-pink) 0 9px, oklch(99% 0.004 230 / 0) 9.5px);
    content: '';
 }
 
@@ -53,6 +70,7 @@
 .blog-article,
 .blog-related {
    position: relative;
+   z-index: 1;
    width: min(1180px, calc(100% - 32px));
    margin-inline: auto;
 }
@@ -65,8 +83,26 @@
    padding: clamp(54px, 8vw, 96px) 0 40px;
 }
 
+.blogs-hero::before {
+   position: absolute;
+   top: 44px;
+   left: min(62%, 730px);
+   z-index: 0;
+   width: 13px;
+   height: 13px;
+   background: var(--blog-pink);
+   content: '';
+   transform: rotate(45deg);
+}
+
 .blogs-hero__copy {
+   position: relative;
+   z-index: 1;
    max-width: 740px;
+}
+
+.blogs-featured {
+   z-index: 1;
 }
 
 .blogs-kicker {
