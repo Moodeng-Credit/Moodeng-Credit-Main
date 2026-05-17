@@ -32,8 +32,8 @@ export const blogPosts: BlogPost[] = [
       publishedAt: 'May 18, 2026',
       readTime: '6 min read',
       audience: 'Borrowers',
-      image: '/hippos/borrower-insights-trophy.png',
-      imageAlt: 'Moodeng hippo holding a borrower insights trophy',
+      image: '/hippos/journal-hippo.png',
+      imageAlt: 'Moodeng hippo writing in a journal',
       accent: 'violet',
       sections: [
          {
