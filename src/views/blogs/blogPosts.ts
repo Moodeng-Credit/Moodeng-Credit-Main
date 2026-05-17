@@ -3,11 +3,27 @@ export interface BlogSection {
    body: string | string[];
 }
 
+export interface BlogFaq {
+   question: string;
+   answer: string;
+}
+
+export interface BlogSource {
+   label: string;
+   href?: string;
+}
+
 export interface BlogPost {
    slug: string;
    category: string;
    title: string;
    dek: string;
+   seoTitle?: string;
+   metaDescription?: string;
+   summary?: string[];
+   keywords?: string[];
+   faq?: BlogFaq[];
+   sources?: BlogSource[];
    sourceLabel?: string;
    sourceHref?: string;
    publishedAt: string;
@@ -20,6 +36,12 @@ export interface BlogPost {
 }
 
 export const podcastUrl = 'https://open.spotify.com/show/5L9DswvEsqHBPvG7rG0qYj';
+export const globalFindexUrl = 'https://www.worldbank.org/en/publication/globalfindex/report';
+export const lookoutLoanAppsUrl =
+   'https://www.lookout.com/news-release/lookout-threat-lab-discovers-predatory-loan-apps-on-google-play-and-apple-app-store';
+export const cgapDigitalCreditUrl = 'https://www.cgap.org/node/3234';
+export const cgapConsumerProtectionUrl = 'https://www.cgap.org/index.php/research/publication/consumer-protection-in-digital-credit';
+export const predatoryLoanAppsPaperUrl = 'https://arxiv.org/abs/2601.12634';
 
 export const blogPosts: BlogPost[] = [
    {
@@ -27,6 +49,38 @@ export const blogPosts: BlogPost[] = [
       category: 'Shadow systems',
       title: 'Your first credit record should not belong to a loan shark',
       dek: 'For millions of informal workers, the first lender to say yes is not a bank. It is an app that can take their contacts, their dignity, and their future trust before it ever earns repayment.',
+      seoTitle: 'Loan Shark Alternatives for First Credit Records | Moodeng',
+      metaDescription:
+         'Why a first credit record should belong to the borrower, not a loan shark app, and how Moodeng uses small USDC loans to build safer trust.',
+      summary: [
+         'A first credit record should help a borrower graduate to safer options, not trap them inside a private loan shark ledger.',
+         'Predatory loan apps often turn a small cash need into a data and reputation problem by collecting contacts, social context, and shame leverage.',
+         'Moodeng is designed around borrower-owned repayment history, clear terms, human uniqueness, and no contact-list collateral.'
+      ],
+      keywords: ['loan shark alternatives', 'first credit record', 'borrower-owned credit history', 'microloan repayment history'],
+      faq: [
+         {
+            question: 'What is a first credit record?',
+            answer:
+               'A first credit record is the earliest reliable evidence that a borrower accepted terms, received funding, and repaid as agreed. For underbanked borrowers, that record is often missing from formal credit systems.'
+         },
+         {
+            question: 'Why are loan shark apps dangerous for credit history?',
+            answer:
+               'They may collect repayment signals, contacts, device permissions, and social pressure points without turning successful repayment into portable borrower-owned credibility.'
+         },
+         {
+            question: 'How is Moodeng different from a loan shark app?',
+            answer:
+               'Moodeng centers clear loan terms, human uniqueness, stable repayment records, and borrower context without using contact-list access as collection pressure.'
+         }
+      ],
+      sources: [
+         { label: 'Moodeng podcast companion', href: podcastUrl },
+         { label: 'Loan Sharks in the App Store research notes' },
+         { label: 'World Bank Global Findex on formal and informal borrowing', href: globalFindexUrl },
+         { label: 'Lookout research on predatory loan apps', href: lookoutLoanAppsUrl }
+      ],
       sourceLabel: 'Podcast companion',
       sourceHref: podcastUrl,
       publishedAt: 'May 18, 2026',
@@ -75,6 +129,38 @@ export const blogPosts: BlogPost[] = [
       category: 'App-store trust',
       title: 'The app-store costume of predatory credit',
       dek: 'The most dangerous lending apps rarely look dangerous. They arrive as bright icons, friendly names, fast approvals, and a wall of happy reviews.',
+      seoTitle: 'How Predatory Loan Apps Look Legitimate | Moodeng',
+      metaDescription:
+         'Predatory loan apps can look safe in app stores. Learn the trust signals that can be faked and what a fair lending product should make visible.',
+      summary: [
+         'A polished app-store listing is not proof that a lender is accountable, regulated, or safe for borrowers.',
+         'Predatory lending networks can change names, icons, and storefronts while keeping the same data extraction and collection playbook.',
+         'A fair credit app should make legitimacy visible through clear terms, funding context, data boundaries, and repayment records.'
+      ],
+      keywords: ['predatory loan apps', 'fake loan apps', 'app store lending scams', 'digital credit transparency'],
+      faq: [
+         {
+            question: 'Can a loan app look legitimate and still be predatory?',
+            answer:
+               'Yes. A friendly name, high rating, or polished app-store page can hide abusive fees, excessive permissions, contact-list collection, or unclear repayment terms.'
+         },
+         {
+            question: 'What should borrowers check before using a loan app?',
+            answer:
+               'Borrowers should look for transparent terms, who operates the lender, what data is requested, whether contacts are required, and whether repayment history becomes useful to the borrower.'
+         },
+         {
+            question: 'What should a fair loan app show upfront?',
+            answer:
+               'A fair loan app should show the loan amount, repayment amount, due date, funding source, privacy boundaries, and what happens after repayment before the borrower commits.'
+         }
+      ],
+      sources: [
+         { label: 'Loan Sharks in the App Store research notes' },
+         { label: 'Lookout research on predatory loan apps', href: lookoutLoanAppsUrl },
+         { label: 'CGAP digital credit risk overview', href: cgapDigitalCreditUrl },
+         { label: 'Predatory loan apps Android study', href: predatoryLoanAppsPaperUrl }
+      ],
       sourceLabel: 'From the loan shark research notes',
       publishedAt: 'May 18, 2026',
       readTime: '8 min read',
@@ -122,6 +208,38 @@ export const blogPosts: BlogPost[] = [
       category: 'Borrower dignity',
       title: 'Contact-list collateral and the shame tax',
       dek: 'Loan sharks do not need a car title when they can threaten your mother, coworkers, customers, or group chat.',
+      seoTitle: 'Contact-List Collateral and Loan App Harassment | Moodeng',
+      metaDescription:
+         'How contact-list access turns small loans into shame pressure, and why fair digital credit should not use borrower contacts as collateral.',
+      summary: [
+         'Contact-list collateral is when a lender treats access to friends, family, coworkers, or customers as repayment leverage.',
+         'The real cost of a predatory microloan can include public embarrassment, relationship damage, and fear that spreads beyond the balance owed.',
+         'Privacy design is credit design: fair repayment should work through clear records and terms, not harassment of a borrower network.'
+      ],
+      keywords: ['contact-list collateral', 'loan app harassment', 'borrower privacy', 'digital credit consumer protection'],
+      faq: [
+         {
+            question: 'What is contact-list collateral?',
+            answer:
+               'Contact-list collateral is the use of a borrower phone contacts as leverage for repayment, often through threats to message family, coworkers, customers, or social groups.'
+         },
+         {
+            question: 'Why is contact-list access dangerous in lending apps?',
+            answer:
+               'It can let lenders pressure third parties, expose private debts, and turn a small repayment issue into public shame or reputational harm.'
+         },
+         {
+            question: 'Does Moodeng require contact-list access?',
+            answer:
+               'No. Moodeng content and product direction are built around repayment records, World ID uniqueness, and borrower-safe context, not contact-list collection.'
+         }
+      ],
+      sources: [
+         { label: 'Moodeng podcast companion', href: podcastUrl },
+         { label: 'CGAP digital credit risks', href: cgapDigitalCreditUrl },
+         { label: 'CGAP consumer protection in digital credit', href: cgapConsumerProtectionUrl },
+         { label: 'Lookout research on excessive loan app permissions', href: lookoutLoanAppsUrl }
+      ],
       sourceLabel: 'Podcast companion',
       sourceHref: podcastUrl,
       publishedAt: 'May 18, 2026',
@@ -170,6 +288,37 @@ export const blogPosts: BlogPost[] = [
       category: 'Lender judgment',
       title: 'Borrower context should feel like a work rhythm, not a confession',
       dek: 'Lenders need enough humanity to understand a request. Borrowers should not have to turn their private life into content to deserve a small loan.',
+      seoTitle: 'Borrower Context for P2P Microloans Without Doxxing | Moodeng',
+      metaDescription:
+         'What lenders need to understand a small loan request, and how borrowers can share payday fit, work rhythm, and purpose without oversharing.',
+      summary: [
+         'Useful borrower context is practical: work rhythm, payday timing, request purpose, due-date fit, and prior repayment behavior.',
+         'Borrowers should not need to disclose employer names, exact addresses, family details, documents, or video calls to request a small loan.',
+         'Lender judgment improves when the product summarizes repayment fit without turning private life into collateral.'
+      ],
+      keywords: ['borrower context', 'p2p microloans', 'loan request profile', 'payday fit'],
+      faq: [
+         {
+            question: 'What borrower information is useful for small-loan lenders?',
+            answer:
+               'Useful details include work type, pay rhythm, due-date fit, prior repayment, requested amount, and a short reason for borrowing.'
+         },
+         {
+            question: 'What should borrowers avoid sharing in a loan request?',
+            answer:
+               'Borrowers should avoid exact employer names, addresses, phone numbers, family names, document screenshots, and private crisis details.'
+         },
+         {
+            question: 'How can a lender judge a request without doxxing the borrower?',
+            answer:
+               'The platform can show safe context, repayment history, amount versus limit, and whether the due date comes after the borrower stated payday window.'
+         }
+      ],
+      sources: [
+         { label: 'Moodeng podcast research notes' },
+         { label: 'World Bank Global Findex on borrowing behavior', href: globalFindexUrl },
+         { label: 'CGAP consumer protection in digital credit', href: cgapConsumerProtectionUrl }
+      ],
       publishedAt: 'May 18, 2026',
       readTime: '6 min read',
       audience: 'Lenders',
@@ -216,6 +365,37 @@ export const blogPosts: BlogPost[] = [
       category: 'Market view',
       title: '$15 loans are infrastructure, not a gimmick',
       dek: 'The amount is small because the missing rail is small: identity, settlement, borrower-owned history, and lender confidence at the size banks refuse to touch.',
+      seoTitle: 'Why Small USDC Loans Can Build Credit Infrastructure | Moodeng',
+      metaDescription:
+         'Small USDC loans can matter when the missing infrastructure is identity, settlement, clear terms, and borrower-owned repayment history.',
+      summary: [
+         'A $15 or $20 liquidity gap can be serious even when banks cannot profitably serve it through traditional underwriting.',
+         'Stable settlement, human uniqueness, clear terms, and borrower-owned repayment records can change the economics of very small loans.',
+         'The goal is not to push larger debt, but to make the small loan someone already needs safer and more useful after repayment.'
+      ],
+      keywords: ['small USDC loans', 'microloan infrastructure', 'borrower repayment history', 'credit-building loans'],
+      faq: [
+         {
+            question: 'Why would a $15 loan matter?',
+            answer:
+               'A small gap can cover transport, medicine, a repair, or the days before income arrives. The amount is small, but the timing can be important.'
+         },
+         {
+            question: 'How can small loans build credit?',
+            answer:
+               'They can create a repayment record when the borrower receives funding, repays on time, and carries that evidence into the next request.'
+         },
+         {
+            question: 'Does small credit infrastructure mean encouraging more borrowing?',
+            answer:
+               'No. The better goal is safer access, clearer limits, and repayment history that helps borrowers avoid predatory options.'
+         }
+      ],
+      sources: [
+         { label: 'World Bank Global Findex on borrowing and financial inclusion', href: globalFindexUrl },
+         { label: 'CGAP digital credit overview', href: cgapDigitalCreditUrl },
+         { label: 'Moodeng pitch and product notes' }
+      ],
       sourceLabel: 'From the Moodeng pitch materials',
       publishedAt: 'May 18, 2026',
       readTime: '6 min read',
@@ -263,6 +443,37 @@ export const blogPosts: BlogPost[] = [
       category: 'Book review',
       title: 'What oil pipelines teach us about credit',
       dek: 'A book about oil routes has a useful lesson for small loans: when the main pipes are controlled by powerful players, ordinary people end up paying more for worse access.',
+      seoTitle: 'Credit Infrastructure Lessons From Oil Pipelines | Moodeng',
+      metaDescription:
+         'A book review connecting oil pipeline infrastructure to credit access, loan sharks, and why small loans need borrower-owned records.',
+      summary: [
+         'Pipelines decide access to critical resources; credit rails decide who can reach normal borrowing and who is pushed into shadow options.',
+         'When formal credit routes are closed, predatory lenders become the available pipe for urgent liquidity.',
+         'A fair credit pipe should move money and reputation without charging borrower dignity as the toll.'
+      ],
+      keywords: ['credit infrastructure', 'oil pipeline book review', 'loan shark alternatives', 'financial access rails'],
+      faq: [
+         {
+            question: 'What do oil pipelines have to do with credit?',
+            answer:
+               'Both are access systems. Pipelines move energy through controlled routes, while credit rails move money through identity, underwriting, and payment networks.'
+         },
+         {
+            question: 'Why compare loan sharks to shadow infrastructure?',
+            answer:
+               'Loan sharks often appear where formal routes are slow or closed. They become the available path, but that path charges borrowers through fear, privacy loss, and dependency.'
+         },
+         {
+            question: 'What is a better credit pipe?',
+            answer:
+               'A better credit pipe combines clear terms, safe identity, stable settlement, lender context, and repayment history that continues helping the borrower.'
+         }
+      ],
+      sources: [
+         { label: 'Book review source: The Global Game of Oil Pipelines' },
+         { label: 'World Bank Global Findex', href: globalFindexUrl },
+         { label: 'CGAP digital credit overview', href: cgapDigitalCreditUrl }
+      ],
       sourceLabel: 'Book review: The Global Game of Oil Pipelines',
       publishedAt: 'May 18, 2026',
       readTime: '8 min read',
@@ -317,6 +528,36 @@ export const blogPosts: BlogPost[] = [
       category: 'Book review',
       title: 'Secret societies and the need for safe trust',
       dek: 'A history of brotherhoods, mutual aid, and rotating credit shows why people build their own institutions when official ones do not protect them.',
+      seoTitle: 'Informal Trust, Mutual Aid, and Safe Microcredit | Moodeng',
+      metaDescription:
+         'A book review on secret societies, mutual aid, rotating credit, and what fair P2P lending can learn about safe trust.',
+      summary: [
+         'Informal trust systems often appear before official institutions reach workers, migrants, or non-elite communities.',
+         'The same social ties that create mutual aid can become coercive when rules are hidden and exit is weak.',
+         'Moodeng should preserve community trust while preventing privacy loss, off-platform pressure, and intimidation.'
+      ],
+      keywords: ['informal credit', 'mutual aid lending', 'safe trust systems', 'p2p lending trust'],
+      faq: [
+         {
+            question: 'Why discuss secret societies on a credit blog?',
+            answer:
+               'The history shows how people create trust and protection systems when official institutions are absent, which is directly relevant to informal credit.'
+         },
+         {
+            question: 'How can mutual aid become harmful?',
+            answer: 'When rules are hidden or power is unequal, social support can turn into pressure, hierarchy, or debt control.'
+         },
+         {
+            question: 'What should P2P lending learn from informal trust systems?',
+            answer:
+               'It should keep the speed and human context of community credit while adding clear rules, privacy boundaries, and borrower-owned records.'
+         }
+      ],
+      sources: [
+         { label: 'Book review source: Secret Societies Reconsidered' },
+         { label: 'World Bank Global Findex on informal borrowing', href: globalFindexUrl },
+         { label: 'CGAP consumer protection in digital credit', href: cgapConsumerProtectionUrl }
+      ],
       sourceLabel: 'Book review: Secret Societies Reconsidered',
       publishedAt: 'May 18, 2026',
       readTime: '8 min read',
@@ -371,6 +612,38 @@ export const blogPosts: BlogPost[] = [
       category: 'Book review',
       title: 'What credit risk books miss about loan sharks',
       dek: 'Reading portfolio risk beside money and credit theory shows a blind spot: formal finance manages lender concentration, while excluded borrowers face concentration of options.',
+      seoTitle: 'Credit Risk, Borrower Concentration, and Loan Sharks | Moodeng',
+      metaDescription:
+         'A book review on credit portfolio risk and money theory, with a borrower-side lens on loan sharks and concentrated credit options.',
+      summary: [
+         'Formal credit risk books focus on lender exposure, but excluded borrowers also face concentration risk when only one bad lender will say yes.',
+         'Loan sharks replace transparent underwriting with social pressure, contact access, shame, and repeat dependency.',
+         'A fair microloan marketplace has to manage lender risk and borrower dependency at the same time.'
+      ],
+      keywords: ['credit risk loan sharks', 'borrower concentration risk', 'credit portfolio risk', 'microloan marketplace risk'],
+      faq: [
+         {
+            question: 'What is borrower-side concentration risk?',
+            answer:
+               'It is the risk a borrower faces when they have too few fair credit options and become dependent on one predatory lender or app.'
+         },
+         {
+            question: 'How do loan sharks manage risk differently from banks?',
+            answer:
+               'Instead of transparent underwriting and diversification, they often rely on pressure, social exposure, contact-list access, and repeat dependency.'
+         },
+         {
+            question: 'What should fair microloan lenders watch?',
+            answer:
+               'They should watch amount versus limit, due-date fit, repayment history, borrower context, and portfolio exposure without using intimidation as risk control.'
+         }
+      ],
+      sources: [
+         { label: 'Book review source: Risk Management in Credit Portfolios' },
+         { label: 'Book review source: The Theory of Money and Credit' },
+         { label: 'CGAP digital credit risk overview', href: cgapDigitalCreditUrl },
+         { label: 'World Bank Global Findex on borrowing sources', href: globalFindexUrl }
+      ],
       sourceLabel: 'Book review: Credit portfolio risk + The Theory of Money and Credit',
       publishedAt: 'May 18, 2026',
       readTime: '9 min read',

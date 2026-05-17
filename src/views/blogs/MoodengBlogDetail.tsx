@@ -1,10 +1,37 @@
-import { type JSX, useLayoutEffect } from 'react';
+import { type JSX, useEffect, useLayoutEffect } from 'react';
 
 import { ArrowRight, CalendarDays, Clock3 } from 'lucide-react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 
 import { blogPosts, findBlogPost } from '@/views/blogs/blogPosts';
 import '@/views/blogs/MoodengBlogs.css';
+
+function setNamedMeta(name: string, content: string): () => void {
+   let meta = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
+   const previousContent = meta?.getAttribute('content') ?? null;
+   const created = !meta;
+
+   if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', name);
+      document.head.appendChild(meta);
+   }
+
+   meta.setAttribute('content', content);
+
+   return () => {
+      if (created) {
+         meta?.remove();
+         return;
+      }
+
+      if (previousContent === null) {
+         meta?.removeAttribute('content');
+      } else {
+         meta?.setAttribute('content', previousContent);
+      }
+   };
+}
 
 export default function MoodengBlogDetail(): JSX.Element {
    const { slug } = useParams();
@@ -13,6 +40,73 @@ export default function MoodengBlogDetail(): JSX.Element {
    useLayoutEffect(() => {
       window.scrollTo({ left: 0, top: 0 });
    }, [slug]);
+
+   useEffect(() => {
+      if (!post) {
+         return undefined;
+      }
+
+      const previousTitle = document.title;
+      document.title = post.seoTitle ?? `${post.title} | Moodeng`;
+
+      const cleanupDescription = setNamedMeta('description', post.metaDescription ?? post.dek);
+      const cleanupKeywords = post.keywords?.length ? setNamedMeta('keywords', post.keywords.join(', ')) : undefined;
+      const structuredData = document.createElement('script');
+      const canonicalUrl = new URL(`/blogs/${post.slug}`, window.location.origin).href;
+      const faqEntities = post.faq?.map((item) => ({
+         '@type': 'Question',
+         name: item.question,
+         acceptedAnswer: {
+            '@type': 'Answer',
+            text: item.answer
+         }
+      }));
+
+      structuredData.type = 'application/ld+json';
+      structuredData.id = 'moodeng-blog-structured-data';
+      structuredData.text = JSON.stringify({
+         '@context': 'https://schema.org',
+         '@graph': [
+            {
+               '@type': 'BlogPosting',
+               headline: post.title,
+               description: post.metaDescription ?? post.dek,
+               datePublished: '2026-05-18',
+               dateModified: '2026-05-18',
+               image: new URL(post.image, window.location.origin).href,
+               mainEntityOfPage: canonicalUrl,
+               author: {
+                  '@type': 'Organization',
+                  name: 'Moodeng Credit'
+               },
+               publisher: {
+                  '@type': 'Organization',
+                  name: 'Moodeng Credit',
+                  url: window.location.origin
+               },
+               keywords: post.keywords?.join(', ')
+            },
+            ...(faqEntities?.length
+               ? [
+                    {
+                       '@type': 'FAQPage',
+                       mainEntityOfPage: canonicalUrl,
+                       mainEntity: faqEntities
+                    }
+                 ]
+               : [])
+         ]
+      });
+      document.getElementById(structuredData.id)?.remove();
+      document.head.appendChild(structuredData);
+
+      return () => {
+         document.title = previousTitle;
+         cleanupDescription();
+         cleanupKeywords?.();
+         structuredData.remove();
+      };
+   }, [post]);
 
    if (!post) {
       return <Navigate to="/blogs" replace />;
@@ -63,6 +157,18 @@ export default function MoodengBlogDetail(): JSX.Element {
                </div>
             </header>
 
+            {post.summary?.length ? (
+               <section className="blog-quick-answer" aria-labelledby="blog-quick-answer-heading">
+                  <p className="blogs-kicker">Quick answer</p>
+                  <h2 id="blog-quick-answer-heading">What this piece says</h2>
+                  <ul>
+                     {post.summary.map((item) => (
+                        <li key={item}>{item}</li>
+                     ))}
+                  </ul>
+               </section>
+            ) : null}
+
             <div className="blog-article__body">
                {post.sections.map((section) => {
                   const paragraphs = Array.isArray(section.body) ? section.body : [section.body];
@@ -77,6 +183,40 @@ export default function MoodengBlogDetail(): JSX.Element {
                   );
                })}
             </div>
+
+            {post.faq?.length ? (
+               <section className="blog-faq" aria-labelledby="blog-faq-heading">
+                  <p className="blogs-kicker">Common questions</p>
+                  <h2 id="blog-faq-heading">Fast answers for readers</h2>
+                  {post.faq.map((item) => (
+                     <div className="blog-faq__item" key={item.question}>
+                        <h3>{item.question}</h3>
+                        <p>{item.answer}</p>
+                     </div>
+                  ))}
+               </section>
+            ) : null}
+
+            {post.sources?.length ? (
+               <aside className="blog-sources" aria-labelledby="blog-sources-heading">
+                  <p className="blogs-kicker">Sources</p>
+                  <h2 id="blog-sources-heading">References and research notes</h2>
+                  <ul>
+                     {post.sources.map((source) => (
+                        <li key={source.label}>
+                           {source.href ? (
+                              <a href={source.href} target="_blank" rel="noreferrer">
+                                 {source.label}
+                                 <ArrowRight aria-hidden="true" size={15} />
+                              </a>
+                           ) : (
+                              <span>{source.label}</span>
+                           )}
+                        </li>
+                     ))}
+                  </ul>
+               </aside>
+            ) : null}
          </article>
 
          <aside className="blog-related" aria-labelledby="related-blog-heading">

@@ -543,6 +543,63 @@
    object-fit: contain;
 }
 
+.blog-quick-answer,
+.blog-faq,
+.blog-sources {
+   position: relative;
+   z-index: 1;
+   max-width: 780px;
+   margin-inline: auto;
+}
+
+.blog-quick-answer {
+   border: 1px solid oklch(63% 0.18 51 / 0.22);
+   border-radius: 20px;
+   background: linear-gradient(135deg, oklch(99% 0.004 230), oklch(94% 0.038 296 / 0.72)), var(--blog-panel);
+   margin-top: 34px;
+   padding: clamp(22px, 4vw, 30px);
+   box-shadow: 0 16px 36px oklch(50% 0.025 230 / 0.08);
+}
+
+.blog-quick-answer h2,
+.blog-faq h2,
+.blog-sources h2 {
+   margin: 12px 0 0;
+   color: var(--blog-ink);
+   font-size: 1.75rem;
+   font-weight: 900;
+   line-height: 1.08;
+}
+
+.blog-quick-answer ul,
+.blog-sources ul {
+   display: grid;
+   gap: 12px;
+   margin: 18px 0 0;
+   padding: 0;
+   list-style: none;
+}
+
+.blog-quick-answer li {
+   position: relative;
+   color: var(--blog-copy);
+   font-size: 1rem;
+   font-weight: 690;
+   line-height: 1.6;
+   padding-left: 22px;
+}
+
+.blog-quick-answer li::before {
+   position: absolute;
+   top: 0.68em;
+   left: 0;
+   width: 8px;
+   height: 8px;
+   border-radius: 999px;
+   background: var(--blog-green);
+   content: '';
+}
+
 .blog-article__body {
    display: grid;
    max-width: 780px;
@@ -573,6 +630,61 @@
    font-size: 1.08rem;
    font-weight: 600;
    line-height: 1.72;
+}
+
+.blog-faq {
+   margin-top: 48px;
+}
+
+.blog-faq__item {
+   border-top: 1px solid var(--blog-line);
+   margin-top: 22px;
+   padding-top: 22px;
+}
+
+.blog-faq__item h3 {
+   margin: 0;
+   color: var(--blog-ink);
+   font-size: 1.22rem;
+   font-weight: 900;
+   line-height: 1.18;
+}
+
+.blog-faq__item p {
+   margin: 10px 0 0;
+   color: var(--blog-copy);
+   font-size: 1rem;
+   font-weight: 610;
+   line-height: 1.66;
+}
+
+.blog-sources {
+   border-top: 1px solid var(--blog-line);
+   margin-top: 46px;
+   padding-top: 30px;
+}
+
+.blog-sources li {
+   color: var(--blog-copy);
+   font-size: 0.98rem;
+   font-weight: 690;
+   line-height: 1.45;
+}
+
+.blog-sources a,
+.blog-sources span {
+   display: inline-flex;
+   align-items: center;
+   gap: 7px;
+}
+
+.blog-sources a {
+   color: var(--blog-orange-dark);
+   text-decoration: none;
+}
+
+.blog-sources a:hover {
+   text-decoration: underline;
 }
 
 .blog-related {
