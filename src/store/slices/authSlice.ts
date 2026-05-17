@@ -567,6 +567,7 @@ const authSlice = createSlice({
       },
       setPreviewAuth: (state, action) => {
          const isFilled = action.payload === 'filled';
+         const needsRoleSelection = action.payload === 'no-role';
          state.user = {
             ...defaultUser,
             id: 'preview-borrower',
@@ -578,7 +579,7 @@ const authSlice = createSlice({
             cs: isFilled ? 60 : 0,
             mal: isFilled ? 1 : 0,
             nal: isFilled ? 1 : 0,
-            userRole: 'borrower',
+            userRole: needsRoleSelection ? undefined : 'borrower',
             createdAt: '2026-05-01T00:00:00.000Z',
             updatedAt: '2026-05-06T00:00:00.000Z'
          };
