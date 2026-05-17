@@ -168,6 +168,8 @@ function RequestBoard$() {
         ? REFERRAL_TEST_USER
         : user;
    const isAuthenticated = !!(effectiveUser?.id && (username || isReferralTestMode || isLenderTourPreview));
+   const hasSelectedRole = Boolean(effectiveUser?.userRole);
+   const needsRoleSelection = isAuthenticated && !hasSelectedRole;
    const showVerify = effectiveUser?.isWorldId !== 'ACTIVE';
    const storeIsBorrower = useIsBorrower();
    const isBorrower = isLenderTourPreview ? false : isReferralTestMode || storeIsBorrower;
@@ -778,7 +780,14 @@ function RequestBoard$() {
                            >
                               Hello, {displayFirstName}
                            </button>
-                           {isBorrower ? (
+                           {needsRoleSelection ? (
+                              <Link
+                                 to="/onboarding/role"
+                                 className="inline-flex w-fit items-center gap-1 rounded-md-sm bg-md-primary-100 px-2 py-1 text-md-b3 font-semibold text-md-primary-1200 underline-offset-2 hover:underline"
+                              >
+                                 Choose borrower or lender
+                              </Link>
+                           ) : isBorrower ? (
                               <div className="flex items-center gap-2">
                                  {showVerify ? (
                                     <>
@@ -859,14 +868,35 @@ function RequestBoard$() {
                   <div className="flex flex-col gap-1" data-tour-target="request-board-title">
                      <h1 className="text-md-h3 font-semibold text-md-heading">Microloan Request Board</h1>
                      <p className="text-md-b2 font-medium text-md-neutral-700">
-                        {isAuthenticated
+                        {needsRoleSelection
+                           ? 'Browse requests now. Choose a role when you are ready to borrow or lend.'
+                           : isAuthenticated
                            ? 'Browse requests posted on Moodeng, or jump right in and get verified to start borrowing in USDC.'
                            : 'Browse requests publicly.'}
                      </p>
                   </div>
 
+                  {needsRoleSelection ? (
+                     <div className="rounded-md-lg border border-md-primary-300 bg-md-primary-100 p-4 shadow-md-card">
+                        <div className="flex flex-col gap-3">
+                           <div className="flex flex-col gap-1">
+                              <p className="text-md-h5 font-semibold text-md-heading">Choose how you’ll use Moodeng</p>
+                              <p className="text-md-b2 font-medium text-md-neutral-800">
+                                 Pick borrower or lender to unlock your dashboard, repayment, and history.
+                              </p>
+                           </div>
+                           <Link
+                              to="/onboarding/role"
+                              className="inline-flex w-fit items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100"
+                           >
+                              Choose role
+                           </Link>
+                        </div>
+                     </div>
+                  ) : null}
+
                   {/* Apply Loan Card — visible for authenticated borrowers, or as CTA for public */}
-                  {isAuthenticated && isBorrower ? (
+                  {isAuthenticated && isBorrower && hasSelectedRole ? (
                      <div
                         className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3"
                         data-tour-target="request-apply-card"
