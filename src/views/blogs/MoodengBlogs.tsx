@@ -26,6 +26,11 @@ const topicCards = [
       title: 'Credit as infrastructure',
       body: 'What oil pipelines can teach us about gatekeepers, access, and informal lending.',
       href: `/blogs/${blogPosts[5].slug}`
+   },
+   {
+      title: 'Trust among strangers',
+      body: 'What mutual aid groups and brotherhoods reveal about safe credit for people outside formal systems.',
+      href: `/blogs/${blogPosts[6].slug}`
    }
 ];
 

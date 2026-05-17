@@ -188,6 +188,37 @@ export const blogPosts: BlogPost[] = [
             body: 'The point is not that a $15 loan is the same as global oil politics. The point is that infrastructure decides outcomes before the individual ever makes a choice. Moodeng needs to make the fair route easier than the predatory one: human uniqueness without doxxing, terms shown before funding, stable settlement, lender context, and repayment history that the borrower can keep building on.'
          }
       ]
+   },
+   {
+      slug: 'secret-societies-and-the-need-for-safe-trust',
+      category: 'Book review',
+      title: 'Secret societies and the need for safe trust',
+      dek: 'A history of brotherhoods, mutual aid, and rotating credit shows why people build their own institutions when official ones do not protect them.',
+      sourceLabel: 'Book review: Secret Societies Reconsidered',
+      publishedAt: 'May 18, 2026',
+      readTime: '6 min read',
+      audience: 'Everyone',
+      image: '/hippos/community.png',
+      imageAlt: 'Moodeng community hippo representing lender review',
+      accent: 'green',
+      sections: [
+         {
+            heading: 'People invent institutions before institutions find them',
+            body: 'David Ownby and Mary Somers Heidhues frame many Chinese brotherhoods and kongsis less as exotic criminal groups and more as non-elite organizations for people moving through risky commercial worlds. Migrants, workers, and marginal young men needed protection, pooled money, funeral support, work organization, and trust among people who were not family.'
+         },
+         {
+            heading: 'Mutual aid can turn into pressure',
+            body: 'That is the important lesson for credit. Informal systems often begin because the official system is absent or hostile. But the same social ties that help someone survive can also become tools of control. Protection can become racketeering. Brotherhood can become hierarchy. A shared fund can become debt pressure if the rules are not visible.'
+         },
+         {
+            heading: 'Loan sharks are a broken trust institution',
+            body: 'A loan shark is not only a bad lender. It is an informal institution built around fear, social exposure, and dependency. It gives fast access, but the borrower pays with privacy, dignity, and repeat vulnerability. The borrower may be known by the shark, but not in a way that creates portable trust.'
+         },
+         {
+            heading: 'Moodeng should make trust legible',
+            body: 'The alternative is not cold, anonymous finance. People still need social trust. They need lenders to understand work rhythm, repayment history, and why a small gap matters. Moodeng has to make that trust safe: identity without doxxing, context without confession, repayment records without intimidation, and clear rules that cannot quietly become social punishment.'
+         }
+      ]
    }
 ];
 
