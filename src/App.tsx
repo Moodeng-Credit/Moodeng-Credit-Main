@@ -183,8 +183,8 @@ export default function App() {
             <Route path="/profile" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
 
             {/* Auth flows */}
-            <Route path="/forgot-password" element={<Layout><ForgotPassword /></Layout>} />
-            <Route path="/reset-password" element={<Layout><ResetPassword /></Layout>} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/auth-success" element={<AuthSuccess />} />
             <Route path="/auth/confirm" element={<AuthConfirm />} />
             <Route path="/auth/verify-code" element={<AuthVerifyCode />} />
