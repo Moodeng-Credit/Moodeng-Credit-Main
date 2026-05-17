@@ -60,11 +60,16 @@ export interface AdminDirectoryUser {
    created_at: string | null;
    updated_at: string | null;
    openRequestCount: number;
+   borrowedLoanCount: number;
    activeLoanCount: number;
    overdueLoanCount: number;
    paidLoanCount: number;
    lentLoanCount: number;
+   totalBorrowedAmount: number;
+   totalRepaymentAmount: number;
+   totalRepaidAmount: number;
    outstandingDue: number;
+   lastLoanAt: string | null;
    restriction: AdminRestriction | null;
    riskProfile: AdminRiskProfile | null;
 }
@@ -301,7 +306,9 @@ async function fetchUsersByIds(userIds: string[]): Promise<Map<string, AdminDire
    const rows = await requireOk<AnyRow[]>(
       getSupabaseBrowserClient()
          .from('users')
-         .select('id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,cs,mal,nal,created_at,updated_at')
+         .select(
+            'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,cs,mal,nal,created_at,updated_at'
+         )
          .in('id', uniqueIds)
    );
 
@@ -330,6 +337,10 @@ async function buildDirectoryRows(
          return Number.isFinite(due) && due < now;
       });
       const paidLoans = borrowedLoans.filter((loan) => loan.repayment_status === 'Paid');
+      const loanActivityDates = userLoans
+         .map((loan) => loan.funded_at ?? loan.created_at ?? null)
+         .filter(Boolean)
+         .sort((first, second) => new Date(second).getTime() - new Date(first).getTime());
 
       return {
          id: row.id,
@@ -348,11 +359,19 @@ async function buildDirectoryRows(
          created_at: row.created_at ?? null,
          updated_at: row.updated_at ?? null,
          openRequestCount: openRequests.length,
+         borrowedLoanCount: borrowedLoans.length,
          activeLoanCount: activeLoans.length,
          overdueLoanCount: overdueLoans.length,
          paidLoanCount: paidLoans.length,
          lentLoanCount: lentLoans.length,
-         outstandingDue: activeLoans.reduce((sum, loan) => sum + Math.max(0, toNumber(loan.total_repayment_amount) - toNumber(loan.repaid_amount)), 0),
+         totalBorrowedAmount: borrowedLoans.reduce((sum, loan) => sum + toNumber(loan.loan_amount), 0),
+         totalRepaymentAmount: borrowedLoans.reduce((sum, loan) => sum + toNumber(loan.total_repayment_amount), 0),
+         totalRepaidAmount: borrowedLoans.reduce((sum, loan) => sum + toNumber(loan.repaid_amount), 0),
+         outstandingDue: activeLoans.reduce(
+            (sum, loan) => sum + Math.max(0, toNumber(loan.total_repayment_amount) - toNumber(loan.repaid_amount)),
+            0
+         ),
+         lastLoanAt: loanActivityDates[0] ?? null,
          restriction: restrictionsByUserId.get(row.id) ?? null,
          riskProfile: riskByUserId.get(row.id) ?? null
       };
@@ -370,12 +389,7 @@ export async function getCurrentAdmin(fallbackUserId?: string | null): Promise<A
    if (!userId) return null;
 
    return requireOk(
-      supabase
-         .from('admin_users')
-         .select('id,user_id,role,active,display_name')
-         .eq('user_id', userId)
-         .eq('active', true)
-         .maybeSingle()
+      supabase.from('admin_users').select('id,user_id,role,active,display_name').eq('user_id', userId).eq('active', true).maybeSingle()
    );
 }
 
@@ -396,12 +410,28 @@ export async function getAdminOverview(): Promise<AdminOverview> {
    ] = await Promise.all([
       supabase.from('users').select('id', { count: 'exact', head: true }),
       supabase.from('loans').select('id', { count: 'exact', head: true }).eq('loan_status', 'Requested'),
-      supabase.from('loans').select('id', { count: 'exact', head: true }).eq('loan_status', 'Lent').in('repayment_status', ['Unpaid', 'Partial']),
-      supabase.from('loans').select('id', { count: 'exact', head: true }).eq('loan_status', 'Lent').in('repayment_status', ['Unpaid', 'Partial']).lt('due_date', now),
-      optionalCount(supabase.from('default_recovery_cases').select('id', { count: 'exact', head: true }).in('status', ['needs_review', 'active'])),
+      supabase
+         .from('loans')
+         .select('id', { count: 'exact', head: true })
+         .eq('loan_status', 'Lent')
+         .in('repayment_status', ['Unpaid', 'Partial']),
+      supabase
+         .from('loans')
+         .select('id', { count: 'exact', head: true })
+         .eq('loan_status', 'Lent')
+         .in('repayment_status', ['Unpaid', 'Partial'])
+         .lt('due_date', now),
+      optionalCount(
+         supabase.from('default_recovery_cases').select('id', { count: 'exact', head: true }).in('status', ['needs_review', 'active'])
+      ),
       optionalCount(supabase.from('admin_account_restrictions').select('id', { count: 'exact', head: true }).eq('status', 'banned')),
       optionalCount(supabase.from('admin_account_restrictions').select('id', { count: 'exact', head: true }).eq('status', 'watchlist')),
-      optionalCount(supabase.from('admin_loan_request_reviews').select('id', { count: 'exact', head: true }).in('status', ['needs_review', 'reported', 'duplicate'])),
+      optionalCount(
+         supabase
+            .from('admin_loan_request_reviews')
+            .select('id', { count: 'exact', head: true })
+            .in('status', ['needs_review', 'reported', 'duplicate'])
+      ),
       optionalCount(supabase.from('admin_risk_profiles').select('id', { count: 'exact', head: true }).eq('risk_level', 'high'))
    ]);
 
@@ -437,7 +467,9 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
    const supabase = getSupabaseBrowserClient();
    let query = supabase
       .from('users')
-      .select('id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,cs,mal,nal,created_at,updated_at')
+      .select(
+         'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,cs,mal,nal,created_at,updated_at'
+      )
       .order('updated_at', { ascending: false })
       .limit(100);
    const trimmedSearch = search?.trim();
@@ -454,27 +486,17 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
          ? requireOk<AnyRow[]>(
               supabase
                  .from('loans')
-                 .select('id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,loan_status,repayment_status')
+                 .select(
+                    'id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,loan_status,repayment_status,created_at,funded_at'
+                 )
                  .or(`borrower_user_id.in.(${userIds.join(',')}),lender_user_id.in.(${userIds.join(',')})`)
            )
          : Promise.resolve([]),
       userIds.length
-         ? optionalOk<AnyRow[]>(
-              supabase
-                 .from('admin_account_restrictions')
-                 .select('*')
-                 .in('user_id', userIds),
-              []
-           )
+         ? optionalOk<AnyRow[]>(supabase.from('admin_account_restrictions').select('*').in('user_id', userIds), [])
          : Promise.resolve([]),
       userIds.length
-         ? optionalOk<AnyRow[]>(
-              supabase
-                 .from('admin_risk_profiles')
-                 .select('*')
-                 .in('user_id', userIds),
-              []
-           )
+         ? optionalOk<AnyRow[]>(supabase.from('admin_risk_profiles').select('*').in('user_id', userIds), [])
          : Promise.resolve([])
    ]);
 
@@ -486,7 +508,9 @@ export async function listAdminLoanRequests(): Promise<AdminLoanRequest[]> {
    const rows = await requireOk<AnyRow[]>(
       supabase
          .from('loans')
-         .select('id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,created_at,funded_at')
+         .select(
+            'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,created_at,funded_at'
+         )
          .eq('loan_status', 'Requested')
          .order('created_at', { ascending: false })
          .limit(100)
@@ -514,7 +538,9 @@ export async function listAdminDefaultCases(): Promise<AdminDefaultCase[]> {
       requireOk<AnyRow[]>(
          supabase
             .from('loans')
-            .select('id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,created_at,funded_at')
+            .select(
+               'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,created_at,funded_at'
+            )
             .eq('loan_status', 'Lent')
             .in('repayment_status', ['Unpaid', 'Partial'])
             .lt('due_date', now)
@@ -600,7 +626,11 @@ export async function findUserByUsername(username: string): Promise<AdminDirecto
    return rows.find((row) => row.username.toLowerCase() === normalizedUsername.toLowerCase()) ?? null;
 }
 
-export async function sendNoticeToUsers(recipientUserIds: string[], notice: NoticeTemplateInput, createdBy?: string | null): Promise<AnyRow[]> {
+export async function sendNoticeToUsers(
+   recipientUserIds: string[],
+   notice: NoticeTemplateInput,
+   createdBy?: string | null
+): Promise<AnyRow[]> {
    const uniqueRecipientUserIds = [...new Set(recipientUserIds.filter(Boolean))];
    if (!uniqueRecipientUserIds.length) return [];
 
