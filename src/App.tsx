@@ -91,7 +91,6 @@ export default function App() {
    const showBottomNav =
       user?.id &&
       !shouldShowAccountSupport &&
-      user?.userRole &&
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
          (location.pathname.startsWith('/user/') && !isUserDetailRoute) ||
          location.pathname.startsWith('/support') ||
