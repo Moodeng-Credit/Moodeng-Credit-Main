@@ -168,19 +168,6 @@
    box-shadow: 22px 26px 64px oklch(50% 0.025 230 / 0.16);
 }
 
-.blogs-featured::before {
-   position: absolute;
-   top: 18px;
-   right: 18px;
-   z-index: 2;
-   width: 68px;
-   height: 34px;
-   border-radius: 999px;
-   background: var(--blog-green);
-   content: '';
-   box-shadow: -84px 88px 0 -10px var(--blog-orange);
-}
-
 .blogs-featured__image,
 .blogs-post-card__image,
 .blog-article__image {
