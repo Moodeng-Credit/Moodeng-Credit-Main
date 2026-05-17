@@ -233,7 +233,7 @@
 
 .blogs-topic-strip {
    display: grid;
-   grid-template-columns: repeat(3, minmax(0, 1fr));
+   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
    gap: 12px;
    padding: 22px 0 48px;
 }
@@ -402,6 +402,8 @@
 .blog-source span {
    display: inline-flex;
    align-items: center;
+   max-width: 100%;
+   flex-wrap: wrap;
    gap: 8px;
    border-radius: 999px;
    background: oklch(48% 0.25 293 / 0.1);
@@ -409,6 +411,7 @@
    color: var(--blog-deep);
    font-size: 0.9rem;
    font-weight: 850;
+   line-height: 1.25;
    text-decoration: none;
 }
 

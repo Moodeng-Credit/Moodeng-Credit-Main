@@ -21,6 +21,11 @@ const topicCards = [
       title: 'Lender judgment',
       body: 'How to read work rhythm, payday fit, and repayment context without demanding too much.',
       href: `/blogs/${blogPosts[3].slug}`
+   },
+   {
+      title: 'Credit as infrastructure',
+      body: 'What oil pipelines can teach us about gatekeepers, access, and informal lending.',
+      href: `/blogs/${blogPosts[5].slug}`
    }
 ];
 

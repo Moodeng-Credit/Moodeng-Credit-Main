@@ -157,6 +157,37 @@ export const blogPosts: BlogPost[] = [
             body: 'The loan is temporary. The repayment signal can last. If Moodeng works, a borrower does not just solve one emergency. They leave with a small piece of portable credibility they can build on.'
          }
       ]
+   },
+   {
+      slug: 'what-oil-pipelines-teach-us-about-credit',
+      category: 'Book review',
+      title: 'What oil pipelines teach us about credit',
+      dek: 'A book about oil routes has a useful lesson for small loans: when the main pipes are controlled by powerful players, ordinary people end up paying more for worse access.',
+      sourceLabel: 'Book review: The Global Game of Oil Pipelines',
+      publishedAt: 'May 18, 2026',
+      readTime: '6 min read',
+      audience: 'Everyone',
+      image: '/hippos/lender-diversity-piechart.png',
+      imageAlt: 'Moodeng hippo reviewing a lender diversity chart',
+      accent: 'blue',
+      sections: [
+         {
+            heading: 'Pipelines are not just pipes',
+            body: 'Gulshan Dietl writes about oil pipelines as routes of power: physical lines that decide who can move a critical resource, who must wait, who pays extra, and who becomes dependent on a gatekeeper. That is a useful way to think about credit too. Money also moves through pipes. Identity checks, banks, credit bureaus, payment networks, and underwriting rules decide who can reach normal loans and who gets left outside.'
+         },
+         {
+            heading: 'When the formal route fails, the shadow route appears',
+            body: 'People do not choose loan sharks because the product is good. They choose them because the official path is too slow, too expensive, too document-heavy, or closed entirely. The same person who is invisible to a bank may be very visible to a predatory app: visible through contacts, work chats, location, screenshots, shame pressure, and repeat borrowing behavior.'
+         },
+         {
+            heading: 'Access without ownership creates dependency',
+            body: 'A pipeline can move oil while still leaving the community around it with little control over the value passing through. Bad credit works the same way. A borrower may repay again and again, but if the record stays inside a private lender ledger, every future emergency starts from zero. The debt moved. The reputation did not.'
+         },
+         {
+            heading: 'Moodeng is trying to build a different pipe',
+            body: 'The point is not that a $15 loan is the same as global oil politics. The point is that infrastructure decides outcomes before the individual ever makes a choice. Moodeng needs to make the fair route easier than the predatory one: human uniqueness without doxxing, terms shown before funding, stable settlement, lender context, and repayment history that the borrower can keep building on.'
+         }
+      ]
    }
 ];
 
