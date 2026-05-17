@@ -38,7 +38,7 @@ interface AdminRiskProfileRow {
    algorithm_note: string | null;
    override_score: number | null;
    override_reason: string | null;
-   computed_at: string | null;
+   calculated_at: string | null;
 }
 
 const SIGNAL_LABEL: Record<SignalKey, string> = {
@@ -102,7 +102,7 @@ export default function RiskAssessmentSection({
          supabase
             .from('admin_risk_profiles')
             .select(
-               'user_id, score, risk_level, status, algorithm_version, algorithm_note, override_score, override_reason, computed_at'
+               'user_id, score, risk_level, status, algorithm_version, algorithm_note, override_score, override_reason, calculated_at'
             )
             .in('user_id', ids),
          supabase
