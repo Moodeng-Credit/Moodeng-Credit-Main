@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { Link, NavLink } from 'react-router-dom';
 
 import UserAvatar from '@/components/UserAvatar';
+
 import type { RootState } from '@/store/store';
 
 interface MarketingPageShellProps {
@@ -13,7 +14,8 @@ interface MarketingPageShellProps {
 const navItems = [
    { label: 'Borrow', href: '/benefits' },
    { label: 'Lend', href: '/whylend' },
-   { label: 'Academy', href: '/academy' }
+   { label: 'Academy', href: '/academy' },
+   { label: 'Blog', href: '/blogs' }
 ];
 
 const LogoMark = ({ className = 'size-12' }: { className?: string }) => (
@@ -135,6 +137,9 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                      </Link>
                      <Link to="/academy" className="hover:text-md-primary-1200">
                         Academy
+                     </Link>
+                     <Link to="/blogs" className="hover:text-md-primary-1200">
+                        Blog
                      </Link>
                   </nav>
                </div>

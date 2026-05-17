@@ -29,6 +29,8 @@ import AuthConfirm from '@/app/auth/confirm/page';
 import AuthVerifyCode from '@/app/auth/verify-code/page';
 import AccountRestrictedPage from '@/app/account-restricted/page';
 import Benefits from '@/app/benefits/page';
+import BlogsPage from '@/app/blogs/page';
+import BlogDetailPage from '@/app/blogs/[slug]/page';
 import Dashboard from '@/views/dashboard/Dashboard';
 import RequestBoard from '@/views/dashboard/RequestBoard';
 import ForgotPassword from '@/app/forgot-password/page';
@@ -202,6 +204,9 @@ export default function App() {
             <Route path="/academy" element={<MarketingPageShell><Guide /></MarketingPageShell>} />
             <Route path="/guide" element={<Navigate to="/academy" replace />} />
             <Route path="/credit-leveling-guide" element={<MarketingPageShell><CreditLevelingGuidePage /></MarketingPageShell>} />
+            <Route path="/blog" element={<Navigate to="/blogs" replace />} />
+            <Route path="/blogs" element={<MarketingPageShell><BlogsPage /></MarketingPageShell>} />
+            <Route path="/blogs/:slug" element={<MarketingPageShell><BlogDetailPage /></MarketingPageShell>} />
             <Route path="/benefits" element={<MarketingPageShell><Benefits /></MarketingPageShell>} />
             <Route path="/whylend" element={<MarketingPageShell><WhyLend /></MarketingPageShell>} />
             <Route path="/simple" element={<Layout><Simple /></Layout>} />
