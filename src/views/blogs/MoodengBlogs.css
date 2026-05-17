@@ -48,7 +48,6 @@
 
 .blogs-hero,
 .blogs-podcast,
-.blogs-topic-strip,
 .blogs-feed,
 .blogs-closing,
 .blog-article,
@@ -299,65 +298,8 @@
    box-shadow: 0 16px 34px oklch(30% 0.09 45 / 0.2);
 }
 
-.blogs-topic-strip {
-   display: grid;
-   grid-template-columns: repeat(6, minmax(190px, 1fr));
-   gap: 12px;
-   padding: 26px 0 58px;
-}
-
-.blogs-topic {
-   display: grid;
-   min-height: 180px;
-   align-content: space-between;
-   border: 1px solid oklch(100% 0.004 230 / 0.82);
-   border-radius: 18px;
-   background: var(--blog-panel);
-   padding: 18px;
-   color: var(--blog-copy);
-   text-decoration: none;
-   box-shadow: 0 12px 30px oklch(50% 0.025 230 / 0.08);
-   transition:
-      border-color 180ms ease,
-      transform 180ms ease;
-}
-
-.blogs-topic:nth-child(2),
-.blogs-topic:nth-child(5) {
-   background: var(--blog-green-soft);
-}
-
-.blogs-topic:nth-child(3) {
-   background: var(--blog-gold-soft);
-}
-
-.blogs-topic:nth-child(4) {
-   background: var(--blog-violet-soft);
-}
-
-.blogs-topic:nth-child(6) {
-   background: var(--blog-blue-soft);
-}
-
-.blogs-topic:hover {
-   border-color: oklch(63% 0.18 51 / 0.38);
-   transform: translateY(-2px);
-}
-
-.blogs-topic svg {
-   color: var(--blog-orange-dark);
-}
-
-.blogs-topic strong {
-   display: block;
-   margin: 16px 0 8px;
-   color: var(--blog-ink);
-   font-size: 1.02rem;
-   line-height: 1.15;
-}
-
 .blogs-feed {
-   padding: 8px 0 78px;
+   padding: 58px 0 78px;
 }
 
 .blogs-section-heading {
@@ -622,12 +564,6 @@
    color: var(--blog-orange-dark);
 }
 
-@media (max-width: 1080px) {
-   .blogs-topic-strip {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-   }
-}
-
 @media (max-width: 920px) {
    .blogs-hero,
    .blog-article__header {
@@ -659,23 +595,12 @@
    }
 }
 
-@media (max-width: 700px) {
-   .blogs-topic-strip {
-      grid-template-columns: 1fr;
-   }
-
-   .blogs-topic {
-      min-height: auto;
-   }
-}
-
 @media (max-width: 640px) {
    .blogs-hero,
    .blogs-podcast,
    .blogs-feed,
    .blog-article,
-   .blogs-closing,
-   .blogs-topic-strip {
+   .blogs-closing {
       width: min(100% - 24px, 1180px);
    }
 

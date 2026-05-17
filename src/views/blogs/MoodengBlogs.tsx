@@ -1,43 +1,10 @@
 import { type JSX } from 'react';
 
-import { ArrowRight, BookOpen, CalendarDays, Clock3, Headphones } from 'lucide-react';
+import { ArrowRight, CalendarDays, Clock3, Headphones } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { blogPosts, featuredBlogPost, podcastUrl } from '@/views/blogs/blogPosts';
 import '@/views/blogs/MoodengBlogs.css';
-
-const topicCards = [
-   {
-      title: 'Shadow lending systems',
-      body: 'How friendly loan apps, fake brands, and contact-list pressure turn small debt into control.',
-      href: `/blogs/${blogPosts[0].slug}`
-   },
-   {
-      title: 'Borrower dignity',
-      body: 'Why fair credit has to work without humiliation, doxxing, or private-life performance.',
-      href: `/blogs/${blogPosts[2].slug}`
-   },
-   {
-      title: 'Lender judgment',
-      body: 'How to read work rhythm, payday fit, and repayment context without demanding too much.',
-      href: `/blogs/${blogPosts[3].slug}`
-   },
-   {
-      title: 'Credit as infrastructure',
-      body: 'What oil pipelines can teach us about gatekeepers, access, and informal lending.',
-      href: `/blogs/${blogPosts[5].slug}`
-   },
-   {
-      title: 'Trust among strangers',
-      body: 'What mutual aid groups and brotherhoods reveal about safe credit for people outside formal systems.',
-      href: `/blogs/${blogPosts[6].slug}`
-   },
-   {
-      title: 'Risk and access',
-      body: 'Why portfolio risk, money theory, and loan sharks are all arguments for borrower-owned credit history.',
-      href: `/blogs/${blogPosts[7].slug}`
-   }
-];
 
 export default function MoodengBlogs(): JSX.Element {
    const latestPosts = blogPosts.filter((post) => post.slug !== featuredBlogPost.slug);
@@ -95,18 +62,6 @@ export default function MoodengBlogs(): JSX.Element {
                <Headphones aria-hidden="true" size={18} />
                Open Spotify
             </a>
-         </section>
-
-         <section className="blogs-topic-strip" aria-label="Blog topics">
-            {topicCards.map((topic) => (
-               <Link to={topic.href} className="blogs-topic" key={topic.title}>
-                  <BookOpen aria-hidden="true" size={20} />
-                  <span>
-                     <strong>{topic.title}</strong>
-                     {topic.body}
-                  </span>
-               </Link>
-            ))}
          </section>
 
          <section className="blogs-feed" aria-labelledby="latest-blogs-heading">
