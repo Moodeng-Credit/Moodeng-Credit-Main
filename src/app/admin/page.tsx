@@ -6,7 +6,7 @@ import type { FormEvent, ReactNode } from 'react';
 import { useSelector } from 'react-redux';
 
 import type { RootState } from '@/store/store';
-import RiskAssessmentSection from './RiskAssessmentSection';
+
 import {
    type AdminDefaultCase,
    type AdminDirectoryUser,
@@ -14,8 +14,6 @@ import {
    type AdminLoanRequest,
    type AdminOverview,
    type AdminUser,
-   type NoticeAudience,
-   type RecoveryPath,
    getAdminOverview,
    getCurrentAdmin,
    getLatestAdminIntegrityRun,
@@ -23,11 +21,14 @@ import {
    listAdminDirectoryUsers,
    listAdminLoanRequests,
    logAdminAction,
+   type NoticeAudience,
+   type RecoveryPath,
    saveDefaultRecoveryPlan,
    sendNoticeToUsername,
    upsertAccountRestrictionByUserId,
    upsertLoanRequestReview
 } from './adminSupabase';
+import RiskAssessmentSection from './RiskAssessmentSection';
 
 type AdminTab = 'users' | 'defaults' | 'requests' | 'risk' | 'notifications';
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
@@ -92,9 +93,7 @@ function badgeTone(value: string) {
 
 function Badge({ children, tone = 'default' }: { children: ReactNode; tone?: string }) {
    return (
-      <span className={`inline-flex rounded-full px-4 py-2 text-sm font-black uppercase tracking-wide ${badgeTone(tone)}`}>
-         {children}
-      </span>
+      <span className={`inline-flex rounded-full px-4 py-2 text-sm font-black uppercase tracking-wide ${badgeTone(tone)}`}>{children}</span>
    );
 }
 
@@ -104,6 +103,17 @@ function StatCard({ label, value, note }: { label: string; value: number; note: 
          <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">{label}</p>
          <strong className="mt-3 block text-5xl font-black text-[#1c053d]">{value}</strong>
          <p className="mt-2 text-sm font-bold text-[#6f627e]">{note}</p>
+      </div>
+   );
+}
+
+function DirectoryMetric({ label, value, tone = 'default' }: { label: string; value: ReactNode; tone?: string }) {
+   return (
+      <div
+         className={`rounded-2xl border p-4 ${tone === 'danger' ? 'border-red-200 bg-red-50' : tone === 'warning' ? 'border-amber-200 bg-amber-50' : tone === 'success' ? 'border-emerald-200 bg-emerald-50' : 'border-[#eadff8] bg-[#fbf8ff]'}`}
+      >
+         <p className="text-xs font-black uppercase tracking-wide text-[#6f627e]">{label}</p>
+         <strong className="mt-1 block break-words text-lg font-black text-[#1c053d]">{value}</strong>
       </div>
    );
 }
@@ -140,6 +150,17 @@ function shortWallet(wallet: string | null | undefined) {
    if (!wallet) return 'No wallet';
    if (wallet.length <= 14) return wallet;
    return `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
+}
+
+function walletLabel(user: AdminDirectoryUser) {
+   if (!user.wallet_address) return 'No wallet saved';
+   return user.wallet_provider ?? user.wallet_connector_name ?? 'Wallet saved';
+}
+
+function statusTone(user: AdminDirectoryUser): 'danger' | 'warning' | 'success' | 'default' {
+   if (user.account_status === 'banned' || user.restriction?.status === 'banned') return 'danger';
+   if (user.account_status === 'blocked' || user.restriction?.status === 'watchlist') return 'warning';
+   return 'success';
 }
 
 function riskTone(user: AdminDirectoryUser) {
@@ -185,7 +206,10 @@ export default function AdminPanel() {
    const [adminDataLoading, setAdminDataLoading] = useState(false);
    const [adminDataLoaded, setAdminDataLoaded] = useState(false);
 
-   const currentAdminName = useMemo(() => admin?.display_name ?? reduxUser?.username ?? 'Moodeng admin', [admin?.display_name, reduxUser?.username]);
+   const currentAdminName = useMemo(
+      () => admin?.display_name ?? reduxUser?.username ?? 'Moodeng admin',
+      [admin?.display_name, reduxUser?.username]
+   );
    const adminInitial = currentAdminName.trim().charAt(0).toUpperCase() || 'M';
    const filteredDirectory = users.filter((user) => roleFilter === 'all' || user.user_role === roleFilter);
    const selectedUser = users.find((user) => user.id === selectedUserId) ?? null;
@@ -193,7 +217,9 @@ export default function AdminPanel() {
    const selectedRequest = loanRequests.find((request) => request.id === selectedRequestId) ?? loanRequests[0] ?? null;
    const selectedTemplate = noticeTemplates.find((template) => template.id === selectedTemplateId) ?? noticeTemplates[0];
    const suggestedNoticeUsers = users
-      .filter((user) => selectedTemplate.audience === 'candidate_lender' ? user.user_role === 'lender' : user.user_role === selectedTemplate.audience)
+      .filter((user) =>
+         selectedTemplate.audience === 'candidate_lender' ? user.user_role === 'lender' : user.user_role === selectedTemplate.audience
+      )
       .slice(0, 8);
    const noticeSearch = noticeUsername.trim().toLowerCase();
    const noticeRecipientRows = (noticeSearch ? users : suggestedNoticeUsers)
@@ -273,7 +299,10 @@ export default function AdminPanel() {
             status: 'watchlist',
             reason: severity === 'ban_review' ? 'manual' : user.overdueLoanCount > 0 ? 'default' : 'manual',
             risk_level: severity === 'ban_review' || user.overdueLoanCount > 0 ? 'high' : 'medium',
-            evidence_summary: severity === 'ban_review' ? 'Flagged for ban review. No ban was applied.' : `${user.overdueLoanCount} overdue loans; ${formatMoney(user.outstandingDue)} outstanding.`,
+            evidence_summary:
+               severity === 'ban_review'
+                  ? 'Flagged for ban review. No ban was applied.'
+                  : `${user.overdueLoanCount} overdue loans; ${formatMoney(user.outstandingDue)} outstanding.`,
             admin_note: severity === 'ban_review' ? `Ban review requested by ${currentAdminName}.` : `Watchlisted by ${currentAdminName}.`,
             updated_by: admin?.user_id ?? reduxUser?.id ?? null
          });
@@ -325,7 +354,8 @@ export default function AdminPanel() {
             status: nextStatus,
             reason: action === 'keep' ? 'manual' : 'unsafe',
             risk_level: action === 'keep' ? 'low' : 'high',
-            evidence_summary: action === 'keep' ? 'Admin reviewed and kept visible.' : 'Admin flagged this request for removal. No loan row was deleted.',
+            evidence_summary:
+               action === 'keep' ? 'Admin reviewed and kept visible.' : 'Admin flagged this request for removal. No loan row was deleted.',
             admin_note: requestReviewNote,
             reviewed_by: admin?.user_id ?? reduxUser?.id ?? null
          });
@@ -409,7 +439,11 @@ export default function AdminPanel() {
          <div className="grid min-h-screen lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
             <aside className="overflow-hidden bg-[#120429] p-6 text-white sm:p-8 lg:sticky lg:top-0 lg:h-screen">
                <div className="flex min-w-0 items-center gap-4">
-                  <a href="/account/settings" className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#8336f0] text-3xl font-black text-white no-underline focus:outline focus:outline-4 focus:outline-offset-4 focus:outline-purple-200 sm:h-20 sm:w-20 sm:text-4xl" title="Account settings">
+                  <a
+                     href="/account/settings"
+                     className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#8336f0] text-3xl font-black text-white no-underline focus:outline focus:outline-4 focus:outline-offset-4 focus:outline-purple-200 sm:h-20 sm:w-20 sm:text-4xl"
+                     title="Account settings"
+                  >
                      {adminInitial}
                   </a>
                   <div className="min-w-0">
@@ -421,7 +455,12 @@ export default function AdminPanel() {
 
                <nav className="mt-12 grid gap-4">
                   {navItems.map((item) => (
-                     <button key={item.id} type="button" onClick={() => setActiveTab(item.id)} className={`rounded-2xl border px-6 py-5 text-left text-xl font-black ${activeTab === item.id ? 'border-[#8336f0] bg-[#2a1453] text-white' : 'border-transparent text-purple-200 hover:border-[#8336f0] hover:bg-[#20103e]'}`}>
+                     <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setActiveTab(item.id)}
+                        className={`rounded-2xl border px-6 py-5 text-left text-xl font-black ${activeTab === item.id ? 'border-[#8336f0] bg-[#2a1453] text-white' : 'border-transparent text-purple-200 hover:border-[#8336f0] hover:bg-[#20103e]'}`}
+                     >
                         {item.label}
                      </button>
                   ))}
@@ -435,11 +474,18 @@ export default function AdminPanel() {
             </aside>
 
             <section className="min-w-0 p-5 sm:p-8 lg:p-10">
-               {error ? <div className="mb-5 rounded-3xl border border-red-200 bg-red-50 p-5 text-lg font-bold text-red-800">{error}</div> : null}
-               {statusMessage ? <div className="mb-5 rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-lg font-bold text-emerald-800">{statusMessage}</div> : null}
+               {error ? (
+                  <div className="mb-5 rounded-3xl border border-red-200 bg-red-50 p-5 text-lg font-bold text-red-800">{error}</div>
+               ) : null}
+               {statusMessage ? (
+                  <div className="mb-5 rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-lg font-bold text-emerald-800">
+                     {statusMessage}
+                  </div>
+               ) : null}
                {integrityRun?.status && integrityRun.status !== 'success' ? (
                   <div className="mb-5 rounded-3xl border border-amber-200 bg-amber-50 p-5 text-lg font-bold text-amber-900">
-                     Daily data check found {integrityRun.issue_count} item{integrityRun.issue_count === 1 ? '' : 's'} to review. Last checked {formatDateTime(integrityRun.created_at)}.
+                     Daily data check found {integrityRun.issue_count} item{integrityRun.issue_count === 1 ? '' : 's'} to review. Last
+                     checked {formatDateTime(integrityRun.created_at)}.
                   </div>
                ) : null}
                {adminDataLoading ? (
@@ -452,14 +498,26 @@ export default function AdminPanel() {
                   <section className="space-y-6">
                      <div>
                         <h2 className="break-words text-4xl font-black tracking-normal sm:text-5xl">User directory</h2>
-                        <p className="mt-3 max-w-3xl text-2xl text-[#6f627e]">Search live borrowers and lenders, review real wallet/account details, and flag accounts for follow-up.</p>
+                        <p className="mt-3 max-w-3xl text-2xl text-[#6f627e]">
+                           Search live borrowers and lenders, review real wallet/account details, and flag accounts for follow-up.
+                        </p>
                      </div>
 
                      <form onSubmit={handleSearch} className="rounded-3xl border border-[#eadff8] bg-white p-5 shadow-sm">
-                        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search users, wallets, emails" className="h-16 w-full rounded-2xl border border-[#ded0ef] px-6 text-2xl text-[#1c053d]" />
+                        <input
+                           value={search}
+                           onChange={(event) => setSearch(event.target.value)}
+                           placeholder="Search users, wallets, emails"
+                           className="h-16 w-full rounded-2xl border border-[#ded0ef] px-6 text-2xl text-[#1c053d]"
+                        />
                         <div className="mt-4 grid grid-cols-4 overflow-hidden rounded-2xl border border-[#ded0ef] text-center text-lg font-black">
                            {(['all', 'borrower', 'lender', 'unset'] as const).map((role) => (
-                              <button key={role} type="button" onClick={() => setRoleFilter(role)} className={`py-4 capitalize ${roleFilter === role ? 'bg-[#8336f0] text-white' : 'bg-white text-[#6f627e]'}`}>
+                              <button
+                                 key={role}
+                                 type="button"
+                                 onClick={() => setRoleFilter(role)}
+                                 className={`py-4 capitalize ${roleFilter === role ? 'bg-[#8336f0] text-white' : 'bg-white text-[#6f627e]'}`}
+                              >
                                  {role === 'all' ? 'Everyone' : role === 'unset' ? 'No role' : `${role}s`}
                               </button>
                            ))}
@@ -470,61 +528,211 @@ export default function AdminPanel() {
                         <StatCard label="All users" value={overview?.allUserCount ?? users.length} note="Live account count" />
                         <StatCard label="Open requests" value={overview?.openLoanRequestCount ?? 0} note="Live request board" />
                         <StatCard label="Overdue loans" value={overview?.defaultedLoanCount ?? 0} note="Needs support review" />
-                        <StatCard label="Daily check" value={integrityRun?.issue_count ?? 0} note={integrityRun ? `${integrityRun.status} · ${formatDateTime(integrityRun.created_at)}` : 'Waiting for first run'} />
+                        <StatCard
+                           label="Daily check"
+                           value={integrityRun?.issue_count ?? 0}
+                           note={
+                              integrityRun ? `${integrityRun.status} · ${formatDateTime(integrityRun.created_at)}` : 'Waiting for first run'
+                           }
+                        />
                      </div>
 
                      <div className="overflow-hidden rounded-3xl border border-[#eadff8] bg-white shadow-sm">
                         {!adminDataLoaded ? <EmptyPanel message="Loading user directory from Supabase..." /> : null}
-                        {adminDataLoaded ? filteredDirectory.map((user) => (
-                           <article key={user.id} className="border-b border-[#eadff8] last:border-b-0">
-                              <div className="grid gap-4 p-6 sm:grid-cols-[1fr_auto] sm:items-center">
-                                 <div className="flex gap-4">
-                                    <button type="button" onClick={() => setSelectedUserId(user.id)} className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#8336f0] text-2xl font-black text-white">
-                                       {user.username.charAt(0).toUpperCase()}
-                                    </button>
-                                    <div>
-                                       <button type="button" onClick={() => setSelectedUserId(user.id)} className="text-left text-3xl font-black underline decoration-2 underline-offset-4">
-                                          {user.username}
-                                       </button>
-                                       <div className="mt-3 flex flex-wrap gap-3">
-                                          <Badge tone={user.user_role}>{roleLabel(user.user_role)}</Badge>
-                                          <Badge tone={user.account_status}>{user.account_status}</Badge>
-                                          <Badge tone={riskTone(user)}>{riskTone(user)} risk</Badge>
-                                          <Badge tone={user.is_world_id ?? 'INACTIVE'}>{user.is_world_id === 'ACTIVE' ? 'verified' : 'not verified'}</Badge>
-                                       </div>
-                                       <p className="mt-3 text-xl text-[#6f627e]">{shortWallet(user.wallet_address)} · {user.openRequestCount} requests · {user.activeLoanCount} active · {user.overdueLoanCount} overdue</p>
-                                    </div>
-                                 </div>
-                                 <button type="button" onClick={() => setSelectedUserId(user.id)} className="rounded-2xl bg-[#34234f] px-6 py-4 text-xl font-black text-white">
-                                    Manage
-                                 </button>
-                              </div>
-                              {selectedUser?.id === user.id ? (
-                                 <div className="border-t border-[#eadff8] bg-[#fbf8ff] p-6">
-                                    <div className="flex flex-wrap items-center justify-between gap-3">
-                                       <h3 className="text-3xl font-black">Selected account</h3>
-                                       <button type="button" onClick={() => setSelectedUserId('')} className="rounded-full border border-[#ded0ef] bg-white px-5 py-3 text-lg font-black text-[#6b21a8]">Collapse</button>
-                                    </div>
-                                    <div className="mt-5 grid gap-4 md:grid-cols-2">
-                                       <div className="rounded-2xl border border-[#eadff8] bg-white p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Name</p><strong className="mt-2 block break-words text-3xl">{user.username}</strong></div>
-                                       <div className="rounded-2xl border border-[#eadff8] bg-white p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Wallet</p><strong className="mt-2 block break-all text-2xl">{shortWallet(user.wallet_address)}</strong><p className="mt-2 text-lg font-bold text-[#6f627e]">{user.wallet_provider ?? user.wallet_connector_name ?? 'No wallet provider saved'}</p></div>
-                                       <div className="rounded-2xl border border-[#eadff8] bg-white p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Borrower activity</p><strong className="mt-2 block text-2xl">{user.openRequestCount} open requests · {user.activeLoanCount} active · {user.paidLoanCount} paid</strong></div>
-                                       <div className="rounded-2xl border border-[#eadff8] bg-white p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Outstanding</p><strong className="mt-2 block text-3xl">{formatMoney(user.outstandingDue)}</strong><p className="mt-2 text-lg font-bold text-[#6f627e]">{user.overdueLoanCount} overdue loans</p></div>
-                                       <div className="rounded-2xl border border-[#eadff8] bg-white p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Credit</p><strong className="mt-2 block text-3xl">${user.cs ?? 0}</strong><p className="mt-2 text-lg font-bold text-[#6f627e]">MAL {user.mal ?? 0} · NAL {user.nal ?? 0}</p></div>
-                                       <div className="rounded-2xl border border-[#eadff8] bg-white p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Admin status</p><strong className="mt-2 block text-2xl">{user.restriction?.status ?? user.account_status}</strong><p className="mt-2 text-lg font-bold text-[#6f627e]">{user.restriction?.admin_note ?? 'No admin restriction note.'}</p></div>
-                                    </div>
-                                    <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                                       <a href={`/user/${encodeURIComponent(user.username)}`} className="rounded-2xl bg-[#34234f] px-5 py-4 text-center text-xl font-black text-white no-underline">Open profile</a>
-                                       <button type="button" onClick={() => { setNoticeUsername(user.username); setActiveTab('notifications'); }} className="rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white">Send notice</button>
-                                       <button type="button" onClick={() => handleWatchlistUser(user, 'watchlist')} className="rounded-2xl bg-amber-500 px-5 py-4 text-xl font-black text-white">Watchlist</button>
-                                       <button type="button" onClick={() => handleWatchlistUser(user, 'ban_review')} className="rounded-2xl bg-red-600 px-5 py-4 text-xl font-black text-white">Flag ban review</button>
-                                       <button type="button" onClick={() => handleClearRestriction(user)} className="rounded-2xl bg-emerald-600 px-5 py-4 text-xl font-black text-white">Clear restriction</button>
-                                    </div>
-                                    <p className="mt-3 text-base font-bold text-[#6f627e]">Flag ban review does not ban anyone. It records an admin review item only.</p>
-                                 </div>
-                              ) : null}
-                           </article>
-                        )) : null}
+                        {adminDataLoaded
+                           ? filteredDirectory.map((user) => (
+                                <article key={user.id} className="border-b border-[#eadff8] last:border-b-0">
+                                   <div className="grid gap-5 p-6">
+                                      <div className="flex flex-wrap items-start justify-between gap-4">
+                                         <div className="flex min-w-0 gap-4">
+                                            <button
+                                               type="button"
+                                               onClick={() => setSelectedUserId(user.id)}
+                                               className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#8336f0] text-2xl font-black text-white"
+                                            >
+                                               {user.username.charAt(0).toUpperCase()}
+                                            </button>
+                                            <div className="min-w-0">
+                                               <button
+                                                  type="button"
+                                                  onClick={() => setSelectedUserId(user.id)}
+                                                  className="text-left text-3xl font-black underline decoration-2 underline-offset-4"
+                                               >
+                                                  {user.username}
+                                               </button>
+                                               <div className="mt-3 flex flex-wrap gap-3">
+                                                  <Badge tone={user.user_role}>{roleLabel(user.user_role)}</Badge>
+                                                  <Badge tone={user.account_status}>{user.account_status}</Badge>
+                                                  <Badge tone={riskTone(user)}>{riskTone(user)} risk</Badge>
+                                                  <Badge tone={user.is_world_id ?? 'INACTIVE'}>
+                                                     {user.is_world_id === 'ACTIVE' ? 'verified' : 'not verified'}
+                                                  </Badge>
+                                                  {user.restriction ? (
+                                                     <Badge tone={user.restriction.status}>admin {user.restriction.status}</Badge>
+                                                  ) : null}
+                                               </div>
+                                               <p className="mt-3 break-all text-xl text-[#6f627e]">
+                                                  {user.email ?? 'No email'} · {walletLabel(user)} · joined {formatDate(user.created_at)}
+                                               </p>
+                                            </div>
+                                         </div>
+                                         <button
+                                            type="button"
+                                            onClick={() => setSelectedUserId(user.id)}
+                                            className="rounded-2xl bg-[#34234f] px-6 py-4 text-xl font-black text-white"
+                                         >
+                                            Manage
+                                         </button>
+                                      </div>
+                                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5">
+                                         <DirectoryMetric
+                                            label="Account"
+                                            value={user.restriction?.status ?? user.account_status}
+                                            tone={statusTone(user)}
+                                         />
+                                         <DirectoryMetric
+                                            label="Wallet"
+                                            value={`${shortWallet(user.wallet_address)} · ${user.wallet_chain_id ? `chain ${user.wallet_chain_id}` : walletLabel(user)}`}
+                                            tone={user.wallet_address ? 'success' : 'warning'}
+                                         />
+                                         <DirectoryMetric
+                                            label="Borrowed loans"
+                                            value={`${user.borrowedLoanCount} total · ${formatMoney(user.totalBorrowedAmount)}`}
+                                         />
+                                         <DirectoryMetric
+                                            label="Active loans"
+                                            value={user.activeLoanCount}
+                                            tone={user.activeLoanCount > 2 ? 'warning' : 'default'}
+                                         />
+                                         <DirectoryMetric
+                                            label="Paid loans"
+                                            value={`${user.paidLoanCount} paid · ${formatMoney(user.totalRepaidAmount)}`}
+                                            tone={user.paidLoanCount > 0 ? 'success' : 'default'}
+                                         />
+                                         <DirectoryMetric
+                                            label="Overdue loans"
+                                            value={user.overdueLoanCount}
+                                            tone={user.overdueLoanCount > 0 ? 'danger' : 'success'}
+                                         />
+                                         <DirectoryMetric
+                                            label="Outstanding"
+                                            value={formatMoney(user.outstandingDue)}
+                                            tone={user.outstandingDue > 0 ? 'warning' : 'success'}
+                                         />
+                                         <DirectoryMetric label="Open requests" value={user.openRequestCount} />
+                                         <DirectoryMetric
+                                            label="Credit metrics"
+                                            value={`CS ${user.cs ?? 0} · MAL ${user.mal ?? 0} · NAL ${user.nal ?? 0}`}
+                                         />
+                                         <DirectoryMetric label="Lender activity" value={`${user.lentLoanCount} funded`} />
+                                         <DirectoryMetric
+                                            label="Last loan activity"
+                                            value={formatDate(user.lastLoanAt ?? user.updated_at)}
+                                         />
+                                      </div>
+                                   </div>
+                                   {selectedUser?.id === user.id ? (
+                                      <div className="border-t border-[#eadff8] bg-[#fbf8ff] p-6">
+                                         <div className="flex flex-wrap items-center justify-between gap-3">
+                                            <h3 className="text-3xl font-black">Selected account</h3>
+                                            <button
+                                               type="button"
+                                               onClick={() => setSelectedUserId('')}
+                                               className="rounded-full border border-[#ded0ef] bg-white px-5 py-3 text-lg font-black text-[#6b21a8]"
+                                            >
+                                               Collapse
+                                            </button>
+                                         </div>
+                                         <div className="mt-5 grid gap-4 md:grid-cols-2">
+                                            <div className="rounded-2xl border border-[#eadff8] bg-white p-5">
+                                               <p className="text-sm font-black uppercase text-[#6f627e]">Name</p>
+                                               <strong className="mt-2 block break-words text-3xl">{user.username}</strong>
+                                            </div>
+                                            <div className="rounded-2xl border border-[#eadff8] bg-white p-5">
+                                               <p className="text-sm font-black uppercase text-[#6f627e]">Wallet</p>
+                                               <strong className="mt-2 block break-all text-2xl">{shortWallet(user.wallet_address)}</strong>
+                                               <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                                                  {user.wallet_provider ?? user.wallet_connector_name ?? 'No wallet provider saved'}
+                                               </p>
+                                            </div>
+                                            <div className="rounded-2xl border border-[#eadff8] bg-white p-5">
+                                               <p className="text-sm font-black uppercase text-[#6f627e]">Borrower activity</p>
+                                               <strong className="mt-2 block text-2xl">
+                                                  {user.openRequestCount} open requests · {user.activeLoanCount} active ·{' '}
+                                                  {user.paidLoanCount} paid
+                                               </strong>
+                                            </div>
+                                            <div className="rounded-2xl border border-[#eadff8] bg-white p-5">
+                                               <p className="text-sm font-black uppercase text-[#6f627e]">Outstanding</p>
+                                               <strong className="mt-2 block text-3xl">{formatMoney(user.outstandingDue)}</strong>
+                                               <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                                                  {user.overdueLoanCount} overdue loans
+                                               </p>
+                                            </div>
+                                            <div className="rounded-2xl border border-[#eadff8] bg-white p-5">
+                                               <p className="text-sm font-black uppercase text-[#6f627e]">Credit</p>
+                                               <strong className="mt-2 block text-3xl">${user.cs ?? 0}</strong>
+                                               <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                                                  MAL {user.mal ?? 0} · NAL {user.nal ?? 0}
+                                               </p>
+                                            </div>
+                                            <div className="rounded-2xl border border-[#eadff8] bg-white p-5">
+                                               <p className="text-sm font-black uppercase text-[#6f627e]">Admin status</p>
+                                               <strong className="mt-2 block text-2xl">
+                                                  {user.restriction?.status ?? user.account_status}
+                                               </strong>
+                                               <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                                                  {user.restriction?.admin_note ?? 'No admin restriction note.'}
+                                               </p>
+                                            </div>
+                                         </div>
+                                         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                                            <a
+                                               href={`/user/${encodeURIComponent(user.username)}`}
+                                               className="rounded-2xl bg-[#34234f] px-5 py-4 text-center text-xl font-black text-white no-underline"
+                                            >
+                                               Open profile
+                                            </a>
+                                            <button
+                                               type="button"
+                                               onClick={() => {
+                                                  setNoticeUsername(user.username);
+                                                  setActiveTab('notifications');
+                                               }}
+                                               className="rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white"
+                                            >
+                                               Send notice
+                                            </button>
+                                            <button
+                                               type="button"
+                                               onClick={() => handleWatchlistUser(user, 'watchlist')}
+                                               className="rounded-2xl bg-amber-500 px-5 py-4 text-xl font-black text-white"
+                                            >
+                                               Watchlist
+                                            </button>
+                                            <button
+                                               type="button"
+                                               onClick={() => handleWatchlistUser(user, 'ban_review')}
+                                               className="rounded-2xl bg-red-600 px-5 py-4 text-xl font-black text-white"
+                                            >
+                                               Flag ban review
+                                            </button>
+                                            <button
+                                               type="button"
+                                               onClick={() => handleClearRestriction(user)}
+                                               className="rounded-2xl bg-emerald-600 px-5 py-4 text-xl font-black text-white"
+                                            >
+                                               Clear restriction
+                                            </button>
+                                         </div>
+                                         <p className="mt-3 text-base font-bold text-[#6f627e]">
+                                            Flag ban review does not ban anyone. It records an admin review item only.
+                                         </p>
+                                      </div>
+                                   ) : null}
+                                </article>
+                             ))
+                           : null}
                         {adminDataLoaded && !filteredDirectory.length ? <EmptyPanel message="No users match these filters." /> : null}
                      </div>
                   </section>
@@ -532,7 +740,12 @@ export default function AdminPanel() {
 
                {activeTab === 'defaults' ? (
                   <section className="space-y-6">
-                     <div><h2 className="break-words text-4xl font-black sm:text-5xl">Default recovery</h2><p className="mt-3 text-2xl text-[#6f627e]">Live overdue loans plus active recovery cases. Saving a path creates or updates a recovery case and audit action.</p></div>
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Default recovery</h2>
+                        <p className="mt-3 text-2xl text-[#6f627e]">
+                           Live overdue loans plus active recovery cases. Saving a path creates or updates a recovery case and audit action.
+                        </p>
+                     </div>
                      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                         <StatCard label="Overdue loans" value={overview?.defaultedLoanCount ?? 0} note="Live from loans" />
                         <StatCard label="Recovery cases" value={overview?.recoveryReviewCount ?? 0} note="Needs review / active" />
@@ -557,7 +770,12 @@ export default function AdminPanel() {
                                     }`}
                                  >
                                     <div className="flex items-start justify-between gap-4">
-                                       <div><h3 className="text-2xl font-black">{item.borrower}</h3><p className="mt-2 text-lg text-[#6f627e]">Lender: {item.lender} · due {formatDate(item.due_date)}</p></div>
+                                       <div>
+                                          <h3 className="text-2xl font-black">{item.borrower}</h3>
+                                          <p className="mt-2 text-lg text-[#6f627e]">
+                                             Lender: {item.lender} · due {formatDate(item.due_date)}
+                                          </p>
+                                       </div>
                                        <strong className="text-3xl font-black">{formatMoney(item.amount_due)}</strong>
                                     </div>
                                     <div className="mt-4 flex flex-wrap gap-3">
@@ -565,7 +783,9 @@ export default function AdminPanel() {
                                        <Badge tone={item.status}>{item.status.replace('_', ' ')}</Badge>
                                        <Badge tone={item.source}>{item.source === 'overdue_loan' ? 'live loan' : 'recovery case'}</Badge>
                                     </div>
-                                    <p className="mt-4 text-lg leading-7 text-[#6f627e]">{item.evidence_summary ?? item.borrower_explanation ?? 'No admin evidence note yet.'}</p>
+                                    <p className="mt-4 text-lg leading-7 text-[#6f627e]">
+                                       {item.evidence_summary ?? item.borrower_explanation ?? 'No admin evidence note yet.'}
+                                    </p>
                                  </button>
                               ))}
                            </div>
@@ -609,10 +829,16 @@ export default function AdminPanel() {
                                        placeholder="Record the team decision or next step"
                                     />
                                  </label>
-                                 <button type="button" onClick={handleSaveRecoveryPath} className="mt-5 w-full rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white">
+                                 <button
+                                    type="button"
+                                    onClick={handleSaveRecoveryPath}
+                                    className="mt-5 w-full rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white"
+                                 >
                                     Save recovery plan
                                  </button>
-                                 <p className="mt-3 text-base font-bold text-[#6f627e]">This records the plan and audit action. It does not silently change repayment amounts or send money.</p>
+                                 <p className="mt-3 text-base font-bold text-[#6f627e]">
+                                    This records the plan and audit action. It does not silently change repayment amounts or send money.
+                                 </p>
                               </div>
                            ) : null}
                         </div>
@@ -622,18 +848,37 @@ export default function AdminPanel() {
 
                {activeTab === 'requests' ? (
                   <section className="space-y-6">
-                     <div><h2 className="break-words text-4xl font-black sm:text-5xl">Loan request review</h2><p className="mt-3 text-2xl text-[#6f627e]">Live open requests from the request board. Review actions write to admin review records.</p></div>
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Loan request review</h2>
+                        <p className="mt-3 text-2xl text-[#6f627e]">
+                           Live open requests from the request board. Review actions write to admin review records.
+                        </p>
+                     </div>
                      {!loanRequests.length ? <EmptyPanel message="No open loan requests found." /> : null}
                      {loanRequests.length ? (
                         <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
                            <div className="overflow-hidden rounded-3xl border border-[#eadff8] bg-white shadow-sm">
                               {loanRequests.map((request) => (
-                                 <button key={request.id} type="button" onClick={() => setSelectedRequestId(request.id)} className={`block w-full border-b border-[#eadff8] p-6 text-left last:border-b-0 ${selectedRequest?.id === request.id ? 'bg-[#fbf8ff]' : 'bg-white'}`}>
-                                    <div className="flex items-center justify-between gap-4"><h3 className="text-3xl font-black underline underline-offset-4">{request.borrower?.username ?? 'Unknown borrower'}</h3><strong className="text-3xl">{formatMoney(request.loan_amount)}</strong></div>
+                                 <button
+                                    key={request.id}
+                                    type="button"
+                                    onClick={() => setSelectedRequestId(request.id)}
+                                    className={`block w-full border-b border-[#eadff8] p-6 text-left last:border-b-0 ${selectedRequest?.id === request.id ? 'bg-[#fbf8ff]' : 'bg-white'}`}
+                                 >
+                                    <div className="flex items-center justify-between gap-4">
+                                       <h3 className="text-3xl font-black underline underline-offset-4">
+                                          {request.borrower?.username ?? 'Unknown borrower'}
+                                       </h3>
+                                       <strong className="text-3xl">{formatMoney(request.loan_amount)}</strong>
+                                    </div>
                                     <div className="mt-3 flex flex-wrap gap-3">
-                                       <Badge tone={request.borrower?.user_role ?? 'borrower'}>{request.borrower?.user_role ?? 'borrower'}</Badge>
+                                       <Badge tone={request.borrower?.user_role ?? 'borrower'}>
+                                          {request.borrower?.user_role ?? 'borrower'}
+                                       </Badge>
                                        <Badge tone={requestStatus(request)}>{requestStatus(request).replace('_', ' ')}</Badge>
-                                       <Badge tone={request.borrower?.is_world_id ?? 'INACTIVE'}>{request.borrower?.is_world_id === 'ACTIVE' ? 'verified' : 'not verified'}</Badge>
+                                       <Badge tone={request.borrower?.is_world_id ?? 'INACTIVE'}>
+                                          {request.borrower?.is_world_id === 'ACTIVE' ? 'verified' : 'not verified'}
+                                       </Badge>
                                     </div>
                                     <p className="mt-3 text-xl text-[#6f627e]">{request.reason}</p>
                                  </button>
@@ -644,10 +889,28 @@ export default function AdminPanel() {
                                  <h3 className="text-3xl font-black">Request detail</h3>
                                  <p className="mt-2 text-xl text-[#6f627e]">Review clearly. This does not ban the borrower.</p>
                                  <div className="mt-5 grid gap-4">
-                                    <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Borrower</p><strong className="mt-2 block text-3xl underline">{selectedRequest.borrower?.username ?? 'Unknown borrower'}</strong></div>
-                                    <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Terms</p><strong className="mt-2 block text-2xl">{formatMoney(selectedRequest.loan_amount)} request · {formatMoney(selectedRequest.total_repayment_amount)} repay · due {formatDate(selectedRequest.due_date)}</strong></div>
-                                    <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Reason</p><strong className="mt-2 block text-2xl">{selectedRequest.reason}</strong></div>
-                                    <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5"><p className="text-sm font-black uppercase text-[#6f627e]">Posted</p><strong className="mt-2 block text-2xl">{formatDate(selectedRequest.created_at)}</strong></div>
+                                    <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5">
+                                       <p className="text-sm font-black uppercase text-[#6f627e]">Borrower</p>
+                                       <strong className="mt-2 block text-3xl underline">
+                                          {selectedRequest.borrower?.username ?? 'Unknown borrower'}
+                                       </strong>
+                                    </div>
+                                    <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5">
+                                       <p className="text-sm font-black uppercase text-[#6f627e]">Terms</p>
+                                       <strong className="mt-2 block text-2xl">
+                                          {formatMoney(selectedRequest.loan_amount)} request ·{' '}
+                                          {formatMoney(selectedRequest.total_repayment_amount)} repay · due{' '}
+                                          {formatDate(selectedRequest.due_date)}
+                                       </strong>
+                                    </div>
+                                    <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5">
+                                       <p className="text-sm font-black uppercase text-[#6f627e]">Reason</p>
+                                       <strong className="mt-2 block text-2xl">{selectedRequest.reason}</strong>
+                                    </div>
+                                    <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5">
+                                       <p className="text-sm font-black uppercase text-[#6f627e]">Posted</p>
+                                       <strong className="mt-2 block text-2xl">{formatDate(selectedRequest.created_at)}</strong>
+                                    </div>
                                     {selectedRequest.review ? (
                                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
                                           <p className="text-sm font-black uppercase text-emerald-700">Review status</p>
@@ -663,8 +926,20 @@ export default function AdminPanel() {
                                        className="min-h-28 rounded-2xl border border-[#ded0ef] p-4 text-lg font-bold normal-case tracking-normal text-[#1c053d]"
                                     />
                                  </label>
-                                 <button type="button" onClick={() => handleLoanRequestAction('remove_review')} className="mt-5 w-full rounded-2xl bg-red-600 px-5 py-4 text-xl font-black text-white">Flag for removal review</button>
-                                 <button type="button" onClick={() => handleLoanRequestAction('keep')} className="mt-3 w-full rounded-2xl border border-[#ded0ef] bg-white px-5 py-4 text-xl font-black text-[#34234f]">Reviewed, keep visible</button>
+                                 <button
+                                    type="button"
+                                    onClick={() => handleLoanRequestAction('remove_review')}
+                                    className="mt-5 w-full rounded-2xl bg-red-600 px-5 py-4 text-xl font-black text-white"
+                                 >
+                                    Flag for removal review
+                                 </button>
+                                 <button
+                                    type="button"
+                                    onClick={() => handleLoanRequestAction('keep')}
+                                    className="mt-3 w-full rounded-2xl border border-[#ded0ef] bg-white px-5 py-4 text-xl font-black text-[#34234f]"
+                                 >
+                                    Reviewed, keep visible
+                                 </button>
                                  <button
                                     type="button"
                                     onClick={() => {
@@ -698,11 +973,21 @@ export default function AdminPanel() {
 
                {activeTab === 'notifications' ? (
                   <section className="space-y-6">
-                     <div><h2 className="break-words text-4xl font-black sm:text-5xl">Notifications</h2><p className="mt-3 text-2xl text-[#6f627e]">Send in-app notices to real users. These appear when they open Moodeng.</p></div>
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Notifications</h2>
+                        <p className="mt-3 text-2xl text-[#6f627e]">
+                           Send in-app notices to real users. These appear when they open Moodeng.
+                        </p>
+                     </div>
                      <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
                         <div className="grid gap-4">
                            {noticeTemplates.map((template) => (
-                              <button key={template.id} type="button" onClick={() => setSelectedTemplateId(template.id)} className={`rounded-3xl border p-6 text-left shadow-sm ${selectedTemplateId === template.id ? 'border-[#8336f0] bg-[#fbf8ff]' : 'border-[#eadff8] bg-white'}`}>
+                              <button
+                                 key={template.id}
+                                 type="button"
+                                 onClick={() => setSelectedTemplateId(template.id)}
+                                 className={`rounded-3xl border p-6 text-left shadow-sm ${selectedTemplateId === template.id ? 'border-[#8336f0] bg-[#fbf8ff]' : 'border-[#eadff8] bg-white'}`}
+                              >
                                  <Badge tone={template.audience}>{template.audience.replace('_', ' ')}</Badge>
                                  <h3 className="mt-4 text-3xl font-black">{template.title}</h3>
                                  <p className="mt-3 text-xl text-[#6f627e]">{template.body}</p>
@@ -712,11 +997,18 @@ export default function AdminPanel() {
                         <form onSubmit={handleSendNotice} className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
                            <h3 className="text-3xl font-black">Send notification</h3>
                            <p className="mt-2 text-xl text-[#6f627e]">Selected: {selectedTemplate.title}</p>
-                           <input value={noticeUsername} onChange={(event) => setNoticeUsername(event.target.value)} placeholder="Username" className="mt-5 h-16 w-full rounded-2xl border border-[#ded0ef] px-5 text-2xl" />
+                           <input
+                              value={noticeUsername}
+                              onChange={(event) => setNoticeUsername(event.target.value)}
+                              placeholder="Username"
+                              className="mt-5 h-16 w-full rounded-2xl border border-[#ded0ef] px-5 text-2xl"
+                           />
                            <div className="mt-4 rounded-3xl border border-[#eadff8] bg-white">
                               <div className="border-b border-[#eadff8] p-4">
                                  <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Matching users</p>
-                                 <p className="mt-1 text-base font-bold text-[#6f627e]">Click a person below to fill the username before sending.</p>
+                                 <p className="mt-1 text-base font-bold text-[#6f627e]">
+                                    Click a person below to fill the username before sending.
+                                 </p>
                               </div>
                               <div className="max-h-80 overflow-y-auto">
                                  {noticeRecipientRows.length ? (
@@ -734,7 +1026,9 @@ export default function AdminPanel() {
                                           </span>
                                           <span className="min-w-0 flex-1">
                                              <span className="block break-words text-xl font-black text-[#1c053d]">{user.username}</span>
-                                             <span className="mt-1 block break-all text-base font-bold text-[#6f627e]">{shortWallet(user.wallet_address)}</span>
+                                             <span className="mt-1 block break-all text-base font-bold text-[#6f627e]">
+                                                {shortWallet(user.wallet_address)}
+                                             </span>
                                           </span>
                                           <Badge tone={user.user_role}>{roleLabel(user.user_role)}</Badge>
                                        </button>
@@ -753,7 +1047,9 @@ export default function AdminPanel() {
                               <h4 className="mt-4 text-3xl font-black">{selectedTemplate.title}</h4>
                               <p className="mt-3 text-xl text-[#6f627e]">{selectedTemplate.body}</p>
                            </div>
-                           <button className="mt-5 w-full rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white">Send notification</button>
+                           <button className="mt-5 w-full rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white">
+                              Send notification
+                           </button>
                         </form>
                      </div>
                   </section>
