@@ -31,6 +31,11 @@ const topicCards = [
       title: 'Trust among strangers',
       body: 'What mutual aid groups and brotherhoods reveal about safe credit for people outside formal systems.',
       href: `/blogs/${blogPosts[6].slug}`
+   },
+   {
+      title: 'Risk and access',
+      body: 'Why portfolio risk, money theory, and loan sharks are all arguments for borrower-owned credit history.',
+      href: `/blogs/${blogPosts[7].slug}`
    }
 ];
 

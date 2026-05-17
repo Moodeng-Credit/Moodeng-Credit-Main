@@ -219,6 +219,41 @@ export const blogPosts: BlogPost[] = [
             body: 'The alternative is not cold, anonymous finance. People still need social trust. They need lenders to understand work rhythm, repayment history, and why a small gap matters. Moodeng has to make that trust safe: identity without doxxing, context without confession, repayment records without intimidation, and clear rules that cannot quietly become social punishment.'
          }
       ]
+   },
+   {
+      slug: 'what-credit-risk-books-miss-about-loan-sharks',
+      category: 'Book review',
+      title: 'What credit risk books miss about loan sharks',
+      dek: 'Reading portfolio risk beside money and credit theory shows a blind spot: formal finance manages lender concentration, while excluded borrowers face concentration of options.',
+      sourceLabel: 'Book review: Credit portfolio risk + The Theory of Money and Credit',
+      publishedAt: 'May 18, 2026',
+      readTime: '7 min read',
+      audience: 'Lenders',
+      image: '/hippos/thinking.png',
+      imageAlt: 'Moodeng hippo thinking about loan types',
+      accent: 'gold',
+      sections: [
+         {
+            heading: 'Formal credit starts with the lender problem',
+            body: 'Risk Management in Credit Portfolios is about a real and important discipline: how banks measure defaults, loss severity, portfolio concentration, correlations, and the capital needed to survive stress. That machinery protects the institution. It asks whether a lender is too exposed to one borrower, one sector, or one hidden pattern of failure.'
+         },
+         {
+            heading: 'Borrowers have concentration risk too',
+            body: 'Loan sharks appear where borrowers have no diversified set of fair options. If a bank rejects a worker because the file is thin, the borrower may not face a market of lenders at all. They may face one app, one shop lender, one contact-list lender, or one informal collector. That is concentration risk from the borrower side: too much dependency on the only person willing to say yes.'
+         },
+         {
+            heading: 'Money and credit are promises across time',
+            body: 'Mises treats money as a medium that makes exchange easier and credit as part of a system of future settlement. Whatever one thinks of his broader politics, this point matters for Moodeng: credit is not just cash today. It is a promise that the future borrower, future lender, and future record will still make sense when repayment comes due.'
+         },
+         {
+            heading: 'Loan sharks turn uncertainty into control',
+            body: 'Predatory lenders do not solve uncertainty cleanly. They replace underwriting with pressure. They ask for phone contacts, shame leverage, social visibility, and repeat dependence. Instead of pricing risk transparently, they make the borrower personally exposed. The lender may feel protected, but the protection comes from fear rather than better credit information.'
+         },
+         {
+            heading: 'Moodeng has to manage both portfolios',
+            body: 'A fair microloan marketplace should care about lender risk without copying the cold parts of bank logic. Lenders need limits, diversification, repayment evidence, and enough context to judge a request. Borrowers need the opposite of loan-shark concentration: more fair funding options, clear terms, no contact-list collateral, and a repayment record that improves their next choice.'
+         }
+      ]
    }
 ];
 
