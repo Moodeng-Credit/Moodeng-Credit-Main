@@ -883,9 +883,9 @@ function RequestBoard$() {
                   </div>
 
                   {needsRoleSelection ? (
-                     <div className="rounded-md-lg border border-md-primary-300 bg-md-primary-100 p-4 shadow-md-card">
-                        <div className="flex flex-col gap-3">
-                           <div className="flex flex-col gap-1">
+                     <div className="relative overflow-hidden rounded-md-lg border border-md-primary-300 bg-md-primary-100 p-4 pr-[132px] shadow-md-card max-[374px]:pr-[112px]">
+                        <div className="relative z-10 flex flex-col gap-3">
+                           <div className="flex max-w-[286px] flex-col gap-1 max-[374px]:max-w-[218px]">
                               <p className="text-md-h5 font-semibold text-md-heading">Choose how you’ll use Moodeng</p>
                               <p className="text-md-b2 font-medium text-md-neutral-800">
                                  Pick borrower or lender to unlock your dashboard, repayment, and history.
@@ -898,6 +898,12 @@ function RequestBoard$() {
                               Choose role
                            </Link>
                         </div>
+                        <img
+                           src="/hippos/sitting-down-pointing-hippo.png"
+                           alt=""
+                           className="pointer-events-none absolute bottom-[-12px] right-[-8px] h-[156px] w-[156px] object-contain max-[374px]:bottom-[-10px] max-[374px]:right-[-16px] max-[374px]:h-[132px] max-[374px]:w-[132px]"
+                           aria-hidden="true"
+                        />
                      </div>
                   ) : null}
 
