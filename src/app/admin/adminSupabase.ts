@@ -3,7 +3,10 @@ import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/sup
 export type AdminRole = 'owner' | 'admin' | 'support';
 export type NoticeAudience = 'borrower' | 'lender' | 'candidate_lender' | 'admin';
 export type RestrictionStatus = 'active' | 'watchlist' | 'banned';
+export type AccountStatus = 'active' | 'blocked' | 'banned';
 export type RiskLevel = 'low' | 'medium' | 'high';
+export type UserRole = 'borrower' | 'lender' | 'unset';
+export type RecoveryPath = 'repay_now' | 'extension' | 'payment_plan' | 'bridge_loan' | 'manual';
 
 export interface AdminUser {
    id: string;
@@ -13,18 +16,142 @@ export interface AdminUser {
    display_name: string | null;
 }
 
+export interface AdminRiskProfile {
+   id?: string;
+   user_id: string;
+   score: number;
+   risk_level: RiskLevel;
+   status: 'active' | 'watchlist' | 'blocked';
+   algorithm_version?: string | null;
+   algorithm_note?: string | null;
+   override_score?: number | null;
+   override_reason?: string | null;
+   calculated_at?: string | null;
+   updated_at?: string | null;
+}
+
+export interface AdminRestriction {
+   id: string;
+   user_id: string;
+   status: RestrictionStatus;
+   reason: string;
+   risk_level: RiskLevel;
+   evidence_summary: string | null;
+   admin_note: string | null;
+   restricted_at: string | null;
+   unrestricted_at: string | null;
+   updated_at: string | null;
+}
+
 export interface AdminDirectoryUser {
    id: string;
-   username: string | null;
+   username: string;
+   email: string | null;
    wallet_address: string | null;
+   wallet_provider: string | null;
+   wallet_connector_name: string | null;
+   wallet_chain_id: number | null;
+   user_role: UserRole;
+   account_status: AccountStatus;
+   is_world_id: 'ACTIVE' | 'INACTIVE' | null;
+   cs: number | null;
+   mal: number | null;
+   nal: number | null;
+   created_at: string | null;
+   updated_at: string | null;
+   openRequestCount: number;
+   borrowedLoanCount: number;
+   activeLoanCount: number;
+   overdueLoanCount: number;
+   paidLoanCount: number;
+   lentLoanCount: number;
+   totalBorrowedAmount: number;
+   totalRepaymentAmount: number;
+   totalRepaidAmount: number;
+   outstandingDue: number;
+   lastLoanAt: string | null;
+   restriction: AdminRestriction | null;
+   riskProfile: AdminRiskProfile | null;
+}
+
+export interface AdminLoanRecord {
+   id: string;
+   tracking_id: string;
+   borrower_user_id: string | null;
+   lender_user_id: string | null;
+   borrower_wallet: string | null;
+   lender_wallet: string | null;
+   loan_amount: number;
+   total_repayment_amount: number;
+   repaid_amount: number | null;
+   due_date: string;
+   reason: string;
+   coin: string;
+   loan_status: 'Requested' | 'Lent' | null;
+   repayment_status: 'Unpaid' | 'Partial' | 'Paid' | null;
+   created_at: string | null;
+   funded_at: string | null;
+   borrower: Pick<AdminDirectoryUser, 'id' | 'username' | 'wallet_address' | 'user_role' | 'account_status' | 'is_world_id'> | null;
+   lender: Pick<AdminDirectoryUser, 'id' | 'username' | 'wallet_address' | 'user_role' | 'account_status' | 'is_world_id'> | null;
+}
+
+export interface AdminLoanRequestReview {
+   id: string;
+   loan_id: string | null;
+   borrower_user_id: string | null;
+   status: 'needs_review' | 'reported' | 'duplicate' | 'kept' | 'deleted';
+   reason: 'spam' | 'duplicate' | 'unsafe' | 'bad_data' | 'manual' | null;
+   risk_level: RiskLevel;
+   evidence_summary: string | null;
+   admin_note: string | null;
+   reviewed_by: string | null;
+   reviewed_at: string | null;
+   updated_at: string | null;
+}
+
+export interface AdminLoanRequest extends AdminLoanRecord {
+   review: AdminLoanRequestReview | null;
+}
+
+export interface AdminDefaultCase {
+   id: string;
+   source: 'recovery_case' | 'overdue_loan';
+   case_id: string | null;
+   loan_id: string | null;
+   borrower_user_id: string | null;
+   lender_user_id: string | null;
+   borrower: string;
+   lender: string;
+   amount_due: number;
+   due_date: string | null;
+   days_late: number;
+   status: string;
+   recovery_path: RecoveryPath | null;
+   borrower_explanation: string | null;
+   evidence_summary: string | null;
+   admin_note: string | null;
+   created_at: string | null;
+   updated_at: string | null;
 }
 
 export interface AdminOverview {
+   allUserCount: number;
+   openLoanRequestCount: number;
+   activeLoanCount: number;
    defaultedLoanCount: number;
    recoveryReviewCount: number;
    bannedUserCount: number;
+   watchlistUserCount: number;
    loanRequestReviewCount: number;
    highRiskProfileCount: number;
+}
+
+export interface AdminIntegrityRun {
+   id: string;
+   status: 'success' | 'warning' | 'error';
+   issue_count: number;
+   summary: Record<string, any>;
+   created_at: string;
 }
 
 export interface NoticeTemplateInput {
@@ -35,14 +162,220 @@ export interface NoticeTemplateInput {
    metadata?: Record<string, unknown>;
 }
 
+type AnyRow = Record<string, any>;
+
 async function requireOk<T>(request: PromiseLike<{ data: T; error: unknown }>): Promise<T> {
    const { data, error } = await request;
    if (error) throw error;
    return data;
 }
 
+async function optionalOk<T>(request: PromiseLike<{ data: T; error: unknown }>, fallback: T): Promise<T> {
+   const { data, error } = await request;
+   if (error) return fallback;
+   return data ?? fallback;
+}
+
+async function optionalCount(request: PromiseLike<{ count: number | null; error: unknown }>): Promise<number> {
+   const { count, error } = await request;
+   if (error) return 0;
+   return count ?? 0;
+}
+
 function countFromResult(count: number | null): number {
    return count ?? 0;
+}
+
+function toNumber(value: unknown): number {
+   const numberValue = Number(value ?? 0);
+   return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function shortUser(row: AdminDirectoryUser | undefined | null) {
+   if (!row) return null;
+   return {
+      id: row.id,
+      username: row.username,
+      wallet_address: row.wallet_address,
+      user_role: row.user_role,
+      account_status: row.account_status,
+      is_world_id: row.is_world_id
+   };
+}
+
+function daysLate(dueDate: string | null | undefined) {
+   if (!dueDate) return 0;
+   const due = new Date(dueDate).getTime();
+   if (!Number.isFinite(due)) return 0;
+   return Math.max(0, Math.floor((Date.now() - due) / 86_400_000));
+}
+
+function outstandingDue(loan: Pick<AdminLoanRecord, 'total_repayment_amount' | 'repaid_amount'>) {
+   return Math.max(0, toNumber(loan.total_repayment_amount) - toNumber(loan.repaid_amount));
+}
+
+function normalizeRole(role: unknown): UserRole {
+   return role === 'borrower' || role === 'lender' ? role : 'unset';
+}
+
+function normalizeAccountStatus(status: unknown): AccountStatus {
+   return status === 'blocked' || status === 'banned' ? status : 'active';
+}
+
+function normalizeRiskLevel(value: unknown): RiskLevel {
+   return value === 'high' || value === 'medium' ? value : 'low';
+}
+
+function mapRiskProfile(row: AnyRow | undefined): AdminRiskProfile | null {
+   if (!row) return null;
+   return {
+      id: row.id,
+      user_id: row.user_id,
+      score: toNumber(row.score),
+      risk_level: normalizeRiskLevel(row.risk_level),
+      status: row.status === 'blocked' || row.status === 'watchlist' ? row.status : 'active',
+      algorithm_version: row.algorithm_version ?? null,
+      algorithm_note: row.algorithm_note ?? null,
+      override_score: row.override_score ?? null,
+      override_reason: row.override_reason ?? null,
+      calculated_at: row.calculated_at ?? row.computed_at ?? null,
+      updated_at: row.updated_at ?? null
+   };
+}
+
+function mapRestriction(row: AnyRow | undefined): AdminRestriction | null {
+   if (!row) return null;
+   return {
+      id: row.id,
+      user_id: row.user_id,
+      status: row.status === 'banned' || row.status === 'active' ? row.status : 'watchlist',
+      reason: row.reason ?? 'manual',
+      risk_level: normalizeRiskLevel(row.risk_level),
+      evidence_summary: row.evidence_summary ?? null,
+      admin_note: row.admin_note ?? null,
+      restricted_at: row.restricted_at ?? null,
+      unrestricted_at: row.unrestricted_at ?? null,
+      updated_at: row.updated_at ?? null
+   };
+}
+
+function mapLoan(row: AnyRow, usersById: Map<string, AdminDirectoryUser>): AdminLoanRecord {
+   return {
+      id: row.id,
+      tracking_id: row.tracking_id,
+      borrower_user_id: row.borrower_user_id ?? null,
+      lender_user_id: row.lender_user_id ?? null,
+      borrower_wallet: row.borrower_wallet ?? null,
+      lender_wallet: row.lender_wallet ?? null,
+      loan_amount: toNumber(row.loan_amount),
+      total_repayment_amount: toNumber(row.total_repayment_amount),
+      repaid_amount: row.repaid_amount == null ? null : toNumber(row.repaid_amount),
+      due_date: row.due_date,
+      reason: row.reason,
+      coin: row.coin,
+      loan_status: row.loan_status ?? null,
+      repayment_status: row.repayment_status ?? null,
+      created_at: row.created_at ?? null,
+      funded_at: row.funded_at ?? null,
+      borrower: shortUser(row.borrower_user_id ? usersById.get(row.borrower_user_id) : null),
+      lender: shortUser(row.lender_user_id ? usersById.get(row.lender_user_id) : null)
+   };
+}
+
+function mapReview(row: AnyRow | undefined): AdminLoanRequestReview | null {
+   if (!row) return null;
+   return {
+      id: row.id,
+      loan_id: row.loan_id ?? null,
+      borrower_user_id: row.borrower_user_id ?? null,
+      status: row.status ?? 'needs_review',
+      reason: row.reason ?? null,
+      risk_level: normalizeRiskLevel(row.risk_level),
+      evidence_summary: row.evidence_summary ?? null,
+      admin_note: row.admin_note ?? null,
+      reviewed_by: row.reviewed_by ?? null,
+      reviewed_at: row.reviewed_at ?? null,
+      updated_at: row.updated_at ?? null
+   };
+}
+
+async function fetchUsersByIds(userIds: string[]): Promise<Map<string, AdminDirectoryUser>> {
+   const uniqueIds = [...new Set(userIds.filter(Boolean))];
+   if (!uniqueIds.length) return new Map();
+
+   const rows = await requireOk<AnyRow[]>(
+      getSupabaseBrowserClient()
+         .from('users')
+         .select(
+            'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,cs,mal,nal,created_at,updated_at'
+         )
+         .in('id', uniqueIds)
+   );
+
+   const emptyLoans: AnyRow[] = [];
+   return buildDirectoryRows(rows, emptyLoans, [], []).then((users) => new Map(users.map((user) => [user.id, user])));
+}
+
+async function buildDirectoryRows(
+   userRows: AnyRow[],
+   loanRows: AnyRow[],
+   restrictionRows: AnyRow[],
+   riskRows: AnyRow[]
+): Promise<AdminDirectoryUser[]> {
+   const restrictionsByUserId = new Map(restrictionRows.map((row) => [row.user_id, mapRestriction(row)]));
+   const riskByUserId = new Map(riskRows.map((row) => [row.user_id, mapRiskProfile(row)]));
+   const now = Date.now();
+
+   return userRows.map((row) => {
+      const userLoans = loanRows.filter((loan) => loan.borrower_user_id === row.id || loan.lender_user_id === row.id);
+      const borrowedLoans = userLoans.filter((loan) => loan.borrower_user_id === row.id);
+      const lentLoans = userLoans.filter((loan) => loan.lender_user_id === row.id);
+      const openRequests = borrowedLoans.filter((loan) => loan.loan_status === 'Requested');
+      const activeLoans = borrowedLoans.filter((loan) => loan.loan_status === 'Lent' && loan.repayment_status !== 'Paid');
+      const overdueLoans = activeLoans.filter((loan) => {
+         const due = new Date(loan.due_date).getTime();
+         return Number.isFinite(due) && due < now;
+      });
+      const paidLoans = borrowedLoans.filter((loan) => loan.repayment_status === 'Paid');
+      const loanActivityDates = userLoans
+         .map((loan) => loan.funded_at ?? loan.created_at ?? null)
+         .filter(Boolean)
+         .sort((first, second) => new Date(second).getTime() - new Date(first).getTime());
+
+      return {
+         id: row.id,
+         username: row.username ?? 'Unnamed user',
+         email: row.email ?? null,
+         wallet_address: row.wallet_address ?? null,
+         wallet_provider: row.wallet_provider ?? null,
+         wallet_connector_name: row.wallet_connector_name ?? null,
+         wallet_chain_id: row.wallet_chain_id ?? null,
+         user_role: normalizeRole(row.user_role),
+         account_status: normalizeAccountStatus(row.account_status),
+         is_world_id: row.is_world_id ?? null,
+         cs: row.cs ?? null,
+         mal: row.mal ?? null,
+         nal: row.nal ?? null,
+         created_at: row.created_at ?? null,
+         updated_at: row.updated_at ?? null,
+         openRequestCount: openRequests.length,
+         borrowedLoanCount: borrowedLoans.length,
+         activeLoanCount: activeLoans.length,
+         overdueLoanCount: overdueLoans.length,
+         paidLoanCount: paidLoans.length,
+         lentLoanCount: lentLoans.length,
+         totalBorrowedAmount: borrowedLoans.reduce((sum, loan) => sum + toNumber(loan.loan_amount), 0),
+         totalRepaymentAmount: borrowedLoans.reduce((sum, loan) => sum + toNumber(loan.total_repayment_amount), 0),
+         totalRepaidAmount: borrowedLoans.reduce((sum, loan) => sum + toNumber(loan.repaid_amount), 0),
+         outstandingDue: activeLoans.reduce(
+            (sum, loan) => sum + Math.max(0, toNumber(loan.total_repayment_amount) - toNumber(loan.repaid_amount)),
+            0
+         ),
+         lastLoanAt: loanActivityDates[0] ?? null,
+         restriction: restrictionsByUserId.get(row.id) ?? null,
+         riskProfile: riskByUserId.get(row.id) ?? null
+      };
+   });
 }
 
 export async function getCurrentAdmin(fallbackUserId?: string | null): Promise<AdminUser | null> {
@@ -56,12 +389,7 @@ export async function getCurrentAdmin(fallbackUserId?: string | null): Promise<A
    if (!userId) return null;
 
    return requireOk(
-      supabase
-         .from('admin_users')
-         .select('id,user_id,role,active,display_name')
-         .eq('user_id', userId)
-         .eq('active', true)
-         .maybeSingle()
+      supabase.from('admin_users').select('id,user_id,role,active,display_name').eq('user_id', userId).eq('active', true).maybeSingle()
    );
 }
 
@@ -69,52 +397,240 @@ export async function getAdminOverview(): Promise<AdminOverview> {
    const supabase = getSupabaseBrowserClient();
    const now = new Date().toISOString();
 
-   const [defaultedLoans, recoveryReviews, bannedUsers, loanRequestReviews, highRiskProfiles] = await Promise.all([
-      supabase.from('loans').select('id', { count: 'exact', head: true }).lt('due_date', now).in('repayment_status', ['Unpaid', 'Partial']),
-      supabase.from('default_recovery_cases').select('id', { count: 'exact', head: true }).in('status', ['needs_review', 'active']),
-      supabase.from('admin_account_restrictions').select('id', { count: 'exact', head: true }).eq('status', 'banned'),
-      supabase.from('admin_loan_request_reviews').select('id', { count: 'exact', head: true }).in('status', ['needs_review', 'reported', 'duplicate']),
-      supabase.from('admin_risk_profiles').select('id', { count: 'exact', head: true }).eq('risk_level', 'high')
+   const [
+      allUsers,
+      openRequests,
+      activeLoans,
+      defaultedLoans,
+      recoveryReviews,
+      bannedUsers,
+      watchlistUsers,
+      loanRequestReviews,
+      highRiskProfiles
+   ] = await Promise.all([
+      supabase.from('users').select('id', { count: 'exact', head: true }),
+      supabase.from('loans').select('id', { count: 'exact', head: true }).eq('loan_status', 'Requested'),
+      supabase
+         .from('loans')
+         .select('id', { count: 'exact', head: true })
+         .eq('loan_status', 'Lent')
+         .in('repayment_status', ['Unpaid', 'Partial']),
+      supabase
+         .from('loans')
+         .select('id', { count: 'exact', head: true })
+         .eq('loan_status', 'Lent')
+         .in('repayment_status', ['Unpaid', 'Partial'])
+         .lt('due_date', now),
+      optionalCount(
+         supabase.from('default_recovery_cases').select('id', { count: 'exact', head: true }).in('status', ['needs_review', 'active'])
+      ),
+      optionalCount(supabase.from('admin_account_restrictions').select('id', { count: 'exact', head: true }).eq('status', 'banned')),
+      optionalCount(supabase.from('admin_account_restrictions').select('id', { count: 'exact', head: true }).eq('status', 'watchlist')),
+      optionalCount(
+         supabase
+            .from('admin_loan_request_reviews')
+            .select('id', { count: 'exact', head: true })
+            .in('status', ['needs_review', 'reported', 'duplicate'])
+      ),
+      optionalCount(supabase.from('admin_risk_profiles').select('id', { count: 'exact', head: true }).eq('risk_level', 'high'))
    ]);
 
-   const failed = [defaultedLoans, recoveryReviews, bannedUsers, loanRequestReviews, highRiskProfiles].find((response) => response.error);
-   if (failed?.error) throw failed.error;
+   const failed = [allUsers, openRequests, activeLoans, defaultedLoans].find((response: any) => response.error);
+   if ((failed as any)?.error) throw (failed as any).error;
 
    return {
-      defaultedLoanCount: countFromResult(defaultedLoans.count),
-      recoveryReviewCount: countFromResult(recoveryReviews.count),
-      bannedUserCount: countFromResult(bannedUsers.count),
-      loanRequestReviewCount: countFromResult(loanRequestReviews.count),
-      highRiskProfileCount: countFromResult(highRiskProfiles.count)
+      allUserCount: countFromResult((allUsers as any).count),
+      openLoanRequestCount: countFromResult((openRequests as any).count),
+      activeLoanCount: countFromResult((activeLoans as any).count),
+      defaultedLoanCount: countFromResult((defaultedLoans as any).count),
+      recoveryReviewCount: recoveryReviews,
+      bannedUserCount: bannedUsers,
+      watchlistUserCount: watchlistUsers,
+      loanRequestReviewCount: loanRequestReviews,
+      highRiskProfileCount: highRiskProfiles
    };
+}
+
+export async function getLatestAdminIntegrityRun(): Promise<AdminIntegrityRun | null> {
+   return optionalOk<AdminIntegrityRun | null>(
+      getSupabaseBrowserClient()
+         .from('admin_integrity_runs')
+         .select('id,status,issue_count,summary,created_at')
+         .order('created_at', { ascending: false })
+         .limit(1)
+         .maybeSingle(),
+      null
+   );
 }
 
 export async function listAdminDirectoryUsers(search?: string): Promise<AdminDirectoryUser[]> {
    const supabase = getSupabaseBrowserClient();
-   let query = supabase.from('users').select('id,username,wallet_address').order('username', { ascending: true }).limit(25);
+   let query = supabase
+      .from('users')
+      .select(
+         'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,cs,mal,nal,created_at,updated_at'
+      )
+      .order('updated_at', { ascending: false })
+      .limit(100);
    const trimmedSearch = search?.trim();
 
    if (trimmedSearch) {
-      query = query.or(`username.ilike.%${trimmedSearch}%,wallet_address.ilike.%${trimmedSearch}%`);
+      query = query.or(`username.ilike.%${trimmedSearch}%,wallet_address.ilike.%${trimmedSearch}%,email.ilike.%${trimmedSearch}%`);
    }
 
-   return requireOk(query);
+   const users = await requireOk<AnyRow[]>(query);
+   const userIds = users.map((user) => user.id);
+
+   const [loans, restrictions, riskProfiles] = await Promise.all([
+      userIds.length
+         ? requireOk<AnyRow[]>(
+              supabase
+                 .from('loans')
+                 .select(
+                    'id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,loan_status,repayment_status,created_at,funded_at'
+                 )
+                 .or(`borrower_user_id.in.(${userIds.join(',')}),lender_user_id.in.(${userIds.join(',')})`)
+           )
+         : Promise.resolve([]),
+      userIds.length
+         ? optionalOk<AnyRow[]>(supabase.from('admin_account_restrictions').select('*').in('user_id', userIds), [])
+         : Promise.resolve([]),
+      userIds.length
+         ? optionalOk<AnyRow[]>(supabase.from('admin_risk_profiles').select('*').in('user_id', userIds), [])
+         : Promise.resolve([])
+   ]);
+
+   return buildDirectoryRows(users, loans, restrictions, riskProfiles);
+}
+
+export async function listAdminLoanRequests(): Promise<AdminLoanRequest[]> {
+   const supabase = getSupabaseBrowserClient();
+   const rows = await requireOk<AnyRow[]>(
+      supabase
+         .from('loans')
+         .select(
+            'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,created_at,funded_at'
+         )
+         .eq('loan_status', 'Requested')
+         .order('created_at', { ascending: false })
+         .limit(100)
+   );
+
+   const userIds = rows.flatMap((loan) => [loan.borrower_user_id, loan.lender_user_id].filter(Boolean));
+   const usersById = await fetchUsersByIds(userIds);
+   const loanIds = rows.map((loan) => loan.id);
+   const reviews = loanIds.length
+      ? await optionalOk<AnyRow[]>(supabase.from('admin_loan_request_reviews').select('*').in('loan_id', loanIds), [])
+      : [];
+   const reviewsByLoanId = new Map(reviews.map((review) => [review.loan_id, mapReview(review)]));
+
+   return rows.map((row) => ({
+      ...mapLoan(row, usersById),
+      review: reviewsByLoanId.get(row.id) ?? null
+   }));
+}
+
+export async function listAdminDefaultCases(): Promise<AdminDefaultCase[]> {
+   const supabase = getSupabaseBrowserClient();
+   const now = new Date().toISOString();
+
+   const [overdueLoans, recoveryCases, recoveryCaseLoans] = await Promise.all([
+      requireOk<AnyRow[]>(
+         supabase
+            .from('loans')
+            .select(
+               'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,created_at,funded_at'
+            )
+            .eq('loan_status', 'Lent')
+            .in('repayment_status', ['Unpaid', 'Partial'])
+            .lt('due_date', now)
+            .order('due_date', { ascending: true })
+            .limit(100)
+      ),
+      optionalOk<AnyRow[]>(supabase.from('default_recovery_cases').select('*').in('status', ['needs_review', 'active']), []),
+      optionalOk<AnyRow[]>(supabase.from('default_recovery_case_loans').select('*').in('status', ['unresolved', 'in_recovery']), [])
+   ]);
+
+   const userIds = [
+      ...overdueLoans.flatMap((loan) => [loan.borrower_user_id, loan.lender_user_id]),
+      ...recoveryCases.flatMap((row) => [row.borrower_user_id, row.case_manager_user_id]),
+      ...recoveryCaseLoans.flatMap((row) => [row.borrower_user_id, row.original_lender_user_id])
+   ].filter(Boolean);
+   const usersById = await fetchUsersByIds(userIds);
+   const recoveryById = new Map(recoveryCases.map((row) => [row.id, row]));
+   const loanIdsInRecovery = new Set(recoveryCaseLoans.map((row) => row.loan_id).filter(Boolean));
+
+   const fromRecovery = recoveryCaseLoans.map((row) => {
+      const recovery = recoveryById.get(row.case_id) ?? {};
+      const borrower = row.borrower_user_id ? usersById.get(row.borrower_user_id) : null;
+      const lender = row.original_lender_user_id ? usersById.get(row.original_lender_user_id) : null;
+
+      return {
+         id: row.id,
+         source: 'recovery_case' as const,
+         case_id: row.case_id ?? null,
+         loan_id: row.loan_id ?? null,
+         borrower_user_id: row.borrower_user_id ?? recovery.borrower_user_id ?? null,
+         lender_user_id: row.original_lender_user_id ?? null,
+         borrower: borrower?.username ?? 'Unknown borrower',
+         lender: lender?.username ?? 'No lender on file',
+         amount_due: toNumber(row.amount_due),
+         due_date: row.due_date ?? null,
+         days_late: daysLate(row.due_date),
+         status: recovery.status ?? row.status ?? 'needs_review',
+         recovery_path: recovery.recovery_path ?? null,
+         borrower_explanation: recovery.borrower_explanation ?? null,
+         evidence_summary: recovery.evidence_summary ?? null,
+         admin_note: recovery.admin_note ?? null,
+         created_at: recovery.created_at ?? row.created_at ?? null,
+         updated_at: recovery.updated_at ?? null
+      };
+   });
+
+   const fromOverdueLoans = overdueLoans
+      .filter((loan) => !loanIdsInRecovery.has(loan.id))
+      .map((loan) => {
+         const borrower = loan.borrower_user_id ? usersById.get(loan.borrower_user_id) : null;
+         const lender = loan.lender_user_id ? usersById.get(loan.lender_user_id) : null;
+
+         return {
+            id: `loan:${loan.id}`,
+            source: 'overdue_loan' as const,
+            case_id: null,
+            loan_id: loan.id,
+            borrower_user_id: loan.borrower_user_id ?? null,
+            lender_user_id: loan.lender_user_id ?? null,
+            borrower: borrower?.username ?? 'Unknown borrower',
+            lender: lender?.username ?? 'No lender on file',
+            amount_due: outstandingDue(mapLoan(loan, usersById)),
+            due_date: loan.due_date ?? null,
+            days_late: daysLate(loan.due_date),
+            status: 'needs_review',
+            recovery_path: null,
+            borrower_explanation: loan.reason ?? null,
+            evidence_summary: `Live overdue loan ${loan.tracking_id}`,
+            admin_note: null,
+            created_at: loan.created_at ?? null,
+            updated_at: loan.updated_at ?? null
+         };
+      });
+
+   return [...fromRecovery, ...fromOverdueLoans].sort((a, b) => b.days_late - a.days_late);
 }
 
 export async function findUserByUsername(username: string): Promise<AdminDirectoryUser | null> {
    const normalizedUsername = username.trim();
    if (!normalizedUsername) return null;
 
-   return requireOk(
-      getSupabaseBrowserClient()
-         .from('users')
-         .select('id,username,wallet_address')
-         .ilike('username', normalizedUsername)
-         .maybeSingle()
-   );
+   const rows = await listAdminDirectoryUsers(normalizedUsername);
+   return rows.find((row) => row.username.toLowerCase() === normalizedUsername.toLowerCase()) ?? null;
 }
 
-export async function sendNoticeToUsers(recipientUserIds: string[], notice: NoticeTemplateInput, createdBy?: string | null) {
+export async function sendNoticeToUsers(
+   recipientUserIds: string[],
+   notice: NoticeTemplateInput,
+   createdBy?: string | null
+): Promise<AnyRow[]> {
    const uniqueRecipientUserIds = [...new Set(recipientUserIds.filter(Boolean))];
    if (!uniqueRecipientUserIds.length) return [];
 
@@ -170,8 +686,9 @@ export async function logAdminAction(input: {
    );
 }
 
-export async function createLoanRequestReviewForUsername(input: {
-   username: string;
+export async function upsertLoanRequestReview(input: {
+   loan_id: string;
+   borrower_user_id?: string | null;
    status: 'needs_review' | 'reported' | 'duplicate' | 'kept' | 'deleted';
    reason: 'spam' | 'duplicate' | 'unsafe' | 'bad_data' | 'manual';
    risk_level: RiskLevel;
@@ -179,21 +696,23 @@ export async function createLoanRequestReviewForUsername(input: {
    admin_note?: string | null;
    reviewed_by?: string | null;
 }) {
-   const user = await findUserByUsername(input.username);
-
    return requireOk(
       getSupabaseBrowserClient()
          .from('admin_loan_request_reviews')
-         .insert({
-            borrower_user_id: user?.id ?? null,
-            status: input.status,
-            reason: input.reason,
-            risk_level: input.risk_level,
-            evidence_summary: input.evidence_summary ?? null,
-            admin_note: input.admin_note ?? null,
-            reviewed_by: input.reviewed_by ?? null,
-            reviewed_at: new Date().toISOString()
-         })
+         .upsert(
+            {
+               loan_id: input.loan_id,
+               borrower_user_id: input.borrower_user_id ?? null,
+               status: input.status,
+               reason: input.reason,
+               risk_level: input.risk_level,
+               evidence_summary: input.evidence_summary ?? null,
+               admin_note: input.admin_note ?? null,
+               reviewed_by: input.reviewed_by ?? null,
+               reviewed_at: new Date().toISOString()
+            },
+            { onConflict: 'loan_id' }
+         )
          .select()
          .single()
    );
@@ -234,8 +753,8 @@ export async function upsertRiskProfileByUsername(input: {
    );
 }
 
-export async function upsertAccountRestrictionByUsername(input: {
-   username: string;
+export async function upsertAccountRestrictionByUserId(input: {
+   user_id: string;
    status: RestrictionStatus;
    reason: 'spam' | 'default' | 'duplicate' | 'abuse' | 'manual';
    risk_level: RiskLevel;
@@ -243,15 +762,12 @@ export async function upsertAccountRestrictionByUsername(input: {
    evidence_summary?: string | null;
    updated_by?: string | null;
 }) {
-   const user = await findUserByUsername(input.username);
-   if (!user) throw new Error(`Could not find user "${input.username}".`);
-
    return requireOk(
       getSupabaseBrowserClient()
          .from('admin_account_restrictions')
          .upsert(
             {
-               user_id: user.id,
+               user_id: input.user_id,
                status: input.status,
                reason: input.reason,
                risk_level: input.risk_level,
@@ -263,6 +779,105 @@ export async function upsertAccountRestrictionByUsername(input: {
             },
             { onConflict: 'user_id' }
          )
+         .select()
+         .single()
+   );
+}
+
+export async function upsertAccountRestrictionByUsername(input: {
+   username: string;
+   status: RestrictionStatus;
+   reason: 'spam' | 'default' | 'duplicate' | 'abuse' | 'manual';
+   risk_level: RiskLevel;
+   admin_note?: string | null;
+   evidence_summary?: string | null;
+   updated_by?: string | null;
+}) {
+   const user = await findUserByUsername(input.username);
+   if (!user) throw new Error(`Could not find user "${input.username}".`);
+   return upsertAccountRestrictionByUserId({ ...input, user_id: user.id });
+}
+
+export async function saveDefaultRecoveryPlan(input: {
+   item: AdminDefaultCase;
+   recovery_path: RecoveryPath;
+   note: string;
+   actor_user_id?: string | null;
+   payload?: Record<string, unknown>;
+}) {
+   const supabase = getSupabaseBrowserClient();
+   let caseId = input.item.case_id;
+
+   if (!caseId) {
+      if (!input.item.borrower_user_id) throw new Error('This overdue loan has no borrower profile attached.');
+
+      const createdCase = await requireOk<AnyRow>(
+         supabase
+            .from('default_recovery_cases')
+            .insert({
+               borrower_user_id: input.item.borrower_user_id,
+               case_manager_user_id: input.actor_user_id ?? null,
+               status: 'active',
+               recovery_path: input.recovery_path,
+               borrower_explanation: input.item.borrower_explanation ?? null,
+               evidence_summary: input.item.evidence_summary ?? null,
+               admin_note: input.note || null
+            })
+            .select()
+            .single()
+      );
+
+      caseId = createdCase.id;
+      await requireOk(
+         supabase
+            .from('default_recovery_case_loans')
+            .insert({
+               case_id: caseId,
+               loan_id: input.item.loan_id,
+               borrower_user_id: input.item.borrower_user_id,
+               original_lender_user_id: input.item.lender_user_id,
+               amount_due: input.item.amount_due,
+               due_date: input.item.due_date,
+               status: 'in_recovery'
+            })
+            .select()
+            .single()
+      );
+   } else {
+      await requireOk(
+         supabase
+            .from('default_recovery_cases')
+            .update({
+               case_manager_user_id: input.actor_user_id ?? null,
+               status: 'active',
+               recovery_path: input.recovery_path,
+               admin_note: input.note || null
+            })
+            .eq('id', caseId)
+            .select()
+            .single()
+      );
+   }
+
+   return requireOk(
+      supabase
+         .from('default_recovery_actions')
+         .insert({
+            case_id: caseId,
+            admin_user_id: input.actor_user_id ?? null,
+            action_type:
+               input.recovery_path === 'extension'
+                  ? 'extend_loan'
+                  : input.recovery_path === 'payment_plan'
+                    ? 'create_payment_plan'
+                    : input.recovery_path === 'bridge_loan'
+                      ? 'create_bridge_loan'
+                      : input.recovery_path === 'manual'
+                        ? 'manual_resolution'
+                        : 'approve_recovery',
+            payload: input.payload ?? {},
+            note: input.note || null
+         })
          .select()
          .single()
    );
