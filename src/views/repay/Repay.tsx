@@ -591,7 +591,7 @@ export default function Repay() {
                                     onChange={handleAmountChange}
                                     placeholder="0.00"
                                     aria-label="Repay amount"
-                                    className="w-full min-w-0 bg-transparent text-[28px] font-normal leading-none text-md-heading outline-none placeholder:text-md-neutral-1000"
+                                    className="w-full min-w-0 bg-transparent text-md-b1 font-normal text-md-heading outline-none placeholder:text-md-neutral-1200"
                                  />
                               </div>
                            </div>
