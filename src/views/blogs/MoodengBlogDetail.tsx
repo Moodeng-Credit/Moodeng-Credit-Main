@@ -64,12 +64,18 @@ export default function MoodengBlogDetail(): JSX.Element {
             </header>
 
             <div className="blog-article__body">
-               {post.sections.map((section) => (
-                  <section key={section.heading}>
-                     <h2>{section.heading}</h2>
-                     <p>{section.body}</p>
-                  </section>
-               ))}
+               {post.sections.map((section) => {
+                  const paragraphs = Array.isArray(section.body) ? section.body : [section.body];
+
+                  return (
+                     <section key={section.heading}>
+                        <h2>{section.heading}</h2>
+                        {paragraphs.map((paragraph) => (
+                           <p key={paragraph}>{paragraph}</p>
+                        ))}
+                     </section>
+                  );
+               })}
             </div>
          </article>
 
