@@ -1,6 +1,6 @@
 import { type FormEvent, type JSX, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, HelpCircle, KeyRound, Mail } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, HelpCircle, Mail } from 'lucide-react';
 
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
@@ -144,9 +144,11 @@ export default function ForgotPasswordPage(): JSX.Element {
             <main className="flex flex-1 flex-col justify-center">
                <section className="rounded-[28px] border border-[#E7D8FF] bg-[#FDFCFD] px-5 py-7 shadow-[0_18px_50px_rgba(36,14,62,0.08)] sm:px-7">
                   <div className="mb-7 flex flex-col items-center text-center">
-                     <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-[26px] bg-[#F1E7FF] text-[#8336F0]">
-                        <KeyRound className="h-10 w-10" strokeWidth={1.8} />
-                     </div>
+                     <img
+                        src="/hippos/hippo-friendly-lock.png"
+                        alt="Moodeng holding a lock"
+                        className="mb-5 h-28 w-28 object-contain drop-shadow-[0_12px_22px_rgba(36,14,62,0.10)]"
+                     />
                      <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0]">
                         Account access
                      </p>
