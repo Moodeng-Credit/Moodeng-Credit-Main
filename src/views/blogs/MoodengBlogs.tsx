@@ -1,26 +1,26 @@
 import { type JSX } from 'react';
 
-import { ArrowRight, BookOpen, CalendarDays, Clock3 } from 'lucide-react';
+import { ArrowRight, BookOpen, CalendarDays, Clock3, Headphones } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-import { blogPosts, featuredBlogPost } from '@/views/blogs/blogPosts';
+import { blogPosts, featuredBlogPost, podcastUrl } from '@/views/blogs/blogPosts';
 import '@/views/blogs/MoodengBlogs.css';
 
 const topicCards = [
    {
-      title: 'Borrower playbooks',
-      body: 'How to explain a request, choose a repayment date, and build a record without oversharing.',
-      href: '/academy'
+      title: 'Shadow lending systems',
+      body: 'How friendly loan apps, fake brands, and contact-list pressure turn small debt into control.',
+      href: `/blogs/${blogPosts[0].slug}`
    },
    {
-      title: 'Lender field notes',
-      body: 'What to look for in a request before funding someone you have never met.',
-      href: '/whylend'
+      title: 'Borrower dignity',
+      body: 'Why fair credit has to work without humiliation, doxxing, or private-life performance.',
+      href: `/blogs/${blogPosts[2].slug}`
    },
    {
-      title: 'Credit basics',
-      body: 'Short explanations of Trust Score, Credit Level, wallets, World ID, and direct USDC repayment.',
-      href: '/benefits'
+      title: 'Lender judgment',
+      body: 'How to read work rhythm, payday fit, and repayment context without demanding too much.',
+      href: `/blogs/${blogPosts[3].slug}`
    }
 ];
 
@@ -32,23 +32,18 @@ export default function MoodengBlogs(): JSX.Element {
          <section className="blogs-hero" aria-labelledby="blogs-heading">
             <div className="blogs-hero__copy">
                <p className="blogs-kicker">Moodeng Blogs</p>
-               <h1 id="blogs-heading">Small-loan ideas for real borrowers and careful lenders</h1>
+               <h1 id="blogs-heading">The human side of fair credit</h1>
                <p>
-                  Practical notes from the Moodeng team on direct USDC loans, repayment behavior, borrower context, and how trust can grow
-                  from small commitments.
+                  Essays and podcast companions on loan sharks, credit invisibility, borrower dignity, lender judgment, and why small USDC
+                  loans need a different kind of trust.
                </p>
                <div className="blogs-hero__actions">
-                  <Link to="/academy" className="blogs-button blogs-button--primary">
-                     Start with Academy
+                  <Link to={`/blogs/${featuredBlogPost.slug}`} className="blogs-button blogs-button--primary">
+                     Read the lead essay
                      <ArrowRight aria-hidden="true" size={18} />
                   </Link>
-                  <a
-                     href="https://moodeng-credit.gitbook.io/moodeng-credit"
-                     target="_blank"
-                     rel="noreferrer"
-                     className="blogs-button blogs-button--secondary"
-                  >
-                     Read docs
+                  <a href={podcastUrl} target="_blank" rel="noreferrer" className="blogs-button blogs-button--secondary">
+                     Listen on Spotify
                   </a>
                </div>
             </div>
@@ -65,11 +60,26 @@ export default function MoodengBlogs(): JSX.Element {
                   <h2>{featuredBlogPost.title}</h2>
                   <p>{featuredBlogPost.dek}</p>
                   <Link to={`/blogs/${featuredBlogPost.slug}`} className="blogs-inline-link">
-                     Read featured note
+                     Read featured essay
                      <ArrowRight aria-hidden="true" size={17} />
                   </Link>
                </div>
             </article>
+         </section>
+
+         <section className="blogs-podcast" aria-label="Moodeng podcast">
+            <div>
+               <p className="blogs-kicker">Podcast</p>
+               <h2>The Shadow Systems of Credit Identity</h2>
+               <p>
+                  The podcast goes deeper on the uncomfortable part of financial inclusion: what happens when the first credit product a
+                  person meets is built to harvest data, manufacture pressure, and disappear.
+               </p>
+            </div>
+            <a href={podcastUrl} target="_blank" rel="noreferrer" className="blogs-button blogs-button--primary">
+               <Headphones aria-hidden="true" size={18} />
+               Open Spotify
+            </a>
          </section>
 
          <section className="blogs-topic-strip" aria-label="Blog topics">
@@ -86,8 +96,8 @@ export default function MoodengBlogs(): JSX.Element {
 
          <section className="blogs-feed" aria-labelledby="latest-blogs-heading">
             <div className="blogs-section-heading">
-               <p className="blogs-kicker">Latest notes</p>
-               <h2 id="latest-blogs-heading">Read what matters before the next request</h2>
+               <p className="blogs-kicker">Latest essays</p>
+               <h2 id="latest-blogs-heading">Beyond guides and FAQs</h2>
             </div>
 
             <div className="blogs-grid">
@@ -114,7 +124,7 @@ export default function MoodengBlogs(): JSX.Element {
                            </span>
                         </div>
                         <Link to={`/blogs/${post.slug}`} className="blogs-inline-link">
-                           Read note
+                           Read essay
                            <ArrowRight aria-hidden="true" size={17} />
                         </Link>
                      </div>
@@ -125,9 +135,9 @@ export default function MoodengBlogs(): JSX.Element {
 
          <section className="blogs-closing" aria-labelledby="blogs-closing-heading">
             <div>
-               <p className="blogs-kicker">Build from the basics</p>
-               <h2 id="blogs-closing-heading">New to Moodeng?</h2>
-               <p>Start with the borrower flow, then come back to the blog when you want deeper context behind the product decisions.</p>
+               <p className="blogs-kicker">Build the alternative</p>
+               <h2 id="blogs-closing-heading">Fair credit is not just nicer copy.</h2>
+               <p>It has to change what data is collected, how repayment pressure works, and who owns the record after the loan is done.</p>
             </div>
             <Link to="/request-board" className="blogs-button blogs-button--primary">
                Explore request board

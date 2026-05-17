@@ -41,6 +41,18 @@ export default function MoodengBlogDetail(): JSX.Element {
                         {post.readTime}
                      </span>
                   </div>
+                  {post.sourceLabel ? (
+                     <div className="blog-source">
+                        {post.sourceHref ? (
+                           <a href={post.sourceHref} target="_blank" rel="noreferrer">
+                              {post.sourceLabel}
+                              <ArrowRight aria-hidden="true" size={16} />
+                           </a>
+                        ) : (
+                           <span>{post.sourceLabel}</span>
+                        )}
+                     </div>
+                  ) : null}
                </div>
                <div className="blog-article__image">
                   <img src={post.image} alt={post.imageAlt} />
