@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AlertCircle, ChevronLeft, ChevronRight, HelpCircle, Search } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import BorrowerVerificationBadge from '@/components/BorrowerVerificationBadge';
 import UserAvatar from '@/components/UserAvatar';
@@ -287,6 +287,7 @@ function EmptyState({ variant }: { variant: 'lender' | 'borrower' }) {
 
 export default function TransactionHistory() {
    const navigate = useNavigate();
+   const location = useLocation();
    const dispatch = useDispatch<AppDispatch>();
    const isBorrower = useIsBorrower();
    const user = useSelector((state: RootState) => state.auth.user);
@@ -376,6 +377,11 @@ export default function TransactionHistory() {
    ];
 
    const firstName = (user?.displayName || user?.username || 'there').split(' ')[0];
+   const accountEditPath = (edit: 'avatar' | 'name') => {
+      const params = new URLSearchParams(location.search);
+      params.set('edit', edit);
+      return `/account/settings?${params.toString()}`;
+   };
 
    return (
       <div className="min-h-screen bg-md-neutral-200">
@@ -386,7 +392,14 @@ export default function TransactionHistory() {
                   <div className="flex items-center gap-md-2">
                      <UserAvatar size={48} />
                      <div className="flex flex-col gap-1">
-                        <p className="text-md-h5 font-semibold text-md-primary-2000">Hello, {firstName}</p>
+                        <button
+                           type="button"
+                           onClick={() => navigate(accountEditPath('name'))}
+                           className="text-left text-md-h5 font-semibold text-md-primary-2000 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 rounded-sm"
+                           aria-label="Edit display name"
+                        >
+                           Hello, {firstName}
+                        </button>
                         <BorrowerVerificationBadge />
                      </div>
                   </div>

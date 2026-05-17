@@ -760,6 +760,11 @@ function RequestBoard$() {
 
    const firstName = user?.username?.split(' ')[0] || user?.username || 'there';
    const displayFirstName = effectiveUser?.username?.split(' ')[0] || effectiveUser?.username || firstName;
+   const accountEditPath = (edit: 'avatar' | 'name') => {
+      const params = new URLSearchParams(location.search);
+      params.set('edit', edit);
+      return `/account/settings?${params.toString()}`;
+   };
    const visibleLoans = shouldShowLenderTour && displayedLoans.length === 0 ? LENDER_TOUR_LOANS : displayedLoans;
    const isListLoading = isLoading && !shouldShowLenderTour;
 
@@ -775,8 +780,9 @@ function RequestBoard$() {
                         <div className="flex flex-col gap-1">
                            <button
                               type="button"
-                              onClick={() => navigate('/account/settings')}
+                              onClick={() => navigate(accountEditPath('name'))}
                               className="w-fit rounded-md-sm text-left text-md-h5 font-semibold text-md-primary-2000 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                              aria-label="Edit display name"
                            >
                               Hello, {displayFirstName}
                            </button>

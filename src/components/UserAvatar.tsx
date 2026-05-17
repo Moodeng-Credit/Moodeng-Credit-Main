@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
 import { DEFAULT_AVATAR_BACKGROUND } from '@/config/avatarBackgrounds';
@@ -29,7 +29,7 @@ interface UserAvatarProps {
  * Displays the user's profile picture with fallback to the placeholder hippo avatar.
  * Fetches from `auth.user.avatarUrl` by default. Pass `src` to override for other users.
  *
- * Clicking the current user's avatar (no `src` prop) navigates to /account/settings by default.
+ * Clicking the current user's avatar (no `src` prop) opens avatar editing by default.
  * Pass `onClick` to override, or `clickable={false}` to opt out entirely.
  */
 export default function UserAvatar({
@@ -42,6 +42,7 @@ export default function UserAvatar({
    clickable = true,
 }: UserAvatarProps) {
    const navigate = useNavigate();
+   const location = useLocation();
    const userAvatarUrl = useSelector((state: RootState) => state.auth.user?.avatarUrl);
    const userAvatarBackground = useSelector((state: RootState) => state.auth.user?.avatarBackground);
    const resolvedSrc = src ?? userAvatarUrl ?? PLACEHOLDER_AVATAR;
@@ -49,7 +50,12 @@ export default function UserAvatar({
 
    // Only the current user's own avatar gets click behaviour (no explicit src override).
    const isCurrentUser = src === undefined;
-   const handleClick = onClick ?? (isCurrentUser && clickable ? () => navigate('/account/settings') : undefined);
+   const avatarEditPath = () => {
+      const params = new URLSearchParams(location.search);
+      params.set('edit', 'avatar');
+      return `/account/settings?${params.toString()}`;
+   };
+   const handleClick = onClick ?? (isCurrentUser && clickable ? () => navigate(avatarEditPath()) : undefined);
 
    const img = (
       <img
@@ -72,7 +78,7 @@ export default function UserAvatar({
             type="button"
             onClick={handleClick}
             className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 shrink-0"
-            aria-label="Go to Account Settings"
+            aria-label="Edit profile photo"
             style={{ width: size, height: size }}
          >
             {img}
