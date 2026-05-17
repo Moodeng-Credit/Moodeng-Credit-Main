@@ -89,7 +89,7 @@ export default function App() {
    const shouldShowAccountSupport = isAccountRestricted || isDefaultedBorrower;
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
    const showBottomNav =
-      user?.id &&
+      Boolean(user?.id) &&
       !shouldShowAccountSupport &&
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
          (location.pathname.startsWith('/user/') && !isUserDetailRoute) ||
@@ -172,8 +172,8 @@ export default function App() {
             {/* Shared authenticated */}
             <Route path="/history" element={<ProtectedRoute><RoleGuard><TransactionHistory /></RoleGuard></ProtectedRoute>} />
             <Route path="/history/:loanId" element={<ProtectedRoute><RoleGuard><TransactionDetail /></RoleGuard></ProtectedRoute>} />
-            <Route path="/account" element={<ProtectedRoute><RoleGuard><Account /></RoleGuard></ProtectedRoute>} />
-            <Route path="/account/settings" element={<ProtectedRoute><RoleGuard><AccountSettings /></RoleGuard></ProtectedRoute>} />
+            <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+            <Route path="/account/settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
 
             {/* Admin */}
             <Route path="/admin" element={<AdminGuard><AdminPanel /></AdminGuard>} />
@@ -214,7 +214,7 @@ export default function App() {
             {/* Fallback */}
             <Route path="*" element={<Navigate to={user?.id && username ? '/' : '/request-board'} replace />} />
          </Routes>
-         {showBottomNav && <BottomNav />}
+         {showBottomNav ? <BottomNav /> : null}
       </BottomNavActionProvider>
    );
 }

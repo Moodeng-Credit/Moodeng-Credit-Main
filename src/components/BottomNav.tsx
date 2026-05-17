@@ -1,22 +1,25 @@
 import { useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 import { type BottomNavPrimaryAction, useBottomNavActionState } from '@/components/BottomNavActionContext';
 
 import { useIsBorrower } from '@/hooks/useIsBorrower';
+import type { RootState } from '@/store/store';
 
 interface NavTab {
    label: string;
    path: string;
    icon: string;
+   requiresRole?: boolean;
 }
 
 type NavItem = NavTab | { type: 'primary-action' };
 
 const BORROWER_TABS: NavTab[] = [
    { label: 'Request Board', path: '/request-board', icon: 'request-board.png' },
-   { label: 'Repay', path: '/repay', icon: 'repay.png' },
-   { label: 'Dashboard', path: '/dashboard', icon: 'dashboard.png' },
-   { label: 'History', path: '/history', icon: 'history.png' },
+   { label: 'Repay', path: '/repay', icon: 'repay.png', requiresRole: true },
+   { label: 'Dashboard', path: '/dashboard', icon: 'dashboard.png', requiresRole: true },
+   { label: 'History', path: '/history', icon: 'history.png', requiresRole: true },
    { label: 'Account', path: '/account', icon: 'account.png' }
 ];
 
@@ -87,26 +90,34 @@ function StandardTab({
    tab,
    isActive,
    isBorrower,
+   isLocked,
    onNavigate
 }: {
    tab: NavTab;
    isActive: boolean;
    isBorrower: boolean;
+   isLocked: boolean;
    onNavigate: () => void;
 }) {
-   const showBg = isActive && isBorrower;
+   const showBg = isActive && isBorrower && !isLocked;
+   const destination = isLocked ? '/onboarding/role' : tab.path;
 
    return (
       <a
          key={tab.path}
-         href={tab.path}
+         href={destination}
          onClick={onNavigate}
-         aria-current={isActive ? 'page' : undefined}
+         aria-current={isActive && !isLocked ? 'page' : undefined}
+         aria-disabled={isLocked ? true : undefined}
+         title={isLocked ? 'Choose a role first' : undefined}
          className="relative z-20 flex flex-1 flex-col items-center gap-1 self-stretch border-0 bg-transparent p-0"
       >
          <div className={`flex h-9 w-9 shrink-0 items-center justify-center ${showBg ? 'rounded-md-md bg-md-primary-900' : ''}`}>
             <div
-               className={`h-6 w-6 shrink-0 ${showBg ? 'bg-white' : isActive ? 'bg-md-primary-900' : 'bg-md-neutral-1000'}`}
+               className={[
+                  'h-6 w-6 shrink-0',
+                  isLocked ? 'bg-md-neutral-600' : showBg ? 'bg-white' : isActive ? 'bg-md-primary-900' : 'bg-md-neutral-1000'
+               ].join(' ')}
                style={{
                   ...MASK_BASE,
                   WebkitMaskImage: `url('/icons/${tab.icon}')`,
@@ -114,7 +125,12 @@ function StandardTab({
                }}
             />
          </div>
-         <span className={`w-full text-center text-md-b4 font-medium ${isActive ? 'text-md-primary-900' : 'text-md-neutral-1000'}`}>
+         <span
+            className={[
+               'w-full text-center text-md-b4 font-medium',
+               isLocked ? 'text-md-neutral-700' : isActive ? 'text-md-primary-900' : 'text-md-neutral-1000'
+            ].join(' ')}
+         >
             {tab.label}
          </span>
       </a>
@@ -123,10 +139,12 @@ function StandardTab({
 
 export default function BottomNav() {
    const isBorrower = useIsBorrower();
+   const userRole = useSelector((state: RootState) => state.auth.user?.userRole);
    const location = useLocation();
    const { primaryAction, setPrimaryAction } = useBottomNavActionState();
    const activePrimaryAction = isBorrower && location.pathname === '/repay' && primaryAction?.path === location.pathname ? primaryAction : null;
    const navItems: NavItem[] = activePrimaryAction ? REPAY_ACTION_TABS : isBorrower ? BORROWER_TABS : LENDER_TABS;
+   const needsRoleSelection = !userRole;
 
    return (
       <nav className="fixed bottom-[15px] left-1/2 z-50 w-[calc(100%-40px)] max-w-[400px] -translate-x-1/2 overflow-visible rounded-md-pill bg-md-neutral-100 px-5 py-3 shadow-md-nav">
@@ -142,6 +160,7 @@ export default function BottomNav() {
                      tab={item}
                      isActive={isActiveTab(location.pathname, item.path)}
                      isBorrower={isBorrower}
+                     isLocked={needsRoleSelection ? Boolean(item.requiresRole) : false}
                      onNavigate={() => {
                         setPrimaryAction(null);
                      }}
