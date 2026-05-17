@@ -1,4 +1,4 @@
-import { type JSX } from 'react';
+import { type JSX, useLayoutEffect } from 'react';
 
 import { ArrowRight, CalendarDays, Clock3 } from 'lucide-react';
 import { Link, Navigate, useParams } from 'react-router-dom';
@@ -9,6 +9,10 @@ import '@/views/blogs/MoodengBlogs.css';
 export default function MoodengBlogDetail(): JSX.Element {
    const { slug } = useParams();
    const post = findBlogPost(slug);
+
+   useLayoutEffect(() => {
+      window.scrollTo({ left: 0, top: 0 });
+   }, [slug]);
 
    if (!post) {
       return <Navigate to="/blogs" replace />;
