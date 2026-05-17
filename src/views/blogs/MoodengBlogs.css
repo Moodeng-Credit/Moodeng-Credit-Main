@@ -38,11 +38,11 @@
 .moodeng-blogs::before {
    position: absolute;
    inset: 0 0 auto;
-   height: 32rem;
+   height: 28rem;
    pointer-events: none;
    background:
-      linear-gradient(155deg, oklch(99% 0.004 230 / 0) 0 42%, oklch(82% 0.052 207 / 0.5) 42% 43%, oklch(99% 0.004 230 / 0) 43%),
-      linear-gradient(90deg, oklch(93% 0.036 205 / 0.78), oklch(98% 0.006 230 / 0.1));
+      radial-gradient(circle at 88% 18%, oklch(89% 0.055 202 / 0.72) 0 12rem, oklch(99% 0.004 230 / 0) 19rem),
+      linear-gradient(90deg, oklch(94% 0.034 205 / 0.7), oklch(98% 0.006 230 / 0.14));
    content: '';
 }
 
@@ -102,7 +102,7 @@
 .blog-article__copy p {
    max-width: 650px;
    margin: 24px 0 0;
-   color: var(--blog-copy);
+   color: oklch(34% 0.018 240);
    font-size: 1.12rem;
    font-weight: 620;
    line-height: 1.58;
