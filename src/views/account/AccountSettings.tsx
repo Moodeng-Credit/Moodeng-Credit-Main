@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Camera } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAccount, useDisconnect } from 'wagmi';
 
 import UserAvatar from '@/components/UserAvatar';
@@ -35,9 +35,13 @@ interface NotificationPrefs {
 }
 
 function loadNotificationPrefs(): NotificationPrefs {
-   const stored = localStorage.getItem(NOTIFICATION_STORAGE_KEY);
-   if (stored) {
-      return JSON.parse(stored) as NotificationPrefs;
+   try {
+      const stored = window.localStorage?.getItem(NOTIFICATION_STORAGE_KEY);
+      if (stored) {
+         return JSON.parse(stored) as NotificationPrefs;
+      }
+   } catch {
+      return { accountActivity: true, transactionActivity: true, moodengBlogs: false };
    }
    return { accountActivity: true, transactionActivity: true, moodengBlogs: false };
 }
@@ -393,6 +397,9 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
 export default function AccountSettings() {
    const navigate = useNavigate();
+   const [searchParams] = useSearchParams();
+   const editTarget = searchParams.get('edit');
+   const handledEditTargetRef = useRef<string | null>(null);
    const dispatch = useDispatch<AppDispatch>();
    const user = useSelector((state: RootState) => state.auth.user);
    const { connector, chain } = useAccount();
@@ -439,8 +446,33 @@ export default function AccountSettings() {
       : 'Having an up-to-date email address attached to your account is a great step towards improving account security.';
 
    useEffect(() => {
-      localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(notifPrefs));
+      try {
+         window.localStorage?.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(notifPrefs));
+      } catch {
+         // Some embedded previews disable localStorage; notification toggles can still render.
+      }
    }, [notifPrefs]);
+
+   useEffect(() => {
+      if (!editTarget || handledEditTargetRef.current === editTarget) return;
+
+      handledEditTargetRef.current = editTarget;
+
+      if (editTarget === 'name') {
+         setEditName(currentDisplayName);
+         setIsEditingName(true);
+         window.requestAnimationFrame(() => {
+            document.getElementById('display-name-section')?.scrollIntoView({ block: 'center' });
+         });
+      }
+
+      if (editTarget === 'avatar') {
+         setShowAvatarModal(true);
+         window.requestAnimationFrame(() => {
+            document.getElementById('avatar-section')?.scrollIntoView({ block: 'center' });
+         });
+      }
+   }, [currentDisplayName, editTarget]);
 
    useEffect(() => {
       setIsEditingWallet(false);
@@ -557,13 +589,13 @@ export default function AccountSettings() {
 
             {/* Avatar + Name */}
             <div className="flex items-center gap-md-5 px-md-5 py-md-3">
-               <div className="flex flex-col gap-md-1 items-center shrink-0">
+               <div id="avatar-section" className="flex flex-col gap-md-1 items-center shrink-0">
                   <EditableAvatar onClick={() => setShowAvatarModal(true)} />
                   <button type="button" onClick={() => setShowAvatarModal(true)} className="text-md-b1 text-md-primary-900">
                      Change
                   </button>
                </div>
-               <div className="flex flex-col gap-md-1 flex-1 min-w-0">
+               <div id="display-name-section" className="flex flex-col gap-md-1 flex-1 min-w-0">
                   <p className="text-md-b2 font-semibold text-md-heading">Display Name</p>
                   <div className="flex items-center justify-between bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
                      {isEditingName ? (

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 type AuthProvider = 'email' | 'google' | 'telegram' | null;
 
@@ -13,6 +13,12 @@ export function useAuthProvider(): { provider: AuthProvider; isEmailPasswordUser
    const [isLoading, setIsLoading] = useState(true);
 
    useEffect(() => {
+      if (!isSupabaseBrowserConfigured()) {
+         setProvider(null);
+         setIsLoading(false);
+         return;
+      }
+
       const supabase = getSupabaseBrowserClient();
       supabase.auth
          .getUser()
