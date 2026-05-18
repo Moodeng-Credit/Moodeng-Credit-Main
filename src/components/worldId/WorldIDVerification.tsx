@@ -2,6 +2,7 @@ import { type ReactNode, useCallback, useRef, useState } from 'react';
 
 import { CredentialRequest, IDKitErrorCodes, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
 import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { VerificationModal } from '@/components/worldId/VerificationModal';
@@ -27,6 +28,7 @@ const WORLD_ID_ENVIRONMENT = (import.meta.env.VITE_WORLD_ID_ENVIRONMENT ||
 
 export default function WorldIDVerification({ children, onSuccess, className = '' }: WorldIDVerificationProps) {
    const dispatch = useDispatch<AppDispatch>();
+   const navigate = useNavigate();
    const { showToastByConfig } = useToast();
    const [isModalOpen, setIsModalOpen] = useState(false);
    const [isIDKitOpen, setIsIDKitOpen] = useState(false);
@@ -119,8 +121,9 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          showToastByConfig('worldid_already_used');
          return;
       }
-      showToastByConfig(getToastKeyFromSuccessCode(SUCCESS_CODES.AUTH_VERIFY_SUCCESS)!);
       onSuccess?.();
+      navigate('/onboarding/congratulations');
+      showToastByConfig(getToastKeyFromSuccessCode(SUCCESS_CODES.AUTH_VERIFY_SUCCESS)!);
    };
 
    const handleError = (errorCode: IDKitErrorCodes) => {
@@ -171,7 +174,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
                allow_legacy_proofs={false}
                environment={WORLD_ID_ENVIRONMENT}
                constraints={CredentialRequest('proof_of_human')}
-               return_to={`${window.location.origin}/onboarding/congratulations`}
+               return_to={window.location.href}
                onSuccess={handleSuccess}
                onError={handleError}
                handleVerify={handleVerify}
