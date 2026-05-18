@@ -1,6 +1,6 @@
 import { type ReactNode, useCallback, useState } from 'react';
 
-import { IDKitWidget, type ISuccessResult, VerificationLevel } from '@worldcoin/idkit';
+import { CredentialRequest, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
 import { useDispatch } from 'react-redux';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -20,35 +20,73 @@ interface WorldIDVerificationProps {
    className?: string;
 }
 
-const WORLD_ID_APP_ID = 'app_9af81594e3d8c3c1010a94f0d553af24';
 const WORLD_ID_ACTION_ID = 'verify-borrower';
+const WORLD_ID_ACTION_DESCRIPTION = 'Verify a borrower as a unique human before borrowing.';
+const WORLD_ID_ENVIRONMENT = (import.meta.env.VITE_WORLD_ID_ENVIRONMENT ||
+   (import.meta.env.MODE === 'production' ? 'production' : 'staging')) as 'production' | 'staging';
 
 export default function WorldIDVerification({ children, onSuccess, className = '' }: WorldIDVerificationProps) {
    const dispatch = useDispatch<AppDispatch>();
    const { showToastByConfig } = useToast();
    const [isModalOpen, setIsModalOpen] = useState(false);
+   const [isIDKitOpen, setIsIDKitOpen] = useState(false);
+   const [rpContext, setRpContext] = useState<RpContext | null>(null);
 
    const action = (import.meta.env.VITE_WORLD_ID_ACTION_ID || WORLD_ID_ACTION_ID) as string;
-   const app_id = WORLD_ID_APP_ID as `app_${string}`;
+   const app_id = import.meta.env.VITE_WORLD_ID_APP_ID as `app_${string}` | undefined;
+   const apiUrl = import.meta.env.VITE_API_URL as string | undefined;
 
-   const handleVerify = async (proof: ISuccessResult) => {
+   const getSessionAccessToken = async () => {
+      const supabase = getSupabaseBrowserClient();
+      const {
+         data: { session }
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+         throw new Error('You must be logged in to verify your World ID.');
+      }
+
+      return session.access_token;
+   };
+
+   const fetchRpContext = async () => {
+      if (!apiUrl) {
+         throw new Error('VITE_API_URL is not configured.');
+      }
+
+      const accessToken = await getSessionAccessToken();
+      const res = await fetch(`${apiUrl}/verify-worldid`, {
+         method: 'POST',
+         headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`
+         },
+         body: JSON.stringify({ type: 'rp-signature', action })
+      });
+      const result = (await res.json()) as ApiResponse & { rp_context?: RpContext };
+
+      if (!res.ok || !result.success || !result.rp_context) {
+         showToastByConfig(handleApiError(result));
+         throw new Error(result.error || 'Failed to prepare World ID verification.');
+      }
+
+      return result.rp_context;
+   };
+
+   const handleVerify = async (proof: IDKitResult) => {
       try {
-         const supabase = getSupabaseBrowserClient();
-         const {
-            data: { session }
-         } = await supabase.auth.getSession();
-
-         if (!session) {
-            throw new Error('You must be logged in to verify your World ID.');
+         if (!apiUrl) {
+            throw new Error('VITE_API_URL is not configured.');
          }
 
-         const res = await fetch(import.meta.env.VITE_API_URL + '/verify-worldid', {
+         const accessToken = await getSessionAccessToken();
+         const res = await fetch(`${apiUrl}/verify-worldid`, {
             method: 'POST',
             headers: {
                'Content-Type': 'application/json',
-               Authorization: `Bearer ${session.access_token}`
+               Authorization: `Bearer ${accessToken}`
             },
-            body: JSON.stringify(proof)
+            body: JSON.stringify({ type: 'verify', proof })
          });
 
          const result = (await res.json()) as ApiResponse;
@@ -85,29 +123,48 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       setIsModalOpen(false);
    }, []);
 
-   return (
-      <IDKitWidget
-         app_id={app_id}
-         action={action}
-         onSuccess={handleSuccess}
-         handleVerify={handleVerify}
-         verification_level={VerificationLevel.Orb}
-      >
-         {({ open }) => (
-            <>
-               <span className={className}>{children({ open: () => setIsModalOpen(true) })}</span>
+   const handleStartIDKit = async () => {
+      if (!app_id) {
+         throw new Error('VITE_WORLD_ID_APP_ID is not configured.');
+      }
 
-               <VerificationModal
-                  isOpen={isModalOpen}
-                  onClose={handleCloseModal}
-                  onVerify={() => {
-                     handleCloseModal();
-                     open();
-                  }}
-                  onCheckStatus={handleCloseModal}
-               />
-            </>
-         )}
-      </IDKitWidget>
+      handleCloseModal();
+      const nextRpContext = await fetchRpContext();
+      setRpContext(nextRpContext);
+      setIsIDKitOpen(true);
+   };
+
+   return (
+      <>
+         <span className={className}>{children({ open: () => setIsModalOpen(true) })}</span>
+
+         <VerificationModal
+            isOpen={isModalOpen}
+            onClose={handleCloseModal}
+            onVerify={() => {
+               handleStartIDKit().catch((error: Error) => {
+                  console.error('World ID preparation error:', error.message || error);
+                  showToastByConfig('server_error');
+               });
+            }}
+            onCheckStatus={handleCloseModal}
+         />
+
+         {app_id && rpContext ? (
+            <IDKitRequestWidget
+               open={isIDKitOpen}
+               onOpenChange={setIsIDKitOpen}
+               app_id={app_id}
+               action={action}
+               action_description={WORLD_ID_ACTION_DESCRIPTION}
+               rp_context={rpContext}
+               allow_legacy_proofs={false}
+               environment={WORLD_ID_ENVIRONMENT}
+               constraints={CredentialRequest('proof_of_human')}
+               onSuccess={handleSuccess}
+               handleVerify={handleVerify}
+            />
+         ) : null}
+      </>
    );
 }
