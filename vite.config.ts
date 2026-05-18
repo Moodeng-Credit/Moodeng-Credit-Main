@@ -1,16 +1,55 @@
+import { createReadStream } from 'fs';
+import { createRequire } from 'module';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin, type PreviewServer, type ViteDevServer } from 'vite';
 import mkcert from 'vite-plugin-mkcert';
+
+const require = createRequire(import.meta.url);
+const idkitPackageRoot = path.resolve(path.dirname(require.resolve('@worldcoin/idkit')), '..');
+const idkitWasmFileName = 'idkit_wasm_bg.wasm';
+const idkitWasmPath = path.resolve(idkitPackageRoot, '../idkit-core/dist/idkit_wasm_bg.wasm');
+
+const configureWasmMiddleware = (server: ViteDevServer | PreviewServer) => {
+   server.middlewares.use((req, res, next) => {
+      const requestPath = req.url?.split('?')[0];
+
+      if (!requestPath?.endsWith('.wasm')) {
+         next();
+         return;
+      }
+
+      res.setHeader('Content-Type', 'application/wasm');
+
+      if (requestPath.endsWith(`/${idkitWasmFileName}`)) {
+         const stream = createReadStream(idkitWasmPath);
+         stream.on('error', next);
+         stream.pipe(res);
+         return;
+      }
+
+      next();
+   });
+};
+
+const wasmMimePlugin = (): Plugin => ({
+   name: 'wasm-mime',
+   configureServer(server) {
+      configureWasmMiddleware(server);
+   },
+   configurePreviewServer(server) {
+      configureWasmMiddleware(server);
+   }
+});
 
 // https://vite.dev/config/
 // Force re-bundle
-export default defineConfig(({ mode }) => {
+export default defineConfig(() => {
    // Check if we are running the local dev script
    const isLocal = process.env.npm_lifecycle_event === 'dev:local';
 
    return {
-      plugins: [react(), isLocal ? mkcert() : null].filter(Boolean),
+      plugins: [wasmMimePlugin(), react(), isLocal ? mkcert() : null].filter(Boolean),
       resolve: {
          alias: {
             '@': path.resolve(__dirname, './src')
