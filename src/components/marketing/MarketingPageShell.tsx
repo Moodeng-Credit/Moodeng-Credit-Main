@@ -24,13 +24,25 @@ const LogoMark = ({ className = 'size-12' }: { className?: string }) => (
    </span>
 );
 
+const AppCtaLabel = ({ isSignedIn, compactOnSmall = false }: { isSignedIn: boolean; compactOnSmall?: boolean }) => {
+   if (!isSignedIn) return <>Sign up</>;
+   if (!compactOnSmall) return <>Open app</>;
+
+   return (
+      <>
+         <span className="hidden min-[380px]:inline">Open app</span>
+         <span className="inline min-[380px]:hidden">App</span>
+      </>
+   );
+};
+
 export default function MarketingPageShell({ children }: MarketingPageShellProps) {
    const [isMenuOpen, setIsMenuOpen] = useState(false);
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
    const isSignedIn = Boolean(user?.id && username);
    const appHref = user?.id && username ? (user.userRole === 'lender' ? '/lender/dashboard' : '/dashboard') : '/sign-up';
-   const appLabel = isSignedIn ? 'Open App' : 'Sign up';
+   const appLabel = isSignedIn ? 'Open app' : 'Sign up';
 
    return (
       <div className="min-h-screen bg-[#fbfafd] text-md-heading">
@@ -70,9 +82,10 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                   ) : null}
                   <Link
                      to={appHref}
+                     aria-label={appLabel}
                      className="inline-flex h-11 items-center justify-center rounded-md-pill bg-md-primary-1200 px-md-3 text-md-b2 font-semibold text-white shadow-md-card"
                   >
-                     {appLabel}
+                     <AppCtaLabel isSignedIn={isSignedIn} compactOnSmall />
                   </Link>
                   <button
                      type="button"
@@ -149,9 +162,10 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                   <div className="mt-md-2 flex flex-col gap-md-2">
                      <Link
                         to={appHref}
+                        aria-label={appLabel}
                         className="inline-flex h-11 items-center justify-center rounded-md-pill bg-md-primary-1200 px-md-3 text-md-b2 font-semibold text-white"
                      >
-                        {appLabel}
+                        <AppCtaLabel isSignedIn={isSignedIn} />
                      </Link>
                      <a
                         href="https://moodeng-credit.gitbook.io/moodeng-credit"
