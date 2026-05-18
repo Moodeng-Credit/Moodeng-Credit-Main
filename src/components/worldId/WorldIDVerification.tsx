@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useState } from 'react';
+import { type ReactNode, useCallback, useRef, useState } from 'react';
 
 import { CredentialRequest, IDKitErrorCodes, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
 import { useDispatch } from 'react-redux';
@@ -31,6 +31,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const [isModalOpen, setIsModalOpen] = useState(false);
    const [isIDKitOpen, setIsIDKitOpen] = useState(false);
    const [rpContext, setRpContext] = useState<RpContext | null>(null);
+   const alreadyUsedRef = useRef(false);
 
    const action = (import.meta.env.VITE_WORLD_ID_ACTION_ID || WORLD_ID_ACTION_ID) as string;
    const app_id = import.meta.env.VITE_WORLD_ID_APP_ID as `app_${string}` | undefined;
@@ -92,6 +93,11 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          const result = (await res.json()) as ApiResponse;
 
          if (!res.ok || !result.success) {
+            if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
+               alreadyUsedRef.current = true;
+               setIsIDKitOpen(false);
+               return;
+            }
             showToastByConfig(handleApiError(result));
             throw new Error(isApiError(result) ? result.error : 'Verification failed.');
          }
@@ -108,6 +114,11 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    };
 
    const handleSuccess = () => {
+      if (alreadyUsedRef.current) {
+         alreadyUsedRef.current = false;
+         showToastByConfig('worldid_already_used');
+         return;
+      }
       showToastByConfig(getToastKeyFromSuccessCode(SUCCESS_CODES.AUTH_VERIFY_SUCCESS)!);
       onSuccess?.();
    };
@@ -160,6 +171,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
                allow_legacy_proofs={false}
                environment={WORLD_ID_ENVIRONMENT}
                constraints={CredentialRequest('proof_of_human')}
+               return_to={`${window.location.origin}/onboarding/congratulations`}
                onSuccess={handleSuccess}
                onError={handleError}
                handleVerify={handleVerify}

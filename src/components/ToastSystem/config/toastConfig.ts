@@ -347,10 +347,9 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
 
    worldid_already_used: {
       toastType: TOAST_TYPES.ERROR,
-      title: 'Verification Failed',
-      message: 'This World ID verification has failed. Please contact support.',
-      buttonText: 'Contact Support',
-      buttonAction: 'contact_support',
+      title: 'World ID Already Linked',
+      message:
+         'Your World ID is already verified and connected to an existing account. Moodeng does not allow the same World ID to be linked to more than one account.',
       customIcon: 'fas fa-exclamation-triangle'
    },
 
