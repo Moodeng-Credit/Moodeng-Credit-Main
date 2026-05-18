@@ -791,7 +791,7 @@ function RequestBoard$() {
                                  to="/onboarding/role"
                                  className="inline-flex w-fit items-center gap-1 rounded-md-sm bg-md-primary-100 px-2 py-1 text-md-b3 font-semibold text-md-primary-1200 underline-offset-2 hover:underline"
                               >
-                                 Choose borrower or lender
+                                 Role not selected
                               </Link>
                            ) : isBorrower ? (
                               <div className="flex items-center gap-2">
@@ -883,9 +883,9 @@ function RequestBoard$() {
                   </div>
 
                   {needsRoleSelection ? (
-                     <div className="relative overflow-hidden rounded-md-lg border border-md-primary-300 bg-md-primary-100 p-4 pr-[132px] shadow-md-card max-[374px]:pr-[112px]">
+                     <div className="relative overflow-hidden rounded-md-lg border border-md-primary-300 bg-md-primary-100 p-4 pr-[120px] shadow-md-card max-[374px]:pr-[104px]">
                         <div className="relative z-10 flex flex-col gap-3">
-                           <div className="flex max-w-[286px] flex-col gap-1 max-[374px]:max-w-[218px]">
+                           <div className="flex max-w-[286px] flex-col gap-1 max-[374px]:max-w-[220px]">
                               <p className="text-md-h5 font-semibold text-md-heading">Choose how you’ll use Moodeng</p>
                               <p className="text-md-b2 font-medium text-md-neutral-800">
                                  Pick borrower or lender to unlock your dashboard, repayment, and history.
@@ -901,7 +901,7 @@ function RequestBoard$() {
                         <img
                            src="/hippos/sitting-down-pointing-hippo.png"
                            alt=""
-                           className="pointer-events-none absolute bottom-[-12px] right-[-8px] h-[156px] w-[156px] object-contain max-[374px]:bottom-[-10px] max-[374px]:right-[-16px] max-[374px]:h-[132px] max-[374px]:w-[132px]"
+                           className="pointer-events-none absolute bottom-[-6px] right-1 h-[132px] w-[132px] object-contain max-[374px]:bottom-[-4px] max-[374px]:right-0 max-[374px]:h-[116px] max-[374px]:w-[116px]"
                            aria-hidden="true"
                         />
                      </div>
@@ -1043,7 +1043,9 @@ function RequestBoard$() {
                               </div>
                            ))
                         ) : (
-                           <div className="text-center py-20 text-md-neutral-1200 text-md-b2">No loan requests found.</div>
+                           <div className="text-center py-20 text-md-neutral-1200 text-md-b2">
+                              {needsRoleSelection ? 'Public requests will appear here when available.' : 'No loan requests found.'}
+                           </div>
                         )}
                      </div>
 
