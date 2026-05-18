@@ -1,10 +1,11 @@
-import { type ReactNode, useCallback, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { CredentialRequest, IDKitErrorCodes, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
+import { AlreadyUsedModal } from '@/components/worldId/modal/AlreadyUsedModal';
 import { VerificationModal } from '@/components/worldId/VerificationModal';
 
 import { handleApiError, isApiError } from '@/lib/apiHandler';
@@ -33,7 +34,15 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const [isModalOpen, setIsModalOpen] = useState(false);
    const [isIDKitOpen, setIsIDKitOpen] = useState(false);
    const [rpContext, setRpContext] = useState<RpContext | null>(null);
+   const [showAlreadyUsedModal, setShowAlreadyUsedModal] = useState(false);
    const alreadyUsedRef = useRef(false);
+
+   useEffect(() => {
+      if (sessionStorage.getItem('moodeng_worldid_error') === 'already_used') {
+         sessionStorage.removeItem('moodeng_worldid_error');
+         setShowAlreadyUsedModal(true);
+      }
+   }, []);
 
    const action = (import.meta.env.VITE_WORLD_ID_ACTION_ID || WORLD_ID_ACTION_ID) as string;
    const app_id = import.meta.env.VITE_WORLD_ID_APP_ID as `app_${string}` | undefined;
@@ -97,6 +106,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          if (!res.ok || !result.success) {
             if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
                alreadyUsedRef.current = true;
+               sessionStorage.setItem('moodeng_worldid_error', 'already_used');
                setIsIDKitOpen(false);
                return;
             }
@@ -118,7 +128,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const handleSuccess = () => {
       if (alreadyUsedRef.current) {
          alreadyUsedRef.current = false;
-         showToastByConfig('worldid_already_used');
+         setShowAlreadyUsedModal(true);
          return;
       }
       onSuccess?.();
@@ -162,6 +172,8 @@ export default function WorldIDVerification({ children, onSuccess, className = '
             }}
             onCheckStatus={handleCloseModal}
          />
+
+         <AlreadyUsedModal isOpen={showAlreadyUsedModal} onClose={() => setShowAlreadyUsedModal(false)} />
 
          {app_id && rpContext ? (
             <IDKitRequestWidget
