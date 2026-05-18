@@ -150,11 +150,13 @@ const previewLoans: Loan[] = [
    })
 ];
 
-const shouldUseLocalPreviewLoans = (search: string): boolean => {
+const shouldUsePreviewLoans = (search: string, pathname: string): boolean => {
    if (typeof window === 'undefined') return false;
 
-   const isLocalPreviewHost = ['127.0.0.1', 'localhost'].includes(window.location.hostname);
-   if (!isLocalPreviewHost) return false;
+   const isPreviewHost = ['127.0.0.1', 'localhost'].includes(window.location.hostname) || window.location.hostname.endsWith('.vercel.app');
+   if (!isPreviewHost) return false;
+
+   if (pathname === '/repay-preview') return true;
 
    const params = new URLSearchParams(search);
    if (params.get('previewLoans') === '1') {
@@ -176,7 +178,7 @@ export default function Repay() {
 
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
-   const usePreviewLoans = shouldUseLocalPreviewLoans(location.search);
+   const usePreviewLoans = shouldUsePreviewLoans(location.search, location.pathname);
    const repayLoans = usePreviewLoans ? previewLoans : loans;
    const { hasFetched: hasCheckedRepayLoans, isLoading: isCheckingRepayLoans } = useLoanData({
       userId: user.id,
@@ -391,7 +393,8 @@ export default function Repay() {
 
    useBottomNavPrimaryAction(bottomNavRepayAction);
 
-   const shouldShowLoanCheckLoading = !usePreviewLoans && Boolean(user.id) && activeLoans.length === 0 && (!hasCheckedRepayLoans || isCheckingRepayLoans);
+   const shouldShowLoanCheckLoading =
+      !usePreviewLoans && Boolean(user.id) && activeLoans.length === 0 && (!hasCheckedRepayLoans || isCheckingRepayLoans);
 
    if (shouldShowLoanCheckLoading) {
       return (
@@ -482,7 +485,7 @@ export default function Repay() {
                         <h2 className="mt-1 truncate text-md-h5 text-md-heading">{selectedLoan.reason || 'Active loan'}</h2>
                      </div>
                      {!hasExistingRepayment ? (
-                        <div className="shrink-0 text-right">
+                        <div className="shrink-0 pr-3 text-right">
                            <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
                            <p className="text-[20px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading">
                               ${formatCurrency(selectedRemaining)}
@@ -525,9 +528,7 @@ export default function Repay() {
                         </div>
                         <div className="rounded-md-input bg-md-neutral-100 p-3 text-right">
                            <p className="text-md-b3 text-md-neutral-1200">Paid so far</p>
-                           <p className="mt-1 text-md-h4 font-semibold text-md-primary-1200">
-                              ${formatNumber(selectedLoan.repaidAmount)}
-                           </p>
+                           <p className="mt-1 text-md-h4 font-semibold text-md-primary-1200">${formatNumber(selectedLoan.repaidAmount)}</p>
                         </div>
                      </div>
                   ) : null}
