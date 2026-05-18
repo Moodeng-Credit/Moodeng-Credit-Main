@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 
 import BorrowerVerificationBadge from '@/components/BorrowerVerificationBadge';
 import UserAvatar from '@/components/UserAvatar';
-import { ICON_MASK_BASE, TELEGRAM_URL, X_URL } from '@/views/support/constants';
-import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
+
 import type { RootState } from '@/store/store';
+import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
+import { ICON_MASK_BASE, SUPPORT_FACEBOOK_URL, X_URL } from '@/views/support/constants';
 
 interface SupportCard {
    label: string;
@@ -115,37 +116,34 @@ export default function Support() {
 
                {/* Join community */}
                <div className="bg-md-neutral-300 border border-md-primary-900 rounded-md-input flex flex-col items-center gap-md-1 p-md-3">
-                  <img
-                     src="/hippos/community.png"
-                     alt=""
-                     className="h-[185px] w-full max-w-[326px] object-contain"
-                  />
+                  <img src="/hippos/community.png" alt="" className="h-[185px] w-full max-w-[326px] object-contain" />
                   <p className="text-md-h5 font-semibold text-md-heading text-center">Join the community</p>
                   <p className="text-md-b2 text-md-neutral-1200 text-center">
                      Connect with other borrowers, share feedback, and stay up to date with Moodeng Credit.
                   </p>
-                  <div className="flex gap-md-1 pt-md-1">
+                  <div className="flex w-full gap-md-1 pt-md-1">
                      <a
-                        href={TELEGRAM_URL}
+                        href={SUPPORT_FACEBOOK_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-md-blue-500 rounded-md-input flex items-center justify-center gap-md-1 px-md-4 py-md-2 shadow-md-card transition-all duration-150 hover:brightness-105 active:scale-[0.97] active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
+                        className="flex-1 min-w-0 rounded-md-input flex items-center justify-center gap-md-1 px-md-3 py-md-2 shadow-md-card transition-all duration-150 hover:brightness-105 active:scale-[0.97] active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
+                        style={{ backgroundColor: '#1877F2' }}
                      >
                         <div
                            className="w-5 h-5 bg-md-neutral-100"
                            style={{
                               ...ICON_MASK_BASE,
-                              WebkitMaskImage: "url('/icons/telegram.svg')",
-                              maskImage: "url('/icons/telegram.svg')"
+                              WebkitMaskImage: "url('/icons/facebook.svg')",
+                              maskImage: "url('/icons/facebook.svg')"
                            }}
                         />
-                        <span className="text-md-b1 font-medium text-md-neutral-100">Join Telegram</span>
+                        <span className="text-md-b1 font-medium text-md-neutral-100 whitespace-nowrap">Facebook</span>
                      </a>
                      <a
                         href={X_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-md-neutral-1700 rounded-md-input flex items-center justify-center gap-md-1 px-md-4 py-md-2 shadow-md-card transition-all duration-150 hover:brightness-110 active:scale-[0.97] active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
+                        className="flex-1 min-w-0 bg-md-neutral-1700 rounded-md-input flex items-center justify-center gap-md-1 px-md-3 py-md-2 shadow-md-card transition-all duration-150 hover:brightness-110 active:scale-[0.97] active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
                      >
                         <div
                            className="w-[22px] h-5 bg-md-neutral-100"
@@ -155,7 +153,7 @@ export default function Support() {
                               maskImage: "url('/icons/x-logo.svg')"
                            }}
                         />
-                        <span className="text-md-b1 font-medium text-md-neutral-100">Follow on X</span>
+                        <span className="text-md-b1 font-medium text-md-neutral-100 whitespace-nowrap">Twitter</span>
                      </a>
                   </div>
                </div>

@@ -1,6 +1,8 @@
 export const SUPPORT_EMAIL = 'support@moodengcredit.com';
 export const SUPPORT_FACEBOOK_URL = 'https://www.facebook.com/profile.php?id=61589106561061';
-export const TELEGRAM_URL = 'https://t.me/moodengcredit';
+export const TELEGRAM_URL = 'https://t.me/jimmymoodengcredit';
+export const TELEGRAM_SUPPORT_MESSAGE = 'Hi there. I was on Moodeng Credit and need help';
+export const TELEGRAM_SUPPORT_URL = `${TELEGRAM_URL}?text=${encodeURIComponent(TELEGRAM_SUPPORT_MESSAGE)}`;
 export const X_URL = 'https://x.com/moodengcredit';
 export const GITBOOK_URL = 'https://moodeng.gitbook.io/credit';
 
