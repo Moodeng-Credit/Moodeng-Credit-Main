@@ -30,8 +30,8 @@ const AppCtaLabel = ({ isSignedIn, compactOnSmall = false }: { isSignedIn: boole
 
    return (
       <>
-         <span className="hidden min-[380px]:inline">Open app</span>
-         <span className="inline min-[380px]:hidden">App</span>
+         <span className="hidden md:inline">Open app</span>
+         <span className="inline md:hidden">App</span>
       </>
    );
 };
@@ -83,7 +83,7 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                   <Link
                      to={appHref}
                      aria-label={appLabel}
-                     className="inline-flex h-11 items-center justify-center rounded-md-pill bg-md-primary-1200 px-md-3 text-md-b2 font-semibold text-white shadow-md-card"
+                     className="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-md-pill bg-md-primary-1200 px-md-3 text-md-b2 font-semibold text-white shadow-md-card"
                   >
                      <AppCtaLabel isSignedIn={isSignedIn} compactOnSmall />
                   </Link>
