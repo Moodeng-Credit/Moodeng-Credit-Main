@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
 
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+
+import type { RootState } from '@/store/store';
 import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
 import SupportHeader from '@/views/support/components/SupportHeader';
 import { DEMO_VIDEO_ID, ICON_MASK_BASE } from '@/views/support/constants';
-import type { RootState } from '@/store/store';
 
 interface BasicsItem {
    title: string;
@@ -50,6 +51,13 @@ const BASICS: BasicsItem[] = [
       icon: 'book-open.svg',
       bg: 'bg-md-primary-1200',
       path: '/academy'
+   },
+   {
+      title: 'Read Moodeng Blogs',
+      description: 'Stories on fair credit, loan sharks, and trust',
+      icon: 'book-open.svg',
+      bg: 'bg-[#d75a00]',
+      path: '/blogs'
    }
 ];
 
