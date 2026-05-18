@@ -1,4 +1,4 @@
-import { createReadStream } from 'fs';
+import { createReadStream, existsSync, readFileSync } from 'fs';
 import { createRequire } from 'module';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -6,9 +6,32 @@ import { defineConfig, type Plugin, type PreviewServer, type ViteDevServer } fro
 import mkcert from 'vite-plugin-mkcert';
 
 const require = createRequire(import.meta.url);
-const idkitPackageRoot = path.resolve(path.dirname(require.resolve('@worldcoin/idkit')), '..');
+
+const getPackageRoot = (packageName: string, resolvePaths?: string[]) => {
+   const resolvedEntry = resolvePaths ? require.resolve(packageName, { paths: resolvePaths }) : require.resolve(packageName);
+   let currentPath = path.dirname(resolvedEntry);
+
+   while (currentPath !== path.dirname(currentPath)) {
+      const packageJsonPath = path.join(currentPath, 'package.json');
+
+      if (existsSync(packageJsonPath)) {
+         const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as { name?: string };
+
+         if (packageJson.name === packageName) {
+            return currentPath;
+         }
+      }
+
+      currentPath = path.dirname(currentPath);
+   }
+
+   throw new Error(`Could not resolve package root for ${packageName}`);
+};
+
+const idkitPackageRoot = getPackageRoot('@worldcoin/idkit');
+const idkitCorePackageRoot = getPackageRoot('@worldcoin/idkit-core', [idkitPackageRoot]);
 const idkitWasmFileName = 'idkit_wasm_bg.wasm';
-const idkitWasmPath = path.resolve(idkitPackageRoot, '../idkit-core/dist/idkit_wasm_bg.wasm');
+const idkitWasmPath = path.resolve(idkitCorePackageRoot, 'dist', idkitWasmFileName);
 
 const configureWasmMiddleware = (server: ViteDevServer | PreviewServer) => {
    server.middlewares.use((req, res, next) => {
