@@ -18,6 +18,8 @@ if (!projectRef) {
 const lockHippoUrl = `${appUrl}/hippos/hippo-friendly-lock.png`;
 const envelopeHippoUrl = `${appUrl}/hippos/hippo-purple-envelope-email.png`;
 const supportUrl = `${appUrl}/support/faq`;
+const telegramUrl = 'https://t.me/jimmymoodengcredit';
+const facebookUrl = 'https://www.facebook.com/profile.php?id=61589106561061';
 
 function buildEmailTemplate({
    imageUrl,
@@ -37,6 +39,7 @@ function buildEmailTemplate({
       .moodeng-email-card { padding:28px 18px !important; border-radius:22px !important; }
       .moodeng-email-title { font-size:28px !important; line-height:33px !important; }
       .moodeng-email-cta { display:block !important; min-width:0 !important; }
+      .moodeng-email-social-link { display:block !important; margin:8px 0 0 !important; }
     }
   </style>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed;background:#f7f3ff;">
@@ -44,17 +47,13 @@ function buildEmailTemplate({
       <td align="center" class="moodeng-email-shell" style="padding:32px 18px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;max-width:600px;border-collapse:collapse;table-layout:fixed;">
           <tr>
-            <td style="padding:0 0 16px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;table-layout:fixed;">
-                <tr>
-                  <td style="font-size:22px;line-height:28px;font-weight:800;color:#09012f;">
-                    Moodeng Credit
-                  </td>
-                  <td align="right" style="font-size:13px;line-height:18px;font-weight:700;color:#8336f0;">
-                    Account email
-                  </td>
-                </tr>
-              </table>
+            <td align="center" style="padding:0 0 16px;text-align:center;">
+              <div style="font-size:22px;line-height:28px;font-weight:800;color:#09012f;">
+                Moodeng Credit
+              </div>
+              <div style="margin-top:4px;font-size:13px;line-height:18px;font-weight:700;color:#8336f0;">
+                Account email
+              </div>
             </td>
           </tr>
           <tr>
@@ -93,8 +92,13 @@ function buildEmailTemplate({
             </td>
           </tr>
           <tr>
-            <td align="center" style="padding:18px 8px 0;font-size:12px;line-height:18px;color:#9a8fa8;">
-              Need help? Visit <a href="${supportUrl}" style="color:#6414db;text-decoration:underline;">Moodeng Support</a>.
+            <td align="center" style="padding:18px 8px 0;text-align:center;font-size:12px;line-height:18px;color:#9a8fa8;">
+              <div style="font-weight:700;color:#9a8fa8;">Moodeng Credit</div>
+              <div style="margin-top:8px;">
+                <a href="${telegramUrl}" class="moodeng-email-social-link" style="display:inline-block;margin:0 8px;color:#6414db;text-decoration:underline;font-weight:700;">Telegram</a>
+                <a href="${facebookUrl}" class="moodeng-email-social-link" style="display:inline-block;margin:0 8px;color:#6414db;text-decoration:underline;font-weight:700;">Facebook</a>
+                <a href="${supportUrl}" class="moodeng-email-social-link" style="display:inline-block;margin:0 8px;color:#6414db;text-decoration:underline;font-weight:700;">Support</a>
+              </div>
             </td>
           </tr>
         </table>
