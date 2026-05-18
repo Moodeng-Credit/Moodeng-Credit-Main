@@ -1,14 +1,29 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { signRequest } from "https://esm.sh/@worldcoin/idkit@4.1.5/signing?target=deno"
+import { hmac } from "https://esm.sh/@noble/hashes@1.8.0/hmac?target=deno"
+import { sha256 } from "https://esm.sh/@noble/hashes@1.8.0/sha2?target=deno"
+import { keccak_256 } from "https://esm.sh/@noble/hashes@1.8.0/sha3?target=deno"
+import { etc, sign } from "https://esm.sh/@noble/secp256k1@2.3.0?target=deno"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Content-Type': 'application/json',
 }
 
 const WORLD_ID_ACTION_ID = 'verify-borrower'
+const DEFAULT_RP_SIGNATURE_TTL_SEC = 300
+const RP_SIGNATURE_MSG_VERSION = 1
+const ETHEREUM_MESSAGE_PREFIX = '\x19Ethereum Signed Message:\n'
+const textEncoder = new TextEncoder()
+
+type RpSignature = {
+  sig: string
+  nonce: string
+  createdAt: number
+  expiresAt: number
+}
 
 type WorldIdRequestBody = {
   type?: 'rp-signature' | 'verify'
@@ -54,6 +69,65 @@ const getDeveloperPortalBaseUrl = () => {
 
 const getVerifyTarget = () => {
   return Deno.env.get('WORLD_ID_RP_ID') || Deno.env.get('WORLD_ID_APP_ID') || Deno.env.get('VITE_WORLD_ID_APP_ID')
+}
+
+etc.hmacSha256Sync = (key, ...msgs) => hmac(sha256, key, etc.concatBytes(...msgs))
+
+const hashToField = (input: Uint8Array) => {
+  const hash = BigInt(`0x${etc.bytesToHex(keccak_256(input))}`) >> 8n
+
+  return etc.hexToBytes(hash.toString(16).padStart(64, '0'))
+}
+
+const computeRpSignatureMessage = (nonceBytes: Uint8Array, createdAt: number, expiresAt: number, action?: string) => {
+  const actionBytes = action === undefined ? undefined : hashToField(textEncoder.encode(action))
+  const message = new Uint8Array(49 + (actionBytes?.length ?? 0))
+  message[0] = RP_SIGNATURE_MSG_VERSION
+  message.set(nonceBytes, 1)
+
+  const view = new DataView(message.buffer)
+  view.setBigUint64(33, BigInt(createdAt), false)
+  view.setBigUint64(41, BigInt(expiresAt), false)
+
+  if (actionBytes) {
+    message.set(actionBytes, 49)
+  }
+
+  return message
+}
+
+const hashEthereumMessage = (message: Uint8Array) => {
+  const prefix = textEncoder.encode(`${ETHEREUM_MESSAGE_PREFIX}${message.length}`)
+
+  return keccak_256(etc.concatBytes(prefix, message))
+}
+
+const signRpRequest = (signingKeyHex: string, action?: string, ttl = DEFAULT_RP_SIGNATURE_TTL_SEC): RpSignature => {
+  const keyHex = signingKeyHex.startsWith('0x') ? signingKeyHex.slice(2) : signingKeyHex
+  if (!/^[0-9a-fA-F]+$/.test(keyHex) || keyHex.length !== 64) {
+    throw Object.assign(new Error('WORLD_ID_SIGNING_KEY must be a 32-byte hex private key'), {
+      status: 500,
+      errorCode: 'WORLDID_CONFIG_INVALID',
+    })
+  }
+
+  const randomBytes = crypto.getRandomValues(new Uint8Array(32))
+  const nonceBytes = hashToField(randomBytes)
+  const createdAt = Math.floor(Date.now() / 1000)
+  const expiresAt = createdAt + ttl
+  const message = computeRpSignatureMessage(nonceBytes, createdAt, expiresAt, action)
+  const recSig = sign(hashEthereumMessage(message), etc.hexToBytes(keyHex))
+  const compact = recSig.toCompactRawBytes()
+  const sig65 = new Uint8Array(65)
+  sig65.set(compact, 0)
+  sig65[64] = recSig.recovery + 27
+
+  return {
+    sig: `0x${etc.bytesToHex(sig65)}`,
+    nonce: `0x${etc.bytesToHex(nonceBytes)}`,
+    createdAt,
+    expiresAt,
+  }
 }
 
 const extractNullifier = (proof: Record<string, unknown>, verifyRes: Record<string, unknown>) => {
@@ -117,7 +191,7 @@ serve(async (req) => {
       }
 
       const rpId = getRequiredEnv('WORLD_ID_RP_ID')
-      const rpSignature = signRequest({ signingKeyHex: signingKey, action })
+      const rpSignature = signRpRequest(signingKey, action)
 
       return successResponse({
         rp_context: {

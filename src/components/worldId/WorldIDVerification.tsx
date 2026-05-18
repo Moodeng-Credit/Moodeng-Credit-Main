@@ -1,12 +1,12 @@
 import { type ReactNode, useCallback, useState } from 'react';
 
-import { CredentialRequest, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
+import { CredentialRequest, IDKitErrorCodes, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
 import { useDispatch } from 'react-redux';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { VerificationModal } from '@/components/worldId/VerificationModal';
 
-import { handleApiError } from '@/lib/apiHandler';
+import { handleApiError, isApiError } from '@/lib/apiHandler';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
@@ -67,7 +67,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
       if (!res.ok || !result.success || !result.rp_context) {
          showToastByConfig(handleApiError(result));
-         throw new Error(result.error || 'Failed to prepare World ID verification.');
+         throw new Error(isApiError(result) ? result.error : 'Failed to prepare World ID verification.');
       }
 
       return result.rp_context;
@@ -91,19 +91,13 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
          const result = (await res.json()) as ApiResponse;
 
-         if (!res.ok && !result.success) {
+         if (!res.ok || !result.success) {
             showToastByConfig(handleApiError(result));
-            throw new Error(result.error || 'Verification failed.');
+            throw new Error(isApiError(result) ? result.error : 'Verification failed.');
          }
 
-         console.log('World ID verification successful:', result);
-
-         // Refresh user data to update verification status
          await dispatch(fetchUser())
             .unwrap()
-            .then(() => {
-               console.log('User data refreshed after World ID verification');
-            })
             .catch((error: Error) => {
                console.error('Error refreshing user data:', error.message || error);
             });
@@ -114,9 +108,14 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    };
 
    const handleSuccess = () => {
-      console.log('World ID verification completed successfully');
       showToastByConfig(getToastKeyFromSuccessCode(SUCCESS_CODES.AUTH_VERIFY_SUCCESS)!);
       onSuccess?.();
+   };
+
+   const handleError = (errorCode: IDKitErrorCodes) => {
+      if (errorCode !== IDKitErrorCodes.UserRejected) {
+         showToastByConfig('server_error');
+      }
    };
 
    const handleCloseModal = useCallback(() => {
@@ -162,6 +161,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
                environment={WORLD_ID_ENVIRONMENT}
                constraints={CredentialRequest('proof_of_human')}
                onSuccess={handleSuccess}
+               onError={handleError}
                handleVerify={handleVerify}
             />
          ) : null}
