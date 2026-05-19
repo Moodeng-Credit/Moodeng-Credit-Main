@@ -51,6 +51,7 @@ export default function SignUpPage() {
    const [email, setEmail] = useState(initialEmail);
    const [password, setPassword] = useState('');
    const [confirm, setConfirm] = useState('');
+   const [showPasswords, setShowPasswords] = useState(false);
    const [isLoading, setIsLoading] = useState(false);
    const [showPassWeak, setShowPassWeak] = useState(false);
    const [showConfirmMismatch, setShowConfirmMismatch] = useState(false);
@@ -325,6 +326,8 @@ export default function SignUpPage() {
                               errorVariant={showConfirmMismatch ? 'red' : 'amber'}
                               icon={<Icons.lock />}
                               showEyeToggle
+                              isPasswordVisible={showPasswords}
+                              onTogglePasswordVisibility={() => setShowPasswords((visible) => !visible)}
                            />
                            {showPassWeak && <SignUpFormErrorAlert type="password_too_weak" />}
                         </div>
@@ -342,6 +345,8 @@ export default function SignUpPage() {
                               error={showConfirmMismatch}
                               icon={<Icons.lock />}
                               showEyeToggle
+                              isPasswordVisible={showPasswords}
+                              onTogglePasswordVisibility={() => setShowPasswords((visible) => !visible)}
                            />
                         </div>
 

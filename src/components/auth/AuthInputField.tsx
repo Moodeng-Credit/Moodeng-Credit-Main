@@ -1,5 +1,5 @@
 import { type ChangeEvent, type ReactNode, useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Eye, EyeOff } from 'lucide-react';
 
 type ErrorVariant = 'red' | 'amber';
 
@@ -16,6 +16,8 @@ interface AuthInputFieldProps {
    errorVariant?: ErrorVariant;
    icon: ReactNode;
    showEyeToggle?: boolean;
+   isPasswordVisible?: boolean;
+   onTogglePasswordVisibility?: () => void;
 }
 
 export function AuthInputField({
@@ -28,10 +30,14 @@ export function AuthInputField({
    errorMessage,
    errorVariant = 'red',
    icon,
-   showEyeToggle = false
+   showEyeToggle = false,
+   isPasswordVisible,
+   onTogglePasswordVisibility
 }: AuthInputFieldProps) {
-   const [showPassword, setShowPassword] = useState(false);
+   const [localShowPassword, setLocalShowPassword] = useState(false);
+   const showPassword = isPasswordVisible ?? localShowPassword;
    const type = showEyeToggle ? (showPassword ? 'text' : 'password') : initialType;
+   const handleTogglePassword = onTogglePasswordVisibility ?? (() => setLocalShowPassword((p) => !p));
 
    const isAmber = error && errorVariant === 'amber';
    const errorBorder = isAmber ? 'border-[#F8C800]' : error ? 'border-[#FA1024]' : 'border-[#B5ACBE]';
@@ -75,11 +81,11 @@ export function AuthInputField({
             {showEyeToggle && (
                <button
                   type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  className="shrink-0 text-[11px] font-bold leading-none tracking-[0.04em] text-[#8336F0] hover:opacity-80"
+                  onClick={handleTogglePassword}
+                  className="shrink-0 w-6 h-6 flex items-center justify-center text-[#8336F0] hover:opacity-80"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                >
-                  {showPassword ? 'HIDE' : 'SHOW PASSWORD'}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                </button>
             )}
          </div>
