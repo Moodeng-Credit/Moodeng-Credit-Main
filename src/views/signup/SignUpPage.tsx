@@ -25,7 +25,6 @@ import { WorldId } from '@/types/authTypes';
 import '@/views/signup/styles/signup.css';
 
 const LINK_PURPLE = '#8336F0';
-const DOCS_URL = 'https://moodeng-credit.gitbook.io/moodeng-credit';
 const VERIFY_EMAIL_STORAGE_KEY = 'moodeng_pending_verification_email';
 
 type SignUpErrorType = 'account_linked' | 'account_exist' | 'email_taken' | null;
@@ -360,15 +359,21 @@ export default function SignUpPage() {
 
                         <p className="text-center text-xs leading-[18px] text-[#4D4359] tracking-[-0.02em]">
                            By creating an account, you agree to our{' '}
-                           <a
-                              href={`${DOCS_URL}/terms`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                           <Link
+                              to="/terms"
                               className="font-semibold underline hover:opacity-80"
                               style={{ color: LINK_PURPLE }}
                            >
-                              Terms and Privacy Policy
-                           </a>
+                              Terms
+                           </Link>{' '}
+                           and{' '}
+                           <Link
+                              to="/privacy"
+                              className="font-semibold underline hover:opacity-80"
+                              style={{ color: LINK_PURPLE }}
+                           >
+                              Privacy Policy
+                           </Link>
                         </p>
                      </form>
 
