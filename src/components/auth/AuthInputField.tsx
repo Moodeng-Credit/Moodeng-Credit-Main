@@ -48,38 +48,42 @@ export function AuthInputField({
    const errorInputText = isAmber ? 'text-[#AE8C00]' : error ? 'text-[#B60413]' : 'text-[#040033]';
 
    return (
-      <div className="flex flex-col gap-2 w-full">
-         <div className="flex flex-row items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-2">
-               <label className="text-base font-semibold text-[#040033] tracking-[-0.02em]">{label}</label>
-               {tooltip && (
-                  <span className="group relative inline-flex">
-                     <button
-                        type="button"
-                        className="flex h-5 w-5 items-center justify-center rounded-full text-[#70617F] outline-none transition-colors hover:text-[#8336F0] focus-visible:ring-2 focus-visible:ring-[#D6BCFA]"
-                        aria-label={`${label} help`}
-                     >
-                        <HelpCircle className="h-4 w-4" strokeWidth={1.8} />
-                     </button>
-                     <span className="pointer-events-none absolute left-1/2 top-7 z-20 w-[260px] -translate-x-1/2 rounded-[12px] border border-[#D6BCFA] bg-[#FDFBFD] px-3 py-2 text-left text-xs font-medium leading-[18px] tracking-[-0.02em] text-[#4D4359] opacity-0 shadow-[0px_8px_18px_rgba(27,28,29,0.12)] transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-                        {tooltip}
+      <div className="group flex flex-col gap-2 w-full">
+         <div className="flex flex-col gap-2">
+            <div className="flex flex-row items-center justify-between gap-2">
+               <span className="inline-flex items-center gap-2">
+                  <label className="text-base font-semibold text-[#040033] tracking-[-0.02em]">{label}</label>
+                  {tooltip && (
+                     <span className="inline-flex">
+                        <button
+                           type="button"
+                           className="flex h-5 w-5 items-center justify-center rounded-full text-[#70617F] outline-none transition-colors hover:text-[#8336F0] focus-visible:ring-2 focus-visible:ring-[#D6BCFA]"
+                           aria-label={`${label} help`}
+                        >
+                           <HelpCircle className="h-4 w-4" strokeWidth={1.8} />
+                        </button>
                      </span>
+                  )}
+               </span>
+               {error && errorMessage && (
+                  <span
+                     className={`inline-flex items-center gap-2 shrink-0 text-sm font-semibold leading-[21px] tracking-[-0.02em] ${
+                        isAmber ? 'text-[#AE8C00]' : 'text-[#8F030F]'
+                     }`}
+                  >
+                     <AlertTriangle
+                        className="shrink-0 w-5 h-5"
+                        strokeWidth={1.5}
+                        aria-hidden
+                     />
+                     {errorMessage}
                   </span>
                )}
-            </span>
-            {error && errorMessage && (
-               <span
-                  className={`inline-flex items-center gap-2 shrink-0 text-sm font-semibold leading-[21px] tracking-[-0.02em] ${
-                     isAmber ? 'text-[#AE8C00]' : 'text-[#8F030F]'
-                  }`}
-               >
-                  <AlertTriangle
-                     className="shrink-0 w-5 h-5"
-                     strokeWidth={1.5}
-                     aria-hidden
-                  />
-                  {errorMessage}
-               </span>
+            </div>
+            {tooltip && (
+               <p className="hidden rounded-[12px] border border-[#D6BCFA] bg-[#FDFBFD] px-3 py-2 text-left text-xs font-medium leading-[18px] tracking-[-0.02em] text-[#4D4359] shadow-[0px_8px_18px_rgba(27,28,29,0.08)] group-hover:block group-focus-within:block">
+                  {tooltip}
+               </p>
             )}
          </div>
          <div
