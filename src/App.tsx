@@ -34,6 +34,7 @@ import LenderPerformance from '@/app/lender/performance/page';
 import LenderRequestBoard from '@/app/lender/request-board/page';
 import Login from '@/app/login/page';
 import MilestonesPage from '@/app/milestones/page';
+import BorrowerContextPage from '@/app/onboarding/borrower-context/page';
 import CongratulationsPage from '@/app/onboarding/congratulations/page';
 import WalletConnected from '@/app/onboarding/wallet/connected/page';
 import WalletConnect from '@/app/onboarding/wallet/page';
@@ -184,6 +185,14 @@ export default function App() {
                }
             />
             <Route
+               path="/onboarding/borrower-context"
+               element={
+                  <ProtectedRoute>
+                     <BorrowerContextPage />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
                path="/onboarding/wallet"
                element={
                   <ProtectedRoute>
@@ -207,10 +216,11 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
-            {import.meta.env.DEV ? <Route path="/onboarding/start-preview" element={<OnboardingWelcome />} /> : null}
-            {import.meta.env.DEV ? <Route path="/onboarding/wallet-preview" element={<WalletConnect />} /> : null}
-            {import.meta.env.DEV ? <Route path="/onboarding/wallet-connected-preview" element={<WalletConnected />} /> : null}
-            {import.meta.env.DEV ? <Route path="/onboarding/congratulations-preview" element={<CongratulationsPage />} /> : null}
+            {showPreviewRoutes ? <Route path="/onboarding/start-preview" element={<OnboardingWelcome />} /> : null}
+            {showPreviewRoutes ? <Route path="/onboarding/borrower-context-preview" element={<BorrowerContextPage />} /> : null}
+            {showPreviewRoutes ? <Route path="/onboarding/wallet-preview" element={<WalletConnect />} /> : null}
+            {showPreviewRoutes ? <Route path="/onboarding/wallet-connected-preview" element={<WalletConnected />} /> : null}
+            {showPreviewRoutes ? <Route path="/onboarding/congratulations-preview" element={<CongratulationsPage />} /> : null}
 
             {/* Verification */}
             <Route
@@ -223,7 +233,7 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
-            {import.meta.env.DEV ? <Route path="/verify-world-id-preview" element={<WorldIdVerification />} /> : null}
+            {showPreviewRoutes ? <Route path="/verify-world-id-preview" element={<WorldIdVerification />} /> : null}
 
             {/* Borrower */}
             <Route
@@ -387,10 +397,7 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
-            <Route
-               path="/support/getting-started"
-               element={<SupportGettingStartedPage />}
-            />
+            <Route path="/support/getting-started" element={<SupportGettingStartedPage />} />
             <Route
                path="/support/guides"
                element={

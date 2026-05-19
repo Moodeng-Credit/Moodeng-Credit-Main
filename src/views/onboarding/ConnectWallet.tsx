@@ -19,7 +19,7 @@ export default function ConnectWallet() {
    const user = useSelector((state: RootState) => state.auth.user);
    const navigate = useNavigate();
    const location = useLocation();
-   const isPreview = import.meta.env.DEV && location.pathname.includes('wallet-preview');
+   const isPreview = location.pathname.includes('wallet-preview');
    const { isConnected } = useAccount();
    const { connect, connectors, status, error } = useConnect();
    const { openConnectModal } = useConnectModal();
@@ -159,8 +159,8 @@ function ConnectBaseAccountButton({ onClick, isDisabled }: { onClick: () => void
          disabled={isDisabled}
          className="flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 shadow-[0_18px_50px_rgba(96,16,210,0.24)] disabled:opacity-60 dark:shadow-[0_18px_60px_rgba(112,16,210,0.38)]"
       >
-         {isDisabled ? 'Connecting...' : 'Connect Base Wallet'}
-         {isDisabled ? null : (
+         {isDisabled ? 'Connecting...' : 'Connect Base Account'}
+         {!isDisabled ? (
             <span
                className="block size-6 bg-md-neutral-100"
                style={{
@@ -174,7 +174,7 @@ function ConnectBaseAccountButton({ onClick, isDisabled }: { onClick: () => void
                   maskSize: 'contain'
                }}
             />
-         )}
+         ) : null}
       </button>
    );
 }

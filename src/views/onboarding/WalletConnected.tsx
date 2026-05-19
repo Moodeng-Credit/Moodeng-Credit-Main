@@ -20,7 +20,7 @@ import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 export default function WalletConnected() {
    const navigate = useNavigate();
    const location = useLocation();
-   const isPreview = import.meta.env.DEV && location.pathname.includes('wallet-connected-preview');
+   const isPreview = location.pathname.includes('wallet-connected-preview');
    const dispatch = useDispatch<AppDispatch>();
    const user = useSelector((state: RootState) => state.auth.user);
    const gloans = useSelector((state: RootState) => state.loans.loans.gloans);
@@ -146,7 +146,7 @@ export default function WalletConnected() {
                className="flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
             >
                {loansLoading ? 'Loading…' : returnTo === 'loan-request' ? 'Continue Application' : 'Next'}
-               {loansLoading ? null : (
+               {!loansLoading ? (
                   <span
                      className="block size-6 bg-md-neutral-100"
                      style={{
@@ -160,7 +160,7 @@ export default function WalletConnected() {
                         maskSize: 'contain'
                      }}
                   />
-               )}
+               ) : null}
             </button>
          </div>
       </div>

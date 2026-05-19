@@ -122,10 +122,17 @@ export default function Welcome() {
    const { locale } = useLocalization();
    const copy = WELCOME_COPY[locale] ?? WELCOME_COPY.en;
    const isPreview = import.meta.env.DEV && location.pathname.includes('start-preview');
+   const startSetupPath =
+      user?.userRole === 'lender'
+         ? isPreview
+            ? '/onboarding/wallet-preview?role=lender'
+            : '/onboarding/wallet'
+         : isPreview
+           ? '/onboarding/borrower-context-preview'
+           : '/onboarding/borrower-context';
    const requestBoardTourPath = import.meta.env.DEV ? '/request-board?tourPreview=1' : '/request-board?tour=1';
    const returnTo =
       (location.state as { returnTo?: string } | null)?.returnTo || new URLSearchParams(location.search).get('returnTo') || undefined;
-   const walletPath = isPreview ? '/onboarding/wallet-preview' : '/onboarding/wallet';
 
    return (
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
@@ -179,7 +186,7 @@ export default function Welcome() {
                <div className="flex flex-col gap-md-3 w-full">
                   <button
                      type="button"
-                     onClick={() => navigate(walletPath, returnTo ? { state: { returnTo } } : undefined)}
+                     onClick={() => navigate(startSetupPath, returnTo ? { state: { returnTo } } : undefined)}
                      className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100"
                   >
                      <span
