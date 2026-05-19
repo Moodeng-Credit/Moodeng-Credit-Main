@@ -9,6 +9,22 @@ import type { AppDispatch } from '@/store/store';
 
 const VERIFY_FALLBACK = '/auth-success?type=verify';
 const CREATED_PATH = '/auth-success?type=created';
+const RECOVERY_PATH = '/reset-password';
+
+export function isPasswordRecoveryRedirect(url: URL, hashParams = new URLSearchParams()): boolean {
+   const type = url.searchParams.get('type') ?? hashParams.get('type');
+   const next = url.searchParams.get('next');
+
+   return type === 'recovery' || next === RECOVERY_PATH;
+}
+
+export function getAuthConfirmDestination(isRecoveryRedirect: boolean, userRole?: string | null): string {
+   if (isRecoveryRedirect) {
+      return RECOVERY_PATH;
+   }
+
+   return userRole ? '/dashboard' : CREATED_PATH;
+}
 
 /**
  * Email confirmation and other auth redirects land here with ?code= (PKCE) or
@@ -40,6 +56,9 @@ export default function AuthConfirmPage() {
          const supabase = getSupabaseBrowserClient();
          const url = new URL(window.location.href);
          const code = url.searchParams.get('code');
+         const tokenHash = url.searchParams.get('token_hash');
+         const hashParams = new URLSearchParams(window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '');
+         const isRecoveryRedirect = isPasswordRecoveryRedirect(url, hashParams);
 
          if (code) {
             const { data: before } = await supabase.auth.getSession();
@@ -55,7 +74,20 @@ export default function AuthConfirmPage() {
             }
          }
 
-         const hashParams = new URLSearchParams(window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '');
+         if (tokenHash && isRecoveryRedirect) {
+            const { error: verifyError } = await supabase.auth.verifyOtp({
+               token_hash: tokenHash,
+               type: 'recovery'
+            });
+            if (verifyError) {
+               const { data: retry } = await supabase.auth.getSession();
+               if (!retry.session) {
+                  setError(verifyError.message);
+                  return false;
+               }
+            }
+         }
+
          const accessToken = hashParams.get('access_token');
          const refreshToken = hashParams.get('refresh_token');
          if (accessToken && refreshToken) {
@@ -81,7 +113,7 @@ export default function AuthConfirmPage() {
 
          if (sessionData.session?.user) {
             const user = await dispatch(fetchUser()).unwrap().catch(() => null);
-            finish(user?.userRole ? '/dashboard' : CREATED_PATH);
+            finish(getAuthConfirmDestination(isRecoveryRedirect, user?.userRole));
             return true;
          }
 
@@ -91,8 +123,8 @@ export default function AuthConfirmPage() {
             if (timeoutId) clearTimeout(timeoutId);
             void dispatch(fetchUser())
                .unwrap()
-               .then((user) => finish(user?.userRole ? '/dashboard' : CREATED_PATH))
-               .catch(() => finish(CREATED_PATH));
+               .then((user) => finish(getAuthConfirmDestination(isRecoveryRedirect, user?.userRole)))
+               .catch(() => finish(getAuthConfirmDestination(isRecoveryRedirect)));
          });
          unsub = () => sub.subscription.unsubscribe();
 
