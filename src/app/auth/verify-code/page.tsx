@@ -1,14 +1,13 @@
 import { type ChangeEvent, type FormEvent, type JSX, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { ArrowLeft, HelpCircle, MailCheck, RefreshCcw } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, HelpCircle, Mail, RefreshCcw } from 'lucide-react';
 
 import Loading from '@/components/Loading';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
-import { Icons } from '@/views/login/components/Icons';
 
 const CREATED_PATH = '/auth-success?type=created';
 const VERIFY_EMAIL_STORAGE_KEY = 'moodeng_pending_verification_email';
@@ -160,17 +159,21 @@ export default function AuthVerifyCodePage(): JSX.Element {
             <main className="flex flex-1 flex-col justify-center">
                <section className="rounded-[28px] border border-[#E7D8FF] bg-[#FDFCFD] px-5 py-7 shadow-[0_18px_50px_rgba(36,14,62,0.08)] sm:px-7">
                   <div className="mb-7 flex flex-col items-center text-center">
-                     <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-[26px] bg-[#F1E7FF] text-[#8336F0]">
-                        <MailCheck className="h-10 w-10" strokeWidth={1.8} />
+                     <div className="mb-5 flex h-[196px] w-[196px] items-center justify-center overflow-hidden rounded-[28px] border border-[#DCC7FF] bg-white shadow-[0_12px_28px_rgba(36,14,62,0.06)]">
+                        <img
+                           src="/hippos/hippo-purple-envelope-email.png"
+                           alt="Moodeng holding an envelope"
+                           className="h-full w-full object-contain drop-shadow-[0_12px_22px_rgba(36,14,62,0.10)]"
+                        />
                      </div>
                      <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0]">
-                        Email verification
+                        Welcome to Moodeng
                      </p>
                      <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.04em] text-[#040033]">
-                        Enter your code
+                        Confirm your email
                      </h1>
-                     <p className="mt-3 max-w-[330px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F]">
-                        We sent a verification code to your email. Enter it here to finish creating your account.
+                     <p className="mt-3 max-w-[340px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F]">
+                        Enter the 6-digit code from the latest Moodeng email to finish setting up your account.
                      </p>
                   </div>
 
@@ -180,9 +183,7 @@ export default function AuthVerifyCodePage(): JSX.Element {
                            Email address
                         </label>
                         <div className="flex h-14 items-center gap-3 rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] px-4 shadow-[0_2px_4px_rgba(27,28,29,0.04)]">
-                           <span className="flex h-6 w-6 items-center justify-center text-[#8336F0]">
-                              <Icons.email />
-                           </span>
+                           <Mail className="h-5 w-5 shrink-0 text-[#8336F0]" strokeWidth={1.8} />
                            <input
                               id="verification-email"
                               type="email"
@@ -217,7 +218,8 @@ export default function AuthVerifyCodePage(): JSX.Element {
                         </p>
                      ) : null}
                      {message ? (
-                        <p className="rounded-2xl border border-[#BCEFD0] bg-[#EDFFF4] px-4 py-3 text-sm font-semibold leading-5 text-[#0D7A3C]">
+                        <p className="flex items-start gap-3 rounded-2xl border border-[#BCEFD0] bg-[#EDFFF4] px-4 py-3 text-sm font-semibold leading-5 text-[#0D7A3C]">
+                           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
                            {message}
                         </p>
                      ) : null}
