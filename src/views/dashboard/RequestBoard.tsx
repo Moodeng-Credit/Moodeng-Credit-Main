@@ -1205,11 +1205,11 @@ function PublicQuestionsMenu({
                Take tour
             </Link>
             <Link
-               to="/support/faq"
+               to="/support/getting-started"
                onClick={onClose}
                className="rounded-md-lg border border-md-primary-200 bg-md-primary-100 px-md-3 py-md-3 text-center text-md-b2 font-semibold text-md-primary-1200"
             >
-               View FAQ
+               See more
             </Link>
          </div>
       </div>
