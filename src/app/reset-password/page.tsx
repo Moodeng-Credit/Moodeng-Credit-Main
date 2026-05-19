@@ -181,13 +181,12 @@ export default function ResetPasswordPage(): JSX.Element {
          }
 
          clearPasswordRecoveryReady();
-         toast.showToast(TOAST_TYPES.SUCCESS, 'Password updated', 'You can sign in with your new password now.');
-         setMessage('Password updated. You can sign in with the new password now.');
+         toast.showToast(TOAST_TYPES.SUCCESS, 'Password updated', 'Your account is secure now.');
+         setMessage('Password updated. Taking you to your dashboard now.');
          setPassword('');
          setConfirmPassword('');
-         await supabase.auth.signOut({ scope: 'local' });
          window.setTimeout(() => {
-            navigate('/sign-in?passwordUpdated=1');
+            navigate('/dashboard');
          }, 1800);
       } catch (resetError) {
          setError(resetError instanceof Error ? resetError.message : 'Could not update your password. Try again in a moment.');
@@ -206,6 +205,7 @@ export default function ResetPasswordPage(): JSX.Element {
       password.length >= 6 &&
       confirmPassword.length >= 6 &&
       password === confirmPassword;
+   const showPasswordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
    return (
       <div className="min-h-screen bg-[#FBFAFD] px-4 py-6 text-[#040033] sm:px-6 sm:py-10">
@@ -301,6 +301,9 @@ export default function ResetPasswordPage(): JSX.Element {
                               placeholder="Re-enter new password"
                               autoComplete="new-password"
                            />
+                           {showPasswordMismatch ? (
+                              <p className="text-sm font-semibold leading-5 text-[#B60413]">Passwords do not match.</p>
+                           ) : null}
                         </div>
 
                         {error ? (
