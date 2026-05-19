@@ -230,11 +230,13 @@ export default function ResetPasswordPage(): JSX.Element {
             <main className="flex flex-1 flex-col justify-center">
                <section className="rounded-[28px] border border-[#E7D8FF] bg-[#FDFCFD] px-5 py-7 shadow-[0_18px_50px_rgba(36,14,62,0.08)] sm:px-7">
                   <div className="mb-7 flex flex-col items-center text-center">
-                     <img
-                        src="/hippos/hippo-friendly-lock.png"
-                        alt="Moodeng holding a lock"
-                        className="mb-5 h-28 w-28 object-contain drop-shadow-[0_12px_22px_rgba(36,14,62,0.10)]"
-                     />
+                     <div className="mb-5 flex h-40 w-40 items-center justify-center rounded-[28px] border border-[#D9C2FF] bg-white p-3 shadow-[0_12px_28px_rgba(36,14,62,0.06)]">
+                        <img
+                           src="/hippos/hippo-friendly-lock.png"
+                           alt="Moodeng holding a lock"
+                           className="h-full w-full object-contain drop-shadow-[0_12px_22px_rgba(36,14,62,0.10)]"
+                        />
+                     </div>
                      <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0]">
                         New password
                      </p>
