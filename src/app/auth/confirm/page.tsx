@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 
 import Loading from '@/components/Loading';
+import { markPasswordRecoveryReady } from '@/lib/passwordRecovery';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
@@ -46,9 +47,12 @@ export default function AuthConfirmPage() {
       let timeoutId: ReturnType<typeof setTimeout> | undefined;
       let unsub: (() => void) | undefined;
 
-      const finish = (path: string) => {
+      const finish = (path: string, isRecoveryRedirect = false) => {
          if (finishedRef.current) return;
          finishedRef.current = true;
+         if (isRecoveryRedirect) {
+            markPasswordRecoveryReady();
+         }
          navigate(path, { replace: true });
       };
 
@@ -113,7 +117,7 @@ export default function AuthConfirmPage() {
 
          if (sessionData.session?.user) {
             const user = await dispatch(fetchUser()).unwrap().catch(() => null);
-            finish(getAuthConfirmDestination(isRecoveryRedirect, user?.userRole));
+            finish(getAuthConfirmDestination(isRecoveryRedirect, user?.userRole), isRecoveryRedirect);
             return true;
          }
 
@@ -123,8 +127,8 @@ export default function AuthConfirmPage() {
             if (timeoutId) clearTimeout(timeoutId);
             void dispatch(fetchUser())
                .unwrap()
-               .then((user) => finish(getAuthConfirmDestination(isRecoveryRedirect, user?.userRole)))
-               .catch(() => finish(getAuthConfirmDestination(isRecoveryRedirect)));
+               .then((user) => finish(getAuthConfirmDestination(isRecoveryRedirect, user?.userRole), isRecoveryRedirect))
+               .catch(() => finish(getAuthConfirmDestination(isRecoveryRedirect), isRecoveryRedirect));
          });
          unsub = () => sub.subscription.unsubscribe();
 
