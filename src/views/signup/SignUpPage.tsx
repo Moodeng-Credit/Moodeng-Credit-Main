@@ -46,7 +46,7 @@ export default function SignUpPage() {
    const toast = useToast();
    const initialEmail = searchParams.get('email')?.trim() ?? '';
    const [showEmailForm, setShowEmailForm] = useState(!!initialEmail);
-   const [fullName, setFullName] = useState('');
+   const [username, setUsername] = useState('');
    const [email, setEmail] = useState(initialEmail);
    const [password, setPassword] = useState('');
    const [isLoading, setIsLoading] = useState(false);
@@ -92,7 +92,7 @@ export default function SignUpPage() {
          navigate('/auth-success?type=created');
          return;
       }
-      setFullName('');
+      setUsername('');
       setEmail('');
       setPassword('');
       navigate('/auth-success?type=created');
@@ -105,7 +105,7 @@ export default function SignUpPage() {
       try {
          const result = await dispatch(
             registerUser({
-               username: fullName.trim() ? slugify(fullName) : email.split('@')[0],
+               username: username.trim() ? slugify(username) : email.split('@')[0],
                isWorldId,
                password,
                email
@@ -250,12 +250,13 @@ export default function SignUpPage() {
 
                      <form onSubmit={handleRegister} className="flex flex-col gap-5">
                         <AuthInputField
-                           label="Full Name"
+                           label="Username"
                            type="text"
-                           placeholder="Enter your full name"
-                           value={fullName}
-                           onChange={(e: ChangeEvent<HTMLInputElement>) => setFullName(e.target.value)}
+                           placeholder="Choose a username"
+                           value={username}
+                           onChange={(e: ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
                            icon={<Icons.user />}
+                           tooltip="Full name is not needed. Borrowers verify with World ID or another verification method; lenders can just use a username."
                         />
 
                         <div className="space-y-2">
