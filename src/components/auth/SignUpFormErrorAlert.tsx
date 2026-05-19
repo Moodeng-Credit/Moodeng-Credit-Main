@@ -66,7 +66,7 @@ export function SignUpFormErrorAlert({ type }: SignUpFormErrorAlertProps) {
       );
    }
 
-   if (type === 'account_linked' || type === 'account_exist') {
+   if (type === 'account_linked') {
       return (
          <div className={`w-full ${amberAlert}`} style={{ background: 'rgba(255, 219, 67, 0.1)' }}>
             <p className="text-xs leading-[18px] tracking-[-0.02em] text-[#594D65]">
@@ -75,6 +75,20 @@ export function SignUpFormErrorAlert({ type }: SignUpFormErrorAlertProps) {
                   Sign In
                </Link>{' '}
                instead.
+            </p>
+         </div>
+      );
+   }
+
+   if (type === 'account_exist') {
+      return (
+         <div className={`w-full ${amberAlert}`} style={{ background: 'rgba(255, 219, 67, 0.1)' }}>
+            <p className="text-xs leading-[18px] tracking-[-0.02em] text-[#594D65]">
+               An account already exists with this email.{' '}
+               <Link to="/sign-in" className="font-semibold text-[#8336F0] underline">
+                  Sign In
+               </Link>{' '}
+               instead, or use forgot password if you need to reset access.
             </p>
          </div>
       );
