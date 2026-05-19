@@ -1,11 +1,22 @@
-import { type FormEvent, type JSX, useEffect, useRef, useState } from 'react';
+import { type FormEvent, type JSX, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, HelpCircle, ShieldCheck } from 'lucide-react';
 
 import Loading from '@/components/Loading';
+import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
+import { useToast } from '@/components/ToastSystem/hooks/useToast';
+import {
+   clearPasswordRecoveryReady,
+   isPasswordRecoveryReady,
+   markPasswordRecoveryReady
+} from '@/lib/passwordRecovery';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 type RecoveryState = 'checking' | 'ready' | 'invalid';
+
+const RESET_LINK_ERROR = 'The reset link is invalid or expired. Request a new one and use the latest email from Moodeng.';
+const MISSING_RESET_SESSION_ERROR = 'Open the reset link from your email, or request a new password reset link.';
+const RECOVERY_SESSION_SETTLE_MS = 1200;
 
 export default function ResetPasswordPage(): JSX.Element {
    const [password, setPassword] = useState('');
@@ -16,36 +27,66 @@ export default function ResetPasswordPage(): JSX.Element {
    const [recoveryState, setRecoveryState] = useState<RecoveryState>('checking');
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
-   const hasExchanged = useRef(false);
+   const toast = useToast();
 
    useEffect(() => {
-      const prepareRecoverySession = async () => {
-         if (hasExchanged.current) return;
-         hasExchanged.current = true;
+      let cancelled = false;
+      let settleTimer: ReturnType<typeof window.setTimeout> | undefined;
 
-         if (!isSupabaseBrowserConfigured()) {
-            setError('Password reset is not configured in this local app.');
-            setRecoveryState('invalid');
-            return;
+      const markReady = () => {
+         if (cancelled) return;
+         markPasswordRecoveryReady();
+         setError('');
+         setRecoveryState('ready');
+      };
+
+      const markInvalid = (message: string) => {
+         if (cancelled) return;
+         setError(message);
+         setRecoveryState('invalid');
+      };
+
+      if (!isSupabaseBrowserConfigured()) {
+         markInvalid('Password reset is not configured in this local app.');
+         return;
+      }
+
+      const supabase = getSupabaseBrowserClient();
+      const {
+         data: { subscription }
+      } = supabase.auth.onAuthStateChange((event, session) => {
+         if (session?.user && (event === 'PASSWORD_RECOVERY' || isPasswordRecoveryReady())) {
+            if (settleTimer) window.clearTimeout(settleTimer);
+            markReady();
          }
+      });
 
+      const prepareRecoverySession = async () => {
          const code = searchParams.get('code');
          const tokenHash = searchParams.get('token_hash');
          const hashParams = new URLSearchParams(window.location.hash.substring(1));
          const accessToken = hashParams.get('access_token');
          const refreshToken = hashParams.get('refresh_token');
-
-         const supabase = getSupabaseBrowserClient();
+         const linkError = searchParams.get('error_description') ?? hashParams.get('error_description');
 
          try {
+            if (linkError) {
+               markInvalid(linkError);
+               return;
+            }
+
             if (code) {
                const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
                if (exchangeError || !data.session) {
-                  setError('The reset link is invalid or expired. Request a new one and use the latest email from Moodeng.');
-                  setRecoveryState('invalid');
+                  const { data: retry } = await supabase.auth.getSession();
+                  if (retry.session?.user) {
+                     markReady();
+                     return;
+                  }
+                  markInvalid(RESET_LINK_ERROR);
                   return;
                }
-               setRecoveryState('ready');
+               markReady();
                return;
             }
 
@@ -55,11 +96,10 @@ export default function ResetPasswordPage(): JSX.Element {
                   refresh_token: refreshToken
                });
                if (sessionError) {
-                  setError('The reset link is invalid or expired. Request a new one and use the latest email from Moodeng.');
-                  setRecoveryState('invalid');
+                  markInvalid(RESET_LINK_ERROR);
                   return;
                }
-               setRecoveryState('ready');
+               markReady();
                return;
             }
 
@@ -69,29 +109,44 @@ export default function ResetPasswordPage(): JSX.Element {
                   type: 'recovery'
                });
                if (verifyError) {
-                  setError('The reset link is invalid or expired. Request a new one and use the latest email from Moodeng.');
-                  setRecoveryState('invalid');
+                  const { data: retry } = await supabase.auth.getSession();
+                  if (retry.session?.user) {
+                     markReady();
+                     return;
+                  }
+                  markInvalid(RESET_LINK_ERROR);
                   return;
                }
-               setRecoveryState('ready');
+               markReady();
                return;
             }
 
             const { data: sessionData } = await supabase.auth.getSession();
-            if (sessionData.session) {
-               setRecoveryState('ready');
+            if (sessionData.session?.user && isPasswordRecoveryReady()) {
+               markReady();
                return;
             }
 
-            setError('Open the reset link from your email, or request a new password reset link.');
-            setRecoveryState('invalid');
+            settleTimer = window.setTimeout(async () => {
+               const { data: settledSession } = await supabase.auth.getSession();
+               if (settledSession.session?.user && isPasswordRecoveryReady()) {
+                  markReady();
+                  return;
+               }
+               markInvalid(MISSING_RESET_SESSION_ERROR);
+            }, RECOVERY_SESSION_SETTLE_MS);
          } catch (recoveryError) {
-            setError(recoveryError instanceof Error ? recoveryError.message : 'Could not open this reset link. Request a new one.');
-            setRecoveryState('invalid');
+            markInvalid(recoveryError instanceof Error ? recoveryError.message : 'Could not open this reset link. Request a new one.');
          }
       };
 
-      prepareRecoverySession();
+      void prepareRecoverySession();
+
+      return () => {
+         cancelled = true;
+         if (settleTimer) window.clearTimeout(settleTimer);
+         subscription.unsubscribe();
+      };
    }, [searchParams]);
 
    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -125,11 +180,13 @@ export default function ResetPasswordPage(): JSX.Element {
             return;
          }
 
-         setMessage('Password updated. You can sign in with the new password now.');
+         clearPasswordRecoveryReady();
+         toast.showToast(TOAST_TYPES.SUCCESS, 'Password updated', 'Your account is secure now.');
+         setMessage('Password updated. Taking you to your dashboard now.');
          setPassword('');
          setConfirmPassword('');
          window.setTimeout(() => {
-            navigate('/sign-in');
+            navigate('/dashboard');
          }, 1800);
       } catch (resetError) {
          setError(resetError instanceof Error ? resetError.message : 'Could not update your password. Try again in a moment.');
@@ -141,6 +198,14 @@ export default function ResetPasswordPage(): JSX.Element {
    if (recoveryState === 'checking') {
       return <Loading />;
    }
+
+   const canSubmit =
+      !loading &&
+      recoveryState === 'ready' &&
+      password.length >= 6 &&
+      confirmPassword.length >= 6 &&
+      password === confirmPassword;
+   const showPasswordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
    return (
       <div className="min-h-screen bg-[#FBFAFD] px-4 py-6 text-[#040033] sm:px-6 sm:py-10">
@@ -181,77 +246,87 @@ export default function ResetPasswordPage(): JSX.Element {
                      </p>
                   </div>
 
-                  <form onSubmit={handleSubmit} className="space-y-5">
-                     <div className="space-y-2">
-                        <label htmlFor="password" className="text-base font-semibold tracking-[-0.02em] text-[#040033]">
-                           New password
-                        </label>
-                        <input
-                           id="password"
-                           name="password"
-                           type="password"
-                           required
-                           value={password}
-                           onChange={(event) => {
-                              setPassword(event.target.value);
-                              setError('');
-                           }}
-                           className="h-14 w-full rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] px-4 text-base text-[#040033] shadow-[0_2px_4px_rgba(27,28,29,0.04)] outline-none placeholder:text-[#70617F] focus:border-[#8336F0] focus:ring-4 focus:ring-[#E9D8FF]"
-                           placeholder="Enter new password"
-                           autoComplete="new-password"
-                        />
-                        <p className="text-sm font-medium leading-5 text-[#70617F]">Use at least 6 characters.</p>
-                     </div>
-
-                     <div className="space-y-2">
-                        <label htmlFor="confirmPassword" className="text-base font-semibold tracking-[-0.02em] text-[#040033]">
-                           Confirm password
-                        </label>
-                        <input
-                           id="confirmPassword"
-                           name="confirmPassword"
-                           type="password"
-                           required
-                           value={confirmPassword}
-                           onChange={(event) => {
-                              setConfirmPassword(event.target.value);
-                              setError('');
-                           }}
-                           className="h-14 w-full rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] px-4 text-base text-[#040033] shadow-[0_2px_4px_rgba(27,28,29,0.04)] outline-none placeholder:text-[#70617F] focus:border-[#8336F0] focus:ring-4 focus:ring-[#E9D8FF]"
-                           placeholder="Re-enter new password"
-                           autoComplete="new-password"
-                        />
-                     </div>
-
-                     {error ? (
+                  {recoveryState === 'invalid' ? (
+                     <div className="space-y-5">
                         <p className="rounded-2xl border border-[#FFD2D8] bg-[#FFF0F2] px-4 py-3 text-sm font-semibold leading-5 text-[#B60413]">
-                           {error}
+                           {error || MISSING_RESET_SESSION_ERROR}
                         </p>
-                     ) : null}
-                     {message ? (
-                        <p className="flex items-start gap-3 rounded-2xl border border-[#BCEFD0] bg-[#EDFFF4] px-4 py-3 text-sm font-semibold leading-5 text-[#0D7A3C]">
-                           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                           {message}
-                        </p>
-                     ) : recoveryState === 'invalid' ? (
                         <p className="rounded-2xl border border-[#E7D8FF] bg-[#F8F4FC] px-4 py-3 text-sm font-semibold leading-5 text-[#4D4359]">
-                           Request a fresh link if this screen was opened without the latest reset email.
+                           Use the newest Moodeng reset email. Older reset links can expire or be replaced by newer emails.
                         </p>
-                     ) : (
+                     </div>
+                  ) : (
+                     <form onSubmit={handleSubmit} className="space-y-5">
                         <p className="flex items-start gap-3 rounded-2xl border border-[#E7D8FF] bg-[#F8F4FC] px-4 py-3 text-sm font-semibold leading-5 text-[#4D4359]">
                            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#8336F0]" />
-                           This link is ready. Set your new password below.
+                           This reset link is ready. Enter matching passwords to continue.
                         </p>
-                     )}
 
-                     <button
-                        type="submit"
-                        disabled={loading || recoveryState !== 'ready' || !password || !confirmPassword}
-                        className="h-14 w-full rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95 disabled:bg-[#BDB5C7] disabled:text-[#FDFCFD]"
-                     >
-                        {loading ? 'Updating...' : 'Update password'}
-                     </button>
-                  </form>
+                        <div className="space-y-2">
+                           <label htmlFor="password" className="text-base font-semibold tracking-[-0.02em] text-[#040033]">
+                              New password
+                           </label>
+                           <input
+                              id="password"
+                              name="password"
+                              type="password"
+                              required
+                              value={password}
+                              onChange={(event) => {
+                                 setPassword(event.target.value);
+                                 setError('');
+                              }}
+                              className="h-14 w-full rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] px-4 text-base text-[#040033] shadow-[0_2px_4px_rgba(27,28,29,0.04)] outline-none placeholder:text-[#70617F] focus:border-[#8336F0] focus:ring-4 focus:ring-[#E9D8FF]"
+                              placeholder="Enter new password"
+                              autoComplete="new-password"
+                           />
+                           <p className="text-sm font-medium leading-5 text-[#70617F]">Use at least 6 characters.</p>
+                        </div>
+
+                        <div className="space-y-2">
+                           <label htmlFor="confirmPassword" className="text-base font-semibold tracking-[-0.02em] text-[#040033]">
+                              Confirm password
+                           </label>
+                           <input
+                              id="confirmPassword"
+                              name="confirmPassword"
+                              type="password"
+                              required
+                              value={confirmPassword}
+                              onChange={(event) => {
+                                 setConfirmPassword(event.target.value);
+                                 setError('');
+                              }}
+                              className="h-14 w-full rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] px-4 text-base text-[#040033] shadow-[0_2px_4px_rgba(27,28,29,0.04)] outline-none placeholder:text-[#70617F] focus:border-[#8336F0] focus:ring-4 focus:ring-[#E9D8FF]"
+                              placeholder="Re-enter new password"
+                              autoComplete="new-password"
+                           />
+                           {showPasswordMismatch ? (
+                              <p className="text-sm font-semibold leading-5 text-[#B60413]">Passwords do not match.</p>
+                           ) : null}
+                        </div>
+
+                        {error ? (
+                           <p className="rounded-2xl border border-[#FFD2D8] bg-[#FFF0F2] px-4 py-3 text-sm font-semibold leading-5 text-[#B60413]">
+                              {error}
+                           </p>
+                        ) : null}
+                        {message ? (
+                           <p className="flex items-start gap-3 rounded-2xl border border-[#BCEFD0] bg-[#EDFFF4] px-4 py-3 text-sm font-semibold leading-5 text-[#0D7A3C]">
+                              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                              {message}
+                           </p>
+                        ) : null}
+
+                        <button
+                           type="submit"
+                           disabled={!canSubmit}
+                           className="h-14 w-full rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95 disabled:bg-[#BDB5C7] disabled:text-[#FDFCFD]"
+                        >
+                           {loading ? 'Updating...' : 'Update password'}
+                        </button>
+                     </form>
+                  )}
 
                   <Link
                      to={recoveryState === 'invalid' ? '/forgot-password' : '/sign-in'}
