@@ -1,5 +1,5 @@
 import { type ChangeEvent, type ReactNode, useState } from 'react';
-import { AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 type ErrorVariant = 'red' | 'amber';
 
@@ -76,10 +76,10 @@ export function AuthInputField({
                <button
                   type="button"
                   onClick={() => setShowPassword((p) => !p)}
-                  className="shrink-0 w-6 h-6 flex items-center justify-center text-[#8336F0] hover:opacity-80"
+                  className="shrink-0 text-[11px] font-bold leading-none tracking-[0.04em] text-[#8336F0] hover:opacity-80"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? 'HIDE' : 'SHOW PASSWORD'}
                </button>
             )}
          </div>
