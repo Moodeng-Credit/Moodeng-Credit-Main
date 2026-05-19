@@ -384,11 +384,7 @@ export default function App() {
             />
             <Route
                path="/support/getting-started"
-               element={
-                  <ProtectedRoute>
-                     <SupportGettingStartedPage />
-                  </ProtectedRoute>
-               }
+               element={<SupportGettingStartedPage />}
             />
             <Route
                path="/support/guides"
