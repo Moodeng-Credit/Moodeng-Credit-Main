@@ -49,11 +49,8 @@ export default function SignUpPage() {
    const [fullName, setFullName] = useState('');
    const [email, setEmail] = useState(initialEmail);
    const [password, setPassword] = useState('');
-   const [confirm, setConfirm] = useState('');
-   const [showPasswords, setShowPasswords] = useState(false);
    const [isLoading, setIsLoading] = useState(false);
    const [showPassWeak, setShowPassWeak] = useState(false);
-   const [showConfirmMismatch, setShowConfirmMismatch] = useState(false);
    const [accountErrorType, setAccountErrorType] = useState<SignUpErrorType>(null);
    const isWorldId = WorldId.INACTIVE;
 
@@ -98,14 +95,12 @@ export default function SignUpPage() {
       setFullName('');
       setEmail('');
       setPassword('');
-      setConfirm('');
       navigate('/auth-success?type=created');
    };
 
    const handleFormRegister = async () => {
       setIsLoading(true);
       setShowPassWeak(false);
-      setShowConfirmMismatch(false);
       setAccountErrorType(null);
       try {
          const result = await dispatch(
@@ -171,16 +166,11 @@ export default function SignUpPage() {
 
    const handleRegister = (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      setShowConfirmMismatch(false);
       setShowPassWeak(false);
       setAccountErrorType(null);
 
       if (password.length < 8) {
          setShowPassWeak(true);
-         return;
-      }
-      if (password !== confirm) {
-         setShowConfirmMismatch(true);
          return;
       }
       if (isWorldId && password && email) {
@@ -312,41 +302,14 @@ export default function SignUpPage() {
                               onChange={(e: ChangeEvent<HTMLInputElement>) => {
                                  setPassword(e.target.value);
                                  setShowPassWeak(false);
-                                 setShowConfirmMismatch(false);
                               }}
-                              error={showPassWeak || showConfirmMismatch}
-                              errorMessage={
-                                 showPassWeak
-                                    ? 'Password too weak'
-                                    : showConfirmMismatch
-                                      ? 'Passwords do not match'
-                                      : undefined
-                              }
-                              errorVariant={showConfirmMismatch ? 'red' : 'amber'}
+                              error={showPassWeak}
+                              errorMessage={showPassWeak ? 'Password too weak' : undefined}
+                              errorVariant="amber"
                               icon={<Icons.lock />}
                               showEyeToggle
-                              isPasswordVisible={showPasswords}
-                              onTogglePasswordVisibility={() => setShowPasswords((visible) => !visible)}
                            />
                            {showPassWeak && <SignUpFormErrorAlert type="password_too_weak" />}
-                        </div>
-
-                        <div className="space-y-2">
-                           <AuthInputField
-                              label="Confirm Password"
-                              type="password"
-                              placeholder="Confirm your password"
-                              value={confirm}
-                              onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                 setConfirm(e.target.value);
-                                 setShowConfirmMismatch(false);
-                              }}
-                              error={showConfirmMismatch}
-                              icon={<Icons.lock />}
-                              showEyeToggle
-                              isPasswordVisible={showPasswords}
-                              onTogglePasswordVisibility={() => setShowPasswords((visible) => !visible)}
-                           />
                         </div>
 
                         <button
