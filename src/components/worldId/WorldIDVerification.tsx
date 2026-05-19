@@ -107,6 +107,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
             if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
                alreadyUsedRef.current = true;
                sessionStorage.setItem('moodeng_worldid_error', 'already_used');
+               setShowAlreadyUsedModal(true);
                return;
             }
             showToastByConfig(handleApiError(result));
