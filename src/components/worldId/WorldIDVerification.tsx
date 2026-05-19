@@ -13,6 +13,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import type { ApiResponse } from '@/types/apiTypes';
+import { ERROR_CODES } from '@/types/errorCodes';
 import { SUCCESS_CODES } from '@/types/successCodes';
 import { getToastKeyFromSuccessCode } from '@/types/successToastMapping';
 
@@ -104,9 +105,10 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          const result = (await res.json()) as ApiResponse;
 
          if (!res.ok || !result.success) {
-            if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
+            if (isApiError(result) && result.errorCode === ERROR_CODES.WORLDID_ALREADY_USED) {
                alreadyUsedRef.current = true;
                sessionStorage.setItem('moodeng_worldid_error', 'already_used');
+               setIsIDKitOpen(false);
                setShowAlreadyUsedModal(true);
                return;
             }
