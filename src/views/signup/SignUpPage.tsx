@@ -321,22 +321,20 @@ export default function SignUpPage() {
                            Create An Account
                         </button>
 
-                        <p className="text-center text-xs leading-[18px] text-[#4D4359] tracking-[-0.02em]">
-                           By creating an account, you agree to our{' '}
+                        <p className="text-center text-xs leading-[18px] text-[#70617F] tracking-[-0.02em]">
+                           By continuing, you agree to Moodeng&apos;s{' '}
                            <Link
                               to="/terms"
-                              className="font-semibold underline hover:opacity-80"
-                              style={{ color: LINK_PURPLE }}
+                              className="font-semibold text-[#6010D2] hover:underline"
                            >
                               Terms
                            </Link>{' '}
                            and{' '}
                            <Link
                               to="/privacy"
-                              className="font-semibold underline hover:opacity-80"
-                              style={{ color: LINK_PURPLE }}
+                              className="font-semibold text-[#6010D2] hover:underline"
                            >
-                              Privacy Policy
+                              Privacy
                            </Link>
                         </p>
                      </form>
