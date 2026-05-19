@@ -40,6 +40,7 @@ import OnboardingWelcome from '@/app/onboarding/welcome/page';
 // Import pages
 import Home from '@/app/page';
 import Profile from '@/app/profile/page';
+import PrivacyPage from '@/app/privacy/page';
 import ResetPassword from '@/app/reset-password/page';
 import RoleSelection from '@/app/role-selection/page';
 import SignUp from '@/app/signup/page';
@@ -51,6 +52,7 @@ import SupportGuidesPage from '@/app/support/guides/page';
 import SupportPage from '@/app/support/page';
 import SupportUpdateDetailPage from '@/app/support/updates/[slug]/page';
 import SupportUpdatesPage from '@/app/support/updates/page';
+import TermsPage from '@/app/terms/page';
 import Test from '@/app/test/page';
 import UserLenderDiversityPage from '@/app/user/[username]/lender-diversity/page';
 import UserProfile from '@/app/user/[username]/page';
@@ -422,6 +424,8 @@ export default function App() {
 
             {/* Public */}
             <Route path="/faq" element={<Navigate to="/support/faq" replace />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
             <Route
                path="/academy"
                element={

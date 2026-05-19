@@ -25,7 +25,6 @@ import { WorldId } from '@/types/authTypes';
 import '@/views/signup/styles/signup.css';
 
 const LINK_PURPLE = '#8336F0';
-const DOCS_URL = 'https://moodeng-credit.gitbook.io/moodeng-credit';
 const VERIFY_EMAIL_STORAGE_KEY = 'moodeng_pending_verification_email';
 
 type SignUpErrorType = 'account_linked' | 'account_exist' | 'email_taken' | null;
@@ -47,14 +46,11 @@ export default function SignUpPage() {
    const toast = useToast();
    const initialEmail = searchParams.get('email')?.trim() ?? '';
    const [showEmailForm, setShowEmailForm] = useState(!!initialEmail);
-   const [fullName, setFullName] = useState('');
+   const [username, setUsername] = useState('');
    const [email, setEmail] = useState(initialEmail);
    const [password, setPassword] = useState('');
-   const [confirm, setConfirm] = useState('');
-   const [showPasswords, setShowPasswords] = useState(false);
    const [isLoading, setIsLoading] = useState(false);
    const [showPassWeak, setShowPassWeak] = useState(false);
-   const [showConfirmMismatch, setShowConfirmMismatch] = useState(false);
    const [accountErrorType, setAccountErrorType] = useState<SignUpErrorType>(null);
    const isWorldId = WorldId.INACTIVE;
 
@@ -96,22 +92,20 @@ export default function SignUpPage() {
          navigate('/auth-success?type=created');
          return;
       }
-      setFullName('');
+      setUsername('');
       setEmail('');
       setPassword('');
-      setConfirm('');
       navigate('/auth-success?type=created');
    };
 
    const handleFormRegister = async () => {
       setIsLoading(true);
       setShowPassWeak(false);
-      setShowConfirmMismatch(false);
       setAccountErrorType(null);
       try {
          const result = await dispatch(
             registerUser({
-               username: fullName.trim() ? slugify(fullName) : email.split('@')[0],
+               username: username.trim() ? slugify(username) : email.split('@')[0],
                isWorldId,
                password,
                email
@@ -172,16 +166,11 @@ export default function SignUpPage() {
 
    const handleRegister = (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      setShowConfirmMismatch(false);
       setShowPassWeak(false);
       setAccountErrorType(null);
 
       if (password.length < 8) {
          setShowPassWeak(true);
-         return;
-      }
-      if (password !== confirm) {
-         setShowConfirmMismatch(true);
          return;
       }
       if (isWorldId && password && email) {
@@ -261,12 +250,13 @@ export default function SignUpPage() {
 
                      <form onSubmit={handleRegister} className="flex flex-col gap-5">
                         <AuthInputField
-                           label="Full Name"
+                           label="Username"
                            type="text"
-                           placeholder="Enter your full name"
-                           value={fullName}
-                           onChange={(e: ChangeEvent<HTMLInputElement>) => setFullName(e.target.value)}
+                           placeholder="Choose a username"
+                           value={username}
+                           onChange={(e: ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
                            icon={<Icons.user />}
+                           tooltip="Full name is not needed. Borrowers verify with World ID or another verification method; lenders can just use a username."
                         />
 
                         <div className="space-y-2">
@@ -313,41 +303,14 @@ export default function SignUpPage() {
                               onChange={(e: ChangeEvent<HTMLInputElement>) => {
                                  setPassword(e.target.value);
                                  setShowPassWeak(false);
-                                 setShowConfirmMismatch(false);
                               }}
-                              error={showPassWeak || showConfirmMismatch}
-                              errorMessage={
-                                 showPassWeak
-                                    ? 'Password too weak'
-                                    : showConfirmMismatch
-                                      ? 'Passwords do not match'
-                                      : undefined
-                              }
-                              errorVariant={showConfirmMismatch ? 'red' : 'amber'}
+                              error={showPassWeak}
+                              errorMessage={showPassWeak ? 'Password too weak' : undefined}
+                              errorVariant="amber"
                               icon={<Icons.lock />}
                               showEyeToggle
-                              isPasswordVisible={showPasswords}
-                              onTogglePasswordVisibility={() => setShowPasswords((visible) => !visible)}
                            />
                            {showPassWeak && <SignUpFormErrorAlert type="password_too_weak" />}
-                        </div>
-
-                        <div className="space-y-2">
-                           <AuthInputField
-                              label="Confirm Password"
-                              type="password"
-                              placeholder="Confirm your password"
-                              value={confirm}
-                              onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                 setConfirm(e.target.value);
-                                 setShowConfirmMismatch(false);
-                              }}
-                              error={showConfirmMismatch}
-                              icon={<Icons.lock />}
-                              showEyeToggle
-                              isPasswordVisible={showPasswords}
-                              onTogglePasswordVisibility={() => setShowPasswords((visible) => !visible)}
-                           />
                         </div>
 
                         <button
@@ -360,15 +323,21 @@ export default function SignUpPage() {
 
                         <p className="text-center text-xs leading-[18px] text-[#4D4359] tracking-[-0.02em]">
                            By creating an account, you agree to our{' '}
-                           <a
-                              href={`${DOCS_URL}/terms`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                           <Link
+                              to="/terms"
                               className="font-semibold underline hover:opacity-80"
                               style={{ color: LINK_PURPLE }}
                            >
-                              Terms and Privacy Policy
-                           </a>
+                              Terms
+                           </Link>{' '}
+                           and{' '}
+                           <Link
+                              to="/privacy"
+                              className="font-semibold underline hover:opacity-80"
+                              style={{ color: LINK_PURPLE }}
+                           >
+                              Privacy Policy
+                           </Link>
                         </p>
                      </form>
 

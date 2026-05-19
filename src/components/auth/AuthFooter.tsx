@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const DOCS_URL = 'https://moodeng-credit.gitbook.io/moodeng-credit';
 
 export function AuthFooter() {
@@ -5,23 +7,13 @@ export function AuthFooter() {
       <footer className="mt-auto w-full px-5 py-4 sm:py-6 border-t border-[#9285A0]">
          <div className="flex flex-col items-center gap-4">
             <p className="text-sm text-[#4D4359]">
-               <a
-                  href={`${DOCS_URL}/privacy`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-               >
+               <Link to="/privacy" className="hover:underline">
                   Privacy
-               </a>
+               </Link>
                {' · '}
-               <a
-                  href={`${DOCS_URL}/terms`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-               >
+               <Link to="/terms" className="hover:underline">
                   Terms
-               </a>
+               </Link>
                {' · '}
                <a href={DOCS_URL} target="_blank" rel="noopener noreferrer" className="hover:underline">
                   Docs
