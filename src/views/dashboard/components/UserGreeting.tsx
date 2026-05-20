@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import BorrowerVerificationBadge from '@/components/BorrowerVerificationBadge';
+import UserAvatar from '@/components/UserAvatar';
 import { getMemberSinceText } from '@/utils/dateFormatters';
 import type { User } from '@/types/authTypes';
 
@@ -28,11 +29,7 @@ export default function UserGreeting({ user }: UserGreetingProps) {
             className="w-12 h-12 rounded-full border-2 border-md-primary-500 overflow-hidden shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
             aria-label="Edit profile photo"
          >
-            {user.avatarUrl ? (
-               <img src={user.avatarUrl} alt={firstName} className="w-full h-full object-cover" />
-            ) : (
-               <img src="/icons/avatar-placeholder.png" alt={firstName} className="w-full h-full object-cover" />
-            )}
+            <UserAvatar size={48} alt={firstName} clickable={false} />
          </button>
          <div className="flex flex-col gap-0.5 min-w-0">
             <button
