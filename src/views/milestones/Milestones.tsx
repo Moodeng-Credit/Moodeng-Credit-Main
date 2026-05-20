@@ -184,6 +184,59 @@ function RewardPreviewIcon({
    );
 }
 
+function getRewardThresholdCopy(reward: TrustPointRewardProgress) {
+   const action = reward.status === 'unlocked' ? 'Unlocked' : 'Unlocks';
+   return `${action} at ${reward.threshold} Trust Points`;
+}
+
+function RewardsHelpSheet({ rewards, onClose }: { rewards: TrustPointRewardProgress[]; onClose: () => void }) {
+   return (
+      <div className="fixed inset-0 z-[80] flex items-end justify-center px-5 pb-5 [font-family:'SF_Pro_Display','SF_Pro',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]">
+         <button type="button" aria-label="Close rewards help" className="absolute inset-0 bg-[#12071f]/28" onClick={onClose} />
+         <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rewards-help-title"
+            className="relative w-full max-w-[440px] rounded-[28px] bg-white px-5 pb-5 pt-3 shadow-[0_24px_80px_rgba(44,19,82,0.18)]"
+         >
+            <div className="mx-auto h-1 w-12 rounded-full bg-[#c9c3d4]" />
+            <div className="mt-5 flex items-start justify-between gap-4">
+               <div>
+                  <p className="text-[12px] font-[590] uppercase leading-none tracking-[0.06em] text-md-primary-900">Rewards</p>
+                  <h3 id="rewards-help-title" className="mt-2 text-[24px] font-[590] leading-[1.12] tracking-[-0.48px] text-md-heading">
+                     How rewards unlock
+                  </h3>
+               </div>
+               <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-md-neutral-900 active:scale-95"
+                  aria-label="Close"
+               >
+                  <img src="/icons/close.svg" alt="" className="h-5 w-5" />
+               </button>
+            </div>
+            <p className="mt-3 text-[14px] font-normal leading-5 text-md-neutral-700">
+               Complete milestones to earn Trust Points. Profile rewards unlock automatically when you reach the required points.
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+               {rewards.map((reward) => (
+                  <div key={reward.id} className="flex items-center justify-between gap-4 rounded-[12px] bg-md-neutral-200 px-3 py-3">
+                     <div className="min-w-0">
+                        <p className="truncate text-[14px] font-[590] leading-5 tracking-[-0.28px] text-md-heading">{reward.title}</p>
+                        <p className="text-[12px] font-normal leading-[18px] tracking-[-0.24px] text-md-neutral-700">{reward.description}</p>
+                     </div>
+                     <span className="shrink-0 rounded-[8px] bg-[#f1ebff] px-2.5 py-2 text-[11px] font-[590] leading-none text-md-primary-900">
+                        {reward.threshold} pts
+                     </span>
+                  </div>
+               ))}
+            </div>
+         </section>
+      </div>
+   );
+}
+
 function TrustPointRewardsPanel({
    pointsTotal,
    unlockedRewardIds,
@@ -195,6 +248,7 @@ function TrustPointRewardsPanel({
    avatarUrl?: string | null;
    avatarBackground?: string | null;
 }) {
+   const [isRewardsHelpOpen, setIsRewardsHelpOpen] = useState(false);
    const progress = getTrustPointRewardProgress(pointsTotal, unlockedRewardIds);
    const visibleRewards = progress.rewards.slice(0, 3);
    const nextRewardLabel = progress.nextReward ? progress.nextReward.title : 'all preview rewards';
@@ -212,6 +266,13 @@ function TrustPointRewardsPanel({
                <p className="mt-1 text-[13px] font-normal leading-5 text-md-neutral-700">
                   Trust Points unlock profile rewards. They do not guarantee funding.
                </p>
+               <button
+                  type="button"
+                  onClick={() => setIsRewardsHelpOpen(true)}
+                  className="mt-2 text-left text-[13px] font-[590] leading-5 text-md-blue-600 underline"
+               >
+                  How rewards work
+               </button>
             </div>
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-[#eafff3]">
                <img src="/icons/milestone-trophy-box.svg" alt="" className="h-10 w-10" />
@@ -237,12 +298,15 @@ function TrustPointRewardsPanel({
                   <RewardPreviewIcon reward={reward} avatarUrl={avatarUrl} avatarBackground={avatarBackground} />
                   <div className="min-w-0">
                      <p className="truncate text-[14px] font-[590] leading-5 tracking-[-0.28px] text-md-heading">{reward.title}</p>
-                     <p className="truncate text-[12px] font-normal leading-[18px] tracking-[-0.24px] text-md-neutral-700">{reward.description}</p>
+                     <p className="truncate text-[12px] font-normal leading-[18px] tracking-[-0.24px] text-md-neutral-700">
+                        {getRewardThresholdCopy(reward)}
+                     </p>
                   </div>
                   <RewardStatusPill reward={reward} pointsToNext={progress.pointsToNext} />
                </div>
             ))}
          </div>
+         {isRewardsHelpOpen ? <RewardsHelpSheet rewards={progress.rewards} onClose={() => setIsRewardsHelpOpen(false)} /> : null}
       </section>
    );
 }
