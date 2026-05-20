@@ -108,6 +108,30 @@ describe('Loan Flow Trigger Integration', () => {
       );
    });
 
+   it('blocks funding when a request is older than the 7-day expiration window', async () => {
+      mockSupabase.single.mockResolvedValueOnce({
+         data: {
+            loan_status: 'Requested',
+            created_at: '2026-04-01T00:00:00.000Z',
+            hash: []
+         },
+         error: null
+      });
+
+      const result = await store.dispatch(
+         updateLoanStatus({
+            id: 'loan-123',
+            loanStatus: 'Lent',
+            wallet: '0x123...'
+         })
+      );
+
+      expect(updateLoanStatus.rejected.match(result)).toBe(true);
+      expect(result.error.message).toBe('This loan request has expired. Ask the borrower to post a new request.');
+      expect(mockSupabase.update).not.toHaveBeenCalled();
+      expect(mockSupabase.functions.invoke).not.toHaveBeenCalled();
+   });
+
    it('should NOT trigger the notification if the status is not "Lent"', async () => {
       const loanUpdatePayload = {
          id: 'loan-123',

@@ -1,6 +1,7 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
+import { isExpiredUnfundedRequest } from '@/lib/borrowerCreditUsage';
 import { evaluateCreditProgression } from '@/lib/creditLeveling';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
@@ -266,6 +267,30 @@ export const updateLoanStatus = createAsyncThunk<
       const sideEffectErrors: LoanSideEffectError[] = [];
 
       const updates: LoanUpdate = {};
+      let currentLoan: Pick<LoanRow, 'created_at' | 'hash' | 'loan_status'> | null = null;
+
+      if (loanStatus === 'Lent' || hash) {
+         const { data: currentLoanRow, error: currentLoanError } = await supabase
+            .from('loans')
+            .select('created_at,hash,loan_status')
+            .eq('id', id)
+            .single();
+
+         if (currentLoanError || !currentLoanRow) {
+            throw new Error(currentLoanError?.message || 'Could not load loan before updating it');
+         }
+
+         currentLoan = currentLoanRow;
+      }
+
+      if (
+         loanStatus === 'Lent' &&
+         currentLoan?.loan_status === 'Requested' &&
+         currentLoan.created_at &&
+         isExpiredUnfundedRequest({ createdAt: currentLoan.created_at, loanStatus: currentLoan.loan_status })
+      ) {
+         throw new Error('This loan request has expired. Ask the borrower to post a new request.');
+      }
 
       if (userId) {
          updates.lender_user_id = userId;
@@ -287,9 +312,6 @@ export const updateLoanStatus = createAsyncThunk<
          updates.funded_at = new Date().toISOString();
       }
       if (hash) {
-         // Fetch current loan to append the new hash
-         const { data: currentLoan } = await supabase.from('loans').select('hash').eq('id', id).single();
-
          updates.hash = [...(currentLoan?.hash || []), hash];
       }
 

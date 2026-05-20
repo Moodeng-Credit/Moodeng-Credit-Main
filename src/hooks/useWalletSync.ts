@@ -124,8 +124,8 @@ export function useWalletSync() {
             );
             showToast(
                TOAST_TYPES.ERROR,
-               'Wrong wallet connected',
-               `Connect ${formatWalletAddressShort(storedWalletAddress)} to continue with this Moodeng account.`,
+               'Saved wallet mismatch',
+               `This account is saved to ${formatWalletAddressShort(storedWalletAddress)}. Connect that Base Account, or update the saved wallet from Account Settings.`,
                undefined,
                undefined
             );

@@ -11,6 +11,7 @@ import type { AppDispatch } from '@/store/store';
 
 const VERIFY_FALLBACK = '/auth-success?type=verify';
 const CREATED_PATH = '/auth-success?type=created';
+const CONFIRMED_PATH = '/auth-success?type=confirmed';
 const RECOVERY_PATH = '/reset-password';
 
 export function isPasswordRecoveryRedirect(url: URL, hashParams = new URLSearchParams()): boolean {
@@ -57,6 +58,23 @@ export default function AuthConfirmPage() {
          navigate(path, { replace: true });
       };
 
+      const finishFromCurrentSession = async (isRecoveryRedirect = false) => {
+         const supabase = getSupabaseBrowserClient();
+         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+         if (sessionError) {
+            setError('We could not finish checking your email session. Please sign in again.');
+            return true;
+         }
+
+         if (!sessionData.session?.user) return false;
+
+         const user = await dispatch(fetchUser())
+            .unwrap()
+            .catch(() => null);
+         finish(getAuthConfirmDestination(isRecoveryRedirect, user?.userRole), isRecoveryRedirect);
+         return true;
+      };
+
       const syncSessionFromUrl = async () => {
          const supabase = getSupabaseBrowserClient();
          const url = new URL(window.location.href);
@@ -64,6 +82,22 @@ export default function AuthConfirmPage() {
          const tokenHash = url.searchParams.get('token_hash');
          const hashParams = new URLSearchParams(window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '');
          const isRecoveryRedirect = isPasswordRecoveryRedirect(url, hashParams);
+         const linkError =
+            url.searchParams.get('error_description') ||
+            url.searchParams.get('error') ||
+            hashParams.get('error_description') ||
+            hashParams.get('error');
+
+         if (linkError) {
+            if (isRecoveryRedirect) {
+               setError(linkError);
+               return false;
+            }
+
+            if (await finishFromCurrentSession(false)) return true;
+            finish(CONFIRMED_PATH);
+            return true;
+         }
 
          if (code) {
             const { data: before } = await supabase.auth.getSession();
@@ -72,6 +106,11 @@ export default function AuthConfirmPage() {
                if (exchangeError) {
                   const { data: retry } = await supabase.auth.getSession();
                   if (!retry.session) {
+                     if (!isRecoveryRedirect) {
+                        finish(CONFIRMED_PATH);
+                        return true;
+                     }
+
                      setError(exchangeError.message);
                      return false;
                   }
@@ -116,11 +155,7 @@ export default function AuthConfirmPage() {
             return false;
          }
 
-         if (sessionData.session?.user) {
-            const user = await dispatch(fetchUser()).unwrap().catch(() => null);
-            finish(getAuthConfirmDestination(isRecoveryRedirect, user?.userRole), isRecoveryRedirect);
-            return true;
-         }
+         if (sessionData.session?.user) return finishFromCurrentSession(isRecoveryRedirect);
 
          const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
             if (!session?.user || finishedRef.current) return;

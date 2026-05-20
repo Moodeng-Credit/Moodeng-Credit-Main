@@ -227,8 +227,8 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
    amount_exceeds_limit: {
       toastType: TOAST_TYPES.ERROR,
       title: 'Amount Exceeds Limit',
-      message: 'The loan amount exceeds your credit score limit.',
-      buttonText: 'View Credit Score',
+      message: 'The loan amount exceeds your available credit limit.',
+      buttonText: 'View Credit Limit',
       buttonAction: 'view_credit_score'
    },
 

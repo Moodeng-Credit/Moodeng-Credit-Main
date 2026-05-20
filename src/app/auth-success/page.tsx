@@ -82,6 +82,7 @@ export default function AuthSuccessPage(): JSX.Element {
    const type = searchParams.get('type');
    const isLinkFlow = type === 'link';
    const isCreatedFlow = type === 'created';
+   const isConfirmedFlow = type === 'confirmed';
 
    if (isCreatedFlow) {
       return <AccountCreatedView />;
@@ -92,15 +93,17 @@ export default function AuthSuccessPage(): JSX.Element {
          imageSrc={isLinkFlow ? '/hippos/hippo-friendly-lock.png' : '/hippos/hippo-purple-envelope-email.png'}
          imageAlt={isLinkFlow ? 'Moodeng holding a lock' : 'Moodeng holding an envelope'}
          eyebrow={isLinkFlow ? 'Account access' : 'Welcome to Moodeng'}
-         title={isLinkFlow ? 'Check your email' : 'Confirm your email'}
+         title={isLinkFlow ? 'Check your email' : isConfirmedFlow ? 'Email confirmed' : 'Confirm your email'}
          body={
             isLinkFlow
                ? 'Use the secure link in the latest Moodeng email to set a password for this account.'
+               : isConfirmedFlow
+                 ? 'Your email link was accepted. Sign in to continue if Moodeng did not open your account automatically.'
                : 'Open the latest Moodeng email, or enter the 6-digit code, to finish setting up your account.'
          }
       >
          <div className="space-y-3">
-            {!isLinkFlow ? (
+            {!isLinkFlow && !isConfirmedFlow ? (
                <Link
                   to="/auth/verify-code"
                   className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95"
@@ -113,7 +116,7 @@ export default function AuthSuccessPage(): JSX.Element {
                to="/sign-in#login"
                className="flex h-12 w-full items-center justify-center rounded-2xl border border-[#E0D7E8] text-sm font-semibold text-[#4D4359] transition hover:bg-[#F8F4FC]"
             >
-               Back to sign in
+               {isConfirmedFlow ? 'Sign in' : 'Back to sign in'}
             </Link>
             <p className="flex items-start gap-3 rounded-2xl border border-[#E7D8FF] bg-[#F8F4FC] px-4 py-3 text-sm font-semibold leading-5 text-[#4D4359]">
                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#8336F0]" />

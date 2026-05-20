@@ -65,8 +65,8 @@ export default function WalletConnected() {
       if (isConnectedWrongWallet) {
          return (
             <FailureView
-               title="Wrong Wallet Connected"
-               body={`Connect ${formatWalletAddressShort(baseWalletLock.address)}. Moodeng only lets you borrow and repay with the Base wallet locked to this account.`}
+               title="Confirm Saved Base Account"
+               body={`Moodeng has ${formatWalletAddressShort(baseWalletLock.address)} saved for this account. Connect that Base Account, or update the saved wallet from Account Settings if this account should use a different one.`}
                onRetry={() => {
                   disconnect();
                   navigate('/onboarding/wallet');
@@ -78,11 +78,11 @@ export default function WalletConnected() {
       if (!baseWalletLock.isConfirmedBase && !isConnectedBaseAccount) {
          return (
             <FailureView
-               title={baseWalletLock.hasStoredWallet ? 'Confirm Your Base Wallet' : 'Base Wallet Not Added'}
+               title={baseWalletLock.hasStoredWallet ? 'Confirm Your Base Account' : 'Base Account Not Added'}
                body={
                   baseWalletLock.hasStoredWallet
-                     ? 'This account has a saved wallet, but Moodeng still needs to confirm it is a Base Account before borrowing or repayment.'
-                     : "We couldn't detect a Base wallet. Please connect a Base Account to continue."
+                     ? `Connect ${formatWalletAddressShort(baseWalletLock.address)} with Base Account so Moodeng can confirm the saved wallet before borrowing or repayment.`
+                     : "We couldn't detect a Base Account. Please connect one to continue."
                }
                onRetry={() => navigate('/onboarding/wallet')}
             />
