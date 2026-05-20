@@ -1,9 +1,16 @@
 import { useState } from 'react';
 
+import { useSelector } from 'react-redux';
 import { Link, useSearchParams } from 'react-router-dom';
 
+import type { RootState } from '@/store/store';
 import { MILESTONE_ICON_CONFIG, MilestoneDetailSheet } from '@/views/dashboard/components/MilestoneSheets';
-import type { DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
+import {
+   getDashboardMilestoneHighlights,
+   getMilestoneSummary,
+   type DashboardMilestone
+} from '@/views/dashboard/dashboardHelpers';
+import { useMilestonePointAwards } from '@/views/dashboard/useMilestonePointAwards';
 
 interface ReputationMilestonesProps {
    milestones: DashboardMilestone[];
@@ -21,12 +28,7 @@ function MilestoneIcon({ status }: { status: DashboardMilestone['status'] }) {
 
 function MilestoneCard({ milestone, onView }: { milestone: DashboardMilestone; onView: (milestone: DashboardMilestone) => void }) {
    const config = MILESTONE_ICON_CONFIG[milestone.status];
-   const summary =
-      milestone.status === 'next'
-         ? milestone.id === 'first-on-time-repayment'
-            ? 'Increase your Trust Score'
-            : milestone.reward
-         : `${milestone.outcome} · ${milestone.benefit}`;
+   const summary = getMilestoneSummary(milestone);
 
    return (
       <div className="grid min-h-[76px] grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-[10px] rounded-[12px] border border-md-primary-100 bg-md-neutral-200 p-3 antialiased">
@@ -51,12 +53,14 @@ function MilestoneCard({ milestone, onView }: { milestone: DashboardMilestone; o
                </button>
             )}
             {milestone.status === 'unlocked' && (
-               <span
+               <button
+                  type="button"
+                  onClick={() => onView(milestone)}
                   className={`inline-flex h-8 items-center justify-center gap-1 whitespace-nowrap rounded-[8px] px-3 py-2 text-[10px] font-[590] leading-[15px] tracking-[-0.2px] antialiased ${config.labelClass}`}
                >
                   Unlocked
-                  <img src="/icons/unlocked.svg" alt="" className="h-3.5 w-3.5 invert" />
-               </span>
+                  <img src="/icons/check-fill.svg" alt="" className="h-4 w-4" />
+               </button>
             )}
             {milestone.status === 'locked' && (
                <button
@@ -89,11 +93,20 @@ function MilestoneSkeletonCard() {
 
 export default function ReputationMilestones({ milestones, isLoading = false }: ReputationMilestonesProps) {
    const [searchParams] = useSearchParams();
+   const userId = useSelector((state: RootState) => state.auth.user.id);
    const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
    const [isHelpOpen, setIsHelpOpen] = useState(false);
    const previewQuery = searchParams.toString();
    const milestonesHref = previewQuery ? `/milestones?${previewQuery}` : '/milestones';
    const selectedMilestone = milestones.find((milestone) => milestone.id === selectedMilestoneId) ?? null;
+   const isPreview = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
+   const visibleMilestones = getDashboardMilestoneHighlights(milestones, 3);
+
+   useMilestonePointAwards({
+      userId,
+      milestones,
+      enabled: !isLoading && !isPreview
+   });
 
    return (
       <div className="rounded-md-lg bg-md-neutral-100 p-4 shadow-md-card [font-family:'SF_Pro_Display','SF_Pro',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]">
@@ -139,7 +152,7 @@ export default function ReputationMilestones({ milestones, isLoading = false }: 
          <div className="flex flex-col gap-2">
             {isLoading
                ? [0, 1, 2].map((item) => <MilestoneSkeletonCard key={item} />)
-               : milestones.slice(0, 3).map((milestone) => (
+               : visibleMilestones.map((milestone) => (
                     <MilestoneCard key={milestone.id} milestone={milestone} onView={(item) => setSelectedMilestoneId(item.id)} />
                  ))}
          </div>

@@ -259,6 +259,239 @@ export type Database = {
           },
         ]
       }
+      milestone_definitions: {
+        Row: {
+          action_label: string | null
+          action_path: string | null
+          benefit: string | null
+          borrower_stage: string
+          category: string
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          outcome: string | null
+          point_source_id: string
+          points_awarded: number
+          reward_label: string | null
+          rule_metadata: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_label?: string | null
+          action_path?: string | null
+          benefit?: string | null
+          borrower_stage?: string
+          category?: string
+          created_at?: string
+          description: string
+          id: string
+          is_active?: boolean
+          outcome?: string | null
+          point_source_id: string
+          points_awarded: number
+          reward_label?: string | null
+          rule_metadata?: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_label?: string | null
+          action_path?: string | null
+          benefit?: string | null
+          borrower_stage?: string
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          outcome?: string | null
+          point_source_id?: string
+          points_awarded?: number
+          reward_label?: string | null
+          rule_metadata?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_milestone_completions: {
+        Row: {
+          completed_at: string
+          id: string
+          metadata: Json
+          milestone_id: string
+          point_event_id: number | null
+          source_id: string
+          source_type: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          metadata?: Json
+          milestone_id: string
+          point_event_id?: number | null
+          source_id: string
+          source_type?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          metadata?: Json
+          milestone_id?: string
+          point_event_id?: number | null
+          source_id?: string
+          source_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_milestone_completions_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "milestone_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_milestone_completions_point_event_id_fkey"
+            columns: ["point_event_id"]
+            isOneToOne: false
+            referencedRelation: "point_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_milestone_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reward_definitions: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          metadata: Json
+          required_points_total: number
+          reward_type: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id: string
+          is_active?: boolean
+          metadata?: Json
+          required_points_total: number
+          reward_type: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          required_points_total?: number
+          reward_type?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      user_rewards: {
+        Row: {
+          id: string
+          metadata: Json
+          reward_id: string
+          source_id: string | null
+          source_type: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          metadata?: Json
+          reward_id: string
+          source_id?: string | null
+          source_type?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          metadata?: Json
+          reward_id?: string
+          source_id?: string | null
+          source_type?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_rewards_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "reward_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_reward_preferences: {
+        Row: {
+          selected_avatar_ring_reward_id: string | null
+          selected_profile_badge_reward_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          selected_avatar_ring_reward_id?: string | null
+          selected_profile_badge_reward_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          selected_avatar_ring_reward_id?: string | null
+          selected_profile_badge_reward_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_reward_preferences_selected_avatar_ring_reward_id_fkey"
+            columns: ["selected_avatar_ring_reward_id"]
+            isOneToOne: false
+            referencedRelation: "reward_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_reward_preferences_selected_profile_badge_reward_id_fkey"
+            columns: ["selected_profile_badge_reward_id"]
+            isOneToOne: false
+            referencedRelation: "reward_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_reward_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guided_tour_events: {
         Row: {
           created_at: string
@@ -407,6 +640,25 @@ export type Database = {
           applied: boolean
           event_id: number | null
           points_total: number
+        }[]
+      }
+      record_milestone_completion: {
+        Args: {
+          metadata_input?: Json
+          milestone_id_input: string
+          user_id_input: string
+        }
+        Returns: {
+          applied: boolean
+          milestone_id: string
+          points_total: number
+        }[]
+      }
+      sync_user_rewards: {
+        Args: { user_id_input: string }
+        Returns: {
+          reward_id: string
+          unlocked_at: string
         }[]
       }
       ensure_email_identity: {
