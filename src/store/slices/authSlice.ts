@@ -724,10 +724,11 @@ const authSlice = createSlice({
          .addMatcher(
             (action) => action.type === 'persist/REHYDRATE',
             (state) => {
-               if (!state.userProfiles) {
-                  state.userProfiles = {};
-               }
-               // Always reset isAuthChecked on rehydration so the initial auth check runs
+               // Persisted auth can come from an older deployment or Supabase project.
+               // Treat it as untrusted until AuthInitializer confirms the live session.
+               state.user = defaultUser;
+               state.username = null;
+               state.userProfiles = {};
                state.isAuthChecked = false;
             }
          );

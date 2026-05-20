@@ -13,6 +13,7 @@ import {
 import { AlertTriangle, HelpCircle, Menu, Search, Wallet, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAccount } from 'wagmi';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
@@ -32,6 +33,7 @@ import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 import { logoImageSrc } from '@/config/navigationConfig';
+import { getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import {
@@ -41,14 +43,14 @@ import {
    recordGuidedTourShown,
    shouldShowGuidedTour
 } from '@/lib/guidedTourStorage';
-import { getBaseWalletLockStatus } from '@/lib/walletProvider';
+import { getBaseWalletLockStatus, isBaseWalletReadyForRepayment } from '@/lib/walletProvider';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
-import { LoanStatus, RepaymentStatus, type Loan } from '@/types/loanTypes';
+import type { Loan } from '@/types/loanTypes';
 import LoanRequestModal, { type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
@@ -139,6 +141,7 @@ function RequestBoard$() {
    const pathname = location.pathname;
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
+   const connectedWallet = useAccount();
 
    const { showToast, showToastByConfig } = useToast();
 
@@ -207,13 +210,7 @@ function RequestBoard$() {
       return floanRequests.filter((loan) => loan.borrowerUser === borrowerUserId);
    }, [borrowerUserId, floanRequests]);
    const usedCreditAmount = useMemo(() => {
-      return borrowerCreditLoans
-         .filter(
-            (loan) =>
-               loan.loanStatus === LoanStatus.REQUESTED ||
-               (loan.loanStatus === LoanStatus.LENT && loan.repaymentStatus !== RepaymentStatus.PAID)
-         )
-         .reduce((sum, loan) => sum + Number(loan.loanAmount || 0), 0);
+      return getBorrowerUsedCreditAmount(borrowerCreditLoans);
    }, [borrowerCreditLoans]);
    const availableCreditLimit = Math.max(effectiveCreditLimit - usedCreditAmount, 0);
    const canUseReferralBoost =
@@ -224,7 +221,14 @@ function RequestBoard$() {
          effectiveCreditLimit <= STARTING_CREDIT_LIMIT &&
          borrowerCreditLoans.length === 0);
    const baseWalletLock = getBaseWalletLockStatus(effectiveUser);
-   const hasBorrowerBaseWallet = !IS_BORROWER_BASE_WALLET_GATE_ENABLED || baseWalletLock.isConfirmedBase;
+   const hasBorrowerBaseWallet =
+      !IS_BORROWER_BASE_WALLET_GATE_ENABLED ||
+      isBaseWalletReadyForRepayment({
+         connectedAddress: connectedWallet.address,
+         connectorId: connectedWallet.connector?.id,
+         connectorName: connectedWallet.connector?.name,
+         wallet: effectiveUser
+      });
    const shouldOpenLoanRequest =
       (location.state as { openLoanRequest?: boolean } | null)?.openLoanRequest === true ||
       new URLSearchParams(location.search).get('applyLoan') === '1';
@@ -739,7 +743,12 @@ function RequestBoard$() {
 
    const filteredLoans = useMemo(() => {
       const allFilters: LoanFilters = { ...filters, search: searchLoan, sortBy: filters.sortBy };
-      return filterLoans(floanRequests, allFilters, customAmount, userProfiles);
+      return filterLoans(
+         floanRequests.filter((loan) => isRequestBoardLoanVisible(loan)),
+         allFilters,
+         customAmount,
+         userProfiles
+      );
    }, [filters, searchLoan, floanRequests, customAmount, userProfiles]);
 
    useEffect(() => {
