@@ -32,7 +32,7 @@ export function useTrustPointTotal({ userId, fallbackPoints, enabled }: UseTrust
 
       const fetchTrustPoints = async () => {
          const supabase = getSupabaseBrowserClient();
-         const { data, error } = await supabase.from('user_points').select('points_total').eq('user_id', userId).maybeSingle();
+         const { data, error } = await supabase.from('user_trust_points').select('points_total').eq('user_id', userId).maybeSingle();
 
          if (!isActive) return;
 
@@ -42,7 +42,7 @@ export function useTrustPointTotal({ userId, fallbackPoints, enabled }: UseTrust
             return;
          }
 
-         setPointsTotal(Math.max(parseMajorPoints(data?.points_total ?? null), fallbackPoints));
+         setPointsTotal(data ? parseMajorPoints(data.points_total) : fallbackPoints);
       };
 
       void fetchTrustPoints();

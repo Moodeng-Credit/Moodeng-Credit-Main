@@ -259,6 +259,83 @@ export type Database = {
           },
         ]
       }
+      trust_point_events: {
+        Row: {
+          created_at: string
+          delta: number
+          event_type: string
+          id: number
+          metadata: Json
+          source_id: string
+          source_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          event_type: string
+          id?: number
+          metadata?: Json
+          source_id: string
+          source_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          event_type?: string
+          id?: number
+          metadata?: Json
+          source_id?: string
+          source_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trust_point_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_trust_points: {
+        Row: {
+          last_event_id: number | null
+          points_total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          last_event_id?: number | null
+          points_total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          last_event_id?: number | null
+          points_total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_trust_points_last_event_id_fkey"
+            columns: ["last_event_id"]
+            isOneToOne: false
+            referencedRelation: "trust_point_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_trust_points_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       milestone_definitions: {
         Row: {
           action_label: string | null
@@ -325,6 +402,7 @@ export type Database = {
           point_event_id: number | null
           source_id: string
           source_type: string
+          trust_point_event_id: number | null
           user_id: string
         }
         Insert: {
@@ -335,6 +413,7 @@ export type Database = {
           point_event_id?: number | null
           source_id: string
           source_type?: string
+          trust_point_event_id?: number | null
           user_id: string
         }
         Update: {
@@ -345,6 +424,7 @@ export type Database = {
           point_event_id?: number | null
           source_id?: string
           source_type?: string
+          trust_point_event_id?: number | null
           user_id?: string
         }
         Relationships: [
@@ -360,6 +440,13 @@ export type Database = {
             columns: ["point_event_id"]
             isOneToOne: false
             referencedRelation: "point_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_milestone_completions_trust_point_event_id_fkey"
+            columns: ["trust_point_event_id"]
+            isOneToOne: false
+            referencedRelation: "trust_point_events"
             referencedColumns: ["id"]
           },
           {

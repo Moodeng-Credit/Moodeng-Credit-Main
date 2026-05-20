@@ -195,6 +195,12 @@ function pointEventRuleLabel(eventType: string, sourceType: string) {
    return rule?.action ?? `${sourceType} ${eventType}`;
 }
 
+function trustPointEventRuleLabel(event: AdminDirectoryUser['recentTrustPointEvents'][number]) {
+   const title = event.metadata?.title;
+   if (typeof title === 'string' && title.trim()) return title;
+   return `${event.source_type} ${event.event_type}`;
+}
+
 function hasPositivePoints(points: number | string) {
    return Number(formatPointsMajor(points)) > 0;
 }
@@ -258,6 +264,9 @@ export default function AdminPanel() {
       (first, second) => Number(formatPointsMajor(second.pointsTotal)) - Number(formatPointsMajor(first.pointsTotal))
    );
    const borrowerTrustRows = users.filter((user) => user.user_role === 'borrower');
+   const usersByTrustPoints = [...borrowerTrustRows].sort(
+      (first, second) => Number(formatPointsMajor(second.trustPointsTotal)) - Number(formatPointsMajor(first.trustPointsTotal))
+   );
 
    async function refresh(searchValue = search, options: { showLoading?: boolean } = {}) {
       if (options.showLoading) setAdminDataLoading(true);
@@ -944,18 +953,18 @@ export default function AdminPanel() {
                         <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Source of truth</p>
                         <h2 className="break-words text-4xl font-black sm:text-5xl">Trust points</h2>
                         <p className="mt-3 max-w-4xl text-2xl text-[#6f627e]">
-                           Borrower-only guide for trust points. The important current truth: there is no separate live trust-points balance
-                           wired into Supabase yet.
+                           Borrower-only Trust Points from <span className="font-black text-[#1c053d]">user_trust_points</span> and{' '}
+                           <span className="font-black text-[#1c053d]">trust_point_events</span>. These are separate from lender IOU points.
                         </p>
                      </div>
 
                      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-                        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-                           <p className="text-sm font-black uppercase tracking-wide text-amber-800">Current storage</p>
-                           <h3 className="mt-2 text-3xl font-black text-[#1c053d]">No trust_points storage</h3>
-                           <p className="mt-3 text-lg font-bold leading-8 text-amber-900">
-                              Borrowers currently have credit-limit fields such as users.cs, users.mal, and users.nal. Those are not IOU
-                              points and not a separate trust-points ledger.
+                        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
+                           <p className="text-sm font-black uppercase tracking-wide text-emerald-800">Current storage</p>
+                           <h3 className="mt-2 text-3xl font-black text-[#1c053d]">Live Trust Point ledger</h3>
+                           <p className="mt-3 text-lg font-bold leading-8 text-emerald-900">
+                              Milestone completions write borrower Trust Point events into Supabase. Credit limit fields such as users.cs stay
+                              separate.
                            </p>
                         </div>
                         <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
@@ -977,21 +986,25 @@ export default function AdminPanel() {
                      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                         <StatCard label="Borrowers loaded" value={borrowerTrustRows.length} note="Admin directory rows" />
                         <StatCard
+                           label="With Trust Points"
+                           value={borrowerTrustRows.filter((user) => hasPositivePoints(user.trustPointsTotal)).length}
+                           note="Stored borrower totals"
+                        />
+                        <StatCard
                            label="Live trust rules"
                            value={trustPointsAwardRules.filter((rule) => rule.status === 'live').length}
-                           note="None yet"
+                           note="Milestone rules"
                         />
-                        <StatCard label="Current borrower field" value={1} note="users.cs credit limit" />
-                        <StatCard label="Trust point tables" value={0} note="Not created yet" />
+                        <StatCard label="Trust point tables" value={2} note="Balance + event ledger" />
                      </div>
 
                      <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
-                        <h3 className="text-3xl font-black">Borrower trust snapshot</h3>
+                        <h3 className="text-3xl font-black">Current Trust Point balances</h3>
                         <p className="mt-2 text-lg font-bold text-[#6f627e]">
-                           This shows current borrower credit fields only. It is not a trust-points balance.
+                           Sorted by highest stored Trust Point balance in the currently loaded admin directory.
                         </p>
                         <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                           {borrowerTrustRows.map((user) => (
+                           {usersByTrustPoints.map((user) => (
                               <article key={user.id} className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5">
                                  <div className="flex flex-wrap items-start justify-between gap-4">
                                     <div>
@@ -1001,15 +1014,32 @@ export default function AdminPanel() {
                                        </p>
                                     </div>
                                     <strong className="rounded-2xl bg-[#1c053d] px-4 py-3 text-2xl font-black text-white">
-                                       CS {user.cs ?? 0}
+                                       {formatPointsMajor(user.trustPointsTotal)}
                                     </strong>
                                  </div>
                                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <DirectoryMetric label="Trust updated" value={formatDate(user.trustPointsUpdatedAt)} />
+                                    <DirectoryMetric label="Trust events" value={user.trustPointEventCount} />
                                     <DirectoryMetric label="Paid loans" value={user.paidLoanCount} />
-                                    <DirectoryMetric label="Active loans" value={user.activeLoanCount} />
-                                    <DirectoryMetric label="Open requests" value={user.openRequestCount} />
-                                    <DirectoryMetric label="Outstanding" value={formatMoney(user.outstandingDue)} />
+                                    <DirectoryMetric label="Credit limit" value={`$${user.cs ?? 0}`} />
                                  </div>
+                                 {user.recentTrustPointEvents.length ? (
+                                    <div className="mt-4 space-y-3">
+                                       {user.recentTrustPointEvents.map((event) => (
+                                          <div key={event.id} className="rounded-2xl border border-[#eadff8] bg-white p-4">
+                                             <div className="flex flex-wrap items-center justify-between gap-3">
+                                                <strong className="text-lg font-black text-[#1c053d]">{trustPointEventRuleLabel(event)}</strong>
+                                                <Badge tone="active">+{formatPointsMajor(event.delta)} Trust</Badge>
+                                             </div>
+                                             <p className="mt-2 text-base font-bold text-[#6f627e]">{formatDateTime(event.created_at)}</p>
+                                          </div>
+                                       ))}
+                                    </div>
+                                 ) : (
+                                    <p className="mt-4 rounded-2xl border border-[#eadff8] bg-white p-4 text-lg font-bold text-[#6f627e]">
+                                       No Trust Point events loaded yet.
+                                    </p>
+                                 )}
                               </article>
                            ))}
                         </div>
@@ -1021,8 +1051,7 @@ export default function AdminPanel() {
                            <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Reference guide</p>
                            <h3 className="mt-2 text-4xl font-black text-[#1c053d]">Trust points reference guide</h3>
                            <p className="mt-3 text-xl font-bold leading-8 text-[#6f627e]">
-                              These rules document what exists today. Real trust-point awards still need a product decision and a Supabase
-                              balance/events model.
+                              These live rules are stored as milestone definitions and awarded through the borrower Trust Point ledger.
                            </p>
                         </div>
                         <div className="grid gap-5 xl:grid-cols-2">
@@ -1033,7 +1062,7 @@ export default function AdminPanel() {
                                        <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">{rule.system}</p>
                                        <h4 className="mt-2 text-3xl font-black text-[#1c053d]">{rule.action}</h4>
                                     </div>
-                                    <Badge tone="watchlist">{ruleStatusLabel(rule.status)}</Badge>
+                                    <Badge tone={rule.status === 'live' ? 'active' : 'watchlist'}>{ruleStatusLabel(rule.status)}</Badge>
                                  </div>
                                  <dl className="mt-5 grid gap-4">
                                     <div>
