@@ -21,6 +21,8 @@ type CreditLevelInput = {
    loans: Loan[];
 };
 
+const DASHBOARD_REFRESH_INTERVAL_MS = 30_000;
+
 const buildUnlockDate = (date?: string | null): string | undefined => {
    if (!date) return undefined;
    return formatDate(date);
@@ -110,25 +112,8 @@ export const useDashboardData = (activeRole: RoleType) => {
    const userId = useSelector((state: RootState) => state.auth.user.id);
    const user = useSelector((state: RootState) => state.auth.user);
    const gloanRequests = useSelector((state: RootState) => state.loans.loans.gloans || []);
-   const [isReady, setIsReady] = useState(false);
-
-   useEffect(() => {
-      const fetchData = async () => {
-         if (!userId) {
-            setIsReady(false);
-            return;
-         }
-
-         setIsReady(false);
-         try {
-            await dispatch(getUserLoans({ userId }));
-            await dispatch(fetchUser());
-         } finally {
-            setIsReady(true);
-         }
-      };
-      void fetchData();
-   }, [dispatch, userId]);
+   const userLoansFetchedFor = useSelector((state: RootState) => state.loans.userLoansFetchedFor);
+   const userLoansFetchedAt = useSelector((state: RootState) => state.loans.userLoansFetchedAt);
 
    const userLoans = useMemo(() => {
       return gloanRequests.filter((loan) => (activeRole === 'borrower' ? loan.borrowerUser === userId : loan.lenderUser === userId));
@@ -137,6 +122,46 @@ export const useDashboardData = (activeRole: RoleType) => {
    const borrowerLoans = useMemo(() => {
       return gloanRequests.filter((loan) => loan.borrowerUser === userId);
    }, [gloanRequests, userId]);
+
+   const hasCachedDashboardData = userLoansFetchedFor === userId || userLoans.length > 0;
+   const hasFreshDashboardData =
+      userLoansFetchedFor === userId &&
+      userLoansFetchedAt !== null &&
+      Date.now() - userLoansFetchedAt < DASHBOARD_REFRESH_INTERVAL_MS;
+   const [isReady, setIsReady] = useState(() => Boolean(userId && hasCachedDashboardData));
+
+   useEffect(() => {
+      if (!userId) {
+         setIsReady(false);
+         return;
+      }
+
+      if (hasCachedDashboardData) {
+         setIsReady(true);
+      } else {
+         setIsReady(false);
+      }
+
+      if (hasFreshDashboardData) {
+         return;
+      }
+
+      let cancelled = false;
+
+      const refreshData = async () => {
+         await Promise.allSettled([dispatch(getUserLoans({ userId })).unwrap(), dispatch(fetchUser()).unwrap()]);
+
+         if (!cancelled) {
+            setIsReady(true);
+         }
+      };
+
+      void refreshData();
+
+      return () => {
+         cancelled = true;
+      };
+   }, [dispatch, hasCachedDashboardData, hasFreshDashboardData, userId]);
 
    const loanArrays = useMemo(() => {
       const repayments = userLoans.filter((loan) => loan.repaymentStatus === 'Paid');
