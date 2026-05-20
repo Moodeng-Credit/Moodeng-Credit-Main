@@ -209,7 +209,7 @@ export default function ResetPasswordPage(): JSX.Element {
    const showPasswordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
    const passwordType = showPasswords ? 'text' : 'password';
    const passwordToggleLabel = showPasswords ? 'Hide passwords' : 'Show passwords';
-   const PasswordToggleIcon = showPasswords ? EyeOff : Eye;
+   const PasswordToggleIcon = showPasswords ? Eye : EyeOff;
 
    return (
       <div className="min-h-screen bg-[#FBFAFD] px-4 py-6 text-[#040033] sm:px-6 sm:py-10">
