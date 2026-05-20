@@ -5,6 +5,7 @@ import type { FormEvent, ReactNode } from 'react';
 
 import { useSelector } from 'react-redux';
 
+import { formatPointsMajor, iouPointsAwardRules, loanFundingPointsPerUsdc, pointsAwardRules, trustPointsAwardRules } from '@/shared/points';
 import type { RootState } from '@/store/store';
 
 import {
@@ -30,7 +31,7 @@ import {
 } from './adminSupabase';
 import RiskAssessmentSection from './RiskAssessmentSection';
 
-type AdminTab = 'users' | 'defaults' | 'requests' | 'risk' | 'notifications';
+type AdminTab = 'users' | 'points' | 'trust-points' | 'defaults' | 'requests' | 'risk' | 'notifications';
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
 
 type NoticeTemplate = {
@@ -42,6 +43,8 @@ type NoticeTemplate = {
 
 const navItems: Array<{ id: AdminTab; label: string }> = [
    { id: 'users', label: 'User directory' },
+   { id: 'points', label: 'IOU points' },
+   { id: 'trust-points', label: 'Trust points' },
    { id: 'defaults', label: 'Default recovery' },
    { id: 'requests', label: 'Loan request review' },
    { id: 'risk', label: 'Risk assessment' },
@@ -181,9 +184,32 @@ function roleLabel(role: AdminDirectoryUser['user_role']) {
    return role === 'unset' ? 'no role' : role;
 }
 
+function ruleStatusLabel(status: (typeof pointsAwardRules)[number]['status']) {
+   if (status === 'live') return 'Live';
+   if (status === 'display-only') return 'Display only';
+   return 'Not awarded';
+}
+
+function pointEventRuleLabel(eventType: string, sourceType: string) {
+   const rule = pointsAwardRules.find((item) => item.eventType === eventType && item.sourceType === sourceType);
+   return rule?.action ?? `${sourceType} ${eventType}`;
+}
+
+function hasPositivePoints(points: number | string) {
+   return Number(formatPointsMajor(points)) > 0;
+}
+
+function initialAdminTab(): AdminTab {
+   if (typeof window === 'undefined') return 'users';
+   const tab = new URLSearchParams(window.location.search).get('tab');
+   if (tab === 'iou' || tab === 'points') return 'points';
+   if (tab === 'trust' || tab === 'trust-points') return 'trust-points';
+   return 'users';
+}
+
 export default function AdminPanel() {
    const reduxUser = useSelector((state: RootState) => state.auth.user);
-   const [activeTab, setActiveTab] = useState<AdminTab>('users');
+   const [activeTab, setActiveTab] = useState<AdminTab>(() => initialAdminTab());
    const [admin, setAdmin] = useState<AdminUser | null>(null);
    const [overview, setOverview] = useState<AdminOverview | null>(null);
    const [integrityRun, setIntegrityRun] = useState<AdminIntegrityRun | null>(null);
@@ -228,6 +254,10 @@ export default function AdminPanel() {
          return `${user.username} ${user.wallet_address ?? ''} ${user.email ?? ''}`.toLowerCase().includes(noticeSearch);
       })
       .slice(0, 8);
+   const usersByIouPoints = [...users].sort(
+      (first, second) => Number(formatPointsMajor(second.pointsTotal)) - Number(formatPointsMajor(first.pointsTotal))
+   );
+   const borrowerTrustRows = users.filter((user) => user.user_role === 'borrower');
 
    async function refresh(searchValue = search, options: { showLoading?: boolean } = {}) {
       if (options.showLoading) setAdminDataLoading(true);
@@ -624,6 +654,11 @@ export default function AdminPanel() {
                                             label="Credit metrics"
                                             value={`CS ${user.cs ?? 0} · MAL ${user.mal ?? 0} · NAL ${user.nal ?? 0}`}
                                          />
+                                         <DirectoryMetric
+                                            label="IOU balance"
+                                            value={formatPointsMajor(user.pointsTotal)}
+                                            tone={hasPositivePoints(user.pointsTotal) ? 'success' : 'default'}
+                                         />
                                          <DirectoryMetric label="Lender activity" value={`${user.lentLoanCount} funded`} />
                                          <DirectoryMetric
                                             label="Last loan activity"
@@ -674,6 +709,13 @@ export default function AdminPanel() {
                                                <strong className="mt-2 block text-3xl">${user.cs ?? 0}</strong>
                                                <p className="mt-2 text-lg font-bold text-[#6f627e]">
                                                   MAL {user.mal ?? 0} · NAL {user.nal ?? 0}
+                                               </p>
+                                            </div>
+                                            <div className="rounded-2xl border border-[#eadff8] bg-white p-5">
+                                               <p className="text-sm font-black uppercase text-[#6f627e]">IOU balance</p>
+                                               <strong className="mt-2 block text-3xl">{formatPointsMajor(user.pointsTotal)}</strong>
+                                               <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                                                  {user.pointEventCount} recent events loaded · updated {formatDate(user.pointsUpdatedAt)}
                                                </p>
                                             </div>
                                             <div className="rounded-2xl border border-[#eadff8] bg-white p-5">
@@ -735,6 +777,286 @@ export default function AdminPanel() {
                            : null}
                         {adminDataLoaded && !filteredDirectory.length ? <EmptyPanel message="No users match these filters." /> : null}
                      </div>
+                  </section>
+               ) : null}
+
+               {activeTab === 'points' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Source of truth</p>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">IOU points</h2>
+                        <p className="mt-3 max-w-4xl text-2xl text-[#6f627e]">
+                           Lender-only points from <span className="font-black text-[#1c053d]">user_points</span> and{' '}
+                           <span className="font-black text-[#1c053d]">point_events</span>. The guide below reads from the shared points
+                           rules used by the funding code.
+                        </p>
+                     </div>
+
+                     <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+                        <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                           <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Live rule</p>
+                           <h3 className="mt-2 text-3xl font-black text-[#1c053d]">
+                              {loanFundingPointsPerUsdc} IOU per 1 USDC funded + borrower bonus
+                           </h3>
+                           <p className="mt-3 text-lg font-bold leading-8 text-[#6f627e]">
+                              Example: a $20 loan to a first-time borrower earns $20 base IOU + 25 bonus IOU = 45 IOU.
+                           </p>
+                        </div>
+                        <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                           <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Reference guide</p>
+                           <h3 className="mt-2 text-3xl font-black text-[#1c053d]">IOU guide only</h3>
+                           <p className="mt-3 text-lg font-bold leading-8 text-[#6f627e]">
+                              This is separate from borrower credit, borrower trust, Academy display rewards, and risk scoring.
+                           </p>
+                           <a
+                              href="#iou-points-reference-guide"
+                              className="mt-5 inline-flex rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white no-underline"
+                           >
+                              Open IOU reference guide
+                           </a>
+                        </div>
+                     </div>
+
+                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <StatCard
+                           label="People with IOU"
+                           value={users.filter((user) => hasPositivePoints(user.pointsTotal)).length}
+                           note="Loaded admin directory"
+                        />
+                        <StatCard
+                           label="IOU events"
+                           value={users.reduce((sum, user) => sum + user.pointEventCount, 0)}
+                           note="Recent point events loaded"
+                        />
+                        <StatCard
+                           label="Live IOU rules"
+                           value={iouPointsAwardRules.filter((rule) => rule.status === 'live').length}
+                           note="Shared rules"
+                        />
+                        <StatCard label="Point system" value={1} note="IOU points only" />
+                     </div>
+
+                     <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                        <h3 className="text-3xl font-black">Current IOU balances</h3>
+                        <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                           Sorted by highest IOU point balance in the currently loaded admin directory.
+                        </p>
+                        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                           {usersByIouPoints.map((user) => (
+                              <article key={user.id} className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5">
+                                 <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                       <h4 className="break-words text-2xl font-black">{user.username}</h4>
+                                       <p className="mt-1 text-lg font-bold text-[#6f627e]">{roleLabel(user.user_role)}</p>
+                                    </div>
+                                    <strong className="rounded-2xl bg-[#1c053d] px-4 py-3 text-2xl font-black text-white">
+                                       {formatPointsMajor(user.pointsTotal)}
+                                    </strong>
+                                 </div>
+                                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <DirectoryMetric label="Funded loans" value={user.lentLoanCount} />
+                                    <DirectoryMetric label="Points updated" value={formatDate(user.pointsUpdatedAt)} />
+                                 </div>
+                                 {user.recentPointEvents.length ? (
+                                    <div className="mt-4 space-y-3">
+                                       {user.recentPointEvents.map((event) => (
+                                          <div key={event.id} className="rounded-2xl border border-[#eadff8] bg-white p-4">
+                                             <div className="flex flex-wrap items-center justify-between gap-3">
+                                                <strong className="text-lg font-black text-[#1c053d]">
+                                                   {pointEventRuleLabel(event.event_type, event.source_type)}
+                                                </strong>
+                                                <Badge tone="active">+{formatPointsMajor(event.delta)} IOU</Badge>
+                                             </div>
+                                             <p className="mt-2 text-base font-bold text-[#6f627e]">{formatDateTime(event.created_at)}</p>
+                                          </div>
+                                       ))}
+                                    </div>
+                                 ) : (
+                                    <p className="mt-4 rounded-2xl border border-[#eadff8] bg-white p-4 text-lg font-bold text-[#6f627e]">
+                                       No recent IOU point events loaded.
+                                    </p>
+                                 )}
+                              </article>
+                           ))}
+                        </div>
+                        {!usersByIouPoints.length ? <EmptyPanel message="Loading IOU point balances from Supabase..." /> : null}
+                     </div>
+
+                     <section id="iou-points-reference-guide" className="space-y-5 scroll-mt-8">
+                        <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                           <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Reference guide</p>
+                           <h3 className="mt-2 text-4xl font-black text-[#1c053d]">IOU points reference guide</h3>
+                           <p className="mt-3 text-xl font-bold leading-8 text-[#6f627e]">
+                              Year 1 only. Later-year tokenomics stay manual until we choose to wire them into the product.
+                           </p>
+                        </div>
+                        <div className="grid gap-5 xl:grid-cols-2">
+                           {iouPointsAwardRules.map((rule) => (
+                              <article key={rule.id} className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                                 <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div>
+                                       <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">{rule.system}</p>
+                                       <h4 className="mt-2 text-3xl font-black text-[#1c053d]">{rule.action}</h4>
+                                    </div>
+                                    <Badge tone={rule.status === 'live' ? 'active' : 'watchlist'}>{ruleStatusLabel(rule.status)}</Badge>
+                                 </div>
+                                 <dl className="mt-5 grid gap-4">
+                                    <div>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Points</dt>
+                                       <dd className="mt-1 text-2xl font-black text-[#1c053d]">{rule.points}</dd>
+                                    </div>
+                                    <div>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Who gets it</dt>
+                                       <dd className="mt-1 text-2xl font-black text-[#1c053d]">{rule.actor}</dd>
+                                    </div>
+                                    <div>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Criteria</dt>
+                                       <dd className="mt-1 text-xl font-bold leading-8 text-[#6f627e]">{rule.criteria}</dd>
+                                    </div>
+                                    <div>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Example</dt>
+                                       <dd className="mt-1 text-xl font-black text-[#1c053d]">{rule.example}</dd>
+                                    </div>
+                                 </dl>
+                                 {rule.bonusTiers?.length ? (
+                                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                                       {rule.bonusTiers.map((tier) => (
+                                          <div key={tier.id} className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-4">
+                                             <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">
+                                                {tier.borrowerLoanNumber}
+                                             </p>
+                                             <p className="mt-1 text-2xl font-black text-[#1c053d]">+{tier.bonusPoints} IOU</p>
+                                             <p className="mt-1 text-base font-bold text-[#6f627e]">{tier.criteria}</p>
+                                          </div>
+                                       ))}
+                                    </div>
+                                 ) : null}
+                              </article>
+                           ))}
+                        </div>
+                     </section>
+                  </section>
+               ) : null}
+
+               {activeTab === 'trust-points' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Source of truth</p>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Trust points</h2>
+                        <p className="mt-3 max-w-4xl text-2xl text-[#6f627e]">
+                           Borrower-only guide for trust points. The important current truth: there is no separate live trust-points balance
+                           wired into Supabase yet.
+                        </p>
+                     </div>
+
+                     <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+                        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+                           <p className="text-sm font-black uppercase tracking-wide text-amber-800">Current storage</p>
+                           <h3 className="mt-2 text-3xl font-black text-[#1c053d]">No trust_points storage</h3>
+                           <p className="mt-3 text-lg font-bold leading-8 text-amber-900">
+                              Borrowers currently have credit-limit fields such as users.cs, users.mal, and users.nal. Those are not IOU
+                              points and not a separate trust-points ledger.
+                           </p>
+                        </div>
+                        <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                           <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Reference guide</p>
+                           <h3 className="mt-2 text-3xl font-black text-[#1c053d]">Trust guide only</h3>
+                           <p className="mt-3 text-lg font-bold leading-8 text-[#6f627e]">
+                              This page is intentionally separate from lender IOU points so we do not mix borrower trust with lender
+                              rewards.
+                           </p>
+                           <a
+                              href="#trust-points-reference-guide"
+                              className="mt-5 inline-flex rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white no-underline"
+                           >
+                              Open Trust reference guide
+                           </a>
+                        </div>
+                     </div>
+
+                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <StatCard label="Borrowers loaded" value={borrowerTrustRows.length} note="Admin directory rows" />
+                        <StatCard
+                           label="Live trust rules"
+                           value={trustPointsAwardRules.filter((rule) => rule.status === 'live').length}
+                           note="None yet"
+                        />
+                        <StatCard label="Current borrower field" value={1} note="users.cs credit limit" />
+                        <StatCard label="Trust point tables" value={0} note="Not created yet" />
+                     </div>
+
+                     <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                        <h3 className="text-3xl font-black">Borrower trust snapshot</h3>
+                        <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                           This shows current borrower credit fields only. It is not a trust-points balance.
+                        </p>
+                        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                           {borrowerTrustRows.map((user) => (
+                              <article key={user.id} className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5">
+                                 <div className="flex flex-wrap items-start justify-between gap-4">
+                                    <div>
+                                       <h4 className="break-words text-2xl font-black">{user.username}</h4>
+                                       <p className="mt-1 text-lg font-bold text-[#6f627e]">
+                                          {user.is_world_id === 'ACTIVE' ? 'Verified borrower' : 'Not verified'}
+                                       </p>
+                                    </div>
+                                    <strong className="rounded-2xl bg-[#1c053d] px-4 py-3 text-2xl font-black text-white">
+                                       CS {user.cs ?? 0}
+                                    </strong>
+                                 </div>
+                                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <DirectoryMetric label="Paid loans" value={user.paidLoanCount} />
+                                    <DirectoryMetric label="Active loans" value={user.activeLoanCount} />
+                                    <DirectoryMetric label="Open requests" value={user.openRequestCount} />
+                                    <DirectoryMetric label="Outstanding" value={formatMoney(user.outstandingDue)} />
+                                 </div>
+                              </article>
+                           ))}
+                        </div>
+                        {!borrowerTrustRows.length ? <EmptyPanel message="No borrower rows loaded yet." /> : null}
+                     </div>
+
+                     <section id="trust-points-reference-guide" className="space-y-5 scroll-mt-8">
+                        <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                           <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Reference guide</p>
+                           <h3 className="mt-2 text-4xl font-black text-[#1c053d]">Trust points reference guide</h3>
+                           <p className="mt-3 text-xl font-bold leading-8 text-[#6f627e]">
+                              These rules document what exists today. Real trust-point awards still need a product decision and a Supabase
+                              balance/events model.
+                           </p>
+                        </div>
+                        <div className="grid gap-5 xl:grid-cols-2">
+                           {trustPointsAwardRules.map((rule) => (
+                              <article key={rule.id} className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                                 <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div>
+                                       <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">{rule.system}</p>
+                                       <h4 className="mt-2 text-3xl font-black text-[#1c053d]">{rule.action}</h4>
+                                    </div>
+                                    <Badge tone="watchlist">{ruleStatusLabel(rule.status)}</Badge>
+                                 </div>
+                                 <dl className="mt-5 grid gap-4">
+                                    <div>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Points</dt>
+                                       <dd className="mt-1 text-2xl font-black text-[#1c053d]">{rule.points}</dd>
+                                    </div>
+                                    <div>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Who gets it</dt>
+                                       <dd className="mt-1 text-2xl font-black text-[#1c053d]">{rule.actor}</dd>
+                                    </div>
+                                    <div>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Criteria</dt>
+                                       <dd className="mt-1 text-xl font-bold leading-8 text-[#6f627e]">{rule.criteria}</dd>
+                                    </div>
+                                    <div>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Example</dt>
+                                       <dd className="mt-1 text-xl font-black text-[#1c053d]">{rule.example}</dd>
+                                    </div>
+                                 </dl>
+                              </article>
+                           ))}
+                        </div>
+                     </section>
                   </section>
                ) : null}
 

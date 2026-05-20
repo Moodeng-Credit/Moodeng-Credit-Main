@@ -1,8 +1,9 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { configureStore } from '@reduxjs/toolkit';
-import loanReducer, { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
-import authReducer from '@/store/slices/authSlice';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import authReducer from '@/store/slices/authSlice';
+import loanReducer, { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 
 // Mock the Supabase client
 vi.mock('@/lib/supabase/client', () => ({
@@ -38,13 +39,18 @@ describe('Loan Flow Trigger Integration', () => {
                tracking_id: 'TRK-123',
                loan_status: 'Lent',
                loan_amount: 10,
+               borrower_user_id: 'borrower-123',
                lender_user_id: 'user-123',
                funded_at: '2024-01-01T00:00:00Z'
             },
             error: null
          }),
+         neq: vi.fn().mockResolvedValue({
+            count: 0,
+            error: null
+         }),
          rpc: vi.fn().mockResolvedValue({
-            data: [{ applied: true, event_id: 1, points_total: 20000000 }],
+            data: [{ applied: true, event_id: 1, points_total: 35000000 }],
             error: null
          }),
          functions: {
@@ -84,10 +90,12 @@ describe('Loan Flow Trigger Integration', () => {
 
       // Assert that the database update was called
       expect(mockSupabase.from).toHaveBeenCalledWith('loans');
-      expect(mockSupabase.update).toHaveBeenCalledWith(expect.objectContaining({
-         loan_status: 'Lent',
-         lender_wallet: '0x123...'
-      }));
+      expect(mockSupabase.update).toHaveBeenCalledWith(
+         expect.objectContaining({
+            loan_status: 'Lent',
+            lender_wallet: '0x123...'
+         })
+      );
 
       // Assert that the edge function was invoked
       expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
@@ -103,7 +111,15 @@ describe('Loan Flow Trigger Integration', () => {
             user_id_input: 'user-123',
             source_type_input: 'loan',
             source_id_input: 'loan-123',
-            event_type_input: 'funded'
+            event_type_input: 'funded',
+            delta_input: '35000000',
+            metadata_input: expect.objectContaining({
+               reward_year: 1,
+               base_points_per_usdc: 1,
+               borrower_prior_funded_loan_count: 0,
+               borrower_loan_number: 1,
+               borrower_bonus_points: 25
+            })
          })
       );
    });

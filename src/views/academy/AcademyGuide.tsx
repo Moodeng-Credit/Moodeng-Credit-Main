@@ -1,6 +1,8 @@
 import { type CSSProperties, type JSX, type MouseEvent, useEffect, useMemo, useState } from 'react';
+
 import { Link } from 'react-router-dom';
 
+import { ACADEMY_QUIZ_POINTS_PER_CORRECT_ANSWER, computeAcademyQuizPoints } from '@/shared/points';
 import '@/views/academy/AcademyGuide.css';
 
 type AcademyStep = {
@@ -28,7 +30,6 @@ type MechaMessage = {
 };
 
 const quizSecondsPerQuestion = 12;
-const quizPointsPerAnswer = 2;
 const tutorialVideoEmbedUrl = 'https://www.youtube.com/embed/fKpBC9zD6Hk';
 const quizPassingScore = 4;
 const baseWalletOnboardingPath = '/onboarding/wallet?returnTo=academy';
@@ -262,7 +263,12 @@ const RequestScreen = ({ onMechaAction }: { onMechaAction: (message: MechaMessag
                <div className="academy-limit">Your available credit limit: $15</div>
                <label className="academy-input-label">
                   <span>Borrow amount</span>
-                  <input value={amount} onChange={(event) => setAmount(event.target.value)} inputMode="decimal" aria-label="Borrow amount" />
+                  <input
+                     value={amount}
+                     onChange={(event) => setAmount(event.target.value)}
+                     inputMode="decimal"
+                     aria-label="Borrow amount"
+                  />
                </label>
                <div className="academy-chips">
                   {['10', '15', '20', '40'].map((value) => (
@@ -282,7 +288,12 @@ const RequestScreen = ({ onMechaAction }: { onMechaAction: (message: MechaMessag
                </label>
                <label className="academy-input-label">
                   <span>Payback amount</span>
-                  <input value={payback} onChange={(event) => setPayback(event.target.value)} inputMode="decimal" aria-label="Payback amount" />
+                  <input
+                     value={payback}
+                     onChange={(event) => setPayback(event.target.value)}
+                     inputMode="decimal"
+                     aria-label="Payback amount"
+                  />
                </label>
                <label className="academy-input-label">
                   <span>Reason</span>
@@ -437,13 +448,13 @@ export default function AcademyGuide(): JSX.Element {
       }, 0);
    }, [quizAnswers]);
 
-   const quizPoints = quizScore * quizPointsPerAnswer;
+   const quizPoints = computeAcademyQuizPoints(quizScore);
    const activeQuestion = quizQuestions[quizIndex];
    const activeAnswer = activeQuestion ? quizAnswers[activeQuestion.id] : '';
    const quizPassed = quizStatus === 'score' && quizScore >= quizPassingScore;
-   const quizReward = quizRole === 'borrower' ? 'trust points' : 'IOU points';
+   const quizReward = 'Academy score';
    const quizClaimPath = quizRole === 'borrower' ? '/verify-world-id' : '/sign-up';
-   const quizClaimLabel = quizRole === 'borrower' ? 'Verify to claim' : 'Register to claim';
+   const quizClaimLabel = quizRole === 'borrower' ? 'Verify World ID' : 'Register';
 
    const resetQuiz = () => {
       setQuizAnswers({});
@@ -565,10 +576,7 @@ export default function AcademyGuide(): JSX.Element {
       };
    }, [showTutorialVideo]);
 
-   const progressStyle = useMemo(
-      () => ({ '--academy-reading-progress': `${readingProgress}%` }) as CSSProperties,
-      [readingProgress]
-   );
+   const progressStyle = useMemo(() => ({ '--academy-reading-progress': `${readingProgress}%` }) as CSSProperties, [readingProgress]);
 
    const handlePathClick = (event: MouseEvent<HTMLAnchorElement>, stepId: string) => {
       const step = document.getElementById(`academy-step-${stepId}`);
@@ -630,11 +638,7 @@ export default function AcademyGuide(): JSX.Element {
 
       if (step.id === 'request') {
          return (
-            <button
-               className="academy-step__action"
-               type="button"
-               onClick={() => scrollToAcademyStep('request')}
-            >
+            <button className="academy-step__action" type="button" onClick={() => scrollToAcademyStep('request')}>
                {step.action}
             </button>
          );
@@ -642,11 +646,7 @@ export default function AcademyGuide(): JSX.Element {
 
       if (step.id === 'board') {
          return (
-            <button
-               className="academy-step__action"
-               type="button"
-               onClick={() => scrollToAcademyStep('board')}
-            >
+            <button className="academy-step__action" type="button" onClick={() => scrollToAcademyStep('board')}>
                {step.action}
             </button>
          );
@@ -702,10 +702,7 @@ export default function AcademyGuide(): JSX.Element {
          {mechaMessage ? (
             <div className="academy-mecha-overlay" role="dialog" aria-modal="true" aria-labelledby="academy-mecha-title">
                <div className="academy-mecha-modal">
-                  <img
-                     src="https://c.animaapp.com/wawSHnKX/img/screenshot-2024-09-19-at-15-51-16-removebg-preview-3.png"
-                     alt=""
-                  />
+                  <img src="https://c.animaapp.com/wawSHnKX/img/screenshot-2024-09-19-at-15-51-16-removebg-preview-3.png" alt="" />
                   <div>
                      <p className="academy-mecha-modal__eyebrow">Mecha says</p>
                      <h3 id="academy-mecha-title">{mechaMessage.title}</h3>
@@ -725,16 +722,12 @@ export default function AcademyGuide(): JSX.Element {
                <div className="academy-kicker">Moodeng Academy</div>
                <h1>How to use Moodeng Credit</h1>
                <p>
-                  A simple walkthrough of the borrower flow. Start here if you want to know what to click, what lenders see,
-                  and how repayment grows your limit.
+                  A simple walkthrough of the borrower flow. Start here if you want to know what to click, what lenders see, and how
+                  repayment grows your limit.
                </p>
                <div className="academy-path" aria-label="Academy path">
                   {pathLinks.map((link) => (
-                     <a
-                        href={`#academy-step-${link.stepId}`}
-                        key={link.stepId}
-                        onClick={(event) => handlePathClick(event, link.stepId)}
-                     >
+                     <a href={`#academy-step-${link.stepId}`} key={link.stepId} onClick={(event) => handlePathClick(event, link.stepId)}>
                         {link.label}
                      </a>
                   ))}
@@ -759,13 +752,8 @@ export default function AcademyGuide(): JSX.Element {
             </div>
             <div className="academy-hero__visual" aria-hidden="true">
                <div className="academy-mecha-card">
-                  <div className="academy-mecha-card__bubble">
-                     I am Mecha. I will walk you through Moodeng step by step.
-                  </div>
-                  <img
-                     src="https://c.animaapp.com/wawSHnKX/img/screenshot-2024-09-19-at-15-51-16-removebg-preview-3.png"
-                     alt=""
-                  />
+                  <div className="academy-mecha-card__bubble">I am Mecha. I will walk you through Moodeng step by step.</div>
+                  <img src="https://c.animaapp.com/wawSHnKX/img/screenshot-2024-09-19-at-15-51-16-removebg-preview-3.png" alt="" />
                </div>
             </div>
          </section>
@@ -831,8 +819,8 @@ export default function AcademyGuide(): JSX.Element {
                   <div className="academy-step__eyebrow">Final quiz</div>
                   <h2>Earn your Academy reward</h2>
                   <p>
-                     Finish the quick check. Score {quizPassingScore} of {quizQuestions.length} or better and the reward
-                     matches your role: borrowers get trust points, lenders get IOU points.
+                     Finish the quick check. Score {quizPassingScore} of {quizQuestions.length} or better to pass. This is a learning score
+                     today, not a live IOU or trust-points balance.
                   </p>
                   <div className="academy-role-toggle" aria-label="Choose reward type">
                      <button
@@ -857,7 +845,7 @@ export default function AcademyGuide(): JSX.Element {
                            ? `Nice. You earned ${quizReward}.`
                            : quizStatus === 'score'
                              ? `Almost. Retake for ${quizReward}.`
-                             : `Score ${quizPassingScore}+ to earn ${quizReward}. Each correct answer is 2 points.`}
+                             : `Score ${quizPassingScore}+ to earn ${quizReward}. Each correct answer is ${ACADEMY_QUIZ_POINTS_PER_CORRECT_ANSWER} points.`}
                      </strong>
                   </div>
                </div>
@@ -867,7 +855,8 @@ export default function AcademyGuide(): JSX.Element {
                         <span>Moodeng Academy Quiz</span>
                         <h3>Ready for the check?</h3>
                         <p>
-                           Answer {quizQuestions.length} quick questions. Each correct answer earns 2 points toward your reward.
+                           Answer {quizQuestions.length} quick questions. Each correct answer earns {ACADEMY_QUIZ_POINTS_PER_CORRECT_ANSWER}{' '}
+                           points toward your Academy score.
                         </p>
                         <button type="button" onClick={resetQuiz}>
                            Start quiz
@@ -915,11 +904,7 @@ export default function AcademyGuide(): JSX.Element {
                            type="button"
                            onClick={handleQuizPrimary}
                         >
-                           {quizSubmitted
-                              ? quizIndex === quizQuestions.length - 1
-                                 ? 'See score'
-                                 : 'Next question'
-                              : 'Submit answer'}
+                           {quizSubmitted ? (quizIndex === quizQuestions.length - 1 ? 'See score' : 'Next question') : 'Submit answer'}
                         </button>
                      </div>
                   ) : (
@@ -928,7 +913,7 @@ export default function AcademyGuide(): JSX.Element {
                         <h3>{quizPassed ? 'Academy passed' : 'Try again'}</h3>
                         <p>
                            {quizPassed
-                              ? `You scored ${quizScore} of ${quizQuestions.length}. Log in and finish the ${quizRole} flow to claim ${quizReward}.`
+                              ? `You scored ${quizScore} of ${quizQuestions.length}. Log in and finish the ${quizRole} flow to keep going.`
                               : `You scored ${quizScore} of ${quizQuestions.length}. Score ${quizPassingScore} of ${quizQuestions.length} to unlock ${quizReward}.`}
                         </p>
                         {quizPassed && (

@@ -1,3 +1,5 @@
+import { loanFundingPointsPerUsdc } from '@/shared/points';
+
 export interface AccountFAQItem {
    id: string;
    question: string;
@@ -34,7 +36,7 @@ Then find a verification location near you. Open https://world.org/find-orb to s
 Go to the Orb. Open the World App, follow the prompts, and let the Orb scan your eyes — it takes about a minute. The scan is converted into an anonymous proof; your biometrics never leave the device.
 
 Once verified in the World App, come back to Moodeng and tap "Verify with World ID" — that links your World ID to your account in seconds, and you're done.`
-   },
+   }
 ];
 
 // Shown to borrowers only
@@ -78,7 +80,7 @@ So if you want to grow your reputation quickly, Trust-Building Loans are a great
 If your limit is $20 and you only borrow $15, that doesn't count toward the next level — even if you repay it perfectly. The system needs to see you can handle the full limit before it raises the ceiling.
 
 Progression goes $15 → $20 → $40 → $60 — and beyond. One step at a time: borrow your max, repay on time, repeat.`
-   },
+   }
 ];
 
 // Shown to lenders only
@@ -86,7 +88,7 @@ export const LENDER_FAQS: AccountFAQItem[] = [
    {
       id: 'what-are-iou-points',
       question: 'What are IOU Points?',
-      answer: `IOU Points are reputation points earned by lenders. Each time you fund a loan and get repaid on time, you earn IOU. They track who's actively supporting the community.
+      answer: `IOU Points are reputation points earned by lenders. In Year 1, funding a loan earns ${loanFundingPointsPerUsdc} IOU per 1 USDC funded, plus a borrower-order bonus: +25 IOU for a borrower's first funded loan, +20 for their second, +15 for their third, and +10 after that. They track who's actively supporting the community.
 
 Right now IOU is just points. Down the line, we'll launch a token also called IOU, and your accumulated points will convert via an airdrop. Holding IOU will unlock additional benefits tied to the platform.
 
@@ -121,5 +123,5 @@ You can track all your active loans and repayment statuses from your Lender Dash
       answer: `The due date is set by the borrower when they post their request — you'll see it clearly on the loan card before you fund, so you always know the timeline upfront.
 
 Once the loan is due, the borrower repays directly to your Base account. You can track the status of all your active loans on your Lender Dashboard.`
-   },
+   }
 ];
