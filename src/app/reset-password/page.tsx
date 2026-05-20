@@ -1,6 +1,6 @@
 import { type FormEvent, type JSX, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, HelpCircle, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Eye, EyeOff, HelpCircle, ShieldCheck } from 'lucide-react';
 
 import Loading from '@/components/Loading';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
@@ -21,6 +21,7 @@ const RECOVERY_SESSION_SETTLE_MS = 1200;
 export default function ResetPasswordPage(): JSX.Element {
    const [password, setPassword] = useState('');
    const [confirmPassword, setConfirmPassword] = useState('');
+   const [showPasswords, setShowPasswords] = useState(false);
    const [message, setMessage] = useState('');
    const [error, setError] = useState('');
    const [loading, setLoading] = useState(false);
@@ -206,6 +207,9 @@ export default function ResetPasswordPage(): JSX.Element {
       confirmPassword.length >= 6 &&
       password === confirmPassword;
    const showPasswordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
+   const passwordType = showPasswords ? 'text' : 'password';
+   const passwordToggleLabel = showPasswords ? 'Hide passwords' : 'Show passwords';
+   const PasswordToggleIcon = showPasswords ? EyeOff : Eye;
 
    return (
       <div className="min-h-screen bg-[#FBFAFD] px-4 py-6 text-[#040033] sm:px-6 sm:py-10">
@@ -268,20 +272,30 @@ export default function ResetPasswordPage(): JSX.Element {
                            <label htmlFor="password" className="text-base font-semibold tracking-[-0.02em] text-[#040033]">
                               New password
                            </label>
-                           <input
-                              id="password"
-                              name="password"
-                              type="password"
-                              required
-                              value={password}
-                              onChange={(event) => {
-                                 setPassword(event.target.value);
-                                 setError('');
-                              }}
-                              className="h-14 w-full rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] px-4 text-base text-[#040033] shadow-[0_2px_4px_rgba(27,28,29,0.04)] outline-none placeholder:text-[#70617F] focus:border-[#8336F0] focus:ring-4 focus:ring-[#E9D8FF]"
-                              placeholder="Enter new password"
-                              autoComplete="new-password"
-                           />
+                           <div className="relative">
+                              <input
+                                 id="password"
+                                 name="password"
+                                 type={passwordType}
+                                 required
+                                 value={password}
+                                 onChange={(event) => {
+                                    setPassword(event.target.value);
+                                    setError('');
+                                 }}
+                                 className="h-14 w-full rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] px-4 pr-12 text-base text-[#040033] shadow-[0_2px_4px_rgba(27,28,29,0.04)] outline-none placeholder:text-[#70617F] focus:border-[#8336F0] focus:ring-4 focus:ring-[#E9D8FF]"
+                                 placeholder="Enter new password"
+                                 autoComplete="new-password"
+                              />
+                              <button
+                                 type="button"
+                                 onClick={() => setShowPasswords((visible) => !visible)}
+                                 className="absolute right-4 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center text-[#8336F0] transition hover:opacity-80"
+                                 aria-label={passwordToggleLabel}
+                              >
+                                 <PasswordToggleIcon className="h-5 w-5" />
+                              </button>
+                           </div>
                            <p className="text-sm font-medium leading-5 text-[#70617F]">Use at least 6 characters.</p>
                         </div>
 
@@ -289,20 +303,30 @@ export default function ResetPasswordPage(): JSX.Element {
                            <label htmlFor="confirmPassword" className="text-base font-semibold tracking-[-0.02em] text-[#040033]">
                               Confirm password
                            </label>
-                           <input
-                              id="confirmPassword"
-                              name="confirmPassword"
-                              type="password"
-                              required
-                              value={confirmPassword}
-                              onChange={(event) => {
-                                 setConfirmPassword(event.target.value);
-                                 setError('');
-                              }}
-                              className="h-14 w-full rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] px-4 text-base text-[#040033] shadow-[0_2px_4px_rgba(27,28,29,0.04)] outline-none placeholder:text-[#70617F] focus:border-[#8336F0] focus:ring-4 focus:ring-[#E9D8FF]"
-                              placeholder="Re-enter new password"
-                              autoComplete="new-password"
-                           />
+                           <div className="relative">
+                              <input
+                                 id="confirmPassword"
+                                 name="confirmPassword"
+                                 type={passwordType}
+                                 required
+                                 value={confirmPassword}
+                                 onChange={(event) => {
+                                    setConfirmPassword(event.target.value);
+                                    setError('');
+                                 }}
+                                 className="h-14 w-full rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] px-4 pr-12 text-base text-[#040033] shadow-[0_2px_4px_rgba(27,28,29,0.04)] outline-none placeholder:text-[#70617F] focus:border-[#8336F0] focus:ring-4 focus:ring-[#E9D8FF]"
+                                 placeholder="Re-enter new password"
+                                 autoComplete="new-password"
+                              />
+                              <button
+                                 type="button"
+                                 onClick={() => setShowPasswords((visible) => !visible)}
+                                 className="absolute right-4 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center text-[#8336F0] transition hover:opacity-80"
+                                 aria-label={passwordToggleLabel}
+                              >
+                                 <PasswordToggleIcon className="h-5 w-5" />
+                              </button>
+                           </div>
                            {showPasswordMismatch ? (
                               <p className="text-sm font-semibold leading-5 text-[#B60413]">Passwords do not match.</p>
                            ) : null}
