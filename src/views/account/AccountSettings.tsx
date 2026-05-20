@@ -152,8 +152,8 @@ function PasswordInput({
                   className="w-5 h-5 bg-md-neutral-1000"
                   style={{
                      ...ICON_MASK,
-                     WebkitMaskImage: `url('/icons/${visible ? 'eye-off' : 'eye'}.svg')`,
-                     maskImage: `url('/icons/${visible ? 'eye-off' : 'eye'}.svg')`
+                     WebkitMaskImage: `url('/icons/${visible ? 'eye' : 'eye-off'}.svg')`,
+                     maskImage: `url('/icons/${visible ? 'eye' : 'eye-off'}.svg')`
                   }}
                />
             </button>
