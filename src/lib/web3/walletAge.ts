@@ -17,6 +17,10 @@ export interface WalletAgeInfo {
    lastTxTimestamp: number;
 }
 
+const WALLET_AGE_CACHE_TTL_MS = 10 * 60 * 1000;
+const walletAgeCache = new Map<string, { info: WalletAgeInfo | null; fetchedAt: number }>();
+const walletAgeRequests = new Map<string, Promise<WalletAgeInfo | null>>();
+
 interface TransferData {
    earliestTimestamp: number | null;
    latestTimestamp: number | null;
@@ -75,7 +79,7 @@ async function fetchTransferData(rpcUrl: string, address: string, direction: 'fr
    };
 }
 
-export async function getWalletAgeInfo(address: string): Promise<WalletAgeInfo | null> {
+async function fetchWalletAgeInfo(address: string): Promise<WalletAgeInfo | null> {
    if (!ALCHEMY_API_KEY) return null;
    if (!address?.startsWith('0x') || address.length !== 42) return null;
 
@@ -120,6 +124,34 @@ export async function getWalletAgeInfo(address: string): Promise<WalletAgeInfo |
    } catch {
       return null;
    }
+}
+
+export async function getWalletAgeInfo(address: string): Promise<WalletAgeInfo | null> {
+   if (!ALCHEMY_API_KEY) return null;
+   if (!address?.startsWith('0x') || address.length !== 42) return null;
+
+   const cacheKey = address.toLowerCase();
+   const cached = walletAgeCache.get(cacheKey);
+   if (cached && Date.now() - cached.fetchedAt < WALLET_AGE_CACHE_TTL_MS) {
+      return cached.info;
+   }
+
+   const activeRequest = walletAgeRequests.get(cacheKey);
+   if (activeRequest) {
+      return activeRequest;
+   }
+
+   const request = fetchWalletAgeInfo(address)
+      .then((info) => {
+         walletAgeCache.set(cacheKey, { info, fetchedAt: Date.now() });
+         return info;
+      })
+      .finally(() => {
+         walletAgeRequests.delete(cacheKey);
+      });
+
+   walletAgeRequests.set(cacheKey, request);
+   return request;
 }
 
 export async function getWalletAgeDays(address: string): Promise<number | null> {

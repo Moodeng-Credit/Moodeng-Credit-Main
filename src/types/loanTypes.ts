@@ -43,6 +43,8 @@ export interface LoanState {
       gloans: Loan[];
       floans: Loan[];
    };
+   userLoansFetchedFor: string | null;
+   userLoansFetchedAt: number | null;
    isLoading: boolean;
    error: string | null;
 }
