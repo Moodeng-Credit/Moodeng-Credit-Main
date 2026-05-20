@@ -2,6 +2,7 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 
 import { isExactCreditTier } from '@/config/creditTiers';
+import { trustPointMilestoneRuleById } from '@/shared/points';
 import type { Loan } from '@/types/loanTypes';
 import type { CreditLevel } from '@/views/profile/components/tabs/types';
 
@@ -153,12 +154,12 @@ export const buildReputationMilestones = ({
    return applyMilestoneStatuses([
       {
          id: 'verify-identity',
-         pointSourceId: '9c826a2d-2fc8-43b5-95b6-09d7f21f1e01',
+         pointSourceId: trustPointMilestoneRuleById['verify-identity'].pointSourceId,
          title: isVerified ? 'Identity verified' : 'Verify your identity',
          description: isVerified
             ? 'Your account can request borrower credit.'
             : 'Unlock borrowing and start building your public trust record.',
-         points: 10,
+         points: trustPointMilestoneRuleById['verify-identity'].points,
          reward: 'Borrowing unlocked',
          outcome: 'Borrowing unlocked',
          benefit: 'Verified profile',
@@ -169,10 +170,10 @@ export const buildReputationMilestones = ({
       },
       {
          id: 'first-loan-request',
-         pointSourceId: '6cb37536-68e5-4d38-a2eb-ef850b69c7ad',
+         pointSourceId: trustPointMilestoneRuleById['first-loan-request'].pointSourceId,
          title: 'Post your first loan request',
          description: 'Ask for a small amount with a clear reason and due date.',
-         points: 10,
+         points: trustPointMilestoneRuleById['first-loan-request'].points,
          reward: 'Visible to lenders',
          outcome: 'Visible to lenders',
          benefit: 'Request live',
@@ -182,10 +183,10 @@ export const buildReputationMilestones = ({
       },
       {
          id: 'first-funded-loan',
-         pointSourceId: 'a030a2e0-3955-443a-b2c7-e1ac03f0319f',
+         pointSourceId: trustPointMilestoneRuleById['first-funded-loan'].pointSourceId,
          title: 'Get funded by a lender',
          description: 'A lender accepts your request and trusts you with your first loan.',
-         points: 15,
+         points: trustPointMilestoneRuleById['first-funded-loan'].points,
          reward: 'First lender signal',
          outcome: 'Lender signal gained',
          benefit: 'History started',
@@ -195,10 +196,10 @@ export const buildReputationMilestones = ({
       },
       {
          id: 'first-on-time-repayment',
-         pointSourceId: '30898ca5-6a8f-4275-8b33-56d5d797435b',
+         pointSourceId: trustPointMilestoneRuleById['first-on-time-repayment'].pointSourceId,
          title: 'Repay a loan on time',
          description: 'Pay the full amount before the due date to start your repayment record.',
-         points: 20,
+         points: trustPointMilestoneRuleById['first-on-time-repayment'].points,
          reward: `Trust Points earned${currentLevelAmount ? ` · up to $${currentLevelAmount}` : ''}`,
          outcome: 'Trust Points earned',
          benefit: currentLevelAmount ? `Up to $${currentLevelAmount}` : 'Limit progress',
@@ -208,10 +209,10 @@ export const buildReputationMilestones = ({
       },
       {
          id: 'two-on-time-streak',
-         pointSourceId: 'f7c1c0d2-93a9-404d-925c-7201d20d0d84',
+         pointSourceId: trustPointMilestoneRuleById['two-on-time-streak'].pointSourceId,
          title: 'Build a 2-loan on-time streak',
          description: 'Show lenders that your repayment reliability is repeatable.',
-         points: 25,
+         points: trustPointMilestoneRuleById['two-on-time-streak'].points,
          reward: 'Stronger lender confidence',
          outcome: 'Reliability improved',
          benefit: 'Stronger profile',
@@ -221,10 +222,10 @@ export const buildReputationMilestones = ({
       },
       {
          id: 'full-limit-credit-builder',
-         pointSourceId: '1e10653e-46ce-4c8d-b2ef-738f3c55a7c9',
+         pointSourceId: trustPointMilestoneRuleById['full-limit-credit-builder'].pointSourceId,
          title: 'Repay a full-limit credit-builder',
          description: 'Use your current Credit Level amount and repay it on time.',
-         points: 30,
+         points: trustPointMilestoneRuleById['full-limit-credit-builder'].points,
          reward: 'Credit Level progress',
          outcome: 'Level progress',
          benefit: 'Higher limit path',
@@ -234,10 +235,10 @@ export const buildReputationMilestones = ({
       },
       {
          id: 'two-unique-lenders',
-         pointSourceId: '05d358b1-ce9b-49ec-9fd6-61611c1e4e37',
+         pointSourceId: trustPointMilestoneRuleById['two-unique-lenders'].pointSourceId,
          title: 'Borrow from 2 different lenders',
          description: 'Build a reputation that does not depend on just one lender.',
-         points: 30,
+         points: trustPointMilestoneRuleById['two-unique-lenders'].points,
          reward: 'Lender diversity signal',
          outcome: 'Diversity improved',
          benefit: 'Broader trust',
@@ -247,10 +248,10 @@ export const buildReputationMilestones = ({
       },
       {
          id: 'repay-100-total',
-         pointSourceId: 'e4a7c7cb-2a88-483e-ad57-a79b35e1a32b',
+         pointSourceId: trustPointMilestoneRuleById['repay-100-total'].pointSourceId,
          title: 'Repay $100 total',
          description: 'Grow from starter loans into a real repayment history.',
-         points: 40,
+         points: trustPointMilestoneRuleById['repay-100-total'].points,
          reward: 'Volume trust signal',
          outcome: 'Volume signal',
          benefit: '$100 repaid',
@@ -260,10 +261,10 @@ export const buildReputationMilestones = ({
       },
       {
          id: 'reach-level-three',
-         pointSourceId: 'fe748497-60b8-4545-b44c-3f77c7172dc6',
+         pointSourceId: trustPointMilestoneRuleById['reach-level-three'].pointSourceId,
          title: 'Reach Credit Level 3',
          description: 'Unlock a higher borrowing limit through verified on-time repayment.',
-         points: 50,
+         points: trustPointMilestoneRuleById['reach-level-three'].points,
          reward: 'Higher borrowing power',
          outcome: 'Higher limit unlocked',
          benefit: 'Level 3',
@@ -273,10 +274,10 @@ export const buildReputationMilestones = ({
       },
       {
          id: 'trusted-borrower-candidate',
-         pointSourceId: '3d321dad-0854-4f4b-aa95-5441a8f77099',
+         pointSourceId: trustPointMilestoneRuleById['trusted-borrower-candidate'].pointSourceId,
          title: 'Become a trusted borrower candidate',
          description: 'Complete 5 on-time repayments, use 3 lenders, and keep defaults resolved.',
-         points: 75,
+         points: trustPointMilestoneRuleById['trusted-borrower-candidate'].points,
          reward: 'Future top-user perks',
          outcome: 'Priority signal',
          benefit: 'Review ready',

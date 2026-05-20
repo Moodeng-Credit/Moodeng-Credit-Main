@@ -86,6 +86,11 @@ export interface AdminDirectoryUser {
    pointEventCount: number;
    latestPointEventAt: string | null;
    recentPointEvents: AdminPointEvent[];
+   trustPointsTotal: number | string;
+   trustPointsUpdatedAt: string | null;
+   trustPointEventCount: number;
+   latestTrustPointEventAt: string | null;
+   recentTrustPointEvents: AdminPointEvent[];
    restriction: AdminRestriction | null;
    riskProfile: AdminRiskProfile | null;
 }
@@ -342,7 +347,7 @@ async function fetchUsersByIds(userIds: string[]): Promise<Map<string, AdminDire
    );
 
    const emptyLoans: AnyRow[] = [];
-   return buildDirectoryRows(rows, emptyLoans, [], [], [], []).then((users) => new Map(users.map((user) => [user.id, user])));
+   return buildDirectoryRows(rows, emptyLoans, [], [], [], [], [], []).then((users) => new Map(users.map((user) => [user.id, user])));
 }
 
 async function buildDirectoryRows(
@@ -351,12 +356,21 @@ async function buildDirectoryRows(
    restrictionRows: AnyRow[],
    riskRows: AnyRow[],
    pointRows: AnyRow[],
-   pointEventRows: AnyRow[]
+   pointEventRows: AnyRow[],
+   trustPointRows: AnyRow[],
+   trustPointEventRows: AnyRow[]
 ): Promise<AdminDirectoryUser[]> {
    const restrictionsByUserId = new Map(restrictionRows.map((row) => [row.user_id, mapRestriction(row)]));
    const riskByUserId = new Map(riskRows.map((row) => [row.user_id, mapRiskProfile(row)]));
    const pointsByUserId = new Map(pointRows.map((row) => [row.user_id, row]));
+   const trustPointsByUserId = new Map(trustPointRows.map((row) => [row.user_id, row]));
    const pointEventsByUserId = pointEventRows.reduce((eventsByUser, row) => {
+      const userEvents = eventsByUser.get(row.user_id) ?? [];
+      userEvents.push(mapPointEvent(row));
+      eventsByUser.set(row.user_id, userEvents);
+      return eventsByUser;
+   }, new Map<string, AdminPointEvent[]>());
+   const trustPointEventsByUserId = trustPointEventRows.reduce((eventsByUser, row) => {
       const userEvents = eventsByUser.get(row.user_id) ?? [];
       userEvents.push(mapPointEvent(row));
       eventsByUser.set(row.user_id, userEvents);
@@ -382,6 +396,9 @@ async function buildDirectoryRows(
       const userPointEvents = pointEventsByUserId.get(row.id) ?? [];
       const latestPointEventAt = userPointEvents[0]?.created_at ?? null;
       const pointsRow = pointsByUserId.get(row.id);
+      const userTrustPointEvents = trustPointEventsByUserId.get(row.id) ?? [];
+      const latestTrustPointEventAt = userTrustPointEvents[0]?.created_at ?? null;
+      const trustPointsRow = trustPointsByUserId.get(row.id);
 
       return {
          id: row.id,
@@ -418,6 +435,11 @@ async function buildDirectoryRows(
          pointEventCount: userPointEvents.length,
          latestPointEventAt,
          recentPointEvents: userPointEvents.slice(0, 3),
+         trustPointsTotal: trustPointsRow?.points_total ?? 0,
+         trustPointsUpdatedAt: trustPointsRow?.updated_at ?? null,
+         trustPointEventCount: userTrustPointEvents.length,
+         latestTrustPointEventAt,
+         recentTrustPointEvents: userTrustPointEvents.slice(0, 3),
          restriction: restrictionsByUserId.get(row.id) ?? null,
          riskProfile: riskByUserId.get(row.id) ?? null
       };
@@ -527,7 +549,7 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
    const users = await requireOk<AnyRow[]>(query);
    const userIds = users.map((user) => user.id);
 
-   const [loans, restrictions, riskProfiles, points, pointEvents] = await Promise.all([
+   const [loans, restrictions, riskProfiles, points, pointEvents, trustPoints, trustPointEvents] = await Promise.all([
       userIds.length
          ? requireOk<AnyRow[]>(
               supabase
@@ -560,10 +582,27 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
                  .limit(300),
               []
            )
+         : Promise.resolve([]),
+      userIds.length
+         ? optionalOk<AnyRow[]>(
+              supabase.from('user_trust_points').select('user_id,points_total,updated_at,last_event_id').in('user_id', userIds),
+              []
+           )
+         : Promise.resolve([]),
+      userIds.length
+         ? optionalOk<AnyRow[]>(
+              supabase
+                 .from('trust_point_events')
+                 .select('id,user_id,event_type,delta,source_type,source_id,created_at,metadata')
+                 .in('user_id', userIds)
+                 .order('created_at', { ascending: false })
+                 .limit(300),
+              []
+           )
          : Promise.resolve([])
    ]);
 
-   return buildDirectoryRows(users, loans, restrictions, riskProfiles, points, pointEvents);
+   return buildDirectoryRows(users, loans, restrictions, riskProfiles, points, pointEvents, trustPoints, trustPointEvents);
 }
 
 export async function listAdminLoanRequests(): Promise<AdminLoanRequest[]> {
