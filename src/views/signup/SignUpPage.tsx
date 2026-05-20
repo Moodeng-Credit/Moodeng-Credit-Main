@@ -321,22 +321,6 @@ export default function SignUpPage() {
                            Create An Account
                         </button>
 
-                        <p className="text-center text-xs leading-[18px] text-[#70617F] tracking-[-0.02em]">
-                           By continuing, you agree to Moodeng&apos;s{' '}
-                           <Link
-                              to="/terms"
-                              className="font-semibold text-[#6010D2] hover:underline"
-                           >
-                              Terms
-                           </Link>{' '}
-                           and{' '}
-                           <Link
-                              to="/privacy"
-                              className="font-semibold text-[#6010D2] hover:underline"
-                           >
-                              Privacy
-                           </Link>
-                        </p>
                      </form>
 
                      <p className="mt-6 text-center text-base text-[#4D4359] tracking-[-0.02em]">
