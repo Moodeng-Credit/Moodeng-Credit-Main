@@ -43,6 +43,17 @@ export interface AdminRestriction {
    updated_at: string | null;
 }
 
+export interface AdminPointEvent {
+   id: number;
+   user_id: string;
+   event_type: string;
+   delta: number | string;
+   source_type: string;
+   source_id: string;
+   created_at: string;
+   metadata: Record<string, any>;
+}
+
 export interface AdminDirectoryUser {
    id: string;
    username: string;
@@ -70,6 +81,11 @@ export interface AdminDirectoryUser {
    totalRepaidAmount: number;
    outstandingDue: number;
    lastLoanAt: string | null;
+   pointsTotal: number | string;
+   pointsUpdatedAt: string | null;
+   pointEventCount: number;
+   latestPointEventAt: string | null;
+   recentPointEvents: AdminPointEvent[];
    restriction: AdminRestriction | null;
    riskProfile: AdminRiskProfile | null;
 }
@@ -299,6 +315,19 @@ function mapReview(row: AnyRow | undefined): AdminLoanRequestReview | null {
    };
 }
 
+function mapPointEvent(row: AnyRow): AdminPointEvent {
+   return {
+      id: toNumber(row.id),
+      user_id: row.user_id,
+      event_type: row.event_type,
+      delta: row.delta ?? 0,
+      source_type: row.source_type,
+      source_id: row.source_id,
+      created_at: row.created_at,
+      metadata: row.metadata ?? {}
+   };
+}
+
 async function fetchUsersByIds(userIds: string[]): Promise<Map<string, AdminDirectoryUser>> {
    const uniqueIds = [...new Set(userIds.filter(Boolean))];
    if (!uniqueIds.length) return new Map();
@@ -313,17 +342,26 @@ async function fetchUsersByIds(userIds: string[]): Promise<Map<string, AdminDire
    );
 
    const emptyLoans: AnyRow[] = [];
-   return buildDirectoryRows(rows, emptyLoans, [], []).then((users) => new Map(users.map((user) => [user.id, user])));
+   return buildDirectoryRows(rows, emptyLoans, [], [], [], []).then((users) => new Map(users.map((user) => [user.id, user])));
 }
 
 async function buildDirectoryRows(
    userRows: AnyRow[],
    loanRows: AnyRow[],
    restrictionRows: AnyRow[],
-   riskRows: AnyRow[]
+   riskRows: AnyRow[],
+   pointRows: AnyRow[],
+   pointEventRows: AnyRow[]
 ): Promise<AdminDirectoryUser[]> {
    const restrictionsByUserId = new Map(restrictionRows.map((row) => [row.user_id, mapRestriction(row)]));
    const riskByUserId = new Map(riskRows.map((row) => [row.user_id, mapRiskProfile(row)]));
+   const pointsByUserId = new Map(pointRows.map((row) => [row.user_id, row]));
+   const pointEventsByUserId = pointEventRows.reduce((eventsByUser, row) => {
+      const userEvents = eventsByUser.get(row.user_id) ?? [];
+      userEvents.push(mapPointEvent(row));
+      eventsByUser.set(row.user_id, userEvents);
+      return eventsByUser;
+   }, new Map<string, AdminPointEvent[]>());
    const now = Date.now();
 
    return userRows.map((row) => {
@@ -341,6 +379,9 @@ async function buildDirectoryRows(
          .map((loan) => loan.funded_at ?? loan.created_at ?? null)
          .filter(Boolean)
          .sort((first, second) => new Date(second).getTime() - new Date(first).getTime());
+      const userPointEvents = pointEventsByUserId.get(row.id) ?? [];
+      const latestPointEventAt = userPointEvents[0]?.created_at ?? null;
+      const pointsRow = pointsByUserId.get(row.id);
 
       return {
          id: row.id,
@@ -372,6 +413,11 @@ async function buildDirectoryRows(
             0
          ),
          lastLoanAt: loanActivityDates[0] ?? null,
+         pointsTotal: pointsRow?.points_total ?? 0,
+         pointsUpdatedAt: pointsRow?.updated_at ?? null,
+         pointEventCount: userPointEvents.length,
+         latestPointEventAt,
+         recentPointEvents: userPointEvents.slice(0, 3),
          restriction: restrictionsByUserId.get(row.id) ?? null,
          riskProfile: riskByUserId.get(row.id) ?? null
       };
@@ -481,7 +527,7 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
    const users = await requireOk<AnyRow[]>(query);
    const userIds = users.map((user) => user.id);
 
-   const [loans, restrictions, riskProfiles] = await Promise.all([
+   const [loans, restrictions, riskProfiles, points, pointEvents] = await Promise.all([
       userIds.length
          ? requireOk<AnyRow[]>(
               supabase
@@ -497,10 +543,27 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
          : Promise.resolve([]),
       userIds.length
          ? optionalOk<AnyRow[]>(supabase.from('admin_risk_profiles').select('*').in('user_id', userIds), [])
+         : Promise.resolve([]),
+      userIds.length
+         ? optionalOk<AnyRow[]>(
+              supabase.from('user_points').select('user_id,points_total,updated_at,last_event_id').in('user_id', userIds),
+              []
+           )
+         : Promise.resolve([]),
+      userIds.length
+         ? optionalOk<AnyRow[]>(
+              supabase
+                 .from('point_events')
+                 .select('id,user_id,event_type,delta,source_type,source_id,created_at,metadata')
+                 .in('user_id', userIds)
+                 .order('created_at', { ascending: false })
+                 .limit(300),
+              []
+           )
          : Promise.resolve([])
    ]);
 
-   return buildDirectoryRows(users, loans, restrictions, riskProfiles);
+   return buildDirectoryRows(users, loans, restrictions, riskProfiles, points, pointEvents);
 }
 
 export async function listAdminLoanRequests(): Promise<AdminLoanRequest[]> {

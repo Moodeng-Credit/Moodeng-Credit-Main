@@ -10,6 +10,7 @@ import {
    useState
 } from 'react';
 
+import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, CheckCircle2, HelpCircle, Menu, Search, Wallet, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -43,7 +44,9 @@ import {
    recordGuidedTourShown,
    shouldShowGuidedTour
 } from '@/lib/guidedTourStorage';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getBaseWalletLockStatus, isBaseWalletReadyForRepayment } from '@/lib/walletProvider';
+import { formatPointsMajor } from '@/shared/points';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -181,6 +184,17 @@ function RequestBoard$() {
    const showVerify = !isWorldIdVerified;
    const storeIsBorrower = useIsBorrower();
    const isBorrower = isLenderTourPreview ? false : isReferralTestMode || storeIsBorrower;
+   const { data: lenderPointsData } = useQuery({
+      queryKey: ['request-board-user-points', effectiveUser?.id],
+      queryFn: async () => {
+         const supabase = getSupabaseBrowserClient();
+         const { data, error } = await supabase.from('user_points').select('points_total').eq('user_id', effectiveUser!.id).maybeSingle();
+         if (error) throw error;
+         return data;
+      },
+      enabled: !isBorrower && !isLenderTourPreview && Boolean(effectiveUser?.id)
+   });
+   const lenderIouPoints = isLenderTourPreview ? String(effectiveUser?.cs ?? 0) : formatPointsMajor(lenderPointsData?.points_total ?? 0);
    const tourUserId = effectiveUser?.id;
    const shouldShowBorrowerTour =
       showTourPreview &&
@@ -850,7 +864,9 @@ function RequestBoard$() {
                                                 </span>
                                                 <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
                                              </span>
-                                             <span className="text-md-b3 font-semibold text-md-primary-900 underline">{'Verify World ID >'}</span>
+                                             <span className="text-md-b3 font-semibold text-md-primary-900 underline">
+                                                {'Verify World ID >'}
+                                             </span>
                                           </button>
                                        )}
                                     </WorldIDVerification>
@@ -858,7 +874,9 @@ function RequestBoard$() {
                                     <div ref={worldIdHighlightRef} className="relative">
                                        <span
                                           className={`inline-flex items-center gap-1 rounded-md-sm bg-md-green-100 px-md-1 py-md-0 transition-shadow duration-200 ${
-                                             showWorldIdHighlight ? 'ring-2 ring-md-green-900/40 ring-offset-2 ring-offset-md-neutral-200' : ''
+                                             showWorldIdHighlight
+                                                ? 'ring-2 ring-md-green-900/40 ring-offset-2 ring-offset-md-neutral-200'
+                                                : ''
                                           }`}
                                        >
                                           <span className="w-3 h-3 rounded-full bg-md-green-900 flex items-center justify-center">
@@ -900,7 +918,7 @@ function RequestBoard$() {
                            ) : (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-md-primary-900 rounded-md-sm w-fit">
                                  <span className="text-md-b3 font-semibold text-md-neutral-100 capitalize whitespace-nowrap">
-                                    IOU {effectiveUser?.cs?.toLocaleString() ?? '0'}
+                                    IOU {lenderIouPoints}
                                  </span>
                               </span>
                            )}
@@ -950,8 +968,8 @@ function RequestBoard$() {
                         {needsRoleSelection
                            ? 'Browse requests now. Choose a role when you are ready to borrow or lend.'
                            : isAuthenticated
-                           ? 'Browse requests posted on Moodeng, or jump right in and get verified to start borrowing in USDC.'
-                           : 'Browse requests publicly.'}
+                             ? 'Browse requests posted on Moodeng, or jump right in and get verified to start borrowing in USDC.'
+                             : 'Browse requests publicly.'}
                      </p>
                   </div>
 

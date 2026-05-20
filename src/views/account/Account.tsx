@@ -1,12 +1,16 @@
 import { useState } from 'react';
 
+import { useQuery } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import UserAvatar from '@/components/UserAvatar';
-import { SHARED_FAQS, BORROWER_FAQS, LENDER_FAQS } from '@/views/account/data/accountFaqs';
+
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { formatPointsMajor } from '@/shared/points';
 import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import { BORROWER_FAQS, LENDER_FAQS, SHARED_FAQS } from '@/views/account/data/accountFaqs';
 
 // TODO: Replace with YouTube video URL when available
 const CREDIT_GUIDE_URL = '/credit-leveling-guide';
@@ -17,12 +21,12 @@ const ICON_MASK_BASE: React.CSSProperties = {
    WebkitMaskRepeat: 'no-repeat',
    maskRepeat: 'no-repeat',
    WebkitMaskPosition: 'center',
-   maskPosition: 'center',
+   maskPosition: 'center'
 };
 
 const ACCOUNT_ITEMS = [
    { label: 'Account Settings', path: '/account/settings' },
-   { label: 'View Loan Transaction History', path: '/history' },
+   { label: 'View Loan Transaction History', path: '/history' }
 ] as const;
 
 const TELEGRAM_SUPPORT_URL =
@@ -34,7 +38,7 @@ const FACEBOOK_GROUP_URL = 'https://www.facebook.com/groups/1593629908540434';
 const CONTACT_ITEMS = [
    { label: 'Join Our Community', url: FACEBOOK_GROUP_URL },
    { label: 'Get Help', url: FACEBOOK_PAGE_URL },
-   { label: 'Contact Us', url: TELEGRAM_SUPPORT_URL },
+   { label: 'Contact Us', url: TELEGRAM_SUPPORT_URL }
 ] as const;
 
 function ChevronRight() {
@@ -44,7 +48,7 @@ function ChevronRight() {
          style={{
             ...ICON_MASK_BASE,
             WebkitMaskImage: "url('/icons/chevron-right.svg')",
-            maskImage: "url('/icons/chevron-right.svg')",
+            maskImage: "url('/icons/chevron-right.svg')"
          }}
       />
    );
@@ -57,7 +61,7 @@ function PlayIcon() {
          style={{
             ...ICON_MASK_BASE,
             WebkitMaskImage: "url('/icons/play.svg')",
-            maskImage: "url('/icons/play.svg')",
+            maskImage: "url('/icons/play.svg')"
          }}
       />
    );
@@ -70,7 +74,7 @@ function ExternalLinkIcon() {
          style={{
             ...ICON_MASK_BASE,
             WebkitMaskImage: "url('/icons/view_link.svg')",
-            maskImage: "url('/icons/view_link.svg')",
+            maskImage: "url('/icons/view_link.svg')"
          }}
       />
    );
@@ -84,7 +88,7 @@ function ChevronDown({ isOpen }: { isOpen: boolean }) {
             ...ICON_MASK_BASE,
             WebkitMaskImage: "url('/icons/chevron-down.svg')",
             maskImage: "url('/icons/chevron-down.svg')",
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)'
          }}
       />
    );
@@ -99,11 +103,21 @@ export default function Account() {
    const [openFaqId, setOpenFaqId] = useState<string | null>(null);
 
    const displayName = user?.displayName || user?.username || 'User';
-   const iouPoints = user?.cs?.toLocaleString() ?? '0';
    const hasWallet = Boolean(user?.walletAddress);
    const isLender = user?.userRole === 'lender';
    const isVerified = user?.isWorldId === 'ACTIVE';
    const walletSetupLabel = isLender ? 'Connect Wallet' : 'Add Base Wallet';
+   const { data: userPointsData } = useQuery({
+      queryKey: ['account-user-points', user?.id],
+      queryFn: async () => {
+         const supabase = getSupabaseBrowserClient();
+         const { data, error } = await supabase.from('user_points').select('points_total').eq('user_id', user!.id).maybeSingle();
+         if (error) throw error;
+         return data;
+      },
+      enabled: isLender && Boolean(user?.id)
+   });
+   const iouPoints = formatPointsMajor(userPointsData?.points_total ?? 0);
 
    const sharedFaqs = isLender ? SHARED_FAQS.filter((item) => item.id !== 'how-to-get-verified') : SHARED_FAQS;
    const roleFaqs = isLender ? LENDER_FAQS : BORROWER_FAQS;
@@ -135,9 +149,7 @@ export default function Account() {
                      <p className="text-md-h6 font-semibold text-md-heading">{displayName}</p>
                      {isLender ? (
                         <div className="bg-md-primary-900 rounded-md-sm px-2 py-1 self-start">
-                           <p className="text-md-b3 font-semibold text-md-neutral-100 capitalize">
-                              IOU {isVerified ? iouPoints : '0'}
-                           </p>
+                           <p className="text-md-b3 font-semibold text-md-neutral-100 capitalize">IOU {isVerified ? iouPoints : '0'}</p>
                         </div>
                      ) : isVerified ? (
                         <span className="inline-flex w-fit items-center gap-1 rounded-md-sm bg-md-green-100 px-2 py-1 text-md-b3 font-semibold text-md-green-900">
@@ -162,7 +174,7 @@ export default function Account() {
                         style={{
                            ...ICON_MASK_BASE,
                            WebkitMaskImage: "url('/icons/wallet.png')",
-                           maskImage: "url('/icons/wallet.png')",
+                           maskImage: "url('/icons/wallet.png')"
                         }}
                      />
                      <span className="text-md-b2 font-semibold text-md-blue-400">{walletSetupLabel}</span>
@@ -182,9 +194,7 @@ export default function Account() {
                         onClick={() => navigate(item.path)}
                         className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
                      >
-                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
-                           {item.label}
-                        </span>
+                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">{item.label}</span>
                         <ChevronRight />
                      </button>
                   ))}
@@ -192,18 +202,13 @@ export default function Account() {
                      href="#account-get-in-touch"
                      className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
                   >
-                     <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
-                        Get in Touch
-                     </span>
+                     <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">Get in Touch</span>
                      <ChevronRight />
                   </a>
                </div>
 
                {/* Common questions */}
-               <div
-                  id="account-common-questions"
-                  className="scroll-mt-4 flex flex-col gap-3"
-               >
+               <div id="account-common-questions" className="scroll-mt-4 flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                      <p className="text-md-b2 font-medium text-md-neutral-700">Common questions</p>
                      <button
@@ -233,25 +238,18 @@ export default function Account() {
                   {faqs.map((item) => {
                      const isOpen = openFaqId === item.id;
                      return (
-                        <div
-                           key={item.id}
-                           className="border border-md-neutral-400 rounded-md-md w-full overflow-hidden"
-                        >
+                        <div key={item.id} className="border border-md-neutral-400 rounded-md-md w-full overflow-hidden">
                            <button
                               type="button"
                               onClick={() => setOpenFaqId(isOpen ? null : item.id)}
                               aria-expanded={isOpen}
                               className="flex items-center justify-between gap-md-2 px-md-5 py-md-3 w-full text-left"
                            >
-                              <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em] flex-1">
-                                 {item.question}
-                              </span>
+                              <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em] flex-1">{item.question}</span>
                               <ChevronDown isOpen={isOpen} />
                            </button>
                            {isOpen ? (
-                              <div className="px-md-5 pb-md-3 text-md-b2 text-md-neutral-1200 whitespace-pre-line">
-                                 {item.answer}
-                              </div>
+                              <div className="px-md-5 pb-md-3 text-md-b2 text-md-neutral-1200 whitespace-pre-line">{item.answer}</div>
                            ) : null}
                         </div>
                      );
@@ -259,10 +257,7 @@ export default function Account() {
                </div>
 
                {/* Get in touch */}
-               <div
-                  id="account-get-in-touch"
-                  className="scroll-mt-4 flex flex-col gap-3"
-               >
+               <div id="account-get-in-touch" className="scroll-mt-4 flex flex-col gap-3">
                   <p className="text-md-b2 font-medium text-md-neutral-700">Get in touch</p>
                   {CONTACT_ITEMS.map((item) => (
                      <button
@@ -271,9 +266,7 @@ export default function Account() {
                         onClick={() => openExternal(item.url)}
                         className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
                      >
-                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
-                           {item.label}
-                        </span>
+                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">{item.label}</span>
                         <ExternalLinkIcon />
                      </button>
                   ))}
@@ -291,7 +284,7 @@ export default function Account() {
                      style={{
                         ...ICON_MASK_BASE,
                         WebkitMaskImage: "url('/icons/sign-out.svg')",
-                        maskImage: "url('/icons/sign-out.svg')",
+                        maskImage: "url('/icons/sign-out.svg')"
                      }}
                   />
                </button>
@@ -300,7 +293,10 @@ export default function Account() {
 
          {/* Sign Out Modal */}
          {showSignOutModal ? (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-5" onClick={() => setShowSignOutModal(false)}>
+            <div
+               className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-5"
+               onClick={() => setShowSignOutModal(false)}
+            >
                <div
                   className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-3 items-center"
                   onClick={(e) => e.stopPropagation()}
