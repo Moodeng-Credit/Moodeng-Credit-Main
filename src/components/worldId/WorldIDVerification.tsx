@@ -20,6 +20,7 @@ interface WorldIDVerificationProps {
    children: (props: { open: () => void }) => ReactNode;
    onSuccess?: () => void;
    className?: string;
+   showSuccessToast?: boolean;
 }
 
 const WORLD_ID_ACTION_ID = 'verify-borrower';
@@ -27,7 +28,7 @@ const WORLD_ID_ACTION_DESCRIPTION = 'Verify a borrower as a unique human before 
 const WORLD_ID_ENVIRONMENT = (import.meta.env.VITE_WORLD_ID_ENVIRONMENT ||
    (import.meta.env.MODE === 'production' ? 'production' : 'staging')) as 'production' | 'staging';
 
-export default function WorldIDVerification({ children, onSuccess, className = '' }: WorldIDVerificationProps) {
+export default function WorldIDVerification({ children, onSuccess, className = '', showSuccessToast = true }: WorldIDVerificationProps) {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
    const { showToastByConfig } = useToast();
@@ -131,9 +132,14 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          setShowAlreadyUsedModal(true);
          return;
       }
-      onSuccess?.();
-      navigate('/onboarding/congratulations');
-      showToastByConfig(getToastKeyFromSuccessCode(SUCCESS_CODES.AUTH_VERIFY_SUCCESS)!);
+      if (onSuccess) {
+         onSuccess();
+      } else {
+         navigate('/onboarding/congratulations');
+      }
+      if (showSuccessToast) {
+         showToastByConfig(getToastKeyFromSuccessCode(SUCCESS_CODES.AUTH_VERIFY_SUCCESS)!);
+      }
    };
 
    const handleError = (errorCode: IDKitErrorCodes) => {
@@ -157,10 +163,11 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       setIsIDKitOpen(true);
    };
 
+   const trigger = className ? <span className={className}>{children({ open: () => setIsModalOpen(true) })}</span> : children({ open: () => setIsModalOpen(true) });
+
    return (
       <>
-         <span className={className}>{children({ open: () => setIsModalOpen(true) })}</span>
-
+         {trigger}
          <VerificationModal
             isOpen={isModalOpen}
             onClose={handleCloseModal}

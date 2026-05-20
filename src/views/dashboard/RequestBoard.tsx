@@ -10,7 +10,7 @@ import {
    useState
 } from 'react';
 
-import { AlertTriangle, HelpCircle, Menu, Search, Wallet, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, HelpCircle, Menu, Search, Wallet, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
@@ -153,6 +153,8 @@ function RequestBoard$() {
    const [showLenderNote, setShowLenderNote] = useState(false);
    const [showPublicQuestions, setShowPublicQuestions] = useState(false);
    const [showGuestWorldIdPreview, setShowGuestWorldIdPreview] = useState(false);
+   const [hasWorldIdJustVerified, setHasWorldIdJustVerified] = useState(false);
+   const [showWorldIdHighlight, setShowWorldIdHighlight] = useState(false);
 
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -161,6 +163,8 @@ function RequestBoard$() {
    const requestBoardSearchParams = new URLSearchParams(location.search);
    const isReferralTestMode = import.meta.env.DEV && requestBoardSearchParams.has('referralTest');
    const forceTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('tourPreview');
+   const showWorldIdSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.has('worldIdSuccessPreview');
+   const holdWorldIdSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.get('worldIdSuccessPreview') === 'hold';
    const showTourPreview = forceTourPreview || requestBoardSearchParams.has('tour');
    const shouldStartTourImmediately = requestBoardSearchParams.get('startTour') === '1';
    const isLenderTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('lenderTourPreview');
@@ -173,7 +177,8 @@ function RequestBoard$() {
    const isAuthenticated = !!(effectiveUser?.id && (username || isReferralTestMode || isLenderTourPreview));
    const hasSelectedRole = Boolean(effectiveUser?.userRole);
    const needsRoleSelection = isAuthenticated && !hasSelectedRole;
-   const showVerify = effectiveUser?.isWorldId !== 'ACTIVE';
+   const isWorldIdVerified = effectiveUser?.isWorldId === 'ACTIVE' || hasWorldIdJustVerified;
+   const showVerify = !isWorldIdVerified;
    const storeIsBorrower = useIsBorrower();
    const isBorrower = isLenderTourPreview ? false : isReferralTestMode || storeIsBorrower;
    const tourUserId = effectiveUser?.id;
@@ -243,6 +248,10 @@ function RequestBoard$() {
       () => setShowPublicQuestions(false),
       showPublicQuestions
    ) as RefObject<HTMLDivElement>;
+   const worldIdHighlightRef = useClickOutside<HTMLDivElement>(
+      () => setShowWorldIdHighlight(false),
+      showWorldIdHighlight
+   ) as RefObject<HTMLDivElement>;
 
    const [filters, setFilters] = useState<LoanFilters>({
       amount: '',
@@ -254,6 +263,21 @@ function RequestBoard$() {
       search: '',
       sortBy: undefined
    });
+
+   useEffect(() => {
+      if (showWorldIdSuccessPreview) {
+         setHasWorldIdJustVerified(true);
+         setShowWorldIdHighlight(true);
+      }
+   }, [showWorldIdSuccessPreview]);
+
+   useEffect(() => {
+      if (!showWorldIdHighlight) return;
+      if (holdWorldIdSuccessPreview) return;
+
+      const timeoutId = window.setTimeout(() => setShowWorldIdHighlight(false), 5000);
+      return () => window.clearTimeout(timeoutId);
+   }, [holdWorldIdSuccessPreview, showWorldIdHighlight]);
 
    const clear = () => {
       setTotalRepaymentAmount('');
@@ -805,32 +829,72 @@ function RequestBoard$() {
                            ) : isBorrower ? (
                               <div className="flex items-center gap-2">
                                  {showVerify ? (
-                                    <>
-                                       <span className="inline-flex items-center gap-1 px-md-1 py-md-0 bg-md-red-100 rounded-md-sm">
-                                          <span className="w-3 h-3 rounded-full bg-md-red-800 flex items-center justify-center">
-                                             <span className="text-white text-[8px] font-bold">!</span>
-                                          </span>
-                                          <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
-                                       </span>
-                                       <WorldIDVerification>
-                                          {({ open }) => (
-                                             <button
-                                                onClick={open}
-                                                className="text-md-b3 font-semibold text-md-primary-900 underline"
-                                                data-tour-target="request-verify-world-id-link"
-                                             >
-                                                {'Verify World ID >'}
-                                             </button>
-                                          )}
-                                       </WorldIDVerification>
-                                    </>
+                                    <WorldIDVerification
+                                       showSuccessToast={false}
+                                       onSuccess={() => {
+                                          setHasWorldIdJustVerified(true);
+                                          setShowWorldIdHighlight(true);
+                                       }}
+                                    >
+                                       {({ open }) => (
+                                          <button
+                                             type="button"
+                                             onClick={open}
+                                             className="inline-flex items-center gap-2 rounded-md-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                                             data-tour-target="request-verify-world-id-link"
+                                             aria-label="Verify World ID"
+                                          >
+                                             <span className="inline-flex items-center gap-1 px-md-1 py-md-0 bg-md-red-100 rounded-md-sm">
+                                                <span className="w-3 h-3 rounded-full bg-md-red-800 flex items-center justify-center">
+                                                   <span className="text-white text-[8px] font-bold">!</span>
+                                                </span>
+                                                <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
+                                             </span>
+                                             <span className="text-md-b3 font-semibold text-md-primary-900 underline">{'Verify World ID >'}</span>
+                                          </button>
+                                       )}
+                                    </WorldIDVerification>
                                  ) : (
-                                    <span className="inline-flex items-center gap-1 px-md-1 py-md-0 bg-md-green-100 rounded-md-sm">
-                                       <span className="w-3 h-3 rounded-full bg-md-green-900 flex items-center justify-center">
-                                          <span className="text-white text-[8px] font-bold">&#10003;</span>
+                                    <div ref={worldIdHighlightRef} className="relative">
+                                       <span
+                                          className={`inline-flex items-center gap-1 rounded-md-sm bg-md-green-100 px-md-1 py-md-0 transition-shadow duration-200 ${
+                                             showWorldIdHighlight ? 'ring-2 ring-md-green-900/40 ring-offset-2 ring-offset-md-neutral-200' : ''
+                                          }`}
+                                       >
+                                          <span className="w-3 h-3 rounded-full bg-md-green-900 flex items-center justify-center">
+                                             <span className="text-white text-[8px] font-bold">&#10003;</span>
+                                          </span>
+                                          <span className="text-md-b3 font-semibold text-md-green-900">Verified</span>
                                        </span>
-                                       <span className="text-md-b3 font-semibold text-md-green-900">Verified</span>
-                                    </span>
+                                       {showWorldIdHighlight && (
+                                          <div
+                                             role="status"
+                                             className="absolute left-0 top-[calc(100%+8px)] z-[75] w-[268px] rounded-[18px] border border-md-green-100 bg-[#fdfbfd] p-md-3 text-left shadow-[0_16px_42px_rgba(36,14,62,0.16)]"
+                                          >
+                                             <div className="flex items-start justify-between gap-md-2">
+                                                <div className="flex min-w-0 gap-md-2">
+                                                   <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-md-green-100 text-md-green-900">
+                                                      <CheckCircle2 className="size-4" strokeWidth={2.4} />
+                                                   </span>
+                                                   <div>
+                                                      <p className="text-md-b2 font-semibold text-md-heading">You are now verified.</p>
+                                                      <p className="mt-0.5 text-md-b3 font-medium leading-[1.4] text-md-neutral-800">
+                                                         Lenders will see this status on your loan requests.
+                                                      </p>
+                                                   </div>
+                                                </div>
+                                                <button
+                                                   type="button"
+                                                   onClick={() => setShowWorldIdHighlight(false)}
+                                                   aria-label="Dismiss verification message"
+                                                   className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-md-neutral-200 text-md-neutral-1000"
+                                                >
+                                                   <X className="size-4" strokeWidth={2.25} />
+                                                </button>
+                                             </div>
+                                          </div>
+                                       )}
+                                    </div>
                                  )}
                               </div>
                            ) : (
