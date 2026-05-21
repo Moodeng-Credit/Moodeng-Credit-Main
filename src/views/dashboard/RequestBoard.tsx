@@ -161,7 +161,6 @@ function RequestBoard$() {
 
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
-   const isAuthChecked = useSelector((state: RootState) => state.auth.isAuthChecked);
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const isLoading = useSelector((state: RootState) => state.loans.isLoading);
    const requestBoardSearchParams = new URLSearchParams(location.search);
@@ -815,10 +814,6 @@ function RequestBoard$() {
    };
    const visibleLoans = shouldShowLenderTour && displayedLoans.length === 0 ? LENDER_TOUR_LOANS : displayedLoans;
    const isListLoading = isLoading && !shouldShowLenderTour;
-
-   if (!isAuthChecked) {
-      return <div id="top" className="min-h-screen bg-md-neutral-200" aria-busy="true" />;
-   }
 
    return (
       <>

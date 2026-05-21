@@ -1,30 +1,14 @@
-
-
 import '@/components/loading/Loading.scss';
 
 const Loading = () => {
    return (
-      <div className="loading">
-         <div className="loading-root">
-            <div className="pl">
-               <div className="pl__coin">
-                  <div className="pl__coin-flare"></div>
-                  <div className="pl__coin-flare"></div>
-                  <div className="pl__coin-flare"></div>
-                  <div className="pl__coin-flare"></div>
-                  <div className="pl__coin-layers">
-                     <div className="pl__coin-layer">
-                        <div className="pl__coin-inscription"></div>
-                     </div>
-                     <div className="pl__coin-layer"></div>
-                     <div className="pl__coin-layer"></div>
-                     <div className="pl__coin-layer"></div>
-                     <div className="pl__coin-layer">
-                        <div className="pl__coin-inscription"></div>
-                     </div>
-                  </div>
-               </div>
-               <div className="pl__shadow"></div>
+      <div className="loading" role="status" aria-live="polite" aria-label="Loading Moodeng">
+         <div className="loading-card" aria-hidden="true">
+            <img src="/brand/moodeng-logo.png" alt="" className="loading-logo" />
+            <div className="loading-track">
+               <span />
+               <span />
+               <span />
             </div>
          </div>
       </div>
