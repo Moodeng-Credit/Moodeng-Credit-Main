@@ -45,7 +45,7 @@ function PrimaryActionSlot({ action }: { action: BottomNavPrimaryAction }) {
    const isDisabled = Boolean(action.disabled);
 
    return (
-      <div className="pointer-events-none relative z-30 flex w-full flex-col items-center self-stretch">
+      <div className="relative z-30 flex w-full flex-col items-center self-stretch">
          <span className="pointer-events-none absolute -top-9 left-1/2 z-0 h-[82px] w-[104px] -translate-x-1/2 rounded-t-[60px] bg-md-neutral-100" />
          <button
             type="button"
