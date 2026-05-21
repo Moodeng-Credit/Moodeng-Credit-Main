@@ -18,7 +18,7 @@ type FilterTab = 'amount' | 'rate' | 'date' | 'type';
 
 const tabs: { id: FilterTab; label: string }[] = [
    { id: 'amount', label: 'Credit Limit' },
-   { id: 'rate', label: 'Repayment %' },
+   { id: 'rate', label: 'Payback %' },
    { id: 'date', label: 'Date' },
    { id: 'type', label: 'Type' }
 ];
@@ -210,8 +210,8 @@ export default function FilterSidebar({
 
                {activeTab === 'rate' ? (
                   <FilterSection
-                     title="Repayment Amount"
-                     tooltip="This filters the extra amount paid above the loan principal. Example: a $30 loan repaid as $33 is 10%."
+                     title="Payback Amount"
+                     tooltip="Payback is the total amount the borrower agrees to return. This filters the extra payback above the loan principal. Example: a $10 loan with a $13 payback is 30%."
                   >
                      <div className="grid grid-cols-2 gap-2">
                         {REPAYMENT_RATES.map((rate) => (
