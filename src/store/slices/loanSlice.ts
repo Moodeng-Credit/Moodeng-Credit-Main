@@ -53,6 +53,8 @@ const initialState: LoanState = {
       gloans: [],
       floans: []
    },
+   userLoansFetchedFor: null,
+   userLoansFetchedAt: null,
    isLoading: false,
    error: null
 };
@@ -174,6 +176,7 @@ const loanSlice = createSlice({
          if (gloanIndex !== -1) {
             state.loans.gloans[gloanIndex] = action.payload;
          }
+         state.userLoansFetchedAt = null;
       }
    },
    extraReducers: (builder) => {
@@ -185,6 +188,7 @@ const loanSlice = createSlice({
          .addCase(createLoan.fulfilled, (state, action) => {
             state.isLoading = false;
             state.loans.floans.push(action.payload);
+            state.userLoansFetchedAt = null;
          })
          .addCase(createLoan.rejected, (state, action) => {
             state.isLoading = false;
@@ -209,6 +213,8 @@ const loanSlice = createSlice({
          .addCase(getUserLoans.fulfilled, (state, action) => {
             state.isLoading = false;
             state.loans.gloans = action.payload;
+            state.userLoansFetchedFor = action.meta.arg.userId?.trim() || null;
+            state.userLoansFetchedAt = Date.now();
          })
          .addCase(getUserLoans.rejected, (state, action) => {
             state.isLoading = false;
@@ -224,6 +230,7 @@ const loanSlice = createSlice({
             if (gloanIndex !== -1) {
                state.loans.gloans[gloanIndex] = updatedLoan;
             }
+            state.userLoansFetchedAt = null;
          })
          .addCase(updateLoanStatus.rejected, (state, action) => {
             state.error = (action.error.message as string) || 'Failed to update loan';
