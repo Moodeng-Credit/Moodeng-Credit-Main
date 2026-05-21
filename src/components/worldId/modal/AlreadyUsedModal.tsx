@@ -48,8 +48,7 @@ export const AlreadyUsedModal: FC<AlreadyUsedModalProps> = ({ isOpen, onClose })
 
                {/* Message */}
                <p id="already-used-desc" className="text-md-b2 font-medium leading-relaxed text-md-neutral-1000 sm:text-md-b1">
-                  Your World ID got verified already and connected to one existing account. Moodeng didn&apos;t allow another account to
-                  be verified with the same World ID.
+                  We do not allow duplicate accounts. This World ID is already connected to an existing Moodeng account.
                </p>
 
                {/* CTA */}

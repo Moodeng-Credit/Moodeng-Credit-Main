@@ -26,6 +26,8 @@ const WORLD_ID_ACTION_ID = 'verify-borrower';
 const WORLD_ID_ACTION_DESCRIPTION = 'Verify a borrower as a unique human before borrowing.';
 const WORLD_ID_ENVIRONMENT = (import.meta.env.VITE_WORLD_ID_ENVIRONMENT ||
    (import.meta.env.MODE === 'production' ? 'production' : 'staging')) as 'production' | 'staging';
+const WORLD_ID_ALREADY_USED_STORAGE_KEY = 'moodeng_worldid_error';
+const WORLD_ID_ALREADY_USED_STORAGE_VALUE = 'already_used';
 
 export default function WorldIDVerification({ children, onSuccess, className = '', showSuccessToast = true }: WorldIDVerificationProps) {
    const dispatch = useDispatch<AppDispatch>();
@@ -37,12 +39,23 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const [showAlreadyUsedModal, setShowAlreadyUsedModal] = useState(false);
    const alreadyUsedRef = useRef(false);
 
-   useEffect(() => {
-      if (sessionStorage.getItem('moodeng_worldid_error') === 'already_used') {
-         sessionStorage.removeItem('moodeng_worldid_error');
+   const showAlreadyUsedWarning = useCallback(
+      ({ persist = false }: { persist?: boolean } = {}) => {
+         if (persist) {
+            sessionStorage.setItem(WORLD_ID_ALREADY_USED_STORAGE_KEY, WORLD_ID_ALREADY_USED_STORAGE_VALUE);
+         }
          setShowAlreadyUsedModal(true);
+         showToastByConfig('worldid_already_used');
+      },
+      [showToastByConfig]
+   );
+
+   useEffect(() => {
+      if (sessionStorage.getItem(WORLD_ID_ALREADY_USED_STORAGE_KEY) === WORLD_ID_ALREADY_USED_STORAGE_VALUE) {
+         sessionStorage.removeItem(WORLD_ID_ALREADY_USED_STORAGE_KEY);
+         showAlreadyUsedWarning();
       }
-   }, []);
+   }, [showAlreadyUsedWarning]);
 
    const action = (import.meta.env.VITE_WORLD_ID_ACTION_ID || WORLD_ID_ACTION_ID) as string;
    const app_id = import.meta.env.VITE_WORLD_ID_APP_ID as `app_${string}` | undefined;
@@ -106,8 +119,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          if (!res.ok || !result.success) {
             if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
                alreadyUsedRef.current = true;
-               sessionStorage.setItem('moodeng_worldid_error', 'already_used');
-               setShowAlreadyUsedModal(true);
+               showAlreadyUsedWarning({ persist: true });
                return;
             }
             showToastByConfig(handleApiError(result));
@@ -128,7 +140,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const handleSuccess = () => {
       if (alreadyUsedRef.current) {
          alreadyUsedRef.current = false;
-         setShowAlreadyUsedModal(true);
+         sessionStorage.removeItem(WORLD_ID_ALREADY_USED_STORAGE_KEY);
          return;
       }
       if (onSuccess) {
