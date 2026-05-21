@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
 import { type BottomNavPrimaryAction, useBottomNavActionState } from '@/components/BottomNavActionContext';
@@ -101,14 +101,17 @@ function StandardTab({
 }) {
    const showBg = isActive && isBorrower && !isLocked;
    const destination = isLocked ? '/onboarding/role' : tab.path;
+   const navigate = useNavigate();
 
    return (
-      <Link
+      <button
+         type="button"
          key={tab.path}
-         to={destination}
-         onClick={onNavigate}
+         onClick={() => {
+            onNavigate();
+            navigate(destination);
+         }}
          aria-current={isActive && !isLocked ? 'page' : undefined}
-         aria-disabled={isLocked ? true : undefined}
          title={isLocked ? 'Choose a role first' : undefined}
          className="relative z-20 flex flex-1 flex-col items-center gap-1 self-stretch border-0 bg-transparent p-0"
       >
@@ -133,7 +136,7 @@ function StandardTab({
          >
             {tab.label}
          </span>
-      </Link>
+      </button>
    );
 }
 
