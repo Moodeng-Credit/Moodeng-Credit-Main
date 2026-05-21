@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import type { RootState } from '@/store/store';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import {
@@ -417,13 +418,27 @@ export default function Milestones() {
                            ? 'Your reputation milestones will appear here as you repay loans on time.'
                            : 'Verify your identity to unlock borrowing and start building your public trust record.'}
                      </p>
-                     <button
-                        type="button"
-                        onClick={() => navigate(isVerified ? '/request-board' : '/verify-world-id')}
-                        className="mt-8 rounded-[16px] bg-md-primary-900 px-8 py-4 text-[18px] font-medium text-white"
-                     >
-                        {isVerified ? 'Request a loan' : 'Verify identity'}
-                     </button>
+                     {isVerified ? (
+                        <button
+                           type="button"
+                           onClick={() => navigate('/request-board')}
+                           className="mt-8 rounded-[16px] bg-md-primary-900 px-8 py-4 text-[18px] font-medium text-white"
+                        >
+                           Request a loan
+                        </button>
+                     ) : (
+                        <WorldIDVerification>
+                           {({ open }) => (
+                              <button
+                                 type="button"
+                                 onClick={open}
+                                 className="mt-8 rounded-[16px] bg-md-primary-900 px-8 py-4 text-[18px] font-medium text-white"
+                              >
+                                 Verify identity
+                              </button>
+                           )}
+                        </WorldIDVerification>
+                     )}
                   </div>
                ) : (
                   <div className="flex flex-col gap-3">
@@ -435,7 +450,7 @@ export default function Milestones() {
             </section>
          </div>
          <MilestoneDetailSheet milestone={selectedMilestone} previewQuery={previewQuery} onClose={() => setSelectedMilestoneId(null)} />
-         {isHelpOpen && <MilestoneHelpSheet onClose={() => setIsHelpOpen(false)} />}
+         {isHelpOpen ? <MilestoneHelpSheet onClose={() => setIsHelpOpen(false)} /> : null}
       </div>
    );
 }

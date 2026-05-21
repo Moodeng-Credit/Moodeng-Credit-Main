@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 export default function VerificationCTA() {
    return (
@@ -8,12 +8,17 @@ export default function VerificationCTA() {
             <p className="text-md-neutral-700 text-md-b4 mb-3">
                Complete a one-time verification to start building trust with lenders.
             </p>
-            <Link
-               to="/verify-world-id"
-               className="inline-flex items-center px-4 py-2 rounded-md-md bg-md-primary-900 text-white text-md-b3 font-semibold"
-            >
-               Get Verified
-            </Link>
+            <WorldIDVerification>
+               {({ open }) => (
+                  <button
+                     type="button"
+                     onClick={open}
+                     className="inline-flex items-center px-4 py-2 rounded-md-md bg-md-primary-900 text-white text-md-b3 font-semibold"
+                  >
+                     Get Verified
+                  </button>
+               )}
+            </WorldIDVerification>
          </div>
          <img src="/hippos/welcome.png" alt="Moodeng" className="w-20 h-20 object-contain shrink-0" />
       </div>

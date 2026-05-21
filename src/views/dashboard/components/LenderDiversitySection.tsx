@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
 import type { WalletLivenessData } from '@/utils/diversityScore';
 
@@ -82,12 +83,23 @@ export default function LenderDiversitySection({
 
             <div className="flex shrink-0 flex-col items-end gap-3">
                <img src="/hippos/lender-diversity-piechart.png" alt="" className="h-[96px] w-[96px] object-contain drop-shadow-md" />
-               <Link
-                  to={isVerified ? '/repay' : '/verify-world-id'}
-                  className="inline-flex items-center rounded-md-md bg-md-primary-1200 px-3 py-2 text-md-b3 font-semibold text-white"
-               >
-                  {isVerified ? 'Pay Loans' : 'Get Verified'}
-               </Link>
+               {isVerified ? (
+                  <Link to="/repay" className="inline-flex items-center rounded-md-md bg-md-primary-1200 px-3 py-2 text-md-b3 font-semibold text-white">
+                     Pay Loans
+                  </Link>
+               ) : (
+                  <WorldIDVerification>
+                     {({ open }) => (
+                        <button
+                           type="button"
+                           onClick={open}
+                           className="inline-flex items-center rounded-md-md bg-md-primary-1200 px-3 py-2 text-md-b3 font-semibold text-white"
+                        >
+                           Get Verified
+                        </button>
+                     )}
+                  </WorldIDVerification>
+               )}
             </div>
          </div>
       </div>

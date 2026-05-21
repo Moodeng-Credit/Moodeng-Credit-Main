@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { AlreadyUsedModal } from '@/components/worldId/modal/AlreadyUsedModal';
-import { VerificationModal } from '@/components/worldId/VerificationModal';
 
 import { handleApiError, isApiError } from '@/lib/apiHandler';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -32,8 +31,8 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
    const { showToastByConfig } = useToast();
-   const [isModalOpen, setIsModalOpen] = useState(false);
    const [isIDKitOpen, setIsIDKitOpen] = useState(false);
+   const [isPreparingIDKit, setIsPreparingIDKit] = useState(false);
    const [rpContext, setRpContext] = useState<RpContext | null>(null);
    const [showAlreadyUsedModal, setShowAlreadyUsedModal] = useState(false);
    const alreadyUsedRef = useRef(false);
@@ -49,7 +48,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const app_id = import.meta.env.VITE_WORLD_ID_APP_ID as `app_${string}` | undefined;
    const apiUrl = import.meta.env.VITE_API_URL as string | undefined;
 
-   const getSessionAccessToken = async () => {
+   const getSessionAccessToken = useCallback(async () => {
       const supabase = getSupabaseBrowserClient();
       const {
          data: { session }
@@ -60,9 +59,9 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       }
 
       return session.access_token;
-   };
+   }, []);
 
-   const fetchRpContext = async () => {
+   const fetchRpContext = useCallback(async () => {
       if (!apiUrl) {
          throw new Error('VITE_API_URL is not configured.');
       }
@@ -84,7 +83,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       }
 
       return result.rp_context;
-   };
+   }, [action, apiUrl, getSessionAccessToken, showToastByConfig]);
 
    const handleVerify = async (proof: IDKitResult) => {
       try {
@@ -148,37 +147,31 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       }
    };
 
-   const handleCloseModal = useCallback(() => {
-      setIsModalOpen(false);
-   }, []);
-
-   const handleStartIDKit = async () => {
-      if (!app_id) {
-         throw new Error('VITE_WORLD_ID_APP_ID is not configured.');
+   const handleStartIDKit = useCallback(async () => {
+      if (isPreparingIDKit || isIDKitOpen) {
+         return;
       }
+      try {
+         if (!app_id) {
+            throw new Error('VITE_WORLD_ID_APP_ID is not configured.');
+         }
+         setIsPreparingIDKit(true);
+         const nextRpContext = await fetchRpContext();
+         setRpContext(nextRpContext);
+         setIsIDKitOpen(true);
+      } catch (error) {
+         console.error('World ID preparation error:', error instanceof Error ? error.message : error);
+         showToastByConfig('server_error');
+      } finally {
+         setIsPreparingIDKit(false);
+      }
+   }, [app_id, fetchRpContext, isIDKitOpen, isPreparingIDKit, showToastByConfig]);
 
-      handleCloseModal();
-      const nextRpContext = await fetchRpContext();
-      setRpContext(nextRpContext);
-      setIsIDKitOpen(true);
-   };
-
-   const trigger = className ? <span className={className}>{children({ open: () => setIsModalOpen(true) })}</span> : children({ open: () => setIsModalOpen(true) });
+   const trigger = className ? <span className={className}>{children({ open: () => void handleStartIDKit() })}</span> : children({ open: () => void handleStartIDKit() });
 
    return (
       <>
          {trigger}
-         <VerificationModal
-            isOpen={isModalOpen}
-            onClose={handleCloseModal}
-            onVerify={() => {
-               handleStartIDKit().catch((error: Error) => {
-                  console.error('World ID preparation error:', error.message || error);
-                  showToastByConfig('server_error');
-               });
-            }}
-            onCheckStatus={handleCloseModal}
-         />
 
          <AlreadyUsedModal isOpen={showAlreadyUsedModal} onClose={() => setShowAlreadyUsedModal(false)} />
 
