@@ -13,12 +13,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
    const username = useSelector((state: RootState) => state.auth.username);
    const isAuthChecked = useSelector((state: RootState) => state.auth.isAuthChecked);
    const location = useLocation();
+   const isAuthenticated = !!(username && user?.id);
 
-   if (!isAuthChecked) {
+   if (!isAuthChecked && !isAuthenticated) {
       return <Loading />;
    }
-
-   const isAuthenticated = !!(username && user?.id);
 
    if (!isAuthenticated) {
       return <Navigate to="/sign-in" state={{ from: location }} replace />;
