@@ -9,27 +9,25 @@ $timings: (
     "ease-out-cubic": cubic-bezier(0.33, 1, 0.67, 1)
 );
 
-* {
-    border: 0;
+.loading,
+.loading * {
     box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-.root {
-    --hue: 163;
-    --hue2: 43;
-    --bg: hsl(var(--hue), 90%, 30%);
-    --fg: hsl(0, 0%, 100%);
-    font-size: calc(20px + (40 - 20) * (100vw - 280px) / (3840 - 280));
 }
 
 .loading {
+    --hue: 263;
+    --hue2: 263;
+    --bg: #fbfafd;
+    --fg: #5f1bd4;
+    --trans-dur: 200ms;
     background-color: var(--bg);
     color: var(--fg);
     display: flex;
-    font: 1em/1.5 sans-serif;
-    height: 100vh;
+    font-family: sans-serif;
+    font-size: clamp(20px, 4vw, 40px);
+    line-height: 1.5;
+    min-height: 100vh;
+    width: 100%;
     transition:
         background-color var(--trans-dur),
         color var(--trans-dur);
