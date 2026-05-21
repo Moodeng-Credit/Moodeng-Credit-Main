@@ -152,8 +152,11 @@ export default function Account() {
                            <p className="text-md-b3 font-semibold text-md-neutral-100 capitalize">IOU {isVerified ? iouPoints : '0'}</p>
                         </div>
                      ) : isVerified ? (
-                        <span className="inline-flex w-fit items-center gap-1 rounded-md-sm bg-md-green-100 px-2 py-1 text-md-b3 font-semibold text-md-green-900">
-                           Verified
+                        <span className="inline-flex w-fit items-center gap-1 rounded-md-sm bg-md-green-100 px-md-1 py-md-0">
+                           <span className="flex h-3 w-3 items-center justify-center rounded-full bg-md-green-900">
+                              <span className="text-[8px] font-bold text-white">&#10003;</span>
+                           </span>
+                           <span className="text-md-b3 font-semibold text-md-green-900">Verified</span>
                         </span>
                      ) : (
                         <span className="inline-flex w-fit items-center rounded-md-sm bg-md-primary-900 px-2 py-1 text-md-b3 font-semibold text-md-neutral-100">
