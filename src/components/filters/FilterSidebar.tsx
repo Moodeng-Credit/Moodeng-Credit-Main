@@ -182,7 +182,7 @@ export default function FilterSidebar({
                         onClick={() => setActiveTab(tab.id)}
                         className={`shrink-0 rounded-[10px] border px-3.5 py-2 text-md-b3 font-medium whitespace-nowrap transition-all duration-150 active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
                            activeTab === tab.id
-                              ? 'border-md-primary-300 bg-white text-md-primary-1200 shadow-[0_1px_5px_rgba(96,16,210,0.14),inset_0_1px_0_rgba(255,255,255,0.92)]'
+                              ? 'border-[#E8E2F4] bg-white text-[#3A2A5F] shadow-[0_4px_12px_rgba(80,40,140,0.08)]'
                               : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_1px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.92)]'
                         }`}
                      >
@@ -315,16 +315,16 @@ function FilterChip({ label, selected, onClick }: { label: string; selected: boo
          type="button"
          onClick={onClick}
          aria-pressed={selected}
-         style={selected ? { borderColor: '#d6bcfa', color: '#6010d2' } : undefined}
+         style={selected ? { backgroundColor: '#FBF7FF', borderColor: '#C99BFF', borderWidth: '1.5px', color: '#5B16E8' } : undefined}
          className={`relative flex min-h-[54px] w-full items-center justify-center rounded-[10px] border px-4 py-2.5 pr-7 text-center text-md-b3 font-medium transition-all duration-150 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
             selected
-               ? 'border-md-primary-300 bg-white text-md-primary-1200 shadow-[0_2px_8px_rgba(96,16,210,0.16),inset_0_1px_0_rgba(255,255,255,0.92)]'
+               ? 'shadow-[0_2px_8px_rgba(96,16,210,0.16),inset_0_1px_0_rgba(255,255,255,0.92)]'
                : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_1px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.92)]'
          }`}
       >
          {label}
          {selected ? (
-            <Check aria-hidden="true" className="absolute right-1.5 top-1.5 h-3 w-3" strokeWidth={3} style={{ color: '#6010d2' }} />
+            <Check aria-hidden="true" className="absolute right-1.5 top-1.5 h-3 w-3" strokeWidth={3} style={{ color: '#5B16E8' }} />
          ) : null}
       </button>
    );
