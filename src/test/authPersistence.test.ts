@@ -4,7 +4,7 @@ import authReducer from '@/store/slices/authSlice';
 import { type AuthState, WorldId } from '@/types/authTypes';
 
 describe('auth persistence', () => {
-   it('does not trust a persisted profile until Supabase confirms the live session', () => {
+   it('keeps the last visible profile while Supabase confirms the live session', () => {
       const staleState: AuthState = {
          user: {
             id: 'stale-user',
@@ -41,9 +41,9 @@ describe('auth persistence', () => {
 
       const state = authReducer(staleState, { type: 'persist/REHYDRATE' });
 
-      expect(state.user.id).toBe('');
-      expect(state.username).toBeNull();
-      expect(state.userProfiles).toEqual({});
+      expect(state.user.id).toBe('stale-user');
+      expect(state.username).toBe('stale');
+      expect(state.userProfiles['stale-user']?.username).toBe('stale');
       expect(state.isAuthChecked).toBe(false);
    });
 });

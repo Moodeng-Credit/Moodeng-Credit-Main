@@ -111,7 +111,6 @@ export default function App() {
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
    const showPreviewRoutes = canShowPreviewRoutes();
    const showBottomNav =
-      isAuthChecked &&
       Boolean(user?.id) &&
       !shouldShowAccountSupport &&
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||

@@ -724,11 +724,9 @@ const authSlice = createSlice({
          .addMatcher(
             (action) => action.type === 'persist/REHYDRATE',
             (state) => {
-               // Persisted auth can come from an older deployment or Supabase project.
-               // Treat it as untrusted until AuthInitializer confirms the live session.
-               state.user = defaultUser;
-               state.username = null;
-               state.userProfiles = {};
+               // Keep the last visible profile during session recovery so app navigation
+               // does not flash back to the public state while Supabase confirms auth.
+               // AuthInitializer still clears it when Supabase confirms there is no session.
                state.isAuthChecked = false;
             }
          );
