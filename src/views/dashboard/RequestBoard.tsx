@@ -5,6 +5,7 @@ import {
    type RefObject,
    useCallback,
    useEffect,
+   useLayoutEffect,
    useMemo,
    useRef,
    useState
@@ -756,6 +757,12 @@ function RequestBoard$() {
          })
          .catch(() => undefined);
    }, [isBorrower, user?.id, dispatch]);
+
+   useLayoutEffect(() => {
+      if (typeof window === 'undefined' || window.location.hash) return;
+
+      window.scrollTo(0, 0);
+   }, [pathname]);
 
    useEffect(() => {
       if (typeof window !== 'undefined' && window.location.hash) {
