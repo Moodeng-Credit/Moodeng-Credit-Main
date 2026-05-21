@@ -1,7 +1,8 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import BorrowerVerificationBadge from '@/components/BorrowerVerificationBadge';
 import UserAvatar from '@/components/UserAvatar';
+import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { getMemberSinceText } from '@/utils/dateFormatters';
 import type { User } from '@/types/authTypes';
 
@@ -42,15 +43,19 @@ export default function UserGreeting({ user }: UserGreetingProps) {
             </button>
             <div className="flex items-center gap-2 flex-wrap">
                <BorrowerVerificationBadge />
-               {!isVerified && (
-                  <Link to="/verify-world-id" className="text-md-b4 font-medium text-md-primary-900">
-                     Verify World ID &gt;
-                  </Link>
-               )}
+               {!isVerified ? (
+                  <WorldIDVerification>
+                     {({ open }) => (
+                        <button type="button" onClick={open} className="text-md-b4 font-medium text-md-primary-900">
+                           Verify World ID &gt;
+                        </button>
+                     )}
+                  </WorldIDVerification>
+               ) : null}
             </div>
-            {memberSince && (
+            {memberSince ? (
                <p className="text-md-b4 text-md-neutral-700">Member since {memberSince}</p>
-            )}
+            ) : null}
          </div>
       </div>
    );

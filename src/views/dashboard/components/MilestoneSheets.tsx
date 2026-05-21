@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { Link } from 'react-router-dom';
 
+import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { formatMilestoneTrustPoints, type DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
 
 export const MILESTONE_STATUS_CLASSES = {
@@ -75,6 +76,7 @@ export const MilestoneDetailSheet = ({
 
    const config = MILESTONE_ICON_CONFIG[milestone.status];
    const actionHref = `${milestone.actionTo ?? '/milestones'}${previewQuery ? `?${previewQuery}` : ''}`;
+   const opensWorldId = milestone.actionTo === '/verify-world-id';
    const isLocked = milestone.status === 'locked';
    const isUnlocked = milestone.status === 'unlocked';
    const pointReward = formatMilestoneTrustPoints(milestone);
@@ -154,6 +156,18 @@ export const MilestoneDetailSheet = ({
                >
                   Done
                </button>
+            ) : opensWorldId ? (
+               <WorldIDVerification>
+                  {({ open }) => (
+                     <button
+                        type="button"
+                        onClick={open}
+                        className="rounded-md-lg bg-md-primary-900 px-4 py-3 text-center text-md-b2 font-semibold text-white"
+                     >
+                        {milestone.actionLabel ?? 'Continue'}
+                     </button>
+                  )}
+               </WorldIDVerification>
             ) : (
                <Link to={actionHref} className="rounded-md-lg bg-md-primary-900 px-4 py-3 text-center text-md-b2 font-semibold text-white">
                   {milestone.actionLabel ?? 'Continue'}
