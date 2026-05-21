@@ -1,5 +1,7 @@
 import { type PointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
+import { Check } from 'lucide-react';
+
 import type { LoanFilters } from '@/utils/loanFilters';
 
 import { BORROW_TYPES, LOAN_AMOUNTS, LOAN_TIME_PERIODS, REPAYMENT_RATES } from '@/constants/loanOptions';
@@ -20,17 +22,6 @@ const tabs: { id: FilterTab; label: string }[] = [
    { id: 'date', label: 'Date' },
    { id: 'type', label: 'Type' }
 ];
-
-const emptyFilters: LoanFilters = {
-   amount: '',
-   rate: '',
-   date: null,
-   loanTime: '',
-   borrowType: [],
-   network: [],
-   search: '',
-   sortBy: undefined
-};
 
 export default function FilterSidebar({
    filters,
@@ -78,11 +69,6 @@ export default function FilterSidebar({
             ? selectedBorrowTypes.filter((type) => type !== value)
             : [...selectedBorrowTypes, value]
       });
-   };
-
-   const resetFilters = () => {
-      setDraftFilters(emptyFilters);
-      setDraftCustomAmount('');
    };
 
    const applyFilters = () => {
@@ -194,10 +180,10 @@ export default function FilterSidebar({
                         key={tab.id}
                         type="button"
                         onClick={() => setActiveTab(tab.id)}
-                        className={`shrink-0 rounded-[10px] px-3.5 py-2 text-md-b3 font-medium whitespace-nowrap transition-all duration-150 active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
+                        className={`shrink-0 rounded-[10px] border px-3.5 py-2 text-md-b3 font-medium whitespace-nowrap transition-all duration-150 active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
                            activeTab === tab.id
-                              ? 'bg-gradient-to-br from-[#7028e4] to-md-primary-1200 text-white shadow-[0_2px_8px_rgba(96,16,210,0.25),inset_0_1px_0_rgba(255,255,255,0.25)]'
-                              : 'bg-white text-md-neutral-1100 shadow-[0_1px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.92)]'
+                              ? 'border-md-primary-300 bg-white text-md-primary-1200 shadow-[0_1px_5px_rgba(96,16,210,0.14),inset_0_1px_0_rgba(255,255,255,0.92)]'
+                              : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_1px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.92)]'
                         }`}
                      >
                         {tab.label}
@@ -207,9 +193,9 @@ export default function FilterSidebar({
             </div>
 
             <div className="flex-1 overflow-y-auto border-t border-[#eee8f7] px-md-4 pb-6 pt-4">
-               {activeTab === 'amount' && (
+               {activeTab === 'amount' ? (
                   <FilterSection title="Credit Limit">
-                     <div className="flex flex-wrap gap-2">
+                     <div className="grid grid-cols-2 gap-2">
                         {LOAN_AMOUNTS.map((amount) => (
                            <FilterChip
                               key={amount.value}
@@ -220,11 +206,11 @@ export default function FilterSidebar({
                         ))}
                      </div>
                   </FilterSection>
-               )}
+               ) : null}
 
-               {activeTab === 'rate' && (
+               {activeTab === 'rate' ? (
                   <FilterSection title="Repayment Amount">
-                     <div className="flex flex-wrap gap-2">
+                     <div className="grid grid-cols-2 gap-2">
                         {REPAYMENT_RATES.map((rate) => (
                            <FilterChip
                               key={rate.value}
@@ -235,11 +221,11 @@ export default function FilterSidebar({
                         ))}
                      </div>
                   </FilterSection>
-               )}
+               ) : null}
 
-               {activeTab === 'date' && (
+               {activeTab === 'date' ? (
                   <FilterSection title="Repayment Date">
-                     <div className="flex flex-wrap gap-2">
+                     <div className="grid grid-cols-2 gap-2">
                         {LOAN_TIME_PERIODS.map((period) => (
                            <FilterChip
                               key={period.value}
@@ -250,11 +236,11 @@ export default function FilterSidebar({
                         ))}
                      </div>
                   </FilterSection>
-               )}
+               ) : null}
 
-               {activeTab === 'type' && (
+               {activeTab === 'type' ? (
                   <FilterSection title="Borrow Type">
-                     <div className="flex flex-wrap gap-2">
+                     <div className="grid grid-cols-2 gap-2">
                         {BORROW_TYPES.map((type) => (
                            <FilterChip
                               key={type.value}
@@ -265,21 +251,14 @@ export default function FilterSidebar({
                         ))}
                      </div>
                   </FilterSection>
-               )}
+               ) : null}
             </div>
 
-            <div className="flex shrink-0 gap-3 border-t border-[#eee8f7] bg-gradient-to-t from-white via-white to-white/90 px-md-4 py-4 shadow-[0_-4px_14px_rgba(0,0,0,0.04)]">
-               <button
-                  type="button"
-                  onClick={resetFilters}
-                  className="flex-1 rounded-[12px] bg-white px-5 py-3 text-md-b1 font-medium text-md-heading shadow-[0_2px_6px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] transition-all duration-150 hover:shadow-[0_3px_10px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
-               >
-                  Reset
-               </button>
+            <div className="flex shrink-0 items-center justify-center border-t border-[#eee8f7] bg-gradient-to-t from-white via-white to-white/90 px-md-4 py-4 shadow-[0_-4px_14px_rgba(0,0,0,0.04)]">
                <button
                   type="button"
                   onClick={applyFilters}
-                  className="flex-1 rounded-[12px] bg-gradient-to-br from-[#7028e4] to-md-primary-1200 px-5 py-3 text-md-b1 font-medium text-white shadow-[0_4px_12px_rgba(96,16,210,0.35),inset_0_1px_0_rgba(255,255,255,0.25)] transition-all duration-150 hover:shadow-[0_6px_16px_rgba(96,16,210,0.42),inset_0_1px_0_rgba(255,255,255,0.25)] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
+                  className="min-h-11 w-full max-w-[220px] rounded-[12px] bg-gradient-to-br from-[#7028e4] to-md-primary-1200 px-5 py-2.5 text-md-b1 font-medium text-white shadow-[0_4px_12px_rgba(96,16,210,0.35),inset_0_1px_0_rgba(255,255,255,0.25)] transition-all duration-150 hover:shadow-[0_6px_16px_rgba(96,16,210,0.42),inset_0_1px_0_rgba(255,255,255,0.25)] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
                >
                   Apply
                </button>
@@ -303,13 +282,18 @@ function FilterChip({ label, selected, onClick }: { label: string; selected: boo
       <button
          type="button"
          onClick={onClick}
-         className={`rounded-[10px] px-4 py-2.5 text-md-b3 font-normal transition-all duration-150 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
+         aria-pressed={selected}
+         style={selected ? { borderColor: '#d6bcfa', color: '#6010d2' } : undefined}
+         className={`relative flex min-h-[54px] w-full items-center justify-center rounded-[10px] border px-4 py-2.5 pr-7 text-center text-md-b3 font-medium transition-all duration-150 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
             selected
-               ? 'scale-[1.02] bg-gradient-to-br from-[#f5f0ff] to-[#ede5ff] text-md-primary-1200 shadow-[0_2px_8px_rgba(96,16,210,0.2),inset_0_-1px_0_rgba(96,16,210,0.15),inset_0_1px_0_rgba(255,255,255,0.86)]'
-               : 'bg-white text-md-neutral-1100 shadow-[0_1px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.92)]'
+               ? 'border-md-primary-300 bg-white text-md-primary-1200 shadow-[0_2px_8px_rgba(96,16,210,0.16),inset_0_1px_0_rgba(255,255,255,0.92)]'
+               : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_1px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.92)]'
          }`}
       >
          {label}
+         {selected ? (
+            <Check aria-hidden="true" className="absolute right-1.5 top-1.5 h-3 w-3" strokeWidth={3} style={{ color: '#6010d2' }} />
+         ) : null}
       </button>
    );
 }

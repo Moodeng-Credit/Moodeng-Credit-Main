@@ -25,12 +25,10 @@ export const LOAN_TIME_PERIODS = [
    { value: '7', label: 'Next Week' },
    { value: '30', label: 'Next 30 Days' },
    { value: '60', label: 'Next 60 Days' },
-   { value: '90', label: 'Next 90 Days' },
-   { value: '120', label: 'Next 120 Days+' }
+   { value: '120', label: 'After 90 Days+' }
 ] as const;
 
 export const BORROW_TYPES = [
-   { value: 'good-standing', label: 'Good Standing' },
    { value: 'beginner', label: 'Beginner Borrower' },
    { value: 'no-active', label: 'No Active Loans' }
 ] as const;
