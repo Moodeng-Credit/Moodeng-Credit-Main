@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 
-import { AlertCircle, ChevronLeft } from 'lucide-react';
+import { AlertCircle, ChevronLeft, Clock3 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
@@ -137,7 +137,7 @@ function buildTimeline(loan: Loan): TimelineStep[] {
       if (key === 'requested') return formatDate(loan.createdAt);
       if (key === 'funded') {
          if (state === 'done') return formatDate(loan.fundedAt ?? loan.updatedAt);
-         if (state === 'active') return 'Pending lender acceptance';
+         if (state === 'active') return 'Not funded yet';
          return undefined;
       }
       if (key === 'partial_repayment') {
@@ -146,12 +146,15 @@ function buildTimeline(loan: Loan): TimelineStep[] {
       }
       if (key === 'repaid') {
          if (state === 'done') return formatDate(loan.updatedAt);
+         if (loan.loanStatus === 'Requested') return 'Available after funding';
          return `Due ${formatDate(loan.dueDate)}`;
       }
       return undefined;
    };
 
    const labelFor = (key: TimelineStep['key'], state: StepState): string => {
+      if (key === 'funded' && state === 'active') return 'Waiting for lender';
+      if (key === 'repaid' && loan.loanStatus === 'Requested') return 'Repayment schedule';
       if (key === 'repaid' && state !== 'done') return 'Repayment due';
       const labels: Record<TimelineStep['key'], string> = {
          requested: 'Requested',
@@ -183,8 +186,12 @@ function StepDot({ state }: { state: StepState }) {
    }
    if (state === 'active') {
       return (
-         <span className="w-6 h-6 rounded-full bg-white border-2 border-md-timeline-border flex items-center justify-center shrink-0">
-            <span className="w-[10px] h-[10px] rounded-full bg-md-timeline-active" />
+         <span className="relative w-7 h-7 shrink-0 flex items-center justify-center" aria-hidden="true">
+            <span className="absolute inset-[-3px] rounded-full border border-[#e65100]/20 bg-[#fff5ec]" />
+            <span className="absolute inset-[1px] rounded-full border border-dashed border-md-timeline-border" />
+            <span className="relative w-6 h-6 rounded-full bg-white border-2 border-[#e65100] flex items-center justify-center">
+               <span className="w-[7px] h-[7px] rounded-full bg-[#e65100]" />
+            </span>
          </span>
       );
    }
@@ -210,28 +217,39 @@ function StepConnector({ nextState }: { nextState: StepState }) {
 
 function Timeline({ loan }: { loan: Loan }) {
    const steps = buildTimeline(loan);
+   const isPendingFunding = loan.loanStatus === 'Requested';
    return (
       <div className="flex flex-col">
          {steps.map((step, i) => {
             const isLast = i === steps.length - 1;
             const nextStep = steps[i + 1];
-            const labelColor = step.state === 'pending' ? 'text-md-timeline-text' : 'text-md-primary-2000';
+            const labelColor =
+               step.state === 'active'
+                  ? 'text-[#a24a00]'
+                  : step.state === 'pending' || (isPendingFunding && step.key === 'repaid')
+                    ? 'text-md-timeline-text'
+                    : 'text-md-primary-2000';
             return (
                <div key={step.key} className="flex gap-md-3">
                   <div className="flex flex-col items-center">
                      <StepDot state={step.state} />
-                     {!isLast && <StepConnector nextState={nextStep.state} />}
+                     {!isLast && nextStep ? <StepConnector nextState={nextStep.state} /> : null}
                   </div>
                   <div className={`flex-1 flex flex-col gap-1 ${isLast ? '' : 'pb-md-3'}`}>
                      <span className="flex items-center gap-2">
                         <span className={`text-md-b1 font-semibold ${labelColor}`}>{step.label}</span>
-                        {step.state === 'due' && (
+                        {step.state === 'due' ? (
                            <span className="rounded-full bg-md-primary-100 px-2.5 py-1 text-md-b4 font-semibold text-md-primary-900 border border-md-primary-300">
                               Due
                            </span>
-                        )}
+                        ) : null}
+                        {step.state === 'active' ? (
+                           <span className="rounded-full bg-[#fff5ec] px-2.5 py-1 text-md-b4 font-semibold text-[#a24a00] border border-[#ffd7b8]">
+                              Pending
+                           </span>
+                        ) : null}
                      </span>
-                     {step.description && <span className="text-md-b3 text-md-timeline-text">{step.description}</span>}
+                     {step.description ? <span className="text-md-b3 text-md-timeline-text">{step.description}</span> : null}
                   </div>
                </div>
             );
@@ -286,6 +304,7 @@ export default function TransactionDetail() {
    }
 
    const status = getLoanStatus(loan);
+   const isPendingFunding = status === 'PENDING';
    const lenderProfile = loan.lenderUser ? userProfiles[loan.lenderUser] : undefined;
    const lenderName = lenderProfile?.username ?? 'Unknown';
    const outstanding = Math.max(0, loan.totalRepaymentAmount - loan.repaidAmount);
@@ -311,11 +330,25 @@ export default function TransactionDetail() {
                      <UserAvatar src={lenderProfile?.avatarUrl} alt={lenderName} size={48} />
                      <div className="flex-1 min-w-0 flex flex-col gap-1">
                         <p className="text-md-b1 font-semibold text-md-primary-2000 line-clamp-2">{loan.reason || 'Loan'}</p>
-                        <span className="text-md-b3 text-md-neutral-1200">Lent by {lenderName}</span>
+                        <span className="text-md-b3 text-md-neutral-1200">
+                           {isPendingFunding ? 'Lender has not accepted yet' : `Lent by ${lenderName}`}
+                        </span>
                      </div>
                   </div>
 
                   <div className="h-px bg-md-neutral-300" />
+
+                  {isPendingFunding ? (
+                     <div className="rounded-md-md border border-[#ffd7b8] bg-[#fff8ef] px-md-3 py-md-2 flex gap-md-2">
+                        <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#a24a00]" strokeWidth={2.3} />
+                        <div className="flex flex-col gap-1">
+                           <span className="text-md-b3 font-semibold text-[#7a3600]">Waiting for lender acceptance</span>
+                           <span className="text-md-b4 text-[#7a5a3a]">
+                              This loan is not funded yet. Repayment starts only after a lender accepts.
+                           </span>
+                        </div>
+                     </div>
+                  ) : null}
 
                   <div className="grid grid-cols-2 gap-md-3">
                      <div className="flex flex-col gap-1">
@@ -334,11 +367,15 @@ export default function TransactionDetail() {
                      </div>
                      <div className="flex flex-col gap-1">
                         <span className="text-md-b3 text-md-neutral-1000">Outstanding</span>
-                        <span className="text-md-b1 font-semibold text-md-red-500">{formatCurrency(outstanding)}</span>
+                        <span className={`text-md-b1 font-semibold ${isPendingFunding ? 'text-md-neutral-600' : 'text-md-red-500'}`}>
+                           {isPendingFunding ? 'Not active' : formatCurrency(outstanding)}
+                        </span>
                      </div>
                      <div className="flex flex-col gap-1 col-span-2">
-                        <span className="text-md-b3 text-md-neutral-1000">Due Date</span>
-                        <span className="text-md-b1 font-semibold text-md-primary-2000">{formatDate(loan.dueDate)}</span>
+                        <span className="text-md-b3 text-md-neutral-1000">{isPendingFunding ? 'Requested on' : 'Due Date'}</span>
+                        <span className="text-md-b1 font-semibold text-md-primary-2000">
+                           {isPendingFunding ? formatDate(loan.createdAt) : formatDate(loan.dueDate)}
+                        </span>
                      </div>
                   </div>
                </div>
@@ -350,7 +387,7 @@ export default function TransactionDetail() {
                </div>
 
                {/* Repay CTA for borrower on active/partial/default */}
-               {(status === 'ACTIVE' || status === 'PARTIAL' || status === 'DEFAULT') && (
+               {status === 'ACTIVE' || status === 'PARTIAL' || status === 'DEFAULT' ? (
                   <button
                      type="button"
                      onClick={() => navigate('/repay')}
@@ -358,7 +395,7 @@ export default function TransactionDetail() {
                   >
                      Repay Loan
                   </button>
-               )}
+               ) : null}
             </div>
          </div>
       </div>
