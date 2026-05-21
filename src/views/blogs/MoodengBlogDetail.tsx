@@ -179,6 +179,16 @@ export default function MoodengBlogDetail(): JSX.Element {
                         {paragraphs.map((paragraph) => (
                            <p key={paragraph}>{paragraph}</p>
                         ))}
+                        {section.evidenceImages?.length ? (
+                           <div className="blog-evidence-grid">
+                              {section.evidenceImages.map((image) => (
+                                 <figure className="blog-evidence-card" key={image.src}>
+                                    <img src={image.src} alt={image.alt} loading="lazy" />
+                                    <figcaption>{image.caption}</figcaption>
+                                 </figure>
+                              ))}
+                           </div>
+                        ) : null}
                      </section>
                   );
                })}

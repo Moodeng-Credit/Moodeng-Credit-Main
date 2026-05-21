@@ -1,6 +1,13 @@
 export interface BlogSection {
    heading: string;
    body: string | string[];
+   evidenceImages?: BlogEvidenceImage[];
+}
+
+export interface BlogEvidenceImage {
+   src: string;
+   alt: string;
+   caption: string;
 }
 
 export interface BlogFaq {
@@ -48,14 +55,14 @@ export const blogPosts: BlogPost[] = [
       slug: 'first-credit-record-should-not-belong-to-a-loan-shark',
       category: 'Shadow systems',
       title: 'Your first credit record should not belong to a loan shark',
-      dek: 'For millions of informal workers, the first lender to say yes is not a bank. It is an app that can take their contacts, their dignity, and their future trust before it ever earns repayment.',
+      dek: 'The app that says yes first gets to write your financial story. In the Philippines, that app is often unregistered, run from overseas, and designed around your contacts, not your creditworthiness.',
       seoTitle: 'Loan Shark Alternatives for First Credit Records | Moodeng',
       metaDescription:
-         'Why a first credit record should belong to the borrower, not a loan shark app, and how Moodeng uses small USDC loans to build safer trust.',
+         'Why the first credit record should belong to the borrower, not an unregistered loan app using contact-list pressure and fake-looking credibility signals.',
       summary: [
-         'A first credit record should help a borrower graduate to safer options, not trap them inside a private loan shark ledger.',
-         'Predatory loan apps often turn a small cash need into a data and reputation problem by collecting contacts, social context, and shame leverage.',
-         'Moodeng is designed around borrower-owned repayment history, clear terms, human uniqueness, and no contact-list collateral.'
+         'In the Philippines, many online lending apps look safe while operating through weak registration, offshore ownership, and private repayment ledgers.',
+         'Fake-looking executive profiles, unverifiable public footprints, and strange engagement signals are red flags when paired with borrower complaints and contact-list abuse.',
+         'A fair first credit record should become portable borrower evidence, not a private collection tool controlled by the lender.'
       ],
       keywords: ['loan shark alternatives', 'first credit record', 'borrower-owned credit history', 'microloan repayment history'],
       faq: [
@@ -76,50 +83,99 @@ export const blogPosts: BlogPost[] = [
          }
       ],
       sources: [
-         { label: 'Moodeng podcast companion', href: podcastUrl },
-         { label: 'Loan Sharks in the App Store research notes' },
-         { label: 'World Bank Global Findex on formal and informal borrowing', href: globalFindexUrl },
-         { label: 'Lookout research on predatory loan apps', href: lookoutLoanAppsUrl }
+         { label: 'OLAs Research notes' },
+         { label: 'National Privacy Commission of the Philippines complaint reports' },
+         { label: 'SEC enforcement orders' },
+         { label: 'Tala 2024 Philippine Digital Lending Industry Report' },
+         { label: 'ResearchGate integrative review of OLAs in the Philippines' },
+         { label: 'Al Jazeera Philippines loan app investigation, September 2024' },
+         { label: 'Rappler investigation into Chinese-linked OLA operators' },
+         { label: 'inquiro.ph financial literacy statistics 2024' }
       ],
-      sourceLabel: 'Podcast companion',
-      sourceHref: podcastUrl,
-      publishedAt: 'May 18, 2026',
-      readTime: '9 min read',
+      sourceLabel: 'From the OLA research notes',
+      publishedAt: 'May 2026',
+      readTime: '11 min read',
       audience: 'Borrowers',
       image: '/hippos/journal-hippo-no-eyebrows.png',
       imageAlt: 'Moodeng hippo writing in a journal',
       accent: 'violet',
       sections: [
          {
+            heading: 'The app-store illusion',
+            body: [
+               'For millions of informal workers across Southeast Asia, formal credit has one consistent answer: no. No bank account history. No payslips from a registered employer. No credit file anywhere a normal lender can read it.',
+               'The need for money does not disappear with the rejection. So borrowers go looking for whoever will say yes. In the Philippines right now, whoever says yes first is very often an app: cheap to build, fast to approve, and designed around a very different definition of collateral than the one printed in any lending contract.',
+               'Open the iOS App Store and search for Philippine loan apps. You will find bright icons, friendly names, fast approvals, low barriers, and easy language about financial freedom. The design communicates safety. In many cases, the substance does not.',
+               'A review of 40 online lending applications active in the Philippines found that only 25% were registered with the Securities and Exchange Commission. Of those claiming to report credit scores, most were not listed with the Credit Information Corporation of the Philippines, the official body that exists specifically to make borrower records portable and useful.',
+               'This is not a niche problem. The National Privacy Commission has received hundreds of formal complaints against online lending apps, all reporting essentially the same pattern: contact lists accessed without genuine consent, personal information disclosed to third parties, and harassment aimed not only at the borrower but at family members, coworkers, and friends.'
+            ]
+         },
+         {
+            heading: 'Who is actually running these apps',
+            body: [
+               'The ownership structure of Philippine online lending apps is one of the most revealing parts of the story, and the least discussed. Research into the operators behind iOS-listed loan apps finds a consistent pattern: many are registered under one company name in the SEC while operating three or four different app brands at the same time.',
+               'A single lending corporation may run several consumer-facing products with shared infrastructure and ownership. If one brand accumulates too many complaints or regulatory attention, the others continue operating.',
+               'The nationality breakdown of identified operators skews heavily toward Chinese nationals, often in partnership with Filipino co-directors who provide the local registration requirements. This is not uniformly predatory. Legitimate Chinese-backed fintech operates across Southeast Asia. But it does create accountability gaps when abusive collection tactics have to be traced through local registrations, offshore operators, and app-store listings that can be changed or removed.',
+               'HappyCash, operated by Yinshan Lending Inc., lists a CEO profile on LinkedIn. The company is SEC-registered, but it is not listed with the Credit Information Corporation. The executive profile raises credibility questions: the profile photo appears AI-generated, the account has no meaningful independent footprint, and searches did not surface a matching public professional record outside the profile itself.',
+               'FT Lending similarly presents a LinkedIn executive identity with a highly polished portrait, a generic corporate-style background, and little verifiable external presence. Researchers were unable to find normal public traces one would expect from a real executive operating a consumer lending company: no press mentions, no visible industry history, no independent references, and no credible trail beyond the profile.'
+            ],
+            evidenceImages: [
+               {
+                  src: '/blog-linkedin-yige-w.png',
+                  alt: 'LinkedIn profile screenshot for Yige W. associated with Yinshan Lending Inc.',
+                  caption:
+                     'HappyCash operator Yinshan Lending Inc. presents a LinkedIn CEO profile with a synthetic-looking portrait and no meaningful independent public footprint.'
+               },
+               {
+                  src: '/blog-linkedin-pete-zuo.png',
+                  alt: 'LinkedIn profile screenshot for Pete Shipeng Zuo associated with FT Lending Master Philippines Corp.',
+                  caption:
+                     'FT Lending presents a similarly polished executive profile with a generic city background and little corroborating public record.'
+               }
+            ]
+         },
+         {
+            heading: 'Constructed credibility',
+            body: [
+               'The two profiles are especially striking side by side. They come from different companies, yet use the same credibility formula: clean studio-like profile photo, generic city cover image, executive title, university badge, and almost no discoverable life outside the page.',
+               'The profile photos are not proof by themselves. But in context, they are a red flag. They look less like accidental placeholders and more like constructed credibility: the visual language of a legitimate fintech executive used to project trust to borrowers, regulators, and journalists who might only do a surface-level check.',
+               'The pattern is not limited to corporate profiles. A Cashify video on Facebook reportedly showed roughly 61,000 views with not a single comment. That is not impossible, but it is suspicious for a consumer loan product targeting real borrowers. Real financial products generate questions, complaints, reactions, confusion, spam, tags, anger, and support requests.',
+               'A large-view, zero-comment lending video deserves scrutiny because it suggests the visible engagement layer may be managed, suppressed, inflated, or disconnected from genuine borrower activity.',
+               'The point is not that every odd profile photo or quiet Facebook video proves fraud. The point is that these apps often rely on surfaces of legitimacy that collapse under basic verification. The App Store listing looks safe. The LinkedIn identity looks professional. The video looks popular. But when the company is not CIC-listed, the executive identity cannot be independently corroborated, the profile image appears synthetic, and borrower complaints describe contact-list abuse, the surface is doing a lot of work.'
+            ]
+         },
+         {
+            heading: 'The contact list is the product',
+            body: [
+               'To understand what these apps are actually selling, you have to understand what they are actually collecting. When a borrower downloads a loan app and requests a small amount, maybe PHP 2,000, PHP 5,000, or an emergency float, they are typically asked for permissions that have nothing to do with assessing their ability to repay.',
+               'Contacts. Location. SMS history. Camera. Sometimes social media access. The framing is underwriting: we need to assess your risk profile. The function is leverage: we need to know who to call if you are late.',
+               'The National Privacy Commission documented the mechanism precisely in its complaints: contact lists are accessed without genuine consent or authority, and the information is used to send threatening, false, or humiliating messages to people who never agreed to be part of a loan transaction. The borrower thinks they borrowed money. The lender knows they purchased leverage over a social network.'
+            ]
+         },
+         {
+            heading: 'Who borrows, and why they stay',
+            body: [
+               'The typical Philippine online lending app borrower does not look like someone making a careless financial decision. Research from Tala paints a specific profile: young adults, 25-34, predominantly female, urban, some college education, Android smartphone users with household incomes under PHP 42,000 a month supporting 2-6 family members.',
+               'They borrow primarily for emergency expenses, bill payments, and daily needs. Nearly 90% report clear awareness of interest rates and fees at the point of application. They are not confused about the terms. They are choosing the available option.',
+               'The Philippine financial literacy rate sits at approximately 25% of adults, 13th among 21 developing Asian countries in a recent comparative ranking. But low financial literacy is not what drives online lending app use. High financial exclusion is. A borrower who understands exactly what an app charges and takes it anyway is telling you something about the alternatives, not about their comprehension.',
+               'What keeps borrowers inside the system is not ignorance. It is the absence of a portable exit. A borrower who repays an app on time has demonstrated something real. But if the lender is not CIC-registered, that demonstration produces no transferable credit record. The next emergency starts from zero. The same gate is still the only open one.'
+            ]
+         },
+         {
             heading: 'The first record becomes the story',
             body: [
-               'A borrower can work every day, sell food, drive passengers, freelance, care for family, send money home, and still be invisible to formal credit. The work is real. The income is real. The repayment intention is real. What is missing is a record that normal lenders can understand without demanding paperwork the borrower does not have.',
-               'That gap is where predatory credit becomes dangerous. The first lender willing to say yes often gets to write the first financial story about the borrower. If that lender is a loan shark app, the story is not written as proof of reliability. It is written as leverage.',
-               'A first credit record should be a ladder. Too often, it becomes a trap. The borrower repays, but the useful signal stays inside a private lender database or disappears entirely. The next emergency starts from zero, and the same predatory option is waiting again.'
+               'There is a simple principle underneath all of this. The first lender to say yes to a new borrower gets to write the first entry in their financial story. If that entry is written by a legitimate lender into a system the borrower owns and can carry forward, it becomes a ladder. If it is written by a predatory app into a private database that serves the lender collection function rather than the borrower future access, it becomes a trap.',
+               'The borrower repays. The lender learned something valuable about that borrower. The borrower behavior generated a proof of reliability. The borrower does not own that proof. It does not travel with them. The next lender cannot see it. The system resets.',
+               'This is how predatory credit reproduces itself. It is not primarily about interest rates, though the rates are often abusive. It is about who owns the useful output of a completed loan. A repayment is evidence. Evidence should belong to the person who produced it.'
             ]
          },
          {
-            heading: 'Predators do not only lend money',
+            heading: 'What a different pipe looks like',
             body: [
-               'The sharpest loan sharks are not only charging abusive fees. They are collecting power. A small loan can become permission to copy phone contacts, scrape social handles, learn family relationships, identify coworkers, and find the pressure points that make a borrower afraid.',
-               'The borrower thinks the product is about cash. The lender understands it as a data transaction. The app may ask for permissions that have nothing to do with underwriting a small loan. Once the permissions are granted, repayment pressure can travel far beyond the borrower.',
-               'This is why the harm can feel bigger than the balance. A late payment on a tiny loan can become threats, embarrassment, fake legal language, doctored images, or messages to people who never agreed to be involved. The debt is financial, but the collection tool is social fear.'
-            ]
-         },
-         {
-            heading: 'The missing product is not another nicer loan app',
-            body: [
-               'A fair alternative cannot just use friendlier colors and kinder copy. Predatory lending already knows how to look friendly. It uses bright icons, easy language, fast approvals, and sometimes even cute mascots. The difference has to be structural.',
-               'For Moodeng, that means no contact-list collateral. It means terms shown before funding, not hidden after the borrower is already desperate. It means a human uniqueness check that helps protect the network without asking borrowers to expose their private life. It means repayment history that builds forward.',
-               'The borrower should not have to choose between dignity and liquidity. If the loan is small, the product discipline has to be even stronger, because small debts are exactly where people are told that their rights, privacy, and reputation do not matter.'
-            ]
-         },
-         {
-            heading: 'The borrower should own the useful part',
-            body: [
-               'The useful part of a successful loan is not only that the lender got repaid. The useful part is that the borrower proved something. They chose terms, accepted funding, repaid in the agreed window, and showed that a small trust relationship can work.',
-               'That signal should not vanish. A borrower-owned record lets the next lender see evidence without demanding humiliation. It turns a small repayment into a small piece of portable credibility.',
-               'That is the core Moodeng bet: the first record can belong to the borrower, not the loan shark. It can be safe enough for lenders to use, simple enough for borrowers to understand, and humane enough that people do not have to turn their private lives into collateral.'
+               'The OLA problem in the Philippines is a specific, documentable instance of a structural failure in credit infrastructure. Informal workers need access to liquidity. Formal systems exclude them. Shadow systems rush in, and the shadow systems are designed around the logic of leverage, not the logic of underwriting.',
+               'A fair alternative has to be different in structure, not just in tone. Friendlier copy and brighter colors are not a product. Predatory apps already know how to look friendly: the app names, the fast-approval UX, the polished LinkedIn profiles, the synthetic-looking executive photos, the engagement numbers that do not behave like real communities, and the trust-building flow that arrives before the permissions request.',
+               'The structural differences that matter are simple: no contact-list collateral, terms before funding, identity that protects the network without exposing the person, and repayment history that belongs to the borrower.',
+               'The first credit record should be a ladder. Moodeng is designed around that premise: small USDC loans, World ID verification, and portable repayment history for borrowers building credit where the formal system has not reached them yet. The app that says yes first should not get to own your financial story forever.'
             ]
          }
       ]
