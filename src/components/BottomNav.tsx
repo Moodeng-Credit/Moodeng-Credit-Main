@@ -45,7 +45,7 @@ function PrimaryActionSlot({ action }: { action: BottomNavPrimaryAction }) {
    const isDisabled = Boolean(action.disabled);
 
    return (
-      <div className="relative z-30 flex w-full flex-col items-center self-stretch">
+      <div className="pointer-events-none relative flex w-full flex-col items-center">
          <span className="pointer-events-none absolute -top-9 left-1/2 z-0 h-[82px] w-[104px] -translate-x-1/2 rounded-t-[60px] bg-md-neutral-100" />
          <button
             type="button"
@@ -153,7 +153,7 @@ export default function BottomNav() {
          >
             {navItems.map((item) => {
                if ('type' in item) {
-                  return activePrimaryAction ? <PrimaryActionSlot key="bottom-nav-primary-action" action={activePrimaryAction} /> : null;
+                  return <div key="bottom-nav-primary-action-spacer" aria-hidden="true" className="pointer-events-none" />;
                }
 
                return (
@@ -166,6 +166,11 @@ export default function BottomNav() {
                   />
                );
             })}
+            {activePrimaryAction ? (
+               <div className="pointer-events-none absolute bottom-0 left-1/2 z-50 w-20 -translate-x-1/2">
+                  <PrimaryActionSlot action={activePrimaryAction} />
+               </div>
+            ) : null}
          </div>
       </nav>
    );
