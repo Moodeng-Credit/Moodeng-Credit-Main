@@ -45,15 +45,15 @@ function PrimaryActionSlot({ action }: { action: BottomNavPrimaryAction }) {
    const isDisabled = Boolean(action.disabled);
 
    return (
-      <div className="pointer-events-none relative flex flex-1 flex-col items-center self-stretch">
-         <span className="pointer-events-none absolute -top-9 left-1/2 h-[82px] w-[104px] -translate-x-1/2 rounded-t-[60px] bg-md-neutral-100" />
+      <div className="pointer-events-none relative z-30 flex w-full flex-col items-center self-stretch">
+         <span className="pointer-events-none absolute -top-9 left-1/2 z-0 h-[82px] w-[104px] -translate-x-1/2 rounded-t-[60px] bg-md-neutral-100" />
          <button
             type="button"
             onClick={action.onClick}
             disabled={isDisabled}
             aria-label={action.ariaLabel}
             className={[
-               'relative z-30 -mt-8 flex h-16 w-16 items-center justify-center rounded-md-pill border-[6px] border-md-neutral-100 shadow-none transition focus:outline-none focus:ring-2 focus:ring-md-primary-300',
+               'relative z-50 -mt-8 flex h-16 w-16 items-center justify-center rounded-md-pill border-[6px] border-md-neutral-100 shadow-none transition focus:outline-none focus:ring-2 focus:ring-md-primary-300',
                isDisabled
                   ? 'pointer-events-none cursor-not-allowed bg-md-neutral-600 text-md-neutral-50'
                   : 'pointer-events-auto bg-md-primary-1200 text-md-neutral-50 hover:bg-md-primary-1500 active:translate-y-0.5'
@@ -71,7 +71,7 @@ function PrimaryActionSlot({ action }: { action: BottomNavPrimaryAction }) {
          </button>
          <span
             className={[
-               'relative z-10 mt-1 text-center text-xs font-semibold leading-none',
+               'relative z-40 mt-1 text-center text-xs font-semibold leading-none',
                isDisabled ? 'text-md-neutral-1000' : 'text-md-primary-1200'
             ].join(' ')}
          >
@@ -107,7 +107,7 @@ function StandardTab({
          aria-current={isActive && !isLocked ? 'page' : undefined}
          aria-disabled={isLocked ? true : undefined}
          title={isLocked ? 'Choose a role first' : undefined}
-         className="relative z-20 flex flex-1 flex-col items-center gap-1 self-stretch border-0 bg-transparent p-0"
+         className="relative z-40 flex w-full flex-1 flex-col items-center gap-1 self-stretch border-0 bg-transparent p-0 pointer-events-auto"
       >
          <div className={`flex h-9 w-9 shrink-0 items-center justify-center ${showBg ? 'rounded-md-md bg-md-primary-900' : ''}`}>
             <div
@@ -145,7 +145,12 @@ export default function BottomNav() {
 
    return (
       <nav className="fixed bottom-[15px] left-1/2 z-50 w-[calc(100%-40px)] max-w-[400px] -translate-x-1/2 overflow-visible rounded-md-pill bg-md-neutral-100 px-5 py-3 shadow-md-nav">
-         <div className="relative flex h-[60px] items-end justify-center">
+         <div
+            className={[
+               'relative h-[60px] items-end justify-center',
+               activePrimaryAction ? 'grid grid-cols-5' : 'flex'
+            ].join(' ')}
+         >
             {navItems.map((item) => {
                if ('type' in item) {
                   return activePrimaryAction ? <PrimaryActionSlot key="bottom-nav-primary-action" action={activePrimaryAction} /> : null;
