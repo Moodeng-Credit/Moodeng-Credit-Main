@@ -90,14 +90,12 @@ function StandardTab({
    tab,
    isActive,
    isBorrower,
-   isLocked,
-   onNavigate
+   isLocked
 }: {
    tab: NavTab;
    isActive: boolean;
    isBorrower: boolean;
    isLocked: boolean;
-   onNavigate: () => void;
 }) {
    const showBg = isActive && isBorrower && !isLocked;
    const destination = isLocked ? '/onboarding/role' : tab.path;
@@ -106,9 +104,6 @@ function StandardTab({
       <Link
          key={tab.path}
          to={destination}
-         onClick={() => {
-            onNavigate();
-         }}
          aria-current={isActive && !isLocked ? 'page' : undefined}
          aria-disabled={isLocked ? true : undefined}
          title={isLocked ? 'Choose a role first' : undefined}
@@ -143,7 +138,7 @@ export default function BottomNav() {
    const isBorrower = useIsBorrower();
    const userRole = useSelector((state: RootState) => state.auth.user?.userRole);
    const location = useLocation();
-   const { primaryAction, setPrimaryAction } = useBottomNavActionState();
+   const { primaryAction } = useBottomNavActionState();
    const activePrimaryAction = isBorrower && location.pathname === '/repay' && primaryAction?.path === location.pathname ? primaryAction : null;
    const navItems: NavItem[] = activePrimaryAction ? REPAY_ACTION_TABS : isBorrower ? BORROWER_TABS : LENDER_TABS;
    const needsRoleSelection = !userRole;
@@ -163,9 +158,6 @@ export default function BottomNav() {
                      isActive={isActiveTab(location.pathname, item.path)}
                      isBorrower={isBorrower}
                      isLocked={needsRoleSelection ? Boolean(item.requiresRole) : false}
-                     onNavigate={() => {
-                        setPrimaryAction(null);
-                     }}
                   />
                );
             })}
