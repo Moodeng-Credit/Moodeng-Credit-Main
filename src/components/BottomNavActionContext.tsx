@@ -43,16 +43,26 @@ export function useBottomNavActionState() {
 
 export function useBottomNavPrimaryAction(action: BottomNavPrimaryAction | null) {
    const context = useContext(BottomNavActionContext);
+   const location = useLocation();
    const setPrimaryAction = context?.setPrimaryAction;
 
    useEffect(() => {
       if (!setPrimaryAction) return undefined;
 
+      if (!action) {
+         setPrimaryAction(null);
+         return undefined;
+      }
+
+      if (action.path !== location.pathname) {
+         setPrimaryAction((current) => (current?.id === action.id ? null : current));
+         return undefined;
+      }
+
       setPrimaryAction(action);
 
       return () => {
-         if (!action) return;
          setPrimaryAction((current) => (current?.id === action.id ? null : current));
       };
-   }, [action, setPrimaryAction]);
+   }, [action, location.pathname, setPrimaryAction]);
 }
