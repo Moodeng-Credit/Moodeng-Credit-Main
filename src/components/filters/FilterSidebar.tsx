@@ -180,10 +180,11 @@ export default function FilterSidebar({
                         key={tab.id}
                         type="button"
                         onClick={() => setActiveTab(tab.id)}
-                        className={`shrink-0 rounded-[10px] border px-3.5 py-2 text-md-b3 font-medium whitespace-nowrap transition-all duration-150 active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
+                        style={{ WebkitTapHighlightColor: 'transparent' }}
+                        className={`shrink-0 appearance-none rounded-[10px] border px-3.5 py-2 text-md-b3 font-medium whitespace-nowrap transition-all duration-150 active:scale-[0.98] active:border-[#C9A7FF] active:bg-[#F7F2FF] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#C7A6FF] ${
                            activeTab === tab.id
-                              ? 'border-[#E8E2F4] bg-white text-[#3A2A5F] shadow-[0_4px_12px_rgba(80,40,140,0.08)]'
-                              : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_1px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.92)]'
+                              ? 'border-[1.5px] border-[#C99BFF] bg-[#FBF7FF] text-[#5B16E8] shadow-[0_4px_12px_rgba(100,60,180,0.10)]'
+                              : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_2px_8px_rgba(82,57,130,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_3px_10px_rgba(82,57,130,0.11),inset_0_1px_0_rgba(255,255,255,0.92)]'
                         }`}
                      >
                         {tab.label}
@@ -315,11 +316,15 @@ function FilterChip({ label, selected, onClick }: { label: string; selected: boo
          type="button"
          onClick={onClick}
          aria-pressed={selected}
-         style={selected ? { backgroundColor: '#FBF7FF', borderColor: '#C99BFF', borderWidth: '1.5px', color: '#5B16E8' } : undefined}
-         className={`relative flex min-h-[54px] w-full items-center justify-center rounded-[10px] border px-4 py-2.5 pr-7 text-center text-md-b3 font-medium transition-all duration-150 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200 ${
+         style={
+            selected
+               ? { WebkitTapHighlightColor: 'transparent', backgroundColor: '#FBF7FF', borderColor: '#C99BFF', borderWidth: '1.5px', color: '#5B16E8' }
+               : { WebkitTapHighlightColor: 'transparent' }
+         }
+         className={`relative flex min-h-[54px] w-full appearance-none items-center justify-center rounded-[10px] border px-4 py-2.5 pr-7 text-center text-md-b3 font-medium transition-all duration-150 active:scale-[0.98] active:border-[#C9A7FF] active:bg-[#F7F2FF] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#C7A6FF] ${
             selected
                ? 'shadow-[0_2px_8px_rgba(96,16,210,0.16),inset_0_1px_0_rgba(255,255,255,0.92)]'
-               : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_1px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.92)]'
+               : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_2px_8px_rgba(82,57,130,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_3px_10px_rgba(82,57,130,0.11),inset_0_1px_0_rgba(255,255,255,0.92)]'
          }`}
       >
          {label}
