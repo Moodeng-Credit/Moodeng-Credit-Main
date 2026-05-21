@@ -45,7 +45,7 @@ function PrimaryActionSlot({ action }: { action: BottomNavPrimaryAction }) {
    const isDisabled = Boolean(action.disabled);
 
    return (
-      <div className="pointer-events-none relative flex w-full flex-col items-center">
+      <div className="relative flex w-full flex-col items-center">
          <span className="pointer-events-none absolute -top-9 left-1/2 z-0 h-[82px] w-[104px] -translate-x-1/2 rounded-t-[60px] bg-md-neutral-100" />
          <button
             type="button"
@@ -167,7 +167,7 @@ export default function BottomNav() {
                );
             })}
             {activePrimaryAction ? (
-               <div className="pointer-events-none absolute bottom-0 left-1/2 z-50 w-20 -translate-x-1/2">
+               <div className="pointer-events-auto absolute bottom-0 left-1/2 z-50 w-20 -translate-x-1/2">
                   <PrimaryActionSlot action={activePrimaryAction} />
                </div>
             ) : null}
