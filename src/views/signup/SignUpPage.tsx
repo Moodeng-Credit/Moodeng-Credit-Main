@@ -68,7 +68,7 @@ export default function SignUpPage() {
          isNewUser?: boolean;
          needsEmailVerification?: boolean;
          user?: { id?: string; userRole?: string | null };
-         reason?: 'linked' | 'taken';
+         reason?: 'linked' | 'taken' | 'existing';
       };
       if (data?.isExistingUser) {
          setAccountErrorType(

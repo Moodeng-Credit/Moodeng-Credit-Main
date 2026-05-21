@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+
 import { HelpCircle } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { Link, useNavigate } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
+
 import { markPasswordRecoveryReady } from '@/lib/passwordRecovery';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import { fetchUser } from '@/store/slices/authSlice';
@@ -14,11 +16,20 @@ const CREATED_PATH = '/auth-success?type=created';
 const CONFIRMED_PATH = '/auth-success?type=confirmed';
 const RECOVERY_PATH = '/reset-password';
 
+type AuthEmailOtpType = 'signup' | 'magiclink' | 'recovery' | 'invite' | 'email_change' | 'email';
+
+const AUTH_EMAIL_OTP_TYPES = new Set<AuthEmailOtpType>(['signup', 'magiclink', 'recovery', 'invite', 'email_change', 'email']);
+
 export function isPasswordRecoveryRedirect(url: URL, hashParams = new URLSearchParams()): boolean {
    const type = url.searchParams.get('type') ?? hashParams.get('type');
    const next = url.searchParams.get('next');
 
    return type === 'recovery' || next === RECOVERY_PATH;
+}
+
+export function getAuthEmailOtpType(url: URL, hashParams = new URLSearchParams()): AuthEmailOtpType | null {
+   const type = url.searchParams.get('type') ?? hashParams.get('type');
+   return AUTH_EMAIL_OTP_TYPES.has(type as AuthEmailOtpType) ? (type as AuthEmailOtpType) : null;
 }
 
 export function getAuthConfirmDestination(isRecoveryRedirect: boolean, userRole?: string | null): string {
@@ -82,6 +93,7 @@ export default function AuthConfirmPage() {
          const tokenHash = url.searchParams.get('token_hash');
          const hashParams = new URLSearchParams(window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '');
          const isRecoveryRedirect = isPasswordRecoveryRedirect(url, hashParams);
+         const emailOtpType = getAuthEmailOtpType(url, hashParams);
          const linkError =
             url.searchParams.get('error_description') ||
             url.searchParams.get('error') ||
@@ -118,10 +130,10 @@ export default function AuthConfirmPage() {
             }
          }
 
-         if (tokenHash && isRecoveryRedirect) {
+         if (tokenHash && emailOtpType) {
             const { error: verifyError } = await supabase.auth.verifyOtp({
                token_hash: tokenHash,
-               type: 'recovery'
+               type: emailOtpType
             });
             if (verifyError) {
                const { data: retry } = await supabase.auth.getSession();

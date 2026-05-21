@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { getAuthConfirmDestination, isPasswordRecoveryRedirect } from '@/app/auth/confirm/page';
+import { getAuthConfirmDestination, getAuthEmailOtpType, isPasswordRecoveryRedirect } from '@/app/auth/confirm/page';
 
 describe('auth confirm recovery routing', () => {
    it('recognizes Supabase recovery redirects with a recovery type', () => {
-      expect(isPasswordRecoveryRedirect(new URL('https://staging.dashboard.moodeng.app/auth/confirm?type=recovery&code=abc'))).toBe(
-         true
-      );
+      expect(isPasswordRecoveryRedirect(new URL('https://staging.dashboard.moodeng.app/auth/confirm?type=recovery&code=abc'))).toBe(true);
    });
 
    it('recognizes recovery redirects that use next reset-password', () => {
@@ -22,5 +20,9 @@ describe('auth confirm recovery routing', () => {
    it('keeps normal email confirmation routing unchanged', () => {
       expect(getAuthConfirmDestination(false, 'borrower')).toBe('/dashboard');
       expect(getAuthConfirmDestination(false, null)).toBe('/auth-success?type=created');
+   });
+
+   it('accepts signup token hash redirects from email confirmation links', () => {
+      expect(getAuthEmailOtpType(new URL('https://staging.dashboard.moodeng.app/auth/confirm?token_hash=abc&type=signup'))).toBe('signup');
    });
 });

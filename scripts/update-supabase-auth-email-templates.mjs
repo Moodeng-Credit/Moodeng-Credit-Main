@@ -21,16 +21,7 @@ const supportUrl = `${appUrl}/support/faq`;
 const telegramUrl = 'https://t.me/jimmymoodengcredit';
 const facebookUrl = 'https://www.facebook.com/profile.php?id=61589106561061';
 
-function buildEmailTemplate({
-   imageUrl,
-   imageAlt,
-   eyebrow,
-   title,
-   body,
-   cta,
-   footer,
-   href = '{{ .ConfirmationURL }}'
-}) {
+function buildEmailTemplate({ imageUrl, imageAlt, eyebrow, title, body, cta, footer, code, href = '{{ .ConfirmationURL }}' }) {
    return `
 <div style="margin:0;padding:0;background:#f7f3ff;font-family:Arial,Helvetica,sans-serif;color:#09012f;">
   <style>
@@ -74,6 +65,18 @@ function buildEmailTemplate({
               <p style="margin:0 auto 26px;max-width:430px;text-align:center;font-size:16px;line-height:25px;font-weight:500;color:#6f6280;">
                 ${body}
               </p>
+              ${
+                 code
+                    ? `<div style="margin:0 auto 24px;max-width:320px;border:1px solid #dcc7ff;border-radius:20px;background:#f7f3ff;padding:18px 16px;text-align:center;">
+                <div style="font-size:12px;line-height:16px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#8336f0;">
+                  Verification code
+                </div>
+                <div style="margin-top:8px;font-size:34px;line-height:40px;font-weight:800;letter-spacing:8px;color:#09012f;">
+                  ${code}
+                </div>
+              </div>`
+                    : ''
+              }
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;table-layout:fixed;">
                 <tr>
                   <td align="center">
@@ -115,7 +118,8 @@ const authTemplateConfig = {
       imageAlt: 'Moodeng holding an envelope',
       eyebrow: 'Welcome to Moodeng',
       title: 'Confirm your email',
-      body: 'Confirm this email so you can continue setting up your Moodeng account.',
+      body: 'Enter this code in Moodeng to finish setting up your account. You can also use the secure button below.',
+      code: '{{ .Token }}',
       cta: 'Confirm Email',
       footer: 'If you did not create a Moodeng account, you can ignore this email.'
    }),
