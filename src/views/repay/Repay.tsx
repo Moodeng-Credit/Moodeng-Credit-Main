@@ -1,4 +1,4 @@
-import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ArrowLeft, Check, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -373,6 +373,15 @@ export default function Repay() {
       dispatch,
       user.id
    ]);
+   const handleRepayRef = useRef(handleRepay);
+
+   useEffect(() => {
+      handleRepayRef.current = handleRepay;
+   }, [handleRepay]);
+
+   const handleBottomNavRepay = useCallback(() => {
+      void handleRepayRef.current();
+   }, []);
 
    const bottomNavRepayAction = useMemo(
       () =>
@@ -384,11 +393,11 @@ export default function Repay() {
                  id: 'repay-pay-now',
                  isProcessing,
                  label: connectStatus === 'pending' ? 'Connecting' : 'Pay Now',
-                 onClick: handleRepay,
+                 onClick: handleBottomNavRepay,
                  path: '/repay'
               }
             : null,
-      [account.isConnected, connectStatus, handleRepay, isProcessing, isRepayDisabled, paymentCtaAmount, selectedLoan]
+      [account.isConnected, connectStatus, handleBottomNavRepay, isProcessing, isRepayDisabled, paymentCtaAmount, selectedLoan]
    );
 
    useBottomNavPrimaryAction(bottomNavRepayAction);
