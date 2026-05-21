@@ -1,6 +1,6 @@
-import { type PointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type PointerEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
 
-import { Check } from 'lucide-react';
+import { Check, HelpCircle } from 'lucide-react';
 
 import type { LoanFilters } from '@/utils/loanFilters';
 
@@ -209,7 +209,10 @@ export default function FilterSidebar({
                ) : null}
 
                {activeTab === 'rate' ? (
-                  <FilterSection title="Repayment Amount">
+                  <FilterSection
+                     title="Repayment Amount"
+                     tooltip="This filters the extra amount paid above the loan principal. Example: a $30 loan repaid as $33 is 10%."
+                  >
                      <div className="grid grid-cols-2 gap-2">
                         {REPAYMENT_RATES.map((rate) => (
                            <FilterChip
@@ -268,10 +271,39 @@ export default function FilterSidebar({
    );
 }
 
-function FilterSection({ title, children }: { title: string; children: ReactNode }) {
+function FilterSection({ title, tooltip, children }: { title: string; tooltip?: string; children: ReactNode }) {
+   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+   const tooltipId = useId();
+
    return (
       <div>
-         <h3 className="mb-3 text-md-b1 font-normal text-md-heading">{title}</h3>
+         <div className="mb-3 flex items-center gap-1.5">
+            <h3 className="text-md-b1 font-normal text-md-heading">{title}</h3>
+            {tooltip ? (
+               <span className="group relative inline-flex">
+                  <button
+                     type="button"
+                     aria-label={`${title} help`}
+                     aria-describedby={isTooltipOpen ? tooltipId : undefined}
+                     aria-expanded={isTooltipOpen}
+                     onClick={() => setIsTooltipOpen((open) => !open)}
+                     onBlur={() => setIsTooltipOpen(false)}
+                     className="flex h-6 w-6 items-center justify-center rounded-full text-md-primary-1200 transition-colors duration-150 hover:bg-md-primary-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
+                  >
+                     <HelpCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
+                  </button>
+                  <span
+                     id={tooltipId}
+                     role="tooltip"
+                     className={`absolute left-1/2 top-full z-20 mt-2 w-[260px] -translate-x-1/2 rounded-[12px] border border-[#d6bcfa] bg-white px-3 py-2 text-left text-xs font-medium leading-[18px] text-[#3c3150] shadow-[0_8px_22px_rgba(27,28,29,0.14)] transition-opacity duration-150 group-hover:visible group-hover:opacity-100 ${
+                        isTooltipOpen ? 'visible opacity-100' : 'invisible opacity-0'
+                     }`}
+                  >
+                     {tooltip}
+                  </span>
+               </span>
+            ) : null}
+         </div>
          {children}
       </div>
    );
