@@ -52,6 +52,7 @@ function PrimaryActionSlot({ action }: { action: BottomNavPrimaryAction }) {
             onClick={action.onClick}
             disabled={isDisabled}
             aria-label={action.ariaLabel}
+            style={{ pointerEvents: isDisabled ? 'none' : 'auto' }}
             className={[
                'relative z-50 -mt-8 flex h-16 w-16 items-center justify-center rounded-md-pill border-[6px] border-md-neutral-100 shadow-none transition focus:outline-none focus:ring-2 focus:ring-md-primary-300',
                isDisabled
@@ -167,7 +168,7 @@ export default function BottomNav() {
                );
             })}
             {activePrimaryAction ? (
-               <div className="pointer-events-auto absolute bottom-0 left-1/2 z-50 w-20 -translate-x-1/2">
+               <div className="pointer-events-none absolute bottom-0 left-1/2 z-50 w-20 -translate-x-1/2">
                   <PrimaryActionSlot action={activePrimaryAction} />
                </div>
             ) : null}
