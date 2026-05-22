@@ -28,6 +28,7 @@ const WORLD_ID_ENVIRONMENT = (import.meta.env.VITE_WORLD_ID_ENVIRONMENT ||
    (import.meta.env.MODE === 'production' ? 'production' : 'staging')) as 'production' | 'staging';
 const WORLD_ID_ALREADY_USED_STORAGE_KEY = 'moodeng_worldid_error';
 const WORLD_ID_ALREADY_USED_STORAGE_VALUE = 'already_used';
+const WORLD_ID_IN_PROGRESS_KEY = 'moodeng_idkit_in_progress';
 
 export default function WorldIDVerification({ children, onSuccess, className = '', showSuccessToast = true }: WorldIDVerificationProps) {
    const dispatch = useDispatch<AppDispatch>();
@@ -144,6 +145,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    };
 
    const handleSuccess = () => {
+      sessionStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
       if (alreadyUsedRef.current) {
          alreadyUsedRef.current = false;
          sessionStorage.removeItem(WORLD_ID_ALREADY_USED_STORAGE_KEY);
@@ -160,6 +162,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    };
 
    const handleError = (errorCode: IDKitErrorCodes) => {
+      sessionStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
       if (errorCode === IDKitErrorCodes.NullifierReplayed || errorCode === IDKitErrorCodes.MaxVerificationsReached) {
          showAlreadyUsedWarning();
       } else if (
@@ -181,6 +184,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          }
          setIsPreparingIDKit(true);
          const nextRpContext = await fetchRpContext();
+         sessionStorage.setItem(WORLD_ID_IN_PROGRESS_KEY, '1');
          setRpContext(nextRpContext);
          setIsIDKitOpen(true);
       } catch (error) {
@@ -191,6 +195,13 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          setIsPreparingIDKit(false);
       }
    }, [app_id, fetchRpContext, isIDKitOpen, isPreparingIDKit, showToastByConfig]);
+
+   const handleIDKitOpenChange = useCallback((open: boolean) => {
+      setIsIDKitOpen(open);
+      if (!open) {
+         sessionStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
+      }
+   }, []);
 
    const trigger = className ? <span className={className}>{children({ open: () => void handleStartIDKit() })}</span> : children({ open: () => void handleStartIDKit() });
 
@@ -203,7 +214,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          {app_id && rpContext ? (
             <IDKitRequestWidget
                open={isIDKitOpen}
-               onOpenChange={setIsIDKitOpen}
+               onOpenChange={handleIDKitOpenChange}
                app_id={app_id}
                action={action}
                action_description={WORLD_ID_ACTION_DESCRIPTION}
