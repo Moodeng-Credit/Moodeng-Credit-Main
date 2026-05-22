@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useRef, useState } from 'react';
 
 import { CredentialRequest, IDKitErrorCodes, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
 import { useDispatch } from 'react-redux';
@@ -35,14 +35,8 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const [isIDKitOpen, setIsIDKitOpen] = useState(false);
    const [rpContext, setRpContext] = useState<RpContext | null>(null);
    const [showAlreadyUsedModal, setShowAlreadyUsedModal] = useState(false);
+   // Prevents handleSuccess from navigating when handleVerify already showed the AlreadyUsedModal
    const alreadyUsedRef = useRef(false);
-
-   useEffect(() => {
-      if (sessionStorage.getItem('moodeng_worldid_error') === 'already_used') {
-         sessionStorage.removeItem('moodeng_worldid_error');
-         setShowAlreadyUsedModal(true);
-      }
-   }, []);
 
    const action = (import.meta.env.VITE_WORLD_ID_ACTION_ID || WORLD_ID_ACTION_ID) as string;
    const app_id = import.meta.env.VITE_WORLD_ID_APP_ID as `app_${string}` | undefined;
@@ -78,6 +72,10 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       const result = (await res.json()) as ApiResponse & { rp_context?: RpContext };
 
       if (!res.ok || !result.success || !result.rp_context) {
+         if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
+            setShowAlreadyUsedModal(true);
+            throw new Error('WORLDID_ALREADY_USED');
+         }
          showToastByConfig(handleApiError(result));
          throw new Error(isApiError(result) ? result.error : 'Failed to prepare World ID verification.');
       }
@@ -106,7 +104,6 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          if (!res.ok || !result.success) {
             if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
                alreadyUsedRef.current = true;
-               sessionStorage.setItem('moodeng_worldid_error', 'already_used');
                setShowAlreadyUsedModal(true);
                return;
             }
@@ -128,7 +125,6 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const handleSuccess = () => {
       if (alreadyUsedRef.current) {
          alreadyUsedRef.current = false;
-         setShowAlreadyUsedModal(true);
          return;
       }
       onSuccess?.();
@@ -137,7 +133,13 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    };
 
    const handleError = (errorCode: IDKitErrorCodes) => {
-      if (errorCode !== IDKitErrorCodes.UserRejected) {
+      if (errorCode === IDKitErrorCodes.NullifierReplayed || errorCode === IDKitErrorCodes.MaxVerificationsReached) {
+         setShowAlreadyUsedModal(true);
+      } else if (
+         errorCode !== IDKitErrorCodes.UserRejected &&
+         errorCode !== IDKitErrorCodes.Cancelled &&
+         errorCode !== IDKitErrorCodes.VerificationRejected
+      ) {
          showToastByConfig('server_error');
       }
    };
@@ -166,6 +168,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
             onClose={handleCloseModal}
             onVerify={() => {
                handleStartIDKit().catch((error: Error) => {
+                  if (error.message === 'WORLDID_ALREADY_USED') return;
                   console.error('World ID preparation error:', error.message || error);
                   showToastByConfig('server_error');
                });
