@@ -52,6 +52,7 @@ import SupportGuidesPage from '@/app/support/guides/page';
 import SupportPage from '@/app/support/page';
 import SupportUpdateDetailPage from '@/app/support/updates/[slug]/page';
 import SupportUpdatesPage from '@/app/support/updates/page';
+import TeamPage from '@/app/team/page';
 import TermsPage from '@/app/terms/page';
 import Test from '@/app/test/page';
 import UserLenderDiversityPage from '@/app/user/[username]/lender-diversity/page';
@@ -473,6 +474,14 @@ export default function App() {
                element={
                   <MarketingPageShell>
                      <WhyLend />
+                  </MarketingPageShell>
+               }
+            />
+            <Route
+               path="/team"
+               element={
+                  <MarketingPageShell>
+                     <TeamPage />
                   </MarketingPageShell>
                }
             />
