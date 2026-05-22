@@ -37,6 +37,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const [isPreparingIDKit, setIsPreparingIDKit] = useState(false);
    const [rpContext, setRpContext] = useState<RpContext | null>(null);
    const [showAlreadyUsedModal, setShowAlreadyUsedModal] = useState(false);
+   // Prevents handleSuccess from navigating when handleVerify already showed the AlreadyUsedModal
    const alreadyUsedRef = useRef(false);
 
    const showAlreadyUsedWarning = useCallback(
@@ -91,6 +92,11 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       const result = (await res.json()) as ApiResponse & { rp_context?: RpContext };
 
       if (!res.ok || !result.success || !result.rp_context) {
+         if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
+            setShowAlreadyUsedModal(true);
+            showToastByConfig('worldid_already_used');
+            throw new Error('WORLDID_ALREADY_USED');
+         }
          showToastByConfig(handleApiError(result));
          throw new Error(isApiError(result) ? result.error : 'Failed to prepare World ID verification.');
       }
@@ -154,7 +160,13 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    };
 
    const handleError = (errorCode: IDKitErrorCodes) => {
-      if (errorCode !== IDKitErrorCodes.UserRejected) {
+      if (errorCode === IDKitErrorCodes.NullifierReplayed || errorCode === IDKitErrorCodes.MaxVerificationsReached) {
+         showAlreadyUsedWarning();
+      } else if (
+         errorCode !== IDKitErrorCodes.UserRejected &&
+         errorCode !== IDKitErrorCodes.Cancelled &&
+         errorCode !== IDKitErrorCodes.VerificationRejected
+      ) {
          showToastByConfig('server_error');
       }
    };
@@ -172,6 +184,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          setRpContext(nextRpContext);
          setIsIDKitOpen(true);
       } catch (error) {
+         if (error instanceof Error && error.message === 'WORLDID_ALREADY_USED') return;
          console.error('World ID preparation error:', error instanceof Error ? error.message : error);
          showToastByConfig('server_error');
       } finally {
