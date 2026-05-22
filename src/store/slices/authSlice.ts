@@ -34,6 +34,26 @@ const toOptionalString = (value: number | string | bigint | null | undefined): s
 
 const normalizeWorldIdStatus = (value?: string | WorldIdStatus | null): WorldIdStatus => (value as WorldIdStatus) ?? WorldId.INACTIVE;
 
+export const isObfuscatedExistingSignupUser = (user?: Pick<SupabaseAuthUser, 'identities'> | null): boolean =>
+   Array.isArray(user?.identities) && user.identities.length === 0;
+
+const EXISTING_ACCOUNT_RESET_MESSAGE =
+   'An account with this email already exists. A password reset link has been sent to your email so you can sign in or reset access.';
+
+const sendExistingAccountReset = async (supabase: SupabaseClientType, email: string) => {
+   const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: getAuthRedirectUrl('/reset-password')
+   });
+
+   if (resetError) throw resetError;
+
+   return {
+      isExistingUser: true as const,
+      reason: 'existing' as const,
+      message: EXISTING_ACCOUNT_RESET_MESSAGE
+   };
+};
+
 const deriveUsername = (authUser: SupabaseAuthUser, explicit?: string): string => {
    if (explicit) {
       return explicit;
@@ -305,19 +325,7 @@ export const registerUser = createAsyncThunk(
       const { data: existingProfile } = await supabase.from('users').select('id').eq('email', userData.email).maybeSingle();
 
       if (existingProfile) {
-         // Trigger password reset to allow them to "link" their email/password to the existing account
-         const { error: resetError } = await supabase.auth.resetPasswordForEmail(userData.email, {
-            redirectTo: `${window.location.origin}/reset-password`
-         });
-
-         if (resetError) throw resetError;
-
-         return {
-            isExistingUser: true,
-            reason: 'linked' as const,
-            message:
-               'An account with this email already exists (likely via Google). A password reset link has been sent to your email. Please use it to set a password and link your email login.'
-         };
+         return sendExistingAccountReset(supabase, userData.email);
       }
 
       const redirectUrl = getAuthRedirectUrl();
@@ -338,20 +346,13 @@ export const registerUser = createAsyncThunk(
       if (error) {
          // If user already exists (e.g. signed up with Google), trigger password reset to "link" accounts
          if (error.message.toLowerCase().includes('already registered') || error.status === 422) {
-            const { error: resetError } = await supabase.auth.resetPasswordForEmail(userData.email, {
-               redirectTo: `${window.location.origin}/reset-password`
-            });
-
-            if (resetError) throw resetError;
-
-            return {
-               isExistingUser: true,
-               reason: 'linked' as const,
-               message:
-                  'An account with this email already exists (likely via Google). A password reset link has been sent to your email. Please use it to set a password and link your email login.'
-            };
+            return sendExistingAccountReset(supabase, userData.email);
          }
          throw error;
+      }
+
+      if (isObfuscatedExistingSignupUser(data.user)) {
+         return sendExistingAccountReset(supabase, userData.email);
       }
 
       const {
@@ -567,6 +568,7 @@ const authSlice = createSlice({
       },
       setPreviewAuth: (state, action) => {
          const isFilled = action.payload === 'filled';
+         const needsRoleSelection = action.payload === 'no-role';
          state.user = {
             ...defaultUser,
             id: 'preview-borrower',
@@ -578,7 +580,7 @@ const authSlice = createSlice({
             cs: isFilled ? 60 : 0,
             mal: isFilled ? 1 : 0,
             nal: isFilled ? 1 : 0,
-            userRole: 'borrower',
+            userRole: needsRoleSelection ? undefined : 'borrower',
             createdAt: '2026-05-01T00:00:00.000Z',
             updatedAt: '2026-05-06T00:00:00.000Z'
          };
@@ -723,10 +725,9 @@ const authSlice = createSlice({
          .addMatcher(
             (action) => action.type === 'persist/REHYDRATE',
             (state) => {
-               if (!state.userProfiles) {
-                  state.userProfiles = {};
-               }
-               // Always reset isAuthChecked on rehydration so the initial auth check runs
+               // Keep the last visible profile during session recovery so app navigation
+               // does not flash back to the public state while Supabase confirms auth.
+               // AuthInitializer still clears it when Supabase confirms there is no session.
                state.isAuthChecked = false;
             }
          );

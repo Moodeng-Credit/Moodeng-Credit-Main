@@ -1,15 +1,17 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
+import { parseDateSafely } from '@/utils/dateFormatters';
+import { toNumber } from '@/utils/decimalHelpers';
+
+import { isExpiredUnfundedRequest } from '@/lib/borrowerCreditUsage';
 import { evaluateCreditProgression } from '@/lib/creditLeveling';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
-import { computePointsDelta } from '@/shared/points';
+import { computeYearOneIouPointsDelta, getYearOneIouBorrowerBonusPoints, loanFundingPointsPerUsdc } from '@/shared/points';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { RootState } from '@/store/store';
 import { type CreateLoanData, type Loan, type LoanState } from '@/types/loanTypes';
-import { parseDateSafely } from '@/utils/dateFormatters';
-import { toNumber } from '@/utils/decimalHelpers';
 
 const supabaseClient = () => getSupabaseBrowserClient();
 
@@ -51,6 +53,8 @@ const initialState: LoanState = {
       gloans: [],
       floans: []
    },
+   userLoansFetchedFor: null,
+   userLoansFetchedAt: null,
    isLoading: false,
    error: null
 };
@@ -125,11 +129,7 @@ export const getUserLoans = createAsyncThunk(
       let resolvedUserId = userId?.trim();
       //TODO: Check if we can remove the deprecated username lookup later
       if (!resolvedUserId && username) {
-         const { data: profile, error: profileError } = await supabase
-            .from('users')
-            .select('id')
-            .eq('username', username)
-            .maybeSingle();
+         const { data: profile, error: profileError } = await supabase.from('users').select('id').eq('username', username).maybeSingle();
 
          if (profileError) {
             throw new Error(profileError.message);
@@ -176,6 +176,7 @@ const loanSlice = createSlice({
          if (gloanIndex !== -1) {
             state.loans.gloans[gloanIndex] = action.payload;
          }
+         state.userLoansFetchedAt = null;
       }
    },
    extraReducers: (builder) => {
@@ -187,6 +188,7 @@ const loanSlice = createSlice({
          .addCase(createLoan.fulfilled, (state, action) => {
             state.isLoading = false;
             state.loans.floans.push(action.payload);
+            state.userLoansFetchedAt = null;
          })
          .addCase(createLoan.rejected, (state, action) => {
             state.isLoading = false;
@@ -211,6 +213,8 @@ const loanSlice = createSlice({
          .addCase(getUserLoans.fulfilled, (state, action) => {
             state.isLoading = false;
             state.loans.gloans = action.payload;
+            state.userLoansFetchedFor = action.meta.arg.userId?.trim() || null;
+            state.userLoansFetchedAt = Date.now();
          })
          .addCase(getUserLoans.rejected, (state, action) => {
             state.isLoading = false;
@@ -226,6 +230,7 @@ const loanSlice = createSlice({
             if (gloanIndex !== -1) {
                state.loans.gloans[gloanIndex] = updatedLoan;
             }
+            state.userLoansFetchedAt = null;
          })
          .addCase(updateLoanStatus.rejected, (state, action) => {
             state.error = (action.error.message as string) || 'Failed to update loan';
@@ -255,171 +260,211 @@ export const updateLoanStatus = createAsyncThunk<
       hash?: string;
    },
    { fulfilledMeta: { sideEffectErrors: LoanSideEffectError[] } }
->(
-   'loans/updateStatus',
-   async (
-      loanData,
-      { dispatch, getState, fulfillWithValue }
-   ) => {
-      const supabase = supabaseClient();
-      const { id, userId, wallet, repaymentStatus, loanStatus, repaidAmount, hash } = loanData;
-      const sideEffectErrors: LoanSideEffectError[] = [];
+>('loans/updateStatus', async (loanData, { dispatch, getState, fulfillWithValue }) => {
+   const supabase = supabaseClient();
+   const { id, userId, wallet, repaymentStatus, loanStatus, repaidAmount, hash } = loanData;
+   const sideEffectErrors: LoanSideEffectError[] = [];
 
-      const updates: LoanUpdate = {};
+   const updates: LoanUpdate = {};
+   let currentLoan: Pick<LoanRow, 'created_at' | 'hash' | 'loan_status'> | null = null;
 
-      if (userId) {
-         updates.lender_user_id = userId;
-      }
-      if (wallet) {
-         updates.lender_wallet = wallet;
-      }
-      if (repaymentStatus) {
-         updates.repayment_status = repaymentStatus as Database['public']['Enums']['repayment_status'];
-      }
-      if (loanStatus) {
-         updates.loan_status = loanStatus as Database['public']['Enums']['loan_status'];
-      }
-      if (repaidAmount !== undefined) {
-         updates.repaid_amount = repaidAmount;
-      }
-      if (loanStatus === 'Lent') {
-         // Set funded_at timestamp when loan is funded
-         updates.funded_at = new Date().toISOString();
-      }
-      if (hash) {
-         // Fetch current loan to append the new hash
-         const { data: currentLoan } = await supabase.from('loans').select('hash').eq('id', id).single();
+   if (loanStatus === 'Lent' || hash) {
+      const { data: currentLoanRow, error: currentLoanError } = await supabase
+         .from('loans')
+         .select('created_at,hash,loan_status')
+         .eq('id', id)
+         .single();
 
-         updates.hash = [...(currentLoan?.hash || []), hash];
+      if (currentLoanError || !currentLoanRow) {
+         throw new Error(currentLoanError?.message || 'Could not load loan before updating it');
       }
 
-      const { data, error } = await supabase.from('loans').update(updates).eq('id', id).select().single();
+      currentLoan = currentLoanRow;
+   }
 
-      if (error) {
-         throw new Error(error.message);
-      }
+   if (
+      loanStatus === 'Lent' &&
+      currentLoan?.loan_status === 'Requested' &&
+      currentLoan.created_at &&
+      isExpiredUnfundedRequest({ createdAt: currentLoan.created_at, loanStatus: currentLoan.loan_status })
+   ) {
+      throw new Error('This loan request has expired. Ask the borrower to post a new request.');
+   }
 
-      if (!data) {
-         throw new Error('Failed to update loan');
-      }
+   if (userId) {
+      updates.lender_user_id = userId;
+   }
+   if (wallet) {
+      updates.lender_wallet = wallet;
+   }
+   if (repaymentStatus) {
+      updates.repayment_status = repaymentStatus as Database['public']['Enums']['repayment_status'];
+   }
+   if (loanStatus) {
+      updates.loan_status = loanStatus as Database['public']['Enums']['loan_status'];
+   }
+   if (repaidAmount !== undefined) {
+      updates.repaid_amount = repaidAmount;
+   }
+   if (loanStatus === 'Lent') {
+      // Set funded_at timestamp when loan is funded
+      updates.funded_at = new Date().toISOString();
+   }
+   if (hash) {
+      updates.hash = [...(currentLoan?.hash || []), hash];
+   }
 
-      if (loanStatus === 'Lent' && data.lender_user_id) {
-         const pointsDelta = computePointsDelta(String(data.loan_amount));
-         const pointsMetadata = {
-            loan_id: data.id,
-            loan_amount: String(data.loan_amount),
-            loan_tracking_id: data.tracking_id,
-            loan_funded_at: data.funded_at
-         };
+   const { data, error } = await supabase.from('loans').update(updates).eq('id', id).select().single();
 
-         const { error: pointsError } = await supabase.rpc('award_points', {
-            user_id_input: data.lender_user_id,
-            source_type_input: 'loan',
-            source_id_input: data.id,
-            event_type_input: 'funded',
-            delta_input: pointsDelta.toString(),
-            metadata_input: pointsMetadata
-         });
+   if (error) {
+      throw new Error(error.message);
+   }
 
-         if (pointsError) {
-            console.error('Failed to award points:', pointsError.message);
-            sideEffectErrors.push({ type: 'award_points', message: pointsError.message });
-         }
-      }
+   if (!data) {
+      throw new Error('Failed to update loan');
+   }
 
-      const isPaid = repaymentStatus === 'Paid' || data.repayment_status === 'Paid';
-      if (isPaid && data.borrower_user_id && data.due_date) {
-         const { data: borrower, error: borrowerError } = await supabase
-            .from('users')
-            .select('id, cs, is_world_id, credit_progression_paused')
-            .eq('id', data.borrower_user_id)
-            .single();
+   if (loanStatus === 'Lent' && data.lender_user_id) {
+      if (!data.borrower_user_id) {
+         const message = 'Could not award IOU points because the funded loan has no borrower user id.';
+         console.error(message);
+         sideEffectErrors.push({ type: 'award_points', message });
+      } else {
+         const { count: borrowerPriorFundedLoanCount, error: borrowerLoanCountError } = await supabase
+            .from('loans')
+            .select('id', { count: 'exact', head: true })
+            .eq('borrower_user_id', data.borrower_user_id)
+            .eq('loan_status', 'Lent')
+            .neq('id', data.id);
 
-         if (borrowerError) {
-            throw new Error(borrowerError.message);
-         }
+         if (borrowerLoanCountError) {
+            console.error('Failed to calculate borrower IOU bonus:', borrowerLoanCountError.message);
+            sideEffectErrors.push({ type: 'award_points', message: borrowerLoanCountError.message });
+         } else {
+            const priorFundedLoanCount = borrowerPriorFundedLoanCount ?? 0;
+            const borrowerBonusPoints = getYearOneIouBorrowerBonusPoints(priorFundedLoanCount);
+            const pointsDelta = computeYearOneIouPointsDelta(String(data.loan_amount), priorFundedLoanCount);
+            const pointsMetadata = {
+               loan_id: data.id,
+               loan_amount: String(data.loan_amount),
+               loan_tracking_id: data.tracking_id,
+               loan_funded_at: data.funded_at,
+               reward_year: 1,
+               base_points_per_usdc: loanFundingPointsPerUsdc,
+               borrower_prior_funded_loan_count: priorFundedLoanCount,
+               borrower_loan_number: priorFundedLoanCount + 1,
+               borrower_bonus_points: borrowerBonusPoints
+            };
 
-         if (borrower) {
-            const { data: paidLoans, error: paidLoansError } = await supabase
-               .from('loans')
-               .select('loan_amount, repaid_amount, total_repayment_amount, due_date, updated_at')
-               .eq('borrower_user_id', data.borrower_user_id)
-               .eq('repayment_status', 'Paid');
-
-            if (paidLoansError) {
-               throw new Error(paidLoansError.message);
-            }
-
-            const cumulativeBorrowedAmount = (paidLoans ?? []).reduce((sum, loan) => {
-               if (!loan.due_date || !loan.updated_at) {
-                  return sum;
-               }
-
-               const repaid = toNumber(loan.repaid_amount ?? 0);
-               const totalRepayment = toNumber(loan.total_repayment_amount ?? 0);
-               const isFullyRepaid = totalRepayment > 0 ? repaid >= totalRepayment : repaid > 0;
-
-               if (!isFullyRepaid) {
-                  return sum;
-               }
-
-               const paidAt = parseDateSafely(loan.updated_at);
-               const dueDate = parseDateSafely(loan.due_date);
-               const isOnTime = paidAt.getTime() <= dueDate.getTime();
-
-               return isOnTime ? sum + toNumber(loan.loan_amount ?? 0) : sum;
-            }, 0);
-
-            const creditEvaluation = evaluateCreditProgression({
-               currentLimit: borrower.cs ?? 0,
-               isVerified: borrower.is_world_id === 'ACTIVE',
-               isPaused: borrower.credit_progression_paused ?? false,
-               repaidAmount: data.repaid_amount,
-               totalRepaymentAmount: data.total_repayment_amount,
-               cumulativeBorrowedAmount,
-               dueDate: data.due_date,
-               paidAt: data.updated_at ?? new Date().toISOString()
+            const { error: pointsError } = await supabase.rpc('award_points', {
+               user_id_input: data.lender_user_id,
+               source_type_input: 'loan',
+               source_id_input: data.id,
+               event_type_input: 'funded',
+               delta_input: pointsDelta.toString(),
+               metadata_input: pointsMetadata
             });
 
-            const userUpdates: Database['public']['Tables']['users']['Update'] = {};
-
-            if (creditEvaluation.shouldPause && !borrower.credit_progression_paused) {
-               userUpdates.credit_progression_paused = true;
-            }
-
-            if (creditEvaluation.shouldLevelUp) {
-               userUpdates.cs = creditEvaluation.nextLimit;
-            }
-
-            if (Object.keys(userUpdates).length > 0) {
-               const { error: userUpdateError } = await supabase.from('users').update(userUpdates).eq('id', borrower.id);
-
-               if (userUpdateError) {
-                  throw new Error(userUpdateError.message);
-               }
-
-               const state = getState() as RootState;
-               if (state.auth.user.id === borrower.id) {
-                  await dispatch(fetchUser());
-               }
+            if (pointsError) {
+               console.error('Failed to award points:', pointsError.message);
+               sideEffectErrors.push({ type: 'award_points', message: pointsError.message });
             }
          }
       }
+   }
 
-      if (loanStatus === 'Lent') {
-         const { error: notificationError } = await supabase.functions.invoke('loan-funded-notification', {
-            body: { loanId: id }
+   const isPaid = repaymentStatus === 'Paid' || data.repayment_status === 'Paid';
+   if (isPaid && data.borrower_user_id && data.due_date) {
+      const { data: borrower, error: borrowerError } = await supabase
+         .from('users')
+         .select('id, cs, is_world_id, credit_progression_paused')
+         .eq('id', data.borrower_user_id)
+         .single();
+
+      if (borrowerError) {
+         throw new Error(borrowerError.message);
+      }
+
+      if (borrower) {
+         const { data: paidLoans, error: paidLoansError } = await supabase
+            .from('loans')
+            .select('loan_amount, repaid_amount, total_repayment_amount, due_date, updated_at')
+            .eq('borrower_user_id', data.borrower_user_id)
+            .eq('repayment_status', 'Paid');
+
+         if (paidLoansError) {
+            throw new Error(paidLoansError.message);
+         }
+
+         const cumulativeBorrowedAmount = (paidLoans ?? []).reduce((sum, loan) => {
+            if (!loan.due_date || !loan.updated_at) {
+               return sum;
+            }
+
+            const repaid = toNumber(loan.repaid_amount ?? 0);
+            const totalRepayment = toNumber(loan.total_repayment_amount ?? 0);
+            const isFullyRepaid = totalRepayment > 0 ? repaid >= totalRepayment : repaid > 0;
+
+            if (!isFullyRepaid) {
+               return sum;
+            }
+
+            const paidAt = parseDateSafely(loan.updated_at);
+            const dueDate = parseDateSafely(loan.due_date);
+            const isOnTime = paidAt.getTime() <= dueDate.getTime();
+
+            return isOnTime ? sum + toNumber(loan.loan_amount ?? 0) : sum;
+         }, 0);
+
+         const creditEvaluation = evaluateCreditProgression({
+            currentLimit: borrower.cs ?? 0,
+            isVerified: borrower.is_world_id === 'ACTIVE',
+            isPaused: borrower.credit_progression_paused ?? false,
+            repaidAmount: data.repaid_amount,
+            totalRepaymentAmount: data.total_repayment_amount,
+            cumulativeBorrowedAmount,
+            dueDate: data.due_date,
+            paidAt: data.updated_at ?? new Date().toISOString()
          });
 
-         if (notificationError) {
-            console.error('Failed to send funded notification:', notificationError.message);
-            sideEffectErrors.push({ type: 'loan_notification', message: notificationError.message });
+         const userUpdates: Database['public']['Tables']['users']['Update'] = {};
+
+         if (creditEvaluation.shouldPause && !borrower.credit_progression_paused) {
+            userUpdates.credit_progression_paused = true;
+         }
+
+         if (creditEvaluation.shouldLevelUp) {
+            userUpdates.cs = creditEvaluation.nextLimit;
+         }
+
+         if (Object.keys(userUpdates).length > 0) {
+            const { error: userUpdateError } = await supabase.from('users').update(userUpdates).eq('id', borrower.id);
+
+            if (userUpdateError) {
+               throw new Error(userUpdateError.message);
+            }
+
+            const state = getState() as RootState;
+            if (state.auth.user.id === borrower.id) {
+               await dispatch(fetchUser());
+            }
          }
       }
-
-      return fulfillWithValue(mapSupabaseLoanToLoan(data), { sideEffectErrors });
    }
-);
+
+   if (loanStatus === 'Lent') {
+      const { error: notificationError } = await supabase.functions.invoke('loan-funded-notification', {
+         body: { loanId: id }
+      });
+
+      if (notificationError) {
+         console.error('Failed to send funded notification:', notificationError.message);
+         sideEffectErrors.push({ type: 'loan_notification', message: notificationError.message });
+      }
+   }
+
+   return fulfillWithValue(mapSupabaseLoanToLoan(data), { sideEffectErrors });
+});
 
 export const deleteLoan = createAsyncThunk('loans/delete', async (loanId: string) => {
    const supabase = supabaseClient();

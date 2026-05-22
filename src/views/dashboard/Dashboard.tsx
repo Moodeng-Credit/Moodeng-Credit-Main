@@ -177,6 +177,10 @@ export default function Dashboard() {
       () => [...new Set(displayFundedLoans.map((loan) => loan.lenderUser).filter(Boolean))] as string[],
       [displayFundedLoans]
    );
+   const missingLenderProfileIds = useMemo(
+      () => (isMockRich ? [] : lenderIds.filter((lenderId) => !displayUserProfiles[lenderId])),
+      [displayUserProfiles, isMockRich, lenderIds]
+   );
    const displayWalletData = Object.keys(walletData).length > 0 ? walletData : undefined;
    const displayLoanArrays = isMockRich
       ? {
@@ -192,9 +196,9 @@ export default function Dashboard() {
    const milestones = buildReputationMilestones({ creditLevels, borrowerLoans: milestoneLoans, isVerified });
 
    useEffect(() => {
-      if (!isBorrower || isMockRich || lenderIds.length === 0) return;
-      dispatch(fetchUserProfiles(lenderIds)).catch(() => undefined);
-   }, [dispatch, isBorrower, isMockRich, lenderIds]);
+      if (!isBorrower || missingLenderProfileIds.length === 0) return;
+      dispatch(fetchUserProfiles(missingLenderProfileIds)).catch(() => undefined);
+   }, [dispatch, isBorrower, missingLenderProfileIds]);
 
    useEffect(() => {
       if (!isBorrower || isMockRich) {

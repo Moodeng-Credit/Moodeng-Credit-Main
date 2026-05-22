@@ -92,12 +92,12 @@ export default function Footer() {
                         <a href="#" className="mt-3 hover:text-blue-300 transition-colors">
                            Contact
                         </a>
-                        <a href="#" className="mt-3 hover:text-blue-300 transition-colors">
+                        <Link to="/privacy" className="mt-3 hover:text-blue-300 transition-colors">
                            Privacy Policy
-                        </a>
-                        <a href="#" className="mt-3 hover:text-blue-300 transition-colors">
+                        </Link>
+                        <Link to="/terms" className="mt-3 hover:text-blue-300 transition-colors">
                            Terms of Service
-                        </a>
+                        </Link>
                      </nav>
                   </div>
                </div>

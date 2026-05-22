@@ -12,6 +12,7 @@ import {
 } from '@/components/auth';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { fetchDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { Icons } from '@/views/login/components/Icons';
 import { loginUser, loginWithGoogle, loginWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
@@ -35,10 +36,18 @@ export default function SignInPage() {
    const [isLoading, setIsLoading] = useState(false);
    const [showAccount, setShowAccount] = useState(false);
    const [errorType, setErrorType] = useState<
-      'incorrect_credentials' | 'email_not_found' | 'too_many_attempts' | null
+      'incorrect_credentials' | 'email_not_found' | 'new_user' | 'too_many_attempts' | null
    >(null);
    const [attemptsRemaining, setAttemptsRemaining] = useState(5);
    const [rememberMe, setRememberMe] = useState(true);
+
+   const getEmailHasProfile = async (value: string) => {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase.from('users').select('id').eq('email', value).maybeSingle();
+
+      if (error) return true;
+      return !!data?.id;
+   };
 
    const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -78,6 +87,9 @@ export default function SignInPage() {
             setErrorType('too_many_attempts');
          } else if (isEmailNotFound) {
             setErrorType('email_not_found');
+         } else if (lower.includes('invalid login') || lower.includes('invalid credentials')) {
+            const hasProfile = await getEmailHasProfile(email.trim().toLowerCase());
+            setErrorType(hasProfile ? 'incorrect_credentials' : 'new_user');
          } else {
             const nextAttempts = Math.max(0, attemptsRemaining - 1);
             setAttemptsRemaining(nextAttempts);
@@ -174,6 +186,8 @@ export default function SignInPage() {
                            errorMessage={
                               showAccount && errorType === 'too_many_attempts'
                                  ? 'Too many attempts detected'
+                                 : showAccount && errorType === 'new_user'
+                                   ? 'New account needed'
                                  : showAccount && errorType === 'email_not_found'
                                    ? 'Email not found'
                                    : showAccount && errorType === 'incorrect_credentials'
@@ -182,16 +196,24 @@ export default function SignInPage() {
                            }
                            icon={<Icons.email />}
                         />
-                        <AuthInputField
-                           label="Password"
-                           type="password"
-                           placeholder="Enter your password"
-                           value={password}
-                           onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                           error={showAccount}
-                           icon={<Icons.lock />}
-                           showEyeToggle
-                        />
+                        <div className="flex flex-col gap-2">
+                           <AuthInputField
+                              label="Password"
+                              type="password"
+                              placeholder="Enter your password"
+                              value={password}
+                              onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                              error={showAccount}
+                              icon={<Icons.lock />}
+                              showEyeToggle
+                           />
+                           <Link
+                              to="/forgot-password"
+                              className="self-end text-sm font-medium leading-5 tracking-[-0.02em] text-[#70617F] underline-offset-4 hover:text-[#6010D2] hover:underline"
+                           >
+                              Forgot password?
+                           </Link>
+                        </div>
                      </div>
 
                      {showAccount && errorType && (
@@ -199,14 +221,15 @@ export default function SignInPage() {
                            type={errorType}
                            attemptsRemaining={attemptsRemaining}
                            onRetry={
-                              errorType === 'incorrect_credentials' || errorType === 'email_not_found'
+                              errorType === 'incorrect_credentials' || errorType === 'email_not_found' || errorType === 'new_user'
                                  ? handleRetry
                                  : undefined
                            }
+                           signupHref={`/sign-up?email=${encodeURIComponent(email.trim())}`}
                         />
                      )}
 
-                     <div className="flex flex-row justify-between items-center gap-2 w-full max-w-[400px] h-6">
+                     <div className="flex flex-row items-center gap-2 w-full max-w-[400px] h-6">
                         <label className="flex flex-row items-center gap-2 cursor-pointer shrink-0">
                            <span className="relative flex size-6 shrink-0">
                               <input
@@ -230,12 +253,6 @@ export default function SignInPage() {
                               Remember Me
                            </span>
                         </label>
-                        <Link
-                           to="/forgot-password"
-                           className="text-base font-semibold leading-6 text-[#8336F0] tracking-[-0.02em] hover:underline shrink-0"
-                        >
-                           Forgot Password
-                        </Link>
                      </div>
 
                      <button
@@ -246,19 +263,18 @@ export default function SignInPage() {
                         Sign In to Moodeng
                      </button>
 
-                     <p className="text-center text-base text-[#4D4359] tracking-[-0.02em]">
+                     <p className="text-center text-sm text-[#70617F] tracking-[-0.02em]">
                         Don&apos;t have an account?{' '}
                         <Link
                            to="/sign-up"
-                           className="font-semibold hover:underline"
-                           style={{ color: '#8336F0' }}
+                           className="font-semibold text-[#6010D2] underline-offset-4 hover:underline"
                         >
                            Sign Up
                         </Link>
                      </p>
                      <Link
                         to="/request-board?tour=1"
-                        className="text-center text-base font-semibold tracking-[-0.02em] text-[#8336F0] hover:underline"
+                        className="text-center text-sm font-medium tracking-[-0.02em] text-[#70617F] underline-offset-4 hover:text-[#6010D2] hover:underline"
                      >
                         Take a tour first
                      </Link>

@@ -847,7 +847,7 @@ const UserProfile = () => {
                      </p>
                   </div>
                   <div className="overflow-hidden rounded-[18px] border border-[#ece7f4] bg-white shadow-[0_4px_16px_rgba(48,24,92,0.06)]">
-                     <div className="border-b border-[#ece7f4] bg-[#fbfafc] px-4 py-3">
+                     <div className="hidden border-b border-[#ece7f4] bg-[#fbfafc] px-4 py-3 sm:block">
                         <div className="grid grid-cols-[minmax(0,1.45fr)_72px_86px] items-center gap-3 text-[11px] font-bold uppercase tracking-[0.04em] text-[#7c6f91]">
                            <span>Loan / lender</span>
                            <span className="text-right">Amount</span>
@@ -856,13 +856,20 @@ const UserProfile = () => {
                      </div>
                      <div className={recentLoansShouldScroll ? 'max-h-[360px] overflow-y-auto' : ''}>
                         {fundedLoans.length > 0 ? (
-                           <table className="w-full border-collapse">
-                              <tbody className="divide-y divide-[#f1edf8]">
+                           <>
+                              <table className="hidden w-full border-collapse sm:table">
+                                 <tbody className="divide-y divide-[#f1edf8]">
+                                    {displayedRecentLoans.map((loan: Loan) => (
+                                       <RecentLoanItem key={loan.id} loan={loan} resolveUsername={resolveUsername} />
+                                    ))}
+                                 </tbody>
+                              </table>
+                              <div className="divide-y divide-[#f1edf8] sm:hidden">
                                  {displayedRecentLoans.map((loan: Loan) => (
-                                    <RecentLoanItem key={loan.id} loan={loan} resolveUsername={resolveUsername} />
+                                    <RecentLoanMobileItem key={loan.id} loan={loan} resolveUsername={resolveUsername} />
                                  ))}
-                              </tbody>
-                           </table>
+                              </div>
+                           </>
                         ) : (
                            <p className="text-md-b2 text-md-neutral-1200 text-center py-6">No funded loans yet</p>
                         )}
@@ -1731,7 +1738,7 @@ const LoanMixType = ({
    </div>
 );
 
-const RecentLoanItem = ({ loan, resolveUsername }: { loan: Loan; resolveUsername: (id?: string | null) => string }) => {
+const getRecentLoanDisplay = (loan: Loan, resolveUsername: (id?: string | null) => string) => {
    const isPaid = loan.repaymentStatus === 'Paid';
    const isDefaulted = !isPaid && parseDateSafely(loan.dueDate).getTime() < Date.now();
    const lenderName = resolveUsername(loan.lenderUser) || 'Unknown';
@@ -1742,6 +1749,18 @@ const RecentLoanItem = ({ loan, resolveUsername }: { loan: Loan; resolveUsername
         ? 'border-[#fecaca] bg-[#fef2f2] text-md-red-500'
         : 'border-[#bbf7d0] bg-[#f0fdf4] text-md-green-700';
    const statusLabel = isPaid ? 'Repaid' : isDefaulted ? 'Default' : 'Active';
+
+   return {
+      fundedDate,
+      isPaid,
+      lenderName,
+      statusClassName,
+      statusLabel
+   };
+};
+
+const RecentLoanItem = ({ loan, resolveUsername }: { loan: Loan; resolveUsername: (id?: string | null) => string }) => {
+   const { fundedDate, isPaid, lenderName, statusClassName, statusLabel } = getRecentLoanDisplay(loan, resolveUsername);
 
    return (
       <tr className="align-top transition-colors hover:bg-[#fbfafc]">
@@ -1768,6 +1787,37 @@ const RecentLoanItem = ({ loan, resolveUsername }: { loan: Loan; resolveUsername
             </span>
          </td>
       </tr>
+   );
+};
+
+const RecentLoanMobileItem = ({ loan, resolveUsername }: { loan: Loan; resolveUsername: (id?: string | null) => string }) => {
+   const { fundedDate, isPaid, lenderName, statusClassName, statusLabel } = getRecentLoanDisplay(loan, resolveUsername);
+
+   return (
+      <div className="px-3 py-3">
+         <div className="flex min-w-0 items-start gap-3">
+            <img src={PLACEHOLDER_AVATAR} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-[#f1edf8]" />
+            <div className="min-w-0 flex-1">
+               <div className="flex min-w-0 items-start justify-between gap-3">
+                  <p className="min-w-0 flex-1 text-[14px] font-bold leading-[1.2] text-md-primary-2000">{loan.reason || 'Loan request'}</p>
+                  <span className={`inline-flex shrink-0 items-center justify-center rounded-full border px-2.5 py-1 text-[10px] font-bold leading-none ${statusClassName}`}>
+                     {isPaid ? <Check className="mr-1 h-2.5 w-2.5" strokeWidth={3} /> : <span className="mr-1 h-1.5 w-1.5 rounded-full bg-current" />}
+                     {statusLabel}
+                  </span>
+               </div>
+               <p className="mt-1 text-[12px] font-semibold leading-tight text-[#766985]">{lenderName}</p>
+               <div className="mt-3 flex items-end justify-between gap-3">
+                  <p className="text-[11px] font-semibold leading-none text-[#a199ad]">{fundedDate}</p>
+                  <div className="text-right">
+                     <p className="font-mono text-[16px] font-bold tabular-nums leading-none text-md-primary-2000">${formatNumber(loan.loanAmount)}</p>
+                     <p className="mt-1 font-mono text-[11px] font-semibold tabular-nums leading-none text-[#9ca3af]">
+                        repays ${formatNumber(loan.totalRepaymentAmount)}
+                     </p>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
    );
 };
 

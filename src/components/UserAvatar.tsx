@@ -1,8 +1,13 @@
-import { useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
+
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
 import { DEFAULT_AVATAR_BACKGROUND } from '@/config/avatarBackgrounds';
 import type { RootState } from '@/store/store';
+import { getAvatarRingRewardId, getTrustPointRewardProgress } from '@/views/dashboard/trustPointRewards';
+import { useTrustPointTotal } from '@/views/dashboard/useTrustPointTotal';
+import { useTrustRewardOwnership } from '@/views/dashboard/useTrustRewardOwnership';
 
 const PLACEHOLDER_AVATAR = '/icons/avatar-placeholder.png';
 
@@ -29,7 +34,7 @@ interface UserAvatarProps {
  * Displays the user's profile picture with fallback to the placeholder hippo avatar.
  * Fetches from `auth.user.avatarUrl` by default. Pass `src` to override for other users.
  *
- * Clicking the current user's avatar (no `src` prop) navigates to /account/settings by default.
+ * Clicking the current user's avatar (no `src` prop) opens avatar editing by default.
  * Pass `onClick` to override, or `clickable={false}` to opt out entirely.
  */
 export default function UserAvatar({
@@ -42,6 +47,8 @@ export default function UserAvatar({
    clickable = true,
 }: UserAvatarProps) {
    const navigate = useNavigate();
+   const location = useLocation();
+   const userId = useSelector((state: RootState) => state.auth.user?.id);
    const userAvatarUrl = useSelector((state: RootState) => state.auth.user?.avatarUrl);
    const userAvatarBackground = useSelector((state: RootState) => state.auth.user?.avatarBackground);
    const resolvedSrc = src ?? userAvatarUrl ?? PLACEHOLDER_AVATAR;
@@ -49,14 +56,39 @@ export default function UserAvatar({
 
    // Only the current user's own avatar gets click behaviour (no explicit src override).
    const isCurrentUser = src === undefined;
-   const handleClick = onClick ?? (isCurrentUser && clickable ? () => navigate('/account/settings') : undefined);
+   const avatarEditPath = () => {
+      const params = new URLSearchParams(location.search);
+      params.set('edit', 'avatar');
+      return `/account/settings?${params.toString()}`;
+   };
+   const handleClick = onClick ?? (isCurrentUser && clickable ? () => navigate(avatarEditPath()) : undefined);
+   const { pointsTotal } = useTrustPointTotal({
+      userId,
+      fallbackPoints: 0,
+      enabled: isCurrentUser
+   });
+   const fallbackRewardIds = useMemo(
+      () =>
+         getTrustPointRewardProgress(pointsTotal).rewards
+            .filter((reward) => reward.status === 'unlocked')
+            .map((reward) => reward.id),
+      [pointsTotal]
+   );
+   const { unlockedRewardIds } = useTrustRewardOwnership({
+      userId,
+      fallbackRewardIds,
+      enabled: isCurrentUser
+   });
+   const avatarRingRewardId = isCurrentUser ? getAvatarRingRewardId(unlockedRewardIds) : null;
+   const ringPadding = avatarRingRewardId ? Math.max(2, Math.round(size * 0.07)) : 0;
+   const imageSize = avatarRingRewardId ? size - ringPadding * 2 : size;
 
    const img = (
       <img
          src={resolvedSrc}
          alt={alt}
          className={`rounded-full object-cover shrink-0 ${className}`}
-         style={{ width: size, height: size, backgroundColor: resolvedBackground }}
+         style={{ width: imageSize, height: imageSize, backgroundColor: resolvedBackground }}
          onError={(e) => {
             const target = e.currentTarget as HTMLImageElement;
             if (target.src !== window.location.origin + PLACEHOLDER_AVATAR) {
@@ -65,6 +97,20 @@ export default function UserAvatar({
          }}
       />
    );
+   const content = avatarRingRewardId ? (
+      <span
+         className={`flex shrink-0 items-center justify-center rounded-full ${
+            avatarRingRewardId === 'gold-avatar-ring'
+               ? 'bg-[conic-gradient(from_145deg,#f6d365,#fff3b0,#b97916,#fff0a3,#f6d365)] shadow-[0_4px_12px_rgba(183,121,22,0.22)]'
+               : 'bg-[conic-gradient(from_145deg,#f8fafc,#a8afbf,#ffffff,#7f879a,#f8fafc)] shadow-[0_4px_12px_rgba(89,99,120,0.18)]'
+         }`}
+         style={{ width: size, height: size, padding: ringPadding }}
+      >
+         {img}
+      </span>
+   ) : (
+      img
+   );
 
    if (handleClick) {
       return (
@@ -72,13 +118,13 @@ export default function UserAvatar({
             type="button"
             onClick={handleClick}
             className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 shrink-0"
-            aria-label="Go to Account Settings"
+            aria-label="Edit profile photo"
             style={{ width: size, height: size }}
          >
-            {img}
+            {content}
          </button>
       );
    }
 
-   return img;
+   return content;
 }

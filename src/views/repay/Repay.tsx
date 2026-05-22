@@ -1,4 +1,4 @@
-import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ArrowLeft, Check, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -150,11 +150,13 @@ const previewLoans: Loan[] = [
    })
 ];
 
-const shouldUseLocalPreviewLoans = (search: string): boolean => {
+const shouldUsePreviewLoans = (search: string, pathname: string): boolean => {
    if (typeof window === 'undefined') return false;
 
-   const isLocalPreviewHost = ['127.0.0.1', 'localhost'].includes(window.location.hostname);
-   if (!isLocalPreviewHost) return false;
+   const isPreviewHost = ['127.0.0.1', 'localhost'].includes(window.location.hostname) || window.location.hostname.endsWith('.vercel.app');
+   if (!isPreviewHost) return false;
+
+   if (pathname === '/repay-preview') return true;
 
    const params = new URLSearchParams(search);
    if (params.get('previewLoans') === '1') {
@@ -176,7 +178,7 @@ export default function Repay() {
 
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
-   const usePreviewLoans = shouldUseLocalPreviewLoans(location.search);
+   const usePreviewLoans = shouldUsePreviewLoans(location.search, location.pathname);
    const repayLoans = usePreviewLoans ? previewLoans : loans;
    const { hasFetched: hasCheckedRepayLoans, isLoading: isCheckingRepayLoans } = useLoanData({
       userId: user.id,
@@ -372,6 +374,16 @@ export default function Repay() {
       user.id
    ]);
 
+   const handleRepayRef = useRef(handleRepay);
+
+   useEffect(() => {
+      handleRepayRef.current = handleRepay;
+   }, [handleRepay]);
+
+   const handleBottomNavRepay = useCallback(() => {
+      void handleRepayRef.current();
+   }, []);
+
    const bottomNavRepayAction = useMemo(
       () =>
          selectedLoan
@@ -382,16 +394,17 @@ export default function Repay() {
                  id: 'repay-pay-now',
                  isProcessing,
                  label: connectStatus === 'pending' ? 'Connecting' : 'Pay Now',
-                 onClick: handleRepay,
+                 onClick: handleBottomNavRepay,
                  path: '/repay'
               }
             : null,
-      [account.isConnected, connectStatus, handleRepay, isProcessing, isRepayDisabled, paymentCtaAmount, selectedLoan]
+      [account.isConnected, connectStatus, handleBottomNavRepay, isProcessing, isRepayDisabled, paymentCtaAmount, selectedLoan]
    );
 
    useBottomNavPrimaryAction(bottomNavRepayAction);
 
-   const shouldShowLoanCheckLoading = !usePreviewLoans && Boolean(user.id) && activeLoans.length === 0 && (!hasCheckedRepayLoans || isCheckingRepayLoans);
+   const shouldShowLoanCheckLoading =
+      !usePreviewLoans && Boolean(user.id) && activeLoans.length === 0 && (!hasCheckedRepayLoans || isCheckingRepayLoans);
 
    if (shouldShowLoanCheckLoading) {
       return (
@@ -419,7 +432,7 @@ export default function Repay() {
                      <ArrowLeft className="h-5 w-5" aria-hidden="true" />
                   </button>
                   <div>
-                     <h1 className="text-[28px] font-[650] leading-[32px] text-md-heading">Repay</h1>
+                     <h1 className="text-md-h3 font-semibold text-md-heading">Repay</h1>
                      <p className="mt-1 text-md-b2 text-md-neutral-1200">Choose a loan, enter an amount, and confirm.</p>
                   </div>
                </div>
@@ -482,9 +495,11 @@ export default function Repay() {
                         <h2 className="mt-1 truncate text-md-h5 text-md-heading">{selectedLoan.reason || 'Active loan'}</h2>
                      </div>
                      {!hasExistingRepayment ? (
-                        <div className="shrink-0 text-right">
+                        <div className="shrink-0 pr-3 text-right">
                            <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
-                           <p className="text-[24px] font-[720] leading-none text-md-heading">${formatCurrency(selectedRemaining)}</p>
+                           <p className="text-[20px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading">
+                              ${formatCurrency(selectedRemaining)}
+                           </p>
                         </div>
                      ) : null}
                   </div>
@@ -501,7 +516,7 @@ export default function Repay() {
                      </p>
                      <p className="text-right text-md-b3 font-medium leading-5 text-md-neutral-1200">Due date</p>
                      <p
-                        className={`min-w-0 truncate text-[20px] font-[680] leading-6 ${
+                        className={`min-w-0 truncate text-[20px] font-semibold leading-6 tracking-[-0.04em] ${
                            isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan) ? 'text-md-red-600' : 'text-md-primary-1200'
                         }`}
                      >
@@ -517,13 +532,13 @@ export default function Repay() {
                      <div className="mt-4 grid grid-cols-2 gap-2">
                         <div className="rounded-md-input bg-md-neutral-100 p-3">
                            <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
-                           <p className="mt-1 text-[32px] font-[720] leading-none text-md-heading">${formatCurrency(selectedRemaining)}</p>
+                           <p className="mt-1 text-[20px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading">
+                              ${formatCurrency(selectedRemaining)}
+                           </p>
                         </div>
                         <div className="rounded-md-input bg-md-neutral-100 p-3 text-right">
                            <p className="text-md-b3 text-md-neutral-1200">Paid so far</p>
-                           <p className="mt-1 text-[24px] font-[680] leading-none text-md-primary-1200">
-                              ${formatNumber(selectedLoan.repaidAmount)}
-                           </p>
+                           <p className="mt-1 text-md-h4 font-semibold text-md-primary-1200">${formatNumber(selectedLoan.repaidAmount)}</p>
                         </div>
                      </div>
                   ) : null}
@@ -569,7 +584,7 @@ export default function Repay() {
                               Repay amount
                            </label>
                            <div className="mt-3 flex min-h-[56px] items-stretch overflow-hidden rounded-md-input border border-md-neutral-500 bg-md-neutral-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition focus-within:border-md-primary-900 focus-within:ring-2 focus-within:ring-md-primary-100">
-                              <div className="flex min-w-[104px] items-center justify-center gap-2 bg-[#2f7fd1] px-3 text-md-b1 font-semibold text-md-neutral-50">
+                              <div className="flex min-w-[104px] items-center justify-center gap-2 bg-[#2775ca] px-3 text-md-b1 font-semibold text-md-neutral-50">
                                  <span
                                     className="flex h-6 w-6 items-center justify-center text-[16px] font-[800] leading-none"
                                     aria-hidden="true"
@@ -587,7 +602,7 @@ export default function Repay() {
                                     onChange={handleAmountChange}
                                     placeholder="0.00"
                                     aria-label="Repay amount"
-                                    className="w-full min-w-0 bg-transparent text-[28px] font-normal leading-none text-md-heading outline-none placeholder:text-md-neutral-1000"
+                                    className="w-full min-w-0 bg-transparent text-md-b1 font-normal text-md-heading outline-none placeholder:text-md-neutral-1200"
                                  />
                               </div>
                            </div>

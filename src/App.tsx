@@ -4,64 +4,70 @@ import posthog from 'posthog-js';
 import { useSelector } from 'react-redux';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
-import AdminPanel from '@/app/admin/page';
-import LenderDashboard from '@/app/lender/dashboard/page';
-import LenderPerformance from '@/app/lender/performance/page';
-import LenderRequestBoard from '@/app/lender/request-board/page';
-import WalletConnect from '@/app/onboarding/wallet/page';
-import WalletConnected from '@/app/onboarding/wallet/connected/page';
-import OnboardingWelcome from '@/app/onboarding/welcome/page';
-import WorldIdVerification from '@/app/verify-world-id/page';
-import CongratulationsPage from '@/app/onboarding/congratulations/page';
+import { AdminGuard } from '@/components/AdminGuard';
 import BottomNav from '@/components/BottomNav';
 import { BottomNavActionProvider } from '@/components/BottomNavActionContext';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
-import MarketingPageShell from '@/components/marketing/MarketingPageShell';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
-import { AdminGuard } from '@/components/AdminGuard';
+import MarketingPageShell from '@/components/marketing/MarketingPageShell';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { RoleGuard } from '@/components/RoleGuard';
+
 import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 
+import AccountRestrictedPage from '@/app/account-restricted/page';
+import AdminPanel from '@/app/admin/page';
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
-import AccountRestrictedPage from '@/app/account-restricted/page';
+import AuthVerifyCode from '@/app/auth/verify-code/page';
 import Benefits from '@/app/benefits/page';
-import Dashboard from '@/views/dashboard/Dashboard';
-import RequestBoard from '@/views/dashboard/RequestBoard';
+import BlogDetailPage from '@/app/blogs/[slug]/page';
+import BlogsPage from '@/app/blogs/page';
+import CreditLevelingGuidePage from '@/app/credit-leveling-guide/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
-import CreditLevelingGuidePage from '@/app/credit-leveling-guide/page';
+import LenderDiversityPage from '@/app/lender-diversity/page';
+import LenderDashboard from '@/app/lender/dashboard/page';
+import LenderPerformance from '@/app/lender/performance/page';
+import LenderRequestBoard from '@/app/lender/request-board/page';
 import Login from '@/app/login/page';
+import MilestonesPage from '@/app/milestones/page';
+import CongratulationsPage from '@/app/onboarding/congratulations/page';
+import WalletConnected from '@/app/onboarding/wallet/connected/page';
+import WalletConnect from '@/app/onboarding/wallet/page';
+import OnboardingWelcome from '@/app/onboarding/welcome/page';
 // Import pages
 import Home from '@/app/page';
 import Profile from '@/app/profile/page';
+import PrivacyPage from '@/app/privacy/page';
 import ResetPassword from '@/app/reset-password/page';
+import RoleSelection from '@/app/role-selection/page';
 import SignUp from '@/app/signup/page';
 import Simple from '@/app/simple/page';
-import Test from '@/app/test/page';
-import SupportPage from '@/app/support/page';
-import SupportGettingStartedPage from '@/app/support/getting-started/page';
-import SupportGuidesPage from '@/app/support/guides/page';
-import SupportGuideDetailPage from '@/app/support/guides/[slug]/page';
 import SupportFAQPage from '@/app/support/faq/page';
-import SupportUpdatesPage from '@/app/support/updates/page';
+import SupportGettingStartedPage from '@/app/support/getting-started/page';
+import SupportGuideDetailPage from '@/app/support/guides/[slug]/page';
+import SupportGuidesPage from '@/app/support/guides/page';
+import SupportPage from '@/app/support/page';
 import SupportUpdateDetailPage from '@/app/support/updates/[slug]/page';
-import LenderDiversityPage from '@/app/lender-diversity/page';
-import MilestonesPage from '@/app/milestones/page';
+import SupportUpdatesPage from '@/app/support/updates/page';
+import TermsPage from '@/app/terms/page';
+import Test from '@/app/test/page';
 import UserLenderDiversityPage from '@/app/user/[username]/lender-diversity/page';
 import UserProfile from '@/app/user/[username]/page';
 import UserProgressHistoryPage from '@/app/user/[username]/progress-history/page';
 import Ut from '@/app/ut/page';
+import WorldIdVerification from '@/app/verify-world-id/page';
 import WhyLend from '@/app/whylend/page';
 import { type RootState } from '@/store/store';
 import Account from '@/views/account/Account';
 import AccountSettings from '@/views/account/AccountSettings';
+import Dashboard from '@/views/dashboard/Dashboard';
+import RequestBoard from '@/views/dashboard/RequestBoard';
 import Repay from '@/views/repay/Repay';
 import TransactionDetail from '@/views/transactions/TransactionDetail';
 import TransactionHistory from '@/views/transactions/TransactionHistory';
-import RoleSelection from '@/app/role-selection/page';
 
 function Layout({ children }: { children: React.ReactNode }) {
    return (
@@ -73,7 +79,23 @@ function Layout({ children }: { children: React.ReactNode }) {
    );
 }
 
-const BOTTOM_NAV_ROUTES = ['/request-board', '/repay', '/dashboard', '/lender/dashboard', '/lender/transactions', '/history', '/account', '/account/settings'];
+const BOTTOM_NAV_ROUTES = [
+   '/request-board',
+   '/repay',
+   '/dashboard',
+   '/lender/dashboard',
+   '/lender/transactions',
+   '/history',
+   '/account',
+   '/account/settings'
+];
+
+const canShowPreviewRoutes = () => {
+   if (import.meta.env.DEV) return true;
+   if (typeof window === 'undefined') return false;
+
+   return window.location.hostname.endsWith('.vercel.app');
+};
 
 export default function App() {
    const location = useLocation();
@@ -87,10 +109,10 @@ export default function App() {
    const canRepayWhileDefaulted = isDefaultedBorrower && location.pathname === '/repay';
    const shouldShowAccountSupport = isAccountRestricted || isDefaultedBorrower;
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
+   const showPreviewRoutes = canShowPreviewRoutes();
    const showBottomNav =
-      user?.id &&
+      Boolean(user?.id) &&
       !shouldShowAccountSupport &&
-      user?.userRole &&
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
          (location.pathname.startsWith('/user/') && !isUserDetailRoute) ||
          location.pathname.startsWith('/support') ||
@@ -131,7 +153,7 @@ export default function App() {
    }
 
    return (
-      <BottomNavActionProvider>
+      <BottomNavActionProvider key={location.pathname}>
          <WalletLoadingOverlay />
          <Routes key={location.pathname}>
             <Route path="/" element={<Home />} />
@@ -142,78 +164,350 @@ export default function App() {
             <Route path="/account-restricted" element={<AccountRestrictedPage />} />
 
             {/* Onboarding */}
-            <Route path="/onboarding/role" element={<ProtectedRoute><RoleSelection /></ProtectedRoute>} />
-            <Route path="/onboarding/welcome" element={<ProtectedRoute><OnboardingWelcome /></ProtectedRoute>} />
-            <Route path="/onboarding/wallet" element={<ProtectedRoute><WalletConnect /></ProtectedRoute>} />
-            <Route path="/onboarding/wallet/connected" element={<ProtectedRoute><WalletConnected /></ProtectedRoute>} />
-            <Route path="/onboarding/congratulations" element={<ProtectedRoute><CongratulationsPage /></ProtectedRoute>} />
+            <Route
+               path="/onboarding/role"
+               element={
+                  <ProtectedRoute>
+                     <RoleSelection />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/onboarding/welcome"
+               element={
+                  <ProtectedRoute>
+                     <OnboardingWelcome />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/onboarding/wallet"
+               element={
+                  <ProtectedRoute>
+                     <WalletConnect />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/onboarding/wallet/connected"
+               element={
+                  <ProtectedRoute>
+                     <WalletConnected />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/onboarding/congratulations"
+               element={
+                  <ProtectedRoute>
+                     <CongratulationsPage />
+                  </ProtectedRoute>
+               }
+            />
             {import.meta.env.DEV ? <Route path="/onboarding/start-preview" element={<OnboardingWelcome />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/wallet-preview" element={<WalletConnect />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/wallet-connected-preview" element={<WalletConnected />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/congratulations-preview" element={<CongratulationsPage />} /> : null}
 
             {/* Verification */}
-            <Route path="/verify-world-id" element={<ProtectedRoute><RoleGuard><WorldIdVerification /></RoleGuard></ProtectedRoute>} />
+            <Route
+               path="/verify-world-id"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <WorldIdVerification />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
             {import.meta.env.DEV ? <Route path="/verify-world-id-preview" element={<WorldIdVerification />} /> : null}
 
             {/* Borrower */}
-            <Route path="/dashboard" element={<ProtectedRoute><RoleGuard><Dashboard /></RoleGuard></ProtectedRoute>} />
+            <Route
+               path="/dashboard"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <Dashboard />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
             <Route path="/request-board" element={<RequestBoard />} />
-            <Route path="/repay" element={<ProtectedRoute><RoleGuard><Repay /></RoleGuard></ProtectedRoute>} />
-            <Route path="/milestones" element={<ProtectedRoute><RoleGuard><MilestonesPage /></RoleGuard></ProtectedRoute>} />
-            <Route path="/lender-diversity" element={<ProtectedRoute><RoleGuard><LenderDiversityPage /></RoleGuard></ProtectedRoute>} />
+            <Route
+               path="/repay"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <Repay />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            {showPreviewRoutes ? <Route path="/repay-preview" element={<Repay />} /> : null}
+            <Route
+               path="/milestones"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <MilestonesPage />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/lender-diversity"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <LenderDiversityPage />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
 
             {/* Lender */}
-            <Route path="/lender/dashboard" element={<ProtectedRoute><RoleGuard><LenderDashboard /></RoleGuard></ProtectedRoute>} />
-            <Route path="/lender/request-board" element={<ProtectedRoute><RoleGuard><LenderRequestBoard /></RoleGuard></ProtectedRoute>} />
-            <Route path="/lender/performance" element={<ProtectedRoute><RoleGuard><LenderPerformance /></RoleGuard></ProtectedRoute>} />
-            <Route path="/lender/transactions" element={<ProtectedRoute><RoleGuard><TransactionHistory /></RoleGuard></ProtectedRoute>} />
+            <Route
+               path="/lender/dashboard"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <LenderDashboard />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/lender/request-board"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <LenderRequestBoard />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/lender/performance"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <LenderPerformance />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/lender/transactions"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <TransactionHistory />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
 
             {/* Shared authenticated */}
-            <Route path="/history" element={<ProtectedRoute><RoleGuard><TransactionHistory /></RoleGuard></ProtectedRoute>} />
-            <Route path="/history/:loanId" element={<ProtectedRoute><RoleGuard><TransactionDetail /></RoleGuard></ProtectedRoute>} />
-            <Route path="/account" element={<ProtectedRoute><RoleGuard><Account /></RoleGuard></ProtectedRoute>} />
-            <Route path="/account/settings" element={<ProtectedRoute><RoleGuard><AccountSettings /></RoleGuard></ProtectedRoute>} />
+            <Route
+               path="/history"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <TransactionHistory />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/history/:loanId"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <TransactionDetail />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/account"
+               element={
+                  <ProtectedRoute>
+                     <Account />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/account/settings"
+               element={
+                  <ProtectedRoute>
+                     <AccountSettings />
+                  </ProtectedRoute>
+               }
+            />
 
             {/* Admin */}
-            <Route path="/admin" element={<AdminGuard><AdminPanel /></AdminGuard>} />
+            <Route
+               path="/admin"
+               element={
+                  <AdminGuard>
+                     <AdminPanel />
+                  </AdminGuard>
+               }
+            />
 
             {/* Profile */}
-            <Route path="/profile" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
+            <Route
+               path="/profile"
+               element={
+                  <ProtectedRoute>
+                     <Layout>
+                        <Profile />
+                     </Layout>
+                  </ProtectedRoute>
+               }
+            />
 
             {/* Auth flows */}
-            <Route path="/forgot-password" element={<Layout><ForgotPassword /></Layout>} />
-            <Route path="/reset-password" element={<Layout><ResetPassword /></Layout>} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/auth-success" element={<AuthSuccess />} />
             <Route path="/auth/confirm" element={<AuthConfirm />} />
+            <Route path="/auth/verify-code" element={<AuthVerifyCode />} />
 
             {/* Help & Support */}
-            <Route path="/support" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />
-            <Route path="/support/getting-started" element={<ProtectedRoute><SupportGettingStartedPage /></ProtectedRoute>} />
-            <Route path="/support/guides" element={<ProtectedRoute><SupportGuidesPage /></ProtectedRoute>} />
-            <Route path="/support/guides/:slug" element={<ProtectedRoute><SupportGuideDetailPage /></ProtectedRoute>} />
+            <Route
+               path="/support"
+               element={
+                  <ProtectedRoute>
+                     <SupportPage />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/support/getting-started"
+               element={<SupportGettingStartedPage />}
+            />
+            <Route
+               path="/support/guides"
+               element={
+                  <ProtectedRoute>
+                     <SupportGuidesPage />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/support/guides/:slug"
+               element={
+                  <ProtectedRoute>
+                     <SupportGuideDetailPage />
+                  </ProtectedRoute>
+               }
+            />
             <Route path="/support/faq" element={<SupportFAQPage />} />
-            <Route path="/support/updates" element={<ProtectedRoute><SupportUpdatesPage /></ProtectedRoute>} />
-            <Route path="/support/updates/:slug" element={<ProtectedRoute><SupportUpdateDetailPage /></ProtectedRoute>} />
+            <Route
+               path="/support/updates"
+               element={
+                  <ProtectedRoute>
+                     <SupportUpdatesPage />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/support/updates/:slug"
+               element={
+                  <ProtectedRoute>
+                     <SupportUpdateDetailPage />
+                  </ProtectedRoute>
+               }
+            />
 
             {/* Public */}
             <Route path="/faq" element={<Navigate to="/support/faq" replace />} />
-            <Route path="/academy" element={<MarketingPageShell><Guide /></MarketingPageShell>} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route
+               path="/academy"
+               element={
+                  <MarketingPageShell>
+                     <Guide />
+                  </MarketingPageShell>
+               }
+            />
             <Route path="/guide" element={<Navigate to="/academy" replace />} />
-            <Route path="/credit-leveling-guide" element={<MarketingPageShell><CreditLevelingGuidePage /></MarketingPageShell>} />
-            <Route path="/benefits" element={<MarketingPageShell><Benefits /></MarketingPageShell>} />
-            <Route path="/whylend" element={<MarketingPageShell><WhyLend /></MarketingPageShell>} />
-            <Route path="/simple" element={<Layout><Simple /></Layout>} />
-            <Route path="/test" element={<Layout><Test /></Layout>} />
+            <Route
+               path="/credit-leveling-guide"
+               element={
+                  <MarketingPageShell>
+                     <CreditLevelingGuidePage />
+                  </MarketingPageShell>
+               }
+            />
+            <Route path="/blog" element={<Navigate to="/blogs" replace />} />
+            <Route
+               path="/blogs"
+               element={
+                  <MarketingPageShell>
+                     <BlogsPage />
+                  </MarketingPageShell>
+               }
+            />
+            <Route
+               path="/blogs/:slug"
+               element={
+                  <MarketingPageShell>
+                     <BlogDetailPage />
+                  </MarketingPageShell>
+               }
+            />
+            <Route
+               path="/benefits"
+               element={
+                  <MarketingPageShell>
+                     <Benefits />
+                  </MarketingPageShell>
+               }
+            />
+            <Route
+               path="/whylend"
+               element={
+                  <MarketingPageShell>
+                     <WhyLend />
+                  </MarketingPageShell>
+               }
+            />
+            <Route
+               path="/simple"
+               element={
+                  <Layout>
+                     <Simple />
+                  </Layout>
+               }
+            />
+            <Route
+               path="/test"
+               element={
+                  <Layout>
+                     <Test />
+                  </Layout>
+               }
+            />
             <Route path="/user/:username/lender-diversity" element={<UserLenderDiversityPage />} />
             <Route path="/user/:username/progress-history" element={<UserProgressHistoryPage />} />
             <Route path="/user/:username" element={<UserProfile />} />
-            <Route path="/ut" element={<Layout><Ut /></Layout>} />
+            <Route
+               path="/ut"
+               element={
+                  <Layout>
+                     <Ut />
+                  </Layout>
+               }
+            />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to={user?.id && username ? '/' : '/request-board'} replace />} />
          </Routes>
-         {showBottomNav && <BottomNav />}
+         {showBottomNav ? <BottomNav /> : null}
       </BottomNavActionProvider>
    );
 }

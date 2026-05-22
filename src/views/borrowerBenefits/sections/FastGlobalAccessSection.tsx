@@ -2,18 +2,20 @@ import { type JSX, useState } from 'react';
 
 const accessItems = [
    {
-      title: 'Own credit',
-      description: 'Your repayment activity builds around your wallet, so your history is not locked inside one lender or one country.',
+      title: 'Direct lender-to-borrower',
+      description:
+         'A lender funds your request directly. Moodeng helps show the terms and record the repayment history without hiding the process behind a middle-man.',
       icon: 'https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/68b8a3d664d9cddfcaad323cdf8060b1cbc394035925642f7e3a3288ae711e2c?apiKey=e485b3dc4b924975b4554885e21242bb'
    },
    {
-      title: 'Global use',
-      description: 'A wallet-based record can travel with you, making it easier to show repayment behavior across borders.',
+      title: 'Funded in your wallet',
+      description:
+         'When a lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.',
       icon: 'https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/a917966497141c5f35849f89593562ca146cb3abb3421a6d00b4e1466e8edcb9?apiKey=e485b3dc4b924975b4554885e21242bb'
    },
    {
-      title: 'Full control',
-      description: 'You choose what to request and when to repay. Terms should be clear before you commit to a loan.',
+      title: 'Terms shown upfront',
+      description: 'You choose the request amount, repayment amount, due date, and reason before a lender decides whether to fund it.',
       icon: 'https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/a917966497141c5f35849f89593562ca146cb3abb3421a6d00b4e1466e8edcb9?apiKey=e485b3dc4b924975b4554885e21242bb'
    }
 ];
@@ -23,7 +25,7 @@ export default function FastGlobalAccessSection(): JSX.Element {
 
    return (
       <div className="borrower-fast-global-section flex flex-col mt-0 max-w-full w-[1068px] px-5 pt-12 pb-8">
-         <div className="text-[38px] leading-tight text-neutral-100 max-md:max-w-full">Fast Global Access</div>
+         <div className="text-[38px] leading-tight text-neutral-100 max-md:max-w-full">Why borrowing feels different</div>
          <div className="borrower-fast-global-list flex flex-col mt-6 w-full text-xl leading-tight text-violet-100 max-md:max-w-full">
             <div className="grid z-10 grid-cols-1 gap-3 items-center w-full max-md:max-w-full">
                {accessItems.map((item) => {

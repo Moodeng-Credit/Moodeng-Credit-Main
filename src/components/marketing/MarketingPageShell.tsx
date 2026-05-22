@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { Link, NavLink } from 'react-router-dom';
 
 import UserAvatar from '@/components/UserAvatar';
+
 import type { RootState } from '@/store/store';
 
 interface MarketingPageShellProps {
@@ -13,7 +14,8 @@ interface MarketingPageShellProps {
 const navItems = [
    { label: 'Borrow', href: '/benefits' },
    { label: 'Lend', href: '/whylend' },
-   { label: 'Academy', href: '/academy' }
+   { label: 'Academy', href: '/academy' },
+   { label: 'Blog', href: '/blogs' }
 ];
 
 const LogoMark = ({ className = 'size-12' }: { className?: string }) => (
@@ -22,13 +24,25 @@ const LogoMark = ({ className = 'size-12' }: { className?: string }) => (
    </span>
 );
 
+const AppCtaLabel = ({ isSignedIn, compactOnSmall = false }: { isSignedIn: boolean; compactOnSmall?: boolean }) => {
+   if (!isSignedIn) return <>Sign up</>;
+   if (!compactOnSmall) return <>Open app</>;
+
+   return (
+      <>
+         <span className="hidden md:inline">Open app</span>
+         <span className="inline md:hidden">App</span>
+      </>
+   );
+};
+
 export default function MarketingPageShell({ children }: MarketingPageShellProps) {
    const [isMenuOpen, setIsMenuOpen] = useState(false);
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
    const isSignedIn = Boolean(user?.id && username);
    const appHref = user?.id && username ? (user.userRole === 'lender' ? '/lender/dashboard' : '/dashboard') : '/sign-up';
-   const appLabel = isSignedIn ? 'Open App' : 'Sign up';
+   const appLabel = isSignedIn ? 'Open app' : 'Sign up';
 
    return (
       <div className="min-h-screen bg-[#fbfafd] text-md-heading">
@@ -68,9 +82,10 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                   ) : null}
                   <Link
                      to={appHref}
-                     className="inline-flex h-11 items-center justify-center rounded-md-pill bg-md-primary-1200 px-md-3 text-md-b2 font-semibold text-white shadow-md-card"
+                     aria-label={appLabel}
+                     className="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-md-pill bg-md-primary-1200 px-md-3 text-md-b2 font-semibold text-white shadow-md-card"
                   >
-                     {appLabel}
+                     <AppCtaLabel isSignedIn={isSignedIn} compactOnSmall />
                   </Link>
                   <button
                      type="button"
@@ -128,13 +143,16 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                   <p className="text-md-b2 font-semibold uppercase tracking-[0.12em] text-md-neutral-700">Explore</p>
                   <nav className="mt-md-2 flex flex-col gap-md-1 text-md-b2 font-semibold text-md-heading">
                      <Link to="/benefits" className="hover:text-md-primary-1200">
-                        Borrower benefits
+                        Borrower Benefits
                      </Link>
                      <Link to="/whylend" className="hover:text-md-primary-1200">
-                        Why lend
+                        Why Lend
                      </Link>
                      <Link to="/academy" className="hover:text-md-primary-1200">
                         Academy
+                     </Link>
+                     <Link to="/blogs" className="hover:text-md-primary-1200">
+                        Blog
                      </Link>
                   </nav>
                </div>
@@ -144,9 +162,10 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                   <div className="mt-md-2 flex flex-col gap-md-2">
                      <Link
                         to={appHref}
+                        aria-label={appLabel}
                         className="inline-flex h-11 items-center justify-center rounded-md-pill bg-md-primary-1200 px-md-3 text-md-b2 font-semibold text-white"
                      >
-                        {appLabel}
+                        <AppCtaLabel isSignedIn={isSignedIn} />
                      </Link>
                      <a
                         href="https://moodeng-credit.gitbook.io/moodeng-credit"

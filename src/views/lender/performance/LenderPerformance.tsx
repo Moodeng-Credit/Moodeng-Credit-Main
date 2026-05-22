@@ -2,15 +2,17 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react';
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 import BottomNav from '@/components/BottomNav';
+import UserAvatar from '@/components/UserAvatar';
+
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { formatPointsMajor } from '@/shared/points';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-import UserAvatar from '@/components/UserAvatar';
 import type { Loan } from '@/types/loanTypes';
 
 // ---------------------------------------------------------------------------
@@ -29,7 +31,7 @@ const PERIOD_DAYS: Record<TimePeriod, number> = {
    '1M': 30,
    '3M': 90,
    '6M': 180,
-   '1Y': 365,
+   '1Y': 365
 };
 
 interface ChartPoint {
@@ -54,7 +56,7 @@ function formatCurrency(amount: number): string {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      maximumFractionDigits: 2
    }).format(amount);
 }
 
@@ -165,11 +167,7 @@ function TrendBadge({ changePercent }: { changePercent: number }) {
          >
             {/* Up / down triangle */}
             <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
-               {isPositive ? (
-                  <path d="M4.5 1L8.5 7.5H0.5L4.5 1Z" fill="#1aa45b" />
-               ) : (
-                  <path d="M4.5 8L0.5 1.5H8.5L4.5 8Z" fill="#b60413" />
-               )}
+               {isPositive ? <path d="M4.5 1L8.5 7.5H0.5L4.5 1Z" fill="#1aa45b" /> : <path d="M4.5 8L0.5 1.5H8.5L4.5 8Z" fill="#b60413" />}
             </svg>
             <span className={`text-md-b3 font-medium whitespace-nowrap ${isPositive ? 'text-md-green-700' : 'text-md-red-800'}`}>
                {Math.abs(changePercent).toFixed(1)}% {isPositive ? 'higher' : 'lower'}
@@ -197,34 +195,25 @@ export default function LenderPerformance() {
       queryKey: ['user-points', user?.id],
       queryFn: async () => {
          const supabase = getSupabaseBrowserClient();
-         const { data, error } = await supabase
-            .from('user_points')
-            .select('points_total')
-            .eq('user_id', user!.id)
-            .single();
+         const { data, error } = await supabase.from('user_points').select('points_total').eq('user_id', user!.id).single();
          if (error) throw error;
          return data;
       },
-      enabled: !!user?.id,
+      enabled: !!user?.id
    });
 
-   const iouPoints = userPointsData?.points_total ?? 0;
+   const iouPoints = formatPointsMajor(userPointsData?.points_total ?? 0);
 
    // Load lender loans
    useEffect(() => {
       if (!user?.id) return;
-      dispatch(getUserLoans({ userId: user.id })).catch((err: Error) =>
-         console.error('Error loading performance data:', err.message)
-      );
+      dispatch(getUserLoans({ userId: user.id })).catch((err: Error) => console.error('Error loading performance data:', err.message));
    }, [dispatch, user?.id]);
 
    const lenderLoans = useMemo(() => gloans.filter((l) => l.lenderUser === user?.id), [gloans, user?.id]);
    const hasData = lenderLoans.length > 0;
 
-   const { total, changePercent, totalLent, totalLoss } = useMemo(
-      () => computeStats(lenderLoans),
-      [lenderLoans]
-   );
+   const { total, changePercent, totalLent, totalLoss } = useMemo(() => computeStats(lenderLoans), [lenderLoans]);
 
    const chartData = useMemo(() => buildChartData(lenderLoans, activePeriod), [lenderLoans, activePeriod]);
 
@@ -234,15 +223,10 @@ export default function LenderPerformance() {
    return (
       <div className="min-h-screen bg-md-neutral-200">
          <div className="max-w-[440px] mx-auto pb-28">
-
             {/* ── Header ── */}
             <div className="flex items-center justify-between px-md-5 py-md-3">
                <div className="flex flex-1 items-center gap-4">
-                  <button
-                     onClick={() => navigate(-1)}
-                     className="shrink-0 w-6 h-6 flex items-center justify-center"
-                     aria-label="Go back"
-                  >
+                  <button onClick={() => navigate(-1)} className="shrink-0 w-6 h-6 flex items-center justify-center" aria-label="Go back">
                      <ChevronLeft className="w-6 h-6 text-md-primary-2000" strokeWidth={2} />
                   </button>
                   <h1 className="text-md-h3 font-semibold text-md-primary-2000">Performance Insights</h1>
@@ -257,18 +241,13 @@ export default function LenderPerformance() {
 
             {/* ── Gradient card: profile + overview ── */}
             <div className="bg-gradient-to-b from-white to-[#eee6fa] rounded-b-[32px] shadow-md-card px-md-4 pt-md-3 pb-md-5 flex flex-col gap-md-3">
-
                {/* Profile row */}
                <div className="flex items-start gap-3">
                   <UserAvatar size={70} />
                   <div className="flex flex-col gap-1 justify-center pt-1">
-                     <p className="text-[18px] tracking-[-0.04em] leading-[1.2] font-semibold text-md-primary-2000">
-                        Hello, {firstName}
-                     </p>
+                     <p className="text-[18px] tracking-[-0.04em] leading-[1.2] font-semibold text-md-primary-2000">Hello, {firstName}</p>
                      <span className="inline-flex items-center self-start px-2 py-1 bg-md-primary-900 rounded-md-sm">
-                        <span className="text-md-b3 font-semibold capitalize text-md-neutral-100 whitespace-nowrap">
-                           IOU {iouPoints.toLocaleString()}
-                        </span>
+                        <span className="text-md-b3 font-semibold capitalize text-md-neutral-100 whitespace-nowrap">IOU {iouPoints}</span>
                      </span>
                      <p className="text-md-b3 font-normal text-md-neutral-1400">Member since {memberSince}</p>
                   </div>
@@ -280,7 +259,6 @@ export default function LenderPerformance() {
 
                   {/* Main card */}
                   <div className="bg-md-neutral-100 rounded-md-lg p-md-3 shadow-md-card flex flex-col gap-md-3">
-
                      {/* Total Earnings */}
                      <div className="flex flex-col gap-1">
                         <span className="text-md-b2 font-medium text-md-neutral-1500">Total Earnings</span>
@@ -288,9 +266,7 @@ export default function LenderPerformance() {
                            <span className="text-md-h3 font-semibold text-md-neutral-2000">
                               {hasData ? formatCurrency(total) : '$0.00'}
                            </span>
-                           {hasData && changePercent !== 0 && (
-                              <TrendBadge changePercent={changePercent} />
-                           )}
+                           {hasData && changePercent !== 0 && <TrendBadge changePercent={changePercent} />}
                         </div>
                      </div>
 
@@ -401,11 +377,9 @@ export default function LenderPerformance() {
                            </span>
                         </div>
                      </div>
-
                   </div>
                </div>
             </div>
-
          </div>
 
          <BottomNav />

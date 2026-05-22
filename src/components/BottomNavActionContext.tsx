@@ -19,6 +19,22 @@ type BottomNavActionContextValue = {
 
 const BottomNavActionContext = createContext<BottomNavActionContextValue | null>(null);
 
+const isSamePrimaryAction = (left: BottomNavPrimaryAction | null, right: BottomNavPrimaryAction | null) => {
+   if (left === right) return true;
+   if (!left || !right) return false;
+
+   return (
+      left.id === right.id &&
+      left.path === right.path &&
+      left.ariaLabel === right.ariaLabel &&
+      left.disabled === right.disabled &&
+      left.icon === right.icon &&
+      left.isProcessing === right.isProcessing &&
+      left.label === right.label &&
+      left.onClick === right.onClick
+   );
+};
+
 export function BottomNavActionProvider({ children }: { children: ReactNode }) {
    const [primaryAction, setPrimaryAction] = useState<BottomNavPrimaryAction | null>(null);
    const location = useLocation();
@@ -43,16 +59,26 @@ export function useBottomNavActionState() {
 
 export function useBottomNavPrimaryAction(action: BottomNavPrimaryAction | null) {
    const context = useContext(BottomNavActionContext);
+   const location = useLocation();
    const setPrimaryAction = context?.setPrimaryAction;
 
    useEffect(() => {
       if (!setPrimaryAction) return undefined;
 
-      setPrimaryAction(action);
+      if (!action) {
+         setPrimaryAction((current) => (current ? null : current));
+         return undefined;
+      }
+
+      if (action.path !== location.pathname) {
+         setPrimaryAction((current) => (current?.id === action.id ? null : current));
+         return undefined;
+      }
+
+      setPrimaryAction((current) => (isSamePrimaryAction(current, action) ? current : action));
 
       return () => {
-         if (!action) return;
          setPrimaryAction((current) => (current?.id === action.id ? null : current));
       };
-   }, [action, setPrimaryAction]);
+   }, [action, location.pathname, setPrimaryAction]);
 }

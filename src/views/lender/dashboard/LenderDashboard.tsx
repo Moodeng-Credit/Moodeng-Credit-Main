@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, HelpCircle, Search} from 'lucide-react';
+import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, HelpCircle, Search } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 
+import UserAvatar from '@/components/UserAvatar';
+
 import { useClickOutside } from '@/hooks/useClickOutside';
+
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { formatPointsMajor } from '@/shared/points';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-import UserAvatar from '@/components/UserAvatar';
 import type { Loan } from '@/types/loanTypes';
 
 // ---------------------------------------------------------------------------
@@ -137,7 +140,15 @@ interface StatCardProps {
    children?: React.ReactNode;
 }
 
-function StatCard({ label, value, valueSize = 'h3', valueClassName = 'text-md-heading', showHelp = true, rightSlot, children }: StatCardProps) {
+function StatCard({
+   label,
+   value,
+   valueSize = 'h3',
+   valueClassName = 'text-md-heading',
+   showHelp = true,
+   rightSlot,
+   children
+}: StatCardProps) {
    const valueCls = valueSize === 'h4' ? 'text-md-h4' : 'text-md-h3';
    return (
       <div className="bg-md-neutral-100 rounded-md-lg p-4 shadow-md-card flex flex-col gap-1">
@@ -272,7 +283,10 @@ function FilterDropdown({ isOpen, onClose, filters, onApply, dropdownRef, openUp
 
          <div className="px-4 pb-4">
             <button
-               onClick={() => { onApply(draft); onClose(); }}
+               onClick={() => {
+                  onApply(draft);
+                  onClose();
+               }}
                className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b2 font-semibold py-2.5 rounded-md-lg"
             >
                Apply Filter
@@ -326,7 +340,7 @@ export default function LenderDashboard() {
       enabled: !!user?.id
    });
 
-   const iouPoints = userPointsData?.points_total ?? 0;
+   const iouPoints = formatPointsMajor(userPointsData?.points_total ?? 0);
 
    // Fetch lender loans + borrower profiles
    useEffect(() => {
@@ -346,7 +360,10 @@ export default function LenderDashboard() {
    const totalLoansLent = useMemo(() => lenderLoans.reduce((sum, l) => sum + l.loanAmount, 0), [lenderLoans]);
    const totalLoansFunded = lenderLoans.length;
    const totalLoss = useMemo(
-      () => lenderLoans.filter((l) => getLoanDisplayStatus(l) === 'DEFAULT').reduce((sum, l) => sum + Math.max(0, l.loanAmount - (l.repaidAmount ?? 0)), 0),
+      () =>
+         lenderLoans
+            .filter((l) => getLoanDisplayStatus(l) === 'DEFAULT')
+            .reduce((sum, l) => sum + Math.max(0, l.loanAmount - (l.repaidAmount ?? 0)), 0),
       [lenderLoans]
    );
    const activeLoansCount = useMemo(() => lenderLoans.filter((l) => getLoanDisplayStatus(l) === 'ACTIVE').length, [lenderLoans]);
@@ -365,7 +382,8 @@ export default function LenderDashboard() {
       const fundedTime = (l: Loan) => new Date(l.fundedAt ?? l.updatedAt).getTime();
       if (appliedFilters.status === 'new-to-old') result.sort((a, b) => fundedTime(b) - fundedTime(a));
       else if (appliedFilters.status === 'old-to-new') result.sort((a, b) => fundedTime(a) - fundedTime(b));
-      else if (appliedFilters.status in statusMap) result = result.filter((l) => getLoanDisplayStatus(l) === statusMap[appliedFilters.status]);
+      else if (appliedFilters.status in statusMap)
+         result = result.filter((l) => getLoanDisplayStatus(l) === statusMap[appliedFilters.status]);
 
       if (appliedFilters.sortBy === 'low-to-high') result.sort((a, b) => a.loanAmount - b.loanAmount);
       else if (appliedFilters.sortBy === 'high-to-low') result.sort((a, b) => b.loanAmount - a.loanAmount);
@@ -384,14 +402,10 @@ export default function LenderDashboard() {
    return (
       <div className="min-h-screen bg-md-neutral-200">
          <div className="max-w-[440px] mx-auto pb-28">
-
             {/* ── Nav header — matches UserProfile "Borrower Insights" pattern ── */}
             <div className="flex items-center justify-between px-md-5 py-md-3">
                <div className="flex-1 flex items-center gap-4">
-                  <button
-                     onClick={() => navigate(-1)}
-                     className="shrink-0 w-6 h-6 flex items-center justify-center"
-                  >
+                  <button onClick={() => navigate(-1)} className="shrink-0 w-6 h-6 flex items-center justify-center">
                      <ChevronLeft className="w-6 h-6 text-md-primary-2000" strokeWidth={2} />
                   </button>
                   <h1 className="text-md-h3 font-semibold text-md-primary-2000">Dashboard</h1>
@@ -410,13 +424,9 @@ export default function LenderDashboard() {
                <UserAvatar size={70} />
                <div className="flex flex-col gap-1 justify-center pt-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                     <p className="text-[18px] tracking-[-0.04em] leading-[1.2] font-semibold text-md-primary-2000">
-                        Hello, {firstName}
-                     </p>
+                     <p className="text-[18px] tracking-[-0.04em] leading-[1.2] font-semibold text-md-primary-2000">Hello, {firstName}</p>
                      <span className="inline-flex items-center px-2.5 py-0.5 bg-md-primary-900 rounded-md-sm">
-                        <span className="text-md-b3 font-semibold text-md-neutral-100 whitespace-nowrap">
-                           IOU {iouPoints.toLocaleString()}
-                        </span>
+                        <span className="text-md-b3 font-semibold text-md-neutral-100 whitespace-nowrap">IOU {iouPoints}</span>
                      </span>
                   </div>
                   <p className="text-md-b3 font-normal text-md-neutral-1400">Member since {memberSince}</p>
@@ -425,7 +435,6 @@ export default function LenderDashboard() {
 
             {/* ── Content ── */}
             <div className="flex flex-col gap-5 px-md-5 pb-md-3">
-
                {/* ── Performance Summary ── */}
                <div className="flex flex-col gap-3">
                   <p className="text-md-h5 font-semibold text-md-heading">Performance Summary</p>
@@ -449,21 +458,17 @@ export default function LenderDashboard() {
                      {totalLoansFunded > 0 && changePercent !== 0 && (
                         <p className="text-md-b3 text-md-neutral-1000">
                            <span className={`font-semibold ${isPositiveChange ? 'text-md-green-700' : 'text-md-red-500'}`}>
-                              {isPositiveChange ? '+' : ''}{changePercent.toFixed(1)}%
-                           </span>
-                           {' '}{isPositiveChange ? 'higher' : 'lower'} vs previous period
+                              {isPositiveChange ? '+' : ''}
+                              {changePercent.toFixed(1)}%
+                           </span>{' '}
+                           {isPositiveChange ? 'higher' : 'lower'} vs previous period
                         </p>
                      )}
                   </StatCard>
 
                   {/* Row 1: Total Loans Lent out (h4 / 24px) + Total Loss (h4 / 24px) */}
                   <div className="grid grid-cols-2 gap-3">
-                     <StatCard
-                        label="Total Loans Lent out"
-                        value={formatCurrency(totalLoansLent)}
-                        valueSize="h4"
-                        showHelp
-                     />
+                     <StatCard label="Total Loans Lent out" value={formatCurrency(totalLoansLent)} valueSize="h4" showHelp />
                      <StatCard
                         label="Total Loss"
                         value={formatCurrency(totalLoss)}
@@ -475,18 +480,8 @@ export default function LenderDashboard() {
 
                   {/* Row 2: Total Loans Funded (h3 / 28px) + Active Loans (h3 / 28px) */}
                   <div className="grid grid-cols-2 gap-3">
-                     <StatCard
-                        label="Total Loans Funded"
-                        value={totalLoansFunded.toString()}
-                        valueSize="h3"
-                        showHelp
-                     />
-                     <StatCard
-                        label="Active Loans"
-                        value={activeLoansCount.toString()}
-                        valueSize="h3"
-                        showHelp
-                     />
+                     <StatCard label="Total Loans Funded" value={totalLoansFunded.toString()} valueSize="h3" showHelp />
+                     <StatCard label="Active Loans" value={activeLoansCount.toString()} valueSize="h3" showHelp />
                   </div>
                </div>
 
@@ -558,7 +553,9 @@ export default function LenderDashboard() {
                      <div className="bg-md-neutral-100 rounded-md-lg p-8 flex flex-col items-center gap-2 shadow-md-card">
                         <p className="text-md-b2 font-medium text-md-neutral-1200 text-center">No transactions found</p>
                         <p className="text-md-b3 text-md-neutral-1000 text-center">
-                           {lenderLoans.length === 0 ? "You haven't funded any loans yet." : 'No transactions match your search or filters.'}
+                           {lenderLoans.length === 0
+                              ? "You haven't funded any loans yet."
+                              : 'No transactions match your search or filters.'}
                         </p>
                      </div>
                   )}

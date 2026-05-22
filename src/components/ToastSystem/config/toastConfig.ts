@@ -227,8 +227,8 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
    amount_exceeds_limit: {
       toastType: TOAST_TYPES.ERROR,
       title: 'Amount Exceeds Limit',
-      message: 'The loan amount exceeds your credit score limit.',
-      buttonText: 'View Credit Score',
+      message: 'The loan amount exceeds your available credit limit.',
+      buttonText: 'View Credit Limit',
       buttonAction: 'view_credit_score'
    },
 
@@ -347,9 +347,8 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
 
    worldid_already_used: {
       toastType: TOAST_TYPES.ERROR,
-      title: 'World ID Already Linked',
-      message:
-         'Your World ID is already verified and connected to an existing account. Moodeng does not allow the same World ID to be linked to more than one account.',
+      title: 'Duplicate Account Not Allowed',
+      message: 'We do not allow duplicate accounts. This World ID is already connected to an existing Moodeng account.',
       customIcon: 'fas fa-exclamation-triangle'
    },
 

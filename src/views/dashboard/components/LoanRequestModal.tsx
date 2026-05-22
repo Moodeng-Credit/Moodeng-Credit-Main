@@ -13,8 +13,8 @@ import {
 
 import { CalendarDays, CheckCircle, ChevronLeft, ChevronRight, HelpCircle, Ticket, X } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
-import { useNavigate } from 'react-router-dom';
 
+import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 import { type User } from '@/types/authTypes';
@@ -253,7 +253,6 @@ export default function LoanRequestModal({
    canUseReferralBoost = true,
    startOnReferralStep = true
 }: LoanRequestModalProps) {
-   const navigate = useNavigate();
    const formRef = useRef<HTMLFormElement | null>(null);
    const dateInputRef = useRef<HTMLInputElement | null>(null);
    const reasonTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -290,11 +289,6 @@ export default function LoanRequestModal({
    const referralPrimaryActionText =
       hasAppliedReferralCode || !hasReferralCode ? 'Continue to application' : hasReferralCodeError ? 'Try again' : 'Apply code';
    const shouldShowReferralStep = showReferralStep && isVerified && canUseReferralBoost;
-
-   const startVerificationOnboarding = () => {
-      onClose();
-      navigate('/verify-world-id');
-   };
 
    useEffect(() => {
       setTypedDate(selectedDateLabel);
@@ -718,13 +712,17 @@ export default function LoanRequestModal({
                               Complete a one-time verification to start building trust with lenders.
                            </p>
                         </div>
-                        <button
-                           onClick={startVerificationOnboarding}
-                           className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                           type="button"
-                        >
-                           Get Verified
-                        </button>
+                        <WorldIDVerification>
+                           {({ open }) => (
+                              <button
+                                 onClick={open}
+                                 className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                                 type="button"
+                              >
+                                 Get Verified
+                              </button>
+                           )}
+                        </WorldIDVerification>
                      </div>
                      <img alt="" aria-hidden="true" className="h-[86px] w-[96px] shrink-0 object-contain" src="/hippos/welcome.png" />
                   </div>

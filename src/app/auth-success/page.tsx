@@ -1,43 +1,79 @@
 import type { JSX } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronRight, HelpCircle } from 'lucide-react';
-import { Icons } from '@/views/login/components/Icons';
-import AuthCard from '@/views/login/components/AuthCard';
+import { ArrowRight, CheckCircle2, ChevronRight, HelpCircle } from 'lucide-react';
+
+type AuthSuccessCardProps = {
+   imageSrc: string;
+   imageAlt: string;
+   eyebrow: string;
+   title: string;
+   body: string;
+   children: JSX.Element;
+};
+
+function AuthSuccessShell({ imageSrc, imageAlt, eyebrow, title, body, children }: AuthSuccessCardProps): JSX.Element {
+   return (
+      <div className="min-h-screen bg-[#FBFAFD] px-4 py-6 text-[#040033] sm:px-6 sm:py-10">
+         <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-[480px] flex-col">
+            <div className="mb-5 flex justify-end">
+               <Link
+                  to="/support/faq"
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FDFCFD] text-[#6010D2] shadow-[0_8px_24px_rgba(36,14,62,0.08)] transition hover:bg-[#F2EAFE]"
+                  aria-label="Help"
+               >
+                  <HelpCircle className="h-6 w-6" />
+               </Link>
+            </div>
+
+            <main className="flex flex-1 flex-col justify-center">
+               <section className="rounded-[28px] border border-[#E7D8FF] bg-[#FDFCFD] px-5 py-7 shadow-[0_18px_50px_rgba(36,14,62,0.08)] sm:px-7">
+                  <div className="mb-7 flex flex-col items-center text-center">
+                     <div className="mb-5 flex h-[196px] w-[196px] items-center justify-center overflow-hidden rounded-[28px] border border-[#DCC7FF] bg-white shadow-[0_12px_28px_rgba(36,14,62,0.06)]">
+                        <img
+                           src={imageSrc}
+                           alt={imageAlt}
+                           className="h-full w-full object-contain drop-shadow-[0_12px_22px_rgba(36,14,62,0.10)]"
+                        />
+                     </div>
+                     <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0]">
+                        {eyebrow}
+                     </p>
+                     <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.04em] text-[#040033]">
+                        {title}
+                     </h1>
+                     <p className="mt-3 max-w-[350px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F]">
+                        {body}
+                     </p>
+                  </div>
+
+                  {children}
+               </section>
+            </main>
+         </div>
+      </div>
+   );
+}
 
 function AccountCreatedView(): JSX.Element {
    const navigate = useNavigate();
 
    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white px-6 py-12">
-         <Link
-            to="/support/faq"
-            className="absolute top-6 right-6 w-10 h-10 rounded-full border border-[#8336F0] flex items-center justify-center text-[#8336F0] hover:bg-purple-50"
-            aria-label="Help"
+      <AuthSuccessShell
+         imageSrc="/hippos/welcome.png"
+         imageAlt="Moodeng welcoming you"
+         eyebrow="Account ready"
+         title="Your account has been created"
+         body="Choose how you want to use Moodeng so we can set up the right experience for you."
+      >
+         <button
+            type="button"
+            onClick={() => navigate('/onboarding/role', { replace: true })}
+            className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95"
          >
-            <HelpCircle className="w-5 h-5" />
-         </Link>
-         <div className="flex flex-col items-center text-center max-w-sm">
-            <img
-               src="/confirm-image.png"
-               alt=""
-               className="mb-6 w-52 h-52 object-contain"
-            />
-            <h1 className="text-2xl font-bold text-[#0A0A29] tracking-tight mb-3">
-               Your account has been created
-            </h1>
-            <p className="text-base text-[#6B7280] leading-relaxed mb-8">
-               Your wallet is used to build your Trust Score and receive USDC loans.
-            </p>
-            <button
-               type="button"
-               onClick={() => navigate('/onboarding/role', { replace: true })}
-               className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-2xl font-semibold text-white bg-[#6010D2] hover:opacity-95 transition-opacity"
-            >
-               Proceed
-               <ChevronRight className="w-5 h-5" />
-            </button>
-         </div>
-      </div>
+            Continue setup
+            <ChevronRight className="h-5 w-5" />
+         </button>
+      </AuthSuccessShell>
    );
 }
 
@@ -46,59 +82,47 @@ export default function AuthSuccessPage(): JSX.Element {
    const type = searchParams.get('type');
    const isLinkFlow = type === 'link';
    const isCreatedFlow = type === 'created';
+   const isConfirmedFlow = type === 'confirmed';
 
    if (isCreatedFlow) {
-      return (
-         <AccountCreatedView />
-      );
+      return <AccountCreatedView />;
    }
 
    return (
-      <div
-         className="flex overflow-hidden flex-col items-center px-6 py-12 w-full min-h-screen max-md:px-4 bg-gray-100"
-         style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.1) 1px, transparent 0)`,
-            backgroundSize: '20px 20px'
-         }}
+      <AuthSuccessShell
+         imageSrc={isLinkFlow ? '/hippos/hippo-friendly-lock.png' : '/hippos/hippo-purple-envelope-email.png'}
+         imageAlt={isLinkFlow ? 'Moodeng holding a lock' : 'Moodeng holding an envelope'}
+         eyebrow={isLinkFlow ? 'Account access' : 'Welcome to Moodeng'}
+         title={isLinkFlow ? 'Check your email' : isConfirmedFlow ? 'Email confirmed' : 'Confirm your email'}
+         body={
+            isLinkFlow
+               ? 'Use the secure link in the latest Moodeng email to set a password for this account.'
+               : isConfirmedFlow
+                 ? 'Your email link was accepted. Sign in to continue if Moodeng did not open your account automatically.'
+               : 'Open the latest Moodeng email, or enter the 6-digit code, to finish setting up your account.'
+         }
       >
-         <div className="flex justify-center items-center w-full max-w-md">
-            <AuthCard
-               title="Check Your Email"
-               isSignUp={false}
-               headerColor="bg-emerald-500"
-               mascotPosition="right"
+         <div className="space-y-3">
+            {!isLinkFlow && !isConfirmedFlow ? (
+               <Link
+                  to="/auth/verify-code"
+                  className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95"
+               >
+                  Enter code
+                  <ArrowRight className="h-5 w-5" />
+               </Link>
+            ) : null}
+            <Link
+               to="/sign-in#login"
+               className="flex h-12 w-full items-center justify-center rounded-2xl border border-[#E0D7E8] text-sm font-semibold text-[#4D4359] transition hover:bg-[#F8F4FC]"
             >
-               <div className="flex flex-col items-center text-center space-y-6 py-4">
-                  <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
-                     <Icons.email className="w-10 h-10" />
-                  </div>
-
-                  <div className="space-y-2">
-                     <h2 className="text-2xl font-bold text-gray-800">
-                        {isLinkFlow ? 'Link Your Account' : 'Verify Your Email'}
-                     </h2>
-                     <p className="text-gray-600 leading-relaxed">
-                        {isLinkFlow
-                           ? "An account with this email already exists (likely via Google). We've sent a password reset link to your email. Please use it to set a password and link your email login."
-                           : "We've sent a verification link to your email address. Please check your inbox and follow the instructions to complete your registration."}
-                     </p>
-                  </div>
-
-                  <div className="w-full pt-4">
-                     <Link
-                        to="/sign-in#login"
-                        className="flex justify-center items-center px-6 py-3 w-full text-white font-bold bg-emerald-500 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"
-                     >
-                        Back to Login
-                     </Link>
-                  </div>
-
-                  <p className="text-sm text-gray-400">
-                     Didn't receive the email? Check your spam folder or try again.
-                  </p>
-               </div>
-            </AuthCard>
+               {isConfirmedFlow ? 'Sign in' : 'Back to sign in'}
+            </Link>
+            <p className="flex items-start gap-3 rounded-2xl border border-[#E7D8FF] bg-[#F8F4FC] px-4 py-3 text-sm font-semibold leading-5 text-[#4D4359]">
+               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#8336F0]" />
+               If the email is hard to find, check spam or promotions and open the latest Moodeng email.
+            </p>
          </div>
-      </div>
+      </AuthSuccessShell>
    );
 }

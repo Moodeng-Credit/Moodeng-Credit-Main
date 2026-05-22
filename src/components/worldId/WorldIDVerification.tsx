@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { CredentialRequest, IDKitErrorCodes, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
 import { useDispatch } from 'react-redux';
@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { AlreadyUsedModal } from '@/components/worldId/modal/AlreadyUsedModal';
-import { VerificationModal } from '@/components/worldId/VerificationModal';
 
 import { handleApiError, isApiError } from '@/lib/apiHandler';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -20,29 +19,50 @@ interface WorldIDVerificationProps {
    children: (props: { open: () => void }) => ReactNode;
    onSuccess?: () => void;
    className?: string;
+   showSuccessToast?: boolean;
 }
 
 const WORLD_ID_ACTION_ID = 'verify-borrower';
 const WORLD_ID_ACTION_DESCRIPTION = 'Verify a borrower as a unique human before borrowing.';
 const WORLD_ID_ENVIRONMENT = (import.meta.env.VITE_WORLD_ID_ENVIRONMENT ||
    (import.meta.env.MODE === 'production' ? 'production' : 'staging')) as 'production' | 'staging';
+const WORLD_ID_ALREADY_USED_STORAGE_KEY = 'moodeng_worldid_error';
+const WORLD_ID_ALREADY_USED_STORAGE_VALUE = 'already_used';
 
-export default function WorldIDVerification({ children, onSuccess, className = '' }: WorldIDVerificationProps) {
+export default function WorldIDVerification({ children, onSuccess, className = '', showSuccessToast = true }: WorldIDVerificationProps) {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
    const { showToastByConfig } = useToast();
-   const [isModalOpen, setIsModalOpen] = useState(false);
    const [isIDKitOpen, setIsIDKitOpen] = useState(false);
+   const [isPreparingIDKit, setIsPreparingIDKit] = useState(false);
    const [rpContext, setRpContext] = useState<RpContext | null>(null);
    const [showAlreadyUsedModal, setShowAlreadyUsedModal] = useState(false);
    // Prevents handleSuccess from navigating when handleVerify already showed the AlreadyUsedModal
    const alreadyUsedRef = useRef(false);
 
+   const showAlreadyUsedWarning = useCallback(
+      ({ persist = false }: { persist?: boolean } = {}) => {
+         if (persist) {
+            sessionStorage.setItem(WORLD_ID_ALREADY_USED_STORAGE_KEY, WORLD_ID_ALREADY_USED_STORAGE_VALUE);
+         }
+         setShowAlreadyUsedModal(true);
+         showToastByConfig('worldid_already_used');
+      },
+      [showToastByConfig]
+   );
+
+   useEffect(() => {
+      if (sessionStorage.getItem(WORLD_ID_ALREADY_USED_STORAGE_KEY) === WORLD_ID_ALREADY_USED_STORAGE_VALUE) {
+         sessionStorage.removeItem(WORLD_ID_ALREADY_USED_STORAGE_KEY);
+         showAlreadyUsedWarning();
+      }
+   }, [showAlreadyUsedWarning]);
+
    const action = (import.meta.env.VITE_WORLD_ID_ACTION_ID || WORLD_ID_ACTION_ID) as string;
    const app_id = import.meta.env.VITE_WORLD_ID_APP_ID as `app_${string}` | undefined;
    const apiUrl = import.meta.env.VITE_API_URL as string | undefined;
 
-   const getSessionAccessToken = async () => {
+   const getSessionAccessToken = useCallback(async () => {
       const supabase = getSupabaseBrowserClient();
       const {
          data: { session }
@@ -53,9 +73,9 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       }
 
       return session.access_token;
-   };
+   }, []);
 
-   const fetchRpContext = async () => {
+   const fetchRpContext = useCallback(async () => {
       if (!apiUrl) {
          throw new Error('VITE_API_URL is not configured.');
       }
@@ -74,6 +94,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       if (!res.ok || !result.success || !result.rp_context) {
          if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
             setShowAlreadyUsedModal(true);
+            showToastByConfig('worldid_already_used');
             throw new Error('WORLDID_ALREADY_USED');
          }
          showToastByConfig(handleApiError(result));
@@ -81,7 +102,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       }
 
       return result.rp_context;
-   };
+   }, [action, apiUrl, getSessionAccessToken, showToastByConfig]);
 
    const handleVerify = async (proof: IDKitResult) => {
       try {
@@ -104,7 +125,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          if (!res.ok || !result.success) {
             if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
                alreadyUsedRef.current = true;
-               setShowAlreadyUsedModal(true);
+               showAlreadyUsedWarning({ persist: true });
                return;
             }
             showToastByConfig(handleApiError(result));
@@ -125,16 +146,22 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const handleSuccess = () => {
       if (alreadyUsedRef.current) {
          alreadyUsedRef.current = false;
+         sessionStorage.removeItem(WORLD_ID_ALREADY_USED_STORAGE_KEY);
          return;
       }
-      onSuccess?.();
-      navigate('/onboarding/congratulations');
-      showToastByConfig(getToastKeyFromSuccessCode(SUCCESS_CODES.AUTH_VERIFY_SUCCESS)!);
+      if (onSuccess) {
+         onSuccess();
+      } else {
+         navigate('/onboarding/congratulations');
+      }
+      if (showSuccessToast) {
+         showToastByConfig(getToastKeyFromSuccessCode(SUCCESS_CODES.AUTH_VERIFY_SUCCESS)!);
+      }
    };
 
    const handleError = (errorCode: IDKitErrorCodes) => {
       if (errorCode === IDKitErrorCodes.NullifierReplayed || errorCode === IDKitErrorCodes.MaxVerificationsReached) {
-         setShowAlreadyUsedModal(true);
+         showAlreadyUsedWarning();
       } else if (
          errorCode !== IDKitErrorCodes.UserRejected &&
          errorCode !== IDKitErrorCodes.Cancelled &&
@@ -144,37 +171,32 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       }
    };
 
-   const handleCloseModal = useCallback(() => {
-      setIsModalOpen(false);
-   }, []);
-
-   const handleStartIDKit = async () => {
-      if (!app_id) {
-         throw new Error('VITE_WORLD_ID_APP_ID is not configured.');
+   const handleStartIDKit = useCallback(async () => {
+      if (isPreparingIDKit || isIDKitOpen) {
+         return;
       }
+      try {
+         if (!app_id) {
+            throw new Error('VITE_WORLD_ID_APP_ID is not configured.');
+         }
+         setIsPreparingIDKit(true);
+         const nextRpContext = await fetchRpContext();
+         setRpContext(nextRpContext);
+         setIsIDKitOpen(true);
+      } catch (error) {
+         if (error instanceof Error && error.message === 'WORLDID_ALREADY_USED') return;
+         console.error('World ID preparation error:', error instanceof Error ? error.message : error);
+         showToastByConfig('server_error');
+      } finally {
+         setIsPreparingIDKit(false);
+      }
+   }, [app_id, fetchRpContext, isIDKitOpen, isPreparingIDKit, showToastByConfig]);
 
-      handleCloseModal();
-      const nextRpContext = await fetchRpContext();
-      setRpContext(nextRpContext);
-      setIsIDKitOpen(true);
-   };
+   const trigger = className ? <span className={className}>{children({ open: () => void handleStartIDKit() })}</span> : children({ open: () => void handleStartIDKit() });
 
    return (
       <>
-         <span className={className}>{children({ open: () => setIsModalOpen(true) })}</span>
-
-         <VerificationModal
-            isOpen={isModalOpen}
-            onClose={handleCloseModal}
-            onVerify={() => {
-               handleStartIDKit().catch((error: Error) => {
-                  if (error.message === 'WORLDID_ALREADY_USED') return;
-                  console.error('World ID preparation error:', error.message || error);
-                  showToastByConfig('server_error');
-               });
-            }}
-            onCheckStatus={handleCloseModal}
-         />
+         {trigger}
 
          <AlreadyUsedModal isOpen={showAlreadyUsedModal} onClose={() => setShowAlreadyUsedModal(false)} />
 

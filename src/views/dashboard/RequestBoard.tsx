@@ -5,14 +5,17 @@ import {
    type RefObject,
    useCallback,
    useEffect,
+   useLayoutEffect,
    useMemo,
    useRef,
    useState
 } from 'react';
 
-import { AlertTriangle, HelpCircle, Menu, Search, Wallet, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { AlertTriangle, CheckCircle2, HelpCircle, Menu, Search, Wallet, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAccount } from 'wagmi';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
@@ -32,6 +35,7 @@ import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 import { logoImageSrc } from '@/config/navigationConfig';
+import { getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import {
@@ -41,14 +45,16 @@ import {
    recordGuidedTourShown,
    shouldShowGuidedTour
 } from '@/lib/guidedTourStorage';
-import { getBaseWalletLockStatus } from '@/lib/walletProvider';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getBaseWalletLockStatus, isBaseWalletReadyForRepayment } from '@/lib/walletProvider';
+import { formatPointsMajor } from '@/shared/points';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
-import { LoanStatus, RepaymentStatus, type Loan } from '@/types/loanTypes';
+import type { Loan } from '@/types/loanTypes';
 import LoanRequestModal, { type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
@@ -139,6 +145,7 @@ function RequestBoard$() {
    const pathname = location.pathname;
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
+   const connectedWallet = useAccount();
 
    const { showToast, showToastByConfig } = useToast();
 
@@ -150,6 +157,8 @@ function RequestBoard$() {
    const [showLenderNote, setShowLenderNote] = useState(false);
    const [showPublicQuestions, setShowPublicQuestions] = useState(false);
    const [showGuestWorldIdPreview, setShowGuestWorldIdPreview] = useState(false);
+   const [hasWorldIdJustVerified, setHasWorldIdJustVerified] = useState(false);
+   const [showWorldIdHighlight, setShowWorldIdHighlight] = useState(false);
 
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -158,6 +167,8 @@ function RequestBoard$() {
    const requestBoardSearchParams = new URLSearchParams(location.search);
    const isReferralTestMode = import.meta.env.DEV && requestBoardSearchParams.has('referralTest');
    const forceTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('tourPreview');
+   const showWorldIdSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.has('worldIdSuccessPreview');
+   const holdWorldIdSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.get('worldIdSuccessPreview') === 'hold';
    const showTourPreview = forceTourPreview || requestBoardSearchParams.has('tour');
    const shouldStartTourImmediately = requestBoardSearchParams.get('startTour') === '1';
    const isLenderTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('lenderTourPreview');
@@ -168,9 +179,23 @@ function RequestBoard$() {
         ? REFERRAL_TEST_USER
         : user;
    const isAuthenticated = !!(effectiveUser?.id && (username || isReferralTestMode || isLenderTourPreview));
-   const showVerify = effectiveUser?.isWorldId !== 'ACTIVE';
+   const hasSelectedRole = Boolean(effectiveUser?.userRole);
+   const needsRoleSelection = isAuthenticated && !hasSelectedRole;
+   const isWorldIdVerified = effectiveUser?.isWorldId === 'ACTIVE' || hasWorldIdJustVerified;
+   const showVerify = !isWorldIdVerified;
    const storeIsBorrower = useIsBorrower();
    const isBorrower = isLenderTourPreview ? false : isReferralTestMode || storeIsBorrower;
+   const { data: lenderPointsData } = useQuery({
+      queryKey: ['request-board-user-points', effectiveUser?.id],
+      queryFn: async () => {
+         const supabase = getSupabaseBrowserClient();
+         const { data, error } = await supabase.from('user_points').select('points_total').eq('user_id', effectiveUser!.id).maybeSingle();
+         if (error) throw error;
+         return data;
+      },
+      enabled: !isBorrower && !isLenderTourPreview && Boolean(effectiveUser?.id)
+   });
+   const lenderIouPoints = isLenderTourPreview ? String(effectiveUser?.cs ?? 0) : formatPointsMajor(lenderPointsData?.points_total ?? 0);
    const tourUserId = effectiveUser?.id;
    const shouldShowBorrowerTour =
       showTourPreview &&
@@ -205,13 +230,7 @@ function RequestBoard$() {
       return floanRequests.filter((loan) => loan.borrowerUser === borrowerUserId);
    }, [borrowerUserId, floanRequests]);
    const usedCreditAmount = useMemo(() => {
-      return borrowerCreditLoans
-         .filter(
-            (loan) =>
-               loan.loanStatus === LoanStatus.REQUESTED ||
-               (loan.loanStatus === LoanStatus.LENT && loan.repaymentStatus !== RepaymentStatus.PAID)
-         )
-         .reduce((sum, loan) => sum + Number(loan.loanAmount || 0), 0);
+      return getBorrowerUsedCreditAmount(borrowerCreditLoans);
    }, [borrowerCreditLoans]);
    const availableCreditLimit = Math.max(effectiveCreditLimit - usedCreditAmount, 0);
    const canUseReferralBoost =
@@ -222,7 +241,14 @@ function RequestBoard$() {
          effectiveCreditLimit <= STARTING_CREDIT_LIMIT &&
          borrowerCreditLoans.length === 0);
    const baseWalletLock = getBaseWalletLockStatus(effectiveUser);
-   const hasBorrowerBaseWallet = !IS_BORROWER_BASE_WALLET_GATE_ENABLED || baseWalletLock.isConfirmedBase;
+   const hasBorrowerBaseWallet =
+      !IS_BORROWER_BASE_WALLET_GATE_ENABLED ||
+      isBaseWalletReadyForRepayment({
+         connectedAddress: connectedWallet.address,
+         connectorId: connectedWallet.connector?.id,
+         connectorName: connectedWallet.connector?.name,
+         wallet: effectiveUser
+      });
    const shouldOpenLoanRequest =
       (location.state as { openLoanRequest?: boolean } | null)?.openLoanRequest === true ||
       new URLSearchParams(location.search).get('applyLoan') === '1';
@@ -237,6 +263,10 @@ function RequestBoard$() {
       () => setShowPublicQuestions(false),
       showPublicQuestions
    ) as RefObject<HTMLDivElement>;
+   const worldIdHighlightRef = useClickOutside<HTMLDivElement>(
+      () => setShowWorldIdHighlight(false),
+      showWorldIdHighlight
+   ) as RefObject<HTMLDivElement>;
 
    const [filters, setFilters] = useState<LoanFilters>({
       amount: '',
@@ -248,6 +278,21 @@ function RequestBoard$() {
       search: '',
       sortBy: undefined
    });
+
+   useEffect(() => {
+      if (showWorldIdSuccessPreview) {
+         setHasWorldIdJustVerified(true);
+         setShowWorldIdHighlight(true);
+      }
+   }, [showWorldIdSuccessPreview]);
+
+   useEffect(() => {
+      if (!showWorldIdHighlight) return;
+      if (holdWorldIdSuccessPreview) return;
+
+      const timeoutId = window.setTimeout(() => setShowWorldIdHighlight(false), 5000);
+      return () => window.clearTimeout(timeoutId);
+   }, [holdWorldIdSuccessPreview, showWorldIdHighlight]);
 
    const clear = () => {
       setTotalRepaymentAmount('');
@@ -713,6 +758,12 @@ function RequestBoard$() {
          .catch(() => undefined);
    }, [isBorrower, user?.id, dispatch]);
 
+   useLayoutEffect(() => {
+      if (typeof window === 'undefined' || window.location.hash) return;
+
+      window.scrollTo(0, 0);
+   }, [pathname]);
+
    useEffect(() => {
       if (typeof window !== 'undefined' && window.location.hash) {
          const element = document.getElementById(window.location.hash.replace('#', ''));
@@ -737,7 +788,12 @@ function RequestBoard$() {
 
    const filteredLoans = useMemo(() => {
       const allFilters: LoanFilters = { ...filters, search: searchLoan, sortBy: filters.sortBy };
-      return filterLoans(floanRequests, allFilters, customAmount, userProfiles);
+      return filterLoans(
+         floanRequests.filter((loan) => isRequestBoardLoanVisible(loan)),
+         allFilters,
+         customAmount,
+         userProfiles
+      );
    }, [filters, searchLoan, floanRequests, customAmount, userProfiles]);
 
    useEffect(() => {
@@ -758,6 +814,11 @@ function RequestBoard$() {
 
    const firstName = user?.username?.split(' ')[0] || user?.username || 'there';
    const displayFirstName = effectiveUser?.username?.split(' ')[0] || effectiveUser?.username || firstName;
+   const accountEditPath = (edit: 'avatar' | 'name') => {
+      const params = new URLSearchParams(location.search);
+      params.set('edit', edit);
+      return `/account/settings?${params.toString()}`;
+   };
    const visibleLoans = shouldShowLenderTour && displayedLoans.length === 0 ? LENDER_TOUR_LOANS : displayedLoans;
    const isListLoading = isLoading && !shouldShowLenderTour;
 
@@ -773,46 +834,98 @@ function RequestBoard$() {
                         <div className="flex flex-col gap-1">
                            <button
                               type="button"
-                              onClick={() => navigate('/account/settings')}
+                              onClick={() => navigate(accountEditPath('name'))}
                               className="w-fit rounded-md-sm text-left text-md-h5 font-semibold text-md-primary-2000 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                              aria-label="Edit display name"
                            >
                               Hello, {displayFirstName}
                            </button>
-                           {isBorrower ? (
+                           {needsRoleSelection ? (
+                              <Link
+                                 to="/onboarding/role"
+                                 className="inline-flex w-fit items-center gap-1 rounded-md-sm bg-md-primary-100 px-2 py-1 text-md-b3 font-semibold text-md-primary-1200 underline-offset-2 hover:underline"
+                              >
+                                 Role not selected
+                              </Link>
+                           ) : isBorrower ? (
                               <div className="flex items-center gap-2">
                                  {showVerify ? (
-                                    <>
-                                       <span className="inline-flex items-center gap-1 px-md-1 py-md-0 bg-md-red-100 rounded-md-sm">
-                                          <span className="w-3 h-3 rounded-full bg-md-red-800 flex items-center justify-center">
-                                             <span className="text-white text-[8px] font-bold">!</span>
-                                          </span>
-                                          <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
-                                       </span>
-                                       <WorldIDVerification>
-                                          {({ open }) => (
-                                             <button
-                                                onClick={open}
-                                                className="text-md-b3 font-semibold text-md-primary-900 underline"
-                                                data-tour-target="request-verify-world-id-link"
-                                             >
+                                    <WorldIDVerification
+                                       showSuccessToast={false}
+                                       onSuccess={() => {
+                                          setHasWorldIdJustVerified(true);
+                                          setShowWorldIdHighlight(true);
+                                       }}
+                                    >
+                                       {({ open }) => (
+                                          <button
+                                             type="button"
+                                             onClick={open}
+                                             className="inline-flex items-center gap-2 rounded-md-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                                             data-tour-target="request-verify-world-id-link"
+                                             aria-label="Verify World ID"
+                                          >
+                                             <span className="inline-flex items-center gap-1 px-md-1 py-md-0 bg-md-red-100 rounded-md-sm">
+                                                <span className="w-3 h-3 rounded-full bg-md-red-800 flex items-center justify-center">
+                                                   <span className="text-white text-[8px] font-bold">!</span>
+                                                </span>
+                                                <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
+                                             </span>
+                                             <span className="text-md-b3 font-semibold text-md-primary-900 underline">
                                                 {'Verify World ID >'}
-                                             </button>
-                                          )}
-                                       </WorldIDVerification>
-                                    </>
+                                             </span>
+                                          </button>
+                                       )}
+                                    </WorldIDVerification>
                                  ) : (
-                                    <span className="inline-flex items-center gap-1 px-md-1 py-md-0 bg-md-green-100 rounded-md-sm">
-                                       <span className="w-3 h-3 rounded-full bg-md-green-900 flex items-center justify-center">
-                                          <span className="text-white text-[8px] font-bold">&#10003;</span>
+                                    <div ref={worldIdHighlightRef} className="relative">
+                                       <span
+                                          className={`inline-flex items-center gap-1 rounded-md-sm bg-md-green-100 px-md-1 py-md-0 transition-shadow duration-200 ${
+                                             showWorldIdHighlight
+                                                ? 'ring-2 ring-md-green-900/40 ring-offset-2 ring-offset-md-neutral-200'
+                                                : ''
+                                          }`}
+                                       >
+                                          <span className="w-3 h-3 rounded-full bg-md-green-900 flex items-center justify-center">
+                                             <span className="text-white text-[8px] font-bold">&#10003;</span>
+                                          </span>
+                                          <span className="text-md-b3 font-semibold text-md-green-900">Verified</span>
                                        </span>
-                                       <span className="text-md-b3 font-semibold text-md-green-900">Verified</span>
-                                    </span>
+                                       {showWorldIdHighlight && (
+                                          <div
+                                             role="status"
+                                             className="absolute left-0 top-[calc(100%+8px)] z-[75] w-[268px] rounded-[18px] border border-md-green-100 bg-[#fdfbfd] p-md-3 text-left shadow-[0_16px_42px_rgba(36,14,62,0.16)]"
+                                          >
+                                             <div className="flex items-start justify-between gap-md-2">
+                                                <div className="flex min-w-0 gap-md-2">
+                                                   <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-md-green-100 text-md-green-900">
+                                                      <CheckCircle2 className="size-4" strokeWidth={2.4} />
+                                                   </span>
+                                                   <div>
+                                                      <p className="text-md-b2 font-semibold text-md-heading">You are now verified.</p>
+                                                      <p className="mt-0.5 text-md-b3 font-medium leading-[1.4] text-md-neutral-800">
+                                                         Lenders will see this status on your loan requests.
+                                                      </p>
+                                                   </div>
+                                                </div>
+                                                <button
+                                                   type="button"
+                                                   onClick={() => setShowWorldIdHighlight(false)}
+                                                   aria-label="Dismiss verification message"
+                                                   className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-md-neutral-200 text-md-neutral-1000"
+                                                >
+                                                   <X className="size-4" strokeWidth={2.25} />
+                                                </button>
+                                             </div>
+                                          </div>
+                                       )}
+                                    </div>
                                  )}
                               </div>
                            ) : (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-md-primary-900 rounded-md-sm w-fit">
                                  <span className="text-md-b3 font-semibold text-md-neutral-100 capitalize whitespace-nowrap">
-                                    IOU {effectiveUser?.cs?.toLocaleString() ?? '0'}
+                                    IOU {lenderIouPoints}
                                  </span>
                               </span>
                            )}
@@ -859,14 +972,41 @@ function RequestBoard$() {
                   <div className="flex flex-col gap-1" data-tour-target="request-board-title">
                      <h1 className="text-md-h3 font-semibold text-md-heading">Microloan Request Board</h1>
                      <p className="text-md-b2 font-medium text-md-neutral-700">
-                        {isAuthenticated
-                           ? 'Browse requests posted on Moodeng, or jump right in and get verified to start borrowing in USDC.'
-                           : 'Browse requests publicly.'}
+                        {needsRoleSelection
+                           ? 'Browse requests now. Choose a role when you are ready to borrow or lend.'
+                           : isAuthenticated
+                             ? 'Browse requests posted on Moodeng, or jump right in and get verified to start borrowing in USDC.'
+                             : 'Browse requests publicly.'}
                      </p>
                   </div>
 
+                  {needsRoleSelection ? (
+                     <div className="relative overflow-hidden rounded-md-lg border border-md-primary-300 bg-md-primary-100 p-4 pr-[120px] shadow-md-card max-[374px]:pr-[104px]">
+                        <div className="relative z-10 flex flex-col gap-3">
+                           <div className="flex max-w-[286px] flex-col gap-1 max-[374px]:max-w-[220px]">
+                              <p className="text-md-h5 font-semibold text-md-heading">Choose how you’ll use Moodeng</p>
+                              <p className="text-md-b2 font-medium text-md-neutral-800">
+                                 Pick borrower or lender to unlock your dashboard, repayment, and history.
+                              </p>
+                           </div>
+                           <Link
+                              to="/onboarding/role"
+                              className="inline-flex w-fit items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100"
+                           >
+                              Choose role
+                           </Link>
+                        </div>
+                        <img
+                           src="/hippos/sitting-down-pointing-hippo.png"
+                           alt=""
+                           className="pointer-events-none absolute bottom-[-6px] right-1 h-[132px] w-[132px] object-contain max-[374px]:bottom-[-4px] max-[374px]:right-0 max-[374px]:h-[116px] max-[374px]:w-[116px]"
+                           aria-hidden="true"
+                        />
+                     </div>
+                  ) : null}
+
                   {/* Apply Loan Card — visible for authenticated borrowers, or as CTA for public */}
-                  {isAuthenticated && isBorrower ? (
+                  {isAuthenticated && isBorrower && hasSelectedRole ? (
                      <div
                         className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3"
                         data-tour-target="request-apply-card"
@@ -1001,7 +1141,9 @@ function RequestBoard$() {
                               </div>
                            ))
                         ) : (
-                           <div className="text-center py-20 text-md-neutral-1200 text-md-b2">No loan requests found.</div>
+                           <div className="text-center py-20 text-md-neutral-1200 text-md-b2">
+                              {needsRoleSelection ? 'Public requests will appear here when available.' : 'No loan requests found.'}
+                           </div>
                         )}
                      </div>
 
@@ -1161,11 +1303,11 @@ function PublicQuestionsMenu({
                Take tour
             </Link>
             <Link
-               to="/support/faq"
+               to="/support/getting-started"
                onClick={onClose}
                className="rounded-md-lg border border-md-primary-200 bg-md-primary-100 px-md-3 py-md-3 text-center text-md-b2 font-semibold text-md-primary-1200"
             >
-               View FAQ
+               See more
             </Link>
          </div>
       </div>
