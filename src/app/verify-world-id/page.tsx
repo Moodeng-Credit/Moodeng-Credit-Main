@@ -1,15 +1,22 @@
+import { useCallback, useEffect } from 'react';
+
+import { useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
+import type { RootState } from '@/store/store';
+import { WorldId } from '@/types/authTypes';
+
 export default function WorldIdVerification() {
    const navigate = useNavigate();
    const location = useLocation();
+   const user = useSelector((state: RootState) => state.auth.user);
    const isPreview = import.meta.env.DEV && location.pathname.includes('preview');
    const returnTo =
       (location.state as { returnTo?: string } | null)?.returnTo || new URLSearchParams(location.search).get('returnTo') || undefined;
 
-   const handleVerified = () => {
+   const handleVerified = useCallback(() => {
       if (!isPreview && returnTo === 'loan-request') {
          navigate('/request-board', { replace: true, state: { openLoanRequest: true } });
          return;
@@ -23,7 +30,15 @@ export default function WorldIdVerification() {
          return;
       }
       navigate(isPreview ? '/onboarding/congratulations-preview' : '/onboarding/congratulations', { replace: true });
-   };
+   }, [isPreview, returnTo, navigate]);
+
+   // Redirect when user becomes verified — handles both normal flow and page-reload
+   // recovery (mobile: World App redirect can reload the page, losing IDKit session)
+   useEffect(() => {
+      if (user?.isWorldId === WorldId.ACTIVE) {
+         handleVerified();
+      }
+   }, [user?.isWorldId, handleVerified]);
 
    return (
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col items-center justify-center max-w-modal mx-auto w-full px-md-4 py-md-5">
