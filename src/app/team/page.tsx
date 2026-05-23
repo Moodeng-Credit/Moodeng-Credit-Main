@@ -80,6 +80,19 @@ function Portrait({ name, image, initial }: { name: string; image?: string; init
    );
 }
 
+function LinkedInButton({ href, className = '' }: { href: string; className?: string }) {
+   return (
+      <a
+         href={href}
+         target="_blank"
+         rel="noreferrer"
+         className={`inline-flex h-11 items-center justify-center rounded-md-pill border-2 border-[#f4d756] bg-md-primary-1600 px-md-3 text-md-b2 font-bold text-[#fff9e8] shadow-[0_5px_0_rgba(13,47,111,0.22)] transition hover:-translate-y-0.5 hover:bg-md-primary-1400 focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-md-primary-1600 ${className}`}
+      >
+         LinkedIn Profile
+      </a>
+   );
+}
+
 export default function TeamPage() {
    return (
       <section className="bg-[#f3d354] px-md-4 py-md-6 text-md-primary-2000 md:py-md-8">
@@ -108,14 +121,7 @@ export default function TeamPage() {
                      <div className="mt-md-3">
                         <CredentialPills items={member.credentials} light={member.name === 'Emma'} />
                      </div>
-                     <a
-                        href={member.linkedIn}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mx-auto mt-md-3 inline-flex h-10 items-center justify-center rounded-md-pill bg-md-primary-1600 px-md-3 text-md-b2 font-semibold text-[#fff9e8]"
-                     >
-                        LinkedIn Profile
-                     </a>
+                     <LinkedInButton href={member.linkedIn} className="mx-auto mt-md-3" />
                   </article>
                ))}
             </div>
@@ -153,14 +159,7 @@ export default function TeamPage() {
                         <div className="mt-md-2">
                            <CredentialPills items={advisor.credentials} light />
                         </div>
-                        <a
-                           href={advisor.linkedIn}
-                           target="_blank"
-                           rel="noreferrer"
-                           className="mt-md-3 inline-flex h-10 items-center justify-center rounded-md-pill border border-[#fff9e8]/50 px-md-3 text-md-b2 font-semibold text-[#fff9e8]"
-                        >
-                           LinkedIn Profile
-                        </a>
+                        <LinkedInButton href={advisor.linkedIn} className="mt-md-3" />
                      </div>
                   </article>
                ))}
