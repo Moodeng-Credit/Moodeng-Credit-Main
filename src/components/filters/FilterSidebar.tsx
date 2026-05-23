@@ -23,16 +23,23 @@ const tabs: { id: FilterTab; label: string }[] = [
    { id: 'type', label: 'Type' }
 ];
 
-export default function FilterSidebar({
-   filters,
-   onFiltersChange,
-   customAmount,
-   onCustomAmountChange,
-   onClose
-}: FilterSidebarProps) {
+function hasTabSelection(tab: FilterTab, filters: LoanFilters, customAmount: string): boolean {
+   if (tab === 'amount') return Boolean(filters.amount || customAmount.trim());
+   if (tab === 'rate') return Boolean(filters.rate);
+   if (tab === 'date') return Boolean(filters.date || filters.loanTime);
+   return Boolean(filters.borrowType?.length);
+}
+
+function hasAnySelection(filters: LoanFilters, customAmount: string): boolean {
+   return tabs.some((tab) => hasTabSelection(tab.id, filters, customAmount));
+}
+
+export default function FilterSidebar({ filters, onFiltersChange, customAmount, onCustomAmountChange, onClose }: FilterSidebarProps) {
    const [activeTab, setActiveTab] = useState<FilterTab>('amount');
    const [draftFilters, setDraftFilters] = useState<LoanFilters>(filters);
    const [draftCustomAmount, setDraftCustomAmount] = useState(customAmount);
+   const [validationErrorTab, setValidationErrorTab] = useState<FilterTab | null>(null);
+   const validationMessageId = useId();
    const dragStartY = useRef<number | null>(null);
    const dragOffsetRef = useRef(0);
    const sideSwipeStart = useRef<{ x: number; y: number } | null>(null);
@@ -43,11 +50,14 @@ export default function FilterSidebar({
    useEffect(() => {
       setDraftFilters(filters);
       setDraftCustomAmount(customAmount);
+      setValidationErrorTab(null);
    }, [filters, customAmount]);
 
    const selectedBorrowTypes = useMemo(() => draftFilters.borrowType || [], [draftFilters.borrowType]);
+   const validationTabLabel = validationErrorTab ? tabs.find((tab) => tab.id === validationErrorTab)?.label : null;
 
    const updateDraft = (nextFilters: Partial<LoanFilters>) => {
+      setValidationErrorTab(null);
       setDraftFilters((prev) => {
          const updated = { ...prev, ...nextFilters };
          if ('loanTime' in nextFilters && nextFilters.loanTime) updated.date = null;
@@ -64,6 +74,7 @@ export default function FilterSidebar({
    };
 
    const toggleBorrowType = (value: string) => {
+      setValidationErrorTab(null);
       updateDraft({
          borrowType: selectedBorrowTypes.includes(value)
             ? selectedBorrowTypes.filter((type) => type !== value)
@@ -71,7 +82,17 @@ export default function FilterSidebar({
       });
    };
 
+   const handleTabChange = (tab: FilterTab) => {
+      setValidationErrorTab(null);
+      setActiveTab(tab);
+   };
+
    const applyFilters = () => {
+      if (!hasAnySelection(draftFilters, draftCustomAmount) && !hasAnySelection(filters, customAmount)) {
+         setValidationErrorTab(activeTab);
+         return;
+      }
+
       onCustomAmountChange(draftCustomAmount);
       onFiltersChange({
          amount: draftFilters.amount || '',
@@ -206,7 +227,7 @@ export default function FilterSidebar({
                      <button
                         key={tab.id}
                         type="button"
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => handleTabChange(tab.id)}
                         className={`filter-control shrink-0 rounded-[10px] border px-3.5 py-2 text-md-b3 font-medium whitespace-nowrap transition-all duration-150 ${
                            activeTab === tab.id
                               ? 'border-[1.5px] border-[#E3D6FF] bg-white text-[#111111] shadow-[0_4px_12px_rgba(100,60,180,0.10)]'
@@ -220,8 +241,18 @@ export default function FilterSidebar({
             </div>
 
             <div className="flex-1 overflow-y-auto border-t border-[#eee8f7] px-md-4 pb-6 pt-4">
+               {validationTabLabel ? (
+                  <div
+                     id={validationMessageId}
+                     role="alert"
+                     className="mb-3 rounded-[12px] border border-[#f5b5b5] bg-[#fff5f5] px-3 py-2 text-sm font-medium leading-5 text-[#b42318] shadow-[0_6px_18px_rgba(180,35,24,0.12)]"
+                  >
+                     Pick one {validationTabLabel} option before applying a filter.
+                  </div>
+               ) : null}
+
                {activeTab === 'amount' ? (
-                  <FilterSection title="Credit Limit">
+                  <FilterSection title="Credit Limit" hasError={validationErrorTab === 'amount'} errorMessageId={validationMessageId}>
                      <div className="grid grid-cols-2 gap-2">
                         {LOAN_AMOUNTS.map((amount) => (
                            <FilterChip
@@ -239,6 +270,8 @@ export default function FilterSidebar({
                   <FilterSection
                      title="Payback Amount"
                      tooltip="Payback is the total amount the borrower agrees to return. This filters the extra payback above the loan principal. Example: a $10 loan with a $13 payback is 30%."
+                     hasError={validationErrorTab === 'rate'}
+                     errorMessageId={validationMessageId}
                   >
                      <div className="grid grid-cols-2 gap-2">
                         {REPAYMENT_RATES.map((rate) => (
@@ -254,7 +287,7 @@ export default function FilterSidebar({
                ) : null}
 
                {activeTab === 'date' ? (
-                  <FilterSection title="Repayment Date">
+                  <FilterSection title="Repayment Date" hasError={validationErrorTab === 'date'} errorMessageId={validationMessageId}>
                      <div className="grid grid-cols-2 gap-2">
                         {LOAN_TIME_PERIODS.map((period) => (
                            <FilterChip
@@ -269,7 +302,7 @@ export default function FilterSidebar({
                ) : null}
 
                {activeTab === 'type' ? (
-                  <FilterSection title="Borrow Type">
+                  <FilterSection title="Borrow Type" hasError={validationErrorTab === 'type'} errorMessageId={validationMessageId}>
                      <div className="grid grid-cols-2 gap-2">
                         {BORROW_TYPES.map((type) => (
                            <FilterChip
@@ -298,12 +331,24 @@ export default function FilterSidebar({
    );
 }
 
-function FilterSection({ title, tooltip, children }: { title: string; tooltip?: string; children: ReactNode }) {
+function FilterSection({
+   title,
+   tooltip,
+   children,
+   hasError = false,
+   errorMessageId
+}: {
+   title: string;
+   tooltip?: string;
+   children: ReactNode;
+   hasError?: boolean;
+   errorMessageId?: string;
+}) {
    const [isTooltipOpen, setIsTooltipOpen] = useState(false);
    const tooltipId = useId();
 
    return (
-      <div>
+      <section aria-describedby={hasError ? errorMessageId : undefined} aria-invalid={hasError || undefined}>
          <div className="mb-3 flex items-center gap-1.5">
             <h3 className="text-md-b1 font-normal text-md-heading">{title}</h3>
             {tooltip ? (
@@ -331,8 +376,16 @@ function FilterSection({ title, tooltip, children }: { title: string; tooltip?: 
                </span>
             ) : null}
          </div>
-         {children}
-      </div>
+         <div
+            className={`-m-1 rounded-[14px] border p-1 transition-all duration-150 ${
+               hasError
+                  ? 'border-[#f04438] bg-[#fff7f7] shadow-[0_0_0_3px_rgba(240,68,56,0.12),0_8px_20px_rgba(180,35,24,0.10)]'
+                  : 'border-transparent'
+            }`}
+         >
+            {children}
+         </div>
+      </section>
    );
 }
 
