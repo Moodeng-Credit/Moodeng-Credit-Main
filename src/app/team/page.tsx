@@ -23,7 +23,7 @@ const widerTeam = [
       role: 'Member of Technical Team',
       image: '/team/yousef.jpg',
       bio: 'Supports engineering across the Moodeng Credit buildout, helping turn product direction into working borrower and lender experiences.',
-      linkedInPending: true
+      showLinkedInPlaceholder: true
    },
    {
       name: 'Louis',
@@ -44,8 +44,8 @@ const advisors = [
       name: 'Jon Brownstead',
       role: 'Advisor',
       image: '/team/jon-brownstead.jpeg',
-      bio: 'US Army professional and Tarleton State University alumnus advising Moodeng Credit on disciplined operations, leadership, and trust-building as the network grows.',
-      credentials: ['US Army', 'Tarleton State University', 'Leadership & Operations'],
+      bio: 'Founder of Mercury Labs and a current US Army professional advising Moodeng Credit on marketing strategy, brand positioning, and disciplined growth as the network expands.',
+      credentials: ['US Army', 'Founder, Mercury Labs', 'Marketing Strategy'],
       linkedIn: 'https://www.linkedin.com/in/johnhenrybrownstead'
    }
 ];
@@ -94,13 +94,13 @@ function LinkedInButton({ href, className = '' }: { href: string; className?: st
    );
 }
 
-function PendingLinkedInButton({ className = '' }: { className?: string }) {
+function LinkedInPlaceholderButton({ className = '' }: { className?: string }) {
    return (
       <span
          aria-disabled="true"
          className={`inline-flex h-11 items-center justify-center rounded-md-pill border-2 border-[#f4d756]/70 bg-[#173f7d] px-md-3 text-md-b2 font-bold text-[#fff9e8]/85 shadow-[0_5px_0_rgba(7,27,67,0.22)] ${className}`}
       >
-         LinkedIn Pending
+         LinkedIn Profile
       </span>
    );
 }
@@ -150,7 +150,9 @@ export default function TeamPage() {
                         {member.role}
                      </p>
                      <p className="mx-auto mt-md-2 max-w-[280px] text-md-b2 font-medium leading-relaxed text-[#fff9e8]/90">{member.bio}</p>
-                     {'linkedInPending' in member && member.linkedInPending ? <PendingLinkedInButton className="mx-auto mt-md-3" /> : null}
+                     {'showLinkedInPlaceholder' in member && member.showLinkedInPlaceholder ? (
+                        <LinkedInPlaceholderButton className="mx-auto mt-md-3" />
+                     ) : null}
                   </article>
                ))}
             </div>
