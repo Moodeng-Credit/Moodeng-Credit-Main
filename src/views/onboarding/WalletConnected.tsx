@@ -115,6 +115,10 @@ export default function WalletConnected() {
          navigate('/repay', { replace: true });
          return;
       }
+      if (returnTo === 'milestones') {
+         navigate('/milestones', { replace: true });
+         return;
+      }
       const destination = user?.userRole === 'borrower' && hasActiveRequest ? '/dashboard' : '/request-board';
       navigate(destination, { replace: true });
    };
