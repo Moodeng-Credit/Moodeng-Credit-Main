@@ -198,15 +198,15 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
                </div>
                <h2 className="mb-4 px-md-4 text-md-h5 font-semibold text-md-heading [text-shadow:0_1px_2px_rgba(0,0,0,0.03)]">Filters</h2>
 
-               <div className="flex gap-1.5 px-md-4 pb-3 overflow-x-auto">
+               <div className="flex items-center gap-1.5 overflow-x-auto px-md-4 pb-3">
                   {tabs.map((tab) => (
                      <button
                         key={tab.id}
                         type="button"
                         onClick={() => handleTabChange(tab.id)}
-                        className={`filter-control shrink-0 rounded-[10px] border px-3.5 py-2 text-md-b3 font-medium whitespace-nowrap transition-all duration-150 ${
+                        className={`filter-control flex h-12 shrink-0 items-center justify-center rounded-[10px] border px-3.5 text-md-b3 font-medium leading-none whitespace-nowrap transition-all duration-150 ${
                            activeTab === tab.id
-                              ? 'border-[#7C2DFF] bg-[#F7F2FF] text-[#5B16E8] shadow-[0_0_0_5px_rgba(124,45,255,0.14),0_6px_16px_rgba(96,16,210,0.18)]'
+                              ? 'border-[#7C2DFF] bg-[#F7F2FF] text-[#5B16E8] shadow-[0_3px_10px_rgba(96,16,210,0.14),inset_0_0_0_1px_rgba(124,45,255,0.45)]'
                               : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_2px_8px_rgba(82,57,130,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_3px_10px_rgba(82,57,130,0.11),inset_0_1px_0_rgba(255,255,255,0.92)]'
                         }`}
                      >
