@@ -22,7 +22,7 @@ function clickButton(container: HTMLElement, text: string) {
    });
 }
 
-describe('FilterSidebar validation', () => {
+describe('FilterSidebar live filtering', () => {
    let container: HTMLDivElement;
    let root: Root;
    let onFiltersChange: ReturnType<typeof vi.fn>;
@@ -59,28 +59,40 @@ describe('FilterSidebar validation', () => {
       });
    };
 
-   it('warns instead of applying when no filter option is selected', () => {
+   it('shows a non-blurring sheet without an apply button', () => {
       renderFilterSidebar();
 
-      clickButton(container, 'Apply');
-
-      expect(onFiltersChange).not.toHaveBeenCalled();
-      expect(onClose).not.toHaveBeenCalled();
-      expect(container.textContent).toContain('Pick one Credit Limit option before applying a filter.');
-      expect(container.querySelector('[aria-invalid="true"]')).toBeTruthy();
+      expect(container.textContent).not.toContain('Apply');
+      expect(container.querySelector('[aria-label="Close filters"]')?.getAttribute('class')).not.toContain('backdrop-blur');
+      expect(container.querySelector('[aria-label="Close filters"]')?.getAttribute('class')).not.toContain('bg-black');
    });
 
-   it('applies after the user picks an option below the active filter tab', () => {
+   it('publishes filter changes immediately when the user picks an option', () => {
       renderFilterSidebar();
 
       clickButton(container, '$15 - $30');
-      clickButton(container, 'Apply');
 
       expect(onFiltersChange).toHaveBeenCalledWith(
          expect.objectContaining({
             amount: '15-30'
          })
       );
-      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(onClose).not.toHaveBeenCalled();
+   });
+
+   it('keeps the sheet open while the user combines filters across tabs', () => {
+      renderFilterSidebar();
+
+      clickButton(container, '$15 - $30');
+      clickButton(container, 'Payback %');
+      clickButton(container, '10% to 20%');
+
+      expect(onFiltersChange).toHaveBeenLastCalledWith(
+         expect.objectContaining({
+            amount: '15-30',
+            rate: '15'
+         })
+      );
+      expect(onClose).not.toHaveBeenCalled();
    });
 });
