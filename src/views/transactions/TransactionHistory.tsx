@@ -138,20 +138,13 @@ function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, s
 
 interface FilterModalProps {
    isOpen: boolean;
-   onClose: () => void;
    filters: TransactionHistoryFilterState;
    onApply: (filters: TransactionHistoryFilterState) => void;
    dropdownRef: React.RefObject<HTMLDivElement>;
    openUpward: boolean;
 }
 
-function FilterModal({ isOpen, onClose, filters, onApply, dropdownRef, openUpward }: FilterModalProps) {
-   const [draft, setDraft] = useState<TransactionHistoryFilterState>(filters);
-
-   useEffect(() => {
-      if (isOpen) setDraft(filters);
-   }, [isOpen, filters]);
-
+function FilterModal({ isOpen, filters, onApply, dropdownRef, openUpward }: FilterModalProps) {
    if (!isOpen) return null;
 
    const sortOptions: { value: TransactionHistorySortBy; label: string }[] = [
@@ -169,10 +162,6 @@ function FilterModal({ isOpen, onClose, filters, onApply, dropdownRef, openUpwar
    ];
 
    const positionClass = openUpward ? 'bottom-full mb-2' : 'top-full mt-2';
-   const applyDraft = (nextDraft: TransactionHistoryFilterState) => {
-      setDraft(nextDraft);
-      onApply(nextDraft);
-   };
 
    return (
       <div
@@ -184,9 +173,9 @@ function FilterModal({ isOpen, onClose, filters, onApply, dropdownRef, openUpwar
             {sortOptions.map((opt) => (
                <button
                   key={opt.value}
-                  onClick={() => applyDraft({ ...draft, sortBy: draft.sortBy === opt.value ? '' : opt.value })}
+                  onClick={() => onApply({ ...filters, sortBy: filters.sortBy === opt.value ? '' : opt.value })}
                   className={`w-full text-left px-3 py-2 rounded-md-md text-md-b2 transition-colors ${
-                     draft.sortBy === opt.value
+                     filters.sortBy === opt.value
                         ? 'bg-md-primary-100 text-md-primary-1200 font-semibold'
                         : 'text-md-neutral-1400 font-medium hover:bg-md-neutral-200'
                   }`}
@@ -198,14 +187,14 @@ function FilterModal({ isOpen, onClose, filters, onApply, dropdownRef, openUpwar
 
          <div className="h-px bg-md-neutral-300 mx-4" />
 
-         <div className="px-4 pt-3 pb-3">
+         <div className="px-4 pt-3 pb-4">
             <p className="text-md-b3 font-bold text-md-neutral-2000 mb-2 uppercase tracking-wide">Status</p>
             {statusOptions.map((opt) => (
                <button
                   key={opt.value}
-                  onClick={() => applyDraft({ ...draft, status: draft.status === opt.value ? '' : opt.value })}
+                  onClick={() => onApply({ ...filters, status: filters.status === opt.value ? '' : opt.value })}
                   className={`w-full text-left px-3 py-2 rounded-md-md text-md-b2 transition-colors ${
-                     draft.status === opt.value
+                     filters.status === opt.value
                         ? 'bg-md-primary-100 text-md-primary-1200 font-semibold'
                         : 'text-md-neutral-1400 font-medium hover:bg-md-neutral-200'
                   }`}
@@ -213,18 +202,6 @@ function FilterModal({ isOpen, onClose, filters, onApply, dropdownRef, openUpwar
                   {opt.label}
                </button>
             ))}
-         </div>
-
-         <div className="px-4 pb-4">
-            <button
-               onClick={() => {
-                  onApply(draft);
-                  onClose();
-               }}
-               className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b2 font-semibold py-2.5 rounded-md-lg"
-            >
-               Apply Filter
-            </button>
          </div>
       </div>
    );
@@ -422,7 +399,6 @@ export default function TransactionHistory() {
 
                      <FilterModal
                         isOpen={showFilter}
-                        onClose={() => setShowFilter(false)}
                         filters={appliedFilters}
                         onApply={handleApplyFilter}
                         dropdownRef={filterDropdownRef}
