@@ -124,7 +124,7 @@ function BorrowerConnectView({
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
          <OnboardingHeader title="Add Base Wallet" />
 
-         <div className="flex flex-1 flex-col items-center justify-center px-md-4 pb-[11vh] text-center">
+         <div className="flex flex-1 flex-col items-center justify-center px-md-4 text-center">
             <img src="/icons/base-wallet.svg" alt="Base Wallet" className="mb-md-3 size-16 rounded-md-xl" />
             <div className="mb-md-4 flex max-w-[360px] flex-col items-center gap-md-2">
                <h2 className="text-[32px] font-semibold leading-[1.12] text-md-heading">Connect Your Base Wallet</h2>
