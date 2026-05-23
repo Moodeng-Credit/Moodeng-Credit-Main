@@ -8,65 +8,67 @@ export interface UpdateEntry {
 }
 
 export const LATEST_UPDATE: UpdateEntry = {
-   slug: 'v2-0-lower-rates-faster-approvals',
-   title: 'v2.0 - Lower Rates & Faster Approvals',
-   subtitle: '30% lower rates • Under 60 second approvals',
-   publishedAt: 'Jan 18, 2024 1:00 A.M.',
-   relativeTime: '15 min ago',
-   body: `We've released version 2.0 of Moodeng Credit to make borrowing simpler, fairer, and faster.
+   slug: 'may-2026-live-filters-cleaner-borrowing',
+   title: 'Live Filters & Cleaner Borrowing Flow',
+   subtitle: 'Request Board and history filters now update as you tap',
+   publishedAt: 'May 24, 2026',
+   relativeTime: 'Latest May 2026 update',
+   body: `The Request Board and Transaction History now feel much more immediate.
 
-This update focuses on two things borrowers told us matter most: lower borrowing costs and less waiting time.
+Filters apply while you choose them, so you can narrow results without pressing an extra Apply button or losing sight of the list behind the panel. Search, amount, date, type, repayment, and status choices are easier to test quickly.
 
-Lower rates
+This release also cleans up the borrower path around loan actions:
+• unverified borrowers are guided back into onboarding before requesting a loan
+• verified borrowers without a Base Wallet go straight to the wallet step
+• filter panels stay focused on browsing instead of blocking the board
 
-We've adjusted our rate structure to better reflect borrower trust and repayment history.
-
-What this means for you:
-• Lower overall borrowing costs
-• Fairer rates as your Trust Score improves
-• Clearer repayment terms
-
-Your behaviour still matters. On-time repayments continue to strengthen your Trust Score and unlock better borrowing conditions over time.
-
-Faster approvals
-
-We've improved our request and review flow to reduce delays.
-
-You'll now see:
-• Faster loan request processing
-• Quicker approval decisions
-• Less friction between request and funding
-
-This helps you access USDC when you need it, without unnecessary waiting.`
+The goal is simple: fewer dead ends, fewer confusing taps, and a request board that updates the moment you make a choice.`
 };
 
 export const PREVIOUS_UPDATES: UpdateEntry[] = [
    {
-      slug: 'v2-1-enhanced-security-features',
-      title: 'v2.1 - Enhanced Security Features',
-      subtitle: 'Advanced encryption • Multi-factor authentication',
-      publishedAt: 'Feb 10, 2024 2:00 P.M.',
-      body: `We've strengthened account security across the platform with advanced encryption and optional multi-factor authentication.
+      slug: 'may-2026-base-wallet-world-id-onboarding',
+      title: 'Base Wallet & World ID Onboarding',
+      subtitle: 'Clearer wallet handoff • Stronger human verification flow',
+      publishedAt: 'May 23, 2026',
+      body: `Borrower onboarding has been tightened so each step leads naturally into the next.
 
-Your wallet remains the source of truth for identity, but we've added layered protections for account actions.`
+The Base Wallet screen is simpler, the connected-wallet success screen now uses the final success mark, and World ID actions are easier to understand from the Request Board and onboarding flow.
+
+This update also improves duplicate World ID handling and keeps borrowers moving through the right next step after wallet connection, verification, or a request-board action.`
    },
    {
-      slug: 'v2-2-user-friendly-dashboard',
-      title: 'v2.2 - User-Friendly Dashboard',
-      subtitle: 'Intuitive navigation • Customizable widgets',
-      publishedAt: 'Mar 5, 2024 3:00 P.M.',
-      body: `The Dashboard has been redesigned for clarity — faster access to your active loans, repayments due, and Trust Score progress.
+      slug: 'may-2026-clearer-loan-repay-states',
+      title: 'Clearer Loan & Repay States',
+      subtitle: 'Pending funding, repayment, and navigation are easier to trust',
+      publishedAt: 'May 22, 2026',
+      body: `Loan screens now do a better job showing what is actually happening.
 
-You can now rearrange widgets to focus on what matters most to you.`
+Pending requests are clearer before they are funded, repayment screens avoid misleading action states, and bottom navigation between Request Board, Repay, Dashboard, History, and Account is more reliable.
+
+These changes are designed to make the app feel calmer when money is involved: the screen should say whether a loan is waiting, active, repaid, or unavailable without making you guess.`
    },
    {
-      slug: 'v2-3-integrated-analytics-tools',
-      title: 'v2.3 - Integrated Analytics Tools',
-      subtitle: 'Real-time data tracking • Performance insights',
-      publishedAt: 'Apr 15, 2024 4:00 P.M.',
-      body: `Borrowers and lenders now get richer insights into loan performance and repayment behaviour over time.
+      slug: 'may-2026-trust-admin-readiness',
+      title: 'Trust System & Admin Readiness',
+      subtitle: 'Cleaner IOU rules • Better account status and recovery controls',
+      publishedAt: 'May 20, 2026',
+      body: `The trust layer behind Moodeng has been made more consistent.
 
-These tools help you make better decisions about when to borrow and who to lend to.`
+Lender IOU point rules are now easier to reason about, admin status controls are closer to the real account state, and recovery workflows have more reliable data to work from.
+
+Most of this work sits behind the scenes, but it matters: borrower records, lender incentives, overdue loans, and account restrictions need to line up before the product can scale safely.`
+   },
+   {
+      slug: 'may-2026-support-credit-education',
+      title: 'Support Library & Credit Education',
+      subtitle: 'Repayment guides • Credit leveling • Borrower safety content',
+      publishedAt: 'May 16, 2026',
+      body: `The support area has been refreshed around the questions borrowers and lenders actually ask.
+
+Guides now explain repayment, Trust Score, credit leveling, World ID, Base Wallet setup, and borrower safety in clearer language.
+
+We also added more educational content around portable repayment history and safer alternatives to predatory lending, so new users can understand what Moodeng is building before they request or fund a loan.`
    }
 ];
 
