@@ -3,7 +3,7 @@ const leadTeam = [
       name: 'George',
       role: 'Member of Lead Team',
       image: '/team/george.jpeg',
-      bio: 'University of Edinburgh graduate, former portfolio manager, and repeat founder bringing investing discipline to early-stage company building.',
+      bio: 'Repeat founder and product builder focused on turning messy early-stage ideas into disciplined, usable systems for real borrowers and lenders.',
       credentials: ['University of Edinburgh', 'Former Portfolio Manager', '1 Exit', '2 Prior Startups'],
       linkedIn: 'https://www.linkedin.com/in/george-l-25a4b844/'
    },
