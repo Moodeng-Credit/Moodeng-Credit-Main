@@ -6,29 +6,24 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import BorrowerVerificationBadge from '@/components/BorrowerVerificationBadge';
 import UserAvatar from '@/components/UserAvatar';
+
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
+
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
-
-type Tab = 'all' | 'active' | 'completed';
-type SortBy = 'low-to-high' | 'high-to-low' | '';
-type StatusFilter = 'new-to-old' | 'old-to-new' | 'pending' | 'active' | 'default' | '';
-interface FilterState {
-   sortBy: SortBy;
-   status: StatusFilter;
-}
-type LoanStatus = 'REPAID' | 'ACTIVE' | 'DEFAULT' | 'PENDING' | 'PARTIAL';
-
-function getLoanStatus(loan: Loan): LoanStatus {
-   if (loan.repaymentStatus === 'Paid') return 'REPAID';
-   if (loan.repaymentStatus === 'Partial') return 'PARTIAL';
-   if (loan.loanStatus === 'Requested') return 'PENDING';
-   if (new Date(loan.dueDate) < new Date()) return 'DEFAULT';
-   return 'ACTIVE';
-}
+import {
+   DEFAULT_TRANSACTION_HISTORY_FILTERS,
+   filterTransactionHistoryLoans,
+   getTransactionLoanStatus,
+   type TransactionHistoryFilterState,
+   type TransactionHistorySortBy,
+   type TransactionHistoryStatusFilter,
+   type TransactionHistoryTab,
+   type TransactionLoanStatus
+} from '@/views/transactions/transactionHistoryFilters';
 
 function formatCurrency(amount: number): string {
    return new Intl.NumberFormat('en-US', {
@@ -44,12 +39,8 @@ function formatDate(dateStr: string | undefined | null): string {
    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
 }
 
-function fundedTime(loan: Loan): number {
-   return new Date(loan.fundedAt ?? loan.updatedAt ?? loan.createdAt).getTime();
-}
-
-function StatusChip({ status }: { status: LoanStatus }) {
-   const map: Record<LoanStatus, { label: string; className: string; icon: React.ReactNode }> = {
+function StatusChip({ status }: { status: TransactionLoanStatus }) {
+   const map: Record<TransactionLoanStatus, { label: string; className: string; icon: React.ReactNode }> = {
       REPAID: {
          label: 'REPAID',
          className: 'border-md-green-700 text-md-green-700 bg-transparent',
@@ -103,23 +94,10 @@ interface TransactionRowProps {
    onClick?: () => void;
 }
 
-function TransactionRow({
-   loan,
-   counterpartyName,
-   counterpartyAvatar,
-   variant,
-   showOutOf,
-   showBadge,
-   onClick
-}: TransactionRowProps) {
-   const status = getLoanStatus(loan);
+function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, showOutOf, showBadge, onClick }: TransactionRowProps) {
+   const status = getTransactionLoanStatus(loan);
    const isBorrower = variant === 'borrower';
-   const amountColor =
-      isBorrower && showBadge
-         ? status === 'DEFAULT'
-            ? 'text-md-red-500'
-            : 'text-md-green-800'
-         : 'text-md-primary-2000';
+   const amountColor = isBorrower && showBadge ? (status === 'DEFAULT' ? 'text-md-red-500' : 'text-md-green-800') : 'text-md-primary-2000';
    const amountPrefix = isBorrower && showBadge ? '+' : '';
 
    const Content = (
@@ -133,9 +111,7 @@ function TransactionRow({
                   {isBorrower ? 'Lent by' : 'Borrowed by'} {counterpartyName}
                </span>
                <span className="w-1 h-1 rounded-full bg-md-neutral-600 shrink-0" />
-               <span className="text-md-b3 text-md-neutral-1200 shrink-0">
-                  {formatDate(loan.fundedAt ?? loan.updatedAt)}
-               </span>
+               <span className="text-md-b3 text-md-neutral-1200 shrink-0">{formatDate(loan.fundedAt ?? loan.updatedAt)}</span>
             </div>
          </div>
 
@@ -144,12 +120,8 @@ function TransactionRow({
                {amountPrefix}
                {formatCurrency(loan.loanAmount)}
             </span>
-            {showOutOf && (
-               <span className="text-md-b3 text-md-neutral-1200">
-                  out of {formatCurrency(loan.totalRepaymentAmount)}
-               </span>
-            )}
-            {showBadge && <StatusChip status={status} />}
+            {showOutOf ? <span className="text-md-b3 text-md-neutral-1200">out of {formatCurrency(loan.totalRepaymentAmount)}</span> : null}
+            {showBadge ? <StatusChip status={status} /> : null}
          </div>
       </div>
    );
@@ -167,14 +139,14 @@ function TransactionRow({
 interface FilterModalProps {
    isOpen: boolean;
    onClose: () => void;
-   filters: FilterState;
-   onApply: (filters: FilterState) => void;
+   filters: TransactionHistoryFilterState;
+   onApply: (filters: TransactionHistoryFilterState) => void;
    dropdownRef: React.RefObject<HTMLDivElement>;
    openUpward: boolean;
 }
 
 function FilterModal({ isOpen, onClose, filters, onApply, dropdownRef, openUpward }: FilterModalProps) {
-   const [draft, setDraft] = useState<FilterState>(filters);
+   const [draft, setDraft] = useState<TransactionHistoryFilterState>(filters);
 
    useEffect(() => {
       if (isOpen) setDraft(filters);
@@ -182,20 +154,25 @@ function FilterModal({ isOpen, onClose, filters, onApply, dropdownRef, openUpwar
 
    if (!isOpen) return null;
 
-   const sortOptions: { value: SortBy; label: string }[] = [
+   const sortOptions: { value: TransactionHistorySortBy; label: string }[] = [
       { value: 'low-to-high', label: 'Low to High' },
-      { value: 'high-to-low', label: 'High to Low' }
+      { value: 'high-to-low', label: 'High to Low' },
+      { value: 'new-to-old', label: 'New to Old' },
+      { value: 'old-to-new', label: 'Old to New' }
    ];
 
-   const statusOptions: { value: StatusFilter; label: string }[] = [
-      { value: 'new-to-old', label: 'New to Old' },
-      { value: 'old-to-new', label: 'Old to New' },
+   const statusOptions: { value: TransactionHistoryStatusFilter; label: string }[] = [
       { value: 'pending', label: 'Pending' },
       { value: 'active', label: 'Active' },
+      { value: 'repaid', label: 'Repaid' },
       { value: 'default', label: 'Default' }
    ];
 
    const positionClass = openUpward ? 'bottom-full mb-2' : 'top-full mt-2';
+   const applyDraft = (nextDraft: TransactionHistoryFilterState) => {
+      setDraft(nextDraft);
+      onApply(nextDraft);
+   };
 
    return (
       <div
@@ -207,7 +184,7 @@ function FilterModal({ isOpen, onClose, filters, onApply, dropdownRef, openUpwar
             {sortOptions.map((opt) => (
                <button
                   key={opt.value}
-                  onClick={() => setDraft((d) => ({ ...d, sortBy: d.sortBy === opt.value ? '' : opt.value }))}
+                  onClick={() => applyDraft({ ...draft, sortBy: draft.sortBy === opt.value ? '' : opt.value })}
                   className={`w-full text-left px-3 py-2 rounded-md-md text-md-b2 transition-colors ${
                      draft.sortBy === opt.value
                         ? 'bg-md-primary-100 text-md-primary-1200 font-semibold'
@@ -226,7 +203,7 @@ function FilterModal({ isOpen, onClose, filters, onApply, dropdownRef, openUpwar
             {statusOptions.map((opt) => (
                <button
                   key={opt.value}
-                  onClick={() => setDraft((d) => ({ ...d, status: d.status === opt.value ? '' : opt.value }))}
+                  onClick={() => applyDraft({ ...draft, status: draft.status === opt.value ? '' : opt.value })}
                   className={`w-full text-left px-3 py-2 rounded-md-md text-md-b2 transition-colors ${
                      draft.status === opt.value
                         ? 'bg-md-primary-100 text-md-primary-1200 font-semibold'
@@ -240,7 +217,10 @@ function FilterModal({ isOpen, onClose, filters, onApply, dropdownRef, openUpwar
 
          <div className="px-4 pb-4">
             <button
-               onClick={() => { onApply(draft); onClose(); }}
+               onClick={() => {
+                  onApply(draft);
+                  onClose();
+               }}
                className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b2 font-semibold py-2.5 rounded-md-lg"
             >
                Apply Filter
@@ -295,11 +275,13 @@ export default function TransactionHistory() {
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const isLoansLoading = useSelector((state: RootState) => state.loans.isLoading);
 
-   const [activeTab, setActiveTab] = useState<Tab>('all');
+   const [activeTab, setActiveTab] = useState<TransactionHistoryTab>('all');
    const [searchQuery, setSearchQuery] = useState('');
    const [showFilter, setShowFilter] = useState(false);
    const [openUpward, setOpenUpward] = useState(false);
-   const [appliedFilters, setAppliedFilters] = useState<FilterState>({ sortBy: '', status: '' });
+   const [appliedFilters, setAppliedFilters] = useState<TransactionHistoryFilterState>({
+      ...DEFAULT_TRANSACTION_HISTORY_FILTERS
+   });
 
    const filterBtnRef = useRef<HTMLButtonElement>(null);
    const filterDropdownRef = useClickOutside<HTMLDivElement>(
@@ -320,9 +302,7 @@ export default function TransactionHistory() {
       if (!user?.id) return;
       const load = async () => {
          const loans = await dispatch(getUserLoans({ userId: user.id })).unwrap();
-         const mine = (loans as Loan[]).filter((l) =>
-            isBorrower ? l.borrowerUser === user.id : l.lenderUser === user.id
-         );
+         const mine = (loans as Loan[]).filter((l) => (isBorrower ? l.borrowerUser === user.id : l.lenderUser === user.id));
          const counterpartyField = isBorrower ? 'lenderUser' : 'borrowerUser';
          const ids = [...new Set(mine.map((l) => l[counterpartyField]).filter(Boolean))] as string[];
          if (ids.length > 0) await dispatch(fetchUserProfiles(ids)).unwrap();
@@ -331,46 +311,24 @@ export default function TransactionHistory() {
    }, [dispatch, user?.id, isBorrower]);
 
    const myLoans = useMemo(
-      () =>
-         gloans.filter((l) => (isBorrower ? l.borrowerUser === user?.id : l.lenderUser === user?.id)),
+      () => gloans.filter((l) => (isBorrower ? l.borrowerUser === user?.id : l.lenderUser === user?.id)),
       [gloans, user?.id, isBorrower]
    );
 
    const visibleLoans = useMemo(() => {
-      let result = [...myLoans];
-
-      if (activeTab === 'active') result = result.filter((l) => {
-         const s = getLoanStatus(l);
-         return s === 'ACTIVE' || s === 'PARTIAL' || s === 'PENDING';
+      return filterTransactionHistoryLoans({
+         loans: myLoans,
+         activeTab,
+         searchQuery,
+         filters: appliedFilters,
+         isBorrower,
+         userProfiles
       });
-      if (activeTab === 'completed') result = result.filter((l) => getLoanStatus(l) === 'REPAID');
-
-      if (searchQuery.trim()) {
-         const q = searchQuery.toLowerCase();
-         const counterpartyField = isBorrower ? 'lenderUser' : 'borrowerUser';
-         result = result.filter(
-            (l) =>
-               l.reason?.toLowerCase().includes(q) ||
-               (userProfiles[l[counterpartyField] ?? '']?.username ?? '').toLowerCase().includes(q)
-         );
-      }
-
-      const statusMap: Record<string, LoanStatus> = { pending: 'PENDING', active: 'ACTIVE', default: 'DEFAULT' };
-      if (appliedFilters.status === 'new-to-old') result.sort((a, b) => fundedTime(b) - fundedTime(a));
-      else if (appliedFilters.status === 'old-to-new') result.sort((a, b) => fundedTime(a) - fundedTime(b));
-      else if (appliedFilters.status in statusMap) result = result.filter((l) => getLoanStatus(l) === statusMap[appliedFilters.status]);
-
-      if (appliedFilters.sortBy === 'low-to-high') result.sort((a, b) => a.loanAmount - b.loanAmount);
-      else if (appliedFilters.sortBy === 'high-to-low') result.sort((a, b) => b.loanAmount - a.loanAmount);
-
-      if (!appliedFilters.sortBy && !appliedFilters.status) result.sort((a, b) => fundedTime(b) - fundedTime(a));
-
-      return result;
    }, [myLoans, activeTab, searchQuery, appliedFilters, userProfiles, isBorrower]);
 
-   const handleApplyFilter = useCallback((filters: FilterState) => setAppliedFilters(filters), []);
+   const handleApplyFilter = useCallback((filters: TransactionHistoryFilterState) => setAppliedFilters(filters), []);
 
-   const TABS: { key: Tab; label: string }[] = [
+   const TABS: { key: TransactionHistoryTab; label: string }[] = [
       { key: 'all', label: 'All Transactions' },
       { key: 'active', label: 'Active Loans' },
       { key: 'completed', label: 'Completed' }
@@ -437,9 +395,7 @@ export default function TransactionHistory() {
 
             {/* ── Content ── */}
             <div className="flex flex-col gap-md-3 px-md-4 py-md-3">
-               {isBorrower && (
-                  <h1 className="text-md-h3 font-semibold text-md-neutral-2000">Transaction History</h1>
-               )}
+               {isBorrower ? <h1 className="text-md-h3 font-semibold text-md-neutral-2000">Transaction History</h1> : null}
 
                {/* Search + Filter */}
                <div className="flex items-center gap-md-3">
@@ -514,13 +470,9 @@ export default function TransactionHistory() {
                                  variant={isBorrower ? 'borrower' : 'lender'}
                                  showOutOf={activeTab === 'all'}
                                  showBadge={isBorrower || activeTab !== 'all'}
-                                 onClick={
-                                    isBorrower ? () => navigate(`/history/${loan.id}`) : undefined
-                                 }
+                                 onClick={isBorrower ? () => navigate(`/history/${loan.id}`) : undefined}
                               />
-                              {i < visibleLoans.length - 1 && (
-                                 <div className="h-px bg-md-neutral-300 mt-md-4" />
-                              )}
+                              {i < visibleLoans.length - 1 ? <div className="h-px bg-md-neutral-300 mt-md-4" /> : null}
                            </div>
                         );
                      })}
