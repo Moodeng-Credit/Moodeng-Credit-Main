@@ -1179,7 +1179,7 @@ function RequestBoard$() {
                               aria-pressed={hasActiveRequestFilters}
                               className={`shrink-0 rounded-[12px] border p-3 flex items-center justify-center transition-all duration-150 active:scale-[0.96] ${
                                  hasActiveRequestFilters
-                                    ? 'border-[#D8C2FF] bg-[#F3E8FF] shadow-none'
+                                    ? 'border-md-primary-900 bg-md-primary-900 shadow-none'
                                     : showFilters
                                       ? 'border-md-primary-1200 bg-white shadow-[0_0_0_5px_rgba(96,16,210,0.16),0_5px_14px_rgba(96,16,210,0.16)]'
                                       : 'border-md-primary-1200 bg-white hover:shadow-[0_0_0_4px_rgba(96,16,210,0.1),0_4px_12px_rgba(96,16,210,0.12)]'
@@ -1188,7 +1188,7 @@ function RequestBoard$() {
                               <img
                                  src="/icons/filter.png"
                                  alt=""
-                                 className="w-6 h-6"
+                                 className={`w-6 h-6 ${hasActiveRequestFilters ? 'brightness-0 invert' : ''}`}
                               />
                            </button>
                         </div>
