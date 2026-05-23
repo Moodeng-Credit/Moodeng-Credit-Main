@@ -142,7 +142,7 @@ export default function GettingStarted() {
                   </div>
                </div>
 
-               <NeedMoreHelp />
+               <NeedMoreHelp showTeamLink />
             </div>
          </div>
       </div>
