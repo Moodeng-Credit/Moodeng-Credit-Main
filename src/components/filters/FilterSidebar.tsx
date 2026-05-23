@@ -160,14 +160,14 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
 
                   .filter-control:active {
                      background: #F7F2FF !important;
-                     border-color: #C9A7FF !important;
-                     box-shadow: 0 4px 12px rgba(100, 60, 180, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
-                     transform: scale(0.98);
+                     border-color: #7C2DFF !important;
+                     box-shadow: 0 0 0 5px rgba(124, 45, 255, 0.16), 0 7px 18px rgba(96, 16, 210, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+                     transform: scale(0.97);
                   }
 
                   .filter-control:focus-visible {
-                     outline: 2px solid #C7A6FF !important;
-                     outline-offset: 3px;
+                     outline: 3px solid #C7A6FF !important;
+                     outline-offset: 4px;
                   }
 
                   .filter-control:active:focus-visible {
@@ -206,7 +206,7 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
                         onClick={() => handleTabChange(tab.id)}
                         className={`filter-control shrink-0 rounded-[10px] border px-3.5 py-2 text-md-b3 font-medium whitespace-nowrap transition-all duration-150 ${
                            activeTab === tab.id
-                              ? 'border-[1.5px] border-[#E3D6FF] bg-white text-[#111111] shadow-[0_4px_12px_rgba(100,60,180,0.10)]'
+                              ? 'border-[#7C2DFF] bg-[#F7F2FF] text-[#5B16E8] shadow-[0_0_0_5px_rgba(124,45,255,0.14),0_6px_16px_rgba(96,16,210,0.18)]'
                               : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_2px_8px_rgba(82,57,130,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_3px_10px_rgba(82,57,130,0.11),inset_0_1px_0_rgba(255,255,255,0.92)]'
                         }`}
                      >
