@@ -115,6 +115,10 @@ export default function WalletConnected() {
          navigate('/repay', { replace: true });
          return;
       }
+      if (returnTo === 'milestones') {
+         navigate('/milestones', { replace: true });
+         return;
+      }
       const destination = user?.userRole === 'borrower' && hasActiveRequest ? '/dashboard' : '/request-board';
       navigate(destination, { replace: true });
    };
@@ -123,26 +127,22 @@ export default function WalletConnected() {
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
          <OnboardingHeader hideBack />
 
-         <div className="flex flex-col flex-1 items-center justify-center px-md-4 gap-md-4">
-            <img src="/icons/check-3d.svg" alt="Success" className="size-[124px]" />
-            <h2 className="text-md-display text-md-heading text-center">Base Wallet Locked In</h2>
-            <p className="text-md-b1 font-medium text-md-neutral-700 text-center">
-               Lenders can fund loans to this wallet, and repayments should come from the same wallet.
-            </p>
-            <div className="w-full rounded-md-lg border border-md-primary-100 bg-md-primary-900/5 p-md-3">
-               <p className="text-md-b2 font-semibold text-md-heading">Why this matters</p>
-               <p className="mt-1 text-md-b2 font-medium text-md-neutral-1200">
-                  Your Base wallet is part of your borrower record. Change it only if you need to use a different wallet going forward.
+         <div className="flex flex-1 flex-col items-center justify-center px-md-4 text-center">
+            <img src="/icons/check-3d.png" alt="Success" className="mb-md-3 size-[104px]" />
+            <div className="mb-md-4 flex max-w-[360px] flex-col items-center gap-md-2">
+               <h2 className="text-[32px] font-semibold leading-[1.12] text-md-heading">Wallet Connected</h2>
+               <p className="max-w-[360px] text-md-b1 font-medium leading-7 text-md-neutral-700">
+                  Your wallet is used to build your Trust Score and receive USDC loans.
                </p>
             </div>
             <button
                type="button"
                onClick={handleNext}
                disabled={loansLoading}
-               className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
+               className="flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
             >
                {loansLoading ? 'Loading…' : returnTo === 'loan-request' ? 'Continue Application' : 'Next'}
-               {!loansLoading && (
+               {loansLoading ? null : (
                   <span
                      className="block size-6 bg-md-neutral-100"
                      style={{
@@ -157,16 +157,6 @@ export default function WalletConnected() {
                      }}
                   />
                )}
-            </button>
-            <button
-               type="button"
-               onClick={() => {
-                  if (!isPreview) disconnect();
-                  navigate(isPreview ? '/onboarding/wallet-preview' : '/onboarding/wallet', { replace: true });
-               }}
-               className="text-md-b2 font-semibold text-md-neutral-1500"
-            >
-               Change Base wallet
             </button>
          </div>
       </div>

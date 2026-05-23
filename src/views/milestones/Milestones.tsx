@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import type { RootState } from '@/store/store';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import {
@@ -12,11 +12,16 @@ import {
    MilestoneDetailSheet,
    MilestoneHelpSheet
 } from '@/views/dashboard/components/MilestoneSheets';
-import { buildReputationMilestones, type DashboardMilestone, getBorrowerLoans, getMilestoneSummary } from '@/views/dashboard/dashboardHelpers';
+import {
+   buildReputationMilestones,
+   type DashboardMilestone,
+   getBorrowerLoans,
+   getMilestoneSummary
+} from '@/views/dashboard/dashboardHelpers';
 import { getEarnedMilestonePoints, getTrustPointRewardProgress, type TrustPointRewardProgress } from '@/views/dashboard/trustPointRewards';
 import { useMilestonePointAwards } from '@/views/dashboard/useMilestonePointAwards';
-import { useTrustRewardOwnership } from '@/views/dashboard/useTrustRewardOwnership';
 import { useTrustPointTotal } from '@/views/dashboard/useTrustPointTotal';
+import { useTrustRewardOwnership } from '@/views/dashboard/useTrustRewardOwnership';
 import { useDashboardData } from '@/views/profile/components/tabs/useDashboardData';
 
 const PREVIEW_REPAID_LOANS: Loan[] = [
@@ -171,12 +176,7 @@ function RewardPreviewIcon({
    }
 
    const icon = reward.id === 'trusted-profile-badge' ? '/icons/milestone-star-box.svg' : '/icons/milestone-trophy-box.svg';
-   const wrapperClass =
-      reward.status === 'unlocked'
-         ? 'bg-[#dcfce7]'
-         : reward.status === 'next'
-           ? 'bg-[#f1ebff]'
-           : 'bg-[#f2eef8]';
+   const wrapperClass = reward.status === 'unlocked' ? 'bg-[#dcfce7]' : reward.status === 'next' ? 'bg-[#f1ebff]' : 'bg-[#f2eef8]';
 
    return (
       <div className={`flex h-11 w-11 items-center justify-center rounded-[14px] ${wrapperClass}`}>
@@ -225,7 +225,9 @@ function RewardsHelpSheet({ rewards, onClose }: { rewards: TrustPointRewardProgr
                   <div key={reward.id} className="flex items-center justify-between gap-4 rounded-[12px] bg-md-neutral-200 px-3 py-3">
                      <div className="min-w-0">
                         <p className="truncate text-[14px] font-[590] leading-5 tracking-[-0.28px] text-md-heading">{reward.title}</p>
-                        <p className="text-[12px] font-normal leading-[18px] tracking-[-0.24px] text-md-neutral-700">{reward.description}</p>
+                        <p className="text-[12px] font-normal leading-[18px] tracking-[-0.24px] text-md-neutral-700">
+                           {reward.description}
+                        </p>
                      </div>
                      <span className="shrink-0 rounded-[8px] bg-[#f1ebff] px-2.5 py-2 text-[11px] font-[590] leading-none text-md-primary-900">
                         {reward.threshold} pts
@@ -355,6 +357,30 @@ export default function Milestones() {
    const previewQuery = searchParams.toString();
    const hasUnlockedMilestones = milestones.some((milestone) => milestone.status === 'unlocked');
    const isVerified = user.isWorldId === 'ACTIVE' || isPreview;
+   const baseWalletLock = getBaseWalletLockStatus(user);
+   const hasCompletedBaseWalletSetup = isPreview || baseWalletLock.isConfirmedBase;
+   const hasFinishedBorrowerSetup = isVerified && hasCompletedBaseWalletSetup;
+   const setupCtaLabel =
+      !isVerified && !hasCompletedBaseWalletSetup ? 'Start setup' : !hasCompletedBaseWalletSetup ? 'Add Base Wallet' : 'Verify identity';
+   const setupEmptyCopy =
+      !isVerified && !hasCompletedBaseWalletSetup
+         ? 'Finish setup with World ID and a Base Wallet to unlock borrowing and start building your public trust record.'
+         : !hasCompletedBaseWalletSetup
+           ? 'Add a Base Wallet to unlock borrowing and start building your public trust record.'
+           : 'Verify your identity to unlock borrowing and start building your public trust record.';
+   const handleSetupCtaClick = useCallback(() => {
+      if (!isVerified && !hasCompletedBaseWalletSetup) {
+         navigate('/onboarding/welcome', { state: { returnTo: 'milestones' } });
+         return;
+      }
+
+      if (!hasCompletedBaseWalletSetup) {
+         navigate('/onboarding/wallet', { state: { returnTo: 'milestones' } });
+         return;
+      }
+
+      navigate('/verify-world-id', { state: { returnTo: 'milestones' } });
+   }, [hasCompletedBaseWalletSetup, isVerified, navigate]);
 
    return (
       <div className="min-h-screen bg-md-neutral-200 [font-family:'SF_Pro_Display','SF_Pro',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]">
@@ -414,11 +440,11 @@ export default function Milestones() {
                   <div className="flex min-h-[360px] flex-col items-center justify-center px-8 text-center">
                      <h3 className="text-[22px] font-medium leading-tight text-md-heading">No milestones yet</h3>
                      <p className="mt-7 text-[18px] leading-7 text-md-neutral-900">
-                        {isVerified
+                        {hasFinishedBorrowerSetup
                            ? 'Your reputation milestones will appear here as you repay loans on time.'
-                           : 'Verify your identity to unlock borrowing and start building your public trust record.'}
+                           : setupEmptyCopy}
                      </p>
-                     {isVerified ? (
+                     {hasFinishedBorrowerSetup ? (
                         <button
                            type="button"
                            onClick={() => navigate('/request-board')}
@@ -427,17 +453,13 @@ export default function Milestones() {
                            Request a loan
                         </button>
                      ) : (
-                        <WorldIDVerification>
-                           {({ open }) => (
-                              <button
-                                 type="button"
-                                 onClick={open}
-                                 className="mt-8 rounded-[16px] bg-md-primary-900 px-8 py-4 text-[18px] font-medium text-white"
-                              >
-                                 Verify identity
-                              </button>
-                           )}
-                        </WorldIDVerification>
+                        <button
+                           type="button"
+                           onClick={handleSetupCtaClick}
+                           className="mt-8 rounded-[16px] bg-md-primary-900 px-8 py-4 text-[18px] font-medium text-white"
+                        >
+                           {setupCtaLabel}
+                        </button>
                      )}
                   </div>
                ) : (

@@ -29,6 +29,10 @@ export default function WorldIdVerification() {
          navigate('/repay', { replace: true });
          return;
       }
+      if (!isPreview && returnTo === 'milestones') {
+         navigate('/milestones', { replace: true });
+         return;
+      }
       navigate(isPreview ? '/onboarding/congratulations-preview' : '/onboarding/congratulations', { replace: true });
    }, [isPreview, returnTo, navigate]);
 
