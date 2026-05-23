@@ -70,6 +70,30 @@ const GUEST_REQUEST_BOARD_TOUR_STEP_COUNT = 7;
 const DASHBOARD_TOUR_STEP_COUNT = 3;
 const TOUR_STEP_EXTRA_DURATION_MS = 3500;
 const PUBLIC_COMMON_QUESTIONS = FAQS;
+
+const getDefaultRequestFilters = (): LoanFilters => ({
+   amount: '',
+   rate: '',
+   date: null,
+   loanTime: '',
+   borrowType: [],
+   network: [],
+   search: '',
+   sortBy: undefined
+});
+
+const hasAppliedRequestFilters = (filters: LoanFilters, customAmount: string) =>
+   Boolean(
+      filters.amount ||
+      filters.rate ||
+      filters.date ||
+      filters.loanTime ||
+      filters.sortBy ||
+      (filters.borrowType?.length ?? 0) > 0 ||
+      (filters.network?.length ?? 0) > 0 ||
+      customAmount.trim()
+   );
+
 const REFERRAL_TEST_USER: User = {
    id: 'referral-test-user',
    username: 'referral-test',
@@ -268,16 +292,8 @@ function RequestBoard$() {
       showWorldIdHighlight
    ) as RefObject<HTMLDivElement>;
 
-   const [filters, setFilters] = useState<LoanFilters>({
-      amount: '',
-      rate: '',
-      date: null,
-      loanTime: '',
-      borrowType: [],
-      network: [],
-      search: '',
-      sortBy: undefined
-   });
+   const [filters, setFilters] = useState<LoanFilters>(() => getDefaultRequestFilters());
+   const hasActiveRequestFilters = useMemo(() => hasAppliedRequestFilters(filters, customAmount), [filters, customAmount]);
 
    useEffect(() => {
       if (showWorldIdSuccessPreview) {
@@ -310,6 +326,21 @@ function RequestBoard$() {
          return updated;
       });
    };
+
+   const resetRequestFilters = useCallback(() => {
+      setFilters(getDefaultRequestFilters());
+      setCustomAmount('');
+      setShowFilters(false);
+   }, []);
+
+   const handleFilterButtonClick = useCallback(() => {
+      if (hasActiveRequestFilters) {
+         resetRequestFilters();
+         return;
+      }
+
+      setShowFilters((current) => !current);
+   }, [hasActiveRequestFilters, resetRequestFilters]);
 
    const handleApplyLoanClick = (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
@@ -1087,10 +1118,19 @@ function RequestBoard$() {
                            </div>
                            {/* Filter Button */}
                            <button
-                              onClick={() => setShowFilters(!showFilters)}
-                              className="shrink-0 border border-md-primary-1200 rounded-[12px] p-3 flex items-center justify-center"
+                              type="button"
+                              onClick={handleFilterButtonClick}
+                              aria-label={hasActiveRequestFilters ? 'Clear filters' : 'Open filters'}
+                              aria-pressed={hasActiveRequestFilters}
+                              className={`shrink-0 border border-md-primary-1200 rounded-[12px] p-3 flex items-center justify-center transition-colors duration-150 ${
+                                 hasActiveRequestFilters ? 'bg-md-primary-1200 shadow-[0_4px_12px_rgba(96,16,210,0.28)]' : 'bg-white'
+                              }`}
                            >
-                              <img src="/icons/filter.png" alt="Filter" className="w-6 h-6" />
+                              <img
+                                 src="/icons/filter.png"
+                                 alt=""
+                                 className={`w-6 h-6 ${hasActiveRequestFilters ? 'brightness-0 invert' : ''}`}
+                              />
                            </button>
                         </div>
                      </div>
