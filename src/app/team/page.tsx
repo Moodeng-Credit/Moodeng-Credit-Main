@@ -22,7 +22,8 @@ const widerTeam = [
       name: 'Yousef',
       role: 'Member of Technical Team',
       image: '/team/yousef.jpg',
-      bio: 'Supports engineering across the Moodeng Credit buildout, helping turn product direction into working borrower and lender experiences.'
+      bio: 'Supports engineering across the Moodeng Credit buildout, helping turn product direction into working borrower and lender experiences.',
+      linkedInPending: true
    },
    {
       name: 'Louis',
@@ -93,6 +94,17 @@ function LinkedInButton({ href, className = '' }: { href: string; className?: st
    );
 }
 
+function PendingLinkedInButton({ className = '' }: { className?: string }) {
+   return (
+      <span
+         aria-disabled="true"
+         className={`inline-flex h-11 items-center justify-center rounded-md-pill border-2 border-[#f4d756]/70 bg-[#173f7d] px-md-3 text-md-b2 font-bold text-[#fff9e8]/85 shadow-[0_5px_0_rgba(7,27,67,0.22)] ${className}`}
+      >
+         LinkedIn Pending
+      </span>
+   );
+}
+
 export default function TeamPage() {
    return (
       <section className="bg-[#f3d354] px-md-4 py-md-6 text-md-primary-2000 md:py-md-8">
@@ -138,6 +150,7 @@ export default function TeamPage() {
                         {member.role}
                      </p>
                      <p className="mx-auto mt-md-2 max-w-[280px] text-md-b2 font-medium leading-relaxed text-[#fff9e8]/90">{member.bio}</p>
+                     {'linkedInPending' in member && member.linkedInPending ? <PendingLinkedInButton className="mx-auto mt-md-3" /> : null}
                   </article>
                ))}
             </div>
