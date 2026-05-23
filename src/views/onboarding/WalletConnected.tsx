@@ -124,7 +124,7 @@ export default function WalletConnected() {
          <OnboardingHeader hideBack />
 
          <div className="flex flex-1 flex-col items-center justify-center px-md-4 text-center">
-            <img src="/icons/check-3d.svg" alt="Success" className="mb-md-3 size-[104px]" />
+            <img src="/icons/check-3d.png" alt="Success" className="mb-md-3 size-[104px]" />
             <div className="mb-md-4 flex max-w-[360px] flex-col items-center gap-md-2">
                <h2 className="text-[32px] font-semibold leading-[1.12] text-md-heading">Wallet Connected</h2>
                <p className="max-w-[360px] text-md-b1 font-medium leading-7 text-md-neutral-700">
