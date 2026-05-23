@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 
 import SupportHeader from '@/views/support/components/SupportHeader';
-import { LATEST_UPDATE, PREVIOUS_UPDATES } from '@/views/support/data/updates';
 import { ICON_MASK_BASE } from '@/views/support/constants';
+import { LATEST_UPDATE, PREVIOUS_UPDATES } from '@/views/support/data/updates';
 
 function BookmarkIcon({ color = 'bg-md-primary-900' }: { color?: string }) {
    return (
@@ -32,7 +32,7 @@ export default function Updates() {
                   <button
                      type="button"
                      onClick={() => navigate(`/support/updates/${LATEST_UPDATE.slug}`)}
-                     className="flex items-start gap-md-2 p-md-3 rounded-md-sm-md w-full text-left"
+                     className="flex items-start gap-md-2 p-md-3 rounded-md-sm-md w-full text-left shadow-[0_18px_40px_rgba(91,22,232,0.22)]"
                      style={{
                         backgroundImage: 'linear-gradient(165.83deg, #9810fa 0%, #4f39f6 100%)'
                      }}
@@ -42,6 +42,7 @@ export default function Updates() {
                      </div>
                      <div className="flex flex-col gap-md-1 flex-1 min-w-0">
                         <div className="flex flex-col gap-1">
+                           <span className="w-fit rounded-full bg-white/15 px-2 py-0.5 text-md-b4 font-semibold text-white">Latest</span>
                            <p className="text-md-b2 font-semibold text-white">{LATEST_UPDATE.title}</p>
                            <p className="text-md-b3 text-md-primary-100">{LATEST_UPDATE.subtitle}</p>
                         </div>
@@ -54,12 +55,12 @@ export default function Updates() {
                <div className="flex flex-col gap-md-3">
                   <h2 className="text-md-h5 font-semibold text-md-heading">Previous Updates</h2>
                   <div className="flex flex-col gap-md-3">
-                     {[LATEST_UPDATE, ...PREVIOUS_UPDATES].map((update) => (
+                     {PREVIOUS_UPDATES.map((update) => (
                         <button
                            key={update.slug}
                            type="button"
                            onClick={() => navigate(`/support/updates/${update.slug}`)}
-                           className="flex items-start gap-md-2 p-md-3 border border-md-primary-100 rounded-md-sm-md bg-md-neutral-200 text-left"
+                           className="flex items-start gap-md-2 p-md-3 border border-md-primary-100 rounded-md-sm-md bg-md-neutral-200 text-left transition-colors active:bg-md-primary-100"
                         >
                            <div className="bg-md-primary-100 rounded-md-md w-8 h-8 shrink-0 flex items-center justify-center">
                               <BookmarkIcon />
