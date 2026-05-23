@@ -56,7 +56,7 @@ function CredentialPills({ items, light = false }: { items: string[]; light?: bo
             <li
                key={item}
                className={`rounded-md-pill px-md-2 py-1 text-md-b3 font-semibold ${
-                  light ? 'bg-md-neutral-100 text-md-primary-1600' : 'bg-[#f4d756] text-md-primary-2000'
+                  light ? 'bg-[#fff9e8] text-[#0d2f6f]' : 'bg-[#f4d756] text-[#071b43]'
                }`}
             >
                {item}
@@ -86,7 +86,7 @@ function LinkedInButton({ href, className = '' }: { href: string; className?: st
          href={href}
          target="_blank"
          rel="noreferrer"
-         className={`inline-flex h-11 items-center justify-center rounded-md-pill border-2 border-[#f4d756] bg-md-primary-1600 px-md-3 text-md-b2 font-bold text-[#fff9e8] shadow-[0_5px_0_rgba(13,47,111,0.22)] transition hover:-translate-y-0.5 hover:bg-md-primary-1400 focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-md-primary-1600 ${className}`}
+         className={`inline-flex h-11 items-center justify-center rounded-md-pill border-2 border-[#f4d756] bg-[#0d2f6f] px-md-3 text-md-b2 font-bold text-[#fff9e8] shadow-[0_5px_0_rgba(13,47,111,0.28)] transition hover:-translate-y-0.5 hover:bg-[#16468f] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#0d2f6f] ${className}`}
       >
          LinkedIn Profile
       </a>
@@ -140,12 +140,12 @@ export default function TeamPage() {
                ))}
             </div>
 
-            <section className="rounded-md-xl border-[5px] border-[#fff9e8] bg-md-primary-1600 p-md-4 text-center text-[#fff9e8]">
+            <section className="rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] p-md-4 text-center text-[#fff9e8]">
                <h2 className="font-serif text-md-h2 font-bold">Advisors</h2>
                {advisors.map((advisor) => (
                   <article
                      key={advisor.name}
-                     className="mx-auto mt-md-3 grid max-w-[760px] gap-md-3 rounded-md-lg border border-[#fff9e8]/50 bg-[#fff9e8]/10 p-md-4 text-center md:grid-cols-[150px_1fr] md:text-left"
+                     className="mx-auto mt-md-3 grid max-w-[760px] gap-md-3 rounded-md-lg border-2 border-[#f4d756] bg-[#173f7d] p-md-4 text-center shadow-[0_10px_0_rgba(7,27,67,0.22)] md:grid-cols-[150px_1fr] md:text-left"
                   >
                      <div className="mx-auto size-[132px] overflow-hidden rounded-md-xl border-[5px] border-[#fff9e8] bg-[#f4d756] md:mx-0">
                         <img src={advisor.image} alt={advisor.name} className="h-full w-full object-cover" />
