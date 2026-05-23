@@ -1179,7 +1179,7 @@ function RequestBoard$() {
                               aria-pressed={hasActiveRequestFilters}
                               className={`shrink-0 border border-md-primary-1200 rounded-[12px] p-3 flex items-center justify-center transition-all duration-150 active:scale-[0.96] ${
                                  hasActiveRequestFilters
-                                    ? 'bg-md-primary-1200 shadow-[0_0_0_4px_rgba(96,16,210,0.14),0_6px_16px_rgba(96,16,210,0.3)]'
+                                    ? 'bg-md-primary-1200 shadow-none'
                                     : showFilters
                                       ? 'bg-white shadow-[0_0_0_5px_rgba(96,16,210,0.16),0_5px_14px_rgba(96,16,210,0.16)]'
                                       : 'bg-white hover:shadow-[0_0_0_4px_rgba(96,16,210,0.1),0_4px_12px_rgba(96,16,210,0.12)]'
