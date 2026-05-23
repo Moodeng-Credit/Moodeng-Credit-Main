@@ -97,8 +97,8 @@ export default function TeamPage() {
    return (
       <section className="bg-[#f3d354] px-md-4 py-md-6 text-md-primary-2000 md:py-md-8">
          <div className="mx-auto flex max-w-[1120px] flex-col gap-md-5">
-            <header className="relative overflow-hidden rounded-md-xl border-[5px] border-md-primary-1600 bg-md-primary-1600 px-md-5 py-md-5 text-center text-[#fff9e8] shadow-[0_18px_0_rgba(13,47,111,0.16)] md:px-md-6 md:py-md-6">
-               <span className="inline-flex rounded-md-pill bg-[#f4d756] px-md-3 py-1 text-md-b2 font-bold text-md-primary-2000">Moodeng Credit</span>
+            <header className="relative overflow-hidden rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] px-md-5 py-md-5 text-center text-[#fff9e8] shadow-[0_18px_0_rgba(7,27,67,0.24)] md:px-md-6 md:py-md-6">
+               <span className="inline-flex rounded-md-pill bg-[#f4d756] px-md-3 py-1 text-md-b2 font-bold text-[#071b43]">Moodeng Credit</span>
                <h1 className="mt-md-2 font-serif text-[58px] font-bold leading-[0.88] md:text-[104px]">Core Team</h1>
                <p className="mx-auto mt-md-2 max-w-[660px] text-md-b1 font-medium text-[#fff9e8] md:text-md-h5">
                   Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.
