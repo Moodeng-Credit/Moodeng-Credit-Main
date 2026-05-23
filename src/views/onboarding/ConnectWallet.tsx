@@ -124,29 +124,13 @@ function BorrowerConnectView({
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
          <OnboardingHeader title="Add Base Wallet" />
 
-         <div className="flex flex-col flex-1 items-center justify-center px-md-4 gap-md-4">
-            <img src="/icons/base-account.svg" alt="Base Account" className="size-16 rounded-md-xl" />
-            <h2 className="text-md-display text-md-heading text-center">Confirm Your Base Account</h2>
-            <p className="text-md-b1 font-medium text-md-neutral-700 text-center">
-               Loans are sent to this wallet and repayments come from it. Use the Base Account you want tied to your Moodeng account.
-            </p>
-            <div className="grid w-full gap-md-2 rounded-md-lg border border-md-primary-100 bg-md-primary-900/5 p-md-3 text-left">
-               <div className="flex items-start gap-md-2">
-                  <span className="mt-1 size-2 rounded-full bg-md-primary-900" />
-                  <p className="text-md-b2 font-medium text-md-neutral-1200">Already have a Base wallet? Connect it here.</p>
-               </div>
-               <div className="flex items-start gap-md-2">
-                  <span className="mt-1 size-2 rounded-full bg-md-primary-900" />
-                  <p className="text-md-b2 font-medium text-md-neutral-1200">
-                     Need one? Choose the Base Account option when the wallet picker opens.
-                  </p>
-               </div>
-               <div className="flex items-start gap-md-2">
-                  <span className="mt-1 size-2 rounded-full bg-md-primary-900" />
-                  <p className="text-md-b2 font-medium text-md-neutral-1200">
-                     You can change it later, but your active loan history stays tied to the wallet you lock in.
-                  </p>
-               </div>
+         <div className="flex flex-1 flex-col items-center justify-center px-md-4 pb-[11vh] text-center">
+            <img src="/icons/base-wallet.svg" alt="Base Wallet" className="mb-md-3 size-16 rounded-md-xl" />
+            <div className="mb-md-4 flex max-w-[360px] flex-col items-center gap-md-2">
+               <h2 className="text-[32px] font-semibold leading-[1.12] text-md-heading">Connect Your Base Wallet</h2>
+               <p className="max-w-[360px] text-md-b1 font-medium leading-7 text-md-neutral-700">
+                  Your wallet is used to build your Trust Score and receive USDC loans.
+               </p>
             </div>
             {isPreview ? (
                <ConnectBaseAccountButton onClick={onPreviewConnect} isDisabled={isConnecting} />
@@ -164,10 +148,10 @@ function ConnectBaseAccountButton({ onClick, isDisabled }: { onClick: () => void
          type="button"
          onClick={onClick}
          disabled={isDisabled}
-         className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
+         className="flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
       >
-         {isDisabled ? 'Connecting...' : 'Connect Base Account'}
-         {!isDisabled && (
+         {isDisabled ? 'Connecting...' : 'Connect Base Wallet'}
+         {isDisabled ? null : (
             <span
                className="block size-6 bg-md-neutral-100"
                style={{
@@ -232,13 +216,13 @@ function LenderConnectView({
                         <div className="flex flex-col gap-md-0 w-full">
                            <div className="flex flex-wrap items-center gap-md-1">
                               <span className="text-md-h5 text-md-heading">{option.name}</span>
-                              {option.tag && (
+                              {option.tag ? (
                                  <span
                                     className={`inline-flex items-center justify-center px-md-1 py-md-0 rounded-md-sm text-md-b3 font-semibold ${option.tag.bgClass} ${option.tag.textClass}`}
                                  >
                                     {option.tag.label}
                                  </span>
-                              )}
+                              ) : null}
                            </div>
                            <p
                               className={`text-md-b2 font-medium ${
@@ -288,7 +272,7 @@ function LenderConnectView({
                   className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
                >
                   {isConnecting ? 'Connecting…' : selectedKey ? 'Connect Wallet' : 'Select a wallet above'}
-                  {!isConnecting && selectedKey && (
+                  {!isConnecting && selectedKey ? (
                      <span
                         className="block size-6 bg-md-neutral-100"
                         style={{
@@ -302,7 +286,7 @@ function LenderConnectView({
                            maskSize: 'contain'
                         }}
                      />
-                  )}
+                  ) : null}
                </button>
                <p className="text-md-b3 text-md-slate-500 text-center">All wallets support gasless transactions on Base network</p>
             </div>
