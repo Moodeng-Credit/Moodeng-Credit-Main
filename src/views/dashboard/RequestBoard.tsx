@@ -302,6 +302,20 @@ function RequestBoard$() {
       setAppliedReferral(null);
    };
 
+   const goToBorrowerOnboardingStart = useCallback(
+      (returnTo?: string) => {
+         setShowModal(false);
+         setShowBaseWalletGate(false);
+         navigate('/onboarding/welcome', returnTo ? { state: { returnTo } } : undefined);
+      },
+      [navigate]
+   );
+
+   const showBorrowerBaseWalletGate = useCallback(() => {
+      setShowModal(false);
+      setShowBaseWalletGate(true);
+   }, []);
+
    const handleFiltersChange = (newFilters: Partial<LoanFilters>) => {
       setFilters((prev) => {
          const updated = { ...prev, ...newFilters };
@@ -313,15 +327,27 @@ function RequestBoard$() {
 
    const handleApplyLoanClick = (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
+
+      if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
+         goToBorrowerOnboardingStart('loan-request');
+         return;
+      }
+
+      if (!hasBorrowerBaseWallet) {
+         showBorrowerBaseWalletGate();
+         return;
+      }
+
+      if (!isWorldIdVerified) {
+         setShowModal(true);
+         return;
+      }
+
       if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
-      if (!hasBorrowerBaseWallet) {
-         setShowModal(false);
-         setShowBaseWalletGate(true);
-         return;
-      }
+
       if (availableCreditLimit <= 0) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
          return;
@@ -334,6 +360,17 @@ function RequestBoard$() {
       setShowBaseWalletGate(false);
       navigate('/onboarding/wallet', { state: { returnTo: 'loan-request' } });
    }, [navigate]);
+   const handleWorldIdHeaderClick = useCallback(
+      (openWorldId: () => void) => {
+         if (!hasBorrowerBaseWallet) {
+            goToBorrowerOnboardingStart();
+            return;
+         }
+
+         openWorldId();
+      },
+      [goToBorrowerOnboardingStart, hasBorrowerBaseWallet]
+   );
    const handleRequestBoardTourStepChange = useCallback(
       (index: number) => {
          if (!isAuthenticated) {
@@ -608,17 +645,30 @@ function RequestBoard$() {
 
    useEffect(() => {
       if (!shouldOpenLoanRequest || !isAuthenticated || !isBorrower || !effectiveUser?.id) return;
+
+      if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
+         navigate('/onboarding/welcome', { replace: true, state: { returnTo: 'loan-request' } });
+         return;
+      }
+
+      if (!hasBorrowerBaseWallet) {
+         showBorrowerBaseWalletGate();
+         navigate(pathname, { replace: true, state: null });
+         return;
+      }
+
+      if (!isWorldIdVerified) {
+         setShowModal(true);
+         navigate(pathname, { replace: true, state: null });
+         return;
+      }
+
       if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          navigate(pathname, { replace: true, state: null });
          return;
       }
-      if (!hasBorrowerBaseWallet) {
-         setShowModal(false);
-         setShowBaseWalletGate(true);
-         navigate(pathname, { replace: true, state: null });
-         return;
-      }
+
       setShowModal(true);
       navigate(pathname, { replace: true, state: null });
    }, [
@@ -629,6 +679,8 @@ function RequestBoard$() {
       shouldOpenLoanRequest,
       showToastByConfig,
       hasBorrowerBaseWallet,
+      isWorldIdVerified,
+      showBorrowerBaseWalletGate,
       effectiveUser?.id,
       effectiveUser?.mal,
       effectiveUser?.nal
@@ -644,8 +696,8 @@ function RequestBoard$() {
       const parsedRepaymentAmount = Number.parseFloat(totalRepaymentAmount);
       const parsedDueDate = days ? new Date(days) : null;
 
-      if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
+      if (effectiveUser.isWorldId !== 'ACTIVE' && !hasBorrowerBaseWallet) {
+         goToBorrowerOnboardingStart('loan-request');
          return;
       }
       if (effectiveUser.isWorldId !== 'ACTIVE') {
@@ -653,8 +705,11 @@ function RequestBoard$() {
          return;
       }
       if (!hasBorrowerBaseWallet) {
-         setShowModal(false);
-         setShowBaseWalletGate(true);
+         showBorrowerBaseWalletGate();
+         return;
+      }
+      if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
+         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
       if (!loanAmount || Number.isNaN(parsedLoanAmount) || parsedLoanAmount <= 0) {
@@ -860,7 +915,7 @@ function RequestBoard$() {
                                        {({ open }) => (
                                           <button
                                              type="button"
-                                             onClick={open}
+                                             onClick={() => handleWorldIdHeaderClick(open)}
                                              className="inline-flex items-center gap-2 rounded-md-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
                                              data-tour-target="request-verify-world-id-link"
                                              aria-label="Verify World ID"

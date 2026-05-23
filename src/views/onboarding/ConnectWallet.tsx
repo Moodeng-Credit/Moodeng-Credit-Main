@@ -45,7 +45,7 @@ export default function ConnectWallet() {
    const handleConnect = useCallback(
       (key: WalletConnectorKey) => {
          if (isPreview) {
-            navigate('/onboarding/wallet-connected-preview');
+            navigate('/onboarding/wallet-connected-preview', returnTo ? { state: { returnTo } } : undefined);
             return;
          }
 
@@ -58,7 +58,7 @@ export default function ConnectWallet() {
          setUserInitiatedConnection(true);
          connect({ connector });
       },
-      [connect, connectorsByName, isPreview, navigate, showToast]
+      [connect, connectorsByName, isPreview, navigate, returnTo, showToast]
    );
 
    useEffect(() => {
@@ -86,7 +86,7 @@ export default function ConnectWallet() {
    if (role === 'borrower') {
       return (
          <BorrowerConnectView
-            onPreviewConnect={() => navigate('/onboarding/wallet-connected-preview')}
+            onPreviewConnect={() => navigate('/onboarding/wallet-connected-preview', returnTo ? { state: { returnTo } } : undefined)}
             onConnectBaseAccount={() => handleConnect('coinbase')}
             isPreview={isPreview}
             isConnecting={pendingKey === 'coinbase' || status === 'pending'}
