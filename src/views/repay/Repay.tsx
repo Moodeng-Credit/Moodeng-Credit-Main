@@ -245,6 +245,37 @@ export default function Repay() {
       connectorName: account.connector?.name,
       wallet: user
    });
+   const isWorldIdVerified = user.isWorldId === 'ACTIVE';
+   const hasCompletedBaseWalletSetup = baseWalletLock.isConfirmedBase;
+   const emptyRepayState = !selectedLoan
+      ? !isWorldIdVerified && !hasCompletedBaseWalletSetup
+         ? {
+              actionLabel: 'Start Setup',
+              body: 'Verify World ID and add a Base Wallet before requesting loans. Repayments will show here after a lender funds your first loan.',
+              onAction: () => navigate('/onboarding/welcome', { state: { returnTo: 'repay' } }),
+              title: 'Finish setup to start borrowing'
+           }
+         : !isWorldIdVerified
+           ? {
+                actionLabel: 'Verify World ID',
+                body: 'Your Base Wallet is added. Complete World ID before requesting loans. Repayments will show here after funding.',
+                onAction: () => navigate('/verify-world-id', { state: { returnTo: 'repay' } }),
+                title: 'Verify World ID to borrow'
+             }
+           : !hasCompletedBaseWalletSetup
+             ? {
+                  actionLabel: 'Add Base Wallet',
+                  body: 'You are verified. Add a Base Wallet so loans and repayments can stay tied to your Moodeng account.',
+                  onAction: () => navigate('/onboarding/wallet', { state: { returnTo: 'repay' } }),
+                  title: 'Add Base Wallet to borrow'
+               }
+             : {
+                  actionLabel: null,
+                  body: 'You do not have any active loans waiting for repayment.',
+                  onAction: null,
+                  title: 'No repayments due'
+               }
+      : null;
 
    const handleSelectLoan = (loanId: string) => {
       setSelectedLoanId(loanId);
@@ -355,15 +386,11 @@ export default function Repay() {
       amountError,
       parsedRepaymentAmount,
       account.isConnected,
-      account.connector?.id,
-      account.connector?.name,
-      account.address,
       account.chain?.id,
       baseAccountConnector,
       navigate,
       baseWalletLock.address,
       baseWalletLock.hasStoredWallet,
-      baseWalletLock.isConfirmedBase,
       canRepayWithConnectedBaseWallet,
       connect,
       isUsingLockedBaseWallet,
@@ -665,9 +692,24 @@ export default function Repay() {
                </section>
             ) : (
                <section className="rounded-md-xl border border-md-green-100 bg-md-neutral-50 p-6 text-center shadow-md-card">
-                  <CheckCircle2 className="mx-auto h-10 w-10 text-md-green-800" aria-hidden="true" />
-                  <h2 className="mt-3 text-md-h5 text-md-heading">No repayments due</h2>
-                  <p className="mt-2 text-md-b2 text-md-neutral-1200">You do not have any active loans waiting for repayment.</p>
+                  {emptyRepayState?.actionLabel ? (
+                     <ShieldCheck className="mx-auto h-10 w-10 text-md-primary-900" aria-hidden="true" />
+                  ) : (
+                     <CheckCircle2 className="mx-auto h-10 w-10 text-md-green-800" aria-hidden="true" />
+                  )}
+                  <h2 className="mt-3 text-md-h5 text-md-heading">{emptyRepayState?.title ?? 'No repayments due'}</h2>
+                  <p className="mt-2 text-md-b2 text-md-neutral-1200">
+                     {emptyRepayState?.body ?? 'You do not have any active loans waiting for repayment.'}
+                  </p>
+                  {emptyRepayState?.actionLabel && emptyRepayState.onAction ? (
+                     <button
+                        type="button"
+                        onClick={emptyRepayState.onAction}
+                        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 text-md-b1 font-semibold text-md-neutral-100"
+                     >
+                        {emptyRepayState.actionLabel}
+                     </button>
+                  ) : null}
                </section>
             )}
          </div>

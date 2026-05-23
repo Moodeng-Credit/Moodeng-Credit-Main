@@ -46,7 +46,7 @@ import {
    shouldShowGuidedTour
 } from '@/lib/guidedTourStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { getBaseWalletLockStatus, isBaseWalletReadyForRepayment } from '@/lib/walletProvider';
+import { isBaseWalletReadyForRepayment } from '@/lib/walletProvider';
 import { formatPointsMajor } from '@/shared/points';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
 import { createLoan, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
@@ -240,7 +240,6 @@ function RequestBoard$() {
          effectiveUser.isWorldId === 'ACTIVE' &&
          effectiveCreditLimit <= STARTING_CREDIT_LIMIT &&
          borrowerCreditLoans.length === 0);
-   const baseWalletLock = getBaseWalletLockStatus(effectiveUser);
    const hasBorrowerBaseWallet =
       !IS_BORROWER_BASE_WALLET_GATE_ENABLED ||
       isBaseWalletReadyForRepayment({
