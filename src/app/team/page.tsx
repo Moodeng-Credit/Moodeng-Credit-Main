@@ -130,11 +130,13 @@ export default function TeamPage() {
                {widerTeam.map((member) => (
                   <article
                      key={member.name}
-                     className="rounded-md-xl border-[5px] border-[#fff9e8] bg-md-primary-1600 p-md-4 text-center text-[#fff9e8] shadow-[0_14px_0_rgba(13,47,111,0.16)]"
+                     className="rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] p-md-4 text-center text-[#fff9e8] shadow-[0_14px_0_rgba(7,27,67,0.24)]"
                   >
                      <Portrait name={member.name} image={member.image} initial={member.initial} />
                      <h2 className="mt-md-3 font-serif text-md-h3 font-bold leading-none">{member.name}</h2>
-                     <p className="mx-auto mt-md-2 w-fit rounded-md-pill bg-[#f4d756] px-md-2 py-1 text-md-b2 font-bold text-md-primary-2000">{member.role}</p>
+                     <p className="mx-auto mt-md-2 w-fit rounded-md-pill bg-[#f4d756] px-md-2 py-1 text-md-b2 font-bold text-[#071b43]">
+                        {member.role}
+                     </p>
                      <p className="mx-auto mt-md-2 max-w-[280px] text-md-b2 font-medium leading-relaxed text-[#fff9e8]/90">{member.bio}</p>
                   </article>
                ))}
