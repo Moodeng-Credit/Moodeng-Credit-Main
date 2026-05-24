@@ -1,4 +1,5 @@
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
+const VERCEL_PREVIEW_SUFFIX = '.vercel.app';
 
 type RuntimeLocation = {
    hostname: string;
@@ -8,7 +9,7 @@ type RuntimeLocation = {
 export function buildAuthRedirectUrl(path = '/auth/confirm', configuredRedirectUrl?: string, currentLocation?: RuntimeLocation): string {
    const redirectPath = path.startsWith('/') ? path : `/${path}`;
 
-   if (currentLocation && LOCAL_HOSTS.has(currentLocation.hostname)) {
+   if (currentLocation && (LOCAL_HOSTS.has(currentLocation.hostname) || currentLocation.hostname.endsWith(VERCEL_PREVIEW_SUFFIX))) {
       return `${currentLocation.origin}${redirectPath}`;
    }
 
