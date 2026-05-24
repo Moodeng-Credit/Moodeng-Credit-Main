@@ -25,4 +25,8 @@ describe('auth confirm recovery routing', () => {
    it('accepts signup token hash redirects from email confirmation links', () => {
       expect(getAuthEmailOtpType(new URL('https://staging.dashboard.moodeng.app/auth/confirm?token_hash=abc&type=signup'))).toBe('signup');
    });
+
+   it('accepts email token hash redirects from link-only confirmation emails', () => {
+      expect(getAuthEmailOtpType(new URL('https://staging.dashboard.moodeng.app/auth/confirm?token_hash=abc&type=email'))).toBe('email');
+   });
 });

@@ -1,42 +1,34 @@
 import { type ChangeEvent, type FormEvent, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
 
 import { Mail } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
+import { AuthFooter, AuthInputField, DividerWithText, SignUpFormErrorAlert, SocialAuthButtons, SocialButton } from '@/components/auth';
 import Loading from '@/components/Loading';
-import {
-   AuthFooter,
-   AuthInputField,
-   SignUpFormErrorAlert,
-   SocialAuthButtons,
-   SocialButton,
-   DividerWithText
-} from '@/components/auth';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
-import { Icons } from '@/views/login/components/Icons';
-import {
-   registerUser,
-   registerWithGoogle,
-   registerWithTelegram
-} from '@/store/slices/authSlice';
+
+import { buildEmailConfirmationPath } from '@/lib/authPaths';
+import { registerUser, registerWithGoogle, registerWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
+import { Icons } from '@/views/login/components/Icons';
 import '@/views/signup/styles/signup.css';
 
 const LINK_PURPLE = '#8336F0';
-const VERIFY_EMAIL_STORAGE_KEY = 'moodeng_pending_verification_email';
 
 type SignUpErrorType = 'account_linked' | 'account_exist' | 'email_taken' | null;
 
 function slugify(text: string): string {
-   return text
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '') || 'user';
+   return (
+      text
+         .trim()
+         .toLowerCase()
+         .replace(/\s+/g, '-')
+         .replace(/[^a-z0-9-]/g, '')
+         .replace(/-+/g, '-')
+         .replace(/^-|-$/g, '') || 'user'
+   );
 }
 
 export default function SignUpPage() {
@@ -54,12 +46,8 @@ export default function SignUpPage() {
    const [accountErrorType, setAccountErrorType] = useState<SignUpErrorType>(null);
    const isWorldId = WorldId.INACTIVE;
 
-   const navigateToVerifyCode = (nextEmail: string) => {
-      const trimmedEmail = nextEmail.trim();
-      if (trimmedEmail) {
-         sessionStorage.setItem(VERIFY_EMAIL_STORAGE_KEY, trimmedEmail);
-      }
-      navigate(`/auth/verify-code${trimmedEmail ? `?email=${encodeURIComponent(trimmedEmail)}` : ''}`);
+   const navigateToEmailConfirmation = (nextEmail: string) => {
+      navigate(buildEmailConfirmationPath(nextEmail));
    };
 
    const processAuthResult = (result: unknown) => {
@@ -71,21 +59,19 @@ export default function SignUpPage() {
          reason?: 'linked' | 'taken' | 'existing';
       };
       if (data?.isExistingUser) {
-         setAccountErrorType(
-            data.reason === 'taken' ? 'email_taken' : data.reason === 'linked' ? 'account_linked' : 'account_exist'
-         );
+         setAccountErrorType(data.reason === 'taken' ? 'email_taken' : data.reason === 'linked' ? 'account_linked' : 'account_exist');
          return;
       }
       if (data?.isNewUser) {
          if (data.needsEmailVerification) {
-            navigateToVerifyCode(email);
+            navigateToEmailConfirmation(email);
             return;
          }
          if (data.user?.id) {
             navigate('/dashboard');
             return;
          }
-         navigateToVerifyCode(email);
+         navigateToEmailConfirmation(email);
          return;
       }
       if (data?.user) {
@@ -136,9 +122,7 @@ export default function SignUpPage() {
       setIsLoading(true);
       setAccountErrorType(null);
       try {
-         const result = await dispatch(
-            registerWithTelegram({ telegramAuthData: JSON.stringify(authData) })
-         ).unwrap();
+         const result = await dispatch(registerWithTelegram({ telegramAuthData: JSON.stringify(authData) })).unwrap();
          processAuthResult(result);
       } catch (err) {
          handleRegisterError(err instanceof Error ? err.message : 'Authentication failed');
@@ -149,11 +133,14 @@ export default function SignUpPage() {
 
    const handleRegisterError = (errorMsg: string) => {
       const lower = (errorMsg || '').toLowerCase();
-      const isEmailError =
-         lower.includes('email') || lower.includes('duplicate') || lower.includes('users_email_key');
+      const isEmailError = lower.includes('email') || lower.includes('duplicate') || lower.includes('users_email_key');
       if (isEmailError) {
          setAccountErrorType(
-            lower.includes('lock') ? 'email_taken' : lower.includes('linked') || lower.includes('google') ? 'account_linked' : 'account_exist'
+            lower.includes('lock')
+               ? 'email_taken'
+               : lower.includes('linked') || lower.includes('google')
+                 ? 'account_linked'
+                 : 'account_exist'
          );
       } else {
          toast.showToastByConfig('register_error', { error: errorMsg });
@@ -224,11 +211,7 @@ export default function SignUpPage() {
                      />
                      <p className="text-center text-base text-[#4D4359] tracking-[-0.02em]">
                         Already have an account?{' '}
-                        <Link
-                           to="/sign-in"
-                           className="font-semibold hover:underline"
-                           style={{ color: LINK_PURPLE }}
-                        >
+                        <Link to="/sign-in" className="font-semibold hover:underline" style={{ color: LINK_PURPLE }}>
                            Log In
                         </Link>
                      </p>
@@ -279,16 +262,10 @@ export default function SignUpPage() {
                                         ? 'Email Address Taken'
                                         : undefined
                               }
-                              errorVariant={
-                                 accountErrorType === 'account_linked' || accountErrorType === 'account_exist'
-                                    ? 'amber'
-                                    : 'red'
-                              }
+                              errorVariant={accountErrorType === 'account_linked' || accountErrorType === 'account_exist' ? 'amber' : 'red'}
                               icon={<Icons.email />}
                            />
-                           {accountErrorType === 'email_taken' && (
-                              <SignUpFormErrorAlert type="email_taken" />
-                           )}
+                           {accountErrorType === 'email_taken' && <SignUpFormErrorAlert type="email_taken" />}
                            {(accountErrorType === 'account_linked' || accountErrorType === 'account_exist') && (
                               <SignUpFormErrorAlert type={accountErrorType} />
                            )}
@@ -320,16 +297,11 @@ export default function SignUpPage() {
                         >
                            Create An Account
                         </button>
-
                      </form>
 
                      <p className="mt-6 text-center text-base text-[#4D4359] tracking-[-0.02em]">
                         Already have an account?{' '}
-                        <Link
-                           to="/sign-in"
-                           className="font-semibold hover:underline"
-                           style={{ color: LINK_PURPLE }}
-                        >
+                        <Link to="/sign-in" className="font-semibold hover:underline" style={{ color: LINK_PURPLE }}>
                            Log In
                         </Link>
                      </p>
