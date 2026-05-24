@@ -2,8 +2,6 @@ import { useMemo } from 'react';
 
 import { Link } from 'react-router-dom';
 
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
-
 import { getCreditLevelNumber } from '@/config/creditTiers';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 
@@ -11,6 +9,7 @@ interface CreditLevelSectionProps {
    currentCs: number;
    usedCreditAmount: number;
    isVerified: boolean;
+   onVerifyToUnlock: () => void;
 }
 
 const MAX_BARS = 8;
@@ -63,7 +62,7 @@ function LvlBadge({ level }: { level: number }) {
    );
 }
 
-export default function CreditLevelSection({ currentCs, usedCreditAmount, isVerified }: CreditLevelSectionProps) {
+export default function CreditLevelSection({ currentCs, usedCreditAmount, isVerified, onVerifyToUnlock }: CreditLevelSectionProps) {
    const effectiveLimit = useMemo(() => getEffectiveCreditLimit(currentCs, isVerified), [currentCs, isVerified]);
    const levelNumber = useMemo(() => (effectiveLimit > 0 ? getCreditLevelNumber(effectiveLimit) : 0), [effectiveLimit]);
    const usedCredit = Math.min(Math.max(usedCreditAmount, 0), effectiveLimit);
@@ -93,17 +92,13 @@ export default function CreditLevelSection({ currentCs, usedCreditAmount, isVeri
          <div className="flex items-center justify-between">
             <LvlBadge level={levelNumber} />
             {isLocked ? (
-               <WorldIDVerification>
-                  {({ open }) => (
-                     <button
-                        type="button"
-                        onClick={open}
-                        className="text-md-b2 font-semibold text-md-neutral-700 underline decoration-md-primary-900/40 underline-offset-4 active:text-md-primary-900"
-                     >
-                        Verify to unlock
-                     </button>
-                  )}
-               </WorldIDVerification>
+               <button
+                  type="button"
+                  onClick={onVerifyToUnlock}
+                  className="text-md-b2 font-semibold text-md-neutral-700 underline decoration-md-primary-900/40 underline-offset-4 active:text-md-primary-900"
+               >
+                  Verify to unlock
+               </button>
             ) : (
                <span className="text-md-b2 font-semibold">
                   <span className="text-md-primary-800">${availableCredit}</span>

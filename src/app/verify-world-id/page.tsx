@@ -33,6 +33,10 @@ export default function WorldIdVerification() {
          navigate('/milestones', { replace: true });
          return;
       }
+      if (!isPreview && returnTo === 'dashboard-credit-level') {
+         navigate('/dashboard', { replace: true });
+         return;
+      }
       navigate(isPreview ? '/onboarding/congratulations-preview' : '/onboarding/congratulations', { replace: true });
    }, [isPreview, returnTo, navigate]);
 

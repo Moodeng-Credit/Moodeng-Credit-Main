@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
@@ -10,6 +10,7 @@ import type { WalletLivenessData } from '@/utils/diversityScore';
 
 import { getWalletAgeInfo } from '@/lib/web3/walletAge';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
+import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { BORROWER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -166,6 +167,7 @@ export default function Dashboard() {
    const borrowerLoans = useMemo(() => getBorrowerLoans(gloanRequests, user.id), [gloanRequests, user.id]);
    const previewLoans = useMemo(() => buildPreviewLoans(user.id), [user.id]);
    const isVerified = user.isWorldId === 'ACTIVE';
+   const hasBorrowerBaseWallet = getBaseWalletLockStatus(user).isConfirmedBase;
    const displayTrustScore = isVerified ? user.cs : 0;
    const milestoneLoans = isMockRich ? previewLoans : borrowerLoans;
    const displayFundedLoans = useMemo(
@@ -194,6 +196,24 @@ export default function Dashboard() {
       [displayLoanArrays.activeLoans, displayLoanArrays.defaultedLoans]
    );
    const milestones = buildReputationMilestones({ creditLevels, borrowerLoans: milestoneLoans, isVerified });
+   const handleCreditLevelUnlockClick = useCallback(() => {
+      if (!user.userRole) {
+         navigate('/onboarding/role');
+         return;
+      }
+
+      if (!hasBorrowerBaseWallet) {
+         navigate('/onboarding/wallet', { state: { returnTo: 'dashboard-credit-level' } });
+         return;
+      }
+
+      if (!isVerified) {
+         navigate('/verify-world-id', { state: { returnTo: 'dashboard-credit-level' } });
+         return;
+      }
+
+      navigate('/request-board');
+   }, [hasBorrowerBaseWallet, isVerified, navigate, user.userRole]);
 
    useEffect(() => {
       if (!isBorrower || missingLenderProfileIds.length === 0) return;
@@ -270,7 +290,12 @@ export default function Dashboard() {
                   <TrustScoreSection trustScore={displayTrustScore} />
                </div>
                <div data-tour-target="dashboard-credit-level">
-                  <CreditLevelSection currentCs={user.cs} usedCreditAmount={usedCreditAmount} isVerified={isVerified} />
+                  <CreditLevelSection
+                     currentCs={user.cs}
+                     usedCreditAmount={usedCreditAmount}
+                     isVerified={isVerified}
+                     onVerifyToUnlock={handleCreditLevelUnlockClick}
+                  />
                </div>
             </div>
 
