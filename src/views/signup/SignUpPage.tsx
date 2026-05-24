@@ -256,7 +256,6 @@ export default function SignUpPage() {
                            value={username}
                            onChange={(e: ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
                            icon={<Icons.user />}
-                           tooltip="Full name is not needed. Borrowers verify with World ID or another verification method; lenders can just use a username."
                         />
 
                         <div className="space-y-2">
