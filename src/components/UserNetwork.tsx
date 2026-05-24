@@ -17,12 +17,15 @@ export default function UserNetwork() {
    const navigate = useNavigate();
    const account = useAccount();
    const username = useSelector((state: RootState) => state.auth.username);
-   const userId = useSelector((state: RootState) => state.auth.user.id);
+   const user = useSelector((state: RootState) => state.auth.user);
+   const userId = user.id;
+   const isLender = user.userRole === 'lender';
+   const isVerifiedBorrower = user.isWorldId === 'ACTIVE';
    const [pointsTotal, setPointsTotal] = useState<number | null>(null);
    const [isPointsLoading, setIsPointsLoading] = useState(false);
 
    useEffect(() => {
-      if (!userId) {
+      if (!isLender || !userId) {
          setPointsTotal(null);
          setIsPointsLoading(false);
          return;
@@ -53,7 +56,7 @@ export default function UserNetwork() {
       return () => {
          isActive = false;
       };
-   }, [userId]);
+   }, [isLender, userId]);
 
    const handleLogout = () => {
       // Don't disconnect wallet - let wagmi persist the connection
@@ -119,13 +122,23 @@ export default function UserNetwork() {
                            {username}
                         </p>
                      </Link>
-                     <button
-                        className="bg-purple-600 text-white text-xs font-semibold rounded-md px-3 pb-1 pt-[0.375rem] flex items-center gap-1 hover:bg-purple-700 transition-all duration-200 hover:scale-105 hover:shadow-md"
-                        type="button"
-                     >
-                        <i className="fas fa-coins"></i>{' '}
-                        {isPointsLoading ? 'IOU Loading' : `IOU ${formatPointsMajor(pointsTotal ?? 0)}`}
-                     </button>
+                     {isLender ? (
+                        <button
+                           className="bg-purple-600 text-white text-xs font-semibold rounded-md px-3 pb-1 pt-[0.375rem] flex items-center gap-1 hover:bg-purple-700 transition-all duration-200 hover:scale-105 hover:shadow-md"
+                           type="button"
+                        >
+                           <i className="fas fa-coins"></i>{' '}
+                           {isPointsLoading ? 'IOU Loading' : `IOU ${formatPointsMajor(pointsTotal ?? 0)}`}
+                        </button>
+                     ) : (
+                        <span
+                           className={`text-xs font-semibold rounded-md px-3 pb-1 pt-[0.375rem] ${
+                              isVerifiedBorrower ? 'bg-md-green-100 text-md-green-900' : 'bg-md-red-100 text-md-red-800'
+                           }`}
+                        >
+                           {isVerifiedBorrower ? 'Verified' : 'Not Verified'}
+                        </span>
+                     )}
                   </div>
                   {account.isConnected ? (
                      <div className="flex border-b border-gray-200 border-solid">
@@ -189,12 +202,14 @@ export default function UserNetwork() {
                      >
                         Increase Credit Limit <i className="fas fa-chevron-right"></i>
                      </a>
-                     <a
-                        href="#"
-                        className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
-                     >
-                        What are IOU Points? <i className="fas fa-chevron-right"></i>
-                     </a>
+                     {isLender ? (
+                        <a
+                           href="#"
+                           className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"
+                        >
+                           What are IOU Points? <i className="fas fa-chevron-right"></i>
+                        </a>
+                     ) : null}
                      <a
                         href="#"
                         className="flex justify-between items-center hover:text-blue-600 transition-colors duration-200 hover:translate-x-1"

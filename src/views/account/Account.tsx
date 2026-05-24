@@ -159,8 +159,11 @@ export default function Account() {
                            <span className="text-md-b3 font-semibold text-md-green-900">Verified</span>
                         </span>
                      ) : (
-                        <span className="inline-flex w-fit items-center rounded-md-sm bg-md-primary-900 px-2 py-1 text-md-b3 font-semibold text-md-neutral-100">
-                           IOU 0
+                        <span className="inline-flex w-fit items-center gap-1 rounded-md-sm bg-md-red-100 px-md-1 py-md-0">
+                           <span className="flex h-3 w-3 items-center justify-center rounded-full bg-md-red-800">
+                              <span className="text-[8px] font-bold text-white">!</span>
+                           </span>
+                           <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
                         </span>
                      )}
                   </div>
