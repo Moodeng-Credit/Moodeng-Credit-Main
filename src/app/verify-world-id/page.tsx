@@ -1,14 +1,18 @@
 import { useCallback, useEffect } from 'react';
 
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
-import type { RootState } from '@/store/store';
+import { fetchUser } from '@/store/slices/authSlice';
+import type { AppDispatch, RootState } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
 
+const WORLD_ID_IN_PROGRESS_KEY = 'moodeng_idkit_in_progress';
+
 export default function WorldIdVerification() {
+   const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
    const location = useLocation();
    const user = useSelector((state: RootState) => state.auth.user);
@@ -39,6 +43,17 @@ export default function WorldIdVerification() {
       }
       navigate(isPreview ? '/onboarding/congratulations-preview' : '/onboarding/congratulations', { replace: true });
    }, [isPreview, returnTo, navigate]);
+
+   // Mobile: World App redirect reloads the page, losing IDKit state entirely.
+   // If IDKit was mid-flow when the reload happened, fetch fresh user data so the
+   // verified state (written by the edge function) propagates without manual refresh.
+   useEffect(() => {
+      if (sessionStorage.getItem(WORLD_ID_IN_PROGRESS_KEY)) {
+         sessionStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
+         void dispatch(fetchUser());
+      }
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
 
    // Redirect when user becomes verified — handles both normal flow and page-reload
    // recovery (mobile: World App redirect can reload the page, losing IDKit session)

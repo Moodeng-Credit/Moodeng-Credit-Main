@@ -125,9 +125,10 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
          if (!res.ok || !result.success) {
             if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
-               // Signal handleError to show the modal. Close IDKit immediately so its own
-               // error UI never renders. Throwing (not returning) guarantees IDKit calls
-               // onError instead of onSuccess, preventing any navigation.
+               // Persist to sessionStorage FIRST — if the mobile return_to redirect causes a
+               // page reload before handleError fires, the useEffect on the next mount picks
+               // this up and still shows the AlreadyUsedModal.
+               sessionStorage.setItem(WORLD_ID_ALREADY_USED_STORAGE_KEY, WORLD_ID_ALREADY_USED_STORAGE_VALUE);
                alreadyUsedRef.current = true;
                setIsIDKitOpen(false);
                throw new Error('WORLDID_ALREADY_USED');
@@ -167,6 +168,8 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          (errorCode === IDKitErrorCodes.FailedByHostApp && alreadyUsedRef.current)
       ) {
          alreadyUsedRef.current = false;
+         // In-session path: modal shown now, so clear the sessionStorage fallback.
+         sessionStorage.removeItem(WORLD_ID_ALREADY_USED_STORAGE_KEY);
          showAlreadyUsedWarning();
       } else if (
          errorCode === IDKitErrorCodes.UserRejected ||
