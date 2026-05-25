@@ -15,6 +15,35 @@ const getSetting = async (supabase: ReturnType<typeof createClient>, key: string
    return data?.value as string | undefined;
 };
 
+const getRequestSecret = (req: Request) => {
+   const authorization = req.headers.get('Authorization') ?? '';
+   const bearerToken = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length).trim() : null;
+   return bearerToken ?? req.headers.get('x-notification-secret');
+};
+
+const authorizeInternalRequest = async (supabase: ReturnType<typeof createClient>, req: Request) => {
+   const requestSecret = getRequestSecret(req);
+   if (!requestSecret) {
+      return { authorized: false, status: 401, error: 'Unauthorized' };
+   }
+
+   const expectedSecret = Deno.env.get('SUPABASE_SECRET_KEY') ?? Deno.env.get('TELEGRAM_NOTIFICATION_SECRET');
+   if (expectedSecret && requestSecret === expectedSecret) {
+      return { authorized: true, status: 200, error: null };
+   }
+
+   const { data, error } = await supabase.rpc('verify_internal_notification_secret', { candidate: requestSecret });
+   if (error) {
+      return { authorized: false, status: 500, error: error.message };
+   }
+
+   if (data !== true) {
+      return { authorized: false, status: 401, error: 'Unauthorized' };
+   }
+
+   return { authorized: true, status: 200, error: null };
+};
+
 const buildLoanUrl = (loanId: string) => {
    const siteUrl = Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('SITE_URL') ?? 'https://app.moodeng.credit';
    return `${siteUrl.replace(/\/$/, '')}/request-board?loan=${loanId}`;
@@ -54,13 +83,21 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
    }
 
+   const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+   const authorization = await authorizeInternalRequest(supabase, req);
+   if (!authorization.authorized) {
+      return new Response(JSON.stringify({ error: authorization.error }), {
+         status: authorization.status,
+         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+   }
+
    try {
       const { loanId, dryRun = false } = await req.json().catch(() => ({}));
       if (!loanId) {
          return new Response(JSON.stringify({ error: 'loanId is required' }), { status: 400, headers: corsHeaders });
       }
 
-      const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
       const enabled = (await getSetting(supabase, 'lender_notifications_enabled')) === 'true';
 
       if (!enabled && !dryRun) {
