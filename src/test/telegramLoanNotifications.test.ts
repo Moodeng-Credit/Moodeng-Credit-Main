@@ -14,13 +14,13 @@ const currentLoan = {
 
 describe('buildTelegramLoanRequestMessage', () => {
    it('builds a concise new borrower request from previous loan history', () => {
-      const message = buildTelegramLoanRequestMessage(currentLoan, [currentLoan], { cs: 20, mal: 3 }, 'https://example.com/request-board');
+      const message = buildTelegramLoanRequestMessage(currentLoan, [currentLoan], { mal: 3 }, 'https://example.com/request-board');
 
       expect(message).toContain('🚀 New Loan Request');
       expect(message).toContain('💰 Amount: 15.00 USDC');
       expect(message).toContain('⏳ Duration: 3 days');
       expect(message).toContain('🆕 New Borrower');
-      expect(message).toContain('⭐ Credit Score: 20');
+      expect(message).not.toContain('Credit Score');
       expect(message).toContain('🔢 Max Active Loans: 3');
       expect(message).toContain('https://example.com/request-board');
    });
@@ -38,11 +38,12 @@ describe('buildTelegramLoanRequestMessage', () => {
             },
             currentLoan
          ],
-         { cs: 40, mal: 3 },
+         { mal: 3 },
          'https://example.com/request-board'
       );
 
       expect(message).toContain('📈 Growing Borrower');
+      expect(message).not.toContain('Credit Score');
       expect(message).toContain('📊 1 loans | 1 repaid');
    });
 });
@@ -53,7 +54,6 @@ describe('getBestTelegramLoanInsights', () => {
          {
             totalLoans: 8,
             loansRepaid: 7,
-            creditScore: 100,
             maxActiveLoans: 3,
             typicalPaymentTimeHours: 0.3,
             repeatLenders: 5,

@@ -23,14 +23,12 @@ export type TelegramLoanHistory = {
 
 export type TelegramBorrowerProfile = {
    username?: string | null;
-   cs?: number | null;
    mal?: number | null;
 };
 
 type BorrowerStats = {
    totalLoans: number;
    loansRepaid: number;
-   creditScore: number | string;
    maxActiveLoans: number | string;
    avgDaysBetweenLoans?: number;
    typicalPaymentTimeHours?: number;
@@ -76,7 +74,6 @@ const calculateStats = (currentLoanId: string, history: TelegramLoanHistory[], b
    const stats: BorrowerStats = {
       totalLoans: previousLoans.length,
       loansRepaid: paidLoans.length,
-      creditScore: borrower?.cs ?? 'N/A',
       maxActiveLoans: borrower?.mal ?? 'N/A'
    };
 
@@ -173,12 +170,11 @@ export const buildTelegramLoanRequestMessage = (
    lines.push(`📝 Reason: ${loan.reason?.trim() || 'No reason provided'}`, '');
 
    if (stats.totalLoans === 0) {
-      lines.push('🆕 New Borrower', `⭐ Credit Score: ${stats.creditScore}`, `🔢 Max Active Loans: ${stats.maxActiveLoans}`, '');
+      lines.push('🆕 New Borrower', `🔢 Max Active Loans: ${stats.maxActiveLoans}`, '');
       lines.push('👉 Fund early & build a relationship');
    } else if (stats.totalLoans < 5) {
       lines.push(
          '📈 Growing Borrower',
-         `⭐ Credit Score: ${stats.creditScore}`,
          `📊 ${stats.totalLoans} loans | ${stats.loansRepaid} repaid`,
          ''
       );
@@ -186,7 +182,6 @@ export const buildTelegramLoanRequestMessage = (
    } else {
       lines.push(
          '🔥 Proven Borrower',
-         `⭐ Credit Score: ${stats.creditScore}`,
          `📊 ${stats.totalLoans} loans | ${stats.loansRepaid} repaid`,
          ''
       );

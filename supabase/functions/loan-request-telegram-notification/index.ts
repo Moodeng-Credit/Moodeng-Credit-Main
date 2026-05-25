@@ -123,7 +123,7 @@ serve(async (req) => {
       }
 
       const { data: borrower } = loan.borrower_user_id
-         ? await supabase.from('users').select('username, cs, mal').eq('id', loan.borrower_user_id).maybeSingle()
+         ? await supabase.from('users').select('username, mal').eq('id', loan.borrower_user_id).maybeSingle()
          : { data: null };
 
       const { data: history, error: historyError } = loan.borrower_user_id
