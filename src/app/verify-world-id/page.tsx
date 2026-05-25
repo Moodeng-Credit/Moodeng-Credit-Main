@@ -1,18 +1,14 @@
 import { useCallback, useEffect } from 'react';
 
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
-import { fetchUser } from '@/store/slices/authSlice';
-import type { AppDispatch, RootState } from '@/store/store';
+import type { RootState } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
 
-const WORLD_ID_IN_PROGRESS_KEY = 'moodeng_idkit_in_progress';
-
 export default function WorldIdVerification() {
-   const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
    const location = useLocation();
    const user = useSelector((state: RootState) => state.auth.user);
@@ -44,24 +40,8 @@ export default function WorldIdVerification() {
       navigate(isPreview ? '/onboarding/congratulations-preview' : '/onboarding/congratulations', { replace: true });
    }, [isPreview, returnTo, navigate]);
 
-   // Mobile: World App redirect reloads the page, losing IDKit state entirely.
-   // If IDKit was mid-flow when the reload happened, fetch fresh user data so the
-   // verified state (written by the edge function) propagates without manual refresh.
-   useEffect(() => {
-      const inProgress = localStorage.getItem(WORLD_ID_IN_PROGRESS_KEY);
-      console.log('[WorldID page] MOUNT — in_progress key:', inProgress);
-      if (inProgress) {
-         localStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
-         console.log('[WorldID page] dispatching fetchUser (post-reload recovery)');
-         void dispatch(fetchUser()).then((action) => {
-            console.log('[WorldID page] fetchUser result:', action.type, (action as { payload?: unknown }).payload);
-         });
-      }
-   // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, []);
-
-   // Redirect when user becomes verified — handles both normal flow and page-reload
-   // recovery (mobile: World App redirect can reload the page, losing IDKit session)
+   // Redirect when user becomes verified — handles both normal flow and mobile
+   // page-reload recovery (WorldIDVerification dispatches fetchUser on restore).
    useEffect(() => {
       console.log('[WorldID page] isWorldId changed:', user?.isWorldId);
       if (user?.isWorldId === WorldId.ACTIVE) {
