@@ -83,14 +83,33 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    // Mobile page-reload recovery: World App redirect reloads the browser, destroying
    // IDKit state. Restore the persisted rp_context so IDKit re-mounts with the SAME
    // relay session and resumes polling — handleVerify then fires normally.
+   // Guard: only restore when IN_PROGRESS_KEY is also set; without it the rpContext
+   // is stale (leftover from a previous aborted session) and restoring it causes an
+   // immediate "Something went wrong" error from IDKit.
+   // React runs child effects before parent effects, so this fires before
+   // verify-world-id/page.tsx removes IN_PROGRESS_KEY in its own mount effect.
    useEffect(() => {
       const raw = sessionStorage.getItem(WORLD_ID_RP_CONTEXT_KEY);
-      log('rp-context restore effect — key present:', !!raw);
+      const inProgress = sessionStorage.getItem(WORLD_ID_IN_PROGRESS_KEY);
+      log('rp-context restore effect — rp_context present:', !!raw, '| in_progress:', inProgress);
       if (!raw) return;
+      if (!inProgress) {
+         log('rp-context restore effect — no in_progress key; stale rp_context, clearing');
+         sessionStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
+         return;
+      }
       try {
-         const restoredContext = JSON.parse(raw) as RpContext;
-         log('rp-context restore effect — parsed OK, restoring IDKit open');
-         setRpContext(restoredContext);
+         const parsed = JSON.parse(raw) as { context: RpContext; ts: number };
+         const ageMs = Date.now() - parsed.ts;
+         log('rp-context restore effect — age:', ageMs, 'ms');
+         if (ageMs > 120_000) {
+            log('rp-context restore effect — expired (>2 min), clearing stale keys');
+            sessionStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
+            sessionStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
+            return;
+         }
+         log('rp-context restore effect — fresh, restoring IDKit open');
+         setRpContext(parsed.context);
          setIsIDKitOpen(true);
       } catch (e) {
          log('rp-context restore effect — parse FAILED, clearing key:', e);
@@ -257,7 +276,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          const nextRpContext = await fetchRpContext();
          log('handleStartIDKit — rp_context fetched; saving to sessionStorage and opening IDKit');
          sessionStorage.setItem(WORLD_ID_IN_PROGRESS_KEY, '1');
-         sessionStorage.setItem(WORLD_ID_RP_CONTEXT_KEY, JSON.stringify(nextRpContext));
+         sessionStorage.setItem(WORLD_ID_RP_CONTEXT_KEY, JSON.stringify({ context: nextRpContext, ts: Date.now() }));
          setRpContext(nextRpContext);
          setIsIDKitOpen(true);
          log('handleStartIDKit — IDKit opened');
