@@ -71,6 +71,6 @@ describe('WorldIDVerification duplicate account feedback', () => {
 
       expect(showToastByConfigMock).toHaveBeenCalledWith('worldid_already_used');
       expect(sessionStorage.getItem(duplicateWorldIdStorageKey)).toBeNull();
-      expect(document.body.textContent).toContain('We do not allow duplicate accounts.');
+      expect(document.body.textContent).toContain('Your World ID got verified already');
    });
 });
