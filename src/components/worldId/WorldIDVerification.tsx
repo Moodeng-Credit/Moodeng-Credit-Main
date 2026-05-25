@@ -48,12 +48,12 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    // Set to true in handleVerify when WORLDID_ALREADY_USED is detected, read in handleError.
    const alreadyUsedRef = useRef(false);
 
-   // Log all sessionStorage keys relevant to WorldID on every mount
+   // Log all localStorage keys relevant to WorldID on every mount
    useEffect(() => {
-      log('MOUNT — sessionStorage snapshot:', {
-         [WORLD_ID_IN_PROGRESS_KEY]: sessionStorage.getItem(WORLD_ID_IN_PROGRESS_KEY),
-         [WORLD_ID_ALREADY_USED_STORAGE_KEY]: sessionStorage.getItem(WORLD_ID_ALREADY_USED_STORAGE_KEY),
-         [WORLD_ID_RP_CONTEXT_KEY]: sessionStorage.getItem(WORLD_ID_RP_CONTEXT_KEY) ? '<present>' : null,
+      log('MOUNT — localStorage snapshot:', {
+         [WORLD_ID_IN_PROGRESS_KEY]: localStorage.getItem(WORLD_ID_IN_PROGRESS_KEY),
+         [WORLD_ID_ALREADY_USED_STORAGE_KEY]: localStorage.getItem(WORLD_ID_ALREADY_USED_STORAGE_KEY),
+         [WORLD_ID_RP_CONTEXT_KEY]: localStorage.getItem(WORLD_ID_RP_CONTEXT_KEY) ? '<present>' : null,
       });
    // eslint-disable-next-line react-hooks/exhaustive-deps
    }, []);
@@ -62,7 +62,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       ({ persist = false }: { persist?: boolean } = {}) => {
          log('showAlreadyUsedWarning — persist:', persist);
          if (persist) {
-            sessionStorage.setItem(WORLD_ID_ALREADY_USED_STORAGE_KEY, WORLD_ID_ALREADY_USED_STORAGE_VALUE);
+            localStorage.setItem(WORLD_ID_ALREADY_USED_STORAGE_KEY, WORLD_ID_ALREADY_USED_STORAGE_VALUE);
          }
          setShowAlreadyUsedModal(true);
          showToastByConfig('worldid_already_used');
@@ -71,10 +71,10 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    );
 
    useEffect(() => {
-      const val = sessionStorage.getItem(WORLD_ID_ALREADY_USED_STORAGE_KEY);
+      const val = localStorage.getItem(WORLD_ID_ALREADY_USED_STORAGE_KEY);
       log('already-used effect — key value:', val);
       if (val === WORLD_ID_ALREADY_USED_STORAGE_VALUE) {
-         sessionStorage.removeItem(WORLD_ID_ALREADY_USED_STORAGE_KEY);
+         localStorage.removeItem(WORLD_ID_ALREADY_USED_STORAGE_KEY);
          log('already-used effect — showing warning (page-reload path)');
          showAlreadyUsedWarning();
       }
@@ -89,13 +89,13 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    // React runs child effects before parent effects, so this fires before
    // verify-world-id/page.tsx removes IN_PROGRESS_KEY in its own mount effect.
    useEffect(() => {
-      const raw = sessionStorage.getItem(WORLD_ID_RP_CONTEXT_KEY);
-      const inProgress = sessionStorage.getItem(WORLD_ID_IN_PROGRESS_KEY);
+      const raw = localStorage.getItem(WORLD_ID_RP_CONTEXT_KEY);
+      const inProgress = localStorage.getItem(WORLD_ID_IN_PROGRESS_KEY);
       log('rp-context restore effect — rp_context present:', !!raw, '| in_progress:', inProgress);
       if (!raw) return;
       if (!inProgress) {
          log('rp-context restore effect — no in_progress key; stale rp_context, clearing');
-         sessionStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
+         localStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
          return;
       }
       try {
@@ -104,8 +104,8 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          log('rp-context restore effect — age:', ageMs, 'ms');
          if (ageMs > 120_000) {
             log('rp-context restore effect — expired (>2 min), clearing stale keys');
-            sessionStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
-            sessionStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
+            localStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
+            localStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
             return;
          }
          log('rp-context restore effect — fresh, restoring IDKit open');
@@ -113,7 +113,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          setIsIDKitOpen(true);
       } catch (e) {
          log('rp-context restore effect — parse FAILED, clearing key:', e);
-         sessionStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
+         localStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
       }
    // eslint-disable-next-line react-hooks/exhaustive-deps
    }, []);
@@ -192,11 +192,11 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
          if (!res.ok || !result.success) {
             if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
-               log('handleVerify — WORLDID_ALREADY_USED detected; setting sessionStorage + alreadyUsedRef, closing IDKit');
-               // Persist to sessionStorage FIRST — if the mobile return_to redirect causes a
+               log('handleVerify — WORLDID_ALREADY_USED detected; setting localStorage + alreadyUsedRef, closing IDKit');
+               // Persist to localStorage FIRST — if the mobile return_to redirect causes a
                // page reload before handleError fires, the useEffect on the next mount picks
                // this up and still shows the AlreadyUsedModal.
-               sessionStorage.setItem(WORLD_ID_ALREADY_USED_STORAGE_KEY, WORLD_ID_ALREADY_USED_STORAGE_VALUE);
+               localStorage.setItem(WORLD_ID_ALREADY_USED_STORAGE_KEY, WORLD_ID_ALREADY_USED_STORAGE_VALUE);
                alreadyUsedRef.current = true;
                setIsIDKitOpen(false);
                throw new Error('WORLDID_ALREADY_USED');
@@ -220,9 +220,9 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    };
 
    const handleSuccess = () => {
-      log('handleSuccess — called; clearing sessionStorage, navigating');
-      sessionStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
-      sessionStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
+      log('handleSuccess — called; clearing localStorage, navigating');
+      localStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
+      localStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
       if (onSuccess) {
          onSuccess();
       } else {
@@ -235,16 +235,16 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
    const handleError = (errorCode: IDKitErrorCodes) => {
       log('handleError — errorCode:', errorCode, '| alreadyUsedRef:', alreadyUsedRef.current);
-      sessionStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
-      sessionStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
+      localStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
+      localStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
       if (
          errorCode === IDKitErrorCodes.NullifierReplayed ||
          errorCode === IDKitErrorCodes.MaxVerificationsReached ||
          (errorCode === IDKitErrorCodes.FailedByHostApp && alreadyUsedRef.current)
       ) {
          alreadyUsedRef.current = false;
-         // In-session path: modal shown now, so clear the sessionStorage fallback.
-         sessionStorage.removeItem(WORLD_ID_ALREADY_USED_STORAGE_KEY);
+         // In-session path: modal shown now, so clear the localStorage fallback.
+         localStorage.removeItem(WORLD_ID_ALREADY_USED_STORAGE_KEY);
          log('handleError — showing AlreadyUsedModal');
          showAlreadyUsedWarning();
       } else if (
@@ -274,9 +274,9 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          }
          setIsPreparingIDKit(true);
          const nextRpContext = await fetchRpContext();
-         log('handleStartIDKit — rp_context fetched; saving to sessionStorage and opening IDKit');
-         sessionStorage.setItem(WORLD_ID_IN_PROGRESS_KEY, '1');
-         sessionStorage.setItem(WORLD_ID_RP_CONTEXT_KEY, JSON.stringify({ context: nextRpContext, ts: Date.now() }));
+         log('handleStartIDKit — rp_context fetched; saving to localStorage and opening IDKit');
+         localStorage.setItem(WORLD_ID_IN_PROGRESS_KEY, '1');
+         localStorage.setItem(WORLD_ID_RP_CONTEXT_KEY, JSON.stringify({ context: nextRpContext, ts: Date.now() }));
          setRpContext(nextRpContext);
          setIsIDKitOpen(true);
          log('handleStartIDKit — IDKit opened');
@@ -296,8 +296,8 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       log('handleIDKitOpenChange — open:', open);
       setIsIDKitOpen(open);
       if (!open) {
-         sessionStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
-         sessionStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
+         localStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
+         localStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
       }
    }, []);
 

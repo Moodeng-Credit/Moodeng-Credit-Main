@@ -48,10 +48,10 @@ export default function WorldIdVerification() {
    // If IDKit was mid-flow when the reload happened, fetch fresh user data so the
    // verified state (written by the edge function) propagates without manual refresh.
    useEffect(() => {
-      const inProgress = sessionStorage.getItem(WORLD_ID_IN_PROGRESS_KEY);
+      const inProgress = localStorage.getItem(WORLD_ID_IN_PROGRESS_KEY);
       console.log('[WorldID page] MOUNT — in_progress key:', inProgress);
       if (inProgress) {
-         sessionStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
+         localStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
          console.log('[WorldID page] dispatching fetchUser (post-reload recovery)');
          void dispatch(fetchUser()).then((action) => {
             console.log('[WorldID page] fetchUser result:', action.type, (action as { payload?: unknown }).payload);
