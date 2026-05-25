@@ -41,7 +41,7 @@ describe('WorldIDVerification duplicate account feedback', () => {
    let root: Root;
 
    beforeEach(() => {
-      sessionStorage.clear();
+      localStorage.clear();
       showToastByConfigMock.mockClear();
       dispatchMock.mockClear();
       navigateMock.mockClear();
@@ -55,11 +55,11 @@ describe('WorldIDVerification duplicate account feedback', () => {
          root.unmount();
       });
       container.remove();
-      sessionStorage.clear();
+      localStorage.clear();
    });
 
    it('shows the duplicate-account toast when a reused World ID returns to the app', async () => {
-      sessionStorage.setItem(duplicateWorldIdStorageKey, 'already_used');
+      localStorage.setItem(duplicateWorldIdStorageKey, 'already_used');
 
       await act(async () => {
          root.render(
@@ -70,7 +70,7 @@ describe('WorldIDVerification duplicate account feedback', () => {
       });
 
       expect(showToastByConfigMock).toHaveBeenCalledWith('worldid_already_used');
-      expect(sessionStorage.getItem(duplicateWorldIdStorageKey)).toBeNull();
+      expect(localStorage.getItem(duplicateWorldIdStorageKey)).toBeNull();
       expect(document.body.textContent).toContain('Your World ID got verified already');
    });
 });
