@@ -3,8 +3,12 @@ import { StrictMode } from 'react';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import '@rainbow-me/rainbowkit/styles.css';
 import { createRoot } from 'react-dom/client';
+import VConsole from 'vconsole';
 import { BrowserRouter } from 'react-router-dom';
 import { PostHogProvider } from 'posthog-js/react';
+
+// TODO: remove before production release
+new VConsole();
 
 import { Providers } from '@/components/providers';
 import App from './App.tsx';
