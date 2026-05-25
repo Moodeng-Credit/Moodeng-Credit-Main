@@ -38,7 +38,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const [isPreparingIDKit, setIsPreparingIDKit] = useState(false);
    const [rpContext, setRpContext] = useState<RpContext | null>(null);
    const [showAlreadyUsedModal, setShowAlreadyUsedModal] = useState(false);
-   // Prevents handleSuccess from navigating when handleVerify already showed the AlreadyUsedModal
+   // Set to true in handleVerify when WORLDID_ALREADY_USED is detected, read in handleError.
    const alreadyUsedRef = useRef(false);
 
    const showAlreadyUsedWarning = useCallback(
@@ -125,9 +125,12 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
          if (!res.ok || !result.success) {
             if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
+               // Signal handleError to show the modal. Close IDKit immediately so its own
+               // error UI never renders. Throwing (not returning) guarantees IDKit calls
+               // onError instead of onSuccess, preventing any navigation.
                alreadyUsedRef.current = true;
-               showAlreadyUsedWarning({ persist: true });
-               return;
+               setIsIDKitOpen(false);
+               throw new Error('WORLDID_ALREADY_USED');
             }
             showToastByConfig(handleApiError(result));
             throw new Error(isApiError(result) ? result.error : 'Verification failed.');
@@ -146,11 +149,6 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
    const handleSuccess = () => {
       sessionStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
-      if (alreadyUsedRef.current) {
-         alreadyUsedRef.current = false;
-         sessionStorage.removeItem(WORLD_ID_ALREADY_USED_STORAGE_KEY);
-         return;
-      }
       if (onSuccess) {
          onSuccess();
       } else {
@@ -163,13 +161,20 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
    const handleError = (errorCode: IDKitErrorCodes) => {
       sessionStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
-      if (errorCode === IDKitErrorCodes.NullifierReplayed || errorCode === IDKitErrorCodes.MaxVerificationsReached) {
+      if (
+         errorCode === IDKitErrorCodes.NullifierReplayed ||
+         errorCode === IDKitErrorCodes.MaxVerificationsReached ||
+         (errorCode === IDKitErrorCodes.FailedByHostApp && alreadyUsedRef.current)
+      ) {
+         alreadyUsedRef.current = false;
          showAlreadyUsedWarning();
       } else if (
-         errorCode !== IDKitErrorCodes.UserRejected &&
-         errorCode !== IDKitErrorCodes.Cancelled &&
-         errorCode !== IDKitErrorCodes.VerificationRejected
+         errorCode === IDKitErrorCodes.UserRejected ||
+         errorCode === IDKitErrorCodes.Cancelled ||
+         errorCode === IDKitErrorCodes.VerificationRejected
       ) {
+         showToastByConfig('worldid_not_completed');
+      } else if (errorCode !== IDKitErrorCodes.FailedByHostApp) {
          showToastByConfig('server_error');
       }
    };
