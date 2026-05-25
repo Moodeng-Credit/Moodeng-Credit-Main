@@ -80,21 +80,36 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       }
    }, [showAlreadyUsedWarning]);
 
-   // Mobile page-reload recovery: World App redirect reloads the browser, destroying
+   // Mobile page-reload recovery: World App redirect opens a new tab, destroying all
    // IDKit state. Restore the persisted rp_context so IDKit re-mounts with the SAME
-   // relay session and resumes polling — handleVerify then fires normally.
-   // Guard: only restore when IN_PROGRESS_KEY is also set; without it the rpContext
-   // is stale (leftover from a previous aborted session) and restoring it causes an
-   // immediate "Something went wrong" error from IDKit.
+   // relay session. Also dispatch fetchUser — if the old tab's IDKit already called
+   // the edge function successfully, the DB is updated and fetchUser will detect it.
+   //
+   // Atomic claim: remove IN_PROGRESS_KEY immediately after reading both keys. Multiple
+   // WorldIDVerification instances mount simultaneously (dashboard, sidebar, etc.) and
+   // all run this effect concurrently within the same JS task. Removing IN_PROGRESS_KEY
+   // first ensures only the first instance to run this code proceeds; siblings see it
+   // gone and skip, preventing duplicate IDKit modals.
+   //
    // React runs child effects before parent effects, so this fires before
-   // verify-world-id/page.tsx removes IN_PROGRESS_KEY in its own mount effect.
+   // verify-world-id/page.tsx's own mount effect — page.tsx won't see IN_PROGRESS_KEY.
    useEffect(() => {
       const raw = localStorage.getItem(WORLD_ID_RP_CONTEXT_KEY);
       const inProgress = localStorage.getItem(WORLD_ID_IN_PROGRESS_KEY);
       log('rp-context restore effect — rp_context present:', !!raw, '| in_progress:', inProgress);
-      if (!raw) return;
-      if (!inProgress) {
-         log('rp-context restore effect — no in_progress key; stale rp_context, clearing');
+      if (!raw || !inProgress) {
+         if (raw && !inProgress) {
+            log('rp-context restore effect — no in_progress key; stale rp_context, clearing');
+            localStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
+         }
+         return;
+      }
+      // Atomic claim — remove before siblings can read it
+      localStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
+      // If the already-used key is present, the already-used effect handles the modal.
+      // Don't also restore IDKit — that would open two overlapping UI layers.
+      if (localStorage.getItem(WORLD_ID_ALREADY_USED_STORAGE_KEY) === WORLD_ID_ALREADY_USED_STORAGE_VALUE) {
+         log('rp-context restore effect — already-used key present; skipping IDKit restore');
          localStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
          return;
       }
@@ -105,9 +120,10 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          if (ageMs > 120_000) {
             log('rp-context restore effect — expired (>2 min), clearing stale keys');
             localStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
-            localStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
             return;
          }
+         log('rp-context restore effect — dispatching fetchUser (success-case detection)');
+         void dispatch(fetchUser());
          log('rp-context restore effect — fresh, restoring IDKit open');
          setRpContext(parsed.context);
          setIsIDKitOpen(true);
@@ -193,10 +209,13 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          if (!res.ok || !result.success) {
             if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
                log('handleVerify — WORLDID_ALREADY_USED detected; setting localStorage + alreadyUsedRef, closing IDKit');
-               // Persist to localStorage FIRST — if the mobile return_to redirect causes a
-               // page reload before handleError fires, the useEffect on the next mount picks
-               // this up and still shows the AlreadyUsedModal.
+               // Set already-used key AND remove in-progress key atomically before throwing.
+               // If mobile redirect opens a new tab before handleError fires, the new tab's
+               // restore effect guards on IN_PROGRESS_KEY being absent and skips IDKit open,
+               // while the already-used effect picks up the already-used key and shows the modal.
                localStorage.setItem(WORLD_ID_ALREADY_USED_STORAGE_KEY, WORLD_ID_ALREADY_USED_STORAGE_VALUE);
+               localStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
+               localStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
                alreadyUsedRef.current = true;
                setIsIDKitOpen(false);
                throw new Error('WORLDID_ALREADY_USED');
@@ -243,8 +262,6 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          (errorCode === IDKitErrorCodes.FailedByHostApp && alreadyUsedRef.current)
       ) {
          alreadyUsedRef.current = false;
-         // In-session path: modal shown now, so clear the localStorage fallback.
-         localStorage.removeItem(WORLD_ID_ALREADY_USED_STORAGE_KEY);
          log('handleError — showing AlreadyUsedModal');
          showAlreadyUsedWarning();
       } else if (
