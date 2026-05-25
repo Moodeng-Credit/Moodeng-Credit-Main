@@ -29,6 +29,10 @@ const WORLD_ID_ENVIRONMENT = (import.meta.env.VITE_WORLD_ID_ENVIRONMENT ||
 const WORLD_ID_ALREADY_USED_STORAGE_KEY = 'moodeng_worldid_error';
 const WORLD_ID_ALREADY_USED_STORAGE_VALUE = 'already_used';
 const WORLD_ID_IN_PROGRESS_KEY = 'moodeng_idkit_in_progress';
+// Persists the relay rp_context across page reloads so IDKit can resume polling
+// after the mobile World App redirect reloads the browser (relay session stays live
+// for 900 s; we restore here so handleVerify still runs and detects WORLDID_ALREADY_USED).
+const WORLD_ID_RP_CONTEXT_KEY = 'moodeng_idkit_rp_context';
 
 export default function WorldIDVerification({ children, onSuccess, className = '', showSuccessToast = true }: WorldIDVerificationProps) {
    const dispatch = useDispatch<AppDispatch>();
@@ -58,6 +62,22 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          showAlreadyUsedWarning();
       }
    }, [showAlreadyUsedWarning]);
+
+   // Mobile page-reload recovery: World App redirect reloads the browser, destroying
+   // IDKit state. Restore the persisted rp_context so IDKit re-mounts with the SAME
+   // relay session and resumes polling — handleVerify then fires normally.
+   useEffect(() => {
+      const raw = sessionStorage.getItem(WORLD_ID_RP_CONTEXT_KEY);
+      if (!raw) return;
+      try {
+         const restoredContext = JSON.parse(raw) as RpContext;
+         setRpContext(restoredContext);
+         setIsIDKitOpen(true);
+      } catch {
+         sessionStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
+      }
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
 
    const action = (import.meta.env.VITE_WORLD_ID_ACTION_ID || WORLD_ID_ACTION_ID) as string;
    const app_id = import.meta.env.VITE_WORLD_ID_APP_ID as `app_${string}` | undefined;
@@ -150,6 +170,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
    const handleSuccess = () => {
       sessionStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
+      sessionStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
       if (onSuccess) {
          onSuccess();
       } else {
@@ -162,6 +183,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
    const handleError = (errorCode: IDKitErrorCodes) => {
       sessionStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
+      sessionStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
       if (
          errorCode === IDKitErrorCodes.NullifierReplayed ||
          errorCode === IDKitErrorCodes.MaxVerificationsReached ||
@@ -193,6 +215,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          setIsPreparingIDKit(true);
          const nextRpContext = await fetchRpContext();
          sessionStorage.setItem(WORLD_ID_IN_PROGRESS_KEY, '1');
+         sessionStorage.setItem(WORLD_ID_RP_CONTEXT_KEY, JSON.stringify(nextRpContext));
          setRpContext(nextRpContext);
          setIsIDKitOpen(true);
       } catch (error) {
@@ -208,6 +231,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
       setIsIDKitOpen(open);
       if (!open) {
          sessionStorage.removeItem(WORLD_ID_IN_PROGRESS_KEY);
+         sessionStorage.removeItem(WORLD_ID_RP_CONTEXT_KEY);
       }
    }, []);
 
