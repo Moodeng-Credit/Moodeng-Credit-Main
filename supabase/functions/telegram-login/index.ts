@@ -12,7 +12,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { id, first_name, last_name, username, photo_url, auth_date, hash } = await req.json()
+    const body = await req.json()
+    const authData = body.authData ?? body
+    const { id, first_name, last_name, username, photo_url, auth_date, hash, allows_write_to_pm } = authData
 
     // Verify Telegram auth
     const botToken = Deno.env.get('TELEGRAM_API_TOKEN')!
@@ -21,15 +23,9 @@ Deno.serve(async (req) => {
       new TextEncoder().encode(botToken)
     )
 
-    const dataCheckString = [
-      `auth_date=${auth_date}`,
-      first_name && `first_name=${first_name}`,
-      id && `id=${id}`,
-      last_name && `last_name=${last_name}`,
-      photo_url && `photo_url=${photo_url}`,
-      username && `username=${username}`,
-    ]
-      .filter(Boolean)
+    const dataCheckString = Object.entries(authData)
+      .filter(([key, value]) => key !== 'hash' && value !== undefined && value !== null && value !== '')
+      .map(([key, value]) => `${key}=${value}`)
       .sort()
       .join('\n')
 
@@ -87,7 +83,25 @@ Deno.serve(async (req) => {
       last_name,
       username,
       photo_url,
+      allows_write_to_pm,
       provider: 'telegram',
+    }
+
+    const allowsWriteToPm = allows_write_to_pm === true || allows_write_to_pm === 1 || allows_write_to_pm === '1' || allows_write_to_pm === 'true'
+
+    const syncTelegramProfile = async (userId: string) => {
+      const updates = {
+        telegram_id: id,
+        ...(username ? { telegram_username: username } : {}),
+        ...(allowsWriteToPm ? { chat_id: id } : {}),
+      }
+
+      const { error } = await supabaseAdmin
+        .from('users')
+        .update(updates)
+        .eq('id', userId)
+
+      if (error) throw error
     }
 
     // Try to sign in first
@@ -101,6 +115,7 @@ Deno.serve(async (req) => {
       await supabaseAdmin.auth.admin.updateUserById(signInData.session.user.id, {
         user_metadata: telegramMetadata,
       })
+      await syncTelegramProfile(signInData.session.user.id)
 
       return new Response(
         JSON.stringify({ session: signInData.session }),
@@ -128,6 +143,10 @@ Deno.serve(async (req) => {
 
     if (newSignInError) {
       throw newSignInError
+    }
+
+    if (newSignInData.session?.user.id) {
+      await syncTelegramProfile(newSignInData.session.user.id)
     }
 
     return new Response(
