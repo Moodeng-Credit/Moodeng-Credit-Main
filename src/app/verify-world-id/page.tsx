@@ -40,12 +40,8 @@ export default function WorldIdVerification() {
       navigate(isPreview ? '/onboarding/congratulations-preview' : '/onboarding/congratulations', { replace: true });
    }, [isPreview, returnTo, navigate]);
 
-   // Redirect when user becomes verified — handles both normal flow and mobile
-   // page-reload recovery (WorldIDVerification dispatches fetchUser on restore).
    useEffect(() => {
-      console.log('[WorldID page] isWorldId changed:', user?.isWorldId);
       if (user?.isWorldId === WorldId.ACTIVE) {
-         console.log('[WorldID page] user is verified — calling handleVerified');
          handleVerified();
       }
    }, [user?.isWorldId, handleVerified]);
