@@ -93,8 +93,14 @@ const formatDate = (dateValue: string | null) => {
    }
 
    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeZone: 'UTC'
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      timeZone: 'UTC',
+      timeZoneName: 'short'
    }).format(parsedDate);
 };
 

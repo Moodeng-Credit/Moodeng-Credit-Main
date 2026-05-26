@@ -58,8 +58,8 @@ describe('buildLoanNotificationEmail', () => {
       expect(result.text).toContain('Total to repay: $275.00 USDC');
       expect(result.text).toContain('Trust point opportunity: +20 pts');
       expect(result.text).toContain('lender-01');
-      expect(result.text).toContain('Jan 10, 2026');
-      expect(result.text).toContain('Jan 15, 2026');
+      expect(result.text).toContain('Jan 10, 2026, 00:00 UTC');
+      expect(result.text).toContain('Jan 15, 2026, 00:00 UTC');
       expect(result.text).toContain('support@moodeng.app');
       expect(result.html).toContain('Moodeng Credit');
       expect(result.html).toContain('Your loan has been funded');
@@ -87,7 +87,7 @@ describe('buildLoanNotificationEmail', () => {
       expect(result.subject).toBe('Your loan is coming due');
       expect(result.text).toContain('2 loans');
       expect(result.text).toContain('coming due in 3 days');
-      expect(result.text).toContain('Due date: Jan 15, 2026');
+      expect(result.text).toContain('Due date: Jan 15, 2026, 00:00 UTC');
       expect(result.text).toContain('Total to repay: $525.00 USDC');
       expect(result.text).toContain('Trust point opportunity: +20 pts');
       expect(result.text).toContain('support@moodeng.app');
@@ -117,7 +117,7 @@ describe('buildLoanNotificationEmail', () => {
 
       expect(result.subject).toBe('Your repayment is due soon');
       expect(result.text).toContain('1 loan due within 24 hours');
-      expect(result.text).toContain('Due date: Jan 15, 2026');
+      expect(result.text).toContain('Due date: Jan 15, 2026, 00:00 UTC');
       expect(result.text).toContain('$250.00 USDC');
       expect(result.text).toContain('Trust point opportunity: +20 pts');
       expect(result.text).toContain('https://moodeng.app/repay');
@@ -144,7 +144,7 @@ describe('buildLoanNotificationEmail', () => {
       expect(result.subject).toBe('Your weekly Moodeng Credit digest');
       expect(result.text).toContain('weekly Moodeng Credit digest');
       expect(result.text).toContain('Active loans: 3');
-      expect(result.text).toContain('Next due date: Jan 15, 2026');
+      expect(result.text).toContain('Next due date: Jan 15, 2026, 00:00 UTC');
       expect(result.text).toContain('Total outstanding: $825.00 USDC');
       expect(result.text).toContain('Trust point note: Open Moodeng to review available milestones.');
       expect(result.text).toContain('support@moodeng.app');
@@ -170,7 +170,7 @@ describe('buildLoanNotificationEmail', () => {
 
       expect(result.subject).toBe('Your loan is overdue');
       expect(result.text).toContain('1 loan overdue');
-      expect(result.text).toContain('Due date: Jan 13, 2026');
+      expect(result.text).toContain('Due date: Jan 13, 2026, 00:00 UTC');
       expect(result.text).toContain('Overdue by: 2 days');
       expect(result.text).toContain('Overdue amount: $240.00 USDC');
       expect(result.text).toContain('Trust point opportunity: +20 pts');
@@ -202,8 +202,8 @@ describe('buildLoanNotificationEmail', () => {
       expect(result.subject).toBe('Your repayment was received');
       expect(result.text).toContain('Your repayment for loan LOAN-123 was received.');
       expect(result.text).toContain('Amount repaid: $275.00 USDC');
-      expect(result.text).toContain('Paid on: Jan 12, 2026');
-      expect(result.text).toContain('Original due date: Jan 15, 2026');
+      expect(result.text).toContain('Paid on: Jan 12, 2026, 00:00 UTC');
+      expect(result.text).toContain('Original due date: Jan 15, 2026, 00:00 UTC');
       expect(result.text).toContain('Trust points earned: +20 pts');
       expect(result.html).toContain('Your repayment was received');
       expect(result.html).toContain('Loan count');
