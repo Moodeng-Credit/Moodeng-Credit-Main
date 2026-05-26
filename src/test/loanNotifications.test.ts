@@ -94,6 +94,7 @@ describe('buildLoanNotificationEmail', () => {
       expect(result.html).toContain('Your loans are coming due');
       expect(result.html).toContain('Loans due');
       expect(result.html).toContain('Due date');
+      expect(result.html).toContain('Good Standing');
       expect(result.html).toContain('Trust point opportunity');
       expect(result.html).toContain('+20 pts');
       expect(result.html).not.toContain('123 pts');

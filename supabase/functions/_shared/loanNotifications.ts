@@ -454,7 +454,7 @@ For help, contact support@moodeng.app`);
          { label: 'Loans due', value: String(count) },
          { label: 'Due date', value: nextDueDate },
          { label: 'Due in', value: dueLabel },
-         { label: 'Repayment benefit', value: 'Good standing', icon: '&check;', tone: 'good' }
+         { label: 'Repayment benefit', value: 'Good Standing', icon: '&check;', tone: 'good' }
       ],
       highlightTitle: trustPointHighlight.title,
       highlightCopy: trustPointHighlight.copy,
