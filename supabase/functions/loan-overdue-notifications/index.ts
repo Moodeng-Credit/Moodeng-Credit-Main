@@ -5,10 +5,8 @@ import { sendEmail } from '../_shared/email.ts';
 import {
    buildLoanNotificationEmail,
    getLoanOutstandingAmount,
-   getReminderWindows,
    LoanNotificationLoan,
-   LoanNotificationRecipient,
-   LoanNotificationType
+   LoanNotificationRecipient
 } from '../_shared/loanNotifications.ts';
 import {
    calculateTrustPointRewardDelta,
@@ -140,10 +138,7 @@ const loadTrustPointRewardContext = async (
    };
 };
 
-const loadSentLoanIds = async (
-   supabase: SupabaseClient,
-   payload: { loanIds: string[]; userId: string; type: LoanNotificationType }
-) => {
+const loadSentLoanIds = async (supabase: SupabaseClient, payload: { loanIds: string[]; userId: string }) => {
    if (!payload.loanIds.length) {
       return new Set<string>();
    }
@@ -153,7 +148,7 @@ const loadSentLoanIds = async (
       .select('loan_id')
       .in('loan_id', payload.loanIds)
       .eq('user_id', payload.userId)
-      .eq('notification_type', payload.type);
+      .eq('notification_type', 'overdue');
 
    if (error) {
       throw new Error(error.message);
@@ -162,12 +157,7 @@ const loadSentLoanIds = async (
    return new Set(((data ?? []) as SentLoanNotificationRow[]).map((item) => item.loan_id));
 };
 
-const recordNotification = async (
-   supabase: SupabaseClient,
-   borrowerId: string,
-   type: LoanNotificationType,
-   loanIds: string[]
-) => {
+const recordOverdueNotification = async (supabase: SupabaseClient, borrowerId: string, loanIds: string[]) => {
    if (!loanIds.length) {
       return;
    }
@@ -176,7 +166,7 @@ const recordNotification = async (
       loanIds.map((loanId) => ({
          loan_id: loanId,
          user_id: borrowerId,
-         notification_type: type
+         notification_type: 'overdue'
       }))
    );
 
@@ -185,79 +175,25 @@ const recordNotification = async (
    }
 };
 
-const formatHoursAsDueLabel = (hours: number) => {
-   if (hours > 0 && hours % 24 === 0) {
-      const days = hours / 24;
-      return `${days} ${days === 1 ? 'day' : 'days'}`;
-   }
-
-   return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
-};
-
-const getNextDueDate = (loans: Array<LoanNotificationLoan & { id: string }>) =>
+const getEarliestDueDate = (loans: Array<LoanNotificationLoan & { id: string }>) =>
    loans
       .map((loan) => loan.due_date)
       .filter((dueDate): dueDate is string => Boolean(dueDate))
       .sort((first, second) => new Date(first).getTime() - new Date(second).getTime())[0] ?? null;
 
-const notifyBorrower = async (
-   supabase: SupabaseClient,
-   borrower: BorrowerRecord,
-   loans: Array<LoanNotificationLoan & { id: string }>,
-   type: LoanNotificationType,
-   dueLabel: string,
-   rewardContext: TrustPointRewardContext,
-   referenceDate: Date
-) => {
-   const loanIds = loans.map((loan) => loan.id);
-   const sentLoanIds = await loadSentLoanIds(supabase, { loanIds, userId: borrower.id, type });
-   const pendingLoans = loans.filter((loan) => !sentLoanIds.has(loan.id));
-
-   if (!pendingLoans.length) {
-      return false;
+const formatOverdueBy = (referenceDate: Date, dueDateValue: string | null) => {
+   if (!dueDateValue) {
+      return 'overdue';
    }
 
-   const aggregate = {
-      count: pendingLoans.length,
-      totalAmount: pendingLoans.reduce((sum, loan) => sum + getLoanOutstandingAmount(loan), 0),
-      dueLabel,
-      nextDueDate: getNextDueDate(pendingLoans)
-   };
-   const borrowerLoans = rewardContext.loansByBorrowerId.get(borrower.id) ?? [];
-   const trustPointsReward = calculateTrustPointRewardDelta({
-      beforeLoans: borrowerLoans,
-      afterLoans: markLoansRepaid(
-         borrowerLoans,
-         pendingLoans.map((loan) => loan.id),
-         referenceDate
-      ),
-      user: borrower,
-      milestoneDefinitions: rewardContext.milestoneDefinitions,
-      completedMilestoneIds: rewardContext.completedMilestoneIdsByBorrowerId.get(borrower.id),
-      referenceDate
-   });
+   const dueDate = new Date(dueDateValue);
+   if (Number.isNaN(dueDate.getTime())) {
+      return 'overdue';
+   }
 
-   const { subject, text, html } = buildLoanNotificationEmail(
-      type,
-      null,
-      {
-         ...borrower,
-         trust_points_reward: trustPointsReward,
-         trust_points_reward_kind: 'potential'
-      },
-      aggregate
-   );
-
-   await sendEmail(borrower.email, subject, text, html);
-
-   await recordNotification(
-      supabase,
-      borrower.id,
-      type,
-      pendingLoans.map((loan) => loan.id)
-   );
-
-   return true;
+   const diffMs = Math.max(0, referenceDate.getTime() - dueDate.getTime());
+   const days = Math.max(1, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
+   return `${days} ${days === 1 ? 'day' : 'days'}`;
 };
 
 serve(async (req) => {
@@ -270,10 +206,7 @@ serve(async (req) => {
    }
 
    const body = await req.json().catch(() => ({}));
-   const urgentReminderHours = Number.parseInt(Deno.env.get('URGENT_REMINDER_HOURS') ?? `${body.urgentReminderHours ?? 72}`, 10);
-   const finalReminderHours = Number.parseInt(Deno.env.get('FINAL_REMINDER_HOURS') ?? `${body.finalReminderHours ?? 24}`, 10);
    const referenceDate = body.referenceDate ? new Date(body.referenceDate) : new Date();
-
    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
    const { data: loans, error } = await supabase
@@ -283,7 +216,8 @@ serve(async (req) => {
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])
-      .not('due_date', 'is', null);
+      .not('due_date', 'is', null)
+      .lt('due_date', referenceDate.toISOString());
 
    if (error) {
       return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
@@ -293,84 +227,76 @@ serve(async (req) => {
    const borrowers = await loadBorrowers(supabase, borrowerIds);
    const trustPointRewardContext = await loadTrustPointRewardContext(supabase, borrowerIds);
 
-   const { final, urgent } = getReminderWindows(
-      referenceDate,
-      Number.isNaN(urgentReminderHours) ? 72 : urgentReminderHours,
-      Number.isNaN(finalReminderHours) ? 24 : finalReminderHours
-   );
-   const urgentDueLabel = formatHoursAsDueLabel(Number.isNaN(urgentReminderHours) ? 72 : urgentReminderHours);
-   const finalDueLabel = formatHoursAsDueLabel(Number.isNaN(finalReminderHours) ? 24 : finalReminderHours);
-
-   const borrowerBuckets = new Map<
-      string,
-      {
-         urgent: Array<LoanNotificationLoan & { id: string }>;
-         final: Array<LoanNotificationLoan & { id: string }>;
-      }
-   >();
+   const borrowerBuckets = new Map<string, Array<LoanNotificationLoan & { id: string }>>();
 
    for (const loan of loans ?? []) {
-      if (!loan.borrower_user_id || !loan.due_date) {
+      if (!loan.borrower_user_id) {
          continue;
       }
 
-      const dueDate = new Date(loan.due_date);
-
-      const isFinalWindow = dueDate.getTime() >= final.start.getTime() && dueDate.getTime() <= final.end.getTime();
-      const isUrgentWindow = dueDate.getTime() > urgent.start.getTime() && dueDate.getTime() <= urgent.end.getTime();
-
-      if (!isFinalWindow && !isUrgentWindow) {
-         continue;
-      }
-
-      const bucket = borrowerBuckets.get(loan.borrower_user_id) ?? { urgent: [], final: [] };
-      if (isFinalWindow) {
-         bucket.final.push(loan);
-      } else if (isUrgentWindow) {
-         bucket.urgent.push(loan);
-      }
-
+      const bucket = borrowerBuckets.get(loan.borrower_user_id) ?? [];
+      bucket.push(loan);
       borrowerBuckets.set(loan.borrower_user_id, bucket);
    }
 
    let sentCount = 0;
 
-   for (const [borrowerId, bucket] of borrowerBuckets.entries()) {
+   for (const [borrowerId, borrowerLoans] of borrowerBuckets.entries()) {
       const borrower = borrowers.get(borrowerId);
       if (!borrower?.email) {
          continue;
       }
 
-      if (bucket.urgent.length) {
-         const wasSent = await notifyBorrower(
-            supabase,
-            borrower,
-            bucket.urgent,
-            'urgent_reminder',
-            urgentDueLabel,
-            trustPointRewardContext,
-            referenceDate
-         );
-         if (wasSent) {
-            sentCount += 1;
-         }
+      const loanIds = borrowerLoans.map((loan) => loan.id);
+      const sentLoanIds = await loadSentLoanIds(supabase, { loanIds, userId: borrower.id });
+      const pendingLoans = borrowerLoans.filter((loan) => !sentLoanIds.has(loan.id));
+
+      if (!pendingLoans.length) {
+         continue;
       }
 
-      if (bucket.final.length) {
-         const wasSent = await notifyBorrower(
-            supabase,
-            borrower,
-            bucket.final,
-            'final_reminder',
-            finalDueLabel,
-            trustPointRewardContext,
+      const nextDueDate = getEarliestDueDate(pendingLoans);
+      const aggregate = {
+         count: pendingLoans.length,
+         totalAmount: pendingLoans.reduce((sum, loan) => sum + getLoanOutstandingAmount(loan), 0),
+         dueLabel: formatOverdueBy(referenceDate, nextDueDate),
+         nextDueDate
+      };
+      const allBorrowerLoans = trustPointRewardContext.loansByBorrowerId.get(borrower.id) ?? [];
+      const trustPointsReward = calculateTrustPointRewardDelta({
+         beforeLoans: allBorrowerLoans,
+         afterLoans: markLoansRepaid(
+            allBorrowerLoans,
+            pendingLoans.map((loan) => loan.id),
             referenceDate
-         );
-         if (wasSent) {
-            sentCount += 1;
-         }
-      }
+         ),
+         user: borrower,
+         milestoneDefinitions: trustPointRewardContext.milestoneDefinitions,
+         completedMilestoneIds: trustPointRewardContext.completedMilestoneIdsByBorrowerId.get(borrower.id),
+         referenceDate
+      });
+
+      const { subject, text, html } = buildLoanNotificationEmail(
+         'overdue',
+         null,
+         {
+            ...borrower,
+            trust_points_reward: trustPointsReward,
+            trust_points_reward_kind: 'potential'
+         },
+         aggregate
+      );
+
+      await sendEmail(borrower.email, subject, text, html);
+
+      await recordOverdueNotification(
+         supabase,
+         borrower.id,
+         pendingLoans.map((loan) => loan.id)
+      );
+
+      sentCount += 1;
    }
 
-   return new Response(JSON.stringify({ message: 'Notifications processed', sent: sentCount }), { status: 200, headers: corsHeaders });
+   return new Response(JSON.stringify({ message: 'Overdue notifications sent', sent: sentCount }), { status: 200, headers: corsHeaders });
 });

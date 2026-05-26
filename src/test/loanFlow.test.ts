@@ -124,6 +124,29 @@ describe('Loan Flow Trigger Integration', () => {
       );
    });
 
+   it('should trigger the repayment received edge function when a loan is fully paid', async () => {
+      await store.dispatch(
+         updateLoanStatus({
+            id: 'loan-123',
+            repaymentStatus: 'Paid',
+            repaidAmount: 275
+         })
+      );
+
+      expect(mockSupabase.update).toHaveBeenCalledWith(
+         expect.objectContaining({
+            repayment_status: 'Paid',
+            repaid_amount: 275
+         })
+      );
+      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
+         'loan-repayment-received-notification',
+         expect.objectContaining({
+            body: { loanId: 'loan-123' }
+         })
+      );
+   });
+
    it('blocks funding when a request is older than the 7-day expiration window', async () => {
       mockSupabase.single.mockResolvedValueOnce({
          data: {

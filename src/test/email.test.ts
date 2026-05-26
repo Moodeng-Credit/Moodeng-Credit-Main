@@ -1,4 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { sendEmail } from '../../supabase/functions/_shared/email';
 
 // Mock values
@@ -28,7 +29,7 @@ describe('sendEmail (Resend)', () => {
       // Mock successful response
       (fetch as any).mockResolvedValue({
          ok: true,
-         json: async () => ({ id: '123' }),
+         json: async () => ({ id: '123' })
       });
 
       const result = await sendEmail('to@example.com', 'Subject', 'Message');
@@ -37,16 +38,40 @@ describe('sendEmail (Resend)', () => {
          method: 'POST',
          headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${MOCK_API_KEY}`,
+            Authorization: `Bearer ${MOCK_API_KEY}`
+         },
+         body: JSON.stringify({
+            from: MOCK_FROM,
+            to: ['to@example.com'],
+            subject: 'Subject',
+            text: 'Message'
+         })
+      });
+      expect(result).toEqual({ id: '123' });
+   });
+
+   it('includes HTML when provided', async () => {
+      (fetch as any).mockResolvedValue({
+         ok: true,
+         json: async () => ({ id: '123' })
+      });
+
+      await sendEmail('to@example.com', 'Subject', 'Message', '<p>Message</p>');
+
+      expect(fetch).toHaveBeenCalledWith('https://api.resend.com/emails', {
+         method: 'POST',
+         headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${MOCK_API_KEY}`
          },
          body: JSON.stringify({
             from: MOCK_FROM,
             to: ['to@example.com'],
             subject: 'Subject',
             text: 'Message',
-         }),
+            html: '<p>Message</p>'
+         })
       });
-      expect(result).toEqual({ id: '123' });
    });
 
    it('throws an error if RESEND_API_KEY is missing', async () => {
@@ -64,7 +89,7 @@ describe('sendEmail (Resend)', () => {
       // Mock failure response
       (fetch as any).mockResolvedValue({
          ok: false,
-         text: async () => 'Internal Server Error',
+         text: async () => 'Internal Server Error'
       });
 
       await expect(sendEmail('to@example.com', 'Sub', 'Msg')).rejects.toThrow('Failed to send email via Resend: Internal Server Error');
