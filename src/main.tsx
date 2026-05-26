@@ -1,5 +1,7 @@
 import { StrictMode } from 'react';
 
+import type { CapturedNetworkRequest } from 'posthog-js';
+
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import '@rainbow-me/rainbowkit/styles.css';
 import { createRoot } from 'react-dom/client';
@@ -17,12 +19,14 @@ const isPosthogEnabled = import.meta.env.PROD && Boolean(posthogKey);
 const posthogOptions = {
    api_host: posthogHost,
    capture_exceptions: {
+      capture_unhandled_errors: true,
+      capture_unhandled_rejections: true,
       capture_console_errors: true
    },
    session_recording: {
       recordHeaders: true,
       recordBody: true,
-      maskCapturedNetworkRequestFn: (data) => data
+      maskCapturedNetworkRequestFn: (data: CapturedNetworkRequest) => data
    },
    capture_pageview: false,
    capture_pageleave: true
