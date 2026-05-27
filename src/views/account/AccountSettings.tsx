@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAccount, useDisconnect } from 'wagmi';
 
+import TelegramAuthButton from '@/components/TelegramAuthButton';
 import UserAvatar from '@/components/UserAvatar';
 
 import { useAuthProvider } from '@/hooks/useAuthProvider';
@@ -13,7 +14,7 @@ import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getBaseWalletLockStatus, getWalletProviderLabel } from '@/lib/walletProvider';
 import { getWorldIdVerificationLabel } from '@/lib/worldIdVerificationLabel';
-import { updateUser } from '@/store/slices/authSlice';
+import { fetchUser, updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 
@@ -393,6 +394,67 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
    );
 }
 
+function TelegramAlertsModal({
+   isOpen,
+   onClose,
+   onConnected
+}: {
+   isOpen: boolean;
+   onClose: () => void;
+   onConnected: (authData: Record<string, string>) => Promise<void>;
+}) {
+   const [error, setError] = useState('');
+   const [isSubmitting, setIsSubmitting] = useState(false);
+
+   const handleClose = () => {
+      if (isSubmitting) return;
+      setError('');
+      onClose();
+   };
+
+   const handleTelegramAuth = async (authData: Record<string, string>) => {
+      setError('');
+      setIsSubmitting(true);
+      try {
+         await onConnected(authData);
+         setIsSubmitting(false);
+         setError('');
+         onClose();
+      } catch (err) {
+         setIsSubmitting(false);
+         setError(err instanceof Error ? err.message : 'Failed to connect Telegram alerts');
+      }
+   };
+
+   if (!isOpen) return null;
+
+   return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#12071f]/50 px-5" onClick={handleClose}>
+         <div
+            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-3 items-center"
+            onClick={(e) => e.stopPropagation()}
+         >
+            <div className="flex flex-col gap-2 items-center text-center">
+               <h2 className="text-md-h4 font-semibold text-md-heading">Telegram Alerts</h2>
+               <p className="text-md-b1 text-md-neutral-1200">Connect private loan alerts to your Telegram account.</p>
+            </div>
+            <div className={`w-full ${isSubmitting ? 'pointer-events-none opacity-60' : ''}`}>
+               <TelegramAuthButton onAuth={handleTelegramAuth} buttonSize="large" requestWriteAccess />
+            </div>
+            {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
+            <button
+               type="button"
+               onClick={handleClose}
+               disabled={isSubmitting}
+               className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50"
+            >
+               Cancel
+            </button>
+         </div>
+      </div>
+   );
+}
+
 // ─── Main Component ───
 
 export default function AccountSettings() {
@@ -412,6 +474,7 @@ export default function AccountSettings() {
    const [isSavingName, setIsSavingName] = useState(false);
    const [showPasswordModal, setShowPasswordModal] = useState(false);
    const [showEmailModal, setShowEmailModal] = useState(false);
+   const [showTelegramAlertsModal, setShowTelegramAlertsModal] = useState(false);
    const [showAvatarModal, setShowAvatarModal] = useState(false);
    const [isSavingAvatar, setIsSavingAvatar] = useState(false);
    const [walletCopied, setWalletCopied] = useState(false);
@@ -444,6 +507,7 @@ export default function AccountSettings() {
    const emailHelpCopy = hasTelegramPlaceholderEmail
       ? 'Telegram sign-in does not provide a real email. Add one for account recovery and notifications.'
       : 'Having an up-to-date email address attached to your account is a great step towards improving account security.';
+   const telegramAlertsValue = user?.chatId ? (user?.telegramUsername ? `@${user.telegramUsername}` : 'Connected') : user?.telegramUsername || 'Not Connected';
 
    useEffect(() => {
       try {
@@ -555,6 +619,21 @@ export default function AccountSettings() {
       }
    };
 
+   const handleConnectTelegramAlerts = async (authData: Record<string, string>) => {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase.functions.invoke('connect-telegram-notifications', {
+         body: { authData }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const result = await dispatch(fetchUser());
+      if (!fetchUser.fulfilled.match(result)) {
+         throw new Error(result.error?.message || 'Failed to refresh Telegram alerts');
+      }
+   };
+
    const truncateAddress = (addr: string) => {
       if (addr.length <= 12) return addr;
       return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -641,9 +720,10 @@ export default function AccountSettings() {
                      onAction={canEditEmail ? () => setShowEmailModal(true) : undefined}
                   />
                   <ReadOnlyField
-                     label="Telegram"
-                     value={user?.telegramUsername || 'Not Connected'}
-                     actionLabel={!user?.telegramUsername ? 'Connect' : undefined}
+                     label="Telegram Alerts"
+                     value={telegramAlertsValue}
+                     actionLabel={user?.chatId ? undefined : 'Connect'}
+                     onAction={user?.chatId ? undefined : () => setShowTelegramAlertsModal(true)}
                   />
                   <ReadOnlyField label="WhatsApp" value="Not Connected" actionLabel="Connect" />
                </div>
@@ -1006,6 +1086,11 @@ export default function AccountSettings() {
 
          <ChangePasswordModal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
          <ChangeEmailModal isOpen={showEmailModal} onClose={() => setShowEmailModal(false)} />
+         <TelegramAlertsModal
+            isOpen={showTelegramAlertsModal}
+            onClose={() => setShowTelegramAlertsModal(false)}
+            onConnected={handleConnectTelegramAlerts}
+         />
       </div>
    );
 }
