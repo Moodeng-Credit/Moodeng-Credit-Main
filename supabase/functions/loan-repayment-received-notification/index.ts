@@ -5,7 +5,7 @@ import { sendEmail } from '../_shared/email.ts';
 import { buildLoanNotificationEmail, LoanNotificationType } from '../_shared/loanNotifications.ts';
 import {
    calculateTrustPointRewardDelta,
-   markLoansRepaid
+   markLoansUnpaid
 } from '../_shared/trustPointRewards.ts';
 import type {
    TrustPointMilestoneDefinition,
@@ -19,7 +19,7 @@ const corsHeaders = {
 };
 
 type SupabaseClient = any;
-type MilestoneCompletionRow = { milestone_id: string };
+type MilestoneCompletionRow = { milestone_id: string; completed_at: string };
 
 const hasNotificationBeenSent = async (
    supabase: SupabaseClient,
@@ -36,7 +36,7 @@ const hasNotificationBeenSent = async (
    return Boolean(data);
 };
 
-const loadTrustPointRewardData = async (supabase: SupabaseClient, borrowerId: string) => {
+const loadTrustPointRewardData = async (supabase: SupabaseClient, borrowerId: string, paidAt: Date) => {
    const { data: loans, error: loansError } = await supabase
       .from('loans')
       .select(
@@ -50,7 +50,7 @@ const loadTrustPointRewardData = async (supabase: SupabaseClient, borrowerId: st
 
    const { data: completions, error: completionsError } = await supabase
       .from('user_milestone_completions')
-      .select('milestone_id')
+      .select('milestone_id, completed_at')
       .eq('user_id', borrowerId);
 
    if (completionsError) {
@@ -70,7 +70,11 @@ const loadTrustPointRewardData = async (supabase: SupabaseClient, borrowerId: st
 
    return {
       loans: (loans ?? []) as TrustPointRewardLoan[],
-      completedMilestoneIds: new Set<string>(completionRows.map((completion) => completion.milestone_id)),
+      completedMilestoneIdsBeforePayment: new Set(
+         completionRows
+            .filter((completion) => new Date(completion.completed_at).getTime() < paidAt.getTime())
+            .map((completion) => completion.milestone_id)
+      ),
       milestoneDefinitions: (milestoneDefinitions ?? []) as TrustPointMilestoneDefinition[]
    };
 };
@@ -94,7 +98,9 @@ serve(async (req) => {
 
    const { data: loan, error: loanError } = await supabase
       .from('loans')
-      .select('id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id')
+      .select(
+         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, repayment_status, updated_at'
+      )
       .eq('id', loanId)
       .maybeSingle();
 
@@ -104,6 +110,10 @@ serve(async (req) => {
 
    if (!loan) {
       return new Response(JSON.stringify({ error: 'Loan not found' }), { status: 404, headers: corsHeaders });
+   }
+
+   if (loan.repayment_status !== 'Paid') {
+      return new Response(JSON.stringify({ error: 'Loan is not fully repaid' }), { status: 400, headers: corsHeaders });
    }
 
    if (!loan.borrower_user_id) {
@@ -126,40 +136,33 @@ serve(async (req) => {
 
    const { data: trustPoints } = await supabase.from('user_trust_points').select('points_total').eq('user_id', borrower.id).maybeSingle();
 
-   const { data: lender } = loan.lender_user_id
-      ? await supabase.from('users').select('username').eq('id', loan.lender_user_id).maybeSingle()
-      : { data: null };
-
-   const loanPayload = {
-      ...loan,
-      lender_username: lender?.username ?? null
-   };
    const borrowerPayload = {
       ...borrower,
       trust_points_total: trustPoints?.points_total ?? 0
    };
 
-   const alreadySent = await hasNotificationBeenSent(supabase, { loanId: loan.id, userId: borrower.id, type: 'funded' });
+   const alreadySent = await hasNotificationBeenSent(supabase, { loanId: loan.id, userId: borrower.id, type: 'repayment_received' });
 
    if (alreadySent) {
       return new Response(JSON.stringify({ message: 'Notification already sent' }), { status: 200, headers: corsHeaders });
    }
 
-   const rewardReferenceDate = new Date();
-   const trustPointRewardData = await loadTrustPointRewardData(supabase, borrower.id);
+   const parsedPaidAt = loan.updated_at ? new Date(loan.updated_at) : new Date();
+   const paidAt = Number.isNaN(parsedPaidAt.getTime()) ? new Date() : parsedPaidAt;
+   const trustPointRewardData = await loadTrustPointRewardData(supabase, borrower.id, paidAt);
    const trustPointsReward = calculateTrustPointRewardDelta({
-      beforeLoans: trustPointRewardData.loans,
-      afterLoans: markLoansRepaid(trustPointRewardData.loans, [loan.id], rewardReferenceDate),
+      beforeLoans: markLoansUnpaid(trustPointRewardData.loans, [loan.id]),
+      afterLoans: trustPointRewardData.loans,
       user: borrower,
       milestoneDefinitions: trustPointRewardData.milestoneDefinitions,
-      completedMilestoneIds: trustPointRewardData.completedMilestoneIds,
-      referenceDate: rewardReferenceDate
+      completedMilestoneIds: trustPointRewardData.completedMilestoneIdsBeforePayment,
+      referenceDate: paidAt
    });
 
-   const { subject, text, html } = buildLoanNotificationEmail('funded', loanPayload, {
+   const { subject, text, html } = buildLoanNotificationEmail('repayment_received', loan, {
       ...borrowerPayload,
       trust_points_reward: trustPointsReward,
-      trust_points_reward_kind: 'potential'
+      trust_points_reward_kind: 'earned'
    });
 
    await sendEmail(borrowerPayload.email, subject, text, html);
@@ -167,7 +170,7 @@ serve(async (req) => {
    const { error: insertError } = await supabase.from('loan_notifications').insert({
       loan_id: loan.id,
       user_id: borrower.id,
-      notification_type: 'funded'
+      notification_type: 'repayment_received'
    });
 
    if (insertError) {

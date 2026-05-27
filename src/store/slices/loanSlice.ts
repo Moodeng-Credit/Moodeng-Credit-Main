@@ -463,6 +463,17 @@ export const updateLoanStatus = createAsyncThunk<
       }
    }
 
+   if (repaymentStatus === 'Paid') {
+      const { error: notificationError } = await supabase.functions.invoke('loan-repayment-received-notification', {
+         body: { loanId: id }
+      });
+
+      if (notificationError) {
+         console.error('Failed to send repayment received notification:', notificationError.message);
+         sideEffectErrors.push({ type: 'loan_notification', message: notificationError.message });
+      }
+   }
+
    return fulfillWithValue(mapSupabaseLoanToLoan(data), { sideEffectErrors });
 });
 
