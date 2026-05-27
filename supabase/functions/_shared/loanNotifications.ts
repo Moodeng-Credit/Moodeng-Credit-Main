@@ -17,6 +17,7 @@ export type LoanNotificationLoan = {
 
 export type LoanNotificationRecipient = {
    username: string | null;
+   telegram_username?: string | null;
    email?: string | null;
    chat_id?: number | string | null;
    trust_points_total?: number | string | null;
@@ -153,7 +154,7 @@ const formatLoanCount = (count: number) => `${count} ${count === 1 ? 'loan' : 'l
 const getRecipientName = (recipient: LoanNotificationRecipient) => recipient.username?.trim() || 'there';
 
 const getTelegramRecipientName = (recipient: LoanNotificationRecipient) => {
-   const username = recipient.username?.trim().replace(/^@/, '');
+   const username = (recipient.telegram_username ?? recipient.username)?.trim().replace(/^@/, '');
    return username ? `@${username}` : getRecipientName(recipient);
 };
 

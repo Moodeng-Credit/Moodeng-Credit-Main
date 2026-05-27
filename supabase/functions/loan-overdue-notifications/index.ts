@@ -44,7 +44,10 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
       return new Map<string, BorrowerRecord>();
    }
 
-   const { data, error } = await supabase.from('users').select('id, username, email, cs, is_world_id, chat_id').in('id', userIds);
+   const { data, error } = await supabase
+      .from('users')
+      .select('id, username, telegram_username, email, cs, is_world_id, chat_id')
+      .in('id', userIds);
 
    if (error || !data) {
       throw new Error(error?.message ?? 'Failed to load borrowers');

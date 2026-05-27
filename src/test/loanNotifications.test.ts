@@ -25,6 +25,7 @@ const baseLoan = {
 
 const recipient = {
    username: 'sam',
+   telegram_username: 'jimmymoodengcredit',
    email: 'sam@example.com',
    trust_points_total: 123000000
 };
@@ -234,7 +235,7 @@ describe('buildLoanNotificationTelegram', () => {
 
       expect(result.actionUrl).toBe('https://moodeng.app/repay');
       expect(result.text).toContain('Loan funded');
-      expect(result.text).toContain('@sam');
+      expect(result.text).toContain('@jimmymoodengcredit');
       expect(result.text).toContain('LOAN-123');
       expect(result.text).toContain('$250.00 USDC');
       expect(result.text).toContain('$275.00 USDC');
