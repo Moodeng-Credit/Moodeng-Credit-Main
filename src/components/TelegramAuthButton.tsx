@@ -7,6 +7,7 @@ interface TelegramAuthButtonProps {
    buttonSize?: 'large' | 'medium' | 'small';
    /** Hide loading state when embedding in custom-styled buttons */
    hideLoading?: boolean;
+   requestWriteAccess?: boolean;
 }
 
 declare global {
@@ -20,10 +21,11 @@ declare global {
 export default function TelegramAuthButton({
    onAuth,
    buttonSize = 'large',
-   hideLoading = false
+   hideLoading = false,
+   requestWriteAccess = false
 }: TelegramAuthButtonProps) {
    const containerRef = useRef<HTMLDivElement>(null);
-   const rawBotUsername = "moodengnewbranchbot";
+   const rawBotUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? 'moodengnewbranchbot';
    const botUsername = rawBotUsername?.trim().replace(/^@/, '');
    const onAuthRef = useRef(onAuth);
    const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +40,8 @@ export default function TelegramAuthButton({
          rawBotUsername,
          normalizedBotUsername: botUsername,
          buttonSize,
-         hideLoading
+         hideLoading,
+         requestWriteAccess
       });
 
       if (!botUsername) {
@@ -68,7 +71,9 @@ export default function TelegramAuthButton({
       script.setAttribute('data-telegram-login', botUsername);
       script.setAttribute('data-size', buttonSize);
       script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-      script.setAttribute('data-request-access', 'write');
+      if (requestWriteAccess) {
+         script.setAttribute('data-request-access', 'write');
+      }
       console.debug(`${debugTag} script configured`, {
          src: script.src,
          telegramLoginAttr: script.getAttribute('data-telegram-login'),
@@ -120,7 +125,7 @@ export default function TelegramAuthButton({
             delete win.onTelegramAuth;
          }
       };
-   }, [buttonSize, botUsername]);
+   }, [buttonSize, botUsername, requestWriteAccess]);
 
    if (!botUsername) {
       console.debug(`${debugTag} returning null because bot username missing`);

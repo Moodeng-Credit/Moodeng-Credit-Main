@@ -1,9 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { sendEmail } from '../_shared/email.ts';
 import {
-   buildLoanNotificationEmail,
+   getBorrowerTelegramNotificationsEnabled,
+   sendBorrowerLoanNotification
+} from '../_shared/borrowerNotificationDelivery.ts';
+import {
    getLoanOutstandingAmount,
    LoanNotificationLoan,
    LoanNotificationRecipient
@@ -41,7 +43,10 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
       return new Map<string, BorrowerRecord>();
    }
 
-   const { data, error } = await supabase.from('users').select('id, username, email, cs, is_world_id').in('id', userIds);
+   const { data, error } = await supabase
+      .from('users')
+      .select('id, username, telegram_username, email, cs, is_world_id, chat_id')
+      .in('id', userIds);
 
    if (error || !data) {
       throw new Error(error?.message ?? 'Failed to load borrowers');
@@ -210,6 +215,7 @@ serve(async (req) => {
    const borrowerIds = Array.from(new Set((loans ?? []).map((loan) => loan.borrower_user_id).filter(Boolean))) as string[];
    const borrowers = await loadBorrowers(supabase, borrowerIds);
    const trustPointRewardContext = await loadTrustPointRewardContext(supabase, borrowerIds);
+   const telegramEnabled = await getBorrowerTelegramNotificationsEnabled(supabase);
 
    const borrowerBuckets = new Map<string, Array<LoanNotificationLoan & { id: string }>>();
 
@@ -227,7 +233,7 @@ serve(async (req) => {
 
    for (const [borrowerId, borrowerLoans] of borrowerBuckets.entries()) {
       const borrower = borrowers.get(borrowerId);
-      if (!borrower?.email) {
+      if (!borrower?.email && !borrower?.chat_id) {
          continue;
       }
 
@@ -255,7 +261,7 @@ serve(async (req) => {
          referenceDate
       });
 
-      const { subject, text, html } = buildLoanNotificationEmail(
+      const delivery = await sendBorrowerLoanNotification(
          'weekly_digest',
          null,
          {
@@ -263,10 +269,13 @@ serve(async (req) => {
             trust_points_reward: trustPointsReward,
             trust_points_reward_kind: 'potential'
          },
-         aggregate
+         aggregate,
+         { telegramEnabled }
       );
 
-      await sendEmail(borrower.email, subject, text, html);
+      if (!delivery.emailSent && !delivery.telegramSent) {
+         continue;
+      }
 
       await recordWeeklyDigest(
          supabase,

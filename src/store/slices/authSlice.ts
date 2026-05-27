@@ -26,10 +26,42 @@ type SupabaseClientType = ReturnType<typeof supabaseClient>;
 type UserRow = Database['public']['Tables']['users']['Row'];
 type UserInsert = Database['public']['Tables']['users']['Insert'];
 type WorldIdStatus = Database['public']['Enums']['world_id_status'];
+type TelegramAuthData = {
+   id?: number | string;
+   username?: string;
+   allows_write_to_pm?: boolean | number | string;
+};
 
 const toOptionalString = (value: number | string | bigint | null | undefined): string | undefined => {
    if (value === null || value === undefined) return undefined;
    return value.toString();
+};
+
+const toOptionalNumber = (value: number | string | null | undefined): number | undefined => {
+   if (value === null || value === undefined || value === '') return undefined;
+   const numberValue = Number(value);
+   return Number.isSafeInteger(numberValue) ? numberValue : undefined;
+};
+
+const allowsTelegramWrite = (value: TelegramAuthData['allows_write_to_pm']): boolean =>
+   value === true || value === 1 || value === '1' || value === 'true';
+
+const getTelegramProfileUpdates = (authData?: TelegramAuthData): Database['public']['Tables']['users']['Update'] => {
+   const telegramId = toOptionalNumber(authData?.id);
+   const updates: Database['public']['Tables']['users']['Update'] = {};
+
+   if (telegramId !== undefined) {
+      updates.telegram_id = telegramId;
+      if (allowsTelegramWrite(authData?.allows_write_to_pm)) {
+         updates.chat_id = telegramId;
+      }
+   }
+
+   if (authData?.username) {
+      updates.telegram_username = authData.username;
+   }
+
+   return updates;
 };
 
 const normalizeWorldIdStatus = (value?: string | WorldIdStatus | null): WorldIdStatus => (value as WorldIdStatus) ?? WorldId.INACTIVE;
@@ -96,7 +128,8 @@ const ensureUserProfileRow = async (
       id: authUser.id,
       username: deriveUsername(authUser, overrides?.username),
       email,
-      is_world_id: normalizeWorldIdStatus(overrides?.isWorldId ?? authUser.user_metadata?.is_world_id)
+      is_world_id: normalizeWorldIdStatus(overrides?.isWorldId ?? authUser.user_metadata?.is_world_id),
+      ...getTelegramProfileUpdates(authUser.user_metadata as TelegramAuthData | undefined)
    };
 
    const { data, error } = await supabase.from('users').insert(payload).select('*').single();
@@ -210,6 +243,35 @@ const signInWithGoogleCredential = async (credential: string): Promise<User> => 
    return await fetchCurrentUserProfile();
 };
 
+const syncTelegramProfile = async (supabase: SupabaseClientType, userId: string, authData: TelegramAuthData): Promise<void> => {
+   const updates = getTelegramProfileUpdates(authData);
+
+   if (Object.keys(updates).length === 0) {
+      return;
+   }
+
+   const { error } = await supabase.from('users').update(updates).eq('id', userId);
+   if (error) throw error;
+};
+
+const completeTelegramAuth = async (telegramAuthData: string): Promise<User> => {
+   const supabase = supabaseClient();
+   const authData = JSON.parse(telegramAuthData) as TelegramAuthData;
+   const { data, error } = await supabase.functions.invoke('telegram-login', {
+      body: { authData }
+   });
+
+   if (error) throw error;
+   if (data.error) throw new Error(data.error);
+
+   const { error: sessionError } = await supabase.auth.setSession(data.session);
+   if (sessionError) throw sessionError;
+
+   const user = await fetchCurrentUserProfile();
+   await syncTelegramProfile(supabase, user.id, authData);
+   return await fetchCurrentUserProfile();
+};
+
 const defaultUser: User = {
    id: '',
    username: '',
@@ -296,19 +358,7 @@ export const loginWithGoogle = createAsyncThunk('auth/loginWithGoogle', async ({
 });
 
 export const loginWithTelegram = createAsyncThunk('auth/loginWithTelegram', async ({ telegramAuthData }: { telegramAuthData: string }) => {
-   const supabase = supabaseClient();
-   const { data, error } = await supabase.functions.invoke('telegram-login', {
-      body: { authData: JSON.parse(telegramAuthData) }
-   });
-
-   if (error) throw error;
-   if (data.error) throw new Error(data.error);
-
-   // Set the session in the client
-   const { error: sessionError } = await supabase.auth.setSession(data.session);
-   if (sessionError) throw sessionError;
-
-   const user = await fetchCurrentUserProfile();
+   const user = await completeTelegramAuth(telegramAuthData);
    return {
       username: user.username,
       user
@@ -390,19 +440,7 @@ export const registerWithGoogle = createAsyncThunk(
 export const registerWithTelegram = createAsyncThunk(
    'auth/registerWithTelegram',
    async ({ telegramAuthData }: { telegramAuthData: string }) => {
-      const supabase = supabaseClient();
-      const { data, error } = await supabase.functions.invoke('telegram-login', {
-         body: { authData: JSON.parse(telegramAuthData) }
-      });
-
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      // Set the session in the client
-      const { error: sessionError } = await supabase.auth.setSession(data.session);
-      if (sessionError) throw sessionError;
-
-      const user = await fetchCurrentUserProfile();
+      const user = await completeTelegramAuth(telegramAuthData);
       return {
          username: user.username,
          user

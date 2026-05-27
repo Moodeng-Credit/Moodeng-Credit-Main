@@ -769,8 +769,8 @@ export type Database = {
         | "funded"
         | "urgent_reminder"
         | "final_reminder"
-        | "weekly_digest"
         | "overdue"
+        | "weekly_digest"
         | "repayment_received"
       loan_status: "Requested" | "Lent"
       repayment_status: "Unpaid" | "Partial" | "Paid"
@@ -906,8 +906,8 @@ export const Constants = {
         "funded",
         "urgent_reminder",
         "final_reminder",
-        "weekly_digest",
         "overdue",
+        "weekly_digest",
         "repayment_received",
       ],
       loan_status: ["Requested", "Lent"],

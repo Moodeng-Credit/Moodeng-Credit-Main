@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import {
    buildLoanNotificationEmail,
+   buildLoanNotificationTelegram,
    getLoanOutstandingAmount,
    getReminderWindows
 } from '../../supabase/functions/_shared/loanNotifications';
@@ -24,6 +25,7 @@ const baseLoan = {
 
 const recipient = {
    username: 'sam',
+   telegram_username: 'jimmymoodengcredit',
    email: 'sam@example.com',
    trust_points_total: 123000000
 };
@@ -222,6 +224,54 @@ describe('buildLoanNotificationEmail', () => {
    it('calculates outstanding amount from the DB repayment fields', () => {
       expect(getLoanOutstandingAmount(baseLoan)).toBe(250);
       expect(getLoanOutstandingAmount({ total_repayment_amount: 100, repaid_amount: 125 })).toBe(0);
+   });
+});
+
+describe('buildLoanNotificationTelegram', () => {
+   it('builds a funded Telegram notification', () => {
+      process.env.VITE_SITE_URL = 'https://moodeng.app';
+
+      const result = buildLoanNotificationTelegram('funded', baseLoan, recipient);
+
+      expect(result.actionUrl).toBe('https://moodeng.app/repay');
+      expect(result.text).toContain('Loan funded');
+      expect(result.text).toContain('@jimmymoodengcredit');
+      expect(result.text).toContain('LOAN-123');
+      expect(result.text).toContain('$250.00 USDC');
+      expect(result.text).toContain('$275.00 USDC');
+      expect(result.text).toContain('https://moodeng.app/repay');
+      expect(result.text).not.toContain('Credit Score');
+   });
+
+   it('builds amount coming due Telegram notifications', () => {
+      const urgent = buildLoanNotificationTelegram('urgent_reminder', null, recipient, {
+         count: 2,
+         totalAmount: 525,
+         dueLabel: '3 days'
+      });
+      const final = buildLoanNotificationTelegram('final_reminder', null, recipient, {
+         count: 1,
+         totalAmount: 250,
+         dueLabel: '24 hours'
+      });
+
+      expect(urgent.text).toContain('Amount coming due');
+      expect(urgent.text).toContain('2 loans due in 3 days');
+      expect(urgent.text).toContain('Amount due: $525.00 USDC');
+      expect(final.text).toContain('1 loan due within 24 hours');
+      expect(final.text).toContain('stablecoins ready');
+   });
+
+   it('builds an overdue Telegram notification', () => {
+      const result = buildLoanNotificationTelegram('overdue', null, recipient, {
+         count: 1,
+         totalAmount: 240
+      });
+
+      expect(result.text).toContain('Amount overdue');
+      expect(result.text).toContain('1 loan overdue');
+      expect(result.text).toContain('Amount overdue: $240.00 USDC');
+      expect(result.text).toContain('get back on track');
    });
 });
 

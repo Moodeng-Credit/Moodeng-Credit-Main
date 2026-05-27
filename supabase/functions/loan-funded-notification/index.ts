@@ -1,8 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { sendEmail } from '../_shared/email.ts';
-import { buildLoanNotificationEmail, LoanNotificationType } from '../_shared/loanNotifications.ts';
+import {
+   getBorrowerTelegramNotificationsEnabled,
+   sendBorrowerLoanNotification
+} from '../_shared/borrowerNotificationDelivery.ts';
+import { LoanNotificationType } from '../_shared/loanNotifications.ts';
 import {
    calculateTrustPointRewardDelta,
    markLoansRepaid
@@ -112,7 +115,7 @@ serve(async (req) => {
 
    const { data: borrower, error: borrowerError } = await supabase
       .from('users')
-      .select('id, username, email, cs, is_world_id')
+      .select('id, username, telegram_username, email, cs, is_world_id, chat_id')
       .eq('id', loan.borrower_user_id)
       .maybeSingle();
 
@@ -120,8 +123,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: borrowerError.message }), { status: 500, headers: corsHeaders });
    }
 
-   if (!borrower?.email) {
-      return new Response(JSON.stringify({ error: 'Borrower email not found' }), { status: 404, headers: corsHeaders });
+   if (!borrower?.email && !borrower?.chat_id) {
+      return new Response(JSON.stringify({ error: 'Borrower notification target not found' }), { status: 404, headers: corsHeaders });
    }
 
    const { data: trustPoints } = await supabase.from('user_trust_points').select('points_total').eq('user_id', borrower.id).maybeSingle();
@@ -156,13 +159,22 @@ serve(async (req) => {
       referenceDate: rewardReferenceDate
    });
 
-   const { subject, text, html } = buildLoanNotificationEmail('funded', loanPayload, {
-      ...borrowerPayload,
-      trust_points_reward: trustPointsReward,
-      trust_points_reward_kind: 'potential'
-   });
+   const telegramEnabled = await getBorrowerTelegramNotificationsEnabled(supabase);
+   const delivery = await sendBorrowerLoanNotification(
+      'funded',
+      loanPayload,
+      {
+         ...borrowerPayload,
+         trust_points_reward: trustPointsReward,
+         trust_points_reward_kind: 'potential'
+      },
+      undefined,
+      { telegramEnabled }
+   );
 
-   await sendEmail(borrowerPayload.email, subject, text, html);
+   if (!delivery.emailSent && !delivery.telegramSent) {
+      return new Response(JSON.stringify({ error: 'Borrower notification target not found' }), { status: 404, headers: corsHeaders });
+   }
 
    const { error: insertError } = await supabase.from('loan_notifications').insert({
       loan_id: loan.id,
