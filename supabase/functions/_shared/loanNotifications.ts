@@ -17,7 +17,8 @@ export type LoanNotificationLoan = {
 
 export type LoanNotificationRecipient = {
    username: string | null;
-   email: string;
+   email?: string | null;
+   chat_id?: number | string | null;
    trust_points_total?: number | string | null;
    trust_points_reward?: number | string | null;
    trust_points_reward_kind?: 'potential' | 'earned';
@@ -150,6 +151,11 @@ const normalizeNotificationText = (text: string) =>
 const formatLoanCount = (count: number) => `${count} ${count === 1 ? 'loan' : 'loans'}`;
 
 const getRecipientName = (recipient: LoanNotificationRecipient) => recipient.username?.trim() || 'there';
+
+const getTelegramRecipientName = (recipient: LoanNotificationRecipient) => {
+   const username = recipient.username?.trim().replace(/^@/, '');
+   return username ? `@${username}` : getRecipientName(recipient);
+};
 
 const getRecipientTrustPointReward = (recipient: LoanNotificationRecipient) => {
    const reward = toNumber(recipient.trust_points_reward);
@@ -678,6 +684,90 @@ export const buildLoanNotificationEmail = (
       text: content.text,
       html: buildLoanEmailHtml(content, recipient)
    };
+};
+
+export const buildLoanNotificationTelegram = (
+   type: LoanNotificationType,
+   loan: LoanNotificationLoan | null,
+   recipient: LoanNotificationRecipient,
+   aggregate?: LoanNotificationAggregate
+) => {
+   const name = getTelegramRecipientName(recipient);
+
+   if (type === 'funded') {
+      if (!loan) {
+         throw new Error('Loan details are required for funded notifications.');
+      }
+
+      const actionUrl = buildRepayLink();
+      const text = normalizeNotificationText(`Loan funded
+Hi ${name}, your request for ${formatUsdcAmount(loan.loan_amount)} (${loan.tracking_id}) was funded by ${
+         loan.lender_username ?? 'a lender'
+      } on ${formatDate(loan.funded_at)}.
+Repay ${formatUsdcAmount(loan.total_repayment_amount)} by ${formatDate(loan.due_date)} to stay in good standing.
+${actionUrl}`);
+
+      return { actionUrl, text };
+   }
+
+   if (type === 'urgent_reminder') {
+      const actionUrl = buildRepayLink();
+      const dueLabel = aggregate?.dueLabel ?? '3 days';
+      const text = normalizeNotificationText(`Amount coming due
+Hi ${name}, you have ${formatLoanCount(aggregate?.count ?? 0)} due in ${dueLabel}.
+Amount due: ${formatUsdcAmount(aggregate?.totalAmount ?? 0)}
+Repay on time to stay in good standing.
+${actionUrl}`);
+
+      return { actionUrl, text };
+   }
+
+   if (type === 'final_reminder') {
+      const actionUrl = buildRepayLink();
+      const dueLabel = aggregate?.dueLabel ?? '24 hours';
+      const text = normalizeNotificationText(`Amount coming due
+Hi ${name}, you have ${formatLoanCount(aggregate?.count ?? 0)} due within ${dueLabel}.
+Amount due: ${formatUsdcAmount(aggregate?.totalAmount ?? 0)}
+Please make sure your wallet has the stablecoins ready so your Moodeng history stays on track.
+${actionUrl}`);
+
+      return { actionUrl, text };
+   }
+
+   if (type === 'overdue') {
+      const actionUrl = buildRepayLink();
+      const text = normalizeNotificationText(`Amount overdue
+Hi ${name}, you have ${formatLoanCount(aggregate?.count ?? 0)} overdue.
+Amount overdue: ${formatUsdcAmount(aggregate?.totalAmount ?? 0)}
+Please repay now so your Moodeng history can get back on track.
+${actionUrl}`);
+
+      return { actionUrl, text };
+   }
+
+   if (type === 'repayment_received') {
+      if (!loan) {
+         throw new Error('Loan details are required for repayment received notifications.');
+      }
+
+      const actionUrl = buildDashboardLink();
+      const text = normalizeNotificationText(`Repayment received
+Hi ${name}, your repayment for ${loan.tracking_id} was received.
+Amount repaid: ${formatUsdcAmount(loan.repaid_amount ?? loan.total_repayment_amount)}
+${actionUrl}`);
+
+      return { actionUrl, text };
+   }
+
+   const actionUrl = buildDashboardLink();
+   const text = normalizeNotificationText(`Weekly Moodeng update
+Hi ${name}, here is your weekly loan update.
+Active loans: ${aggregate?.count ?? 0}
+Total outstanding: ${formatUsdcAmount(aggregate?.totalAmount ?? 0)}
+Keep repayments on time to build your Moodeng history.
+${actionUrl}`);
+
+   return { actionUrl, text };
 };
 
 export const getReminderWindows = (referenceDate: Date, urgentHours: number, finalHours: number) => {

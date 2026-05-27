@@ -1,9 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { sendEmail } from '../_shared/email.ts';
 import {
-   buildLoanNotificationEmail,
+   getBorrowerTelegramNotificationsEnabled,
+   sendBorrowerLoanNotification
+} from '../_shared/borrowerNotificationDelivery.ts';
+import {
    getLoanOutstandingAmount,
    getReminderWindows,
    LoanNotificationLoan,
@@ -39,12 +41,41 @@ type TrustPointRewardContext = {
    milestoneDefinitions: TrustPointMilestoneDefinition[];
 };
 
+const getRequestSecret = (req: Request) => {
+   const authorization = req.headers.get('Authorization') ?? '';
+   const bearerToken = authorization.replace(/^Bearer\s+/i, '').trim();
+   return bearerToken || req.headers.get('x-notification-secret');
+};
+
+const authorizeInternalRequest = async (supabase: SupabaseClient, req: Request) => {
+   const requestSecret = getRequestSecret(req);
+   if (!requestSecret) {
+      return { authorized: false, status: 401, error: 'Unauthorized' };
+   }
+
+   const expectedSecret = Deno.env.get('SUPABASE_SECRET_KEY') ?? Deno.env.get('TELEGRAM_NOTIFICATION_SECRET');
+   if (expectedSecret && requestSecret === expectedSecret) {
+      return { authorized: true, status: 200, error: null };
+   }
+
+   const { data, error } = await supabase.rpc('verify_internal_notification_secret', { candidate: requestSecret });
+   if (error) {
+      return { authorized: false, status: 500, error: error.message };
+   }
+
+   if (data !== true) {
+      return { authorized: false, status: 401, error: 'Unauthorized' };
+   }
+
+   return { authorized: true, status: 200, error: null };
+};
+
 const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promise<Map<string, BorrowerRecord>> => {
    if (!userIds.length) {
       return new Map<string, BorrowerRecord>();
    }
 
-   const { data, error } = await supabase.from('users').select('id, username, email, cs, is_world_id').in('id', userIds);
+   const { data, error } = await supabase.from('users').select('id, username, email, cs, is_world_id, chat_id').in('id', userIds);
 
    if (error || !data) {
       throw new Error(error?.message ?? 'Failed to load borrowers');
@@ -207,7 +238,8 @@ const notifyBorrower = async (
    type: LoanNotificationType,
    dueLabel: string,
    rewardContext: TrustPointRewardContext,
-   referenceDate: Date
+   referenceDate: Date,
+   telegramEnabled: boolean
 ) => {
    const loanIds = loans.map((loan) => loan.id);
    const sentLoanIds = await loadSentLoanIds(supabase, { loanIds, userId: borrower.id, type });
@@ -237,7 +269,7 @@ const notifyBorrower = async (
       referenceDate
    });
 
-   const { subject, text, html } = buildLoanNotificationEmail(
+   const delivery = await sendBorrowerLoanNotification(
       type,
       null,
       {
@@ -245,10 +277,13 @@ const notifyBorrower = async (
          trust_points_reward: trustPointsReward,
          trust_points_reward_kind: 'potential'
       },
-      aggregate
+      aggregate,
+      { telegramEnabled }
    );
 
-   await sendEmail(borrower.email, subject, text, html);
+   if (!delivery.emailSent && !delivery.telegramSent) {
+      return false;
+   }
 
    await recordNotification(
       supabase,
@@ -269,12 +304,19 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
    }
 
+   const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+   const authorization = await authorizeInternalRequest(supabase, req);
+   if (!authorization.authorized) {
+      return new Response(JSON.stringify({ error: authorization.error }), {
+         status: authorization.status,
+         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+   }
+
    const body = await req.json().catch(() => ({}));
    const urgentReminderHours = Number.parseInt(Deno.env.get('URGENT_REMINDER_HOURS') ?? `${body.urgentReminderHours ?? 72}`, 10);
    const finalReminderHours = Number.parseInt(Deno.env.get('FINAL_REMINDER_HOURS') ?? `${body.finalReminderHours ?? 24}`, 10);
    const referenceDate = body.referenceDate ? new Date(body.referenceDate) : new Date();
-
-   const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
    const { data: loans, error } = await supabase
       .from('loans')
@@ -292,6 +334,7 @@ serve(async (req) => {
    const borrowerIds = Array.from(new Set((loans ?? []).map((loan) => loan.borrower_user_id).filter(Boolean))) as string[];
    const borrowers = await loadBorrowers(supabase, borrowerIds);
    const trustPointRewardContext = await loadTrustPointRewardContext(supabase, borrowerIds);
+   const telegramEnabled = await getBorrowerTelegramNotificationsEnabled(supabase);
 
    const { final, urgent } = getReminderWindows(
       referenceDate,
@@ -337,7 +380,7 @@ serve(async (req) => {
 
    for (const [borrowerId, bucket] of borrowerBuckets.entries()) {
       const borrower = borrowers.get(borrowerId);
-      if (!borrower?.email) {
+      if (!borrower?.email && !borrower?.chat_id) {
          continue;
       }
 
@@ -349,7 +392,8 @@ serve(async (req) => {
             'urgent_reminder',
             urgentDueLabel,
             trustPointRewardContext,
-            referenceDate
+            referenceDate,
+            telegramEnabled
          );
          if (wasSent) {
             sentCount += 1;
@@ -364,7 +408,8 @@ serve(async (req) => {
             'final_reminder',
             finalDueLabel,
             trustPointRewardContext,
-            referenceDate
+            referenceDate,
+            telegramEnabled
          );
          if (wasSent) {
             sentCount += 1;
