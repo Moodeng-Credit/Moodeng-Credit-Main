@@ -133,17 +133,22 @@ function VerificationFeedbackOverlay({
                      {isShowingHelp ? 'Need help verifying?' : title}
                   </h2>
                   <p className="max-w-[350px] whitespace-pre-line text-md-b1 font-normal tracking-normal text-md-neutral-1000 max-[374px]:text-md-b2">
-                     {isShowingHelp ? 'Keep this screen open if verification is still processing.\nMessage Moodeng support if it does not finish.' : description}
+                     {isShowingHelp ? 'Verification may still finish.\nFor help, message us on Telegram.' : description}
                   </p>
                </div>
 
                {isShowingHelp ? (
-                  <div className="w-full rounded-[22px] border border-md-primary-100 bg-md-neutral-100/80 p-md-4 shadow-[0_2px_4px_rgba(27,28,29,0.04)]">
-                     <div className="flex items-center justify-center gap-md-2 text-center">
-                        <Shield className="h-5 w-5 shrink-0 text-md-primary-1200" aria-hidden="true" />
-                        <p className="text-md-b2 font-medium tracking-normal text-md-neutral-1200">
-                           Support can help if World ID finished but Moodeng still does not update.
-                        </p>
+                  <div className="w-full rounded-[12px] border border-md-primary-100 bg-md-neutral-200 p-3 text-left antialiased shadow-[0_2px_4px_rgba(27,28,29,0.04)]">
+                     <div className="grid min-h-[76px] grid-cols-[40px_minmax(0,1fr)] items-center gap-[10px]">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-md-primary-300 bg-white text-md-primary-1200">
+                           <Shield className="h-5 w-5" aria-hidden="true" />
+                        </div>
+                        <div className="min-w-0">
+                           <p className="text-[16px] font-[510] leading-6 tracking-normal text-md-heading">Telegram support</p>
+                           <p className="mt-0.5 text-[12px] font-normal leading-[18px] tracking-normal text-md-neutral-700">
+                              Fastest way to reach Moodeng if World ID finished but your status does not update.
+                           </p>
+                        </div>
                      </div>
                   </div>
                ) : (
@@ -185,14 +190,14 @@ function VerificationFeedbackOverlay({
                         onClick={onCloseHelp}
                         className="inline-flex items-center justify-center rounded-md-lg border border-md-neutral-500 bg-white px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-heading"
                      >
-                        Back
+                        Keep waiting
                      </button>
                      <button
                         type="button"
                         onClick={onContactSupport}
                         className="inline-flex items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-white"
                      >
-                        Message support
+                        Open Telegram
                      </button>
                   </div>
                ) : isProcessing ? (
