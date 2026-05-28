@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { CredentialRequest, IDKitErrorCodes, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
-import { AlertTriangle, CheckCircle2, LoaderCircle, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, LoaderCircle, LockKeyhole, Shield } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
@@ -49,6 +49,7 @@ interface VerificationFeedbackOverlayProps {
    processingElapsedSeconds: number;
    onTryAgain: () => void;
    onDismiss: () => void;
+   onNeedHelp: () => void;
 }
 
 function VerificationFeedbackOverlay({
@@ -56,7 +57,8 @@ function VerificationFeedbackOverlay({
    processingStep,
    processingElapsedSeconds,
    onTryAgain,
-   onDismiss
+   onDismiss,
+   onNeedHelp
 }: VerificationFeedbackOverlayProps) {
    if (state === 'idle') return null;
 
@@ -74,66 +76,90 @@ function VerificationFeedbackOverlay({
    const description = isProcessing
       ? isTakingLonger
          ? 'This is taking longer than usual. Keep this screen open while Moodeng finishes syncing.'
-         : 'This usually takes around 10 seconds. Keep this screen open - no further action is needed.'
+         : 'This usually takes less than 10 seconds. Keep this screen open - no further action is needed.'
       : isSuccess
         ? 'Your World ID is linked to Moodeng.'
         : 'Please try again or return to the previous step.';
    const iconClassName = isProcessing ? 'animate-spin text-md-primary-1200' : isSuccess ? 'text-md-green-900' : 'text-md-red-600';
    const iconBackgroundClassName = isSuccess ? 'bg-md-green-100' : state === 'error' ? 'bg-md-red-100' : 'bg-md-primary-100';
-   const stepStatuses = [
-      { label: 'World ID proof received', status: 'complete' },
-      {
-         label: 'Confirming verification',
-         status: state === 'success' || processingStep === 'syncing' ? 'complete' : 'current'
-      },
-      {
-         label: 'Updating Moodeng status',
-         status: state === 'success' ? 'complete' : processingStep === 'syncing' || state === 'error' ? 'current' : 'pending'
-      }
-   ] as const;
+   const progressPercent = isSuccess
+      ? 100
+      : state === 'error'
+        ? 100
+        : processingStep === 'syncing'
+          ? Math.min(92, 74 + processingElapsedSeconds)
+          : Math.min(64, 38 + processingElapsedSeconds * 3);
+   const statusLabel = isSuccess
+      ? 'Verification complete'
+      : state === 'error'
+        ? 'Verification interrupted'
+        : processingStep === 'syncing'
+          ? 'Finalizing verification...'
+          : 'Confirming verification...';
+   const panelDescription = isSuccess
+      ? 'Your status has been updated securely.'
+      : state === 'error'
+        ? 'The verification did not finish. Try again when you are ready.'
+        : 'Your verification is being processed securely.';
+   const progressBarClassName = state === 'error' ? 'bg-md-red-600' : isSuccess ? 'bg-md-green-900' : 'bg-md-primary-1200';
 
    return (
       <div
-         className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-md-primary-2000/50 px-md-4 font-sans backdrop-blur-[2px]"
+         className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-md-primary-2000/65 px-md-4 font-sans backdrop-blur-[6px]"
          role="alertdialog"
          aria-modal="true"
       >
-         <div className="w-full max-w-[398px] overflow-hidden rounded-md-xl border border-md-primary-100 bg-white text-center shadow-[0_24px_80px_rgba(44,19,82,0.18)]">
-            <div className="flex flex-col items-center gap-md-3 px-md-5 py-md-5">
-               <div className={`flex h-14 w-14 items-center justify-center rounded-full ${iconBackgroundClassName}`}>
-                  <Icon className={`h-7 w-7 ${iconClassName}`} aria-hidden="true" />
-               </div>
-               <div className="flex flex-col items-center gap-md-1">
-                  <h2 className="text-md-h5 font-semibold tracking-normal text-md-heading">{title}</h2>
-                  <p className="max-w-[320px] text-md-b2 font-medium tracking-normal text-md-neutral-1200">{description}</p>
+         <div className="w-full max-w-[430px] overflow-hidden rounded-[28px] border border-md-primary-100 bg-white text-center shadow-[0_28px_90px_rgba(44,19,82,0.22)]">
+            <div className="flex flex-col items-center gap-md-4 px-md-5 py-md-5 sm:px-md-5 sm:py-md-5">
+               <div className={`flex h-16 w-16 items-center justify-center rounded-full ${iconBackgroundClassName}`}>
+                  <Icon className={`h-8 w-8 ${iconClassName}`} aria-hidden="true" />
                </div>
 
-               <div className="w-full rounded-md-lg border border-md-primary-100 bg-md-neutral-100 p-md-2 text-left">
-                  {stepStatuses.map((step, index) => (
-                     <div
-                        key={step.label}
-                        className={`flex items-center gap-md-2 px-md-2 py-md-2 ${
-                           index === stepStatuses.length - 1 ? '' : 'border-b border-md-primary-100'
-                        }`}
-                     >
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md-pill border border-md-primary-100 bg-white text-md-b3 font-semibold tracking-normal text-md-primary-1200">
-                           {step.status === 'complete' ? (
-                              <CheckCircle2 className="h-4 w-4 text-md-green-900" aria-hidden="true" />
-                           ) : step.status === 'current' ? (
-                              <LoaderCircle className="h-4 w-4 animate-spin text-md-primary-1200" aria-hidden="true" />
-                           ) : (
-                              index + 1
-                           )}
-                        </span>
-                        <span className="text-md-b2 font-semibold tracking-normal text-md-heading">{step.label}</span>
+               <div className="flex flex-col items-center gap-md-2">
+                  <h2 className="max-w-[340px] text-md-h4 font-semibold tracking-normal text-md-heading max-[374px]:text-md-h5">{title}</h2>
+                  <p className="max-w-[340px] whitespace-pre-line text-md-b1 font-medium tracking-normal text-md-neutral-1200 max-[374px]:text-md-b2">
+                     {description}
+                  </p>
+               </div>
+
+               <div className="w-full rounded-[22px] border border-md-primary-100 bg-md-neutral-100/80 p-md-4 text-left shadow-[0_2px_4px_rgba(27,28,29,0.04)]">
+                  <div className="grid grid-cols-[44px_minmax(0,1fr)] items-center gap-md-3">
+                     <div className="flex h-11 w-11 items-center justify-center rounded-md-lg bg-md-primary-100 text-md-primary-1200">
+                        <LockKeyhole className="h-6 w-6" aria-hidden="true" />
                      </div>
-                  ))}
+                     <div className="min-w-0">
+                        <p className="text-right text-md-b1 font-semibold tracking-normal text-md-heading max-[374px]:text-md-b2">{statusLabel}</p>
+                        <div
+                           className="mt-md-2 h-2.5 overflow-hidden rounded-md-pill bg-md-primary-100"
+                           role="progressbar"
+                           aria-label={statusLabel}
+                           aria-valuemin={0}
+                           aria-valuemax={100}
+                           aria-valuenow={Math.round(progressPercent)}
+                        >
+                           <div
+                              className={`h-full rounded-md-pill transition-[width] duration-500 ease-out ${progressBarClassName}`}
+                              style={{ width: `${progressPercent}%` }}
+                           />
+                        </div>
+                     </div>
+                  </div>
+
+                  <div className="mt-md-3 flex items-start gap-md-2 border-t border-md-primary-100 pt-md-3">
+                     <Shield className="mt-[2px] h-5 w-5 shrink-0 text-md-neutral-1200" aria-hidden="true" />
+                     <p className="text-md-b2 font-medium tracking-normal text-md-neutral-1200">{panelDescription}</p>
+                  </div>
                </div>
 
-               <div className="inline-flex items-center gap-md-1 rounded-md-pill bg-md-neutral-200 px-md-2 py-md-1 text-md-b3 font-semibold tracking-normal text-md-neutral-1200">
-                  <ShieldCheck className="h-4 w-4 text-md-primary-1200" aria-hidden="true" />
-                  Securely processed with World ID
-               </div>
+               {isProcessing ? (
+                  <button
+                     type="button"
+                     onClick={onNeedHelp}
+                     className="text-md-b2 font-semibold tracking-normal text-md-neutral-1200 underline underline-offset-4"
+                  >
+                     Having trouble?
+                  </button>
+               ) : null}
 
                {state === 'error' ? (
                   <div className="grid w-full grid-cols-2 gap-md-2">
@@ -390,6 +416,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
             processingElapsedSeconds={processingElapsedSeconds}
             onTryAgain={() => void handleStartIDKit()}
             onDismiss={() => setVerificationFeedbackState('idle')}
+            onNeedHelp={() => setVerificationFeedbackState('error')}
          />
 
          {app_id && rpContext ? (
