@@ -1,7 +1,7 @@
 const leadTeam = [
    {
       name: 'George',
-      role: 'Member of Lead Team',
+      role: 'Lead Co-Founder · Co-Project Lead',
       image: '/team/george.jpeg',
       bio: 'Repeat founder and product builder focused on turning messy early-stage ideas into disciplined, usable systems for real borrowers and lenders.',
       credentials: ['University of Edinburgh', 'Former Portfolio Manager', '1 Exit', '2 Prior Startups'],
@@ -9,7 +9,7 @@ const leadTeam = [
    },
    {
       name: 'Emma',
-      role: 'Member of Lead Team',
+      role: 'Lead Co-Founder · Co-Project Lead',
       image: '/team/emma-moodeng.jpeg',
       bio: 'Community builder helping Moodeng Credit turn borrower trust, education, and grassroots momentum into a clearer growth engine.',
       credentials: ['Ex. YC', 'Blockchain for Youth', 'Community Manager'],
@@ -20,20 +20,20 @@ const leadTeam = [
 const widerTeam = [
    {
       name: 'Yousef',
-      role: 'Member of Technical Team',
+      role: 'Co-Founder',
       image: '/team/yousef.jpg',
       bio: 'Supports engineering across the Moodeng Credit buildout, helping turn product direction into working borrower and lender experiences.',
       showLinkedInPlaceholder: true
    },
    {
       name: 'Louis',
-      role: 'Head of Partnerships',
+      role: 'Co-Founder',
       initial: 'L',
       bio: 'Experienced relationship builder helping shape partner conversations, lender outreach, and ecosystem growth.'
    },
    {
       name: 'Ogunjana Adeleke',
-      role: 'Community Lead',
+      role: 'Co-Founder',
       image: '/team/ogunjana-adeleke.png',
       bio: 'Helps manage X/Twitter and other social channels, keeping the community active across regional conversations.',
       linkedIn: 'https://www.linkedin.com/in/ogunjana-adeleke-lexioneth-2a75b2238/'
