@@ -87,7 +87,7 @@ function VerificationFeedbackOverlay({
       : state === 'error'
         ? 100
         : processingStep === 'syncing'
-          ? Math.min(92, 74 + processingElapsedSeconds)
+          ? Math.min(92, 80 + processingElapsedSeconds)
           : Math.min(64, 38 + processingElapsedSeconds * 3);
    const statusLabel = isSuccess
       ? 'Verification complete'
@@ -122,32 +122,33 @@ function VerificationFeedbackOverlay({
                   </p>
                </div>
 
-               <div className="w-full rounded-[22px] border border-md-primary-100 bg-md-neutral-100/80 p-md-4 text-left shadow-[0_2px_4px_rgba(27,28,29,0.04)]">
-                  <div className="grid grid-cols-[44px_minmax(0,1fr)] items-center gap-md-3">
-                     <div className="flex h-11 w-11 items-center justify-center rounded-md-lg bg-md-primary-100 text-md-primary-1200">
+               <div className="w-full rounded-[22px] border border-md-primary-100 bg-md-neutral-100/80 p-md-4 shadow-[0_2px_4px_rgba(27,28,29,0.04)]">
+                  <div className="flex items-center gap-md-3 text-left">
+                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md-lg border border-md-primary-300 bg-white text-md-primary-1200">
                         <LockKeyhole className="h-6 w-6" aria-hidden="true" />
                      </div>
-                     <div className="min-w-0">
-                        <p className="text-right text-md-b1 font-semibold tracking-normal text-md-heading max-[374px]:text-md-b2">{statusLabel}</p>
-                        <div
-                           className="mt-md-2 h-2.5 overflow-hidden rounded-md-pill bg-md-primary-100"
-                           role="progressbar"
-                           aria-label={statusLabel}
-                           aria-valuemin={0}
-                           aria-valuemax={100}
-                           aria-valuenow={Math.round(progressPercent)}
-                        >
-                           <div
-                              className={`h-full rounded-md-pill transition-[width] duration-500 ease-out ${progressBarClassName}`}
-                              style={{ width: `${progressPercent}%` }}
-                           />
-                        </div>
-                     </div>
+                     <p className="min-w-0 text-md-b1 font-medium tracking-normal text-md-neutral-1500 max-[374px]:text-md-b2">{statusLabel}</p>
                   </div>
 
-                  <div className="mt-md-3 flex items-start gap-md-2 border-t border-md-primary-100 pt-md-3">
-                     <Shield className="mt-[2px] h-5 w-5 shrink-0 text-md-neutral-1200" aria-hidden="true" />
-                     <p className="text-md-b2 font-medium tracking-normal text-md-neutral-1200">{panelDescription}</p>
+                  <div
+                     className="mx-auto mt-md-3 h-2.5 w-full overflow-hidden rounded-md-pill bg-md-primary-100"
+                     role="progressbar"
+                     aria-label={statusLabel}
+                     aria-valuemin={0}
+                     aria-valuemax={100}
+                     aria-valuenow={Math.round(progressPercent)}
+                  >
+                     <div
+                        className={`h-full rounded-md-pill transition-[width] duration-500 ease-out ${progressBarClassName}`}
+                        style={{ width: `${progressPercent}%` }}
+                     />
+                  </div>
+
+                  <div className="mt-md-3 border-t border-md-primary-100 pt-md-3">
+                     <div className="flex items-center justify-center gap-md-2 text-center">
+                        <Shield className="h-5 w-5 shrink-0 text-md-primary-1200" aria-hidden="true" />
+                        <p className="text-md-b2 font-medium tracking-normal text-md-neutral-1200">{panelDescription}</p>
+                     </div>
                   </div>
                </div>
 
