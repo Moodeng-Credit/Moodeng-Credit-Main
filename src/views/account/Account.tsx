@@ -135,8 +135,8 @@ export default function Account() {
       <div className="min-h-screen bg-md-neutral-200">
          <div className="max-w-[440px] mx-auto pb-28 flex flex-col">
             {/* User header */}
-            <div className="flex items-center justify-between px-md-5 py-md-3">
-               <div className="flex gap-4 items-center">
+            <div className="flex items-center justify-between gap-3 px-md-5 py-md-3">
+               <div className="flex min-w-0 flex-1 gap-4 items-center">
                   <button
                      type="button"
                      onClick={() => navigate('/account/settings')}
@@ -145,8 +145,10 @@ export default function Account() {
                   >
                      <UserAvatar size={48} />
                   </button>
-                  <div className="flex flex-col gap-1">
-                     <p className="text-md-h6 font-semibold text-md-heading">{displayName}</p>
+                  <div className="flex min-w-0 flex-col gap-1">
+                     <p className="max-w-full break-words text-md-h6 font-semibold leading-tight text-md-heading [overflow-wrap:anywhere]">
+                        {displayName}
+                     </p>
                      {isLender ? (
                         <div className="bg-md-primary-900 rounded-md-sm px-2 py-1 self-start">
                            <p className="text-md-b3 font-semibold text-md-neutral-100 capitalize">IOU {isVerified ? iouPoints : '0'}</p>
