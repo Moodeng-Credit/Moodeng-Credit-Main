@@ -32,10 +32,11 @@ const widerTeam = [
       bio: 'Experienced relationship builder helping shape partner conversations, lender outreach, and ecosystem growth.'
    },
    {
-      name: 'Quick Silver',
+      name: 'Ogunjana Adeleke',
       role: 'Community Lead',
-      initial: 'QS',
-      bio: 'Helps manage X/Twitter and other social channels, keeping the community active across regional conversations.'
+      image: '/team/ogunjana-adeleke.png',
+      bio: 'Helps manage X/Twitter and other social channels, keeping the community active across regional conversations.',
+      linkedIn: 'https://www.linkedin.com/in/ogunjana-adeleke-lexioneth-2a75b2238/'
    }
 ];
 
@@ -110,7 +111,9 @@ export default function TeamPage() {
       <section className="bg-[#f3d354] px-md-4 py-md-6 text-md-primary-2000 md:py-md-8">
          <div className="mx-auto flex max-w-[1120px] flex-col gap-md-5">
             <header className="relative overflow-hidden rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] px-md-5 py-md-5 text-center text-[#fff9e8] shadow-[0_18px_0_rgba(7,27,67,0.24)] md:px-md-6 md:py-md-6">
-               <span className="inline-flex rounded-md-pill bg-[#f4d756] px-md-3 py-1 text-md-b2 font-bold text-[#071b43]">Moodeng Credit</span>
+               <span className="inline-flex rounded-md-pill bg-[#f4d756] px-md-3 py-1 text-md-b2 font-bold text-[#071b43]">
+                  Moodeng Credit
+               </span>
                <h1 className="mt-md-2 font-serif text-[58px] font-bold leading-[0.88] md:text-[104px]">Core Team</h1>
                <p className="mx-auto mt-md-2 max-w-[660px] text-md-b1 font-medium text-[#fff9e8] md:text-md-h5">
                   Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.
@@ -129,7 +132,9 @@ export default function TeamPage() {
                      <p className="mx-auto mt-md-3 w-fit rounded-md-sm bg-md-primary-1600 px-md-3 py-md-1 font-serif text-md-h4 font-bold leading-tight text-[#fff9e8]">
                         {member.role}
                      </p>
-                     <p className="mx-auto mt-md-3 max-w-[430px] text-md-b1 font-medium leading-relaxed text-md-primary-2000">{member.bio}</p>
+                     <p className="mx-auto mt-md-3 max-w-[430px] text-md-b1 font-medium leading-relaxed text-md-primary-2000">
+                        {member.bio}
+                     </p>
                      <div className="mt-md-3">
                         <CredentialPills items={member.credentials} light={member.name === 'Emma'} />
                      </div>
@@ -152,6 +157,8 @@ export default function TeamPage() {
                      <p className="mx-auto mt-md-2 max-w-[280px] text-md-b2 font-medium leading-relaxed text-[#fff9e8]/90">{member.bio}</p>
                      {'showLinkedInPlaceholder' in member && member.showLinkedInPlaceholder ? (
                         <LinkedInPlaceholderButton className="mx-auto mt-md-3" />
+                     ) : 'linkedIn' in member && member.linkedIn ? (
+                        <LinkedInButton href={member.linkedIn} className="mx-auto mt-md-3" />
                      ) : null}
                   </article>
                ))}
