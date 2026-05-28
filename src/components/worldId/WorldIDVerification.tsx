@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { CredentialRequest, IDKitErrorCodes, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
-import { AlertTriangle, CheckCircle2, LoaderCircle, LockKeyhole, Shield } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, LoaderCircle, LockKeyhole, MessageCircle, Shield } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,6 +15,7 @@ import type { AppDispatch } from '@/store/store';
 import type { ApiResponse } from '@/types/apiTypes';
 import { SUCCESS_CODES } from '@/types/successCodes';
 import { getToastKeyFromSuccessCode } from '@/types/successToastMapping';
+import { TELEGRAM_SUPPORT_URL } from '@/views/support/constants';
 
 interface WorldIDVerificationProps {
    children: (props: { open: () => void }) => ReactNode;
@@ -48,23 +49,30 @@ interface VerificationFeedbackOverlayProps {
    state: VerificationFeedbackState;
    processingStep: VerificationProcessingStep;
    processingElapsedSeconds: number;
+   showHelpPanel: boolean;
    onTryAgain: () => void;
    onDismiss: () => void;
    onNeedHelp: () => void;
+   onCloseHelp: () => void;
+   onContactSupport: () => void;
 }
 
 function VerificationFeedbackOverlay({
    state,
    processingStep,
    processingElapsedSeconds,
+   showHelpPanel,
    onTryAgain,
    onDismiss,
-   onNeedHelp
+   onNeedHelp,
+   onCloseHelp,
+   onContactSupport
 }: VerificationFeedbackOverlayProps) {
    if (state === 'idle') return null;
 
    const isProcessing = state === 'processing';
    const isSuccess = state === 'success';
+   const isShowingHelp = isProcessing && showHelpPanel;
    const Icon = isProcessing ? LoaderCircle : isSuccess ? CheckCircle2 : AlertTriangle;
    const isTakingLonger = isProcessing && processingElapsedSeconds >= LONG_PROCESSING_SECONDS;
    const title = isProcessing
@@ -112,48 +120,82 @@ function VerificationFeedbackOverlay({
       >
          <div className="w-full max-w-[430px] overflow-hidden rounded-[28px] border border-md-primary-100 bg-white text-center shadow-[0_28px_90px_rgba(44,19,82,0.22)]">
             <div className="flex flex-col items-center gap-md-4 px-md-5 py-md-5 sm:px-md-5 sm:py-md-5">
-               <div className={`flex h-16 w-16 items-center justify-center rounded-full ${iconBackgroundClassName}`}>
-                  <Icon className={`h-8 w-8 ${iconClassName}`} aria-hidden="true" />
+               <div className={`flex h-16 w-16 items-center justify-center rounded-full ${isShowingHelp ? 'bg-md-primary-100' : iconBackgroundClassName}`}>
+                  {isShowingHelp ? (
+                     <MessageCircle className="h-8 w-8 text-md-primary-1200" aria-hidden="true" />
+                  ) : (
+                     <Icon className={`h-8 w-8 ${iconClassName}`} aria-hidden="true" />
+                  )}
                </div>
 
                <div className="flex flex-col items-center gap-md-2">
-                  <h2 className="max-w-[340px] text-md-h4 font-semibold tracking-normal text-md-heading max-[374px]:text-md-h5">{title}</h2>
+                  <h2 className="max-w-[340px] text-md-h4 font-semibold tracking-normal text-md-heading max-[374px]:text-md-h5">
+                     {isShowingHelp ? 'Need help verifying?' : title}
+                  </h2>
                   <p className="max-w-[350px] whitespace-pre-line text-md-b1 font-normal tracking-normal text-md-neutral-1000 max-[374px]:text-md-b2">
-                     {description}
+                     {isShowingHelp ? 'Keep this screen open if verification is still processing.\nMessage Moodeng support if it does not finish.' : description}
                   </p>
                </div>
 
-               <div className="w-full rounded-[22px] border border-md-primary-100 bg-md-neutral-100/80 p-md-4 shadow-[0_2px_4px_rgba(27,28,29,0.04)]">
-                  <div className="flex items-center gap-md-3 text-left">
-                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md-lg border border-md-primary-300 bg-white text-md-primary-1200">
-                        <LockKeyhole className="h-6 w-6" aria-hidden="true" />
-                     </div>
-                     <p className="min-w-0 text-md-b1 font-medium tracking-normal text-md-neutral-1500 max-[374px]:text-md-b2">{statusLabel}</p>
-                  </div>
-
-                  <div
-                     className="mx-auto mt-md-3 h-2.5 w-full overflow-hidden rounded-md-pill bg-md-primary-100"
-                     role="progressbar"
-                     aria-label={statusLabel}
-                     aria-valuemin={0}
-                     aria-valuemax={100}
-                     aria-valuenow={Math.round(progressPercent)}
-                  >
-                     <div
-                        className={`h-full rounded-md-pill transition-[width] duration-500 ease-out ${progressBarClassName}`}
-                        style={{ width: `${progressPercent}%` }}
-                     />
-                  </div>
-
-                  <div className="mt-md-3 border-t border-md-primary-100 pt-md-3">
+               {isShowingHelp ? (
+                  <div className="w-full rounded-[22px] border border-md-primary-100 bg-md-neutral-100/80 p-md-4 shadow-[0_2px_4px_rgba(27,28,29,0.04)]">
                      <div className="flex items-center justify-center gap-md-2 text-center">
                         <Shield className="h-5 w-5 shrink-0 text-md-primary-1200" aria-hidden="true" />
-                        <p className="text-md-b2 font-medium tracking-normal text-md-neutral-1200">{panelDescription}</p>
+                        <p className="text-md-b2 font-medium tracking-normal text-md-neutral-1200">
+                           Support can help if World ID finished but Moodeng still does not update.
+                        </p>
                      </div>
                   </div>
-               </div>
+               ) : (
+                  <div className="w-full rounded-[22px] border border-md-primary-100 bg-md-neutral-100/80 p-md-4 shadow-[0_2px_4px_rgba(27,28,29,0.04)]">
+                     <div className="flex items-center gap-md-3 text-left">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md-lg border border-md-primary-300 bg-white text-md-primary-1200">
+                           <LockKeyhole className="h-6 w-6" aria-hidden="true" />
+                        </div>
+                        <p className="min-w-0 text-md-b1 font-medium tracking-normal text-md-neutral-1500 max-[374px]:text-md-b2">{statusLabel}</p>
+                     </div>
 
-               {isProcessing ? (
+                     <div
+                        className="mx-auto mt-md-3 h-2.5 w-full overflow-hidden rounded-md-pill bg-md-primary-100"
+                        role="progressbar"
+                        aria-label={statusLabel}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(progressPercent)}
+                     >
+                        <div
+                           className={`h-full rounded-md-pill transition-[width] duration-500 ease-out ${progressBarClassName}`}
+                           style={{ width: `${progressPercent}%` }}
+                        />
+                     </div>
+
+                     <div className="mt-md-3 border-t border-md-primary-100 pt-md-3">
+                        <div className="flex items-center justify-center gap-md-2 text-center">
+                           <Shield className="h-5 w-5 shrink-0 text-md-primary-1200" aria-hidden="true" />
+                           <p className="text-md-b2 font-medium tracking-normal text-md-neutral-1200">{panelDescription}</p>
+                        </div>
+                     </div>
+                  </div>
+               )}
+
+               {isShowingHelp ? (
+                  <div className="grid w-full grid-cols-2 gap-md-2">
+                     <button
+                        type="button"
+                        onClick={onCloseHelp}
+                        className="inline-flex items-center justify-center rounded-md-lg border border-md-neutral-500 bg-white px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-heading"
+                     >
+                        Back
+                     </button>
+                     <button
+                        type="button"
+                        onClick={onContactSupport}
+                        className="inline-flex items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-white"
+                     >
+                        Message support
+                     </button>
+                  </div>
+               ) : isProcessing ? (
                   <button
                      type="button"
                      onClick={onNeedHelp}
@@ -203,6 +245,7 @@ export default function WorldIDVerification({
    const [verificationFeedbackState, setVerificationFeedbackState] = useState<VerificationFeedbackState>('idle');
    const [verificationProcessingStep, setVerificationProcessingStep] = useState<VerificationProcessingStep>('confirming');
    const [processingElapsedSeconds, setProcessingElapsedSeconds] = useState(0);
+   const [showVerificationHelp, setShowVerificationHelp] = useState(false);
    const alreadyUsedRef = useRef(false);
    const preparingRef = useRef(false);
    const successTimerRef = useRef<number | null>(null);
@@ -299,6 +342,7 @@ export default function WorldIDVerification({
    const handleVerify = async (proof: IDKitResult) => {
       setVerificationProcessingStep('confirming');
       setVerificationFeedbackState('processing');
+      setShowVerificationHelp(false);
       try {
          if (!apiUrl) {
             throw new Error('VITE_API_URL is not configured.');
@@ -331,6 +375,7 @@ export default function WorldIDVerification({
          await refreshUserUntilWorldIdActive();
       } catch (error) {
          if (!(error instanceof Error && error.message === 'WORLDID_ALREADY_USED')) {
+            setShowVerificationHelp(false);
             setVerificationFeedbackState('error');
          }
          console.error('[WorldID] handleVerify error:', error);
@@ -349,6 +394,7 @@ export default function WorldIDVerification({
 
       const finishSuccessfulVerification = () => {
          setVerificationFeedbackState('idle');
+         setShowVerificationHelp(false);
          if (onSuccess) {
             onSuccess();
          } else {
@@ -400,6 +446,7 @@ export default function WorldIDVerification({
          preparingRef.current = true;
          setVerificationFeedbackState('idle');
          setVerificationProcessingStep('confirming');
+         setShowVerificationHelp(false);
          const nextRpContext = await fetchRpContext();
          setRpContext(nextRpContext);
          setIsIDKitOpen(true);
@@ -416,6 +463,10 @@ export default function WorldIDVerification({
       setIsIDKitOpen(open);
    }, []);
 
+   const handleContactSupport = useCallback(() => {
+      window.open(TELEGRAM_SUPPORT_URL, '_blank', 'noopener,noreferrer');
+   }, []);
+
    const trigger = className ? <span className={className}>{children({ open: () => void handleStartIDKit() })}</span> : children({ open: () => void handleStartIDKit() });
 
    return (
@@ -428,9 +479,15 @@ export default function WorldIDVerification({
             state={verificationFeedbackState}
             processingStep={verificationProcessingStep}
             processingElapsedSeconds={processingElapsedSeconds}
+            showHelpPanel={showVerificationHelp}
             onTryAgain={() => void handleStartIDKit()}
-            onDismiss={() => setVerificationFeedbackState('idle')}
-            onNeedHelp={() => setVerificationFeedbackState('error')}
+            onDismiss={() => {
+               setShowVerificationHelp(false);
+               setVerificationFeedbackState('idle');
+            }}
+            onNeedHelp={() => setShowVerificationHelp(true)}
+            onCloseHelp={() => setShowVerificationHelp(false)}
+            onContactSupport={handleContactSupport}
          />
 
          {app_id && rpContext ? (
