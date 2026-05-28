@@ -21,7 +21,7 @@ const STROKE_W = 18;
 function arcPoint(angle: number) {
    return {
       x: GAUGE_CX + GAUGE_R * Math.cos(angle),
-      y: GAUGE_CY - GAUGE_R * Math.sin(angle),
+      y: GAUGE_CY - GAUGE_R * Math.sin(angle)
    };
 }
 
@@ -45,21 +45,14 @@ function TrustGauge({ score }: { score: number }) {
          </defs>
 
          <path
+            className="trust-gauge-track"
             d={`M ${start.x} ${start.y} A ${GAUGE_R} ${GAUGE_R} 0 0 1 ${end.x} ${end.y}`}
             stroke="#e8e4ed"
             strokeWidth={STROKE_W}
             fill="none"
             strokeLinecap="round"
          />
-         {pct > 0 && (
-            <path
-               d={arcD}
-               stroke={`url(#${gradientId})`}
-               strokeWidth={STROKE_W}
-               fill="none"
-               strokeLinecap="round"
-            />
-         )}
+         {pct > 0 && <path d={arcD} stroke={`url(#${gradientId})`} strokeWidth={STROKE_W} fill="none" strokeLinecap="round" />}
       </svg>
    );
 }
@@ -78,9 +71,7 @@ export default function TrustScoreSection({ trustScore }: TrustScoreSectionProps
             <div className="relative w-full max-w-[260px]">
                <TrustGauge score={trustScore} />
                <div className="absolute inset-0 flex flex-col items-center justify-end pb-2">
-                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-md-b4 font-medium ${color} ${bgColor} mb-1`}>
-                     {label}
-                  </span>
+                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-md-b4 font-medium ${color} ${bgColor} mb-1`}>{label}</span>
                   <p className="text-md-h3 font-semibold text-md-heading">{trustScore} points</p>
                   <p className="text-md-b3 text-md-neutral-700">Trust Score</p>
                </div>

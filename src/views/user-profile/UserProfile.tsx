@@ -27,6 +27,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import GuidedTourPreview from '@/components/GuidedTourPreview';
 import Loading from '@/components/Loading';
+import { useThemeMode } from '@/components/ThemeModeProvider';
 import { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
@@ -54,7 +55,6 @@ const DIVERSITY_STYLES: Record<string, { border: string; text: string; bg: strin
 };
 
 const getDiversityBadgeStyle = (status: string) => DIVERSITY_STYLES[status] ?? DIVERSITY_STYLES.Poor;
-const BORROWER_INSIGHTS_THEME_KEY = 'borrower-insights-theme';
 const LENDER_DIVERSITY_DOCS_URL =
    'https://app.gitbook.com/o/AMHwk2hHdkax8lFhGYOU/s/1QbbZpQ1L3YZPjatm5Lw/the-product/lender-diversity-score/~/gitsync/status';
 
@@ -70,10 +70,7 @@ const UserProfile = () => {
    const [isRepaymentHistorySheetOpen, setIsRepaymentHistorySheetOpen] = useState(false);
    const [isLenderDiversitySheetOpen, setIsLenderDiversitySheetOpen] = useState(false);
    const hasScrolledToHashRef = useRef(false);
-   const [isDarkMode, setIsDarkMode] = useState(() => {
-      if (typeof window === 'undefined') return false;
-      return window.localStorage.getItem(BORROWER_INSIGHTS_THEME_KEY) === 'dark';
-   });
+   const { isDarkMode, toggleMode } = useThemeMode();
    const isDemoInsights = searchParams.get('demo') === 'rich';
    const forceTourPreview = import.meta.env.DEV && searchParams.has('tourPreview');
 
@@ -84,9 +81,7 @@ const UserProfile = () => {
    const userProfiles = isDemoInsights ? DEMO_LENDER_PROFILES : storedUserProfiles;
    const resolvedUser = isDemoInsights ? DEMO_BORROWER_INSIGHTS_USER : (profileUser ?? user);
    const showLenderInsightsTour =
-      forceTourPreview &&
-      searchParams.has('lenderTourPreview') &&
-      shouldShowGuidedTour(LENDER_GUIDED_TOUR_ID, user.id, forceTourPreview);
+      forceTourPreview && searchParams.has('lenderTourPreview') && shouldShowGuidedTour(LENDER_GUIDED_TOUR_ID, user.id, forceTourPreview);
 
    useEffect(() => {
       if (hasScrolledToHashRef.current || window.location.hash !== '#loan-summary' || !resolvedUser) return;
@@ -100,10 +95,6 @@ const UserProfile = () => {
    useEffect(() => {
       window.scrollTo(0, 0);
    }, []);
-
-   useEffect(() => {
-      window.localStorage.setItem(BORROWER_INSIGHTS_THEME_KEY, isDarkMode ? 'dark' : 'light');
-   }, [isDarkMode]);
 
    useEffect(() => {
       if (!username || isDemoInsights) return;
@@ -280,7 +271,9 @@ const UserProfile = () => {
    ];
 
    return (
-      <div className={`borrower-insights-page min-h-screen bg-md-neutral-200 transition-colors duration-200 ${isDarkMode ? 'borrower-insights-dark' : ''}`}>
+      <div
+         className={`borrower-insights-page min-h-screen bg-md-neutral-200 transition-colors duration-200 ${isDarkMode ? 'borrower-insights-dark' : ''}`}
+      >
          <style>{`
             .borrower-insights-dark {
                background: #0f1117;
@@ -506,7 +499,7 @@ const UserProfile = () => {
                <div className="flex shrink-0 items-center gap-2">
                   <button
                      type="button"
-                     onClick={() => setIsDarkMode((current) => !current)}
+                     onClick={toggleMode}
                      aria-label={isDarkMode ? 'Switch borrower insights to light mode' : 'Switch borrower insights to dark mode'}
                      aria-pressed={isDarkMode}
                      data-tour-target="borrower-dark-mode"
@@ -532,7 +525,10 @@ const UserProfile = () => {
             {/* Body */}
             <div className="flex flex-col gap-5 px-md-4 py-md-3">
                {/* User Profile */}
-               <div className="borrower-identity-card flex items-center gap-3 rounded-[20px] px-4 py-4 transition-colors duration-200" data-tour-target="borrower-identity">
+               <div
+                  className="borrower-identity-card flex items-center gap-3 rounded-[20px] px-4 py-4 transition-colors duration-200"
+                  data-tour-target="borrower-identity"
+               >
                   <img src={PLACEHOLDER_AVATAR} alt="Profile" className="h-16 w-16 shrink-0 rounded-full object-cover" />
                   <div className="min-w-0 flex-1 py-1">
                      <p className="truncate text-[20px] font-semibold leading-tight text-md-primary-2000">
@@ -1199,7 +1195,9 @@ const RepaymentHistoryBottomSheet = ({
                <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
                      <h3 className="text-[26px] font-bold leading-tight tracking-[-0.01em] text-[#1f2937]">Repayment History</h3>
-                     <p className="mt-2 text-[15px] leading-5 text-[#6b7280]">Money this borrower has already paid back across funded loans.</p>
+                     <p className="mt-2 text-[15px] leading-5 text-[#6b7280]">
+                        Money this borrower has already paid back across funded loans.
+                     </p>
                   </div>
                   <button
                      type="button"
@@ -1243,7 +1241,9 @@ const RepaymentHistoryBottomSheet = ({
                            key={loan.id}
                            className="flex items-center gap-3 rounded-[18px] border border-[#f3f4f6] bg-white p-4 shadow-[0_4px_16px_rgba(16,185,129,0.08)]"
                         >
-                           <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${isPaid ? 'bg-[#dcfce7]' : 'bg-[#ffedd5]'}`}>
+                           <span
+                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${isPaid ? 'bg-[#dcfce7]' : 'bg-[#ffedd5]'}`}
+                           >
                               {isPaid ? (
                                  <Check className="h-6 w-6 text-[#059669]" strokeWidth={2.5} />
                               ) : (
@@ -1251,7 +1251,9 @@ const RepaymentHistoryBottomSheet = ({
                               )}
                            </span>
                            <div className="min-w-0 flex-1">
-                              <p className="text-[16px] font-bold leading-tight text-[#1f2937]">{isPaid ? 'Loan fully repaid' : 'Partial repayment made'}</p>
+                              <p className="text-[16px] font-bold leading-tight text-[#1f2937]">
+                                 {isPaid ? 'Loan fully repaid' : 'Partial repayment made'}
+                              </p>
                               <p className="mt-1 text-[14px] leading-tight text-[#6b7280]">Borrowed: ${formatNumber(loan.loanAmount)}</p>
                               <p className="mt-1 text-[14px] leading-tight text-[#6b7280]">
                                  Repaid: ${formatNumber(loan.repaidAmount)} of ${formatNumber(loan.totalRepaymentAmount)}
@@ -1274,8 +1276,8 @@ const RepaymentHistoryBottomSheet = ({
                   <div>
                      <p className="text-[16px] font-bold leading-tight text-[#1f2937]">Why it matters</p>
                      <p className="mt-2 text-[15px] leading-5 text-[#4b5563]">
-                        Completed repayments show this borrower has returned funds before. Partial repayments can still be useful context, but
-                        lenders should compare them with due dates and remaining balances.
+                        Completed repayments show this borrower has returned funds before. Partial repayments can still be useful context,
+                        but lenders should compare them with due dates and remaining balances.
                      </p>
                   </div>
                </div>
@@ -1398,15 +1400,7 @@ const CreditLevelBottomSheet = ({ isOpen, onClose }: { isOpen: boolean; onClose:
    );
 };
 
-const LenderDiversityBottomSheet = ({
-   isOpen,
-   onClose,
-   onOpenDocs
-}: {
-   isOpen: boolean;
-   onClose: () => void;
-   onOpenDocs: () => void;
-}) => {
+const LenderDiversityBottomSheet = ({ isOpen, onClose, onOpenDocs }: { isOpen: boolean; onClose: () => void; onOpenDocs: () => void }) => {
    const dragStartY = useRef<number | null>(null);
    const dragOffsetRef = useRef(0);
    const [dragOffset, setDragOffset] = useState(0);
@@ -1461,9 +1455,7 @@ const LenderDiversityBottomSheet = ({
             <div className="shrink-0 border-b border-[#f1edf8] px-6 pb-4 pt-2">
                <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                     <h3 className="text-[24px] font-bold leading-tight tracking-[-0.02em] text-[#1f2937]">
-                        How Lender Diversity Works
-                     </h3>
+                     <h3 className="text-[24px] font-bold leading-tight tracking-[-0.02em] text-[#1f2937]">How Lender Diversity Works</h3>
                      <p className="mt-2 text-[15px] leading-6 text-[#4b5563]">
                         This score belongs to the borrower. It measures the quality of the people who have lent to them.
                      </p>
@@ -1482,16 +1474,16 @@ const LenderDiversityBottomSheet = ({
                <div className="rounded-[18px] border border-[#eadfff] bg-[#fbfaff] p-4">
                   <p className="text-[14px] font-bold uppercase tracking-[0.02em] text-[#8b5cf6]">What a high score means</p>
                   <p className="mt-2 text-[15px] leading-6 text-[#4b5563]">
-                     Lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not overly
-                     concentrated in one lender.
+                     Lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not
+                     overly concentrated in one lender.
                   </p>
                </div>
 
                <div className="mt-4 rounded-[18px] border border-[#fee2e2] bg-[#fef2f2] p-4">
                   <p className="text-[14px] font-bold uppercase tracking-[0.02em] text-[#ef4444]">What it is trying to catch</p>
                   <p className="mt-2 text-[15px] leading-6 text-[#4b5563]">
-                     A borrower could look trustworthy by using fake lender accounts to fund small loans, then ask for a larger real loan. This
-                     score looks for that kind of coordinated lender history.
+                     A borrower could look trustworthy by using fake lender accounts to fund small loans, then ask for a larger real loan.
+                     This score looks for that kind of coordinated lender history.
                   </p>
                </div>
 
@@ -1532,7 +1524,8 @@ const LenderDiversityBottomSheet = ({
                <div className="mt-5 flex gap-3 rounded-[18px] border border-[#dbeafe] bg-[#eff6ff] p-4">
                   <Users className="mt-1 h-5 w-5 shrink-0 text-[#2563eb]" strokeWidth={2.5} />
                   <p className="text-[14px] leading-6 text-[#4b5563]">
-                     This does not judge the borrower directly. It tells lenders whether the borrower's lender network looks organic or suspicious.
+                     This does not judge the borrower directly. It tells lenders whether the borrower's lender network looks organic or
+                     suspicious.
                   </p>
                </div>
 
@@ -1547,7 +1540,9 @@ const LenderDiversityBottomSheet = ({
                      </span>
                      <span className="min-w-0">
                         <span className="block text-[15px] font-bold leading-tight">Read the full docs</span>
-                        <span className="mt-1 block text-[12px] font-medium leading-tight text-white/75">Lender Diversity Score documentation</span>
+                        <span className="mt-1 block text-[12px] font-medium leading-tight text-white/75">
+                           Lender Diversity Score documentation
+                        </span>
                      </span>
                   </span>
                   <ChevronRight className="h-5 w-5 shrink-0" strokeWidth={2.4} />
@@ -1775,14 +1770,22 @@ const RecentLoanItem = ({ loan, resolveUsername }: { loan: Loan; resolveUsername
             </div>
          </td>
          <td className="px-2 py-3 text-right">
-            <p className="font-mono text-[15px] font-bold tabular-nums leading-tight text-md-primary-2000">${formatNumber(loan.loanAmount)}</p>
+            <p className="font-mono text-[15px] font-bold tabular-nums leading-tight text-md-primary-2000">
+               ${formatNumber(loan.loanAmount)}
+            </p>
             <p className="mt-1 font-mono text-[11px] font-semibold tabular-nums leading-none text-[#9ca3af]">
                / ${formatNumber(loan.totalRepaymentAmount)}
             </p>
          </td>
          <td className="px-4 py-3 text-right">
-            <span className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-[10px] font-bold leading-none ${statusClassName}`}>
-               {isPaid ? <Check className="mr-1 h-2.5 w-2.5" strokeWidth={3} /> : <span className="mr-1 h-1.5 w-1.5 rounded-full bg-current" />}
+            <span
+               className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-[10px] font-bold leading-none ${statusClassName}`}
+            >
+               {isPaid ? (
+                  <Check className="mr-1 h-2.5 w-2.5" strokeWidth={3} />
+               ) : (
+                  <span className="mr-1 h-1.5 w-1.5 rounded-full bg-current" />
+               )}
                {statusLabel}
             </span>
          </td>
@@ -1800,8 +1803,14 @@ const RecentLoanMobileItem = ({ loan, resolveUsername }: { loan: Loan; resolveUs
             <div className="min-w-0 flex-1">
                <div className="flex min-w-0 items-start justify-between gap-3">
                   <p className="min-w-0 flex-1 text-[14px] font-bold leading-[1.2] text-md-primary-2000">{loan.reason || 'Loan request'}</p>
-                  <span className={`inline-flex shrink-0 items-center justify-center rounded-full border px-2.5 py-1 text-[10px] font-bold leading-none ${statusClassName}`}>
-                     {isPaid ? <Check className="mr-1 h-2.5 w-2.5" strokeWidth={3} /> : <span className="mr-1 h-1.5 w-1.5 rounded-full bg-current" />}
+                  <span
+                     className={`inline-flex shrink-0 items-center justify-center rounded-full border px-2.5 py-1 text-[10px] font-bold leading-none ${statusClassName}`}
+                  >
+                     {isPaid ? (
+                        <Check className="mr-1 h-2.5 w-2.5" strokeWidth={3} />
+                     ) : (
+                        <span className="mr-1 h-1.5 w-1.5 rounded-full bg-current" />
+                     )}
                      {statusLabel}
                   </span>
                </div>
@@ -1809,7 +1818,9 @@ const RecentLoanMobileItem = ({ loan, resolveUsername }: { loan: Loan; resolveUs
                <div className="mt-3 flex items-end justify-between gap-3">
                   <p className="text-[11px] font-semibold leading-none text-[#a199ad]">{fundedDate}</p>
                   <div className="text-right">
-                     <p className="font-mono text-[16px] font-bold tabular-nums leading-none text-md-primary-2000">${formatNumber(loan.loanAmount)}</p>
+                     <p className="font-mono text-[16px] font-bold tabular-nums leading-none text-md-primary-2000">
+                        ${formatNumber(loan.loanAmount)}
+                     </p>
                      <p className="mt-1 font-mono text-[11px] font-semibold tabular-nums leading-none text-[#9ca3af]">
                         repays ${formatNumber(loan.totalRepaymentAmount)}
                      </p>

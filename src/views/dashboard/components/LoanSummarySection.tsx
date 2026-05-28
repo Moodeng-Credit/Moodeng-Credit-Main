@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
 import { formatCurrency } from '@/utils/decimalHelpers';
+
 import type { StatsData } from '@/views/profile/components/tabs/types';
 
 interface LoanSummarySectionProps {
@@ -11,27 +12,27 @@ const STAT_CARDS = [
    {
       key: 'repayments' as const,
       label: 'Repayments',
-      bgColor: 'bg-[#d6f8e6]',
-      iconBg: 'bg-[#16884b]',
+      cardClass: 'loan-summary-card-repayments',
+      iconBg: 'bg-[#16884b]'
    },
    {
       key: 'pending' as const,
       label: 'Pending Loans',
-      bgColor: 'bg-[#fff6d0]',
-      iconBg: 'bg-[#c28800]',
+      cardClass: 'loan-summary-card-pending',
+      iconBg: 'bg-[#c28800]'
    },
    {
       key: 'defaulted' as const,
       label: 'Defaulted',
-      bgColor: 'bg-md-red-100',
-      iconBg: 'bg-[#dd0417]',
+      cardClass: 'loan-summary-card-defaulted',
+      iconBg: 'bg-[#dd0417]'
    },
    {
       key: 'active' as const,
       label: 'Active Loans',
-      bgColor: 'bg-[#d1e8ff]',
-      iconBg: 'bg-[#0076eb]',
-   },
+      cardClass: 'loan-summary-card-active',
+      iconBg: 'bg-[#0076eb]'
+   }
 ];
 
 export default function LoanSummarySection({ stats }: LoanSummarySectionProps) {
@@ -45,12 +46,12 @@ export default function LoanSummarySection({ stats }: LoanSummarySectionProps) {
          </div>
 
          <div className="flex gap-3 overflow-x-auto pb-2 -mx-md-4 px-md-4" style={{ scrollbarWidth: 'none' }}>
-            {STAT_CARDS.map(({ key, label, bgColor, iconBg }) => {
+            {STAT_CARDS.map(({ key, label, cardClass, iconBg }) => {
                const stat = stats[key];
                return (
                   <div
                      key={key}
-                     className={`${bgColor} rounded-md-lg p-3.5 min-w-[140px] flex-shrink-0 flex flex-col gap-2`}
+                     className={`loan-summary-card ${cardClass} rounded-md-lg p-3.5 min-w-[140px] flex-shrink-0 flex flex-col gap-2`}
                   >
                      <div className={`${iconBg} w-9 h-9 rounded-full flex items-center justify-center`}>
                         <img src="/icons/stats.png" alt="" className="w-4 h-4" />

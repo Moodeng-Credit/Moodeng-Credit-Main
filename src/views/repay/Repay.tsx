@@ -435,7 +435,7 @@ export default function Repay() {
 
    if (shouldShowLoanCheckLoading) {
       return (
-         <main className="min-h-screen bg-md-neutral-200 px-5 pb-28 pt-8">
+         <main className="repay-page min-h-screen bg-md-neutral-200 px-5 pb-28 pt-8">
             <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4">
                <div className="h-16 rounded-md-xl bg-md-neutral-300" />
                <div className="h-44 rounded-md-xl bg-md-neutral-300" />
@@ -446,7 +446,7 @@ export default function Repay() {
    }
 
    return (
-      <main className="min-h-screen bg-[linear-gradient(180deg,#fbfafd_0%,#ffffff_44%,#fbfafd_100%)] px-4 pb-32 pt-5 text-md-heading sm:px-6">
+      <main className="repay-page min-h-screen bg-[linear-gradient(180deg,#fbfafd_0%,#ffffff_44%,#fbfafd_100%)] px-4 pb-32 pt-5 text-md-heading sm:px-6">
          <div className="mx-auto flex w-full max-w-[470px] flex-col gap-3">
             <header className="flex items-start justify-between gap-4">
                <div className="flex items-start gap-3">

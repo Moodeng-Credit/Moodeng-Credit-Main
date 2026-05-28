@@ -6,6 +6,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAccount, useDisconnect } from 'wagmi';
 
 import TelegramAuthButton from '@/components/TelegramAuthButton';
+import { useThemeMode } from '@/components/ThemeModeProvider';
 import UserAvatar from '@/components/UserAvatar';
 
 import { useAuthProvider } from '@/hooks/useAuthProvider';
@@ -467,6 +468,7 @@ export default function AccountSettings() {
    const { connector, chain } = useAccount();
    const { disconnect } = useDisconnect();
    const { isEmailPasswordUser } = useAuthProvider();
+   const { isDarkMode, setMode } = useThemeMode();
 
    const currentDisplayName = user?.displayName ?? user?.username ?? '';
    const [isEditingName, setIsEditingName] = useState(false);
@@ -507,7 +509,11 @@ export default function AccountSettings() {
    const emailHelpCopy = hasTelegramPlaceholderEmail
       ? 'Telegram sign-in does not provide a real email. Add one for account recovery and notifications.'
       : 'Having an up-to-date email address attached to your account is a great step towards improving account security.';
-   const telegramAlertsValue = user?.chatId ? (user?.telegramUsername ? `@${user.telegramUsername}` : 'Connected') : user?.telegramUsername || 'Not Connected';
+   const telegramAlertsValue = user?.chatId
+      ? user?.telegramUsername
+         ? `@${user.telegramUsername}`
+         : 'Connected'
+      : user?.telegramUsername || 'Not Connected';
 
    useEffect(() => {
       try {
@@ -838,8 +844,8 @@ export default function AccountSettings() {
                            <div className="flex flex-col gap-md-2 rounded-md-md border border-md-primary-100 bg-md-neutral-100 p-md-2">
                               <p className="text-md-b2 font-semibold text-md-heading">Change Base Account?</p>
                               <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                                 Future funded loans and repayments will use the new Base Account. Your existing repayment history stays tied to
-                                 this account.
+                                 Future funded loans and repayments will use the new Base Account. Your existing repayment history stays
+                                 tied to this account.
                               </p>
                               <div className="grid grid-cols-2 gap-md-2">
                                  <button
@@ -927,8 +933,8 @@ export default function AccountSettings() {
                            <div className="min-w-0">
                               <p className="text-md-b2 font-semibold text-md-heading">Base Account locked</p>
                               <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                                 This wallet receives funded loans and is used for repayment history. Change it only if this is no longer your
-                                 Base Account.
+                                 This wallet receives funded loans and is used for repayment history. Change it only if this is no longer
+                                 your Base Account.
                               </p>
                            </div>
                         </div>
@@ -939,8 +945,8 @@ export default function AccountSettings() {
                                  <div className="flex flex-col gap-md-2 rounded-md-md border border-md-primary-100 bg-md-neutral-100 p-md-2">
                                     <p className="text-md-b2 font-semibold text-md-heading">Change Base Account?</p>
                                     <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                                       Future funded loans and repayments will use the new Base Account. Your existing repayment history stays
-                                       tied to this account.
+                                       Future funded loans and repayments will use the new Base Account. Your existing repayment history
+                                       stays tied to this account.
                                     </p>
                                     <div className="grid grid-cols-2 gap-md-2">
                                        <button
@@ -963,8 +969,8 @@ export default function AccountSettings() {
                                  <div className="flex flex-col gap-md-2 rounded-md-md border border-md-red-100 bg-md-red-100/60 p-md-2">
                                     <p className="text-md-b2 font-semibold text-md-heading">Disconnect wallet?</p>
                                     <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                                       Save changes to remove this wallet from your account. You will need to connect a Base Account again before
-                                       borrowing or repaying.
+                                       Save changes to remove this wallet from your account. You will need to connect a Base Account again
+                                       before borrowing or repaying.
                                     </p>
                                     {walletError ? <p className="text-md-b3 font-medium text-md-red-500">{walletError}</p> : null}
                                     <div className="grid grid-cols-2 gap-md-2">
@@ -1007,7 +1013,6 @@ export default function AccountSettings() {
                                     </button>
                                  </div>
                               )}
-
                            </div>
                         ) : (
                            <button
@@ -1030,6 +1035,20 @@ export default function AccountSettings() {
                         </div>
                      </div>
                   ) : null}
+               </div>
+
+               {/* Appearance */}
+               <div className="flex flex-col gap-3">
+                  <h2 className="text-md-h5 font-semibold text-md-heading">Appearance</h2>
+                  <p className="text-md-b2 font-medium text-md-neutral-700">Choose how Moodeng looks on this device.</p>
+
+                  <div className="flex flex-col gap-2">
+                     <div className="flex items-center justify-between">
+                        <p className="text-md-b2 font-semibold text-md-heading">Dark Mode</p>
+                        <Toggle checked={isDarkMode} onChange={(checked) => setMode(checked ? 'dark' : 'light')} />
+                     </div>
+                     <p className="text-md-b3 font-medium text-md-neutral-1400">Use darker app surfaces across the website.</p>
+                  </div>
                </div>
 
                {/* Notifications */}

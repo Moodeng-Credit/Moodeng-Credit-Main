@@ -1,9 +1,10 @@
-import { Link, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { Link, useLocation } from 'react-router-dom';
 
 import { type BottomNavPrimaryAction, useBottomNavActionState } from '@/components/BottomNavActionContext';
 
 import { useIsBorrower } from '@/hooks/useIsBorrower';
+
 import type { RootState } from '@/store/store';
 
 interface NavTab {
@@ -54,7 +55,7 @@ function PrimaryActionSlot({ action }: { action: BottomNavPrimaryAction }) {
             aria-label={action.ariaLabel}
             style={{ pointerEvents: isDisabled ? 'none' : 'auto' }}
             className={[
-               'relative z-50 -mt-8 flex h-16 w-16 items-center justify-center rounded-md-pill border-[6px] border-md-neutral-100 shadow-none transition focus:outline-none focus:ring-2 focus:ring-md-primary-300',
+               'bottom-nav-primary-button relative z-50 -mt-8 flex h-16 w-16 items-center justify-center rounded-md-pill border-[6px] border-md-neutral-100 shadow-none transition focus:outline-none focus:ring-2 focus:ring-md-primary-300',
                isDisabled
                   ? 'pointer-events-none cursor-not-allowed bg-md-neutral-600 text-md-neutral-50'
                   : 'pointer-events-auto bg-md-primary-1200 text-md-neutral-50 hover:bg-md-primary-1500 active:translate-y-0.5'
@@ -72,7 +73,7 @@ function PrimaryActionSlot({ action }: { action: BottomNavPrimaryAction }) {
          </button>
          <span
             className={[
-               'relative z-40 mt-1 text-center text-xs font-semibold leading-none',
+               'relative z-40 mt-1 text-center text-xs font-semibold leading-tight',
                isDisabled ? 'text-md-neutral-1000' : 'text-md-primary-1200'
             ].join(' ')}
          >
@@ -87,17 +88,7 @@ function isActiveTab(pathname: string, tabPath: string) {
    return pathname === tabPath;
 }
 
-function StandardTab({
-   tab,
-   isActive,
-   isBorrower,
-   isLocked
-}: {
-   tab: NavTab;
-   isActive: boolean;
-   isBorrower: boolean;
-   isLocked: boolean;
-}) {
+function StandardTab({ tab, isActive, isBorrower, isLocked }: { tab: NavTab; isActive: boolean; isBorrower: boolean; isLocked: boolean }) {
    const showBg = isActive && isBorrower && !isLocked;
    const destination = isLocked ? '/onboarding/role' : tab.path;
 
@@ -140,18 +131,14 @@ export default function BottomNav() {
    const userRole = useSelector((state: RootState) => state.auth.user?.userRole);
    const location = useLocation();
    const { primaryAction } = useBottomNavActionState();
-   const activePrimaryAction = isBorrower && location.pathname === '/repay' && primaryAction?.path === location.pathname ? primaryAction : null;
+   const activePrimaryAction =
+      isBorrower && location.pathname === '/repay' && primaryAction?.path === location.pathname ? primaryAction : null;
    const navItems: NavItem[] = activePrimaryAction ? REPAY_ACTION_TABS : isBorrower ? BORROWER_TABS : LENDER_TABS;
    const needsRoleSelection = !userRole;
 
    return (
-      <nav className="fixed bottom-[15px] left-1/2 z-50 w-[calc(100%-40px)] max-w-[400px] -translate-x-1/2 overflow-visible rounded-md-pill bg-md-neutral-100 px-5 py-3 shadow-md-nav">
-         <div
-            className={[
-               'relative h-[60px] items-end justify-center',
-               activePrimaryAction ? 'grid grid-cols-5' : 'flex'
-            ].join(' ')}
-         >
+      <nav className="bottom-nav-shell fixed left-1/2 z-50 w-[calc(100%-40px)] max-w-[400px] -translate-x-1/2 overflow-visible rounded-md-pill bg-md-neutral-100 px-5 py-3 shadow-md-nav">
+         <div className={['relative h-[60px] items-end justify-center', activePrimaryAction ? 'grid grid-cols-5' : 'flex'].join(' ')}>
             {navItems.map((item) => {
                if ('type' in item) {
                   return <div key="bottom-nav-primary-action-spacer" aria-hidden="true" className="pointer-events-none" />;
@@ -168,7 +155,7 @@ export default function BottomNav() {
                );
             })}
             {activePrimaryAction ? (
-               <div className="pointer-events-none absolute bottom-0 left-1/2 z-50 w-20 -translate-x-1/2">
+               <div className="pointer-events-none absolute bottom-1 left-1/2 z-50 w-20 -translate-x-1/2">
                   <PrimaryActionSlot action={activePrimaryAction} />
                </div>
             ) : null}

@@ -80,3 +80,353 @@ a {
 .Table tr:nth-child(even):not(:first-child) {
    background-color: #a7b9f9;
 }
+
+html.dark,
+html.dark body,
+html.dark #root {
+   min-height: 100%;
+   background: #100d17;
+   color: #f8f4ff;
+}
+
+html.dark * {
+   scrollbar-color: #4e405f #17121f;
+}
+
+html.dark *::-webkit-scrollbar {
+   width: 10px;
+   height: 10px;
+}
+
+html.dark *::-webkit-scrollbar-track {
+   background: #17121f;
+}
+
+html.dark *::-webkit-scrollbar-thumb {
+   background: #4e405f;
+   border-radius: 999px;
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+   color: #f8f4ff;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+   color: #8f819e;
+}
+
+html.dark .bg-md-neutral-200,
+html.dark [class*='bg-[#fbf8ff'],
+html.dark [class*='bg-[#fbfafd'],
+html.dark [class*='bg-[#fbfafc'],
+html.dark [class*='bg-[#f9f8fa'],
+html.dark [class*='bg-[#f9fafb'],
+html.dark [class*='bg-[#f7f3ff'],
+html.dark [class*='bg-[#f5f3ff'],
+html.dark [class*='bg-[#f4f0ff'],
+html.dark [class*='bg-[#f1f1f1'],
+html.dark [class*='bg-[#f6f6f6'] {
+   background-color: #100d17;
+}
+
+html.dark .bg-white,
+html.dark .bg-md-neutral-50,
+html.dark .bg-md-neutral-100,
+html.dark [class*='bg-[#ffffff'],
+html.dark [class*='bg-[#fdfbfd'],
+html.dark [class*='bg-[#fdfcfd'] {
+   background-color: #1b1525;
+}
+
+html.dark .bg-md-neutral-300,
+html.dark .bg-md-neutral-400,
+html.dark .bg-md-neutral-500,
+html.dark [class*='bg-[#f2f0f5'],
+html.dark [class*='bg-[#f3f4f6'],
+html.dark [class*='bg-[#e5e7eb'] {
+   background-color: #2a2235;
+}
+
+html.dark .bg-md-primary-100,
+html.dark [class*='bg-[#ede9fe'],
+html.dark [class*='bg-[#f1ebff'],
+html.dark [class*='bg-[#f3e8ff'] {
+   background-color: #2a1740;
+}
+
+html.dark .bg-md-green-100,
+html.dark [class*='bg-[#dcfce7'],
+html.dark [class*='bg-[#f0fdf4'] {
+   background-color: #113522;
+}
+
+html.dark .bg-md-yellow-100,
+html.dark [class*='bg-[#fff8e1'],
+html.dark [class*='bg-[#ffedd5'],
+html.dark [class*='bg-[#fff7ed'] {
+   background-color: #3d2d12;
+}
+
+html.dark .bg-md-red-100,
+html.dark [class*='bg-[#fee2e2'],
+html.dark [class*='bg-[#fef2f2'] {
+   background-color: #3c171e;
+}
+
+html.dark [class*='bg-[#eff6ff'],
+html.dark [class*='bg-[#dbeafe'],
+html.dark [class*='bg-[#e2f7f5'] {
+   background-color: #102a3f;
+}
+
+html.dark .text-md-heading,
+html.dark .text-md-neutral-1700,
+html.dark .text-md-neutral-1900,
+html.dark .text-md-neutral-2000,
+html.dark .text-md-primary-2000,
+html.dark .text-black,
+html.dark [class*='text-[#040033'],
+html.dark [class*='text-[#0a1a5f'],
+html.dark [class*='text-[#0B1033'],
+html.dark [class*='text-[#111827'],
+html.dark [class*='text-[#171420'],
+html.dark [class*='text-[#1c053d'],
+html.dark [class*='text-[#1f2937'],
+html.dark [class*='text-[#070707'],
+html.dark [class*='text-[#000000'],
+html.dark [class*='text-[#333333'] {
+   color: #f8f4ff;
+}
+
+html.dark .text-md-neutral-700,
+html.dark .text-md-neutral-800,
+html.dark .text-md-neutral-1000,
+html.dark .text-md-neutral-1200,
+html.dark .text-md-neutral-1400,
+html.dark .text-md-neutral-1500,
+html.dark [class*='text-[#4D4359'],
+html.dark [class*='text-[#4d4359'],
+html.dark [class*='text-[#4a4a4a'],
+html.dark [class*='text-[#45556c'],
+html.dark [class*='text-[#585858'],
+html.dark [class*='text-[#594D65'],
+html.dark [class*='text-[#6B7280'],
+html.dark [class*='text-[#6b7280'],
+html.dark [class*='text-[#6f627e'],
+html.dark [class*='text-[#70617F'],
+html.dark [class*='text-[#70617f'],
+html.dark [class*='text-[#766985'],
+html.dark [class*='text-[#877897'],
+html.dark [class*='text-[#9ca3af'],
+html.dark [class*='text-[#a199ad'] {
+   color: #cfc4dd;
+}
+
+html.dark .text-md-primary-900,
+html.dark .text-md-primary-1100,
+html.dark .text-md-primary-1200,
+html.dark [class*='text-[#582cd6'],
+html.dark [class*='text-[#6010D2'],
+html.dark [class*='text-[#8336'],
+html.dark [class*='text-[#8b5cf6'] {
+   color: #d8c2ff;
+}
+
+html.dark .text-md-green-600,
+html.dark .text-md-green-700,
+html.dark .text-md-green-800,
+html.dark .text-md-green-900,
+html.dark [class*='text-[#059669'] {
+   color: #70e4a6;
+}
+
+html.dark .text-md-red-300,
+html.dark .text-md-red-400,
+html.dark .text-md-red-500,
+html.dark .text-md-red-600,
+html.dark .text-md-red-800,
+html.dark [class*='text-[#ef4444'] {
+   color: #ff8a96;
+}
+
+html.dark .text-md-yellow-700,
+html.dark [class*='text-[#AE8C00'],
+html.dark [class*='text-[#a24a00'],
+html.dark [class*='text-[#ea580c'] {
+   color: #facc6b;
+}
+
+html.dark .border-md-neutral-300,
+html.dark .border-md-neutral-400,
+html.dark .border-md-neutral-500,
+html.dark .border-md-neutral-600,
+html.dark .divide-md-neutral-300 > :not([hidden]) ~ :not([hidden]),
+html.dark [class*='border-[#dddddd'],
+html.dark [class*='border-[#ded0ef'],
+html.dark [class*='border-[#eadff8'],
+html.dark [class*='border-[#eadfff'],
+html.dark [class*='border-[#ece7f4'],
+html.dark [class*='border-[#f1edf8'],
+html.dark [class*='border-[#f3f4f6'] {
+   border-color: #40354f;
+}
+
+html.dark .border-white {
+   border-color: #1b1525;
+}
+
+html.dark .border-md-primary-100,
+html.dark .border-md-primary-900,
+html.dark .border-md-primary-1200 {
+   border-color: #7c4ed8;
+}
+
+html.dark .border-md-red-100,
+html.dark [class*='border-[#fecaca'] {
+   border-color: #68303a;
+}
+
+html.dark .border-md-green-100,
+html.dark [class*='border-[#bbf7d0'],
+html.dark [class*='border-[#dcfce7'] {
+   border-color: #2b6647;
+}
+
+html.dark .shadow-md-card,
+html.dark .shadow-md-nav,
+html.dark [class*='shadow-[0_'] {
+   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+}
+
+html.dark .ring-white {
+   --tw-ring-color: #1b1525;
+}
+
+html.dark .dashboard-score-card {
+   background: #1b1525;
+   border: 1px solid #40354f;
+}
+
+html.dark .trust-gauge-track {
+   stroke: #3a3146;
+}
+
+.bottom-nav-shell {
+   bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+}
+
+html.dark .bottom-nav-primary-button {
+   border-color: #1b1525;
+}
+
+.loan-summary-card {
+   min-height: 158px;
+}
+
+.loan-summary-card-repayments {
+   background: #d6f8e6;
+}
+
+.loan-summary-card-pending {
+   background: #fff6d0;
+}
+
+.loan-summary-card-defaulted {
+   background: #fee2e2;
+}
+
+.loan-summary-card-active {
+   background: #d1e8ff;
+}
+
+html.dark .loan-summary-card {
+   border: 1px solid #40354f;
+}
+
+html.dark .loan-summary-card-repayments {
+   background: #173b2a;
+}
+
+html.dark .loan-summary-card-pending {
+   background: #3d2d12;
+}
+
+html.dark .loan-summary-card-defaulted {
+   background: #401820;
+}
+
+html.dark .loan-summary-card-active {
+   background: #102a3f;
+}
+
+.credit-level-badge-shell,
+.credit-level-badge-label {
+   background: #d6f8e6;
+}
+
+.credit-level-badge-core {
+   background: #5be59b;
+}
+
+html.dark .credit-level-badge-shell,
+html.dark .credit-level-badge-label {
+   background: #173b2a;
+}
+
+html.dark .credit-level-badge-core {
+   background: #38d982;
+}
+
+html.dark .Table tr:nth-child(odd):not(:first-child),
+html.dark .Table tr:nth-child(even):not(:first-child) {
+   background-color: #1b1525;
+}
+
+html.dark :is(#benefits, #why-lend, #guide) :is(.bg-neutral-100, .bg-stone-100, .bg-zinc-100, .bg-zinc-200, .bg-zinc-300) {
+   background-color: #1b1525;
+   color: #f8f4ff;
+}
+
+html.dark
+   :is(#benefits, #why-lend, #guide)
+   :is(.bg-neutral-100, .bg-stone-100, .bg-zinc-100, .bg-zinc-200, .bg-zinc-300)
+   :is(
+      .text-zinc-500,
+      .text-zinc-600,
+      .text-zinc-700,
+      .text-zinc-800,
+      .text-zinc-900,
+      .text-zinc-950,
+      .text-neutral-700,
+      .text-neutral-900,
+      .text-neutral-950
+   ) {
+   color: #f8f4ff;
+}
+
+html.dark
+   :is(#benefits, #why-lend, #guide)
+   :is(.bg-neutral-100, .bg-stone-100, .bg-zinc-100, .bg-zinc-200, .bg-zinc-300)
+   :is(.text-zinc-500, .text-zinc-600, .text-zinc-700, .text-zinc-800, .text-neutral-700) {
+   color: #cfc4dd;
+}
+
+html.dark
+   #benefits
+   :is(.borrower-benefit-card, .bg-blue-400, .bg-fuchsia-300, .bg-amber-300, .bg-emerald-400)
+   :is(.text-zinc-900, .text-zinc-900\/55),
+html.dark #benefits :is(.borrower-benefit-card, .bg-blue-400, .bg-fuchsia-300, .bg-amber-300, .bg-emerald-400) {
+   color: #171420;
+}
+
+html.dark #benefits .borrower-mecha-caption {
+   background-color: #2a2235;
+   color: #f8f4ff;
+}
+
+html.dark .repay-page {
+   background: #100d17;
+}
