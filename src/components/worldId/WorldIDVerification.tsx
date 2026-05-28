@@ -21,6 +21,7 @@ interface WorldIDVerificationProps {
    onSuccess?: () => void;
    className?: string;
    showSuccessToast?: boolean;
+   showSuccessFeedback?: boolean;
 }
 
 const WORLD_ID_ACTION_ID = 'verify-borrower';
@@ -186,7 +187,13 @@ function VerificationFeedbackOverlay({
    );
 }
 
-export default function WorldIDVerification({ children, onSuccess, className = '', showSuccessToast = true }: WorldIDVerificationProps) {
+export default function WorldIDVerification({
+   children,
+   onSuccess,
+   className = '',
+   showSuccessToast = true,
+   showSuccessFeedback = true
+}: WorldIDVerificationProps) {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
    const { showToastByConfig } = useToast();
@@ -332,8 +339,6 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    };
 
    const handleSuccess = () => {
-      setVerificationFeedbackState('success');
-
       if ('vibrate' in window.navigator && typeof window.navigator.vibrate === 'function') {
          window.navigator.vibrate(50);
       }
@@ -342,7 +347,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          window.clearTimeout(successTimerRef.current);
       }
 
-      successTimerRef.current = window.setTimeout(() => {
+      const finishSuccessfulVerification = () => {
          setVerificationFeedbackState('idle');
          if (onSuccess) {
             onSuccess();
@@ -352,7 +357,15 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          if (showSuccessToast) {
             showToastByConfig(getToastKeyFromSuccessCode(SUCCESS_CODES.AUTH_VERIFY_SUCCESS)!);
          }
-      }, SUCCESS_CONFIRMATION_MS);
+      };
+
+      if (!showSuccessFeedback) {
+         finishSuccessfulVerification();
+         return;
+      }
+
+      setVerificationFeedbackState('success');
+      successTimerRef.current = window.setTimeout(finishSuccessfulVerification, SUCCESS_CONFIRMATION_MS);
    };
 
    const handleError = (errorCode: IDKitErrorCodes) => {
