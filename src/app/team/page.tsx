@@ -130,7 +130,7 @@ export default function TeamPage() {
                   >
                      <h2 className="mb-md-3 text-left font-serif text-[46px] font-bold leading-none md:text-[64px]">{member.name}</h2>
                      <Portrait name={member.name} image={member.image} />
-                     <p className="mx-auto mt-md-3 w-fit rounded-md-sm bg-md-primary-1600 px-md-3 py-md-1 font-serif text-md-h4 font-bold leading-tight text-[#fff9e8]">
+                     <p className="lead-team-role mx-auto mt-md-3 w-fit rounded-md-sm bg-md-primary-1600 px-md-3 py-md-1 font-serif text-md-h4 font-bold leading-tight text-[#fff9e8]">
                         {member.role}
                      </p>
                      <p className="mx-auto mt-md-3 max-w-[430px] text-md-b1 font-medium leading-relaxed text-md-primary-2000">

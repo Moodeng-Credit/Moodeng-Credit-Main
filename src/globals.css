@@ -440,3 +440,8 @@ html.dark .team-page .text-md-heading {
 html.dark .team-page :is(.bg-[#0d2f6f], .bg-[#173f7d]) {
    color: #fff9e8;
 }
+
+html.dark .team-page .lead-team-role {
+   background-color: #f4d756;
+   color: #071b43;
+}
