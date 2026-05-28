@@ -26,11 +26,11 @@ const LogoMark = ({ className = 'size-12' }: { className?: string }) => (
 
 const AppCtaLabel = ({ isSignedIn, compactOnSmall = false }: { isSignedIn: boolean; compactOnSmall?: boolean }) => {
    if (!isSignedIn) return <>Sign up</>;
-   if (!compactOnSmall) return <>Open App</>;
+   if (!compactOnSmall) return <>Open app</>;
 
    return (
       <>
-         <span className="hidden md:inline">Open App</span>
+         <span className="hidden md:inline">Open app</span>
          <span className="inline md:hidden">App</span>
       </>
    );
@@ -42,7 +42,7 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
    const username = useSelector((state: RootState) => state.auth.username);
    const isSignedIn = Boolean(user?.id && username);
    const appHref = user?.id && username ? (user.userRole === 'lender' ? '/lender/dashboard' : '/dashboard') : '/sign-up';
-   const appLabel = isSignedIn ? 'Open App' : 'Sign up';
+   const appLabel = isSignedIn ? 'Open app' : 'Sign up';
 
    return (
       <div className="min-h-screen bg-[#fbfafd] text-md-heading">
