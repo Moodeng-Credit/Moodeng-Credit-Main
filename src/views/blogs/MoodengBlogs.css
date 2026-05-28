@@ -73,6 +73,11 @@
    content: '';
 }
 
+html.dark .moodeng-blogs::after,
+html.dark .moodeng-blog-detail::after {
+   content: none;
+}
+
 .blogs-hero,
 .blogs-podcast,
 .blogs-feed,
