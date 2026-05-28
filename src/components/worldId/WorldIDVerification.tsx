@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { CredentialRequest, IDKitErrorCodes, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
-import { AlertTriangle, CheckCircle2, LoaderCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
@@ -31,46 +31,118 @@ const WORLD_ID_APP_ID = (WORLD_ID_ENVIRONMENT === 'production'
    ? import.meta.env.VITE_WORLD_ID_APP_ID_PROD
    : import.meta.env.VITE_WORLD_ID_APP_ID_STAGING) as `app_${string}` | undefined;
 const SUCCESS_CONFIRMATION_MS = 1500;
-const STATUS_REFRESH_RETRIES = 15;
+const STATUS_REFRESH_RETRIES = 30;
 const STATUS_REFRESH_DELAY_MS = 1000;
+const LONG_PROCESSING_SECONDS = 10;
 
 type VerificationFeedbackState = 'idle' | 'processing' | 'success' | 'error';
+type VerificationProcessingStep = 'confirming' | 'syncing';
 
 const wait = (ms: number) =>
    new Promise<void>((resolve) => {
       window.setTimeout(resolve, ms);
    });
 
-function VerificationFeedbackOverlay({ state, onTryAgain }: { state: VerificationFeedbackState; onTryAgain: () => void }) {
+interface VerificationFeedbackOverlayProps {
+   state: VerificationFeedbackState;
+   processingStep: VerificationProcessingStep;
+   processingElapsedSeconds: number;
+   onTryAgain: () => void;
+   onDismiss: () => void;
+}
+
+function VerificationFeedbackOverlay({
+   state,
+   processingStep,
+   processingElapsedSeconds,
+   onTryAgain,
+   onDismiss
+}: VerificationFeedbackOverlayProps) {
    if (state === 'idle') return null;
 
    const isProcessing = state === 'processing';
    const isSuccess = state === 'success';
    const Icon = isProcessing ? LoaderCircle : isSuccess ? CheckCircle2 : AlertTriangle;
-   const title = isProcessing ? 'Verifying your ID...' : isSuccess ? 'Verification Successful' : 'Verification interrupted. Please try again.';
+   const isTakingLonger = isProcessing && processingElapsedSeconds >= LONG_PROCESSING_SECONDS;
+   const title = isProcessing
+      ? isTakingLonger
+         ? 'Still verifying your World ID...'
+         : 'Verifying your World ID...'
+      : isSuccess
+        ? 'Verification Successful'
+        : 'Verification is taking too long';
    const description = isProcessing
-      ? 'Please keep this screen open. This usually takes less than 10 seconds.'
+      ? isTakingLonger
+         ? 'This is taking longer than usual. Keep this screen open while Moodeng finishes syncing.'
+         : 'This usually takes around 10 seconds. Keep this screen open - no further action is needed.'
       : isSuccess
         ? 'Your World ID is linked to Moodeng.'
-        : 'Please try again and keep Moodeng open until verification finishes.';
+        : 'Please try again or return to the previous step.';
    const iconClassName = isProcessing ? 'animate-spin text-md-primary-1200' : isSuccess ? 'text-md-green-900' : 'text-md-red-600';
+   const stepStatuses = [
+      { label: 'World ID proof received', status: 'complete' },
+      {
+         label: 'Confirming verification',
+         status: state === 'success' || processingStep === 'syncing' ? 'complete' : 'current'
+      },
+      {
+         label: 'Updating Moodeng status',
+         status: state === 'success' ? 'complete' : processingStep === 'syncing' || state === 'error' ? 'current' : 'pending'
+      }
+   ] as const;
 
    return (
-      <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-md-primary-2000/70 px-md-4" role="alertdialog" aria-modal="true">
-         <div className="w-full max-w-[360px] rounded-md-md bg-white p-md-5 text-center shadow-2xl">
+      <div
+         className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-md-primary-2000/60 px-md-4 backdrop-blur-sm"
+         role="alertdialog"
+         aria-modal="true"
+      >
+         <div className="w-full max-w-[380px] rounded-md-md bg-white p-md-5 text-center shadow-2xl">
             <div className="mx-auto mb-md-3 flex h-12 w-12 items-center justify-center rounded-full bg-md-neutral-200">
                <Icon className={`h-7 w-7 ${iconClassName}`} aria-hidden="true" />
             </div>
             <h2 className="text-md-h5 font-semibold text-md-heading">{title}</h2>
             <p className="mt-md-1 text-md-b2 font-medium text-md-neutral-700">{description}</p>
+
+            <div className="mt-md-4 space-y-md-1 text-left">
+               {stepStatuses.map((step, index) => (
+                  <div key={step.label} className="flex items-center gap-md-2 rounded-md-md bg-md-primary-100 px-md-2 py-md-1">
+                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-md-b4 font-semibold text-md-primary-1200">
+                        {step.status === 'complete' ? (
+                           <CheckCircle2 className="h-4 w-4 text-md-green-900" aria-hidden="true" />
+                        ) : step.status === 'current' ? (
+                           <LoaderCircle className="h-4 w-4 animate-spin text-md-primary-1200" aria-hidden="true" />
+                        ) : (
+                           index + 1
+                        )}
+                     </span>
+                     <span className="text-md-b3 font-semibold text-md-heading">{step.label}</span>
+                  </div>
+               ))}
+            </div>
+
+            <div className="mt-md-4 inline-flex items-center gap-md-1 rounded-md-pill bg-md-neutral-200 px-md-2 py-md-1 text-md-b3 font-semibold text-md-neutral-1200">
+               <ShieldCheck className="h-4 w-4 text-md-primary-1200" aria-hidden="true" />
+               Securely processed with World ID
+            </div>
+
             {state === 'error' ? (
-               <button
-                  type="button"
-                  onClick={onTryAgain}
-                  className="mt-md-4 inline-flex w-full items-center justify-center rounded-md-md bg-md-primary-1200 px-md-4 py-md-3 text-md-b2 font-semibold text-white"
-               >
-                  Try again
-               </button>
+               <div className="mt-md-4 grid grid-cols-2 gap-md-2">
+                  <button
+                     type="button"
+                     onClick={onDismiss}
+                     className="inline-flex items-center justify-center rounded-md-md border border-md-neutral-500 bg-white px-md-3 py-md-2 text-md-b2 font-semibold text-md-heading"
+                  >
+                     Back
+                  </button>
+                  <button
+                     type="button"
+                     onClick={onTryAgain}
+                     className="inline-flex items-center justify-center rounded-md-md bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-white"
+                  >
+                     Try again
+                  </button>
+               </div>
             ) : null}
          </div>
       </div>
@@ -85,6 +157,8 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const [rpContext, setRpContext] = useState<RpContext | null>(null);
    const [showAlreadyUsedModal, setShowAlreadyUsedModal] = useState(false);
    const [verificationFeedbackState, setVerificationFeedbackState] = useState<VerificationFeedbackState>('idle');
+   const [verificationProcessingStep, setVerificationProcessingStep] = useState<VerificationProcessingStep>('confirming');
+   const [processingElapsedSeconds, setProcessingElapsedSeconds] = useState(0);
    const alreadyUsedRef = useRef(false);
    const preparingRef = useRef(false);
    const successTimerRef = useRef<number | null>(null);
@@ -118,6 +192,20 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          }
       };
    }, []);
+
+   useEffect(() => {
+      if (verificationFeedbackState !== 'processing') {
+         setProcessingElapsedSeconds(0);
+         return undefined;
+      }
+
+      setProcessingElapsedSeconds(0);
+      const interval = window.setInterval(() => {
+         setProcessingElapsedSeconds((elapsedSeconds) => elapsedSeconds + 1);
+      }, 1000);
+
+      return () => window.clearInterval(interval);
+   }, [verificationFeedbackState]);
 
    const refreshUserUntilWorldIdActive = useCallback(async () => {
       for (let attempt = 0; attempt < STATUS_REFRESH_RETRIES; attempt += 1) {
@@ -165,6 +253,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    }, [action, apiUrl, getSessionAccessToken, showToastByConfig]);
 
    const handleVerify = async (proof: IDKitResult) => {
+      setVerificationProcessingStep('confirming');
       setVerificationFeedbackState('processing');
       try {
          if (!apiUrl) {
@@ -194,6 +283,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
             throw new Error(isApiError(result) ? result.error : 'Verification failed.');
          }
 
+         setVerificationProcessingStep('syncing');
          await refreshUserUntilWorldIdActive();
       } catch (error) {
          if (!(error instanceof Error && error.message === 'WORLDID_ALREADY_USED')) {
@@ -258,10 +348,11 @@ export default function WorldIDVerification({ children, onSuccess, className = '
             throw new Error('VITE_WORLD_ID_APP_ID is not configured.');
          }
          preparingRef.current = true;
+         setVerificationFeedbackState('idle');
+         setVerificationProcessingStep('confirming');
          const nextRpContext = await fetchRpContext();
          setRpContext(nextRpContext);
          setIsIDKitOpen(true);
-         setVerificationFeedbackState('idle');
       } catch (error) {
          if (error instanceof Error && error.message === 'WORLDID_ALREADY_USED') return;
          console.error('[WorldID] handleStartIDKit error:', error instanceof Error ? error.message : error);
@@ -283,7 +374,13 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
          <AlreadyUsedModal isOpen={showAlreadyUsedModal} onClose={() => setShowAlreadyUsedModal(false)} />
 
-         <VerificationFeedbackOverlay state={verificationFeedbackState} onTryAgain={() => void handleStartIDKit()} />
+         <VerificationFeedbackOverlay
+            state={verificationFeedbackState}
+            processingStep={verificationProcessingStep}
+            processingElapsedSeconds={processingElapsedSeconds}
+            onTryAgain={() => void handleStartIDKit()}
+            onDismiss={() => setVerificationFeedbackState('idle')}
+         />
 
          {app_id && rpContext ? (
             <IDKitRequestWidget
