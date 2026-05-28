@@ -79,6 +79,7 @@ function VerificationFeedbackOverlay({
         ? 'Your World ID is linked to Moodeng.'
         : 'Please try again or return to the previous step.';
    const iconClassName = isProcessing ? 'animate-spin text-md-primary-1200' : isSuccess ? 'text-md-green-900' : 'text-md-red-600';
+   const iconBackgroundClassName = isSuccess ? 'bg-md-green-100' : state === 'error' ? 'bg-md-red-100' : 'bg-md-primary-100';
    const stepStatuses = [
       { label: 'World ID proof received', status: 'complete' },
       {
@@ -93,57 +94,66 @@ function VerificationFeedbackOverlay({
 
    return (
       <div
-         className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-md-primary-2000/60 px-md-4 backdrop-blur-sm"
+         className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-md-primary-2000/50 px-md-4 font-sans backdrop-blur-[2px]"
          role="alertdialog"
          aria-modal="true"
       >
-         <div className="w-full max-w-[380px] rounded-md-md bg-white p-md-5 text-center shadow-2xl">
-            <div className="mx-auto mb-md-3 flex h-12 w-12 items-center justify-center rounded-full bg-md-neutral-200">
-               <Icon className={`h-7 w-7 ${iconClassName}`} aria-hidden="true" />
-            </div>
-            <h2 className="text-md-h5 font-semibold text-md-heading">{title}</h2>
-            <p className="mt-md-1 text-md-b2 font-medium text-md-neutral-700">{description}</p>
-
-            <div className="mt-md-4 space-y-md-1 text-left">
-               {stepStatuses.map((step, index) => (
-                  <div key={step.label} className="flex items-center gap-md-2 rounded-md-md bg-md-primary-100 px-md-2 py-md-1">
-                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-md-b4 font-semibold text-md-primary-1200">
-                        {step.status === 'complete' ? (
-                           <CheckCircle2 className="h-4 w-4 text-md-green-900" aria-hidden="true" />
-                        ) : step.status === 'current' ? (
-                           <LoaderCircle className="h-4 w-4 animate-spin text-md-primary-1200" aria-hidden="true" />
-                        ) : (
-                           index + 1
-                        )}
-                     </span>
-                     <span className="text-md-b3 font-semibold text-md-heading">{step.label}</span>
-                  </div>
-               ))}
-            </div>
-
-            <div className="mt-md-4 inline-flex items-center gap-md-1 rounded-md-pill bg-md-neutral-200 px-md-2 py-md-1 text-md-b3 font-semibold text-md-neutral-1200">
-               <ShieldCheck className="h-4 w-4 text-md-primary-1200" aria-hidden="true" />
-               Securely processed with World ID
-            </div>
-
-            {state === 'error' ? (
-               <div className="mt-md-4 grid grid-cols-2 gap-md-2">
-                  <button
-                     type="button"
-                     onClick={onDismiss}
-                     className="inline-flex items-center justify-center rounded-md-md border border-md-neutral-500 bg-white px-md-3 py-md-2 text-md-b2 font-semibold text-md-heading"
-                  >
-                     Back
-                  </button>
-                  <button
-                     type="button"
-                     onClick={onTryAgain}
-                     className="inline-flex items-center justify-center rounded-md-md bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-white"
-                  >
-                     Try again
-                  </button>
+         <div className="w-full max-w-[398px] overflow-hidden rounded-md-xl border border-md-primary-100 bg-white text-center shadow-[0_24px_80px_rgba(44,19,82,0.18)]">
+            <div className="flex flex-col items-center gap-md-3 px-md-5 py-md-5">
+               <div className={`flex h-14 w-14 items-center justify-center rounded-full ${iconBackgroundClassName}`}>
+                  <Icon className={`h-7 w-7 ${iconClassName}`} aria-hidden="true" />
                </div>
-            ) : null}
+               <div className="flex flex-col items-center gap-md-1">
+                  <h2 className="text-md-h5 font-semibold tracking-normal text-md-heading">{title}</h2>
+                  <p className="max-w-[320px] text-md-b2 font-medium tracking-normal text-md-neutral-1200">{description}</p>
+               </div>
+
+               <div className="w-full rounded-md-lg border border-md-primary-100 bg-md-neutral-100 p-md-2 text-left">
+                  {stepStatuses.map((step, index) => (
+                     <div
+                        key={step.label}
+                        className={`flex items-center gap-md-2 px-md-2 py-md-2 ${
+                           index === stepStatuses.length - 1 ? '' : 'border-b border-md-primary-100'
+                        }`}
+                     >
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md-pill border border-md-primary-100 bg-white text-md-b3 font-semibold tracking-normal text-md-primary-1200">
+                           {step.status === 'complete' ? (
+                              <CheckCircle2 className="h-4 w-4 text-md-green-900" aria-hidden="true" />
+                           ) : step.status === 'current' ? (
+                              <LoaderCircle className="h-4 w-4 animate-spin text-md-primary-1200" aria-hidden="true" />
+                           ) : (
+                              index + 1
+                           )}
+                        </span>
+                        <span className="text-md-b2 font-semibold tracking-normal text-md-heading">{step.label}</span>
+                     </div>
+                  ))}
+               </div>
+
+               <div className="inline-flex items-center gap-md-1 rounded-md-pill bg-md-neutral-200 px-md-2 py-md-1 text-md-b3 font-semibold tracking-normal text-md-neutral-1200">
+                  <ShieldCheck className="h-4 w-4 text-md-primary-1200" aria-hidden="true" />
+                  Securely processed with World ID
+               </div>
+
+               {state === 'error' ? (
+                  <div className="grid w-full grid-cols-2 gap-md-2">
+                     <button
+                        type="button"
+                        onClick={onDismiss}
+                        className="inline-flex items-center justify-center rounded-md-lg border border-md-neutral-500 bg-white px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-heading"
+                     >
+                        Back
+                     </button>
+                     <button
+                        type="button"
+                        onClick={onTryAgain}
+                        className="inline-flex items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-white"
+                     >
+                        Try again
+                     </button>
+                  </div>
+               ) : null}
+            </div>
          </div>
       </div>
    );
