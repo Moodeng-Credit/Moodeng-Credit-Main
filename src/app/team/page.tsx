@@ -29,7 +29,8 @@ const widerTeam = [
       name: 'Louis',
       role: 'Co-Founder',
       initial: 'L',
-      bio: 'Experienced relationship builder helping shape partner conversations, lender outreach, and ecosystem growth.'
+      bio: 'Experienced relationship builder helping shape partner conversations, lender outreach, and ecosystem growth.',
+      linkedIn: 'https://www.linkedin.com/in/louis-philippe/'
    },
    {
       name: 'Ogunjana Adeleke',
