@@ -170,18 +170,18 @@ export default function TeamPage() {
                {advisors.map((advisor) => (
                   <article
                      key={advisor.name}
-                     className="mx-auto mt-md-3 grid max-w-[760px] gap-md-3 rounded-md-lg border-2 border-[#f4d756] bg-[#173f7d] p-md-4 text-center shadow-[0_10px_0_rgba(7,27,67,0.22)] md:grid-cols-[150px_1fr] md:text-left"
+                     className="mx-auto mt-md-3 grid max-w-[820px] items-center gap-md-4 rounded-md-lg border-2 border-[#f4d756] bg-[#173f7d] p-md-4 text-center shadow-[0_10px_0_rgba(7,27,67,0.22)] md:grid-cols-[150px_minmax(0,1fr)] md:text-left"
                   >
                      <div className="mx-auto size-[132px] overflow-hidden rounded-md-xl border-[5px] border-[#fff9e8] bg-[#f4d756] md:mx-0">
                         <img src={advisor.image} alt={advisor.name} className="h-full w-full object-cover" />
                      </div>
-                     <div>
+                     <div className="flex min-w-0 flex-col items-center md:items-start">
                         <h3 className="font-serif text-md-h3 font-bold">{advisor.name}</h3>
                         <p className="mt-2 inline-flex rounded-md-pill bg-[#f4d756] px-md-2 py-1 text-md-b2 font-bold text-md-primary-2000">
                            {advisor.role}
                         </p>
                         <p className="mt-md-2 text-md-b2 font-medium leading-relaxed text-[#fff9e8]/90">{advisor.bio}</p>
-                        <div className="mt-md-2">
+                        <div className="mt-md-2 w-full [&>ul]:justify-center md:[&>ul]:justify-start">
                            <CredentialPills items={advisor.credentials} light />
                         </div>
                         <LinkedInButton href={advisor.linkedIn} className="mt-md-3" />
