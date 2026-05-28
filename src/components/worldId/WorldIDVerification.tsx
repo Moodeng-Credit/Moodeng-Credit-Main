@@ -77,7 +77,7 @@ function VerificationFeedbackOverlay({
    const description = isProcessing
       ? isTakingLonger
          ? 'This is taking longer than usual. Keep this screen open while Moodeng finishes syncing.'
-         : 'This usually takes less than 10 seconds. Keep this screen open - no further action is needed.'
+         : 'This usually takes less than 10 seconds.\nKeep this screen open.\nNo further action is needed.'
       : isSuccess
         ? 'Your World ID is linked to Moodeng.'
         : 'Please try again or return to the previous step.';
@@ -118,7 +118,7 @@ function VerificationFeedbackOverlay({
 
                <div className="flex flex-col items-center gap-md-2">
                   <h2 className="max-w-[340px] text-md-h4 font-semibold tracking-normal text-md-heading max-[374px]:text-md-h5">{title}</h2>
-                  <p className="max-w-[340px] whitespace-pre-line text-md-b1 font-medium tracking-normal text-md-neutral-1200 max-[374px]:text-md-b2">
+                  <p className="max-w-[350px] whitespace-pre-line text-md-b1 font-normal tracking-normal text-md-neutral-1000 max-[374px]:text-md-b2">
                      {description}
                   </p>
                </div>
