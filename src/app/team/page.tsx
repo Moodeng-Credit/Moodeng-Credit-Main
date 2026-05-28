@@ -4,7 +4,7 @@ const leadTeam = [
       role: 'Lead Co-Founder · Co-Project Lead',
       image: '/team/george.jpeg',
       bio: 'Repeat founder and product builder focused on turning messy early-stage ideas into disciplined, usable systems for real borrowers and lenders.',
-      credentials: ['University of Edinburgh', 'Former Portfolio Manager', '1 Exit', '2 Prior Startups'],
+      credentials: ['University of Edinburgh', 'Ex-UNHCR Data Team Lead', 'Former Portfolio Manager', '1 Exit', '2 Prior Startups'],
       linkedIn: 'https://www.linkedin.com/in/george-l-25a4b844/'
    },
    {
