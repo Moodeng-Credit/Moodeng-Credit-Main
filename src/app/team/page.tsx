@@ -1,7 +1,7 @@
 const leadTeam = [
    {
       name: 'George',
-      role: 'Lead Co-Founder · Co-Project Lead',
+      roles: ['Lead Co-Founder', 'Co-Project Lead'],
       image: '/team/george.jpeg',
       bio: 'Repeat founder and product builder focused on turning messy early-stage ideas into disciplined, usable systems for real borrowers and lenders.',
       credentials: ['University of Edinburgh', 'Ex-UNHCR Data Team Lead', 'Former Portfolio Manager', '1 Exit', '2 Prior Startups'],
@@ -9,7 +9,7 @@ const leadTeam = [
    },
    {
       name: 'Emma',
-      role: 'Lead Co-Founder · Co-Project Lead',
+      roles: ['Lead Co-Founder', 'Co-Project Lead'],
       image: '/team/emma-moodeng.jpeg',
       bio: 'Community builder helping Moodeng Credit turn borrower trust, education, and grassroots momentum into a clearer growth engine.',
       credentials: ['Ex. YC', 'Blockchain for Youth', 'Community Manager'],
@@ -130,9 +130,11 @@ export default function TeamPage() {
                   >
                      <h2 className="mb-md-3 text-left font-serif text-[46px] font-bold leading-none md:text-[64px]">{member.name}</h2>
                      <Portrait name={member.name} image={member.image} />
-                     <p className="lead-team-role mx-auto mt-md-3 w-fit rounded-md-sm bg-md-primary-1600 px-md-3 py-md-1 font-serif text-md-h4 font-bold leading-tight text-[#fff9e8]">
-                        {member.role}
-                     </p>
+                     <div className="lead-team-role mx-auto mt-md-3 flex w-fit flex-col gap-1 rounded-md-sm bg-md-primary-1600 px-md-3 py-md-2 font-serif text-md-h4 font-bold leading-tight text-[#fff9e8]">
+                        {member.roles.map((role) => (
+                           <span key={role}>{role}</span>
+                        ))}
+                     </div>
                      <p className="mx-auto mt-md-3 max-w-[430px] text-md-b1 font-medium leading-relaxed text-md-primary-2000">
                         {member.bio}
                      </p>
