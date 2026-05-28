@@ -1,6 +1,7 @@
-import { type ReactNode, useCallback, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { CredentialRequest, IDKitErrorCodes, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
+import { AlertTriangle, CheckCircle2, LoaderCircle } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
@@ -29,6 +30,52 @@ const WORLD_ID_ENVIRONMENT = (import.meta.env.VITE_WORLD_ID_ENVIRONMENT ||
 const WORLD_ID_APP_ID = (WORLD_ID_ENVIRONMENT === 'production'
    ? import.meta.env.VITE_WORLD_ID_APP_ID_PROD
    : import.meta.env.VITE_WORLD_ID_APP_ID_STAGING) as `app_${string}` | undefined;
+const SUCCESS_CONFIRMATION_MS = 1500;
+const STATUS_REFRESH_RETRIES = 15;
+const STATUS_REFRESH_DELAY_MS = 1000;
+
+type VerificationFeedbackState = 'idle' | 'processing' | 'success' | 'error';
+
+const wait = (ms: number) =>
+   new Promise<void>((resolve) => {
+      window.setTimeout(resolve, ms);
+   });
+
+function VerificationFeedbackOverlay({ state, onTryAgain }: { state: VerificationFeedbackState; onTryAgain: () => void }) {
+   if (state === 'idle') return null;
+
+   const isProcessing = state === 'processing';
+   const isSuccess = state === 'success';
+   const Icon = isProcessing ? LoaderCircle : isSuccess ? CheckCircle2 : AlertTriangle;
+   const title = isProcessing ? 'Verifying your ID...' : isSuccess ? 'Verification Successful' : 'Verification interrupted. Please try again.';
+   const description = isProcessing
+      ? 'Please keep this screen open. This usually takes less than 10 seconds.'
+      : isSuccess
+        ? 'Your World ID is linked to Moodeng.'
+        : 'Please try again and keep Moodeng open until verification finishes.';
+   const iconClassName = isProcessing ? 'animate-spin text-md-primary-1200' : isSuccess ? 'text-md-green-900' : 'text-md-red-600';
+
+   return (
+      <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-md-primary-2000/70 px-md-4" role="alertdialog" aria-modal="true">
+         <div className="w-full max-w-[360px] rounded-md-md bg-white p-md-5 text-center shadow-2xl">
+            <div className="mx-auto mb-md-3 flex h-12 w-12 items-center justify-center rounded-full bg-md-neutral-200">
+               <Icon className={`h-7 w-7 ${iconClassName}`} aria-hidden="true" />
+            </div>
+            <h2 className="text-md-h5 font-semibold text-md-heading">{title}</h2>
+            <p className="mt-md-1 text-md-b2 font-medium text-md-neutral-700">{description}</p>
+            {state === 'error' ? (
+               <button
+                  type="button"
+                  onClick={onTryAgain}
+                  className="mt-md-4 inline-flex w-full items-center justify-center rounded-md-md bg-md-primary-1200 px-md-4 py-md-3 text-md-b2 font-semibold text-white"
+               >
+                  Try again
+               </button>
+            ) : null}
+         </div>
+      </div>
+   );
+}
 
 export default function WorldIDVerification({ children, onSuccess, className = '', showSuccessToast = true }: WorldIDVerificationProps) {
    const dispatch = useDispatch<AppDispatch>();
@@ -37,8 +84,10 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    const [isIDKitOpen, setIsIDKitOpen] = useState(false);
    const [rpContext, setRpContext] = useState<RpContext | null>(null);
    const [showAlreadyUsedModal, setShowAlreadyUsedModal] = useState(false);
+   const [verificationFeedbackState, setVerificationFeedbackState] = useState<VerificationFeedbackState>('idle');
    const alreadyUsedRef = useRef(false);
    const preparingRef = useRef(false);
+   const successTimerRef = useRef<number | null>(null);
 
    const showAlreadyUsedWarning = useCallback(() => {
       setShowAlreadyUsedModal(true);
@@ -61,6 +110,30 @@ export default function WorldIDVerification({ children, onSuccess, className = '
 
       return session.access_token;
    }, []);
+
+   useEffect(() => {
+      return () => {
+         if (successTimerRef.current !== null) {
+            window.clearTimeout(successTimerRef.current);
+         }
+      };
+   }, []);
+
+   const refreshUserUntilWorldIdActive = useCallback(async () => {
+      for (let attempt = 0; attempt < STATUS_REFRESH_RETRIES; attempt += 1) {
+         if (attempt > 0) {
+            await wait(STATUS_REFRESH_DELAY_MS);
+         }
+
+         const refreshedUser = await dispatch(fetchUser()).unwrap();
+
+         if (refreshedUser.isWorldId === 'ACTIVE') {
+            return;
+         }
+      }
+
+      throw new Error('World ID verification was accepted, but the account status did not update.');
+   }, [dispatch]);
 
    const fetchRpContext = useCallback(async () => {
       if (!apiUrl) {
@@ -92,6 +165,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
    }, [action, apiUrl, getSessionAccessToken, showToastByConfig]);
 
    const handleVerify = async (proof: IDKitResult) => {
+      setVerificationFeedbackState('processing');
       try {
          if (!apiUrl) {
             throw new Error('VITE_API_URL is not configured.');
@@ -112,6 +186,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          if (!res.ok || !result.success) {
             if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
                alreadyUsedRef.current = true;
+               setVerificationFeedbackState('idle');
                setIsIDKitOpen(false);
                throw new Error('WORLDID_ALREADY_USED');
             }
@@ -119,29 +194,43 @@ export default function WorldIDVerification({ children, onSuccess, className = '
             throw new Error(isApiError(result) ? result.error : 'Verification failed.');
          }
 
-         await dispatch(fetchUser())
-            .unwrap()
-            .catch((error: Error) => {
-               console.error('Error refreshing user data:', error.message || error);
-            });
+         await refreshUserUntilWorldIdActive();
       } catch (error) {
+         if (!(error instanceof Error && error.message === 'WORLDID_ALREADY_USED')) {
+            setVerificationFeedbackState('error');
+         }
          console.error('[WorldID] handleVerify error:', error);
          throw error;
       }
    };
 
    const handleSuccess = () => {
-      if (onSuccess) {
-         onSuccess();
-      } else {
-         navigate('/onboarding/congratulations');
+      setVerificationFeedbackState('success');
+
+      if ('vibrate' in window.navigator && typeof window.navigator.vibrate === 'function') {
+         window.navigator.vibrate(50);
       }
-      if (showSuccessToast) {
-         showToastByConfig(getToastKeyFromSuccessCode(SUCCESS_CODES.AUTH_VERIFY_SUCCESS)!);
+
+      if (successTimerRef.current !== null) {
+         window.clearTimeout(successTimerRef.current);
       }
+
+      successTimerRef.current = window.setTimeout(() => {
+         setVerificationFeedbackState('idle');
+         if (onSuccess) {
+            onSuccess();
+         } else {
+            navigate('/onboarding/congratulations');
+         }
+         if (showSuccessToast) {
+            showToastByConfig(getToastKeyFromSuccessCode(SUCCESS_CODES.AUTH_VERIFY_SUCCESS)!);
+         }
+      }, SUCCESS_CONFIRMATION_MS);
    };
 
    const handleError = (errorCode: IDKitErrorCodes) => {
+      const isFinishingVerification = verificationFeedbackState === 'processing' || verificationFeedbackState === 'success';
+
       if (
          errorCode === IDKitErrorCodes.NullifierReplayed ||
          errorCode === IDKitErrorCodes.MaxVerificationsReached ||
@@ -154,7 +243,9 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          errorCode === IDKitErrorCodes.Cancelled ||
          errorCode === IDKitErrorCodes.VerificationRejected
       ) {
-         showToastByConfig('worldid_not_completed');
+         if (!isFinishingVerification) {
+            showToastByConfig('worldid_not_completed');
+         }
       } else if (errorCode !== IDKitErrorCodes.FailedByHostApp) {
          showToastByConfig('server_error');
       }
@@ -170,6 +261,7 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          const nextRpContext = await fetchRpContext();
          setRpContext(nextRpContext);
          setIsIDKitOpen(true);
+         setVerificationFeedbackState('idle');
       } catch (error) {
          if (error instanceof Error && error.message === 'WORLDID_ALREADY_USED') return;
          console.error('[WorldID] handleStartIDKit error:', error instanceof Error ? error.message : error);
@@ -190,6 +282,8 @@ export default function WorldIDVerification({ children, onSuccess, className = '
          {trigger}
 
          <AlreadyUsedModal isOpen={showAlreadyUsedModal} onClose={() => setShowAlreadyUsedModal(false)} />
+
+         <VerificationFeedbackOverlay state={verificationFeedbackState} onTryAgain={() => void handleStartIDKit()} />
 
          {app_id && rpContext ? (
             <IDKitRequestWidget
