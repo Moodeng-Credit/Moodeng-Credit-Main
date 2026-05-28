@@ -430,3 +430,13 @@ html.dark #benefits .borrower-mecha-caption {
 html.dark .repay-page {
    background: #100d17;
 }
+
+html.dark .team-page,
+html.dark .team-page .text-md-primary-2000,
+html.dark .team-page .text-md-heading {
+   color: #071b43;
+}
+
+html.dark .team-page :is(.bg-[#0d2f6f], .bg-[#173f7d]) {
+   color: #fff9e8;
+}

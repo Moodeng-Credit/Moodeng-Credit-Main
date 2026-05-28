@@ -108,7 +108,7 @@ function LinkedInPlaceholderButton({ className = '' }: { className?: string }) {
 
 export default function TeamPage() {
    return (
-      <section className="bg-[#f3d354] px-md-4 py-md-6 text-md-primary-2000 md:py-md-8">
+      <section className="team-page bg-[#f3d354] px-md-4 py-md-6 text-md-primary-2000 md:py-md-8">
          <div className="mx-auto flex max-w-[1120px] flex-col gap-md-5">
             <header className="relative overflow-hidden rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] px-md-5 py-md-5 text-center text-[#fff9e8] shadow-[0_18px_0_rgba(7,27,67,0.24)] md:px-md-6 md:py-md-6">
                <span className="inline-flex rounded-md-pill bg-[#f4d756] px-md-3 py-1 text-md-b2 font-bold text-[#071b43]">
