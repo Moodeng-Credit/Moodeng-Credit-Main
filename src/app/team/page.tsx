@@ -1,7 +1,8 @@
 const leadTeam = [
    {
       name: 'George',
-      roles: ['Lead Co-Founder', 'Co-Project Lead'],
+      founderRole: 'Lead Co-Founder',
+      jobRole: 'Project Lead',
       image: '/team/george.jpeg',
       bio: 'Repeat founder and product builder focused on turning messy early-stage ideas into disciplined, usable systems for real borrowers and lenders.',
       credentials: ['University of Edinburgh', 'Ex-UNHCR Data Team Lead', 'Former Portfolio Manager', '1 Exit', '2 Prior Startups'],
@@ -9,7 +10,8 @@ const leadTeam = [
    },
    {
       name: 'Emma',
-      roles: ['Lead Co-Founder', 'Co-Project Lead'],
+      founderRole: 'Lead Co-Founder',
+      jobRole: 'Project Lead',
       image: '/team/emma-moodeng.jpeg',
       bio: 'Community builder helping Moodeng Credit turn borrower trust, education, and grassroots momentum into a clearer growth engine.',
       credentials: ['Ex. YC', 'Blockchain for Youth', 'Community Manager'],
@@ -20,21 +22,24 @@ const leadTeam = [
 const widerTeam = [
    {
       name: 'Yousef',
-      role: 'Co-Founder',
+      founderRole: 'Co-Founder',
+      jobRole: 'Member of Technical Staff',
       image: '/team/yousef.jpg',
       bio: 'Supports engineering across the Moodeng Credit buildout, helping turn product direction into working borrower and lender experiences.',
       showLinkedInPlaceholder: true
    },
    {
       name: 'Louis',
-      role: 'Co-Founder',
+      founderRole: 'Co-Founder',
+      jobRole: 'Head of Partnerships',
       initial: 'L',
       bio: 'Experienced relationship builder helping shape partner conversations, lender outreach, and ecosystem growth.',
       linkedIn: 'https://www.linkedin.com/in/louis-philippe/'
    },
    {
       name: 'Ogunjana Adeleke',
-      role: 'Co-Founder',
+      founderRole: 'Co-Founder',
+      jobRole: 'Head of Community',
       image: '/team/ogunjana-adeleke.png',
       bio: 'Helps manage X/Twitter and other social channels, keeping the community active across regional conversations.',
       linkedIn: 'https://www.linkedin.com/in/ogunjana-adeleke-lexioneth-2a75b2238/'
@@ -130,10 +135,13 @@ export default function TeamPage() {
                   >
                      <h2 className="mb-md-3 text-left font-serif text-[46px] font-bold leading-none md:text-[64px]">{member.name}</h2>
                      <Portrait name={member.name} image={member.image} />
-                     <div className="lead-team-role mx-auto mt-md-3 flex w-fit flex-col gap-1 rounded-md-sm bg-md-primary-1600 px-md-3 py-md-2 font-serif text-md-h4 font-bold leading-tight text-[#fff9e8]">
-                        {member.roles.map((role) => (
-                           <span key={role}>{role}</span>
-                        ))}
+                     <div className="mx-auto mt-md-3 flex w-fit flex-col items-center gap-2">
+                        <p className="lead-team-role rounded-md-sm bg-md-primary-1600 px-md-3 py-md-2 font-serif text-md-h4 font-bold leading-tight text-[#fff9e8]">
+                           {member.founderRole}
+                        </p>
+                        <p className="lead-team-job-role rounded-md-pill border-2 border-md-primary-1600/25 bg-[#fff9e8] px-md-3 py-1 text-md-b2 font-bold text-md-primary-2000">
+                           {member.jobRole}
+                        </p>
                      </div>
                      <p className="mx-auto mt-md-3 max-w-[430px] text-md-b1 font-medium leading-relaxed text-md-primary-2000">
                         {member.bio}
@@ -154,9 +162,14 @@ export default function TeamPage() {
                   >
                      <Portrait name={member.name} image={member.image} initial={member.initial} />
                      <h2 className="mt-md-3 font-serif text-md-h3 font-bold leading-none">{member.name}</h2>
-                     <p className="mx-auto mt-md-2 w-fit rounded-md-pill bg-[#f4d756] px-md-2 py-1 text-md-b2 font-bold text-[#071b43]">
-                        {member.role}
-                     </p>
+                     <div className="mx-auto mt-md-2 flex w-fit flex-col items-center gap-1.5">
+                        <p className="rounded-md-pill bg-[#f4d756] px-md-2 py-1 text-md-b2 font-bold text-[#071b43]">
+                           {member.founderRole}
+                        </p>
+                        <p className="rounded-md-pill border border-[#f4d756]/55 bg-[#fff9e8]/12 px-md-2 py-1 text-md-b3 font-bold text-[#fff9e8]">
+                           {member.jobRole}
+                        </p>
+                     </div>
                      <p className="mx-auto mt-md-2 max-w-[280px] text-md-b2 font-medium leading-relaxed text-[#fff9e8]/90">{member.bio}</p>
                      {'showLinkedInPlaceholder' in member && member.showLinkedInPlaceholder ? (
                         <LinkedInPlaceholderButton className="mx-auto mt-md-3" />
