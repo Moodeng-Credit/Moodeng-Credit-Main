@@ -1,16 +1,20 @@
 import { StrictMode } from 'react';
 
-import type { CapturedNetworkRequest } from 'posthog-js';
-
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import '@rainbow-me/rainbowkit/styles.css';
+import type { CapturedNetworkRequest } from 'posthog-js';
+import { PostHogProvider } from 'posthog-js/react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { PostHogProvider } from 'posthog-js/react';
 
 import { Providers } from '@/components/providers';
+
+import { applyThemeMode, getStoredThemeMode } from '@/lib/themeMode';
+
 import App from './App.tsx';
 import './globals.css';
+
+applyThemeMode(getStoredThemeMode());
 
 const posthogKey = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
 const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;

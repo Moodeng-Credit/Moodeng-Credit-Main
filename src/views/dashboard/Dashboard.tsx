@@ -4,14 +4,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
 import GuidedTourPreview from '@/components/GuidedTourPreview';
+
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 
 import type { WalletLivenessData } from '@/utils/diversityScore';
 
-import { getWalletAgeInfo } from '@/lib/web3/walletAge';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
-import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { BORROWER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
+import { getBaseWalletLockStatus } from '@/lib/walletProvider';
+import { getWalletAgeInfo } from '@/lib/web3/walletAge';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
@@ -192,7 +193,11 @@ export default function Dashboard() {
         }
       : loanArrays;
    const usedCreditAmount = useMemo(
-      () => [...displayLoanArrays.activeLoans, ...displayLoanArrays.defaultedLoans].reduce((sum, loan) => sum + Number(loan.loanAmount || 0), 0),
+      () =>
+         [...displayLoanArrays.activeLoans, ...displayLoanArrays.defaultedLoans].reduce(
+            (sum, loan) => sum + Number(loan.loanAmount || 0),
+            0
+         ),
       [displayLoanArrays.activeLoans, displayLoanArrays.defaultedLoans]
    );
    const milestones = buildReputationMilestones({ creditLevels, borrowerLoans: milestoneLoans, isVerified });
@@ -285,7 +290,7 @@ export default function Dashboard() {
             <DashboardHeader />
             <UserGreeting user={user} />
 
-            <div className="bg-md-neutral-100 rounded-md-lg p-4 shadow-md-card flex flex-col gap-4 bg-gradient-to-b from-white to-[#eee6fa]">
+            <div className="dashboard-score-card bg-md-neutral-100 rounded-md-lg p-4 shadow-md-card flex flex-col gap-4 bg-gradient-to-b from-white to-[#eee6fa]">
                <div data-tour-target="dashboard-trust-score">
                   <TrustScoreSection trustScore={displayTrustScore} />
                </div>
