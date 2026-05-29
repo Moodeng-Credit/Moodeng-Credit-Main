@@ -64,35 +64,28 @@ function VerificationHandoffOverlay({ isOpen, isPreparing, onContinue, onCancel 
          aria-describedby="world-id-handoff-description"
       >
          <div className="w-full max-w-[398px] overflow-hidden rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 text-left shadow-md-card">
-            <div className="flex min-h-[56px] items-center justify-between border-b border-md-neutral-400 px-md-3 py-md-3">
+            <div className="flex min-h-[56px] items-center border-b border-md-neutral-400 px-md-3 py-md-3">
                <h2 id="world-id-handoff-title" className="min-w-0 text-[20px] font-[590] leading-[1.2] tracking-normal text-md-heading">
-                  {isPreparing ? 'Opening World ID' : 'Continue to World ID'}
+                  Open World ID in a new window
                </h2>
-               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md-md bg-md-primary-100 text-md-primary-1200">
-                  {isPreparing ? (
-                     <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
-                  ) : (
-                     <ExternalLink className="h-5 w-5" aria-hidden="true" />
-                  )}
-               </div>
             </div>
 
             <div className="flex flex-col gap-md-3 p-md-3">
                <p id="world-id-handoff-description" className="text-md-b2 font-normal tracking-normal text-md-neutral-1200">
-                  World ID may open in another app or browser. It can take a few seconds to load.
+                  World ID will open in a new window so you can complete verification. Keep this Moodeng tab open. Your status will update here when you are done.
                </p>
 
                <div className="flex flex-col gap-md-1">
                   <p className="text-md-b2 font-semibold tracking-normal text-md-heading">Before you continue</p>
-                  <div className="rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 shadow-md-card">
-                     <div className="flex items-center gap-md-2">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md-md border border-md-primary-300 bg-md-primary-100 text-md-primary-1200">
-                           <Shield className="h-5 w-5" aria-hidden="true" />
+                  <div className="rounded-md-input border border-md-neutral-400 bg-md-primary-100/45 px-md-3 py-md-2">
+                     <div className="flex items-start gap-md-2">
+                        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md-md border border-md-primary-300 bg-md-neutral-100 text-md-primary-1200">
+                           <Shield className="h-4 w-4" aria-hidden="true" />
                         </div>
                         <div className="min-w-0">
                            <p className="text-md-b1 font-semibold tracking-normal text-md-heading">Return to Moodeng after verifying</p>
                            <p className="mt-0.5 text-md-b3 font-normal tracking-normal text-md-neutral-1200">
-                              Keep this screen open until Moodeng updates your status.
+                              Once verification is complete, come back to this tab.
                            </p>
                         </div>
                      </div>
@@ -112,9 +105,19 @@ function VerificationHandoffOverlay({ isOpen, isPreparing, onContinue, onCancel 
                      type="button"
                      onClick={onContinue}
                      disabled={isPreparing}
-                     className="inline-flex min-h-12 items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-neutral-100 disabled:cursor-not-allowed disabled:opacity-70"
+                     className="inline-flex min-h-12 items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-neutral-100 disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                     {isPreparing ? 'Opening...' : 'Open World ID'}
+                     {isPreparing ? (
+                        <>
+                           <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+                           Opening...
+                        </>
+                     ) : (
+                        <>
+                           Open World ID
+                           <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                        </>
+                     )}
                   </button>
                </div>
             </div>
