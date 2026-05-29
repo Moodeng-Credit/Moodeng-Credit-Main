@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { CredentialRequest, IDKitErrorCodes, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
-import { AlertTriangle, CheckCircle2, LoaderCircle, LockKeyhole, MessageCircle, Shield } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, LoaderCircle, LockKeyhole, MessageCircle, Shield, X } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
@@ -87,7 +87,7 @@ function VerificationFeedbackOverlay({
    const description = isProcessing
       ? isTakingLonger
          ? 'This is taking longer than usual. Keep this screen open while Moodeng finishes syncing.'
-         : 'This usually takes less than 10 seconds.\nKeep this screen open.\nNo further action is needed.'
+         : 'This usually takes less than 10 seconds. Keep this screen open.'
       : isSuccess
         ? 'Your World ID is linked to Moodeng.'
         : 'Please try again or return to the previous step.';
@@ -120,102 +120,104 @@ function VerificationFeedbackOverlay({
          role="alertdialog"
          aria-modal="true"
       >
-         <div className="w-full max-w-[430px] overflow-hidden rounded-[28px] border border-md-primary-100 bg-white text-center shadow-[0_28px_90px_rgba(44,19,82,0.22)]">
-            <div className="flex flex-col items-center gap-md-4 px-md-5 py-md-5 sm:px-md-5 sm:py-md-5">
-               <div className={`flex h-16 w-16 items-center justify-center rounded-full ${isShowingHelp ? 'bg-md-primary-100' : iconBackgroundClassName}`}>
-                  {isShowingHelp ? (
-                     <MessageCircle className="h-8 w-8 text-md-primary-1200" aria-hidden="true" />
-                  ) : (
-                     <Icon className={`h-8 w-8 ${iconClassName}`} aria-hidden="true" />
-                  )}
-               </div>
-
-               <div className="flex flex-col items-center gap-md-2">
-                  <h2 className="max-w-[340px] text-md-h4 font-semibold tracking-normal text-md-heading max-[374px]:text-md-h5">
-                     {isShowingHelp ? 'Need help verifying?' : title}
-                  </h2>
-                  <p className="max-w-[350px] whitespace-pre-line text-md-b1 font-normal tracking-normal text-md-neutral-1000 max-[374px]:text-md-b2">
-                     {isShowingHelp ? 'Verification may still finish.\nFor help, message us on Telegram.' : description}
-                  </p>
-               </div>
-
+         <div className="w-full max-w-[398px] overflow-hidden rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 text-left shadow-md-card">
+            <div className="flex min-h-[56px] items-center justify-between border-b border-md-neutral-400 px-md-3 py-md-3">
+               <h2 className="min-w-0 text-[20px] font-[590] leading-[1.2] tracking-normal text-md-heading">
+                  {isShowingHelp ? 'Need help verifying?' : title}
+               </h2>
                {isShowingHelp ? (
-                  <div className="w-full rounded-[12px] border border-md-primary-100 bg-md-neutral-200 p-3 text-left antialiased shadow-[0_2px_4px_rgba(27,28,29,0.04)]">
-                     <div className="grid min-h-[76px] grid-cols-[40px_minmax(0,1fr)] items-center gap-[10px]">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-md-primary-300 bg-white text-md-primary-1200">
-                           <Shield className="h-5 w-5" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                           <p className="text-[16px] font-[510] leading-6 tracking-normal text-md-heading">Telegram support</p>
-                           <p className="mt-0.5 text-[12px] font-normal leading-[18px] tracking-normal text-md-neutral-700">
-                              Fastest way to reach Moodeng if World ID finished but your status does not update.
-                           </p>
-                        </div>
-                     </div>
-                  </div>
+                  <button
+                     type="button"
+                     onClick={onCloseHelp}
+                     aria-label="Close verification help"
+                     className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md-md text-md-neutral-1500"
+                  >
+                     <X className="h-5 w-5" aria-hidden="true" />
+                  </button>
                ) : (
-                  <div className="w-full rounded-[22px] border border-md-primary-100 bg-md-neutral-100/80 p-md-4 shadow-[0_2px_4px_rgba(27,28,29,0.04)]">
-                     <div className="flex items-center gap-md-3 text-left">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md-lg border border-md-primary-300 bg-white text-md-primary-1200">
-                           <LockKeyhole className="h-6 w-6" aria-hidden="true" />
-                        </div>
-                        <p className="min-w-0 text-md-b1 font-medium tracking-normal text-md-neutral-1500 max-[374px]:text-md-b2">{statusLabel}</p>
-                     </div>
-
-                     <div
-                        className="mx-auto mt-md-3 h-2.5 w-full overflow-hidden rounded-md-pill bg-md-primary-100"
-                        role="progressbar"
-                        aria-label={statusLabel}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-valuenow={Math.round(progressPercent)}
-                     >
-                        <div
-                           className={`h-full rounded-md-pill transition-[width] duration-500 ease-out ${progressBarClassName}`}
-                           style={{ width: `${progressPercent}%` }}
-                        />
-                     </div>
-
-                     <div className="mt-md-3 border-t border-md-primary-100 pt-md-3">
-                        <div className="flex items-center justify-center gap-md-2 text-center">
-                           <Shield className="h-5 w-5 shrink-0 text-md-primary-1200" aria-hidden="true" />
-                           <p className="text-md-b2 font-medium tracking-normal text-md-neutral-1200">{panelDescription}</p>
-                        </div>
-                     </div>
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md-md ${iconBackgroundClassName}`}>
+                     <Icon className={`h-5 w-5 ${iconClassName}`} aria-hidden="true" />
                   </div>
                )}
+            </div>
+
+            <div className="flex flex-col gap-md-3 p-md-3">
+               <p className="text-md-b2 font-normal tracking-normal text-md-neutral-1200">
+                  {isShowingHelp
+                     ? 'If World ID finished but Moodeng did not update, choose a support channel.'
+                     : description}
+               </p>
 
                {isShowingHelp ? (
-                  <div className="flex w-full flex-col gap-md-2">
-                     <div className="grid w-full grid-cols-2 gap-md-2">
-                        <button
-                           type="button"
-                           onClick={onCloseHelp}
-                           className="inline-flex items-center justify-center rounded-md-lg border border-md-neutral-500 bg-white px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-heading"
-                        >
-                           Keep waiting
-                        </button>
-                        <button
-                           type="button"
-                           onClick={onContactSupport}
-                           className="inline-flex items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-white"
-                        >
-                           Open Telegram
-                        </button>
+                  <>
+                     <div className="flex flex-col gap-md-1">
+                        <p className="text-md-b2 font-semibold tracking-normal text-md-heading">Contact us via</p>
+                        <div className="grid w-full grid-cols-2 gap-md-2">
+                           <button
+                              type="button"
+                              onClick={onContactSupport}
+                              className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b1 font-semibold tracking-normal text-md-neutral-100"
+                           >
+                              <MessageCircle className="h-5 w-5" aria-hidden="true" />
+                              Telegram
+                           </button>
+                           <button
+                              type="button"
+                              onClick={onOpenFacebookSupport}
+                              className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-3 text-md-b1 font-semibold tracking-normal text-md-heading"
+                           >
+                              Facebook
+                           </button>
+                        </div>
                      </div>
                      <button
                         type="button"
-                        onClick={onOpenFacebookSupport}
-                        className="inline-flex min-h-10 w-full items-center justify-center rounded-md-lg border border-md-primary-100 bg-md-neutral-100 px-md-3 py-md-2 text-md-b3 font-semibold tracking-normal text-md-neutral-1200"
+                        onClick={onCloseHelp}
+                        className="inline-flex min-h-10 w-full items-center justify-center rounded-md-lg border border-md-primary-100 bg-md-primary-100 px-md-3 py-md-2 text-md-b2 font-semibold tracking-normal text-md-primary-1600"
                      >
-                        Facebook support page
+                        Keep waiting
                      </button>
-                  </div>
-               ) : isProcessing ? (
+                  </>
+               ) : (
+                  <>
+                     <div className="rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 shadow-md-card">
+                        <div className="flex items-center gap-md-2">
+                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md-md border border-md-primary-300 bg-md-primary-100 text-md-primary-1200">
+                              <LockKeyhole className="h-5 w-5" aria-hidden="true" />
+                           </div>
+                           <div className="min-w-0">
+                              <p className="text-md-b1 font-semibold tracking-normal text-md-heading">{statusLabel}</p>
+                              <p className="mt-0.5 text-md-b3 font-normal tracking-normal text-md-neutral-1200">{panelDescription}</p>
+                           </div>
+                        </div>
+
+                        <div
+                           className="mt-md-2 h-2 w-full overflow-hidden rounded-md-pill bg-md-primary-100"
+                           role="progressbar"
+                           aria-label={statusLabel}
+                           aria-valuemin={0}
+                           aria-valuemax={100}
+                           aria-valuenow={Math.round(progressPercent)}
+                        >
+                           <div
+                              className={`h-full rounded-md-pill transition-[width] duration-500 ease-out ${progressBarClassName}`}
+                              style={{ width: `${progressPercent}%` }}
+                           />
+                        </div>
+                     </div>
+
+                     <div className="flex items-center gap-md-1 text-md-b3 font-normal tracking-normal text-md-neutral-1200">
+                        <Shield className="h-4 w-4 shrink-0 text-md-primary-1200" aria-hidden="true" />
+                        <span>{isProcessing ? 'No further action is needed.' : 'Your verification status is protected.'}</span>
+                     </div>
+                  </>
+               )}
+
+               {!isShowingHelp && isProcessing ? (
                   <button
                      type="button"
                      onClick={onNeedHelp}
-                     className="text-md-b2 font-semibold tracking-normal text-md-neutral-1200 underline underline-offset-4"
+                     className="inline-flex min-h-12 w-full items-center justify-center rounded-md-lg border border-md-primary-100 bg-md-primary-100 px-md-3 py-md-2 text-md-b2 font-semibold tracking-normal text-md-primary-1600"
                   >
                      Having trouble?
                   </button>
@@ -226,14 +228,14 @@ function VerificationFeedbackOverlay({
                      <button
                         type="button"
                         onClick={onDismiss}
-                        className="inline-flex items-center justify-center rounded-md-lg border border-md-neutral-500 bg-white px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-heading"
+                        className="inline-flex min-h-12 items-center justify-center rounded-md-lg border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-heading"
                      >
                         Back
                      </button>
                      <button
                         type="button"
                         onClick={onTryAgain}
-                        className="inline-flex items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-white"
+                        className="inline-flex min-h-12 items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-neutral-100"
                      >
                         Try again
                      </button>
