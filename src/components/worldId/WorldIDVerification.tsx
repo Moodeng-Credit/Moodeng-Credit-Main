@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
-import { CredentialRequest, IDKitErrorCodes, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
-import { AlertTriangle, CheckCircle2, ExternalLink, LoaderCircle, LockKeyhole, Shield, X } from 'lucide-react';
+import { CredentialRequest, IDKit, IDKitErrorCodes, type IDKitResult, type RpContext } from '@worldcoin/idkit';
+import { AlertTriangle, CheckCircle2, ExternalLink, Globe2, LoaderCircle, LockKeyhole, Shield, X } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
@@ -36,91 +36,92 @@ const SUCCESS_CONFIRMATION_MS = 1500;
 const STATUS_REFRESH_RETRIES = 30;
 const STATUS_REFRESH_DELAY_MS = 1000;
 const LONG_PROCESSING_SECONDS = 10;
+const LAUNCH_FALLBACK_DELAY_MS = 4000;
 
 type VerificationFeedbackState = 'idle' | 'processing' | 'success' | 'error';
 type VerificationProcessingStep = 'confirming' | 'syncing';
+type VerificationLaunchState = 'idle' | 'opening' | 'fallback';
+type WorldIdRequestStatus = {
+   type: string;
+   result?: IDKitResult;
+   error?: IDKitErrorCodes;
+};
+type PreparedWorldIdRequest = {
+   connectorURI: string;
+   pollOnce: () => Promise<WorldIdRequestStatus>;
+};
 
 const wait = (ms: number) =>
    new Promise<void>((resolve) => {
       window.setTimeout(resolve, ms);
    });
 
-interface VerificationHandoffOverlayProps {
-   isOpen: boolean;
-   isPreparing: boolean;
-   onContinue: () => void;
+interface VerificationLaunchOverlayProps {
+   state: VerificationLaunchState;
+   onRetryOpen: () => void;
    onCancel: () => void;
 }
 
-function VerificationHandoffOverlay({ isOpen, isPreparing, onContinue, onCancel }: VerificationHandoffOverlayProps) {
-   if (!isOpen) return null;
+function VerificationLaunchOverlay({ state, onRetryOpen, onCancel }: VerificationLaunchOverlayProps) {
+   if (state === 'idle') return null;
+
+   const isFallback = state === 'fallback';
 
    return (
       <div
          className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-md-primary-2000/65 px-md-4 font-sans backdrop-blur-[6px]"
-         role="alertdialog"
+         role={isFallback ? 'alertdialog' : 'status'}
          aria-modal="true"
-         aria-labelledby="world-id-handoff-title"
-         aria-describedby="world-id-handoff-description"
+         aria-live="polite"
+         aria-labelledby="world-id-launch-title"
+         aria-describedby="world-id-launch-description"
       >
-         <div className="w-full max-w-[398px] overflow-hidden rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 text-left shadow-md-card">
-            <div className="flex min-h-[56px] items-center border-b border-md-neutral-400 px-md-3 py-md-3">
-               <h2 id="world-id-handoff-title" className="min-w-0 text-[20px] font-[590] leading-[1.2] tracking-normal text-md-heading">
-                  Open World ID in a new window
-               </h2>
-            </div>
-
-            <div className="flex flex-col gap-md-3 p-md-3">
-               <p id="world-id-handoff-description" className="text-md-b2 font-normal tracking-normal text-md-neutral-1200">
-                  World ID will open in a new window so you can complete verification. Keep this Moodeng tab open. Your status will update here when you are done.
-               </p>
-
-               <div className="flex flex-col gap-md-1">
-                  <p className="text-md-b2 font-semibold tracking-normal text-md-heading">Before you continue</p>
-                  <div className="rounded-md-input border border-md-neutral-400 bg-md-primary-100/45 px-md-3 py-md-2">
-                     <div className="flex items-start gap-md-2">
-                        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md-md border border-md-primary-300 bg-md-neutral-100 text-md-primary-1200">
-                           <Shield className="h-4 w-4" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                           <p className="text-md-b1 font-semibold tracking-normal text-md-heading">Return to Moodeng after verifying</p>
-                           <p className="mt-0.5 text-md-b3 font-normal tracking-normal text-md-neutral-1200">
-                              Once verification is complete, come back to this tab.
-                           </p>
-                        </div>
-                     </div>
+         <div className="w-full max-w-[398px] rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 px-md-4 py-md-5 text-center shadow-md-card">
+            {isFallback ? (
+               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-md-primary-300 bg-md-primary-100 text-md-primary-1200">
+                  <ExternalLink className="h-8 w-8" aria-hidden="true" />
+               </div>
+            ) : (
+               <div className="relative mx-auto h-16 w-16" aria-label="Opening World ID" role="status">
+                  <div className="absolute inset-0 rounded-full border-[5px] border-md-primary-200 border-t-md-primary-1200 animate-spin" />
+                  <div className="absolute inset-3 flex items-center justify-center rounded-full bg-md-primary-100 text-md-primary-1200">
+                     <Globe2 className="h-7 w-7" aria-hidden="true" />
                   </div>
                </div>
+            )}
 
-               <div className="grid w-full grid-cols-2 gap-md-2">
+            <div className="mt-md-3 flex flex-col gap-md-1">
+               <h2 id="world-id-launch-title" className="text-[24px] font-[590] leading-[1.2] tracking-normal text-md-heading">
+                  {isFallback ? "World ID didn't open?" : 'Opening World ID...'}
+               </h2>
+               <p id="world-id-launch-description" className="text-md-b2 font-normal leading-[1.5] tracking-normal text-md-neutral-1200">
+                  {isFallback
+                     ? 'Your browser may have blocked the external window. Open World ID manually to continue.'
+                     : "You'll verify with World ID in an external app or window. You'll return to Moodeng to finish."}
+               </p>
+            </div>
+
+            {isFallback ? (
+               <div className="mt-md-4 grid w-full grid-cols-2 gap-md-2 border-t border-md-neutral-400 pt-md-3">
                   <button
                      type="button"
                      onClick={onCancel}
-                     disabled={isPreparing}
-                     className="inline-flex min-h-12 items-center justify-center rounded-md-lg border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-heading disabled:cursor-not-allowed disabled:opacity-50"
+                     className="inline-flex min-h-12 items-center justify-center rounded-md-lg border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-heading"
                   >
                      Cancel
                   </button>
                   <button
                      type="button"
-                     onClick={onContinue}
-                     disabled={isPreparing}
-                     className="inline-flex min-h-12 items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-neutral-100 disabled:cursor-not-allowed disabled:opacity-70"
+                     onClick={onRetryOpen}
+                     className="inline-flex min-h-12 items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-neutral-100"
                   >
-                     {isPreparing ? (
-                        <>
-                           <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
-                           Opening...
-                        </>
-                     ) : (
-                        <>
-                           Open World ID
-                           <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                        </>
-                     )}
+                     Open World ID
+                     <ExternalLink className="h-4 w-4" aria-hidden="true" />
                   </button>
                </div>
-            </div>
+            ) : (
+               <p className="mt-md-3 text-md-b3 font-normal tracking-normal text-md-neutral-1200">This may take a few seconds.</p>
+            )}
          </div>
       </div>
    );
@@ -357,11 +358,8 @@ export default function WorldIDVerification({
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
    const { showToastByConfig } = useToast();
-   const [isIDKitOpen, setIsIDKitOpen] = useState(false);
-   const [rpContext, setRpContext] = useState<RpContext | null>(null);
    const [showAlreadyUsedModal, setShowAlreadyUsedModal] = useState(false);
-   const [showHandoffPrompt, setShowHandoffPrompt] = useState(false);
-   const [isPreparingIDKit, setIsPreparingIDKit] = useState(false);
+   const [verificationLaunchState, setVerificationLaunchState] = useState<VerificationLaunchState>('idle');
    const [verificationFeedbackState, setVerificationFeedbackState] = useState<VerificationFeedbackState>('idle');
    const [verificationProcessingStep, setVerificationProcessingStep] = useState<VerificationProcessingStep>('confirming');
    const [processingElapsedSeconds, setProcessingElapsedSeconds] = useState(0);
@@ -369,6 +367,12 @@ export default function WorldIDVerification({
    const alreadyUsedRef = useRef(false);
    const preparingRef = useRef(false);
    const successTimerRef = useRef<number | null>(null);
+   const preparedRequestRef = useRef<PreparedWorldIdRequest | null>(null);
+   const prepareRequestPromiseRef = useRef<Promise<PreparedWorldIdRequest> | null>(null);
+   const launchFallbackTimerRef = useRef<number | null>(null);
+   const temporaryLaunchWindowRef = useRef<Window | null>(null);
+   const pollRunRef = useRef(0);
+   const didLaunchExternalFlowRef = useRef(false);
 
    const showAlreadyUsedWarning = useCallback(() => {
       setShowAlreadyUsedModal(true);
@@ -394,9 +398,14 @@ export default function WorldIDVerification({
 
    useEffect(() => {
       return () => {
+         pollRunRef.current += 1;
          if (successTimerRef.current !== null) {
             window.clearTimeout(successTimerRef.current);
          }
+         if (launchFallbackTimerRef.current !== null) {
+            window.clearTimeout(launchFallbackTimerRef.current);
+         }
+         temporaryLaunchWindowRef.current = null;
       };
    }, []);
 
@@ -413,6 +422,31 @@ export default function WorldIDVerification({
 
       return () => window.clearInterval(interval);
    }, [verificationFeedbackState]);
+
+   useEffect(() => {
+      if (verificationLaunchState !== 'opening') return undefined;
+
+      const markExternalFlowStarted = () => {
+         didLaunchExternalFlowRef.current = true;
+         if (launchFallbackTimerRef.current !== null) {
+            window.clearTimeout(launchFallbackTimerRef.current);
+            launchFallbackTimerRef.current = null;
+         }
+      };
+      const handleVisibilityChange = () => {
+         if (document.visibilityState === 'hidden') {
+            markExternalFlowStarted();
+         }
+      };
+
+      window.addEventListener('pagehide', markExternalFlowStarted);
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      return () => {
+         window.removeEventListener('pagehide', markExternalFlowStarted);
+         document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
+   }, [verificationLaunchState]);
 
    const refreshUserUntilWorldIdActive = useCallback(async () => {
       for (let attempt = 0; attempt < STATUS_REFRESH_RETRIES; attempt += 1) {
@@ -459,7 +493,65 @@ export default function WorldIDVerification({
       return result.rp_context;
    }, [action, apiUrl, getSessionAccessToken, showToastByConfig]);
 
-   const handleVerify = async (proof: IDKitResult) => {
+   const createWorldIdRequest = useCallback(async () => {
+      if (!app_id) {
+         throw new Error('VITE_WORLD_ID_APP_ID is not configured.');
+      }
+
+      const nextRpContext = await fetchRpContext();
+      const request = await IDKit.request({
+         app_id,
+         action,
+         action_description: WORLD_ID_ACTION_DESCRIPTION,
+         rp_context: nextRpContext,
+         allow_legacy_proofs: false,
+         environment: WORLD_ID_ENVIRONMENT
+      }).constraints(CredentialRequest('proof_of_human'));
+
+      return request as PreparedWorldIdRequest;
+   }, [action, app_id, fetchRpContext]);
+
+   const prepareWorldIdRequest = useCallback(() => {
+      if (preparedRequestRef.current) {
+         return Promise.resolve(preparedRequestRef.current);
+      }
+
+      if (!prepareRequestPromiseRef.current) {
+         prepareRequestPromiseRef.current = createWorldIdRequest()
+            .then((request) => {
+               preparedRequestRef.current = request;
+               return request;
+            })
+            .catch((error) => {
+               prepareRequestPromiseRef.current = null;
+               throw error;
+            });
+      }
+
+      return prepareRequestPromiseRef.current;
+   }, [createWorldIdRequest]);
+
+   useEffect(() => {
+      if (!app_id || !apiUrl) return undefined;
+
+      let isMounted = true;
+      void prepareWorldIdRequest().catch((error) => {
+         if (isMounted) {
+            console.error('[WorldID] prepareWorldIdRequest error:', error instanceof Error ? error.message : error);
+         }
+      });
+
+      return () => {
+         isMounted = false;
+      };
+   }, [apiUrl, app_id, prepareWorldIdRequest]);
+
+   const handleVerify = useCallback(async (proof: IDKitResult) => {
+      if (launchFallbackTimerRef.current !== null) {
+         window.clearTimeout(launchFallbackTimerRef.current);
+         launchFallbackTimerRef.current = null;
+      }
+      setVerificationLaunchState('idle');
       setVerificationProcessingStep('confirming');
       setVerificationFeedbackState('processing');
       setShowVerificationHelp(false);
@@ -484,7 +576,6 @@ export default function WorldIDVerification({
             if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
                alreadyUsedRef.current = true;
                setVerificationFeedbackState('idle');
-               setIsIDKitOpen(false);
                throw new Error('WORLDID_ALREADY_USED');
             }
             showToastByConfig(handleApiError(result));
@@ -501,9 +592,9 @@ export default function WorldIDVerification({
          console.error('[WorldID] handleVerify error:', error);
          throw error;
       }
-   };
+   }, [apiUrl, getSessionAccessToken, refreshUserUntilWorldIdActive, showToastByConfig]);
 
-   const handleSuccess = () => {
+   const handleSuccess = useCallback(() => {
       if ('vibrate' in window.navigator && typeof window.navigator.vibrate === 'function') {
          window.navigator.vibrate(50);
       }
@@ -513,6 +604,7 @@ export default function WorldIDVerification({
       }
 
       const finishSuccessfulVerification = () => {
+         setVerificationLaunchState('idle');
          setVerificationFeedbackState('idle');
          setShowVerificationHelp(false);
          if (onSuccess) {
@@ -532,9 +624,9 @@ export default function WorldIDVerification({
 
       setVerificationFeedbackState('success');
       successTimerRef.current = window.setTimeout(finishSuccessfulVerification, SUCCESS_CONFIRMATION_MS);
-   };
+   }, [navigate, onSuccess, showSuccessFeedback, showSuccessToast, showToastByConfig]);
 
-   const handleError = (errorCode: IDKitErrorCodes) => {
+   const handleError = useCallback((errorCode: IDKitErrorCodes) => {
       const isFinishingVerification = verificationFeedbackState === 'processing' || verificationFeedbackState === 'success';
 
       if (
@@ -555,44 +647,194 @@ export default function WorldIDVerification({
       } else if (errorCode !== IDKitErrorCodes.FailedByHostApp) {
          showToastByConfig('server_error');
       }
-   };
+   }, [showAlreadyUsedWarning, showToastByConfig, verificationFeedbackState]);
 
-   const handleOpenHandoffPrompt = useCallback(() => {
-      if (preparingRef.current) return;
-      setVerificationFeedbackState('idle');
-      setShowVerificationHelp(false);
-      setShowHandoffPrompt(true);
-   }, []);
-
-   const handleStartIDKit = useCallback(async () => {
-      if (preparingRef.current) return;
-      try {
-         if (!app_id) {
-            throw new Error('VITE_WORLD_ID_APP_ID is not configured.');
-         }
-         preparingRef.current = true;
-         setIsPreparingIDKit(true);
-         setVerificationFeedbackState('idle');
-         setVerificationProcessingStep('confirming');
-         setShowVerificationHelp(false);
-         const nextRpContext = await fetchRpContext();
-         setRpContext(nextRpContext);
-         setShowHandoffPrompt(false);
-         setIsIDKitOpen(true);
-      } catch (error) {
-         setShowHandoffPrompt(false);
-         if (error instanceof Error && error.message === 'WORLDID_ALREADY_USED') return;
-         console.error('[WorldID] handleStartIDKit error:', error instanceof Error ? error.message : error);
-         showToastByConfig('server_error');
-      } finally {
-         preparingRef.current = false;
-         setIsPreparingIDKit(false);
+   const clearLaunchFallbackTimer = useCallback(() => {
+      if (launchFallbackTimerRef.current !== null) {
+         window.clearTimeout(launchFallbackTimerRef.current);
+         launchFallbackTimerRef.current = null;
       }
-   }, [app_id, fetchRpContext, showToastByConfig]);
-
-   const handleIDKitOpenChange = useCallback((open: boolean) => {
-      setIsIDKitOpen(open);
    }, []);
+
+   const showLaunchFallback = useCallback(() => {
+      clearLaunchFallbackTimer();
+      if (!didLaunchExternalFlowRef.current) {
+         temporaryLaunchWindowRef.current?.close();
+         temporaryLaunchWindowRef.current = null;
+         setVerificationLaunchState('fallback');
+      }
+   }, [clearLaunchFallbackTimer]);
+
+   const openExternalWorldId = useCallback((connectorURI: string) => {
+      try {
+         const openedWindow = window.open(connectorURI, '_blank');
+         if (!openedWindow) return false;
+         openedWindow.opener = null;
+         didLaunchExternalFlowRef.current = true;
+         clearLaunchFallbackTimer();
+         return true;
+      } catch (error) {
+         console.error('[WorldID] openExternalWorldId error:', error);
+         return false;
+      }
+   }, [clearLaunchFallbackTimer]);
+
+   const beginPollingWorldIdRequest = useCallback(
+      (request: PreparedWorldIdRequest) => {
+         const runId = pollRunRef.current + 1;
+         pollRunRef.current = runId;
+
+         void (async () => {
+            const startedAt = Date.now();
+            while (pollRunRef.current === runId) {
+               if (Date.now() - startedAt > 15 * 60 * 1000) {
+                  setVerificationLaunchState('idle');
+                  handleError(IDKitErrorCodes.Timeout);
+                  return;
+               }
+
+               const nextStatus = await request.pollOnce();
+
+               if (pollRunRef.current !== runId) {
+                  return;
+               }
+
+               if (nextStatus.type === 'confirmed') {
+                  if (!nextStatus.result) {
+                     setVerificationLaunchState('idle');
+                     handleError(IDKitErrorCodes.UnexpectedResponse);
+                     return;
+                  }
+
+                  clearLaunchFallbackTimer();
+                  setVerificationLaunchState('idle');
+                  try {
+                     await handleVerify(nextStatus.result);
+                     handleSuccess();
+                  } catch {
+                     // handleVerify already maps the error into the existing processing/error UI.
+                  } finally {
+                     preparedRequestRef.current = null;
+                     prepareRequestPromiseRef.current = null;
+                  }
+                  return;
+               }
+
+               if (nextStatus.type === 'failed') {
+                  setVerificationLaunchState('idle');
+                  handleError(nextStatus.error ?? IDKitErrorCodes.GenericError);
+                  preparedRequestRef.current = null;
+                  prepareRequestPromiseRef.current = null;
+                  void prepareWorldIdRequest().catch(() => undefined);
+                  return;
+               }
+
+               await wait(STATUS_REFRESH_DELAY_MS);
+            }
+         })().catch((error) => {
+            if (pollRunRef.current === runId) {
+               setVerificationLaunchState('idle');
+               console.error('[WorldID] beginPollingWorldIdRequest error:', error);
+               showToastByConfig('server_error');
+            }
+         });
+      },
+      [clearLaunchFallbackTimer, handleError, handleSuccess, handleVerify, prepareWorldIdRequest, showToastByConfig]
+   );
+
+   const launchPreparedWorldIdRequest = useCallback(
+      (request: PreparedWorldIdRequest) => {
+         const didOpen = openExternalWorldId(request.connectorURI);
+         if (!didOpen) {
+            clearLaunchFallbackTimer();
+            setVerificationLaunchState('fallback');
+            return false;
+         }
+
+         setVerificationLaunchState('opening');
+         beginPollingWorldIdRequest(request);
+         return true;
+      },
+      [beginPollingWorldIdRequest, clearLaunchFallbackTimer, openExternalWorldId]
+   );
+
+   const handleStartWorldIdLaunch = useCallback(() => {
+      if (preparingRef.current || verificationLaunchState === 'opening') return;
+
+      preparingRef.current = true;
+      didLaunchExternalFlowRef.current = false;
+      setVerificationFeedbackState('idle');
+      setVerificationProcessingStep('confirming');
+      setShowVerificationHelp(false);
+      setVerificationLaunchState('opening');
+
+      if (launchFallbackTimerRef.current !== null) {
+         window.clearTimeout(launchFallbackTimerRef.current);
+      }
+      launchFallbackTimerRef.current = window.setTimeout(showLaunchFallback, LAUNCH_FALLBACK_DELAY_MS);
+
+      const preparedRequest = preparedRequestRef.current;
+      if (preparedRequest) {
+         launchPreparedWorldIdRequest(preparedRequest);
+         preparingRef.current = false;
+         return;
+      }
+
+      let placeholderWindow: Window | null = null;
+      try {
+         placeholderWindow = window.open('', '_blank');
+         if (placeholderWindow) {
+            placeholderWindow.opener = null;
+            placeholderWindow.document.title = 'Opening World ID';
+            placeholderWindow.document.body.style.fontFamily = 'system-ui, sans-serif';
+            placeholderWindow.document.body.style.padding = '24px';
+            placeholderWindow.document.body.textContent = 'Opening World ID...';
+            temporaryLaunchWindowRef.current = placeholderWindow;
+         }
+      } catch (error) {
+         console.error('[WorldID] placeholder launch window error:', error);
+      }
+
+      if (!placeholderWindow) {
+         setVerificationLaunchState('fallback');
+      }
+
+      prepareWorldIdRequest()
+         .then((request) => {
+            if (temporaryLaunchWindowRef.current && !temporaryLaunchWindowRef.current.closed) {
+               temporaryLaunchWindowRef.current.location.href = request.connectorURI;
+               temporaryLaunchWindowRef.current = null;
+               didLaunchExternalFlowRef.current = true;
+               clearLaunchFallbackTimer();
+               beginPollingWorldIdRequest(request);
+            }
+         })
+         .catch((error) => {
+            setVerificationLaunchState('idle');
+            if (error instanceof Error && error.message === 'WORLDID_ALREADY_USED') return;
+            console.error('[WorldID] handleStartWorldIdLaunch error:', error instanceof Error ? error.message : error);
+            showToastByConfig('server_error');
+         })
+         .finally(() => {
+            preparingRef.current = false;
+         });
+   }, [
+      beginPollingWorldIdRequest,
+      clearLaunchFallbackTimer,
+      launchPreparedWorldIdRequest,
+      prepareWorldIdRequest,
+      showLaunchFallback,
+      showToastByConfig,
+      verificationLaunchState
+   ]);
+
+   const handleCancelWorldIdLaunch = useCallback(() => {
+      pollRunRef.current += 1;
+      preparingRef.current = false;
+      clearLaunchFallbackTimer();
+      temporaryLaunchWindowRef.current = null;
+      setVerificationLaunchState('idle');
+   }, [clearLaunchFallbackTimer]);
 
    const handleContactSupport = useCallback(() => {
       window.open(WORLD_ID_VERIFICATION_SUPPORT_URL, '_blank', 'noopener,noreferrer');
@@ -603,9 +845,9 @@ export default function WorldIDVerification({
    }, []);
 
    const trigger = className ? (
-      <span className={className}>{children({ open: handleOpenHandoffPrompt })}</span>
+      <span className={className}>{children({ open: handleStartWorldIdLaunch })}</span>
    ) : (
-      children({ open: handleOpenHandoffPrompt })
+      children({ open: handleStartWorldIdLaunch })
    );
 
    return (
@@ -614,11 +856,10 @@ export default function WorldIDVerification({
 
          <AlreadyUsedModal isOpen={showAlreadyUsedModal} onClose={() => setShowAlreadyUsedModal(false)} />
 
-         <VerificationHandoffOverlay
-            isOpen={showHandoffPrompt}
-            isPreparing={isPreparingIDKit}
-            onContinue={() => void handleStartIDKit()}
-            onCancel={() => setShowHandoffPrompt(false)}
+         <VerificationLaunchOverlay
+            state={verificationLaunchState}
+            onRetryOpen={handleStartWorldIdLaunch}
+            onCancel={handleCancelWorldIdLaunch}
          />
 
          <VerificationFeedbackOverlay
@@ -626,7 +867,7 @@ export default function WorldIDVerification({
             processingStep={verificationProcessingStep}
             processingElapsedSeconds={processingElapsedSeconds}
             showHelpPanel={showVerificationHelp}
-            onTryAgain={handleOpenHandoffPrompt}
+            onTryAgain={handleStartWorldIdLaunch}
             onDismiss={() => {
                setShowVerificationHelp(false);
                setVerificationFeedbackState('idle');
@@ -636,23 +877,6 @@ export default function WorldIDVerification({
             onContactSupport={handleContactSupport}
             onOpenFacebookSupport={handleOpenFacebookSupport}
          />
-
-         {app_id && rpContext ? (
-            <IDKitRequestWidget
-               open={isIDKitOpen}
-               onOpenChange={handleIDKitOpenChange}
-               app_id={app_id}
-               action={action}
-               action_description={WORLD_ID_ACTION_DESCRIPTION}
-               rp_context={rpContext}
-               allow_legacy_proofs={false}
-               environment={WORLD_ID_ENVIRONMENT}
-               constraints={CredentialRequest('proof_of_human')}
-               onSuccess={handleSuccess}
-               onError={handleError}
-               handleVerify={handleVerify}
-            />
-         ) : null}
       </>
    );
 }
