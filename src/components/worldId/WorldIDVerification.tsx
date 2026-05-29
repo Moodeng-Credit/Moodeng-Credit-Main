@@ -15,7 +15,7 @@ import type { AppDispatch } from '@/store/store';
 import type { ApiResponse } from '@/types/apiTypes';
 import { SUCCESS_CODES } from '@/types/successCodes';
 import { getToastKeyFromSuccessCode } from '@/types/successToastMapping';
-import { TELEGRAM_SUPPORT_URL } from '@/views/support/constants';
+import { SUPPORT_FACEBOOK_URL, WORLD_ID_VERIFICATION_SUPPORT_URL } from '@/views/support/constants';
 
 interface WorldIDVerificationProps {
    children: (props: { open: () => void }) => ReactNode;
@@ -55,6 +55,7 @@ interface VerificationFeedbackOverlayProps {
    onNeedHelp: () => void;
    onCloseHelp: () => void;
    onContactSupport: () => void;
+   onOpenFacebookSupport: () => void;
 }
 
 function VerificationFeedbackOverlay({
@@ -66,7 +67,8 @@ function VerificationFeedbackOverlay({
    onDismiss,
    onNeedHelp,
    onCloseHelp,
-   onContactSupport
+   onContactSupport,
+   onOpenFacebookSupport
 }: VerificationFeedbackOverlayProps) {
    if (state === 'idle') return null;
 
@@ -184,20 +186,29 @@ function VerificationFeedbackOverlay({
                )}
 
                {isShowingHelp ? (
-                  <div className="grid w-full grid-cols-2 gap-md-2">
+                  <div className="flex w-full flex-col gap-md-2">
+                     <div className="grid w-full grid-cols-2 gap-md-2">
+                        <button
+                           type="button"
+                           onClick={onCloseHelp}
+                           className="inline-flex items-center justify-center rounded-md-lg border border-md-neutral-500 bg-white px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-heading"
+                        >
+                           Keep waiting
+                        </button>
+                        <button
+                           type="button"
+                           onClick={onContactSupport}
+                           className="inline-flex items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-white"
+                        >
+                           Open Telegram
+                        </button>
+                     </div>
                      <button
                         type="button"
-                        onClick={onCloseHelp}
-                        className="inline-flex items-center justify-center rounded-md-lg border border-md-neutral-500 bg-white px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-heading"
+                        onClick={onOpenFacebookSupport}
+                        className="inline-flex min-h-10 w-full items-center justify-center rounded-md-lg border border-md-primary-100 bg-md-neutral-100 px-md-3 py-md-2 text-md-b3 font-semibold tracking-normal text-md-neutral-1200"
                      >
-                        Keep waiting
-                     </button>
-                     <button
-                        type="button"
-                        onClick={onContactSupport}
-                        className="inline-flex items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-white"
-                     >
-                        Open Telegram
+                        Facebook support page
                      </button>
                   </div>
                ) : isProcessing ? (
@@ -469,7 +480,11 @@ export default function WorldIDVerification({
    }, []);
 
    const handleContactSupport = useCallback(() => {
-      window.open(TELEGRAM_SUPPORT_URL, '_blank', 'noopener,noreferrer');
+      window.open(WORLD_ID_VERIFICATION_SUPPORT_URL, '_blank', 'noopener,noreferrer');
+   }, []);
+
+   const handleOpenFacebookSupport = useCallback(() => {
+      window.open(SUPPORT_FACEBOOK_URL, '_blank', 'noopener,noreferrer');
    }, []);
 
    const trigger = className ? <span className={className}>{children({ open: () => void handleStartIDKit() })}</span> : children({ open: () => void handleStartIDKit() });
@@ -493,6 +508,7 @@ export default function WorldIDVerification({
             onNeedHelp={() => setShowVerificationHelp(true)}
             onCloseHelp={() => setShowVerificationHelp(false)}
             onContactSupport={handleContactSupport}
+            onOpenFacebookSupport={handleOpenFacebookSupport}
          />
 
          {app_id && rpContext ? (
