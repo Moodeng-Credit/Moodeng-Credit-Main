@@ -79,8 +79,8 @@ function VerificationFeedbackOverlay({
    const isTakingLonger = isProcessing && processingElapsedSeconds >= LONG_PROCESSING_SECONDS;
    const title = isProcessing
       ? isTakingLonger
-         ? 'Still verifying your World ID...'
-         : 'Verifying your World ID...'
+         ? 'Still verifying your World ID'
+         : 'Verifying your World ID'
       : isSuccess
         ? 'Verification Successful'
         : 'Verification is taking too long';
@@ -105,8 +105,8 @@ function VerificationFeedbackOverlay({
       : state === 'error'
         ? 'Verification interrupted'
         : processingStep === 'syncing'
-          ? 'Finalizing verification...'
-          : 'Confirming verification...';
+          ? 'Finalizing verification'
+          : 'Confirming verification';
    const panelDescription = isSuccess
       ? 'Your status has been updated securely.'
       : state === 'error'
@@ -196,29 +196,32 @@ function VerificationFeedbackOverlay({
                   </>
                ) : (
                   <>
-                     <div className="rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 shadow-md-card">
-                        <div className="flex items-center gap-md-2">
-                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md-md border border-md-primary-300 bg-md-primary-100 text-md-primary-1200">
-                              <LockKeyhole className="h-5 w-5" aria-hidden="true" />
+                     <div className="flex flex-col gap-md-1">
+                        <p className="text-md-b2 font-semibold tracking-normal text-md-heading">Verification status</p>
+                        <div className="rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 shadow-md-card">
+                           <div className="flex items-center gap-md-2">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md-md border border-md-primary-300 bg-md-primary-100 text-md-primary-1200">
+                                 <LockKeyhole className="h-5 w-5" aria-hidden="true" />
+                              </div>
+                              <div className="min-w-0">
+                                 <p className="text-md-b1 font-semibold tracking-normal text-md-heading">{statusLabel}</p>
+                                 <p className="mt-0.5 text-md-b3 font-normal tracking-normal text-md-neutral-1200">{panelDescription}</p>
+                              </div>
                            </div>
-                           <div className="min-w-0">
-                              <p className="text-md-b1 font-semibold tracking-normal text-md-heading">{statusLabel}</p>
-                              <p className="mt-0.5 text-md-b3 font-normal tracking-normal text-md-neutral-1200">{panelDescription}</p>
-                           </div>
-                        </div>
 
-                        <div
-                           className="mt-md-2 h-2 w-full overflow-hidden rounded-md-pill bg-md-primary-100"
-                           role="progressbar"
-                           aria-label={statusLabel}
-                           aria-valuemin={0}
-                           aria-valuemax={100}
-                           aria-valuenow={Math.round(progressPercent)}
-                        >
                            <div
-                              className={`h-full rounded-md-pill transition-[width] duration-500 ease-out ${progressBarClassName}`}
-                              style={{ width: `${progressPercent}%` }}
-                           />
+                              className="mt-md-2 h-2 w-full overflow-hidden rounded-md-pill bg-md-primary-100"
+                              role="progressbar"
+                              aria-label={statusLabel}
+                              aria-valuemin={0}
+                              aria-valuemax={100}
+                              aria-valuenow={Math.round(progressPercent)}
+                           >
+                              <div
+                                 className={`h-full rounded-md-pill transition-[width] duration-500 ease-out ${progressBarClassName}`}
+                                 style={{ width: `${progressPercent}%` }}
+                              />
+                           </div>
                         </div>
                      </div>
 
