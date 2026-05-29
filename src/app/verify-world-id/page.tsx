@@ -15,6 +15,7 @@ export default function WorldIdVerification() {
    const isPreview = import.meta.env.DEV && location.pathname.includes('preview');
    const returnTo =
       (location.state as { returnTo?: string } | null)?.returnTo || new URLSearchParams(location.search).get('returnTo') || undefined;
+   const shouldShowInlineSuccess = Boolean(returnTo);
 
    const handleVerified = useCallback(() => {
       if (!isPreview && returnTo === 'loan-request') {
@@ -60,7 +61,12 @@ export default function WorldIdVerification() {
                </p>
             </div>
 
-            <WorldIDVerification onSuccess={handleVerified} className="w-full">
+            <WorldIDVerification
+               onSuccess={handleVerified}
+               className="w-full"
+               showSuccessFeedback={shouldShowInlineSuccess}
+               showSuccessToast={shouldShowInlineSuccess}
+            >
                {({ open }) => (
                   <button
                      type="button"
