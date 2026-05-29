@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { CredentialRequest, IDKitErrorCodes, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
-import { AlertTriangle, CheckCircle2, LoaderCircle, LockKeyhole, MessageCircle, Shield, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, LoaderCircle, LockKeyhole, Shield, X } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
@@ -156,16 +156,32 @@ function VerificationFeedbackOverlay({
                            <button
                               type="button"
                               onClick={onContactSupport}
-                              className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b1 font-semibold tracking-normal text-md-neutral-100"
+                              className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg px-md-3 py-md-3 text-md-b1 font-semibold tracking-normal text-md-neutral-100 shadow-md-card transition-all duration-150 hover:brightness-105 active:scale-[0.97] active:brightness-95"
+                              style={{ backgroundColor: '#0088CC' }}
                            >
-                              <MessageCircle className="h-5 w-5" aria-hidden="true" />
+                              <img src="/icons/telegram-classic-filled.png" alt="" className="h-5 w-5 shrink-0" />
                               Telegram
                            </button>
                            <button
                               type="button"
                               onClick={onOpenFacebookSupport}
-                              className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-3 text-md-b1 font-semibold tracking-normal text-md-heading"
+                              className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg px-md-3 py-md-3 text-md-b1 font-semibold tracking-normal text-md-neutral-100 shadow-md-card transition-all duration-150 hover:brightness-105 active:scale-[0.97] active:brightness-95"
+                              style={{ backgroundColor: '#1877F2' }}
                            >
+                              <span
+                                 className="h-5 w-5 shrink-0 bg-md-neutral-100"
+                                 aria-hidden="true"
+                                 style={{
+                                    WebkitMaskImage: "url('/icons/facebook.svg')",
+                                    maskImage: "url('/icons/facebook.svg')",
+                                    WebkitMaskSize: 'contain',
+                                    maskSize: 'contain',
+                                    WebkitMaskRepeat: 'no-repeat',
+                                    maskRepeat: 'no-repeat',
+                                    WebkitMaskPosition: 'center',
+                                    maskPosition: 'center'
+                                 }}
+                              />
                               Facebook
                            </button>
                         </div>
