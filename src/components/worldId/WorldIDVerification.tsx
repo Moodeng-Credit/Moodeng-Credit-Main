@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { CredentialRequest, IDKitErrorCodes, IDKitRequestWidget, type IDKitResult, type RpContext } from '@worldcoin/idkit';
-import { AlertTriangle, CheckCircle2, LoaderCircle, LockKeyhole, Shield, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ExternalLink, LoaderCircle, LockKeyhole, Shield, X } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
@@ -44,6 +44,84 @@ const wait = (ms: number) =>
    new Promise<void>((resolve) => {
       window.setTimeout(resolve, ms);
    });
+
+interface VerificationHandoffOverlayProps {
+   isOpen: boolean;
+   isPreparing: boolean;
+   onContinue: () => void;
+   onCancel: () => void;
+}
+
+function VerificationHandoffOverlay({ isOpen, isPreparing, onContinue, onCancel }: VerificationHandoffOverlayProps) {
+   if (!isOpen) return null;
+
+   return (
+      <div
+         className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-md-primary-2000/65 px-md-4 font-sans backdrop-blur-[6px]"
+         role="alertdialog"
+         aria-modal="true"
+         aria-labelledby="world-id-handoff-title"
+         aria-describedby="world-id-handoff-description"
+      >
+         <div className="w-full max-w-[398px] overflow-hidden rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 text-left shadow-md-card">
+            <div className="flex min-h-[56px] items-center justify-between border-b border-md-neutral-400 px-md-3 py-md-3">
+               <h2 id="world-id-handoff-title" className="min-w-0 text-[20px] font-[590] leading-[1.2] tracking-normal text-md-heading">
+                  {isPreparing ? 'Opening World ID' : 'Continue to World ID'}
+               </h2>
+               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md-md bg-md-primary-100 text-md-primary-1200">
+                  {isPreparing ? (
+                     <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
+                  ) : (
+                     <ExternalLink className="h-5 w-5" aria-hidden="true" />
+                  )}
+               </div>
+            </div>
+
+            <div className="flex flex-col gap-md-3 p-md-3">
+               <p id="world-id-handoff-description" className="text-md-b2 font-normal tracking-normal text-md-neutral-1200">
+                  World ID may open in another app or browser. It can take a few seconds to load.
+               </p>
+
+               <div className="flex flex-col gap-md-1">
+                  <p className="text-md-b2 font-semibold tracking-normal text-md-heading">Before you continue</p>
+                  <div className="rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 shadow-md-card">
+                     <div className="flex items-center gap-md-2">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md-md border border-md-primary-300 bg-md-primary-100 text-md-primary-1200">
+                           <Shield className="h-5 w-5" aria-hidden="true" />
+                        </div>
+                        <div className="min-w-0">
+                           <p className="text-md-b1 font-semibold tracking-normal text-md-heading">Return to Moodeng after verifying</p>
+                           <p className="mt-0.5 text-md-b3 font-normal tracking-normal text-md-neutral-1200">
+                              Keep this screen open until Moodeng updates your status.
+                           </p>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <div className="grid w-full grid-cols-2 gap-md-2">
+                  <button
+                     type="button"
+                     onClick={onCancel}
+                     disabled={isPreparing}
+                     className="inline-flex min-h-12 items-center justify-center rounded-md-lg border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-heading disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                     Cancel
+                  </button>
+                  <button
+                     type="button"
+                     onClick={onContinue}
+                     disabled={isPreparing}
+                     className="inline-flex min-h-12 items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-neutral-100 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                     {isPreparing ? 'Opening...' : 'Open World ID'}
+                  </button>
+               </div>
+            </div>
+         </div>
+      </div>
+   );
+}
 
 interface VerificationFeedbackOverlayProps {
    state: VerificationFeedbackState;
@@ -279,6 +357,8 @@ export default function WorldIDVerification({
    const [isIDKitOpen, setIsIDKitOpen] = useState(false);
    const [rpContext, setRpContext] = useState<RpContext | null>(null);
    const [showAlreadyUsedModal, setShowAlreadyUsedModal] = useState(false);
+   const [showHandoffPrompt, setShowHandoffPrompt] = useState(false);
+   const [isPreparingIDKit, setIsPreparingIDKit] = useState(false);
    const [verificationFeedbackState, setVerificationFeedbackState] = useState<VerificationFeedbackState>('idle');
    const [verificationProcessingStep, setVerificationProcessingStep] = useState<VerificationProcessingStep>('confirming');
    const [processingElapsedSeconds, setProcessingElapsedSeconds] = useState(0);
@@ -474,6 +554,13 @@ export default function WorldIDVerification({
       }
    };
 
+   const handleOpenHandoffPrompt = useCallback(() => {
+      if (preparingRef.current) return;
+      setVerificationFeedbackState('idle');
+      setShowVerificationHelp(false);
+      setShowHandoffPrompt(true);
+   }, []);
+
    const handleStartIDKit = useCallback(async () => {
       if (preparingRef.current) return;
       try {
@@ -481,18 +568,22 @@ export default function WorldIDVerification({
             throw new Error('VITE_WORLD_ID_APP_ID is not configured.');
          }
          preparingRef.current = true;
+         setIsPreparingIDKit(true);
          setVerificationFeedbackState('idle');
          setVerificationProcessingStep('confirming');
          setShowVerificationHelp(false);
          const nextRpContext = await fetchRpContext();
          setRpContext(nextRpContext);
+         setShowHandoffPrompt(false);
          setIsIDKitOpen(true);
       } catch (error) {
+         setShowHandoffPrompt(false);
          if (error instanceof Error && error.message === 'WORLDID_ALREADY_USED') return;
          console.error('[WorldID] handleStartIDKit error:', error instanceof Error ? error.message : error);
          showToastByConfig('server_error');
       } finally {
          preparingRef.current = false;
+         setIsPreparingIDKit(false);
       }
    }, [app_id, fetchRpContext, showToastByConfig]);
 
@@ -508,7 +599,11 @@ export default function WorldIDVerification({
       window.open(SUPPORT_FACEBOOK_URL, '_blank', 'noopener,noreferrer');
    }, []);
 
-   const trigger = className ? <span className={className}>{children({ open: () => void handleStartIDKit() })}</span> : children({ open: () => void handleStartIDKit() });
+   const trigger = className ? (
+      <span className={className}>{children({ open: handleOpenHandoffPrompt })}</span>
+   ) : (
+      children({ open: handleOpenHandoffPrompt })
+   );
 
    return (
       <>
@@ -516,12 +611,19 @@ export default function WorldIDVerification({
 
          <AlreadyUsedModal isOpen={showAlreadyUsedModal} onClose={() => setShowAlreadyUsedModal(false)} />
 
+         <VerificationHandoffOverlay
+            isOpen={showHandoffPrompt}
+            isPreparing={isPreparingIDKit}
+            onContinue={() => void handleStartIDKit()}
+            onCancel={() => setShowHandoffPrompt(false)}
+         />
+
          <VerificationFeedbackOverlay
             state={verificationFeedbackState}
             processingStep={verificationProcessingStep}
             processingElapsedSeconds={processingElapsedSeconds}
             showHelpPanel={showVerificationHelp}
-            onTryAgain={() => void handleStartIDKit()}
+            onTryAgain={handleOpenHandoffPrompt}
             onDismiss={() => {
                setShowVerificationHelp(false);
                setVerificationFeedbackState('idle');
