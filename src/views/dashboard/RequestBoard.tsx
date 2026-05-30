@@ -31,11 +31,12 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { usePagination } from '@/hooks/usePagination';
 
+import { formatCurrency } from '@/utils/decimalHelpers';
 import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 import { logoImageSrc } from '@/config/navigationConfig';
-import { getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
+import { getBorrowerActiveLoanCount, getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import {
@@ -45,11 +46,12 @@ import {
    recordGuidedTourShown,
    shouldShowGuidedTour
 } from '@/lib/guidedTourStorage';
+import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { isBaseWalletReadyForRepayment } from '@/lib/walletProvider';
 import { formatPointsMajor } from '@/shared/points';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
-import { createLoan, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
+import { createLoan, deleteLoan, fetchLoanRequestRepostStatus, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -183,6 +185,8 @@ function RequestBoard$() {
    const [showGuestWorldIdPreview, setShowGuestWorldIdPreview] = useState(false);
    const [hasWorldIdJustVerified, setHasWorldIdJustVerified] = useState(false);
    const [showWorldIdHighlight, setShowWorldIdHighlight] = useState(false);
+   const [requestToDelete, setRequestToDelete] = useState<Loan | null>(null);
+   const [isDeletingRequest, setIsDeletingRequest] = useState(false);
 
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -256,6 +260,8 @@ function RequestBoard$() {
    const usedCreditAmount = useMemo(() => {
       return getBorrowerUsedCreditAmount(borrowerCreditLoans);
    }, [borrowerCreditLoans]);
+   const activeBorrowerLoanCount = useMemo(() => getBorrowerActiveLoanCount(borrowerCreditLoans), [borrowerCreditLoans]);
+   const hasReachedActiveLoanLimit = (effectiveUser.mal ?? 0) > 0 && activeBorrowerLoanCount >= (effectiveUser.mal ?? 0);
    const availableCreditLimit = Math.max(effectiveCreditLimit - usedCreditAmount, 0);
    const canUseReferralBoost =
       isReferralTestMode ||
@@ -290,6 +296,9 @@ function RequestBoard$() {
       () => setShowWorldIdHighlight(false),
       showWorldIdHighlight
    ) as RefObject<HTMLDivElement>;
+   const deleteRequestModalRef = useClickOutside<HTMLDivElement>(() => {
+      if (!isDeletingRequest) setRequestToDelete(null);
+   }, Boolean(requestToDelete)) as RefObject<HTMLDivElement>;
 
    const [filters, setFilters] = useState<LoanFilters>(() => getDefaultRequestFilters());
    const hasActiveRequestFilters = useMemo(() => hasAppliedRequestFilters(filters, customAmount), [filters, customAmount]);
@@ -355,7 +364,39 @@ function RequestBoard$() {
       setShowFilters((current) => !current);
    }, [hasActiveRequestFilters, resetRequestFilters]);
 
-   const handleApplyLoanClick = (e: MouseEvent<HTMLButtonElement>) => {
+   const showLoanRequestCooldown = useCallback(
+      (status: LoanRequestRepostStatus) => {
+         showToast(TOAST_TYPES.WARNING, 'New request paused', getLoanRequestCooldownMessage(status), 'OK', 'acknowledge');
+      },
+      [showToast]
+   );
+
+   const ensureCanCreateLoanRequest = useCallback(async () => {
+      if (!isAuthenticated || !isBorrower || isReferralTestMode || isLenderTourPreview) return true;
+
+      try {
+         const repostStatus = await dispatch(fetchLoanRequestRepostStatus()).unwrap();
+
+         if (!repostStatus.canCreate) {
+            showLoanRequestCooldown(repostStatus);
+            return false;
+         }
+
+         return true;
+      } catch (error) {
+         console.error('Error checking loan request repost status:', (error as Error).message || error);
+         showToast(
+            TOAST_TYPES.ERROR,
+            'Request limit unavailable',
+            'We could not check your request limit. Please try again.',
+            'OK',
+            'acknowledge'
+         );
+         return false;
+      }
+   }, [dispatch, isAuthenticated, isBorrower, isLenderTourPreview, isReferralTestMode, showLoanRequestCooldown, showToast]);
+
+   const handleApplyLoanClick = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
 
       if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
@@ -373,13 +414,16 @@ function RequestBoard$() {
          return;
       }
 
-      if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
+      if (hasReachedActiveLoanLimit) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
 
       if (availableCreditLimit <= 0) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
+         return;
+      }
+      if (!(await ensureCanCreateLoanRequest())) {
          return;
       }
       setShowModal(true);
@@ -675,6 +719,7 @@ function RequestBoard$() {
 
    useEffect(() => {
       if (!shouldOpenLoanRequest || !isAuthenticated || !isBorrower || !effectiveUser?.id) return;
+      let isActive = true;
 
       if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
          navigate('/onboarding/welcome', { replace: true, state: { returnTo: 'loan-request' } });
@@ -693,15 +738,28 @@ function RequestBoard$() {
          return;
       }
 
-      if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
-         navigate(pathname, { replace: true, state: null });
-         return;
-      }
+      const openLoanRequestFromRoute = async () => {
+         if (hasReachedActiveLoanLimit) {
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
+            navigate(pathname, { replace: true, state: null });
+            return;
+         }
 
-      setShowModal(true);
-      navigate(pathname, { replace: true, state: null });
+         const canCreateRequest = await ensureCanCreateLoanRequest();
+         if (!isActive) return;
+
+         if (canCreateRequest) setShowModal(true);
+         navigate(pathname, { replace: true, state: null });
+      };
+
+      void openLoanRequestFromRoute();
+
+      return () => {
+         isActive = false;
+      };
    }, [
+      ensureCanCreateLoanRequest,
+      hasReachedActiveLoanLimit,
       isAuthenticated,
       isBorrower,
       navigate,
@@ -711,9 +769,7 @@ function RequestBoard$() {
       hasBorrowerBaseWallet,
       isWorldIdVerified,
       showBorrowerBaseWalletGate,
-      effectiveUser?.id,
-      effectiveUser?.mal,
-      effectiveUser?.nal
+      effectiveUser?.id
    ]);
 
    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -738,7 +794,7 @@ function RequestBoard$() {
          showBorrowerBaseWalletGate();
          return;
       }
-      if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
+      if (hasReachedActiveLoanLimit) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
@@ -785,13 +841,16 @@ function RequestBoard$() {
       if (
          effectiveUser.isWorldId === 'ACTIVE' &&
          hasBorrowerBaseWallet &&
-         (effectiveUser.nal || 0) < (effectiveUser.mal || 0) &&
+         !hasReachedActiveLoanLimit &&
          parsedLoanAmount <= availableCreditLimit &&
          parsedLoanAmount > 0 &&
          parsedRepaymentAmount >= parsedLoanAmount + 1
       ) {
          setIsSubmitting(true);
          try {
+            if (!(await ensureCanCreateLoanRequest())) {
+               return;
+            }
             await dispatch(createLoan(loanData)).unwrap();
             clear();
             setShowPurple(true);
@@ -894,6 +953,75 @@ function RequestBoard$() {
       items: sortedLoans,
       resetDependencies: [filters, searchLoan]
    });
+
+   const handleDeleteOwnRequestClick = useCallback(
+      (loan: Loan) => {
+         if (!effectiveUser?.id || loan.borrowerUser !== effectiveUser.id || loan.loanStatus !== 'Requested') return;
+
+         setRequestToDelete(loan);
+      },
+      [effectiveUser?.id]
+   );
+
+   const handleCloseDeleteRequest = useCallback(() => {
+      if (!isDeletingRequest) setRequestToDelete(null);
+   }, [isDeletingRequest]);
+
+   const handleConfirmDeleteRequest = useCallback(async () => {
+      if (!requestToDelete || isDeletingRequest) return;
+
+      if (!effectiveUser?.id || requestToDelete.borrowerUser !== effectiveUser.id || requestToDelete.loanStatus !== 'Requested') {
+         setRequestToDelete(null);
+         showToast(
+            TOAST_TYPES.ERROR,
+            "Request wasn't deleted",
+            'Only the borrower who made a pending request can delete it.',
+            'OK',
+            'acknowledge'
+         );
+         return;
+      }
+
+      setIsDeletingRequest(true);
+      try {
+         await dispatch(deleteLoan(requestToDelete.id)).unwrap();
+         setRequestToDelete(null);
+
+         const repostStatus = await dispatch(fetchLoanRequestRepostStatus())
+            .unwrap()
+            .catch(() => null);
+
+         showToast(
+            TOAST_TYPES.SUCCESS,
+            'Request deleted',
+            repostStatus && !repostStatus.canCreate
+               ? getLoanRequestCooldownMessage(repostStatus)
+               : 'Lenders will no longer see this request on the board.'
+         );
+
+         await dispatch(fetchUser())
+            .unwrap()
+            .catch((error: Error) => {
+               console.error('Error refreshing user after loan request delete:', error.message || error);
+            });
+      } catch (error) {
+         console.error('Error deleting loan request:', (error as Error).message || error);
+         showToast(
+            TOAST_TYPES.ERROR,
+            "Request wasn't deleted",
+            'It may already be funded or unavailable. Refreshing the board now.',
+            'OK',
+            'acknowledge'
+         );
+         await dispatch(fetchLoans())
+            .unwrap()
+            .catch((fetchError: Error) => {
+               console.error('Error refreshing loans after delete failure:', fetchError.message || fetchError);
+            });
+      } finally {
+         setIsDeletingRequest(false);
+      }
+   }, [dispatch, effectiveUser?.id, isDeletingRequest, requestToDelete, showToast]);
 
    const handleSuccessModalClose = useCallback(() => setShowPurple(false), []);
 
@@ -1233,8 +1361,11 @@ function RequestBoard$() {
                               <div key={loan.id} data-tour-target={visibleLoans[0]?.id === loan.id ? 'request-first-card' : undefined}>
                                  <UserCard
                                     {...loan}
+                                    currentUserId={effectiveUser?.id}
                                     isBorrower={isBorrower}
                                     isAuthenticated={isAuthenticated}
+                                    isDeletingOwnRequest={Boolean(isDeletingRequest && requestToDelete?.id === loan.id)}
+                                    onDeleteOwnRequest={handleDeleteOwnRequestClick}
                                     tourBorrowerUsername={loan.id.startsWith('lender-tour') ? 'maya-demo' : undefined}
                                  />
                               </div>
@@ -1309,6 +1440,13 @@ function RequestBoard$() {
                   clickOutsideRef={loanRequestModalRef}
                />
                <SuccessModal isOpen={showPurple} onClose={handleSuccessModalClose} clickOutsideRef={successModalRef} />
+               <DeleteLoanRequestModal
+                  loan={requestToDelete}
+                  clickOutsideRef={deleteRequestModalRef}
+                  isDeleting={isDeletingRequest}
+                  onClose={handleCloseDeleteRequest}
+                  onConfirm={handleConfirmDeleteRequest}
+               />
             </>
          )}
          {isGuestBorrowerTour && showGuestWorldIdPreview && <GuestWorldIdTourPreview />}
@@ -1333,6 +1471,88 @@ function RequestBoard$() {
             />
          )}
       </>
+   );
+}
+
+function DeleteLoanRequestModal({
+   loan,
+   clickOutsideRef,
+   isDeleting,
+   onClose,
+   onConfirm
+}: {
+   loan: Loan | null;
+   clickOutsideRef: RefObject<HTMLDivElement>;
+   isDeleting: boolean;
+   onClose: () => void;
+   onConfirm: () => void;
+}) {
+   if (!loan) return null;
+
+   const dueDate = new Date(loan.dueDate);
+   const dueDateLabel = Number.isNaN(dueDate.getTime())
+      ? 'the selected date'
+      : new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(dueDate);
+
+   return (
+      <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#12071f]/45 px-md-3 py-md-4 sm:items-center">
+         <div
+            ref={clickOutsideRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-loan-request-title"
+            className="w-full max-w-[408px] overflow-hidden rounded-t-[32px] bg-white shadow-md-overlay sm:rounded-[32px]"
+         >
+            <div className="flex items-center justify-between border-b border-md-neutral-400 px-md-4 py-md-3">
+               <div>
+                  <h2 id="delete-loan-request-title" className="text-md-h4 font-semibold text-md-heading">
+                     Delete this request?
+                  </h2>
+                  <p className="mt-1 text-md-b3 font-medium text-md-neutral-800">This cannot be undone.</p>
+               </div>
+               <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isDeleting}
+                  aria-label="Close delete request confirmation"
+                  className="size-11 shrink-0 rounded-full text-md-heading inline-flex items-center justify-center active:bg-md-neutral-300 disabled:cursor-not-allowed disabled:opacity-50"
+               >
+                  <X className="size-7" strokeWidth={2.25} />
+               </button>
+            </div>
+
+            <div className="flex flex-col gap-md-4 px-md-4 py-md-5">
+               <div className="rounded-md-lg border border-red-100 bg-red-50 px-md-4 py-md-4">
+                  <p className="text-md-b1 font-semibold text-red-700">{loan.reason || 'Loan request'}</p>
+                  <p className="mt-2 text-md-b2 font-medium leading-[1.45] text-md-neutral-900">
+                     Borrowing ${formatCurrency(loan.loanAmount)} and repaying ${formatCurrency(loan.totalRepaymentAmount)} by{' '}
+                     {dueDateLabel}.
+                  </p>
+               </div>
+               <p className="text-md-b2 font-medium leading-[1.45] text-md-neutral-900">
+                  Lenders will no longer see it. You can make a new request from the board, but repeated deletes pause new requests for a
+                  short time.
+               </p>
+
+               <button
+                  type="button"
+                  onClick={onConfirm}
+                  disabled={isDeleting}
+                  className="w-full rounded-md-lg bg-red-600 px-md-4 py-md-3 text-md-b1 font-semibold text-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+               >
+                  {isDeleting ? 'Deleting...' : 'Delete request'}
+               </button>
+               <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isDeleting}
+                  className="w-full rounded-md-lg border border-md-neutral-500 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-1200 active:bg-md-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
+               >
+                  Keep request
+               </button>
+            </div>
+         </div>
+      </div>
    );
 }
 

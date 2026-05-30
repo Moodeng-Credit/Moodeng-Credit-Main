@@ -6,6 +6,7 @@ import { toNumber } from '@/utils/decimalHelpers';
 
 import { isExpiredUnfundedRequest } from '@/lib/borrowerCreditUsage';
 import { evaluateCreditProgression } from '@/lib/creditLeveling';
+import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { computeYearOneIouPointsDelta, getYearOneIouBorrowerBonusPoints, loanFundingPointsPerUsdc } from '@/shared/points';
@@ -18,6 +19,7 @@ const supabaseClient = () => getSupabaseBrowserClient();
 type LoanRow = Database['public']['Tables']['loans']['Row'];
 type LoanInsert = Database['public']['Tables']['loans']['Insert'];
 type LoanUpdate = Database['public']['Tables']['loans']['Update'];
+type LoanRequestRepostStatusRow = Database['public']['Functions']['get_loan_request_repost_status']['Returns'][number];
 export type LoanSideEffectError = {
    type: 'award_points' | 'loan_notification';
    message: string;
@@ -59,8 +61,35 @@ const initialState: LoanState = {
    error: null
 };
 
+const mapLoanRequestRepostStatus = (row?: LoanRequestRepostStatusRow | null): LoanRequestRepostStatus => ({
+   deleteCount24h: row?.delete_count_24h ?? 0,
+   cooldownUntil: row?.cooldown_until ?? null,
+   canCreate: row?.can_create ?? true
+});
+
+const fetchLoanRequestRepostStatusFromSupabase = async (supabase: ReturnType<typeof supabaseClient>) => {
+   const { data, error } = await supabase.rpc('get_loan_request_repost_status');
+
+   if (error) {
+      throw new Error(error.message);
+   }
+
+   return mapLoanRequestRepostStatus(Array.isArray(data) ? data[0] : data);
+};
+
+export const fetchLoanRequestRepostStatus = createAsyncThunk('loans/fetchLoanRequestRepostStatus', async () => {
+   const supabase = supabaseClient();
+
+   return fetchLoanRequestRepostStatusFromSupabase(supabase);
+});
+
 export const createLoan = createAsyncThunk('loans/create', async (loanData: CreateLoanData) => {
    const supabase = supabaseClient();
+   const repostStatus = await fetchLoanRequestRepostStatusFromSupabase(supabase);
+
+   if (!repostStatus.canCreate) {
+      throw new Error(getLoanRequestCooldownMessage(repostStatus));
+   }
 
    // Generate a unique tracking ID
    const trackingId = `LOAN-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -480,13 +509,17 @@ export const updateLoanStatus = createAsyncThunk<
 export const deleteLoan = createAsyncThunk('loans/delete', async (loanId: string) => {
    const supabase = supabaseClient();
 
-   const { error } = await supabase.from('loans').delete().eq('id', loanId);
+   const { data, error } = await supabase.from('loans').delete().eq('id', loanId).select('id').maybeSingle();
 
    if (error) {
       throw new Error(error.message);
    }
 
-   return loanId;
+   if (!data?.id) {
+      throw new Error('Loan request was not deleted');
+   }
+
+   return data.id;
 });
 
 export const getLoans = getUserLoans;
