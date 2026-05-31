@@ -30,6 +30,7 @@ const foundingTeam = [
       role: 'Working on Partnerships',
       initial: 'L',
       bio: 'Experienced relationship builder helping shape partner conversations, lender outreach, and ecosystem growth.',
+      credentials: ['Head of Growth', 'Growth Hacking', 'Blockchain Analysis', 'Digital Marketing', 'Marketing Automation'],
       linkedIn: 'https://www.linkedin.com/in/louis-philippe/'
    },
    {
@@ -160,16 +161,7 @@ export default function TeamPage() {
                </div>
             </section>
 
-            <section
-               aria-labelledby="founding-team-heading"
-               className="mt-md-1 border-t-[8px] border-[#0d2f6f] pt-md-4 md:mt-md-2 md:pt-md-6"
-            >
-               <header className="mb-md-3 text-center text-[#071b43] md:mb-md-4">
-                  <h2 id="founding-team-heading" className="font-serif text-[40px] font-bold leading-none md:text-[72px]">
-                     Founding Team
-                  </h2>
-               </header>
-
+            <section aria-label="Additional team members" className="mt-md-1 border-t-[8px] border-[#0d2f6f] pt-md-4 md:mt-md-2 md:pt-md-6">
                <div className="grid gap-md-3 md:grid-cols-3">
                   {foundingTeam.map((member) => (
                      <article
@@ -186,6 +178,11 @@ export default function TeamPage() {
                         <p className="mx-auto mt-md-2 flex max-w-[280px] items-center text-md-b2 font-medium leading-relaxed text-[#fff9e8]/90 md:min-h-[128px]">
                            {member.bio}
                         </p>
+                        {'credentials' in member && member.credentials ? (
+                           <div className="mt-md-2 w-full [&>ul]:justify-center">
+                              <CredentialPills items={member.credentials} />
+                           </div>
+                        ) : null}
                         <div className="mt-auto pt-md-2 md:pt-md-3">
                            {'showLinkedInPlaceholder' in member && member.showLinkedInPlaceholder ? (
                               <LinkedInPlaceholderButton className="mx-auto" />
