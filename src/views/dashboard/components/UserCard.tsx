@@ -32,10 +32,10 @@ type UserCardProps = Loan & {
 
 export default function UserCard(loan: UserCardProps) {
    const {
+      currentUserId,
       isBorrower = true,
       isAuthenticated = true,
       isDeletingOwnRequest = false,
-      currentUserId,
       onDeleteOwnRequest,
       tourBorrowerUsername,
       ...loanData
@@ -299,8 +299,8 @@ export default function UserCard(loan: UserCardProps) {
                )}
 
                {/* View Borrower Details — hidden for logged-out users */}
-               {isAuthenticated &&
-                  (borrowerUsername ? (
+               {isAuthenticated ? (
+                  borrowerUsername ? (
                      <Link
                         to={borrowerDetailsHref}
                         data-tour-target="lender-borrower-details-link"
@@ -314,7 +314,8 @@ export default function UserCard(loan: UserCardProps) {
                         View Borrower Details
                         <ExternalLink className="w-5 h-5" />
                      </span>
-                  ))}
+                  )
+               ) : null}
             </div>
          </div>
 

@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      loan_request_delete_events: {
+        Row: {
+          borrower_user_id: string
+          deleted_at: string
+          id: string
+          loan_id: string
+        }
+        Insert: {
+          borrower_user_id: string
+          deleted_at?: string
+          id?: string
+          loan_id: string
+        }
+        Update: {
+          borrower_user_id?: string
+          deleted_at?: string
+          id?: string
+          loan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_request_delete_events_borrower_user_id_fkey"
+            columns: ["borrower_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loan_notifications: {
         Row: {
           email_sent_at: string | null
@@ -727,6 +756,18 @@ export type Database = {
           applied: boolean
           event_id: number | null
           points_total: number
+        }[]
+      }
+      can_create_loan_request: {
+        Args: { p_borrower_user_id: string }
+        Returns: boolean
+      }
+      get_loan_request_repost_status: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          can_create: boolean
+          cooldown_until: string | null
+          delete_count_24h: number
         }[]
       }
       record_milestone_completion: {
