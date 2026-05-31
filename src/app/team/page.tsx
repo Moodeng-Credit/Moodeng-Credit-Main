@@ -22,7 +22,7 @@ const foundingTeam = [
       name: 'Yousuf',
       role: 'Member of Technical Team',
       image: '/team/yousef.jpg',
-      bio: 'Backend engineer helping Moodeng Credit turn borrower and lender requirements into reliable app flows, APIs, and shipped features.',
+      bio: 'Backend engineer building scalable APIs, cloud systems, and product flows for Moodeng Credit.',
       credentials: ['Backend Engineer', 'Java', 'Node.js', 'AWS', 'App Flows'],
       linkedIn: 'https://www.linkedin.com/in/m-yousuf-dev',
       website: 'https://yousuf-dev.com/'
