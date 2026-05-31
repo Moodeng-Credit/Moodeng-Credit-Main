@@ -900,6 +900,7 @@ const UserProfile = () => {
          />
          {showLenderInsightsTour && (
             <GuidedTourPreview
+               startImmediately={forceTourPreview || searchParams.get('startTour') === '1'}
                stepOffset={3}
                totalSteps={9}
                steps={lenderInsightsTourSteps}
@@ -1047,7 +1048,7 @@ const DefaultHistoryBottomSheet = ({
          <button
             type="button"
             aria-label="Close default history"
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-[#1f1b29]/45 backdrop-blur-sm"
             onClick={onClose}
          />
          <div
@@ -1175,7 +1176,7 @@ const RepaymentHistoryBottomSheet = ({
          <button
             type="button"
             aria-label="Close repayment history"
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-[#1f1b29]/45 backdrop-blur-sm"
             onClick={onClose}
          />
          <div
@@ -1330,7 +1331,7 @@ const CreditLevelBottomSheet = ({ isOpen, onClose }: { isOpen: boolean; onClose:
          <button
             type="button"
             aria-label="Close credit level explanation"
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-[#1f1b29]/45 backdrop-blur-sm"
             onClick={onClose}
          />
          <div
@@ -1436,7 +1437,7 @@ const LenderDiversityBottomSheet = ({ isOpen, onClose, onOpenDocs }: { isOpen: b
          <button
             type="button"
             aria-label="Close lender diversity explanation"
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-[#1f1b29]/45 backdrop-blur-sm"
             onClick={onClose}
          />
          <div
@@ -1615,7 +1616,7 @@ const LoanMixBottomSheet = ({
          <button
             type="button"
             aria-label="Close loan mix explanation"
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-[#1f1b29]/45 backdrop-blur-sm"
             onClick={onClose}
          />
          <div

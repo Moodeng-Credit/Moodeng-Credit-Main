@@ -333,7 +333,7 @@ export default function UserCard(loan: UserCardProps) {
 
          {/* Fund Success Modal */}
          {showModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1f1b29]/50">
                <div className="bg-white rounded-2xl shadow-lg max-w-sm mx-auto flex flex-col overflow-hidden" style={{ minWidth: '320px' }}>
                   <div className="bg-gradient-to-r from-[#C55FFF] to-[#7B5FFF] px-6 py-4 flex items-center justify-between">
                      <h3 className="text-white font-bold text-lg">Funded</h3>

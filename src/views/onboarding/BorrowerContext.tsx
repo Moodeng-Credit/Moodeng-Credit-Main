@@ -1,28 +1,27 @@
 import { useMemo, useState } from 'react';
 
 import {
-   BarChart3,
+   ArrowRight,
+   Bolt,
    Briefcase,
    BriefcaseBusiness,
    Bus,
-   CalendarDays,
    Check,
    Clock3,
    FileText,
+   Heart,
    LockKeyhole,
    type LucideIcon,
-   PencilLine,
    ShieldCheck,
    Stethoscope,
    TriangleAlert,
    Users,
-   WalletCards
+   WalletCards,
+   Wrench
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
-
-type SingleField = 'incomeSetup' | 'incomeRhythm' | 'payday' | 'paydayWindow';
+type SingleField = 'incomeSetup' | 'paydayWindow';
 
 type BorrowerContextState = Record<SingleField, string> & {
    cashGaps: string[];
@@ -32,6 +31,8 @@ type BorrowerContextState = Record<SingleField, string> & {
 type Option = {
    label: string;
    value: string;
+   description: string;
+   icon: LucideIcon;
 };
 
 type SingleSection = {
@@ -45,24 +46,34 @@ type CashGapOption = Option & {
    icon: LucideIcon;
 };
 
+type StepId = 'income' | 'payday' | 'gaps' | 'review';
+
+type Step = {
+   id: StepId;
+   label: string;
+};
+
 const NOTE_LIMIT = 120;
+
+const steps: Step[] = [
+   { id: 'income', label: 'Income' },
+   { id: 'payday', label: 'Payday' },
+   { id: 'gaps', label: 'Gaps' },
+   { id: 'review', label: 'Review' }
+];
 
 const EMPTY_CONTEXT: BorrowerContextState = {
    incomeSetup: '',
-   incomeRhythm: '',
-   payday: '',
    paydayWindow: '',
    cashGaps: [],
    note: ''
 };
 
 const PREVIEW_CONTEXT: BorrowerContextState = {
-   incomeSetup: 'full_time',
-   incomeRhythm: 'mostly_steady',
-   payday: 'every_2_weeks',
-   paydayWindow: '15_20',
-   cashGaps: ['bills_before_payday', 'transport', 'family_needs'],
-   note: 'I usually repay after payday and use small loans for short-term work needs.'
+   incomeSetup: '',
+   paydayWindow: '',
+   cashGaps: [],
+   note: ''
 };
 
 const singleSections: SingleSection[] = [
@@ -71,58 +82,35 @@ const singleSections: SingleSection[] = [
       icon: BriefcaseBusiness,
       title: 'Income setup',
       options: [
-         { label: 'Full-time', value: 'full_time' },
-         { label: 'Part-time', value: 'part_time' },
-         { label: 'Contract / temp', value: 'contract_temp' },
-         { label: 'Freelance / gig', value: 'freelance_gig' },
-         { label: 'Self-employed', value: 'self_employed' },
-         { label: 'Irregular income', value: 'irregular_income' }
-      ]
-   },
-   {
-      field: 'incomeRhythm',
-      icon: BarChart3,
-      title: 'Income rhythm',
-      options: [
-         { label: 'Very steady', value: 'very_steady' },
-         { label: 'Mostly steady', value: 'mostly_steady' },
-         { label: 'Varies', value: 'varies' },
-         { label: 'Project-based', value: 'project_based' }
-      ]
-   },
-   {
-      field: 'payday',
-      icon: CalendarDays,
-      title: 'Typical payday',
-      options: [
-         { label: 'Weekly', value: 'weekly' },
-         { label: 'Every 2 weeks', value: 'every_2_weeks' },
-         { label: 'Twice a month', value: 'twice_a_month' },
-         { label: 'Monthly', value: 'monthly' },
-         { label: 'Varies', value: 'varies' }
+         { label: 'Full-time employee', value: 'full_time', description: 'Regular salary from one employer', icon: BriefcaseBusiness },
+         { label: 'Part-time', value: 'part_time', description: 'Scheduled hours, under 30/week', icon: Clock3 },
+         { label: 'Contract / Temp', value: 'contract_temp', description: 'Fixed-term or agency work', icon: FileText },
+         { label: 'Freelance / Gig', value: 'freelance_gig', description: 'Project-based or platform work', icon: Bolt },
+         { label: 'Self-employed', value: 'self_employed', description: 'Own business or sole trader', icon: Users },
+         { label: 'Irregular income', value: 'irregular_income', description: 'Income varies month to month', icon: WalletCards }
       ]
    },
    {
       field: 'paydayWindow',
       icon: Clock3,
-      title: 'Payday window',
+      title: 'Payday timing',
       options: [
-         { label: '1st-5th', value: '1_5' },
-         { label: '10th-15th', value: '10_15' },
-         { label: '15th-20th', value: '15_20' },
-         { label: '25th-30th', value: '25_30' },
-         { label: 'It varies', value: 'it_varies' }
+         { label: 'Early month', value: '1_5', description: '1st - 5th', icon: Clock3 },
+         { label: 'Mid-month', value: '10_15', description: '10th - 15th', icon: Clock3 },
+         { label: 'Late mid', value: '15_20', description: '15th - 20th', icon: Clock3 },
+         { label: 'End of month', value: '25_30', description: '25th - 30th', icon: Clock3 },
+         { label: 'It varies', value: 'it_varies', description: 'No fixed schedule', icon: Clock3 }
       ]
    }
 ];
 
 const cashGapOptions: CashGapOption[] = [
-   { label: 'Bills before payday', value: 'bills_before_payday', icon: FileText },
-   { label: 'Transport', value: 'transport', icon: Bus },
-   { label: 'Work supplies', value: 'work_supplies', icon: Briefcase },
-   { label: 'Family needs', value: 'family_needs', icon: Users },
-   { label: 'Medical', value: 'medical', icon: Stethoscope },
-   { label: 'Emergency expense', value: 'emergency_expense', icon: TriangleAlert }
+   { label: 'Bills before payday', value: 'bills_before_payday', description: '', icon: FileText },
+   { label: 'Transport costs', value: 'transport', description: '', icon: Bus },
+   { label: 'Work supplies', value: 'work_supplies', description: '', icon: Wrench },
+   { label: 'Family needs', value: 'family_needs', description: '', icon: Heart },
+   { label: 'Medical expenses', value: 'medical', description: '', icon: Stethoscope },
+   { label: 'Emergency costs', value: 'emergency_expense', description: '', icon: TriangleAlert }
 ];
 
 function buildInitialContext(isPreview: boolean): BorrowerContextState {
@@ -139,10 +127,19 @@ export default function BorrowerContext() {
    const isPreview = location.pathname.includes('borrower-context-preview');
    const nextPath = isPreview ? '/onboarding/wallet-preview?role=borrower' : '/onboarding/wallet';
    const [context, setContext] = useState<BorrowerContextState>(() => buildInitialContext(isPreview));
-   const [attemptedSave, setAttemptedSave] = useState(false);
+   const [activeStep, setActiveStep] = useState(0);
 
    const completedRequiredFields = useMemo(() => singleSections.filter((section) => Boolean(context[section.field])).length, [context]);
-   const canSave = completedRequiredFields === singleSections.length;
+   const requiredComplete = completedRequiredFields === singleSections.length;
+   const currentStep = steps[activeStep];
+   const canContinue =
+      currentStep.id === 'income'
+         ? Boolean(context.incomeSetup)
+         : currentStep.id === 'payday'
+           ? Boolean(context.paydayWindow)
+           : currentStep.id === 'review'
+             ? requiredComplete
+             : true;
 
    const handleSingleSelect = (field: SingleField, value: string) => {
       setContext((current) => ({ ...current, [field]: value }));
@@ -159,9 +156,7 @@ export default function BorrowerContext() {
    };
 
    const handleSave = () => {
-      setAttemptedSave(true);
-
-      if (!canSave) {
+      if (!requiredComplete) {
          return;
       }
 
@@ -174,175 +169,332 @@ export default function BorrowerContext() {
       navigate(nextPath, { state: { borrowerContext: context } });
    };
 
+   const handleContinue = () => {
+      if (!canContinue) {
+         return;
+      }
+
+      if (activeStep === steps.length - 1) {
+         handleSave();
+         return;
+      }
+
+      setActiveStep((step) => step + 1);
+   };
+
    return (
-      <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
-         <OnboardingHeader title="Borrower Context" />
+      <div className="min-h-screen bg-[#f7f6fb] flex flex-col mx-auto w-full max-w-[760px]">
+         <main className="flex flex-1 flex-col px-md-3 py-md-3 min-[560px]:px-md-5 min-[560px]:py-md-5">
+            <section className="flex min-h-[calc(100vh-24px)] flex-col overflow-hidden rounded-[28px] border border-md-neutral-300 bg-md-neutral-100 shadow-[0_18px_48px_rgba(47,39,68,0.14)] min-[560px]:min-h-[680px]">
+               <StepProgress activeStep={activeStep} />
 
-         <main className="flex flex-col gap-md-4 px-md-4 pb-md-5">
-            <section className="flex flex-col gap-md-1 text-center">
-               <p className="text-md-b3 font-semibold uppercase tracking-[0.14em] text-md-primary-900">Step 2 of 3</p>
-               <h2 className="text-md-display text-md-heading">Help lenders understand your repayment timing.</h2>
-               <p className="text-md-b1 font-medium text-md-neutral-700">
-                  Share work rhythm and cash-flow context without employer names, addresses, or contacts.
-               </p>
-            </section>
+               <div className="flex flex-1 flex-col border-t border-md-neutral-300 px-md-4 py-md-5 min-[560px]:px-md-6">
+                  {currentStep.id === 'income' ? (
+                     <QuestionStep
+                        icon={BriefcaseBusiness}
+                        title="How do you earn income?"
+                        options={singleSections[0].options}
+                        selectedValues={[context.incomeSetup]}
+                        onSelect={(value) => handleSingleSelect('incomeSetup', value)}
+                     />
+                  ) : null}
 
-            <section className="rounded-md-xl border border-md-neutral-400 bg-white p-md-3 shadow-[0_14px_34px_rgba(31,28,37,0.06)]">
-               <div className="mb-md-3 flex flex-col gap-md-2 rounded-md-lg bg-md-primary-900/5 p-md-3 min-[390px]:flex-row min-[390px]:items-center min-[390px]:justify-between">
-                  <span className="inline-flex w-fit shrink-0 items-center justify-center whitespace-nowrap rounded-md-pill bg-md-primary-100 px-md-3 py-md-1 text-md-b2 font-semibold text-md-primary-1200">
-                     Step 2 of 3
-                  </span>
-                  <div className="flex items-center gap-md-1 text-md-b3 font-semibold text-md-neutral-1200">
-                     <ShieldCheck className="size-4 shrink-0 text-md-primary-900" strokeWidth={2.1} />
-                     No employer name, address, or contacts required.
+                  {currentStep.id === 'payday' ? (
+                     <QuestionStep
+                        icon={Clock3}
+                        title="When do you usually get paid?"
+                        helperText="This helps lenders understand your cash-flow timing."
+                        options={singleSections[1].options}
+                        selectedValues={[context.paydayWindow]}
+                        onSelect={(value) => handleSingleSelect('paydayWindow', value)}
+                        variant="schedule"
+                     />
+                  ) : null}
+
+                  {currentStep.id === 'gaps' ? (
+                     <QuestionStep
+                        icon={WalletCards}
+                        title="What causes cash-flow gaps?"
+                        helperText="Select all that apply, completely optional."
+                        options={cashGapOptions}
+                        selectedValues={context.cashGaps}
+                        onSelect={handleCashGapToggle}
+                        variant="compact"
+                     />
+                  ) : null}
+
+                  {currentStep.id === 'review' ? (
+                     <ReviewStep context={context} onNoteChange={(note) => setContext((current) => ({ ...current, note }))} />
+                  ) : null}
+
+                  <div className="mt-auto flex flex-col gap-md-3 pt-md-5">
+                     {currentStep.id === 'gaps' ? (
+                        <button
+                           type="button"
+                           onClick={() => setActiveStep((step) => step + 1)}
+                           className="mx-auto inline-flex min-h-[40px] items-center justify-center gap-md-1 px-md-2 text-md-b1 font-medium text-md-neutral-1000 transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                        >
+                           Skip this step
+                           <ArrowRight className="size-4" strokeWidth={2.2} />
+                        </button>
+                     ) : null}
+
+                     <div className={activeStep === 0 ? 'flex' : 'grid grid-cols-[92px_minmax(0,1fr)] gap-md-2 min-[390px]:grid-cols-[112px_minmax(0,1fr)]'}>
+                        <button
+                           type="button"
+                           disabled={activeStep === 0}
+                           onClick={() => setActiveStep((step) => Math.max(0, step - 1))}
+                           className={`min-h-[52px] items-center justify-center gap-md-1 rounded-[12px] border border-md-neutral-300 bg-md-neutral-100 text-md-b1 font-semibold text-md-heading shadow-[0_8px_20px_rgba(47,39,68,0.12)] transition active:scale-[0.99] disabled:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
+                              activeStep === 0 ? 'hidden' : 'flex'
+                           }`}
+                        >
+                           <ArrowRight className="size-5 rotate-180" strokeWidth={2.2} />
+                           Back
+                        </button>
+                        <button
+                           type="button"
+                           disabled={!canContinue}
+                           onClick={handleContinue}
+                           className="flex min-h-[56px] w-full items-center justify-center gap-md-2 rounded-[14px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 shadow-[0_10px_24px_rgba(105,48,232,0.22)] transition active:scale-[0.99] disabled:bg-md-primary-600 disabled:text-md-neutral-100 disabled:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                        >
+                           {currentStep.id === 'review' ? (
+                              <>
+                                 <LockKeyhole className="size-5" strokeWidth={2.2} />
+                                 Save context
+                              </>
+                           ) : (
+                              <>
+                                 Continue
+                                 <ArrowRight className="size-5" strokeWidth={2.2} />
+                              </>
+                           )}
+                        </button>
+                     </div>
                   </div>
                </div>
-
-               <div className="flex flex-col">
-                  {singleSections.map((section, index) => (
-                     <ContextSection key={section.field} index={index + 1} icon={section.icon} title={section.title} isFirst={index === 0}>
-                        <div className="grid grid-cols-1 gap-md-2 min-[360px]:grid-cols-2">
-                           {section.options.map((option) => (
-                              <SelectButton
-                                 key={option.value}
-                                 label={option.label}
-                                 isSelected={context[section.field] === option.value}
-                                 onClick={() => handleSingleSelect(section.field, option.value)}
-                              />
-                           ))}
-                        </div>
-                     </ContextSection>
-                  ))}
-
-                  <ContextSection index={5} icon={WalletCards} title="Common cash-flow gaps" helperText="Select all that apply">
-                     <div className="grid grid-cols-1 gap-md-2 min-[360px]:grid-cols-2">
-                        {cashGapOptions.map((option) => (
-                           <SelectButton
-                              key={option.value}
-                              label={option.label}
-                              icon={option.icon}
-                              isSelected={context.cashGaps.includes(option.value)}
-                              onClick={() => handleCashGapToggle(option.value)}
-                           />
-                        ))}
-                     </div>
-                  </ContextSection>
-
-                  <ContextSection index={6} icon={PencilLine} title="Optional note">
-                     <label className="sr-only" htmlFor="borrower-context-note">
-                        Optional note
-                     </label>
-                     <div className="rounded-md-input border border-md-neutral-500 bg-md-neutral-100 px-md-3 py-md-2 focus-within:border-md-primary-900 focus-within:ring-2 focus-within:ring-md-primary-100">
-                        <textarea
-                           id="borrower-context-note"
-                           value={context.note}
-                           maxLength={NOTE_LIMIT}
-                           onChange={(event) => setContext((current) => ({ ...current, note: event.target.value }))}
-                           placeholder="Example: I usually repay after payday and use small loans for short-term work needs."
-                           className="min-h-[92px] w-full resize-none bg-transparent text-md-b1 font-medium text-md-heading placeholder:text-md-neutral-700 focus:outline-none"
-                        />
-                        <div className="text-right text-md-b3 font-semibold text-md-neutral-900">
-                           {context.note.length}/{NOTE_LIMIT}
-                        </div>
-                     </div>
-                  </ContextSection>
-               </div>
             </section>
-
-            {attemptedSave && !canSave ? (
-               <p className="rounded-md-lg border border-md-primary-200 bg-md-primary-100 px-md-3 py-md-2 text-center text-md-b2 font-semibold text-md-primary-1200">
-                  Choose your income setup, rhythm, typical payday, and payday window before saving.
-               </p>
-            ) : null}
-
-            <div className="flex flex-col gap-md-3 pb-md-2">
-               <button
-                  type="button"
-                  onClick={handleSave}
-                  className="flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-               >
-                  <LockKeyhole className="size-5" strokeWidth={2.2} />
-                  Save context
-               </button>
-               <button
-                  type="button"
-                  onClick={() => navigate(nextPath)}
-                  className="min-h-[44px] text-md-b1 font-semibold text-md-primary-1200 transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-               >
-                  Skip for now
-               </button>
-            </div>
          </main>
       </div>
    );
 }
 
-function ContextSection({
-   index,
-   icon: Icon,
-   title,
-   helperText,
-   isFirst = false,
-   children
-}: {
-   index: number;
-   icon: LucideIcon;
-   title: string;
-   helperText?: string;
-   isFirst?: boolean;
-   children: React.ReactNode;
-}) {
+function StepProgress({ activeStep }: { activeStep: number }) {
    return (
-      <section className={`${isFirst ? 'pt-0' : 'border-t border-md-neutral-300 pt-md-3'} pb-md-3`}>
-         <div className="mb-md-2 flex items-center gap-md-2">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-md-pill bg-md-primary-100 text-md-primary-900">
-               <Icon className="size-5" strokeWidth={2} />
-            </span>
-            <div className="min-w-0 flex-1">
-               <div className="flex flex-wrap items-baseline gap-x-md-1 gap-y-md-0">
-                  <h3 className="text-md-h5 text-md-heading">
-                     {index}. {title}
-                  </h3>
-                  {helperText ? <span className="text-md-b3 font-semibold text-md-neutral-900">{helperText}</span> : null}
+      <div className="px-md-4 pb-md-5 pt-md-6">
+         <div className="grid grid-cols-[1fr_20px_1fr_20px_1fr_20px_1fr] items-start min-[420px]:grid-cols-[1fr_30px_1fr_30px_1fr_30px_1fr]">
+            {steps.map((step, index) => (
+               <div key={step.id} className="contents">
+                  <div className="flex flex-col items-center gap-md-2">
+                     <span
+                        className={`flex size-12 items-center justify-center rounded-md-pill text-md-h5 font-semibold min-[420px]:size-14 min-[420px]:text-md-h4 ${
+                           index <= activeStep ? 'bg-md-primary-1200 text-md-neutral-100' : 'bg-md-neutral-300 text-md-neutral-1100'
+                        }`}
+                     >
+                        {index < activeStep ? <Check className="size-6 min-[420px]:size-7" strokeWidth={2.8} /> : index + 1}
+                     </span>
+                     <span className={`text-center text-md-b2 font-semibold ${index <= activeStep ? 'text-md-primary-1200' : 'text-md-neutral-1000'}`}>
+                        {step.label}
+                     </span>
+                  </div>
+                  {index < steps.length - 1 ? (
+                     <div
+                        className={`mt-[23px] h-[3px] rounded-md-pill min-[420px]:mt-[27px] ${
+                           index < activeStep ? 'bg-md-primary-900' : 'bg-md-neutral-400'
+                        }`}
+                     />
+                  ) : null}
                </div>
-            </div>
+            ))}
          </div>
-         {children}
-      </section>
+      </div>
    );
 }
 
-function SelectButton({
+function QuestionStep({
+   icon: Icon,
+   title,
+   helperText,
+   options,
+   selectedValues,
+   onSelect,
+   variant = 'detail'
+}: {
+   icon: LucideIcon;
+   title: string;
+   helperText?: string;
+   options: Option[];
+   selectedValues: string[];
+   onSelect: (value: string) => void;
+   variant?: 'detail' | 'schedule' | 'compact';
+}) {
+   const isGrid = variant !== 'detail';
+
+   return (
+      <div className="flex flex-col gap-md-3">
+         <div className="flex items-start gap-md-2">
+            <Icon className="mt-[5px] size-7 shrink-0 text-md-primary-1200" strokeWidth={2.2} />
+            <div className="min-w-0">
+               <h1 className="text-[28px] font-semibold leading-[34px] text-md-heading">{title}</h1>
+               {helperText ? <p className="mt-md-1 text-md-b2 font-medium text-md-neutral-1000">{helperText}</p> : null}
+            </div>
+         </div>
+
+         <div className={isGrid ? 'grid grid-cols-1 gap-md-2 min-[560px]:grid-cols-2' : 'flex flex-col gap-md-2'}>
+            {options.map((option) => (
+               <OptionCard
+                  key={option.value}
+                  label={option.label}
+                  description={option.description}
+                  icon={option.icon}
+                  isSelected={selectedValues.includes(option.value)}
+                  onClick={() => onSelect(option.value)}
+                  variant={variant}
+               />
+            ))}
+         </div>
+      </div>
+   );
+}
+
+function ReviewStep({
+   context,
+   onNoteChange
+}: {
+   context: BorrowerContextState;
+   onNoteChange: (note: string) => void;
+}) {
+   const incomeLabel = singleSections[0].options.find((option) => option.value === context.incomeSetup)?.label ?? 'Not selected';
+   const paydayOption = singleSections[1].options.find((option) => option.value === context.paydayWindow);
+   const paydayLabel = paydayOption ? `${paydayOption.label}, ${paydayOption.description}` : 'Not selected';
+   const gapLabels = cashGapOptions.filter((option) => context.cashGaps.includes(option.value)).map((option) => option.label);
+
+   return (
+      <div className="flex flex-col gap-md-3">
+         <div className="flex items-start gap-md-2">
+            <ShieldCheck className="mt-[5px] size-7 shrink-0 text-md-primary-1200" strokeWidth={2.2} />
+            <div className="min-w-0">
+               <h1 className="text-[28px] font-semibold leading-[34px] text-md-heading">Review your borrower bio.</h1>
+               <p className="mt-md-1 text-md-b2 font-medium text-md-neutral-1000">Private details stay out.</p>
+            </div>
+         </div>
+
+         <div className="grid gap-md-2">
+            <SummaryRow label="Income" value={incomeLabel} />
+            <SummaryRow label="Payday" value={paydayLabel} />
+            <SummaryRow label="Gaps" value={gapLabels.length > 0 ? gapLabels.join(', ') : 'No common gaps selected'} />
+         </div>
+
+         <label className="flex flex-col gap-md-1">
+            <span className="text-md-b2 font-semibold text-md-heading">Note</span>
+            <div className="rounded-md-input border border-md-neutral-500 bg-white px-md-3 py-md-2 focus-within:border-md-primary-900 focus-within:ring-2 focus-within:ring-md-primary-100">
+               <textarea
+                  value={context.note}
+                  maxLength={NOTE_LIMIT}
+                  onChange={(event) => onNoteChange(event.target.value)}
+                  placeholder="Example: I usually repay after payday."
+                  className="min-h-[76px] w-full resize-none bg-transparent text-md-b1 font-medium text-md-heading placeholder:text-md-neutral-700 focus:outline-none"
+               />
+               <div className="text-right text-md-b3 font-semibold text-md-neutral-900">
+                  {context.note.length}/{NOTE_LIMIT}
+               </div>
+            </div>
+         </label>
+      </div>
+   );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+   return (
+      <div className="rounded-md-input border border-md-neutral-400 bg-white px-md-3 py-md-2">
+         <p className="text-md-b3 font-semibold text-md-neutral-1000">{label}</p>
+         <p className="mt-[2px] text-md-b1 font-semibold text-md-heading">{value}</p>
+      </div>
+   );
+}
+
+function OptionCard({
    label,
+   description,
    icon: Icon,
    isSelected,
-   onClick
+   onClick,
+   variant = 'detail'
 }: {
    label: string;
-   icon?: LucideIcon;
+   description: string;
+   icon: LucideIcon;
    isSelected: boolean;
    onClick: () => void;
+   variant?: 'detail' | 'schedule' | 'compact';
 }) {
+   if (variant === 'schedule') {
+      return (
+         <button
+            type="button"
+            aria-pressed={isSelected}
+            onClick={onClick}
+            className={`min-h-[92px] rounded-[18px] border-2 bg-white px-md-3 py-md-3 text-left transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+               isSelected
+                  ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_8px_18px_rgba(105,48,232,0.12)]'
+                  : 'border-md-neutral-400 text-md-neutral-1200'
+            }`}
+         >
+            <span className="block text-md-h5 font-semibold leading-[24px] text-md-heading">{label}</span>
+            <span className="mt-[2px] block text-md-b1 font-medium leading-[22px] text-md-neutral-1000">{description}</span>
+         </button>
+      );
+   }
+
+   if (variant === 'compact') {
+      return (
+         <button
+            type="button"
+            aria-pressed={isSelected}
+            onClick={onClick}
+            className={`grid min-h-[76px] w-full grid-cols-[32px_minmax(0,1fr)_24px] items-center gap-md-2 rounded-[18px] border-2 px-md-3 py-md-3 text-left transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+               isSelected
+                  ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_8px_20px_rgba(105,48,232,0.18)]'
+                  : 'border-md-neutral-400 bg-white text-md-neutral-1200'
+            }`}
+         >
+            <Icon className={`size-6 shrink-0 ${isSelected ? 'text-md-primary-900' : 'text-md-neutral-1000'}`} strokeWidth={2} />
+            <span className={`min-w-0 text-md-b1 font-semibold leading-[22px] ${isSelected ? 'text-md-primary-1200' : 'text-md-heading'}`}>
+               {label}
+            </span>
+            {isSelected ? (
+               <span className="flex size-6 shrink-0 items-center justify-center rounded-md-pill bg-md-primary-900 text-md-neutral-100">
+                  <Check className="size-4" strokeWidth={2.6} />
+               </span>
+            ) : (
+               <span aria-hidden="true" />
+            )}
+         </button>
+      );
+   }
+
    return (
       <button
          type="button"
          aria-pressed={isSelected}
          onClick={onClick}
-         className={`relative flex min-h-[48px] items-center justify-center gap-md-1 rounded-md-input border px-md-2 py-md-2 pr-9 text-center text-md-b2 font-semibold transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+         className={`grid min-h-[82px] w-full grid-cols-[36px_minmax(0,1fr)_24px] items-center gap-md-2 rounded-[20px] border-2 px-md-3 py-md-3 text-left transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
             isSelected
-               ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_0_0_1px_rgba(131,54,240,0.10)]'
-               : 'border-md-neutral-500 bg-white text-md-neutral-1200'
+               ? 'border-md-primary-900 bg-white text-md-primary-1200 shadow-[0_0_0_1px_rgba(131,54,240,0.08)]'
+               : 'border-md-neutral-400 bg-white text-md-neutral-1200'
          }`}
       >
-         {Icon ? (
-            <Icon className={`size-5 shrink-0 ${isSelected ? 'text-md-primary-900' : 'text-md-neutral-900'}`} strokeWidth={2} />
-         ) : null}
-         <span className="min-w-0">{label}</span>
+         <Icon className={`size-7 shrink-0 ${isSelected ? 'text-md-primary-900' : 'text-md-neutral-1000'}`} strokeWidth={2} />
+         <span className="min-w-0">
+            <span className="block text-md-h5 font-semibold leading-[24px] text-md-heading">{label}</span>
+            <span className="mt-[2px] block text-md-b1 font-medium leading-[22px] text-md-neutral-1000">{description}</span>
+         </span>
          {isSelected ? (
-            <span className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md-pill bg-md-primary-900 text-white">
-               <Check className="size-4" strokeWidth={2.4} />
+            <span className="ml-md-0 flex size-5 shrink-0 items-center justify-center rounded-md-pill bg-md-primary-900 text-md-neutral-100">
+               <Check className="size-3.5" strokeWidth={2.4} />
             </span>
-         ) : null}
+         ) : (
+            <span aria-hidden="true" />
+         )}
       </button>
    );
 }

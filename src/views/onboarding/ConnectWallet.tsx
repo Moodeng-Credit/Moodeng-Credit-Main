@@ -10,7 +10,7 @@ import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
 import type { WalletConnectorKey } from '@/config/wagmiConfig';
 import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
-import { getBaseAccountConnector } from '@/lib/walletProvider';
+import { DEV_BASE_ACCOUNT_OVERRIDE_ADDRESS, DEV_BASE_ACCOUNT_OVERRIDE_KEY, getBaseAccountConnector } from '@/lib/walletProvider';
 import type { RootState } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 import { LENDER_WALLET_OPTIONS } from '@/views/onboarding/walletPickerOptions';
@@ -61,6 +61,19 @@ export default function ConnectWallet() {
       [connect, connectorsByName, isPreview, navigate, returnTo, showToast]
    );
 
+   const handleDevBaseAccount = useCallback(() => {
+      window.localStorage.setItem(DEV_BASE_ACCOUNT_OVERRIDE_KEY, DEV_BASE_ACCOUNT_OVERRIDE_ADDRESS);
+      if (returnTo === 'account-settings') {
+         navigate('/account/settings', { replace: true });
+         return;
+      }
+      if (returnTo === 'repay') {
+         navigate('/repay', { replace: true });
+         return;
+      }
+      navigate('/request-board', { replace: true, state: { openLoanRequest: true } });
+   }, [navigate, returnTo]);
+
    useEffect(() => {
       if (isConnected && (role === 'borrower' || userInitiatedConnection)) {
          setPendingKey(null);
@@ -88,6 +101,7 @@ export default function ConnectWallet() {
          <BorrowerConnectView
             onPreviewConnect={() => navigate('/onboarding/wallet-connected-preview', returnTo ? { state: { returnTo } } : undefined)}
             onConnectBaseAccount={() => handleConnect('coinbase')}
+            onUseDevBaseAccount={import.meta.env.DEV ? handleDevBaseAccount : undefined}
             isPreview={isPreview}
             isConnecting={pendingKey === 'coinbase' || status === 'pending'}
          />
@@ -115,11 +129,13 @@ const CONNECT_WALLET_SCREEN_CLASS =
 function BorrowerConnectView({
    onPreviewConnect,
    onConnectBaseAccount,
+   onUseDevBaseAccount,
    isPreview,
    isConnecting
 }: {
    onPreviewConnect: () => void;
    onConnectBaseAccount: () => void;
+   onUseDevBaseAccount?: () => void;
    isPreview: boolean;
    isConnecting: boolean;
 }) {
@@ -146,6 +162,15 @@ function BorrowerConnectView({
             ) : (
                <ConnectBaseAccountButton onClick={onConnectBaseAccount} isDisabled={isConnecting} />
             )}
+            {onUseDevBaseAccount ? (
+               <button
+                  type="button"
+                  onClick={onUseDevBaseAccount}
+                  className="w-full rounded-md-lg border border-md-primary-300 bg-md-primary-100 px-md-4 py-md-3 text-md-b2 font-semibold text-md-primary-1400"
+               >
+                  Use test Base Account
+               </button>
+            ) : null}
          </div>
       </div>
    );

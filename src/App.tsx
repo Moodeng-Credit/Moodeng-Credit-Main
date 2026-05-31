@@ -32,6 +32,7 @@ import LenderDiversityPage from '@/app/lender-diversity/page';
 import LenderDashboard from '@/app/lender/dashboard/page';
 import LenderPerformance from '@/app/lender/performance/page';
 import LenderRequestBoard from '@/app/lender/request-board/page';
+import LoanRequestPreview from '@/app/loan-request-preview/page';
 import Login from '@/app/login/page';
 import MilestonesPage from '@/app/milestones/page';
 import BorrowerContextPage from '@/app/onboarding/borrower-context/page';
@@ -221,6 +222,7 @@ export default function App() {
             {showPreviewRoutes ? <Route path="/onboarding/wallet-preview" element={<WalletConnect />} /> : null}
             {showPreviewRoutes ? <Route path="/onboarding/wallet-connected-preview" element={<WalletConnected />} /> : null}
             {showPreviewRoutes ? <Route path="/onboarding/congratulations-preview" element={<CongratulationsPage />} /> : null}
+            {showPreviewRoutes ? <Route path="/loan-request-preview" element={<LoanRequestPreview />} /> : null}
 
             {/* Verification */}
             <Route

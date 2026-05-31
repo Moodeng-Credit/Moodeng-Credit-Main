@@ -1,6 +1,14 @@
 export type WalletProvider = 'argent' | 'base_wallet' | 'metamask' | 'phantom' | 'rainbow' | 'trust' | 'walletconnect' | 'unknown';
 
+export const DEV_BASE_ACCOUNT_OVERRIDE_KEY = 'moodeng-dev-base-account-override';
+export const DEV_BASE_ACCOUNT_OVERRIDE_ADDRESS = '0x71c4000000000000000000000000000000009d42';
+
 const normalizeConnectorValue = (value?: string | null) => (value ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+export const getDevBaseAccountOverride = () => {
+   if (!import.meta.env.DEV || typeof window === 'undefined') return null;
+   return window.localStorage.getItem(DEV_BASE_ACCOUNT_OVERRIDE_KEY) || null;
+};
 
 export const getWalletProviderFromConnectorName = (connectorName?: string | null): WalletProvider => {
    const normalized = normalizeConnectorValue(connectorName);
@@ -95,6 +103,17 @@ export const getStoredWalletProvider = (wallet?: WalletRecord | null): WalletPro
 };
 
 export const getBaseWalletLockStatus = (wallet?: WalletRecord | null) => {
+   const devOverrideAddress = getDevBaseAccountOverride();
+   if (devOverrideAddress) {
+      return {
+         address: normalizeWalletAddress(devOverrideAddress),
+         provider: 'base_wallet' as WalletProvider,
+         hasStoredWallet: true,
+         isConfirmedBase: true,
+         needsConfirmation: false
+      };
+   }
+
    const address = normalizeWalletAddress(wallet?.walletAddress);
    const provider = getStoredWalletProvider(wallet);
    const isConfirmedBase = Boolean(address && isBaseWalletProvider(provider));

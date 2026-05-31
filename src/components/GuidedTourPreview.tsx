@@ -152,18 +152,33 @@ export default function GuidedTourPreview({
       setStepIndex((index) => Math.max(0, index - 1));
    }, [onStepBack, stepIndex]);
 
+   useEffect(() => {
+      const handleKeyDown = (event: KeyboardEvent) => {
+         if (event.key === 'Escape') finish('skip');
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+   }, [finish]);
+
    const stepLabel = useMemo(() => `Step ${globalStepIndex + 1} of ${totalSteps ?? steps.length}`, [globalStepIndex, steps.length, totalSteps]);
 
    if (!isVisible || steps.length === 0) return null;
 
    return (
-      <div className="fixed inset-0 z-[120] pointer-events-none">
-         <div className="absolute inset-0 bg-[#080512]/45" />
+      <div className="fixed inset-0 z-[120]">
+         <button
+            type="button"
+            aria-label="Skip tour"
+            tabIndex={-1}
+            className="absolute inset-0 cursor-default bg-[#080512]/45"
+            onClick={() => finish('skip')}
+         />
 
          {hasStarted && bounds ? (
             <div
                aria-hidden="true"
-               className="absolute rounded-[20px] border-[3px] border-md-primary-900 bg-transparent shadow-[0_0_0_9999px_rgba(8,5,18,0.45),0_12px_34px_rgba(20,18,24,0.22)]"
+               className="pointer-events-none absolute rounded-[20px] border-[3px] border-md-primary-900 bg-transparent shadow-[0_0_0_9999px_rgba(8,5,18,0.45),0_12px_34px_rgba(20,18,24,0.22)]"
                style={{
                   height: bounds.height,
                   left: bounds.left,
@@ -174,7 +189,7 @@ export default function GuidedTourPreview({
          ) : null}
 
          {!hasStarted ? (
-            <article className="pointer-events-auto fixed left-1/2 top-1/2 w-[calc(100vw-64px)] max-w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] border border-md-neutral-400 bg-md-neutral-100 p-md-4 shadow-md-card">
+            <article className="fixed left-1/2 top-1/2 z-10 w-[calc(100vw-64px)] max-w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] border border-md-neutral-400 bg-md-neutral-100 p-md-4 shadow-md-card">
                <h2 className="text-md-h4 font-semibold text-md-heading">Want a quick tour?</h2>
                <p className="mt-md-1 text-md-b2 font-normal text-md-neutral-1200">
                   See how Moodeng works in under a minute. You can skip this and use everything normally.
@@ -199,7 +214,7 @@ export default function GuidedTourPreview({
          ) : (
             <article
                ref={cardRef}
-               className="pointer-events-auto fixed left-1/2 w-[calc(100vw-64px)] max-w-[340px] -translate-x-1/2 rounded-[22px] bg-[#3b087b] p-md-3 text-md-neutral-100 shadow-md-card"
+               className="fixed left-1/2 z-10 w-[calc(100vw-64px)] max-w-[340px] -translate-x-1/2 rounded-[22px] bg-[#3b087b] p-md-3 text-md-neutral-100 shadow-md-card"
                style={cardTop === undefined ? { bottom: CARD_BOTTOM_MARGIN } : { top: cardTop }}
             >
                <div className="text-[11px] font-semibold uppercase leading-4 tracking-[0.08em] text-white/70">{stepLabel}</div>

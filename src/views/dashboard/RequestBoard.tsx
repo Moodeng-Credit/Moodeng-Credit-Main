@@ -15,6 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, CheckCircle2, HelpCircle, LoaderCircle, Menu, Search, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAccount } from 'wagmi';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
@@ -47,7 +48,7 @@ import {
 } from '@/lib/guidedTourStorage';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { hasWalletAddressOnAccount } from '@/lib/walletProvider';
+import { getBaseWalletLockStatus, isBaseWalletReadyForRepayment } from '@/lib/walletProvider';
 import { formatPointsMajor } from '@/shared/points';
 import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
 import { createLoan, deleteLoan, fetchLoanRequestRepostStatus, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
@@ -55,7 +56,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
-import { LoanStatus, RepaymentStatus, type Loan } from '@/types/loanTypes';
+import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import LoanRequestModal, { type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
@@ -204,7 +205,11 @@ const isPreviewRequestBoardLoan = (loan: Pick<Loan, 'id'>) => loan.id.startsWith
 const isRequestBoardPreviewHost = () => {
    if (typeof window === 'undefined') return false;
 
-   return import.meta.env.DEV || ['127.0.0.1', 'localhost'].includes(window.location.hostname) || window.location.hostname.endsWith('.vercel.app');
+   return (
+      import.meta.env.DEV ||
+      ['127.0.0.1', 'localhost'].includes(window.location.hostname) ||
+      window.location.hostname.endsWith('.vercel.app')
+   );
 };
 
 const shouldShowPreviewRequestBoardLoans = (search: string, loans: Loan[]) => {
@@ -287,6 +292,7 @@ function RequestBoard$() {
    const pathname = location.pathname;
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
+   const connectedWallet = useAccount();
 
    const { showToast, showToastByConfig } = useToast();
 
@@ -388,7 +394,15 @@ function RequestBoard$() {
          effectiveUser.isWorldId === 'ACTIVE' &&
          effectiveCreditLimit <= STARTING_CREDIT_LIMIT &&
          borrowerCreditLoans.length === 0);
-   const hasBorrowerBaseWallet = !IS_BORROWER_BASE_WALLET_GATE_ENABLED || hasWalletAddressOnAccount(effectiveUser);
+   const baseWalletLock = getBaseWalletLockStatus(effectiveUser);
+   const hasBorrowerBaseWallet =
+      !IS_BORROWER_BASE_WALLET_GATE_ENABLED ||
+      isBaseWalletReadyForRepayment({
+         connectedAddress: connectedWallet.address,
+         connectorId: connectedWallet.connector?.id,
+         connectorName: connectedWallet.connector?.name,
+         wallet: effectiveUser
+      });
    const shouldOpenLoanRequest =
       (location.state as { openLoanRequest?: boolean } | null)?.openLoanRequest === true ||
       new URLSearchParams(location.search).get('applyLoan') === '1';
@@ -441,18 +455,16 @@ function RequestBoard$() {
       [navigate]
    );
 
-   const goToBorrowerWalletSetup = useCallback(
-      (returnTo?: string, replace = false) => {
+   const navigateToBaseAccountSetup = useCallback(
+      (options?: { replace?: boolean }) => {
          setShowModal(false);
-         navigate('/onboarding/wallet', { replace, state: returnTo ? { returnTo } : undefined });
+         navigate('/onboarding/wallet', {
+            replace: options?.replace ?? false,
+            state: { returnTo: 'loan-request' }
+         });
       },
       [navigate]
    );
-
-   const handleMissingBorrowerWallet = useCallback(() => {
-      setShowModal(false);
-      goToBorrowerWalletSetup('loan-request');
-   }, [goToBorrowerWalletSetup]);
 
    const handleFiltersChange = (newFilters: Partial<LoanFilters>) => {
       setFilters((prev) => {
@@ -522,7 +534,7 @@ function RequestBoard$() {
          }
 
          if (!hasBorrowerBaseWallet) {
-            handleMissingBorrowerWallet();
+            navigateToBaseAccountSetup();
             return;
          }
 
@@ -553,13 +565,13 @@ function RequestBoard$() {
    const handleWorldIdHeaderClick = useCallback(
       (openWorldId: () => void) => {
          if (!hasBorrowerBaseWallet) {
-            goToBorrowerOnboardingStart();
+            navigateToBaseAccountSetup();
             return;
          }
 
          openWorldId();
       },
-      [goToBorrowerOnboardingStart, hasBorrowerBaseWallet]
+      [hasBorrowerBaseWallet, navigateToBaseAccountSetup]
    );
    const handleRequestBoardTourStepChange = useCallback(
       (index: number) => {
@@ -843,7 +855,7 @@ function RequestBoard$() {
       }
 
       if (!hasBorrowerBaseWallet) {
-         goToBorrowerWalletSetup('loan-request', true);
+         navigateToBaseAccountSetup({ replace: true });
          return;
       }
 
@@ -883,7 +895,7 @@ function RequestBoard$() {
       showToastByConfig,
       hasBorrowerBaseWallet,
       isWorldIdVerified,
-      goToBorrowerWalletSetup,
+      navigateToBaseAccountSetup,
       effectiveUser?.id
    ]);
 
@@ -891,7 +903,7 @@ function RequestBoard$() {
       e.preventDefault();
       if (isSubmitting) return;
 
-      const borrowerWallet = effectiveUser.walletAddress?.trim();
+      const borrowerWallet = baseWalletLock.address ?? effectiveUser.walletAddress?.trim();
       const trimmedReason = reason.trim();
       const parsedLoanAmount = Number.parseFloat(loanAmount);
       const parsedRepaymentAmount = Number.parseFloat(totalRepaymentAmount);
@@ -906,7 +918,7 @@ function RequestBoard$() {
          return;
       }
       if (!hasBorrowerBaseWallet) {
-         handleMissingBorrowerWallet();
+         navigateToBaseAccountSetup();
          return;
       }
       if (hasReachedActiveLoanLimit) {
@@ -1148,7 +1160,7 @@ function RequestBoard$() {
       params.set('edit', edit);
       return `/account/settings?${params.toString()}`;
    };
-   const visibleLoans = shouldShowLenderTour && displayedLoans.length === 0 ? LENDER_TOUR_LOANS : displayedLoans;
+   const visibleLoans = isLenderTourPreview ? LENDER_TOUR_LOANS : displayedLoans;
    const isListLoading = isLoading && !shouldShowLenderTour;
 
    return (
@@ -1591,6 +1603,7 @@ function RequestBoard$() {
          {shouldShowLenderTour && (
             <GuidedTourPreview
                key={`lender-tour-${location.search}`}
+               startImmediately={shouldStartTourImmediately || forceTourPreview}
                onFinish={handleLenderTourFinish}
                totalSteps={9}
                steps={lenderTourSteps}
