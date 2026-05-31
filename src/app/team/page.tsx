@@ -1,7 +1,7 @@
 const coFounders = [
    {
       name: 'George',
-      role: 'Project Lead',
+      role: 'Project Co-Lead',
       image: '/team/george.jpeg',
       bio: 'Repeat founder and product builder focused on turning messy early-stage ideas into disciplined, usable systems for real borrowers and lenders.',
       credentials: ['University of Edinburgh', 'Ex-UNHCR Data Team Lead', 'Former Portfolio Manager', '1 Exit', '2 Prior Startups'],
@@ -9,7 +9,7 @@ const coFounders = [
    },
    {
       name: 'Emma',
-      role: 'Marketing & Community Lead',
+      role: 'Project Co-Lead',
       image: '/team/emma-moodeng.jpeg',
       bio: 'Leads growth and community storytelling for Moodeng Credit, turning borrower education, social content, and campaign feedback into clearer trust-building moments.',
       credentials: ['Growth Marketing', 'Borrower Education', 'Community Campaigns'],
@@ -20,21 +20,21 @@ const coFounders = [
 const foundingTeam = [
    {
       name: 'Yousef',
-      role: 'Developer',
+      role: 'Member of Technical Team',
       image: '/team/yousef.jpg',
       bio: 'Supports engineering across the Moodeng Credit buildout, helping turn product direction into working borrower and lender experiences.',
       showLinkedInPlaceholder: true
    },
    {
       name: 'Louis',
-      role: 'Head of Partnerships',
+      role: 'Working on Partnerships',
       initial: 'L',
       bio: 'Experienced relationship builder helping shape partner conversations, lender outreach, and ecosystem growth.',
       linkedIn: 'https://www.linkedin.com/in/louis-philippe/'
    },
    {
       name: 'Ogunjana Adeleke',
-      role: 'Head of Community',
+      role: 'Working on Building Community',
       image: '/team/ogunjana-adeleke.png',
       bio: 'Helps manage X/Twitter and other social channels, keeping the community active across regional conversations.',
       linkedIn: 'https://www.linkedin.com/in/ogunjana-adeleke-lexioneth-2a75b2238/'
