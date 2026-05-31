@@ -23,6 +23,7 @@ const foundingTeam = [
       role: 'Member of Technical Team',
       image: '/team/yousef.jpg',
       bio: 'Supports engineering across the Moodeng Credit buildout, helping turn product direction into working borrower and lender experiences.',
+      credentials: ['Builder', 'Developer', 'Product Engineering'],
       showLinkedInPlaceholder: true
    },
    {
@@ -30,7 +31,7 @@ const foundingTeam = [
       role: 'Working on Partnerships',
       image: '/team/louis-profile-avatar.png',
       bio: 'Experienced relationship builder helping shape partner conversations, lender outreach, and ecosystem growth.',
-      credentials: ['Growth Hacking', 'Blockchain Analysis', 'Marketing Automation'],
+      credentials: ['Head of Growth', 'Growth Hacking', 'Blockchain Analysis', 'Digital Marketing', 'Marketing Automation'],
       linkedIn: 'https://www.linkedin.com/in/louis-philippe/'
    },
    {
@@ -38,6 +39,7 @@ const foundingTeam = [
       role: 'Working on Building Community',
       image: '/team/ogunjana-adeleke.png',
       bio: 'Helps manage X/Twitter and other social channels, keeping the community active across regional conversations.',
+      credentials: ['Community Building', 'Social Channels', 'X/Twitter'],
       linkedIn: 'https://www.linkedin.com/in/ogunjana-adeleke-lexioneth-2a75b2238/'
    }
 ];
@@ -179,7 +181,7 @@ export default function TeamPage() {
                            {member.bio}
                         </p>
                         {'credentials' in member && member.credentials ? (
-                           <div className="hidden w-full md:mt-md-2 md:block [&>ul]:justify-center">
+                           <div className="mt-md-2 w-full [&>ul]:justify-center">
                               <CredentialPills items={member.credentials} />
                            </div>
                         ) : null}
