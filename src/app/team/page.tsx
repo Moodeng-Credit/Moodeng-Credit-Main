@@ -170,7 +170,7 @@ export default function TeamPage() {
                            <RoleBadge>{member.role}</RoleBadge>
                         </div>
                         <p className="mx-auto mt-md-2 flex max-w-[430px] items-center text-md-b2 font-medium leading-relaxed text-md-primary-2000 md:mt-md-3 md:min-h-[116px] md:text-md-b1">
-                           {member.bio}
+                           <span className="block min-w-0">{member.bio}</span>
                         </p>
                         <div className="mt-md-2 flex items-center justify-center md:mt-md-3 md:min-h-[86px]">
                            <CredentialPills items={member.credentials} />
@@ -198,7 +198,7 @@ export default function TeamPage() {
                            <RoleBadge variant="outline">{member.role}</RoleBadge>
                         </div>
                         <p className="mx-auto mt-md-2 flex max-w-[280px] items-center text-md-b2 font-medium leading-relaxed text-[#fff9e8]/90 md:min-h-[128px]">
-                           {member.bio}
+                           <span className="block min-w-0">{member.bio}</span>
                         </p>
                         {'credentials' in member && member.credentials ? (
                            <div className="mt-md-2 w-full [&>ul]:justify-center">
