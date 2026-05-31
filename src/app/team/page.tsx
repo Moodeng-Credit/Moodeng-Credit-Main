@@ -3,7 +3,7 @@ const coFounders = [
       name: 'George',
       role: 'Project Co-Lead',
       image: '/team/george.jpeg',
-      bio: 'Repeat founder and product builder focused on turning messy early-stage ideas into disciplined, usable systems for real borrowers and lenders.',
+      bio: 'Repeat founder and product builder working to help people build credit through practical systems that are clear, fair, and useful in real life.',
       credentials: ['University of Edinburgh', 'Ex-UNHCR Data Team Lead', 'Former Portfolio Manager', '1 Exit', '2 Prior Startups'],
       linkedIn: 'https://www.linkedin.com/in/george-l-25a4b844/'
    },
