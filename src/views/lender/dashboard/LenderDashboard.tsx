@@ -333,7 +333,7 @@ export default function LenderDashboard() {
       queryKey: ['user-points', user?.id],
       queryFn: async () => {
          const supabase = getSupabaseBrowserClient();
-         const { data, error } = await supabase.from('user_points').select('points_total').eq('user_id', user.id).single();
+         const { data, error } = await supabase.from('user_points').select('points_total').eq('user_id', user.id).maybeSingle();
          if (error) throw error;
          return data;
       },

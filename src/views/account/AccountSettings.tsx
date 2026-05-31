@@ -5,12 +5,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAccount, useDisconnect } from 'wagmi';
 
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import TelegramAuthButton from '@/components/TelegramAuthButton';
 import { useThemeMode } from '@/components/ThemeModeProvider';
 import UserAvatar from '@/components/UserAvatar';
 
 import { useAuthProvider } from '@/hooks/useAuthProvider';
 
+import { useLocalization } from '@/i18n';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getBaseWalletLockStatus, getWalletProviderLabel } from '@/lib/walletProvider';
@@ -461,6 +463,7 @@ function TelegramAlertsModal({
 export default function AccountSettings() {
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
+   const { t } = useLocalization();
    const editTarget = searchParams.get('edit');
    const handledEditTargetRef = useRef<string | null>(null);
    const dispatch = useDispatch<AppDispatch>();
@@ -732,6 +735,15 @@ export default function AccountSettings() {
                      onAction={user?.chatId ? undefined : () => setShowTelegramAlertsModal(true)}
                   />
                   <ReadOnlyField label="WhatsApp" value="Not Connected" actionLabel="Connect" />
+               </div>
+
+               {/* Language */}
+               <div className="flex flex-col gap-3">
+                  <h2 className="text-md-h5 font-semibold text-md-heading">{t('language.label')}</h2>
+                  <p className="text-md-b2 font-medium text-md-neutral-700">{t('language.settingsDescription')}</p>
+                  <div className="rounded-md-input border border-md-neutral-600 bg-md-neutral-100 p-3 shadow-md-card">
+                     <LanguageSwitcher tone="light" variant="full" />
+                  </div>
                </div>
 
                {/* Security */}

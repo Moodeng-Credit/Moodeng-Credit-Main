@@ -1,5 +1,3 @@
-
-
 import { useState } from 'react';
 
 import { useSelector } from 'react-redux';
@@ -11,12 +9,14 @@ import MobileNav from '@/components/Header/MobileNav';
 import UserMenu from '@/components/Header/UserMenu';
 
 import { navigationButtons } from '@/config/buttonConfig';
+import { useLocalization } from '@/i18n';
 import type { RootState } from '@/store/store';
 
 export default function Header() {
    const username = useSelector((state: RootState) => state.auth.username);
    const [isMenuOpen, setIsMenuOpen] = useState(false);
    const [showUserMenu, setShowUserMenu] = useState(false);
+   const { t } = useLocalization();
 
    const closeMenu = () => setIsMenuOpen(false);
    const toggleUserMenu = () => setShowUserMenu(!showUserMenu);
@@ -33,21 +33,18 @@ export default function Header() {
 
             <div className="flex items-center gap-4">
                {username ? (
-                  <UserMenu
-                     dashboardHref="/dashboard"
-                     showMenu={showUserMenu}
-                     onToggleMenu={toggleUserMenu}
-                     onClose={closeUserMenu}
-                  />
+                  <UserMenu dashboardHref="/dashboard" showMenu={showUserMenu} onToggleMenu={toggleUserMenu} onClose={closeUserMenu} />
                ) : (
-                  <AuthButtons />
+                  <div className="hidden sm:block">
+                     <AuthButtons />
+                  </div>
                )}
 
                {/* Mobile menu toggle */}
                <button
-                  className="md:hidden text-white text-2xl"
+                  className="lg:hidden text-white text-2xl"
                   onClick={toggleMobileMenu}
-                  aria-label="Toggle navigation menu"
+                  aria-label={t('nav.toggleMenu')}
                   aria-expanded={isMenuOpen}
                >
                   ☰
@@ -55,13 +52,7 @@ export default function Header() {
             </div>
          </div>
 
-         <MobileNav
-            buttons={navigationButtons}
-            isOpen={isMenuOpen}
-            onClose={closeMenu}
-            username={username}
-            dashboardHref="/dashboard"
-         />
+         <MobileNav buttons={navigationButtons} isOpen={isMenuOpen} onClose={closeMenu} username={username} dashboardHref="/dashboard" />
       </header>
    );
 }

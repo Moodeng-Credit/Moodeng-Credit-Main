@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 
+import { useLocalization } from '@/i18n';
 import type { ActionButtonConfig } from '@/types/actionButtonTypes';
 
 interface ActionButtonProps {
@@ -8,7 +9,9 @@ interface ActionButtonProps {
 }
 
 export default function ActionButton({ button, onClick }: ActionButtonProps) {
-   const { text, bgColor, textColor, href, isExternal = false, width = 'w-auto' } = button;
+   const { text, translationKey, bgColor, textColor, href, isExternal = false, width = 'w-auto' } = button;
+   const { t } = useLocalization();
+   const label = translationKey ? t(translationKey) : text;
 
    const buttonClasses = `${width} h-[42px] ${bgColor} rounded-[100px] cursor-pointer flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-lg hover:shadow-black/20 active:scale-95`;
    const textClasses = `${textColor} text-[22px] text-center tracking-[0] leading-[22px] whitespace-nowrap font-normal transition-all duration-300 ease-in-out`;
@@ -16,7 +19,7 @@ export default function ActionButton({ button, onClick }: ActionButtonProps) {
    if (!href) {
       return (
          <button onClick={onClick} className={buttonClasses} type="button">
-            <span className={textClasses}>{text}</span>
+            <span className={textClasses}>{label}</span>
          </button>
       );
    }
@@ -24,14 +27,14 @@ export default function ActionButton({ button, onClick }: ActionButtonProps) {
    if (isExternal) {
       return (
          <a href={href} target="_blank" rel="noopener noreferrer" onClick={onClick} className={buttonClasses}>
-            <span className={textClasses}>{text}</span>
+            <span className={textClasses}>{label}</span>
          </a>
       );
    }
 
    return (
       <Link to={href} onClick={onClick} className={buttonClasses}>
-         <span className={textClasses}>{text}</span>
+         <span className={textClasses}>{label}</span>
       </Link>
    );
 }
