@@ -73,7 +73,7 @@ function RoleBadge({ children, variant = 'filled' }: { children: string; variant
 
    return (
       <p
-         className={`mx-auto inline-flex min-h-10 items-center justify-center rounded-md-pill border-2 px-md-3 py-1 text-md-b2 font-bold leading-tight ${badgeClass}`}
+         className={`mx-auto inline-flex min-h-10 max-w-full items-center justify-center rounded-md-pill border-2 px-md-3 py-1 text-center text-md-b3 font-bold leading-tight md:text-md-b2 ${badgeClass}`}
       >
          {children}
       </p>
@@ -120,17 +120,17 @@ function LinkedInPlaceholderButton({ className = '' }: { className?: string }) {
 
 export default function TeamPage() {
    return (
-      <section className="team-page bg-[#f3d354] px-md-4 py-md-6 text-md-primary-2000 md:py-md-8">
-         <div className="mx-auto flex max-w-[1120px] flex-col gap-md-6">
+      <section className="team-page bg-[#f3d354] px-md-3 py-md-4 text-md-primary-2000 md:px-md-4 md:py-md-8">
+         <div className="mx-auto flex max-w-[1120px] flex-col gap-md-4 md:gap-md-6">
             <section aria-labelledby="co-founders-heading">
-               <header className="team-blue-panel relative mb-md-5 overflow-hidden rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] px-md-5 py-md-5 text-center text-[#fff9e8] shadow-[0_18px_0_rgba(7,27,67,0.24)] md:px-md-6 md:py-md-6">
+               <header className="team-blue-panel relative mb-md-4 overflow-hidden rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] px-md-3 py-md-4 text-center text-[#fff9e8] shadow-[0_18px_0_rgba(7,27,67,0.24)] md:mb-md-5 md:px-md-6 md:py-md-6">
                   <span className="inline-flex rounded-md-pill bg-[#f4d756] px-md-3 py-1 text-md-b2 font-bold text-[#071b43]">
                      Moodeng Credit
                   </span>
-                  <h1 id="co-founders-heading" className="mt-md-2 font-serif text-[58px] font-bold leading-[0.88] md:text-[104px]">
+                  <h1 id="co-founders-heading" className="mt-md-2 font-serif text-[42px] font-bold leading-[0.9] md:text-[104px]">
                      Co-Founders
                   </h1>
-                  <p className="mx-auto mt-md-2 max-w-[660px] text-md-b1 font-medium text-[#fff9e8] md:text-md-h5">
+                  <p className="mx-auto mt-md-2 max-w-[660px] text-md-b2 font-medium leading-relaxed text-[#fff9e8] md:text-md-h5">
                      Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.
                   </p>
                   <div className="mx-auto mt-md-4 h-2 w-full max-w-[720px] rounded-t-md-pill bg-[#f4d756]" />
@@ -140,22 +140,22 @@ export default function TeamPage() {
                   {coFounders.map((member) => (
                      <article
                         key={member.name}
-                        className="relative flex h-full flex-col overflow-hidden border-[5px] border-md-primary-1600 bg-[#fff8de]/90 p-md-4 text-center text-[#071b43] md:min-h-[810px]"
+                        className="relative flex h-full flex-col overflow-hidden border-[5px] border-md-primary-1600 bg-[#fff8de]/90 p-md-3 text-center text-[#071b43] md:min-h-[810px] md:p-md-4"
                      >
-                        <div className="mb-md-3 flex min-h-[72px] items-end">
-                           <h2 className="text-left font-serif text-[46px] font-bold leading-none md:text-[64px]">{member.name}</h2>
+                        <div className="mb-md-2 flex items-end md:mb-md-3 md:min-h-[72px]">
+                           <h2 className="text-left font-serif text-[40px] font-bold leading-none md:text-[64px]">{member.name}</h2>
                         </div>
                         <Portrait name={member.name} image={member.image} />
-                        <div className="mt-md-3 flex min-h-[52px] items-center justify-center">
+                        <div className="mt-md-2 flex items-center justify-center md:mt-md-3 md:min-h-[52px]">
                            <RoleBadge>{member.role}</RoleBadge>
                         </div>
-                        <p className="mx-auto mt-md-3 flex min-h-[116px] max-w-[430px] items-center text-md-b1 font-medium leading-relaxed text-md-primary-2000">
+                        <p className="mx-auto mt-md-2 flex max-w-[430px] items-center text-md-b2 font-medium leading-relaxed text-md-primary-2000 md:mt-md-3 md:min-h-[116px] md:text-md-b1">
                            {member.bio}
                         </p>
-                        <div className="mt-md-3 flex min-h-[86px] items-center justify-center">
+                        <div className="mt-md-2 flex items-center justify-center md:mt-md-3 md:min-h-[86px]">
                            <CredentialPills items={member.credentials} />
                         </div>
-                        <div className="mt-auto pt-md-3">
+                        <div className="mt-auto pt-md-2 md:pt-md-3">
                            <LinkedInButton href={member.linkedIn} className="mx-auto" />
                         </div>
                      </article>
@@ -163,9 +163,12 @@ export default function TeamPage() {
                </div>
             </section>
 
-            <section aria-labelledby="founding-team-heading" className="mt-md-2 border-t-[8px] border-[#0d2f6f] pt-md-6">
-               <header className="mb-md-4 text-center text-[#071b43]">
-                  <h2 id="founding-team-heading" className="font-serif text-[46px] font-bold leading-none md:text-[72px]">
+            <section
+               aria-labelledby="founding-team-heading"
+               className="mt-md-1 border-t-[8px] border-[#0d2f6f] pt-md-4 md:mt-md-2 md:pt-md-6"
+            >
+               <header className="mb-md-3 text-center text-[#071b43] md:mb-md-4">
+                  <h2 id="founding-team-heading" className="font-serif text-[40px] font-bold leading-none md:text-[72px]">
                      Founding Team
                   </h2>
                </header>
@@ -174,19 +177,19 @@ export default function TeamPage() {
                   {foundingTeam.map((member) => (
                      <article
                         key={member.name}
-                        className="team-blue-panel flex h-full flex-col rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] p-md-4 text-center text-[#fff9e8] shadow-[0_14px_0_rgba(7,27,67,0.24)] md:min-h-[670px]"
+                        className="team-blue-panel flex h-full flex-col rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] p-md-3 text-center text-[#fff9e8] shadow-[0_14px_0_rgba(7,27,67,0.24)] md:min-h-[670px] md:p-md-4"
                      >
                         <Portrait name={member.name} image={member.image} initial={member.initial} />
-                        <div className="mt-md-3 flex min-h-[86px] items-end justify-center">
+                        <div className="mt-md-2 flex items-end justify-center md:mt-md-3 md:min-h-[86px]">
                            <h3 className="font-serif text-md-h3 font-bold leading-none">{member.name}</h3>
                         </div>
-                        <div className="mt-md-2 flex min-h-[52px] items-center justify-center">
+                        <div className="mt-md-2 flex items-center justify-center md:min-h-[52px]">
                            <RoleBadge variant="outline">{member.role}</RoleBadge>
                         </div>
-                        <p className="mx-auto mt-md-2 flex min-h-[128px] max-w-[280px] items-center text-md-b2 font-medium leading-relaxed text-[#fff9e8]/90">
+                        <p className="mx-auto mt-md-2 flex max-w-[280px] items-center text-md-b2 font-medium leading-relaxed text-[#fff9e8]/90 md:min-h-[128px]">
                            {member.bio}
                         </p>
-                        <div className="mt-auto pt-md-3">
+                        <div className="mt-auto pt-md-2 md:pt-md-3">
                            {'showLinkedInPlaceholder' in member && member.showLinkedInPlaceholder ? (
                               <LinkedInPlaceholderButton className="mx-auto" />
                            ) : 'linkedIn' in member && member.linkedIn ? (
