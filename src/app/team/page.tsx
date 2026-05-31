@@ -55,8 +55,10 @@ const advisors = [
    }
 ];
 
-function CredentialPills({ items, stacked = false }: { items: string[]; stacked?: boolean }) {
-   const listClass = stacked ? 'flex flex-col items-center gap-2' : 'flex flex-wrap justify-center gap-2';
+function CredentialPills({ items, constrained = false }: { items: string[]; constrained?: boolean }) {
+   const listClass = constrained
+      ? 'mx-auto flex max-w-[260px] flex-wrap justify-center gap-2 md:max-w-[320px]'
+      : 'flex flex-wrap justify-center gap-2';
 
    return (
       <ul className={listClass}>
@@ -184,7 +186,7 @@ export default function TeamPage() {
                         </p>
                         {'credentials' in member && member.credentials ? (
                            <div className="mt-md-2 w-full [&>ul]:justify-center">
-                              <CredentialPills items={member.credentials} stacked />
+                              <CredentialPills items={member.credentials} constrained />
                            </div>
                         ) : null}
                         <div className="mt-auto pt-md-2 md:pt-md-3">
