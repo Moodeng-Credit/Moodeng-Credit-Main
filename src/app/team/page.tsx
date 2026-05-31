@@ -38,8 +38,8 @@ const foundingTeam = [
       name: 'Ogunjana Adeleke',
       role: 'Working on Building Community',
       image: '/team/ogunjana-adeleke.png',
-      bio: 'Helps manage X/Twitter and other social channels, keeping the community active across regional conversations.',
-      credentials: ['Community Building', 'Social Channels', 'X/Twitter'],
+      bio: 'Builds stories and visual direction for Moodeng Credit, helping turn community ideas into growth narratives people can understand, share, and rally around.',
+      credentials: ['Storytelling', 'Visual Direction', 'Growth Hacking', 'Narrative Setting'],
       linkedIn: 'https://www.linkedin.com/in/ogunjana-adeleke-lexioneth-2a75b2238/'
    }
 ];
