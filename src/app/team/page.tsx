@@ -1,8 +1,7 @@
-const leadTeam = [
+const coFounders = [
    {
       name: 'George',
-      founderRole: 'Member of Lead Team',
-      jobRole: 'Project Lead',
+      role: 'Project Lead',
       image: '/team/george.jpeg',
       bio: 'Repeat founder and product builder focused on turning messy early-stage ideas into disciplined, usable systems for real borrowers and lenders.',
       credentials: ['University of Edinburgh', 'Ex-UNHCR Data Team Lead', 'Former Portfolio Manager', '1 Exit', '2 Prior Startups'],
@@ -10,8 +9,7 @@ const leadTeam = [
    },
    {
       name: 'Emma',
-      founderRole: 'Member of Lead Team',
-      jobRole: 'Marketing & Community Lead',
+      role: 'Marketing & Community Lead',
       image: '/team/emma-moodeng.jpeg',
       bio: 'Leads growth and community storytelling for Moodeng Credit, turning borrower education, social content, and campaign feedback into clearer trust-building moments.',
       credentials: ['Growth Marketing', 'Borrower Education', 'Community Campaigns'],
@@ -19,27 +17,24 @@ const leadTeam = [
    }
 ];
 
-const widerTeam = [
+const foundingTeam = [
    {
       name: 'Yousef',
-      founderRole: 'Technical Team',
-      jobRole: 'Member of Technical Staff',
+      role: 'Developer',
       image: '/team/yousef.jpg',
       bio: 'Supports engineering across the Moodeng Credit buildout, helping turn product direction into working borrower and lender experiences.',
       showLinkedInPlaceholder: true
    },
    {
       name: 'Louis',
-      founderRole: 'Partnerships',
-      jobRole: 'Head of Partnerships',
+      role: 'Head of Partnerships',
       initial: 'L',
       bio: 'Experienced relationship builder helping shape partner conversations, lender outreach, and ecosystem growth.',
       linkedIn: 'https://www.linkedin.com/in/louis-philippe/'
    },
    {
       name: 'Ogunjana Adeleke',
-      founderRole: 'Community',
-      jobRole: 'Head of Community',
+      role: 'Head of Community',
       image: '/team/ogunjana-adeleke.png',
       bio: 'Helps manage X/Twitter and other social channels, keeping the community active across regional conversations.',
       linkedIn: 'https://www.linkedin.com/in/ogunjana-adeleke-lexioneth-2a75b2238/'
@@ -72,14 +67,16 @@ function CredentialPills({ items }: { items: string[] }) {
    );
 }
 
-function RolePills({ primary, secondary, light = false }: { primary: string; secondary: string; light?: boolean }) {
-   const secondaryClass = light ? 'border-[#e0c23d] bg-[#fff0a8] text-[#071b43]' : 'border-[#f4d756] bg-[#fff0a8] text-[#071b43]';
+function RoleBadge({ children, variant = 'filled' }: { children: string; variant?: 'filled' | 'outline' }) {
+   const badgeClass =
+      variant === 'filled' ? 'border-[#f4d756] bg-[#f4d756] text-[#071b43]' : 'border-[#f4d756] bg-transparent text-[#fff9e8]';
 
    return (
-      <div className="mx-auto flex min-h-[78px] w-fit flex-col items-center justify-center gap-2">
-         <p className="rounded-md-pill bg-[#f4d756] px-md-3 py-1 text-md-b2 font-bold leading-tight text-[#071b43]">{primary}</p>
-         <p className={`rounded-md-pill border-2 px-md-3 py-1 text-md-b2 font-bold leading-tight ${secondaryClass}`}>{secondary}</p>
-      </div>
+      <p
+         className={`mx-auto inline-flex min-h-10 items-center justify-center rounded-md-pill border-2 px-md-3 py-1 text-md-b2 font-bold leading-tight ${badgeClass}`}
+      >
+         {children}
+      </p>
    );
 }
 
@@ -124,70 +121,78 @@ function LinkedInPlaceholderButton({ className = '' }: { className?: string }) {
 export default function TeamPage() {
    return (
       <section className="team-page bg-[#f3d354] px-md-4 py-md-6 text-md-primary-2000 md:py-md-8">
-         <div className="mx-auto flex max-w-[1120px] flex-col gap-md-5">
-            <header className="team-blue-panel relative overflow-hidden rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] px-md-5 py-md-5 text-center text-[#fff9e8] shadow-[0_18px_0_rgba(7,27,67,0.24)] md:px-md-6 md:py-md-6">
-               <span className="inline-flex rounded-md-pill bg-[#f4d756] px-md-3 py-1 text-md-b2 font-bold text-[#071b43]">
-                  Moodeng Credit
-               </span>
-               <h1 className="mt-md-2 font-serif text-[58px] font-bold leading-[0.88] md:text-[104px]">Core Team</h1>
-               <p className="mx-auto mt-md-2 max-w-[660px] text-md-b1 font-medium text-[#fff9e8] md:text-md-h5">
-                  Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.
-               </p>
-               <div className="mx-auto mt-md-4 h-2 w-full max-w-[720px] rounded-t-md-pill bg-[#f4d756]" />
-            </header>
+         <div className="mx-auto flex max-w-[1120px] flex-col gap-md-6">
+            <section aria-labelledby="co-founders-heading">
+               <header className="mb-md-4 text-center text-[#071b43]">
+                  <h1 id="co-founders-heading" className="font-serif text-[58px] font-bold leading-[0.88] md:text-[96px]">
+                     Co-Founders
+                  </h1>
+                  <p className="mx-auto mt-md-2 max-w-[660px] text-md-b1 font-medium leading-relaxed md:text-md-h5">
+                     Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.
+                  </p>
+               </header>
 
-            <div className="grid gap-md-4 md:grid-cols-2">
-               {leadTeam.map((member) => (
-                  <article
-                     key={member.name}
-                     className="relative flex h-full flex-col overflow-hidden border-[5px] border-md-primary-1600 bg-[#fff8de]/90 p-md-4 text-center text-[#071b43] md:min-h-[860px]"
-                  >
-                     <div className="mb-md-3 flex min-h-[72px] items-end">
-                        <h2 className="text-left font-serif text-[46px] font-bold leading-none md:text-[64px]">{member.name}</h2>
-                     </div>
-                     <Portrait name={member.name} image={member.image} />
-                     <div className="mt-md-3">
-                        <RolePills primary={member.founderRole} secondary={member.jobRole} light />
-                     </div>
-                     <p className="mx-auto mt-md-3 flex min-h-[116px] max-w-[430px] items-center text-md-b1 font-medium leading-relaxed text-md-primary-2000">
-                        {member.bio}
-                     </p>
-                     <div className="mt-md-3 flex min-h-[86px] items-center justify-center">
-                        <CredentialPills items={member.credentials} />
-                     </div>
-                     <div className="mt-auto pt-md-3">
-                        <LinkedInButton href={member.linkedIn} className="mx-auto" />
-                     </div>
-                  </article>
-               ))}
-            </div>
-
-            <div className="grid gap-md-3 md:grid-cols-3">
-               {widerTeam.map((member) => (
-                  <article
-                     key={member.name}
-                     className="team-blue-panel flex h-full flex-col rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] p-md-4 text-center text-[#fff9e8] shadow-[0_14px_0_rgba(7,27,67,0.24)] md:min-h-[720px]"
-                  >
-                     <Portrait name={member.name} image={member.image} initial={member.initial} />
-                     <div className="mt-md-3 flex min-h-[86px] items-end justify-center">
-                        <h2 className="font-serif text-md-h3 font-bold leading-none">{member.name}</h2>
-                     </div>
-                     <div className="mt-md-2">
-                        <RolePills primary={member.founderRole} secondary={member.jobRole} />
-                     </div>
-                     <p className="mx-auto mt-md-2 flex min-h-[128px] max-w-[280px] items-center text-md-b2 font-medium leading-relaxed text-[#fff9e8]/90">
-                        {member.bio}
-                     </p>
-                     <div className="mt-auto pt-md-3">
-                        {'showLinkedInPlaceholder' in member && member.showLinkedInPlaceholder ? (
-                           <LinkedInPlaceholderButton className="mx-auto" />
-                        ) : 'linkedIn' in member && member.linkedIn ? (
+               <div className="grid gap-md-4 md:grid-cols-2">
+                  {coFounders.map((member) => (
+                     <article
+                        key={member.name}
+                        className="relative flex h-full flex-col overflow-hidden border-[5px] border-md-primary-1600 bg-[#fff8de]/90 p-md-4 text-center text-[#071b43] md:min-h-[810px]"
+                     >
+                        <div className="mb-md-3 flex min-h-[72px] items-end">
+                           <h2 className="text-left font-serif text-[46px] font-bold leading-none md:text-[64px]">{member.name}</h2>
+                        </div>
+                        <Portrait name={member.name} image={member.image} />
+                        <div className="mt-md-3 flex min-h-[52px] items-center justify-center">
+                           <RoleBadge>{member.role}</RoleBadge>
+                        </div>
+                        <p className="mx-auto mt-md-3 flex min-h-[116px] max-w-[430px] items-center text-md-b1 font-medium leading-relaxed text-md-primary-2000">
+                           {member.bio}
+                        </p>
+                        <div className="mt-md-3 flex min-h-[86px] items-center justify-center">
+                           <CredentialPills items={member.credentials} />
+                        </div>
+                        <div className="mt-auto pt-md-3">
                            <LinkedInButton href={member.linkedIn} className="mx-auto" />
-                        ) : null}
-                     </div>
-                  </article>
-               ))}
-            </div>
+                        </div>
+                     </article>
+                  ))}
+               </div>
+            </section>
+
+            <section aria-labelledby="founding-team-heading" className="mt-md-2 border-t-[8px] border-[#0d2f6f] pt-md-6">
+               <header className="mb-md-4 text-center text-[#071b43]">
+                  <h2 id="founding-team-heading" className="font-serif text-[46px] font-bold leading-none md:text-[72px]">
+                     Founding Team
+                  </h2>
+               </header>
+
+               <div className="grid gap-md-3 md:grid-cols-3">
+                  {foundingTeam.map((member) => (
+                     <article
+                        key={member.name}
+                        className="team-blue-panel flex h-full flex-col rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] p-md-4 text-center text-[#fff9e8] shadow-[0_14px_0_rgba(7,27,67,0.24)] md:min-h-[670px]"
+                     >
+                        <Portrait name={member.name} image={member.image} initial={member.initial} />
+                        <div className="mt-md-3 flex min-h-[86px] items-end justify-center">
+                           <h3 className="font-serif text-md-h3 font-bold leading-none">{member.name}</h3>
+                        </div>
+                        <div className="mt-md-2 flex min-h-[52px] items-center justify-center">
+                           <RoleBadge variant="outline">{member.role}</RoleBadge>
+                        </div>
+                        <p className="mx-auto mt-md-2 flex min-h-[128px] max-w-[280px] items-center text-md-b2 font-medium leading-relaxed text-[#fff9e8]/90">
+                           {member.bio}
+                        </p>
+                        <div className="mt-auto pt-md-3">
+                           {'showLinkedInPlaceholder' in member && member.showLinkedInPlaceholder ? (
+                              <LinkedInPlaceholderButton className="mx-auto" />
+                           ) : 'linkedIn' in member && member.linkedIn ? (
+                              <LinkedInButton href={member.linkedIn} className="mx-auto" />
+                           ) : null}
+                        </div>
+                     </article>
+                  ))}
+               </div>
+            </section>
 
             <section className="team-blue-panel rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] p-md-4 text-center text-[#fff9e8]">
                <h2 className="font-serif text-md-h2 font-bold">Advisors</h2>
