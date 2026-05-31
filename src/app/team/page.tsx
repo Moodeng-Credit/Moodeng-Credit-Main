@@ -32,8 +32,8 @@ const foundingTeam = [
       image: '/team/louis-profile-avatar.png',
       bio: (
          <>
+            Supports Moodeng Credit with partnerships, lender outreach, and growth channels, while also working at{' '}
             <span className="whitespace-nowrap">
-               At{' '}
                <a
                   href="https://pinax.network/"
                   target="_blank"
@@ -42,9 +42,8 @@ const foundingTeam = [
                >
                   Pinax
                </a>
-               ,
             </span>{' '}
-            Louis helps connect startup teams with blockchain data infrastructure, partnerships, and growth channels.
+            helping teams connect with blockchain data infrastructure.
          </>
       ),
       credentials: ['Head of Growth', 'Growth Hacking', 'Blockchain Analysis', 'Digital Marketing', 'Marketing Automation'],
