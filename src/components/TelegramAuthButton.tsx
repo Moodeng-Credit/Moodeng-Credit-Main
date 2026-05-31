@@ -23,6 +23,7 @@ export default function TelegramAuthButton({
    requestWriteAccess = false
 }: TelegramAuthButtonProps) {
    const containerRef = useRef<HTMLDivElement>(null);
+   const widgetIdRef = useRef(`telegram_auth_${Math.random().toString(36).slice(2)}`);
    const rawBotUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? 'moodengnewbranchbot';
    const botUsername = rawBotUsername?.trim().replace(/^@/, '');
    const onAuthRef = useRef(onAuth);
@@ -51,24 +52,22 @@ export default function TelegramAuthButton({
          return;
       }
 
-      const existingScript = document.getElementById('telegram-login-script');
-      if (existingScript) {
-         console.debug(`${debugTag} removing existing script before re-mount`);
-         existingScript.remove();
-      }
+      const widgetId = widgetIdRef.current;
+      const callbackName = `${widgetId}_callback`;
+      const scriptId = `${widgetId}_script`;
 
-      (window as unknown as Record<string, unknown>).onTelegramAuth = (user: Record<string, string>) => {
-         console.debug(`${debugTag} onTelegramAuth callback fired`, user);
+      (window as unknown as Record<string, unknown>)[callbackName] = (user: Record<string, string>) => {
+         console.debug(`${debugTag} callback fired`, user);
          onAuthRef.current(user);
       };
 
       const script = document.createElement('script');
-      script.id = 'telegram-login-script';
+      script.id = scriptId;
       script.async = true;
       script.src = 'https://telegram.org/js/telegram-widget.js?22';
       script.setAttribute('data-telegram-login', botUsername);
       script.setAttribute('data-size', buttonSize);
-      script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+      script.setAttribute('data-onauth', `${callbackName}(user)`);
       if (requestWriteAccess) {
          script.setAttribute('data-request-access', 'write');
       }
@@ -119,11 +118,11 @@ export default function TelegramAuthButton({
       return () => {
          console.debug(`${debugTag} cleanup`);
          const win = window as unknown as Record<string, unknown>;
-         if (win.onTelegramAuth) {
-            delete win.onTelegramAuth;
+         if (win[callbackName]) {
+            delete win[callbackName];
          }
       };
-   }, [buttonSize, botUsername, requestWriteAccess]);
+   }, [buttonSize, botUsername, hideLoading, rawBotUsername, requestWriteAccess]);
 
    if (!botUsername) {
       console.debug(`${debugTag} returning null because bot username missing`);
@@ -132,7 +131,7 @@ export default function TelegramAuthButton({
 
    return (
       <div className="w-full min-w-0">
-         {!hideLoading && isLoading && (
+         {!hideLoading && isLoading ? (
             <div className="flex justify-center py-4">
                <div className="flex flex-col items-center gap-3 w-full px-4">
                   {/* Animated loading bar skeleton */}
@@ -162,7 +161,7 @@ export default function TelegramAuthButton({
                   }
                `}</style>
             </div>
-         )}
+         ) : null}
          <div
             ref={containerRef}
             className="flex w-full min-w-0 min-h-0 justify-center overflow-hidden [&>iframe]:max-w-full"
