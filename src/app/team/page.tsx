@@ -19,7 +19,7 @@ const coFounders = [
 
 const foundingTeam = [
    {
-      name: 'Yousef',
+      name: 'Yousuf',
       role: 'Member of Technical Team',
       image: '/team/yousef.jpg',
       bio: 'Backend engineer helping Moodeng Credit turn borrower and lender requirements into reliable app flows, APIs, and shipped features.',
