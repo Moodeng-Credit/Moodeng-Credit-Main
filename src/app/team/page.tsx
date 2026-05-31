@@ -124,10 +124,7 @@ export default function TeamPage() {
          <div className="mx-auto flex max-w-[1120px] flex-col gap-md-4 md:gap-md-6">
             <section aria-labelledby="co-founders-heading">
                <header className="team-blue-panel relative mb-md-4 overflow-hidden rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] px-md-3 py-md-4 text-center text-[#fff9e8] shadow-[0_18px_0_rgba(7,27,67,0.24)] md:mb-md-5 md:px-md-6 md:py-md-6">
-                  <span className="inline-flex rounded-md-pill bg-[#f4d756] px-md-3 py-1 text-md-b2 font-bold text-[#071b43]">
-                     Moodeng Credit
-                  </span>
-                  <h1 id="co-founders-heading" className="mt-md-2 font-serif text-[42px] font-bold leading-[0.9] md:text-[104px]">
+                  <h1 id="co-founders-heading" className="font-serif text-[42px] font-bold leading-[0.9] md:text-[104px]">
                      Co-Founders
                   </h1>
                   <p className="mx-auto mt-md-2 max-w-[660px] text-md-b2 font-medium leading-relaxed text-[#fff9e8] md:text-md-h5">
