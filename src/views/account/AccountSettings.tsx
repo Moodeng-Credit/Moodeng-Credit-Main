@@ -8,6 +8,8 @@ import { useAccount, useDisconnect } from 'wagmi';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import TelegramAuthButton from '@/components/TelegramAuthButton';
 import { useThemeMode } from '@/components/ThemeModeProvider';
+import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
+import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar from '@/components/UserAvatar';
 
 import { useAuthProvider } from '@/hooks/useAuthProvider';
@@ -406,8 +408,10 @@ function TelegramAlertsModal({
    onClose: () => void;
    onConnected: (authData: Record<string, string>) => Promise<void>;
 }) {
+   const { showToast } = useToast();
    const [error, setError] = useState('');
    const [isSubmitting, setIsSubmitting] = useState(false);
+   const isSubmittingRef = useRef(false);
 
    const handleClose = () => {
       if (isSubmitting) return;
@@ -416,16 +420,22 @@ function TelegramAlertsModal({
    };
 
    const handleTelegramAuth = async (authData: Record<string, string>) => {
+      if (isSubmittingRef.current) return;
+      isSubmittingRef.current = true;
       setError('');
       setIsSubmitting(true);
       try {
          await onConnected(authData);
+         isSubmittingRef.current = false;
          setIsSubmitting(false);
          setError('');
          onClose();
       } catch (err) {
+         const message = err instanceof Error ? err.message : 'Failed to connect Telegram alerts';
+         isSubmittingRef.current = false;
          setIsSubmitting(false);
-         setError(err instanceof Error ? err.message : 'Failed to connect Telegram alerts');
+         setError(message);
+         showToast(TOAST_TYPES.ERROR, 'Telegram alerts not connected', message, 'Contact support', 'contact_support');
       }
    };
 
@@ -634,7 +644,17 @@ export default function AccountSettings() {
          body: { authData }
       });
 
-      if (error) throw error;
+      if (error) {
+         const response = (error as { context?: Response }).context;
+         if (response) {
+            const body = (await response
+               .clone()
+               .json()
+               .catch(() => null)) as { error?: string } | null;
+            if (body?.error) throw new Error(body.error);
+         }
+         throw error;
+      }
       if (data?.error) throw new Error(data.error);
 
       const result = await dispatch(fetchUser());

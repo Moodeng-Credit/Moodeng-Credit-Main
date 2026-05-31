@@ -9,6 +9,8 @@ const corsHeaders = {
 };
 
 const isWriteAllowed = (value: unknown) => value === true || value === 1 || value === '1' || value === 'true';
+const TELEGRAM_ACCOUNT_CONFLICT_MESSAGE =
+   'This Telegram account is already connected to another active Moodeng account. Sign in with that Telegram account, or contact support if you need help moving alerts.';
 
 const verifyTelegramAuth = async (authData: Record<string, unknown>) => {
    const botToken = Deno.env.get('TELEGRAM_API_TOKEN');
@@ -105,6 +107,32 @@ serve(async (req) => {
             status: 401,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
          });
+      }
+
+      const { data: existingTelegramUser, error: existingTelegramUserError } = await supabase
+         .from('users')
+         .select('id, username, account_status')
+         .or(`telegram_id.eq.${telegramId},chat_id.eq.${telegramId}`)
+         .neq('id', user.id)
+         .eq('account_status', 'active')
+         .limit(1)
+         .maybeSingle();
+
+      if (existingTelegramUserError) {
+         throw existingTelegramUserError;
+      }
+
+      if (existingTelegramUser) {
+         return new Response(
+            JSON.stringify({
+               error: TELEGRAM_ACCOUNT_CONFLICT_MESSAGE,
+               code: 'telegram_account_already_connected'
+            }),
+            {
+               status: 409,
+               headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+         );
       }
 
       const updates = {
