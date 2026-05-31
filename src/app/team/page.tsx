@@ -22,9 +22,9 @@ const foundingTeam = [
       name: 'Yousef',
       role: 'Member of Technical Team',
       image: '/team/yousef.jpg',
-      bio: 'Supports engineering across the Moodeng Credit buildout, helping turn product direction into working borrower and lender experiences.',
-      credentials: ['Builder', 'Developer', 'Product Engineering'],
-      showLinkedInPlaceholder: true
+      bio: 'Builds across the Moodeng Credit product, turning borrower and lender requirements into usable app flows, technical systems, and shipped features.',
+      credentials: ['Product Builder', 'Developer', 'Technical Systems', 'App Flows'],
+      linkedIn: 'https://www.linkedin.com/in/m-yousuf-dev'
    },
    {
       name: 'Louis',
@@ -132,14 +132,6 @@ function LinkedInButton({ href, className = '' }: { href: string; className?: st
    );
 }
 
-function LinkedInPlaceholderButton({ className = '' }: { className?: string }) {
-   return (
-      <span aria-disabled="true" className={`${linkedInButtonClass} cursor-default ${className}`}>
-         LinkedIn Profile
-      </span>
-   );
-}
-
 export default function TeamPage() {
    return (
       <section className="team-page bg-[#f3d354] px-md-3 py-md-4 text-md-primary-2000 md:px-md-4 md:py-md-8">
@@ -205,11 +197,7 @@ export default function TeamPage() {
                            </div>
                         ) : null}
                         <div className="mt-auto pt-md-2 md:pt-md-3">
-                           {'showLinkedInPlaceholder' in member && member.showLinkedInPlaceholder ? (
-                              <LinkedInPlaceholderButton className="mx-auto" />
-                           ) : 'linkedIn' in member && member.linkedIn ? (
-                              <LinkedInButton href={member.linkedIn} className="mx-auto" />
-                           ) : null}
+                           <LinkedInButton href={member.linkedIn} className="mx-auto" />
                         </div>
                      </article>
                   ))}
