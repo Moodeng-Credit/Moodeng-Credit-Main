@@ -21,7 +21,19 @@ import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
 
-type UserCardProps = Loan & {
+type BorrowerContextState = {
+   incomeSetup?: string;
+   paydayWindow?: string;
+   cashGaps?: string[];
+   note?: string;
+};
+
+type LoanWithBorrowerContext = Loan & {
+   borrowerContext?: BorrowerContextState;
+   borrower_context?: BorrowerContextState;
+};
+
+type UserCardProps = LoanWithBorrowerContext & {
    currentUserId?: string;
    isBorrower?: boolean;
    isAuthenticated?: boolean;
@@ -32,6 +44,138 @@ type UserCardProps = Loan & {
 };
 
 const getSafeProfileText = (value: unknown) => (typeof value === 'string' && value.trim() ? value : undefined);
+
+const incomeContextLabels: Record<string, string> = {
+   full_time: 'Full-time employee',
+   part_time: 'Part-time',
+   contract: 'Contract / Temp',
+   contract_temp: 'Contract / Temp',
+   freelance: 'Freelance / Gig',
+   freelance_gig: 'Freelance / Gig',
+   self_employed: 'Self-employed',
+   irregular: 'Irregular income',
+   irregular_income: 'Irregular income'
+};
+
+const paydayContextLabels: Record<string, { label: string; range: string; start?: number; end?: number }> = {
+   '1_5': { label: 'Early month', range: '1st-5th', start: 1, end: 5 },
+   '10_15': { label: 'Mid-month', range: '10th-15th', start: 10, end: 15 },
+   '15_20': { label: 'Late month', range: '15th-20th', start: 15, end: 20 },
+   '25_30': { label: 'End of month', range: '25th-30th', start: 25, end: 30 },
+   varies: { label: 'It varies', range: 'No fixed schedule' },
+   it_varies: { label: 'It varies', range: 'No fixed schedule' }
+};
+
+const cashGapContextLabels: Record<string, string> = {
+   bills_before_payday: 'Bills before payday',
+   transport: 'Transport costs',
+   work_supplies: 'Work supplies',
+   family_needs: 'Family needs',
+   medical: 'Medical expenses',
+   emergency_costs: 'Emergency costs',
+   emergency_expense: 'Emergency costs'
+};
+
+const formatContextList = (items: string[]) => {
+   if (items.length <= 1) return items[0] ?? '';
+   if (items.length === 2) return `${items[0]} and ${items[1]}`;
+   return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
+};
+
+const demoBorrowerContext: BorrowerContextState = {
+   incomeSetup: 'full_time',
+   paydayWindow: '10_15',
+   cashGaps: ['family_needs', 'bills_before_payday']
+};
+
+const isBorrowerContextState = (value: unknown): value is BorrowerContextState => {
+   if (!value || typeof value !== 'object') return false;
+   const context = value as BorrowerContextState;
+   return Boolean(context.incomeSetup || context.paydayWindow || context.cashGaps?.length);
+};
+
+const getBorrowerContextForLoan = (loanData: LoanWithBorrowerContext) => {
+   if (isBorrowerContextState(loanData.borrowerContext)) return loanData.borrowerContext;
+   if (isBorrowerContextState(loanData.borrower_context)) return loanData.borrower_context;
+   if (import.meta.env.DEV && loanData.id.startsWith('lender-tour')) return demoBorrowerContext;
+   return null;
+};
+
+const getPaydayTimingCopy = (context: BorrowerContextState, loanData: LoanWithBorrowerContext) => {
+   const payday = context.paydayWindow ? paydayContextLabels[context.paydayWindow] : undefined;
+   if (!payday?.start || !payday.end) return 'Payday timing varies, so review the due date against the request details.';
+
+   const requestedAt = parseISO(loanData.createdAt);
+   const dueAt = parseISO(loanData.dueDate);
+   const requestedDay = requestedAt.getDate();
+   const dueDay = dueAt.getDate();
+   const requestLabel = format(requestedAt, 'MMM d');
+   const dueLabel = format(dueAt, 'MMM d');
+   const requestedBeforeWindow = requestedDay < payday.start;
+   const dueInsideWindow = dueDay >= payday.start && dueDay <= payday.end;
+   const dueAfterWindow = dueDay > payday.end;
+
+   if (requestedBeforeWindow && (dueInsideWindow || dueAfterWindow)) {
+      return `The request was opened ${requestLabel}, before their usual ${payday.range} payday window. The due date is ${dueLabel}, after that window opens.`;
+   }
+
+   if (dueInsideWindow) return `The due date is ${dueLabel}, inside their usual ${payday.range} payday window.`;
+   if (dueAfterWindow) return `The due date is ${dueLabel}, after their usual ${payday.range} payday window.`;
+   return `The due date is ${dueLabel}, before their usual ${payday.range} payday window. Review timing carefully.`;
+};
+
+function BorrowerContextSignal({
+   borrowerName,
+   context,
+   loanData,
+   loanReason
+}: {
+   borrowerName: string;
+   context: BorrowerContextState;
+   loanData: LoanWithBorrowerContext;
+   loanReason: string;
+}) {
+   const incomeLabel = context.incomeSetup ? incomeContextLabels[context.incomeSetup] : '';
+   const payday = context.paydayWindow ? paydayContextLabels[context.paydayWindow] : undefined;
+   const gapLabels = (context.cashGaps ?? []).map((gap) => cashGapContextLabels[gap]).filter(Boolean);
+   const gapCopy = formatContextList(gapLabels.map((gap) => gap.toLowerCase())) || 'a stated cash-flow gap';
+   const gapNoun = gapLabels.length === 1 ? 'pressure point' : 'pressure points';
+   const incomeCopy = incomeLabel
+      ? incomeLabel.toLowerCase().includes('income')
+         ? incomeLabel.toLowerCase()
+         : `${incomeLabel.toLowerCase()} income`
+      : 'income';
+   const timingCopy = getPaydayTimingCopy(context, loanData);
+   const sharedContext = [
+      incomeLabel ? `${incomeLabel} income` : '',
+      payday ? `${payday.label} payday (${payday.range})` : '',
+      gapLabels.length > 0 ? formatContextList(gapLabels) : ''
+   ].filter(Boolean);
+
+   return (
+      <section className="rounded-[16px] bg-md-primary-100/70 p-md-3" aria-label="Timing fit">
+         <div className="flex flex-col gap-md-1">
+            <p className="text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-primary-1200">Timing fit</p>
+            <p className="text-md-b2 font-semibold leading-[21px] text-md-heading">
+               Read {borrowerName}&rsquo;s request against their usual cash-flow pattern.
+            </p>
+         </div>
+
+         <p className="mt-md-2 text-md-b2 font-medium leading-[22px] text-md-neutral-1500">
+            {borrowerName} usually reports {gapCopy} as the {gapNoun}. This ${formatCurrency(loanData.loanAmount)} request is for{' '}
+            {loanReason.toLowerCase()}. Their shared context lists {incomeCopy} and{' '}
+            {payday ? `${payday.label.toLowerCase()} pay timing (${payday.range})` : 'payday timing'}, so the request timing can be compared
+            with the repayment date. {timingCopy}
+         </p>
+
+         {sharedContext.length > 0 ? (
+            <div className="mt-md-2 rounded-[12px] bg-md-neutral-100 px-md-2 py-md-1">
+               <p className="text-md-b3 font-medium leading-[18px] text-md-neutral-1200">Shared context: {sharedContext.join('; ')}</p>
+            </div>
+         ) : null}
+      </section>
+   );
+}
 
 export default function UserCard(loan: UserCardProps) {
    const {
@@ -188,6 +332,8 @@ export default function UserCard(loan: UserCardProps) {
    const isOwnLoan = loanData.borrowerUser === userId;
    const isLent = loanData.loanStatus === 'Lent';
    const canDeleteOwnRequest = Boolean(isAuthenticated && isOwnLoan && loanData.loanStatus === 'Requested' && onDeleteOwnRequest);
+   const borrowerContext = !isBorrower && isAuthenticated ? getBorrowerContextForLoan(loanData) : null;
+   const shouldShowLenderContext = isAuthenticated && !isBorrower && !isOwnLoan && !isLent;
 
    const handleDeleteOwnRequest = (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
@@ -262,6 +408,15 @@ export default function UserCard(loan: UserCardProps) {
                   </div>
                </div>
             </div>
+
+            {shouldShowLenderContext && borrowerContext ? (
+               <BorrowerContextSignal
+                  borrowerName={borrowerDisplayName}
+                  context={borrowerContext}
+                  loanData={loanData}
+                  loanReason={loanReason}
+               />
+            ) : null}
 
             {/* CTA + Borrower Link */}
             <div className="flex flex-col gap-4">
