@@ -28,7 +28,7 @@ const foundingTeam = [
    {
       name: 'Louis',
       role: 'Working on Partnerships',
-      initial: 'L',
+      image: '/team/louis-profile-avatar.png',
       bio: 'Experienced relationship builder helping shape partner conversations, lender outreach, and ecosystem growth.',
       credentials: ['Growth Hacking', 'Blockchain Analysis', 'Marketing Automation'],
       linkedIn: 'https://www.linkedin.com/in/louis-philippe/'
