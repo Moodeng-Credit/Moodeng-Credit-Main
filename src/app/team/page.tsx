@@ -72,6 +72,17 @@ function CredentialPills({ items }: { items: string[] }) {
    );
 }
 
+function RolePills({ primary, secondary, light = false }: { primary: string; secondary: string; light?: boolean }) {
+   const secondaryClass = light ? 'border-[#e0c23d] bg-[#fff0a8] text-[#071b43]' : 'border-[#f4d756] bg-[#fff0a8] text-[#071b43]';
+
+   return (
+      <div className="mx-auto flex min-h-[78px] w-fit flex-col items-center justify-center gap-2">
+         <p className="rounded-md-pill bg-[#f4d756] px-md-3 py-1 text-md-b2 font-bold leading-tight text-[#071b43]">{primary}</p>
+         <p className={`rounded-md-pill border-2 px-md-3 py-1 text-md-b2 font-bold leading-tight ${secondaryClass}`}>{secondary}</p>
+      </div>
+   );
+}
+
 function Portrait({ name, image, initial }: { name: string; image?: string; initial?: string }) {
    return (
       <div className="mx-auto grid aspect-[0.86] w-[min(250px,78%)] place-items-center overflow-hidden rounded-md-xl border-[6px] border-md-primary-1600 bg-[#fff8de]">
@@ -86,13 +97,16 @@ function Portrait({ name, image, initial }: { name: string; image?: string; init
    );
 }
 
+const linkedInButtonClass =
+   'inline-flex h-12 w-[224px] max-w-full items-center justify-center rounded-md-pill border-2 border-[#f4d756] bg-[#0d2f6f] px-md-3 text-md-b2 font-bold text-[#fff9e8] shadow-[0_5px_0_rgba(13,47,111,0.28)]';
+
 function LinkedInButton({ href, className = '' }: { href: string; className?: string }) {
    return (
       <a
          href={href}
          target="_blank"
          rel="noreferrer"
-         className={`inline-flex h-12 min-w-[190px] items-center justify-center rounded-md-pill border-2 border-[#f4d756] bg-[#0d2f6f] px-md-3 text-md-b2 font-bold text-[#fff9e8] shadow-[0_5px_0_rgba(13,47,111,0.28)] transition hover:-translate-y-0.5 hover:bg-[#16468f] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#0d2f6f] ${className}`}
+         className={`${linkedInButtonClass} transition hover:-translate-y-0.5 hover:bg-[#16468f] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#0d2f6f] ${className}`}
       >
          LinkedIn Profile
       </a>
@@ -101,10 +115,7 @@ function LinkedInButton({ href, className = '' }: { href: string; className?: st
 
 function LinkedInPlaceholderButton({ className = '' }: { className?: string }) {
    return (
-      <span
-         aria-disabled="true"
-         className={`inline-flex h-12 min-w-[190px] items-center justify-center rounded-md-pill border-2 border-[#d8c458] bg-[#254c86] px-md-3 text-md-b2 font-bold text-[#fff9e8]/85 shadow-[0_5px_0_rgba(7,27,67,0.22)] ${className}`}
-      >
+      <span aria-disabled="true" className={`${linkedInButtonClass} cursor-default ${className}`}>
          LinkedIn Profile
       </span>
    );
@@ -129,22 +140,19 @@ export default function TeamPage() {
                {leadTeam.map((member) => (
                   <article
                      key={member.name}
-                     className="relative flex h-full flex-col overflow-hidden border-[5px] border-md-primary-1600 bg-[#fff8de]/90 p-md-4 text-center text-[#071b43]"
+                     className="relative flex h-full flex-col overflow-hidden border-[5px] border-md-primary-1600 bg-[#fff8de]/90 p-md-4 text-center text-[#071b43] md:min-h-[860px]"
                   >
-                     <h2 className="mb-md-3 text-left font-serif text-[46px] font-bold leading-none md:text-[64px]">{member.name}</h2>
-                     <Portrait name={member.name} image={member.image} />
-                     <div className="mx-auto mt-md-3 flex w-fit flex-col items-center gap-2">
-                        <p className="rounded-md-pill bg-[#f4d756] px-md-3 py-1 text-md-b2 font-bold leading-tight text-[#071b43]">
-                           {member.founderRole}
-                        </p>
-                        <p className="lead-team-job-role rounded-md-pill border-2 border-md-primary-1600/25 bg-[#fff9e8] px-md-3 py-1 text-md-b2 font-bold text-md-primary-2000">
-                           {member.jobRole}
-                        </p>
+                     <div className="mb-md-3 flex min-h-[72px] items-end">
+                        <h2 className="text-left font-serif text-[46px] font-bold leading-none md:text-[64px]">{member.name}</h2>
                      </div>
-                     <p className="mx-auto mt-md-3 max-w-[430px] text-md-b1 font-medium leading-relaxed text-md-primary-2000">
+                     <Portrait name={member.name} image={member.image} />
+                     <div className="mt-md-3">
+                        <RolePills primary={member.founderRole} secondary={member.jobRole} light />
+                     </div>
+                     <p className="mx-auto mt-md-3 flex min-h-[116px] max-w-[430px] items-center text-md-b1 font-medium leading-relaxed text-md-primary-2000">
                         {member.bio}
                      </p>
-                     <div className="mt-md-3">
+                     <div className="mt-md-3 flex min-h-[86px] items-center justify-center">
                         <CredentialPills items={member.credentials} />
                      </div>
                      <div className="mt-auto pt-md-3">
@@ -158,19 +166,18 @@ export default function TeamPage() {
                {widerTeam.map((member) => (
                   <article
                      key={member.name}
-                     className="team-blue-panel flex h-full flex-col rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] p-md-4 text-center text-[#fff9e8] shadow-[0_14px_0_rgba(7,27,67,0.24)]"
+                     className="team-blue-panel flex h-full flex-col rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] p-md-4 text-center text-[#fff9e8] shadow-[0_14px_0_rgba(7,27,67,0.24)] md:min-h-[720px]"
                   >
                      <Portrait name={member.name} image={member.image} initial={member.initial} />
-                     <h2 className="mt-md-3 font-serif text-md-h3 font-bold leading-none">{member.name}</h2>
-                     <div className="mx-auto mt-md-2 flex w-fit flex-col items-center gap-1.5">
-                        <p className="rounded-md-pill bg-[#f4d756] px-md-2 py-1 text-md-b2 font-bold text-[#071b43]">
-                           {member.founderRole}
-                        </p>
-                        <p className="rounded-md-pill border border-[#f4d756]/55 bg-[#fff9e8]/12 px-md-2 py-1 text-md-b3 font-bold text-[#fff9e8]">
-                           {member.jobRole}
-                        </p>
+                     <div className="mt-md-3 flex min-h-[86px] items-end justify-center">
+                        <h2 className="font-serif text-md-h3 font-bold leading-none">{member.name}</h2>
                      </div>
-                     <p className="mx-auto mt-md-2 max-w-[280px] text-md-b2 font-medium leading-relaxed text-[#fff9e8]/90">{member.bio}</p>
+                     <div className="mt-md-2">
+                        <RolePills primary={member.founderRole} secondary={member.jobRole} />
+                     </div>
+                     <p className="mx-auto mt-md-2 flex min-h-[128px] max-w-[280px] items-center text-md-b2 font-medium leading-relaxed text-[#fff9e8]/90">
+                        {member.bio}
+                     </p>
                      <div className="mt-auto pt-md-3">
                         {'showLinkedInPlaceholder' in member && member.showLinkedInPlaceholder ? (
                            <LinkedInPlaceholderButton className="mx-auto" />
