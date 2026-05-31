@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { getLoanRequestCooldownMinutes, getLoanRequestRepostStatusFromDeletedAt } from '@/lib/loanRequestRepostStatus';
+import {
+   getLoanRequestCooldownMessage,
+   getLoanRequestCooldownMinutes,
+   getLoanRequestRepostStatusFromDeletedAt
+} from '@/lib/loanRequestRepostStatus';
 
 describe('loan request repost cooldown', () => {
    const now = new Date('2026-05-31T12:00:00.000Z');
@@ -22,6 +26,9 @@ describe('loan request repost cooldown', () => {
       expect(status.canCreate).toBe(false);
       expect(status.cooldownUntil).toBe('2026-05-31T12:20:00.000Z');
       expect(getLoanRequestCooldownMinutes(status.cooldownUntil, now)).toBe(20);
+      expect(getLoanRequestCooldownMessage(status, now)).toBe(
+         'You deleted 2 loan requests in the last 24 hours, so new requests are paused. You can make another loan request in about 20 minutes.'
+      );
    });
 
    it('allows reposting when the latest delete is outside the cooldown', () => {

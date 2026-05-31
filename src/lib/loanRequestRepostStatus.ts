@@ -38,10 +38,11 @@ export const getLoanRequestCooldownMinutes = (cooldownUntil: string | null, now 
 
 export const getLoanRequestCooldownMessage = (status: Pick<LoanRequestRepostStatus, 'cooldownUntil'>, now = new Date()) => {
    const minutes = getLoanRequestCooldownMinutes(status.cooldownUntil, now);
+   const baseMessage = `You deleted ${LOAN_REQUEST_DELETE_LIMIT} loan requests in the last 24 hours, so new requests are paused`;
 
    if (minutes <= 1) {
-      return 'You can make another loan request in about 1 minute.';
+      return `${baseMessage}. You can make another loan request in about 1 minute.`;
    }
 
-   return `You can make another loan request in about ${minutes} minutes.`;
+   return `${baseMessage}. You can make another loan request in about ${minutes} minutes.`;
 };
