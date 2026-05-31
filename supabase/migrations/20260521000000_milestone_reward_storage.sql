@@ -253,7 +253,7 @@ begin
   from public.reward_definitions as rd
   where rd.is_active = true
     and rd.required_points_total <= coalesce(current_points, 0)
-  on conflict (user_id, reward_id) do nothing;
+  on conflict on constraint user_rewards_user_id_reward_id_key do nothing;
 
   return query
   select ur.reward_id, ur.unlocked_at
@@ -323,7 +323,7 @@ begin
     milestone_record.point_source_id,
     coalesce(metadata_input, '{}'::jsonb)
   )
-  on conflict (user_id, milestone_id) do nothing
+  on conflict on constraint user_milestone_completions_user_id_milestone_id_key do nothing
   returning id into inserted_completion_id;
 
   if inserted_completion_id is not null then

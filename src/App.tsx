@@ -7,6 +7,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AdminGuard } from '@/components/AdminGuard';
 import BottomNav from '@/components/BottomNav';
 import { BottomNavActionProvider } from '@/components/BottomNavActionContext';
+import { ExpiredLoanRequestNotifier } from '@/components/ExpiredLoanRequestNotifier';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
@@ -156,6 +157,7 @@ export default function App() {
    return (
       <BottomNavActionProvider key={location.pathname}>
          <WalletLoadingOverlay />
+         <ExpiredLoanRequestNotifier />
          <Routes key={location.pathname}>
             <Route path="/" element={<Home />} />
 
