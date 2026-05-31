@@ -438,11 +438,7 @@ html.dark .team-page .text-md-heading {
 }
 
 html.dark .team-page [class~='bg-[#0d2f6f]'],
-html.dark .team-page [class~='bg-[#173f7d]'] {
+html.dark .team-page [class~='bg-[#173f7d]'],
+html.dark .team-page .team-blue-panel {
    color: #fff9e8;
-}
-
-html.dark .team-page .lead-team-role {
-   background-color: #f4d756;
-   color: #071b43;
 }
