@@ -48,7 +48,7 @@ export function OnboardingHeader({ title, onBack, hideBack = false }: Onboarding
    return (
       <div className="flex items-center justify-between px-md-5 py-md-3 w-full">
          <div className="flex items-center gap-md-3 flex-1 min-w-0">
-            {!hideBack && (
+            {!hideBack ? (
                <button
                   type="button"
                   onClick={handleBack}
@@ -56,7 +56,7 @@ export function OnboardingHeader({ title, onBack, hideBack = false }: Onboarding
                   className="size-6 inline-flex items-center justify-center shrink-0"
                >
                   <span
-                     className="block size-6 bg-md-primary-2000"
+                     className="block size-6 bg-md-primary-2000 dark:bg-md-neutral-100"
                      style={{
                         WebkitMaskImage: "url('/icons/arrow-left.svg')",
                         maskImage: "url('/icons/arrow-left.svg')",
@@ -69,17 +69,21 @@ export function OnboardingHeader({ title, onBack, hideBack = false }: Onboarding
                      }}
                   />
                </button>
-            )}
-            {title && <h1 className="text-[28px] leading-[1.1] tracking-[-0.02em] font-semibold text-md-primary-2000 truncate">{title}</h1>}
+            ) : null}
+            {title ? (
+               <h1 className="truncate text-[28px] font-semibold leading-[1.1] tracking-[-0.02em] text-md-primary-2000 dark:text-md-neutral-100">
+                  {title}
+               </h1>
+            ) : null}
          </div>
          <button
             type="button"
             aria-label={copy.help}
             onClick={() => navigate('/support')}
-            className="h-12 w-12 inline-flex items-center justify-center bg-white rounded-md-pill shadow-md-card shrink-0"
+            className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-md-pill bg-white shadow-md-card dark:border dark:border-md-primary-900/40 dark:bg-[#191023]"
          >
             <span
-               className="block size-6 bg-md-primary-1200"
+               className="block size-6 bg-md-primary-1200 dark:bg-md-primary-900"
                style={{
                   WebkitMaskImage: "url('/icons/question_light.svg')",
                   maskImage: "url('/icons/question_light.svg')",

@@ -39,11 +39,7 @@ export const getWalletProviderLabel = ({
    assumeBaseAccount?: boolean;
 }) => {
    const resolvedProvider =
-      provider && provider !== 'unknown'
-         ? provider
-         : connectorName
-           ? getWalletProviderFromConnectorName(connectorName)
-           : null;
+      provider && provider !== 'unknown' ? provider : connectorName ? getWalletProviderFromConnectorName(connectorName) : null;
 
    if (isBaseWalletProvider(resolvedProvider) || assumeBaseAccount) return 'Base Account';
 
@@ -82,6 +78,8 @@ type WalletRecord = {
    walletProvider?: string | null;
    walletConnectorName?: string | null;
 };
+
+export const hasWalletAddressOnAccount = (wallet?: WalletRecord | null) => Boolean(normalizeWalletAddress(wallet?.walletAddress));
 
 export const getStoredWalletProvider = (wallet?: WalletRecord | null): WalletProvider | null => {
    if (!wallet) return null;

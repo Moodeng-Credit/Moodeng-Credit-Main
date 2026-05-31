@@ -4,11 +4,12 @@ import {
    areWalletAddressesEqual,
    getBaseAccountConnector,
    getBaseWalletLockStatus,
-   getWalletProviderLabel,
    getWalletProviderFromConnector,
    getWalletProviderFromConnectorName,
-   isBaseWalletReadyForRepayment,
+   getWalletProviderLabel,
+   hasWalletAddressOnAccount,
    isBaseWalletProvider,
+   isBaseWalletReadyForRepayment,
    isConnectedToLockedBaseWallet
 } from '@/lib/walletProvider';
 
@@ -35,6 +36,17 @@ describe('walletProvider', () => {
 
    it('can show Base Account for borrower rows that predate wallet metadata', () => {
       expect(getWalletProviderLabel({ assumeBaseAccount: true })).toBe('Base Account');
+   });
+
+   it('treats any saved account wallet address as present for account-level gates', () => {
+      expect(
+         hasWalletAddressOnAccount({
+            walletAddress: '0xC1022456DFd3BF36af1dA553cd5631F9e76ca8D6',
+            walletProvider: null
+         })
+      ).toBe(true);
+      expect(hasWalletAddressOnAccount({ walletAddress: '   ' })).toBe(false);
+      expect(hasWalletAddressOnAccount(null)).toBe(false);
    });
 
    it('does not treat missing or unknown wallet providers as Base', () => {
