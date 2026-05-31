@@ -109,6 +109,9 @@ export default function ConnectWallet() {
    );
 }
 
+const CONNECT_WALLET_SCREEN_CLASS =
+   'min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col max-w-[440px] mx-auto w-full';
+
 function BorrowerConnectView({
    onPreviewConnect,
    onConnectBaseAccount,
@@ -121,13 +124,19 @@ function BorrowerConnectView({
    isConnecting: boolean;
 }) {
    return (
-      <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
+      <div className={CONNECT_WALLET_SCREEN_CLASS}>
          <OnboardingHeader title="Add Base Wallet" />
 
          <div className="flex flex-1 flex-col items-center justify-center px-md-4 text-center">
-            <img src="/icons/base-wallet.svg" alt="Base Wallet" className="mb-md-3 size-16 rounded-md-xl" />
+            <img
+               src="/icons/base-wallet.svg"
+               alt="Base Wallet"
+               className="mb-md-3 size-16 rounded-md-xl shadow-[0_18px_56px_rgba(96,16,210,0.22)]"
+            />
             <div className="mb-md-4 flex max-w-[360px] flex-col items-center gap-md-2">
-               <h2 className="text-[32px] font-semibold leading-[1.12] text-md-heading">Connect Your Base Wallet</h2>
+               <h2 className="text-[32px] font-semibold leading-[1.12] text-md-heading dark:text-md-neutral-100">
+                  Connect Your Base Wallet
+               </h2>
                <p className="max-w-[360px] text-md-b1 font-medium leading-7 text-md-neutral-700">
                   Your wallet is used to build your Trust Score and receive USDC loans.
                </p>
@@ -148,7 +157,7 @@ function ConnectBaseAccountButton({ onClick, isDisabled }: { onClick: () => void
          type="button"
          onClick={onClick}
          disabled={isDisabled}
-         className="flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
+         className="flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 shadow-[0_18px_50px_rgba(96,16,210,0.24)] disabled:opacity-60 dark:shadow-[0_18px_60px_rgba(112,16,210,0.38)]"
       >
          {isDisabled ? 'Connecting...' : 'Connect Base Wallet'}
          {isDisabled ? null : (
@@ -186,7 +195,7 @@ function LenderConnectView({
    const canConnect = Boolean(selectedKey) && !isConnecting;
 
    return (
-      <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
+      <div className={CONNECT_WALLET_SCREEN_CLASS}>
          <OnboardingHeader title="Connect Wallet" />
 
          <div className="flex flex-col gap-md-4 p-md-4">
