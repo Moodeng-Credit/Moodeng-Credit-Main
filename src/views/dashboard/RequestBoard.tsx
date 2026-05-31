@@ -1263,7 +1263,7 @@ function RequestBoard$() {
                         type="button"
                         onClick={() => navigate('/support')}
                         aria-label="Open help and support center"
-                        className="shrink-0 w-12 h-12 bg-white rounded-full shadow-md-card flex items-center justify-center"
+                        className="shrink-0 w-12 h-12 bg-white rounded-full shadow-md-card flex items-center justify-center transition-all duration-150 hover:brightness-105 active:scale-[0.96] active:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
                      >
                         <HelpCircle className="w-6 h-6 text-md-primary-900" strokeWidth={1.5} />
                      </button>
