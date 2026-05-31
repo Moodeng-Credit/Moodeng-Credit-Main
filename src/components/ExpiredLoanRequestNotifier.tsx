@@ -65,7 +65,9 @@ export function ExpiredLoanRequestNotifier() {
                ? `Your ${formatUsdcAmount(newestRequest.loan_amount)} request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.`
                : `${expiredCount} loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.`;
 
-         showToast(TOAST_TYPES.WARNING, title, message, 'Contact support', 'contact_support');
+         showToast(TOAST_TYPES.WARNING, title, message, 'Contact support', 'open_support_contacts', {
+            supportIssue: 'loan_request_expired'
+         });
       };
 
       void checkExpiredRequests();

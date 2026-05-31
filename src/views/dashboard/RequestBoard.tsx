@@ -12,7 +12,7 @@ import {
 } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle2, HelpCircle, Menu, Search, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, HelpCircle, LoaderCircle, Menu, Search, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
@@ -301,6 +301,7 @@ function RequestBoard$() {
    const [showWorldIdHighlight, setShowWorldIdHighlight] = useState(false);
    const [requestToDelete, setRequestToDelete] = useState<Loan | null>(null);
    const [isDeletingRequest, setIsDeletingRequest] = useState(false);
+   const [isOpeningLoanRequest, setIsOpeningLoanRequest] = useState(false);
 
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -511,35 +512,41 @@ function RequestBoard$() {
 
    const handleApplyLoanClick = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
+      if (isOpeningLoanRequest) return;
+      setIsOpeningLoanRequest(true);
 
-      if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
-         goToBorrowerOnboardingStart('loan-request');
-         return;
-      }
+      try {
+         if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
+            goToBorrowerOnboardingStart('loan-request');
+            return;
+         }
 
-      if (!hasBorrowerBaseWallet) {
-         handleMissingBorrowerWallet();
-         return;
-      }
+         if (!hasBorrowerBaseWallet) {
+            handleMissingBorrowerWallet();
+            return;
+         }
 
-      if (!isWorldIdVerified) {
+         if (!isWorldIdVerified) {
+            setShowModal(true);
+            return;
+         }
+
+         if (hasReachedActiveLoanLimit) {
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
+            return;
+         }
+
+         if (availableCreditLimit <= 0) {
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
+            return;
+         }
+         if (!(await ensureCanCreateLoanRequest())) {
+            return;
+         }
          setShowModal(true);
-         return;
+      } finally {
+         window.setTimeout(() => setIsOpeningLoanRequest(false), 180);
       }
-
-      if (hasReachedActiveLoanLimit) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
-         return;
-      }
-
-      if (availableCreditLimit <= 0) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
-         return;
-      }
-      if (!(await ensureCanCreateLoanRequest())) {
-         return;
-      }
-      setShowModal(true);
    };
 
    const handleCloseModal = useCallback(() => setShowModal(false), []);
@@ -1346,10 +1353,19 @@ function RequestBoard$() {
                            </div>
                            <button
                               onClick={handleApplyLoanClick}
+                              disabled={isOpeningLoanRequest}
+                              aria-busy={isOpeningLoanRequest}
                               data-tour-target="request-apply-button"
-                              className="bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold px-md-4 py-md-3 rounded-md-lg w-fit max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
+                              className="inline-flex min-h-[56px] w-fit items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 shadow-md-card transition-all duration-150 hover:brightness-110 active:scale-[0.97] active:brightness-90 disabled:pointer-events-none disabled:opacity-75 max-[374px]:min-h-12 max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
                            >
-                              Apply For A Loan
+                              {isOpeningLoanRequest ? (
+                                 <>
+                                    <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
+                                    Opening...
+                                 </>
+                              ) : (
+                                 'Apply For A Loan'
+                              )}
                            </button>
                         </div>
                         <img
@@ -1377,7 +1393,7 @@ function RequestBoard$() {
                            </div>
                            <Link
                               to="/sign-up"
-                              className="border border-md-primary-1200 text-md-primary-1200 text-md-b1 font-semibold px-md-4 py-md-3 rounded-md-lg w-fit max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
+                              className="inline-flex min-h-[56px] w-fit items-center justify-center rounded-md-lg border border-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-primary-1200 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.97] active:brightness-95 max-[374px]:min-h-12 max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
                            >
                               Apply For A Loan
                            </Link>
