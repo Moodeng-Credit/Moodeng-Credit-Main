@@ -1,5 +1,3 @@
-
-
 import { useEffect, useRef, useState } from 'react';
 
 interface TelegramAuthButtonProps {
@@ -146,7 +144,7 @@ export default function TelegramAuthButton({
                         }}
                      />
                   </div>
-                  <p className="text-sm text-gray-500 font-medium">Loading Telegram...</p>
+                  <p className="text-sm font-medium text-white">Loading Telegram...</p>
                </div>
                <style>{`
                   @keyframes shimmer {

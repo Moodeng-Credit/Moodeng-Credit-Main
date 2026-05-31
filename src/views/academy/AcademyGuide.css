@@ -295,7 +295,7 @@
    border-top: 8px solid transparent;
    border-bottom: 8px solid transparent;
    border-left: 12px solid #3458f6;
-   content: "";
+   content: '';
    transform: translate(-40%, -50%);
 }
 
@@ -460,7 +460,7 @@
    height: 20px;
    background: inherit;
    clip-path: polygon(0 0, 100% 50%, 0 100%);
-   content: "";
+   content: '';
 }
 
 .academy-mecha-card img {
@@ -654,9 +654,7 @@
 }
 
 .academy-screen--wallet {
-   background:
-      radial-gradient(circle at 88% 8%, rgba(0, 82, 255, 0.24), transparent 8rem),
-      #f8fbff;
+   background: radial-gradient(circle at 88% 8%, rgba(0, 82, 255, 0.24), transparent 8rem), #f8fbff;
 }
 
 .academy-wallet-card {
@@ -879,7 +877,7 @@
    position: absolute;
    top: 0;
    left: 0;
-   content: "✓";
+   content: '✓';
 }
 
 .academy-choice-card--trust li::before {
@@ -1472,6 +1470,86 @@
    line-height: 1.45;
 }
 
+html.dark .academy-mecha-card__bubble {
+   background: #1c6f55;
+   color: #f8f4ff;
+}
+
+html.dark .academy-step,
+html.dark .academy-quiz,
+html.dark .academy-step__copy,
+html.dark .academy-quiz__intro,
+html.dark .academy-step__screen,
+html.dark .academy-quiz__questions,
+html.dark .academy-screen,
+html.dark .academy-quiz-start,
+html.dark .academy-quiz-card,
+html.dark .academy-quiz-result,
+html.dark .academy-quiz__reward {
+   background: #1b1525;
+   border-color: #40354f;
+   color: #f8f4ff;
+}
+
+html.dark .academy-step__copy,
+html.dark .academy-quiz__intro,
+html.dark .academy-screen,
+html.dark .academy-quiz-start,
+html.dark .academy-quiz-card,
+html.dark .academy-quiz-result,
+html.dark .academy-quiz__reward {
+   box-shadow: inset 0 0 0 1px #40354f;
+}
+
+html.dark .academy-step__copy h2,
+html.dark .academy-quiz__intro h2,
+html.dark .academy-screen h3,
+html.dark .academy-quiz-start h3,
+html.dark .academy-quiz-card h3,
+html.dark .academy-quiz-result h3,
+html.dark .academy-quiz__reward strong,
+html.dark .academy-quiz-question legend {
+   color: #f8f4ff;
+}
+
+html.dark .academy-step__copy p,
+html.dark .academy-quiz__intro p,
+html.dark .academy-screen p,
+html.dark .academy-quiz-start p,
+html.dark .academy-quiz-result p {
+   color: #cfc4dd;
+}
+
+html.dark .academy-field,
+html.dark .academy-role-toggle,
+html.dark .academy-quiz-options button {
+   background: #2a2235;
+   border-color: #40354f;
+   color: #cfc4dd;
+}
+
+html.dark .academy-step__copy > span,
+html.dark .academy-step__action,
+html.dark .academy-role-toggle button.is-active,
+html.dark .academy-quiz-start button,
+html.dark .academy-quiz-next,
+html.dark .academy-quiz-claim,
+html.dark .academy-quiz-result button {
+   background: #7c4ed8;
+   color: #ffffff;
+}
+
+html.dark .academy-quiz-options button.is-selected,
+html.dark .academy-quiz-options button.is-correct {
+   background: #113522;
+   color: #70e4a6;
+}
+
+html.dark .academy-quiz-options button.is-wrong {
+   background: #3c171e;
+   color: #ff8a96;
+}
+
 @media (max-width: 820px) {
    .academy-guide {
       background:
@@ -1587,4 +1665,88 @@
    .academy-video-window__learn-more {
       margin: 10px 10px 10px;
    }
+}
+
+html.dark .academy-step:nth-child(2n) .academy-step__copy,
+html.dark .academy-step:nth-child(3n) .academy-step__copy,
+html.dark .academy-auth-card,
+html.dark .academy-modal-card,
+html.dark .academy-wallet-card,
+html.dark .academy-wallet-network,
+html.dark .academy-world-lockup {
+   background: #1b1525;
+   border-color: #40354f;
+   color: #f8f4ff;
+}
+
+html.dark .academy-auth-card h3,
+html.dark .academy-wallet-card h3,
+html.dark .academy-wallet-network strong,
+html.dark .academy-wallet-network span,
+html.dark .academy-wallet-card small,
+html.dark .academy-modal-card h3,
+html.dark .academy-modal-card p {
+   color: #f8f4ff;
+}
+
+html.dark .academy-auth-card p,
+html.dark .academy-wallet-card p,
+html.dark .academy-wallet-card small,
+html.dark .academy-step:nth-child(2n) .academy-step__copy p,
+html.dark .academy-step:nth-child(3n) .academy-step__copy p {
+   color: #cfc4dd;
+}
+
+html.dark .academy-primary,
+html.dark .academy-primary--dark {
+   background: #7c4ed8;
+   color: #ffffff;
+}
+
+html.dark .academy-guide {
+   background:
+      radial-gradient(circle at 50% 0%, rgba(124, 78, 216, 0.28), transparent 24rem), linear-gradient(180deg, #120f1f 0%, #15161a 100%);
+}
+
+html.dark .academy-choice-card,
+html.dark .academy-choice-card--trust,
+html.dark .academy-choice-card--credit {
+   border-color: #40354f;
+   background: #1b1525;
+   color: #f8f4ff;
+}
+
+html.dark .academy-choice-card h3,
+html.dark .academy-choice-card ul {
+   color: #f8f4ff;
+}
+
+html.dark .academy-choice-card p,
+html.dark .academy-choice-card li {
+   color: #cfc4dd;
+}
+
+html.dark .academy-input-label input,
+html.dark .academy-input-label textarea {
+   border-color: #40354f;
+   background: #120f1f;
+   color: #f8f4ff;
+}
+
+html.dark .academy-input-label input::placeholder,
+html.dark .academy-input-label textarea::placeholder {
+   color: #9c8faf;
+}
+
+html.dark .academy-hero__actions a {
+   background: #7c4ed8;
+   color: #ffffff;
+}
+
+html.dark .academy-video-callout__play {
+   background: #7c4ed8;
+}
+
+html.dark .academy-video-callout__play::after {
+   border-left-color: #ffffff;
 }
