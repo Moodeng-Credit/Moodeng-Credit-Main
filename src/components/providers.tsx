@@ -8,6 +8,7 @@ import { useAccount, useConnect, useConnections, WagmiProvider } from 'wagmi';
 
 import { AuthInitializer } from '@/components/AuthInitializer';
 import Loading from '@/components/Loading';
+import { SupportContactsModalHost } from '@/components/support/SupportContactsModal';
 import { ThemeModeProvider } from '@/components/ThemeModeProvider';
 import { ToastProvider } from '@/components/ToastSystem/contexts/ToastContext';
 import ToastContainer from '@/components/ToastSystem/ToastContainer';
@@ -134,6 +135,7 @@ export function Providers({ children }: { children: ReactNode }) {
                            <ToastInitializer />
                            <WalletSyncInitializer />
                            {children}
+                           <SupportContactsModalHost />
                            <ToastContainer />
                         </ThemeModeProvider>
                      </ToastProvider>
