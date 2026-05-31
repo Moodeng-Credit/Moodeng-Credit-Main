@@ -25,6 +25,7 @@ type UserCardProps = Loan & {
    currentUserId?: string;
    isBorrower?: boolean;
    isAuthenticated?: boolean;
+   isPreviewRequest?: boolean;
    isDeletingOwnRequest?: boolean;
    onDeleteOwnRequest?: (loan: Loan) => void;
    tourBorrowerUsername?: string;
@@ -35,6 +36,7 @@ export default function UserCard(loan: UserCardProps) {
       currentUserId,
       isBorrower = true,
       isAuthenticated = true,
+      isPreviewRequest = false,
       isDeletingOwnRequest = false,
       onDeleteOwnRequest,
       tourBorrowerUsername,
@@ -57,7 +59,7 @@ export default function UserCard(loan: UserCardProps) {
    const borrowerProfile = borrowerUserId ? userProfiles[borrowerUserId] : undefined;
    const borrowerUsername = borrowerProfile?.username ?? tourBorrowerUsername ?? '';
    const borrowerDetailsHref =
-      tourBorrowerUsername && import.meta.env.DEV
+      tourBorrowerUsername && (import.meta.env.DEV || isPreviewRequest)
          ? `/user/${borrowerUsername}?demo=rich&lenderTourPreview=1&tourPreview=1`
          : `/user/${borrowerUsername}`;
    const borrowerDisplayName = borrowerUsername || 'Unknown user';
@@ -273,6 +275,14 @@ export default function UserCard(loan: UserCardProps) {
                   <div className="bg-md-neutral-500 text-md-neutral-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg text-center cursor-not-allowed">
                      Your Loan Request
                   </div>
+               ) : isPreviewRequest ? (
+                  <Link
+                     to={borrowerDetailsHref}
+                     className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2"
+                  >
+                     View Request
+                     <ChevronRight className="w-5 h-5" />
+                  </Link>
                ) : isLent ? (
                   <div className="bg-md-neutral-500 text-md-neutral-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg text-center cursor-not-allowed">
                      Help Received
