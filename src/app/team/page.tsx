@@ -19,12 +19,13 @@ const coFounders = [
 
 const foundingTeam = [
    {
-      name: 'Yousef',
+      name: 'Yousuf',
       role: 'Member of Technical Team',
       image: '/team/yousef.jpg',
-      bio: 'Supports engineering across the Moodeng Credit buildout, helping turn product direction into working borrower and lender experiences.',
-      credentials: ['Builder', 'Developer', 'Product Engineering'],
-      showLinkedInPlaceholder: true
+      bio: 'Backend engineer building scalable APIs, cloud systems, and product flows for Moodeng Credit.',
+      credentials: ['Backend Engineer', 'Java', 'Node.js', 'AWS', 'App Flows'],
+      linkedIn: 'https://www.linkedin.com/in/m-yousuf-dev',
+      website: 'https://yousuf-dev.com/'
    },
    {
       name: 'Louis',
@@ -116,27 +117,37 @@ function Portrait({ name, image, initial }: { name: string; image?: string; init
    );
 }
 
-const linkedInButtonClass =
-   'inline-flex h-12 w-[224px] max-w-full items-center justify-center rounded-md-pill border-2 border-[#f4d756] bg-[#0d2f6f] px-md-3 text-md-b2 font-bold text-[#fff9e8] shadow-[0_5px_0_rgba(13,47,111,0.28)]';
+const profileButtonBaseClass =
+   'inline-flex h-12 max-w-full items-center justify-center rounded-md-pill border-2 border-[#f4d756] bg-[#0d2f6f] px-md-3 text-md-b2 font-bold text-[#fff9e8] shadow-[0_5px_0_rgba(13,47,111,0.28)]';
 
-function LinkedInButton({ href, className = '' }: { href: string; className?: string }) {
+function ProfileButton({
+   href,
+   children,
+   className = '',
+   compact = false
+}: {
+   href: string;
+   children: string;
+   className?: string;
+   compact?: boolean;
+}) {
    return (
       <a
          href={href}
          target="_blank"
          rel="noreferrer"
-         className={`${linkedInButtonClass} transition hover:-translate-y-0.5 hover:bg-[#16468f] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#0d2f6f] ${className}`}
+         className={`${profileButtonBaseClass} ${compact ? 'w-[132px]' : 'w-[224px]'} transition hover:-translate-y-0.5 hover:bg-[#16468f] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#0d2f6f] ${className}`}
       >
-         LinkedIn Profile
+         {children}
       </a>
    );
 }
 
-function LinkedInPlaceholderButton({ className = '' }: { className?: string }) {
+function LinkedInButton({ href, className = '' }: { href: string; className?: string }) {
    return (
-      <span aria-disabled="true" className={`${linkedInButtonClass} cursor-default ${className}`}>
+      <ProfileButton href={href} className={className}>
          LinkedIn Profile
-      </span>
+      </ProfileButton>
    );
 }
 
@@ -205,11 +216,18 @@ export default function TeamPage() {
                            </div>
                         ) : null}
                         <div className="mt-auto pt-md-2 md:pt-md-3">
-                           {'showLinkedInPlaceholder' in member && member.showLinkedInPlaceholder ? (
-                              <LinkedInPlaceholderButton className="mx-auto" />
-                           ) : 'linkedIn' in member && member.linkedIn ? (
+                           {'website' in member && member.website ? (
+                              <div className="flex flex-wrap justify-center gap-2">
+                                 <ProfileButton href={member.linkedIn} compact>
+                                    LinkedIn
+                                 </ProfileButton>
+                                 <ProfileButton href={member.website} compact>
+                                    Website
+                                 </ProfileButton>
+                              </div>
+                           ) : (
                               <LinkedInButton href={member.linkedIn} className="mx-auto" />
-                           ) : null}
+                           )}
                         </div>
                      </article>
                   ))}
