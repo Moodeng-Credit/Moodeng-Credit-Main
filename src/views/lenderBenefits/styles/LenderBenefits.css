@@ -683,6 +683,74 @@
    border: 1px solid #ebe7f0;
 }
 
+html.dark #why-lend .lender-community-hero {
+   background:
+      radial-gradient(circle at 100% 0%, rgb(124 78 216 / 0.34), rgb(124 78 216 / 0) 32%), linear-gradient(135deg, #1b1525 0%, #2a1740 100%);
+   color: #f8f4ff;
+}
+
+html.dark #why-lend .lender-community-hero__kicker,
+html.dark #why-lend .lender-community-hero h1,
+html.dark #why-lend .lender-community-hero p {
+   color: #f8f4ff;
+}
+
+html.dark #why-lend .lender-community-hero span {
+   background: #7c4ed8;
+   color: #ffffff;
+}
+
+html.dark #why-lend .lender-story-section,
+html.dark #why-lend .lender-problem-card,
+html.dark #why-lend .lender-web3-card {
+   background: #1b1525;
+   border-color: #40354f;
+   color: #f8f4ff;
+}
+
+html.dark #why-lend .lender-problem-kicker,
+html.dark #why-lend .lender-problem-section article h2,
+html.dark #why-lend .lender-problem-section article h3,
+html.dark #why-lend .lender-web3-card h2,
+html.dark #why-lend .lender-web3-point strong,
+html.dark #why-lend .lender-problem-point strong {
+   color: #f8f4ff;
+}
+
+html.dark #why-lend .lender-problem-card h3 + p,
+html.dark #why-lend .lender-problem-point,
+html.dark #why-lend .lender-web3-point,
+html.dark #why-lend .lender-problem-section p,
+html.dark #why-lend .lender-web3-section p {
+   color: #cfc4dd;
+}
+
+html.dark #why-lend .lender-problem-callout,
+html.dark #why-lend .lender-web3-point {
+   background: #17121f;
+   border-color: #40354f;
+}
+
+html.dark #why-lend .lender-problem-point--reset {
+   background: #2a1740;
+   border-color: #7c4ed8;
+}
+
+html.dark #why-lend .lender-problem-point--invisible {
+   background: #113522;
+   border-color: #2b6647;
+}
+
+html.dark #why-lend .lender-problem-point--gap {
+   background: #3d2d12;
+   border-color: #7a5a21;
+}
+
+html.dark #why-lend .lender-web3-image-wrap,
+html.dark #why-lend .lender-illustration-visual {
+   background: #17121f;
+}
+
 .lender-incentive-point {
    background: #f8f7fb;
    border: 1px solid #e9e5ef;
@@ -948,4 +1016,61 @@
       min-height: 220px;
       border-radius: 24px;
    }
+}
+
+html.dark #why-lend .lender-incentive-card,
+html.dark #why-lend .lender-verify-card {
+   background: #1b1525;
+   border-color: #40354f;
+   color: #f8f4ff;
+}
+
+html.dark #why-lend .lender-incentive-card h2,
+html.dark #why-lend .lender-verify-card h3 {
+   color: #f8f4ff;
+}
+
+html.dark #why-lend .lender-incentive-point,
+html.dark #why-lend .lender-incentive-image-wrap,
+html.dark #why-lend .lender-incentive-image-note {
+   background: #17121f;
+   border-color: #40354f;
+   color: #cfc4dd;
+}
+
+html.dark #why-lend .lender-incentive-point strong,
+html.dark #why-lend .lender-incentive-point span,
+html.dark #why-lend .lender-verify-card p,
+html.dark #why-lend .text-stone-600,
+html.dark #why-lend .text-stone-700 {
+   color: #cfc4dd;
+}
+
+html.dark #why-lend .lender-incentive-card .bg-orange-200 {
+   background: #7c4ed8;
+   color: #ffffff;
+}
+
+html.dark #why-lend .lender-market-card__region,
+html.dark #why-lend .lender-market-card__region strong,
+html.dark #why-lend .lender-market-card__region small {
+   color: #f8f4ff;
+}
+
+html.dark #why-lend .lender-world-verify {
+   border-color: #40354f;
+   background:
+      radial-gradient(circle at 90% 10%, rgba(124, 78, 216, 0.3), rgba(124, 78, 216, 0) 30%),
+      linear-gradient(135deg, #1b1525 0%, #211832 56%, #120f1f 100%);
+}
+
+html.dark #why-lend .lender-world-verify__point,
+html.dark #why-lend .lender-world-verify__badge {
+   border-color: #40354f;
+   background: #17121f;
+   color: #f8f4ff;
+}
+
+html.dark #why-lend .lender-borrower-intro__image {
+   background: rgba(27, 21, 37, 0.9) !important;
 }
