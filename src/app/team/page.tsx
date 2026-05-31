@@ -30,7 +30,21 @@ const foundingTeam = [
       name: 'Louis',
       role: 'Working on Partnerships',
       image: '/team/louis-profile-avatar.png',
-      bio: 'Experienced relationship builder helping shape partner conversations, lender outreach, and ecosystem growth.',
+      bio: (
+         <>
+            Currently at{' '}
+            <a
+               href="https://pinax.network/"
+               target="_blank"
+               rel="noreferrer"
+               className="font-bold text-[#f4d756] underline decoration-[#f4d756]/80 underline-offset-4 transition hover:text-[#fff8de]"
+            >
+               Pinax
+            </a>
+            , connecting startup teams with the broader blockchain data ecosystem while helping shape partnerships, lender outreach, and
+            growth channels.
+         </>
+      ),
       credentials: ['Head of Growth', 'Growth Hacking', 'Blockchain Analysis', 'Digital Marketing', 'Marketing Automation'],
       linkedIn: 'https://www.linkedin.com/in/louis-philippe/'
    },
