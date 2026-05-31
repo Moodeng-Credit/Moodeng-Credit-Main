@@ -38,6 +38,12 @@ export const sendBorrowerLoanNotification = async (
    let emailSent = false;
    let telegramSent = false;
    const recipientEmail = recipient.email?.trim();
+   const telegramActionLabel =
+      type === 'request_expired'
+         ? 'Contact Support'
+         : type === 'weekly_digest' || type === 'repayment_received'
+           ? 'Open Dashboard'
+           : 'Open Repay';
 
    if (recipientEmail) {
       const { subject, text, html } = buildLoanNotificationEmail(type, loan, recipient, aggregate);
@@ -52,7 +58,7 @@ export const sendBorrowerLoanNotification = async (
             inlineKeyboard: [
                [
                   {
-                     text: type === 'weekly_digest' || type === 'repayment_received' ? 'Open Dashboard' : 'Open Repay',
+                     text: telegramActionLabel,
                      url: actionUrl
                   }
                ]

@@ -4,6 +4,11 @@ import { TOAST_CONFIGS } from '@/components/ToastSystem/config/toastConfig';
 import type { ToastData } from '@/components/ToastSystem/types';
 
 export const handleToastAction = (action: string, customData: ToastData, navigate: AppRouterInstance) => {
+   if (action === 'contact_support') {
+      navigate('/support');
+      return;
+   }
+
    const configEntry = Object.values(TOAST_CONFIGS).find((config) => config.buttonAction === action);
 
    if (configEntry && 'route' in configEntry && configEntry.route && navigate) {

@@ -18,6 +18,7 @@ const baseLoan = {
    repaid_amount: 25,
    due_date: '2026-01-15T00:00:00.000Z',
    funded_at: '2026-01-10T00:00:00.000Z',
+   created_at: '2026-01-01T00:00:00.000Z',
    borrower_user_id: '11111111-1111-1111-1111-111111111111',
    lender_user_id: '22222222-2222-2222-2222-222222222222',
    lender_username: 'lender-01'
@@ -221,6 +222,27 @@ describe('buildLoanNotificationEmail', () => {
       expect(result.text).not.toMatch(/\n\s*\n/);
    });
 
+   it('builds a request expired email', () => {
+      process.env.VITE_SITE_URL = 'https://moodeng.app';
+
+      const result = buildLoanNotificationEmail('request_expired', baseLoan, recipient);
+
+      expect(result.subject).toBe('Your loan request expired');
+      expect(result.text).toContain('Your loan request LOAN-123 expired before it was funded.');
+      expect(result.text).toContain('Requested amount: $250.00 USDC');
+      expect(result.text).toContain('Posted on: Jan 1, 2026, 00:00 UTC');
+      expect(result.text).toContain('Contact support if you need help connecting with a lender');
+      expect(result.text).toContain('https://moodeng.app/support');
+      expect(result.html).toContain('Your loan request expired');
+      expect(result.html).toContain('Request status');
+      expect(result.html).toContain('Contact support');
+      expect(result.html).toContain('Support can help');
+      expectSupportChannels(result.html);
+
+      // Ensure no blank lines anywhere (Gmail collapse prevention)
+      expect(result.text).not.toMatch(/\n\s*\n/);
+   });
+
    it('calculates outstanding amount from the DB repayment fields', () => {
       expect(getLoanOutstandingAmount(baseLoan)).toBe(250);
       expect(getLoanOutstandingAmount({ total_repayment_amount: 100, repaid_amount: 125 })).toBe(0);
@@ -272,6 +294,20 @@ describe('buildLoanNotificationTelegram', () => {
       expect(result.text).toContain('1 loan overdue');
       expect(result.text).toContain('Amount overdue: $240.00 USDC');
       expect(result.text).toContain('get back on track');
+   });
+
+   it('builds a request expired Telegram notification', () => {
+      process.env.VITE_SITE_URL = 'https://moodeng.app';
+
+      const result = buildLoanNotificationTelegram('request_expired', baseLoan, recipient);
+
+      expect(result.actionUrl).toBe('https://moodeng.app/support');
+      expect(result.text).toContain('Loan request expired');
+      expect(result.text).toContain('@jimmymoodengcredit');
+      expect(result.text).toContain('LOAN-123');
+      expect(result.text).toContain('$250.00 USDC');
+      expect(result.text).toContain('help connecting with a lender');
+      expect(result.text).toContain('https://moodeng.app/support');
    });
 });
 
