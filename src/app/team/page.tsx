@@ -30,7 +30,7 @@ const foundingTeam = [
       role: 'Working on Partnerships',
       initial: 'L',
       bio: 'Experienced relationship builder helping shape partner conversations, lender outreach, and ecosystem growth.',
-      credentials: ['Head of Growth', 'Growth Hacking', 'Blockchain Analysis', 'Digital Marketing', 'Marketing Automation'],
+      credentials: ['Growth Hacking', 'Blockchain Analysis', 'Marketing Automation'],
       linkedIn: 'https://www.linkedin.com/in/louis-philippe/'
    },
    {
@@ -179,7 +179,7 @@ export default function TeamPage() {
                            {member.bio}
                         </p>
                         {'credentials' in member && member.credentials ? (
-                           <div className="mt-md-2 w-full [&>ul]:justify-center">
+                           <div className="hidden w-full md:mt-md-2 md:block [&>ul]:justify-center">
                               <CredentialPills items={member.credentials} />
                            </div>
                         ) : null}
