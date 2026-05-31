@@ -1,4 +1,11 @@
-export type LoanNotificationType = 'funded' | 'urgent_reminder' | 'final_reminder' | 'weekly_digest' | 'overdue' | 'repayment_received';
+export type LoanNotificationType =
+   | 'funded'
+   | 'urgent_reminder'
+   | 'final_reminder'
+   | 'weekly_digest'
+   | 'overdue'
+   | 'repayment_received'
+   | 'request_expired';
 
 export type LoanNotificationLoan = {
    tracking_id: string;
@@ -7,6 +14,7 @@ export type LoanNotificationLoan = {
    repaid_amount?: number | null;
    due_date: string | null;
    funded_at: string | null;
+   created_at?: string | null;
    borrower_user_id: string | null;
    lender_user_id: string | null;
    repayment_status?: string | null;
@@ -133,6 +141,8 @@ const buildAppLink = (path: string) => `${getSiteUrl()}${path.startsWith('/') ? 
 const buildDashboardLink = () => buildAppLink('/dashboard');
 
 const buildRepayLink = () => buildAppLink('/repay');
+
+const buildSupportLink = () => buildAppLink('/support');
 
 const buildHeroImageUrl = () => getConfiguredUrl('MOODENG_EMAIL_HIPPO_URL') ?? `${getSiteUrl()}/hippos/hippo-purple-envelope-email.png`;
 
@@ -608,6 +618,41 @@ For help, contact support@moodeng.app`);
    };
 };
 
+const buildRequestExpiredContent = (loan: LoanNotificationLoan, recipient: LoanNotificationRecipient): EmailContent => {
+   const requestedAmount = formatUsdcAmount(loan.loan_amount);
+   const postedDate = formatDate(loan.created_at ?? null);
+   const supportLink = buildSupportLink();
+   const text = normalizeNotificationText(`Hi ${getRecipientName(recipient)},
+Your loan request ${loan.tracking_id} expired before it was funded.
+Requested amount: ${requestedAmount}
+Posted on: ${postedDate}
+Status: Expired
+Contact support if you need help connecting with a lender or deciding whether to post again: ${supportLink}
+For help, contact support@moodeng.app`);
+
+   return {
+      subject: 'Your loan request expired',
+      title: 'Your loan request expired',
+      intro: 'Your request was not funded before it expired.',
+      amountLabel: 'Requested amount',
+      amountValue: requestedAmount,
+      details: [
+         { label: 'Loan request', value: loan.tracking_id },
+         { label: 'Request status', value: 'Expired', icon: '!', tone: 'warn' },
+         { label: 'Posted on', value: postedDate },
+         { label: 'Next step', value: 'Contact support', icon: '!', tone: 'warn' }
+      ],
+      highlightTitle: 'Support can help',
+      highlightCopy: 'We can help you decide whether to post again or get connected with a lender.',
+      highlightValue: 'Help',
+      ctaLabel: 'Contact support',
+      ctaHref: supportLink,
+      supportText: 'Message us if you need help reaching a lender or deciding whether to post a new request.',
+      telegramText: `Hi Moodeng Credit, my loan request ${loan.tracking_id} expired and I need help connecting with a lender or deciding what to do next.`,
+      text
+   };
+};
+
 const buildWeeklyDigestContent = (recipient: LoanNotificationRecipient, aggregate?: LoanNotificationAggregate): EmailContent => {
    const count = aggregate?.count ?? 0;
    const nextDueDate = formatDate(aggregate?.nextDueDate ?? null);
@@ -676,6 +721,12 @@ export const buildLoanNotificationEmail = (
       }
 
       content = buildRepaymentReceivedContent(loan, recipient);
+   } else if (type === 'request_expired') {
+      if (!loan) {
+         throw new Error('Loan details are required for request expired notifications.');
+      }
+
+      content = buildRequestExpiredContent(loan, recipient);
    } else {
       content = buildWeeklyDigestContent(recipient, aggregate);
    }
@@ -755,6 +806,20 @@ ${actionUrl}`);
       const text = normalizeNotificationText(`Repayment received
 Hi ${name}, your repayment for ${loan.tracking_id} was received.
 Amount repaid: ${formatUsdcAmount(loan.repaid_amount ?? loan.total_repayment_amount)}
+${actionUrl}`);
+
+      return { actionUrl, text };
+   }
+
+   if (type === 'request_expired') {
+      if (!loan) {
+         throw new Error('Loan details are required for request expired notifications.');
+      }
+
+      const actionUrl = buildSupportLink();
+      const text = normalizeNotificationText(`Loan request expired
+Hi ${name}, your request for ${formatUsdcAmount(loan.loan_amount)} (${loan.tracking_id}) expired before it was funded.
+Contact support if you need help connecting with a lender or deciding whether to post again.
 ${actionUrl}`);
 
       return { actionUrl, text };
