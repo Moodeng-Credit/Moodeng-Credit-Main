@@ -36,16 +36,6 @@ const AppCtaLabel = ({ isSignedIn, compactOnSmall = false }: { isSignedIn: boole
    );
 };
 
-const LanguageSwitcherLabel = ({ className = '' }: { className?: string }) => (
-   <span
-      aria-label="Language switcher"
-      className={`inline-flex h-11 items-center justify-center whitespace-nowrap rounded-md-pill border border-md-neutral-300 bg-white px-md-2 text-md-b3 font-semibold text-md-neutral-1400 shadow-md-card ${className}`}
-   >
-      <span className="hidden lg:inline">English / Filipino</span>
-      <span className="inline lg:hidden">EN / Filipino</span>
-   </span>
-);
-
 export default function MarketingPageShell({ children }: MarketingPageShellProps) {
    const [isMenuOpen, setIsMenuOpen] = useState(false);
    const user = useSelector((state: RootState) => state.auth.user);
@@ -90,7 +80,6 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                         className="border-2 border-white shadow-md-card"
                      />
                   ) : null}
-                  <LanguageSwitcherLabel className="hidden sm:inline-flex" />
                   <Link
                      to={appHref}
                      aria-label={appLabel}
@@ -116,7 +105,6 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                   aria-label="Mobile benefits navigation"
                >
                   <div className="mx-auto flex max-w-[440px] flex-col gap-md-1">
-                     <LanguageSwitcherLabel className="mb-md-1 flex w-full shadow-none" />
                      {navItems.map((item) => (
                         <NavLink
                            key={item.href}
