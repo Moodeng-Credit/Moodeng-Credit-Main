@@ -65,8 +65,8 @@ const advisors = [
       name: 'Jon Brownstead',
       role: 'Advisor',
       image: '/team/jon-brownstead.jpeg',
-      bio: 'Founder of Mercury Labs and a current US Army professional advising Moodeng Credit on marketing strategy, brand positioning, and disciplined growth as the network expands.',
-      credentials: ['US Army', 'Founder, Mercury Labs', 'Marketing Strategy'],
+      bio: 'US Army Officer, Mercury Labs founder, and sports/Web3 operator advising Moodeng Credit on investor strategy, brand positioning, and disciplined growth.',
+      credentials: ['US Army Officer', 'Mercury Labs', 'Sports', 'Writer', 'MBA', 'Management', 'Marketing'],
       linkedIn: 'https://www.linkedin.com/in/johnhenrybrownstead'
    }
 ];
