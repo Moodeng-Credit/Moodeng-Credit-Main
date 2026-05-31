@@ -123,13 +123,17 @@ export default function TeamPage() {
       <section className="team-page bg-[#f3d354] px-md-4 py-md-6 text-md-primary-2000 md:py-md-8">
          <div className="mx-auto flex max-w-[1120px] flex-col gap-md-6">
             <section aria-labelledby="co-founders-heading">
-               <header className="mb-md-4 text-center text-[#071b43]">
-                  <h1 id="co-founders-heading" className="font-serif text-[58px] font-bold leading-[0.88] md:text-[96px]">
+               <header className="team-blue-panel relative mb-md-5 overflow-hidden rounded-md-xl border-[5px] border-[#fff9e8] bg-[#0d2f6f] px-md-5 py-md-5 text-center text-[#fff9e8] shadow-[0_18px_0_rgba(7,27,67,0.24)] md:px-md-6 md:py-md-6">
+                  <span className="inline-flex rounded-md-pill bg-[#f4d756] px-md-3 py-1 text-md-b2 font-bold text-[#071b43]">
+                     Moodeng Credit
+                  </span>
+                  <h1 id="co-founders-heading" className="mt-md-2 font-serif text-[58px] font-bold leading-[0.88] md:text-[104px]">
                      Co-Founders
                   </h1>
-                  <p className="mx-auto mt-md-2 max-w-[660px] text-md-b1 font-medium leading-relaxed md:text-md-h5">
+                  <p className="mx-auto mt-md-2 max-w-[660px] text-md-b1 font-medium text-[#fff9e8] md:text-md-h5">
                      Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.
                   </p>
+                  <div className="mx-auto mt-md-4 h-2 w-full max-w-[720px] rounded-t-md-pill bg-[#f4d756]" />
                </header>
 
                <div className="grid gap-md-4 md:grid-cols-2">
