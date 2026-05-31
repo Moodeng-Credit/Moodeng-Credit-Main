@@ -32,17 +32,19 @@ const foundingTeam = [
       image: '/team/louis-profile-avatar.png',
       bio: (
          <>
-            Currently at{' '}
-            <a
-               href="https://pinax.network/"
-               target="_blank"
-               rel="noreferrer"
-               className="font-bold text-[#f4d756] underline decoration-[#f4d756]/80 underline-offset-4 transition hover:text-[#fff8de]"
-            >
-               Pinax
-            </a>
-            , connecting startup teams with the broader blockchain data ecosystem while helping shape partnerships, lender outreach, and
-            growth channels.
+            <span className="whitespace-nowrap">
+               At{' '}
+               <a
+                  href="https://pinax.network/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-bold text-[#f4d756] underline decoration-[#f4d756]/80 underline-offset-4 transition hover:text-[#fff8de]"
+               >
+                  Pinax
+               </a>
+               ,
+            </span>{' '}
+            Louis helps connect startup teams with blockchain data infrastructure, partnerships, and growth channels.
          </>
       ),
       credentials: ['Head of Growth', 'Growth Hacking', 'Blockchain Analysis', 'Digital Marketing', 'Marketing Automation'],
