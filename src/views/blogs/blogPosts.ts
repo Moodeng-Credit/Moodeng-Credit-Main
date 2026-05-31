@@ -49,6 +49,14 @@ export const lookoutLoanAppsUrl =
 export const cgapDigitalCreditUrl = 'https://www.cgap.org/node/3234';
 export const cgapConsumerProtectionUrl = 'https://www.cgap.org/index.php/research/publication/consumer-protection-in-digital-credit';
 export const predatoryLoanAppsPaperUrl = 'https://arxiv.org/abs/2601.12634';
+export const loanSharksBookUrl = 'https://www.bloomsbury.com/us/loan-sharks-9780815734321/';
+export const organizedCrimeCyberspaceUrl = 'https://academic.oup.com/bjc/article/61/2/303/5918755';
+export const philippinesOlpAdvisoryUrl =
+   'https://privacy.gov.ph/wp-content/uploads/2026/03/DICT-NPC-SEC-Public-Advisory-on-Online-Lending-Platforms.pdf';
+export const reutersThaiHouseholdDebtUrl =
+   'https://www.tradingview.com/news/reuters.com%2C2025%3Anewsml_L6N3VQ05C%3A0-thailand-to-start-buying-bad-household-debt-this-month-finance-minister-says/';
+export const reutersScamCentersUrl =
+   'https://www.investing.com/news/world-news/scam-hubs-on-thaimyanmar-border-still-have-up-to-100000-people-thai-police-says-3933574';
 
 export const blogPosts: BlogPost[] = [
    {
@@ -182,79 +190,147 @@ export const blogPosts: BlogPost[] = [
    },
    {
       slug: 'app-store-costume-of-predatory-credit',
-      category: 'App-store trust',
-      title: 'The app-store costume of predatory credit',
-      dek: 'The most dangerous lending apps rarely look dangerous. They arrive as bright icons, friendly names, fast approvals, and a wall of happy reviews.',
-      seoTitle: 'How Predatory Loan Apps Look Legitimate | Moodeng',
+      category: 'Predatory credit history',
+      title: "Loan sharks didn't begin with apps",
+      dek: "They began where banks wouldn't lend. Smartphones changed the scale of predatory lending, but not the business model.",
+      seoTitle: 'Loan Sharking History and Predatory Loan Apps | Moodeng',
       metaDescription:
-         'Predatory loan apps can look safe in app stores. Learn the trust signals that can be faked and what a fair lending product should make visible.',
+         'A history of loan sharking, salary buying, payday lending, and app-based debt collection shows how predatory credit keeps finding the same pressure points.',
       summary: [
-         'A polished app-store listing is not proof that a lender is accountable, regulated, or safe for borrowers.',
-         'Predatory lending networks can change names, icons, and storefronts while keeping the same data extraction and collection playbook.',
-         'A fair credit app should make legitimacy visible through clear terms, funding context, data boundaries, and repayment records.'
+         'Loan sharking grew where formal banks would not make small loans, leaving workers and low-income borrowers dependent on private lenders.',
+         'Salary buying shows the payday-lending template: quick cash before wages arrive, confusing legal framing, and collection pressure through the borrower job.',
+         'Digital loan apps scale old tactics by turning phones, contacts, photos, and social ties into collection leverage.'
       ],
-      keywords: ['predatory loan apps', 'fake loan apps', 'app store lending scams', 'digital credit transparency'],
+      keywords: ['loan sharking history', 'predatory loan apps', 'salary buying', 'contact-list lending', 'payday lending history'],
       faq: [
          {
-            question: 'Can a loan app look legitimate and still be predatory?',
+            question: 'Did loan sharks begin with mobile apps?',
             answer:
-               'Yes. A friendly name, high rating, or polished app-store page can hide abusive fees, excessive permissions, contact-list collection, or unclear repayment terms.'
+               'No. Modern loan apps scale an older model: find people excluded from normal credit, make the debt hard to escape, and collect through pressure.'
          },
          {
-            question: 'What should borrowers check before using a loan app?',
+            question: 'What was salary buying?',
             answer:
-               'Borrowers should look for transparent terms, who operates the lender, what data is requested, whether contacts are required, and whether repayment history becomes useful to the borrower.'
+               'Salary buying was an early form of payday lending where a worker received cash before payday and repaid through wages, often with charges that looked small but annualized into extreme rates.'
          },
          {
-            question: 'What should a fair loan app show upfront?',
+            question: 'What makes app-based predatory lending dangerous?',
             answer:
-               'A fair loan app should show the loan amount, repayment amount, due date, funding source, privacy boundaries, and what happens after repayment before the borrower commits.'
+               'The danger is not only interest. Some apps can use contact lists, messages, photos, location, and social ties as pressure points for debt collection.'
          }
       ],
       sources: [
-         { label: 'Loan Sharks in the App Store research notes' },
-         { label: 'Lookout research on predatory loan apps', href: lookoutLoanAppsUrl },
-         { label: 'CGAP digital credit risk overview', href: cgapDigitalCreditUrl },
-         { label: 'Predatory loan apps Android study', href: predatoryLoanAppsPaperUrl }
+         { label: 'Loan Sharks: The Birth of Predatory Lending, Charles R. Geisst', href: loanSharksBookUrl },
+         { label: 'Organized crime in cyberspace, British Journal of Criminology', href: organizedCrimeCyberspaceUrl },
+         { label: 'The Cost of Convenience: predatory loan applications on Android', href: predatoryLoanAppsPaperUrl },
+         { label: 'Philippines public advisory on online lending platforms', href: philippinesOlpAdvisoryUrl },
+         { label: 'Reuters reporting on Thai household debt', href: reutersThaiHouseholdDebtUrl },
+         { label: 'Reuters reporting on Southeast Asia scam centres', href: reutersScamCentersUrl },
+         { label: "Bangkok Post reporting on Thailand's traditional and app-based loan-shark cases" }
       ],
-      sourceLabel: 'From the loan shark research notes',
-      publishedAt: 'May 18, 2026',
-      readTime: '8 min read',
+      sourceLabel: 'Loan shark history and digital lending research',
+      sourceHref: loanSharksBookUrl,
+      publishedAt: 'May 31, 2026',
+      readTime: '18 min read',
       audience: 'Everyone',
-      image: '/hippos/thinking.png',
-      imageAlt: 'Moodeng hippo thinking about loan types',
+      image: '/blog-loan-shark.png',
+      imageAlt: 'Cartoon loan shark in a suit holding a phone and loan agreement',
       accent: 'blue',
       sections: [
          {
-            heading: 'Trust theater is cheap to manufacture',
+            heading: 'The old business model',
             body: [
-               'A loan shark does not have to look like a loan shark. In the app store, the costume is easy: a rounded logo, a cheerful name, a smooth onboarding flow, a few screenshots of smiling users, and copy that promises cash in minutes.',
-               'That surface can create trust faster than a borrower can investigate who owns the app. A desperate user rarely has time to compare licenses, company registration, controller relationships, data policies, and complaint histories. The app only needs to look safer than the alternatives in that moment.',
-               'This is the first lesson from the loan shark research notes: visual trust is not the same thing as real accountability. A brand can feel local while the decision-making, data storage, playbook, and profit extraction sit somewhere else.'
+               `A history of loan sharking shows that predatory lending has always followed the same pattern: find people who need money quickly, make the price hard to escape, and use shame or fear to collect. Smartphones changed the scale, not the business model.`,
+               `Before the loan shark became an app, he was a lender with a desk, a newspaper ad, and a very good understanding of payday.`,
+               `The phrase itself is older than the smartphone by more than a century. In Loan Sharks: The Birth of Predatory Lending, Charles R. Geisst traces the rise of American loan sharking to the decades after the Civil War, when banks were growing, cities were expanding, and many ordinary borrowers still had nowhere respectable to go for small loans. The book's central argument is blunt: "Today's predatory lending is yesterday's loan sharking."`,
+               `The first loan sharks did not appear because people suddenly became reckless with money. They appeared because formal credit was unevenly distributed. In the late 19th century, large banks mostly served businesses, merchants, and wealthier customers. Farmers, wage workers, and small borrowers were often left outside the system. Geisst writes that by the 1890s, loan sharking had become a "large cottage industry," especially west of the Ohio River, where small banks and private finance companies filled gaps left by older institutions.`,
+               `Those lenders were not always gangsters. Some were merchants. Some were businessmen. Geisst even notes that clergymen with a few thousand dollars to invest entered the high-interest lending business. The attraction was simple: small borrowers had urgent needs, few alternatives, and little ability to sue. In Geisst's telling, lenders charged "what the market would bear," and borrowers seldom complained publicly. Returns could run from ordinary-looking interest to well over 500% a year.`,
+               `That is where the modern story begins: not with violence, but with exclusion. The poor needed cash. The banks did not want the loans. Private lenders stepped in.`
             ]
          },
          {
-            heading: 'The brand changes, the machine stays',
+            heading: 'Exclusion created the market',
             body: [
-               'Predatory lending networks can rotate names, icons, and front companies faster than ordinary borrowers can build a warning list. One app is removed. Another appears. The colors change, the screenshots change, the support name changes, but the operating logic survives.',
-               'This matters because borrowers often judge a loan app as a single product. The network may judge it as one disposable storefront in a larger machine. The machine is what matters: traffic acquisition, permission capture, contact-list pressure, collections scripts, and repeat borrowing loops.',
-               'When the front door is disposable, reputation stops working as a normal consumer safety mechanism. Bad reviews can be outrun. A damaged brand can be abandoned. The borrower is left dealing with a system that is harder to name than the app they downloaded.'
+               `The name "loan shark" replaced the older word "usurer" because "shark" already meant a predator in 19th-century American slang. The new term made the lender sound less like a medieval moral villain and more like a rough businessman providing a service at a price. Geisst notes that some later loan sharks even softened their public image as "aunties and uncles," though the rates were anything but charitable.`,
+               `Usury laws were supposed to stop this. Many states had inherited interest-rate ceilings from older British and colonial traditions. Some capped real-estate loans at 6% or 8%. But the laws were patchy, outdated, and often easy to evade. Small borrowers, generally people borrowing $300 or less, had to rely on private lenders. Those lenders could hide the real cost in the details of the agreement while appearing to stay within the law.`,
+               `The problem was not only that the rates were high. It was that the rules were written for one kind of credit market while borrowers were living in another.`
             ]
          },
          {
-            heading: 'Fast approval is not the same as fair access',
+            heading: 'Salary buying',
             body: [
-               'The promise of instant approval is powerful because the underlying need is real. People are not foolish for wanting speed. A delayed paycheck, a medical trip, a repair, or a family emergency does not wait for a bank queue.',
-               'The problem begins when speed replaces consent. A borrower who needs money now may click through permissions they would reject in a calmer moment. Predatory apps exploit that urgency. They make the path to cash obvious and the path to understanding almost invisible.',
-               'A fair product should still be fast where speed helps the borrower. But it should slow down where speed creates harm: before permissions, before terms, before wallet actions, before a borrower commits to a due date that does not match their income.'
+               `By the early 20th century, one form of loan sharking became especially important: salary buying.`,
+               `Today, Geisst writes, salary buying is known as payday lending. It took off in urban areas with factories, offices, and municipal governments, places full of workers with steady paychecks and frequent cash shortages. A finance company would advance money to a worker before payday. When the worker was paid, the lender took a fee, leaving the worker with less than the full paycheck. The charge often amounted to more than 20% per pay period, or about 240% annualized. The lender's defense was that this was not a loan, but a discounted advance on future wages.`,
+               `That legal distinction mattered. If it was not a loan, usury laws might not apply. But the borrower experienced it like debt.`,
+               `Salary buying was attractive to loan sharks because it was simple, contractual, and profitable. One New York loan office reported a monthly return that worked out to 342% annualized. Geisst describes how successful salary lenders grew from local offices into multi-city businesses. D.H. Tolman, one of the most notorious salary buyers of the era, had more than 60 offices in the United States and Canada by World War I.`,
+               `The most powerful weapon was not always a fist. It was the borrower's job.`,
+               `Borrowing against salary could be grounds for dismissal. That made the worker vulnerable. If a borrower fell behind, the lender could notify the employer. Geisst calls the implied blackmail obvious. Some lenders also sent women to workplaces to publicly shame borrowers, a practice known as a "bawling out."`,
+               `That detail matters because it shows that loan sharking has always been about more than interest. The debt was collected through reputation. The lender did not merely own the loan. He owned the borrower's fear of exposure.`
             ]
          },
          {
-            heading: 'Legitimacy should be visible in the product',
+            heading: 'Reform and evasion',
             body: [
-               'Moodeng does not need to look less friendly to be more serious. Friendly is useful. The point is to make the parts that matter visible: who is funding the loan, what amount is requested, when repayment is due, how much the borrower offered to repay, what data is not collected, and how repayment affects trust.',
-               'The app should behave like it has nothing to hide. A lender should see the request and the borrower context. A borrower should see the cost, due date, and consequences before submitting. Everyone should understand that Moodeng is not using hidden contact pressure as a backstop.',
-               'That is the opposite of app-store theater. The mascot can be cute, but the system underneath has to be plain, inspectable, and hard to abuse.'
+               `Reformers saw the problem. The Russell Sage Foundation became one of the central forces in the early 20th-century campaign against loan sharks. Arthur Ham, who led the foundation's Division of Remedial Loans, studied the economics of small lending and reached an uncomfortable conclusion. Very low legal interest ceilings did not make small loans affordable; they made legal small loans uneconomical, leaving the market to illegal lenders. Ham wrote that "A profitable business at 6 percent is impossible," because the revenue on a small loan could not cover the cost of administering it.`,
+               `That was the reform dilemma. If the law capped rates too low, legitimate lenders stayed away and loan sharks filled the vacuum. If the law allowed higher rates, reformers worried they were legalizing exploitation.`,
+               `The Uniform Small Loan Law tried to resolve that tension. Beginning in the 1910s, states adopted versions of a model law backed by the Russell Sage Foundation. These laws allowed licensed lenders to charge higher rates, often 2.5% to 3.5% per month, while requiring licenses, limits on fees, and rules around business methods. In effect, reformers tried to draw a line between legal high-cost lending and criminal loan sharking.`,
+               `But the line was never clean.`,
+               `Geisst shows that even when states legalized higher rates for licensed lenders, loan sharks continued to operate. In New York, officials realized in the late 1920s that loan sharking had never really been defeated in salary buying, which Geisst calls the "almost invisible weapon" of urban loan sharks. Borrowers got less money in exchange for salary advances and often had little choice but to continue. Lenders still used employers as pressure points.`,
+               `Chicago showed how organized the business had become. A 1916 city report found 229 lending firms active at one time or another, with 139 active in the fall of that year. The business was estimated at nearly $12 million a year. And despite the image of small-time operators, loan sharks had systems: Geisst notes that Chicago lenders operated a joint clearinghouse, much like banks and brokers, to check whether borrowers already owed other sharks.`,
+               `The clearinghouse was not consumer protection. It protected the lender. A borrower already trapped by one shark might be too risky for another.`
+            ]
+         },
+         {
+            heading: 'Depression-era scale',
+            body: [
+               `During the Depression, the problem hardened. Workers were poorer, credit was tighter, and desperation was easier to monetize. Geisst describes one Atlanta case in which a borrower paid $1,550 on an original $76 loan before it was finally settled. The Twentieth Century Fund estimated that loan sharks had a total business volume of about $750 million on loans averaging $50, implying roughly 15 million transactions.`,
+               `By then, the older business had also begun to overlap more clearly with organized crime. Geisst notes that before the Great Depression, organized crime did not dominate urban private lending. But crime syndicates moved quickly when other loans became hard to find in the 1930s.`,
+               `Thomas Dewey's campaign against New York loan sharks shows how large the problem had become. Loan sharking was so widespread among Works Progress Administration employees that, after receiving more than 14,000 complaints, Dewey launched a major investigation. His agents raided lenders around New York, targeting small unlicensed operators whose terms and tactics were hurting working people. By October 1936, Dewey had successfully prosecuted 130 people.`,
+               `But even that victory was temporary. The pattern repeated: reformers cracked down, lenders adapted, and borrowers with few alternatives kept returning.`
+            ]
+         },
+         {
+            heading: 'Smartphones solved old operating problems',
+            body: [
+               `That is the history that matters for today's loan apps. The smartphone did not create the loan shark's business model. It solved the loan shark's old operating problems.`,
+               `A salary buyer once needed access to a worker's employer. A digital lender can access a borrower's contact list.`,
+               `A workplace shaming campaign once required someone to show up and yell. A digital lender can text-bomb relatives, classmates, and co-workers.`,
+               `A lender once needed local knowledge. A phone already contains the borrower's social world.`
+            ]
+         },
+         {
+            heading: 'Relational repression went digital',
+            body: [
+               `In a 2020 article in the British Journal of Criminology, Peng Wang, Mei Su, and Jingyi Wang examined how traditional organized criminal groups in China moved into online peer-to-peer lending. Their research found loan sharks using false advertising, hidden or confusing interest terms, compromising information, and legal intimidation to trap student borrowers. The authors describe a new enforcement strategy: relational repression, or pressure applied through a borrower's social ties.`,
+               `Their clearest sentence is this: "Cyberviolence drags the client's social contacts into the debt collection process." In the cases they studied, borrowers were asked for phone service codes that allowed lenders to obtain call records and numbers for family members, teachers, and friends. Social contacts became collateral. Some borrowers were also pressured to provide nude photos or videos, which lenders could threaten to expose.`,
+               `This is not a break from the old loan shark. It is a continuation.`,
+               `The old salary buyer threatened the worker's job. The digital loan shark threatens the borrower's social graph. The old "bawling out" happened at the workplace. The new version happens through mass messages. The old loan shark used shame locally. The new loan shark can scale shame instantly.`
+            ]
+         },
+         {
+            heading: 'The app data problem',
+            body: [
+               `A 2026 study of 434 loan apps in Indonesia, Kenya, Nigeria, Pakistan, and the Philippines found that some apps transmitted sensitive data, including contacts, SMS, location, and media, before users had completed sign-up. The researchers found 141 apps violating national regulatory policy and 147 violating Google policy; after disclosure, Google removed 93 flagged apps representing more than 300 million cumulative installs.`,
+               `Regulators are now describing the same problem in plain language. In the Philippines, a 2026 public advisory said the government had received reports of online lending platforms engaging in "harassment, intimidation, public shaming" and unlawful use of personal data. The advisory prohibited excessive access to contact lists and said lenders may contact only named guarantors for debt collection. It ended with a line that could apply across the digital credit industry: "Digital transformation must protect -- not prey upon -- the Filipino people."`
+            ]
+         },
+         {
+            heading: 'Southeast Asia is the live test',
+            body: [
+               `Thailand shows why this matters in Southeast Asia. Reuters reported in October 2025 that household debt had "shackled the economy" for years, with Thailand's household debt at 86.8% of GDP by the end of June and total debt at 16.3 trillion baht.`,
+               `High household debt does not automatically create illegal lending. But it creates the conditions in which fast money becomes powerful. When families are stretched and formal credit is slow or unavailable, the loan shark's pitch becomes familiar again: money now, consequences later.`,
+               `According to the Bangkok Post, Thai authorities have confronted both old and new faces of loan sharking. A report headlined "Biggest loan shark surrenders, held in custody" evokes the traditional model: a powerful local lender with personal reach. Another Bangkok Post report, "Chinese loan sharks charged 3,780% a year," points to a newer form: cross-border operators, extreme rates, and lending systems that can move through digital channels and disposable identities.`,
+               `Across the region, the wider infrastructure of digital crime has also become more industrialized. Reuters reported in 2025 that scam centres along the Thai-Myanmar border and elsewhere in Southeast Asia have trafficked large numbers of people into online fraud operations, with criminal networks primarily originating from China known to operate some centres. Those scam centres are not the same thing as every illegal lending app, but they show the kind of infrastructure -- call centres, scripts, messaging platforms, payment channels, and cross-border enforcement problems -- that can also support predatory digital lending.`
+            ]
+         },
+         {
+            heading: 'The pressure point',
+            body: [
+               `The history of loan sharks is therefore not a story of a criminal disappearing and then returning as technology. It is a story of continuity.`,
+               `First, the lender used the borrower's lack of banking access. Then he used the paycheck. Then he used the employer. Then he used public shame. Now he can use the phone.`,
+               `The app-store version may look cleaner than the old salary buyer's office. It may have a friendly name, a logo, and a privacy policy. But the test is the same one reformers faced a century ago: does the lender solve a real credit need, or does it turn need into dependency?`,
+               `A fair loan should make the amount, cost, due date, and consequences clear before the borrower commits. It should not hide fees. It should not make repayment impossible. It should not turn a borrower's family, friends, or co-workers into collateral.`,
+               `The loan shark's oldest trick was never just charging interest. It was finding the point of pressure. For the salary buyer, that point was payday. For the app-based lender, it may be the contact list.`
             ]
          }
       ]
