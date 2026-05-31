@@ -9,6 +9,7 @@ import { BrowserRouter } from 'react-router-dom';
 
 import { Providers } from '@/components/providers';
 
+import { LocalizationProvider } from '@/i18n';
 import { applyThemeMode, getStoredThemeMode } from '@/lib/themeMode';
 
 import App from './App.tsx';
@@ -36,22 +37,24 @@ const posthogOptions = {
    capture_pageleave: true
 } as const;
 
+const appTree = (
+   <LocalizationProvider>
+      <BrowserRouter>
+         <Providers>
+            <App />
+         </Providers>
+      </BrowserRouter>
+   </LocalizationProvider>
+);
+
 createRoot(document.getElementById('root')!).render(
    <StrictMode>
       {isPosthogEnabled ? (
          <PostHogProvider apiKey={posthogKey} options={posthogOptions}>
-            <BrowserRouter>
-               <Providers>
-                  <App />
-               </Providers>
-            </BrowserRouter>
+            {appTree}
          </PostHogProvider>
       ) : (
-         <BrowserRouter>
-            <Providers>
-               <App />
-            </Providers>
-         </BrowserRouter>
+         appTree
       )}
    </StrictMode>
 );

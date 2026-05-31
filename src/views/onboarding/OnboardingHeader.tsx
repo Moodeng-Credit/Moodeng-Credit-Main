@@ -1,13 +1,41 @@
 import { useNavigate } from 'react-router-dom';
 
+import { useLocalization } from '@/i18n/LocalizationProvider';
+import type { LocaleCode } from '@/i18n/translations';
+
 type OnboardingHeaderProps = {
    title?: string;
    onBack?: () => void;
    hideBack?: boolean;
 };
 
+const HEADER_COPY = {
+   en: {
+      goBack: 'Go back',
+      help: 'Help'
+   },
+   fil: {
+      goBack: 'Bumalik',
+      help: 'Tulong'
+   },
+   id: {
+      goBack: 'Kembali',
+      help: 'Bantuan'
+   },
+   th: {
+      goBack: 'กลับ',
+      help: 'ช่วยเหลือ'
+   },
+   vi: {
+      goBack: 'Quay lại',
+      help: 'Trợ giúp'
+   }
+} satisfies Record<LocaleCode, { goBack: string; help: string }>;
+
 export function OnboardingHeader({ title, onBack, hideBack = false }: OnboardingHeaderProps) {
    const navigate = useNavigate();
+   const { locale } = useLocalization();
+   const copy = HEADER_COPY[locale] ?? HEADER_COPY.en;
 
    const handleBack = () => {
       if (onBack) {
@@ -24,7 +52,7 @@ export function OnboardingHeader({ title, onBack, hideBack = false }: Onboarding
                <button
                   type="button"
                   onClick={handleBack}
-                  aria-label="Go back"
+                  aria-label={copy.goBack}
                   className="size-6 inline-flex items-center justify-center shrink-0"
                >
                   <span
@@ -42,15 +70,11 @@ export function OnboardingHeader({ title, onBack, hideBack = false }: Onboarding
                   />
                </button>
             )}
-            {title && (
-               <h1 className="text-[28px] leading-[1.1] tracking-[-0.02em] font-semibold text-md-primary-2000 truncate">
-                  {title}
-               </h1>
-            )}
+            {title && <h1 className="text-[28px] leading-[1.1] tracking-[-0.02em] font-semibold text-md-primary-2000 truncate">{title}</h1>}
          </div>
          <button
             type="button"
-            aria-label="Help"
+            aria-label={copy.help}
             onClick={() => navigate('/support')}
             className="h-12 w-12 inline-flex items-center justify-center bg-white rounded-md-pill shadow-md-card shrink-0"
          >

@@ -6,11 +6,12 @@ import { useNavigate } from 'react-router-dom';
 
 import UserAvatar from '@/components/UserAvatar';
 
+import { useLocalization } from '@/i18n';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { formatPointsMajor } from '@/shared/points';
 import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-import { BORROWER_FAQS, LENDER_FAQS, SHARED_FAQS } from '@/views/account/data/accountFaqs';
+import { getAccountFaqsForLocale } from '@/views/account/data/accountFaqs';
 
 // TODO: Replace with YouTube video URL when available
 const CREDIT_GUIDE_URL = '/credit-leveling-guide';
@@ -97,6 +98,7 @@ function ChevronDown({ isOpen }: { isOpen: boolean }) {
 export default function Account() {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
+   const { locale } = useLocalization();
    const user = useSelector((state: RootState) => state.auth.user);
    const [showSignOutModal, setShowSignOutModal] = useState(false);
    const [isSigningOut, setIsSigningOut] = useState(false);
@@ -119,9 +121,7 @@ export default function Account() {
    });
    const iouPoints = formatPointsMajor(userPointsData?.points_total ?? 0);
 
-   const sharedFaqs = isLender ? SHARED_FAQS.filter((item) => item.id !== 'how-to-get-verified') : SHARED_FAQS;
-   const roleFaqs = isLender ? LENDER_FAQS : BORROWER_FAQS;
-   const faqs = [...sharedFaqs, ...roleFaqs];
+   const faqs = getAccountFaqsForLocale(locale, isLender);
 
    const handleSignOut = async () => {
       setIsSigningOut(true);

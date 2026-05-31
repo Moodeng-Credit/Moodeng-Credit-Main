@@ -3,16 +3,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
+import { useLocalization } from '@/i18n';
+import type { RootState } from '@/store/store';
 import SearchBar from '@/views/support/components/SearchBar';
 import SupportHeader from '@/views/support/components/SupportHeader';
-import { GUIDES } from '@/views/support/data/guides';
 import { ICON_MASK_BASE } from '@/views/support/constants';
-import type { RootState } from '@/store/store';
+import { getGuidesForLocale } from '@/views/support/data/guides';
 
-const LENDER_HIDDEN_GUIDE_SLUGS = new Set([
-   'understanding-your-trust-score',
-   'how-repayments-affect-your-trust-score',
-]);
+const LENDER_HIDDEN_GUIDE_SLUGS = new Set(['understanding-your-trust-score', 'how-repayments-affect-your-trust-score']);
 
 const GUIDE_CATEGORIES = {
    gettingStarted: 'Getting Started',
@@ -23,8 +21,56 @@ const GUIDE_CATEGORIES = {
    security: 'Security'
 } as const;
 
-type GuideCategory = typeof GUIDE_CATEGORIES[keyof typeof GUIDE_CATEGORIES];
+type GuideCategory = (typeof GUIDE_CATEGORIES)[keyof typeof GUIDE_CATEGORIES];
 type CategoryFilter = 'All' | GuideCategory;
+
+const GUIDE_CATEGORY_LABELS = {
+   en: {
+      All: 'All',
+      [GUIDE_CATEGORIES.gettingStarted]: 'Getting Started',
+      [GUIDE_CATEGORIES.trustScore]: 'Trust Score',
+      [GUIDE_CATEGORIES.creditLevel]: 'Credit Level',
+      [GUIDE_CATEGORIES.repayment]: 'Repayment',
+      [GUIDE_CATEGORIES.wallet]: 'Wallet',
+      [GUIDE_CATEGORIES.security]: 'Security'
+   },
+   fil: {
+      All: 'Lahat',
+      [GUIDE_CATEGORIES.gettingStarted]: 'Magsimula',
+      [GUIDE_CATEGORIES.trustScore]: 'Trust Score',
+      [GUIDE_CATEGORIES.creditLevel]: 'Credit Level',
+      [GUIDE_CATEGORIES.repayment]: 'Repayment',
+      [GUIDE_CATEGORIES.wallet]: 'Wallet',
+      [GUIDE_CATEGORIES.security]: 'Security'
+   },
+   id: {
+      All: 'Semua',
+      [GUIDE_CATEGORIES.gettingStarted]: 'Mulai',
+      [GUIDE_CATEGORIES.trustScore]: 'Trust Score',
+      [GUIDE_CATEGORIES.creditLevel]: 'Credit Level',
+      [GUIDE_CATEGORIES.repayment]: 'Pembayaran',
+      [GUIDE_CATEGORIES.wallet]: 'Wallet',
+      [GUIDE_CATEGORIES.security]: 'Keamanan'
+   },
+   th: {
+      All: 'ทั้งหมด',
+      [GUIDE_CATEGORIES.gettingStarted]: 'เริ่มต้น',
+      [GUIDE_CATEGORIES.trustScore]: 'Trust Score',
+      [GUIDE_CATEGORIES.creditLevel]: 'Credit Level',
+      [GUIDE_CATEGORIES.repayment]: 'การชำระคืน',
+      [GUIDE_CATEGORIES.wallet]: 'กระเป๋าเงิน',
+      [GUIDE_CATEGORIES.security]: 'ความปลอดภัย'
+   },
+   vi: {
+      All: 'Tất cả',
+      [GUIDE_CATEGORIES.gettingStarted]: 'Bắt đầu',
+      [GUIDE_CATEGORIES.trustScore]: 'Trust Score',
+      [GUIDE_CATEGORIES.creditLevel]: 'Credit Level',
+      [GUIDE_CATEGORIES.repayment]: 'Trả nợ',
+      [GUIDE_CATEGORIES.wallet]: 'Ví',
+      [GUIDE_CATEGORIES.security]: 'Bảo mật'
+   }
+} as const;
 
 const GUIDE_CATEGORY_BY_SLUG: Record<string, GuideCategory> = {
    'how-to-request-your-first-loan': GUIDE_CATEGORIES.gettingStarted,
@@ -38,23 +84,52 @@ const GUIDE_CATEGORY_BY_SLUG: Record<string, GuideCategory> = {
    'managing-your-account-and-security-settings': GUIDE_CATEGORIES.security
 };
 
-const getGuideCategory = (slug: string): GuideCategory =>
-   GUIDE_CATEGORY_BY_SLUG[slug] ?? GUIDE_CATEGORIES.gettingStarted;
+const getGuideCategory = (slug: string): GuideCategory => GUIDE_CATEGORY_BY_SLUG[slug] ?? GUIDE_CATEGORIES.gettingStarted;
 
 export default function Guides() {
    const navigate = useNavigate();
+   const { locale } = useLocalization();
    const [query, setQuery] = useState('');
    const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('All');
    const [showCategoryFilters, setShowCategoryFilters] = useState(false);
    const user = useSelector((state: RootState) => state.auth.user);
    const isLender = user?.userRole === 'lender';
+   const guides = useMemo(() => getGuidesForLocale(locale), [locale]);
+   const copy = GUIDE_CATEGORY_LABELS[locale] ?? GUIDE_CATEGORY_LABELS.en;
+   const pageCopy =
+      locale === 'fil'
+         ? {
+              title: 'Mga gabay',
+              placeholder: 'Maghanap ng mga gabay',
+              empty: 'Walang gabay na tugma sa search mo.'
+           }
+         : locale === 'id'
+           ? {
+                title: 'Panduan',
+                placeholder: 'Cari panduan',
+                empty: 'Tidak ada panduan yang cocok dengan pencarian kamu.'
+             }
+           : locale === 'th'
+             ? {
+                  title: 'คู่มือ',
+                  placeholder: 'ค้นหาคู่มือ',
+                  empty: 'ไม่มีคู่มือที่ตรงกับการค้นหา'
+               }
+             : locale === 'vi'
+               ? {
+                    title: 'Hướng dẫn',
+                    placeholder: 'Tìm kiếm hướng dẫn',
+                    empty: 'Không có hướng dẫn nào khớp với tìm kiếm.'
+                 }
+               : {
+                    title: 'Guides',
+                    placeholder: 'Search Guides',
+                    empty: 'No guides match your search.'
+                 };
 
    const visibleGuides = useMemo(
-      () =>
-         isLender
-            ? GUIDES.filter((guide) => !LENDER_HIDDEN_GUIDE_SLUGS.has(guide.slug))
-            : GUIDES,
-      [isLender]
+      () => (isLender ? guides.filter((guide) => !LENDER_HIDDEN_GUIDE_SLUGS.has(guide.slug)) : guides),
+      [guides, isLender]
    );
 
    const availableCategories = useMemo(() => {
@@ -70,9 +145,7 @@ export default function Guides() {
 
    const filtered = useMemo(() => {
       const categoryFiltered =
-         selectedCategory === 'All'
-            ? visibleGuides
-            : visibleGuides.filter((guide) => getGuideCategory(guide.slug) === selectedCategory);
+         selectedCategory === 'All' ? visibleGuides : visibleGuides.filter((guide) => getGuideCategory(guide.slug) === selectedCategory);
       const q = query.trim().toLowerCase();
       if (!q) return categoryFiltered;
       return categoryFiltered.filter((g) => g.title.toLowerCase().includes(q));
@@ -84,11 +157,11 @@ export default function Guides() {
    return (
       <div className="min-h-screen bg-md-neutral-200">
          <div className="max-w-[440px] mx-auto pb-28 flex flex-col">
-            <SupportHeader title="Guides" />
+            <SupportHeader title={pageCopy.title} />
 
             <div className="flex flex-col gap-md-3 p-md-4">
                <SearchBar
-                  placeholder="Search Guides"
+                  placeholder={pageCopy.placeholder}
                   value={query}
                   onChange={setQuery}
                   showFilter={shouldShowCategoryFilters}
@@ -97,10 +170,7 @@ export default function Guides() {
                />
 
                {shouldShowCategoryFilters && showCategoryFilters ? (
-                  <div
-                     className="-mx-md-4 px-md-4 flex gap-1.5 overflow-x-auto pb-1"
-                     aria-label="Guide categories"
-                  >
+                  <div className="-mx-md-4 px-md-4 flex gap-1.5 overflow-x-auto pb-1" aria-label="Guide categories">
                      {categoryFilters.map((category) => {
                         const isSelected = selectedCategory === category;
                         return (
@@ -116,7 +186,7 @@ export default function Guides() {
                               ].join(' ')}
                               aria-pressed={isSelected}
                            >
-                              {category}
+                              {copy[category]}
                            </button>
                         );
                      })}
@@ -142,11 +212,7 @@ export default function Guides() {
                         />
                      </button>
                   ))}
-                  {filtered.length === 0 ? (
-                     <p className="text-md-b2 text-md-neutral-1200 text-center py-md-5">
-                        No guides match your search.
-                     </p>
-                  ) : null}
+                  {filtered.length === 0 ? <p className="text-md-b2 text-md-neutral-1200 text-center py-md-5">{pageCopy.empty}</p> : null}
                </div>
             </div>
          </div>

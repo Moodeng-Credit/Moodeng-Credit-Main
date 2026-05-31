@@ -8,7 +8,7 @@ interface DesktopNavProps {
 
 export default function DesktopNav({ buttons }: DesktopNavProps) {
    return (
-      <nav className="hidden md:flex items-center gap-8" role="navigation">
+      <nav className="hidden lg:flex items-center gap-8" role="navigation">
          {buttons.map((button) => (
             <ActionButton key={button.href} button={button} />
          ))}

@@ -2,7 +2,7 @@ import { type MouseEvent, useCallback, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
-import { ChevronRight, ExternalLink, Send } from 'lucide-react';
+import { ChevronRight, ExternalLink, Send, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
@@ -15,14 +15,31 @@ import useWallet from '@/hooks/useWallet';
 import { formatCurrency, formatNumber } from '@/utils/decimalHelpers';
 
 import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
-import { type LoanSideEffectError, fetchLoans, updateLoanStatus } from '@/store/slices/loanSlice';
+import { fetchLoans, type LoanSideEffectError, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
 
-export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenticated?: boolean; tourBorrowerUsername?: string }) {
-   const { isBorrower = true, isAuthenticated = true, tourBorrowerUsername, ...loanData } = loan;
+type UserCardProps = Loan & {
+   currentUserId?: string;
+   isBorrower?: boolean;
+   isAuthenticated?: boolean;
+   isDeletingOwnRequest?: boolean;
+   onDeleteOwnRequest?: (loan: Loan) => void;
+   tourBorrowerUsername?: string;
+};
+
+export default function UserCard(loan: UserCardProps) {
+   const {
+      isBorrower = true,
+      isAuthenticated = true,
+      isDeletingOwnRequest = false,
+      currentUserId,
+      onDeleteOwnRequest,
+      tourBorrowerUsername,
+      ...loanData
+   } = loan;
    const borrowerUserId = loanData.borrowerUser || '';
 
    const dispatch = useDispatch<AppDispatch>();
@@ -34,8 +51,8 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenti
    const [isProcessing, setIsProcessing] = useState(false);
    const { showToast, showToastByConfig } = useToast();
    const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
-   const username = useSelector((state: RootState) => state.auth.username);
-   const userId = useSelector((state: RootState) => state.auth.user.id);
+   const storeUserId = useSelector((state: RootState) => state.auth.user.id);
+   const userId = currentUserId || storeUserId;
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const borrowerProfile = borrowerUserId ? userProfiles[borrowerUserId] : undefined;
    const borrowerUsername = borrowerProfile?.username ?? tourBorrowerUsername ?? '';
@@ -142,7 +159,6 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenti
       loanData.coin,
       loanData.loanAmount,
       loanData.id,
-      username,
       borrowerDisplayName,
       userId,
       account.address,
@@ -167,12 +183,34 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenti
    const dueFormatted = format(due, 'MMM dd yyyy');
    const isOwnLoan = loanData.borrowerUser === userId;
    const isLent = loanData.loanStatus === 'Lent';
+   const canDeleteOwnRequest = Boolean(isAuthenticated && isOwnLoan && loanData.loanStatus === 'Requested' && onDeleteOwnRequest);
+
+   const handleDeleteOwnRequest = (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onDeleteOwnRequest?.(loanData);
+   };
 
    return (
       <>
-         <div className="bg-white border border-[#f0f0f0] rounded-[24px] shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)] flex flex-col gap-4 p-md-4" data-tour-target="lender-request-card">
+         <div
+            className="relative bg-white border border-[#f0f0f0] rounded-[24px] shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)] flex flex-col gap-4 p-md-4"
+            data-tour-target="lender-request-card"
+         >
+            {canDeleteOwnRequest ? (
+               <button
+                  type="button"
+                  onClick={handleDeleteOwnRequest}
+                  disabled={isDeletingOwnRequest}
+                  aria-label="Delete your loan request"
+                  title="Delete request"
+                  className="absolute right-3 top-3 z-10 inline-flex size-11 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 shadow-[0_8px_20px_rgba(185,28,28,0.12)] transition active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50"
+               >
+                  <X className="size-5" strokeWidth={2.5} />
+               </button>
+            ) : null}
             {/* Top: Loan Info + Amount Card */}
-            <div className="flex gap-4 items-center">
+            <div className={`flex gap-4 items-center ${canDeleteOwnRequest ? 'pr-10' : ''}`}>
                {/* Left: Loan Details */}
                <div className="flex-1 flex flex-col gap-2 min-w-0">
                   <p className="text-md-h5 font-semibold text-md-heading">{loanReason}</p>
@@ -261,8 +299,8 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenti
                )}
 
                {/* View Borrower Details — hidden for logged-out users */}
-               {isAuthenticated && (
-                  borrowerUsername ? (
+               {isAuthenticated &&
+                  (borrowerUsername ? (
                      <Link
                         to={borrowerDetailsHref}
                         data-tour-target="lender-borrower-details-link"
@@ -276,8 +314,7 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenti
                         View Borrower Details
                         <ExternalLink className="w-5 h-5" />
                      </span>
-                  )
-               )}
+                  ))}
             </div>
          </div>
 
@@ -297,7 +334,16 @@ export default function UserCard(loan: Loan & { isBorrower?: boolean; isAuthenti
                   </div>
                   <div className="p-6 flex flex-col items-center gap-4">
                      <div className="w-16 h-16 rounded-full bg-md-primary-900 flex items-center justify-center">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                           width="32"
+                           height="32"
+                           viewBox="0 0 24 24"
+                           fill="none"
+                           stroke="white"
+                           strokeWidth="3"
+                           strokeLinecap="round"
+                           strokeLinejoin="round"
+                        >
                            <polyline points="20 6 9 17 4 12" />
                         </svg>
                      </div>

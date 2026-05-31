@@ -3,6 +3,7 @@ import type { ActionButtonConfig } from '@/types/actionButtonTypes';
 export const heroSectionButtons: ActionButtonConfig[] = [
    {
       text: 'Borrow',
+      translationKey: 'actions.borrow',
       bgColor: 'bg-[#6d57ff]',
       textColor: 'text-[#f6f6f6]',
       href: '/dashboard#request',
@@ -10,6 +11,7 @@ export const heroSectionButtons: ActionButtonConfig[] = [
    },
    {
       text: 'Lend',
+      translationKey: 'actions.lend',
       bgColor: 'bg-[#4de5a6]',
       textColor: 'text-[#171420]',
       href: '/dashboard#request',
@@ -17,14 +19,16 @@ export const heroSectionButtons: ActionButtonConfig[] = [
    },
    {
       text: 'Chat',
+      translationKey: 'actions.chat',
       bgColor: 'bg-[#f093ff]',
       textColor: 'text-[#171420]',
-      href: `https://t.me/${"moodengnewbranchbot"}`,
+      href: `https://t.me/${'moodengnewbranchbot'}`,
       isExternal: true,
       width: 'w-44'
    },
    {
       text: 'Get Help',
+      translationKey: 'actions.getHelp',
       bgColor: 'bg-[#ff9900]',
       textColor: 'text-[#171420]',
       href: 'https://moodeng-credit.gitbook.io/moodeng-credit',
@@ -36,6 +40,7 @@ export const heroSectionButtons: ActionButtonConfig[] = [
 export const financialInclusionButtons: ActionButtonConfig[] = [
    {
       text: 'See How it Works',
+      translationKey: 'actions.seeHowItWorks',
       bgColor: 'bg-[#171420]',
       textColor: 'text-[#f6f6f6]',
       href: '/academy#academy-steps',
@@ -46,6 +51,7 @@ export const financialInclusionButtons: ActionButtonConfig[] = [
 export const revolutionizeButtons: ActionButtonConfig[] = [
    {
       text: 'See More Benefits',
+      translationKey: 'actions.seeMoreBenefits',
       bgColor: 'bg-[#f6f6f6]',
       textColor: 'text-[#171420]',
       href: '/benefits#benefits',
@@ -56,6 +62,7 @@ export const revolutionizeButtons: ActionButtonConfig[] = [
 export const whyLendButtons: ActionButtonConfig[] = [
    {
       text: 'See Why',
+      translationKey: 'actions.seeWhy',
       bgColor: 'bg-[#171420]',
       textColor: 'text-[#f6f6f6]',
       href: '/whylend#why-lend',
@@ -66,6 +73,7 @@ export const whyLendButtons: ActionButtonConfig[] = [
 export const aboutHeroButtons: ActionButtonConfig[] = [
    {
       text: 'See Request Board',
+      translationKey: 'actions.seeRequestBoard',
       bgColor: 'bg-[#f6f6f6]',
       textColor: 'text-[#171420]',
       href: '/dashboard#request',
@@ -76,6 +84,7 @@ export const aboutHeroButtons: ActionButtonConfig[] = [
 export const creditSystemButtons: ActionButtonConfig[] = [
    {
       text: 'Borrow',
+      translationKey: 'actions.borrow',
       bgColor: 'bg-indigo-500',
       textColor: 'text-neutral-100',
       href: '/dashboard#request',
@@ -83,6 +92,7 @@ export const creditSystemButtons: ActionButtonConfig[] = [
    },
    {
       text: 'Lend',
+      translationKey: 'actions.lend',
       bgColor: 'bg-emerald-400',
       textColor: 'text-zinc-900',
       href: '/dashboard#request',
@@ -93,6 +103,7 @@ export const creditSystemButtons: ActionButtonConfig[] = [
 export const mostNeededLendingButtons: ActionButtonConfig[] = [
    {
       text: 'Start Lending',
+      translationKey: 'actions.startLending',
       bgColor: 'bg-indigo-500',
       textColor: 'text-neutral-100',
       href: '/dashboard#request',
@@ -103,6 +114,7 @@ export const mostNeededLendingButtons: ActionButtonConfig[] = [
 export const verifyIdentityButtons: ActionButtonConfig[] = [
    {
       text: 'Read Docs',
+      translationKey: 'actions.readDocs',
       bgColor: 'bg-white',
       textColor: 'text-blue-700',
       href: 'https://moodeng-credit.gitbook.io/moodeng-credit',
@@ -114,6 +126,7 @@ export const verifyIdentityButtons: ActionButtonConfig[] = [
 export const menuAuthButtons: ActionButtonConfig[] = [
    {
       text: 'Log in',
+      translationKey: 'auth.login',
       bgColor: 'bg-black',
       textColor: 'text-white',
       href: '/sign-in',
@@ -121,6 +134,7 @@ export const menuAuthButtons: ActionButtonConfig[] = [
    },
    {
       text: 'Sign up',
+      translationKey: 'auth.signup',
       bgColor: 'bg-[#6d57ff]',
       textColor: 'text-white',
       href: '/sign-up',
@@ -131,6 +145,7 @@ export const menuAuthButtons: ActionButtonConfig[] = [
 export const navigationButtons: ActionButtonConfig[] = [
    {
       text: 'Guide',
+      translationKey: 'nav.guide',
       bgColor: 'bg-transparent',
       textColor: 'text-white',
       href: '/academy',
@@ -138,6 +153,7 @@ export const navigationButtons: ActionButtonConfig[] = [
    },
    {
       text: 'Benefits',
+      translationKey: 'nav.benefits',
       bgColor: 'bg-transparent',
       textColor: 'text-white',
       href: '/benefits',
@@ -145,6 +161,7 @@ export const navigationButtons: ActionButtonConfig[] = [
    },
    {
       text: 'Why Lend',
+      translationKey: 'nav.whyLend',
       bgColor: 'bg-transparent',
       textColor: 'text-white',
       href: '/whylend',
@@ -152,6 +169,7 @@ export const navigationButtons: ActionButtonConfig[] = [
    },
    {
       text: 'Docs',
+      translationKey: 'nav.docs',
       bgColor: 'bg-transparent',
       textColor: 'text-white',
       href: 'https://moodeng-credit.gitbook.io/moodeng-credit',
