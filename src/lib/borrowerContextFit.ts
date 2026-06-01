@@ -145,15 +145,15 @@ const buildBaseSegments = ({
    ];
 
    if (primaryGapChipId) {
-      segments.push('They marked ', chipSegment(primaryGapChipId), ' as the cash-flow gap. ');
+      segments.push('Need: ', chipSegment(primaryGapChipId), '. ');
    }
 
    if (incomeChipId && paydayChipId) {
-      segments.push('Their profile shows ', chipSegment(incomeChipId), ' paid ', chipSegment(paydayChipId), '. ');
+      segments.push('Income: ', chipSegment(incomeChipId), ' paid ', chipSegment(paydayChipId), '. ');
    } else if (incomeChipId) {
-      segments.push('Their profile shows ', chipSegment(incomeChipId), '. ');
+      segments.push('Income: ', chipSegment(incomeChipId), '. ');
    } else if (paydayChipId) {
-      segments.push('Their profile shows ', chipSegment(paydayChipId), ' pay timing. ');
+      segments.push('Pay timing: ', chipSegment(paydayChipId), '. ');
    }
 
    return segments;
@@ -242,7 +242,7 @@ export const buildBorrowerContextFit = ({
          chips: allChips,
          fitLevel: 'no_income',
          secondaryChips,
-         segments: [...baseSegments, 'This borrower has not shared an income source. Review repayment history for more context.'],
+         segments: [...baseSegments, 'No income source is shared. Review repayment history for more context.'],
          showTimingClaim: true,
          tone: 'caution'
       });
@@ -253,7 +253,7 @@ export const buildBorrowerContextFit = ({
          chips: allChips,
          fitLevel: 'variable',
          secondaryChips,
-         segments: [...baseSegments, 'Their payday timing varies, so use repayment history and request reason to judge fit.'],
+         segments: [...baseSegments, 'Payday timing varies, so use repayment history and request reason to judge fit.'],
          showTimingClaim: true,
          tone: 'neutral'
       });
@@ -316,7 +316,7 @@ export const buildBorrowerContextFit = ({
          chips: [...allChips, deltaChip],
          fitLevel: 'consistent',
          secondaryChips,
-         segments: [...baseSegments, 'Repayment falls ', chipSegment('delta'), ', consistent with their profile.'],
+         segments: [...baseSegments, 'Repayment falls ', chipSegment('delta'), ', consistent with the profile.'],
          showTimingClaim: true,
          tone: 'supportive'
       });
@@ -331,7 +331,7 @@ export const buildBorrowerContextFit = ({
          ...baseSegments,
          'Repayment falls ',
          chipSegment('delta'),
-         ', so the due date follows the income timing they shared.'
+         ', so the due date follows the shared income timing.'
       ],
       showTimingClaim: true,
       tone: 'supportive'

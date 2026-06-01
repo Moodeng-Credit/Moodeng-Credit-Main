@@ -34,7 +34,7 @@ describe('buildBorrowerContextFit', () => {
       expect(deltaChip(fit)).toBe('1 day after payday');
       expect(renderText(fit)).toContain('maya-demo opened this request for $15 · emergency groceries on May 8');
       expect(renderText(fit)).toContain('planning to repay by May 16');
-      expect(renderText(fit)).toContain('due date follows the income timing they shared');
+      expect(renderText(fit)).toContain('due date follows the shared income timing');
    });
 
    it('uses consistent timing when repayment falls inside the payday window', () => {
@@ -46,7 +46,7 @@ describe('buildBorrowerContextFit', () => {
 
       expect(fit.fitLevel).toBe('consistent');
       expect(deltaChip(fit)).toBe('inside payday window');
-      expect(renderText(fit)).toContain('consistent with their profile');
+      expect(renderText(fit)).toContain('consistent with the profile');
    });
 
    it('frames before-payday repayment as an early gap instead of a borrower warning', () => {
@@ -93,7 +93,7 @@ describe('buildBorrowerContextFit', () => {
       });
 
       expect(fit.fitLevel).toBe('variable');
-      expect(renderText(fit)).toContain('Their payday timing varies');
+      expect(renderText(fit)).toContain('Payday timing varies');
    });
 
    it('falls back when borrower context is missing', () => {
@@ -136,14 +136,16 @@ describe('buildBorrowerContextFit', () => {
 
       expect(fit.fitLevel).toBe('no_income');
       expect(fit.tone).toBe('caution');
-      expect(renderText(fit)).toContain('has not shared an income source');
+      expect(renderText(fit)).toContain('No income source is shared');
    });
 
-   it('never makes a repayment certainty claim', () => {
+   it('never makes a repayment certainty claim or adds gendered pronouns', () => {
       const fit = buildBorrowerContextFit({ ...baseInput, context: baseContext });
       const text = renderText(fit).toLowerCase();
 
       expect(text).not.toContain('likely to repay');
       expect(text).not.toContain('will pay back');
+      expect(text).not.toContain('they');
+      expect(text).not.toContain('their');
    });
 });
