@@ -6,6 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const getTelegramBotToken = () => {
+  const rawToken = Deno.env.get('TELEGRAM_API_TOKEN') ?? Deno.env.get('TELEGRAM_BOT_TOKEN') ?? ''
+  return rawToken.trim().replace(/^["']|["']$/g, '')
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -17,7 +22,11 @@ Deno.serve(async (req) => {
     const { id, first_name, last_name, username, photo_url, auth_date, hash, allows_write_to_pm } = authData
 
     // Verify Telegram auth
-    const botToken = Deno.env.get('TELEGRAM_API_TOKEN')!
+    const botToken = getTelegramBotToken()
+    if (!botToken) {
+      throw new Error('TELEGRAM_API_TOKEN is not configured.')
+    }
+
     const secretKey = await crypto.subtle.digest(
       'SHA-256',
       new TextEncoder().encode(botToken)
