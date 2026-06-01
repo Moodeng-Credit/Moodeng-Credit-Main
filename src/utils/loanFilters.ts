@@ -59,12 +59,7 @@ const isAmountInRange = (amount: number, range: string, customAmount?: string): 
    return amount === Number(range);
 };
 
-export const filterByCreditLimit = (
-   loans: Loan[],
-   amount: string,
-   customAmount?: string,
-   userProfiles?: Record<string, User>
-): Loan[] => {
+export const filterByCreditLimit = (loans: Loan[], amount: string, customAmount?: string, userProfiles?: Record<string, User>): Loan[] => {
    if ((!amount || Number(amount) === 0) && (!customAmount || Number(customAmount) <= 0)) return loans;
 
    return loans.filter((loan) => {
@@ -159,14 +154,16 @@ export const filterByTimePeriod = (loans: Loan[], loanTime: string): Loan[] => {
 /**
  * Filter loans by search query (searches reason, borrower display name, and borrower username)
  */
+const getSearchableProfileText = (value: unknown): string => (typeof value === 'string' ? value : '');
+
 export const filterBySearch = (loans: Loan[], search: string, userProfiles?: Record<string, User>): Loan[] => {
    if (!search) return loans;
 
    const searchLower = search.toLowerCase();
    return loans.filter((loan) => {
       const borrowerProfile = loan.borrowerUser ? userProfiles?.[loan.borrowerUser] : undefined;
-      const borrowerUsername = borrowerProfile?.username ?? loan.borrowerUser ?? '';
-      const borrowerDisplayName = borrowerProfile?.displayName ?? '';
+      const borrowerUsername = getSearchableProfileText(borrowerProfile?.username) || getSearchableProfileText(loan.borrowerUser);
+      const borrowerDisplayName = getSearchableProfileText(borrowerProfile?.displayName);
       return (
          loan.reason?.toLowerCase().includes(searchLower) ||
          borrowerDisplayName.toLowerCase().includes(searchLower) ||
@@ -186,9 +183,7 @@ export const filterByBorrowType = (
    const activeFundedLoans = allLoans.filter(
       (loan) => loan.loanStatus === LoanStatus.LENT && loan.repaymentStatus !== RepaymentStatus.PAID
    );
-   const borrowersWithActiveFundedLoans = new Set(
-      activeFundedLoans.map((loan) => loan.borrowerUser).filter(Boolean)
-   );
+   const borrowersWithActiveFundedLoans = new Set(activeFundedLoans.map((loan) => loan.borrowerUser).filter(Boolean));
    const borrowersWithCompletedFundedLoans = new Set(
       allLoans
          .filter((loan) => loan.loanStatus === LoanStatus.LENT && loan.repaymentStatus === RepaymentStatus.PAID)
@@ -205,8 +200,7 @@ export const filterByBorrowType = (
       return borrowTypes.some((borrowType) => {
          if (borrowType === 'beginner') {
             return (
-               creditLimit <= STARTING_CREDIT_LIMIT &&
-               (!loan.borrowerUser || !borrowersWithCompletedFundedLoans.has(loan.borrowerUser))
+               creditLimit <= STARTING_CREDIT_LIMIT && (!loan.borrowerUser || !borrowersWithCompletedFundedLoans.has(loan.borrowerUser))
             );
          }
          if (borrowType === 'no-active') {
@@ -221,12 +215,7 @@ export const filterByBorrowType = (
 /**
  * Apply all filters to a list of loans
  */
-export const filterLoans = (
-   loans: Loan[],
-   filters: LoanFilters,
-   customAmount?: string,
-   userProfiles?: Record<string, User>
-): Loan[] => {
+export const filterLoans = (loans: Loan[], filters: LoanFilters, customAmount?: string, userProfiles?: Record<string, User>): Loan[] => {
    const allLoans = [...loans];
    let filtered = [...loans];
 

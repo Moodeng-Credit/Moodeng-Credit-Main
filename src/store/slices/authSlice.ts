@@ -196,11 +196,7 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
    // avatar_background = soft color shown behind transparent/background-removed avatars
    // picture    = Google OAuth profile photo
    // photo_url  = Telegram profile photo (written by edge function on sign-in)
-   const avatarUrl = (
-      user.user_metadata?.avatar_url ??
-      user.user_metadata?.picture ??
-      user.user_metadata?.photo_url
-   ) as string | undefined;
+   const avatarUrl = (user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? user.user_metadata?.photo_url) as string | undefined;
    const avatarBackground = user.user_metadata?.avatar_background as string | undefined;
    const displayName = normalizeProfileText(user.user_metadata?.name);
 
@@ -488,7 +484,7 @@ export const fetchUserProfiles = createAsyncThunk('auth/fetchUserProfiles', asyn
       throw error;
    }
 
-   return { users: (profiles || []).map(mapSupabaseRowToUser) };
+   return { users: (profiles || []).map((profile) => mapSupabaseRowToUser(profile)) };
 });
 
 export const updateUser = createAsyncThunk('auth/updateUser', async (userData: UpdateUserPayload) => {
@@ -552,9 +548,7 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
    if (updateError) {
       const isWalletMetadataSchemaMismatch =
          updateError.code === '42703' &&
-         (userData.walletProvider !== undefined ||
-            userData.walletConnectorName !== undefined ||
-            userData.walletChainId !== undefined);
+         (userData.walletProvider !== undefined || userData.walletConnectorName !== undefined || userData.walletChainId !== undefined);
 
       if (isWalletMetadataSchemaMismatch && userData.walletAddress) {
          const fallbackUpdates: Database['public']['Tables']['users']['Update'] = {

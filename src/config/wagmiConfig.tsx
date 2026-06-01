@@ -20,6 +20,10 @@ export type { CustomChainConfig };
 
 installBaseAccountPopupSizePatch();
 
+export const BASE_USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+const DEFAULT_ALLOWED_CHAIN_ID = base.id;
+const DEFAULT_ALLOWED_CHAIN_NAME = 'Base';
+
 export const getNetworkSvg = (networkId: number) => {
    const colors: Record<number, ReactNode> = {
       [sepolia.id]: (
@@ -164,9 +168,9 @@ export const chainConfig: Record<number, CustomChainConfig> = {
       bgColor: 'bg-[#0051ff]',
       textColor: 'text-[#0051ff]',
       tokens: {
-         USDC: import.meta.env.VITE_BASE_USDC_ADDRESS || '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'
+         USDC: import.meta.env.VITE_BASE_USDC_ADDRESS || BASE_USDC_ADDRESS
       }
-   },
+   }
    // [arbitrum.id]: {
    //    ...arbitrum,
    //    iconBackground: '#2D374B',
@@ -206,28 +210,21 @@ export const chainConfig: Record<number, CustomChainConfig> = {
    //       USDT: '0x55d398326f99059fF775485246999027B3197955'
    //    }
    // },
-   [baseSepolia.id]: {
-      ...baseSepolia,
-      iconBackground: '#0052FF',
-      displayName: 'Base Sepolia',
-      shortName: 'BASE SEP',
-      color: 'bg-[#0051ff]',
-      bgColor: 'bg-[#0051ff]',
-      textColor: 'text-[#0051ff]',
-      tokens: {
-         USDC: import.meta.env.VITE_BASE_SEPOLIA_USDC_ADDRESS || '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
-      }
-   }
 };
 
 // Calculate allowed chain before using it
-const normalizeChainName = (value?: string) => (value ?? '').toLowerCase().replace(/\s+/g, '');
-const allowedChainEnvName = (import.meta.env.VITE_ALLOWED_CHAIN_NAME || 'Base Sepolia').trim();
-const normalizedAllowedChainName = normalizeChainName(allowedChainEnvName);
-const allowedChainEntry = Object.entries(chainConfig).find(
-   ([, chain]) => normalizeChainName(chain.displayName) === normalizedAllowedChainName
-);
-export const ALLOWED_CHAIN_ID = allowedChainEntry ? parseInt(allowedChainEntry[0], 10) : baseSepolia.id;
+export const normalizeChainName = (value?: string) => (value ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+export const getAllowedChainIdFromName = (value?: string) => {
+   const allowedChainName = value?.trim() || DEFAULT_ALLOWED_CHAIN_NAME;
+   const normalizedAllowedChainName = normalizeChainName(allowedChainName);
+   const allowedChainEntry = Object.entries(chainConfig).find(
+      ([, chain]) => normalizeChainName(chain.displayName) === normalizedAllowedChainName
+   );
+   return allowedChainEntry ? parseInt(allowedChainEntry[0], 10) : DEFAULT_ALLOWED_CHAIN_ID;
+};
+const configuredAllowedChainName = import.meta.env.VITE_ALLOWED_CHAIN_NAME?.trim();
+const allowedChainEnvName = configuredAllowedChainName || DEFAULT_ALLOWED_CHAIN_NAME;
+export const ALLOWED_CHAIN_ID = getAllowedChainIdFromName(configuredAllowedChainName);
 
 // Convert to array for RainbowKit - only include allowed chain
 export const chainsWithIcons = [chainConfig[ALLOWED_CHAIN_ID]];
@@ -312,14 +309,14 @@ export const tokenAddresses = Object.fromEntries(
 
 export const chainIdFromNetwork = (network: string) => {
    const chain = Object.values(chainConfig).find(
-      (value: CustomChainConfig) => value.displayName.toLowerCase().replace(' ', '') === network.toLowerCase().replace(' ', '')
+      (value: CustomChainConfig) => normalizeChainName(value.displayName) === normalizeChainName(network)
    );
    return chain ? Object.keys(chainConfig).find((key) => chainConfig[parseInt(key)] === chain) : undefined;
 };
 
 export const ALLOWED_CHAIN_NAME = allowedChainEnvName;
 export const ALLOWED_CHAIN_DISPLAY_NAME = getChainDisplayConfig(ALLOWED_CHAIN_ID)?.name || ALLOWED_CHAIN_NAME;
-export const getAllowedChainConfig = () => chainConfig[ALLOWED_CHAIN_ID] ?? baseSepolia;
+export const getAllowedChainConfig = () => chainConfig[ALLOWED_CHAIN_ID] ?? chainConfig[DEFAULT_ALLOWED_CHAIN_ID];
 export const getAllowedChainTokenConfig = () => {
    const chain = getAllowedChainConfig();
    return chain ? { id: ALLOWED_CHAIN_ID, ...chain.tokens } : null;
