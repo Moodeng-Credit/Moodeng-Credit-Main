@@ -80,10 +80,6 @@ function BorrowerContextSignal({
 
    return (
       <section className="rounded-[18px] bg-md-primary-100/70 p-[14px]" aria-label="Timing fit">
-         <div className="flex flex-col gap-md-1">
-            <p className="text-md-b3 font-semibold uppercase tracking-[0.1em] text-md-primary-1200">Timing fit</p>
-         </div>
-
          <InlineFitSentence fit={fit} />
       </section>
    );
@@ -91,10 +87,15 @@ function BorrowerContextSignal({
 
 function InlineFitSentence({ fit }: { fit: BorrowerContextFit }) {
    const chipById = new Map(fit.chips.map((currentChip) => [currentChip.id, currentChip]));
+   const insightToneClasses: Record<BorrowerContextFit['tone'], string> = {
+      caution: 'bg-[#fff4ce] text-[#79420b]',
+      neutral: 'bg-md-neutral-100 text-md-neutral-1400',
+      supportive: 'bg-[#d2f8e5] text-[#075f42]'
+   };
 
    return (
       <>
-         <p className="mt-[6px] text-[15px] font-medium leading-[28px] text-md-neutral-1500">
+         <p className="text-[15px] font-medium leading-[28px] text-md-neutral-1500">
             {fit.segments.map((segment, index) => (
                <FitSegment
                   key={`${typeof segment === 'string' ? segment : segment.chipId}-${index}`}
@@ -104,12 +105,17 @@ function InlineFitSentence({ fit }: { fit: BorrowerContextFit }) {
             ))}
          </p>
 
-         {fit.secondaryChips.length > 0 ? (
-            <div className="mt-md-2 flex flex-wrap items-center gap-[6px] border-t border-md-primary-200/80 pt-md-2">
-               <span className="text-[13px] font-medium leading-[18px] text-md-neutral-1000">Also shared:</span>
-               {fit.secondaryChips.map((currentChip) => (
-                  <FitChip key={currentChip.id} chip={currentChip} compact />
+         {fit.explanationSegments.length > 0 ? (
+            <div className={`mt-md-2 rounded-[14px] px-md-2 py-md-2 ${insightToneClasses[fit.tone]}`}>
+               <p className="text-[15px] font-medium leading-[28px]">
+                  {fit.explanationSegments.map((segment, index) => (
+                     <FitInsightSegment
+                        key={`${typeof segment === 'string' ? segment : segment.chipId}-${index}`}
+                        segment={segment}
+                        chipById={chipById}
+                     />
                ))}
+               </p>
             </div>
          ) : null}
       </>
@@ -121,6 +127,13 @@ function FitSegment({ chipById, segment }: { chipById: Map<string, BorrowerConte
    const currentChip = chipById.get(segment.chipId);
    if (!currentChip) return null;
    return <FitChip chip={currentChip} />;
+}
+
+function FitInsightSegment({ chipById, segment }: { chipById: Map<string, BorrowerContextFitChip>; segment: BorrowerContextFitSegment }) {
+   if (typeof segment === 'string') return <>{segment}</>;
+   const currentChip = chipById.get(segment.chipId);
+   if (!currentChip) return null;
+   return <strong className="font-semibold text-inherit">{currentChip.text}</strong>;
 }
 
 function FitChip({ chip, compact = false }: { chip: BorrowerContextFitChip; compact?: boolean }) {

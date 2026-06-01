@@ -43,6 +43,7 @@ export type BorrowerContextFitSegment = string | { chipId: string };
 
 export type BorrowerContextFit = {
    chips: BorrowerContextFitChip[];
+   explanationSegments: BorrowerContextFitSegment[];
    fitLevel: BorrowerContextFitLevel;
    segments: BorrowerContextFitSegment[];
    secondaryChips: BorrowerContextFitChip[];
@@ -60,17 +61,29 @@ export type BorrowerContextFitInput = {
 };
 
 const incomeContextLabels: Record<string, string> = {
-   full_time: 'full-time income',
-   part_time: 'part-time income',
-   contract: 'contract income',
-   contract_temp: 'contract income',
-   freelance: 'freelance income',
-   freelance_gig: 'freelance income',
+   full_time: 'full-time employee',
+   part_time: 'part-time worker',
+   contract: 'contract worker',
+   contract_temp: 'contract worker',
+   freelance: 'freelance worker',
+   freelance_gig: 'freelance worker',
    none: 'No income shared',
    no_income: 'No income shared',
-   self_employed: 'self-employed income',
+   self_employed: 'self-employed',
    irregular: 'irregular income',
    irregular_income: 'irregular income'
+};
+
+const incomePatternLabels: Record<string, string> = {
+   full_time: 'full-time',
+   part_time: 'part-time',
+   contract: 'contract',
+   contract_temp: 'contract',
+   freelance: 'freelance',
+   freelance_gig: 'freelance',
+   self_employed: 'self-employed',
+   irregular: 'irregular',
+   irregular_income: 'irregular'
 };
 
 const paydayContextLabels: Record<string, { label: string; range: string; start?: number; end?: number; variable?: boolean }> = {
@@ -114,60 +127,52 @@ const formatDelta = (days: number, direction: 'after' | 'before') => {
    return `${absoluteDays} ${absoluteDays === 1 ? 'day' : 'days'} ${direction} payday`;
 };
 
+const formatBridge = (days: number) => `${days}-day gap`;
+
 const formatChipAmount = (amount: number) => formatCurrency(amount).replace(/\.00$/, '');
 
 const buildBaseSegments = ({
    dueChipId,
-   incomeChipId,
-   openedChipId,
-   paydayChipId,
+   patternChipId,
    primaryGapChipId,
    requestChipId,
    borrowerChipId
 }: {
    borrowerChipId: string;
    dueChipId: string;
-   incomeChipId?: string;
-   openedChipId: string;
-   paydayChipId?: string;
+   patternChipId?: string;
    primaryGapChipId?: string;
    requestChipId: string;
 }): BorrowerContextFitSegment[] => {
-   const segments: BorrowerContextFitSegment[] = [
-      chipSegment(borrowerChipId),
-      ' opened this request for ',
-      chipSegment(requestChipId),
-      ' on ',
-      chipSegment(openedChipId),
-      ', planning to repay by ',
-      chipSegment(dueChipId),
-      '. '
-   ];
+   const segments: BorrowerContextFitSegment[] = [chipSegment(borrowerChipId)];
+
+   if (patternChipId) {
+      segments.push(' - ', chipSegment(patternChipId), ' - is requesting ');
+   } else {
+      segments.push(' is requesting ');
+   }
+
+   segments.push(chipSegment(requestChipId), ', due ', chipSegment(dueChipId));
 
    if (primaryGapChipId) {
-      segments.push('Need: ', chipSegment(primaryGapChipId), '. ');
+      segments.push(', with recurring ', chipSegment(primaryGapChipId));
    }
 
-   if (incomeChipId && paydayChipId) {
-      segments.push('Income: ', chipSegment(incomeChipId), ' paid ', chipSegment(paydayChipId), '. ');
-   } else if (incomeChipId) {
-      segments.push('Income: ', chipSegment(incomeChipId), '. ');
-   } else if (paydayChipId) {
-      segments.push('Pay timing: ', chipSegment(paydayChipId), '. ');
-   }
-
+   segments.push('.');
    return segments;
 };
 
 const buildResult = ({
    chips,
+   explanationSegments = [],
    fitLevel,
    secondaryChips = [],
    segments,
    showTimingClaim,
    tone
-}: BorrowerContextFit): BorrowerContextFit => ({
+}: BorrowerContextFit & { explanationSegments?: BorrowerContextFitSegment[] }): BorrowerContextFit => ({
    chips,
+   explanationSegments,
    fitLevel,
    secondaryChips,
    segments,
@@ -188,8 +193,10 @@ export const buildBorrowerContextFit = ({
    const hasValidDates = isValid(openedAt) && isValid(dueAt);
    const requestReason = loanReason.trim() || 'loan request';
    const incomeLabel = context?.incomeSetup ? incomeContextLabels[context.incomeSetup] : undefined;
+   const incomePatternLabel = context?.incomeSetup ? incomePatternLabels[context.incomeSetup] : undefined;
    const hasNoIncome = context?.incomeSetup === 'none' || context?.incomeSetup === 'no_income';
    const payday = context?.paydayWindow ? paydayContextLabels[context.paydayWindow] : undefined;
+   const payPattern = payday?.label ? [incomePatternLabel, payday.label].filter(Boolean).join(', ') : incomePatternLabel;
    const gapLabels = (context?.cashGaps ?? []).map((gap) => cashGapContextLabels[gap]).filter(Boolean);
    const primaryGap = gapLabels[0];
    const secondaryGaps = gapLabels.slice(1);
@@ -198,19 +205,18 @@ export const buildBorrowerContextFit = ({
    const allChips = [
       chip('borrower', 'Borrower', borrowerName, 'borrower'),
       chip('opened', 'Opened', openedText, 'date'),
-      chip('request', 'Request', `$${formatChipAmount(loanAmount)} · ${requestReason.toLowerCase()}`, 'request'),
+      chip('request', 'Request', `$${formatChipAmount(loanAmount)} for ${requestReason.toLowerCase()}`, 'request'),
       chip('due', 'Repay by', dueText, 'due'),
       incomeLabel ? chip('income', 'Income', incomeLabel, hasNoIncome ? 'neutral' : 'income') : null,
-      payday ? chip('payday', 'Payday', `${payday.label}${payday.range ? ` (${payday.range})` : ''}`, 'payday') : null,
+      payday ? chip('payday', 'Payday', payday.label, 'payday') : null,
+      payPattern ? chip('pattern', 'Pattern', `${payPattern} pay`, 'income') : null,
       primaryGap ? chip('gap-primary', 'Need', primaryGap, 'gap') : null
    ].filter(Boolean) as BorrowerContextFitChip[];
    const secondaryChips = secondaryGaps.map((gap, index) => chip(`gap-secondary-${index}`, 'Also', gap, 'gap'));
    const baseSegments = buildBaseSegments({
       borrowerChipId: 'borrower',
       dueChipId: 'due',
-      incomeChipId: incomeLabel ? 'income' : undefined,
-      openedChipId: 'opened',
-      paydayChipId: payday ? 'payday' : undefined,
+      patternChipId: payPattern ? 'pattern' : undefined,
       primaryGapChipId: primaryGap ? 'gap-primary' : undefined,
       requestChipId: 'request'
    });
@@ -218,9 +224,10 @@ export const buildBorrowerContextFit = ({
    if (!context || (!context.paydayWindow && !gapLabels.length)) {
       return buildResult({
          chips: allChips,
+         explanationSegments: ['Timing context is incomplete. Review repayment history and request reason before funding.'],
          fitLevel: 'unclear',
          secondaryChips,
-         segments: [...baseSegments, 'Use the request reason and repayment history to judge fit.'],
+         segments: baseSegments,
          showTimingClaim: false,
          tone: 'neutral'
       });
@@ -229,9 +236,10 @@ export const buildBorrowerContextFit = ({
    if (!hasValidDates) {
       return buildResult({
          chips: allChips,
+         explanationSegments: ['The timing details are not available, so use repayment history and request reason to judge fit.'],
          fitLevel: 'unclear',
          secondaryChips,
-         segments: [...baseSegments, 'The timing details are not available, so use repayment history and request reason to judge fit.'],
+         segments: baseSegments,
          showTimingClaim: false,
          tone: 'neutral'
       });
@@ -240,9 +248,10 @@ export const buildBorrowerContextFit = ({
    if (hasNoIncome) {
       return buildResult({
          chips: allChips,
+         explanationSegments: ['No income source is shared. Review repayment history for more context.'],
          fitLevel: 'no_income',
          secondaryChips,
-         segments: [...baseSegments, 'No income source is shared. Review repayment history for more context.'],
+         segments: baseSegments,
          showTimingClaim: true,
          tone: 'caution'
       });
@@ -251,9 +260,10 @@ export const buildBorrowerContextFit = ({
    if (!payday || payday.variable || !payday.start || !payday.end) {
       return buildResult({
          chips: allChips,
+         explanationSegments: ['Pay timing varies, so repayment history and request reason are the clearest timing signals.'],
          fitLevel: 'variable',
          secondaryChips,
-         segments: [...baseSegments, 'Payday timing varies, so use repayment history and request reason to judge fit.'],
+         segments: baseSegments,
          showTimingClaim: true,
          tone: 'neutral'
       });
@@ -265,9 +275,10 @@ export const buildBorrowerContextFit = ({
       const deltaChip = chip('delta', 'Timing', `${daysFromRequestToDue} days after request`, 'delta');
       return buildResult({
          chips: [...allChips, deltaChip],
+         explanationSegments: ['Repayment is due ', chipSegment('delta'), ', so payday timing is less useful as a short-term signal.'],
          fitLevel: 'distant',
          secondaryChips,
-         segments: [...baseSegments, 'Repayment is due ', chipSegment('delta'), ', so payday timing is less of a signal here.'],
+         segments: baseSegments,
          showTimingClaim: true,
          tone: 'neutral'
       });
@@ -280,14 +291,14 @@ export const buildBorrowerContextFit = ({
       const deltaChip = chip('delta', 'Timing', formatDelta(requestDay - payday.end, 'after'), 'delta');
       return buildResult({
          chips: [...allChips, deltaChip],
+         explanationSegments: [
+            'This request opened ',
+            chipSegment('delta'),
+            ', which may indicate a gap after income was received. Use repayment history for context.'
+         ],
          fitLevel: 'after_payday_gap',
          secondaryChips,
-         segments: [
-            ...baseSegments,
-            'This request was opened ',
-            chipSegment('delta'),
-            ', which may reflect a gap after income was received.'
-         ],
+         segments: baseSegments,
          showTimingClaim: true,
          tone: 'neutral'
       });
@@ -297,14 +308,14 @@ export const buildBorrowerContextFit = ({
       const deltaChip = chip('delta', 'Timing', formatDelta(payday.start - dueDay, 'before'), 'delta');
       return buildResult({
          chips: [...allChips, deltaChip],
-         fitLevel: 'early_gap',
-         secondaryChips,
-         segments: [
-            ...baseSegments,
+         explanationSegments: [
             'Repayment is due ',
             chipSegment('delta'),
-            '. This may bridge an earlier gap, so borrower history gives the clearest context.'
+            '. This may bridge an earlier gap, so repayment history gives the clearest context.'
          ],
+         fitLevel: 'early_gap',
+         secondaryChips,
+         segments: baseSegments,
          showTimingClaim: true,
          tone: 'neutral'
       });
@@ -314,25 +325,46 @@ export const buildBorrowerContextFit = ({
       const deltaChip = chip('delta', 'Timing', 'inside payday window', 'delta');
       return buildResult({
          chips: [...allChips, deltaChip],
+         explanationSegments: ['Repayment falls ', chipSegment('delta'), ', matching the shared pay timing.'],
          fitLevel: 'consistent',
          secondaryChips,
-         segments: [...baseSegments, 'Repayment falls ', chipSegment('delta'), ', consistent with the profile.'],
+         segments: baseSegments,
          showTimingClaim: true,
          tone: 'supportive'
       });
    }
 
    const deltaChip = chip('delta', 'Timing', formatDelta(dueDay - payday.end, 'after'), 'delta');
+   const bridgeChip = chip('bridge', 'Bridge', formatBridge(Math.max(daysFromRequestToDue, 1)), 'delta');
+   const explanationSegments: BorrowerContextFitSegment[] =
+      incomeLabel && payday?.label
+         ? [
+              'As a ',
+              chipSegment('income'),
+              ' paid ',
+              chipSegment('payday'),
+              ', ',
+              chipSegment('borrower'),
+              ' should have received income before repayment is due. This request bridges a short-term ',
+              chipSegment('bridge'),
+              ', with repayment ',
+              chipSegment('delta'),
+              ', so the timing fits the stated cash-flow pattern.'
+           ]
+         : [
+              'This request bridges a short-term ',
+              chipSegment('bridge'),
+              ', with repayment ',
+              chipSegment('delta'),
+              ', so the timing fits the stated cash-flow pattern.'
+           ];
+
    return buildResult({
-      chips: [...allChips, deltaChip],
+      chips: [...allChips, deltaChip, bridgeChip],
+      explanationSegments,
       fitLevel: 'supportive',
       secondaryChips,
-      segments: [
-         ...baseSegments,
-         'Repayment falls ',
-         chipSegment('delta'),
-         ', so the due date follows the shared income timing.'
-      ],
+      segments: baseSegments,
       showTimingClaim: true,
       tone: 'supportive'
    });

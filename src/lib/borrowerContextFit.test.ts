@@ -24,6 +24,14 @@ const renderText = (fit: BorrowerContextFit) =>
       })
       .join('');
 
+const renderExplanationText = (fit: BorrowerContextFit) =>
+   fit.explanationSegments
+      .map((segment) => {
+         if (typeof segment === 'string') return segment;
+         return fit.chips.find((chip) => chip.id === segment.chipId)?.text ?? '';
+      })
+      .join('');
+
 const deltaChip = (fit: BorrowerContextFit) => fit.chips.find((chip) => chip.id === 'delta')?.text;
 
 describe('buildBorrowerContextFit', () => {
@@ -32,9 +40,12 @@ describe('buildBorrowerContextFit', () => {
 
       expect(fit.fitLevel).toBe('supportive');
       expect(deltaChip(fit)).toBe('1 day after payday');
-      expect(renderText(fit)).toContain('maya-demo opened this request for $15 · emergency groceries on May 8');
-      expect(renderText(fit)).toContain('planning to repay by May 16');
-      expect(renderText(fit)).toContain('due date follows the shared income timing');
+      expect(renderText(fit)).toContain(
+         'maya-demo - full-time, mid-month pay - is requesting $15 for emergency groceries, due May 16, with recurring family needs.'
+      );
+      expect(renderExplanationText(fit)).toContain('As a full-time employee paid mid-month');
+      expect(renderExplanationText(fit)).toContain('8-day gap');
+      expect(renderExplanationText(fit)).toContain('timing fits the stated cash-flow pattern');
    });
 
    it('uses consistent timing when repayment falls inside the payday window', () => {
@@ -46,7 +57,7 @@ describe('buildBorrowerContextFit', () => {
 
       expect(fit.fitLevel).toBe('consistent');
       expect(deltaChip(fit)).toBe('inside payday window');
-      expect(renderText(fit)).toContain('consistent with the profile');
+      expect(renderExplanationText(fit)).toContain('matching the shared pay timing');
    });
 
    it('frames before-payday repayment as an early gap instead of a borrower warning', () => {
@@ -58,8 +69,8 @@ describe('buildBorrowerContextFit', () => {
 
       expect(fit.fitLevel).toBe('early_gap');
       expect(deltaChip(fit)).toBe('2 days before payday');
-      expect(renderText(fit)).toContain('may bridge an earlier gap');
-      expect(renderText(fit)).not.toContain('does not clearly line up');
+      expect(renderExplanationText(fit)).toContain('may bridge an earlier gap');
+      expect(renderExplanationText(fit)).not.toContain('does not clearly line up');
    });
 
    it('handles requests opened after the payday window ended', () => {
@@ -71,7 +82,7 @@ describe('buildBorrowerContextFit', () => {
 
       expect(fit.fitLevel).toBe('after_payday_gap');
       expect(deltaChip(fit)).toBe('3 days after payday');
-      expect(renderText(fit)).toContain('may reflect a gap after income was received');
+      expect(renderExplanationText(fit)).toContain('may indicate a gap after income was received');
    });
 
    it('reduces timing confidence for far future due dates', () => {
@@ -83,7 +94,7 @@ describe('buildBorrowerContextFit', () => {
 
       expect(fit.fitLevel).toBe('distant');
       expect(deltaChip(fit)).toBe('43 days after request');
-      expect(renderText(fit)).toContain('payday timing is less of a signal here');
+      expect(renderExplanationText(fit)).toContain('payday timing is less useful as a short-term signal');
    });
 
    it('uses neutral language for irregular payday timing', () => {
@@ -93,7 +104,7 @@ describe('buildBorrowerContextFit', () => {
       });
 
       expect(fit.fitLevel).toBe('variable');
-      expect(renderText(fit)).toContain('Payday timing varies');
+      expect(renderExplanationText(fit)).toContain('Pay timing varies');
    });
 
    it('falls back when borrower context is missing', () => {
@@ -102,7 +113,7 @@ describe('buildBorrowerContextFit', () => {
       expect(fit.fitLevel).toBe('unclear');
       expect(fit.showTimingClaim).toBe(false);
       expect(fit.chips.some((chip) => chip.id === 'delta')).toBe(false);
-      expect(renderText(fit)).toContain('Use the request reason and repayment history to judge fit');
+      expect(renderExplanationText(fit)).toContain('Timing context is incomplete');
    });
 
    it('falls back when dates cannot be parsed', () => {
@@ -115,7 +126,7 @@ describe('buildBorrowerContextFit', () => {
       expect(fit.fitLevel).toBe('unclear');
       expect(fit.showTimingClaim).toBe(false);
       expect(fit.chips.some((chip) => chip.id === 'delta')).toBe(false);
-      expect(renderText(fit)).toContain('timing details are not available');
+      expect(renderExplanationText(fit)).toContain('timing details are not available');
    });
 
    it('uses the first gap inline and renders additional gaps as secondary chips', () => {
@@ -136,12 +147,12 @@ describe('buildBorrowerContextFit', () => {
 
       expect(fit.fitLevel).toBe('no_income');
       expect(fit.tone).toBe('caution');
-      expect(renderText(fit)).toContain('No income source is shared');
+      expect(renderExplanationText(fit)).toContain('No income source is shared');
    });
 
    it('never makes a repayment certainty claim or adds gendered pronouns', () => {
       const fit = buildBorrowerContextFit({ ...baseInput, context: baseContext });
-      const text = renderText(fit).toLowerCase();
+      const text = `${renderText(fit)} ${renderExplanationText(fit)}`.toLowerCase();
 
       expect(text).not.toContain('likely to repay');
       expect(text).not.toContain('will pay back');
