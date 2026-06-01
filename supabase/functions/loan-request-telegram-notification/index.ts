@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { buildTelegramLoanRequestMessage } from '../_shared/telegramLoanNotifications.ts';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -9,7 +10,9 @@ const corsHeaders = {
    'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
-const getSetting = async (supabase: ReturnType<typeof createClient>, key: string) => {
+type SupabaseClient = ReturnType<typeof createClient<any>>;
+
+const getSetting = async (supabase: SupabaseClient, key: string) => {
    const { data, error } = await supabase.from('telegram_bot_settings').select('value').eq('key', key).maybeSingle();
    if (error) throw new Error(error.message);
    return data?.value as string | undefined;
@@ -21,7 +24,7 @@ const getRequestSecret = (req: Request) => {
    return bearerToken ?? req.headers.get('x-notification-secret');
 };
 
-const authorizeInternalRequest = async (supabase: ReturnType<typeof createClient>, req: Request) => {
+const authorizeInternalRequest = async (supabase: SupabaseClient, req: Request) => {
    const requestSecret = getRequestSecret(req);
    if (!requestSecret) {
       return { authorized: false, status: 401, error: 'Unauthorized' };
@@ -47,31 +50,6 @@ const authorizeInternalRequest = async (supabase: ReturnType<typeof createClient
 const buildLoanUrl = (loanId: string) => {
    const siteUrl = Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('SITE_URL') ?? 'https://app.moodeng.credit';
    return `${siteUrl.replace(/\/$/, '')}/request-board?loan=${loanId}`;
-};
-
-const sendTelegramMessage = async (chatId: string, text: string, loanUrl: string) => {
-   const token = Deno.env.get('TELEGRAM_API_TOKEN') ?? Deno.env.get('TELEGRAM_BOT_TOKEN');
-   if (!token) throw new Error('TELEGRAM_API_TOKEN is not configured.');
-
-   const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-         chat_id: chatId,
-         text,
-         disable_web_page_preview: true,
-         reply_markup: {
-            inline_keyboard: [[{ text: 'Fund this loan', url: loanUrl }]]
-         }
-      })
-   });
-
-   const result = await response.json().catch(() => null);
-   if (!response.ok || !result?.ok) {
-      throw new Error(result?.description ?? `Telegram sendMessage failed with ${response.status}`);
-   }
-
-   return result;
 };
 
 serve(async (req) => {
@@ -155,14 +133,16 @@ serve(async (req) => {
          throw new Error('lender_group_chat_id is not configured.');
       }
 
-      await sendTelegramMessage(chatId, message, loanUrl);
+      await sendTelegramMessage(chatId, message, {
+         inlineKeyboard: [[{ text: 'Fund this loan', url: loanUrl }]]
+      });
 
       return new Response(JSON.stringify({ message: 'Telegram lender notification sent' }), {
          status: 200,
          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
    } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
+      return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Telegram lender notification failed' }), {
          status: 500,
          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
