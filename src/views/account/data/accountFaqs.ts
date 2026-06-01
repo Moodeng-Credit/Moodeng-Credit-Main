@@ -177,14 +177,14 @@ Ang importanteng detalye: palaging piliin ang Base bilang network kapag nagde-de
 2. Kapag may USDC ka na sa exchange, i-withdraw ito papunta sa Base account mo. Kunin ang deposit address mula sa Base wallet mo at siguraduhing Base ang network para libre ang transfer.
 3. Kapag nasa Base account mo na ang USDC, pumunta sa Magbayad section ng app at sundin ang steps para ipadala ito sa lender mo.
 
-Palaging magbayad bago ang due date. Ang on-time repayment ay nagpapataas ng Trust Score mo at nag-u-unlock ng mas mataas na Credit Levels.`
+Palaging magbayad bago ang due date. Ang on-time repayment ay nagpapataas ng Trust Score mo at nag-u-unlock ng mas mataas na antas ng kredito.`
    },
    {
       id: 'borrow-below-limit',
       question: 'Puwede ba akong humiram nang mas mababa sa credit limit ko?',
       answer: `Oo, at inirerekomenda pa nga namin ito lalo na kung nagsisimula ka pa lang. Ang paghiram nang mas mababa sa limit mo ay tinatawag na Trust-Building Loan.
 
-Hindi binibilang ang mas maliliit na loans na ito para ma-unlock ang susunod na Credit Level. Para doon, kailangan mong hiramin ang buong limit mo at magbayad on time. Pero nakakatulong ang mga ito na bumuo ng repayment history mo at makakuha ng mas maraming Trust Points kaysa kung lagi mong hihiramin ang maximum.
+Hindi binibilang ang mas maliliit na loans na ito para ma-unlock ang susunod na antas ng kredito. Para doon, kailangan mong hiramin ang buong limit mo at magbayad on time. Pero nakakatulong ang mga ito na bumuo ng repayment history mo at makakuha ng mas maraming Trust Points kaysa kung lagi mong hihiramin ang maximum.
 
 Kaya kung gusto mong mabilis na mapalakas ang reputation mo, magandang paraan ang Trust-Building Loans.`
    },
@@ -207,7 +207,7 @@ const FILIPINO_LENDER_FAQS: AccountFAQItem[] = [
 
 Sa ngayon, points pa lang ang IOU. Sa susunod, maglulunsad kami ng token na IOU rin ang pangalan, at ang naipon mong points ay iko-convert sa pamamagitan ng airdrop. Ang pag-hold ng IOU ay mag-u-unlock ng karagdagang benefits na konektado sa platform.
 
-Para sa lenders lang ang IOU. Ang borrowers naman ay bumubuo ng Trust Score at Credit Level. Kaya kung gusto mong kumita ng IOU, mag-fund ng loan request mula sa Request Board.`
+Para sa lenders lang ang IOU. Ang borrowers naman ay bumubuo ng Trust Score at antas ng kredito. Kaya kung gusto mong kumita ng IOU, mag-fund ng loan request mula sa Request Board.`
    },
    {
       id: 'how-borrowers-verify',
@@ -294,14 +294,14 @@ Detail penting: selalu pilih Base sebagai network saat deposit ke exchange. Mema
 2. Setelah punya USDC di exchange, withdraw ke Base account kamu. Ambil alamat deposit dari Base wallet dan pastikan network disetel ke Base agar transfer gratis.
 3. Setelah USDC ada di Base account, buka bagian Bayar di app dan ikuti langkah untuk mengirimnya ke pemberi pinjaman.
 
-Selalu bayar sebelum tanggal jatuh tempo. Pembayaran tepat waktu membangun Trust Score dan membuka Credit Level yang lebih tinggi.`
+Selalu bayar sebelum tanggal jatuh tempo. Pembayaran tepat waktu membangun Trust Score dan membuka level kredit yang lebih tinggi.`
    },
    {
       id: 'borrow-below-limit',
       question: 'Bisakah saya meminjam di bawah credit limit saya?',
       answer: `Ya, dan kami justru merekomendasikannya, terutama saat kamu baru mulai. Meminjam di bawah limit disebut Trust-Building Loan.
 
-Pinjaman yang lebih kecil ini tidak dihitung untuk membuka Credit Level berikutnya. Untuk itu, kamu perlu meminjam limit penuh dan membayar tepat waktu. Tetapi pinjaman kecil tetap membangun riwayat pembayaran dan memberi lebih banyak Trust Points daripada selalu meminjam maksimum.
+Pinjaman yang lebih kecil ini tidak dihitung untuk membuka level kredit berikutnya. Untuk itu, kamu perlu meminjam limit penuh dan membayar tepat waktu. Tetapi pinjaman kecil tetap membangun riwayat pembayaran dan memberi lebih banyak Trust Points daripada selalu meminjam maksimum.
 
 Jadi jika kamu ingin cepat membangun reputasi, Trust-Building Loans adalah cara yang bagus.`
    },
@@ -324,7 +324,7 @@ const INDONESIAN_LENDER_FAQS: AccountFAQItem[] = [
 
 Saat ini IOU masih berupa poin. Ke depannya, kami akan meluncurkan token yang juga bernama IOU, dan poin yang terkumpul akan dikonversi lewat airdrop. Memegang IOU akan membuka manfaat tambahan yang terhubung ke platform.
 
-IOU hanya untuk pemberi pinjaman. Peminjam membangun Trust Score dan Credit Level. Jadi jika kamu ingin mendapatkan IOU, danai permintaan pinjaman dari Papan Permintaan.`
+IOU hanya untuk pemberi pinjaman. Peminjam membangun Trust Score dan level kredit. Jadi jika kamu ingin mendapatkan IOU, danai permintaan pinjaman dari Papan Permintaan.`
    },
    {
       id: 'how-borrowers-verify',
@@ -397,14 +397,14 @@ const THAI_BORROWER_FAQS: AccountFAQItem[] = [
 
 ซื้อหรือฝาก USDC ผ่าน exchange ของคุณ จากนั้นถอน USDC ไปยังบัญชี Base ตรวจสอบว่าเลือกเครือข่าย Base เพื่อให้โอนฟรี เมื่อ USDC อยู่ในบัญชี Base แล้ว ไปที่ส่วนชำระในแอปและทำตามขั้นตอนเพื่อส่งให้ผู้ให้กู้
 
-ชำระก่อนวันครบกำหนดเสมอ เพราะการชำระตรงเวลาช่วยเพิ่ม Trust Score และปลดล็อก Credit Level ที่สูงขึ้น`
+ชำระก่อนวันครบกำหนดเสมอ เพราะการชำระตรงเวลาช่วยเพิ่ม Trust Score และปลดล็อกระดับเครดิตที่สูงขึ้น`
    },
    {
       id: 'borrow-below-limit',
       question: 'ฉันยืมต่ำกว่าวงเงินเครดิตได้ไหม?',
       answer: `ได้ และเราแนะนำโดยเฉพาะเมื่อคุณเพิ่งเริ่ม การยืมต่ำกว่าวงเงินเรียกว่า Trust-Building Loan
 
-เงินกู้ขนาดเล็กเหล่านี้ไม่ได้นับเพื่อปลดล็อก Credit Level ถัดไป แต่ช่วยสร้างประวัติการชำระคืนและเพิ่ม Trust Points ได้ดี`
+เงินกู้ขนาดเล็กเหล่านี้ไม่ได้นับเพื่อปลดล็อกระดับเครดิตถัดไป แต่ช่วยสร้างประวัติการชำระคืนและเพิ่ม Trust Points ได้ดี`
    },
    {
       id: 'increase-credit-limit',
@@ -488,14 +488,14 @@ Chi tiết quan trọng: luôn chọn Base khi nạp vào sàn. Chọn sai mạn
 
 Mua hoặc nạp USDC qua sàn của bạn, sau đó rút USDC về tài khoản Base. Lấy địa chỉ nạp từ ví Base và đảm bảo mạng là Base để chuyển miễn phí. Khi USDC đã ở tài khoản Base, vào phần Trả nợ trong app và làm theo các bước để gửi cho người cho vay.
 
-Luôn trả trước ngày đến hạn. Trả đúng hạn giúp tăng Trust Score và mở khóa Credit Level cao hơn.`
+Luôn trả trước ngày đến hạn. Trả đúng hạn giúp tăng Trust Score và mở khóa hạng tín dụng cao hơn.`
    },
    {
       id: 'borrow-below-limit',
       question: 'Tôi có thể vay thấp hơn hạn mức tín dụng không?',
       answer: `Có, và chúng tôi thật sự khuyến nghị điều đó, nhất là khi bạn mới bắt đầu. Vay thấp hơn hạn mức được gọi là Trust-Building Loan.
 
-Các khoản nhỏ này không mở khóa Credit Level tiếp theo, nhưng chúng xây dựng lịch sử trả nợ và giúp bạn kiếm nhiều Trust Points hơn.`
+Các khoản nhỏ này không mở khóa hạng tín dụng tiếp theo, nhưng chúng xây dựng lịch sử trả nợ và giúp bạn kiếm nhiều Trust Points hơn.`
    },
    {
       id: 'increase-credit-limit',

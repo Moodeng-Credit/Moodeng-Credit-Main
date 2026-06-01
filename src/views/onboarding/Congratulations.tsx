@@ -59,7 +59,7 @@ const CONGRATULATIONS_COPY = {
             subtitle: 'Sumali sa komunidad at magtanong'
          },
          creditLeveling: {
-            title: 'Alamin ang Credit Leveling System',
+            title: 'Alamin ang sistema ng pagpapataas ng antas ng kredito',
             subtitle: 'Palakihin ang limit, bumuo ng tiwala'
          }
       },
@@ -88,7 +88,7 @@ const CONGRATULATIONS_COPY = {
             subtitle: 'Gabung komunitas dan ajukan pertanyaan'
          },
          creditLeveling: {
-            title: 'Pelajari sistem Credit Level',
+            title: 'Pelajari sistem peningkatan level kredit',
             subtitle: 'Naikkan limit, bangun kepercayaan'
          }
       },
@@ -117,7 +117,7 @@ const CONGRATULATIONS_COPY = {
             subtitle: 'เข้าร่วมชุมชนและถามคำถาม'
          },
          creditLeveling: {
-            title: 'เรียนรู้ระบบ Credit Level',
+            title: 'เรียนรู้ระบบการเพิ่มระดับเครดิต',
             subtitle: 'เพิ่มวงเงิน สร้างความน่าเชื่อถือ'
          }
       },
@@ -146,7 +146,7 @@ const CONGRATULATIONS_COPY = {
             subtitle: 'Tham gia cộng đồng và đặt câu hỏi'
          },
          creditLeveling: {
-            title: 'Tìm hiểu hệ thống Credit Level',
+            title: 'Tìm hiểu hệ thống nâng hạng tín dụng',
             subtitle: 'Tăng hạn mức, xây dựng niềm tin'
          }
       },

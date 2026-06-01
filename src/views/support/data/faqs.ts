@@ -103,7 +103,7 @@ const FILIPINO_FAQS: FAQItem[] = [
       question: 'Ano ang Moodeng Credit?',
       answer: `Ang Moodeng Credit ay borrowing platform kung saan puwede kang mag-request ng short-term loans sa USDC habang bumubuo ng Trust Score na naka-link sa wallet mo.
 
-Sa halip na umasa sa traditional credit scores, tinutulungan ka ng Moodeng na bumuo ng tiwala sa pamamagitan ng responsible borrowing at on-time repayments. Habang tumatagal, ang tiwalang ito ang nag-u-unlock ng mas mataas na Credit Levels at mas malaking loan amounts.
+Sa halip na umasa sa traditional credit scores, tinutulungan ka ng Moodeng na bumuo ng tiwala sa pamamagitan ng responsible borrowing at on-time repayments. Habang tumatagal, ang tiwalang ito ang nag-u-unlock ng mas mataas na antas ng kredito at mas malaking loan amounts.
 
 Hindi nakakulong ang Trust Score mo sa isang app lang. Dinisenyo itong magpakita ng reliability mo at tumulong bumuo ng reputation na madadala mo sa susunod.`
    },
@@ -123,8 +123,8 @@ Tumataas ito kapag nagbabayad ka on time at in full, at bumababa kapag late ang 
    },
    {
       id: 'what-is-a-credit-level',
-      question: 'Ano ang Credit Level?',
-      answer: `Ang Credit Levels ang kumokontrol kung magkano ang puwede mong hiramin at a time.
+      question: 'Ano ang antas ng kredito?',
+      answer: `Ang mga antas ng kredito ang kumokontrol kung magkano ang puwede mong hiramin at a time.
 
 Magsisimula ka sa Level 1 na may $15 limit. Bawat full repayment ng Credit-Building Loan ay nagpapataas ng limit mo at nag-u-unlock ng next level: $15 -> $20 -> $40 -> $60, at pataas pa.`
    },
@@ -162,7 +162,7 @@ Paano namin pinananatiling libre ito? Hindi kami kumukuha ng cut. Ang future bus
       question: 'Paano tumutulong ang Moodeng laban sa loan sharks?',
       answer: `Ang loan sharks ay informal lenders na naniningil ng 20-100% weekly interest, nananakot ng borrowers, at nagkukulong sa tao sa cycle ng utang. Global problem ito. Daan-daang milyong unbanked at underbanked na tao ang walang ibang mapuntahan para sa emergency cash, kaya nauuwi sila sa pagbabayad ng maraming beses ng orihinal nilang hiniram.
 
-Ginawa ang Moodeng Credit bilang mas patas na alternative. Ang interest rates ay sine-set ng borrower at tinatanggap o nilalagpasan ng lenders sa transparent marketplace. Walang hidden charges at walang compounding tricks. Ang small starter loans, gaya ng $15-$60 sa Credit Levels 1-4, ay tugma sa short-term emergency needs ng borrowers, kasama ang credit-building system na nagpapalaki ng limit habang napapatunayan mo ang reliability mo.
+Ginawa ang Moodeng Credit bilang mas patas na alternative. Ang interest rates ay sine-set ng borrower at tinatanggap o nilalagpasan ng lenders sa transparent marketplace. Walang hidden charges at walang compounding tricks. Ang small starter loans, gaya ng $15-$60 sa antas ng kredito 1-4, ay tugma sa short-term emergency needs ng borrowers, kasama ang credit-building system na nagpapalaki ng limit habang napapatunayan mo ang reliability mo.
 
 Walang collateral, walang government ID, at walang bank account na kailangan. Verified World ID at Coinbase Smart Wallet lang. Kahit sinong may phone ay puwedeng maka-access ng loans. At dahil naka-link sa wallet at World ID ang reputation mo, nadadala mo ito at nakakabuo ka ng tunay na credit history na puwedeng pagkatiwalaan ng lenders, sa halip na manatili sa cycle.
 
@@ -171,11 +171,11 @@ Hindi namin sinasabing papalitan namin ang banks para sa lahat. Pero para sa mga
    {
       id: 'what-is-credit-building-loan',
       question: 'Ano ang credit-building loan?',
-      answer: `Ang credit-building loan ay loan na kinukuha mo para palakihin ang credit limit mo sa Moodeng. Para maging credit-building loan, dapat nasa buong current Credit Level limit mo ang loan, hindi mas mababa.
+      answer: `Ang credit-building loan ay loan na kinukuha mo para palakihin ang credit limit mo sa Moodeng. Para maging credit-building loan, dapat nasa buong current limit ng antas ng kredito mo ang loan, hindi mas mababa.
 
-Ganito ito gumagana. Magsisimula ka sa Credit Level 1 na may $15 borrowing limit. Hiramin ang buong $15 at bayaran on time, at aangat ang limit mo sa $20. Hiramin naman ang buong $20 sa susunod at bayaran, mag-u-unlock ka ng $40. Pagkatapos $60. Patuloy ang progression sa higher levels.
+Ganito ito gumagana. Magsisimula ka sa antas ng kredito 1 na may $15 borrowing limit. Hiramin ang buong $15 at bayaran on time, at aangat ang limit mo sa $20. Hiramin naman ang buong $20 sa susunod at bayaran, mag-u-unlock ka ng $40. Pagkatapos $60. Patuloy ang progression sa higher levels.
 
-Ang mas maliliit na loans na mas mababa sa full limit mo ay tinatawag na Trust-Building Loans. Nakakatulong pa rin ang mga iyon dahil pinapalakas nila ang repayment record at reputation mo sa lenders, pero hindi nila tinataas ang Credit Level mo. Kaya kung goal mo ang mag-build ng credit at mag-unlock ng mas malalaking loans, kailangan mong kumuha at magbayad ng full-limit Credit-Building Loans.
+Ang mas maliliit na loans na mas mababa sa full limit mo ay tinatawag na Trust-Building Loans. Nakakatulong pa rin ang mga iyon dahil pinapalakas nila ang repayment record at reputation mo sa lenders, pero hindi nila tinataas ang antas ng kredito mo. Kaya kung goal mo ang mag-build ng credit at mag-unlock ng mas malalaking loans, kailangan mong kumuha at magbayad ng full-limit Credit-Building Loans.
 
 Hindi tulad ng bank credit card o traditional credit-builder product, hindi nire-report sa credit bureau ang credit ng Moodeng. Naka-track ito on-chain, naka-link sa wallet at World ID mo, at portable sa kahit anong platform na mag-iintegrate sa system.`
    },
@@ -184,7 +184,7 @@ Hindi tulad ng bank credit card o traditional credit-builder product, hindi nire
       question: 'Puwede ba akong makakuha ng maliit na loan sa Moodeng?',
       answer: `Oo. Maliit na loans talaga ang pangunahing gamit ng Moodeng. Nagsisimula ang bagong borrowers sa $15 limit, at dinisenyo ang platform para sa short-term, low-amount lending: emergency cash, pantawid bago payday, o one-off expenses.
 
-Walang minimum loan amounts, walang monthly subscriptions, walang setup costs, at walang fees. Ire-request mo ang kailangan mo, hanggang sa current Credit Level limit mo, ise-set ang repayment date at interest rate, at lenders ang magdedesisyon kung popondohan ka nila.
+Walang minimum loan amounts, walang monthly subscriptions, walang setup costs, at walang fees. Ire-request mo ang kailangan mo, hanggang sa current limit ng antas ng kredito mo, ise-set ang repayment date at interest rate, at lenders ang magdedesisyon kung popondohan ka nila.
 
 Bawat successful repayment ay nagpapalaki ng limit mo step by step: $15 -> $20 -> $40 -> $60, at pataas pa. Kaya puwede kang magsimula sa maliit para subukan ang platform with low stakes, bumuo ng reputation, at lumaki lang sa bigger loans kapag handa ka na.`
    }
@@ -196,7 +196,7 @@ const INDONESIAN_FAQS: FAQItem[] = [
       question: 'Apa itu Moodeng Credit?',
       answer: `Moodeng Credit adalah platform pinjaman yang memungkinkan kamu mengajukan pinjaman jangka pendek dalam USDC sambil membangun Trust Score yang tertaut ke wallet kamu.
 
-Alih-alih fokus pada skor kredit tradisional, Moodeng membantu kamu membangun kepercayaan lewat pinjaman yang bertanggung jawab dan pembayaran tepat waktu. Seiring waktu, kepercayaan ini membuka Credit Level yang lebih tinggi dan jumlah pinjaman yang lebih besar.
+Alih-alih fokus pada skor kredit tradisional, Moodeng membantu kamu membangun kepercayaan lewat pinjaman yang bertanggung jawab dan pembayaran tepat waktu. Seiring waktu, kepercayaan ini membuka level kredit yang lebih tinggi dan jumlah pinjaman yang lebih besar.
 
 Trust Score kamu tidak terkunci di satu app. Skor ini dirancang untuk mencerminkan keandalan kamu dan membantu kamu membangun reputasi yang bisa dibawa ke depan.`
    },
@@ -216,8 +216,8 @@ Skor ini naik saat kamu membayar penuh dan tepat waktu, dan turun saat pembayara
    },
    {
       id: 'what-is-a-credit-level',
-      question: 'Apa itu Credit Level?',
-      answer: `Credit Level menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu.
+      question: 'Apa itu level kredit?',
+      answer: `Level kredit menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu.
 
 Kamu mulai dari Level 1 dengan limit $15. Setiap pembayaran penuh untuk Credit-Building Loan menaikkan limit dan membuka level berikutnya: $15 -> $20 -> $40 -> $60, dan seterusnya.`
    },
@@ -255,7 +255,7 @@ Bagaimana kami menjaga ini tetap gratis? Kami tidak mengambil potongan. Model bi
       question: 'Bagaimana Moodeng membantu melawan rentenir?',
       answer: `Rentenir, yaitu pemberi pinjaman informal yang mengenakan bunga mingguan 20-100%, mengancam peminjam, dan menjebak orang dalam siklus utang, adalah masalah global. Ratusan juta orang unbanked dan underbanked tidak punya pilihan lain untuk uang darurat, lalu membayar berkali-kali lipat dari jumlah yang mereka pinjam.
 
-Moodeng Credit dibuat sebagai alternatif yang lebih adil. Rate bunga ditentukan oleh peminjam dan diterima atau dilewati oleh pemberi pinjaman di marketplace yang transparan. Tidak ada biaya tersembunyi dan tidak ada trik bunga berbunga. Pinjaman awal kecil, seperti $15-$60 di Credit Level 1-4, sesuai dengan kebutuhan darurat jangka pendek, ditambah sistem credit-building yang menaikkan limit saat kamu membuktikan keandalan.
+Moodeng Credit dibuat sebagai alternatif yang lebih adil. Rate bunga ditentukan oleh peminjam dan diterima atau dilewati oleh pemberi pinjaman di marketplace yang transparan. Tidak ada biaya tersembunyi dan tidak ada trik bunga berbunga. Pinjaman awal kecil, seperti $15-$60 di level kredit 1-4, sesuai dengan kebutuhan darurat jangka pendek, ditambah sistem credit-building yang menaikkan limit saat kamu membuktikan keandalan.
 
 Tidak perlu agunan, ID pemerintah, atau rekening bank. Cukup World ID terverifikasi dan Coinbase Smart Wallet. Siapa pun dengan ponsel bisa mengakses pinjaman. Reputasi kamu juga ikut terbawa, karena tertaut ke wallet dan World ID, sehingga kamu membangun riwayat kredit nyata yang bisa dipercaya pemberi pinjaman.
 
@@ -264,11 +264,11 @@ Kami tidak mengklaim bisa menggantikan bank untuk semua orang. Tetapi untuk oran
    {
       id: 'what-is-credit-building-loan',
       question: 'Apa itu credit-building loan?',
-      answer: `Credit-building loan adalah pinjaman yang kamu ambil khusus untuk menaikkan credit limit di Moodeng. Agar termasuk credit-building loan, pinjaman harus sebesar limit Credit Level kamu saat ini, bukan di bawahnya.
+      answer: `Credit-building loan adalah pinjaman yang kamu ambil khusus untuk menaikkan credit limit di Moodeng. Agar termasuk credit-building loan, pinjaman harus sebesar limit level kredit kamu saat ini, bukan di bawahnya.
 
-Begini cara kerjanya. Kamu mulai di Credit Level 1 dengan limit pinjaman $15. Pinjam penuh $15 dan bayar tepat waktu, lalu limit kamu naik ke $20. Pinjam penuh $20 berikutnya dan bayar, kamu membuka $40. Lalu $60. Progression terus berlanjut di level yang lebih tinggi.
+Begini cara kerjanya. Kamu mulai di level kredit 1 dengan limit pinjaman $15. Pinjam penuh $15 dan bayar tepat waktu, lalu limit kamu naik ke $20. Pinjam penuh $20 berikutnya dan bayar, kamu membuka $40. Lalu $60. Progression terus berlanjut di level yang lebih tinggi.
 
-Pinjaman lebih kecil di bawah limit penuh disebut Trust-Building Loans. Pinjaman itu tetap membantu karena membangun riwayat pembayaran dan reputasi dengan pemberi pinjaman, tetapi tidak menaikkan Credit Level. Jadi jika tujuan kamu adalah membangun kredit dan membuka pinjaman lebih besar, kamu perlu mengambil dan membayar Credit-Building Loans dengan limit penuh.
+Pinjaman lebih kecil di bawah limit penuh disebut Trust-Building Loans. Pinjaman itu tetap membantu karena membangun riwayat pembayaran dan reputasi dengan pemberi pinjaman, tetapi tidak menaikkan level kredit. Jadi jika tujuan kamu adalah membangun kredit dan membuka pinjaman lebih besar, kamu perlu mengambil dan membayar Credit-Building Loans dengan limit penuh.
 
 Berbeda dari kartu kredit bank atau produk credit-builder tradisional, kredit Moodeng tidak dilaporkan ke credit bureau. Kredit ini dilacak on-chain, tertaut ke wallet dan World ID kamu, dan portable ke platform mana pun yang mengintegrasikan sistem ini.`
    },
@@ -277,7 +277,7 @@ Berbeda dari kartu kredit bank atau produk credit-builder tradisional, kredit Mo
       question: 'Bisakah saya mendapat pinjaman kecil di Moodeng?',
       answer: `Ya. Pinjaman kecil memang alasan utama Moodeng dibuat. Peminjam baru mulai dengan limit $15, dan platform ini dirancang untuk pinjaman jangka pendek bernilai kecil: uang darurat, menjembatani kebutuhan sebelum gajian, atau pengeluaran satu kali.
 
-Tidak ada minimum jumlah pinjaman, tidak ada langganan bulanan, tidak ada biaya setup, dan tidak ada fee. Kamu meminta jumlah yang kamu perlukan, sampai limit Credit Level saat ini, menetapkan tanggal pembayaran dan rate bunga, lalu pemberi pinjaman memutuskan apakah ingin mendanai.
+Tidak ada minimum jumlah pinjaman, tidak ada langganan bulanan, tidak ada biaya setup, dan tidak ada fee. Kamu meminta jumlah yang kamu perlukan, sampai limit level kredit saat ini, menetapkan tanggal pembayaran dan rate bunga, lalu pemberi pinjaman memutuskan apakah ingin mendanai.
 
 Setiap pembayaran berhasil menaikkan limit kamu bertahap: $15 -> $20 -> $40 -> $60, dan seterusnya. Jadi kamu bisa mulai kecil untuk mencoba platform dengan risiko rendah, membangun reputasi, lalu tumbuh ke pinjaman lebih besar saat sudah siap.`
    }
@@ -289,7 +289,7 @@ const THAI_FAQS: FAQItem[] = [
       question: 'Moodeng Credit คืออะไร?',
       answer: `Moodeng Credit เป็นแพลตฟอร์มการยืมที่ให้คุณขอเงินกู้ระยะสั้นเป็น USDC พร้อมสร้าง Trust Score ที่ผูกกับกระเป๋าเงินของคุณ
 
-แทนที่จะอิงคะแนนเครดิตแบบเดิม Moodeng ช่วยให้คุณสร้างความน่าเชื่อถือผ่านการยืมอย่างรับผิดชอบและการชำระคืนตรงเวลา เมื่อเวลาผ่านไป ความน่าเชื่อถือนี้จะช่วยปลดล็อก Credit Level ที่สูงขึ้นและขอวงเงินที่มากขึ้นได้
+แทนที่จะอิงคะแนนเครดิตแบบเดิม Moodeng ช่วยให้คุณสร้างความน่าเชื่อถือผ่านการยืมอย่างรับผิดชอบและการชำระคืนตรงเวลา เมื่อเวลาผ่านไป ความน่าเชื่อถือนี้จะช่วยปลดล็อกระดับเครดิตที่สูงขึ้นและขอวงเงินที่มากขึ้นได้
 
 Trust Score ของคุณไม่ได้ติดอยู่ในแอปเดียว แต่สะท้อนความน่าเชื่อถือและช่วยสร้างชื่อเสียงที่คุณพกต่อไปได้`
    },
@@ -309,8 +309,8 @@ Trust Score ของคุณไม่ได้ติดอยู่ในแ�
    },
    {
       id: 'what-is-a-credit-level',
-      question: 'Credit Level คืออะไร?',
-      answer: `Credit Level กำหนดว่าคุณสามารถยืมได้มากแค่ไหนในแต่ละครั้ง
+      question: 'ระดับเครดิตคืออะไร?',
+      answer: `ระดับเครดิตกำหนดว่าคุณสามารถยืมได้มากแค่ไหนในแต่ละครั้ง
 
 คุณเริ่มที่ Level 1 พร้อมวงเงิน $15 การชำระคืนเต็มจำนวนของ Credit-Building Loan แต่ละครั้งจะเพิ่มวงเงินและปลดล็อกระดับถัดไป: $15 -> $20 -> $40 -> $60 และต่อไป`
    },
@@ -347,11 +347,11 @@ Moodeng Credit ถูกสร้างเป็นทางเลือกท�
    {
       id: 'what-is-credit-building-loan',
       question: 'Credit-Building Loan คืออะไร?',
-      answer: `Credit-Building Loan คือเงินกู้ที่คุณใช้เพื่อเพิ่มวงเงินเครดิตบน Moodeng โดยต้องเป็นเงินกู้เต็มวงเงิน Credit Level ปัจจุบัน ไม่ต่ำกว่านั้น
+      answer: `Credit-Building Loan คือเงินกู้ที่คุณใช้เพื่อเพิ่มวงเงินเครดิตบน Moodeng โดยต้องเป็นเงินกู้เต็มวงเงินระดับเครดิตปัจจุบัน ไม่ต่ำกว่านั้น
 
 เช่น คุณเริ่มที่ Level 1 วงเงิน $15 ยืมเต็ม $15 และชำระคืนตรงเวลา วงเงินจะเพิ่มเป็น $20 ครั้งต่อไปยืมเต็ม $20 และชำระคืน ก็จะปลดล็อก $40 แล้วต่อไปเป็น $60
 
-เงินกู้ที่ต่ำกว่าเต็มวงเงินเรียกว่า Trust-Building Loan ซึ่งช่วยสร้างประวัติการชำระและชื่อเสียง แต่ไม่เพิ่ม Credit Level`
+เงินกู้ที่ต่ำกว่าเต็มวงเงินเรียกว่า Trust-Building Loan ซึ่งช่วยสร้างประวัติการชำระและชื่อเสียง แต่ไม่เพิ่มระดับเครดิต`
    },
    {
       id: 'small-loan',
@@ -368,7 +368,7 @@ const VIETNAMESE_FAQS: FAQItem[] = [
       question: 'Moodeng Credit là gì?',
       answer: `Moodeng Credit là nền tảng vay cho phép bạn yêu cầu các khoản vay ngắn hạn bằng USDC đồng thời xây dựng Trust Score gắn với ví của bạn.
 
-Thay vì tập trung vào điểm tín dụng truyền thống, Moodeng giúp bạn xây dựng niềm tin qua việc vay có trách nhiệm và trả đúng hạn. Theo thời gian, niềm tin này giúp bạn mở khóa Credit Level cao hơn và yêu cầu khoản vay lớn hơn.
+Thay vì tập trung vào điểm tín dụng truyền thống, Moodeng giúp bạn xây dựng niềm tin qua việc vay có trách nhiệm và trả đúng hạn. Theo thời gian, niềm tin này giúp bạn mở khóa hạng tín dụng cao hơn và yêu cầu khoản vay lớn hơn.
 
 Trust Score của bạn không bị khóa trong một ứng dụng. Nó phản ánh độ tin cậy và giúp bạn xây dựng uy tín có thể mang theo.`
    },
@@ -388,8 +388,8 @@ Người cho vay xem các yêu cầu đang mở và chọn khoản muốn cấp 
    },
    {
       id: 'what-is-a-credit-level',
-      question: 'Credit Level là gì?',
-      answer: `Credit Level kiểm soát số tiền bạn có thể vay trong một lần.
+      question: 'Hạng tín dụng là gì?',
+      answer: `Hạng tín dụng kiểm soát số tiền bạn có thể vay trong một lần.
 
 Bạn bắt đầu ở Level 1 với hạn mức $15. Mỗi lần trả đủ một Credit-Building Loan sẽ tăng hạn mức và mở khóa cấp tiếp theo: $15 -> $20 -> $40 -> $60, và tiếp tục.`
    },
@@ -426,11 +426,11 @@ Moodeng Credit là một lựa chọn công bằng hơn. Lãi suất do người
    {
       id: 'what-is-credit-building-loan',
       question: 'Credit-Building Loan là gì?',
-      answer: `Credit-Building Loan là khoản vay bạn dùng để tăng hạn mức tín dụng trên Moodeng. Để được tính là loại này, khoản vay phải bằng toàn bộ hạn mức Credit Level hiện tại, không thấp hơn.
+      answer: `Credit-Building Loan là khoản vay bạn dùng để tăng hạn mức tín dụng trên Moodeng. Để được tính là loại này, khoản vay phải bằng toàn bộ hạn mức hạng tín dụng hiện tại, không thấp hơn.
 
-Bạn bắt đầu ở Credit Level 1 với hạn mức $15. Vay đủ $15 và trả đúng hạn, hạn mức tăng lên $20. Lần sau vay đủ $20 và trả, bạn mở khóa $40, rồi $60.
+Bạn bắt đầu ở hạng tín dụng 1 với hạn mức $15. Vay đủ $15 và trả đúng hạn, hạn mức tăng lên $20. Lần sau vay đủ $20 và trả, bạn mở khóa $40, rồi $60.
 
-Các khoản vay nhỏ hơn hạn mức được gọi là Trust-Building Loan. Chúng vẫn giúp xây dựng lịch sử trả và uy tín, nhưng không tăng Credit Level.`
+Các khoản vay nhỏ hơn hạn mức được gọi là Trust-Building Loan. Chúng vẫn giúp xây dựng lịch sử trả và uy tín, nhưng không tăng hạng tín dụng.`
    },
    {
       id: 'small-loan',

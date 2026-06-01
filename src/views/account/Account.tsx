@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 import UserAvatar from '@/components/UserAvatar';
 
-import { useLocalization } from '@/i18n';
+import { type LocaleCode, useLocalization } from '@/i18n';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { formatPointsMajor } from '@/shared/points';
 import { logoutUser } from '@/store/slices/authSlice';
@@ -26,8 +26,8 @@ const ICON_MASK_BASE: React.CSSProperties = {
 };
 
 const ACCOUNT_ITEMS = [
-   { label: 'Account Settings', path: '/account/settings' },
-   { label: 'View Loan Transaction History', path: '/history' }
+   { id: 'settings', path: '/account/settings' },
+   { id: 'loanHistory', path: '/history' }
 ] as const;
 
 const TELEGRAM_SUPPORT_URL =
@@ -37,10 +37,167 @@ const FACEBOOK_PAGE_URL = 'https://www.facebook.com/profile.php?id=6158910656106
 const FACEBOOK_GROUP_URL = 'https://www.facebook.com/groups/1593629908540434';
 
 const CONTACT_ITEMS = [
-   { label: 'Join Our Community', url: FACEBOOK_GROUP_URL },
-   { label: 'Get Help', url: FACEBOOK_PAGE_URL },
-   { label: 'Contact Us', url: TELEGRAM_SUPPORT_URL }
+   { id: 'community', url: FACEBOOK_GROUP_URL },
+   { id: 'help', url: FACEBOOK_PAGE_URL },
+   { id: 'contact', url: TELEGRAM_SUPPORT_URL }
 ] as const;
+
+type AccountItemId = (typeof ACCOUNT_ITEMS)[number]['id'];
+type ContactItemId = (typeof CONTACT_ITEMS)[number]['id'];
+
+const ACCOUNT_COPY: Record<
+   LocaleCode,
+   {
+      accountInformation: string;
+      accountItems: Record<AccountItemId, string>;
+      contactItems: Record<ContactItemId, string>;
+      getInTouch: string;
+      commonQuestions: string;
+      viewMore: string;
+      creditGuide: string;
+      verified: string;
+      notVerified: string;
+      connectWallet: string;
+      addBaseWallet: string;
+      signOut: string;
+      signOutTitle: string;
+      signOutBody: string;
+      signingOut: string;
+      cancel: string;
+      settingsAria: string;
+   }
+> = {
+   en: {
+      accountInformation: 'Account Information',
+      accountItems: {
+         settings: 'Account Settings',
+         loanHistory: 'View Loan Transaction History'
+      },
+      contactItems: {
+         community: 'Join Our Community',
+         help: 'Get Help',
+         contact: 'Contact Us'
+      },
+      getInTouch: 'Get in Touch',
+      commonQuestions: 'Common questions',
+      viewMore: 'View More',
+      creditGuide: 'Watch our Credit Levelling Guide',
+      verified: 'Verified',
+      notVerified: 'Not Verified',
+      connectWallet: 'Connect Wallet',
+      addBaseWallet: 'Add Base Wallet',
+      signOut: 'Sign Out',
+      signOutTitle: 'Sign out?',
+      signOutBody: 'You can sign back in anytime. Your Trust Score stays with your wallet.',
+      signingOut: 'Signing Out...',
+      cancel: 'Cancel',
+      settingsAria: 'Go to Account Settings'
+   },
+   fil: {
+      accountInformation: 'Impormasyon ng account',
+      accountItems: {
+         settings: 'Mga setting ng account',
+         loanHistory: 'Tingnan ang kasaysayan ng loan transactions'
+      },
+      contactItems: {
+         community: 'Sumali sa community',
+         help: 'Humingi ng tulong',
+         contact: 'Kontakin kami'
+      },
+      getInTouch: 'Makipag-ugnayan',
+      commonQuestions: 'Mga karaniwang tanong',
+      viewMore: 'Tingnan pa',
+      creditGuide: 'Panoorin ang gabay sa pagpapataas ng antas ng kredito',
+      verified: 'Beripikado',
+      notVerified: 'Hindi beripikado',
+      connectWallet: 'Ikonek ang wallet',
+      addBaseWallet: 'Idagdag ang Base Wallet',
+      signOut: 'Mag-sign out',
+      signOutTitle: 'Mag-sign out?',
+      signOutBody: 'Puwede kang mag-sign in ulit anumang oras. Mananatili sa wallet mo ang Trust Score mo.',
+      signingOut: 'Nag-sign out...',
+      cancel: 'Kanselahin',
+      settingsAria: 'Pumunta sa Account Settings'
+   },
+   id: {
+      accountInformation: 'Informasi akun',
+      accountItems: {
+         settings: 'Pengaturan akun',
+         loanHistory: 'Lihat riwayat transaksi pinjaman'
+      },
+      contactItems: {
+         community: 'Bergabung dengan komunitas',
+         help: 'Dapatkan bantuan',
+         contact: 'Hubungi kami'
+      },
+      getInTouch: 'Hubungi kami',
+      commonQuestions: 'Pertanyaan umum',
+      viewMore: 'Lihat lainnya',
+      creditGuide: 'Tonton panduan peningkatan level kredit',
+      verified: 'Terverifikasi',
+      notVerified: 'Belum terverifikasi',
+      connectWallet: 'Hubungkan wallet',
+      addBaseWallet: 'Tambahkan Base Wallet',
+      signOut: 'Keluar',
+      signOutTitle: 'Keluar?',
+      signOutBody: 'Kamu bisa masuk lagi kapan saja. Trust Score tetap bersama wallet kamu.',
+      signingOut: 'Keluar...',
+      cancel: 'Batal',
+      settingsAria: 'Buka Pengaturan Akun'
+   },
+   th: {
+      accountInformation: 'ข้อมูลบัญชี',
+      accountItems: {
+         settings: 'การตั้งค่าบัญชี',
+         loanHistory: 'ดูประวัติธุรกรรมเงินกู้'
+      },
+      contactItems: {
+         community: 'เข้าร่วมชุมชน',
+         help: 'ขอความช่วยเหลือ',
+         contact: 'ติดต่อเรา'
+      },
+      getInTouch: 'ติดต่อเรา',
+      commonQuestions: 'คำถามที่พบบ่อย',
+      viewMore: 'ดูเพิ่มเติม',
+      creditGuide: 'ดูคู่มือการเพิ่มระดับเครดิต',
+      verified: 'ยืนยันแล้ว',
+      notVerified: 'ยังไม่ได้ยืนยัน',
+      connectWallet: 'เชื่อมต่อกระเป๋าเงิน',
+      addBaseWallet: 'เพิ่ม Base Wallet',
+      signOut: 'ออกจากระบบ',
+      signOutTitle: 'ออกจากระบบ?',
+      signOutBody: 'คุณสามารถเข้าสู่ระบบใหม่ได้ทุกเมื่อ Trust Score จะยังอยู่กับกระเป๋าเงินของคุณ',
+      signingOut: 'กำลังออกจากระบบ...',
+      cancel: 'ยกเลิก',
+      settingsAria: 'ไปที่การตั้งค่าบัญชี'
+   },
+   vi: {
+      accountInformation: 'Thông tin tài khoản',
+      accountItems: {
+         settings: 'Cài đặt tài khoản',
+         loanHistory: 'Xem lịch sử giao dịch khoản vay'
+      },
+      contactItems: {
+         community: 'Tham gia cộng đồng',
+         help: 'Nhận trợ giúp',
+         contact: 'Liên hệ chúng tôi'
+      },
+      getInTouch: 'Liên hệ',
+      commonQuestions: 'Câu hỏi thường gặp',
+      viewMore: 'Xem thêm',
+      creditGuide: 'Xem hướng dẫn nâng hạng tín dụng',
+      verified: 'Đã xác minh',
+      notVerified: 'Chưa xác minh',
+      connectWallet: 'Kết nối ví',
+      addBaseWallet: 'Thêm Base Wallet',
+      signOut: 'Đăng xuất',
+      signOutTitle: 'Đăng xuất?',
+      signOutBody: 'Bạn có thể đăng nhập lại bất cứ lúc nào. Trust Score vẫn đi cùng ví của bạn.',
+      signingOut: 'Đang đăng xuất...',
+      cancel: 'Hủy',
+      settingsAria: 'Đi tới Cài đặt tài khoản'
+   }
+};
 
 function ChevronRight() {
    return (
@@ -108,7 +265,8 @@ export default function Account() {
    const hasWallet = Boolean(user?.walletAddress);
    const isLender = user?.userRole === 'lender';
    const isVerified = user?.isWorldId === 'ACTIVE';
-   const walletSetupLabel = isLender ? 'Connect Wallet' : 'Add Base Wallet';
+   const copy = ACCOUNT_COPY[locale];
+   const walletSetupLabel = isLender ? copy.connectWallet : copy.addBaseWallet;
    const { data: userPointsData } = useQuery({
       queryKey: ['account-user-points', user?.id],
       queryFn: async () => {
@@ -141,7 +299,7 @@ export default function Account() {
                      type="button"
                      onClick={() => navigate('/account/settings')}
                      className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                     aria-label="Go to Account Settings"
+                     aria-label={copy.settingsAria}
                   >
                      <UserAvatar size={48} />
                   </button>
@@ -158,14 +316,14 @@ export default function Account() {
                            <span className="flex h-3 w-3 items-center justify-center rounded-full bg-md-green-900">
                               <span className="text-[8px] font-bold text-white">&#10003;</span>
                            </span>
-                           <span className="text-md-b3 font-semibold text-md-green-900">Verified</span>
+                           <span className="text-md-b3 font-semibold text-md-green-900">{copy.verified}</span>
                         </span>
                      ) : (
                         <span className="inline-flex w-fit items-center gap-1 rounded-md-sm bg-md-red-100 px-md-1 py-md-0">
                            <span className="flex h-3 w-3 items-center justify-center rounded-full bg-md-red-800">
                               <span className="text-[8px] font-bold text-white">!</span>
                            </span>
-                           <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
+                           <span className="text-md-b3 font-semibold text-md-red-800">{copy.notVerified}</span>
                         </span>
                      )}
                   </div>
@@ -194,15 +352,15 @@ export default function Account() {
             <div className="flex flex-col gap-5 px-md-4">
                {/* Account Information */}
                <div className="flex flex-col gap-3">
-                  <p className="text-md-b2 font-medium text-md-neutral-700">Account Information</p>
+                  <p className="text-md-b2 font-medium text-md-neutral-700">{copy.accountInformation}</p>
                   {ACCOUNT_ITEMS.map((item) => (
                      <button
-                        key={item.label}
+                        key={item.id}
                         type="button"
                         onClick={() => navigate(item.path)}
                         className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
                      >
-                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">{item.label}</span>
+                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">{copy.accountItems[item.id]}</span>
                         <ChevronRight />
                      </button>
                   ))}
@@ -210,7 +368,7 @@ export default function Account() {
                      href="#account-get-in-touch"
                      className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
                   >
-                     <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">Get in Touch</span>
+                     <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">{copy.getInTouch}</span>
                      <ChevronRight />
                   </a>
                </div>
@@ -218,13 +376,13 @@ export default function Account() {
                {/* Common questions */}
                <div id="account-common-questions" className="scroll-mt-4 flex flex-col gap-3">
                   <div className="flex items-center justify-between">
-                     <p className="text-md-b2 font-medium text-md-neutral-700">Common questions</p>
+                     <p className="text-md-b2 font-medium text-md-neutral-700">{copy.commonQuestions}</p>
                      <button
                         type="button"
                         onClick={() => navigate('/support')}
                         className="rounded-md-sm px-2 py-1 text-md-b2 font-medium text-md-primary-900 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.96] active:bg-md-primary-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
                      >
-                        View More
+                        {copy.viewMore}
                      </button>
                   </div>
 
@@ -236,7 +394,7 @@ export default function Account() {
                         className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
                      >
                         <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
-                           Watch our Credit Levelling Guide
+                           {copy.creditGuide}
                         </span>
                         <PlayIcon />
                      </button>
@@ -266,15 +424,15 @@ export default function Account() {
 
                {/* Get in touch */}
                <div id="account-get-in-touch" className="scroll-mt-4 flex flex-col gap-3">
-                  <p className="text-md-b2 font-medium text-md-neutral-700">Get in touch</p>
+                  <p className="text-md-b2 font-medium text-md-neutral-700">{copy.getInTouch}</p>
                   {CONTACT_ITEMS.map((item) => (
                      <button
-                        key={item.label}
+                        key={item.id}
                         type="button"
                         onClick={() => openExternal(item.url)}
                         className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
                      >
-                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">{item.label}</span>
+                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">{copy.contactItems[item.id]}</span>
                         <ExternalLinkIcon />
                      </button>
                   ))}
@@ -286,7 +444,7 @@ export default function Account() {
                   onClick={() => setShowSignOutModal(true)}
                   className="flex items-center justify-center gap-2.5 px-md-5 py-md-3 border border-md-red-300 rounded-md-md w-full"
                >
-                  <span className="text-md-h5 font-semibold text-md-red-300">Sign Out</span>
+                  <span className="text-md-h5 font-semibold text-md-red-300">{copy.signOut}</span>
                   <div
                      className="w-6 h-6 shrink-0 bg-md-red-300"
                      style={{
@@ -310,10 +468,8 @@ export default function Account() {
                   onClick={(e) => e.stopPropagation()}
                >
                   <div className="flex flex-col gap-md-1 items-center text-center">
-                     <h2 className="text-md-h4 font-semibold text-md-heading">Sign out?</h2>
-                     <p className="text-md-b1 text-md-neutral-1200">
-                        You can sign back in anytime. Your Trust Score stays with your wallet.
-                     </p>
+                     <h2 className="text-md-h4 font-semibold text-md-heading">{copy.signOutTitle}</h2>
+                     <p className="text-md-b1 text-md-neutral-1200">{copy.signOutBody}</p>
                   </div>
                   <button
                      type="button"
@@ -321,14 +477,14 @@ export default function Account() {
                      onClick={handleSignOut}
                      className="w-full py-md-3 px-md-4 bg-md-red-500 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-50"
                   >
-                     {isSigningOut ? 'Signing Out...' : 'Sign Out'}
+                     {isSigningOut ? copy.signingOut : copy.signOut}
                   </button>
                   <button
                      type="button"
                      onClick={() => setShowSignOutModal(false)}
                      className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200"
                   >
-                     Cancel
+                     {copy.cancel}
                   </button>
                </div>
             </div>

@@ -86,16 +86,16 @@ describe('localization translations', () => {
    });
 
    it('localizes support guide cards and detail body copy', () => {
-      expect(getGuidesForLocale('fil').map((guide) => guide.title)).toContain('Paano gumagana ang Credit Levels');
-      expect(getGuideForLocale('how-credit-levels-work', 'fil')?.body).toContain('Tinutukoy ng Credit Levels');
+      expect(getGuidesForLocale('fil').map((guide) => guide.title)).toContain('Paano gumagana ang mga antas ng kredito');
+      expect(getGuideForLocale('how-credit-levels-work', 'fil')?.body).toContain('Tinutukoy ng mga antas ng kredito');
       expect(getGuideForLocale('verification-and-why-its-required', 'fil')?.body).toContain('Bakit kailangan mag-verify?');
-      expect(getGuidesForLocale('id').map((guide) => guide.title)).toContain('Cara kerja Credit Level');
-      expect(getGuideForLocale('how-credit-levels-work', 'id')?.body).toContain('Credit Level menentukan');
+      expect(getGuidesForLocale('id').map((guide) => guide.title)).toContain('Cara kerja level kredit');
+      expect(getGuideForLocale('how-credit-levels-work', 'id')?.body).toContain('Level kredit menentukan');
       expect(getGuideForLocale('verification-and-why-its-required', 'id')?.body).toContain('Mengapa perlu verifikasi?');
-      expect(getGuidesForLocale('th').map((guide) => guide.title)).toContain('Credit Level ทำงานอย่างไร');
-      expect(getGuideForLocale('how-credit-levels-work', 'th')?.body).toContain('Credit Level กำหนด');
-      expect(getGuidesForLocale('vi').map((guide) => guide.title)).toContain('Credit Level hoạt động như thế nào');
-      expect(getGuideForLocale('how-credit-levels-work', 'vi')?.body).toContain('Credit Level xác định');
+      expect(getGuidesForLocale('th').map((guide) => guide.title)).toContain('ระดับเครดิตทำงานอย่างไร');
+      expect(getGuideForLocale('how-credit-levels-work', 'th')?.body).toContain('ระดับเครดิตกำหนด');
+      expect(getGuidesForLocale('vi').map((guide) => guide.title)).toContain('Hạng tín dụng hoạt động như thế nào');
+      expect(getGuideForLocale('how-credit-levels-work', 'vi')?.body).toContain('Hạng tín dụng xác định');
    });
 
    it('localizes account and support FAQ records', () => {
