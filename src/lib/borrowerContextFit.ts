@@ -60,38 +60,38 @@ export type BorrowerContextFitInput = {
 };
 
 const incomeContextLabels: Record<string, string> = {
-   full_time: 'Full-time employee',
-   part_time: 'Part-time',
-   contract: 'Contract / Temp',
-   contract_temp: 'Contract / Temp',
-   freelance: 'Freelance / Gig',
-   freelance_gig: 'Freelance / Gig',
+   full_time: 'full-time income',
+   part_time: 'part-time income',
+   contract: 'contract income',
+   contract_temp: 'contract income',
+   freelance: 'freelance income',
+   freelance_gig: 'freelance income',
    none: 'No income shared',
    no_income: 'No income shared',
-   self_employed: 'Self-employed',
-   irregular: 'Irregular income',
-   irregular_income: 'Irregular income'
+   self_employed: 'self-employed income',
+   irregular: 'irregular income',
+   irregular_income: 'irregular income'
 };
 
 const paydayContextLabels: Record<string, { label: string; range: string; start?: number; end?: number; variable?: boolean }> = {
-   '1_5': { label: 'Early month', range: '1st-5th', start: 1, end: 5 },
-   '10_15': { label: 'Mid-month', range: '10th-15th', start: 10, end: 15 },
-   '15_20': { label: 'Late month', range: '15th-20th', start: 15, end: 20 },
-   '25_30': { label: 'End of month', range: '25th-30th', start: 25, end: 30 },
-   irregular: { label: 'Irregular payday', range: 'Varies', variable: true },
-   varies: { label: 'It varies', range: 'No fixed schedule', variable: true },
-   it_varies: { label: 'It varies', range: 'No fixed schedule', variable: true }
+   '1_5': { label: 'early month', range: '1st-5th', start: 1, end: 5 },
+   '10_15': { label: 'mid-month', range: '10th-15th', start: 10, end: 15 },
+   '15_20': { label: 'late month', range: '15th-20th', start: 15, end: 20 },
+   '25_30': { label: 'end of month', range: '25th-30th', start: 25, end: 30 },
+   irregular: { label: 'irregular payday', range: 'varies', variable: true },
+   varies: { label: 'it varies', range: 'no fixed schedule', variable: true },
+   it_varies: { label: 'it varies', range: 'no fixed schedule', variable: true }
 };
 
 const cashGapContextLabels: Record<string, string> = {
-   bills_before_payday: 'Bills before payday',
-   transport: 'Transport costs',
-   work_supplies: 'Work supplies',
-   family_needs: 'Family needs',
-   food: 'Food',
-   medical: 'Medical expenses',
-   emergency_costs: 'Emergency costs',
-   emergency_expense: 'Emergency costs'
+   bills_before_payday: 'bills before payday',
+   transport: 'transport costs',
+   work_supplies: 'work supplies',
+   family_needs: 'family needs',
+   food: 'food',
+   medical: 'medical expenses',
+   emergency_costs: 'emergency costs',
+   emergency_expense: 'emergency costs'
 };
 
 export const isBorrowerContextState = (value: unknown): value is BorrowerContextState => {
@@ -111,8 +111,10 @@ const chipSegment = (chipId: string): BorrowerContextFitSegment => ({ chipId });
 
 const formatDelta = (days: number, direction: 'after' | 'before') => {
    const absoluteDays = Math.abs(days);
-   return `${absoluteDays} ${absoluteDays === 1 ? 'day' : 'days'} ${direction} payday window`;
+   return `${absoluteDays} ${absoluteDays === 1 ? 'day' : 'days'} ${direction} payday`;
 };
+
+const formatChipAmount = (amount: number) => formatCurrency(amount).replace(/\.00$/, '');
 
 const buildBaseSegments = ({
    dueChipId,
@@ -133,22 +135,21 @@ const buildBaseSegments = ({
 }): BorrowerContextFitSegment[] => {
    const segments: BorrowerContextFitSegment[] = [
       chipSegment(borrowerChipId),
-      ' is requesting ',
+      ' opened this request for ',
       chipSegment(requestChipId),
-      ' and plans to repay by ',
+      ' on ',
+      chipSegment(openedChipId),
+      ', planning to repay by ',
       chipSegment(dueChipId),
-      '. The request opened ',
-      chipSegment(openedChipId)
+      '. '
    ];
 
    if (primaryGapChipId) {
-      segments.push(', and they need it for ', chipSegment(primaryGapChipId), '. ');
-   } else {
-      segments.push('. ');
+      segments.push('They marked ', chipSegment(primaryGapChipId), ' as the cash-flow gap. ');
    }
 
    if (incomeChipId && paydayChipId) {
-      segments.push('Their profile shows ', chipSegment(incomeChipId), ' with ', chipSegment(paydayChipId), ' pay timing. ');
+      segments.push('Their profile shows ', chipSegment(incomeChipId), ' paid ', chipSegment(paydayChipId), '. ');
    } else if (incomeChipId) {
       segments.push('Their profile shows ', chipSegment(incomeChipId), '. ');
    } else if (paydayChipId) {
@@ -197,7 +198,7 @@ export const buildBorrowerContextFit = ({
    const allChips = [
       chip('borrower', 'Borrower', borrowerName, 'borrower'),
       chip('opened', 'Opened', openedText, 'date'),
-      chip('request', 'Request', `$${formatCurrency(loanAmount)} for ${requestReason.toLowerCase()}`, 'request'),
+      chip('request', 'Request', `$${formatChipAmount(loanAmount)} · ${requestReason.toLowerCase()}`, 'request'),
       chip('due', 'Repay by', dueText, 'due'),
       incomeLabel ? chip('income', 'Income', incomeLabel, hasNoIncome ? 'neutral' : 'income') : null,
       payday ? chip('payday', 'Payday', `${payday.label}${payday.range ? ` (${payday.range})` : ''}`, 'payday') : null,

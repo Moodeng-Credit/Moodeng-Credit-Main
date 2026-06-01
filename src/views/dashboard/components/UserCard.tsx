@@ -79,9 +79,9 @@ function BorrowerContextSignal({
    });
 
    return (
-      <section className="rounded-[18px] bg-md-primary-100/70 p-md-3" aria-label="Timing fit">
+      <section className="rounded-[18px] bg-md-primary-100/70 p-[14px]" aria-label="Timing fit">
          <div className="flex flex-col gap-md-1">
-            <p className="text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-primary-1200">Timing fit</p>
+            <p className="text-md-b3 font-semibold uppercase tracking-[0.1em] text-md-primary-1200">Timing fit</p>
          </div>
 
          <InlineFitSentence fit={fit} />
@@ -94,7 +94,7 @@ function InlineFitSentence({ fit }: { fit: BorrowerContextFit }) {
 
    return (
       <>
-         <p className="mt-md-1 text-[15px] font-medium leading-[34px] text-md-neutral-1500">
+         <p className="mt-[6px] text-[15px] font-medium leading-[28px] text-md-neutral-1500">
             {fit.segments.map((segment, index) => (
                <FitSegment
                   key={`${typeof segment === 'string' ? segment : segment.chipId}-${index}`}
@@ -105,8 +105,8 @@ function InlineFitSentence({ fit }: { fit: BorrowerContextFit }) {
          </p>
 
          {fit.secondaryChips.length > 0 ? (
-            <div className="mt-md-2 flex flex-wrap items-center gap-md-1">
-               <span className="text-md-b3 font-medium text-md-neutral-1000">Also shared:</span>
+            <div className="mt-md-2 flex flex-wrap items-center gap-[6px] border-t border-md-primary-200/80 pt-md-2">
+               <span className="text-[13px] font-medium leading-[18px] text-md-neutral-1000">Also shared:</span>
                {fit.secondaryChips.map((currentChip) => (
                   <FitChip key={currentChip.id} chip={currentChip} compact />
                ))}
@@ -125,23 +125,23 @@ function FitSegment({ chipById, segment }: { chipById: Map<string, BorrowerConte
 
 function FitChip({ chip, compact = false }: { chip: BorrowerContextFitChip; compact?: boolean }) {
    const variantClasses: Record<BorrowerContextFitChip['variant'], string> = {
-      borrower: 'border-[#cad4ff] bg-[#eef2ff] text-[#3434a8]',
-      request: 'border-[#c9f3d4] bg-[#ecfff1] text-[#0f6d35]',
-      date: 'border-[#e5dcff] bg-[#f7f2ff] text-md-primary-1200',
-      due: 'border-[#ffe4a3] bg-[#fff4c7] text-[#9a4a08]',
-      gap: 'border-[#ead7ff] bg-[#fbf4ff] text-[#7120bd]',
-      income: 'border-[#ffe0c4] bg-[#fff5ea] text-[#9a3d16]',
-      payday: 'border-[#cde1ff] bg-[#eff6ff] text-[#2450bb]',
-      delta: 'border-[#d7f2de] bg-[#f0fff4] text-[#0e6b34]',
-      neutral: 'border-md-neutral-400 bg-md-neutral-100 text-md-neutral-1400'
+      borrower: 'bg-md-primary-200 text-md-primary-1200',
+      request: 'bg-[#e6faee] text-[#0b6b38]',
+      date: 'bg-[#fff1c7] text-[#9a4a08]',
+      due: 'bg-[#fff1c7] text-[#9a4a08]',
+      gap: 'bg-[#f9eaff] text-[#8321c7]',
+      income: 'bg-[#e8f1ff] text-[#2150b8]',
+      payday: 'bg-[#e8f1ff] text-[#2150b8]',
+      delta: 'bg-[#dff8eb] text-[#0b6b38]',
+      neutral: 'bg-md-neutral-200 text-md-neutral-1200'
    };
 
    return (
       <span
-         className={`inline-flex max-w-full align-baseline font-semibold shadow-[0_1px_0_rgba(44,19,82,0.04)] ${variantClasses[chip.variant]} ${
+         className={`inline-flex max-w-full align-baseline font-semibold ${variantClasses[chip.variant]} ${
             compact
-               ? 'rounded-[999px] border px-md-1 py-[2px] text-md-b3 leading-[18px]'
-               : 'rounded-[999px] border px-[10px] py-[5px] text-[15px] leading-[18px]'
+               ? 'rounded-[999px] px-[7px] py-[1px] text-[13px] leading-[16px]'
+               : 'rounded-[999px] px-[7px] py-[1px] text-[14px] leading-[17px]'
          }`}
       >
          {chip.text}

@@ -31,9 +31,9 @@ describe('buildBorrowerContextFit', () => {
       const fit = buildBorrowerContextFit({ ...baseInput, context: baseContext });
 
       expect(fit.fitLevel).toBe('supportive');
-      expect(deltaChip(fit)).toBe('1 day after payday window');
-      expect(renderText(fit)).toContain('maya-demo is requesting $15.00 for emergency groceries');
-      expect(renderText(fit)).toContain('The request opened May 8');
+      expect(deltaChip(fit)).toBe('1 day after payday');
+      expect(renderText(fit)).toContain('maya-demo opened this request for $15 · emergency groceries on May 8');
+      expect(renderText(fit)).toContain('planning to repay by May 16');
       expect(renderText(fit)).toContain('due date follows the income timing they shared');
    });
 
@@ -57,7 +57,7 @@ describe('buildBorrowerContextFit', () => {
       });
 
       expect(fit.fitLevel).toBe('early_gap');
-      expect(deltaChip(fit)).toBe('2 days before payday window');
+      expect(deltaChip(fit)).toBe('2 days before payday');
       expect(renderText(fit)).toContain('may bridge an earlier gap');
       expect(renderText(fit)).not.toContain('does not clearly line up');
    });
@@ -70,7 +70,7 @@ describe('buildBorrowerContextFit', () => {
       });
 
       expect(fit.fitLevel).toBe('after_payday_gap');
-      expect(deltaChip(fit)).toBe('3 days after payday window');
+      expect(deltaChip(fit)).toBe('3 days after payday');
       expect(renderText(fit)).toContain('may reflect a gap after income was received');
    });
 
@@ -124,8 +124,8 @@ describe('buildBorrowerContextFit', () => {
          context: { ...baseContext, cashGaps: ['family_needs', 'bills_before_payday', 'transport'] }
       });
 
-      expect(fit.chips.find((chip) => chip.id === 'gap-primary')?.text).toBe('Family needs');
-      expect(fit.secondaryChips.map((chip) => chip.text)).toEqual(['Bills before payday', 'Transport costs']);
+      expect(fit.chips.find((chip) => chip.id === 'gap-primary')?.text).toBe('family needs');
+      expect(fit.secondaryChips.map((chip) => chip.text)).toEqual(['bills before payday', 'transport costs']);
    });
 
    it('uses caution copy when no income source is shared', () => {
