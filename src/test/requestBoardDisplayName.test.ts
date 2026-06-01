@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { filterBySearch } from '@/utils/loanFilters';
 
-import { WorldId, type User } from '@/types/authTypes';
+import { type User, WorldId } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
 
 const loan: Loan = {
@@ -38,5 +38,15 @@ const borrower: User = {
 describe('Request Board display names', () => {
    it('matches borrower display names in search', () => {
       expect(filterBySearch([loan], 'g.l.', { 'user-1': borrower })).toEqual([loan]);
+   });
+
+   it('ignores non-string profile display names from stale cached state', () => {
+      const staleProfile = {
+         ...borrower,
+         displayName: [{ id: 'raw-supabase-row' }]
+      } as unknown as User;
+
+      expect(() => filterBySearch([loan], 'georgemlerner', { 'user-1': staleProfile })).not.toThrow();
+      expect(filterBySearch([loan], 'georgemlerner', { 'user-1': staleProfile })).toEqual([loan]);
    });
 });

@@ -31,6 +31,8 @@ type UserCardProps = Loan & {
    tourBorrowerUsername?: string;
 };
 
+const getSafeProfileText = (value: unknown) => (typeof value === 'string' && value.trim() ? value : undefined);
+
 export default function UserCard(loan: UserCardProps) {
    const {
       currentUserId,
@@ -57,12 +59,12 @@ export default function UserCard(loan: UserCardProps) {
    const userId = currentUserId || storeUserId;
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const borrowerProfile = borrowerUserId ? userProfiles[borrowerUserId] : undefined;
-   const borrowerUsername = borrowerProfile?.username ?? tourBorrowerUsername ?? '';
+   const borrowerUsername = getSafeProfileText(borrowerProfile?.username) ?? getSafeProfileText(tourBorrowerUsername) ?? '';
    const borrowerDetailsHref =
       tourBorrowerUsername && (import.meta.env.DEV || isPreviewRequest)
          ? `/user/${borrowerUsername}?demo=rich&lenderTourPreview=1&tourPreview=1`
          : `/user/${borrowerUsername}`;
-   const borrowerDisplayName = borrowerProfile?.displayName || borrowerUsername || 'Unknown user';
+   const borrowerDisplayName = getSafeProfileText(borrowerProfile?.displayName) || borrowerUsername || 'Unknown user';
    const due = parseISO(loanData.dueDate);
 
    const handleFetch = async () => {
