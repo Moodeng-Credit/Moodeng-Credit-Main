@@ -21,9 +21,27 @@ const buildLoanUrl = (loanId: string) => {
    return `${siteUrl.replace(/\/$/, '')}/request-board?loan=${loanId}`;
 };
 
-const sendTelegramMessage = async (chatId: string, text: string, loanUrl: string) => {
-   const token = Deno.env.get('TELEGRAM_API_TOKEN') ?? Deno.env.get('TELEGRAM_BOT_TOKEN');
-   if (!token) throw new Error('TELEGRAM_API_TOKEN is not configured.');
+const getTelegramApiToken = async (supabase: any) => {
+   const envToken = Deno.env.get('TELEGRAM_API_TOKEN') ?? Deno.env.get('TELEGRAM_BOT_TOKEN');
+   if (envToken?.trim()) {
+      return envToken.trim();
+   }
+
+   const { data, error } = await supabase.rpc('get_telegram_api_token');
+   if (error) {
+      throw new Error(error.message);
+   }
+
+   const vaultToken = typeof data === 'string' ? data.trim() : '';
+   if (!vaultToken) {
+      throw new Error('TELEGRAM_API_TOKEN is not configured.');
+   }
+
+   return vaultToken;
+};
+
+const sendTelegramMessage = async (supabase: any, chatId: string, text: string, loanUrl: string) => {
+   const token = await getTelegramApiToken(supabase);
 
    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
@@ -127,7 +145,7 @@ serve(async (req) => {
          throw new Error('lender_group_chat_id is not configured.');
       }
 
-      await sendTelegramMessage(chatId, message, loanUrl);
+      await sendTelegramMessage(supabase, chatId, message, loanUrl);
 
       return new Response(JSON.stringify({ message: 'Telegram lender notification sent' }), {
          status: 200,
