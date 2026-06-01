@@ -196,7 +196,9 @@ export const buildBorrowerContextFit = ({
    const incomePatternLabel = context?.incomeSetup ? incomePatternLabels[context.incomeSetup] : undefined;
    const hasNoIncome = context?.incomeSetup === 'none' || context?.incomeSetup === 'no_income';
    const payday = context?.paydayWindow ? paydayContextLabels[context.paydayWindow] : undefined;
-   const payPattern = payday?.label ? [incomePatternLabel, payday.label].filter(Boolean).join(', ') : incomePatternLabel;
+   const paydayChipLabel = payday?.range ? `${payday.range} monthly` : payday?.variable ? 'payday varies' : payday?.label;
+   const paydayPatternLabel = paydayChipLabel && !payday?.variable ? `paid ${paydayChipLabel}` : paydayChipLabel;
+   const payPattern = paydayPatternLabel ? [incomePatternLabel, paydayPatternLabel].filter(Boolean).join(', ') : incomePatternLabel;
    const gapLabels = (context?.cashGaps ?? []).map((gap) => cashGapContextLabels[gap]).filter(Boolean);
    const primaryGap = gapLabels[0];
    const secondaryGaps = gapLabels.slice(1);
@@ -208,8 +210,8 @@ export const buildBorrowerContextFit = ({
       chip('request', 'Request', `$${formatChipAmount(loanAmount)} for ${requestReason.toLowerCase()}`, 'request'),
       chip('due', 'Repay by', dueText, 'due'),
       incomeLabel ? chip('income', 'Income', incomeLabel, hasNoIncome ? 'neutral' : 'income') : null,
-      payday ? chip('payday', 'Payday', payday.label, 'payday') : null,
-      payPattern ? chip('pattern', 'Pattern', `${payPattern} pay`, 'income') : null,
+      paydayChipLabel ? chip('payday', 'Payday', paydayChipLabel, 'payday') : null,
+      payPattern ? chip('pattern', 'Pattern', payPattern, 'income') : null,
       primaryGap ? chip('gap-primary', 'Need', primaryGap, 'gap') : null
    ].filter(Boolean) as BorrowerContextFitChip[];
    const secondaryChips = secondaryGaps.map((gap, index) => chip(`gap-secondary-${index}`, 'Also', gap, 'gap'));
@@ -341,7 +343,7 @@ export const buildBorrowerContextFit = ({
          ? [
               'As a ',
               chipSegment('income'),
-              ' paid ',
+              ' usually paid ',
               chipSegment('payday'),
               ', ',
               chipSegment('borrower'),
