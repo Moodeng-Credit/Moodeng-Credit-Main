@@ -12,6 +12,42 @@ import { LoanStatus } from '@/types/loanTypes';
 
 const TOAST_STORAGE_PREFIX = 'moodeng-expired-loan-request-toast';
 
+const getStoredToastValue = (storage: Storage, storageKey: string) => {
+   try {
+      return storage.getItem(storageKey);
+   } catch {
+      return null;
+   }
+};
+
+const setStoredToastValue = (storage: Storage, storageKey: string) => {
+   try {
+      storage.setItem(storageKey, '1');
+      return true;
+   } catch {
+      return false;
+   }
+};
+
+const hasSeenExpiredRequestToast = (storageKey: string) => {
+   const seenInLocalStorage = getStoredToastValue(window.localStorage, storageKey) === '1';
+   const seenInSessionStorage = getStoredToastValue(window.sessionStorage, storageKey) === '1';
+
+   if (!seenInLocalStorage && seenInSessionStorage) {
+      setStoredToastValue(window.localStorage, storageKey);
+   }
+
+   return seenInLocalStorage || seenInSessionStorage;
+};
+
+const markExpiredRequestToastSeen = (storageKey: string) => {
+   if (setStoredToastValue(window.localStorage, storageKey)) {
+      return;
+   }
+
+   setStoredToastValue(window.sessionStorage, storageKey);
+};
+
 const formatUsdcAmount = (amount: number | string | null | undefined) => {
    const value = Number(amount ?? 0);
    const safeValue = Number.isFinite(value) ? value : 0;
@@ -52,11 +88,11 @@ export function ExpiredLoanRequestNotifier() {
          const newestRequest = data[0];
          const storageKey = `${TOAST_STORAGE_PREFIX}:${user.id}:${newestRequest.id}`;
 
-         if (window.sessionStorage.getItem(storageKey)) {
+         if (hasSeenExpiredRequestToast(storageKey)) {
             return;
          }
 
-         window.sessionStorage.setItem(storageKey, '1');
+         markExpiredRequestToastSeen(storageKey);
 
          const expiredCount = count ?? data.length;
          const title = expiredCount === 1 ? 'Loan request expired' : 'Loan requests expired';
