@@ -66,6 +66,12 @@ const getTelegramProfileUpdates = (authData?: TelegramAuthData): Database['publi
 
 const normalizeWorldIdStatus = (value?: string | WorldIdStatus | null): WorldIdStatus => (value as WorldIdStatus) ?? WorldId.INACTIVE;
 
+const normalizeProfileText = (value: unknown): string | undefined => {
+   if (typeof value !== 'string') return undefined;
+   const trimmed = value.trim();
+   return trimmed.length > 0 ? trimmed : undefined;
+};
+
 export const isObfuscatedExistingSignupUser = (user?: Pick<SupabaseAuthUser, 'identities'> | null): boolean =>
    Array.isArray(user?.identities) && user.identities.length === 0;
 
@@ -127,6 +133,7 @@ const ensureUserProfileRow = async (
    const payload: UserInsert = {
       id: authUser.id,
       username: deriveUsername(authUser, overrides?.username),
+      display_name: normalizeProfileText(authUser.user_metadata?.name) ?? null,
       email,
       is_world_id: normalizeWorldIdStatus(overrides?.isWorldId ?? authUser.user_metadata?.is_world_id),
       ...getTelegramProfileUpdates(authUser.user_metadata as TelegramAuthData | undefined)
@@ -147,7 +154,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    email: row.email,
    avatarUrl,
    avatarBackground,
-   displayName,
+   displayName: displayName ?? row.display_name ?? undefined,
    googleId: row.google_id ?? undefined,
    walletAddress: row.wallet_address ?? undefined,
    walletChainId: (row as UserRow & { wallet_chain_id?: number | null }).wallet_chain_id ?? undefined,
@@ -195,11 +202,24 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
       user.user_metadata?.photo_url
    ) as string | undefined;
    const avatarBackground = user.user_metadata?.avatar_background as string | undefined;
-   const displayName = user.user_metadata?.name as string | undefined;
+   const displayName = normalizeProfileText(user.user_metadata?.name);
 
    if (!profile) {
       const ensuredProfile = await ensureUserProfileRow(supabase, user);
       return mapSupabaseRowToUser(ensuredProfile, avatarUrl, displayName, avatarBackground);
+   }
+
+   if (displayName && profile.display_name !== displayName) {
+      const { data: syncedProfile, error: syncError } = await supabase
+         .from('users')
+         .update({ display_name: displayName })
+         .eq('id', user.id)
+         .select('*')
+         .single();
+
+      if (!syncError && syncedProfile) {
+         return mapSupabaseRowToUser(syncedProfile, avatarUrl, displayName, avatarBackground);
+      }
    }
 
    return mapSupabaseRowToUser(profile, avatarUrl, displayName, avatarBackground);
@@ -512,6 +532,7 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
 
    const updates: Database['public']['Tables']['users']['Update'] = {};
    if (userData.username) updates.username = userData.username;
+   if (userData.displayName !== undefined) updates.display_name = userData.displayName;
    if (userData.email) updates.email = userData.email;
    if (userData.walletAddress !== undefined) updates.wallet_address = userData.walletAddress;
    if (userData.walletChainId !== undefined) updates.wallet_chain_id = userData.walletChainId;

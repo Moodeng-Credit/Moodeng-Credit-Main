@@ -157,15 +157,21 @@ export const filterByTimePeriod = (loans: Loan[], loanTime: string): Loan[] => {
 };
 
 /**
- * Filter loans by search query (searches reason and borrower username)
+ * Filter loans by search query (searches reason, borrower display name, and borrower username)
  */
 export const filterBySearch = (loans: Loan[], search: string, userProfiles?: Record<string, User>): Loan[] => {
    if (!search) return loans;
 
    const searchLower = search.toLowerCase();
    return loans.filter((loan) => {
-      const borrowerUsername = loan.borrowerUser ? userProfiles?.[loan.borrowerUser]?.username ?? loan.borrowerUser : '';
-      return loan.reason?.toLowerCase().includes(searchLower) || borrowerUsername.toLowerCase().includes(searchLower);
+      const borrowerProfile = loan.borrowerUser ? userProfiles?.[loan.borrowerUser] : undefined;
+      const borrowerUsername = borrowerProfile?.username ?? loan.borrowerUser ?? '';
+      const borrowerDisplayName = borrowerProfile?.displayName ?? '';
+      return (
+         loan.reason?.toLowerCase().includes(searchLower) ||
+         borrowerDisplayName.toLowerCase().includes(searchLower) ||
+         borrowerUsername.toLowerCase().includes(searchLower)
+      );
    });
 };
 

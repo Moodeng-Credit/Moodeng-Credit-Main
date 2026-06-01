@@ -1140,8 +1140,9 @@ function RequestBoard$() {
 
    const handleSuccessModalClose = useCallback(() => setShowPurple(false), []);
 
-   const firstName = user?.username?.split(' ')[0] || user?.username || 'there';
-   const displayFirstName = effectiveUser?.username?.split(' ')[0] || effectiveUser?.username || firstName;
+   const firstName = user?.displayName?.split(' ')[0] || user?.username?.split(' ')[0] || user?.username || 'there';
+   const displayFirstName =
+      effectiveUser?.displayName?.split(' ')[0] || effectiveUser?.username?.split(' ')[0] || effectiveUser?.username || firstName;
    const accountEditPath = (edit: 'avatar' | 'name') => {
       const params = new URLSearchParams(location.search);
       params.set('edit', edit);

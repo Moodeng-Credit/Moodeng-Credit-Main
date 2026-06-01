@@ -22,7 +22,7 @@ export interface User {
    avatarUrl?: string;
    /** Soft frame color used behind transparent/background-removed avatars. */
    avatarBackground?: string;
-   /** Display name from Supabase auth user_metadata.name. Not stored in the DB users table. */
+   /** User-facing name shown across profile surfaces. Falls back to username when unset. */
    displayName?: string;
    googleId?: string;
    walletAddress?: string;

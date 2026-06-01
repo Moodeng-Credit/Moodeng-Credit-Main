@@ -62,7 +62,7 @@ export default function UserCard(loan: UserCardProps) {
       tourBorrowerUsername && (import.meta.env.DEV || isPreviewRequest)
          ? `/user/${borrowerUsername}?demo=rich&lenderTourPreview=1&tourPreview=1`
          : `/user/${borrowerUsername}`;
-   const borrowerDisplayName = borrowerUsername || 'Unknown user';
+   const borrowerDisplayName = borrowerProfile?.displayName || borrowerUsername || 'Unknown user';
    const due = parseISO(loanData.dueDate);
 
    const handleFetch = async () => {
