@@ -15,18 +15,19 @@ import useWallet from '@/hooks/useWallet';
 import { formatCurrency, formatNumber } from '@/utils/decimalHelpers';
 
 import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
+import {
+   type BorrowerContextFit,
+   type BorrowerContextFitChip,
+   type BorrowerContextFitSegment,
+   type BorrowerContextState,
+   buildBorrowerContextFit,
+   isBorrowerContextState
+} from '@/lib/borrowerContextFit';
 import { fetchLoans, type LoanSideEffectError, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
-
-type BorrowerContextState = {
-   incomeSetup?: string;
-   paydayWindow?: string;
-   cashGaps?: string[];
-   note?: string;
-};
 
 type LoanWithBorrowerContext = Loan & {
    borrowerContext?: BorrowerContextState;
@@ -44,54 +45,10 @@ type UserCardProps = LoanWithBorrowerContext & {
 };
 
 const getSafeProfileText = (value: unknown) => (typeof value === 'string' && value.trim() ? value : undefined);
-
-const incomeContextLabels: Record<string, string> = {
-   full_time: 'Full-time employee',
-   part_time: 'Part-time',
-   contract: 'Contract / Temp',
-   contract_temp: 'Contract / Temp',
-   freelance: 'Freelance / Gig',
-   freelance_gig: 'Freelance / Gig',
-   self_employed: 'Self-employed',
-   irregular: 'Irregular income',
-   irregular_income: 'Irregular income'
-};
-
-const paydayContextLabels: Record<string, { label: string; range: string; start?: number; end?: number }> = {
-   '1_5': { label: 'Early month', range: '1st-5th', start: 1, end: 5 },
-   '10_15': { label: 'Mid-month', range: '10th-15th', start: 10, end: 15 },
-   '15_20': { label: 'Late month', range: '15th-20th', start: 15, end: 20 },
-   '25_30': { label: 'End of month', range: '25th-30th', start: 25, end: 30 },
-   varies: { label: 'It varies', range: 'No fixed schedule' },
-   it_varies: { label: 'It varies', range: 'No fixed schedule' }
-};
-
-const cashGapContextLabels: Record<string, string> = {
-   bills_before_payday: 'Bills before payday',
-   transport: 'Transport costs',
-   work_supplies: 'Work supplies',
-   family_needs: 'Family needs',
-   medical: 'Medical expenses',
-   emergency_costs: 'Emergency costs',
-   emergency_expense: 'Emergency costs'
-};
-
-const formatContextList = (items: string[]) => {
-   if (items.length <= 1) return items[0] ?? '';
-   if (items.length === 2) return `${items[0]} and ${items[1]}`;
-   return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
-};
-
 const demoBorrowerContext: BorrowerContextState = {
    incomeSetup: 'full_time',
    paydayWindow: '10_15',
    cashGaps: ['family_needs', 'bills_before_payday']
-};
-
-const isBorrowerContextState = (value: unknown): value is BorrowerContextState => {
-   if (!value || typeof value !== 'object') return false;
-   const context = value as BorrowerContextState;
-   return Boolean(context.incomeSetup || context.paydayWindow || context.cashGaps?.length);
 };
 
 const getBorrowerContextForLoan = (loanData: LoanWithBorrowerContext) => {
@@ -99,29 +56,6 @@ const getBorrowerContextForLoan = (loanData: LoanWithBorrowerContext) => {
    if (isBorrowerContextState(loanData.borrower_context)) return loanData.borrower_context;
    if (import.meta.env.DEV && loanData.id.startsWith('lender-tour')) return demoBorrowerContext;
    return null;
-};
-
-const getPaydayTimingCopy = (context: BorrowerContextState, loanData: LoanWithBorrowerContext) => {
-   const payday = context.paydayWindow ? paydayContextLabels[context.paydayWindow] : undefined;
-   if (!payday?.start || !payday.end) return 'Payday timing varies, so review the due date against the request details.';
-
-   const requestedAt = parseISO(loanData.createdAt);
-   const dueAt = parseISO(loanData.dueDate);
-   const requestedDay = requestedAt.getDate();
-   const dueDay = dueAt.getDate();
-   const requestLabel = format(requestedAt, 'MMM d');
-   const dueLabel = format(dueAt, 'MMM d');
-   const requestedBeforeWindow = requestedDay < payday.start;
-   const dueInsideWindow = dueDay >= payday.start && dueDay <= payday.end;
-   const dueAfterWindow = dueDay > payday.end;
-
-   if (requestedBeforeWindow && (dueInsideWindow || dueAfterWindow)) {
-      return `The request was opened ${requestLabel}, before their usual ${payday.range} payday window. The due date is ${dueLabel}, after that window opens.`;
-   }
-
-   if (dueInsideWindow) return `The due date is ${dueLabel}, inside their usual ${payday.range} payday window.`;
-   if (dueAfterWindow) return `The due date is ${dueLabel}, after their usual ${payday.range} payday window.`;
-   return `The due date is ${dueLabel}, before their usual ${payday.range} payday window. Review timing carefully.`;
 };
 
 function BorrowerContextSignal({
@@ -135,45 +69,83 @@ function BorrowerContextSignal({
    loanData: LoanWithBorrowerContext;
    loanReason: string;
 }) {
-   const incomeLabel = context.incomeSetup ? incomeContextLabels[context.incomeSetup] : '';
-   const payday = context.paydayWindow ? paydayContextLabels[context.paydayWindow] : undefined;
-   const gapLabels = (context.cashGaps ?? []).map((gap) => cashGapContextLabels[gap]).filter(Boolean);
-   const gapCopy = formatContextList(gapLabels.map((gap) => gap.toLowerCase())) || 'a stated cash-flow gap';
-   const gapNoun = gapLabels.length === 1 ? 'pressure point' : 'pressure points';
-   const incomeCopy = incomeLabel
-      ? incomeLabel.toLowerCase().includes('income')
-         ? incomeLabel.toLowerCase()
-         : `${incomeLabel.toLowerCase()} income`
-      : 'income';
-   const timingCopy = getPaydayTimingCopy(context, loanData);
-   const sharedContext = [
-      incomeLabel ? `${incomeLabel} income` : '',
-      payday ? `${payday.label} payday (${payday.range})` : '',
-      gapLabels.length > 0 ? formatContextList(gapLabels) : ''
-   ].filter(Boolean);
+   const fit = buildBorrowerContextFit({
+      borrowerName,
+      context,
+      dueDate: loanData.dueDate,
+      loanAmount: loanData.loanAmount,
+      loanReason,
+      requestDate: loanData.createdAt
+   });
 
    return (
-      <section className="rounded-[16px] bg-md-primary-100/70 p-md-3" aria-label="Timing fit">
+      <section className="rounded-[18px] bg-md-primary-100/70 p-md-3" aria-label="Timing fit">
          <div className="flex flex-col gap-md-1">
             <p className="text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-primary-1200">Timing fit</p>
-            <p className="text-md-b2 font-semibold leading-[21px] text-md-heading">
-               Read {borrowerName}&rsquo;s request against their usual cash-flow pattern.
-            </p>
          </div>
 
-         <p className="mt-md-2 text-md-b2 font-medium leading-[22px] text-md-neutral-1500">
-            {borrowerName} usually reports {gapCopy} as the {gapNoun}. This ${formatCurrency(loanData.loanAmount)} request is for{' '}
-            {loanReason.toLowerCase()}. Their shared context lists {incomeCopy} and{' '}
-            {payday ? `${payday.label.toLowerCase()} pay timing (${payday.range})` : 'payday timing'}, so the request timing can be compared
-            with the repayment date. {timingCopy}
+         <InlineFitSentence fit={fit} />
+      </section>
+   );
+}
+
+function InlineFitSentence({ fit }: { fit: BorrowerContextFit }) {
+   const chipById = new Map(fit.chips.map((currentChip) => [currentChip.id, currentChip]));
+
+   return (
+      <>
+         <p className="mt-md-1 text-[15px] font-medium leading-[34px] text-md-neutral-1500">
+            {fit.segments.map((segment, index) => (
+               <FitSegment
+                  key={`${typeof segment === 'string' ? segment : segment.chipId}-${index}`}
+                  segment={segment}
+                  chipById={chipById}
+               />
+            ))}
          </p>
 
-         {sharedContext.length > 0 ? (
-            <div className="mt-md-2 rounded-[12px] bg-md-neutral-100 px-md-2 py-md-1">
-               <p className="text-md-b3 font-medium leading-[18px] text-md-neutral-1200">Shared context: {sharedContext.join('; ')}</p>
+         {fit.secondaryChips.length > 0 ? (
+            <div className="mt-md-2 flex flex-wrap items-center gap-md-1">
+               <span className="text-md-b3 font-medium text-md-neutral-1000">Also shared:</span>
+               {fit.secondaryChips.map((currentChip) => (
+                  <FitChip key={currentChip.id} chip={currentChip} compact />
+               ))}
             </div>
          ) : null}
-      </section>
+      </>
+   );
+}
+
+function FitSegment({ chipById, segment }: { chipById: Map<string, BorrowerContextFitChip>; segment: BorrowerContextFitSegment }) {
+   if (typeof segment === 'string') return <>{segment}</>;
+   const currentChip = chipById.get(segment.chipId);
+   if (!currentChip) return null;
+   return <FitChip chip={currentChip} />;
+}
+
+function FitChip({ chip, compact = false }: { chip: BorrowerContextFitChip; compact?: boolean }) {
+   const variantClasses: Record<BorrowerContextFitChip['variant'], string> = {
+      borrower: 'border-[#cad4ff] bg-[#eef2ff] text-[#3434a8]',
+      request: 'border-[#c9f3d4] bg-[#ecfff1] text-[#0f6d35]',
+      date: 'border-[#e5dcff] bg-[#f7f2ff] text-md-primary-1200',
+      due: 'border-[#ffe4a3] bg-[#fff4c7] text-[#9a4a08]',
+      gap: 'border-[#ead7ff] bg-[#fbf4ff] text-[#7120bd]',
+      income: 'border-[#ffe0c4] bg-[#fff5ea] text-[#9a3d16]',
+      payday: 'border-[#cde1ff] bg-[#eff6ff] text-[#2450bb]',
+      delta: 'border-[#d7f2de] bg-[#f0fff4] text-[#0e6b34]',
+      neutral: 'border-md-neutral-400 bg-md-neutral-100 text-md-neutral-1400'
+   };
+
+   return (
+      <span
+         className={`inline-flex max-w-full align-baseline font-semibold shadow-[0_1px_0_rgba(44,19,82,0.04)] ${variantClasses[chip.variant]} ${
+            compact
+               ? 'rounded-[999px] border px-md-1 py-[2px] text-md-b3 leading-[18px]'
+               : 'rounded-[999px] border px-[10px] py-[5px] text-[15px] leading-[18px]'
+         }`}
+      >
+         {chip.text}
+      </span>
    );
 }
 
