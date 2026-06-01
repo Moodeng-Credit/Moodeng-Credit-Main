@@ -90,8 +90,8 @@ const GETTING_STARTED_COPY = {
          { title: 'Tingnan ang mga gabay', description: 'Quick start para sa bagong users' },
          { title: 'Tingnan ang benefits', description: 'Alamin kung bakit sulit ito' },
          { title: 'Bakit USDC ang gamit ng Moodeng', description: 'Alamin kung paano gumagana ang USDC' },
-         { title: 'Alamin ang Credit Leveling System', description: 'Palakihin ang limits, bumuo ng trust' },
-         { title: 'Matuto pa sa Academy', description: 'Borrowing, Base wallet, Trust Score, at Credit Level' },
+         { title: 'Alamin ang sistema ng pagpapataas ng antas ng kredito', description: 'Palakihin ang limits, bumuo ng trust' },
+         { title: 'Matuto pa sa Academy', description: 'Paghiram, Base wallet, Trust Score, at antas ng kredito' },
          { title: 'Basahin ang Moodeng Blogs', description: 'Mga kwento tungkol sa patas na credit, loan sharks, at trust' }
       ]
    },
@@ -106,8 +106,8 @@ const GETTING_STARTED_COPY = {
          { title: 'Lihat panduan', description: 'Mulai cepat untuk pengguna baru' },
          { title: 'Lihat manfaat', description: 'Lihat mengapa ini berguna' },
          { title: 'Mengapa Moodeng memakai USDC', description: 'Pelajari cara kerja USDC' },
-         { title: 'Pelajari sistem Credit Leveling', description: 'Naikkan limit, bangun kepercayaan' },
-         { title: 'Pelajari lebih lanjut di Academy', description: 'Pinjaman, Base wallet, Trust Score, dan Credit Level' },
+         { title: 'Pelajari sistem peningkatan level kredit', description: 'Naikkan limit, bangun kepercayaan' },
+         { title: 'Pelajari lebih lanjut di Academy', description: 'Pinjaman, Base wallet, Trust Score, dan level kredit' },
          { title: 'Baca Blog Moodeng', description: 'Cerita tentang kredit adil, rentenir, dan kepercayaan' }
       ]
    },
@@ -122,8 +122,8 @@ const GETTING_STARTED_COPY = {
          { title: 'ดูคู่มือ', description: 'เริ่มต้นอย่างรวดเร็วสำหรับผู้ใช้ใหม่' },
          { title: 'ดูประโยชน์', description: 'ดูว่าทำไมจึงคุ้มค่า' },
          { title: 'ทำไม Moodeng ใช้ USDC', description: 'เรียนรู้ว่า USDC ทำงานอย่างไร' },
-         { title: 'เรียนรู้ระบบ Credit Level', description: 'เพิ่มวงเงิน สร้างความน่าเชื่อถือ' },
-         { title: 'เรียนรู้เพิ่มเติมที่ Academy', description: 'การยืม, Base wallet, Trust Score และ Credit Level' },
+         { title: 'เรียนรู้ระบบการเพิ่มระดับเครดิต', description: 'เพิ่มวงเงิน สร้างความน่าเชื่อถือ' },
+         { title: 'เรียนรู้เพิ่มเติมที่ Academy', description: 'การยืม, Base wallet, Trust Score และระดับเครดิต' },
          { title: 'อ่านบล็อก Moodeng', description: 'เรื่องราวเกี่ยวกับเครดิตที่เป็นธรรม เงินกู้นอกระบบ และความน่าเชื่อถือ' }
       ]
    },
@@ -138,8 +138,8 @@ const GETTING_STARTED_COPY = {
          { title: 'Xem hướng dẫn', description: 'Bắt đầu nhanh cho người dùng mới' },
          { title: 'Xem lợi ích', description: 'Xem vì sao đáng dùng' },
          { title: 'Vì sao Moodeng dùng USDC', description: 'Tìm hiểu USDC hoạt động ra sao' },
-         { title: 'Tìm hiểu hệ thống Credit Level', description: 'Tăng hạn mức, xây dựng niềm tin' },
-         { title: 'Học thêm tại Academy', description: 'Vay, Base wallet, Trust Score và Credit Level' },
+         { title: 'Tìm hiểu hệ thống nâng hạng tín dụng', description: 'Tăng hạn mức, xây dựng niềm tin' },
+         { title: 'Học thêm tại Academy', description: 'Vay, Base wallet, Trust Score và hạng tín dụng' },
          { title: 'Đọc Blog Moodeng', description: 'Câu chuyện về tín dụng công bằng, cho vay nặng lãi và niềm tin' }
       ]
    }

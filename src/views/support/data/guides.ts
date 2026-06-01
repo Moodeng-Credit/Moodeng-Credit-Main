@@ -213,9 +213,9 @@ Tumataas ito sa bawat on-time repayment at bumababa kapag late ka o nag-default.
 Dahil naka-tie ang Trust Score mo sa wallet mo, dala mo ito kahit saan. Hindi ito nakakulong sa isang app lang.`
    },
    'how-credit-levels-work': {
-      title: 'Paano gumagana ang Credit Levels',
+      title: 'Paano gumagana ang mga antas ng kredito',
       lastUpdated: 'Ene 18, 2024 1:00 A.M.',
-      body: `Tinutukoy ng Credit Levels kung magkano ang puwede mong hiramin at a time.
+      body: `Tinutukoy ng mga antas ng kredito kung magkano ang puwede mong hiramin at a time.
 
 Lahat nagsisimula sa Level 1 na may $15 limit. Habang humihiram ka at fully nagbabayad, lumalaki ang limit mo — $15 → $20 → $40 → $60 — at nag-a-unlock ng bagong levels.
 
@@ -228,7 +228,7 @@ Umakyat ka lang kapag nakumpleto mo ang Credit Growth Loan: loan sa buong curren
 
 Ang Trust-building loans ay mas maliit na loans below sa current limit mo. Tinutulungan ka nitong ipakita na reliable kang magbayad, pero hindi nito tinataas ang limit mo.
 
-Ang Credit-building loans ay full-limit loans. Kapag nabayaran mo ito on time, tataas ang limit mo at maa-unlock ang next Credit Level.
+Ang Credit-building loans ay full-limit loans. Kapag nabayaran mo ito on time, tataas ang limit mo at maa-unlock ang susunod na antas ng kredito.
 
 Karamihan ng borrowers ay gumagamit ng pareho: trust loans para manatiling healthy ang activity, at credit loans para palakihin ang limit over time.`
    },
@@ -363,9 +363,9 @@ Skor ini naik setiap kali kamu membayar tepat waktu dan turun saat kamu terlamba
 Karena Trust Score tertaut ke wallet, skor ini ikut bersama kamu. Skor ini tidak terkunci di satu app saja.`
    },
    'how-credit-levels-work': {
-      title: 'Cara kerja Credit Level',
+      title: 'Cara kerja level kredit',
       lastUpdated: '18 Jan 2024 1:00 A.M.',
-      body: `Credit Level menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu.
+      body: `Level kredit menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu.
 
 Semua orang mulai di Level 1 dengan limit $15. Saat kamu meminjam dan membayar penuh, limit kamu bertambah: $15 -> $20 -> $40 -> $60, dan membuka level baru.
 
@@ -378,7 +378,7 @@ Kamu hanya naik level dengan menyelesaikan Credit Growth Loan: pinjaman sebesar 
 
 Trust-building loans adalah pinjaman lebih kecil di bawah limit saat ini. Pinjaman ini membantu kamu menunjukkan pembayaran yang andal, tetapi tidak menaikkan limit.
 
-Credit-building loans adalah pinjaman full-limit. Membayar satu pinjaman ini tepat waktu menaikkan limit dan membuka Credit Level berikutnya.
+Credit-building loans adalah pinjaman full-limit. Membayar satu pinjaman ini tepat waktu menaikkan limit dan membuka level kredit berikutnya.
 
 Sebagian besar peminjam memakai keduanya: trust loans untuk menjaga aktivitas sehat, dan credit loans untuk menaikkan limit dari waktu ke waktu.`
    },
@@ -496,7 +496,7 @@ const THAI_GUIDES: Record<string, LocalizedGuideArticle> = {
 หมายเหตุเกี่ยวกับวงเงินเครดิต
 - ผู้ยืมใหม่เริ่มที่วงเงิน $15
 - Credit-Building Loan คือเงินกู้เต็มวงเงินปัจจุบัน การชำระคืนสำเร็จเท่านั้นที่เพิ่มวงเงินไปยังระดับถัดไป
-- Trust-Building Loan คือเงินกู้ที่ต่ำกว่าวงเงิน ช่วยสร้าง Trust Score แต่ไม่เพิ่ม Credit Level`
+- Trust-Building Loan คือเงินกู้ที่ต่ำกว่าวงเงิน ช่วยสร้าง Trust Score แต่ไม่เพิ่มระดับเครดิต`
    },
    'understanding-your-trust-score': {
       title: 'ทำความเข้าใจ Trust Score',
@@ -508,9 +508,9 @@ const THAI_GUIDES: Record<string, LocalizedGuideArticle> = {
 เพราะ Trust Score ผูกกับกระเป๋าเงิน มันจึงติดตามคุณไปได้ ไม่ได้อยู่แค่ในแอปเดียว`
    },
    'how-credit-levels-work': {
-      title: 'Credit Level ทำงานอย่างไร',
+      title: 'ระดับเครดิตทำงานอย่างไร',
       lastUpdated: '18 ม.ค. 2024 1:00 A.M.',
-      body: `Credit Level กำหนดว่าคุณสามารถยืมได้มากแค่ไหนในแต่ละครั้ง
+      body: `ระดับเครดิตกำหนดว่าคุณสามารถยืมได้มากแค่ไหนในแต่ละครั้ง
 
 ทุกคนเริ่มที่ Level 1 พร้อมวงเงิน $15 เมื่อคุณยืมและชำระคืนครบถ้วน วงเงินจะเพิ่มขึ้น: $15 → $20 → $40 → $60 และปลดล็อกระดับใหม่
 
@@ -523,7 +523,7 @@ const THAI_GUIDES: Record<string, LocalizedGuideArticle> = {
 
 Trust-Building Loan คือเงินกู้ขนาดเล็กที่ต่ำกว่าวงเงินปัจจุบัน ช่วยแสดงว่าคุณชำระคืนได้ดี แต่ไม่เพิ่มวงเงิน
 
-Credit-Building Loan คือเงินกู้เต็มวงเงิน การชำระตรงเวลาจะเพิ่มวงเงินและปลดล็อก Credit Level ถัดไป
+Credit-Building Loan คือเงินกู้เต็มวงเงิน การชำระตรงเวลาจะเพิ่มวงเงินและปลดล็อกระดับเครดิตถัดไป
 
 ผู้ยืมส่วนใหญ่ใช้ทั้งสองแบบ: trust loans เพื่อรักษาประวัติให้แข็งแรง และ credit loans เพื่อเพิ่มวงเงินเมื่อพร้อม`
    },
@@ -603,7 +603,7 @@ Bấm "Explore the Request Board" để đặt số tiền vay, ngày trả, s�
 Lưu ý về hạn mức tín dụng
 - Người vay mới bắt đầu với hạn mức $15.
 - Credit-Building Loan là khoản vay toàn bộ hạn mức hiện tại; trả thành công là cách tăng hạn mức.
-- Trust-Building Loan là khoản nhỏ hơn hạn mức; chúng xây dựng Trust Score nhưng không tăng Credit Level.`
+- Trust-Building Loan là khoản nhỏ hơn hạn mức; chúng xây dựng Trust Score nhưng không tăng hạng tín dụng.`
    },
    'understanding-your-trust-score': {
       title: 'Hiểu Trust Score của bạn',
@@ -615,9 +615,9 @@ Lưu ý về hạn mức tín dụng
 Vì Trust Score gắn với ví của bạn, nó đi cùng bạn và không bị khóa trong một ứng dụng duy nhất.`
    },
    'how-credit-levels-work': {
-      title: 'Credit Level hoạt động như thế nào',
+      title: 'Hạng tín dụng hoạt động như thế nào',
       lastUpdated: '18 thg 1, 2024 1:00 A.M.',
-      body: `Credit Level xác định bạn có thể vay bao nhiêu trong một lần.
+      body: `Hạng tín dụng xác định bạn có thể vay bao nhiêu trong một lần.
 
 Mọi người bắt đầu ở Level 1 với hạn mức $15. Khi bạn vay và trả đầy đủ, hạn mức tăng: $15 → $20 → $40 → $60 và mở khóa cấp mới.
 
@@ -630,7 +630,7 @@ Bạn chỉ lên cấp bằng cách hoàn thành Credit Growth Loan: khoản vay
 
 Trust-Building Loan là khoản nhỏ hơn hạn mức hiện tại. Chúng giúp bạn chứng minh khả năng trả đáng tin cậy nhưng không tăng hạn mức.
 
-Credit-Building Loan là khoản vay toàn bộ hạn mức. Trả đúng hạn sẽ nâng hạn mức và mở khóa Credit Level tiếp theo.
+Credit-Building Loan là khoản vay toàn bộ hạn mức. Trả đúng hạn sẽ nâng hạn mức và mở khóa hạng tín dụng tiếp theo.
 
 Hầu hết người vay dùng cả hai: trust loans để giữ hoạt động lành mạnh, credit loans để tăng hạn mức theo thời gian.`
    },

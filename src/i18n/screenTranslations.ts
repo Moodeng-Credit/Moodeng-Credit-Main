@@ -347,7 +347,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
       'Na-update ang password. Puwede ka nang mag-sign in gamit ang bagong password.',
    'Borrower Insights': 'Insights ng borrower',
    'Member since': 'Member since',
-   'Credit Level': 'Credit Level',
+   'Credit Level': 'Antas ng kredito',
    'View Progress History': 'Tingnan ang Progress History',
    'Lender Diversity': 'Diversity ng lenders',
    'Lender Diversity Score': 'Score ng lender diversity',
@@ -487,7 +487,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Message us for wallet help, deposits, or questions': 'I-message kami para sa wallet help, deposits, o questions',
    'Contact Us on Facebook': 'Kontakin kami sa Facebook',
    'Join our community and ask questions': 'Sumali sa community at magtanong',
-   'Learn Credit Leveling System': 'Alamin ang sistema ng Credit Leveling',
+   'Learn Credit Leveling System': 'Alamin ang sistema ng pagpapataas ng antas ng kredito',
    'Grow Limits, Build Trust': 'Palakihin ang limits, bumuo ng tiwala',
    'Explore the Request Board': 'I-explore ang Request Board',
    'You can now explore Moodeng Credit and begin your journey with confidence.':
@@ -514,7 +514,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'What is Moodeng Credit?': 'Ano ang Moodeng Credit?',
    'How does borrowing on Moodeng work?': 'Paano gumagana ang borrowing sa Moodeng?',
    'What is a Trust Score and how is it calculated?': 'Ano ang Trust Score at paano ito kinakalkula?',
-   'What is a Credit Level?': 'Ano ang Credit Level?',
+   'What is a Credit Level?': 'Ano ang antas ng kredito?',
    'What is a Base wallet?': 'Ano ang Base wallet?',
    'What is USDC, and why does Moodeng use it?': 'Ano ang USDC, at bakit ito ginagamit ng Moodeng?',
    'Does Moodeng charge fees?': 'May fees ba ang Moodeng?',
@@ -524,7 +524,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Moodeng Credit is a borrowing platform that lets you request short-term loans in USDC while building a Trust Score linked to your wallet.':
       'Ang Moodeng Credit ay borrowing platform kung saan puwede kang mag-request ng short-term loans sa USDC habang bumubuo ng Trust Score na naka-link sa wallet mo.',
    'Instead of focusing on traditional credit scores, Moodeng helps you build trust through responsible borrowing and on-time repayments. Over time, this trust allows you to unlock higher Credit Levels and request larger loan amounts.':
-      'Sa halip na traditional credit scores, tinutulungan ka ng Moodeng na bumuo ng tiwala sa pamamagitan ng responsible borrowing at on-time repayments. Over time, puwede nitong i-unlock ang mas mataas na Credit Levels at mas malaking loan amounts.',
+      'Sa halip na traditional credit scores, tinutulungan ka ng Moodeng na bumuo ng tiwala sa pamamagitan ng responsible borrowing at on-time repayments. Over time, puwede nitong i-unlock ang mas mataas na antas ng kredito at mas malaking loan amounts.',
    "Your Trust Score isn't locked inside one app. It's designed to reflect your reliability and help you build a reputation you can carry forward.":
       'Hindi nakakulong sa isang app ang Trust Score mo. Dinisenyo ito para ipakita ang reliability mo at tulungan kang bumuo ng reputasyong madadala mo forward.',
    'LIVE ADMIN PANEL': 'LIVE ADMIN PANEL',
@@ -545,7 +545,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    paid: 'nabayaran',
    'Apply Filter': 'I-apply ang filter',
    'Borrowed by': 'Hiniram ng',
-   'Borrowing, Base wallet, Trust Score, and Credit Level': 'Borrowing, Base wallet, Trust Score, at Credit Level',
+   'Borrowing, Base wallet, Trust Score, and Credit Level': 'Paghiram, Base wallet, Trust Score, at antas ng kredito',
    'Browse Benefits': 'Tingnan ang mga benepisyo',
    Completed: 'Tapos na',
    Connecting: 'Kumokonekta',
@@ -604,7 +604,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Verified Lender': 'Beripikadong nagpapahiram',
    'View Loan Transaction History': 'Tingnan ang kasaysayan ng mga transaksyon sa loan',
    'View More': 'Tingnan pa',
-   'Watch our Credit Levelling Guide': 'Panoorin ang Gabay sa Credit Levelling',
+   'Watch our Credit Levelling Guide': 'Panoorin ang gabay sa pagpapataas ng antas ng kredito',
    'Why does Moodeng use USDC?': 'Bakit gumagamit ng USDC ang Moodeng?',
    'Why Moodeng uses USDC': 'Bakit gumagamit ng USDC ang Moodeng',
    left: 'natitira',
@@ -617,9 +617,9 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Your loan activity will appear here once you start borrowing.': 'Lalabas dito ang loan activity mo kapag nagsimula ka nang humiram.',
    'Your transactions will appear here once you start lending.': 'Lalabas dito ang mga transaksyon mo kapag nagsimula ka nang magpahiram.',
 
-   'How to unlock your next Credit Level': 'Paano i-unlock ang susunod mong Credit Level',
+   'How to unlock your next Credit Level': 'Paano i-unlock ang susunod mong antas ng kredito',
    'Credit Leveling is not a list of buttons to press. It is one simple rule: use your full current limit, repay the funded terms on time, then unlock the next limit.':
-      'Ang Credit Leveling ay hindi listahan ng buttons. Simple lang ang rule: gamitin ang buong current limit, bayaran ang funded terms on time, tapos i-unlock ang susunod na limit.',
+      'Ang pagpapataas ng antas ng kredito ay hindi listahan ng buttons. Simple lang ang rule: gamitin ang buong current limit, bayaran ang funded terms on time, tapos i-unlock ang susunod na limit.',
    'Back to Academy': 'Bumalik sa Academy',
    'The rule': 'Ang rule',
    'Full limit': 'Buong limit',
@@ -629,7 +629,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'How it works': 'Paano ito gumagana',
    'The level-up path is simple': 'Simple ang path para mag-level up',
    'Credit Leveling rewards one specific pattern: a full-limit request followed by a clean repayment.':
-      'May specific pattern na nire-reward ang Credit Leveling: full-limit request na sinusundan ng malinis na repayment.',
+      'May specific pattern na nire-reward ang pagpapataas ng antas ng kredito: full-limit request na sinusundan ng malinis na repayment.',
    'Use the full current limit': 'Gamitin ang buong current limit',
    'If your current level allows $15, the credit-building request is $15.':
       'Kung $15 ang allowed sa current level mo, $15 ang credit-building request.',
@@ -665,7 +665,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Trust-building loan': 'Trust-building loan',
    'Builds repayment history': 'Bumubuo ng repayment history',
    'Useful when you need less than your full limit. It can help lenders trust you, but it does not raise your credit level.':
-      'Useful ito kapag mas mababa sa buong limit mo ang kailangan mo. Makakatulong ito para magtiwala ang lenders, pero hindi nito tinataas ang credit level mo.',
+      'Useful ito kapag mas mababa sa buong limit mo ang kailangan mo. Makakatulong ito para magtiwala ang lenders, pero hindi nito tinataas ang antas ng kredito mo.',
    'Credit-building loan': 'Credit-building loan',
    'Can unlock $20': 'Puwedeng mag-unlock ng $20',
    'This is the level-up loan. You borrow your full current limit and repay the funded terms on time.':
@@ -999,7 +999,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
       'Kailangan nitong baguhin kung anong data ang kinokolekta, paano gumagana ang repayment pressure, at sino ang may-ari ng record pagkatapos ng loan.',
    'Explore request board': 'I-explore ang request board',
    "Moodeng Credit is a borrowing platform that lets you request short-term loans in USDC while building a Trust Score linked to your wallet. Instead of focusing on traditional credit scores, Moodeng helps you build trust through responsible borrowing and on-time repayments. Over time, this trust allows you to unlock higher Credit Levels and request larger loan amounts. Your Trust Score isn't locked inside one app. It's designed to reflect your reliability and help you build a reputation you can carry forward.":
-      'Ang Moodeng Credit ay borrowing platform kung saan puwede kang mag-request ng short-term loans sa USDC habang bumubuo ng Trust Score na naka-link sa wallet mo. Sa halip na traditional credit scores, tinutulungan ka ng Moodeng na bumuo ng tiwala sa pamamagitan ng responsible borrowing at on-time repayments. Over time, puwede nitong i-unlock ang mas mataas na Credit Levels at mas malaking loan amounts. Hindi nakakulong sa isang app ang Trust Score mo. Dinisenyo ito para ipakita ang reliability mo at tulungan kang bumuo ng reputasyong madadala mo forward.',
+      'Ang Moodeng Credit ay borrowing platform kung saan puwede kang mag-request ng short-term loans sa USDC habang bumubuo ng Trust Score na naka-link sa wallet mo. Sa halip na traditional credit scores, tinutulungan ka ng Moodeng na bumuo ng tiwala sa pamamagitan ng responsible borrowing at on-time repayments. Over time, puwede nitong i-unlock ang mas mataas na antas ng kredito at mas malaking loan amounts. Hindi nakakulong sa isang app ang Trust Score mo. Dinisenyo ito para ipakita ang reliability mo at tulungan kang bumuo ng reputasyong madadala mo forward.',
 
    'Prove you are a real person. This is a one-time step before larger borrowing limits.':
       'Patunayan na totoong tao ka. One-time step ito bago ang mas malaking borrowing limits.',
@@ -1200,13 +1200,14 @@ export const indonesianScreenTranslations: Record<string, string> = {
    Timeline: 'Timeline',
    'Transaction History': 'Riwayat transaksi',
    'Trust Score': 'Trust Score',
-   'Credit Level': 'Credit Level',
+   'Credit Level': 'Level kredit',
    'Verified Borrower': 'Peminjam terverifikasi',
    'Reputation Milestones': 'Milestone reputasi',
    'View All Milestones': 'Lihat semua milestone',
    'Complete milestones to unlock higher loan levels.': 'Selesaikan milestone untuk membuka level pinjaman lebih tinggi.',
    Unlocked: 'Terbuka',
    'View More': 'Lihat lainnya',
+   'Watch our Credit Levelling Guide': 'Tonton panduan peningkatan level kredit',
    Wallet: 'Wallet',
    'Wallet Not Connected': 'Wallet belum terhubung',
    'World ID': 'World ID',
@@ -1361,6 +1362,7 @@ export const thaiScreenTranslations: Record<string, string> = {
    'Complete milestones to unlock higher loan levels.': 'ทำเป้าหมายให้สำเร็จเพื่อปลดล็อกระดับเงินกู้ที่สูงขึ้น',
    Unlocked: 'ปลดล็อกแล้ว',
    'View More': 'ดูเพิ่มเติม',
+   'Watch our Credit Levelling Guide': 'ดูคู่มือการเพิ่มระดับเครดิต',
    Wallet: 'กระเป๋าเงิน',
    'Wallet Not Connected': 'ยังไม่ได้เชื่อมต่อกระเป๋า',
    'World ID': 'World ID',
@@ -1515,6 +1517,7 @@ export const vietnameseScreenTranslations: Record<string, string> = {
    'Complete milestones to unlock higher loan levels.': 'Hoàn thành các mốc để mở khóa cấp vay cao hơn.',
    Unlocked: 'Đã mở khóa',
    'View More': 'Xem thêm',
+   'Watch our Credit Levelling Guide': 'Xem hướng dẫn nâng hạng tín dụng',
    Wallet: 'Ví',
    'Wallet Not Connected': 'Chưa kết nối ví',
    'World ID': 'World ID',
