@@ -651,6 +651,7 @@ export type Database = {
           chat_id: number | null
           created_at: string | null
           credit_progression_paused: boolean | null
+          display_name: string | null
           cs: number | null
           email: string
           google_id: string | null
@@ -678,6 +679,7 @@ export type Database = {
           chat_id?: number | null
           created_at?: string | null
           credit_progression_paused?: boolean | null
+          display_name?: string | null
           cs?: number | null
           email: string
           google_id?: string | null
@@ -705,6 +707,7 @@ export type Database = {
           chat_id?: number | null
           created_at?: string | null
           credit_progression_paused?: boolean | null
+          display_name?: string | null
           cs?: number | null
           email?: string
           google_id?: string | null
