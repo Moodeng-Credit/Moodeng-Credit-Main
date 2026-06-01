@@ -488,7 +488,7 @@ export const fetchUserProfiles = createAsyncThunk('auth/fetchUserProfiles', asyn
       throw error;
    }
 
-   return { users: (profiles || []).map(mapSupabaseRowToUser) };
+   return { users: (profiles || []).map((profile) => mapSupabaseRowToUser(profile)) };
 });
 
 export const updateUser = createAsyncThunk('auth/updateUser', async (userData: UpdateUserPayload) => {
