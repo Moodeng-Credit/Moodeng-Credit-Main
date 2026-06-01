@@ -27,3 +27,12 @@ verify_jwt = false
 
 [functions.loan-request-telegram-notification]
 verify_jwt = false
+
+[functions.loan-overdue-notifications]
+verify_jwt = false
+
+[functions.loan-weekly-digest]
+verify_jwt = false
+
+[functions.loan-request-expired-notifications]
+verify_jwt = false

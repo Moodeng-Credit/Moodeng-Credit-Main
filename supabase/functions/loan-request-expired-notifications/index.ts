@@ -2,11 +2,12 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { getBorrowerTelegramNotificationsEnabled, sendBorrowerLoanNotification } from '../_shared/borrowerNotificationDelivery.ts';
+import { authorizeInternalRequest } from '../_shared/internalNotificationAuth.ts';
 import { LoanNotificationLoan, LoanNotificationRecipient } from '../_shared/loanNotifications.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
-   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-notification-secret',
    'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
@@ -83,11 +84,19 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
    }
 
+   const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+   const authorization = await authorizeInternalRequest(supabase, req);
+   if (!authorization.authorized) {
+      return new Response(JSON.stringify({ error: authorization.error }), {
+         status: authorization.status,
+         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+   }
+
    const body = await req.json().catch(() => ({}));
    const referenceDate = body.referenceDate ? new Date(body.referenceDate) : new Date();
    const expirationDays = parseExpirationDays(body.expirationDays ?? Deno.env.get('REQUEST_EXPIRATION_DAYS'));
    const expiredBefore = getExpirationCutoff(referenceDate, expirationDays);
-   const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
    const { data: loans, error } = await supabase
       .from('loans')
