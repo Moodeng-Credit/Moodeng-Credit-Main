@@ -19,11 +19,11 @@ const coFounders = [
 
 const foundingTeam = [
    {
-      name: 'Yousuf',
+      name: 'M. Yousuf',
       role: 'Member of Technical Team',
-      image: '/team/yousef.jpg',
+      image: '/team/yousuf.jpeg',
       bio: 'Backend engineer building scalable APIs, cloud systems, and product flows for Moodeng Credit.',
-      credentials: ['Backend Engineer', 'Java', 'Node.js', 'AWS', 'App Flows'],
+      credentials: ['Backend Engineer', 'Java', 'Node.js', 'AWS','Web3', 'App Flows'],
       linkedIn: 'https://www.linkedin.com/in/m-yousuf-dev',
       website: 'https://yousuf-dev.com/'
    },
