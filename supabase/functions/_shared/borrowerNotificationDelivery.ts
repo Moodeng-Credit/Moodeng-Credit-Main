@@ -14,11 +14,11 @@ export type BorrowerNotificationDeliveryResult = {
    telegramSent: boolean;
 };
 
-export const getBorrowerTelegramNotificationsEnabled = async (supabase: any) => {
+export const getTelegramBotSettingEnabled = async (supabase: any, key: string) => {
    const { data, error } = await supabase
       .from('telegram_bot_settings')
       .select('value')
-      .eq('key', 'borrower_notifications_enabled')
+      .eq('key', key)
       .maybeSingle();
 
    if (error) {
@@ -27,6 +27,9 @@ export const getBorrowerTelegramNotificationsEnabled = async (supabase: any) => 
 
    return data?.value === 'true';
 };
+
+export const getBorrowerTelegramNotificationsEnabled = async (supabase: any) =>
+   getTelegramBotSettingEnabled(supabase, 'borrower_notifications_enabled');
 
 export const sendBorrowerLoanNotification = async (
    type: LoanNotificationType,

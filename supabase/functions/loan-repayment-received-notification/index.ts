@@ -2,7 +2,13 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { sendEmail } from '../_shared/email.ts';
-import { buildLoanNotificationEmail, LoanNotificationType } from '../_shared/loanNotifications.ts';
+import { getTelegramBotSettingEnabled } from '../_shared/borrowerNotificationDelivery.ts';
+import {
+   buildLenderRepaymentTelegram,
+   buildLoanNotificationEmail,
+   LoanNotificationType
+} from '../_shared/loanNotifications.ts';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
 import {
    calculateTrustPointRewardDelta,
    markLoansUnpaid
@@ -34,6 +40,15 @@ const hasNotificationBeenSent = async (
       .maybeSingle();
 
    return Boolean(data);
+};
+
+const getLenderDirectNotificationsEnabled = async (supabase: SupabaseClient) => {
+   const envValue = Deno.env.get('LENDER_TELEGRAM_NOTIFICATIONS_ENABLED') ?? Deno.env.get('TELEGRAM_DIRECT_MESSAGES_ENABLED');
+   if (envValue) {
+      return envValue === 'true';
+   }
+
+   return getTelegramBotSettingEnabled(supabase, 'lender_direct_notifications_enabled');
 };
 
 const loadTrustPointRewardData = async (supabase: SupabaseClient, borrowerId: string, paidAt: Date) => {
@@ -130,8 +145,20 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: borrowerError.message }), { status: 500, headers: corsHeaders });
    }
 
-   if (!borrower?.email) {
-      return new Response(JSON.stringify({ error: 'Borrower email not found' }), { status: 404, headers: corsHeaders });
+   if (!borrower) {
+      return new Response(JSON.stringify({ error: 'Borrower not found' }), { status: 404, headers: corsHeaders });
+   }
+
+   const { data: lender, error: lenderError } = loan.lender_user_id
+      ? await supabase.from('users').select('id, username, telegram_username, email, chat_id').eq('id', loan.lender_user_id).maybeSingle()
+      : { data: null, error: null };
+
+   if (lenderError) {
+      return new Response(JSON.stringify({ error: lenderError.message }), { status: 500, headers: corsHeaders });
+   }
+
+   if (!borrower?.email && !lender?.chat_id) {
+      return new Response(JSON.stringify({ error: 'Repayment notification target not found' }), { status: 404, headers: corsHeaders });
    }
 
    const { data: trustPoints } = await supabase.from('user_trust_points').select('points_total').eq('user_id', borrower.id).maybeSingle();
@@ -141,41 +168,74 @@ serve(async (req) => {
       trust_points_total: trustPoints?.points_total ?? 0
    };
 
-   const alreadySent = await hasNotificationBeenSent(supabase, { loanId: loan.id, userId: borrower.id, type: 'repayment_received' });
+   const borrowerAlreadySent = borrower?.email
+      ? await hasNotificationBeenSent(supabase, { loanId: loan.id, userId: borrower.id, type: 'repayment_received' })
+      : true;
+   const lenderAlreadySent = lender?.id
+      ? await hasNotificationBeenSent(supabase, { loanId: loan.id, userId: lender.id, type: 'repayment_received' })
+      : true;
 
-   if (alreadySent) {
+   if (borrowerAlreadySent && lenderAlreadySent) {
       return new Response(JSON.stringify({ message: 'Notification already sent' }), { status: 200, headers: corsHeaders });
    }
 
-   const parsedPaidAt = loan.updated_at ? new Date(loan.updated_at) : new Date();
-   const paidAt = Number.isNaN(parsedPaidAt.getTime()) ? new Date() : parsedPaidAt;
-   const trustPointRewardData = await loadTrustPointRewardData(supabase, borrower.id, paidAt);
-   const trustPointsReward = calculateTrustPointRewardDelta({
-      beforeLoans: markLoansUnpaid(trustPointRewardData.loans, [loan.id]),
-      afterLoans: trustPointRewardData.loans,
-      user: borrower,
-      milestoneDefinitions: trustPointRewardData.milestoneDefinitions,
-      completedMilestoneIds: trustPointRewardData.completedMilestoneIdsBeforePayment,
-      referenceDate: paidAt
-   });
+   let emailSent = false;
+   let telegramSent = false;
+   const notificationRows: Array<{ loan_id: string; user_id: string; notification_type: LoanNotificationType }> = [];
 
-   const { subject, text, html } = buildLoanNotificationEmail('repayment_received', loan, {
-      ...borrowerPayload,
-      trust_points_reward: trustPointsReward,
-      trust_points_reward_kind: 'earned'
-   });
+   if (borrower?.email && !borrowerAlreadySent) {
+      const parsedPaidAt = loan.updated_at ? new Date(loan.updated_at) : new Date();
+      const paidAt = Number.isNaN(parsedPaidAt.getTime()) ? new Date() : parsedPaidAt;
+      const trustPointRewardData = await loadTrustPointRewardData(supabase, borrower.id, paidAt);
+      const trustPointsReward = calculateTrustPointRewardDelta({
+         beforeLoans: markLoansUnpaid(trustPointRewardData.loans, [loan.id]),
+         afterLoans: trustPointRewardData.loans,
+         user: borrower,
+         milestoneDefinitions: trustPointRewardData.milestoneDefinitions,
+         completedMilestoneIds: trustPointRewardData.completedMilestoneIdsBeforePayment,
+         referenceDate: paidAt
+      });
 
-   await sendEmail(borrowerPayload.email, subject, text, html);
+      const { subject, text, html } = buildLoanNotificationEmail('repayment_received', loan, {
+         ...borrowerPayload,
+         trust_points_reward: trustPointsReward,
+         trust_points_reward_kind: 'earned'
+      });
 
-   const { error: insertError } = await supabase.from('loan_notifications').insert({
-      loan_id: loan.id,
-      user_id: borrower.id,
-      notification_type: 'repayment_received'
-   });
-
-   if (insertError) {
-      return new Response(JSON.stringify({ error: insertError.message }), { status: 500, headers: corsHeaders });
+      await sendEmail(borrowerPayload.email, subject, text, html);
+      emailSent = true;
+      notificationRows.push({
+         loan_id: loan.id,
+         user_id: borrower.id,
+         notification_type: 'repayment_received'
+      });
    }
 
-   return new Response(JSON.stringify({ message: 'Notification sent' }), { status: 200, headers: corsHeaders });
+   const lenderTelegramEnabled = await getLenderDirectNotificationsEnabled(supabase);
+   if (lender?.chat_id && lenderTelegramEnabled && !lenderAlreadySent) {
+      const { text, actionUrl } = buildLenderRepaymentTelegram(loan, lender, borrower);
+      await sendTelegramMessage(lender.chat_id, text, {
+         inlineKeyboard: [[{ text: 'Open Dashboard', url: actionUrl }]]
+      });
+      telegramSent = true;
+      notificationRows.push({
+         loan_id: loan.id,
+         user_id: lender.id,
+         notification_type: 'repayment_received'
+      });
+   }
+
+   if (!emailSent && !telegramSent) {
+      return new Response(JSON.stringify({ message: 'No eligible repayment notification target' }), { status: 200, headers: corsHeaders });
+   }
+
+   if (notificationRows.length) {
+      const { error: insertError } = await supabase.from('loan_notifications').insert(notificationRows);
+
+      if (insertError) {
+         return new Response(JSON.stringify({ error: insertError.message }), { status: 500, headers: corsHeaders });
+      }
+   }
+
+   return new Response(JSON.stringify({ message: 'Notification sent', emailSent, telegramSent }), { status: 200, headers: corsHeaders });
 });

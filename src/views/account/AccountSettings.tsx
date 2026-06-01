@@ -266,7 +266,7 @@ function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
             >
                {isSubmitting ? 'Updating...' : 'Update password'}
-               {!isSubmitting && (
+               {!isSubmitting ? (
                   <div
                      className="w-6 h-6 bg-md-neutral-100"
                      style={{
@@ -275,7 +275,7 @@ function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                         maskImage: "url('/icons/chevron-right.svg')"
                      }}
                   />
-               )}
+               ) : null}
             </button>
             <button
                type="button"
@@ -375,7 +375,7 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                   className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
                >
                   {isSubmitting ? 'Updating...' : 'Confirm email change'}
-                  {!isSubmitting && (
+                  {!isSubmitting ? (
                      <div
                         className="w-6 h-6 bg-md-neutral-100"
                         style={{
@@ -384,7 +384,7 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                            maskImage: "url('/icons/chevron-right.svg')"
                         }}
                      />
-                  )}
+                  ) : null}
                </button>
                <button
                   type="button"
@@ -402,20 +402,26 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 function TelegramAlertsModal({
    isOpen,
    onClose,
-   onConnected
+   onConnected,
+   onRefresh,
+   onCreateConnectLink
 }: {
    isOpen: boolean;
    onClose: () => void;
    onConnected: (authData: Record<string, string>) => Promise<void>;
+   onRefresh: () => Promise<boolean>;
+   onCreateConnectLink: () => Promise<string>;
 }) {
    const { showToast } = useToast();
    const [error, setError] = useState('');
    const [isSubmitting, setIsSubmitting] = useState(false);
+   const [hasOpenedBot, setHasOpenedBot] = useState(false);
    const isSubmittingRef = useRef(false);
 
    const handleClose = () => {
       if (isSubmitting) return;
       setError('');
+      setHasOpenedBot(false);
       onClose();
    };
 
@@ -439,6 +445,50 @@ function TelegramAlertsModal({
       }
    };
 
+   const handleOpenTelegramBot = async () => {
+      if (isSubmittingRef.current) return;
+      isSubmittingRef.current = true;
+      setError('');
+      setIsSubmitting(true);
+      try {
+         const url = await onCreateConnectLink();
+         window.open(url, '_blank', 'noopener,noreferrer');
+         setHasOpenedBot(true);
+      } catch (err) {
+         const message = err instanceof Error ? err.message : 'Failed to create Telegram connection link';
+         setError(message);
+         showToast(TOAST_TYPES.ERROR, 'Telegram alerts not connected', message, 'Contact support', 'contact_support');
+      } finally {
+         isSubmittingRef.current = false;
+         setIsSubmitting(false);
+      }
+   };
+
+   const handleRefreshConnection = async () => {
+      if (isSubmittingRef.current) return;
+      isSubmittingRef.current = true;
+      setError('');
+      setIsSubmitting(true);
+      try {
+         const isConnected = await onRefresh();
+         isSubmittingRef.current = false;
+         setIsSubmitting(false);
+         if (isConnected) {
+            setError('');
+            onClose();
+            return;
+         }
+
+         setError('Open Telegram, tap Start in the bot, then check again.');
+      } catch (err) {
+         const message = err instanceof Error ? err.message : 'Failed to refresh Telegram alerts';
+         isSubmittingRef.current = false;
+         setIsSubmitting(false);
+         setError(message);
+         showToast(TOAST_TYPES.ERROR, 'Telegram alerts not connected', message, 'Contact support', 'contact_support');
+      }
+   };
+
    if (!isOpen) return null;
 
    return (
@@ -450,6 +500,29 @@ function TelegramAlertsModal({
             <div className="flex flex-col gap-2 items-center text-center">
                <h2 className="text-md-h4 font-semibold text-md-heading">Telegram Alerts</h2>
                <p className="text-md-b1 text-md-neutral-1200">Connect private loan alerts to your Telegram account.</p>
+            </div>
+            <div className="flex w-full flex-col gap-2">
+               <button
+                  type="button"
+                  onClick={handleOpenTelegramBot}
+                  disabled={isSubmitting}
+                  className="w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-center text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-50"
+               >
+                  Open Telegram Bot
+               </button>
+               <button
+                  type="button"
+                  onClick={handleRefreshConnection}
+                  disabled={isSubmitting || !hasOpenedBot}
+                  className="w-full rounded-md-lg border border-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50"
+               >
+                  Check Connection
+               </button>
+            </div>
+            <div className="flex w-full items-center gap-3 text-md-b3 font-semibold text-md-neutral-700">
+               <div className="h-px flex-1 bg-md-neutral-600" />
+               <span>or</span>
+               <div className="h-px flex-1 bg-md-neutral-600" />
             </div>
             <div className={`w-full ${isSubmitting ? 'pointer-events-none opacity-60' : ''}`}>
                <TelegramAuthButton onAuth={handleTelegramAuth} buttonSize="large" requestWriteAccess />
@@ -661,6 +734,39 @@ export default function AccountSettings() {
       if (!fetchUser.fulfilled.match(result)) {
          throw new Error(result.error?.message || 'Failed to refresh Telegram alerts');
       }
+   };
+
+   const handleRefreshTelegramAlerts = async () => {
+      const result = await dispatch(fetchUser());
+      if (!fetchUser.fulfilled.match(result)) {
+         throw new Error(result.error?.message || 'Failed to refresh Telegram alerts');
+      }
+
+      return Boolean(result.payload?.chatId);
+   };
+
+   const handleCreateTelegramConnectLink = async () => {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase.functions.invoke('create-telegram-connect-link', {
+         body: {}
+      });
+
+      if (error) {
+         const response = (error as { context?: Response }).context;
+         if (response) {
+            const body = (await response
+               .clone()
+               .json()
+               .catch(() => null)) as { error?: string } | null;
+            if (body?.error) throw new Error(body.error);
+         }
+         throw error;
+      }
+
+      if (data?.error) throw new Error(data.error);
+      if (!data?.url) throw new Error('Telegram connection link was not created');
+
+      return data.url as string;
    };
 
    const truncateAddress = (addr: string) => {
@@ -1141,6 +1247,8 @@ export default function AccountSettings() {
             isOpen={showTelegramAlertsModal}
             onClose={() => setShowTelegramAlertsModal(false)}
             onConnected={handleConnectTelegramAlerts}
+            onRefresh={handleRefreshTelegramAlerts}
+            onCreateConnectLink={handleCreateTelegramConnectLink}
          />
       </div>
    );

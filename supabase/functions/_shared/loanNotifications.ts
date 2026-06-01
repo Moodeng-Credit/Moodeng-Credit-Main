@@ -836,6 +836,24 @@ ${actionUrl}`);
    return { actionUrl, text };
 };
 
+export const buildLenderRepaymentTelegram = (
+   loan: LoanNotificationLoan,
+   lender: LoanNotificationRecipient,
+   borrower: Pick<LoanNotificationRecipient, 'username' | 'telegram_username'>
+) => {
+   const name = getTelegramRecipientName(lender);
+   const borrowerName = borrower.username?.trim() || borrower.telegram_username?.trim().replace(/^@/, '') || 'A borrower';
+   const actionUrl = buildDashboardLink();
+   const amountRepaid = formatUsdcAmount(loan.repaid_amount ?? loan.total_repayment_amount);
+
+   const text = normalizeNotificationText(`Repayment received
+Hi ${name}, ${borrowerName} repaid ${amountRepaid} for ${loan.tracking_id}.
+Thanks for supporting the Moodeng community.
+${actionUrl}`);
+
+   return { actionUrl, text };
+};
+
 export const getReminderWindows = (referenceDate: Date, urgentHours: number, finalHours: number) => {
    const finalEnd = new Date(referenceDate);
    finalEnd.setUTCHours(finalEnd.getUTCHours() + finalHours);

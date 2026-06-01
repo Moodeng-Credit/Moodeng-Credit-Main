@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+   buildLenderRepaymentTelegram,
    buildLoanNotificationEmail,
    buildLoanNotificationTelegram,
    getLoanOutstandingAmount,
@@ -308,6 +309,31 @@ describe('buildLoanNotificationTelegram', () => {
       expect(result.text).toContain('$250.00 USDC');
       expect(result.text).toContain('help connecting with a lender');
       expect(result.text).toContain('https://moodeng.app/support');
+   });
+
+   it('builds a lender repayment Telegram notification', () => {
+      process.env.VITE_SITE_URL = 'https://moodeng.app';
+
+      const result = buildLenderRepaymentTelegram(
+         {
+            ...baseLoan,
+            repaid_amount: 275,
+            repayment_status: 'Paid',
+            updated_at: '2026-01-12T00:00:00.000Z'
+         },
+         {
+            username: 'lender-01',
+            telegram_username: 'lender_one',
+            chat_id: 12345
+         },
+         recipient
+      );
+
+      expect(result.actionUrl).toBe('https://moodeng.app/dashboard');
+      expect(result.text).toContain('Repayment received');
+      expect(result.text).toContain('@lender_one');
+      expect(result.text).toContain('sam repaid $275.00 USDC for LOAN-123');
+      expect(result.text).toContain('https://moodeng.app/dashboard');
    });
 });
 
