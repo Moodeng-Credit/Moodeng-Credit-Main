@@ -1,10 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import {
-   getBorrowerTelegramNotificationsEnabled,
-   sendBorrowerLoanNotification
-} from '../_shared/borrowerNotificationDelivery.ts';
+import { getBorrowerTelegramNotificationsEnabled, sendBorrowerLoanNotification } from '../_shared/borrowerNotificationDelivery.ts';
+import { authorizeInternalRequest } from '../_shared/internalNotificationAuth.ts';
 import {
    getLoanOutstandingAmount,
    getReminderWindows,
@@ -12,19 +10,12 @@ import {
    LoanNotificationRecipient,
    LoanNotificationType
 } from '../_shared/loanNotifications.ts';
-import {
-   calculateTrustPointRewardDelta,
-   markLoansRepaid
-} from '../_shared/trustPointRewards.ts';
-import type {
-   TrustPointMilestoneDefinition,
-   TrustPointRewardLoan,
-   TrustPointRewardUser
-} from '../_shared/trustPointRewards.ts';
+import { calculateTrustPointRewardDelta, markLoansRepaid } from '../_shared/trustPointRewards.ts';
+import type { TrustPointMilestoneDefinition, TrustPointRewardLoan, TrustPointRewardUser } from '../_shared/trustPointRewards.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
-   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-notification-secret',
    'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
@@ -39,35 +30,6 @@ type TrustPointRewardContext = {
    loansByBorrowerId: Map<string, TrustPointRewardLoan[]>;
    completedMilestoneIdsByBorrowerId: Map<string, Set<string>>;
    milestoneDefinitions: TrustPointMilestoneDefinition[];
-};
-
-const getRequestSecret = (req: Request) => {
-   const authorization = req.headers.get('Authorization') ?? '';
-   const bearerToken = authorization.replace(/^Bearer\s+/i, '').trim();
-   return bearerToken || req.headers.get('x-notification-secret');
-};
-
-const authorizeInternalRequest = async (supabase: SupabaseClient, req: Request) => {
-   const requestSecret = getRequestSecret(req);
-   if (!requestSecret) {
-      return { authorized: false, status: 401, error: 'Unauthorized' };
-   }
-
-   const expectedSecret = Deno.env.get('SUPABASE_SECRET_KEY') ?? Deno.env.get('TELEGRAM_NOTIFICATION_SECRET');
-   if (expectedSecret && requestSecret === expectedSecret) {
-      return { authorized: true, status: 200, error: null };
-   }
-
-   const { data, error } = await supabase.rpc('verify_internal_notification_secret', { candidate: requestSecret });
-   if (error) {
-      return { authorized: false, status: 500, error: error.message };
-   }
-
-   if (data !== true) {
-      return { authorized: false, status: 401, error: 'Unauthorized' };
-   }
-
-   return { authorized: true, status: 200, error: null };
 };
 
 const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promise<Map<string, BorrowerRecord>> => {
@@ -108,10 +70,7 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
    );
 };
 
-const loadTrustPointRewardContext = async (
-   supabase: SupabaseClient,
-   userIds: string[]
-): Promise<TrustPointRewardContext> => {
+const loadTrustPointRewardContext = async (supabase: SupabaseClient, userIds: string[]): Promise<TrustPointRewardContext> => {
    if (!userIds.length) {
       return {
          loansByBorrowerId: new Map(),
@@ -174,10 +133,7 @@ const loadTrustPointRewardContext = async (
    };
 };
 
-const loadSentLoanIds = async (
-   supabase: SupabaseClient,
-   payload: { loanIds: string[]; userId: string; type: LoanNotificationType }
-) => {
+const loadSentLoanIds = async (supabase: SupabaseClient, payload: { loanIds: string[]; userId: string; type: LoanNotificationType }) => {
    if (!payload.loanIds.length) {
       return new Set<string>();
    }
@@ -196,12 +152,7 @@ const loadSentLoanIds = async (
    return new Set(((data ?? []) as SentLoanNotificationRow[]).map((item) => item.loan_id));
 };
 
-const recordNotification = async (
-   supabase: SupabaseClient,
-   borrowerId: string,
-   type: LoanNotificationType,
-   loanIds: string[]
-) => {
+const recordNotification = async (supabase: SupabaseClient, borrowerId: string, type: LoanNotificationType, loanIds: string[]) => {
    if (!loanIds.length) {
       return;
    }
