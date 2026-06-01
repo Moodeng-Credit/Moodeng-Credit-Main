@@ -83,14 +83,13 @@ type BorrowerContextOption = {
    description?: string;
    icon?: typeof BriefcaseBusiness;
    label: string;
+   pillLabel?: string;
    value: string;
 };
 
 type BorrowerContextMultiOption = BorrowerContextOption & {
    icon: typeof BriefcaseBusiness;
 };
-
-type BorrowerContextStep = 'income' | 'payday' | 'gaps';
 
 const REFERRAL_TEST_CODES: Record<string, AppliedReferralCode> = {
    BELLE: { id: 'referral-test-belle', code: 'BELLE', boostAmount: 5 }
@@ -105,26 +104,33 @@ const emptyBorrowerContext: BorrowerContextState = {
    cashGaps: []
 };
 
-const borrowerContextSteps: { id: BorrowerContextStep; label: string }[] = [
-   { id: 'income', label: 'Income' },
-   { id: 'payday', label: 'Payday' },
-   { id: 'gaps', label: 'Gaps' }
-];
-
 const incomeSetupOptions: BorrowerContextOption[] = [
-   { label: 'Full-time employee', value: 'full_time', description: 'Regular salary from one employer', icon: Briefcase },
+   {
+      label: 'Full-time employee',
+      pillLabel: 'Full-time',
+      value: 'full_time',
+      description: 'Regular salary from one employer',
+      icon: Briefcase
+   },
    { label: 'Part-time', value: 'part_time', description: 'Scheduled hours, under 30/week', icon: Clock3 },
    { label: 'Contract / Temp', value: 'contract', description: 'Fixed-term or agency work', icon: FileText },
    { label: 'Freelance / Gig', value: 'freelance', description: 'Project-based or platform work', icon: Ticket },
    { label: 'Self-employed', value: 'self_employed', description: 'Own business or sole trader', icon: Users },
-   { label: 'Irregular income', value: 'irregular', description: 'Income varies month to month', icon: WalletCards }
+   {
+      label: 'Irregular income',
+      pillLabel: 'Irregular',
+      value: 'irregular',
+      description: 'Income varies month to month',
+      icon: WalletCards
+   },
+   { label: 'No income', value: 'no_income', description: 'No regular income source', icon: WalletCards }
 ];
 
 const paydayWindowOptions: BorrowerContextOption[] = [
-   { label: 'Early month', value: '1_5', description: '1st-5th', icon: Clock3 },
-   { label: 'Mid-month', value: '10_15', description: '10th-15th', icon: Clock3 },
-   { label: 'Late month', value: '15_20', description: '15th-20th', icon: Clock3 },
-   { label: 'End of month', value: '25_30', description: '25th-30th', icon: Clock3 },
+   { label: 'Early month', pillLabel: 'Early month (1st-5th)', value: '1_5', description: '1st-5th', icon: Clock3 },
+   { label: 'Mid-month', pillLabel: 'Mid-month (10th-15th)', value: '10_15', description: '10th-15th', icon: Clock3 },
+   { label: 'Late month', pillLabel: 'Late month (15th-20th)', value: '15_20', description: '15th-20th', icon: Clock3 },
+   { label: 'End of month', pillLabel: 'End of month (25th-30th)', value: '25_30', description: '25th-30th', icon: Clock3 },
    { label: 'It varies', value: 'varies', description: 'No fixed schedule', icon: Clock3 }
 ];
 
@@ -134,11 +140,9 @@ const cashGapOptions: BorrowerContextMultiOption[] = [
    { label: 'Work supplies', value: 'work_supplies', icon: Briefcase },
    { label: 'Family needs', value: 'family_needs', icon: Users },
    { label: 'Medical expenses', value: 'medical', icon: Stethoscope },
-   { label: 'Emergency costs', value: 'emergency_costs', icon: TriangleAlert }
+   { label: 'Emergency costs', value: 'emergency_costs', icon: TriangleAlert },
+   { label: 'Food', value: 'food', icon: WalletCards }
 ];
-
-const findBorrowerContextLabel = (options: BorrowerContextOption[], value: string) =>
-   options.find((option) => option.value === value)?.label ?? '';
 
 type TooltipId = 'terms' | 'limit' | 'usdc';
 
@@ -312,234 +316,149 @@ const UsdcIcon = () => (
 
 function BorrowerContextLoanStep({
    context,
-   currentStep,
    isSubmitting,
    onBack,
    onCashGapToggle,
    onContinue,
    onIncomeSelect,
-   onPaydaySelect
+   onPaydaySelect,
+   username
 }: {
    context: BorrowerContextState;
-   currentStep: BorrowerContextStep;
    isSubmitting: boolean;
    onBack: () => void;
    onCashGapToggle: (value: string) => void;
    onContinue: () => void;
    onIncomeSelect: (value: string) => void;
    onPaydaySelect: (value: string) => void;
+   username: string;
 }) {
-   const currentStepIndex = borrowerContextSteps.findIndex((step) => step.id === currentStep);
-   const canContinue =
-      currentStep === 'income'
-         ? Boolean(context.incomeSetup)
-         : currentStep === 'payday'
-           ? Boolean(context.paydayWindow)
-           : context.cashGaps.length > 0;
-   const isFinalStep = currentStep === 'gaps';
-   const stepHeading =
-      currentStep === 'income'
-         ? 'How do you earn income?'
-         : currentStep === 'payday'
-           ? 'When do you usually get paid?'
-           : 'What causes your cash-flow gap?';
-   const stepSupportingText =
-      currentStep === 'income'
-         ? 'Choose the option that best matches your regular income.'
-         : currentStep === 'payday'
-           ? 'This helps lenders understand your cash-flow timing.'
-           : 'Select at least one reason. This will be shown on your lender card.';
+   const canContinue = Boolean(context.incomeSetup && context.paydayWindow && context.cashGaps.length > 0);
+
    return (
-      <div className="flex min-h-0 flex-col gap-md-2">
-         <div className="flex flex-col gap-md-1">
-            <p className="text-md-b2 font-[590] text-md-primary-1200">
-               {currentStepIndex + 1}/{borrowerContextSteps.length}
-            </p>
-            <div className="grid grid-cols-3 gap-md-1">
-               {borrowerContextSteps.map((step, index) => (
-                  <span
-                     key={step.id}
-                     className={`h-[4px] rounded-md-pill ${index <= currentStepIndex ? 'bg-md-primary-900' : 'bg-md-neutral-400'}`}
-                  />
-               ))}
-            </div>
-         </div>
-
-         <div className="flex min-h-[104px] w-full items-center gap-md-2 overflow-hidden rounded-md-xl border border-[#f0f0f0] bg-[#fff6d0] px-md-3 py-md-2 shadow-md-card">
-            <div className="min-w-0 flex-1">
-               <p className="max-w-[194px] text-md-b2 font-[510] leading-[21px] text-md-primary-2000">
-                  Help lenders understand your situation
-               </p>
-               <p className="mt-md-0 max-w-[190px] text-md-b3 font-normal leading-[18px] text-md-neutral-1400">
-                  No employer names, documents, addresses, or contacts.
+      <div className="flex min-h-0 flex-col gap-md-3">
+         <div className="rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 p-md-3 shadow-md-card">
+            <div className="mb-md-3">
+               <h3 className="text-md-h6 font-[590] text-md-heading">Your profile</h3>
+               <p className="mt-md-0 text-md-b3 font-normal leading-[19px] text-md-neutral-1200">
+                  This helps lenders understand repayment timing without employer names, documents, addresses, or contacts.
                </p>
             </div>
-            <img alt="" aria-hidden="true" className="h-[82px] w-[96px] shrink-0 object-contain" src="/hippos/welcome.png" />
-         </div>
-
-         <div className="flex flex-col gap-md-0 px-[4px]">
-            <h3 className="mb-md-1 text-md-b1 font-[590] text-md-heading">{stepHeading}</h3>
-            <p className="text-md-b2 font-[510] text-md-neutral-1200">{stepSupportingText}</p>
-         </div>
-
-         {currentStep === 'income' ? (
-            <div className="grid gap-md-2">
-               {incomeSetupOptions.map((option) => (
-                  <BorrowerContextChoice
-                     key={option.value}
-                     description={option.description}
-                     icon={option.icon}
-                     isSelected={context.incomeSetup === option.value}
-                     label={option.label}
-                     onClick={() => onIncomeSelect(option.value)}
-                  />
-               ))}
-            </div>
-         ) : null}
-
-         {currentStep === 'payday' ? (
-            <div className="grid gap-md-2">
-               {paydayWindowOptions.map((option) => (
-                  <BorrowerContextChoice
-                     key={option.value}
-                     description={option.description}
-                     icon={option.icon}
-                     isSelected={context.paydayWindow === option.value}
-                     label={option.label}
-                     onClick={() => onPaydaySelect(option.value)}
-                  />
-               ))}
-            </div>
-         ) : null}
-
-         {currentStep === 'gaps' ? (
-            <div className="flex flex-col gap-md-2">
-               <div className="grid grid-cols-2 gap-md-2">
-                  {cashGapOptions.map((option) => (
-                     <BorrowerContextMultiChoice
-                        key={option.value}
-                        icon={option.icon}
-                        isSelected={context.cashGaps.includes(option.value)}
-                        label={option.label}
-                        onClick={() => onCashGapToggle(option.value)}
-                     />
-                  ))}
+            <div className="flex flex-col gap-md-3">
+               <div className="flex flex-col gap-md-1">
+                  <span className="text-md-b2 font-[590] text-md-neutral-1200">Your name</span>
+                  <div className="rounded-md-input border border-md-neutral-500 bg-md-neutral-200 px-md-3 py-md-2 text-md-b1 font-[590] text-md-heading">
+                     {username || 'Moodeng borrower'}
+                  </div>
                </div>
-               {!canContinue ? (
-                  <p className="text-md-b3 font-medium leading-[18px] text-md-primary-1200">Select at least one reason to continue.</p>
-               ) : null}
+
+               <BorrowerContextPillGroup
+                  label="Employment type"
+                  options={incomeSetupOptions}
+                  selectedValues={[context.incomeSetup]}
+                  onSelect={onIncomeSelect}
+               />
+
+               <BorrowerContextPillGroup
+                  label="When do you usually get paid?"
+                  options={paydayWindowOptions}
+                  selectedValues={[context.paydayWindow]}
+                  onSelect={onPaydaySelect}
+               />
+
+               <BorrowerContextPillGroup
+                  label="What do you usually need help with?"
+                  options={cashGapOptions}
+                  selectedValues={context.cashGaps}
+                  onSelect={onCashGapToggle}
+                  multi
+               />
             </div>
+         </div>
+
+         {!canContinue ? (
+            <p className="rounded-md-md bg-md-primary-100 px-md-2 py-md-1 text-md-b3 font-medium leading-[18px] text-md-primary-1200">
+               Choose an income type, payday window, and at least one need to continue.
+            </p>
          ) : null}
 
-         <div className={isFinalStep ? 'flex flex-col gap-md-2 pt-md-1' : 'grid grid-cols-[104px_minmax(0,1fr)] gap-md-2 pt-md-1'}>
-            {!isFinalStep ? (
-               <button
-                  className="inline-flex min-h-[48px] items-center justify-center gap-md-1 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 text-md-b1 font-medium text-md-heading shadow-md-card transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                  onClick={onBack}
-                  type="button"
-               >
-                  <ChevronLeft className="size-5" strokeWidth={2} />
-                  Back
-               </button>
-            ) : null}
+         <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-md-2 pt-md-1">
+            <button
+               className="inline-flex min-h-[48px] items-center justify-center gap-md-1 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 text-md-b1 font-medium text-md-heading shadow-md-card transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+               onClick={onBack}
+               type="button"
+            >
+               <ChevronLeft className="size-5" strokeWidth={2} />
+               Back
+            </button>
             <button
                className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
                disabled={!canContinue || isSubmitting}
                onClick={onContinue}
                type="button"
             >
-               {isSubmitting ? 'Submitting...' : isFinalStep ? 'Save to lender card' : 'Continue'}
-               {!isSubmitting && !isFinalStep ? <ChevronRight className="size-5" strokeWidth={2} /> : null}
+               {isSubmitting ? 'Submitting...' : 'Save to lender card'}
             </button>
          </div>
       </div>
    );
 }
-function BorrowerContextChoice({
-   description,
-   icon: Icon,
-   isSelected,
+
+function BorrowerContextPillGroup({
    label,
-   onClick
+   multi = false,
+   onSelect,
+   options,
+   selectedValues
 }: {
-   description?: string;
-   icon?: typeof BriefcaseBusiness;
-   isSelected: boolean;
    label: string;
-   onClick: () => void;
+   multi?: boolean;
+   onSelect: (value: string) => void;
+   options: BorrowerContextOption[];
+   selectedValues: string[];
 }) {
    return (
-      <button
-         aria-pressed={isSelected}
-         className={`grid min-h-[64px] grid-cols-[44px_minmax(0,1fr)_28px] items-center gap-md-2 rounded-md-input border px-md-3 py-md-2 text-left shadow-md-card transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
-            isSelected
-               ? 'border-md-primary-900 bg-md-neutral-100 text-md-primary-1200 shadow-[0_8px_22px_rgba(96,16,210,0.08)]'
-               : 'border-md-neutral-300 bg-md-neutral-100 text-md-heading shadow-[0_2px_8px_rgba(20,18,24,0.04)]'
-         }`}
-         onClick={onClick}
-         type="button"
-      >
-         <span
-            className={`flex size-10 items-center justify-center rounded-md-md ${
-               isSelected ? 'bg-md-primary-100 text-md-primary-900' : 'bg-md-primary-100/60 text-md-neutral-1000'
-            }`}
-         >
-            {Icon ? <Icon className="size-5" strokeWidth={2} /> : null}
-         </span>
-         <span className="min-w-0">
-            <span className="block text-md-b2 font-[590] text-md-heading">{label}</span>
-            {description ? <span className="block text-md-b3 font-normal text-md-neutral-1200">{description}</span> : null}
-         </span>
-         <span
-            className={`ml-auto flex size-7 items-center justify-center rounded-md-pill border transition ${
-               isSelected
-                  ? 'border-md-primary-900 bg-md-primary-900 text-md-neutral-100'
-                  : 'border-md-neutral-500 bg-md-neutral-100 text-transparent'
-            }`}
-         >
-            <Check className="size-4" strokeWidth={3} />
-         </span>
-      </button>
+      <fieldset className="flex flex-col gap-md-1">
+         <legend className="text-md-b2 font-[590] text-md-neutral-1200">{label}</legend>
+         <div className="flex flex-wrap gap-md-1">
+            {options.map((option) => (
+               <BorrowerContextPill
+                  key={option.value}
+                  isSelected={selectedValues.includes(option.value)}
+                  label={option.pillLabel ?? option.label}
+                  multi={multi}
+                  onClick={() => onSelect(option.value)}
+               />
+            ))}
+         </div>
+      </fieldset>
    );
 }
 
-function BorrowerContextMultiChoice({
-   icon: Icon,
+function BorrowerContextPill({
    isSelected,
    label,
+   multi,
    onClick
 }: {
-   icon: typeof BriefcaseBusiness;
    isSelected: boolean;
    label: string;
+   multi: boolean;
    onClick: () => void;
 }) {
    return (
       <button
          aria-pressed={isSelected}
-         className={`grid min-h-[64px] grid-cols-[40px_minmax(0,1fr)_24px] items-center gap-md-1 rounded-md-input border px-md-2 py-md-2 text-left shadow-md-card transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+         className={`inline-flex min-h-[38px] items-center justify-center rounded-md-pill border px-md-2 py-md-1 text-md-b2 font-[590] leading-[20px] transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
             isSelected
-               ? 'border-md-primary-900 bg-md-primary-100/80 text-md-primary-1200 shadow-[0_8px_22px_rgba(96,16,210,0.12)]'
-               : 'border-md-neutral-300 bg-md-neutral-100 text-md-heading shadow-[0_2px_8px_rgba(20,18,24,0.04)]'
+               ? 'border-[#cfd8ff] bg-[#eef3ff] text-[#3432a8] shadow-[0_6px_14px_rgba(96,16,210,0.08)]'
+               : 'border-md-neutral-500 bg-md-neutral-100 text-md-neutral-1200'
          }`}
          onClick={onClick}
          type="button"
       >
-         <span
-            className={`flex size-9 items-center justify-center rounded-md-md ${
-               isSelected ? 'bg-md-primary-900/10 text-md-primary-900' : 'bg-md-primary-100/60 text-md-neutral-1000'
-            }`}
-         >
-            <Icon className="size-4" strokeWidth={2} />
-         </span>
-         <span className="min-w-0 text-md-b2 font-[590]">{label}</span>
-         {isSelected ? (
-            <span className="flex size-6 items-center justify-center rounded-md-pill bg-md-primary-900 text-md-neutral-100">
-               <Check className="size-4" strokeWidth={2.6} />
-            </span>
-         ) : (
-            <span aria-hidden="true" />
-         )}
+         {label}
+         {multi && isSelected ? <Check className="ml-md-0 size-4" strokeWidth={2.6} /> : null}
       </button>
    );
 }
@@ -582,7 +501,6 @@ export default function LoanRequestModal({
    const [referralCodeError, setReferralCodeError] = useState('');
    const [isApplyingReferralCode, setIsApplyingReferralCode] = useState(false);
    const [showBorrowerContextStep, setShowBorrowerContextStep] = useState(startOnBorrowerContextStep);
-   const [borrowerContextStep, setBorrowerContextStep] = useState<BorrowerContextStep>('income');
    const [borrowerContext, setBorrowerContext] = useState<BorrowerContextState>(emptyBorrowerContext);
    const [borrowerContextPromptSeen, setBorrowerContextPromptSeen] = useState(false);
 
@@ -608,13 +526,9 @@ export default function LoanRequestModal({
    const referralPrimaryActionText =
       hasAppliedReferralCode || !hasReferralCode ? 'Continue to application' : hasReferralCodeError ? 'Try again' : 'Apply code';
    const shouldShowReferralStep = showReferralStep && isVerified && canUseReferralBoost;
-   const borrowerContextStepIndex = borrowerContextSteps.findIndex((step) => step.id === borrowerContextStep);
-   const canContinueBorrowerContext =
-      borrowerContextStep === 'income'
-         ? Boolean(borrowerContext.incomeSetup)
-         : borrowerContextStep === 'payday'
-           ? Boolean(borrowerContext.paydayWindow)
-           : borrowerContext.cashGaps.length > 0;
+   const canContinueBorrowerContext = Boolean(
+      borrowerContext.incomeSetup && borrowerContext.paydayWindow && borrowerContext.cashGaps.length > 0
+   );
 
    useEffect(() => {
       setTypedDate(selectedDateLabel);
@@ -630,7 +544,6 @@ export default function LoanRequestModal({
 
       setShowReferralStep(startOnReferralStep && isVerified && canUseReferralBoost);
       setShowBorrowerContextStep(startOnBorrowerContextStep);
-      setBorrowerContextStep('income');
       setBorrowerContext(emptyBorrowerContext);
       setBorrowerContextPromptSeen(false);
       setReferralCode('');
@@ -857,7 +770,6 @@ export default function LoanRequestModal({
       if (!borrowerContextPromptSeen && !showBorrowerContextStep) {
          event.preventDefault();
          setShowBorrowerContextStep(true);
-         setBorrowerContextStep('income');
          return;
       }
 
@@ -869,21 +781,11 @@ export default function LoanRequestModal({
    const handleBorrowerContextContinue = () => {
       if (!canContinueBorrowerContext) return;
 
-      if (borrowerContextStepIndex < borrowerContextSteps.length - 1) {
-         setBorrowerContextStep(borrowerContextSteps[borrowerContextStepIndex + 1].id);
-         return;
-      }
-
       setBorrowerContextPromptSeen(true);
       formRef.current?.requestSubmit();
    };
 
    const handleBorrowerContextBack = () => {
-      if (borrowerContextStepIndex > 0) {
-         setBorrowerContextStep(borrowerContextSteps[borrowerContextStepIndex - 1].id);
-         return;
-      }
-
       setShowBorrowerContextStep(false);
    };
 
@@ -978,7 +880,7 @@ export default function LoanRequestModal({
                   {shouldShowReferralStep ? (
                      <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
                   ) : showBorrowerContextStep ? (
-                     <h2 className="text-md-h6 font-[590] text-md-heading">Repayment Context</h2>
+                     <h2 className="text-md-h6 font-[590] text-md-heading">Lender card profile</h2>
                   ) : (
                      <>
                         <h2 className="text-md-h6 text-md-heading">Set Your Own Terms</h2>
@@ -1102,13 +1004,13 @@ export default function LoanRequestModal({
                   {showBorrowerContextStep ? (
                      <BorrowerContextLoanStep
                         context={borrowerContext}
-                        currentStep={borrowerContextStep}
                         isSubmitting={isSubmitting}
                         onBack={handleBorrowerContextBack}
                         onCashGapToggle={handleCashGapToggle}
                         onContinue={handleBorrowerContextContinue}
                         onIncomeSelect={(value) => setBorrowerContext((current) => ({ ...current, incomeSetup: value }))}
                         onPaydaySelect={(value) => setBorrowerContext((current) => ({ ...current, paydayWindow: value }))}
+                        username={user.username}
                      />
                   ) : (
                      <>

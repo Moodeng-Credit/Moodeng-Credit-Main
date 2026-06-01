@@ -21,16 +21,7 @@ export type BorrowerContextFitLevel =
 
 export type BorrowerContextFitTone = 'supportive' | 'neutral' | 'caution';
 
-export type BorrowerContextFitChipVariant =
-   | 'borrower'
-   | 'request'
-   | 'date'
-   | 'due'
-   | 'gap'
-   | 'income'
-   | 'payday'
-   | 'delta'
-   | 'neutral';
+export type BorrowerContextFitChipVariant = 'borrower' | 'request' | 'date' | 'due' | 'gap' | 'income' | 'payday' | 'delta' | 'neutral';
 
 export type BorrowerContextFitChip = {
    id: string;

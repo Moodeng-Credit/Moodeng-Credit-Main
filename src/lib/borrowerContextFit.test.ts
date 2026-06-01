@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildBorrowerContextFit, type BorrowerContextFit } from '@/lib/borrowerContextFit';
+import { type BorrowerContextFit, buildBorrowerContextFit } from '@/lib/borrowerContextFit';
 
 const baseInput = {
    borrowerName: 'maya-demo',

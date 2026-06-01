@@ -114,7 +114,7 @@ function InlineFitSentence({ fit }: { fit: BorrowerContextFit }) {
                         segment={segment}
                         chipById={chipById}
                      />
-               ))}
+                  ))}
                </p>
             </div>
          ) : null}
