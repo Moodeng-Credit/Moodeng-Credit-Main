@@ -11,6 +11,15 @@ const getTelegramBotToken = () => {
   return rawToken.trim().replace(/^["']|["']$/g, '')
 }
 
+const signedTelegramLoginFields = new Set([
+  'id',
+  'first_name',
+  'last_name',
+  'username',
+  'photo_url',
+  'auth_date'
+])
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -33,7 +42,7 @@ Deno.serve(async (req) => {
     )
 
     const dataCheckString = Object.entries(authData)
-      .filter(([key, value]) => key !== 'hash' && value !== undefined && value !== null && value !== '')
+      .filter(([key, value]) => signedTelegramLoginFields.has(key) && value !== undefined && value !== null && value !== '')
       .map(([key, value]) => `${key}=${value}`)
       .sort()
       .join('\n')
