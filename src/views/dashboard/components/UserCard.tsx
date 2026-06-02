@@ -378,7 +378,7 @@ export default function UserCard(loan: UserCardProps) {
                   <div className="bg-md-neutral-500 text-md-neutral-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg text-center cursor-not-allowed">
                      Help Received
                   </div>
-               ) : isBorrower ? (
+               ) : isBorrower && isOwnLoan ? (
                   <Link
                      to={`/loan/${loanData.id}`}
                      className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
@@ -386,7 +386,7 @@ export default function UserCard(loan: UserCardProps) {
                      View Request
                      <ChevronRight className="w-5 h-5" />
                   </Link>
-               ) : (
+               ) : isBorrower ? null : (
                   <button
                      onClick={handleLend}
                      disabled={isProcessing}
@@ -399,8 +399,8 @@ export default function UserCard(loan: UserCardProps) {
                   </button>
                )}
 
-               {/* View Borrower Details — hidden for logged-out users */}
-               {isAuthenticated ? (
+               {/* View Borrower Details — hidden for logged-out users and borrowers viewing others */}
+               {isAuthenticated && (!isBorrower || isOwnLoan) ? (
                   borrowerUsername ? (
                      <Link
                         to={borrowerDetailsHref}
