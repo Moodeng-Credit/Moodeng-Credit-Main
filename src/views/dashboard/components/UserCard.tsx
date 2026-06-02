@@ -62,12 +62,14 @@ function BorrowerBioCard({
    borrowerName,
    context,
    loanData,
-   loanReason
+   loanReason,
+   onCollapse
 }: {
    borrowerName: string;
    context: BorrowerContextState;
    loanData: LoanWithBorrowerContext;
    loanReason: string;
+   onCollapse: () => void;
 }) {
    const fit = buildBorrowerContextFit({
       borrowerName,
@@ -79,9 +81,14 @@ function BorrowerBioCard({
    });
 
    return (
-      <section className="rounded-[18px] bg-md-primary-100/70 p-[14px]" aria-label="Borrower bio card">
+      <button
+         aria-label="Hide borrower bio card"
+         className="w-full rounded-[18px] bg-md-primary-100/70 p-[14px] text-left transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+         onClick={onCollapse}
+         type="button"
+      >
          <InlineFitSentence fit={fit} />
-      </section>
+      </button>
    );
 }
 
@@ -182,6 +189,7 @@ export default function UserCard(loan: UserCardProps) {
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
+   const [isBorrowerBioExpanded, setIsBorrowerBioExpanded] = useState(false);
    const { showToast, showToastByConfig } = useToast();
    const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const storeUserId = useSelector((state: RootState) => state.auth.user.id);
@@ -319,11 +327,17 @@ export default function UserCard(loan: UserCardProps) {
    const canDeleteOwnRequest = Boolean(isAuthenticated && isOwnLoan && loanData.loanStatus === 'Requested' && onDeleteOwnRequest);
    const borrowerBioContext = !isBorrower && isAuthenticated ? getBorrowerBioForLoan(loanData) : null;
    const shouldShowBorrowerBioCard = isAuthenticated && !isBorrower && !isOwnLoan && !isLent;
+   const hasExpandableBorrowerBio = Boolean(shouldShowBorrowerBioCard && borrowerBioContext);
 
    const handleDeleteOwnRequest = (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       e.stopPropagation();
       onDeleteOwnRequest?.(loanData);
+   };
+
+   const handleViewRequest = (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      setIsBorrowerBioExpanded(true);
    };
 
    return (
@@ -394,12 +408,13 @@ export default function UserCard(loan: UserCardProps) {
                </div>
             </div>
 
-            {shouldShowBorrowerBioCard && borrowerBioContext ? (
+            {hasExpandableBorrowerBio && isBorrowerBioExpanded && borrowerBioContext ? (
                <BorrowerBioCard
                   borrowerName={borrowerDisplayName}
                   context={borrowerBioContext}
                   loanData={loanData}
                   loanReason={loanReason}
+                  onCollapse={() => setIsBorrowerBioExpanded(false)}
                />
             ) : null}
 
@@ -437,6 +452,15 @@ export default function UserCard(loan: UserCardProps) {
                      View Request
                      <ChevronRight className="w-5 h-5" />
                   </Link>
+               ) : hasExpandableBorrowerBio && !isBorrowerBioExpanded ? (
+                  <button
+                     onClick={handleViewRequest}
+                     type="button"
+                     className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
+                  >
+                     View Request
+                     <ChevronRight className="w-5 h-5" />
+                  </button>
                ) : (
                   <button
                      onClick={handleLend}
@@ -451,7 +475,7 @@ export default function UserCard(loan: UserCardProps) {
                )}
 
                {/* View Borrower Details — hidden for logged-out users */}
-               {isAuthenticated ? (
+               {isAuthenticated && (!hasExpandableBorrowerBio || isBorrowerBioExpanded) ? (
                   borrowerUsername ? (
                      <Link
                         to={borrowerDetailsHref}
