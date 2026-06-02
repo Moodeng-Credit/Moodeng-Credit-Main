@@ -338,9 +338,7 @@ function BorrowerContextLoanStep({
    onPaydaySelect: (value: string) => void;
    username: string;
 }) {
-   const nameInputRef = useRef<HTMLInputElement>(null);
    const [profileName, setProfileName] = useState(username || '');
-   const [showTrustPrompt, setShowTrustPrompt] = useState(true);
    const canContinue = Boolean(context.incomeSetup && context.paydayWindow && context.cashGaps.length > 0);
 
    useEffect(() => {
@@ -349,75 +347,48 @@ function BorrowerContextLoanStep({
 
    return (
       <div className="flex min-h-0 flex-col gap-md-3">
-         {showTrustPrompt ? (
-            <section className="relative rounded-md-md border border-md-primary-500 bg-[#f3e8ff] px-md-2 py-md-2">
-               <button
-                  aria-label="Dismiss funding profile tip"
-                  className="absolute right-md-1 top-md-1 rounded-md-pill p-md-0 text-md-neutral-1000 transition hover:bg-md-neutral-100/80 hover:text-md-primary-1200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
-                  onClick={() => setShowTrustPrompt(false)}
-                  type="button"
-               >
-                  <X className="size-4" strokeWidth={2} />
-               </button>
-               <div className="pr-md-4">
-                  <p className="text-md-b2 font-[590] leading-[20px] text-md-primary-1200">Add borrower background</p>
-                  <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                     A friendly name and profile image help lenders understand the person behind the request. Takes 30 seconds.
-                  </p>
-               </div>
-               <div className="mt-md-2 flex gap-md-1">
-                  <button
-                     className="min-h-[34px] rounded-md-md border border-md-neutral-300 bg-md-neutral-100/60 px-md-2 text-md-b3 font-[590] text-md-primary-1200 transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
-                     onClick={() => nameInputRef.current?.focus()}
-                     type="button"
-                  >
-                     Add a name
-                  </button>
-                  <button
-                     className="min-h-[34px] cursor-not-allowed rounded-md-md border border-md-neutral-300 bg-md-neutral-100/40 px-md-2 text-md-b3 font-[590] text-md-neutral-700"
-                     disabled
-                     type="button"
-                  >
-                     Add an image
-                  </button>
-               </div>
-            </section>
-         ) : null}
-
-         <section className="flex items-center gap-md-2 border-b border-md-neutral-400 pb-md-2">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-md-pill border-2 border-dashed border-md-primary-900 bg-md-primary-100 text-md-primary-1200">
-               <Users className="size-5" strokeWidth={2} />
-            </div>
-            <div className="min-w-0 flex-1">
-               <div className="flex items-center gap-md-1">
-                  <p className="text-md-b2 font-[590] leading-[18px] text-md-heading">Profile image</p>
-                  <TrustBadge label="+15 trust" />
-               </div>
+         <section className="rounded-md-md border border-md-primary-500 bg-[#f3e8ff] px-md-2 py-md-2">
+            <div>
+               <p className="text-md-b2 font-[590] leading-[20px] text-md-primary-1200">Borrower background</p>
                <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                  Use a photo, avatar, or image that shows your character. It does not need to be formal.
+                  Add a friendly name and optional image so lenders can understand the request without private details.
                </p>
             </div>
-         </section>
 
-         <label className="flex flex-col gap-md-1">
-            <span className="flex items-center gap-md-1 text-md-b2 font-[590] leading-[18px] text-md-heading">
-               Your name
-               <TrustBadge label="+10 trust" />
-            </span>
-            <input
-               ref={nameInputRef}
-               className="min-h-[44px] rounded-md-sm border border-[#54504b] bg-[#2f2f2b] px-md-2 text-md-b1 font-[590] text-md-neutral-100 placeholder:text-[#8b7b99] focus:outline-none focus:ring-2 focus:ring-md-primary-900"
-               maxLength={30}
-               onChange={(event) => setProfileName(event.target.value)}
-               placeholder="e.g. Maya, Jay, or a friendly nickname"
-               type="text"
-               value={profileName}
-            />
-            <span className="flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-               <span>This is the name lenders see with your requests.</span>
-               <span className="shrink-0">{profileName.length}/30</span>
-            </span>
-         </label>
+            <div className="mt-md-2 flex items-center gap-md-2 rounded-md-md bg-md-neutral-100/70 p-md-2">
+               <div className="flex size-12 shrink-0 items-center justify-center rounded-md-pill border-2 border-dashed border-md-primary-900 bg-md-primary-100 text-md-primary-1200">
+                  <Users className="size-5" strokeWidth={2} />
+               </div>
+               <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-md-1">
+                     <p className="text-md-b2 font-[590] leading-[18px] text-md-heading">Profile image</p>
+                     <TrustBadge label="+15 trust" />
+                  </div>
+                  <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                     Use a photo, avatar, or anything that shows your character.
+                  </p>
+               </div>
+            </div>
+
+            <label className="mt-md-2 flex flex-col gap-md-1">
+               <span className="flex items-center gap-md-1 text-md-b2 font-[590] leading-[18px] text-md-heading">
+                  Your name
+                  <TrustBadge label="+10 trust" />
+               </span>
+               <input
+                  className="min-h-[44px] rounded-md-sm border border-[#54504b] bg-[#2f2f2b] px-md-2 text-md-b1 font-[590] text-md-neutral-100 placeholder:text-[#8b7b99] focus:outline-none focus:ring-2 focus:ring-md-primary-900"
+                  maxLength={30}
+                  onChange={(event) => setProfileName(event.target.value)}
+                  placeholder="e.g. Maya, Jay, or a friendly nickname"
+                  type="text"
+                  value={profileName}
+               />
+               <span className="flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                  <span>This is the name lenders see with your requests.</span>
+                  <span className="shrink-0">{profileName.length}/30</span>
+               </span>
+            </label>
+         </section>
 
          <BorrowerContextRadioSection
             label="How would you describe your work?"
