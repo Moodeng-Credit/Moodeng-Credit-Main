@@ -43,6 +43,8 @@ interface LoanRequestModalProps {
    availableCreditLimit: number;
    canUseReferralBoost?: boolean;
    startOnReferralStep?: boolean;
+   showBioStep?: boolean;
+   onBioSave?: (data: { incomeType: string; paydayType: string; gapReasons: string[] }) => void;
 }
 
 export type AppliedReferralCode = {
@@ -218,6 +220,120 @@ function InfoTooltip({
    );
 }
 
+const BIO_INCOME_OPTIONS = [
+   { label: 'Full-time', value: 'full-time' },
+   { label: 'Part-time', value: 'part-time' },
+   { label: 'Freelance / self-employed', value: 'freelance' },
+   { label: 'No regular income', value: 'none' }
+];
+
+const BIO_PAYDAY_OPTIONS = [
+   { label: 'Weekly', value: 'weekly' },
+   { label: 'Mid-month (10th–20th)', value: 'mid-month' },
+   { label: 'End of month (25th+)', value: 'end-of-month' },
+   { label: 'Irregular / varies', value: 'irregular' }
+];
+
+const BIO_GAP_OPTIONS = [
+   { label: 'Family expenses', value: 'family expenses' },
+   { label: 'Bills before payday', value: 'bills before payday' },
+   { label: 'Transport', value: 'transport' },
+   { label: 'Medical', value: 'medical' },
+   { label: 'Work supplies', value: 'work supplies' },
+   { label: 'Emergency', value: 'emergency' }
+];
+
+function BioStep({ onSave }: { onSave: (data: { incomeType: string; paydayType: string; gapReasons: string[] }) => void }) {
+   const [incomeType, setIncomeType] = useState('');
+   const [paydayType, setPaydayType] = useState('');
+   const [gapReasons, setGapReasons] = useState<string[]>([]);
+
+   const toggleGap = (value: string) =>
+      setGapReasons((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
+
+   const canSave = incomeType && paydayType;
+
+   return (
+      <div className="flex min-h-0 flex-col gap-md-3 overflow-y-auto p-md-3 text-md-b2 text-md-heading">
+         <p className="text-md-b2 text-md-neutral-1200">
+            This helps lenders understand your situation. It's saved to your profile and only asked once.
+         </p>
+
+         <div className="flex flex-col gap-md-1">
+            <span className="text-md-b2 font-semibold text-md-heading">How do you earn income?</span>
+            <div className="grid grid-cols-2 gap-md-1">
+               {BIO_INCOME_OPTIONS.map((opt) => (
+                  <button
+                     key={opt.value}
+                     type="button"
+                     onClick={() => setIncomeType(opt.value)}
+                     className={[
+                        'rounded-md-sm px-md-2 py-md-1 text-md-b2 font-medium border transition-colors text-left',
+                        incomeType === opt.value
+                           ? 'border-md-primary-900 bg-md-primary-900/10 text-md-primary-1200'
+                           : 'border-md-neutral-600 bg-md-neutral-100 text-md-heading'
+                     ].join(' ')}
+                  >
+                     {opt.label}
+                  </button>
+               ))}
+            </div>
+         </div>
+
+         <div className="flex flex-col gap-md-1">
+            <span className="text-md-b2 font-semibold text-md-heading">When do you typically get paid?</span>
+            <div className="grid grid-cols-2 gap-md-1">
+               {BIO_PAYDAY_OPTIONS.map((opt) => (
+                  <button
+                     key={opt.value}
+                     type="button"
+                     onClick={() => setPaydayType(opt.value)}
+                     className={[
+                        'rounded-md-sm px-md-2 py-md-1 text-md-b2 font-medium border transition-colors text-left',
+                        paydayType === opt.value
+                           ? 'border-md-primary-900 bg-md-primary-900/10 text-md-primary-1200'
+                           : 'border-md-neutral-600 bg-md-neutral-100 text-md-heading'
+                     ].join(' ')}
+                  >
+                     {opt.label}
+                  </button>
+               ))}
+            </div>
+         </div>
+
+         <div className="flex flex-col gap-md-1">
+            <span className="text-md-b2 font-semibold text-md-heading">What do you usually need help covering? <span className="font-normal text-md-neutral-1200">(optional)</span></span>
+            <div className="grid grid-cols-2 gap-md-1">
+               {BIO_GAP_OPTIONS.map((opt) => (
+                  <button
+                     key={opt.value}
+                     type="button"
+                     onClick={() => toggleGap(opt.value)}
+                     className={[
+                        'rounded-md-sm px-md-2 py-md-1 text-md-b2 font-medium border transition-colors text-left',
+                        gapReasons.includes(opt.value)
+                           ? 'border-md-primary-900 bg-md-primary-900/10 text-md-primary-1200'
+                           : 'border-md-neutral-600 bg-md-neutral-100 text-md-heading'
+                     ].join(' ')}
+                  >
+                     {opt.label}
+                  </button>
+               ))}
+            </div>
+         </div>
+
+         <button
+            type="button"
+            disabled={!canSave}
+            onClick={() => onSave({ incomeType, paydayType, gapReasons })}
+            className="w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-medium text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 disabled:opacity-100"
+         >
+            Save and continue
+         </button>
+      </div>
+   );
+}
+
 const UsdcIcon = () => (
    <svg aria-hidden="true" className="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24">
       <path
@@ -251,7 +367,9 @@ export default function LoanRequestModal({
    isSubmitting,
    availableCreditLimit,
    canUseReferralBoost = true,
-   startOnReferralStep = true
+   startOnReferralStep = true,
+   showBioStep = false,
+   onBioSave
 }: LoanRequestModalProps) {
    const formRef = useRef<HTMLFormElement | null>(null);
    const dateInputRef = useRef<HTMLInputElement | null>(null);
@@ -590,6 +708,8 @@ export default function LoanRequestModal({
                <div className="flex items-center gap-md-1">
                   {shouldShowReferralStep ? (
                      <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
+                  ) : showBioStep ? (
+                     <h2 className="text-md-h6 text-md-heading">A bit about you</h2>
                   ) : (
                      <>
                         <h2 className="text-md-h6 text-md-heading">Set Your Own Terms</h2>
@@ -704,6 +824,8 @@ export default function LoanRequestModal({
 
                   <p className="text-center text-md-b3 font-normal text-md-neutral-1200">No code needed. You can continue normally.</p>
                </div>
+            ) : showBioStep ? (
+               <BioStep onSave={onBioSave!} />
             ) : (
                <form
                   ref={formRef}
