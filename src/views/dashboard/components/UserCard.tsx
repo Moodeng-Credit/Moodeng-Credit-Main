@@ -158,10 +158,10 @@ function FitChip({ chip, compact = false }: { chip: BorrowerContextFitChip; comp
 
    return (
       <span
-         className={`inline-flex max-w-full align-baseline font-semibold ${variantClasses[chip.variant]} ${
+         className={`mr-[-4px] inline-flex max-w-full align-baseline font-semibold ${variantClasses[chip.variant]} ${
             compact
-               ? 'rounded-[999px] px-[7px] py-[1px] text-[13px] leading-[16px]'
-               : 'rounded-[999px] px-[7px] py-[1px] text-[14px] leading-[17px]'
+               ? 'rounded-[999px] py-[1px] pl-[7px] pr-[5px] text-[13px] leading-[16px]'
+               : 'rounded-[999px] py-[1px] pl-[7px] pr-[5px] text-[14px] leading-[17px]'
          }`}
       >
          {chip.text}
