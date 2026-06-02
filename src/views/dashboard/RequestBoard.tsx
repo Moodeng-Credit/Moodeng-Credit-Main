@@ -35,6 +35,7 @@ import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 import { logoImageSrc } from '@/config/navigationConfig';
+import type { BorrowerContextProfileData } from '@/lib/borrowerContextFit';
 import { getBorrowerActiveLoanCount, getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
@@ -55,7 +56,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
-import { LoanStatus, RepaymentStatus, type Loan } from '@/types/loanTypes';
+import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import LoanRequestModal, { type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
@@ -122,6 +123,38 @@ const PREVIEW_REQUEST_BOARD_BORROWER_USERNAMES: Record<string, string> = {
    'request-board-preview-borrower-maya': 'maya-demo',
    'request-board-preview-borrower-jordan': 'jordan-demo',
    'request-board-preview-borrower-ana': 'ana-demo'
+};
+
+const PREVIEW_REQUEST_BOARD_BORROWER_CONTEXTS: Record<string, BorrowerContextProfileData> = {
+   'request-board-preview-borrower-maya': {
+      incomeType: 'full-time',
+      paydayType: 'weekly',
+      paydayStart: 1,
+      paydayEnd: 7,
+      gapReasons: ['family needs']
+   },
+   'request-board-preview-borrower-jordan': {
+      incomeType: 'part-time',
+      paydayType: 'mid-month',
+      paydayStart: 10,
+      paydayEnd: 15,
+      gapReasons: ['medicine', 'bills']
+   },
+   'request-board-preview-borrower-ana': {
+      incomeType: 'freelance',
+      paydayType: 'irregular',
+      paydayStart: null,
+      paydayEnd: null,
+      gapReasons: ['payday bridge', 'transport']
+   }
+};
+
+const LENDER_TOUR_BORROWER_CONTEXT: BorrowerContextProfileData = {
+   incomeType: 'full-time',
+   paydayType: 'weekly',
+   paydayStart: 1,
+   paydayEnd: 7,
+   gapReasons: ['family needs']
 };
 
 const buildPreviewRequestBoardLoan = ({
@@ -204,7 +237,11 @@ const isPreviewRequestBoardLoan = (loan: Pick<Loan, 'id'>) => loan.id.startsWith
 const isRequestBoardPreviewHost = () => {
    if (typeof window === 'undefined') return false;
 
-   return import.meta.env.DEV || ['127.0.0.1', 'localhost'].includes(window.location.hostname) || window.location.hostname.endsWith('.vercel.app');
+   return (
+      import.meta.env.DEV ||
+      ['127.0.0.1', 'localhost'].includes(window.location.hostname) ||
+      window.location.hostname.endsWith('.vercel.app')
+   );
 };
 
 const shouldShowPreviewRequestBoardLoans = (search: string, loans: Loan[]) => {
@@ -1497,6 +1534,13 @@ function RequestBoard$() {
                                           ? 'maya-demo'
                                           : loan.borrowerUser
                                             ? PREVIEW_REQUEST_BOARD_BORROWER_USERNAMES[loan.borrowerUser]
+                                            : undefined
+                                    }
+                                    borrowerContextProfile={
+                                       loan.id.startsWith('lender-tour')
+                                          ? LENDER_TOUR_BORROWER_CONTEXT
+                                          : loan.borrowerUser
+                                            ? PREVIEW_REQUEST_BOARD_BORROWER_CONTEXTS[loan.borrowerUser]
                                             : undefined
                                     }
                                  />
