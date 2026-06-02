@@ -68,6 +68,7 @@ interface LoanRequestModalProps {
    isSubmitting: boolean;
    availableCreditLimit: number;
    canUseReferralBoost?: boolean;
+   requireBorrowerContextStep?: boolean;
    startOnBorrowerContextStep?: boolean;
    startOnReferralStep?: boolean;
 }
@@ -629,6 +630,7 @@ export default function LoanRequestModal({
    isSubmitting,
    availableCreditLimit,
    canUseReferralBoost = true,
+   requireBorrowerContextStep = true,
    startOnBorrowerContextStep = false,
    startOnReferralStep = true
 }: LoanRequestModalProps) {
@@ -994,7 +996,7 @@ export default function LoanRequestModal({
          return;
       }
 
-      if (!borrowerContextPromptSeen && !showBorrowerContextStep) {
+      if (requireBorrowerContextStep && !borrowerContextPromptSeen && !showBorrowerContextStep) {
          event.preventDefault();
          setShowBorrowerContextStep(true);
          return;

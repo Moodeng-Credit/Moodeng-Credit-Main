@@ -420,6 +420,7 @@ function RequestBoard$() {
          effectiveUser.isWorldId === 'ACTIVE' &&
          effectiveCreditLimit <= STARTING_CREDIT_LIMIT &&
          borrowerCreditLoans.length === 0);
+   const shouldRequireBorrowerContextStep = isAuthenticated && isBorrower && borrowerCreditLoans.length === 0;
    const baseWalletLock = getBaseWalletLockStatus(effectiveUser);
    const hasBorrowerBaseWallet =
       !IS_BORROWER_BASE_WALLET_GATE_ENABLED ||
@@ -1601,6 +1602,7 @@ function RequestBoard$() {
                   isSubmitting={isSubmitting}
                   availableCreditLimit={availableCreditLimit}
                   canUseReferralBoost={canUseReferralBoost}
+                  requireBorrowerContextStep={shouldRequireBorrowerContextStep}
                   startOnReferralStep={!shouldShowBorrowerTour && canUseReferralBoost}
                   clickOutsideRef={loanRequestModalRef}
                />

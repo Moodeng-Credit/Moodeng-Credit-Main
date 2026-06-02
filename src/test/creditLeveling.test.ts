@@ -1,6 +1,8 @@
 import { type ReactNode, createElement, createRef } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { Provider } from 'react-redux';
 
+import { configureStore } from '@reduxjs/toolkit';
 import { describe, expect, it, vi } from 'vitest';
 
 import { evaluateCreditProgression } from '@/lib/creditLeveling';
@@ -56,6 +58,12 @@ const createLoan = (overrides: Partial<Loan>): Loan => ({
    updatedAt: '2025-01-20T00:00:00.000Z',
    ...overrides
 });
+
+const renderLoanRequestModal = (props: Parameters<typeof LoanRequestModal>[0]) => {
+   const store = configureStore({ reducer: () => ({}) });
+
+   return renderToStaticMarkup(createElement(Provider, { store }, createElement(LoanRequestModal, props)));
+};
 
 describe('Credit leveling logic', () => {
    it('increments limit after on-time full repayment at the current limit', () => {
@@ -144,13 +152,11 @@ describe('LoanRequestModal borrowing gate', () => {
    };
 
    it('shows verification-required state for unverified users', () => {
-      const markup = renderToStaticMarkup(
-         createElement(LoanRequestModal, {
-            ...sharedProps,
-            showVerify: true,
-            user: { ...baseUser, isWorldId: 'INACTIVE' }
-         })
-      );
+      const markup = renderLoanRequestModal({
+         ...sharedProps,
+         showVerify: true,
+         user: { ...baseUser, isWorldId: 'INACTIVE' }
+      });
 
       expect(markup).toContain('One quick step to request a loan');
       expect(markup).toContain('Get Verified');
@@ -158,29 +164,25 @@ describe('LoanRequestModal borrowing gate', () => {
    });
 
    it('uses the verified credit limit when showing the loan cap', () => {
-      const markup = renderToStaticMarkup(
-         createElement(LoanRequestModal, {
-            ...sharedProps,
-            showVerify: false,
-            user: { ...baseUser, cs: 40 },
-            availableCreditLimit: 40,
-            startOnReferralStep: false
-         })
-      );
+      const markup = renderLoanRequestModal({
+         ...sharedProps,
+         showVerify: false,
+         user: { ...baseUser, cs: 40 },
+         availableCreditLimit: 40,
+         startOnReferralStep: false
+      });
 
       expect(markup).toContain('Limit: $40');
    });
 
    it('shows remaining available credit after the current limit is used', () => {
-      const markup = renderToStaticMarkup(
-         createElement(LoanRequestModal, {
-            ...sharedProps,
-            showVerify: false,
-            user: { ...baseUser, cs: 20 },
-            availableCreditLimit: 0,
-            startOnReferralStep: false
-         })
-      );
+      const markup = renderLoanRequestModal({
+         ...sharedProps,
+         showVerify: false,
+         user: { ...baseUser, cs: 20 },
+         availableCreditLimit: 0,
+         startOnReferralStep: false
+      });
 
       expect(markup).toContain('Limit: $0');
    });
