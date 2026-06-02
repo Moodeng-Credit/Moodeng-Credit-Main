@@ -1,11 +1,7 @@
-import { useState, type JSX, type ReactNode } from 'react';
+import { type JSX, type ReactNode } from 'react';
 
 import { CheckCircle2, ChevronRight, HelpCircle } from 'lucide-react';
-import { useDispatch } from 'react-redux';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-
-import { fetchUser } from '@/store/slices/authSlice';
-import type { AppDispatch } from '@/store/store';
 
 type AuthSuccessCardProps = {
    imageSrc: string;
@@ -55,22 +51,9 @@ function AuthSuccessShell({ imageSrc, imageAlt, eyebrow, title, body, children }
 
 function AccountCreatedView(): JSX.Element {
    const navigate = useNavigate();
-   const dispatch = useDispatch<AppDispatch>();
-   const [isProceeding, setIsProceeding] = useState(false);
 
-   const handleProceed = async () => {
-      if (isProceeding) return;
-      setIsProceeding(true);
-
-      try {
-         await dispatch(fetchUser()).unwrap();
-         navigate('/onboarding/role', { replace: true });
-      } catch {
-         // Direct previews do not have a live signup session. Keep the card in place
-         // instead of showing a dead-end auth error.
-      } finally {
-         setIsProceeding(false);
-      }
+   const handleProceed = () => {
+      navigate('/onboarding/role', { replace: true });
    };
 
    return (
@@ -99,11 +82,10 @@ function AccountCreatedView(): JSX.Element {
                </p>
                <button
                   type="button"
-                  disabled={isProceeding}
                   onClick={handleProceed}
-                  className="mt-1 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#6010D2] px-5 text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95 disabled:opacity-60"
+                  className="mt-1 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#6010D2] px-5 text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95"
                >
-                  {isProceeding ? 'Loading account...' : 'Proceed'}
+                  Proceed
                   <ChevronRight className="h-5 w-5" />
                </button>
             </section>
