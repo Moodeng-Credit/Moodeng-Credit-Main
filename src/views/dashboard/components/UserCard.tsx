@@ -475,7 +475,7 @@ export default function UserCard(loan: UserCardProps) {
                )}
 
                {/* View Borrower Details — hidden for logged-out users */}
-               {isAuthenticated && (!hasExpandableBorrowerBio || isBorrowerBioExpanded) ? (
+               {isAuthenticated ? (
                   borrowerUsername ? (
                      <Link
                         to={borrowerDetailsHref}
