@@ -68,14 +68,14 @@ export default function SignUpPage() {
             return;
          }
          if (data.user?.id) {
-            navigate('/dashboard');
+            navigate(data.user.userRole ? '/dashboard' : '/auth-success?type=created');
             return;
          }
          navigateToEmailConfirmation(email);
          return;
       }
       if (data?.user) {
-         navigate('/auth-success?type=created');
+         navigate(data.user.userRole ? '/dashboard' : '/auth-success?type=created');
          return;
       }
       setUsername('');
