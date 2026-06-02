@@ -44,11 +44,11 @@ export default function LoanRequestPreview() {
             loanAmount={loanAmount}
             onClose={() => undefined}
             reason={reason}
+            requireBorrowerContextStep
             setLoanAmount={setLoanAmount}
             setReason={setReason}
             setTotalRepaymentAmount={setTotalRepaymentAmount}
             showVerify={false}
-            startOnBorrowerContextStep
             startOnReferralStep={false}
             today={today}
             totalRepaymentAmount={totalRepaymentAmount}
