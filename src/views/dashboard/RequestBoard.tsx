@@ -12,7 +12,7 @@ import {
 } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle2, HelpCircle, LoaderCircle, Menu, Search, X } from 'lucide-react';
+import { AlertTriangle, HelpCircle, LoaderCircle, Menu, Search, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
@@ -72,6 +72,7 @@ const UNVERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT = 4;
 const GUEST_REQUEST_BOARD_TOUR_STEP_COUNT = 7;
 const DASHBOARD_TOUR_STEP_COUNT = 3;
 const TOUR_STEP_EXTRA_DURATION_MS = 3500;
+const REQUEST_BOARD_COMPLETION_HIGHLIGHT_MS = 5000;
 const PUBLIC_COMMON_QUESTIONS = FAQS;
 
 const getDefaultRequestFilters = (): LoanFilters => ({
@@ -337,6 +338,8 @@ function RequestBoard$() {
    const [showGuestWorldIdPreview, setShowGuestWorldIdPreview] = useState(false);
    const [hasWorldIdJustVerified, setHasWorldIdJustVerified] = useState(false);
    const [showWorldIdHighlight, setShowWorldIdHighlight] = useState(false);
+   const [pendingSubmittedRequestId, setPendingSubmittedRequestId] = useState<string | null>(null);
+   const [highlightedRequestId, setHighlightedRequestId] = useState<string | null>(null);
    const [requestToDelete, setRequestToDelete] = useState<Loan | null>(null);
    const [isDeletingRequest, setIsDeletingRequest] = useState(false);
    const [isOpeningLoanRequest, setIsOpeningLoanRequest] = useState(false);
@@ -349,7 +352,7 @@ function RequestBoard$() {
    const isReferralTestMode = import.meta.env.DEV && requestBoardSearchParams.has('referralTest');
    const forceTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('tourPreview');
    const showWorldIdSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.has('worldIdSuccessPreview');
-   const holdWorldIdSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.get('worldIdSuccessPreview') === 'hold';
+   const showSubmittedRequestSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.has('submittedRequestSuccessPreview');
    const showTourPreview = forceTourPreview || requestBoardSearchParams.has('tour');
    const shouldStartTourImmediately = requestBoardSearchParams.get('startTour') === '1';
    const isLenderTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('lenderTourPreview');
@@ -438,10 +441,9 @@ function RequestBoard$() {
       () => setShowPublicQuestions(false),
       showPublicQuestions
    ) as RefObject<HTMLDivElement>;
-   const worldIdHighlightRef = useClickOutside<HTMLDivElement>(
-      () => setShowWorldIdHighlight(false),
-      showWorldIdHighlight
-   ) as RefObject<HTMLDivElement>;
+   const highlightedRequestRef = useRef<HTMLDivElement | null>(null);
+   const lastScrolledHighlightedRequestIdRef = useRef<string | null>(null);
+   const submittedRequestPreviewRunRef = useRef<string | null>(null);
    const deleteRequestModalRef = useClickOutside<HTMLDivElement>(() => {
       if (!isDeletingRequest) setRequestToDelete(null);
    }, Boolean(requestToDelete)) as RefObject<HTMLDivElement>;
@@ -458,11 +460,20 @@ function RequestBoard$() {
 
    useEffect(() => {
       if (!showWorldIdHighlight) return;
-      if (holdWorldIdSuccessPreview) return;
 
-      const timeoutId = window.setTimeout(() => setShowWorldIdHighlight(false), 5000);
+      const timeoutId = window.setTimeout(() => setShowWorldIdHighlight(false), REQUEST_BOARD_COMPLETION_HIGHLIGHT_MS);
       return () => window.clearTimeout(timeoutId);
-   }, [holdWorldIdSuccessPreview, showWorldIdHighlight]);
+   }, [showWorldIdHighlight]);
+
+   useEffect(() => {
+      if (!highlightedRequestId) {
+         lastScrolledHighlightedRequestIdRef.current = null;
+         return;
+      }
+
+      const timeoutId = window.setTimeout(() => setHighlightedRequestId(null), REQUEST_BOARD_COMPLETION_HIGHLIGHT_MS);
+      return () => window.clearTimeout(timeoutId);
+   }, [highlightedRequestId]);
 
    const clear = () => {
       setTotalRepaymentAmount('');
@@ -1021,10 +1032,23 @@ function RequestBoard$() {
          if (!(await ensureCanCreateLoanRequest())) {
             return;
          }
-         await dispatch(createLoan(loanData)).unwrap();
+         const createdLoan = await dispatch(createLoan(loanData)).unwrap();
          clear();
+         setSearchLoan('');
+         setCustomAmount('');
+         setFilters(getDefaultRequestFilters());
+         setPendingSubmittedRequestId(createdLoan.id);
          setShowPurple(true);
          setShowModal(false);
+         try {
+            const loans = await dispatch(fetchLoans()).unwrap();
+            const borrowerUserIds = [...new Set(loans.map((loan: Loan) => loan.borrowerUser).filter(Boolean))] as string[];
+            if (borrowerUserIds.length > 0) {
+               await dispatch(fetchUserProfiles(borrowerUserIds)).unwrap();
+            }
+         } catch (error) {
+            console.error('Error refreshing loans after request creation:', (error as Error).message || error);
+         }
          try {
             await dispatch(fetchUser()).unwrap();
          } catch (error) {
@@ -1209,7 +1233,13 @@ function RequestBoard$() {
       }
    }, [dispatch, effectiveUser?.id, isDeletingRequest, requestToDelete, showToast]);
 
-   const handleSuccessModalClose = useCallback(() => setShowPurple(false), []);
+   const handleSuccessModalClose = useCallback(() => {
+      setShowPurple(false);
+      if (!pendingSubmittedRequestId) return;
+
+      setHighlightedRequestId(pendingSubmittedRequestId);
+      setPendingSubmittedRequestId(null);
+   }, [pendingSubmittedRequestId]);
 
    const firstName = user?.displayName?.split(' ')[0] || user?.username?.split(' ')[0] || user?.username || 'there';
    const displayFirstName =
@@ -1221,6 +1251,26 @@ function RequestBoard$() {
    };
    const visibleLoans = shouldShowLenderTour && displayedLoans.length === 0 ? LENDER_TOUR_LOANS : displayedLoans;
    const isListLoading = isLoading && !shouldShowLenderTour;
+
+   useEffect(() => {
+      if (!highlightedRequestId || lastScrolledHighlightedRequestIdRef.current === highlightedRequestId) return;
+      if (!visibleLoans.some((loan) => loan.id === highlightedRequestId)) return;
+
+      const frameId = window.requestAnimationFrame(() => {
+         highlightedRequestRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         lastScrolledHighlightedRequestIdRef.current = highlightedRequestId;
+      });
+
+      return () => window.cancelAnimationFrame(frameId);
+   }, [highlightedRequestId, visibleLoans]);
+
+   useEffect(() => {
+      if (!showSubmittedRequestSuccessPreview || visibleLoans.length === 0) return;
+      if (submittedRequestPreviewRunRef.current === location.search) return;
+
+      submittedRequestPreviewRunRef.current = location.search;
+      setHighlightedRequestId(visibleLoans[0].id);
+   }, [location.search, showSubmittedRequestSuccessPreview, visibleLoans]);
 
    return (
       <>
@@ -1278,11 +1328,11 @@ function RequestBoard$() {
                                        )}
                                     </WorldIDVerification>
                                  ) : (
-                                    <div ref={worldIdHighlightRef} className="relative">
+                                    <div className="relative">
                                        <span
                                           className={`inline-flex items-center gap-1 rounded-md-sm bg-md-green-100 px-md-1 py-md-0 transition-shadow duration-200 ${
                                              showWorldIdHighlight
-                                                ? 'ring-2 ring-md-green-900/40 ring-offset-2 ring-offset-md-neutral-200'
+                                                ? 'request-board-focus-highlight-badge ring-[3px] ring-md-primary-900/70 ring-offset-4 ring-offset-md-neutral-200'
                                                 : ''
                                           }`}
                                        >
@@ -1291,34 +1341,6 @@ function RequestBoard$() {
                                           </span>
                                           <span className="text-md-b3 font-semibold text-md-green-900">Verified</span>
                                        </span>
-                                       {showWorldIdHighlight && (
-                                          <div
-                                             role="status"
-                                             className="absolute left-0 top-[calc(100%+8px)] z-[75] w-[268px] rounded-[18px] border border-md-green-100 bg-[#fdfbfd] p-md-3 text-left shadow-[0_16px_42px_rgba(36,14,62,0.16)]"
-                                          >
-                                             <div className="flex items-start justify-between gap-md-2">
-                                                <div className="flex min-w-0 gap-md-2">
-                                                   <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-md-green-100 text-md-green-900">
-                                                      <CheckCircle2 className="size-4" strokeWidth={2.4} />
-                                                   </span>
-                                                   <div>
-                                                      <p className="text-md-b2 font-semibold text-md-heading">You are now verified.</p>
-                                                      <p className="mt-0.5 text-md-b3 font-medium leading-[1.4] text-md-neutral-800">
-                                                         Lenders will see this status on your loan requests.
-                                                      </p>
-                                                   </div>
-                                                </div>
-                                                <button
-                                                   type="button"
-                                                   onClick={() => setShowWorldIdHighlight(false)}
-                                                   aria-label="Dismiss verification message"
-                                                   className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-md-neutral-200 text-md-neutral-1000"
-                                                >
-                                                   <X className="size-4" strokeWidth={2.25} />
-                                                </button>
-                                             </div>
-                                          </div>
-                                       )}
                                     </div>
                                  )}
                               </div>
@@ -1554,12 +1576,17 @@ function RequestBoard$() {
                            </div>
                         ) : visibleLoans && visibleLoans.length > 0 ? (
                            visibleLoans.map((loan) => (
-                              <div key={loan.id} data-tour-target={visibleLoans[0]?.id === loan.id ? 'request-first-card' : undefined}>
+                              <div
+                                 key={loan.id}
+                                 ref={loan.id === highlightedRequestId ? highlightedRequestRef : undefined}
+                                 data-tour-target={visibleLoans[0]?.id === loan.id ? 'request-first-card' : undefined}
+                              >
                                  <UserCard
                                     {...loan}
                                     currentUserId={effectiveUser?.id}
                                     isBorrower={isBorrower}
                                     isAuthenticated={isAuthenticated}
+                                    isHighlighted={loan.id === highlightedRequestId}
                                     isPreviewRequest={isPreviewRequestBoardLoan(loan)}
                                     isDeletingOwnRequest={Boolean(isDeletingRequest && requestToDelete?.id === loan.id)}
                                     onDeleteOwnRequest={handleDeleteOwnRequestClick}

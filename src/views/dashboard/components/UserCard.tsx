@@ -34,6 +34,7 @@ type UserCardProps = Loan & {
    currentUserId?: string;
    isBorrower?: boolean;
    isAuthenticated?: boolean;
+   isHighlighted?: boolean;
    isPreviewRequest?: boolean;
    isDeletingOwnRequest?: boolean;
    onDeleteOwnRequest?: (loan: Loan) => void;
@@ -74,7 +75,7 @@ function BorrowerContextLine({ context }: { context: BorrowerContextResult }) {
    const parts = context.contextLine.split(/(\{[a-z-]+\})/g);
 
    return (
-      <p className="text-md-b2 font-medium leading-[1.55] text-md-neutral-900">
+      <p className="flex flex-wrap items-center gap-x-1 text-md-b2 font-medium leading-[1.55] text-md-neutral-900">
          {parts.map((part, index) => {
             const chipId = part.match(/^\{([a-z-]+)\}$/)?.[1];
             const chip = chipId ? chipMap.get(chipId) : undefined;
@@ -83,7 +84,7 @@ function BorrowerContextLine({ context }: { context: BorrowerContextResult }) {
                return <BorrowerContextChipView key={`${chip.id}-${index}`} chip={chip} />;
             }
 
-            return <span key={`${part}-${index}`}>{part}</span>;
+            return <span key={`${part}-${index}`}>{part.trim()}</span>;
          })}
       </p>
    );
@@ -102,11 +103,13 @@ function BorrowerContextPanel({ context }: { context: BorrowerContextResult }) {
    );
 }
 
+
 export default function UserCard(loan: UserCardProps) {
    const {
       currentUserId,
       isBorrower = true,
       isAuthenticated = true,
+      isHighlighted = false,
       isPreviewRequest = false,
       isDeletingOwnRequest = false,
       onDeleteOwnRequest,
@@ -123,6 +126,7 @@ export default function UserCard(loan: UserCardProps) {
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
+   const [showDetails, setShowDetails] = useState(false);
    const { showToast, showToastByConfig } = useToast();
    const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const storeUserId = useSelector((state: RootState) => state.auth.user.id);
@@ -274,7 +278,14 @@ export default function UserCard(loan: UserCardProps) {
          ...borrowerContextProfileData
       });
    }, [borrowerContextProfileData, borrowerDisplayName, due, loanData.createdAt, loanData.loanAmount, loanReason]);
-   const showBorrowerContext = Boolean(borrowerContext && !isBorrower);
+   const isLenderCard = Boolean(isAuthenticated && !isBorrower && !isOwnLoan && !isLent && !isPreviewRequest);
+   const showBorrowerContext = Boolean(borrowerContext && !isBorrower && (!isLenderCard || showDetails));
+   const cardClassName = [
+      'relative flex flex-col gap-4 rounded-[24px] border border-[#f0f0f0] bg-white p-md-4 shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)] transition-[border-color,box-shadow,transform] duration-300',
+      isHighlighted ? 'request-board-focus-highlight' : ''
+   ]
+      .filter(Boolean)
+      .join(' ');
 
    const handleDeleteOwnRequest = (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
@@ -285,8 +296,9 @@ export default function UserCard(loan: UserCardProps) {
    return (
       <>
          <div
-            className="relative bg-white border border-[#f0f0f0] rounded-[24px] shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)] flex flex-col gap-4 p-md-4"
+            className={cardClassName}
             data-tour-target="lender-request-card"
+            data-highlighted-request={isHighlighted ? 'true' : undefined}
          >
             {canDeleteOwnRequest ? (
                <button
@@ -301,7 +313,10 @@ export default function UserCard(loan: UserCardProps) {
                </button>
             ) : null}
             {/* Top: Loan Info + Amount Card */}
-            <div className={`flex gap-4 items-center ${canDeleteOwnRequest ? 'pr-10' : ''}`}>
+            <div
+               className={`flex gap-4 items-center ${canDeleteOwnRequest ? 'pr-10' : ''} ${isLenderCard && showDetails ? 'cursor-pointer' : ''}`}
+               onClick={isLenderCard && showDetails ? () => setShowDetails(false) : undefined}
+            >
                {/* Left: Loan Details */}
                <div className="flex-1 flex flex-col gap-2 min-w-0">
                   <p className="text-md-h5 font-semibold text-md-heading">{loanReason}</p>
@@ -378,7 +393,7 @@ export default function UserCard(loan: UserCardProps) {
                   <div className="bg-md-neutral-500 text-md-neutral-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg text-center cursor-not-allowed">
                      Help Received
                   </div>
-               ) : isBorrower && isOwnLoan ? (
+               ) : isBorrower ? (
                   <Link
                      to={`/loan/${loanData.id}`}
                      className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
@@ -386,7 +401,16 @@ export default function UserCard(loan: UserCardProps) {
                      View Request
                      <ChevronRight className="w-5 h-5" />
                   </Link>
-               ) : isBorrower ? null : (
+               ) : isLenderCard && !showDetails ? (
+                  <button
+                     type="button"
+                     onClick={() => setShowDetails(true)}
+                     className="w-full border border-md-primary-1200 text-md-primary-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.98] active:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
+                  >
+                     View Request
+                     <ChevronRight className="w-5 h-5" />
+                  </button>
+               ) : (
                   <button
                      onClick={handleLend}
                      disabled={isProcessing}
@@ -399,8 +423,8 @@ export default function UserCard(loan: UserCardProps) {
                   </button>
                )}
 
-               {/* View Borrower Details — hidden for logged-out users and borrowers viewing others */}
-               {isAuthenticated && (!isBorrower || isOwnLoan) ? (
+               {/* View Borrower Details — hidden for logged-out users and collapsed lender cards */}
+               {isAuthenticated && (!isLenderCard || showDetails) ? (
                   borrowerUsername ? (
                      <Link
                         to={borrowerDetailsHref}
