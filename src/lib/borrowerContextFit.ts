@@ -88,6 +88,7 @@ const paydayContextLabels: Record<string, { label: string; range: string; start?
 };
 
 const cashGapContextLabels: Record<string, string> = {
+   gap_before_payday: 'gap before payday',
    bills_before_payday: 'bills before payday',
    transport: 'transport costs',
    work_supplies: 'work supplies',

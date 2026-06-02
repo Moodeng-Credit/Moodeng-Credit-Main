@@ -106,42 +106,47 @@ const emptyBorrowerContext: BorrowerContextState = {
 
 const incomeSetupOptions: BorrowerContextOption[] = [
    {
-      label: 'Full-time employee',
-      pillLabel: 'Full-time',
+      label: 'I have a regular job',
       value: 'full_time',
-      description: 'Regular salary from one employer',
+      description: 'Full-time or part-time with a fixed employer',
       icon: Briefcase
    },
-   { label: 'Part-time', value: 'part_time', description: 'Scheduled hours, under 30/week', icon: Clock3 },
-   { label: 'Contract / Temp', value: 'contract', description: 'Fixed-term or agency work', icon: FileText },
-   { label: 'Freelance / Gig', value: 'freelance', description: 'Project-based or platform work', icon: Ticket },
-   { label: 'Self-employed', value: 'self_employed', description: 'Own business or sole trader', icon: Users },
    {
-      label: 'Irregular income',
-      pillLabel: 'Irregular',
+      label: 'I work for myself',
+      value: 'self_employed',
+      description: 'Freelance, gig work, self-employed, or contract',
+      icon: Ticket
+   },
+   {
+      label: 'My income varies',
       value: 'irregular',
-      description: 'Income varies month to month',
+      description: 'Irregular, seasonal, or mixed sources',
       icon: WalletCards
    },
-   { label: 'No income', value: 'no_income', description: 'No regular income source', icon: WalletCards }
+   {
+      label: 'Something else',
+      value: 'contract',
+      description: 'Describe your situation in your own words',
+      icon: FileText
+   }
 ];
 
 const paydayWindowOptions: BorrowerContextOption[] = [
-   { label: 'Early month', pillLabel: 'Early month (1st-5th)', value: '1_5', description: '1st-5th', icon: Clock3 },
-   { label: 'Mid-month', pillLabel: 'Mid-month (10th-15th)', value: '10_15', description: '10th-15th', icon: Clock3 },
-   { label: 'Late month', pillLabel: 'Late month (15th-20th)', value: '15_20', description: '15th-20th', icon: Clock3 },
-   { label: 'End of month', pillLabel: 'End of month (25th-30th)', value: '25_30', description: '25th-30th', icon: Clock3 },
-   { label: 'It varies', value: 'varies', description: 'No fixed schedule', icon: Clock3 }
+   { label: '1st-5th', value: '1_5', icon: Clock3 },
+   { label: '10th-15th', value: '10_15', icon: Clock3 },
+   { label: '15th-20th', value: '15_20', icon: Clock3 },
+   { label: '25th-30th', value: '25_30', icon: Clock3 },
+   { label: 'It varies', value: 'varies', icon: Clock3 }
 ];
 
 const cashGapOptions: BorrowerContextMultiOption[] = [
+   { label: 'Gap before payday', value: 'gap_before_payday', icon: Clock3 },
    { label: 'Bills before payday', value: 'bills_before_payday', icon: FileText },
-   { label: 'Transport costs', value: 'transport', icon: Bus },
-   { label: 'Work supplies', value: 'work_supplies', icon: Briefcase },
    { label: 'Family needs', value: 'family_needs', icon: Users },
+   { label: 'Transport costs', value: 'transport', icon: Bus },
    { label: 'Medical expenses', value: 'medical', icon: Stethoscope },
    { label: 'Emergency costs', value: 'emergency_costs', icon: TriangleAlert },
-   { label: 'Food', value: 'food', icon: WalletCards }
+   { label: 'Work supplies', value: 'work_supplies', icon: Briefcase }
 ];
 
 type TooltipId = 'terms' | 'limit' | 'usdc';
@@ -333,84 +338,229 @@ function BorrowerContextLoanStep({
    onPaydaySelect: (value: string) => void;
    username: string;
 }) {
+   const nameInputRef = useRef<HTMLInputElement>(null);
+   const [profileName, setProfileName] = useState(username || '');
+   const [showTrustPrompt, setShowTrustPrompt] = useState(true);
    const canContinue = Boolean(context.incomeSetup && context.paydayWindow && context.cashGaps.length > 0);
+
+   useEffect(() => {
+      setProfileName(username || '');
+   }, [username]);
 
    return (
       <div className="flex min-h-0 flex-col gap-md-3">
-         <div className="rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 p-md-3 shadow-md-card">
-            <div className="mb-md-3">
-               <h3 className="text-md-h6 font-[590] text-md-heading">Your profile</h3>
-               <p className="mt-md-0 text-md-b3 font-normal leading-[19px] text-md-neutral-1200">
-                  This helps lenders understand repayment timing without employer names, documents, addresses, or contacts.
-               </p>
-            </div>
-            <div className="flex flex-col gap-md-3">
-               <div className="flex flex-col gap-md-1">
-                  <span className="text-md-b2 font-[590] text-md-neutral-1200">Your name</span>
-                  <div className="rounded-md-input border border-md-neutral-500 bg-md-neutral-200 px-md-3 py-md-2 text-md-b1 font-[590] text-md-heading">
-                     {username || 'Moodeng borrower'}
-                  </div>
+         {showTrustPrompt ? (
+            <section className="relative rounded-md-md border border-md-primary-500 bg-[#f3e8ff] px-md-2 py-md-2">
+               <button
+                  aria-label="Dismiss funding profile tip"
+                  className="absolute right-md-1 top-md-1 rounded-md-pill p-md-0 text-md-neutral-1000 transition hover:bg-md-neutral-100/80 hover:text-md-primary-1200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                  onClick={() => setShowTrustPrompt(false)}
+                  type="button"
+               >
+                  <X className="size-4" strokeWidth={2} />
+               </button>
+               <div className="pr-md-4">
+                  <p className="text-md-b2 font-[590] leading-[20px] text-md-primary-1200">Get funded faster</p>
+                  <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                     Borrowers with a recognisable name and photo get funded more often. Takes 30 seconds.
+                  </p>
                </div>
-
-               <BorrowerContextPillGroup
-                  label="Employment type"
-                  options={incomeSetupOptions}
-                  selectedValues={[context.incomeSetup]}
-                  onSelect={onIncomeSelect}
-               />
-
-               <BorrowerContextPillGroup
-                  label="When do you usually get paid?"
-                  options={paydayWindowOptions}
-                  selectedValues={[context.paydayWindow]}
-                  onSelect={onPaydaySelect}
-               />
-
-               <BorrowerContextPillGroup
-                  label="What do you usually need help with?"
-                  options={cashGapOptions}
-                  selectedValues={context.cashGaps}
-                  onSelect={onCashGapToggle}
-                  multi
-               />
-            </div>
-         </div>
-
-         {!canContinue ? (
-            <p className="rounded-md-md bg-md-primary-100 px-md-2 py-md-1 text-md-b3 font-medium leading-[18px] text-md-primary-1200">
-               Choose an income type, payday window, and at least one need to continue.
-            </p>
+               <div className="mt-md-2 flex gap-md-1">
+                  <button
+                     className="min-h-[34px] rounded-md-md border border-md-neutral-300 bg-md-neutral-100/60 px-md-2 text-md-b3 font-[590] text-md-primary-1200 transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                     onClick={() => nameInputRef.current?.focus()}
+                     type="button"
+                  >
+                     Add a name
+                  </button>
+                  <button
+                     className="min-h-[34px] cursor-not-allowed rounded-md-md border border-md-neutral-300 bg-md-neutral-100/40 px-md-2 text-md-b3 font-[590] text-md-neutral-700"
+                     disabled
+                     type="button"
+                  >
+                     Add your photo
+                  </button>
+               </div>
+            </section>
          ) : null}
 
-         <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-md-2 pt-md-1">
-            <button
-               className="inline-flex min-h-[48px] items-center justify-center gap-md-1 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 text-md-b1 font-medium text-md-heading shadow-md-card transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-               onClick={onBack}
-               type="button"
+         <section className="flex items-center gap-md-2 border-b border-md-neutral-400 pb-md-2">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-md-pill border-2 border-dashed border-md-primary-900 bg-md-primary-100 text-md-primary-1200">
+               <Users className="size-5" strokeWidth={2} />
+            </div>
+            <div className="min-w-0 flex-1">
+               <div className="flex items-center gap-md-1">
+                  <p className="text-md-b2 font-[590] leading-[18px] text-md-heading">Your photo</p>
+                  <TrustBadge label="+15 trust" />
+               </div>
+               <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                  A real photo helps lenders feel confident funding your request.
+               </p>
+            </div>
+         </section>
+
+         <label className="flex flex-col gap-md-1">
+            <span className="flex items-center gap-md-1 text-md-b2 font-[590] leading-[18px] text-md-heading">
+               Your name
+               <TrustBadge label="+10 trust" />
+            </span>
+            <input
+               ref={nameInputRef}
+               className="min-h-[44px] rounded-md-sm border border-[#54504b] bg-[#2f2f2b] px-md-2 text-md-b1 font-[590] text-md-neutral-100 placeholder:text-[#8b7b99] focus:outline-none focus:ring-2 focus:ring-md-primary-900"
+               maxLength={30}
+               onChange={(event) => setProfileName(event.target.value)}
+               placeholder="e.g. Maya, Jay, or a friendly nickname"
+               type="text"
+               value={profileName}
+            />
+            <span className="flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+               <span>This is what lenders see on every request.</span>
+               <span className="shrink-0">{profileName.length}/30</span>
+            </span>
+         </label>
+
+         <BorrowerContextRadioSection
+            label="How would you describe your work?"
+            onSelect={onIncomeSelect}
+            options={incomeSetupOptions}
+            selectedValue={context.incomeSetup}
+         />
+
+         <BorrowerContextChipSection
+            helper="Helps lenders see that repayment timing makes sense."
+            label="When do you usually get paid?"
+            onSelect={onPaydaySelect}
+            options={paydayWindowOptions}
+            selectedValues={[context.paydayWindow]}
+         />
+
+         <BorrowerContextChipSection
+            caption="Pick all that apply."
+            label="What do you usually need short-term help with?"
+            multi
+            onSelect={onCashGapToggle}
+            options={cashGapOptions}
+            selectedValues={context.cashGaps}
+         />
+
+         <div className="flex flex-col gap-md-2">
+            <p
+               className={`text-center text-md-b3 font-medium leading-[18px] ${
+                  canContinue ? 'text-md-neutral-1200' : 'text-md-primary-1200'
+               }`}
             >
-               <ChevronLeft className="size-5" strokeWidth={2} />
-               Back
-            </button>
-            <button
-               className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-               disabled={!canContinue || isSubmitting}
-               onClick={onContinue}
-               type="button"
-            >
-               {isSubmitting ? 'Submitting...' : 'Save to lender card'}
-            </button>
+               {canContinue ? 'Ready to save this to your lender card.' : 'Fill in all sections to continue.'}
+            </p>
+
+            <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-md-2">
+               <button
+                  className="inline-flex min-h-[48px] items-center justify-center gap-md-1 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 text-md-b1 font-medium text-md-heading shadow-md-card transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                  onClick={onBack}
+                  type="button"
+               >
+                  <ChevronLeft className="size-5" strokeWidth={2} />
+                  Back
+               </button>
+               <button
+                  className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                  disabled={!canContinue || isSubmitting}
+                  onClick={onContinue}
+                  type="button"
+               >
+                  {isSubmitting ? 'Submitting...' : 'Save to lender card'}
+               </button>
+            </div>
          </div>
       </div>
    );
 }
 
-function BorrowerContextPillGroup({
+function TrustBadge({ label }: { label: string }) {
+   return (
+      <span className="rounded-md-pill bg-md-primary-1200 px-[6px] py-[2px] text-[10px] font-[590] leading-none text-md-neutral-100">
+         {label}
+      </span>
+   );
+}
+
+function BorrowerContextRadioSection({
+   label,
+   onSelect,
+   options,
+   selectedValue
+}: {
+   label: string;
+   onSelect: (value: string) => void;
+   options: BorrowerContextOption[];
+   selectedValue: string;
+}) {
+   return (
+      <fieldset className="flex flex-col gap-md-1">
+         <legend className="text-md-b2 font-[590] leading-[18px] text-md-heading">{label}</legend>
+         <div className="flex flex-col gap-md-1">
+            {options.map((option) => (
+               <BorrowerContextRadioCard
+                  key={option.value}
+                  isSelected={selectedValue === option.value}
+                  onClick={() => onSelect(option.value)}
+                  option={option}
+               />
+            ))}
+         </div>
+      </fieldset>
+   );
+}
+
+function BorrowerContextRadioCard({
+   isSelected,
+   onClick,
+   option
+}: {
+   isSelected: boolean;
+   onClick: () => void;
+   option: BorrowerContextOption;
+}) {
+   return (
+      <button
+         aria-pressed={isSelected}
+         className={`grid min-h-[58px] w-full grid-cols-[minmax(0,1fr)_22px] items-center gap-md-2 rounded-md-input border px-md-2 py-md-1 text-left transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+            isSelected
+               ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_8px_18px_rgba(105,48,232,0.08)]'
+               : 'border-md-neutral-500 bg-md-neutral-100 text-md-neutral-1200'
+         }`}
+         onClick={onClick}
+         type="button"
+      >
+         <span className="min-w-0">
+            <span className={`block text-md-b2 font-[590] leading-[18px] ${isSelected ? 'text-md-primary-1200' : 'text-md-heading'}`}>
+               {option.label}
+            </span>
+            {option.description ? (
+               <span className="mt-[2px] block text-md-b3 font-normal leading-[17px] text-md-neutral-1200">{option.description}</span>
+            ) : null}
+         </span>
+         <span
+            className={`flex size-5 shrink-0 items-center justify-center rounded-md-pill border ${
+               isSelected ? 'border-md-primary-1200 bg-md-primary-1200 text-md-neutral-100' : 'border-md-neutral-700 bg-md-neutral-100'
+            }`}
+         >
+            {isSelected ? <Check className="size-3.5" strokeWidth={2.6} /> : null}
+         </span>
+      </button>
+   );
+}
+
+function BorrowerContextChipSection({
+   caption,
+   helper,
    label,
    multi = false,
    onSelect,
    options,
    selectedValues
 }: {
+   caption?: string;
+   helper?: string;
    label: string;
    multi?: boolean;
    onSelect: (value: string) => void;
@@ -418,11 +568,17 @@ function BorrowerContextPillGroup({
    selectedValues: string[];
 }) {
    return (
-      <fieldset className="flex flex-col gap-md-1">
-         <legend className="text-md-b2 font-[590] text-md-neutral-1200">{label}</legend>
+      <fieldset className="flex flex-col gap-md-1 border-t border-md-neutral-400 pt-md-2">
+         <legend className="sr-only">{label}</legend>
+         <div className="flex items-start justify-between gap-md-2">
+            <span className="text-md-b2 font-[590] leading-[18px] text-md-heading">{label}</span>
+            {caption ? (
+               <span className="max-w-[84px] text-right text-md-b3 font-normal leading-[16px] text-md-neutral-1200">{caption}</span>
+            ) : null}
+         </div>
          <div className="flex flex-wrap gap-md-1">
             {options.map((option) => (
-               <BorrowerContextPill
+               <BorrowerContextChoiceChip
                   key={option.value}
                   isSelected={selectedValues.includes(option.value)}
                   label={option.pillLabel ?? option.label}
@@ -431,11 +587,12 @@ function BorrowerContextPillGroup({
                />
             ))}
          </div>
+         {helper ? <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">{helper}</p> : null}
       </fieldset>
    );
 }
 
-function BorrowerContextPill({
+function BorrowerContextChoiceChip({
    isSelected,
    label,
    multi,
@@ -449,16 +606,16 @@ function BorrowerContextPill({
    return (
       <button
          aria-pressed={isSelected}
-         className={`inline-flex min-h-[38px] items-center justify-center rounded-md-pill border px-md-2 py-md-1 text-md-b2 font-[590] leading-[20px] transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+         className={`inline-flex min-h-[32px] items-center justify-center gap-[6px] rounded-md-pill border px-md-2 py-[5px] text-md-b3 font-medium leading-[18px] transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
             isSelected
-               ? 'border-[#cfd8ff] bg-[#eef3ff] text-[#3432a8] shadow-[0_6px_14px_rgba(96,16,210,0.08)]'
-               : 'border-md-neutral-500 bg-md-neutral-100 text-md-neutral-1200'
+               ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_5px_12px_rgba(105,48,232,0.08)]'
+               : 'border-md-neutral-700 bg-md-neutral-100 text-md-neutral-1400'
          }`}
          onClick={onClick}
          type="button"
       >
          {label}
-         {multi && isSelected ? <Check className="ml-md-0 size-4" strokeWidth={2.6} /> : null}
+         {multi && isSelected ? <Check className="size-3.5" strokeWidth={2.6} /> : null}
       </button>
    );
 }
@@ -880,7 +1037,12 @@ export default function LoanRequestModal({
                   {shouldShowReferralStep ? (
                      <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
                   ) : showBorrowerContextStep ? (
-                     <h2 className="text-md-h6 font-[590] text-md-heading">Lender card profile</h2>
+                     <div>
+                        <h2 className="text-md-h6 font-[590] leading-[24px] text-md-heading">How lenders see you</h2>
+                        <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                           This helps lenders understand your situation and fund faster.
+                        </p>
+                     </div>
                   ) : (
                      <>
                         <h2 className="text-md-h6 text-md-heading">Set Your Own Terms</h2>
