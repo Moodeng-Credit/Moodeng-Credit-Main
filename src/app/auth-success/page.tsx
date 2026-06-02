@@ -3,6 +3,8 @@ import { type JSX, type ReactNode } from 'react';
 import { CheckCircle2, ChevronRight, HelpCircle } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
+import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
+
 type AuthSuccessCardProps = {
    imageSrc: string;
    imageAlt: string;
@@ -57,16 +59,8 @@ function AccountCreatedView(): JSX.Element {
    };
 
    return (
-      <div className="flex min-h-screen flex-col overflow-hidden rounded-[20px] bg-gradient-to-b from-[#FBFAFD] to-white text-[#040033]">
-         <div className="flex justify-end px-6 py-4">
-            <Link
-               to="/support/faq"
-               className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#8336F0] shadow-[0_2px_4px_rgba(27,28,29,0.04)] transition hover:bg-[#F8F4FC]"
-               aria-label="Help"
-            >
-               <HelpCircle className="h-6 w-6" />
-            </Link>
-         </div>
+      <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#FBFAFD] to-white text-[#040033] max-w-[440px] mx-auto w-full">
+         <OnboardingHeader hideBack />
 
          <main className="flex flex-1 flex-col justify-center px-5 pb-14">
             <section className="mx-auto flex w-full max-w-[400px] flex-col items-center gap-5 text-center">
