@@ -54,7 +54,7 @@ values
     10000000,
     'Bio visible',
 	    'Bio added',
-    'Clearer bio context',
+    'Clearer request context',
     'Complete bio',
     '/request-board',
     '{"rule":"borrower_has_saved_context"}'

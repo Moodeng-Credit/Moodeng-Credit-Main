@@ -45,7 +45,7 @@ describe('buildBorrowerContextFit', () => {
       );
       expect(renderExplanationText(fit)).toContain('As a full-time employee paid 10th-15th monthly');
       expect(renderExplanationText(fit)).toContain('8-day gap');
-      expect(renderExplanationText(fit)).toContain('due date follows the bio timing shared');
+      expect(renderExplanationText(fit)).toContain('due date follows the pay schedule shared');
    });
 
    it('uses consistent timing when due date falls inside the payday window', () => {
@@ -57,7 +57,7 @@ describe('buildBorrowerContextFit', () => {
 
       expect(fit.fitLevel).toBe('consistent');
       expect(deltaChip(fit)).toBe('inside payday window');
-      expect(renderExplanationText(fit)).toContain('matching the bio timing shared');
+      expect(renderExplanationText(fit)).toContain('matching the pay schedule shared');
    });
 
    it('frames due dates before the payday window as an early gap instead of a borrower warning', () => {
@@ -84,7 +84,7 @@ describe('buildBorrowerContextFit', () => {
       expect(fit.fitLevel).toBe('after_payday_gap');
       expect(deltaChip(fit)).toBe('1 day before payday');
       expect(fit.chips.find((chip) => chip.id === 'opened-delta')?.text).toBe('3 days after payday');
-      expect(renderExplanationText(fit)).toContain('Bio timing gives a less direct signal');
+      expect(renderExplanationText(fit)).toContain('pay schedule gives a less direct signal');
    });
 
    it('uses the next calendar month payday window when repayment crosses months', () => {
@@ -123,16 +123,16 @@ describe('buildBorrowerContextFit', () => {
 
       expect(fit.fitLevel).toBe('variable');
       expect(renderExplanationText(fit)).toContain('Pay timing varies');
-      expect(renderExplanationText(fit)).toContain('clearest bio signals');
+      expect(renderExplanationText(fit)).toContain('clearest signals');
    });
 
-   it('falls back when saved bio context is missing', () => {
+   it('falls back when saved borrower details are missing', () => {
       const fit = buildBorrowerContextFit({ ...baseInput, context: null });
 
       expect(fit.fitLevel).toBe('unclear');
       expect(fit.showTimingClaim).toBe(false);
       expect(fit.chips.some((chip) => chip.id === 'delta')).toBe(false);
-      expect(renderExplanationText(fit)).toContain('Bio context is incomplete');
+      expect(renderExplanationText(fit)).toContain('Saved borrower details are incomplete');
    });
 
    it('falls back when dates cannot be parsed', () => {

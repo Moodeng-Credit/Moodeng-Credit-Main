@@ -287,7 +287,7 @@ export const buildBorrowerContextFit = ({
    if (!context || (!context.paydayWindow && !gapLabels.length)) {
       return buildResult({
          chips: allChips,
-         explanationSegments: ['Bio context is incomplete. Use request reason and repayment history for context.'],
+         explanationSegments: ['Saved borrower details are incomplete. Use request reason and repayment history for context.'],
          fitLevel: 'unclear',
          secondaryChips,
          segments: baseSegments,
@@ -323,7 +323,7 @@ export const buildBorrowerContextFit = ({
    if (!payday || payday.variable || !payday.start || !payday.end) {
       return buildResult({
          chips: allChips,
-         explanationSegments: ['Pay timing varies, so repayment history and request reason are the clearest bio signals.'],
+         explanationSegments: ['Pay timing varies, so repayment history and request reason are the clearest signals.'],
          fitLevel: 'variable',
          secondaryChips,
          segments: baseSegments,
@@ -376,7 +376,7 @@ export const buildBorrowerContextFit = ({
                chipSegment('opened-delta'),
                ', and repayment is due ',
                chipSegment('delta'),
-               '. Bio timing gives a less direct signal here, so repayment history is the clearest context.'
+               '. The pay schedule gives a less direct signal here, so repayment history is the clearest context.'
             ],
             fitLevel: 'after_payday_gap',
             secondaryChips,
@@ -405,7 +405,7 @@ export const buildBorrowerContextFit = ({
       const deltaChip = chip('delta', 'Timing', 'inside payday window', 'delta');
       return buildResult({
          chips: [...allChips, deltaChip],
-         explanationSegments: ['Repayment falls ', chipSegment('delta'), ', matching the bio timing shared.'],
+         explanationSegments: ['Repayment falls ', chipSegment('delta'), ', matching the pay schedule shared.'],
          fitLevel: 'consistent',
          secondaryChips,
          segments: baseSegments,
@@ -427,14 +427,14 @@ export const buildBorrowerContextFit = ({
               chipSegment('bridge'),
               ', with repayment ',
               chipSegment('delta'),
-              ', so the due date follows the bio timing shared.'
+              ', so the due date follows the pay schedule shared.'
            ]
          : [
               'This request bridges a short-term ',
               chipSegment('bridge'),
               ', with repayment ',
               chipSegment('delta'),
-              ', so the due date follows the bio timing shared.'
+              ', so the due date follows the pay schedule shared.'
            ];
 
    return buildResult({

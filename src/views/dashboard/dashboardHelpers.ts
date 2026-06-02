@@ -191,7 +191,7 @@ export const buildReputationMilestones = ({
          points: trustPointMilestoneRuleById['borrower-background-complete'].points,
          reward: 'Bio visible',
          outcome: 'Bio added',
-         benefit: 'Clearer bio context',
+         benefit: 'Clearer request context',
          isComplete: hasBorrowerBackground,
          actionLabel: 'Complete bio',
          actionTo: '/request-board'

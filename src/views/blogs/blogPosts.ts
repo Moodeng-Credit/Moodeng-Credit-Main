@@ -598,7 +598,7 @@ export const blogPosts: BlogPost[] = [
          {
             question: 'What is a better credit pipe?',
             answer:
-               'A better credit pipe combines clear terms, safe identity, stable settlement, borrower bio context, and repayment history that continues helping the borrower.'
+               'A better credit pipe combines clear terms, safe identity, stable settlement, borrower request context, and repayment history that continues helping the borrower.'
          }
       ],
       sources: [
