@@ -52,6 +52,21 @@ const buildLoanUrl = (loanId: string) => {
    return `${siteUrl.replace(/\/$/, '')}/request-board?loan=${loanId}`;
 };
 
+const getNotificationBotToken = async (supabase: SupabaseClient) => {
+   const envToken = Deno.env.get('TELEGRAM_NOTIFICATION_API_TOKEN') ?? Deno.env.get('TELEGRAM_LENDER_BOT_TOKEN');
+   if (envToken?.trim()) {
+      return envToken.trim();
+   }
+
+   const { data, error } = await supabase.rpc('get_telegram_notification_api_token');
+   if (error) {
+      throw new Error(error.message);
+   }
+
+   const vaultToken = typeof data === 'string' ? data.trim() : '';
+   return vaultToken || null;
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') {
       return new Response('ok', { headers: corsHeaders });
@@ -133,7 +148,10 @@ serve(async (req) => {
          throw new Error('lender_group_chat_id is not configured.');
       }
 
+      const notificationBotToken = await getNotificationBotToken(supabase);
+
       await sendTelegramMessage(chatId, message, {
+         token: notificationBotToken,
          inlineKeyboard: [[{ text: 'Fund this loan', url: loanUrl }]]
       });
 

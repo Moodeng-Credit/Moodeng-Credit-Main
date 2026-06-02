@@ -6,11 +6,16 @@ type TelegramApiResult<T> = {
    description?: string;
 };
 
-const getTelegramToken = () => Deno.env.get('TELEGRAM_API_TOKEN') ?? Deno.env.get('TELEGRAM_BOT_TOKEN');
+const getTelegramToken = (tokenOverride?: string | null) =>
+   tokenOverride?.trim() || Deno.env.get('TELEGRAM_API_TOKEN') || Deno.env.get('TELEGRAM_BOT_TOKEN');
 
-export const callTelegramApi = async <T = unknown>(method: string, payload: Record<string, unknown>) => {
-   const telegramApiUrl = Deno.env.get('TELEGRAM_API_URL');
-   const telegramToken = getTelegramToken();
+export const callTelegramApi = async <T = unknown>(
+   method: string,
+   payload: Record<string, unknown>,
+   options: { token?: string | null } = {}
+) => {
+   const telegramToken = getTelegramToken(options.token);
+   const telegramApiUrl = options.token ? null : Deno.env.get('TELEGRAM_API_URL');
    const url =
       method === 'sendMessage' && telegramApiUrl
          ? telegramApiUrl
@@ -39,15 +44,19 @@ export const callTelegramApi = async <T = unknown>(method: string, payload: Reco
 export const sendTelegramMessage = async (
    chatId: number | string,
    text: string,
-   options: { inlineKeyboard?: TelegramInlineKeyboard; messageThreadId?: number } = {}
+   options: { inlineKeyboard?: TelegramInlineKeyboard; messageThreadId?: number; token?: string | null } = {}
 ) => {
-   return callTelegramApi('sendMessage', {
-      chat_id: chatId,
-      text,
-      disable_web_page_preview: true,
-      ...(options.messageThreadId ? { message_thread_id: options.messageThreadId } : {}),
-      ...(options.inlineKeyboard ? { reply_markup: { inline_keyboard: options.inlineKeyboard } } : {})
-   });
+   return callTelegramApi(
+      'sendMessage',
+      {
+         chat_id: chatId,
+         text,
+         disable_web_page_preview: true,
+         ...(options.messageThreadId ? { message_thread_id: options.messageThreadId } : {}),
+         ...(options.inlineKeyboard ? { reply_markup: { inline_keyboard: options.inlineKeyboard } } : {})
+      },
+      { token: options.token }
+   );
 };
 
 export type TelegramForumTopic = {
