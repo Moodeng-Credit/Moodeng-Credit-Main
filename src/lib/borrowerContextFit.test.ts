@@ -41,7 +41,7 @@ describe('buildBorrowerContextFit', () => {
       expect(fit.fitLevel).toBe('supportive');
       expect(deltaChip(fit)).toBe('1 day after payday');
       expect(renderText(fit)).toContain(
-         'maya-demo - full-time, paid 10th-15th monthly - is requesting $15 for emergency groceries, due May 16, with recurring family needs.'
+         'maya-demo is full-time, paid 10th-15th monthly and requesting $15 for emergency groceries due May 16 with family needs as the recurring need.'
       );
       expect(renderExplanationText(fit)).toContain('As a full-time employee paid 10th-15th monthly');
       expect(renderExplanationText(fit)).toContain('8-day gap');

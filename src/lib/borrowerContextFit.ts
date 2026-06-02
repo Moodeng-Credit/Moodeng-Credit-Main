@@ -208,15 +208,15 @@ const buildBaseSegments = ({
    const segments: BorrowerContextFitSegment[] = [chipSegment(borrowerChipId)];
 
    if (patternChipId) {
-      segments.push(' - ', chipSegment(patternChipId), ' - is requesting ');
+      segments.push(' is ', chipSegment(patternChipId), ' and requesting ');
    } else {
       segments.push(' is requesting ');
    }
 
-   segments.push(chipSegment(requestChipId), ', due ', chipSegment(dueChipId));
+   segments.push(chipSegment(requestChipId), ' due ', chipSegment(dueChipId));
 
    if (primaryGapChipId) {
-      segments.push(', with recurring ', chipSegment(primaryGapChipId));
+      segments.push(' with ', chipSegment(primaryGapChipId), ' as the recurring need');
    }
 
    segments.push('.');
