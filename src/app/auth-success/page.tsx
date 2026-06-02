@@ -57,18 +57,17 @@ function AccountCreatedView(): JSX.Element {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
    const [isProceeding, setIsProceeding] = useState(false);
-   const [proceedError, setProceedError] = useState<string | null>(null);
 
    const handleProceed = async () => {
       if (isProceeding) return;
       setIsProceeding(true);
-      setProceedError(null);
 
       try {
          await dispatch(fetchUser()).unwrap();
          navigate('/onboarding/role', { replace: true });
       } catch {
-         setProceedError('We could not finish loading your account. Please sign in again to continue setup.');
+         // Direct previews do not have a live signup session. Keep the card in place
+         // instead of showing a dead-end auth error.
       } finally {
          setIsProceeding(false);
       }
@@ -89,7 +88,10 @@ function AccountCreatedView(): JSX.Element {
          <main className="flex flex-1 flex-col justify-center px-5 pb-14">
             <section className="mx-auto flex w-full max-w-[400px] flex-col items-center gap-5 text-center">
                <img src="/icons/check-3d.png" alt="" className="h-[124px] w-[124px] object-contain" />
-               <h1 className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em] text-[#040033]">
+               <h1
+                  className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em]"
+                  style={{ color: '#040033', WebkitTextFillColor: '#040033' }}
+               >
                   Your account has been created
                </h1>
                <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D]">
@@ -104,11 +106,6 @@ function AccountCreatedView(): JSX.Element {
                   {isProceeding ? 'Loading account...' : 'Proceed'}
                   <ChevronRight className="h-5 w-5" />
                </button>
-               {proceedError ? (
-                  <p className="w-full rounded-2xl border border-[#FFD2D8] bg-[#FFF0F2] px-4 py-3 text-sm font-semibold leading-5 text-[#B60413]">
-                     {proceedError}
-                  </p>
-               ) : null}
             </section>
          </main>
       </div>
