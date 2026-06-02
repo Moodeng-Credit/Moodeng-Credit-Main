@@ -360,9 +360,9 @@ function BorrowerContextLoanStep({
                   <X className="size-4" strokeWidth={2} />
                </button>
                <div className="pr-md-4">
-                  <p className="text-md-b2 font-[590] leading-[20px] text-md-primary-1200">Get funded faster</p>
+                  <p className="text-md-b2 font-[590] leading-[20px] text-md-primary-1200">Add borrower background</p>
                   <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                     Borrowers with a recognisable name and photo get funded more often. Takes 30 seconds.
+                     A friendly name and profile image help lenders understand the person behind the request. Takes 30 seconds.
                   </p>
                </div>
                <div className="mt-md-2 flex gap-md-1">
@@ -378,7 +378,7 @@ function BorrowerContextLoanStep({
                      disabled
                      type="button"
                   >
-                     Add your photo
+                     Add an image
                   </button>
                </div>
             </section>
@@ -390,11 +390,11 @@ function BorrowerContextLoanStep({
             </div>
             <div className="min-w-0 flex-1">
                <div className="flex items-center gap-md-1">
-                  <p className="text-md-b2 font-[590] leading-[18px] text-md-heading">Your photo</p>
+                  <p className="text-md-b2 font-[590] leading-[18px] text-md-heading">Profile image</p>
                   <TrustBadge label="+15 trust" />
                </div>
                <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                  A real photo helps lenders feel confident funding your request.
+                  Use a photo, avatar, or image that shows your character. It does not need to be formal.
                </p>
             </div>
          </section>
@@ -414,7 +414,7 @@ function BorrowerContextLoanStep({
                value={profileName}
             />
             <span className="flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-               <span>This is what lenders see on every request.</span>
+               <span>This is the name lenders see with your requests.</span>
                <span className="shrink-0">{profileName.length}/30</span>
             </span>
          </label>
@@ -449,7 +449,7 @@ function BorrowerContextLoanStep({
                   canContinue ? 'text-md-neutral-1200' : 'text-md-primary-1200'
                }`}
             >
-               {canContinue ? 'Ready to save this to your lender card.' : 'Fill in all sections to continue.'}
+               {canContinue ? 'Ready to save your background info.' : 'Fill in work, payday, and help sections to continue.'}
             </p>
 
             <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-md-2">
@@ -467,7 +467,7 @@ function BorrowerContextLoanStep({
                   onClick={onContinue}
                   type="button"
                >
-                  {isSubmitting ? 'Submitting...' : 'Save to lender card'}
+                  {isSubmitting ? 'Submitting...' : 'Save background info'}
                </button>
             </div>
          </div>
@@ -1040,7 +1040,7 @@ export default function LoanRequestModal({
                      <div>
                         <h2 className="text-md-h6 font-[590] leading-[24px] text-md-heading">How lenders see you</h2>
                         <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                           This helps lenders understand your situation and fund faster.
+                           Share simple background so lenders can understand your request.
                         </p>
                      </div>
                   ) : (
