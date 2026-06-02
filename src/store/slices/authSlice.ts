@@ -134,6 +134,8 @@ const ensureUserProfileRow = async (
       id: authUser.id,
       username: deriveUsername(authUser, overrides?.username),
       display_name: normalizeProfileText(authUser.user_metadata?.name) ?? null,
+      avatar_url: normalizeProfileText(authUser.user_metadata?.avatar_url) ?? null,
+      avatar_background: normalizeProfileText(authUser.user_metadata?.avatar_background) ?? null,
       email,
       is_world_id: normalizeWorldIdStatus(overrides?.isWorldId ?? authUser.user_metadata?.is_world_id),
       ...getTelegramProfileUpdates(authUser.user_metadata as TelegramAuthData | undefined)
@@ -152,8 +154,8 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    id: row.id,
    username: row.username,
    email: row.email,
-   avatarUrl,
-   avatarBackground,
+   avatarUrl: avatarUrl ?? row.avatar_url ?? undefined,
+   avatarBackground: avatarBackground ?? row.avatar_background ?? undefined,
    displayName: displayName ?? row.display_name ?? undefined,
    googleId: row.google_id ?? undefined,
    walletAddress: row.wallet_address ?? undefined,
@@ -196,8 +198,10 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
    // avatar_background = soft color shown behind transparent/background-removed avatars
    // picture    = Google OAuth profile photo
    // photo_url  = Telegram profile photo (written by edge function on sign-in)
-   const avatarUrl = (user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? user.user_metadata?.photo_url) as string | undefined;
-   const avatarBackground = user.user_metadata?.avatar_background as string | undefined;
+   const uploadedAvatarUrl = normalizeProfileText(user.user_metadata?.avatar_url);
+   const providerAvatarUrl = normalizeProfileText(user.user_metadata?.picture) ?? normalizeProfileText(user.user_metadata?.photo_url);
+   const avatarUrl = uploadedAvatarUrl ?? providerAvatarUrl;
+   const avatarBackground = normalizeProfileText(user.user_metadata?.avatar_background);
    const displayName = normalizeProfileText(user.user_metadata?.name);
 
    if (!profile) {
@@ -205,10 +209,15 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
       return mapSupabaseRowToUser(ensuredProfile, avatarUrl, displayName, avatarBackground);
    }
 
-   if (displayName && profile.display_name !== displayName) {
+   const profileSyncUpdates: Database['public']['Tables']['users']['Update'] = {};
+   if (displayName && profile.display_name !== displayName) profileSyncUpdates.display_name = displayName;
+   if (uploadedAvatarUrl && profile.avatar_url !== uploadedAvatarUrl) profileSyncUpdates.avatar_url = uploadedAvatarUrl;
+   if (avatarBackground && profile.avatar_background !== avatarBackground) profileSyncUpdates.avatar_background = avatarBackground;
+
+   if (Object.keys(profileSyncUpdates).length > 0) {
       const { data: syncedProfile, error: syncError } = await supabase
          .from('users')
-         .update({ display_name: displayName })
+         .update(profileSyncUpdates)
          .eq('id', user.id)
          .select('*')
          .single();
@@ -529,6 +538,8 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
    const updates: Database['public']['Tables']['users']['Update'] = {};
    if (userData.username) updates.username = userData.username;
    if (userData.displayName !== undefined) updates.display_name = userData.displayName;
+   if (userData.avatarUrl !== undefined) updates.avatar_url = userData.avatarUrl;
+   if (userData.avatarBackground !== undefined) updates.avatar_background = userData.avatarBackground;
    if (userData.email) updates.email = userData.email;
    if (userData.walletAddress !== undefined) updates.wallet_address = userData.walletAddress;
    if (userData.walletChainId !== undefined) updates.wallet_chain_id = userData.walletChainId;

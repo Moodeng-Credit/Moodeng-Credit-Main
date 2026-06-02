@@ -32,11 +32,18 @@ import {
    X
 } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
+import { useDispatch } from 'react-redux';
 
+import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
+import type { BorrowerContextState } from '@/lib/borrowerContextFit';
+import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { updateUser } from '@/store/slices/authSlice';
+import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
+import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 
 import { termsTooltipIconSrc } from './termsTooltipIcon';
 
@@ -55,7 +62,7 @@ interface LoanRequestModalProps {
    days: string;
    today: string;
    handleDays: (e: ChangeEvent<HTMLInputElement>) => void;
-   handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
+   handleSubmit: (e: FormEvent<HTMLFormElement>, borrowerContext?: BorrowerContextState) => void;
    onReferralApplied?: (referral: AppliedReferralCode | null) => void;
    onReferralRedeemed?: () => Promise<void>;
    isSubmitting: boolean;
@@ -72,12 +79,6 @@ export type AppliedReferralCode = {
 };
 
 type DismissGestureMode = 'down' | 'side' | 'referral';
-
-type BorrowerContextState = {
-   incomeSetup: string;
-   paydayWindow: string;
-   cashGaps: string[];
-};
 
 type BorrowerContextOption = {
    description?: string;
@@ -156,6 +157,14 @@ const tooltipCopy: Record<TooltipId, string> = {
    limit: 'Your current maximum borrow amount. Repaying loans on time can help increase this limit.',
    usdc: 'USDC is digital dollars accepted by major exchanges, making borrowing and lending easier across countries.'
 };
+
+const isIgnorableMilestoneError = (error: { code?: string; message?: string }) =>
+   error.code === 'PGRST202' ||
+   error.code === 'P0002' ||
+   error.code === '23514' ||
+   error.message?.includes('record_milestone_completion') ||
+   error.message?.includes('Milestone not found') ||
+   error.message?.includes('Milestone criteria not met');
 
 const parseIsoDate = (value: string) => {
    if (!value) return undefined;
@@ -321,64 +330,80 @@ const UsdcIcon = () => (
 
 function BorrowerContextLoanStep({
    context,
+   currentAvatarBackground,
+   currentAvatarUrl,
    isSubmitting,
+   isSavingProfile,
    onBack,
    onCashGapToggle,
    onContinue,
    onIncomeSelect,
    onPaydaySelect,
-   username
+   onProfileImageClick,
+   onProfileNameChange,
+   profileName,
+   profileSaveError
 }: {
    context: BorrowerContextState;
+   currentAvatarBackground?: string | null;
+   currentAvatarUrl?: string | null;
    isSubmitting: boolean;
+   isSavingProfile: boolean;
    onBack: () => void;
    onCashGapToggle: (value: string) => void;
    onContinue: () => void;
    onIncomeSelect: (value: string) => void;
    onPaydaySelect: (value: string) => void;
-   username: string;
+   onProfileImageClick: () => void;
+   onProfileNameChange: (value: string) => void;
+   profileName: string;
+   profileSaveError: string;
 }) {
-   const [profileName, setProfileName] = useState(username || '');
    const canContinue = Boolean(context.incomeSetup && context.paydayWindow && context.cashGaps.length > 0);
-
-   useEffect(() => {
-      setProfileName(username || '');
-   }, [username]);
+   const isBusy = isSubmitting || isSavingProfile;
 
    return (
       <div className="flex min-h-0 flex-col gap-md-3">
-         <section className="rounded-md-md border border-md-primary-500 bg-[#f3e8ff] px-md-2 py-md-2">
+         <section className="rounded-md-input border border-md-primary-300 bg-md-primary-100 px-md-2 py-md-2">
             <div>
-               <p className="text-md-b2 font-[590] leading-[20px] text-md-primary-1200">Borrower background</p>
-               <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                  Add a friendly name and optional image so lenders can understand the request without private details.
+	               <p className="text-md-b2 font-[590] text-md-heading">Borrower bio</p>
+	               <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+	                  Add a friendly name and optional image so lenders can understand the request without private details.
                </p>
             </div>
 
-            <div className="mt-md-2 flex items-center gap-md-2 rounded-md-md bg-md-neutral-100/70 p-md-2">
-               <div className="flex size-12 shrink-0 items-center justify-center rounded-md-pill border-2 border-dashed border-md-primary-900 bg-md-primary-100 text-md-primary-1200">
-                  <Users className="size-5" strokeWidth={2} />
-               </div>
+            <button
+               className="mt-md-2 flex w-full items-center gap-md-2 rounded-md-md bg-md-neutral-100/70 p-md-2 text-left transition hover:bg-md-neutral-100 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1"
+               onClick={onProfileImageClick}
+               type="button"
+            >
+               <UserAvatar
+                  alt="Profile image"
+                  backgroundColor={currentAvatarBackground ?? undefined}
+                  clickable={false}
+                  size={48}
+                  src={currentAvatarUrl || PLACEHOLDER_AVATAR}
+               />
                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-md-1">
-                     <p className="text-md-b2 font-[590] leading-[18px] text-md-heading">Profile image</p>
-                     <TrustBadge label="+15 trust" />
+                     <p className="text-md-b2 font-[590] text-md-heading">Profile image</p>
+                     <TrustBadge label="+15 Trust Points" />
                   </div>
                   <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
                      Use a photo, avatar, or anything that shows your character.
                   </p>
                </div>
-            </div>
+            </button>
 
             <label className="mt-md-2 flex flex-col gap-md-1">
-               <span className="flex items-center gap-md-1 text-md-b2 font-[590] leading-[18px] text-md-heading">
+               <span className="flex items-center gap-md-1 text-md-b2 font-[590] text-md-heading">
                   Your name
-                  <TrustBadge label="+10 trust" />
+                  <TrustBadge label="+10 Trust Points" />
                </span>
                <input
-                  className="min-h-[44px] rounded-md-sm border border-[#54504b] bg-[#2f2f2b] px-md-2 text-md-b1 font-[590] text-md-neutral-100 placeholder:text-[#8b7b99] focus:outline-none focus:ring-2 focus:ring-md-primary-900"
+                  className="min-h-[48px] rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b1 font-normal text-md-heading shadow-md-card placeholder:text-md-neutral-1200 focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
                   maxLength={30}
-                  onChange={(event) => setProfileName(event.target.value)}
+                  onChange={(event) => onProfileNameChange(event.target.value)}
                   placeholder="e.g. Maya, Jay, or a friendly nickname"
                   type="text"
                   value={profileName}
@@ -387,8 +412,16 @@ function BorrowerContextLoanStep({
                   <span>This is the name lenders see with your requests.</span>
                   <span className="shrink-0">{profileName.length}/30</span>
                </span>
+               {profileSaveError ? <span className="text-md-b3 font-medium leading-[18px] text-md-red-500">{profileSaveError}</span> : null}
             </label>
          </section>
+
+         {!canContinue ? (
+            <div className="flex flex-wrap items-center gap-md-1 text-md-b3 font-medium leading-[18px] text-md-primary-1200">
+               <span>Fill in work, payday, and help sections to continue.</span>
+               <TrustBadge label="+10 Trust Points" />
+            </div>
+         ) : null}
 
          <BorrowerContextRadioSection
             label="How would you describe your work?"
@@ -414,15 +447,7 @@ function BorrowerContextLoanStep({
             selectedValues={context.cashGaps}
          />
 
-         <div className="flex flex-col gap-md-2">
-            <p
-               className={`text-center text-md-b3 font-medium leading-[18px] ${
-                  canContinue ? 'text-md-neutral-1200' : 'text-md-primary-1200'
-               }`}
-            >
-               {canContinue ? 'Ready to save your background info.' : 'Fill in work, payday, and help sections to continue.'}
-            </p>
-
+         <div>
             <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-md-2">
                <button
                   className="inline-flex min-h-[48px] items-center justify-center gap-md-1 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 text-md-b1 font-medium text-md-heading shadow-md-card transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
@@ -434,11 +459,11 @@ function BorrowerContextLoanStep({
                </button>
                <button
                   className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                  disabled={!canContinue || isSubmitting}
+                  disabled={!canContinue || isBusy}
                   onClick={onContinue}
                   type="button"
                >
-                  {isSubmitting ? 'Submitting...' : 'Save background info'}
+	                  {isSavingProfile ? 'Saving profile...' : isSubmitting ? 'Submitting...' : 'Save bio info'}
                </button>
             </div>
          </div>
@@ -447,11 +472,7 @@ function BorrowerContextLoanStep({
 }
 
 function TrustBadge({ label }: { label: string }) {
-   return (
-      <span className="rounded-md-pill bg-md-primary-1200 px-[6px] py-[2px] text-[10px] font-[590] leading-none text-md-neutral-100">
-         {label}
-      </span>
-   );
+   return <span className="rounded-md-pill bg-md-primary-1200 px-[6px] py-[2px] text-md-b4 font-[590] text-md-neutral-100">{label}</span>;
 }
 
 function BorrowerContextRadioSection({
@@ -467,7 +488,7 @@ function BorrowerContextRadioSection({
 }) {
    return (
       <fieldset className="flex flex-col gap-md-1">
-         <legend className="text-md-b2 font-[590] leading-[18px] text-md-heading">{label}</legend>
+         <legend className="text-md-b2 font-[590] text-md-heading">{label}</legend>
          <div className="flex flex-col gap-md-1">
             {options.map((option) => (
                <BorrowerContextRadioCard
@@ -503,11 +524,9 @@ function BorrowerContextRadioCard({
          type="button"
       >
          <span className="min-w-0">
-            <span className={`block text-md-b2 font-[590] leading-[18px] ${isSelected ? 'text-md-primary-1200' : 'text-md-heading'}`}>
-               {option.label}
-            </span>
+            <span className={`block text-md-b2 font-[590] ${isSelected ? 'text-md-primary-1200' : 'text-md-heading'}`}>{option.label}</span>
             {option.description ? (
-               <span className="mt-[2px] block text-md-b3 font-normal leading-[17px] text-md-neutral-1200">{option.description}</span>
+               <span className="mt-[2px] block text-md-b3 font-normal text-md-neutral-1200">{option.description}</span>
             ) : null}
          </span>
          <span
@@ -541,11 +560,10 @@ function BorrowerContextChipSection({
    return (
       <fieldset className="flex flex-col gap-md-1 border-t border-md-neutral-400 pt-md-2">
          <legend className="sr-only">{label}</legend>
-         <div className="flex items-start justify-between gap-md-2">
-            <span className="text-md-b2 font-[590] leading-[18px] text-md-heading">{label}</span>
-            {caption ? (
-               <span className="max-w-[84px] text-right text-md-b3 font-normal leading-[16px] text-md-neutral-1200">{caption}</span>
-            ) : null}
+         <div className="flex flex-col gap-[2px]">
+            <span className="text-md-b2 font-[590] text-md-heading">{label}</span>
+            {caption ? <span className="text-md-b3 font-normal text-md-neutral-1200">{caption}</span> : null}
+            {helper ? <span className="text-md-b3 font-normal text-md-neutral-1200">{helper}</span> : null}
          </div>
          <div className="flex flex-wrap gap-md-1">
             {options.map((option) => (
@@ -558,7 +576,6 @@ function BorrowerContextChipSection({
                />
             ))}
          </div>
-         {helper ? <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">{helper}</p> : null}
       </fieldset>
    );
 }
@@ -615,6 +632,7 @@ export default function LoanRequestModal({
    startOnBorrowerContextStep = false,
    startOnReferralStep = true
 }: LoanRequestModalProps) {
+   const dispatch = useDispatch<AppDispatch>();
    const formRef = useRef<HTMLFormElement | null>(null);
    const dateInputRef = useRef<HTMLInputElement | null>(null);
    const reasonTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -631,6 +649,11 @@ export default function LoanRequestModal({
    const [showBorrowerContextStep, setShowBorrowerContextStep] = useState(startOnBorrowerContextStep);
    const [borrowerContext, setBorrowerContext] = useState<BorrowerContextState>(emptyBorrowerContext);
    const [borrowerContextPromptSeen, setBorrowerContextPromptSeen] = useState(false);
+   const [borrowerProfileName, setBorrowerProfileName] = useState(user.displayName ?? user.username ?? '');
+   const [borrowerProfileError, setBorrowerProfileError] = useState('');
+   const [showBorrowerAvatarModal, setShowBorrowerAvatarModal] = useState(false);
+   const [isSavingBorrowerProfile, setIsSavingBorrowerProfile] = useState(false);
+   const [isSavingBorrowerAvatar, setIsSavingBorrowerAvatar] = useState(false);
 
    const isVerified = !showVerify;
    const limitAmount = Math.max(availableCreditLimit, 0);
@@ -657,6 +680,8 @@ export default function LoanRequestModal({
    const canContinueBorrowerContext = Boolean(
       borrowerContext.incomeSetup && borrowerContext.paydayWindow && borrowerContext.cashGaps.length > 0
    );
+   const currentBorrowerDisplayName = user.displayName ?? user.username ?? '';
+   const isPreviewUser = user.email.endsWith('@moodeng.local') || user.id.includes('preview');
 
    useEffect(() => {
       setTypedDate(selectedDateLabel);
@@ -674,12 +699,24 @@ export default function LoanRequestModal({
       setShowBorrowerContextStep(startOnBorrowerContextStep);
       setBorrowerContext(emptyBorrowerContext);
       setBorrowerContextPromptSeen(false);
+      setBorrowerProfileName(user.displayName ?? user.username ?? '');
+      setBorrowerProfileError('');
+      setShowBorrowerAvatarModal(false);
       setReferralCode('');
       setAppliedReferral(null);
       setReferralCodeError('');
       setIsApplyingReferralCode(false);
       onReferralApplied?.(null);
-   }, [canUseReferralBoost, isOpen, isVerified, onReferralApplied, startOnBorrowerContextStep, startOnReferralStep]);
+   }, [
+      canUseReferralBoost,
+      isOpen,
+      isVerified,
+      onReferralApplied,
+      startOnBorrowerContextStep,
+      startOnReferralStep,
+      user.displayName,
+      user.username
+   ]);
 
    useEffect(() => {
       if (!isOpen || shouldShowReferralStep) return;
@@ -881,11 +918,73 @@ export default function LoanRequestModal({
       await applyReferralCode();
    };
 
-   const saveBorrowerContextDraft = () => {
+   const recordBorrowerProfileMilestone = async (milestoneId: 'profile-name-added' | 'profile-image-added') => {
+      if (isPreviewUser || !user.id) return;
+
       try {
-         window.localStorage.setItem('moodeng-borrower-context-draft', JSON.stringify(borrowerContext));
-      } catch {
-         // Local storage is only a temporary handoff until this is wired to the account record.
+         const supabase = getSupabaseBrowserClient();
+         const { error } = await supabase.rpc('record_milestone_completion', {
+            user_id_input: user.id,
+            milestone_id_input: milestoneId,
+            metadata_input: {
+               source: 'loan_request_profile_step'
+            }
+         });
+
+         if (error && !isIgnorableMilestoneError(error)) {
+            console.error(`Failed to record ${milestoneId} milestone:`, error.message);
+         }
+      } catch (error) {
+         console.error(`Failed to record ${milestoneId} milestone:`, error);
+      }
+   };
+
+   const saveBorrowerProfile = async () => {
+      const trimmedProfileName = borrowerProfileName.trim();
+      if (!trimmedProfileName || isPreviewUser) return true;
+      if (trimmedProfileName === currentBorrowerDisplayName) {
+         await recordBorrowerProfileMilestone('profile-name-added');
+         return true;
+      }
+
+      setIsSavingBorrowerProfile(true);
+      setBorrowerProfileError('');
+      try {
+         const result = await dispatch(updateUser({ displayName: trimmedProfileName }));
+         if (updateUser.fulfilled.match(result)) {
+            await recordBorrowerProfileMilestone('profile-name-added');
+            return true;
+         }
+
+         throw new Error(result.error?.message || 'Failed to save profile name.');
+      } catch (error) {
+         setBorrowerProfileError(error instanceof Error ? error.message : 'Failed to save profile name.');
+         return false;
+      } finally {
+         setIsSavingBorrowerProfile(false);
+      }
+   };
+
+   const handleBorrowerAvatarSave = async (file: File, avatarBackground: string) => {
+      setIsSavingBorrowerAvatar(true);
+      setBorrowerProfileError('');
+      try {
+         if (isPreviewUser) {
+            setShowBorrowerAvatarModal(false);
+            return;
+         }
+
+         const avatarUrl = await uploadAvatarForCurrentUser(file);
+         const result = await dispatch(updateUser({ avatarUrl, avatarBackground }));
+         if (updateUser.fulfilled.match(result)) {
+            await recordBorrowerProfileMilestone('profile-image-added');
+            setShowBorrowerAvatarModal(false);
+            return;
+         }
+
+         throw new Error(result.error?.message || 'Failed to update profile image.');
+      } finally {
+         setIsSavingBorrowerAvatar(false);
       }
    };
 
@@ -901,13 +1000,14 @@ export default function LoanRequestModal({
          return;
       }
 
-      if (showBorrowerContextStep) saveBorrowerContextDraft();
-
-      handleSubmit(event);
+      handleSubmit(event, showBorrowerContextStep ? borrowerContext : undefined);
    };
 
-   const handleBorrowerContextContinue = () => {
+   const handleBorrowerContextContinue = async () => {
       if (!canContinueBorrowerContext) return;
+
+      const isProfileSaved = await saveBorrowerProfile();
+      if (!isProfileSaved) return;
 
       setBorrowerContextPromptSeen(true);
       formRef.current?.requestSubmit();
@@ -1011,7 +1111,7 @@ export default function LoanRequestModal({
                      <div>
                         <h2 className="text-md-h6 font-[590] leading-[24px] text-md-heading">How lenders see you</h2>
                         <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                           Share simple background so lenders can understand your request.
+	                           Share simple bio details so lenders can understand your request.
                         </p>
                      </div>
                   ) : (
@@ -1137,13 +1237,22 @@ export default function LoanRequestModal({
                   {showBorrowerContextStep ? (
                      <BorrowerContextLoanStep
                         context={borrowerContext}
+                        currentAvatarBackground={user.avatarBackground}
+                        currentAvatarUrl={user.avatarUrl}
                         isSubmitting={isSubmitting}
+                        isSavingProfile={isSavingBorrowerProfile}
                         onBack={handleBorrowerContextBack}
                         onCashGapToggle={handleCashGapToggle}
                         onContinue={handleBorrowerContextContinue}
                         onIncomeSelect={(value) => setBorrowerContext((current) => ({ ...current, incomeSetup: value }))}
                         onPaydaySelect={(value) => setBorrowerContext((current) => ({ ...current, paydayWindow: value }))}
-                        username={user.username}
+                        onProfileImageClick={() => setShowBorrowerAvatarModal(true)}
+                        onProfileNameChange={(value) => {
+                           setBorrowerProfileName(value);
+                           setBorrowerProfileError('');
+                        }}
+                        profileName={borrowerProfileName}
+                        profileSaveError={borrowerProfileError}
                      />
                   ) : (
                      <>
@@ -1397,6 +1506,14 @@ export default function LoanRequestModal({
                </div>
             </div>
          ) : null}
+         <AvatarUploadModal
+            currentAvatar={user.avatarUrl}
+            currentAvatarBackground={user.avatarBackground}
+            isOpen={showBorrowerAvatarModal}
+            isSaving={isSavingBorrowerAvatar}
+            onClose={() => setShowBorrowerAvatarModal(false)}
+            onSave={handleBorrowerAvatarSave}
+         />
       </div>
    );
 }

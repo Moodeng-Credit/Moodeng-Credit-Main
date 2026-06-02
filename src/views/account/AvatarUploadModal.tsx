@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 
 import { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
+
 import { AVATAR_BACKGROUNDS, DEFAULT_AVATAR_BACKGROUND } from '@/config/avatarBackgrounds';
 import { detectVisibleAvatarBackgroundArea, imageHasVisibleAvatarBackgroundArea } from '@/lib/avatarBackgroundVisibility';
 import { updateUser } from '@/store/slices/authSlice';
@@ -12,7 +13,7 @@ import type { AppDispatch } from '@/store/store';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PREVIEW_SIZE = 240; // px — circular preview shown in the modal
-const OUTPUT_SIZE = 512;  // px — square canvas used for the PNG export
+const OUTPUT_SIZE = 512; // px — square canvas used for the PNG export
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -46,7 +47,7 @@ export default function AvatarUploadModal({
    currentAvatar,
    currentAvatarBackground,
    onClose,
-   onSave,
+   onSave
 }: AvatarUploadModalProps) {
    const dispatch = useDispatch<AppDispatch>();
    const [step, setStep] = useState<Step>('select');
@@ -72,10 +73,7 @@ export default function AvatarUploadModal({
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      const baseScale = Math.max(
-         PREVIEW_SIZE / imgEl.naturalWidth,
-         PREVIEW_SIZE / imgEl.naturalHeight,
-      );
+      const baseScale = Math.max(PREVIEW_SIZE / imgEl.naturalWidth, PREVIEW_SIZE / imgEl.naturalHeight);
       const totalScale = baseScale * scale;
 
       ctx.save();
@@ -203,21 +201,18 @@ export default function AvatarUploadModal({
       const drawY = OUTPUT_SIZE / 2 - (imgEl.naturalHeight / 2 - offset.y) * totalScale;
       ctx.drawImage(imgEl, drawX, drawY, imgEl.naturalWidth * totalScale, imgEl.naturalHeight * totalScale);
 
-      canvas.toBlob(
-         async (blob) => {
-            if (!blob) {
-               setError('Failed to process the image. Please try again.');
-               return;
-            }
-            try {
-               await onSave(new File([blob], 'avatar.png', { type: 'image/png' }), avatarBackground);
-               reset();
-            } catch (err) {
-               setError(err instanceof Error ? err.message : 'Failed to save avatar.');
-            }
-         },
-         'image/png',
-      );
+      canvas.toBlob(async (blob) => {
+         if (!blob) {
+            setError('Failed to process the image. Please try again.');
+            return;
+         }
+         try {
+            await onSave(new File([blob], 'avatar.png', { type: 'image/png' }), avatarBackground);
+            reset();
+         } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to save avatar.');
+         }
+      }, 'image/png');
    };
 
    const handleSaveBackground = async () => {
@@ -244,19 +239,14 @@ export default function AvatarUploadModal({
    if (!isOpen) return null;
 
    return (
-      <div
-         className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-5"
-         onClick={handleClose}
-      >
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-5" onClick={handleClose}>
          <div
             className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-3 items-center"
             onClick={(e) => e.stopPropagation()}
          >
             {/* ── Header ── */}
             <div className="flex items-center justify-between w-full">
-               <h2 className="text-md-h4 font-semibold text-md-heading">
-                  {step === 'select' ? 'Change Profile Photo' : 'Crop Photo'}
-               </h2>
+               <h2 className="text-md-h4 font-semibold text-md-heading">{step === 'select' ? 'Change Profile Photo' : 'Crop Photo'}</h2>
                <button
                   type="button"
                   onClick={handleClose}
@@ -289,7 +279,9 @@ export default function AvatarUploadModal({
                                     type="button"
                                     onClick={() => setAvatarBackground(option.value)}
                                     className={`flex aspect-square items-center justify-center rounded-full border bg-white transition ${
-                                       isSelected ? 'border-md-primary-900 shadow-[0_0_0_3px_rgba(131,54,240,0.16)]' : 'border-md-neutral-400'
+                                       isSelected
+                                          ? 'border-md-primary-900 shadow-[0_0_0_3px_rgba(131,54,240,0.16)]'
+                                          : 'border-md-neutral-400'
                                     }`}
                                     aria-label={`${option.name} avatar background`}
                                     aria-pressed={isSelected}
@@ -301,7 +293,9 @@ export default function AvatarUploadModal({
                                        {isSelected ? (
                                           <span
                                              className={`h-3 w-3 rounded-full ${
-                                                option.value === DEFAULT_AVATAR_BACKGROUND || option.name === 'Night' ? 'bg-white' : 'bg-md-primary-1200'
+                                                option.value === DEFAULT_AVATAR_BACKGROUND || option.name === 'Night'
+                                                   ? 'bg-white'
+                                                   : 'bg-md-primary-1200'
                                              }`}
                                              aria-hidden="true"
                                           />
@@ -313,7 +307,9 @@ export default function AvatarUploadModal({
                         </div>
                         <button
                            type="button"
-                           disabled={isSaving || isSavingBackground || avatarBackground === (currentAvatarBackground ?? DEFAULT_AVATAR_BACKGROUND)}
+                           disabled={
+                              isSaving || isSavingBackground || avatarBackground === (currentAvatarBackground ?? DEFAULT_AVATAR_BACKGROUND)
+                           }
                            onClick={handleSaveBackground}
                            className="mt-3 w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-50"
                         >
@@ -332,8 +328,7 @@ export default function AvatarUploadModal({
                      }}
                   >
                      <p className="text-md-b1 text-md-neutral-1200 text-center">
-                        <span className="text-md-primary-900 font-semibold">Click to upload</span>
-                        {' '}or drag and drop
+                        <span className="text-md-primary-900 font-semibold">Click to upload</span> or drag and drop
                      </p>
                      <p className="text-md-b3 text-md-neutral-800">PNG, JPG, WEBP · up to 5 MB</p>
                      <input
@@ -348,9 +343,7 @@ export default function AvatarUploadModal({
                      />
                   </label>
 
-                  {error ? (
-                     <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p>
-                  ) : null}
+                  {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
 
                   <button
                      type="button"
@@ -393,9 +386,7 @@ export default function AvatarUploadModal({
                      <span className="text-md-b3 text-md-neutral-800 select-none w-4 text-center">+</span>
                   </div>
 
-                  <p className="text-md-b3 text-md-neutral-800 text-center">
-                     Drag to reposition · use the slider to zoom
-                  </p>
+                  <p className="text-md-b3 text-md-neutral-800 text-center">Drag to reposition · use the slider to zoom</p>
 
                   {uploadedAvatarSupportsBackground ? (
                      <div className="w-full rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 p-3">
@@ -409,7 +400,9 @@ export default function AvatarUploadModal({
                                     type="button"
                                     onClick={() => setAvatarBackground(option.value)}
                                     className={`flex aspect-square items-center justify-center rounded-full border bg-white transition ${
-                                       isSelected ? 'border-md-primary-900 shadow-[0_0_0_3px_rgba(131,54,240,0.16)]' : 'border-md-neutral-400'
+                                       isSelected
+                                          ? 'border-md-primary-900 shadow-[0_0_0_3px_rgba(131,54,240,0.16)]'
+                                          : 'border-md-neutral-400'
                                     }`}
                                     aria-label={`${option.name} avatar background`}
                                     aria-pressed={isSelected}
@@ -421,7 +414,9 @@ export default function AvatarUploadModal({
                                        {isSelected ? (
                                           <span
                                              className={`h-3 w-3 rounded-full ${
-                                                option.value === DEFAULT_AVATAR_BACKGROUND || option.name === 'Night' ? 'bg-white' : 'bg-md-primary-1200'
+                                                option.value === DEFAULT_AVATAR_BACKGROUND || option.name === 'Night'
+                                                   ? 'bg-white'
+                                                   : 'bg-md-primary-1200'
                                              }`}
                                              aria-hidden="true"
                                           />
@@ -434,9 +429,7 @@ export default function AvatarUploadModal({
                      </div>
                   ) : null}
 
-                  {error ? (
-                     <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p>
-                  ) : null}
+                  {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
 
                   <button
                      type="button"

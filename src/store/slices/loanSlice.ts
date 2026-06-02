@@ -4,11 +4,12 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 
+import { isBorrowerContextState } from '@/lib/borrowerContextFit';
 import { isExpiredUnfundedRequest } from '@/lib/borrowerCreditUsage';
 import { evaluateCreditProgression } from '@/lib/creditLeveling';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import type { Database } from '@/lib/supabase/types';
+import type { Database, Json } from '@/lib/supabase/types';
 import { computeYearOneIouPointsDelta, getYearOneIouBorrowerBonusPoints, loanFundingPointsPerUsdc } from '@/shared/points';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { RootState } from '@/store/store';
@@ -25,8 +26,39 @@ export type LoanSideEffectError = {
    message: string;
 };
 
+const isIgnorableMilestoneError = (error: { code?: string; message?: string }) =>
+   error.code === 'PGRST202' ||
+   error.code === 'P0002' ||
+   error.code === '23514' ||
+   error.message?.includes('record_milestone_completion') ||
+   error.message?.includes('Milestone not found') ||
+   error.message?.includes('Milestone criteria not met');
+
+const recordBorrowerBackgroundMilestone = async (
+   supabase: ReturnType<typeof supabaseClient>,
+   borrowerUserId: string | null | undefined,
+   loanId: string,
+   borrowerContext: unknown
+) => {
+   if (!borrowerUserId || !isBorrowerContextState(borrowerContext)) return;
+
+   const { error } = await supabase.rpc('record_milestone_completion', {
+      user_id_input: borrowerUserId,
+      milestone_id_input: 'borrower-background-complete',
+      metadata_input: {
+         loan_id: loanId,
+         source: 'loan_request',
+         borrower_context: borrowerContext as Json
+      }
+   });
+
+   if (error && !isIgnorableMilestoneError(error)) {
+      console.error('Failed to record borrower background milestone:', error.message);
+   }
+};
+
 // Helper function to map Supabase loan row to frontend Loan type
-const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
+export const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    id: row.id,
    trackingId: row.tracking_id,
    borrowerWallet: row.borrower_wallet ?? undefined,
@@ -47,7 +79,8 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    fundedAt: row.funded_at ?? undefined,
    referralCodeId: row.referral_code_id ?? undefined,
    referralCode: row.referral_code ?? undefined,
-   referralBoostAmount: row.referral_boost_amount ?? undefined
+   referralBoostAmount: row.referral_boost_amount ?? undefined,
+   borrowerContext: isBorrowerContextState(row.borrower_context) ? row.borrower_context : undefined
 });
 
 const initialState: LoanState = {
@@ -106,6 +139,7 @@ export const createLoan = createAsyncThunk('loans/create', async (loanData: Crea
       referral_code_id: loanData.referralCodeId || null,
       referral_code: loanData.referralCode || null,
       referral_boost_amount: loanData.referralBoostAmount ?? null,
+      borrower_context: loanData.borrowerContext ? (loanData.borrowerContext as Json) : null,
       coin: 'USDC' // Only USDC transfers supported
    };
 
@@ -118,6 +152,8 @@ export const createLoan = createAsyncThunk('loans/create', async (loanData: Crea
    if (!data) {
       throw new Error('Failed to create loan');
    }
+
+   await recordBorrowerBackgroundMilestone(supabase, loanData.borrowerUserId, data.id, loanData.borrowerContext);
 
    return mapSupabaseLoanToLoan(data);
 });

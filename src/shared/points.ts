@@ -120,6 +120,30 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
       example: 'First request posted = +10 Trust Points'
    },
    {
+      id: 'profile-name-added',
+      pointSourceId: '7446f4ae-cc24-4718-8f98-f8ed7fc0afb9',
+      title: 'Add a bio name',
+      points: 10,
+      criteria: 'Borrower has saved a bio display name.',
+      example: 'Display name saved = +10 Trust Points'
+   },
+   {
+      id: 'profile-image-added',
+      pointSourceId: 'eb091789-5c5d-4d54-a927-87d58bea1206',
+      title: 'Add a profile image',
+      points: 15,
+      criteria: 'Borrower has saved a profile image.',
+      example: 'Profile image saved = +15 Trust Points'
+   },
+   {
+      id: 'borrower-background-complete',
+      pointSourceId: '9d3b05b2-4f6d-4ad2-8e60-29f11920f3a4',
+      title: 'Complete borrower bio',
+      points: 10,
+      criteria: 'Borrower has a loan request with saved work, payday, and short-term help context.',
+      example: 'Borrower bio saved with a request = +10 Trust Points'
+   },
+   {
       id: 'first-funded-loan',
       pointSourceId: 'a030a2e0-3955-443a-b2c7-e1ac03f0319f',
       title: 'Get funded by a lender',

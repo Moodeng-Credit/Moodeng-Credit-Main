@@ -4,6 +4,7 @@
  */
 import { z } from 'zod';
 
+import { borrowerCashGapIds, borrowerIncomeSetupIds, borrowerPaydayWindowIds } from '@/lib/borrowerContextFit';
 import {
    loanAmountSchema,
    loanDaysSchema,
@@ -18,13 +19,21 @@ import { LoanStatus, RepaymentStatus } from '@/types/loanTypes';
  * Create loan schema
  * Used for /api/loans/create
  */
+const borrowerContextSchema = z.object({
+   incomeSetup: z.enum(borrowerIncomeSetupIds),
+   paydayWindow: z.enum(borrowerPaydayWindowIds),
+   cashGaps: z.array(z.enum(borrowerCashGapIds)).min(1),
+   note: z.string().optional()
+});
+
 export const createLoanSchema = z.object({
    borrowerUserId: z.string().min(1, { message: 'Borrower user ID is required' }),
    loanAmount: loanAmountSchema,
    totalRepaymentAmount: loanAmountSchema, // Total amount to be repaid (principal + interest) - must be provided
    reason: textFieldSchema(500, 'Reason'),
    days: loanDaysSchema,
-   coin: z.literal('USDC').default('USDC')
+   coin: z.literal('USDC').default('USDC'),
+   borrowerContext: borrowerContextSchema.optional()
 });
 
 export type CreateLoanInput = z.infer<typeof createLoanSchema>;

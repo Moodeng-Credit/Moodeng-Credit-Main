@@ -1,5 +1,6 @@
 // Loan Types for Supabase
 // Amounts are stored as numbers in Supabase
+import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 
 export interface Loan {
    id: string;
@@ -23,6 +24,7 @@ export interface Loan {
    referralCodeId?: string;
    referralCode?: string;
    referralBoostAmount?: number;
+   borrowerContext?: BorrowerContextState;
 }
 
 export interface CreateLoanData {
@@ -36,6 +38,7 @@ export interface CreateLoanData {
    referralCodeId?: string;
    referralCode?: string;
    referralBoostAmount?: number;
+   borrowerContext?: BorrowerContextState;
 }
 
 export interface LoanState {

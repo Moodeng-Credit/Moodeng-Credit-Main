@@ -36,6 +36,7 @@ import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 import { logoImageSrc } from '@/config/navigationConfig';
+import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import { getBorrowerActiveLoanCount, getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
@@ -125,6 +126,24 @@ const PREVIEW_REQUEST_BOARD_BORROWER_USERNAMES: Record<string, string> = {
    'request-board-preview-borrower-ana': 'ana-demo'
 };
 
+const PREVIEW_BORROWER_CONTEXTS: Record<string, BorrowerContextState> = {
+   maya: {
+      incomeSetup: 'full_time',
+      paydayWindow: '10_15',
+      cashGaps: ['family_needs', 'bills_before_payday']
+   },
+   jordan: {
+      incomeSetup: 'self_employed',
+      paydayWindow: '25_30',
+      cashGaps: ['medical']
+   },
+   ana: {
+      incomeSetup: 'irregular',
+      paydayWindow: 'varies',
+      cashGaps: ['gap_before_payday', 'transport']
+   }
+};
+
 const buildPreviewRequestBoardLoan = ({
    id,
    trackingId,
@@ -133,8 +152,10 @@ const buildPreviewRequestBoardLoan = ({
    loanAmount,
    totalRepaymentAmount,
    reason,
-   dueInDays
+   dueInDays,
+   borrowerContext
 }: {
+   borrowerContext?: BorrowerContextState;
    id: string;
    trackingId: string;
    borrowerUser: string;
@@ -163,7 +184,8 @@ const buildPreviewRequestBoardLoan = ({
       coin: 'USDC',
       hash: [],
       createdAt,
-      updatedAt: createdAt
+      updatedAt: createdAt,
+      borrowerContext
    };
 };
 
@@ -176,7 +198,8 @@ const buildPreviewRequestBoardLoans = (): Loan[] => [
       loanAmount: 15,
       totalRepaymentAmount: 17,
       reason: 'Emergency groceries',
-      dueInDays: 7
+      dueInDays: 14,
+      borrowerContext: PREVIEW_BORROWER_CONTEXTS.maya
    }),
    buildPreviewRequestBoardLoan({
       id: 'request-board-preview-loan-2',
@@ -186,7 +209,8 @@ const buildPreviewRequestBoardLoans = (): Loan[] => [
       loanAmount: 25,
       totalRepaymentAmount: 28,
       reason: 'Medicine refill',
-      dueInDays: 14
+      dueInDays: 14,
+      borrowerContext: PREVIEW_BORROWER_CONTEXTS.jordan
    }),
    buildPreviewRequestBoardLoan({
       id: 'request-board-preview-loan-3',
@@ -196,7 +220,8 @@ const buildPreviewRequestBoardLoans = (): Loan[] => [
       loanAmount: 40,
       totalRepaymentAmount: 45,
       reason: 'Payday bridge',
-      dueInDays: 30
+      dueInDays: 30,
+      borrowerContext: PREVIEW_BORROWER_CONTEXTS.ana
    })
 ];
 
@@ -271,11 +296,12 @@ const LENDER_TOUR_LOANS: Loan[] = [
       reason: 'Emergency groceries',
       loanStatus: LoanStatus.REQUESTED,
       repaymentStatus: RepaymentStatus.UNPAID,
-      dueDate: getPreviewRequestDate(7),
+      dueDate: getPreviewRequestDate(14),
       coin: 'USDC',
       hash: [],
       createdAt: getPreviewRequestDate(-1),
-      updatedAt: getPreviewRequestDate(-1)
+      updatedAt: getPreviewRequestDate(-1),
+      borrowerContext: PREVIEW_BORROWER_CONTEXTS.maya
    }
 ];
 
@@ -899,7 +925,7 @@ function RequestBoard$() {
       effectiveUser?.id
    ]);
 
-   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+   const handleSubmit = async (e: FormEvent<HTMLFormElement>, submittedBorrowerContext?: BorrowerContextState) => {
       e.preventDefault();
       if (isSubmitting) return;
 
@@ -962,7 +988,8 @@ function RequestBoard$() {
          dueDate: days,
          referralCodeId: appliedReferral?.id,
          referralCode: appliedReferral?.code,
-         referralBoostAmount: appliedReferral?.boostAmount
+         referralBoostAmount: appliedReferral?.boostAmount,
+         borrowerContext: submittedBorrowerContext
       };
 
       if (

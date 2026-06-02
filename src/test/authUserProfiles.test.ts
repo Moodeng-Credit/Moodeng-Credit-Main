@@ -21,6 +21,8 @@ describe('auth user profiles', () => {
                username: 'borrower-one',
                email: 'borrower@example.com',
                display_name: null,
+               avatar_url: 'https://example.com/avatar.png',
+               avatar_background: '#f3eefb',
                is_world_id: 'ACTIVE',
                nullifier_hash: null,
                google_id: null,
@@ -59,6 +61,8 @@ describe('auth user profiles', () => {
       const profile = store.getState().auth.userProfiles['borrower-1'];
       expect(profile.username).toBe('borrower-one');
       expect(profile.displayName).toBeUndefined();
+      expect(profile.avatarUrl).toBe('https://example.com/avatar.png');
+      expect(profile.avatarBackground).toBe('#f3eefb');
       expect(Array.isArray(profile.displayName)).toBe(false);
    });
 });

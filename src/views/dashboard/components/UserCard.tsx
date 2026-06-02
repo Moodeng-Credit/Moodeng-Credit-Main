@@ -51,14 +51,14 @@ const demoBorrowerContext: BorrowerContextState = {
    cashGaps: ['family_needs', 'bills_before_payday']
 };
 
-const getBorrowerContextForLoan = (loanData: LoanWithBorrowerContext) => {
+const getBorrowerBioForLoan = (loanData: LoanWithBorrowerContext) => {
    if (isBorrowerContextState(loanData.borrowerContext)) return loanData.borrowerContext;
    if (isBorrowerContextState(loanData.borrower_context)) return loanData.borrower_context;
    if (import.meta.env.DEV && loanData.id.startsWith('lender-tour')) return demoBorrowerContext;
    return null;
 };
 
-function BorrowerContextSignal({
+function BorrowerBioCard({
    borrowerName,
    context,
    loanData,
@@ -79,7 +79,7 @@ function BorrowerContextSignal({
    });
 
    return (
-      <section className="rounded-[18px] bg-md-primary-100/70 p-[14px]" aria-label="Timing fit">
+      <section className="rounded-[18px] bg-md-primary-100/70 p-[14px]" aria-label="Borrower bio card">
          <InlineFitSentence fit={fit} />
       </section>
    );
@@ -317,8 +317,8 @@ export default function UserCard(loan: UserCardProps) {
    const isOwnLoan = loanData.borrowerUser === userId;
    const isLent = loanData.loanStatus === 'Lent';
    const canDeleteOwnRequest = Boolean(isAuthenticated && isOwnLoan && loanData.loanStatus === 'Requested' && onDeleteOwnRequest);
-   const borrowerContext = !isBorrower && isAuthenticated ? getBorrowerContextForLoan(loanData) : null;
-   const shouldShowLenderContext = isAuthenticated && !isBorrower && !isOwnLoan && !isLent;
+   const borrowerBioContext = !isBorrower && isAuthenticated ? getBorrowerBioForLoan(loanData) : null;
+   const shouldShowBorrowerBioCard = isAuthenticated && !isBorrower && !isOwnLoan && !isLent;
 
    const handleDeleteOwnRequest = (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
@@ -394,10 +394,10 @@ export default function UserCard(loan: UserCardProps) {
                </div>
             </div>
 
-            {shouldShowLenderContext && borrowerContext ? (
-               <BorrowerContextSignal
+            {shouldShowBorrowerBioCard && borrowerBioContext ? (
+               <BorrowerBioCard
                   borrowerName={borrowerDisplayName}
-                  context={borrowerContext}
+                  context={borrowerBioContext}
                   loanData={loanData}
                   loanReason={loanReason}
                />

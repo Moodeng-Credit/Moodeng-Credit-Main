@@ -2,6 +2,7 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 
 import { isExactCreditTier } from '@/config/creditTiers';
+import { isBorrowerContextState } from '@/lib/borrowerContextFit';
 import { trustPointMilestoneRuleById } from '@/shared/points';
 import type { Loan } from '@/types/loanTypes';
 import type { CreditLevel } from '@/views/profile/components/tabs/types';
@@ -145,6 +146,7 @@ export const buildReputationMilestones = ({
    const currentLevelAmount = currentLevel?.amount ?? nextLevel?.amount;
    const hasActiveLoanToRepay = borrowerLoans.some((loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus !== 'Paid');
    const hasRequestedLoan = borrowerLoans.length > 0;
+   const hasBorrowerBackground = borrowerLoans.some((loan) => isBorrowerContextState(loan.borrowerContext));
    const hasFullLimitRepayment = onTimePaidLoans.some((loan) => isExactCreditTier(toNumber(loan.loanAmount)));
    const uniqueLenders = countUniqueLenders(fundedLoans);
    const totalRepaid = paidLoans.reduce((sum, loan) => sum + toNumber(loan.repaidAmount), 0);
@@ -179,6 +181,19 @@ export const buildReputationMilestones = ({
          benefit: 'Request live',
          isComplete: hasRequestedLoan,
          actionLabel: 'Request a loan',
+         actionTo: '/request-board'
+      },
+      {
+         id: 'borrower-background-complete',
+         pointSourceId: trustPointMilestoneRuleById['borrower-background-complete'].pointSourceId,
+         title: 'Complete borrower bio',
+         description: 'Share work, payday, and short-term help context so lenders understand your request.',
+         points: trustPointMilestoneRuleById['borrower-background-complete'].points,
+         reward: 'Bio visible',
+         outcome: 'Bio added',
+         benefit: 'Clearer bio context',
+         isComplete: hasBorrowerBackground,
+         actionLabel: 'Complete bio',
          actionTo: '/request-board'
       },
       {

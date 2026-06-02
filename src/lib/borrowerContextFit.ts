@@ -1,11 +1,43 @@
-import { differenceInCalendarDays, format, isValid, parseISO } from 'date-fns';
+import { addMonths, differenceInCalendarDays, format, isValid, parseISO } from 'date-fns';
 
 import { formatCurrency } from '@/utils/decimalHelpers';
 
+export const borrowerIncomeSetupIds = [
+   'full_time',
+   'part_time',
+   'contract',
+   'contract_temp',
+   'freelance',
+   'freelance_gig',
+   'none',
+   'no_income',
+   'self_employed',
+   'irregular',
+   'irregular_income'
+] as const;
+
+export const borrowerPaydayWindowIds = ['1_5', '10_15', '15_20', '25_30', 'irregular', 'varies', 'it_varies'] as const;
+
+export const borrowerCashGapIds = [
+   'gap_before_payday',
+   'bills_before_payday',
+   'transport',
+   'work_supplies',
+   'family_needs',
+   'food',
+   'medical',
+   'emergency_costs',
+   'emergency_expense'
+] as const;
+
+export type BorrowerIncomeSetupId = (typeof borrowerIncomeSetupIds)[number];
+export type BorrowerPaydayWindowId = (typeof borrowerPaydayWindowIds)[number];
+export type BorrowerCashGapId = (typeof borrowerCashGapIds)[number];
+
 export type BorrowerContextState = {
-   incomeSetup?: string;
-   paydayWindow?: string;
-   cashGaps?: string[];
+   incomeSetup?: BorrowerIncomeSetupId;
+   paydayWindow?: BorrowerPaydayWindowId;
+   cashGaps?: BorrowerCashGapId[];
    note?: string;
 };
 
@@ -51,7 +83,11 @@ export type BorrowerContextFitInput = {
    requestDate: string;
 };
 
-const incomeContextLabels: Record<string, string> = {
+const knownIncomeSetupIds = new Set<string>(borrowerIncomeSetupIds);
+const knownPaydayWindowIds = new Set<string>(borrowerPaydayWindowIds);
+const knownCashGapIds = new Set<string>(borrowerCashGapIds);
+
+const incomeContextLabels: Record<BorrowerIncomeSetupId, string> = {
    full_time: 'full-time employee',
    part_time: 'part-time worker',
    contract: 'contract worker',
@@ -65,7 +101,7 @@ const incomeContextLabels: Record<string, string> = {
    irregular_income: 'irregular income'
 };
 
-const incomePatternLabels: Record<string, string> = {
+const incomePatternLabels: Partial<Record<BorrowerIncomeSetupId, string>> = {
    full_time: 'full-time',
    part_time: 'part-time',
    contract: 'contract',
@@ -77,7 +113,9 @@ const incomePatternLabels: Record<string, string> = {
    irregular_income: 'irregular'
 };
 
-const paydayContextLabels: Record<string, { label: string; range: string; start?: number; end?: number; variable?: boolean }> = {
+type PaydayWindowDefinition = { label: string; range: string; start?: number; end?: number; variable?: boolean };
+
+const paydayContextLabels: Record<BorrowerPaydayWindowId, PaydayWindowDefinition> = {
    '1_5': { label: 'early month', range: '1st-5th', start: 1, end: 5 },
    '10_15': { label: 'mid-month', range: '10th-15th', start: 10, end: 15 },
    '15_20': { label: 'late month', range: '15th-20th', start: 15, end: 20 },
@@ -87,7 +125,7 @@ const paydayContextLabels: Record<string, { label: string; range: string; start?
    it_varies: { label: 'it varies', range: 'no fixed schedule', variable: true }
 };
 
-const cashGapContextLabels: Record<string, string> = {
+const cashGapContextLabels: Record<BorrowerCashGapId, string> = {
    gap_before_payday: 'gap before payday',
    bills_before_payday: 'bills before payday',
    transport: 'transport costs',
@@ -102,7 +140,17 @@ const cashGapContextLabels: Record<string, string> = {
 export const isBorrowerContextState = (value: unknown): value is BorrowerContextState => {
    if (!value || typeof value !== 'object') return false;
    const context = value as BorrowerContextState;
-   return Boolean(context.incomeSetup || context.paydayWindow || context.cashGaps?.length);
+   return Boolean(
+      typeof context.incomeSetup === 'string' &&
+      context.incomeSetup.trim() &&
+      knownIncomeSetupIds.has(context.incomeSetup) &&
+      typeof context.paydayWindow === 'string' &&
+      context.paydayWindow.trim() &&
+      knownPaydayWindowIds.has(context.paydayWindow) &&
+      Array.isArray(context.cashGaps) &&
+      context.cashGaps.length > 0 &&
+      context.cashGaps.every((gap) => typeof gap === 'string' && knownCashGapIds.has(gap))
+   );
 };
 
 const chip = (id: string, label: string, text: string, variant: BorrowerContextFitChipVariant): BorrowerContextFitChip => ({
@@ -122,6 +170,27 @@ const formatDelta = (days: number, direction: 'after' | 'before') => {
 const formatBridge = (days: number) => `${days}-day gap`;
 
 const formatChipAmount = (amount: number) => formatCurrency(amount).replace(/\.00$/, '');
+
+const startOfCalendarDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+const getMonthLastDay = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+
+const buildPaydayWindowForMonth = (anchorDate: Date, payday: Required<Pick<PaydayWindowDefinition, 'start' | 'end'>>) => {
+   const lastDay = getMonthLastDay(anchorDate);
+   const startDay = Math.min(payday.start, lastDay);
+   const endDay = Math.min(payday.end, lastDay);
+
+   return {
+      startDate: startOfCalendarDay(new Date(anchorDate.getFullYear(), anchorDate.getMonth(), startDay)),
+      endDate: startOfCalendarDay(new Date(anchorDate.getFullYear(), anchorDate.getMonth(), Math.max(startDay, endDay)))
+   };
+};
+
+const getNextPaydayWindow = (fromDate: Date, payday: Required<Pick<PaydayWindowDefinition, 'start' | 'end'>>) => {
+   const currentWindow = buildPaydayWindowForMonth(fromDate, payday);
+   if (startOfCalendarDay(fromDate).getTime() <= currentWindow.endDate.getTime()) return currentWindow;
+   return buildPaydayWindowForMonth(addMonths(fromDate, 1), payday);
+};
 
 const buildBaseSegments = ({
    dueChipId,
@@ -218,7 +287,7 @@ export const buildBorrowerContextFit = ({
    if (!context || (!context.paydayWindow && !gapLabels.length)) {
       return buildResult({
          chips: allChips,
-         explanationSegments: ['Timing context is incomplete. Review repayment history and request reason before funding.'],
+         explanationSegments: ['Bio context is incomplete. Use request reason and repayment history for context.'],
          fitLevel: 'unclear',
          secondaryChips,
          segments: baseSegments,
@@ -242,7 +311,7 @@ export const buildBorrowerContextFit = ({
    if (hasNoIncome) {
       return buildResult({
          chips: allChips,
-         explanationSegments: ['No income source is shared. Review repayment history for more context.'],
+         explanationSegments: ['No income source is included in the bio. Repayment history gives the clearest context.'],
          fitLevel: 'no_income',
          secondaryChips,
          segments: baseSegments,
@@ -254,7 +323,7 @@ export const buildBorrowerContextFit = ({
    if (!payday || payday.variable || !payday.start || !payday.end) {
       return buildResult({
          chips: allChips,
-         explanationSegments: ['Pay timing varies, so repayment history and request reason are the clearest timing signals.'],
+         explanationSegments: ['Pay timing varies, so repayment history and request reason are the clearest bio signals.'],
          fitLevel: 'variable',
          secondaryChips,
          segments: baseSegments,
@@ -278,28 +347,45 @@ export const buildBorrowerContextFit = ({
       });
    }
 
-   const requestDay = openedAt.getDate();
-   const dueDay = dueAt.getDate();
+   const requestDay = startOfCalendarDay(openedAt);
+   const dueDay = startOfCalendarDay(dueAt);
+   const paydayWindowForRequestMonth = buildPaydayWindowForMonth(
+      requestDay,
+      payday as Required<Pick<PaydayWindowDefinition, 'start' | 'end'>>
+   );
+   const nextPaydayWindow = getNextPaydayWindow(requestDay, payday as Required<Pick<PaydayWindowDefinition, 'start' | 'end'>>);
+   const openedAfterPaydayWindow = requestDay.getTime() > paydayWindowForRequestMonth.endDate.getTime();
+   const dueDaysBeforePayday = differenceInCalendarDays(nextPaydayWindow.startDate, dueDay);
+   const dueDaysAfterPayday = differenceInCalendarDays(dueDay, nextPaydayWindow.endDate);
 
-   if (requestDay > payday.end) {
-      const deltaChip = chip('delta', 'Timing', formatDelta(requestDay - payday.end, 'after'), 'delta');
-      return buildResult({
-         chips: [...allChips, deltaChip],
-         explanationSegments: [
-            'This request opened ',
-            chipSegment('delta'),
-            ', which may indicate a gap after income was received. Use repayment history for context.'
-         ],
-         fitLevel: 'after_payday_gap',
-         secondaryChips,
-         segments: baseSegments,
-         showTimingClaim: true,
-         tone: 'neutral'
-      });
-   }
+   if (dueDay.getTime() < nextPaydayWindow.startDate.getTime()) {
+      const deltaChip = chip('delta', 'Timing', formatDelta(dueDaysBeforePayday, 'before'), 'delta');
 
-   if (dueDay < payday.start) {
-      const deltaChip = chip('delta', 'Timing', formatDelta(payday.start - dueDay, 'before'), 'delta');
+      if (openedAfterPaydayWindow) {
+         const openedDeltaChip = chip(
+            'opened-delta',
+            'Opened',
+            formatDelta(differenceInCalendarDays(requestDay, paydayWindowForRequestMonth.endDate), 'after'),
+            'neutral'
+         );
+
+         return buildResult({
+            chips: [...allChips, deltaChip, openedDeltaChip],
+            explanationSegments: [
+               'This request opened ',
+               chipSegment('opened-delta'),
+               ', and repayment is due ',
+               chipSegment('delta'),
+               '. Bio timing gives a less direct signal here, so repayment history is the clearest context.'
+            ],
+            fitLevel: 'after_payday_gap',
+            secondaryChips,
+            segments: baseSegments,
+            showTimingClaim: true,
+            tone: 'neutral'
+         });
+      }
+
       return buildResult({
          chips: [...allChips, deltaChip],
          explanationSegments: [
@@ -315,11 +401,11 @@ export const buildBorrowerContextFit = ({
       });
    }
 
-   if (dueDay >= payday.start && dueDay <= payday.end) {
+   if (dueDay.getTime() >= nextPaydayWindow.startDate.getTime() && dueDay.getTime() <= nextPaydayWindow.endDate.getTime()) {
       const deltaChip = chip('delta', 'Timing', 'inside payday window', 'delta');
       return buildResult({
          chips: [...allChips, deltaChip],
-         explanationSegments: ['Repayment falls ', chipSegment('delta'), ', matching the shared pay timing.'],
+         explanationSegments: ['Repayment falls ', chipSegment('delta'), ', matching the bio timing shared.'],
          fitLevel: 'consistent',
          secondaryChips,
          segments: baseSegments,
@@ -328,29 +414,27 @@ export const buildBorrowerContextFit = ({
       });
    }
 
-   const deltaChip = chip('delta', 'Timing', formatDelta(dueDay - payday.end, 'after'), 'delta');
+   const deltaChip = chip('delta', 'Timing', formatDelta(dueDaysAfterPayday, 'after'), 'delta');
    const bridgeChip = chip('bridge', 'Bridge', formatBridge(Math.max(daysFromRequestToDue, 1)), 'delta');
    const explanationSegments: BorrowerContextFitSegment[] =
-      incomeLabel && payday?.label
+      incomeLabel && payday?.range
          ? [
               'As a ',
               chipSegment('income'),
-              ' usually paid ',
+              ' paid ',
               chipSegment('payday'),
-              ', ',
-              chipSegment('borrower'),
-              ' should have received income before repayment is due. This request bridges a short-term ',
+              ', this request bridges a short-term ',
               chipSegment('bridge'),
               ', with repayment ',
               chipSegment('delta'),
-              ', so the timing fits the stated cash-flow pattern.'
+              ', so the due date follows the bio timing shared.'
            ]
          : [
               'This request bridges a short-term ',
               chipSegment('bridge'),
               ', with repayment ',
               chipSegment('delta'),
-              ', so the timing fits the stated cash-flow pattern.'
+              ', so the due date follows the bio timing shared.'
            ];
 
    return buildResult({

@@ -18,7 +18,7 @@ export interface User {
    id: string;
    username: string;
    email: string;
-   /** Profile picture URL from auth provider metadata (Google, Telegram). Not stored in the DB users table. */
+   /** Profile picture URL. Current-user auth metadata takes priority; public profiles read the users table value. */
    avatarUrl?: string;
    /** Soft frame color used behind transparent/background-removed avatars. */
    avatarBackground?: string;
