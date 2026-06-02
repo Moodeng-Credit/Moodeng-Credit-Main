@@ -11,11 +11,12 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
+   const isLoading = useSelector((state: RootState) => state.auth.isLoading);
    const isAuthChecked = useSelector((state: RootState) => state.auth.isAuthChecked);
    const location = useLocation();
    const isAuthenticated = !!(username && user?.id);
 
-   if (!isAuthChecked && !isAuthenticated) {
+   if ((!isAuthChecked || isLoading) && !isAuthenticated) {
       return <Loading />;
    }
 

@@ -1,7 +1,11 @@
-import type { JSX, ReactNode } from 'react';
+import { useState, type JSX, type ReactNode } from 'react';
 
 import { CheckCircle2, ChevronRight, HelpCircle } from 'lucide-react';
+import { useDispatch } from 'react-redux';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+
+import { fetchUser } from '@/store/slices/authSlice';
+import type { AppDispatch } from '@/store/store';
 
 type AuthSuccessCardProps = {
    imageSrc: string;
@@ -51,24 +55,60 @@ function AuthSuccessShell({ imageSrc, imageAlt, eyebrow, title, body, children }
 
 function AccountCreatedView(): JSX.Element {
    const navigate = useNavigate();
+   const dispatch = useDispatch<AppDispatch>();
+   const [isProceeding, setIsProceeding] = useState(false);
+
+   const handleProceed = async () => {
+      if (isProceeding) return;
+      setIsProceeding(true);
+
+      try {
+         await dispatch(fetchUser()).unwrap();
+         navigate('/onboarding/role', { replace: true });
+      } catch {
+         // Direct previews do not have a live signup session. Keep the card in place
+         // instead of showing a dead-end auth error.
+      } finally {
+         setIsProceeding(false);
+      }
+   };
 
    return (
-      <AuthSuccessShell
-         imageSrc="/hippos/welcome.png"
-         imageAlt="Moodeng welcoming you"
-         eyebrow="Account ready"
-         title="Your account has been created"
-         body="Choose how you want to use Moodeng so we can set up the right experience for you."
-      >
-         <button
-            type="button"
-            onClick={() => navigate('/onboarding/role', { replace: true })}
-            className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95"
-         >
-            Continue setup
-            <ChevronRight className="h-5 w-5" />
-         </button>
-      </AuthSuccessShell>
+      <div className="flex min-h-screen flex-col overflow-hidden rounded-[20px] bg-gradient-to-b from-[#FBFAFD] to-white text-[#040033]">
+         <div className="flex justify-end px-6 py-4">
+            <Link
+               to="/support/faq"
+               className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#8336F0] shadow-[0_2px_4px_rgba(27,28,29,0.04)] transition hover:bg-[#F8F4FC]"
+               aria-label="Help"
+            >
+               <HelpCircle className="h-6 w-6" />
+            </Link>
+         </div>
+
+         <main className="flex flex-1 flex-col justify-center px-5 pb-14">
+            <section className="mx-auto flex w-full max-w-[400px] flex-col items-center gap-5 text-center">
+               <img src="/icons/check-3d.png" alt="" className="h-[124px] w-[124px] object-contain" />
+               <h1
+                  className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em]"
+                  style={{ color: '#040033', WebkitTextFillColor: '#040033' }}
+               >
+                  Your account has been created
+               </h1>
+               <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D]">
+                  Your wallet is used to build your Trust Score and receive USDC loans.
+               </p>
+               <button
+                  type="button"
+                  disabled={isProceeding}
+                  onClick={handleProceed}
+                  className="mt-1 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#6010D2] px-5 text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95 disabled:opacity-60"
+               >
+                  {isProceeding ? 'Loading account...' : 'Proceed'}
+                  <ChevronRight className="h-5 w-5" />
+               </button>
+            </section>
+         </main>
+      </div>
    );
 }
 
