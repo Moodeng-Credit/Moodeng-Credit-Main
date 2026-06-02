@@ -34,6 +34,7 @@ type UserCardProps = Loan & {
    currentUserId?: string;
    isBorrower?: boolean;
    isAuthenticated?: boolean;
+   isHighlighted?: boolean;
    isPreviewRequest?: boolean;
    isDeletingOwnRequest?: boolean;
    onDeleteOwnRequest?: (loan: Loan) => void;
@@ -107,6 +108,7 @@ export default function UserCard(loan: UserCardProps) {
       currentUserId,
       isBorrower = true,
       isAuthenticated = true,
+      isHighlighted = false,
       isPreviewRequest = false,
       isDeletingOwnRequest = false,
       onDeleteOwnRequest,
@@ -275,6 +277,12 @@ export default function UserCard(loan: UserCardProps) {
       });
    }, [borrowerContextProfileData, borrowerDisplayName, due, loanData.createdAt, loanData.loanAmount, loanReason]);
    const showBorrowerContext = Boolean(borrowerContext && !isBorrower);
+   const cardClassName = [
+      'relative flex flex-col gap-4 rounded-[24px] border border-[#f0f0f0] bg-white p-md-4 shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)] transition-[border-color,box-shadow,transform] duration-300',
+      isHighlighted ? 'request-board-focus-highlight' : ''
+   ]
+      .filter(Boolean)
+      .join(' ');
 
    const handleDeleteOwnRequest = (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
@@ -285,8 +293,9 @@ export default function UserCard(loan: UserCardProps) {
    return (
       <>
          <div
-            className="relative bg-white border border-[#f0f0f0] rounded-[24px] shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)] flex flex-col gap-4 p-md-4"
+            className={cardClassName}
             data-tour-target="lender-request-card"
+            data-highlighted-request={isHighlighted ? 'true' : undefined}
          >
             {canDeleteOwnRequest ? (
                <button

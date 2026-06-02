@@ -216,7 +216,7 @@ const loanSlice = createSlice({
          })
          .addCase(createLoan.fulfilled, (state, action) => {
             state.isLoading = false;
-            state.loans.floans.push(action.payload);
+            state.loans.floans = [action.payload, ...state.loans.floans.filter((loan) => loan.id !== action.payload.id)];
             state.userLoansFetchedAt = null;
          })
          .addCase(createLoan.rejected, (state, action) => {
