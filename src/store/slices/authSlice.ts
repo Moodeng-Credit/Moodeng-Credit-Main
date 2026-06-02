@@ -171,6 +171,11 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    creditProgressionPaused: row.credit_progression_paused ?? false,
    accountStatus: (row as UserRow & { account_status?: AccountStatus | null }).account_status ?? 'active',
    userRole: row.user_role ?? undefined,
+   incomeType: (row as UserRow & { income_type?: string | null }).income_type ?? undefined,
+   paydayType: (row as UserRow & { payday_type?: string | null }).payday_type ?? undefined,
+   paydayStart: (row as UserRow & { payday_start?: number | null }).payday_start ?? undefined,
+   paydayEnd: (row as UserRow & { payday_end?: number | null }).payday_end ?? undefined,
+   gapReasons: (row as UserRow & { gap_reasons?: string[] | null }).gap_reasons ?? undefined,
    createdAt: row.created_at,
    updatedAt: row.updated_at
 });
@@ -567,6 +572,45 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
    return await fetchCurrentUserProfile();
 });
 
+export interface BorrowerContextPayload {
+   incomeType: string;
+   paydayType: string;
+   paydayStart?: number | null;
+   paydayEnd?: number | null;
+   gapReasons?: string[];
+}
+
+/** Save borrower context (income/payday/gap info) to the user's profile. Done once after first loan request. */
+export const updateBorrowerContext = createAsyncThunk(
+   'auth/updateBorrowerContext',
+   async (payload: BorrowerContextPayload) => {
+      const supabase = supabaseClient();
+      const {
+         data: { user },
+         error: sessionError
+      } = await supabase.auth.getUser();
+
+      if (sessionError || !user) throw sessionError ?? new Error('Not authenticated');
+
+      const { data: updatedRow, error } = await supabase
+         .from('users')
+         .update({
+            income_type: payload.incomeType,
+            payday_type: payload.paydayType,
+            payday_start: payload.paydayStart ?? null,
+            payday_end: payload.paydayEnd ?? null,
+            gap_reasons: payload.gapReasons ?? []
+         } as Record<string, unknown>)
+         .eq('id', user.id)
+         .select('*')
+         .single();
+
+      if (error || !updatedRow) throw error ?? new Error('Failed to save borrower context');
+
+      return mapSupabaseRowToUser(updatedRow);
+   }
+);
+
 /** Set user_role in Supabase. Single source of truth for role-based routing. */
 export const updateUserRole = createAsyncThunk('auth/updateUserRole', async (role: UserRole) => {
    const supabase = supabaseClient();
@@ -757,6 +801,9 @@ const authSlice = createSlice({
          })
          .addCase(updateUserRole.rejected, (state, action) => {
             state.error = (action.error.message as string) || null;
+         })
+         .addCase(updateBorrowerContext.fulfilled, (state, action) => {
+            state.user = action.payload;
          })
          .addCase(fetchUserProfiles.fulfilled, (state, action) => {
             // Ensure userProfiles exists (for redux-persist rehydration compatibility)

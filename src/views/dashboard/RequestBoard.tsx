@@ -50,13 +50,13 @@ import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/l
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { hasWalletAddressOnAccount } from '@/lib/walletProvider';
 import { formatPointsMajor } from '@/shared/points';
-import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
+import { fetchUser, fetchUserProfiles, updateBorrowerContext } from '@/store/slices/authSlice';
 import { createLoan, deleteLoan, fetchLoanRequestRepostStatus, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
-import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
+import { type CreateLoanData, type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import LoanRequestModal, { type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
@@ -329,6 +329,7 @@ function RequestBoard$() {
 
    const [showModal, setShowModal] = useState(false);
    const [showPurple, setShowPurple] = useState(false);
+   const [showBioStep, setShowBioStep] = useState(false);
    const [isSubmitting, setIsSubmitting] = useState(false);
    const [showFilters, setShowFilters] = useState(false);
    const [showLenderNote, setShowLenderNote] = useState(false);
@@ -389,6 +390,7 @@ function RequestBoard$() {
       shouldShowGuidedTour(LENDER_GUIDED_TOUR_ID, tourUserId, forceTourPreview);
    const isGuestBorrowerTour = shouldShowBorrowerTour && !isAuthenticated;
    const recordedTourViewsRef = useRef<Set<string>>(new Set());
+   const pendingLoanDataRef = useRef<CreateLoanData | null>(null);
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
    const previewRequestBoardLoans = useMemo(buildPreviewRequestBoardLoans, []);
@@ -586,7 +588,11 @@ function RequestBoard$() {
       }
    };
 
-   const handleCloseModal = useCallback(() => setShowModal(false), []);
+   const handleCloseModal = useCallback(() => {
+      setShowModal(false);
+      setShowBioStep(false);
+      pendingLoanDataRef.current = null;
+   }, []);
    const handleWorldIdHeaderClick = useCallback(
       (openWorldId: () => void) => {
          if (!hasBorrowerBaseWallet) {
@@ -998,32 +1004,57 @@ function RequestBoard$() {
          parsedLoanAmount > 0 &&
          parsedRepaymentAmount >= parsedLoanAmount + 1
       ) {
-         setIsSubmitting(true);
-         try {
-            if (!(await ensureCanCreateLoanRequest())) {
-               return;
-            }
-            await dispatch(createLoan(loanData)).unwrap();
-            clear();
-            setShowPurple(true);
-            setShowModal(false);
-            try {
-               await dispatch(fetchUser()).unwrap();
-            } catch (error) {
-               console.error('Error fetching user:', (error as Error).message || error);
-            }
-         } catch (error) {
-            console.error('Error creating loan:', (error as Error).message || error);
-            showToast(
-               TOAST_TYPES.ERROR,
-               "Request wasn't saved",
-               "We couldn't save this loan request. Please try again.",
-               'Try Again',
-               'retry_loan_request'
-            );
-         } finally {
-            setIsSubmitting(false);
+         // If borrower hasn't filled in bio yet, show bio step first
+         if (!effectiveUser.incomeType) {
+            pendingLoanDataRef.current = loanData;
+            setShowBioStep(true);
+            return;
          }
+
+         await doCreateLoan(loanData);
+      }
+   };
+
+   const doCreateLoan = async (loanData: CreateLoanData) => {
+      setIsSubmitting(true);
+      try {
+         if (!(await ensureCanCreateLoanRequest())) {
+            return;
+         }
+         await dispatch(createLoan(loanData)).unwrap();
+         clear();
+         setShowPurple(true);
+         setShowModal(false);
+         try {
+            await dispatch(fetchUser()).unwrap();
+         } catch (error) {
+            console.error('Error fetching user:', (error as Error).message || error);
+         }
+      } catch (error) {
+         console.error('Error creating loan:', (error as Error).message || error);
+         showToast(
+            TOAST_TYPES.ERROR,
+            "Request wasn't saved",
+            "We couldn't save this loan request. Please try again.",
+            'Try Again',
+            'retry_loan_request'
+         );
+      } finally {
+         setIsSubmitting(false);
+      }
+   };
+
+   const handleBioSave = async (data: { incomeType: string; paydayType: string; gapReasons: string[] }) => {
+      try {
+         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, gapReasons: data.gapReasons })).unwrap();
+      } catch (error) {
+         console.error('Failed to save borrower context:', error);
+      }
+      setShowBioStep(false);
+      const pending = pendingLoanDataRef.current;
+      pendingLoanDataRef.current = null;
+      if (pending) {
+         await doCreateLoan(pending);
       }
    };
 
@@ -1151,11 +1182,14 @@ function RequestBoard$() {
                : 'Lenders will no longer see this request on the board.'
          );
 
-         await dispatch(fetchUser())
-            .unwrap()
-            .catch((error: Error) => {
+         await Promise.all([
+            dispatch(fetchLoans()).unwrap().catch((error: Error) => {
+               console.error('Error refreshing loans after delete:', error.message || error);
+            }),
+            dispatch(fetchUser()).unwrap().catch((error: Error) => {
                console.error('Error refreshing user after loan request delete:', error.message || error);
-            });
+            })
+         ]);
       } catch (error) {
          console.error('Error deleting loan request:', (error as Error).message || error);
          showToast(
@@ -1607,6 +1641,8 @@ function RequestBoard$() {
                   availableCreditLimit={availableCreditLimit}
                   canUseReferralBoost={canUseReferralBoost}
                   startOnReferralStep={!shouldShowBorrowerTour && canUseReferralBoost}
+                  showBioStep={showBioStep}
+                  onBioSave={handleBioSave}
                   clickOutsideRef={loanRequestModalRef}
                />
                <SuccessModal isOpen={showPurple} onClose={handleSuccessModalClose} clickOutsideRef={successModalRef} />

@@ -41,6 +41,11 @@ export interface User {
    accountStatus?: AccountStatus;
    /** Single source of truth for role-based routing, wallet connect options, and tab bar */
    userRole?: UserRole | null;
+   incomeType?: string;
+   paydayType?: string;
+   paydayStart?: number | null;
+   paydayEnd?: number | null;
+   gapReasons?: string[];
    createdAt: string;
    updatedAt: string;
 }
