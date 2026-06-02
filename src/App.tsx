@@ -169,11 +169,7 @@ export default function App() {
             {/* Onboarding */}
             <Route
                path="/onboarding/role"
-               element={
-                  <ProtectedRoute>
-                     <RoleSelection />
-                  </ProtectedRoute>
-               }
+               element={<RoleSelection />}
             />
             <Route
                path="/onboarding/welcome"
