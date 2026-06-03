@@ -393,15 +393,15 @@ export default function UserCard(loan: UserCardProps) {
                   <div className="bg-md-neutral-500 text-md-neutral-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg text-center cursor-not-allowed">
                      Help Received
                   </div>
-               ) : isBorrower && isOwnLoan ? (
+               ) : isBorrower ? (
                   <Link
-                     to={`/loan/${loanData.id}`}
-                     className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
+                     to={isOwnLoan ? `/loan/${loanData.id}` : borrowerDetailsHref}
+                     className="w-full border border-md-primary-1200 text-md-primary-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.98] active:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
                   >
-                     View Request
-                     <ChevronRight className="w-5 h-5" />
+                     View Details
+                     <ExternalLink className="w-5 h-5" />
                   </Link>
-               ) : isBorrower ? null : isLenderCard && !showDetails ? (
+               ) : isLenderCard && !showDetails ? (
                   <button
                      type="button"
                      onClick={() => setShowDetails(true)}
