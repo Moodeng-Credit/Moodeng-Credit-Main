@@ -374,7 +374,7 @@ function BorrowerContextLoanStep({
             </div>
 
             <button
-               className="mt-md-2 flex w-full items-center gap-md-2 rounded-md-md bg-md-neutral-100/70 p-md-2 text-left transition hover:bg-md-neutral-100 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1"
+               className="mt-md-2 flex w-full items-center gap-md-2 rounded-md-md bg-md-neutral-100 p-md-2 text-left transition hover:bg-md-neutral-200 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1"
                onClick={onProfileImageClick}
                type="button"
             >

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { X } from 'lucide-react';
 import { useDispatch } from 'react-redux';
@@ -243,9 +244,9 @@ export default function AvatarUploadModal({
 
    if (!isOpen) return null;
 
-   return (
+   return createPortal(
       <div
-         className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-5"
+         className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 px-5"
          onClick={handleClose}
       >
          <div
@@ -457,6 +458,7 @@ export default function AvatarUploadModal({
                </>
             )}
          </div>
-      </div>
+      </div>,
+      document.body
    );
 }
