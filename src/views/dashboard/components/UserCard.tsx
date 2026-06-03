@@ -370,16 +370,6 @@ export default function UserCard(loan: UserCardProps) {
                </div>
             </div>
 
-            {isLenderCard && showDetails ? (
-               <button
-                  type="button"
-                  onClick={() => setShowDetails(false)}
-                  className="flex items-center gap-1 text-md-b3 font-medium text-md-neutral-800 hover:text-md-neutral-1200 transition-colors self-start -mt-2"
-               >
-                  <ChevronRight className="w-4 h-4 rotate-180" />
-                  Back
-               </button>
-            ) : null}
             {showBorrowerContext && borrowerContext ? <BorrowerContextPanel context={borrowerContext} /> : null}
 
             {/* CTA + Borrower Link */}
