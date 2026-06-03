@@ -36,8 +36,17 @@ export const sendBorrowerLoanNotification = async (
    loan: LoanNotificationLoan | null,
    recipient: LoanNotificationRecipient,
    aggregate?: LoanNotificationAggregate,
-   options: { telegramEnabled: boolean } = { telegramEnabled: false }
+   options: {
+      telegramEnabled: boolean;
+      /** If false the notification is suppressed entirely for this recipient */
+      notifEnabled?: boolean;
+   } = { telegramEnabled: false }
 ): Promise<BorrowerNotificationDeliveryResult> => {
+   // If the user has opted out of this notification category, skip silently
+   if (options.notifEnabled === false) {
+      return { emailSent: false, telegramSent: false };
+   }
+
    let emailSent = false;
    let telegramSent = false;
    const recipientEmail = recipient.email?.trim();

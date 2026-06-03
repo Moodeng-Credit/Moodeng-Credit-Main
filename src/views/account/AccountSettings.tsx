@@ -32,24 +32,10 @@ const ICON_MASK: React.CSSProperties = {
    maskPosition: 'center'
 };
 
-const NOTIFICATION_STORAGE_KEY = 'md_notification_prefs';
-
 interface NotificationPrefs {
    accountActivity: boolean;
    transactionActivity: boolean;
    moodengBlogs: boolean;
-}
-
-function loadNotificationPrefs(): NotificationPrefs {
-   try {
-      const stored = window.localStorage?.getItem(NOTIFICATION_STORAGE_KEY);
-      if (stored) {
-         return JSON.parse(stored) as NotificationPrefs;
-      }
-   } catch {
-      return { accountActivity: true, transactionActivity: true, moodengBlogs: false };
-   }
-   return { accountActivity: true, transactionActivity: true, moodengBlogs: false };
 }
 
 function isTelegramPlaceholderEmail(email?: string | null) {
@@ -573,7 +559,11 @@ export default function AccountSettings() {
    const [isDisconnectWalletPending, setIsDisconnectWalletPending] = useState(false);
    const [isSavingWallet, setIsSavingWallet] = useState(false);
    const [walletError, setWalletError] = useState('');
-   const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
+   const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(() => ({
+      accountActivity: user?.notifAccountActivity ?? true,
+      transactionActivity: user?.notifTransactionActivity ?? true,
+      moodengBlogs: user?.notifBlogs ?? false
+   }));
 
    const hasWallet = Boolean(user?.walletAddress);
    const walletSetupLabel = user?.userRole === 'lender' ? 'Connect' : 'Connect Base Account';
@@ -602,12 +592,14 @@ export default function AccountSettings() {
       : user?.telegramUsername || 'Not Connected';
 
    useEffect(() => {
-      try {
-         window.localStorage?.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(notifPrefs));
-      } catch {
-         // Some embedded previews disable localStorage; notification toggles can still render.
-      }
-   }, [notifPrefs]);
+      if (!user?.id) return;
+      const supabase = getSupabaseBrowserClient();
+      void supabase.from('users').update({
+         notif_account_activity: notifPrefs.accountActivity,
+         notif_transaction_activity: notifPrefs.transactionActivity,
+         notif_blogs: notifPrefs.moodengBlogs
+      }).eq('id', user.id);
+   }, [notifPrefs, user?.id]);
 
    useEffect(() => {
       if (!editTarget || handledEditTargetRef.current === editTarget) return;

@@ -115,7 +115,7 @@ serve(async (req) => {
 
    const { data: borrower, error: borrowerError } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, chat_id')
+      .select('id, username, telegram_username, email, cs, is_world_id, chat_id, notif_transaction_activity')
       .eq('id', loan.borrower_user_id)
       .maybeSingle();
 
@@ -169,7 +169,7 @@ serve(async (req) => {
          trust_points_reward_kind: 'potential'
       },
       undefined,
-      { telegramEnabled }
+      { telegramEnabled, notifEnabled: borrower.notif_transaction_activity !== false }
    );
 
    if (!delivery.emailSent && !delivery.telegramSent) {
