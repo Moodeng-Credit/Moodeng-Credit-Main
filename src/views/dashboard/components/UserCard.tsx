@@ -45,19 +45,19 @@ type UserCardProps = Loan & {
 const getSafeProfileText = (value: unknown) => (typeof value === 'string' && value.trim() ? value : undefined);
 
 const contextChipClasses: Record<BorrowerContextChipType, string> = {
-   name: 'bg-[#efe7ff] text-md-primary-1200',
-   pay: 'bg-[#dce9ff] text-[#1b4db8]',
-   need: 'bg-[#f0e3ff] text-[#8a22df]',
-   money: 'bg-[#ccf6e4] text-[#056044]',
-   date: 'bg-[#fff0c2] text-[#a34800]',
-   delta: 'bg-[#e9f9d4] text-[#3d6f00]'
+   name: 'bg-[#efe7ff] text-md-primary-1200 dark:bg-[#3a2460] dark:text-[#d4b8ff]',
+   pay: 'bg-[#dce9ff] text-[#1b4db8] dark:bg-[#1a2d4d] dark:text-[#93b8ff]',
+   need: 'bg-[#f0e3ff] text-[#8a22df] dark:bg-[#35194d] dark:text-[#cc88ff]',
+   money: 'bg-[#ccf6e4] text-[#056044] dark:bg-[#0d3326] dark:text-[#5ddba8]',
+   date: 'bg-[#fff0c2] text-[#a34800] dark:bg-[#3d2800] dark:text-[#ffd166]',
+   delta: 'bg-[#e9f9d4] text-[#3d6f00] dark:bg-[#1a3300] dark:text-[#a3e060]'
 };
 
 const verdictClasses: Record<BorrowerContextFitLevel, string> = {
-   strong: 'bg-[#d4f8df] text-[#075e45]',
-   ok: 'bg-[#dcf4ff] text-[#064a6a]',
-   weak: 'bg-[#fff0c2] text-[#6d4300]',
-   unknown: 'bg-[#f8f4ff] text-md-neutral-1000'
+   strong: 'bg-[#d4f8df] text-[#075e45] dark:bg-[#0d3326] dark:text-[#5ddba8]',
+   ok: 'bg-[#dcf4ff] text-[#064a6a] dark:bg-[#0a2233] dark:text-[#7dd3fc]',
+   weak: 'bg-[#fff0c2] text-[#6d4300] dark:bg-[#3d2800] dark:text-[#ffd166]',
+   unknown: 'bg-[#f8f4ff] text-md-neutral-1000 dark:bg-[#2a2040] dark:text-md-neutral-700'
 };
 
 function BorrowerContextChipView({ chip }: { chip: BorrowerContextChip }) {
@@ -75,7 +75,7 @@ function BorrowerContextLine({ context }: { context: BorrowerContextResult }) {
    const parts = context.contextLine.split(/(\{[a-z-]+\})/g);
 
    return (
-      <p className="flex flex-wrap items-center gap-x-1 text-md-b2 font-medium leading-[1.55] text-md-neutral-900">
+      <p className="flex flex-wrap items-center gap-x-1 text-md-b2 font-medium leading-[1.55] text-md-neutral-900 dark:text-md-neutral-700">
          {parts.map((part, index) => {
             const chipId = part.match(/^\{([a-z-]+)\}$/)?.[1];
             const chip = chipId ? chipMap.get(chipId) : undefined;
@@ -92,8 +92,8 @@ function BorrowerContextLine({ context }: { context: BorrowerContextResult }) {
 
 function BorrowerContextPanel({ context }: { context: BorrowerContextResult }) {
    return (
-      <section className="rounded-[20px] bg-[#f3efff] p-4">
-         <p className="mb-3 text-md-b3 font-bold uppercase tracking-[0.18em] text-md-primary-900">Timing Fit</p>
+      <section className="rounded-[20px] bg-[#f3efff] dark:bg-[#1e1535] p-4">
+         <p className="mb-3 text-md-b3 font-bold uppercase tracking-[0.18em] text-md-primary-900 dark:text-[#c4a0ff]">Timing Fit</p>
          <BorrowerContextLine context={context} />
          <p
             className={`mt-4 rounded-[18px] p-4 text-md-b2 font-medium leading-[1.55] ${verdictClasses[context.fitLevel]}`}
