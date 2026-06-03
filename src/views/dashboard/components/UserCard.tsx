@@ -132,7 +132,11 @@ export default function UserCard(loan: UserCardProps) {
    const storeUserId = useSelector((state: RootState) => state.auth.user.id);
    const userId = currentUserId || storeUserId;
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
+   const allLoans = useSelector((state: RootState) => state.loans.loans.gloans);
    const borrowerProfile = borrowerUserId ? userProfiles[borrowerUserId] : undefined;
+   const borrowerFundedLoanCount = borrowerUserId
+      ? allLoans.filter((l) => l.borrowerUser === borrowerUserId && l.loanStatus === 'Lent').length
+      : undefined;
    const borrowerUsername = getSafeProfileText(borrowerProfile?.username) ?? getSafeProfileText(tourBorrowerUsername) ?? '';
    const borrowerDetailsHref =
       tourBorrowerUsername && (import.meta.env.DEV || isPreviewRequest)
@@ -275,9 +279,10 @@ export default function UserCard(loan: UserCardProps) {
          dueDate: due,
          amount: loanData.loanAmount,
          reason: loanReason,
+         fundedLoanCount: borrowerFundedLoanCount,
          ...borrowerContextProfileData
       });
-   }, [borrowerContextProfileData, borrowerDisplayName, due, loanData.createdAt, loanData.loanAmount, loanReason]);
+   }, [borrowerContextProfileData, borrowerDisplayName, borrowerFundedLoanCount, due, loanData.createdAt, loanData.loanAmount, loanReason]);
    const isLenderCard = Boolean(isAuthenticated && !isBorrower && !isOwnLoan && !isLent && !isPreviewRequest);
    const showBorrowerContext = Boolean(borrowerContext && !isBorrower && (!isLenderCard || showDetails));
    const cardClassName = [
