@@ -576,6 +576,7 @@ export default function WorldIDVerification({
             if (isApiError(result) && result.errorCode === 'WORLDID_ALREADY_USED') {
                alreadyUsedRef.current = true;
                setVerificationFeedbackState('idle');
+               showAlreadyUsedWarning();
                throw new Error('WORLDID_ALREADY_USED');
             }
             showToastByConfig(handleApiError(result));
@@ -592,7 +593,7 @@ export default function WorldIDVerification({
          console.error('[WorldID] handleVerify error:', error);
          throw error;
       }
-   }, [apiUrl, getSessionAccessToken, refreshUserUntilWorldIdActive, showToastByConfig]);
+   }, [apiUrl, getSessionAccessToken, refreshUserUntilWorldIdActive, showAlreadyUsedWarning, showToastByConfig]);
 
    const handleSuccess = useCallback(() => {
       if ('vibrate' in window.navigator && typeof window.navigator.vibrate === 'function') {

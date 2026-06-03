@@ -1272,7 +1272,7 @@ export default function LoanRequestModal({
                                        Complete a one-time verification to start building trust with lenders.
                                     </p>
                                  </div>
-                                 <WorldIDVerification>
+                                 <WorldIDVerification onSuccess={() => undefined}>
                                     {({ open }) => (
                                        <button
                                           onClick={open}
