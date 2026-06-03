@@ -407,7 +407,7 @@ export default function UserCard(loan: UserCardProps) {
                      onClick={() => setShowDetails(true)}
                      className="w-full border border-md-primary-1200 text-md-primary-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.98] active:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
                   >
-                     View Details
+                     View Request
                      <ChevronRight className="w-5 h-5" />
                   </button>
                ) : (
@@ -423,8 +423,8 @@ export default function UserCard(loan: UserCardProps) {
                   </button>
                )}
 
-               {/* View Borrower Details — hidden for logged-out users, borrowers viewing others, and collapsed lender cards */}
-               {isAuthenticated && (!isBorrower || isOwnLoan) && (!isLenderCard || showDetails) ? (
+               {/* View Borrower Details — hidden for logged-out users and borrowers viewing others */}
+               {isAuthenticated && (!isBorrower || isOwnLoan) ? (
                   borrowerUsername ? (
                      <Link
                         to={borrowerDetailsHref}
