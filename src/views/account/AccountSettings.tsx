@@ -566,7 +566,7 @@ export default function AccountSettings() {
    const [showAvatarModal, setShowAvatarModal] = useState(false);
    const [isSavingAvatar, setIsSavingAvatar] = useState(false);
    const [walletCopied, setWalletCopied] = useState(false);
-   const [showWalletAddress, setShowWalletAddress] = useState(false);
+
    const [showWalletActions, setShowWalletActions] = useState(false);
    const [isEditingWallet, setIsEditingWallet] = useState(false);
    const [isChangeWalletPending, setIsChangeWalletPending] = useState(false);
@@ -912,11 +912,10 @@ export default function AccountSettings() {
                               <button
                                  type="button"
                                  onClick={() => {
-                                    setShowWalletAddress((current) => !current);
                                     setShowWalletActions((current) => !current);
                                  }}
                                  className="flex min-w-0 flex-1 items-center justify-between gap-md-2 text-left"
-                                 aria-expanded={showWalletAddress}
+                                 aria-expanded={showWalletActions}
                               >
                                  <span className="flex min-w-0 shrink-0 items-center gap-2 text-md-b1 text-md-neutral-1200">
                                     <span
@@ -931,7 +930,7 @@ export default function AccountSettings() {
                                  </span>
                                  <span className="mx-md-2 h-6 w-px shrink-0 bg-md-neutral-600" aria-hidden="true" />
                                  <span className="min-w-0 flex-1 truncate text-right text-md-b2 font-medium text-md-neutral-900">
-                                    {showWalletAddress ? user?.walletAddress : truncateAddress(user?.walletAddress || '')}
+                                    {truncateAddress(user?.walletAddress || '')}
                                  </span>
                               </button>
                               <button
