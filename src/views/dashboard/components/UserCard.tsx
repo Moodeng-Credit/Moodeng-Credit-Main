@@ -365,6 +365,16 @@ export default function UserCard(loan: UserCardProps) {
                </div>
             </div>
 
+            {isLenderCard && showDetails ? (
+               <button
+                  type="button"
+                  onClick={() => setShowDetails(false)}
+                  className="flex items-center gap-1 text-md-b3 font-medium text-md-neutral-800 hover:text-md-neutral-1200 transition-colors self-start -mt-2"
+               >
+                  <ChevronRight className="w-4 h-4 rotate-180" />
+                  Back
+               </button>
+            ) : null}
             {showBorrowerContext && borrowerContext ? <BorrowerContextPanel context={borrowerContext} /> : null}
 
             {/* CTA + Borrower Link */}
@@ -405,7 +415,7 @@ export default function UserCard(loan: UserCardProps) {
                   <button
                      type="button"
                      onClick={() => setShowDetails(true)}
-                     className="w-full border border-md-primary-1200 text-md-primary-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.98] active:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
+                     className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
                   >
                      View Request
                      <ChevronRight className="w-5 h-5" />
