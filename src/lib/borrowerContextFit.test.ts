@@ -65,7 +65,7 @@ describe('borrower context fit', () => {
       expect(result.fitLevel).toBe('unknown');
       expect(result.gapDays).toBe(1);
       expect(result.verdictHTML).toBe(
-         'No income source shared. This request is based on stated needs alone — review repayment history before funding.'
+         'No income source shared. This request is based on stated needs alone — check their repayment history before funding.'
       );
    });
 

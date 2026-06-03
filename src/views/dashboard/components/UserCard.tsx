@@ -45,19 +45,19 @@ type UserCardProps = Loan & {
 const getSafeProfileText = (value: unknown) => (typeof value === 'string' && value.trim() ? value : undefined);
 
 const contextChipClasses: Record<BorrowerContextChipType, string> = {
-   name: 'bg-[#efe7ff] text-md-primary-1200',
-   pay: 'bg-[#dce9ff] text-[#1b4db8]',
-   need: 'bg-[#f0e3ff] text-[#8a22df]',
-   money: 'bg-[#ccf6e4] text-[#056044]',
-   date: 'bg-[#fff0c2] text-[#a34800]',
-   delta: 'bg-[#e9f9d4] text-[#3d6f00]'
+   name: 'bg-[#efe7ff] text-md-primary-1200 dark:bg-[#3a2460] dark:text-[#d4b8ff]',
+   pay: 'bg-[#dce9ff] text-[#1b4db8] dark:bg-[#1a2d4d] dark:text-[#93b8ff]',
+   need: 'bg-[#f0e3ff] text-[#8a22df] dark:bg-[#35194d] dark:text-[#cc88ff]',
+   money: 'bg-[#ccf6e4] text-[#056044] dark:bg-[#0d3326] dark:text-[#5ddba8]',
+   date: 'bg-[#fff0c2] text-[#a34800] dark:bg-[#3d2800] dark:text-[#ffd166]',
+   delta: 'bg-[#e9f9d4] text-[#3d6f00] dark:bg-[#1a3300] dark:text-[#a3e060]'
 };
 
 const verdictClasses: Record<BorrowerContextFitLevel, string> = {
-   strong: 'bg-[#d4f8df] text-[#075e45]',
-   ok: 'bg-[#dcf4ff] text-[#064a6a]',
-   weak: 'bg-[#fff0c2] text-[#6d4300]',
-   unknown: 'bg-[#f8f4ff] text-md-neutral-1000'
+   strong: 'bg-[#d4f8df] text-[#075e45] dark:bg-[#0d3326] dark:text-[#5ddba8]',
+   ok: 'bg-[#dcf4ff] text-[#064a6a] dark:bg-[#0a2233] dark:text-[#7dd3fc]',
+   weak: 'bg-[#fff0c2] text-[#6d4300] dark:bg-[#3d2800] dark:text-[#ffd166]',
+   unknown: 'bg-[#f8f4ff] text-md-neutral-1000 dark:bg-[#2a2040] dark:text-md-neutral-700'
 };
 
 function BorrowerContextChipView({ chip }: { chip: BorrowerContextChip }) {
@@ -75,7 +75,7 @@ function BorrowerContextLine({ context }: { context: BorrowerContextResult }) {
    const parts = context.contextLine.split(/(\{[a-z-]+\})/g);
 
    return (
-      <p className="flex flex-wrap items-center gap-x-1 text-md-b2 font-medium leading-[1.55] text-md-neutral-900">
+      <p className="flex flex-wrap items-center gap-x-1 text-md-b2 font-medium leading-[1.55] text-md-neutral-900 dark:text-md-neutral-700">
          {parts.map((part, index) => {
             const chipId = part.match(/^\{([a-z-]+)\}$/)?.[1];
             const chip = chipId ? chipMap.get(chipId) : undefined;
@@ -92,8 +92,8 @@ function BorrowerContextLine({ context }: { context: BorrowerContextResult }) {
 
 function BorrowerContextPanel({ context }: { context: BorrowerContextResult }) {
    return (
-      <section className="rounded-[20px] bg-[#f3efff] p-4">
-         <p className="mb-3 text-md-b3 font-bold uppercase tracking-[0.18em] text-md-primary-900">Timing Fit</p>
+      <section className="rounded-[20px] bg-[#f3efff] dark:bg-[#1e1535] p-4">
+         <p className="mb-3 text-md-b3 font-bold uppercase tracking-[0.18em] text-md-primary-900 dark:text-[#c4a0ff]">Timing Fit</p>
          <BorrowerContextLine context={context} />
          <p
             className={`mt-4 rounded-[18px] p-4 text-md-b2 font-medium leading-[1.55] ${verdictClasses[context.fitLevel]}`}
@@ -132,7 +132,11 @@ export default function UserCard(loan: UserCardProps) {
    const storeUserId = useSelector((state: RootState) => state.auth.user.id);
    const userId = currentUserId || storeUserId;
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
+   const allLoans = useSelector((state: RootState) => state.loans.loans.gloans);
    const borrowerProfile = borrowerUserId ? userProfiles[borrowerUserId] : undefined;
+   const borrowerFundedLoanCount = borrowerUserId
+      ? allLoans.filter((l) => l.borrowerUser === borrowerUserId && l.loanStatus === 'Lent').length
+      : undefined;
    const borrowerUsername = getSafeProfileText(borrowerProfile?.username) ?? getSafeProfileText(tourBorrowerUsername) ?? '';
    const borrowerDetailsHref =
       tourBorrowerUsername && (import.meta.env.DEV || isPreviewRequest)
@@ -275,9 +279,10 @@ export default function UserCard(loan: UserCardProps) {
          dueDate: due,
          amount: loanData.loanAmount,
          reason: loanReason,
+         fundedLoanCount: borrowerFundedLoanCount,
          ...borrowerContextProfileData
       });
-   }, [borrowerContextProfileData, borrowerDisplayName, due, loanData.createdAt, loanData.loanAmount, loanReason]);
+   }, [borrowerContextProfileData, borrowerDisplayName, borrowerFundedLoanCount, due, loanData.createdAt, loanData.loanAmount, loanReason]);
    const isLenderCard = Boolean(isAuthenticated && !isBorrower && !isOwnLoan && !isLent && !isPreviewRequest);
    const showBorrowerContext = Boolean(borrowerContext && !isBorrower && (!isLenderCard || showDetails));
    const cardClassName = [
@@ -365,6 +370,16 @@ export default function UserCard(loan: UserCardProps) {
                </div>
             </div>
 
+            {isLenderCard && showDetails ? (
+               <button
+                  type="button"
+                  onClick={() => setShowDetails(false)}
+                  className="flex items-center gap-1 text-md-b3 font-medium text-md-neutral-800 hover:text-md-neutral-1200 transition-colors self-start -mt-2"
+               >
+                  <ChevronRight className="w-4 h-4 rotate-180" />
+                  Back
+               </button>
+            ) : null}
             {showBorrowerContext && borrowerContext ? <BorrowerContextPanel context={borrowerContext} /> : null}
 
             {/* CTA + Borrower Link */}
@@ -395,17 +410,17 @@ export default function UserCard(loan: UserCardProps) {
                   </div>
                ) : isBorrower ? (
                   <Link
-                     to={`/loan/${loanData.id}`}
-                     className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
+                     to={isOwnLoan ? `/loan/${loanData.id}` : borrowerDetailsHref}
+                     className="w-full border border-md-primary-1200 text-md-primary-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.98] active:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
                   >
-                     View Request
-                     <ChevronRight className="w-5 h-5" />
+                     View Details
+                     <ExternalLink className="w-5 h-5" />
                   </Link>
                ) : isLenderCard && !showDetails ? (
                   <button
                      type="button"
                      onClick={() => setShowDetails(true)}
-                     className="w-full border border-md-primary-1200 text-md-primary-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.98] active:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
+                     className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
                   >
                      View Request
                      <ChevronRight className="w-5 h-5" />
@@ -423,8 +438,8 @@ export default function UserCard(loan: UserCardProps) {
                   </button>
                )}
 
-               {/* View Borrower Details — hidden for logged-out users and collapsed lender cards */}
-               {isAuthenticated && (!isLenderCard || showDetails) ? (
+               {/* View Borrower Details — hidden for logged-out users and borrowers viewing others */}
+               {isAuthenticated && (!isBorrower || isOwnLoan) ? (
                   borrowerUsername ? (
                      <Link
                         to={borrowerDetailsHref}

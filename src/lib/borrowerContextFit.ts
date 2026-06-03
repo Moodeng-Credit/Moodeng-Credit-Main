@@ -14,6 +14,7 @@ export interface BorrowerContextInput {
    paydayStart: number | null;
    paydayEnd: number | null;
    gapReasons: string[];
+   fundedLoanCount?: number; // how many of their loans have been funded (0 = new borrower)
 }
 
 export interface BorrowerContextChip {
@@ -206,12 +207,20 @@ const buildNeutralResult = (
    gapDays
 });
 
+const historyPhrase = (fundedLoanCount: number | undefined): string => {
+   if (fundedLoanCount === undefined) return 'check their repayment history before funding';
+   if (fundedLoanCount === 0) return 'this is their first funded request — judge fit on their profile and stated needs';
+   if (fundedLoanCount === 1) return 'they have one repaid loan — review that track record before funding';
+   return `they have ${fundedLoanCount} funded loans — lean on that repayment track record`;
+};
+
 const buildVerdict = (input: BorrowerContextInput, fitLevel: BorrowerContextFitLevel, gapDays: number, dueDate: Date): string => {
    const borrowerName = escapeHtml(normalizeText(input.borrowerName) ?? 'this borrower');
    const income = escapeHtml(incomeLabels[input.incomeType].withArticle);
    const payday = escapeHtml(paydayLabels[input.paydayType]);
    const dueLabel = escapeHtml(formatDateLabel(dueDate));
    const absGapDays = Math.abs(gapDays);
+   const history = historyPhrase(input.fundedLoanCount);
 
    if (fitLevel === 'strong') {
       return `As ${income} paid ${payday}, ${borrowerName} will have received income before repayment is due. This request bridges a <strong>${absGapDays}-day gap</strong> before their next payday — a short-term need that fits squarely within their stated cash-flow pattern.`;
@@ -222,10 +231,10 @@ const buildVerdict = (input: BorrowerContextInput, fitLevel: BorrowerContextFitL
    }
 
    if (gapDays < 0) {
-      return `Repayment is due <strong>${absGapDays} days</strong> before their usual payday window opens. Their profile doesn't clearly explain this timing — check their repayment history to see how they've handled similar requests.`;
+      return `Repayment is due <strong>${absGapDays} days</strong> before their usual payday window opens. Their profile doesn't clearly explain this timing — ${history}.`;
    }
 
-   return `Repayment is due <strong>${absGapDays} days</strong> after their usual payday window closes. Their profile doesn't clearly explain this longer timing — check their repayment history to see how they've handled similar requests.`;
+   return `Repayment is due <strong>${absGapDays} days</strong> after their usual payday window closes. Their profile doesn't clearly explain this longer timing — ${history}.`;
 };
 
 export const buildBorrowerContextFit = (input: BorrowerContextInput): BorrowerContextResult => {
@@ -239,21 +248,23 @@ export const buildBorrowerContextFit = (input: BorrowerContextInput): BorrowerCo
    const gapDays = input.paydayType === 'irregular' ? null : calculateGapDays(dueDate, input.paydayStart, input.paydayEnd);
 
    if (input.incomeType === 'none') {
+      const history = historyPhrase(input.fundedLoanCount);
       return buildNeutralResult(
          input,
          dueDate,
          gapDays,
-         'No income source shared. This request is based on stated needs alone — review repayment history before funding.'
+         `No income source shared. This request is based on stated needs alone — ${history}.`
       );
    }
 
    if (input.paydayType === 'irregular' || gapDays === null) {
       const firstGapReason = escapeHtml(cleanList(input.gapReasons)[0] ?? 'stated needs');
+      const history = historyPhrase(input.fundedLoanCount);
       return buildNeutralResult(
          input,
          dueDate,
          gapDays,
-         `With irregular income, timing alone isn't a strong signal here. This request is consistent with their stated ${firstGapReason} pattern — lean on their repayment history to judge fit.`
+         `With irregular income, timing alone isn't a strong signal here. This request is consistent with their stated ${firstGapReason} pattern — ${history}.`
       );
    }
 

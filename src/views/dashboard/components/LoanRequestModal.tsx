@@ -11,13 +11,39 @@ import {
    useState
 } from 'react';
 
-import { CalendarDays, CheckCircle, ChevronLeft, ChevronRight, HelpCircle, Ticket, X } from 'lucide-react';
+import {
+   Briefcase,
+   BriefcaseBusiness,
+   Bus,
+   CalendarDays,
+   Check,
+   CheckCircle,
+   ChevronLeft,
+   ChevronRight,
+   Clock3,
+   FileText,
+   HelpCircle,
+   ShieldCheck,
+   Stethoscope,
+   Ticket,
+   TriangleAlert,
+   Users,
+   WalletCards,
+   X
+} from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
+import { useDispatch } from 'react-redux';
 
+import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
+import type { BorrowerContextState } from '@/lib/borrowerContextFit';
+import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { updateUser } from '@/store/slices/authSlice';
+import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
+import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 
 import { termsTooltipIconSrc } from './termsTooltipIcon';
 
@@ -36,15 +62,15 @@ interface LoanRequestModalProps {
    days: string;
    today: string;
    handleDays: (e: ChangeEvent<HTMLInputElement>) => void;
-   handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
+   handleSubmit: (e: FormEvent<HTMLFormElement>, borrowerContext?: BorrowerContextState) => void;
    onReferralApplied?: (referral: AppliedReferralCode | null) => void;
    onReferralRedeemed?: () => Promise<void>;
    isSubmitting: boolean;
    availableCreditLimit: number;
    canUseReferralBoost?: boolean;
+   requireBorrowerContextStep?: boolean;
+   startOnBorrowerContextStep?: boolean;
    startOnReferralStep?: boolean;
-   showBioStep?: boolean;
-   onBioSave?: (data: { incomeType: string; paydayType: string; gapReasons: string[] }) => void;
 }
 
 export type AppliedReferralCode = {
@@ -55,12 +81,75 @@ export type AppliedReferralCode = {
 
 type DismissGestureMode = 'down' | 'side' | 'referral';
 
+type BorrowerContextOption = {
+   description?: string;
+   icon?: typeof BriefcaseBusiness;
+   label: string;
+   pillLabel?: string;
+   value: string;
+};
+
+type BorrowerContextMultiOption = BorrowerContextOption & {
+   icon: typeof BriefcaseBusiness;
+};
+
 const REFERRAL_TEST_CODES: Record<string, AppliedReferralCode> = {
    BELLE: { id: 'referral-test-belle', code: 'BELLE', boostAmount: 5 }
 };
 
 const inputShellClass =
    'border-md-neutral-600 bg-md-neutral-100 shadow-md-card overflow-hidden rounded-md-input border border-solid transition duration-150 ease-out focus-within:border-md-primary-900 focus-within:ring-2 focus-within:ring-md-primary-100 focus:border-md-primary-900 focus:ring-2 focus:ring-md-primary-100';
+
+const emptyBorrowerContext: BorrowerContextState = {
+   incomeSetup: '',
+   paydayWindow: '',
+   cashGaps: []
+};
+
+const incomeSetupOptions: BorrowerContextOption[] = [
+   {
+      label: 'I have a regular job',
+      value: 'full_time',
+      description: 'Full-time or part-time with a fixed employer',
+      icon: Briefcase
+   },
+   {
+      label: 'I work for myself',
+      value: 'self_employed',
+      description: 'Freelance, gig work, self-employed, or contract',
+      icon: Ticket
+   },
+   {
+      label: 'My income varies',
+      value: 'irregular',
+      description: 'Irregular, seasonal, or mixed sources',
+      icon: WalletCards
+   },
+   {
+      label: 'Something else',
+      value: 'contract',
+      description: 'Describe your situation in your own words',
+      icon: FileText
+   }
+];
+
+const paydayWindowOptions: BorrowerContextOption[] = [
+   { label: '1st-5th', value: '1_5', icon: Clock3 },
+   { label: '10th-15th', value: '10_15', icon: Clock3 },
+   { label: '15th-20th', value: '15_20', icon: Clock3 },
+   { label: '25th-30th', value: '25_30', icon: Clock3 },
+   { label: 'It varies', value: 'varies', icon: Clock3 }
+];
+
+const cashGapOptions: BorrowerContextMultiOption[] = [
+   { label: 'Gap before payday', value: 'gap_before_payday', icon: Clock3 },
+   { label: 'Bills before payday', value: 'bills_before_payday', icon: FileText },
+   { label: 'Family needs', value: 'family_needs', icon: Users },
+   { label: 'Transport costs', value: 'transport', icon: Bus },
+   { label: 'Medical expenses', value: 'medical', icon: Stethoscope },
+   { label: 'Emergency costs', value: 'emergency_costs', icon: TriangleAlert },
+   { label: 'Work supplies', value: 'work_supplies', icon: Briefcase }
+];
 
 type TooltipId = 'terms' | 'limit' | 'usdc';
 
@@ -69,6 +158,14 @@ const tooltipCopy: Record<TooltipId, string> = {
    limit: 'Your current maximum borrow amount. Repaying loans on time can help increase this limit.',
    usdc: 'USDC is digital dollars accepted by major exchanges, making borrowing and lending easier across countries.'
 };
+
+const isIgnorableMilestoneError = (error: { code?: string; message?: string }) =>
+   error.code === 'PGRST202' ||
+   error.code === 'P0002' ||
+   error.code === '23514' ||
+   error.message?.includes('record_milestone_completion') ||
+   error.message?.includes('Milestone not found') ||
+   error.message?.includes('Milestone criteria not met');
 
 const parseIsoDate = (value: string) => {
    if (!value) return undefined;
@@ -220,120 +317,6 @@ function InfoTooltip({
    );
 }
 
-const BIO_INCOME_OPTIONS = [
-   { label: 'Full-time', value: 'full-time' },
-   { label: 'Part-time', value: 'part-time' },
-   { label: 'Freelance / self-employed', value: 'freelance' },
-   { label: 'No regular income', value: 'none' }
-];
-
-const BIO_PAYDAY_OPTIONS = [
-   { label: 'Weekly', value: 'weekly' },
-   { label: 'Mid-month (10th–20th)', value: 'mid-month' },
-   { label: 'End of month (25th+)', value: 'end-of-month' },
-   { label: 'Irregular / varies', value: 'irregular' }
-];
-
-const BIO_GAP_OPTIONS = [
-   { label: 'Family expenses', value: 'family expenses' },
-   { label: 'Bills before payday', value: 'bills before payday' },
-   { label: 'Transport', value: 'transport' },
-   { label: 'Medical', value: 'medical' },
-   { label: 'Work supplies', value: 'work supplies' },
-   { label: 'Emergency', value: 'emergency' }
-];
-
-function BioStep({ onSave }: { onSave: (data: { incomeType: string; paydayType: string; gapReasons: string[] }) => void }) {
-   const [incomeType, setIncomeType] = useState('');
-   const [paydayType, setPaydayType] = useState('');
-   const [gapReasons, setGapReasons] = useState<string[]>([]);
-
-   const toggleGap = (value: string) =>
-      setGapReasons((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
-
-   const canSave = incomeType && paydayType;
-
-   return (
-      <div className="flex min-h-0 flex-col gap-md-3 overflow-y-auto p-md-3 text-md-b2 text-md-heading">
-         <p className="text-md-b2 text-md-neutral-1200">
-            This helps lenders understand your situation. It's saved to your profile and only asked once.
-         </p>
-
-         <div className="flex flex-col gap-md-1">
-            <span className="text-md-b2 font-semibold text-md-heading">How do you earn income?</span>
-            <div className="grid grid-cols-2 gap-md-1">
-               {BIO_INCOME_OPTIONS.map((opt) => (
-                  <button
-                     key={opt.value}
-                     type="button"
-                     onClick={() => setIncomeType(opt.value)}
-                     className={[
-                        'rounded-md-sm px-md-2 py-md-1 text-md-b2 font-medium border transition-colors text-left',
-                        incomeType === opt.value
-                           ? 'border-md-primary-900 bg-md-primary-900/10 text-md-primary-1200'
-                           : 'border-md-neutral-600 bg-md-neutral-100 text-md-heading'
-                     ].join(' ')}
-                  >
-                     {opt.label}
-                  </button>
-               ))}
-            </div>
-         </div>
-
-         <div className="flex flex-col gap-md-1">
-            <span className="text-md-b2 font-semibold text-md-heading">When do you typically get paid?</span>
-            <div className="grid grid-cols-2 gap-md-1">
-               {BIO_PAYDAY_OPTIONS.map((opt) => (
-                  <button
-                     key={opt.value}
-                     type="button"
-                     onClick={() => setPaydayType(opt.value)}
-                     className={[
-                        'rounded-md-sm px-md-2 py-md-1 text-md-b2 font-medium border transition-colors text-left',
-                        paydayType === opt.value
-                           ? 'border-md-primary-900 bg-md-primary-900/10 text-md-primary-1200'
-                           : 'border-md-neutral-600 bg-md-neutral-100 text-md-heading'
-                     ].join(' ')}
-                  >
-                     {opt.label}
-                  </button>
-               ))}
-            </div>
-         </div>
-
-         <div className="flex flex-col gap-md-1">
-            <span className="text-md-b2 font-semibold text-md-heading">What do you usually need help covering? <span className="font-normal text-md-neutral-1200">(optional)</span></span>
-            <div className="grid grid-cols-2 gap-md-1">
-               {BIO_GAP_OPTIONS.map((opt) => (
-                  <button
-                     key={opt.value}
-                     type="button"
-                     onClick={() => toggleGap(opt.value)}
-                     className={[
-                        'rounded-md-sm px-md-2 py-md-1 text-md-b2 font-medium border transition-colors text-left',
-                        gapReasons.includes(opt.value)
-                           ? 'border-md-primary-900 bg-md-primary-900/10 text-md-primary-1200'
-                           : 'border-md-neutral-600 bg-md-neutral-100 text-md-heading'
-                     ].join(' ')}
-                  >
-                     {opt.label}
-                  </button>
-               ))}
-            </div>
-         </div>
-
-         <button
-            type="button"
-            disabled={!canSave}
-            onClick={() => onSave({ incomeType, paydayType, gapReasons })}
-            className="w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-medium text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 disabled:opacity-100"
-         >
-            Save and continue
-         </button>
-      </div>
-   );
-}
-
 const UsdcIcon = () => (
    <svg aria-hidden="true" className="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24">
       <path
@@ -345,6 +328,286 @@ const UsdcIcon = () => (
       />
    </svg>
 );
+
+function BorrowerContextLoanStep({
+   context,
+   currentAvatarBackground,
+   currentAvatarUrl,
+   isSubmitting,
+   isSavingProfile,
+   onBack,
+   onCashGapToggle,
+   onContinue,
+   onIncomeSelect,
+   onPaydaySelect,
+   onProfileImageClick,
+   onProfileNameChange,
+   profileName,
+   profileSaveError
+}: {
+   context: BorrowerContextState;
+   currentAvatarBackground?: string | null;
+   currentAvatarUrl?: string | null;
+   isSubmitting: boolean;
+   isSavingProfile: boolean;
+   onBack: () => void;
+   onCashGapToggle: (value: string) => void;
+   onContinue: () => void;
+   onIncomeSelect: (value: string) => void;
+   onPaydaySelect: (value: string) => void;
+   onProfileImageClick: () => void;
+   onProfileNameChange: (value: string) => void;
+   profileName: string;
+   profileSaveError: string;
+}) {
+   const canContinue = Boolean(context.incomeSetup && context.paydayWindow && context.cashGaps.length > 0);
+   const isBusy = isSubmitting || isSavingProfile;
+
+   return (
+      <div className="flex min-h-0 flex-col gap-md-3">
+         <section className="rounded-md-input border border-md-primary-300 bg-md-primary-100 px-md-2 py-md-2">
+            <div>
+	               <p className="text-md-b2 font-[590] text-md-heading">Borrower bio</p>
+	               <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+	                  Add a friendly name and optional image so lenders can understand the request without private details.
+               </p>
+            </div>
+
+            <button
+               className="mt-md-2 flex w-full items-center gap-md-2 rounded-md-md bg-md-neutral-100 p-md-2 text-left transition hover:bg-md-neutral-200 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1"
+               onClick={onProfileImageClick}
+               type="button"
+            >
+               <UserAvatar
+                  alt="Profile image"
+                  backgroundColor={currentAvatarBackground ?? undefined}
+                  clickable={false}
+                  size={48}
+                  src={currentAvatarUrl || PLACEHOLDER_AVATAR}
+               />
+               <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-md-1">
+                     <p className="text-md-b2 font-[590] text-md-heading">Profile image</p>
+                     <TrustBadge label="+15 Trust Points" />
+                  </div>
+                  <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                     Use a photo, avatar, or anything that shows your character.
+                  </p>
+               </div>
+            </button>
+
+            <label className="mt-md-2 flex flex-col gap-md-1">
+               <span className="flex items-center gap-md-1 text-md-b2 font-[590] text-md-heading">
+                  Your name
+                  <TrustBadge label="+10 Trust Points" />
+               </span>
+               <input
+                  className="min-h-[48px] rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b1 font-normal text-md-heading shadow-md-card placeholder:text-md-neutral-1200 focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
+                  maxLength={30}
+                  onChange={(event) => onProfileNameChange(event.target.value)}
+                  placeholder="e.g. Maya, Jay, or a friendly nickname"
+                  type="text"
+                  value={profileName}
+               />
+               <span className="flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                  <span>This is the name lenders see with your requests.</span>
+                  <span className="shrink-0">{profileName.length}/30</span>
+               </span>
+               {profileSaveError ? <span className="text-md-b3 font-medium leading-[18px] text-md-red-500">{profileSaveError}</span> : null}
+            </label>
+         </section>
+
+         {!canContinue ? (
+            <div className="flex flex-wrap items-center gap-md-1 text-md-b3 font-medium leading-[18px] text-md-primary-1200">
+               <span>Fill in work, payday, and help sections to continue.</span>
+               <TrustBadge label="+10 Trust Points" />
+            </div>
+         ) : null}
+
+         <BorrowerContextRadioSection
+            label="How would you describe your work?"
+            onSelect={onIncomeSelect}
+            options={incomeSetupOptions}
+            selectedValue={context.incomeSetup}
+         />
+
+         <BorrowerContextChipSection
+            helper="Helps lenders see that repayment timing makes sense."
+            label="When do you usually get paid?"
+            onSelect={onPaydaySelect}
+            options={paydayWindowOptions}
+            selectedValues={[context.paydayWindow]}
+         />
+
+         <BorrowerContextChipSection
+            caption="Pick all that apply."
+            label="What do you usually need short-term help with?"
+            multi
+            onSelect={onCashGapToggle}
+            options={cashGapOptions}
+            selectedValues={context.cashGaps}
+         />
+
+         <div>
+            <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-md-2">
+               <button
+                  className="inline-flex min-h-[48px] items-center justify-center gap-md-1 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 text-md-b1 font-medium text-md-heading shadow-md-card transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                  onClick={onBack}
+                  type="button"
+               >
+                  <ChevronLeft className="size-5" strokeWidth={2} />
+                  Back
+               </button>
+               <button
+                  className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                  disabled={!canContinue || isBusy}
+                  onClick={onContinue}
+                  type="button"
+               >
+	                  {isSavingProfile ? 'Saving profile...' : isSubmitting ? 'Submitting...' : 'Save bio info'}
+               </button>
+            </div>
+         </div>
+      </div>
+   );
+}
+
+function TrustBadge({ label }: { label: string }) {
+   return <span className="rounded-md-pill bg-md-primary-1200 px-[6px] py-[2px] text-md-b4 font-[590] text-md-neutral-100">{label}</span>;
+}
+
+function BorrowerContextRadioSection({
+   label,
+   onSelect,
+   options,
+   selectedValue
+}: {
+   label: string;
+   onSelect: (value: string) => void;
+   options: BorrowerContextOption[];
+   selectedValue: string;
+}) {
+   return (
+      <fieldset className="flex flex-col gap-md-1">
+         <legend className="text-md-b2 font-[590] text-md-heading">{label}</legend>
+         <div className="flex flex-col gap-md-1">
+            {options.map((option) => (
+               <BorrowerContextRadioCard
+                  key={option.value}
+                  isSelected={selectedValue === option.value}
+                  onClick={() => onSelect(option.value)}
+                  option={option}
+               />
+            ))}
+         </div>
+      </fieldset>
+   );
+}
+
+function BorrowerContextRadioCard({
+   isSelected,
+   onClick,
+   option
+}: {
+   isSelected: boolean;
+   onClick: () => void;
+   option: BorrowerContextOption;
+}) {
+   return (
+      <button
+         aria-pressed={isSelected}
+         className={`grid min-h-[58px] w-full grid-cols-[minmax(0,1fr)_22px] items-center gap-md-2 rounded-md-input border px-md-2 py-md-1 text-left transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+            isSelected
+               ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_8px_18px_rgba(105,48,232,0.08)]'
+               : 'border-md-neutral-500 bg-md-neutral-100 text-md-neutral-1200'
+         }`}
+         onClick={onClick}
+         type="button"
+      >
+         <span className="min-w-0">
+            <span className={`block text-md-b2 font-[590] ${isSelected ? 'text-md-primary-1200' : 'text-md-heading'}`}>{option.label}</span>
+            {option.description ? (
+               <span className="mt-[2px] block text-md-b3 font-normal text-md-neutral-1200">{option.description}</span>
+            ) : null}
+         </span>
+         <span
+            className={`flex size-5 shrink-0 items-center justify-center rounded-md-pill border ${
+               isSelected ? 'border-md-primary-1200 bg-md-primary-1200 text-md-neutral-100' : 'border-md-neutral-700 bg-md-neutral-100'
+            }`}
+         >
+            {isSelected ? <Check className="size-3.5" strokeWidth={2.6} /> : null}
+         </span>
+      </button>
+   );
+}
+
+function BorrowerContextChipSection({
+   caption,
+   helper,
+   label,
+   multi = false,
+   onSelect,
+   options,
+   selectedValues
+}: {
+   caption?: string;
+   helper?: string;
+   label: string;
+   multi?: boolean;
+   onSelect: (value: string) => void;
+   options: BorrowerContextOption[];
+   selectedValues: string[];
+}) {
+   return (
+      <fieldset className="flex flex-col gap-md-1 border-t border-md-neutral-400 pt-md-2">
+         <legend className="sr-only">{label}</legend>
+         <div className="flex flex-col gap-[2px]">
+            <span className="text-md-b2 font-[590] text-md-heading">{label}</span>
+            {caption ? <span className="text-md-b3 font-normal text-md-neutral-1200">{caption}</span> : null}
+            {helper ? <span className="text-md-b3 font-normal text-md-neutral-1200">{helper}</span> : null}
+         </div>
+         <div className="flex flex-wrap gap-md-1">
+            {options.map((option) => (
+               <BorrowerContextChoiceChip
+                  key={option.value}
+                  isSelected={selectedValues.includes(option.value)}
+                  label={option.pillLabel ?? option.label}
+                  multi={multi}
+                  onClick={() => onSelect(option.value)}
+               />
+            ))}
+         </div>
+      </fieldset>
+   );
+}
+
+function BorrowerContextChoiceChip({
+   isSelected,
+   label,
+   multi,
+   onClick
+}: {
+   isSelected: boolean;
+   label: string;
+   multi: boolean;
+   onClick: () => void;
+}) {
+   return (
+      <button
+         aria-pressed={isSelected}
+         className={`inline-flex min-h-[32px] items-center justify-center gap-[6px] rounded-md-pill border px-md-2 py-[5px] text-md-b3 font-medium leading-[18px] transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+            isSelected
+               ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_5px_12px_rgba(105,48,232,0.08)]'
+               : 'border-md-neutral-700 bg-md-neutral-100 text-md-neutral-1400'
+         }`}
+         onClick={onClick}
+         type="button"
+      >
+         {label}
+         {multi && isSelected ? <Check className="size-3.5" strokeWidth={2.6} /> : null}
+      </button>
+   );
+}
 
 export default function LoanRequestModal({
    clickOutsideRef,
@@ -367,10 +630,11 @@ export default function LoanRequestModal({
    isSubmitting,
    availableCreditLimit,
    canUseReferralBoost = true,
-   startOnReferralStep = true,
-   showBioStep = false,
-   onBioSave
+   requireBorrowerContextStep = true,
+   startOnBorrowerContextStep = false,
+   startOnReferralStep = true
 }: LoanRequestModalProps) {
+   const dispatch = useDispatch<AppDispatch>();
    const formRef = useRef<HTMLFormElement | null>(null);
    const dateInputRef = useRef<HTMLInputElement | null>(null);
    const reasonTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -384,6 +648,14 @@ export default function LoanRequestModal({
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
    const [referralCodeError, setReferralCodeError] = useState('');
    const [isApplyingReferralCode, setIsApplyingReferralCode] = useState(false);
+   const [showBorrowerContextStep, setShowBorrowerContextStep] = useState(startOnBorrowerContextStep);
+   const [borrowerContext, setBorrowerContext] = useState<BorrowerContextState>(emptyBorrowerContext);
+   const [borrowerContextPromptSeen, setBorrowerContextPromptSeen] = useState(false);
+   const [borrowerProfileName, setBorrowerProfileName] = useState(user.displayName ?? user.username ?? '');
+   const [borrowerProfileError, setBorrowerProfileError] = useState('');
+   const [showBorrowerAvatarModal, setShowBorrowerAvatarModal] = useState(false);
+   const [isSavingBorrowerProfile, setIsSavingBorrowerProfile] = useState(false);
+   const [isSavingBorrowerAvatar, setIsSavingBorrowerAvatar] = useState(false);
 
    const isVerified = !showVerify;
    const limitAmount = Math.max(availableCreditLimit, 0);
@@ -407,6 +679,11 @@ export default function LoanRequestModal({
    const referralPrimaryActionText =
       hasAppliedReferralCode || !hasReferralCode ? 'Continue to application' : hasReferralCodeError ? 'Try again' : 'Apply code';
    const shouldShowReferralStep = showReferralStep && isVerified && canUseReferralBoost;
+   const canContinueBorrowerContext = Boolean(
+      borrowerContext.incomeSetup && borrowerContext.paydayWindow && borrowerContext.cashGaps.length > 0
+   );
+   const currentBorrowerDisplayName = user.displayName ?? user.username ?? '';
+   const isPreviewUser = user.email.endsWith('@moodeng.local') || user.id.includes('preview');
 
    useEffect(() => {
       setTypedDate(selectedDateLabel);
@@ -421,12 +698,27 @@ export default function LoanRequestModal({
       if (!isOpen) return;
 
       setShowReferralStep(startOnReferralStep && isVerified && canUseReferralBoost);
+      setShowBorrowerContextStep(startOnBorrowerContextStep);
+      setBorrowerContext(emptyBorrowerContext);
+      setBorrowerContextPromptSeen(false);
+      setBorrowerProfileName(user.displayName ?? user.username ?? '');
+      setBorrowerProfileError('');
+      setShowBorrowerAvatarModal(false);
       setReferralCode('');
       setAppliedReferral(null);
       setReferralCodeError('');
       setIsApplyingReferralCode(false);
       onReferralApplied?.(null);
-   }, [canUseReferralBoost, isOpen, isVerified, onReferralApplied, startOnReferralStep]);
+   }, [
+      canUseReferralBoost,
+      isOpen,
+      isVerified,
+      onReferralApplied,
+      startOnBorrowerContextStep,
+      startOnReferralStep,
+      user.displayName,
+      user.username
+   ]);
 
    useEffect(() => {
       if (!isOpen || shouldShowReferralStep) return;
@@ -628,6 +920,115 @@ export default function LoanRequestModal({
       await applyReferralCode();
    };
 
+   const recordBorrowerProfileMilestone = async (milestoneId: 'profile-name-added' | 'profile-image-added') => {
+      if (isPreviewUser || !user.id) return;
+
+      try {
+         const supabase = getSupabaseBrowserClient();
+         const { error } = await supabase.rpc('record_milestone_completion', {
+            user_id_input: user.id,
+            milestone_id_input: milestoneId,
+            metadata_input: {
+               source: 'loan_request_profile_step'
+            }
+         });
+
+         if (error && !isIgnorableMilestoneError(error)) {
+            console.error(`Failed to record ${milestoneId} milestone:`, error.message);
+         }
+      } catch (error) {
+         console.error(`Failed to record ${milestoneId} milestone:`, error);
+      }
+   };
+
+   const saveBorrowerProfile = async () => {
+      const trimmedProfileName = borrowerProfileName.trim();
+      if (!trimmedProfileName || isPreviewUser) return true;
+      if (trimmedProfileName === currentBorrowerDisplayName) {
+         await recordBorrowerProfileMilestone('profile-name-added');
+         return true;
+      }
+
+      setIsSavingBorrowerProfile(true);
+      setBorrowerProfileError('');
+      try {
+         const result = await dispatch(updateUser({ displayName: trimmedProfileName }));
+         if (updateUser.fulfilled.match(result)) {
+            await recordBorrowerProfileMilestone('profile-name-added');
+            return true;
+         }
+
+         throw new Error(result.error?.message || 'Failed to save profile name.');
+      } catch (error) {
+         setBorrowerProfileError(error instanceof Error ? error.message : 'Failed to save profile name.');
+         return false;
+      } finally {
+         setIsSavingBorrowerProfile(false);
+      }
+   };
+
+   const handleBorrowerAvatarSave = async (file: File, avatarBackground: string) => {
+      setIsSavingBorrowerAvatar(true);
+      setBorrowerProfileError('');
+      try {
+         if (isPreviewUser) {
+            setShowBorrowerAvatarModal(false);
+            return;
+         }
+
+         const avatarUrl = await uploadAvatarForCurrentUser(file);
+         const result = await dispatch(updateUser({ avatarUrl, avatarBackground }));
+         if (updateUser.fulfilled.match(result)) {
+            await recordBorrowerProfileMilestone('profile-image-added');
+            setShowBorrowerAvatarModal(false);
+            return;
+         }
+
+         throw new Error(result.error?.message || 'Failed to update profile image.');
+      } finally {
+         setIsSavingBorrowerAvatar(false);
+      }
+   };
+
+   const handleLoanFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+      if (!isVerified || isSubmitting) {
+         event.preventDefault();
+         return;
+      }
+
+      if (requireBorrowerContextStep && !borrowerContextPromptSeen && !showBorrowerContextStep) {
+         event.preventDefault();
+         setShowBorrowerContextStep(true);
+         return;
+      }
+
+      handleSubmit(event, showBorrowerContextStep ? borrowerContext : undefined);
+   };
+
+   const handleBorrowerContextContinue = async () => {
+      if (!canContinueBorrowerContext) return;
+
+      const isProfileSaved = await saveBorrowerProfile();
+      if (!isProfileSaved) return;
+
+      setBorrowerContextPromptSeen(true);
+      formRef.current?.requestSubmit();
+   };
+
+   const handleBorrowerContextBack = () => {
+      setShowBorrowerContextStep(false);
+   };
+
+   const handleCashGapToggle = (value: string) => {
+      setBorrowerContext((current) => {
+         const hasValue = current.cashGaps.includes(value);
+         return {
+            ...current,
+            cashGaps: hasValue ? current.cashGaps.filter((gap) => gap !== value) : [...current.cashGaps, value]
+         };
+      });
+   };
+
    if (!isOpen) return null;
 
    const isInteractiveReferralTarget = (target: EventTarget | null) =>
@@ -681,7 +1082,7 @@ export default function LoanRequestModal({
    };
 
    return (
-      <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/20 px-[21px] py-[64px] sm:items-center sm:py-6">
+      <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-[#1f1b29]/20 px-[21px] py-[64px] sm:items-center sm:py-6">
          <section
             ref={clickOutsideRef}
             className="relative mx-auto flex max-h-[calc(100dvh-42px)] w-full max-w-[398px] flex-col overflow-hidden rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 shadow-md-card transition-transform duration-150 ease-out"
@@ -708,8 +1109,13 @@ export default function LoanRequestModal({
                <div className="flex items-center gap-md-1">
                   {shouldShowReferralStep ? (
                      <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
-                  ) : showBioStep ? (
-                     <h2 className="text-md-h6 text-md-heading">A bit about you</h2>
+                  ) : showBorrowerContextStep ? (
+                     <div>
+                        <h2 className="text-md-h6 font-[590] leading-[24px] text-md-heading">How lenders see you</h2>
+                        <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+	                           Share simple bio details so lenders can understand your request.
+                        </p>
+                     </div>
                   ) : (
                      <>
                         <h2 className="text-md-h6 text-md-heading">Set Your Own Terms</h2>
@@ -736,7 +1142,7 @@ export default function LoanRequestModal({
                   className="rounded-full p-1 text-md-neutral-2000 transition duration-150 ease-out hover:bg-md-primary-100 hover:text-md-primary-1200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 dark:text-[#f8f4ff] dark:hover:bg-[#2a2235] dark:hover:text-white dark:focus-visible:ring-offset-[#1b1525]"
                   type="button"
                >
-                  <X aria-hidden="true" className="h-8 w-8" strokeWidth={2} />
+                  <X aria-hidden="true" className="h-6 w-6" strokeWidth={2} />
                </button>
             </header>
 
@@ -824,189 +1230,216 @@ export default function LoanRequestModal({
 
                   <p className="text-center text-md-b3 font-normal text-md-neutral-1200">No code needed. You can continue normally.</p>
                </div>
-            ) : showBioStep ? (
-               <BioStep onSave={onBioSave!} />
             ) : (
                <form
                   ref={formRef}
-                  onSubmit={handleSubmit}
+                  onSubmit={handleLoanFormSubmit}
                   className="flex min-h-0 flex-col gap-md-3 overflow-y-auto p-md-3 text-md-b2 text-md-heading"
                >
-                  {showVerify ? (
-                     <div
-                        className="flex items-center gap-md-2 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-[#fff6d0] px-md-3 py-md-2"
-                        data-tour-target="loan-verification-card"
-                     >
-                        <div className="flex min-w-0 max-w-[220px] flex-1 flex-col gap-md-1">
-                           <div className="flex flex-col gap-md-0">
-                              <p className="whitespace-nowrap text-md-b2 font-medium text-md-primary-2000">
-                                 One quick step to request a loan
-                              </p>
-                              <p className="text-md-b3 font-normal text-md-neutral-1400">
-                                 Complete a one-time verification to start building trust with lenders.
-                              </p>
+                  {showBorrowerContextStep ? (
+                     <BorrowerContextLoanStep
+                        context={borrowerContext}
+                        currentAvatarBackground={user.avatarBackground}
+                        currentAvatarUrl={user.avatarUrl}
+                        isSubmitting={isSubmitting}
+                        isSavingProfile={isSavingBorrowerProfile}
+                        onBack={handleBorrowerContextBack}
+                        onCashGapToggle={handleCashGapToggle}
+                        onContinue={handleBorrowerContextContinue}
+                        onIncomeSelect={(value) => setBorrowerContext((current) => ({ ...current, incomeSetup: value }))}
+                        onPaydaySelect={(value) => setBorrowerContext((current) => ({ ...current, paydayWindow: value }))}
+                        onProfileImageClick={() => setShowBorrowerAvatarModal(true)}
+                        onProfileNameChange={(value) => {
+                           setBorrowerProfileName(value);
+                           setBorrowerProfileError('');
+                        }}
+                        profileName={borrowerProfileName}
+                        profileSaveError={borrowerProfileError}
+                     />
+                  ) : (
+                     <>
+                        {showVerify ? (
+                           <div
+                              className="flex items-center gap-md-2 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-[#fff6d0] px-md-3 py-md-2"
+                              data-tour-target="loan-verification-card"
+                           >
+                              <div className="flex min-w-0 max-w-[220px] flex-1 flex-col gap-md-1">
+                                 <div className="flex flex-col gap-md-0">
+                                    <p className="whitespace-nowrap text-md-b2 font-medium text-md-primary-2000">
+                                       One quick step to request a loan
+                                    </p>
+                                    <p className="text-md-b3 font-normal text-md-neutral-1400">
+                                       Complete a one-time verification to start building trust with lenders.
+                                    </p>
+                                 </div>
+                                 <WorldIDVerification>
+                                    {({ open }) => (
+                                       <button
+                                          onClick={open}
+                                          className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                                          type="button"
+                                       >
+                                          Get Verified
+                                       </button>
+                                    )}
+                                 </WorldIDVerification>
+                              </div>
+                              <img
+                                 alt=""
+                                 aria-hidden="true"
+                                 className="h-[86px] w-[96px] shrink-0 object-contain"
+                                 src="/hippos/welcome.png"
+                              />
                            </div>
-                           <WorldIDVerification>
-                              {({ open }) => (
+                        ) : null}
+
+                        <div className="flex flex-col gap-md-1" data-tour-target="loan-borrow-amount">
+                           <div className="flex items-center justify-between gap-md-2">
+                              <label className="text-md-b2 font-normal text-md-heading" htmlFor="borrow-amount">
+                                 Borrow Amount
+                              </label>
+                              <div className="flex items-center gap-md-0 rounded-md-md bg-md-primary-100 px-md-1 py-md-0 text-md-b3 font-normal text-[#3e0a88] dark:border dark:border-[#7c4ed8]/40 dark:bg-[#2a1740] dark:text-[#f8f4ff]">
+                                 <span>Current Limit: ${limitAmount || '0'}</span>
+                                 <InfoTooltip
+                                    activeTooltip={activeTooltip}
+                                    arrowClassName="left-1/2 top-[-5px] -translate-x-1/2 rotate-45"
+                                    iconClassName="h-4 w-4"
+                                    id="limit"
+                                    label="Explain current borrow limit"
+                                    panelClassName="right-0 top-full mt-md-1"
+                                    setActiveTooltip={setActiveTooltip}
+                                 />
+                              </div>
+                           </div>
+                           <div className={`flex items-center ${inputShellClass}`}>
+                              <span
+                                 aria-hidden="true"
+                                 className="flex min-w-[112px] items-center justify-center gap-md-1 self-stretch border-r border-md-neutral-600 bg-[#2775ca] px-md-3 py-md-2 text-md-b1 font-normal text-md-neutral-100"
+                              >
+                                 <UsdcIcon />
+                                 USDC
+                              </span>
+                              <input
+                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setLoanAmount(e.target.value)}
+                                 onFocus={scrollFieldIntoView}
+                                 className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
+                                 id="borrow-amount"
+                                 inputMode="decimal"
+                                 placeholder="Set your desired amount"
+                                 type="text"
+                                 value={loanAmount}
+                              />
+                           </div>
+                           <div className="flex justify-end gap-md-1 text-md-b3 font-normal text-md-neutral-1200">
+                              <InfoTooltip
+                                 activeTooltip={activeTooltip}
+                                 iconClassName="h-4 w-4"
+                                 iconStrokeWidth={1.35}
+                                 id="usdc"
+                                 label="Explain USDC loans"
+                                 panelClassName="left-0 top-full mt-md-1 -translate-x-1/2"
+                                 setActiveTooltip={setActiveTooltip}
+                              />
+                              <span>All loans are issued and repaid in USDC.</span>
+                           </div>
+                        </div>
+
+                        <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-amount">
+                           <label className="text-md-b2 font-normal text-md-heading" htmlFor="repayment-amount">
+                              Set Repayment Amount
+                           </label>
+                           <input
+                              onChange={(e: ChangeEvent<HTMLInputElement>) => setTotalRepaymentAmount(e.target.value)}
+                              onFocus={scrollFieldIntoView}
+                              className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none`}
+                              id="repayment-amount"
+                              inputMode="decimal"
+                              placeholder="Must be more than the borrowed amount"
+                              type="text"
+                              value={totalRepaymentAmount}
+                           />
+                        </div>
+
+                        <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-date">
+                           <label className="text-md-b2 font-normal text-md-heading" htmlFor="repaymentDate">
+                              Set Repayment Date
+                           </label>
+                           <div className="relative">
+                              <div className={`relative flex items-center ${inputShellClass}`}>
+                                 <input
+                                    ref={dateInputRef}
+                                    aria-label="Selected repayment date"
+                                    onChange={handleTypedDate}
+                                    onClick={() => keepDateCursorInEditablePart()}
+                                    onBlur={() => {
+                                       if (!typedDate.replace(/\D/g, '')) setTypedDate('');
+                                    }}
+                                    onFocus={(event) => {
+                                       scrollFieldIntoView(event);
+                                       keepDateCursorInEditablePart();
+                                    }}
+                                    onKeyDown={handleDateKeyDown}
+                                    onPaste={handleDatePaste}
+                                    onSelect={() => keepDateCursorInEditablePart()}
+                                    placeholder={datePlaceholder}
+                                    type="text"
+                                    value={typedDate}
+                                    id="repaymentDate"
+                                    className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 pr-[64px] text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
+                                 />
                                  <button
-                                    onClick={open}
-                                    className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                                    aria-expanded={isCalendarOpen}
+                                    aria-label="Open repayment date calendar"
+                                    className={`absolute inset-y-0 right-0 flex w-[56px] items-center justify-center border-l border-md-primary-1200 transition duration-150 ease-out active:bg-[#4b00b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
+                                       isCalendarOpen || isRepaymentDateFilled
+                                          ? 'bg-md-primary-1200 text-md-neutral-100 hover:bg-[#5200c8]'
+                                          : 'bg-md-neutral-100 text-md-primary-900 hover:bg-md-primary-100'
+                                    }`}
+                                    onClick={() => setIsCalendarOpen((isOpen) => !isOpen)}
                                     type="button"
                                  >
-                                    Get Verified
+                                    <CalendarDays aria-hidden="true" className="h-6 w-6" strokeWidth={1.6} />
                                  </button>
-                              )}
-                           </WorldIDVerification>
+                              </div>
+                           </div>
                         </div>
-                        <img alt="" aria-hidden="true" className="h-[86px] w-[96px] shrink-0 object-contain" src="/hippos/welcome.png" />
-                     </div>
-                  ) : null}
 
-                  <div className="flex flex-col gap-md-1" data-tour-target="loan-borrow-amount">
-                     <div className="flex items-center justify-between gap-md-2">
-                        <label className="text-md-b2 font-normal text-md-heading" htmlFor="borrow-amount">
-                           Borrow Amount
-                        </label>
-                        <div className="flex items-center gap-md-0 rounded-md-md bg-md-primary-100 px-md-1 py-md-0 text-md-b3 font-normal text-[#3e0a88] dark:border dark:border-[#7c4ed8]/40 dark:bg-[#2a1740] dark:text-[#f8f4ff]">
-                           <span>Current Limit: ${limitAmount || '0'}</span>
-                           <InfoTooltip
-                              activeTooltip={activeTooltip}
-                              arrowClassName="left-1/2 top-[-5px] -translate-x-1/2 rotate-45"
-                              iconClassName="h-4 w-4"
-                              id="limit"
-                              label="Explain current borrow limit"
-                              panelClassName="right-0 top-full mt-md-1"
-                              setActiveTooltip={setActiveTooltip}
-                           />
+                        <div className="flex flex-col gap-md-1" data-tour-target="loan-reason">
+                           <label className="text-md-b2 font-normal text-md-heading" htmlFor="reason">
+                              Reason For Borrowing
+                           </label>
+                           <div className={`${inputShellClass} flex flex-col px-md-3 py-md-2`}>
+                              <textarea
+                                 ref={reasonTextareaRef}
+                                 maxLength={40}
+                                 onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
+                                    setReason(e.target.value);
+                                    resizeReasonTextarea(e.target);
+                                 }}
+                                 onFocus={scrollFieldIntoView}
+                                 className="min-h-[48px] resize-none overflow-hidden bg-transparent text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
+                                 id="reason"
+                                 placeholder="Text"
+                                 rows={1}
+                                 value={reason}
+                              />
+                              <div className="text-right text-md-b3 font-normal text-md-neutral-1200 select-none">{reason.length}/40</div>
+                           </div>
                         </div>
-                     </div>
-                     <div className={`flex items-center ${inputShellClass}`}>
-                        <span
-                           aria-hidden="true"
-                           className="flex min-w-[112px] items-center justify-center gap-md-1 self-stretch border-r border-md-neutral-600 bg-[#2775ca] px-md-3 py-md-2 text-md-b1 font-normal text-md-neutral-100"
+
+                        <button
+                           className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
+                              isVerified && !isSubmitting
+                                 ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2'
+                                 : 'cursor-not-allowed bg-md-neutral-600'
+                           }`}
+                           type="submit"
+                           disabled={!isVerified || isSubmitting}
                         >
-                           <UsdcIcon />
-                           USDC
-                        </span>
-                        <input
-                           onChange={(e: ChangeEvent<HTMLInputElement>) => setLoanAmount(e.target.value)}
-                           onFocus={scrollFieldIntoView}
-                           className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
-                           id="borrow-amount"
-                           inputMode="decimal"
-                           placeholder="Set your desired amount"
-                           type="text"
-                           value={loanAmount}
-                        />
-                     </div>
-                     <div className="flex justify-end gap-md-1 text-md-b3 font-normal text-md-neutral-1200">
-                        <InfoTooltip
-                           activeTooltip={activeTooltip}
-                           iconClassName="h-4 w-4"
-                           iconStrokeWidth={1.35}
-                           id="usdc"
-                           label="Explain USDC loans"
-                           panelClassName="left-0 top-full mt-md-1 -translate-x-1/2"
-                           setActiveTooltip={setActiveTooltip}
-                        />
-                        <span>All loans are issued and repaid in USDC.</span>
-                     </div>
-                  </div>
-
-                  <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-amount">
-                     <label className="text-md-b2 font-normal text-md-heading" htmlFor="repayment-amount">
-                        Set Repayment Amount
-                     </label>
-                     <input
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => setTotalRepaymentAmount(e.target.value)}
-                        onFocus={scrollFieldIntoView}
-                        className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none`}
-                        id="repayment-amount"
-                        inputMode="decimal"
-                        placeholder="Must be more than the borrowed amount"
-                        type="text"
-                        value={totalRepaymentAmount}
-                     />
-                  </div>
-
-                  <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-date">
-                     <label className="text-md-b2 font-normal text-md-heading" htmlFor="repaymentDate">
-                        Set Repayment Date
-                     </label>
-                     <div className="relative">
-                        <div className={`relative flex items-center ${inputShellClass}`}>
-                           <input
-                              ref={dateInputRef}
-                              aria-label="Selected repayment date"
-                              onChange={handleTypedDate}
-                              onClick={() => keepDateCursorInEditablePart()}
-                              onBlur={() => {
-                                 if (!typedDate.replace(/\D/g, '')) setTypedDate('');
-                              }}
-                              onFocus={(event) => {
-                                 scrollFieldIntoView(event);
-                                 keepDateCursorInEditablePart();
-                              }}
-                              onKeyDown={handleDateKeyDown}
-                              onPaste={handleDatePaste}
-                              onSelect={() => keepDateCursorInEditablePart()}
-                              placeholder={datePlaceholder}
-                              type="text"
-                              value={typedDate}
-                              id="repaymentDate"
-                              className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 pr-[64px] text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
-                           />
-                           <button
-                              aria-expanded={isCalendarOpen}
-                              aria-label="Open repayment date calendar"
-                              className={`absolute inset-y-0 right-0 flex w-[56px] items-center justify-center border-l border-md-primary-1200 transition duration-150 ease-out active:bg-[#4b00b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
-                                 isCalendarOpen || isRepaymentDateFilled
-                                    ? 'bg-md-primary-1200 text-md-neutral-100 hover:bg-[#5200c8]'
-                                    : 'bg-md-neutral-100 text-md-primary-900 hover:bg-md-primary-100'
-                              }`}
-                              onClick={() => setIsCalendarOpen((isOpen) => !isOpen)}
-                              type="button"
-                           >
-                              <CalendarDays aria-hidden="true" className="h-6 w-6" strokeWidth={1.6} />
-                           </button>
-                        </div>
-                     </div>
-                  </div>
-
-                  <div className="flex flex-col gap-md-1" data-tour-target="loan-reason">
-                     <label className="text-md-b2 font-normal text-md-heading" htmlFor="reason">
-                        Reason For Borrowing
-                     </label>
-                     <div className={`${inputShellClass} flex flex-col px-md-3 py-md-2`}>
-                        <textarea
-                           ref={reasonTextareaRef}
-                           maxLength={40}
-                           onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
-                              setReason(e.target.value);
-                              resizeReasonTextarea(e.target);
-                           }}
-                           onFocus={scrollFieldIntoView}
-                           className="min-h-[48px] resize-none overflow-hidden bg-transparent text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
-                           id="reason"
-                           placeholder="Text"
-                           rows={1}
-                           value={reason}
-                        />
-                        <div className="text-right text-md-b3 font-normal text-md-neutral-1200 select-none">{reason.length}/40</div>
-                     </div>
-                  </div>
-
-                  <button
-                     className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
-                        isVerified && !isSubmitting
-                           ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2'
-                           : 'cursor-not-allowed bg-md-neutral-600'
-                     }`}
-                     type="submit"
-                     disabled={!isVerified || isSubmitting}
-                  >
-                     {isSubmitting ? 'Submitting...' : 'Make Your Request'}
-                  </button>
+                           {isSubmitting ? 'Submitting...' : 'Make Your Request'}
+                        </button>
+                     </>
+                  )}
                </form>
             )}
          </section>
@@ -1014,7 +1447,7 @@ export default function LoanRequestModal({
             <div
                aria-label="Choose repayment date"
                aria-modal="true"
-               className="fixed inset-0 z-[90] flex items-center justify-center bg-black/20 px-[21px]"
+               className="fixed inset-0 z-[90] flex items-center justify-center bg-[#1f1b29]/20 px-[21px]"
                onClick={() => setIsCalendarOpen(false)}
                onMouseDown={(event) => event.stopPropagation()}
                role="dialog"
@@ -1075,6 +1508,14 @@ export default function LoanRequestModal({
                </div>
             </div>
          ) : null}
+         <AvatarUploadModal
+            currentAvatar={user.avatarUrl}
+            currentAvatarBackground={user.avatarBackground}
+            isOpen={showBorrowerAvatarModal}
+            isSaving={isSavingBorrowerAvatar}
+            onClose={() => setShowBorrowerAvatarModal(false)}
+            onSave={handleBorrowerAvatarSave}
+         />
       </div>
    );
 }
