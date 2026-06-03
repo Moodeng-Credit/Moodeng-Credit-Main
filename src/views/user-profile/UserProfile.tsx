@@ -79,7 +79,7 @@ const UserProfile = () => {
    const storedUserProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const loans = isDemoInsights ? DEMO_BORROWER_INSIGHTS_LOANS : storedLoans;
    const userProfiles = isDemoInsights ? DEMO_LENDER_PROFILES : storedUserProfiles;
-   const resolvedUser = isDemoInsights ? DEMO_BORROWER_INSIGHTS_USER : (profileUser ?? user);
+   const resolvedUser = isDemoInsights ? DEMO_BORROWER_INSIGHTS_USER : (profileUser ?? (username === user.username ? user : null));
    const showLenderInsightsTour =
       forceTourPreview && searchParams.has('lenderTourPreview') && shouldShowGuidedTour(LENDER_GUIDED_TOUR_ID, user.id, forceTourPreview);
 
