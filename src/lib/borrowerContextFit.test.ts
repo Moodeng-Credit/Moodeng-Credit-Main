@@ -22,8 +22,8 @@ describe('borrower context fit', () => {
 
       expect(result.fitLevel).toBe('strong');
       expect(result.gapDays).toBe(3);
-      expect(result.verdictHTML).toContain('<strong>3-day gap</strong>');
-      expect(result.verdictHTML).toContain('will have income before repayment is due');
+      expect(result.verdictHTML).toContain('<strong>3 days</strong>');
+      expect(result.verdictHTML).toContain("They'll have their pay before they need to repay");
    });
 
    it('returns ok when repayment falls inside the payday window', () => {
@@ -39,7 +39,7 @@ describe('borrower context fit', () => {
 
       expect(result.fitLevel).toBe('weak');
       expect(result.gapDays).toBe(-2);
-      expect(result.verdictHTML).toContain('<strong>2 days</strong> before their typical pay window');
+      expect(result.verdictHTML).toContain('<strong>2 days</strong> before they usually get paid');
    });
 
    it('returns unknown for irregular income timing', () => {
@@ -55,7 +55,7 @@ describe('borrower context fit', () => {
 
       expect(result.fitLevel).toBe('unknown');
       expect(result.gapDays).toBeNull();
-      expect(result.verdictHTML).toContain('Part-time work means hours and pay vary');
+      expect(result.verdictHTML).toContain("Hours and pay aren't fixed");
       expect(result.verdictHTML).toContain('family needs and bills');
    });
 
@@ -63,7 +63,7 @@ describe('borrower context fit', () => {
       const result = buildBorrowerContextFit(makeInput({ incomeType: 'none' }));
 
       expect(result.fitLevel).toBe('unknown');
-      expect(result.verdictHTML).toContain('No income source on file');
+      expect(result.verdictHTML).toContain('No income listed');
       expect(result.verdictHTML).toContain('family needs');
    });
 
@@ -72,7 +72,7 @@ describe('borrower context fit', () => {
 
       expect(result.fitLevel).toBe('unknown');
       expect(result.gapDays).toBeNull();
-      expect(result.verdictHTML).toContain('Repayment timing is incomplete');
+      expect(result.verdictHTML).toContain('No timing info available');
    });
 
    it('uses multiple gap reasons as a natural list in the context line chip data', () => {
@@ -85,26 +85,26 @@ describe('borrower context fit', () => {
 
    it('flags a pattern match when reason matches gap reasons', () => {
       const result = buildBorrowerContextFit(makeInput({ reason: 'family expenses', gapReasons: ['family needs'] }));
-      expect(result.verdictHTML).toContain('aligns with their usual borrowing pattern');
+      expect(result.verdictHTML).toContain('Matches their usual reason for borrowing');
    });
 
    it('track record dominates for weak timing with strong history', () => {
       const result = buildBorrowerContextFit(makeInput({
-         dueDate: new Date('2026-05-08T00:00:00.000Z'), // before payday window
+         dueDate: new Date('2026-05-08T00:00:00.000Z'),
          repaidLoanCount: 4
       }));
       expect(result.fitLevel).toBe('weak');
-      expect(result.verdictHTML).toContain('proven track record');
+      expect(result.verdictHTML).toContain("they've shown they handle this");
    });
 
    it('shows verified + good standing in verdict', () => {
       const result = buildBorrowerContextFit(makeInput({ goodStanding: true, isVerified: true }));
-      expect(result.verdictHTML).toContain('Verified human, Good Standing.');
+      expect(result.verdictHTML).toContain('World ID verified · Good Standing.');
    });
 
    it('uses repaidLoanCount over fundedLoanCount when both provided', () => {
       const result = buildBorrowerContextFit(makeInput({ repaidLoanCount: 3, fundedLoanCount: 5 }));
-      expect(result.verdictHTML).toContain('3 repaid loans');
+      expect(result.verdictHTML).toContain('Paid back 3 loans');
    });
 
    it('handles freelance + irregular with strong history correctly', () => {
@@ -116,7 +116,7 @@ describe('borrower context fit', () => {
          repaidLoanCount: 3
       }));
       expect(result.fitLevel).toBe('unknown');
-      expect(result.verdictHTML).toContain('established');
+      expect(result.verdictHTML).toContain('well-established pattern');
    });
 
    it('handles full-time + irregular as commission/bonus-based', () => {
