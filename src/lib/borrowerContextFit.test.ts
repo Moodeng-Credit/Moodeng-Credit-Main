@@ -55,7 +55,7 @@ describe('borrower context fit', () => {
 
       expect(result.fitLevel).toBe('unknown');
       expect(result.gapDays).toBeNull();
-      expect(result.verdictHTML).toContain('Variable hours and pay timing');
+      expect(result.verdictHTML).toContain('Part-time work means hours and pay vary');
       expect(result.verdictHTML).toContain('family needs and bills');
    });
 

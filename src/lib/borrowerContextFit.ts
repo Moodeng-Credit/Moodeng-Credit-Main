@@ -374,7 +374,7 @@ export const buildBorrowerContextFit = (input: BorrowerContextInput): BorrowerCo
 
       // Part-time + irregular — gig-like work
       return buildNeutralResult(input, dueDate, gapDays,
-         `Variable hours and pay timing — ${incomeReliability}. Focus on the stated ${needLabel} need and their repayment history.${patternNote} ${track}.${creds}`
+         `Part-time work means hours and pay vary — focus on their stated ${needLabel} need and repayment history.${patternNote} ${track}.${creds}`
       );
    }
 
