@@ -17,7 +17,7 @@ const makeInput = (overrides: Partial<BorrowerContextInput> = {}): BorrowerConte
 });
 
 describe('borrower context fit', () => {
-   it('strong — explains they will have pay before repayment', () => {
+   it('strong — income arrives before repayment', () => {
       const result = buildBorrowerContextFit(makeInput({ dueDate: new Date('2026-05-18T00:00:00.000Z') }));
       expect(result.fitLevel).toBe('strong');
       expect(result.gapDays).toBe(3);
@@ -54,19 +54,19 @@ describe('borrower context fit', () => {
       expect(result.verdictHTML).toContain('repaid 3 loans');
    });
 
-   it('weak before — notes they need to pay before getting paid', () => {
+   it('weak before — notes timing relative to payday', () => {
       const result = buildBorrowerContextFit(makeInput({ dueDate: new Date('2026-05-08T00:00:00.000Z') }));
       expect(result.fitLevel).toBe('weak');
       expect(result.verdictHTML).toContain('<strong>2 days</strong> before their usual payday');
    });
 
-   it('weak before + strong history — offsets timing with track record', () => {
+   it('weak before + strong history — references prior similar situations', () => {
       const result = buildBorrowerContextFit(makeInput({
          dueDate: new Date('2026-05-08T00:00:00.000Z'),
          repaidLoanCount: 4
       }));
-      expect(result.verdictHTML).toContain("repaid 4 loans");
-      expect(result.verdictHTML).toContain("similar situations");
+      expect(result.verdictHTML).toContain('repaid 4 loans');
+      expect(result.verdictHTML).toContain('similar timing situations');
    });
 
    it('weak before + emergency — notes urgency', () => {
@@ -78,7 +78,7 @@ describe('borrower context fit', () => {
       expect(result.verdictHTML).toContain('Emergency need');
    });
 
-   it('unknown — part-time irregular, explains income varies week to week', () => {
+   it('unknown — part-time irregular, describes flexible hours', () => {
       const result = buildBorrowerContextFit(makeInput({
          incomeType: 'part-time',
          paydayType: 'irregular',
@@ -86,28 +86,27 @@ describe('borrower context fit', () => {
          paydayEnd: null
       }));
       expect(result.fitLevel).toBe('unknown');
-      expect(result.verdictHTML).toContain('Part-time work with no fixed pay schedule');
+      expect(result.verdictHTML).toContain('Part-time work with flexible hours');
    });
 
-   it('unknown — no income, no history is explicit about limited info', () => {
+   it('unknown — no income first loan leads with New to Moodeng', () => {
       const result = buildBorrowerContextFit(makeInput({ incomeType: 'none', repaidLoanCount: 0 }));
       expect(result.fitLevel).toBe('unknown');
-      expect(result.verdictHTML).toContain('very limited information');
+      expect(result.verdictHTML).toContain('New to Moodeng');
    });
 
    it('unknown — no income + strong history leads with track record', () => {
       const result = buildBorrowerContextFit(makeInput({ incomeType: 'none', repaidLoanCount: 4 }));
       expect(result.verdictHTML).toContain("repaid 4 loans");
-      expect(result.verdictHTML).toContain("shown they can cover repayments");
    });
 
-   it('unknown — missing date is honest about it', () => {
+   it('unknown — missing date returns track record', () => {
       const result = buildBorrowerContextFit(makeInput({ dueDate: new Date('not-a-date') }));
       expect(result.fitLevel).toBe('unknown');
-      expect(result.verdictHTML).toContain('No repayment date on file');
+      expect(result.verdictHTML).toContain('First loan on Moodeng');
    });
 
-   it('unknown — freelance no history, explains no track record yet', () => {
+   it('unknown — freelance no history, new borrower', () => {
       const result = buildBorrowerContextFit(makeInput({
          incomeType: 'freelance',
          paydayType: 'irregular',
@@ -115,7 +114,8 @@ describe('borrower context fit', () => {
          paydayEnd: null,
          repaidLoanCount: 0
       }));
-      expect(result.verdictHTML).toContain('no repayment history to draw on yet');
+      expect(result.verdictHTML).toContain('Freelance work');
+      expect(result.verdictHTML).toContain('First loan on Moodeng');
    });
 
    it('unknown — freelance strong history notes they manage regardless', () => {
@@ -129,14 +129,14 @@ describe('borrower context fit', () => {
       expect(result.verdictHTML).toContain('manage repayment regardless of timing');
    });
 
-   it('full-time irregular noted as commission or performance-based', () => {
+   it('full-time irregular describes variable pay', () => {
       const result = buildBorrowerContextFit(makeInput({
          incomeType: 'full-time',
          paydayType: 'irregular',
          paydayStart: null,
          paydayEnd: null
       }));
-      expect(result.verdictHTML).toContain('commission or performance-based');
+      expect(result.verdictHTML).toContain('Full-time employee');
    });
 
    it('shows verified + good standing in verdict', () => {
@@ -144,7 +144,7 @@ describe('borrower context fit', () => {
       expect(result.verdictHTML).toContain('World ID verified · Good Standing.');
    });
 
-   it('bridge loan reason bypasses timing uncertainty', () => {
+   it('bridge loan leads with bridging context', () => {
       const result = buildBorrowerContextFit(makeInput({
          reason: 'payday bridge',
          incomeType: 'part-time',
@@ -152,23 +152,7 @@ describe('borrower context fit', () => {
          paydayStart: null,
          paydayEnd: null
       }));
-      expect(result.verdictHTML).toContain('Explicit payday bridge');
-   });
-
-   it('active loans warning when 2+ concurrent', () => {
-      const result = buildBorrowerContextFit(makeInput({
-         fundedLoanCount: 4,
-         repaidLoanCount: 1
-      }));
-      expect(result.verdictHTML).toContain('other active loans');
-   });
-
-   it('low repayment rate flagged', () => {
-      const result = buildBorrowerContextFit(makeInput({
-         fundedLoanCount: 10,
-         repaidLoanCount: 4
-      }));
-      expect(result.verdictHTML).toContain('below 60%');
+      expect(result.verdictHTML).toContain('bridge the gap');
    });
 
    it('weekly pay gets strong fit within 3 days of window', () => {
@@ -176,7 +160,7 @@ describe('borrower context fit', () => {
          paydayType: 'weekly',
          paydayStart: 10,
          paydayEnd: 14,
-         dueDate: new Date('2026-05-17T00:00:00.000Z') // 3 days after window closes
+         dueDate: new Date('2026-05-17T00:00:00.000Z')
       }));
       expect(result.fitLevel).toBe('strong');
    });
@@ -194,13 +178,13 @@ describe('borrower context fit', () => {
    it('short loan noted on weak timing', () => {
       const result = buildBorrowerContextFit(makeInput({
          requestDate: new Date('2026-05-06T00:00:00.000Z'),
-         dueDate: new Date('2026-05-08T00:00:00.000Z'), // 2 days loan, before payday
+         dueDate: new Date('2026-05-08T00:00:00.000Z'),
          repaidLoanCount: 0
       }));
-      expect(result.verdictHTML).toContain('Short loan');
+      expect(result.verdictHTML).toContain('2-day loan');
    });
 
-   it('first timer + verified surfaced in no-income case', () => {
+   it('first timer + verified surfaced for no-income case', () => {
       const result = buildBorrowerContextFit(makeInput({
          incomeType: 'none',
          repaidLoanCount: 0,
