@@ -176,6 +176,9 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    paydayStart: (row as UserRow & { payday_start?: number | null }).payday_start ?? undefined,
    paydayEnd: (row as UserRow & { payday_end?: number | null }).payday_end ?? undefined,
    gapReasons: (row as UserRow & { gap_reasons?: string[] | null }).gap_reasons ?? undefined,
+   notifAccountActivity: (row as UserRow & { notif_account_activity?: boolean | null }).notif_account_activity ?? true,
+   notifTransactionActivity: (row as UserRow & { notif_transaction_activity?: boolean | null }).notif_transaction_activity ?? true,
+   notifBlogs: (row as UserRow & { notif_blogs?: boolean | null }).notif_blogs ?? false,
    createdAt: row.created_at,
    updatedAt: row.updated_at
 });

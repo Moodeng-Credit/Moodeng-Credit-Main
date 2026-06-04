@@ -46,7 +46,7 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
 
    const { data, error } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, chat_id')
+      .select('id, username, telegram_username, email, cs, is_world_id, chat_id, notif_transaction_activity')
       .in('id', userIds);
 
    if (error || !data) {
@@ -291,7 +291,7 @@ serve(async (req) => {
             trust_points_reward_kind: 'potential'
          },
          aggregate,
-         { telegramEnabled }
+         { telegramEnabled, notifEnabled: borrower.notif_transaction_activity !== false }
       );
 
       if (!delivery.emailSent && !delivery.telegramSent) {
