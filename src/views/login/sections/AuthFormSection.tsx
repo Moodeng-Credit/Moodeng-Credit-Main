@@ -115,7 +115,6 @@ export default function AuthFormSection(): JSX.Element {
    );
 
    const handleRegisterError = (errorMsg: string) => {
-      console.log('Register error:', errorMsg);
       const msg = errorMsg || '';
       const lower = msg.toLowerCase();
       const isEmailError = lower.includes('email') || lower.includes('duplicate') || lower.includes('users_email_key');
@@ -134,20 +133,16 @@ export default function AuthFormSection(): JSX.Element {
    };
 
    const handleLoginError = (errorMsg: string) => {
-      console.log('handleLoginError called with:', errorMsg);
       // Check if this is an email verification error from Supabase
       // Supabase returns error_not_confirmed code - our thunk transforms it to a friendly message
       const isEmailError =
          errorMsg.toLowerCase().includes('verify') ||
          errorMsg.toLowerCase().includes('email') ||
          errorMsg.toLowerCase().includes('confirm');
-      console.log('Is email error?', isEmailError);
 
       if (isEmailError) {
-         console.log('Showing email verification toast');
          toast.showToastByConfig('login_error', { error: errorMsg });
       } else {
-         console.log('Showing account error inline');
          setShowAccount(true);
       }
    };

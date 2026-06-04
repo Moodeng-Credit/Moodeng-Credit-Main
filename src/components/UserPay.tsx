@@ -188,36 +188,36 @@ function UserPay({ loan }: { loan: Loan }) {
    };
 
    return (
-      <main className="flex flex-col py-7 w-full bg-white rounded-3xl border border-solid border-neutral-200 shadow-[0px_2px_8px_rgba(0,0,0,0.25)] flex overflow-hidden flex-col py-5 bg-white rounded-2xl max-w-[473px]">
+      <main className="flex flex-col py-7 w-full bg-white dark:bg-[#21162c] rounded-3xl border border-solid border-neutral-200 dark:border-[#2e203d] shadow-[0px_2px_8px_rgba(0,0,0,0.25)] overflow-hidden py-5 rounded-2xl max-w-[473px]">
          <section className="flex flex-col px-5 w-full">
-            <h1 className="self-start text-2xl font-medium leading-none text-black">Loan Repayment</h1>
+            <h1 className="self-start text-2xl font-medium leading-none text-black dark:text-[#f0e9f8]">Loan Repayment</h1>
             <div className="flex gap-10 items-center mt-8">
                <div className="flex flex-col self-stretch my-auto">
-                  <div className="text-sm leading-loose text-black text-opacity-60">Total Due</div>
-                  <div className="mt-1.5 text-base font-medium leading-loose text-black">${formatNumber(loan.totalRepaymentAmount)}</div>
+                  <div className="text-sm leading-loose text-black text-opacity-60 dark:text-[#9d88b8]">Total Due</div>
+                  <div className="mt-1.5 text-base font-medium leading-loose text-black dark:text-[#f0e9f8]">${formatNumber(loan.totalRepaymentAmount)}</div>
                </div>
                <div className="flex flex-col self-stretch my-auto">
-                  <div className="text-sm leading-loose text-black text-opacity-60">Amount Paid</div>
-                  <div className="mt-1.5 text-base font-medium leading-loose text-black">
+                  <div className="text-sm leading-loose text-black text-opacity-60 dark:text-[#9d88b8]">Amount Paid</div>
+                  <div className="mt-1.5 text-base font-medium leading-loose text-black dark:text-[#f0e9f8]">
                      ${formatNumber(loan.repaidAmount)}
-                     <span className="text-sm leading-6 text-black">
+                     <span className="text-sm leading-6 text-black dark:text-[#9d88b8]">
                         {' ($' + formatNumber(toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount)) + ' Remaining)'}
                      </span>
                   </div>
                </div>
                <div className="flex flex-col self-stretch my-auto">
-                  <div className="text-sm leading-loose text-black text-opacity-60">Due Date</div>
-                  <div className="mt-1.5 text-base font-medium leading-loose text-black">{time.split('T')[0]}</div>
+                  <div className="text-sm leading-loose text-black text-opacity-60 dark:text-[#9d88b8]">Due Date</div>
+                  <div className="mt-1.5 text-base font-medium leading-loose text-black dark:text-[#f0e9f8]">{time.split('T')[0]}</div>
                </div>
             </div>
          </section>
-         <hr className="mt-5 w-full border border-solid border-zinc-300 min-h-[1px]" />
+         <hr className="mt-5 w-full border border-solid border-zinc-300 dark:border-[#2e203d] min-h-[1px]" />
          <section className="flex flex-col px-5 mt-5 w-full">
-            <h2 className="self-start text-lg font-medium leading-loose text-black">Repayment Information</h2>
-            <div className="flex overflow-hidden gap-10 p-4 mt-2.5 w-full whitespace-nowrap rounded-lg bg-neutral-100">
+            <h2 className="self-start text-lg font-medium leading-loose text-black dark:text-[#f0e9f8]">Repayment Information</h2>
+            <div className="flex overflow-hidden gap-10 p-4 mt-2.5 w-full whitespace-nowrap rounded-lg bg-neutral-100 dark:bg-[#281b35]">
                <div className="flex flex-1 gap-4 items-center">
-                  <div className="self-stretch my-auto text-sm leading-loose text-black text-opacity-60">Stablecoin</div>
-                  <div className="flex gap-1.5 items-center self-stretch my-auto text-base font-medium leading-loose text-black">
+                  <div className="self-stretch my-auto text-sm leading-loose text-black text-opacity-60 dark:text-[#9d88b8]">Stablecoin</div>
+                  <div className="flex gap-1.5 items-center self-stretch my-auto text-base font-medium leading-loose text-black dark:text-[#f0e9f8]">
                      <img
                         loading="lazy"
                         src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/36b2768ece14cc8c27f15df886baeb4d8561b26fdb09d2a7fd36f57790e94282?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -230,7 +230,7 @@ function UserPay({ loan }: { loan: Loan }) {
                   </div>
                </div>
                <div className="flex flex-1 gap-1.5 items-center self-start">
-                  <div className="self-stretch my-auto text-sm leading-loose text-black text-opacity-60">Network</div>
+                  <div className="self-stretch my-auto text-sm leading-loose text-black text-opacity-60 dark:text-[#9d88b8]">Network</div>
                   <img
                      loading="lazy"
                      src="https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/4ba089761d655b916ff23874ab3595e64d2f358d02957d03b3aaa8c77195070b?apiKey=e485b3dc4b924975b4554885e21242bb"
@@ -239,10 +239,10 @@ function UserPay({ loan }: { loan: Loan }) {
                      width={100}
                      height={100}
                   />
-                  <div className="self-stretch my-auto text-base font-medium leading-loose text-black">{ALLOWED_CHAIN_DISPLAY_NAME}</div>
+                  <div className="self-stretch my-auto text-base font-medium leading-loose text-black dark:text-[#f0e9f8]">{ALLOWED_CHAIN_DISPLAY_NAME}</div>
                </div>
             </div>
-            <label htmlFor="repayment" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="repayment" className="block text-sm font-medium text-gray-700 dark:text-[#9d88b8]">
                Repayment Amount
             </label>
             <input
@@ -253,7 +253,7 @@ function UserPay({ loan }: { loan: Loan }) {
                placeholder="Enter custom amount"
                value={repaidAmountToAdd}
                onChange={(e: ChangeEvent<HTMLInputElement>) => setRepaidAmountToAdd(e.target.value)}
-               className="mt-1 p-2 w-full border rounded-md focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-colors duration-300"
+               className="mt-1 p-2 w-full border rounded-md focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-colors duration-300 dark:bg-[#1e1535] dark:border-[#2e203d] dark:text-[#f0e9f8]"
             />
             <button
                onClick={handleBorrow}
@@ -262,7 +262,7 @@ function UserPay({ loan }: { loan: Loan }) {
             >
                {isProcessing ? 'Processing...' : 'Repay Now'}
             </button>
-            <p className="mt-5 text-sm leading-6 text-black text-opacity-60">
+            <p className="mt-5 text-sm leading-6 text-black text-opacity-60 dark:text-[#9d88b8]">
                You can repay any amount at any time before the due date. Ensure full repayment by the due date to maintain your credit
                score.
             </p>

@@ -34,10 +34,7 @@ const useWallet = () => {
    const { showToastByConfig } = useToast();
 
    const Transfer = async (recipient: string, amount: string, id: string, coin: string = 'USDC'): Promise<string | null> => {
-      console.log('[Transfer] Starting transfer - Loan ID:', id, 'Coin:', coin);
-
       const tokenConfig = getAllowedChainTokenConfig();
-      console.log('[Transfer] Token config:', tokenConfig);
 
       if (!tokenConfig) {
          console.error('[Transfer] Missing token configuration for', ALLOWED_CHAIN_DISPLAY_NAME, 'Loan ID:', id);
@@ -53,7 +50,6 @@ const useWallet = () => {
          return null;
       }
 
-      console.log('[Transfer] Using', ALLOWED_CHAIN_DISPLAY_NAME, 'and', effectiveCoin);
       try {
          // USDC uses 6 decimals
          const decimals = 6;
@@ -65,9 +61,6 @@ const useWallet = () => {
             functionName: 'transfer',
             args: [recipient, amounts]
          });
-
-         console.log('Transaction hash:', hash);
-         console.log('Loan ID:', id);
 
          return hash;
       } catch (err) {
