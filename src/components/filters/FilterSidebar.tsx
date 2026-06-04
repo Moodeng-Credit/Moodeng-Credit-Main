@@ -137,7 +137,7 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
          <button aria-label="Close filters" className="absolute inset-0 bg-transparent" type="button" onClick={onClose} />
 
          <aside
-            className="relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-[24px] border border-white/70 bg-gradient-to-b from-[#fdfbff] via-white to-white shadow-[0_-14px_42px_rgba(96,16,210,0.16),0_-2px_12px_rgba(0,0,0,0.08)] transition-transform duration-150 ease-out animate-[filterSheetUp_0.25s_ease-out] sm:mb-6 sm:max-w-[440px] sm:rounded-[24px]"
+            className="relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-[24px] border border-white/70 bg-gradient-to-b from-[#fdfbff] via-white to-white shadow-[0_-14px_42px_rgba(96,16,210,0.16),0_-2px_12px_rgba(0,0,0,0.08)] transition-transform duration-150 ease-out animate-[filterSheetUp_0.25s_ease-out] sm:mb-6 sm:max-w-[440px] sm:rounded-[24px] dark:border-white/10 dark:from-[#1e1535] dark:via-[#1a1230] dark:to-[#1a1230]"
             style={{ transform: `translate(${sideSwipeOffset}px, ${dragOffset}px)` }}
          >
             <style>
@@ -165,6 +165,11 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
                      transform: scale(0.97);
                   }
 
+                  html.dark .filter-control:active {
+                     background: #2a1740 !important;
+                     box-shadow: 0 0 0 5px rgba(124, 45, 255, 0.20), 0 7px 18px rgba(96, 16, 210, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+                  }
+
                   .filter-control:focus-visible {
                      outline: 3px solid #C7A6FF !important;
                      outline-offset: 4px;
@@ -186,7 +191,7 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
                role="presentation"
             />
 
-            <div className="shrink-0 bg-gradient-to-b from-[#fdfbff] via-white to-white">
+            <div className="shrink-0 bg-gradient-to-b from-[#fdfbff] via-white to-white dark:from-[#1e1535] dark:via-[#1a1230] dark:to-[#1a1230]">
                <div
                   className="touch-none cursor-grab select-none pb-4 pt-3 active:cursor-grabbing"
                   onPointerDown={handleDragStart}
@@ -198,7 +203,7 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
                </div>
                <h2 className="mb-4 px-md-4 text-md-h5 font-semibold text-md-heading [text-shadow:0_1px_2px_rgba(0,0,0,0.03)]">Filters</h2>
 
-               <div className="flex items-center gap-1.5 overflow-x-auto px-md-4 pb-3">
+               <div className="flex items-center justify-center gap-1.5 overflow-x-auto px-md-4 pb-3">
                   {tabs.map((tab) => (
                      <button
                         key={tab.id}
@@ -206,8 +211,8 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
                         onClick={() => handleTabChange(tab.id)}
                         className={`filter-control flex h-12 shrink-0 items-center justify-center rounded-[10px] border px-3.5 text-md-b3 font-medium leading-none whitespace-nowrap transition-all duration-150 ${
                            activeTab === tab.id
-                              ? 'border-[#7C2DFF] bg-[#F7F2FF] text-[#5B16E8] shadow-[0_3px_10px_rgba(96,16,210,0.14),inset_0_0_0_1px_rgba(124,45,255,0.45)]'
-                              : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_2px_8px_rgba(82,57,130,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_3px_10px_rgba(82,57,130,0.11),inset_0_1px_0_rgba(255,255,255,0.92)]'
+                              ? 'border-[#7C2DFF] bg-[#F7F2FF] text-[#5B16E8] shadow-[0_3px_10px_rgba(96,16,210,0.14),inset_0_0_0_1px_rgba(124,45,255,0.45)] dark:bg-[#2a1740] dark:text-[#d8c2ff]'
+                              : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_2px_8px_rgba(82,57,130,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_3px_10px_rgba(82,57,130,0.11),inset_0_1px_0_rgba(255,255,255,0.92)] dark:bg-[#241b3a] dark:shadow-none'
                         }`}
                      >
                         {tab.label}
@@ -216,7 +221,7 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
                </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto border-t border-[#eee8f7] px-md-4 pb-6 pt-4">
+            <div className="flex-1 overflow-y-auto border-t border-[#eee8f7] px-md-4 pb-6 pt-4 dark:border-[#2d2545]">
                {activeTab === 'amount' ? (
                   <FilterSection title="Credit Limit">
                      <div className="grid grid-cols-2 gap-2">
@@ -309,7 +314,7 @@ function FilterSection({ title, tooltip, children }: { title: string; tooltip?: 
                   <span
                      id={tooltipId}
                      role="tooltip"
-                     className={`absolute left-1/2 top-full z-20 mt-2 w-[260px] -translate-x-1/2 rounded-[12px] border border-[#d6bcfa] bg-white px-3 py-2 text-left text-xs font-medium leading-[18px] text-[#3c3150] shadow-[0_8px_22px_rgba(27,28,29,0.14)] transition-opacity duration-150 group-hover:visible group-hover:opacity-100 ${
+                     className={`absolute left-1/2 top-full z-20 mt-2 w-[260px] -translate-x-1/2 rounded-[12px] border border-[#d6bcfa] bg-white px-3 py-2 text-left text-xs font-medium leading-[18px] text-[#3c3150] shadow-[0_8px_22px_rgba(27,28,29,0.14)] transition-opacity duration-150 group-hover:visible group-hover:opacity-100 dark:border-[#5b3a8a] dark:text-[#e8d5ff] ${
                         isTooltipOpen ? 'visible opacity-100' : 'invisible opacity-0'
                      }`}
                   >
@@ -331,8 +336,8 @@ function FilterChip({ label, selected, onClick }: { label: string; selected: boo
          aria-pressed={selected}
          className={`filter-control relative flex min-h-[54px] w-full items-center justify-center rounded-[10px] border px-4 py-2.5 pr-7 text-center text-md-b3 font-medium transition-all duration-150 ${
             selected
-               ? 'border-[1.5px] border-[#C99BFF] bg-[#FBF7FF] text-[#5B16E8] shadow-[0_2px_8px_rgba(96,16,210,0.16),inset_0_1px_0_rgba(255,255,255,0.92)]'
-               : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_2px_8px_rgba(82,57,130,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_3px_10px_rgba(82,57,130,0.11),inset_0_1px_0_rgba(255,255,255,0.92)]'
+               ? 'border-[1.5px] border-[#C99BFF] bg-[#FBF7FF] text-[#5B16E8] shadow-[0_2px_8px_rgba(96,16,210,0.16),inset_0_1px_0_rgba(255,255,255,0.92)] dark:bg-[#2a1740] dark:text-[#d8c2ff] dark:shadow-none'
+               : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_2px_8px_rgba(82,57,130,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_3px_10px_rgba(82,57,130,0.11),inset_0_1px_0_rgba(255,255,255,0.92)] dark:bg-[#241b3a] dark:shadow-none'
          }`}
       >
          {label}
