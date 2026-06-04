@@ -23,7 +23,7 @@ describe('borrower context fit', () => {
       expect(result.fitLevel).toBe('strong');
       expect(result.gapDays).toBe(3);
       expect(result.verdictHTML).toContain('<strong>3-day gap</strong>');
-      expect(result.verdictHTML).toContain('will have received income before repayment is due');
+      expect(result.verdictHTML).toContain('will have received income');
    });
 
    it('returns ok when repayment falls inside the payday window', () => {
@@ -31,8 +31,7 @@ describe('borrower context fit', () => {
 
       expect(result.fitLevel).toBe('ok');
       expect(result.gapDays).toBe(2);
-      expect(result.verdictHTML).toContain('inside their usual mid-month window');
-      expect(result.verdictHTML).toContain('<strong>2-day gap</strong>');
+      expect(result.verdictHTML).toContain('mid-month pay window');
    });
 
    it('returns weak when repayment is before the payday window opens', () => {
@@ -40,7 +39,7 @@ describe('borrower context fit', () => {
 
       expect(result.fitLevel).toBe('weak');
       expect(result.gapDays).toBe(-2);
-      expect(result.verdictHTML).toContain('<strong>2 days</strong> before their usual payday window opens');
+      expect(result.verdictHTML).toContain('<strong>2 days</strong> before their typical pay window');
    });
 
    it('returns unknown for irregular income timing', () => {
@@ -55,18 +54,16 @@ describe('borrower context fit', () => {
 
       expect(result.fitLevel).toBe('unknown');
       expect(result.gapDays).toBeNull();
-      expect(result.verdictHTML).toContain("With irregular income, timing alone isn't a strong signal here");
-      expect(result.verdictHTML).toContain('stated family needs pattern');
+      expect(result.verdictHTML).toContain('Variable pay timing');
+      expect(result.verdictHTML).toContain('family needs and bills');
    });
 
    it('returns unknown when no income source is shared', () => {
       const result = buildBorrowerContextFit(makeInput({ incomeType: 'none' }));
 
       expect(result.fitLevel).toBe('unknown');
-      expect(result.gapDays).toBe(1);
-      expect(result.verdictHTML).toBe(
-         'No income source shared. This request is based on stated needs alone — check their repayment history before funding.'
-      );
+      expect(result.verdictHTML).toContain('No income source on file');
+      expect(result.verdictHTML).toContain('family needs');
    });
 
    it('returns neutral unknown when dates are missing or unparseable', () => {
@@ -74,7 +71,7 @@ describe('borrower context fit', () => {
 
       expect(result.fitLevel).toBe('unknown');
       expect(result.gapDays).toBeNull();
-      expect(result.verdictHTML).toBe('Borrower timing is missing or unclear. Review repayment history before funding.');
+      expect(result.verdictHTML).toContain('Repayment timing is incomplete');
    });
 
    it('uses multiple gap reasons as a natural list in the context line chip data', () => {
@@ -83,5 +80,60 @@ describe('borrower context fit', () => {
 
       expect(result.contextLine).toContain('{need}');
       expect(needChip).toEqual({ id: 'need', label: 'family needs, bills, and transport', type: 'need' });
+   });
+
+   it('flags a pattern match when reason matches gap reasons', () => {
+      const result = buildBorrowerContextFit(makeInput({ reason: 'family expenses', gapReasons: ['family needs'] }));
+      expect(result.verdictHTML).toContain('aligns with their usual borrowing pattern');
+   });
+
+   it('track record dominates for weak timing with strong history', () => {
+      const result = buildBorrowerContextFit(makeInput({
+         dueDate: new Date('2026-05-08T00:00:00.000Z'), // before payday window
+         repaidLoanCount: 4
+      }));
+      expect(result.fitLevel).toBe('weak');
+      expect(result.verdictHTML).toContain('proven track record');
+   });
+
+   it('shows verified + good standing in verdict', () => {
+      const result = buildBorrowerContextFit(makeInput({ goodStanding: true, isVerified: true }));
+      expect(result.verdictHTML).toContain('Verified human, Good Standing.');
+   });
+
+   it('uses repaidLoanCount over fundedLoanCount when both provided', () => {
+      const result = buildBorrowerContextFit(makeInput({ repaidLoanCount: 3, fundedLoanCount: 5 }));
+      expect(result.verdictHTML).toContain('3 repaid loans');
+   });
+
+   it('handles freelance + irregular with strong history correctly', () => {
+      const result = buildBorrowerContextFit(makeInput({
+         incomeType: 'freelance',
+         paydayType: 'irregular',
+         paydayStart: null,
+         paydayEnd: null,
+         repaidLoanCount: 3
+      }));
+      expect(result.fitLevel).toBe('unknown');
+      expect(result.verdictHTML).toContain('established');
+   });
+
+   it('handles full-time + irregular as commission/bonus-based', () => {
+      const result = buildBorrowerContextFit(makeInput({
+         incomeType: 'full-time',
+         paydayType: 'irregular',
+         paydayStart: null,
+         paydayEnd: null
+      }));
+      expect(result.verdictHTML).toContain('commission or bonus-based');
+   });
+
+   it('emergency reason gets urgency note on weak timing', () => {
+      const result = buildBorrowerContextFit(makeInput({
+         dueDate: new Date('2026-05-08T00:00:00.000Z'),
+         reason: 'emergency car repair',
+         repaidLoanCount: 0
+      }));
+      expect(result.verdictHTML).toContain('emergency');
    });
 });

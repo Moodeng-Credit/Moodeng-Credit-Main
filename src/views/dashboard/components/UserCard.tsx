@@ -137,6 +137,11 @@ export default function UserCard(loan: UserCardProps) {
    const borrowerFundedLoanCount = borrowerUserId
       ? allLoans.filter((l) => l.borrowerUser === borrowerUserId && l.loanStatus === 'Lent').length
       : undefined;
+   const borrowerRepaidLoanCount = borrowerUserId
+      ? allLoans.filter((l) => l.borrowerUser === borrowerUserId && l.repaymentStatus === 'Paid').length
+      : undefined;
+   const borrowerGoodStanding = borrowerProfile ? (borrowerProfile.cs ?? 0) > 0 : undefined;
+   const borrowerIsVerified = borrowerProfile ? borrowerProfile.isWorldId === 'ACTIVE' : undefined;
    const borrowerUsername = getSafeProfileText(borrowerProfile?.username) ?? getSafeProfileText(tourBorrowerUsername) ?? '';
    const borrowerDetailsHref =
       tourBorrowerUsername && (import.meta.env.DEV || isPreviewRequest)
@@ -280,9 +285,12 @@ export default function UserCard(loan: UserCardProps) {
          amount: loanData.loanAmount,
          reason: loanReason,
          fundedLoanCount: borrowerFundedLoanCount,
+         repaidLoanCount: borrowerRepaidLoanCount,
+         goodStanding: borrowerGoodStanding,
+         isVerified: borrowerIsVerified,
          ...borrowerContextProfileData
       });
-   }, [borrowerContextProfileData, borrowerDisplayName, borrowerFundedLoanCount, due, loanData.createdAt, loanData.loanAmount, loanReason]);
+   }, [borrowerContextProfileData, borrowerDisplayName, borrowerFundedLoanCount, borrowerRepaidLoanCount, borrowerGoodStanding, borrowerIsVerified, due, loanData.createdAt, loanData.loanAmount, loanReason]);
    const isLenderCard = Boolean(isAuthenticated && !isBorrower && !isOwnLoan && !isLent && !isPreviewRequest);
    const showBorrowerContext = Boolean(borrowerContext && !isBorrower && (!isLenderCard || showDetails));
    const cardClassName = [
