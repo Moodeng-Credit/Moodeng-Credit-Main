@@ -399,7 +399,7 @@ BEGIN
   IF to_regclass('public.admin_risk_profiles') IS NOT NULL THEN
     INSERT INTO public.admin_risk_profiles (
       user_id, score, risk_level, status,
-      algorithm_version, algorithm_note, computed_at
+      algorithm_version, algorithm_note, calculated_at
     )
     VALUES (
       p_user_id, final_score,
@@ -418,7 +418,7 @@ BEGIN
         risk_level        = EXCLUDED.risk_level,
         algorithm_version = EXCLUDED.algorithm_version,
         algorithm_note    = EXCLUDED.algorithm_note,
-        computed_at       = EXCLUDED.computed_at
+        calculated_at     = EXCLUDED.calculated_at
     WHERE admin_risk_profiles.override_score IS NULL;
   END IF;
 

@@ -6,6 +6,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 
 import Loading from '@/components/Loading';
+import { useThemeMode } from '@/components/ThemeModeProvider';
 import { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
@@ -21,7 +22,6 @@ import type { Loan } from '@/types/loanTypes';
 import { DEMO_BORROWER_INSIGHTS_LOANS, DEMO_BORROWER_INSIGHTS_USER, DEMO_LENDER_PROFILES } from './demoBorrowerInsights';
 
 const CHART_COLORS = ['#5b21b6', '#7c3aed', '#3b82f6', '#60a5fa', '#c4b5fd', '#a78bfa', '#93c5fd'];
-const BORROWER_INSIGHTS_THEME_KEY = 'borrower-insights-theme';
 
 type LenderDistributionDatum = {
    id: string;
@@ -109,10 +109,7 @@ export default function LenderDiversityHistory() {
    const [profileUser, setProfileUser] = useState<User | null>(null);
    const [activeIndex, setActiveIndex] = useState<number | null>(null);
    const [walletData, setWalletData] = useState<Record<string, WalletLivenessData>>({});
-   const [isDarkMode, setIsDarkMode] = useState(() => {
-      if (typeof window === 'undefined') return false;
-      return window.localStorage.getItem(BORROWER_INSIGHTS_THEME_KEY) === 'dark';
-   });
+   const { isDarkMode, toggleMode } = useThemeMode();
    const isDemoInsights = searchParams.get('demo') === 'rich';
 
    const user = useSelector((state: RootState) => state.auth.user);
@@ -125,10 +122,6 @@ export default function LenderDiversityHistory() {
    useEffect(() => {
       window.scrollTo(0, 0);
    }, []);
-
-   useEffect(() => {
-      window.localStorage.setItem(BORROWER_INSIGHTS_THEME_KEY, isDarkMode ? 'dark' : 'light');
-   }, [isDarkMode]);
 
    useEffect(() => {
       if (!username || isDemoInsights) return;
@@ -218,7 +211,9 @@ export default function LenderDiversityHistory() {
    if (!borrower) return <Loading />;
 
    return (
-      <div className={`lender-diversity-page min-h-screen bg-[#f7f3ff] transition-colors duration-200 ${isDarkMode ? 'lender-diversity-dark' : ''}`}>
+      <div
+         className={`lender-diversity-page min-h-screen bg-[#f7f3ff] transition-colors duration-200 ${isDarkMode ? 'lender-diversity-dark' : ''}`}
+      >
          <style>{`
             .lender-diversity-dark {
                background: #0f1117;
@@ -307,12 +302,16 @@ export default function LenderDiversityHistory() {
                <div className="flex items-center gap-2">
                   <button
                      type="button"
-                     onClick={() => setIsDarkMode((current) => !current)}
+                     onClick={toggleMode}
                      aria-label={isDarkMode ? 'Switch lender diversity to light mode' : 'Switch lender diversity to dark mode'}
                      aria-pressed={isDarkMode}
                      className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-md-primary-900 shadow-md-card active:scale-95"
                   >
-                     {isDarkMode ? <Sun className="h-4 w-4 text-[#facc15]" strokeWidth={2.2} /> : <Moon className="h-4 w-4" strokeWidth={2.2} />}
+                     {isDarkMode ? (
+                        <Sun className="h-4 w-4 text-[#facc15]" strokeWidth={2.2} />
+                     ) : (
+                        <Moon className="h-4 w-4" strokeWidth={2.2} />
+                     )}
                   </button>
                   <button
                      type="button"

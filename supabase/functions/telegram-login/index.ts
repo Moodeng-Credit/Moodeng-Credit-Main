@@ -6,30 +6,44 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const getTelegramBotToken = () => {
+  const rawToken = Deno.env.get('TELEGRAM_API_TOKEN') ?? Deno.env.get('TELEGRAM_BOT_TOKEN') ?? ''
+  return rawToken.trim().replace(/^["']|["']$/g, '')
+}
+
+const signedTelegramLoginFields = new Set([
+  'id',
+  'first_name',
+  'last_name',
+  'username',
+  'photo_url',
+  'auth_date'
+])
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { id, first_name, last_name, username, photo_url, auth_date, hash } = await req.json()
+    const body = await req.json()
+    const authData = body.authData ?? body
+    const { id, first_name, last_name, username, photo_url, auth_date, hash, allows_write_to_pm } = authData
 
     // Verify Telegram auth
-    const botToken = Deno.env.get('TELEGRAM_API_TOKEN')!
+    const botToken = getTelegramBotToken()
+    if (!botToken) {
+      throw new Error('TELEGRAM_API_TOKEN is not configured.')
+    }
+
     const secretKey = await crypto.subtle.digest(
       'SHA-256',
       new TextEncoder().encode(botToken)
     )
 
-    const dataCheckString = [
-      `auth_date=${auth_date}`,
-      first_name && `first_name=${first_name}`,
-      id && `id=${id}`,
-      last_name && `last_name=${last_name}`,
-      photo_url && `photo_url=${photo_url}`,
-      username && `username=${username}`,
-    ]
-      .filter(Boolean)
+    const dataCheckString = Object.entries(authData)
+      .filter(([key, value]) => signedTelegramLoginFields.has(key) && value !== undefined && value !== null && value !== '')
+      .map(([key, value]) => `${key}=${value}`)
       .sort()
       .join('\n')
 
@@ -77,8 +91,19 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    // Use telegram ID as email (synthetic)
-    const email = `telegram_${id}@moodeng.app`
+    const { data: existingProfile, error: existingProfileError } = await supabaseAdmin
+      .from('users')
+      .select('id, email')
+      .eq('telegram_id', id)
+      .maybeSingle()
+
+    if (existingProfileError) {
+      throw existingProfileError
+    }
+
+    // Prefer an existing Moodeng profile so older telegram_...@moodeng.credit
+    // accounts are not stranded by the newer moodeng.app synthetic email.
+    const email = existingProfile?.email ?? `telegram_${id}@moodeng.app`
     const password = `tg_${id}_${botToken.slice(0, 8)}`
 
     const telegramMetadata = {
@@ -87,7 +112,37 @@ Deno.serve(async (req) => {
       last_name,
       username,
       photo_url,
+      allows_write_to_pm,
       provider: 'telegram',
+    }
+
+    const allowsWriteToPm = allows_write_to_pm === true || allows_write_to_pm === 1 || allows_write_to_pm === '1' || allows_write_to_pm === 'true'
+
+    const syncTelegramProfile = async (userId: string) => {
+      const updates = {
+        telegram_id: id,
+        ...(username ? { telegram_username: username } : {}),
+        ...(allowsWriteToPm ? { chat_id: id } : {}),
+      }
+
+      const { error } = await supabaseAdmin
+        .from('users')
+        .update(updates)
+        .eq('id', userId)
+
+      if (error) throw error
+    }
+
+    if (existingProfile) {
+      const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(existingProfile.id, {
+        password,
+        user_metadata: telegramMetadata,
+        email_confirm: true,
+      })
+
+      if (updateAuthError) {
+        throw updateAuthError
+      }
     }
 
     // Try to sign in first
@@ -101,6 +156,7 @@ Deno.serve(async (req) => {
       await supabaseAdmin.auth.admin.updateUserById(signInData.session.user.id, {
         user_metadata: telegramMetadata,
       })
+      await syncTelegramProfile(signInData.session.user.id)
 
       return new Response(
         JSON.stringify({ session: signInData.session }),
@@ -130,13 +186,19 @@ Deno.serve(async (req) => {
       throw newSignInError
     }
 
+    if (newSignInData.session?.user.id) {
+      await syncTelegramProfile(newSignInData.session.user.id)
+    }
+
     return new Response(
       JSON.stringify({ session: newSignInData.session }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unexpected Telegram login error'
+
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

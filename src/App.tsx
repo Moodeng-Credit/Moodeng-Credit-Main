@@ -7,6 +7,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AdminGuard } from '@/components/AdminGuard';
 import BottomNav from '@/components/BottomNav';
 import { BottomNavActionProvider } from '@/components/BottomNavActionContext';
+import { ExpiredLoanRequestNotifier } from '@/components/ExpiredLoanRequestNotifier';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
@@ -20,6 +21,7 @@ import AccountRestrictedPage from '@/app/account-restricted/page';
 import AdminPanel from '@/app/admin/page';
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
+import TelegramCallback from '@/app/auth/telegram/callback/page';
 import AuthVerifyCode from '@/app/auth/verify-code/page';
 import Benefits from '@/app/benefits/page';
 import BlogDetailPage from '@/app/blogs/[slug]/page';
@@ -156,6 +158,7 @@ export default function App() {
    return (
       <BottomNavActionProvider key={location.pathname}>
          <WalletLoadingOverlay />
+         <ExpiredLoanRequestNotifier />
          <Routes key={location.pathname}>
             <Route path="/" element={<Home />} />
 
@@ -167,11 +170,7 @@ export default function App() {
             {/* Onboarding */}
             <Route
                path="/onboarding/role"
-               element={
-                  <ProtectedRoute>
-                     <RoleSelection />
-                  </ProtectedRoute>
-               }
+               element={<RoleSelection />}
             />
             <Route
                path="/onboarding/welcome"
@@ -375,6 +374,7 @@ export default function App() {
             <Route path="/auth-success" element={<AuthSuccess />} />
             <Route path="/auth/confirm" element={<AuthConfirm />} />
             <Route path="/auth/verify-code" element={<AuthVerifyCode />} />
+            <Route path="/auth/telegram/callback" element={<TelegramCallback />} />
 
             {/* Help & Support */}
             <Route

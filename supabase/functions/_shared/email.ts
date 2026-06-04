@@ -1,4 +1,4 @@
-export const sendEmail = async (recipientEmail: string, subject: string, message: string) => {
+export const sendEmail = async (recipientEmail: string, subject: string, message: string, html?: string) => {
    const resendApiKey = Deno.env.get('RESEND_API_KEY');
    const resendFrom = Deno.env.get('RESEND_FROM') || 'support@moodeng.app';
 
@@ -16,7 +16,8 @@ export const sendEmail = async (recipientEmail: string, subject: string, message
          from: resendFrom,
          to: [recipientEmail],
          subject: subject,
-         text: message
+         text: message,
+         ...(html ? { html } : {})
       })
    });
 

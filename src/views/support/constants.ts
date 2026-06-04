@@ -3,6 +3,12 @@ export const SUPPORT_FACEBOOK_URL = 'https://www.facebook.com/profile.php?id=615
 export const TELEGRAM_URL = 'https://t.me/jimmymoodengcredit';
 export const TELEGRAM_SUPPORT_MESSAGE = 'Hi there. I was on Moodeng Credit and need help';
 export const TELEGRAM_SUPPORT_URL = `${TELEGRAM_URL}?text=${encodeURIComponent(TELEGRAM_SUPPORT_MESSAGE)}`;
+export const WORLD_ID_VERIFICATION_SUPPORT_MESSAGE =
+   'Hi Moodeng, I need help with World ID verification. I completed World ID, but my Moodeng status has not updated.';
+export const WORLD_ID_VERIFICATION_SUPPORT_URL = `${TELEGRAM_URL}?text=${encodeURIComponent(WORLD_ID_VERIFICATION_SUPPORT_MESSAGE)}`;
+export const LOAN_REQUEST_EXPIRED_SUPPORT_MESSAGE =
+   'Hi Moodeng, my loan request expired before it was funded. I need help connecting with a lender or deciding whether to post again.';
+export const LOAN_REQUEST_EXPIRED_SUPPORT_URL = `${TELEGRAM_URL}?text=${encodeURIComponent(LOAN_REQUEST_EXPIRED_SUPPORT_MESSAGE)}`;
 export const X_URL = 'https://x.com/moodengcredit';
 export const GITBOOK_URL = 'https://moodeng.gitbook.io/credit';
 

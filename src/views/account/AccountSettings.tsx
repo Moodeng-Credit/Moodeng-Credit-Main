@@ -5,15 +5,21 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAccount, useDisconnect } from 'wagmi';
 
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import TelegramAuthButton from '@/components/TelegramAuthButton';
+import { useThemeMode } from '@/components/ThemeModeProvider';
+import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
+import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar from '@/components/UserAvatar';
 
 import { useAuthProvider } from '@/hooks/useAuthProvider';
 
+import { useLocalization } from '@/i18n';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getBaseWalletLockStatus, getWalletProviderLabel } from '@/lib/walletProvider';
 import { getWorldIdVerificationLabel } from '@/lib/worldIdVerificationLabel';
-import { updateUser } from '@/store/slices/authSlice';
+import { fetchUser, updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 
@@ -260,7 +266,7 @@ function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
             >
                {isSubmitting ? 'Updating...' : 'Update password'}
-               {!isSubmitting && (
+               {!isSubmitting ? (
                   <div
                      className="w-6 h-6 bg-md-neutral-100"
                      style={{
@@ -269,7 +275,7 @@ function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                         maskImage: "url('/icons/chevron-right.svg')"
                      }}
                   />
-               )}
+               ) : null}
             </button>
             <button
                type="button"
@@ -369,7 +375,7 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                   className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
                >
                   {isSubmitting ? 'Updating...' : 'Confirm email change'}
-                  {!isSubmitting && (
+                  {!isSubmitting ? (
                      <div
                         className="w-6 h-6 bg-md-neutral-100"
                         style={{
@@ -378,7 +384,7 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                            maskImage: "url('/icons/chevron-right.svg')"
                         }}
                      />
-                  )}
+                  ) : null}
                </button>
                <button
                   type="button"
@@ -393,11 +399,154 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
    );
 }
 
+function TelegramAlertsModal({
+   isOpen,
+   onClose,
+   onConnected,
+   onRefresh,
+   onCreateConnectLink
+}: {
+   isOpen: boolean;
+   onClose: () => void;
+   onConnected: (authData: Record<string, string>) => Promise<void>;
+   onRefresh: () => Promise<boolean>;
+   onCreateConnectLink: () => Promise<string>;
+}) {
+   const { showToast } = useToast();
+   const [error, setError] = useState('');
+   const [isSubmitting, setIsSubmitting] = useState(false);
+   const [hasOpenedBot, setHasOpenedBot] = useState(false);
+   const isSubmittingRef = useRef(false);
+
+   const handleClose = () => {
+      if (isSubmitting) return;
+      setError('');
+      setHasOpenedBot(false);
+      onClose();
+   };
+
+   const handleTelegramAuth = async (authData: Record<string, string>) => {
+      if (isSubmittingRef.current) return;
+      isSubmittingRef.current = true;
+      setError('');
+      setIsSubmitting(true);
+      try {
+         await onConnected(authData);
+         isSubmittingRef.current = false;
+         setIsSubmitting(false);
+         setError('');
+         onClose();
+      } catch (err) {
+         const message = err instanceof Error ? err.message : 'Failed to connect Telegram alerts';
+         isSubmittingRef.current = false;
+         setIsSubmitting(false);
+         setError(message);
+         showToast(TOAST_TYPES.ERROR, 'Telegram alerts not connected', message, 'Contact support', 'contact_support');
+      }
+   };
+
+   const handleOpenTelegramBot = async () => {
+      if (isSubmittingRef.current) return;
+      isSubmittingRef.current = true;
+      setError('');
+      setIsSubmitting(true);
+      try {
+         const url = await onCreateConnectLink();
+         window.open(url, '_blank', 'noopener,noreferrer');
+         setHasOpenedBot(true);
+      } catch (err) {
+         const message = err instanceof Error ? err.message : 'Failed to create Telegram connection link';
+         setError(message);
+         showToast(TOAST_TYPES.ERROR, 'Telegram alerts not connected', message, 'Contact support', 'contact_support');
+      } finally {
+         isSubmittingRef.current = false;
+         setIsSubmitting(false);
+      }
+   };
+
+   const handleRefreshConnection = async () => {
+      if (isSubmittingRef.current) return;
+      isSubmittingRef.current = true;
+      setError('');
+      setIsSubmitting(true);
+      try {
+         const isConnected = await onRefresh();
+         isSubmittingRef.current = false;
+         setIsSubmitting(false);
+         if (isConnected) {
+            setError('');
+            onClose();
+            return;
+         }
+
+         setError('Open Telegram, tap Start in the bot, then check again.');
+      } catch (err) {
+         const message = err instanceof Error ? err.message : 'Failed to refresh Telegram alerts';
+         isSubmittingRef.current = false;
+         setIsSubmitting(false);
+         setError(message);
+         showToast(TOAST_TYPES.ERROR, 'Telegram alerts not connected', message, 'Contact support', 'contact_support');
+      }
+   };
+
+   if (!isOpen) return null;
+
+   return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#12071f]/50 px-5" onClick={handleClose}>
+         <div
+            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-3 items-center"
+            onClick={(e) => e.stopPropagation()}
+         >
+            <div className="flex flex-col gap-2 items-center text-center">
+               <h2 className="text-md-h4 font-semibold text-md-heading">Telegram Alerts</h2>
+               <p className="text-md-b1 text-md-neutral-1200">Connect private loan alerts to your Telegram account.</p>
+            </div>
+            <div className="flex w-full flex-col gap-2">
+               <button
+                  type="button"
+                  onClick={handleOpenTelegramBot}
+                  disabled={isSubmitting}
+                  className="w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-center text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-50"
+               >
+                  Open Telegram Bot
+               </button>
+               <button
+                  type="button"
+                  onClick={handleRefreshConnection}
+                  disabled={isSubmitting || !hasOpenedBot}
+                  className="w-full rounded-md-lg border border-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50"
+               >
+                  Check Connection
+               </button>
+            </div>
+            <div className="flex w-full items-center gap-3 text-md-b3 font-semibold text-md-neutral-700">
+               <div className="h-px flex-1 bg-md-neutral-600" />
+               <span>or</span>
+               <div className="h-px flex-1 bg-md-neutral-600" />
+            </div>
+            <div className={`w-full ${isSubmitting ? 'pointer-events-none opacity-60' : ''}`}>
+               <TelegramAuthButton onAuth={handleTelegramAuth} buttonSize="large" requestWriteAccess />
+            </div>
+            {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
+            <button
+               type="button"
+               onClick={handleClose}
+               disabled={isSubmitting}
+               className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50"
+            >
+               Cancel
+            </button>
+         </div>
+      </div>
+   );
+}
+
 // ─── Main Component ───
 
 export default function AccountSettings() {
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
+   const { t } = useLocalization();
    const editTarget = searchParams.get('edit');
    const handledEditTargetRef = useRef<string | null>(null);
    const dispatch = useDispatch<AppDispatch>();
@@ -405,6 +554,7 @@ export default function AccountSettings() {
    const { connector, chain } = useAccount();
    const { disconnect } = useDisconnect();
    const { isEmailPasswordUser } = useAuthProvider();
+   const { isDarkMode, setMode } = useThemeMode();
 
    const currentDisplayName = user?.displayName ?? user?.username ?? '';
    const [isEditingName, setIsEditingName] = useState(false);
@@ -412,10 +562,10 @@ export default function AccountSettings() {
    const [isSavingName, setIsSavingName] = useState(false);
    const [showPasswordModal, setShowPasswordModal] = useState(false);
    const [showEmailModal, setShowEmailModal] = useState(false);
+   const [showTelegramAlertsModal, setShowTelegramAlertsModal] = useState(false);
    const [showAvatarModal, setShowAvatarModal] = useState(false);
    const [isSavingAvatar, setIsSavingAvatar] = useState(false);
    const [walletCopied, setWalletCopied] = useState(false);
-   const [showWalletAddress, setShowWalletAddress] = useState(false);
    const [showWalletActions, setShowWalletActions] = useState(false);
    const [isEditingWallet, setIsEditingWallet] = useState(false);
    const [isChangeWalletPending, setIsChangeWalletPending] = useState(false);
@@ -444,6 +594,11 @@ export default function AccountSettings() {
    const emailHelpCopy = hasTelegramPlaceholderEmail
       ? 'Telegram sign-in does not provide a real email. Add one for account recovery and notifications.'
       : 'Having an up-to-date email address attached to your account is a great step towards improving account security.';
+   const telegramAlertsValue = user?.chatId
+      ? user?.telegramUsername
+         ? `@${user.telegramUsername}`
+         : 'Connected'
+      : user?.telegramUsername || 'Not Connected';
 
    useEffect(() => {
       try {
@@ -555,6 +710,64 @@ export default function AccountSettings() {
       }
    };
 
+   const handleConnectTelegramAlerts = async (authData: Record<string, string>) => {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase.functions.invoke('connect-telegram-notifications', {
+         body: { authData }
+      });
+
+      if (error) {
+         const response = (error as { context?: Response }).context;
+         if (response) {
+            const body = (await response
+               .clone()
+               .json()
+               .catch(() => null)) as { error?: string } | null;
+            if (body?.error) throw new Error(body.error);
+         }
+         throw error;
+      }
+      if (data?.error) throw new Error(data.error);
+
+      const result = await dispatch(fetchUser());
+      if (!fetchUser.fulfilled.match(result)) {
+         throw new Error(result.error?.message || 'Failed to refresh Telegram alerts');
+      }
+   };
+
+   const handleRefreshTelegramAlerts = async () => {
+      const result = await dispatch(fetchUser());
+      if (!fetchUser.fulfilled.match(result)) {
+         throw new Error(result.error?.message || 'Failed to refresh Telegram alerts');
+      }
+
+      return Boolean(result.payload?.chatId);
+   };
+
+   const handleCreateTelegramConnectLink = async () => {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase.functions.invoke('create-telegram-connect-link', {
+         body: {}
+      });
+
+      if (error) {
+         const response = (error as { context?: Response }).context;
+         if (response) {
+            const body = (await response
+               .clone()
+               .json()
+               .catch(() => null)) as { error?: string } | null;
+            if (body?.error) throw new Error(body.error);
+         }
+         throw error;
+      }
+
+      if (data?.error) throw new Error(data.error);
+      if (!data?.url) throw new Error('Telegram connection link was not created');
+
+      return data.url as string;
+   };
+
    const truncateAddress = (addr: string) => {
       if (addr.length <= 12) return addr;
       return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -641,11 +854,21 @@ export default function AccountSettings() {
                      onAction={canEditEmail ? () => setShowEmailModal(true) : undefined}
                   />
                   <ReadOnlyField
-                     label="Telegram"
-                     value={user?.telegramUsername || 'Not Connected'}
-                     actionLabel={!user?.telegramUsername ? 'Connect' : undefined}
+                     label="Telegram Alerts"
+                     value={telegramAlertsValue}
+                     actionLabel={user?.chatId ? undefined : 'Connect'}
+                     onAction={user?.chatId ? undefined : () => setShowTelegramAlertsModal(true)}
                   />
                   <ReadOnlyField label="WhatsApp" value="Not Connected" actionLabel="Connect" />
+               </div>
+
+               {/* Language */}
+               <div className="flex flex-col gap-3">
+                  <h2 className="text-md-h5 font-semibold text-md-heading">{t('language.label')}</h2>
+                  <p className="text-md-b2 font-medium text-md-neutral-700">{t('language.settingsDescription')}</p>
+                  <div className="rounded-md-input border border-md-neutral-600 bg-md-neutral-100 p-3 shadow-md-card">
+                     <LanguageSwitcher tone="light" variant="full" />
+                  </div>
                </div>
 
                {/* Security */}
@@ -688,11 +911,10 @@ export default function AccountSettings() {
                               <button
                                  type="button"
                                  onClick={() => {
-                                    setShowWalletAddress((current) => !current);
                                     setShowWalletActions((current) => !current);
                                  }}
                                  className="flex min-w-0 flex-1 items-center justify-between gap-md-2 text-left"
-                                 aria-expanded={showWalletAddress}
+                                 aria-expanded={showWalletActions}
                               >
                                  <span className="flex min-w-0 shrink-0 items-center gap-2 text-md-b1 text-md-neutral-1200">
                                     <span
@@ -707,7 +929,7 @@ export default function AccountSettings() {
                                  </span>
                                  <span className="mx-md-2 h-6 w-px shrink-0 bg-md-neutral-600" aria-hidden="true" />
                                  <span className="min-w-0 flex-1 truncate text-right text-md-b2 font-medium text-md-neutral-900">
-                                    {showWalletAddress ? user?.walletAddress : truncateAddress(user?.walletAddress || '')}
+                                    {truncateAddress(user?.walletAddress || '')}
                                  </span>
                               </button>
                               <button
@@ -758,8 +980,8 @@ export default function AccountSettings() {
                            <div className="flex flex-col gap-md-2 rounded-md-md border border-md-primary-100 bg-md-neutral-100 p-md-2">
                               <p className="text-md-b2 font-semibold text-md-heading">Change Base Account?</p>
                               <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                                 Future funded loans and repayments will use the new Base Account. Your existing repayment history stays tied to
-                                 this account.
+                                 Future funded loans and repayments will use the new Base Account. Your existing repayment history stays
+                                 tied to this account.
                               </p>
                               <div className="grid grid-cols-2 gap-md-2">
                                  <button
@@ -847,8 +1069,8 @@ export default function AccountSettings() {
                            <div className="min-w-0">
                               <p className="text-md-b2 font-semibold text-md-heading">Base Account locked</p>
                               <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                                 This wallet receives funded loans and is used for repayment history. Change it only if this is no longer your
-                                 Base Account.
+                                 This wallet receives funded loans and is used for repayment history. Change it only if this is no longer
+                                 your Base Account.
                               </p>
                            </div>
                         </div>
@@ -859,8 +1081,8 @@ export default function AccountSettings() {
                                  <div className="flex flex-col gap-md-2 rounded-md-md border border-md-primary-100 bg-md-neutral-100 p-md-2">
                                     <p className="text-md-b2 font-semibold text-md-heading">Change Base Account?</p>
                                     <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                                       Future funded loans and repayments will use the new Base Account. Your existing repayment history stays
-                                       tied to this account.
+                                       Future funded loans and repayments will use the new Base Account. Your existing repayment history
+                                       stays tied to this account.
                                     </p>
                                     <div className="grid grid-cols-2 gap-md-2">
                                        <button
@@ -883,8 +1105,8 @@ export default function AccountSettings() {
                                  <div className="flex flex-col gap-md-2 rounded-md-md border border-md-red-100 bg-md-red-100/60 p-md-2">
                                     <p className="text-md-b2 font-semibold text-md-heading">Disconnect wallet?</p>
                                     <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                                       Save changes to remove this wallet from your account. You will need to connect a Base Account again before
-                                       borrowing or repaying.
+                                       Save changes to remove this wallet from your account. You will need to connect a Base Account again
+                                       before borrowing or repaying.
                                     </p>
                                     {walletError ? <p className="text-md-b3 font-medium text-md-red-500">{walletError}</p> : null}
                                     <div className="grid grid-cols-2 gap-md-2">
@@ -927,7 +1149,6 @@ export default function AccountSettings() {
                                     </button>
                                  </div>
                               )}
-
                            </div>
                         ) : (
                            <button
@@ -950,6 +1171,20 @@ export default function AccountSettings() {
                         </div>
                      </div>
                   ) : null}
+               </div>
+
+               {/* Appearance */}
+               <div className="flex flex-col gap-3">
+                  <h2 className="text-md-h5 font-semibold text-md-heading">Appearance</h2>
+                  <p className="text-md-b2 font-medium text-md-neutral-700">Choose how Moodeng looks on this device.</p>
+
+                  <div className="flex flex-col gap-2">
+                     <div className="flex items-center justify-between">
+                        <p className="text-md-b2 font-semibold text-md-heading">Dark Mode</p>
+                        <Toggle checked={isDarkMode} onChange={(checked) => setMode(checked ? 'dark' : 'light')} />
+                     </div>
+                     <p className="text-md-b3 font-medium text-md-neutral-1400">Use darker app surfaces across the website.</p>
+                  </div>
                </div>
 
                {/* Notifications */}
@@ -1006,6 +1241,13 @@ export default function AccountSettings() {
 
          <ChangePasswordModal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
          <ChangeEmailModal isOpen={showEmailModal} onClose={() => setShowEmailModal(false)} />
+         <TelegramAlertsModal
+            isOpen={showTelegramAlertsModal}
+            onClose={() => setShowTelegramAlertsModal(false)}
+            onConnected={handleConnectTelegramAlerts}
+            onRefresh={handleRefreshTelegramAlerts}
+            onCreateConnectLink={handleCreateTelegramConnectLink}
+         />
       </div>
    );
 }

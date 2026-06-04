@@ -12,10 +12,9 @@ import {
 } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle2, HelpCircle, Menu, Search, Wallet, X } from 'lucide-react';
+import { AlertTriangle, HelpCircle, LoaderCircle, Menu, Search, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAccount } from 'wagmi';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
@@ -31,11 +30,13 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { usePagination } from '@/hooks/usePagination';
 
+import { formatCurrency } from '@/utils/decimalHelpers';
 import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 import { logoImageSrc } from '@/config/navigationConfig';
-import { getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
+import type { BorrowerContextProfileData } from '@/lib/borrowerContextFit';
+import { getBorrowerActiveLoanCount, getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import {
@@ -45,16 +46,17 @@ import {
    recordGuidedTourShown,
    shouldShowGuidedTour
 } from '@/lib/guidedTourStorage';
+import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { isBaseWalletReadyForRepayment } from '@/lib/walletProvider';
+import { hasWalletAddressOnAccount } from '@/lib/walletProvider';
 import { formatPointsMajor } from '@/shared/points';
-import { fetchUser, fetchUserProfiles } from '@/store/slices/authSlice';
-import { createLoan, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
+import { fetchUser, fetchUserProfiles, updateBorrowerContext } from '@/store/slices/authSlice';
+import { createLoan, deleteLoan, fetchLoanRequestRepostStatus, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
-import type { Loan } from '@/types/loanTypes';
+import { type CreateLoanData, type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import LoanRequestModal, { type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
@@ -63,12 +65,14 @@ import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 import { FAQS } from '@/views/support/data/faqs';
 
 const LENDER_NOTE_STORAGE_KEY = 'moodeng_lender_note_dismissed';
+const REQUEST_BOARD_PREVIEW_REQUESTS_STORAGE_KEY = 'moodeng-request-board-preview-requests';
 const IS_BORROWER_BASE_WALLET_GATE_ENABLED = true;
 const VERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT = 5;
 const UNVERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT = 4;
 const GUEST_REQUEST_BOARD_TOUR_STEP_COUNT = 7;
 const DASHBOARD_TOUR_STEP_COUNT = 3;
 const TOUR_STEP_EXTRA_DURATION_MS = 3500;
+const REQUEST_BOARD_COMPLETION_HIGHLIGHT_MS = 5000;
 const PUBLIC_COMMON_QUESTIONS = FAQS;
 
 const getDefaultRequestFilters = (): LoanFilters => ({
@@ -109,6 +113,157 @@ const REFERRAL_TEST_USER: User = {
    updatedAt: new Date(0).toISOString()
 };
 
+const getPreviewRequestDate = (dayOffset: number) => {
+   const date = new Date();
+   date.setUTCDate(date.getUTCDate() + dayOffset);
+   date.setUTCHours(0, 0, 0, 0);
+   return date.toISOString();
+};
+
+const PREVIEW_REQUEST_BOARD_BORROWER_USERNAMES: Record<string, string> = {
+   'request-board-preview-borrower-maya': 'maya-demo',
+   'request-board-preview-borrower-jordan': 'jordan-demo',
+   'request-board-preview-borrower-ana': 'ana-demo'
+};
+
+const PREVIEW_REQUEST_BOARD_BORROWER_CONTEXTS: Record<string, BorrowerContextProfileData> = {
+   'request-board-preview-borrower-maya': {
+      incomeType: 'full-time',
+      paydayType: 'weekly',
+      paydayStart: 1,
+      paydayEnd: 7,
+      gapReasons: ['family needs']
+   },
+   'request-board-preview-borrower-jordan': {
+      incomeType: 'part-time',
+      paydayType: 'mid-month',
+      paydayStart: 10,
+      paydayEnd: 15,
+      gapReasons: ['medicine', 'bills']
+   },
+   'request-board-preview-borrower-ana': {
+      incomeType: 'freelance',
+      paydayType: 'irregular',
+      paydayStart: null,
+      paydayEnd: null,
+      gapReasons: ['payday bridge', 'transport']
+   }
+};
+
+const LENDER_TOUR_BORROWER_CONTEXT: BorrowerContextProfileData = {
+   incomeType: 'full-time',
+   paydayType: 'weekly',
+   paydayStart: 1,
+   paydayEnd: 7,
+   gapReasons: ['family needs']
+};
+
+const buildPreviewRequestBoardLoan = ({
+   id,
+   trackingId,
+   borrowerUser,
+   borrowerWallet,
+   loanAmount,
+   totalRepaymentAmount,
+   reason,
+   dueInDays
+}: {
+   id: string;
+   trackingId: string;
+   borrowerUser: string;
+   borrowerWallet: string;
+   loanAmount: number;
+   totalRepaymentAmount: number;
+   reason: string;
+   dueInDays: number;
+}): Loan => {
+   const createdAt = getPreviewRequestDate(-1);
+
+   return {
+      id,
+      trackingId,
+      borrowerWallet,
+      lenderWallet: '',
+      borrowerUser,
+      lenderUser: '',
+      loanAmount,
+      repaidAmount: 0,
+      totalRepaymentAmount,
+      reason,
+      loanStatus: LoanStatus.REQUESTED,
+      repaymentStatus: RepaymentStatus.UNPAID,
+      dueDate: getPreviewRequestDate(dueInDays),
+      coin: 'USDC',
+      hash: [],
+      createdAt,
+      updatedAt: createdAt
+   };
+};
+
+const buildPreviewRequestBoardLoans = (): Loan[] => [
+   buildPreviewRequestBoardLoan({
+      id: 'request-board-preview-loan-1',
+      trackingId: 'PREVIEW-REQ-001',
+      borrowerUser: 'request-board-preview-borrower-maya',
+      borrowerWallet: '0x71c4000000000000000000000000000000009d42',
+      loanAmount: 15,
+      totalRepaymentAmount: 17,
+      reason: 'Emergency groceries',
+      dueInDays: 7
+   }),
+   buildPreviewRequestBoardLoan({
+      id: 'request-board-preview-loan-2',
+      trackingId: 'PREVIEW-REQ-002',
+      borrowerUser: 'request-board-preview-borrower-jordan',
+      borrowerWallet: '0x71c4000000000000000000000000000000009d43',
+      loanAmount: 25,
+      totalRepaymentAmount: 28,
+      reason: 'Medicine refill',
+      dueInDays: 14
+   }),
+   buildPreviewRequestBoardLoan({
+      id: 'request-board-preview-loan-3',
+      trackingId: 'PREVIEW-REQ-003',
+      borrowerUser: 'request-board-preview-borrower-ana',
+      borrowerWallet: '0x71c4000000000000000000000000000000009d44',
+      loanAmount: 40,
+      totalRepaymentAmount: 45,
+      reason: 'Payday bridge',
+      dueInDays: 30
+   })
+];
+
+const isPreviewRequestBoardLoan = (loan: Pick<Loan, 'id'>) => loan.id.startsWith('request-board-preview-');
+
+const isRequestBoardPreviewHost = () => {
+   if (typeof window === 'undefined') return false;
+
+   return (
+      import.meta.env.DEV ||
+      ['127.0.0.1', 'localhost'].includes(window.location.hostname) ||
+      window.location.hostname.endsWith('.vercel.app')
+   );
+};
+
+export const shouldShowPreviewRequestBoardLoans = (search: string, loans: Loan[]) => {
+   if (!isRequestBoardPreviewHost()) return false;
+   if (loans.some((loan) => isRequestBoardLoanVisible(loan))) return false;
+
+   const params = new URLSearchParams(search);
+   if (params.get('previewRequests') === '0') {
+      window.sessionStorage.removeItem(REQUEST_BOARD_PREVIEW_REQUESTS_STORAGE_KEY);
+      return false;
+   }
+
+   if (params.has('tour') || params.has('tourPreview') || params.has('lenderTourPreview') || params.has('referralTest')) return true;
+
+   if (params.get('previewRequests') === '1') {
+      return true;
+   }
+
+   return false;
+};
+
 type RequestBoardTourStep = {
    target: string;
    title: string;
@@ -146,13 +301,13 @@ const LENDER_TOUR_LOANS: Loan[] = [
       repaidAmount: 0,
       totalRepaymentAmount: 17,
       reason: 'Emergency groceries',
-      loanStatus: 'Requested',
-      repaymentStatus: 'Unpaid',
-      dueDate: '2026-05-16T00:00:00.000Z',
+      loanStatus: LoanStatus.REQUESTED,
+      repaymentStatus: RepaymentStatus.UNPAID,
+      dueDate: getPreviewRequestDate(7),
       coin: 'USDC',
       hash: [],
-      createdAt: '2026-05-08T00:00:00.000Z',
-      updatedAt: '2026-05-08T00:00:00.000Z'
+      createdAt: getPreviewRequestDate(-1),
+      updatedAt: getPreviewRequestDate(-1)
    }
 ];
 
@@ -169,13 +324,12 @@ function RequestBoard$() {
    const pathname = location.pathname;
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
-   const connectedWallet = useAccount();
 
    const { showToast, showToastByConfig } = useToast();
 
    const [showModal, setShowModal] = useState(false);
    const [showPurple, setShowPurple] = useState(false);
-   const [showBaseWalletGate, setShowBaseWalletGate] = useState(false);
+   const [showBioStep, setShowBioStep] = useState(false);
    const [isSubmitting, setIsSubmitting] = useState(false);
    const [showFilters, setShowFilters] = useState(false);
    const [showLenderNote, setShowLenderNote] = useState(false);
@@ -183,6 +337,11 @@ function RequestBoard$() {
    const [showGuestWorldIdPreview, setShowGuestWorldIdPreview] = useState(false);
    const [hasWorldIdJustVerified, setHasWorldIdJustVerified] = useState(false);
    const [showWorldIdHighlight, setShowWorldIdHighlight] = useState(false);
+   const [pendingSubmittedRequestId, setPendingSubmittedRequestId] = useState<string | null>(null);
+   const [highlightedRequestId, setHighlightedRequestId] = useState<string | null>(null);
+   const [requestToDelete, setRequestToDelete] = useState<Loan | null>(null);
+   const [isDeletingRequest, setIsDeletingRequest] = useState(false);
+   const [isOpeningLoanRequest, setIsOpeningLoanRequest] = useState(false);
 
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -192,7 +351,7 @@ function RequestBoard$() {
    const isReferralTestMode = import.meta.env.DEV && requestBoardSearchParams.has('referralTest');
    const forceTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('tourPreview');
    const showWorldIdSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.has('worldIdSuccessPreview');
-   const holdWorldIdSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.get('worldIdSuccessPreview') === 'hold';
+   const showSubmittedRequestSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.has('submittedRequestSuccessPreview');
    const showTourPreview = forceTourPreview || requestBoardSearchParams.has('tour');
    const shouldStartTourImmediately = requestBoardSearchParams.get('startTour') === '1';
    const isLenderTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('lenderTourPreview');
@@ -233,8 +392,14 @@ function RequestBoard$() {
       shouldShowGuidedTour(LENDER_GUIDED_TOUR_ID, tourUserId, forceTourPreview);
    const isGuestBorrowerTour = shouldShowBorrowerTour && !isAuthenticated;
    const recordedTourViewsRef = useRef<Set<string>>(new Set());
+   const pendingLoanDataRef = useRef<CreateLoanData | null>(null);
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
+   const [hasLoadedRequestBoardLoans, setHasLoadedRequestBoardLoans] = useState(false);
+   const liveRequestBoardLoans = hasLoadedRequestBoardLoans ? floanRequests : [];
+   const previewRequestBoardLoans = useMemo(buildPreviewRequestBoardLoans, []);
+   const shouldUsePreviewRequestBoardLoans = hasLoadedRequestBoardLoans && shouldShowPreviewRequestBoardLoans(location.search, liveRequestBoardLoans);
+   const requestBoardLoans = shouldUsePreviewRequestBoardLoans ? previewRequestBoardLoans : liveRequestBoardLoans;
    const [sortedLoans, setSortedLoans] = useState(floanRequests);
 
    const today = new Date().toISOString().split('T')[0];
@@ -256,6 +421,8 @@ function RequestBoard$() {
    const usedCreditAmount = useMemo(() => {
       return getBorrowerUsedCreditAmount(borrowerCreditLoans);
    }, [borrowerCreditLoans]);
+   const activeBorrowerLoanCount = useMemo(() => getBorrowerActiveLoanCount(borrowerCreditLoans), [borrowerCreditLoans]);
+   const hasReachedActiveLoanLimit = (effectiveUser.mal ?? 0) > 0 && activeBorrowerLoanCount >= (effectiveUser.mal ?? 0);
    const availableCreditLimit = Math.max(effectiveCreditLimit - usedCreditAmount, 0);
    const canUseReferralBoost =
       isReferralTestMode ||
@@ -264,32 +431,23 @@ function RequestBoard$() {
          effectiveUser.isWorldId === 'ACTIVE' &&
          effectiveCreditLimit <= STARTING_CREDIT_LIMIT &&
          borrowerCreditLoans.length === 0);
-   const hasBorrowerBaseWallet =
-      !IS_BORROWER_BASE_WALLET_GATE_ENABLED ||
-      isBaseWalletReadyForRepayment({
-         connectedAddress: connectedWallet.address,
-         connectorId: connectedWallet.connector?.id,
-         connectorName: connectedWallet.connector?.name,
-         wallet: effectiveUser
-      });
+   const hasBorrowerBaseWallet = !IS_BORROWER_BASE_WALLET_GATE_ENABLED || hasWalletAddressOnAccount(effectiveUser);
    const shouldOpenLoanRequest =
       (location.state as { openLoanRequest?: boolean } | null)?.openLoanRequest === true ||
       new URLSearchParams(location.search).get('applyLoan') === '1';
 
    const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
    const successModalRef = useClickOutside<HTMLDivElement>(() => setShowPurple(false), showPurple) as RefObject<HTMLDivElement>;
-   const baseWalletGateRef = useClickOutside<HTMLDivElement>(
-      () => setShowBaseWalletGate(false),
-      showBaseWalletGate
-   ) as RefObject<HTMLDivElement>;
    const publicQuestionsRef = useClickOutside<HTMLDivElement>(
       () => setShowPublicQuestions(false),
       showPublicQuestions
    ) as RefObject<HTMLDivElement>;
-   const worldIdHighlightRef = useClickOutside<HTMLDivElement>(
-      () => setShowWorldIdHighlight(false),
-      showWorldIdHighlight
-   ) as RefObject<HTMLDivElement>;
+   const highlightedRequestRef = useRef<HTMLDivElement | null>(null);
+   const lastScrolledHighlightedRequestIdRef = useRef<string | null>(null);
+   const submittedRequestPreviewRunRef = useRef<string | null>(null);
+   const deleteRequestModalRef = useClickOutside<HTMLDivElement>(() => {
+      if (!isDeletingRequest) setRequestToDelete(null);
+   }, Boolean(requestToDelete)) as RefObject<HTMLDivElement>;
 
    const [filters, setFilters] = useState<LoanFilters>(() => getDefaultRequestFilters());
    const hasActiveRequestFilters = useMemo(() => hasAppliedRequestFilters(filters, customAmount), [filters, customAmount]);
@@ -303,11 +461,20 @@ function RequestBoard$() {
 
    useEffect(() => {
       if (!showWorldIdHighlight) return;
-      if (holdWorldIdSuccessPreview) return;
 
-      const timeoutId = window.setTimeout(() => setShowWorldIdHighlight(false), 5000);
+      const timeoutId = window.setTimeout(() => setShowWorldIdHighlight(false), REQUEST_BOARD_COMPLETION_HIGHLIGHT_MS);
       return () => window.clearTimeout(timeoutId);
-   }, [holdWorldIdSuccessPreview, showWorldIdHighlight]);
+   }, [showWorldIdHighlight]);
+
+   useEffect(() => {
+      if (!highlightedRequestId) {
+         lastScrolledHighlightedRequestIdRef.current = null;
+         return;
+      }
+
+      const timeoutId = window.setTimeout(() => setHighlightedRequestId(null), REQUEST_BOARD_COMPLETION_HIGHLIGHT_MS);
+      return () => window.clearTimeout(timeoutId);
+   }, [highlightedRequestId]);
 
    const clear = () => {
       setTotalRepaymentAmount('');
@@ -320,16 +487,23 @@ function RequestBoard$() {
    const goToBorrowerOnboardingStart = useCallback(
       (returnTo?: string) => {
          setShowModal(false);
-         setShowBaseWalletGate(false);
          navigate('/onboarding/welcome', returnTo ? { state: { returnTo } } : undefined);
       },
       [navigate]
    );
 
-   const showBorrowerBaseWalletGate = useCallback(() => {
+   const goToBorrowerWalletSetup = useCallback(
+      (returnTo?: string, replace = false) => {
+         setShowModal(false);
+         navigate('/onboarding/wallet', { replace, state: returnTo ? { returnTo } : undefined });
+      },
+      [navigate]
+   );
+
+   const handleMissingBorrowerWallet = useCallback(() => {
       setShowModal(false);
-      setShowBaseWalletGate(true);
-   }, []);
+      goToBorrowerWalletSetup('loan-request');
+   }, [goToBorrowerWalletSetup]);
 
    const handleFiltersChange = (newFilters: Partial<LoanFilters>) => {
       setFilters((prev) => {
@@ -355,41 +529,82 @@ function RequestBoard$() {
       setShowFilters((current) => !current);
    }, [hasActiveRequestFilters, resetRequestFilters]);
 
-   const handleApplyLoanClick = (e: MouseEvent<HTMLButtonElement>) => {
+   const showLoanRequestCooldown = useCallback(
+      (status: LoanRequestRepostStatus) => {
+         showToast(TOAST_TYPES.WARNING, 'New request paused', getLoanRequestCooldownMessage(status), 'OK', 'acknowledge');
+      },
+      [showToast]
+   );
+
+   const ensureCanCreateLoanRequest = useCallback(async () => {
+      if (!isAuthenticated || !isBorrower || isReferralTestMode || isLenderTourPreview) return true;
+
+      try {
+         const repostStatus = await dispatch(fetchLoanRequestRepostStatus()).unwrap();
+
+         if (!repostStatus.canCreate) {
+            showLoanRequestCooldown(repostStatus);
+            return false;
+         }
+
+         return true;
+      } catch (error) {
+         console.error('Error checking loan request repost status:', (error as Error).message || error);
+         showToast(
+            TOAST_TYPES.ERROR,
+            'Request limit unavailable',
+            'We could not check your request limit. Please try again.',
+            'OK',
+            'acknowledge'
+         );
+         return false;
+      }
+   }, [dispatch, isAuthenticated, isBorrower, isLenderTourPreview, isReferralTestMode, showLoanRequestCooldown, showToast]);
+
+   const handleApplyLoanClick = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
+      if (isOpeningLoanRequest) return;
+      setIsOpeningLoanRequest(true);
 
-      if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
-         goToBorrowerOnboardingStart('loan-request');
-         return;
-      }
+      try {
+         if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
+            goToBorrowerOnboardingStart('loan-request');
+            return;
+         }
 
-      if (!hasBorrowerBaseWallet) {
-         showBorrowerBaseWalletGate();
-         return;
-      }
+         if (!hasBorrowerBaseWallet) {
+            handleMissingBorrowerWallet();
+            return;
+         }
 
-      if (!isWorldIdVerified) {
+         if (!isWorldIdVerified) {
+            setShowModal(true);
+            return;
+         }
+
+         if (hasReachedActiveLoanLimit) {
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
+            return;
+         }
+
+         if (availableCreditLimit <= 0) {
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
+            return;
+         }
+         if (!(await ensureCanCreateLoanRequest())) {
+            return;
+         }
          setShowModal(true);
-         return;
+      } finally {
+         window.setTimeout(() => setIsOpeningLoanRequest(false), 180);
       }
-
-      if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
-         return;
-      }
-
-      if (availableCreditLimit <= 0) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
-         return;
-      }
-      setShowModal(true);
    };
 
-   const handleCloseModal = useCallback(() => setShowModal(false), []);
-   const handleAddBaseWallet = useCallback(() => {
-      setShowBaseWalletGate(false);
-      navigate('/onboarding/wallet', { state: { returnTo: 'loan-request' } });
-   }, [navigate]);
+   const handleCloseModal = useCallback(() => {
+      setShowModal(false);
+      setShowBioStep(false);
+      pendingLoanDataRef.current = null;
+   }, []);
    const handleWorldIdHeaderClick = useCallback(
       (openWorldId: () => void) => {
          if (!hasBorrowerBaseWallet) {
@@ -675,6 +890,7 @@ function RequestBoard$() {
 
    useEffect(() => {
       if (!shouldOpenLoanRequest || !isAuthenticated || !isBorrower || !effectiveUser?.id) return;
+      let isActive = true;
 
       if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
          navigate('/onboarding/welcome', { replace: true, state: { returnTo: 'loan-request' } });
@@ -682,8 +898,7 @@ function RequestBoard$() {
       }
 
       if (!hasBorrowerBaseWallet) {
-         showBorrowerBaseWalletGate();
-         navigate(pathname, { replace: true, state: null });
+         goToBorrowerWalletSetup('loan-request', true);
          return;
       }
 
@@ -693,15 +908,28 @@ function RequestBoard$() {
          return;
       }
 
-      if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
-         navigate(pathname, { replace: true, state: null });
-         return;
-      }
+      const openLoanRequestFromRoute = async () => {
+         if (hasReachedActiveLoanLimit) {
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
+            navigate(pathname, { replace: true, state: null });
+            return;
+         }
 
-      setShowModal(true);
-      navigate(pathname, { replace: true, state: null });
+         const canCreateRequest = await ensureCanCreateLoanRequest();
+         if (!isActive) return;
+
+         if (canCreateRequest) setShowModal(true);
+         navigate(pathname, { replace: true, state: null });
+      };
+
+      void openLoanRequestFromRoute();
+
+      return () => {
+         isActive = false;
+      };
    }, [
+      ensureCanCreateLoanRequest,
+      hasReachedActiveLoanLimit,
       isAuthenticated,
       isBorrower,
       navigate,
@@ -710,10 +938,8 @@ function RequestBoard$() {
       showToastByConfig,
       hasBorrowerBaseWallet,
       isWorldIdVerified,
-      showBorrowerBaseWalletGate,
-      effectiveUser?.id,
-      effectiveUser?.mal,
-      effectiveUser?.nal
+      goToBorrowerWalletSetup,
+      effectiveUser?.id
    ]);
 
    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -735,10 +961,10 @@ function RequestBoard$() {
          return;
       }
       if (!hasBorrowerBaseWallet) {
-         showBorrowerBaseWalletGate();
+         handleMissingBorrowerWallet();
          return;
       }
-      if ((effectiveUser.nal || 0) >= (effectiveUser.mal || 0)) {
+      if (hasReachedActiveLoanLimit) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
          return;
       }
@@ -785,34 +1011,75 @@ function RequestBoard$() {
       if (
          effectiveUser.isWorldId === 'ACTIVE' &&
          hasBorrowerBaseWallet &&
-         (effectiveUser.nal || 0) < (effectiveUser.mal || 0) &&
+         !hasReachedActiveLoanLimit &&
          parsedLoanAmount <= availableCreditLimit &&
          parsedLoanAmount > 0 &&
          parsedRepaymentAmount >= parsedLoanAmount + 1
       ) {
-         setIsSubmitting(true);
+         // If borrower hasn't filled in bio yet, show bio step first
+         if (!effectiveUser.incomeType) {
+            pendingLoanDataRef.current = loanData;
+            setShowBioStep(true);
+            return;
+         }
+
+         await doCreateLoan(loanData);
+      }
+   };
+
+   const doCreateLoan = async (loanData: CreateLoanData) => {
+      setIsSubmitting(true);
+      try {
+         if (!(await ensureCanCreateLoanRequest())) {
+            return;
+         }
+         const createdLoan = await dispatch(createLoan(loanData)).unwrap();
+         clear();
+         setSearchLoan('');
+         setCustomAmount('');
+         setFilters(getDefaultRequestFilters());
+         setPendingSubmittedRequestId(createdLoan.id);
+         setShowPurple(true);
+         setShowModal(false);
          try {
-            await dispatch(createLoan(loanData)).unwrap();
-            clear();
-            setShowPurple(true);
-            setShowModal(false);
-            try {
-               await dispatch(fetchUser()).unwrap();
-            } catch (error) {
-               console.error('Error fetching user:', (error as Error).message || error);
+            const loans = await dispatch(fetchLoans()).unwrap();
+            const borrowerUserIds = [...new Set(loans.map((loan: Loan) => loan.borrowerUser).filter(Boolean))] as string[];
+            if (borrowerUserIds.length > 0) {
+               await dispatch(fetchUserProfiles(borrowerUserIds)).unwrap();
             }
          } catch (error) {
-            console.error('Error creating loan:', (error as Error).message || error);
-            showToast(
-               TOAST_TYPES.ERROR,
-               "Request wasn't saved",
-               "We couldn't save this loan request. Please try again.",
-               'Try Again',
-               'retry_loan_request'
-            );
-         } finally {
-            setIsSubmitting(false);
+            console.error('Error refreshing loans after request creation:', (error as Error).message || error);
          }
+         try {
+            await dispatch(fetchUser()).unwrap();
+         } catch (error) {
+            console.error('Error fetching user:', (error as Error).message || error);
+         }
+      } catch (error) {
+         console.error('Error creating loan:', (error as Error).message || error);
+         showToast(
+            TOAST_TYPES.ERROR,
+            "Request wasn't saved",
+            "We couldn't save this loan request. Please try again.",
+            'Try Again',
+            'retry_loan_request'
+         );
+      } finally {
+         setIsSubmitting(false);
+      }
+   };
+
+   const handleBioSave = async (data: { incomeType: string; paydayType: string; gapReasons: string[] }) => {
+      try {
+         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, gapReasons: data.gapReasons })).unwrap();
+      } catch (error) {
+         console.error('Failed to save borrower context:', error);
+      }
+      setShowBioStep(false);
+      const pending = pendingLoanDataRef.current;
+      pendingLoanDataRef.current = null;
+      if (pending) {
+         await doCreateLoan(pending);
       }
    };
 
@@ -858,6 +1125,7 @@ function RequestBoard$() {
 
    useEffect(() => {
       const loadLoans = async () => {
+         setHasLoadedRequestBoardLoans(false);
          try {
             const loans = await dispatch(fetchLoans()).unwrap();
             const borrowerUserIds = [...new Set(loans.map((loan: Loan) => loan.borrowerUser).filter(Boolean))] as string[];
@@ -866,6 +1134,8 @@ function RequestBoard$() {
             }
          } catch (error) {
             console.error('Error fetching data:', (error as Error).message || error);
+         } finally {
+            setHasLoadedRequestBoardLoans(true);
          }
       };
       loadLoans();
@@ -874,12 +1144,12 @@ function RequestBoard$() {
    const filteredLoans = useMemo(() => {
       const allFilters: LoanFilters = { ...filters, search: searchLoan, sortBy: filters.sortBy };
       return filterLoans(
-         floanRequests.filter((loan) => isRequestBoardLoanVisible(loan)),
+         requestBoardLoans.filter((loan) => isRequestBoardLoanVisible(loan)),
          allFilters,
          customAmount,
          userProfiles
       );
-   }, [filters, searchLoan, floanRequests, customAmount, userProfiles]);
+   }, [filters, searchLoan, requestBoardLoans, customAmount, userProfiles]);
 
    useEffect(() => {
       setSortedLoans(filteredLoans);
@@ -895,17 +1165,116 @@ function RequestBoard$() {
       resetDependencies: [filters, searchLoan]
    });
 
-   const handleSuccessModalClose = useCallback(() => setShowPurple(false), []);
+   const handleDeleteOwnRequestClick = useCallback(
+      (loan: Loan) => {
+         if (!effectiveUser?.id || loan.borrowerUser !== effectiveUser.id || loan.loanStatus !== 'Requested') return;
 
-   const firstName = user?.username?.split(' ')[0] || user?.username || 'there';
-   const displayFirstName = effectiveUser?.username?.split(' ')[0] || effectiveUser?.username || firstName;
+         setRequestToDelete(loan);
+      },
+      [effectiveUser?.id]
+   );
+
+   const handleCloseDeleteRequest = useCallback(() => {
+      if (!isDeletingRequest) setRequestToDelete(null);
+   }, [isDeletingRequest]);
+
+   const handleConfirmDeleteRequest = useCallback(async () => {
+      if (!requestToDelete || isDeletingRequest) return;
+
+      if (!effectiveUser?.id || requestToDelete.borrowerUser !== effectiveUser.id || requestToDelete.loanStatus !== 'Requested') {
+         setRequestToDelete(null);
+         showToast(
+            TOAST_TYPES.ERROR,
+            "Request wasn't deleted",
+            'Only the borrower who made a pending request can delete it.',
+            'OK',
+            'acknowledge'
+         );
+         return;
+      }
+
+      setIsDeletingRequest(true);
+      try {
+         await dispatch(deleteLoan(requestToDelete.id)).unwrap();
+         setRequestToDelete(null);
+
+         const repostStatus = await dispatch(fetchLoanRequestRepostStatus())
+            .unwrap()
+            .catch(() => null);
+
+         showToast(
+            TOAST_TYPES.SUCCESS,
+            'Request deleted',
+            repostStatus && !repostStatus.canCreate
+               ? getLoanRequestCooldownMessage(repostStatus)
+               : 'Lenders will no longer see this request on the board.'
+         );
+
+         await Promise.all([
+            dispatch(fetchLoans()).unwrap().catch((error: Error) => {
+               console.error('Error refreshing loans after delete:', error.message || error);
+            }),
+            dispatch(fetchUser()).unwrap().catch((error: Error) => {
+               console.error('Error refreshing user after loan request delete:', error.message || error);
+            })
+         ]);
+      } catch (error) {
+         console.error('Error deleting loan request:', (error as Error).message || error);
+         showToast(
+            TOAST_TYPES.ERROR,
+            "Request wasn't deleted",
+            'It may already be funded or unavailable. Refreshing the board now.',
+            'OK',
+            'acknowledge'
+         );
+         await dispatch(fetchLoans())
+            .unwrap()
+            .catch((fetchError: Error) => {
+               console.error('Error refreshing loans after delete failure:', fetchError.message || fetchError);
+            });
+      } finally {
+         setIsDeletingRequest(false);
+      }
+   }, [dispatch, effectiveUser?.id, isDeletingRequest, requestToDelete, showToast]);
+
+   const handleSuccessModalClose = useCallback(() => {
+      setShowPurple(false);
+      if (!pendingSubmittedRequestId) return;
+
+      setHighlightedRequestId(pendingSubmittedRequestId);
+      setPendingSubmittedRequestId(null);
+   }, [pendingSubmittedRequestId]);
+
+   const firstName = user?.displayName?.split(' ')[0] || user?.username?.split(' ')[0] || user?.username || 'there';
+   const displayFirstName =
+      effectiveUser?.displayName?.split(' ')[0] || effectiveUser?.username?.split(' ')[0] || effectiveUser?.username || firstName;
    const accountEditPath = (edit: 'avatar' | 'name') => {
       const params = new URLSearchParams(location.search);
       params.set('edit', edit);
       return `/account/settings?${params.toString()}`;
    };
    const visibleLoans = shouldShowLenderTour && displayedLoans.length === 0 ? LENDER_TOUR_LOANS : displayedLoans;
-   const isListLoading = isLoading && !shouldShowLenderTour;
+   const isListLoading = (!hasLoadedRequestBoardLoans || isLoading) && !shouldShowLenderTour;
+
+   useEffect(() => {
+      if (!highlightedRequestId || lastScrolledHighlightedRequestIdRef.current === highlightedRequestId) return;
+      if (!visibleLoans.some((loan) => loan.id === highlightedRequestId)) return;
+
+      const frameId = window.requestAnimationFrame(() => {
+         highlightedRequestRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         lastScrolledHighlightedRequestIdRef.current = highlightedRequestId;
+      });
+
+      return () => window.cancelAnimationFrame(frameId);
+   }, [highlightedRequestId, visibleLoans]);
+
+   useEffect(() => {
+      if (!showSubmittedRequestSuccessPreview || visibleLoans.length === 0) return;
+      if (submittedRequestPreviewRunRef.current === location.search) return;
+
+      submittedRequestPreviewRunRef.current = location.search;
+      setHighlightedRequestId(visibleLoans[0].id);
+   }, [location.search, showSubmittedRequestSuccessPreview, visibleLoans]);
 
    return (
       <>
@@ -963,11 +1332,11 @@ function RequestBoard$() {
                                        )}
                                     </WorldIDVerification>
                                  ) : (
-                                    <div ref={worldIdHighlightRef} className="relative">
+                                    <div className="relative">
                                        <span
                                           className={`inline-flex items-center gap-1 rounded-md-sm bg-md-green-100 px-md-1 py-md-0 transition-shadow duration-200 ${
                                              showWorldIdHighlight
-                                                ? 'ring-2 ring-md-green-900/40 ring-offset-2 ring-offset-md-neutral-200'
+                                                ? 'request-board-focus-highlight-badge ring-[3px] ring-md-primary-900/70 ring-offset-4 ring-offset-md-neutral-200'
                                                 : ''
                                           }`}
                                        >
@@ -976,34 +1345,6 @@ function RequestBoard$() {
                                           </span>
                                           <span className="text-md-b3 font-semibold text-md-green-900">Verified</span>
                                        </span>
-                                       {showWorldIdHighlight && (
-                                          <div
-                                             role="status"
-                                             className="absolute left-0 top-[calc(100%+8px)] z-[75] w-[268px] rounded-[18px] border border-md-green-100 bg-[#fdfbfd] p-md-3 text-left shadow-[0_16px_42px_rgba(36,14,62,0.16)]"
-                                          >
-                                             <div className="flex items-start justify-between gap-md-2">
-                                                <div className="flex min-w-0 gap-md-2">
-                                                   <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-md-green-100 text-md-green-900">
-                                                      <CheckCircle2 className="size-4" strokeWidth={2.4} />
-                                                   </span>
-                                                   <div>
-                                                      <p className="text-md-b2 font-semibold text-md-heading">You are now verified.</p>
-                                                      <p className="mt-0.5 text-md-b3 font-medium leading-[1.4] text-md-neutral-800">
-                                                         Lenders will see this status on your loan requests.
-                                                      </p>
-                                                   </div>
-                                                </div>
-                                                <button
-                                                   type="button"
-                                                   onClick={() => setShowWorldIdHighlight(false)}
-                                                   aria-label="Dismiss verification message"
-                                                   className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-md-neutral-200 text-md-neutral-1000"
-                                                >
-                                                   <X className="size-4" strokeWidth={2.25} />
-                                                </button>
-                                             </div>
-                                          </div>
-                                       )}
                                     </div>
                                  )}
                               </div>
@@ -1020,7 +1361,7 @@ function RequestBoard$() {
                         type="button"
                         onClick={() => navigate('/support')}
                         aria-label="Open help and support center"
-                        className="shrink-0 w-12 h-12 bg-white rounded-full shadow-md-card flex items-center justify-center"
+                        className="shrink-0 w-12 h-12 bg-white rounded-full shadow-md-card flex items-center justify-center transition-all duration-150 hover:brightness-105 active:scale-[0.96] active:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
                      >
                         <HelpCircle className="w-6 h-6 text-md-primary-900" strokeWidth={1.5} />
                      </button>
@@ -1110,10 +1451,19 @@ function RequestBoard$() {
                            </div>
                            <button
                               onClick={handleApplyLoanClick}
+                              disabled={isOpeningLoanRequest}
+                              aria-busy={isOpeningLoanRequest}
                               data-tour-target="request-apply-button"
-                              className="bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold px-md-4 py-md-3 rounded-md-lg w-fit max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
+                              className="inline-flex min-h-[56px] w-fit items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 shadow-md-card transition-all duration-150 hover:brightness-110 active:scale-[0.97] active:brightness-90 disabled:pointer-events-none disabled:opacity-75 max-[374px]:min-h-12 max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
                            >
-                              Apply For A Loan
+                              {isOpeningLoanRequest ? (
+                                 <>
+                                    <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
+                                    Opening...
+                                 </>
+                              ) : (
+                                 'Apply For A Loan'
+                              )}
                            </button>
                         </div>
                         <img
@@ -1141,7 +1491,7 @@ function RequestBoard$() {
                            </div>
                            <Link
                               to="/sign-up"
-                              className="border border-md-primary-1200 text-md-primary-1200 text-md-b1 font-semibold px-md-4 py-md-3 rounded-md-lg w-fit max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
+                              className="inline-flex min-h-[56px] w-fit items-center justify-center rounded-md-lg border border-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-primary-1200 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.97] active:brightness-95 max-[374px]:min-h-12 max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
                            >
                               Apply For A Loan
                            </Link>
@@ -1230,12 +1580,34 @@ function RequestBoard$() {
                            </div>
                         ) : visibleLoans && visibleLoans.length > 0 ? (
                            visibleLoans.map((loan) => (
-                              <div key={loan.id} data-tour-target={visibleLoans[0]?.id === loan.id ? 'request-first-card' : undefined}>
+                              <div
+                                 key={loan.id}
+                                 ref={loan.id === highlightedRequestId ? highlightedRequestRef : undefined}
+                                 data-tour-target={visibleLoans[0]?.id === loan.id ? 'request-first-card' : undefined}
+                              >
                                  <UserCard
                                     {...loan}
+                                    currentUserId={effectiveUser?.id}
                                     isBorrower={isBorrower}
                                     isAuthenticated={isAuthenticated}
-                                    tourBorrowerUsername={loan.id.startsWith('lender-tour') ? 'maya-demo' : undefined}
+                                    isHighlighted={loan.id === highlightedRequestId}
+                                    isPreviewRequest={isPreviewRequestBoardLoan(loan)}
+                                    isDeletingOwnRequest={Boolean(isDeletingRequest && requestToDelete?.id === loan.id)}
+                                    onDeleteOwnRequest={handleDeleteOwnRequestClick}
+                                    tourBorrowerUsername={
+                                       loan.id.startsWith('lender-tour')
+                                          ? 'maya-demo'
+                                          : loan.borrowerUser
+                                            ? PREVIEW_REQUEST_BOARD_BORROWER_USERNAMES[loan.borrowerUser]
+                                            : undefined
+                                    }
+                                    borrowerContextProfile={
+                                       loan.id.startsWith('lender-tour')
+                                          ? LENDER_TOUR_BORROWER_CONTEXT
+                                          : loan.borrowerUser
+                                            ? PREVIEW_REQUEST_BOARD_BORROWER_CONTEXTS[loan.borrowerUser]
+                                            : undefined
+                                    }
                                  />
                               </div>
                            ))
@@ -1279,12 +1651,6 @@ function RequestBoard$() {
 
          {((isAuthenticated && isBorrower) || isGuestBorrowerTour) && (
             <>
-               <BaseWalletRequiredModal
-                  isOpen={showBaseWalletGate}
-                  clickOutsideRef={baseWalletGateRef}
-                  onClose={() => setShowBaseWalletGate(false)}
-                  onAddBaseWallet={handleAddBaseWallet}
-               />
                <LoanRequestModal
                   isOpen={showModal}
                   onClose={handleCloseModal}
@@ -1306,9 +1672,18 @@ function RequestBoard$() {
                   availableCreditLimit={availableCreditLimit}
                   canUseReferralBoost={canUseReferralBoost}
                   startOnReferralStep={!shouldShowBorrowerTour && canUseReferralBoost}
+                  showBioStep={showBioStep}
+                  onBioSave={handleBioSave}
                   clickOutsideRef={loanRequestModalRef}
                />
                <SuccessModal isOpen={showPurple} onClose={handleSuccessModalClose} clickOutsideRef={successModalRef} />
+               <DeleteLoanRequestModal
+                  loan={requestToDelete}
+                  clickOutsideRef={deleteRequestModalRef}
+                  isDeleting={isDeletingRequest}
+                  onClose={handleCloseDeleteRequest}
+                  onConfirm={handleConfirmDeleteRequest}
+               />
             </>
          )}
          {isGuestBorrowerTour && showGuestWorldIdPreview && <GuestWorldIdTourPreview />}
@@ -1333,6 +1708,88 @@ function RequestBoard$() {
             />
          )}
       </>
+   );
+}
+
+function DeleteLoanRequestModal({
+   loan,
+   clickOutsideRef,
+   isDeleting,
+   onClose,
+   onConfirm
+}: {
+   loan: Loan | null;
+   clickOutsideRef: RefObject<HTMLDivElement>;
+   isDeleting: boolean;
+   onClose: () => void;
+   onConfirm: () => void;
+}) {
+   if (!loan) return null;
+
+   const dueDate = new Date(loan.dueDate);
+   const dueDateLabel = Number.isNaN(dueDate.getTime())
+      ? 'the selected date'
+      : new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(dueDate);
+
+   return (
+      <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#12071f]/45 px-md-3 py-md-4 sm:items-center">
+         <div
+            ref={clickOutsideRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-loan-request-title"
+            className="w-full max-w-[408px] overflow-hidden rounded-t-[32px] bg-white shadow-md-overlay sm:rounded-[32px]"
+         >
+            <div className="flex items-center justify-between border-b border-md-neutral-400 px-md-4 py-md-3">
+               <div>
+                  <h2 id="delete-loan-request-title" className="text-md-h4 font-semibold text-md-heading">
+                     Delete this request?
+                  </h2>
+                  <p className="mt-1 text-md-b3 font-medium text-md-neutral-800">This cannot be undone.</p>
+               </div>
+               <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isDeleting}
+                  aria-label="Close delete request confirmation"
+                  className="size-11 shrink-0 rounded-full text-md-heading inline-flex items-center justify-center active:bg-md-neutral-300 disabled:cursor-not-allowed disabled:opacity-50"
+               >
+                  <X className="size-7" strokeWidth={2.25} />
+               </button>
+            </div>
+
+            <div className="flex flex-col gap-md-4 px-md-4 py-md-5">
+               <div className="rounded-md-lg border border-red-100 bg-red-50 px-md-4 py-md-4">
+                  <p className="text-md-b1 font-semibold text-red-700">{loan.reason || 'Loan request'}</p>
+                  <p className="mt-2 text-md-b2 font-medium leading-[1.45] text-md-neutral-900">
+                     Borrowing ${formatCurrency(loan.loanAmount)} and repaying ${formatCurrency(loan.totalRepaymentAmount)} by{' '}
+                     {dueDateLabel}.
+                  </p>
+               </div>
+               <p className="text-md-b2 font-medium leading-[1.45] text-md-neutral-900">
+                  Lenders will no longer see it. You can make a new request from the board, but repeated deletes pause new requests for a
+                  short time.
+               </p>
+
+               <button
+                  type="button"
+                  onClick={onConfirm}
+                  disabled={isDeleting}
+                  className="w-full rounded-md-lg bg-red-600 px-md-4 py-md-3 text-md-b1 font-semibold text-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+               >
+                  {isDeleting ? 'Deleting...' : 'Delete request'}
+               </button>
+               <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isDeleting}
+                  className="w-full rounded-md-lg border border-md-neutral-500 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-1200 active:bg-md-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
+               >
+                  Keep request
+               </button>
+            </div>
+         </div>
+      </div>
    );
 }
 
@@ -1408,73 +1865,6 @@ function PublicQuestionsMenu({
             >
                See more
             </Link>
-         </div>
-      </div>
-   );
-}
-
-function BaseWalletRequiredModal({
-   isOpen,
-   clickOutsideRef,
-   onClose,
-   onAddBaseWallet
-}: {
-   isOpen: boolean;
-   clickOutsideRef: RefObject<HTMLDivElement>;
-   onClose: () => void;
-   onAddBaseWallet: () => void;
-}) {
-   if (!isOpen) return null;
-
-   return (
-      <div className="fixed inset-0 z-[100] bg-[#12071f]/40 flex items-end sm:items-center justify-center px-md-3 py-md-4">
-         <div
-            ref={clickOutsideRef}
-            className="w-full max-w-[408px] rounded-t-[32px] sm:rounded-[32px] bg-white shadow-md-overlay overflow-hidden"
-         >
-            <div className="flex items-center justify-between border-b border-md-neutral-400 px-md-4 py-md-3">
-               <div className="flex items-center gap-md-2">
-                  <img src="/icons/base-account.svg" alt="" className="size-11 rounded-md-lg" />
-                  <h2 className="text-md-h4 font-semibold text-md-heading">Connect Base Wallet</h2>
-               </div>
-               <button
-                  type="button"
-                  onClick={onClose}
-                  aria-label="Close connect Base wallet"
-                  className="size-11 rounded-full inline-flex items-center justify-center text-md-heading active:bg-md-neutral-300"
-               >
-                  <X className="size-7" strokeWidth={2.25} />
-               </button>
-            </div>
-
-            <div className="flex flex-col gap-md-4 px-md-4 py-md-5">
-               <div className="rounded-md-lg border border-md-primary-300 bg-md-primary-100 px-md-4 py-md-4">
-                  <div className="flex items-start gap-md-3">
-                     <div className="mt-0.5 size-10 rounded-full bg-md-primary-900/10 inline-flex items-center justify-center shrink-0">
-                        <Wallet className="size-5 text-md-primary-900" strokeWidth={1.8} />
-                     </div>
-                     <p className="text-md-b1 font-medium leading-[1.45] text-md-neutral-900">
-                        Borrowers need a confirmed Base wallet before requesting a loan. Connect the Base wallet you want tied to funding,
-                        repayment, and your public trust record.
-                     </p>
-                  </div>
-               </div>
-
-               <button
-                  type="button"
-                  onClick={onAddBaseWallet}
-                  className="w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
-               >
-                  Connect Base Wallet
-               </button>
-               <button
-                  type="button"
-                  onClick={onClose}
-                  className="w-full rounded-md-lg border border-md-neutral-500 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-1200 active:bg-md-neutral-200"
-               >
-                  Not now
-               </button>
-            </div>
          </div>
       </div>
    );

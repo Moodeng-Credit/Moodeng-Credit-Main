@@ -52,7 +52,7 @@ const getRequiredEnv = (name: string, errorCode = 'WORLDID_CONFIG_MISSING') => {
 const getAction = () => Deno.env.get('WORLD_ID_ACTION_ID') || Deno.env.get('VITE_WORLD_ID_ACTION_ID') || WORLD_ID_ACTION_ID
 
 const getWorldIdEnvironment = () => {
-  const environment = Deno.env.get('WORLD_ID_ENVIRONMENT') || Deno.env.get('VITE_WORLD_ID_ENVIRONMENT') || 'production'
+  const environment = Deno.env.get('WORLD_ID_ENVIRONMENT') || 'production'
 
   return environment === 'staging' ? 'staging' : 'production'
 }
@@ -67,8 +67,15 @@ const getDeveloperPortalBaseUrl = () => {
   return getWorldIdEnvironment() === 'staging' ? 'https://staging-developer.worldcoin.org' : 'https://developer.world.org'
 }
 
+const getEnvForWorldId = (base: string) => {
+  const env = getWorldIdEnvironment()
+  const suffix = env === 'staging' ? '_STAGING' : '_PROD'
+
+  return Deno.env.get(`${base}${suffix}`) || Deno.env.get(base)
+}
+
 const getVerifyTarget = () => {
-  return Deno.env.get('WORLD_ID_RP_ID') || Deno.env.get('WORLD_ID_APP_ID') || Deno.env.get('VITE_WORLD_ID_APP_ID')
+  return getEnvForWorldId('WORLD_ID_RP_ID') || Deno.env.get('WORLD_ID_APP_ID') || Deno.env.get('VITE_WORLD_ID_APP_ID')
 }
 
 etc.hmacSha256Sync = (key, ...msgs) => hmac(sha256, key, etc.concatBytes(...msgs))
@@ -185,12 +192,15 @@ serve(async (req) => {
     }
 
     if (body.type === 'rp-signature') {
-      const signingKey = Deno.env.get('WORLD_ID_SIGNING_KEY') || Deno.env.get('RP_SIGNING_KEY')
+      const signingKey = getEnvForWorldId('WORLD_ID_SIGNING_KEY') || Deno.env.get('RP_SIGNING_KEY')
       if (!signingKey) {
         return errorResponse('WORLD_ID_SIGNING_KEY is not configured', 500, 'WORLDID_CONFIG_MISSING')
       }
 
-      const rpId = getRequiredEnv('WORLD_ID_RP_ID')
+      const rpId = getEnvForWorldId('WORLD_ID_RP_ID')
+      if (!rpId) {
+        return errorResponse('WORLD_ID_RP_ID is not configured', 500, 'WORLDID_CONFIG_MISSING')
+      }
       const rpSignature = signRpRequest(signingKey, action)
 
       return successResponse({

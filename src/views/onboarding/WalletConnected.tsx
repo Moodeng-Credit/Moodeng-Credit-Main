@@ -119,6 +119,10 @@ export default function WalletConnected() {
          navigate('/milestones', { replace: true });
          return;
       }
+      if (returnTo === 'dashboard-credit-level') {
+         navigate('/dashboard', { replace: true });
+         return;
+      }
       const destination = user?.userRole === 'borrower' && hasActiveRequest ? '/dashboard' : '/request-board';
       navigate(destination, { replace: true });
    };

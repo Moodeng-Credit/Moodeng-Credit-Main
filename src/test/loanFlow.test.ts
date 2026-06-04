@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import authReducer from '@/store/slices/authSlice';
-import loanReducer, { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
+import loanReducer, { deleteLoan, getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 
 // Mock the Supabase client
 vi.mock('@/lib/supabase/client', () => ({
@@ -28,11 +28,16 @@ describe('Loan Flow Trigger Integration', () => {
       // Setup mock Supabase client
       mockSupabase = {
          from: vi.fn().mockReturnThis(),
+         delete: vi.fn().mockReturnThis(),
          update: vi.fn().mockReturnThis(),
          select: vi.fn().mockReturnThis(),
          eq: vi.fn().mockReturnThis(),
          or: vi.fn().mockReturnThis(),
          order: vi.fn().mockResolvedValue({ data: [], error: null }),
+         maybeSingle: vi.fn().mockResolvedValue({
+            data: { id: 'loan-123' },
+            error: null
+         }),
          single: vi.fn().mockResolvedValue({
             data: {
                id: 'loan-123',
@@ -124,6 +129,29 @@ describe('Loan Flow Trigger Integration', () => {
       );
    });
 
+   it('should trigger the repayment received edge function when a loan is fully paid', async () => {
+      await store.dispatch(
+         updateLoanStatus({
+            id: 'loan-123',
+            repaymentStatus: 'Paid',
+            repaidAmount: 275
+         })
+      );
+
+      expect(mockSupabase.update).toHaveBeenCalledWith(
+         expect.objectContaining({
+            repayment_status: 'Paid',
+            repaid_amount: 275
+         })
+      );
+      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
+         'loan-repayment-received-notification',
+         expect.objectContaining({
+            body: { loanId: 'loan-123' }
+         })
+      );
+   });
+
    it('blocks funding when a request is older than the 7-day expiration window', async () => {
       mockSupabase.single.mockResolvedValueOnce({
          data: {
@@ -161,5 +189,32 @@ describe('Loan Flow Trigger Integration', () => {
       // Assert that the edge function was NOT invoked
       expect(mockSupabase.functions.invoke).not.toHaveBeenCalled();
       expect(mockSupabase.rpc).not.toHaveBeenCalled();
+   });
+
+   it('only fulfills loan deletion after Supabase returns the deleted row', async () => {
+      mockSupabase.maybeSingle.mockResolvedValueOnce({
+         data: { id: 'loan-123' },
+         error: null
+      });
+
+      const result = await store.dispatch(deleteLoan('loan-123'));
+
+      expect(deleteLoan.fulfilled.match(result)).toBe(true);
+      expect(mockSupabase.from).toHaveBeenCalledWith('loans');
+      expect(mockSupabase.delete).toHaveBeenCalled();
+      expect(mockSupabase.eq).toHaveBeenCalledWith('id', 'loan-123');
+      expect(mockSupabase.select).toHaveBeenCalledWith('id');
+   });
+
+   it('rejects loan deletion when row-level security returns no deleted row', async () => {
+      mockSupabase.maybeSingle.mockResolvedValueOnce({
+         data: null,
+         error: null
+      });
+
+      const result = await store.dispatch(deleteLoan('loan-123'));
+
+      expect(deleteLoan.rejected.match(result)).toBe(true);
+      expect(result.error.message).toBe('Loan request was not deleted');
    });
 });

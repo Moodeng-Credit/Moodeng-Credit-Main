@@ -25,6 +25,15 @@ vi.mock('react-router-dom', async () => {
    };
 });
 
+vi.mock('react-redux', async () => {
+   const actual = await vi.importActual<typeof import('react-redux')>('react-redux');
+   return {
+      ...actual,
+      useDispatch: () => vi.fn(),
+      useSelector: () => undefined
+   };
+});
+
 const baseUser: User = {
    id: 'user-1',
    username: 'moodeng',

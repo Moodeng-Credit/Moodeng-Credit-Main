@@ -29,4 +29,13 @@ describe('buildAuthRedirectUrl', () => {
          })
       ).toBe('http://127.0.0.1:5215/reset-password');
    });
+
+   it('keeps auth redirects on the active Vercel preview instead of sending users to staging', () => {
+      expect(
+         buildAuthRedirectUrl('/auth/confirm', 'https://staging.dashboard.moodeng.app/auth/confirm', {
+            hostname: 'moodeng-credit-main-git-codex-repay-54c445-snak2etechs-projects.vercel.app',
+            origin: 'https://moodeng-credit-main-git-codex-repay-54c445-snak2etechs-projects.vercel.app'
+         })
+      ).toBe('https://moodeng-credit-main-git-codex-repay-54c445-snak2etechs-projects.vercel.app/auth/confirm');
+   });
 });

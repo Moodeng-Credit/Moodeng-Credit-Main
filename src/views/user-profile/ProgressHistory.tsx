@@ -25,6 +25,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
+import { useThemeMode } from '@/components/ThemeModeProvider';
 import { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
@@ -36,6 +37,7 @@ import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type User, WorldId } from '@/types/authTypes';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
+
 import { DEMO_BORROWER_INSIGHTS_USER } from './demoBorrowerInsights';
 
 type TimelineTone = 'purple' | 'blue' | 'green' | 'red' | 'neutral';
@@ -53,7 +55,6 @@ export type BorrowerTimelineEvent = {
 };
 
 type LoanClassification = 'trust' | 'credit';
-const BORROWER_INSIGHTS_THEME_KEY = 'borrower-insights-theme';
 
 const DEMO_BORROWER = DEMO_BORROWER_INSIGHTS_USER;
 
@@ -446,10 +447,7 @@ export default function ProgressHistory() {
    const { username } = useParams();
    const [searchParams] = useSearchParams();
    const [profileUser, setProfileUser] = useState<User | null>(null);
-   const [isDarkMode, setIsDarkMode] = useState(() => {
-      if (typeof window === 'undefined') return false;
-      return window.localStorage.getItem(BORROWER_INSIGHTS_THEME_KEY) === 'dark';
-   });
+   const { isDarkMode, toggleMode } = useThemeMode();
 
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
@@ -460,10 +458,6 @@ export default function ProgressHistory() {
    useEffect(() => {
       window.scrollTo(0, 0);
    }, []);
-
-   useEffect(() => {
-      window.localStorage.setItem(BORROWER_INSIGHTS_THEME_KEY, isDarkMode ? 'dark' : 'light');
-   }, [isDarkMode]);
 
    useEffect(() => {
       if (!username) return;
@@ -500,7 +494,9 @@ export default function ProgressHistory() {
    const isGoodStanding = defaultCount === 0;
 
    return (
-      <div className={`progress-history-page min-h-screen bg-[#fbf8ff] transition-colors duration-200 ${isDarkMode ? 'progress-history-dark' : ''}`}>
+      <div
+         className={`progress-history-page min-h-screen bg-[#fbf8ff] transition-colors duration-200 ${isDarkMode ? 'progress-history-dark' : ''}`}
+      >
          <style>{`
             .progress-history-dark {
                background: #0f1117;
@@ -611,12 +607,16 @@ export default function ProgressHistory() {
                <div className="flex items-center justify-end gap-2">
                   <button
                      type="button"
-                     onClick={() => setIsDarkMode((current) => !current)}
+                     onClick={toggleMode}
                      aria-label={isDarkMode ? 'Switch progress history to light mode' : 'Switch progress history to dark mode'}
                      aria-pressed={isDarkMode}
                      className="flex h-12 w-12 items-center justify-center rounded-full border border-[#eadfff] bg-white text-md-primary-900 shadow-md-card active:scale-95"
                   >
-                     {isDarkMode ? <Sun className="h-5 w-5 text-[#facc15]" strokeWidth={2.2} /> : <Moon className="h-5 w-5" strokeWidth={2.2} />}
+                     {isDarkMode ? (
+                        <Sun className="h-5 w-5 text-[#facc15]" strokeWidth={2.2} />
+                     ) : (
+                        <Moon className="h-5 w-5" strokeWidth={2.2} />
+                     )}
                   </button>
                   <button
                      type="button"
@@ -640,7 +640,10 @@ export default function ProgressHistory() {
                               Verified Borrower
                            </StatusPill>
                         )}
-                        <StatusPill tone={isGoodStanding ? 'green' : 'red'} icon={<ShieldCheck className="h-3.5 w-3.5" strokeWidth={2.4} />}>
+                        <StatusPill
+                           tone={isGoodStanding ? 'green' : 'red'}
+                           icon={<ShieldCheck className="h-3.5 w-3.5" strokeWidth={2.4} />}
+                        >
                            {isGoodStanding ? 'Good Standing' : 'Defaults Present'}
                         </StatusPill>
                      </div>
@@ -682,7 +685,9 @@ function TimelineEventCard({ event }: { event: BorrowerTimelineEvent }) {
    return (
       <div className="relative grid grid-cols-[48px_1fr] gap-4">
          <div className="relative z-10 flex justify-center pt-3">
-            <div className={`timeline-node-ring flex h-12 w-12 items-center justify-center rounded-full border-[5px] border-[#f7f0ff] ${styles.node}`}>
+            <div
+               className={`timeline-node-ring flex h-12 w-12 items-center justify-center rounded-full border-[5px] border-[#f7f0ff] ${styles.node}`}
+            >
                <Icon className="h-5.5 w-5.5" strokeWidth={2.5} />
             </div>
          </div>

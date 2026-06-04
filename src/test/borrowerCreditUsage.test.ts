@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { getBorrowerUsedCreditAmount, isExpiredUnfundedRequest, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
+import {
+   getBorrowerActiveLoanCount,
+   getBorrowerUsedCreditAmount,
+   isExpiredUnfundedRequest,
+   isRequestBoardLoanVisible
+} from '@/lib/borrowerCreditUsage';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 
 const baseLoan: Loan = {
@@ -47,6 +52,7 @@ describe('borrower credit usage', () => {
       };
 
       expect(getBorrowerUsedCreditAmount([activeRequest, unpaidFunded, paidFunded], now)).toBe(35);
+      expect(getBorrowerActiveLoanCount([activeRequest, unpaidFunded, paidFunded], now)).toBe(2);
    });
 
    it('keeps requested loans active until they are 7 days old', () => {

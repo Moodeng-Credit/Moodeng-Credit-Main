@@ -13,7 +13,6 @@ import type { AppDispatch } from '@/store/store';
 
 const VERIFY_FALLBACK = '/auth-success?type=verify';
 const CREATED_PATH = '/auth-success?type=created';
-const CONFIRMED_PATH = '/auth-success?type=confirmed';
 const RECOVERY_PATH = '/reset-password';
 
 type AuthEmailOtpType = 'signup' | 'magiclink' | 'recovery' | 'invite' | 'email_change' | 'email';
@@ -107,8 +106,8 @@ export default function AuthConfirmPage() {
             }
 
             if (await finishFromCurrentSession(false)) return true;
-            finish(CONFIRMED_PATH);
-            return true;
+            setError(linkError);
+            return false;
          }
 
          if (code) {
@@ -118,11 +117,6 @@ export default function AuthConfirmPage() {
                if (exchangeError) {
                   const { data: retry } = await supabase.auth.getSession();
                   if (!retry.session) {
-                     if (!isRecoveryRedirect) {
-                        finish(CONFIRMED_PATH);
-                        return true;
-                     }
-
                      setError(exchangeError.message);
                      return false;
                   }
@@ -220,9 +214,7 @@ export default function AuthConfirmPage() {
                               className="h-full w-full object-contain drop-shadow-[0_12px_22px_rgba(36,14,62,0.10)]"
                            />
                         </div>
-                        <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0]">
-                           Account access
-                        </p>
+                        <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0]">Account access</p>
                         <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.04em] text-[#040033]">
                            This link did not work
                         </h1>

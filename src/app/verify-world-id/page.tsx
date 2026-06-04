@@ -15,6 +15,7 @@ export default function WorldIdVerification() {
    const isPreview = import.meta.env.DEV && location.pathname.includes('preview');
    const returnTo =
       (location.state as { returnTo?: string } | null)?.returnTo || new URLSearchParams(location.search).get('returnTo') || undefined;
+   const shouldShowInlineSuccess = Boolean(returnTo);
 
    const handleVerified = useCallback(() => {
       if (!isPreview && returnTo === 'loan-request') {
@@ -33,11 +34,13 @@ export default function WorldIdVerification() {
          navigate('/milestones', { replace: true });
          return;
       }
+      if (!isPreview && returnTo === 'dashboard-credit-level') {
+         navigate('/dashboard', { replace: true });
+         return;
+      }
       navigate(isPreview ? '/onboarding/congratulations-preview' : '/onboarding/congratulations', { replace: true });
    }, [isPreview, returnTo, navigate]);
 
-   // Redirect when user becomes verified — handles both normal flow and page-reload
-   // recovery (mobile: World App redirect can reload the page, losing IDKit session)
    useEffect(() => {
       if (user?.isWorldId === WorldId.ACTIVE) {
          handleVerified();
@@ -58,7 +61,12 @@ export default function WorldIdVerification() {
                </p>
             </div>
 
-            <WorldIDVerification onSuccess={handleVerified} className="w-full">
+            <WorldIDVerification
+               onSuccess={handleVerified}
+               className="w-full"
+               showSuccessFeedback={shouldShowInlineSuccess}
+               showSuccessToast={shouldShowInlineSuccess}
+            >
                {({ open }) => (
                   <button
                      type="button"

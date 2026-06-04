@@ -1,19 +1,19 @@
-
-
 import { type ReactNode, useEffect, useRef } from 'react';
 
 import { darkTheme, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
-import { WagmiProvider, useAccount, useConnect, useConnections } from 'wagmi';
+import { useAccount, useConnect, useConnections, WagmiProvider } from 'wagmi';
 
+import { AuthInitializer } from '@/components/AuthInitializer';
+import Loading from '@/components/Loading';
+import { SupportContactsModalHost } from '@/components/support/SupportContactsModal';
+import { ThemeModeProvider } from '@/components/ThemeModeProvider';
 import { ToastProvider } from '@/components/ToastSystem/contexts/ToastContext';
 import ToastContainer from '@/components/ToastSystem/ToastContainer';
-import Loading from '@/components/Loading';
 import { ToastInitializer } from '@/components/ToastSystem/ToastInitializer';
 import { WalletSyncInitializer } from '@/components/WalletSyncInitializer';
-import { AuthInitializer } from '@/components/AuthInitializer';
 
 import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import { setStoreRef } from '@/lib/axios';
@@ -57,10 +57,13 @@ function WalletConnectionLogger() {
    }, [connectStatus, connectError]);
 
    useEffect(() => {
-      console.log('[Wallet Debug] Active Connections:', connections.map(c => ({
-         name: c.connector.name,
-         accounts: c.accounts
-      })));
+      console.log(
+         '[Wallet Debug] Active Connections:',
+         connections.map((c) => ({
+            name: c.connector.name,
+            accounts: c.accounts
+         }))
+      );
    }, [connections]);
 
    return null;
@@ -86,7 +89,7 @@ export function Providers({ children }: { children: ReactNode }) {
          // Find the closest button or clickable element to get better context
          const clickable = target.closest('button, a, [role="button"]');
          const text = target.innerText || clickable?.textContent || '';
-         
+
          console.log('[Click Log]', {
             tagName: target.tagName,
             text: text.trim().slice(0, 100),
@@ -127,11 +130,14 @@ export function Providers({ children }: { children: ReactNode }) {
                   <RainbowKitProvider theme={darkTheme()} initialChain={ALLOWED_CHAIN_ID}>
                      <WalletConnectionLogger />
                      <ToastProvider>
-                        <AuthInitializer />
-                        <ToastInitializer />
-                        <WalletSyncInitializer />
-                        {children}
-                        <ToastContainer />
+                        <ThemeModeProvider>
+                           <AuthInitializer />
+                           <ToastInitializer />
+                           <WalletSyncInitializer />
+                           {children}
+                           <SupportContactsModalHost />
+                           <ToastContainer />
+                        </ThemeModeProvider>
                      </ToastProvider>
                   </RainbowKitProvider>
                </QueryClientProvider>

@@ -1,6 +1,6 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowLeft, Check, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Check, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
@@ -270,10 +270,10 @@ export default function Repay() {
                   title: 'Add Base Wallet to borrow'
                }
              : {
-                  actionLabel: null,
-                  body: 'You do not have any active loans waiting for repayment.',
-                  onAction: null,
-                  title: 'No repayments due'
+                  actionLabel: 'Request a loan',
+                  body: 'Your repayment activity will appear here once a lender funds your first loan.',
+                  onAction: () => navigate('/request-board', { state: { openLoanRequest: true } }),
+                  title: 'No repayments yet'
                }
       : null;
 
@@ -435,7 +435,7 @@ export default function Repay() {
 
    if (shouldShowLoanCheckLoading) {
       return (
-         <main className="min-h-screen bg-md-neutral-200 px-5 pb-28 pt-8">
+         <main className="repay-page min-h-screen bg-md-neutral-200 px-5 pb-28 pt-8">
             <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4">
                <div className="h-16 rounded-md-xl bg-md-neutral-300" />
                <div className="h-44 rounded-md-xl bg-md-neutral-300" />
@@ -446,7 +446,7 @@ export default function Repay() {
    }
 
    return (
-      <main className="min-h-screen bg-[linear-gradient(180deg,#fbfafd_0%,#ffffff_44%,#fbfafd_100%)] px-4 pb-32 pt-5 text-md-heading sm:px-6">
+      <main className="repay-page min-h-screen bg-[linear-gradient(180deg,#fbfafd_0%,#ffffff_44%,#fbfafd_100%)] px-4 pb-32 pt-5 text-md-heading sm:px-6">
          <div className="mx-auto flex w-full max-w-[470px] flex-col gap-3">
             <header className="flex items-start justify-between gap-4">
                <div className="flex items-start gap-3">
@@ -691,21 +691,16 @@ export default function Repay() {
                   </div>
                </section>
             ) : (
-               <section className="rounded-md-xl border border-md-green-100 bg-md-neutral-50 p-6 text-center shadow-md-card">
-                  {emptyRepayState?.actionLabel ? (
-                     <ShieldCheck className="mx-auto h-10 w-10 text-md-primary-900" aria-hidden="true" />
-                  ) : (
-                     <CheckCircle2 className="mx-auto h-10 w-10 text-md-green-800" aria-hidden="true" />
-                  )}
-                  <h2 className="mt-3 text-md-h5 text-md-heading">{emptyRepayState?.title ?? 'No repayments due'}</h2>
-                  <p className="mt-2 text-md-b2 text-md-neutral-1200">
-                     {emptyRepayState?.body ?? 'You do not have any active loans waiting for repayment.'}
+               <section className="flex min-h-[430px] flex-col items-center justify-center px-6 text-center">
+                  <h2 className="text-md-h5 font-semibold text-[#040033]">{emptyRepayState?.title ?? 'No repayments yet'}</h2>
+                  <p className="mt-3 max-w-[320px] text-md-b2 font-medium leading-[21px] text-md-neutral-1000">
+                     {emptyRepayState?.body ?? 'Your repayment activity will appear here once a lender funds your first loan.'}
                   </p>
                   {emptyRepayState?.actionLabel && emptyRepayState.onAction ? (
                      <button
                         type="button"
                         onClick={emptyRepayState.onAction}
-                        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 text-md-b1 font-semibold text-md-neutral-100"
+                        className="mt-5 inline-flex min-h-[56px] items-center justify-center rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
                      >
                         {emptyRepayState.actionLabel}
                      </button>

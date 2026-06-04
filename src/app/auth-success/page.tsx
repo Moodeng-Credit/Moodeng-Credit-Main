@@ -1,13 +1,16 @@
-import type { JSX } from 'react';
+import { type JSX, type ReactNode } from 'react';
+
+import { CheckCircle2, ChevronRight, HelpCircle } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, ChevronRight, HelpCircle } from 'lucide-react';
+
+import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
 type AuthSuccessCardProps = {
    imageSrc: string;
    imageAlt: string;
    eyebrow: string;
    title: string;
-   body: string;
+   body: ReactNode;
    children: JSX.Element;
 };
 
@@ -35,15 +38,9 @@ function AuthSuccessShell({ imageSrc, imageAlt, eyebrow, title, body, children }
                            className="h-full w-full object-contain drop-shadow-[0_12px_22px_rgba(36,14,62,0.10)]"
                         />
                      </div>
-                     <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0]">
-                        {eyebrow}
-                     </p>
-                     <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.04em] text-[#040033]">
-                        {title}
-                     </h1>
-                     <p className="mt-3 max-w-[350px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F]">
-                        {body}
-                     </p>
+                     <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0]">{eyebrow}</p>
+                     <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.04em] text-[#040033]">{title}</h1>
+                     <div className="mt-3 max-w-[350px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F]">{body}</div>
                   </div>
 
                   {children}
@@ -57,32 +54,60 @@ function AuthSuccessShell({ imageSrc, imageAlt, eyebrow, title, body, children }
 function AccountCreatedView(): JSX.Element {
    const navigate = useNavigate();
 
+   const handleProceed = () => {
+      navigate('/onboarding/role', { replace: true });
+   };
+
    return (
-      <AuthSuccessShell
-         imageSrc="/hippos/welcome.png"
-         imageAlt="Moodeng welcoming you"
-         eyebrow="Account ready"
-         title="Your account has been created"
-         body="Choose how you want to use Moodeng so we can set up the right experience for you."
-      >
-         <button
-            type="button"
-            onClick={() => navigate('/onboarding/role', { replace: true })}
-            className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95"
-         >
-            Continue setup
-            <ChevronRight className="h-5 w-5" />
-         </button>
-      </AuthSuccessShell>
+      <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#FBFAFD] to-white text-[#040033] max-w-[440px] mx-auto w-full">
+         <OnboardingHeader hideBack />
+
+         <main className="flex flex-1 flex-col justify-center px-5 pb-14">
+            <section className="mx-auto flex w-full max-w-[400px] flex-col items-center gap-5 text-center">
+               <img src="/icons/check-3d.png" alt="" className="h-[124px] w-[124px] object-contain" />
+               <h1
+                  className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em]"
+                  style={{ color: '#040033', WebkitTextFillColor: '#040033' }}
+               >
+                  Your account has been created
+               </h1>
+               <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D]">
+                  Your wallet is used to build your Trust Score and receive USDC loans.
+               </p>
+               <button
+                  type="button"
+                  onClick={handleProceed}
+                  className="mt-1 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#6010D2] px-5 text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95"
+               >
+                  Proceed
+                  <ChevronRight className="h-5 w-5" />
+               </button>
+            </section>
+         </main>
+      </div>
    );
 }
 
 export default function AuthSuccessPage(): JSX.Element {
    const [searchParams] = useSearchParams();
    const type = searchParams.get('type');
+   const email = searchParams.get('email')?.trim();
    const isLinkFlow = type === 'link';
    const isCreatedFlow = type === 'created';
    const isConfirmedFlow = type === 'confirmed';
+   const confirmationInstructions = (
+      <div className="space-y-3">
+         <p>Open the latest Moodeng email.</p>
+         {email ? (
+            <p className="mx-auto max-w-[300px] text-sm font-semibold leading-5 tracking-[-0.01em] text-[#4D4359] break-words">
+               Sent to {email}
+            </p>
+         ) : null}
+         <p>
+            Tap <span className="font-semibold text-[#4D4359]">Confirm Email</span> inside that email to finish setup.
+         </p>
+      </div>
+   );
 
    if (isCreatedFlow) {
       return <AccountCreatedView />;
@@ -99,19 +124,10 @@ export default function AuthSuccessPage(): JSX.Element {
                ? 'Use the secure link in the latest Moodeng email to set a password for this account.'
                : isConfirmedFlow
                  ? 'Your email link was accepted. Sign in to continue if Moodeng did not open your account automatically.'
-               : 'Open the latest Moodeng email, or enter the 6-digit code, to finish setting up your account.'
+                 : confirmationInstructions
          }
       >
          <div className="space-y-3">
-            {!isLinkFlow && !isConfirmedFlow ? (
-               <Link
-                  to="/auth/verify-code"
-                  className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95"
-               >
-                  Enter code
-                  <ArrowRight className="h-5 w-5" />
-               </Link>
-            ) : null}
             <Link
                to="/sign-in#login"
                className="flex h-12 w-full items-center justify-center rounded-2xl border border-[#E0D7E8] text-sm font-semibold text-[#4D4359] transition hover:bg-[#F8F4FC]"

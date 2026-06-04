@@ -26,13 +26,51 @@ type SupabaseClientType = ReturnType<typeof supabaseClient>;
 type UserRow = Database['public']['Tables']['users']['Row'];
 type UserInsert = Database['public']['Tables']['users']['Insert'];
 type WorldIdStatus = Database['public']['Enums']['world_id_status'];
+type TelegramAuthData = {
+   id?: number | string;
+   username?: string;
+   allows_write_to_pm?: boolean | number | string;
+};
 
 const toOptionalString = (value: number | string | bigint | null | undefined): string | undefined => {
    if (value === null || value === undefined) return undefined;
    return value.toString();
 };
 
+const toOptionalNumber = (value: number | string | null | undefined): number | undefined => {
+   if (value === null || value === undefined || value === '') return undefined;
+   const numberValue = Number(value);
+   return Number.isSafeInteger(numberValue) ? numberValue : undefined;
+};
+
+const allowsTelegramWrite = (value: TelegramAuthData['allows_write_to_pm']): boolean =>
+   value === true || value === 1 || value === '1' || value === 'true';
+
+const getTelegramProfileUpdates = (authData?: TelegramAuthData): Database['public']['Tables']['users']['Update'] => {
+   const telegramId = toOptionalNumber(authData?.id);
+   const updates: Database['public']['Tables']['users']['Update'] = {};
+
+   if (telegramId !== undefined) {
+      updates.telegram_id = telegramId;
+      if (allowsTelegramWrite(authData?.allows_write_to_pm)) {
+         updates.chat_id = telegramId;
+      }
+   }
+
+   if (authData?.username) {
+      updates.telegram_username = authData.username;
+   }
+
+   return updates;
+};
+
 const normalizeWorldIdStatus = (value?: string | WorldIdStatus | null): WorldIdStatus => (value as WorldIdStatus) ?? WorldId.INACTIVE;
+
+const normalizeProfileText = (value: unknown): string | undefined => {
+   if (typeof value !== 'string') return undefined;
+   const trimmed = value.trim();
+   return trimmed.length > 0 ? trimmed : undefined;
+};
 
 export const isObfuscatedExistingSignupUser = (user?: Pick<SupabaseAuthUser, 'identities'> | null): boolean =>
    Array.isArray(user?.identities) && user.identities.length === 0;
@@ -95,8 +133,10 @@ const ensureUserProfileRow = async (
    const payload: UserInsert = {
       id: authUser.id,
       username: deriveUsername(authUser, overrides?.username),
+      display_name: normalizeProfileText(authUser.user_metadata?.name) ?? null,
       email,
-      is_world_id: normalizeWorldIdStatus(overrides?.isWorldId ?? authUser.user_metadata?.is_world_id)
+      is_world_id: normalizeWorldIdStatus(overrides?.isWorldId ?? authUser.user_metadata?.is_world_id),
+      ...getTelegramProfileUpdates(authUser.user_metadata as TelegramAuthData | undefined)
    };
 
    const { data, error } = await supabase.from('users').insert(payload).select('*').single();
@@ -114,7 +154,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    email: row.email,
    avatarUrl,
    avatarBackground,
-   displayName,
+   displayName: displayName ?? row.display_name ?? undefined,
    googleId: row.google_id ?? undefined,
    walletAddress: row.wallet_address ?? undefined,
    walletChainId: (row as UserRow & { wallet_chain_id?: number | null }).wallet_chain_id ?? undefined,
@@ -131,6 +171,14 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    creditProgressionPaused: row.credit_progression_paused ?? false,
    accountStatus: (row as UserRow & { account_status?: AccountStatus | null }).account_status ?? 'active',
    userRole: row.user_role ?? undefined,
+   incomeType: (row as UserRow & { income_type?: string | null }).income_type ?? undefined,
+   paydayType: (row as UserRow & { payday_type?: string | null }).payday_type ?? undefined,
+   paydayStart: (row as UserRow & { payday_start?: number | null }).payday_start ?? undefined,
+   paydayEnd: (row as UserRow & { payday_end?: number | null }).payday_end ?? undefined,
+   gapReasons: (row as UserRow & { gap_reasons?: string[] | null }).gap_reasons ?? undefined,
+   notifAccountActivity: (row as UserRow & { notif_account_activity?: boolean | null }).notif_account_activity ?? true,
+   notifTransactionActivity: (row as UserRow & { notif_transaction_activity?: boolean | null }).notif_transaction_activity ?? true,
+   notifBlogs: (row as UserRow & { notif_blogs?: boolean | null }).notif_blogs ?? false,
    createdAt: row.created_at,
    updatedAt: row.updated_at
 });
@@ -156,17 +204,26 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
    // avatar_background = soft color shown behind transparent/background-removed avatars
    // picture    = Google OAuth profile photo
    // photo_url  = Telegram profile photo (written by edge function on sign-in)
-   const avatarUrl = (
-      user.user_metadata?.avatar_url ??
-      user.user_metadata?.picture ??
-      user.user_metadata?.photo_url
-   ) as string | undefined;
+   const avatarUrl = (user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? user.user_metadata?.photo_url) as string | undefined;
    const avatarBackground = user.user_metadata?.avatar_background as string | undefined;
-   const displayName = user.user_metadata?.name as string | undefined;
+   const displayName = normalizeProfileText(user.user_metadata?.name);
 
    if (!profile) {
       const ensuredProfile = await ensureUserProfileRow(supabase, user);
       return mapSupabaseRowToUser(ensuredProfile, avatarUrl, displayName, avatarBackground);
+   }
+
+   if (displayName && profile.display_name !== displayName) {
+      const { data: syncedProfile, error: syncError } = await supabase
+         .from('users')
+         .update({ display_name: displayName })
+         .eq('id', user.id)
+         .select('*')
+         .single();
+
+      if (!syncError && syncedProfile) {
+         return mapSupabaseRowToUser(syncedProfile, avatarUrl, displayName, avatarBackground);
+      }
    }
 
    return mapSupabaseRowToUser(profile, avatarUrl, displayName, avatarBackground);
@@ -207,6 +264,35 @@ const signInWithGoogleCredential = async (credential: string): Promise<User> => 
       throw error;
    }
 
+   return await fetchCurrentUserProfile();
+};
+
+const syncTelegramProfile = async (supabase: SupabaseClientType, userId: string, authData: TelegramAuthData): Promise<void> => {
+   const updates = getTelegramProfileUpdates(authData);
+
+   if (Object.keys(updates).length === 0) {
+      return;
+   }
+
+   const { error } = await supabase.from('users').update(updates).eq('id', userId);
+   if (error) throw error;
+};
+
+const completeTelegramAuth = async (telegramAuthData: string): Promise<User> => {
+   const supabase = supabaseClient();
+   const authData = JSON.parse(telegramAuthData) as TelegramAuthData;
+   const { data, error } = await supabase.functions.invoke('telegram-login', {
+      body: { authData }
+   });
+
+   if (error) throw error;
+   if (data.error) throw new Error(data.error);
+
+   const { error: sessionError } = await supabase.auth.setSession(data.session);
+   if (sessionError) throw sessionError;
+
+   const user = await fetchCurrentUserProfile();
+   await syncTelegramProfile(supabase, user.id, authData);
    return await fetchCurrentUserProfile();
 };
 
@@ -296,19 +382,7 @@ export const loginWithGoogle = createAsyncThunk('auth/loginWithGoogle', async ({
 });
 
 export const loginWithTelegram = createAsyncThunk('auth/loginWithTelegram', async ({ telegramAuthData }: { telegramAuthData: string }) => {
-   const supabase = supabaseClient();
-   const { data, error } = await supabase.functions.invoke('telegram-login', {
-      body: { authData: JSON.parse(telegramAuthData) }
-   });
-
-   if (error) throw error;
-   if (data.error) throw new Error(data.error);
-
-   // Set the session in the client
-   const { error: sessionError } = await supabase.auth.setSession(data.session);
-   if (sessionError) throw sessionError;
-
-   const user = await fetchCurrentUserProfile();
+   const user = await completeTelegramAuth(telegramAuthData);
    return {
       username: user.username,
       user
@@ -390,19 +464,7 @@ export const registerWithGoogle = createAsyncThunk(
 export const registerWithTelegram = createAsyncThunk(
    'auth/registerWithTelegram',
    async ({ telegramAuthData }: { telegramAuthData: string }) => {
-      const supabase = supabaseClient();
-      const { data, error } = await supabase.functions.invoke('telegram-login', {
-         body: { authData: JSON.parse(telegramAuthData) }
-      });
-
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      // Set the session in the client
-      const { error: sessionError } = await supabase.auth.setSession(data.session);
-      if (sessionError) throw sessionError;
-
-      const user = await fetchCurrentUserProfile();
+      const user = await completeTelegramAuth(telegramAuthData);
       return {
          username: user.username,
          user
@@ -430,7 +492,7 @@ export const fetchUserProfiles = createAsyncThunk('auth/fetchUserProfiles', asyn
       throw error;
    }
 
-   return { users: (profiles || []).map(mapSupabaseRowToUser) };
+   return { users: (profiles || []).map((profile) => mapSupabaseRowToUser(profile)) };
 });
 
 export const updateUser = createAsyncThunk('auth/updateUser', async (userData: UpdateUserPayload) => {
@@ -474,6 +536,7 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
 
    const updates: Database['public']['Tables']['users']['Update'] = {};
    if (userData.username) updates.username = userData.username;
+   if (userData.displayName !== undefined) updates.display_name = userData.displayName;
    if (userData.email) updates.email = userData.email;
    if (userData.walletAddress !== undefined) updates.wallet_address = userData.walletAddress;
    if (userData.walletChainId !== undefined) updates.wallet_chain_id = userData.walletChainId;
@@ -493,9 +556,7 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
    if (updateError) {
       const isWalletMetadataSchemaMismatch =
          updateError.code === '42703' &&
-         (userData.walletProvider !== undefined ||
-            userData.walletConnectorName !== undefined ||
-            userData.walletChainId !== undefined);
+         (userData.walletProvider !== undefined || userData.walletConnectorName !== undefined || userData.walletChainId !== undefined);
 
       if (isWalletMetadataSchemaMismatch && userData.walletAddress) {
          const fallbackUpdates: Database['public']['Tables']['users']['Update'] = {
@@ -513,6 +574,45 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
 
    return await fetchCurrentUserProfile();
 });
+
+export interface BorrowerContextPayload {
+   incomeType: string;
+   paydayType: string;
+   paydayStart?: number | null;
+   paydayEnd?: number | null;
+   gapReasons?: string[];
+}
+
+/** Save borrower context (income/payday/gap info) to the user's profile. Done once after first loan request. */
+export const updateBorrowerContext = createAsyncThunk(
+   'auth/updateBorrowerContext',
+   async (payload: BorrowerContextPayload) => {
+      const supabase = supabaseClient();
+      const {
+         data: { user },
+         error: sessionError
+      } = await supabase.auth.getUser();
+
+      if (sessionError || !user) throw sessionError ?? new Error('Not authenticated');
+
+      const { data: updatedRow, error } = await supabase
+         .from('users')
+         .update({
+            income_type: payload.incomeType,
+            payday_type: payload.paydayType,
+            payday_start: payload.paydayStart ?? null,
+            payday_end: payload.paydayEnd ?? null,
+            gap_reasons: payload.gapReasons ?? []
+         } as Record<string, unknown>)
+         .eq('id', user.id)
+         .select('*')
+         .single();
+
+      if (error || !updatedRow) throw error ?? new Error('Failed to save borrower context');
+
+      return mapSupabaseRowToUser(updatedRow);
+   }
+);
 
 /** Set user_role in Supabase. Single source of truth for role-based routing. */
 export const updateUserRole = createAsyncThunk('auth/updateUserRole', async (role: UserRole) => {
@@ -704,6 +804,9 @@ const authSlice = createSlice({
          })
          .addCase(updateUserRole.rejected, (state, action) => {
             state.error = (action.error.message as string) || null;
+         })
+         .addCase(updateBorrowerContext.fulfilled, (state, action) => {
+            state.user = action.payload;
          })
          .addCase(fetchUserProfiles.fulfilled, (state, action) => {
             // Ensure userProfiles exists (for redux-persist rehydration compatibility)

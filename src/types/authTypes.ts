@@ -22,7 +22,7 @@ export interface User {
    avatarUrl?: string;
    /** Soft frame color used behind transparent/background-removed avatars. */
    avatarBackground?: string;
-   /** Display name from Supabase auth user_metadata.name. Not stored in the DB users table. */
+   /** User-facing name shown across profile surfaces. Falls back to username when unset. */
    displayName?: string;
    googleId?: string;
    walletAddress?: string;
@@ -41,6 +41,17 @@ export interface User {
    accountStatus?: AccountStatus;
    /** Single source of truth for role-based routing, wallet connect options, and tab bar */
    userRole?: UserRole | null;
+   incomeType?: string;
+   paydayType?: string;
+   paydayStart?: number | null;
+   paydayEnd?: number | null;
+   gapReasons?: string[];
+   /** Whether the user wants account activity notifications (loan approvals, World ID, etc.) */
+   notifAccountActivity: boolean;
+   /** Whether the user wants transaction notifications (funded, repayment, overdue, due) */
+   notifTransactionActivity: boolean;
+   /** Whether the user wants blog/news/weekly digest notifications */
+   notifBlogs: boolean;
    createdAt: string;
    updatedAt: string;
 }

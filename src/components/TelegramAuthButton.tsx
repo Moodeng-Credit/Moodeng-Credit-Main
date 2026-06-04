@@ -1,12 +1,17 @@
-
-
 import { useEffect, useRef, useState } from 'react';
 
 interface TelegramAuthButtonProps {
-   onAuth: (authData: Record<string, string>) => void;
+   onAuth?: (authData: Record<string, string>) => void;
+   /**
+    * When true, uses data-auth-url redirect mode instead of the popup-based
+    * data-onauth callback. Required on iOS Safari where cross-origin iframe
+    * popups are blocked and land on about:blank.
+    */
+   useRedirect?: boolean;
    buttonSize?: 'large' | 'medium' | 'small';
    /** Hide loading state when embedding in custom-styled buttons */
    hideLoading?: boolean;
+   requestWriteAccess?: boolean;
 }
 
 declare global {
@@ -19,11 +24,14 @@ declare global {
 
 export default function TelegramAuthButton({
    onAuth,
+   useRedirect = false,
    buttonSize = 'large',
-   hideLoading = false
+   hideLoading = false,
+   requestWriteAccess = false
 }: TelegramAuthButtonProps) {
    const containerRef = useRef<HTMLDivElement>(null);
-   const rawBotUsername = "moodengnewbranchbot";
+   const widgetIdRef = useRef(`telegram_auth_${Math.random().toString(36).slice(2)}`);
+   const rawBotUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? 'moodengnewbranchbot';
    const botUsername = rawBotUsername?.trim().replace(/^@/, '');
    const onAuthRef = useRef(onAuth);
    const [isLoading, setIsLoading] = useState(true);
@@ -33,12 +41,24 @@ export default function TelegramAuthButton({
       onAuthRef.current = onAuth;
    });
 
+   // Warm up the telegram-login edge function as soon as the button mounts so
+   // the Deno cold-start (~30-60 s) has already happened by the time the user
+   // finishes Telegram auth and the callback page needs to call it.
+   useEffect(() => {
+      if (!useRedirect) return;
+      const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL ?? '').trim();
+      if (!supabaseUrl) return;
+      fetch(`${supabaseUrl}/functions/v1/telegram-login`, { method: 'OPTIONS' }).catch(() => {});
+   }, [useRedirect]);
+
    useEffect(() => {
       console.debug(`${debugTag} init`, {
          rawBotUsername,
          normalizedBotUsername: botUsername,
          buttonSize,
-         hideLoading
+         hideLoading,
+         requestWriteAccess,
+         useRedirect,
       });
 
       if (!botUsername) {
@@ -50,25 +70,34 @@ export default function TelegramAuthButton({
          return;
       }
 
-      const existingScript = document.getElementById('telegram-login-script');
-      if (existingScript) {
-         console.debug(`${debugTag} removing existing script before re-mount`);
-         existingScript.remove();
-      }
-
-      (window as unknown as Record<string, unknown>).onTelegramAuth = (user: Record<string, string>) => {
-         console.debug(`${debugTag} onTelegramAuth callback fired`, user);
-         onAuthRef.current(user);
-      };
+      const widgetId = widgetIdRef.current;
+      const callbackName = `${widgetId}_callback`;
+      const scriptId = `${widgetId}_script`;
 
       const script = document.createElement('script');
-      script.id = 'telegram-login-script';
+      script.id = scriptId;
       script.async = true;
       script.src = 'https://telegram.org/js/telegram-widget.js?22';
       script.setAttribute('data-telegram-login', botUsername);
       script.setAttribute('data-size', buttonSize);
-      script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-      script.setAttribute('data-request-access', 'write');
+
+      if (useRedirect) {
+         // Redirect mode: Telegram sends a postMessage to the parent frame which
+         // then navigates to the callback URL. This avoids the popup that iOS
+         // Safari blocks when triggered from a cross-origin iframe (about:blank bug).
+         const callbackUrl = `${window.location.origin}/auth/telegram/callback`;
+         script.setAttribute('data-auth-url', callbackUrl);
+      } else {
+         (window as unknown as Record<string, unknown>)[callbackName] = (user: Record<string, string>) => {
+            console.debug(`${debugTag} callback fired`, user);
+            onAuthRef.current?.(user);
+         };
+         script.setAttribute('data-onauth', `${callbackName}(user)`);
+      }
+
+      if (requestWriteAccess) {
+         script.setAttribute('data-request-access', 'write');
+      }
       console.debug(`${debugTag} script configured`, {
          src: script.src,
          telegramLoginAttr: script.getAttribute('data-telegram-login'),
@@ -115,12 +144,14 @@ export default function TelegramAuthButton({
 
       return () => {
          console.debug(`${debugTag} cleanup`);
-         const win = window as unknown as Record<string, unknown>;
-         if (win.onTelegramAuth) {
-            delete win.onTelegramAuth;
+         if (!useRedirect) {
+            const win = window as unknown as Record<string, unknown>;
+            if (win[callbackName]) {
+               delete win[callbackName];
+            }
          }
       };
-   }, [buttonSize, botUsername]);
+   }, [buttonSize, botUsername, hideLoading, rawBotUsername, requestWriteAccess, useRedirect]);
 
    if (!botUsername) {
       console.debug(`${debugTag} returning null because bot username missing`);
@@ -129,7 +160,7 @@ export default function TelegramAuthButton({
 
    return (
       <div className="w-full min-w-0">
-         {!hideLoading && isLoading && (
+         {!hideLoading && isLoading ? (
             <div className="flex justify-center py-4">
                <div className="flex flex-col items-center gap-3 w-full px-4">
                   {/* Animated loading bar skeleton */}
@@ -141,7 +172,7 @@ export default function TelegramAuthButton({
                         }}
                      />
                   </div>
-                  <p className="text-sm text-gray-500 font-medium">Loading Telegram...</p>
+                  <p className="text-sm font-medium text-white">Loading Telegram...</p>
                </div>
                <style>{`
                   @keyframes shimmer {
@@ -159,7 +190,7 @@ export default function TelegramAuthButton({
                   }
                `}</style>
             </div>
-         )}
+         ) : null}
          <div
             ref={containerRef}
             className="flex w-full min-w-0 min-h-0 justify-center overflow-hidden [&>iframe]:max-w-full"

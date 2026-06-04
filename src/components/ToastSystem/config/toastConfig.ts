@@ -358,6 +358,12 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       message: 'Please connect your wallet to continue.'
    },
 
+   worldid_not_completed: {
+      toastType: TOAST_TYPES.WARNING,
+      title: 'Verification Not Completed',
+      message: 'You did not complete World ID verification. You can try again anytime.'
+   },
+
    self_lending_not_allowed: {
       toastType: TOAST_TYPES.ERROR,
       title: 'Cannot Lend to Yourself',

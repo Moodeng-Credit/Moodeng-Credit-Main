@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
+import { useLocalization } from '@/i18n';
 import type { RootState } from '@/store/store';
 import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
 import SupportHeader from '@/views/support/components/SupportHeader';
@@ -61,6 +62,89 @@ const BASICS: BasicsItem[] = [
    }
 ];
 
+const GETTING_STARTED_COPY = {
+   en: {
+      title: 'Getting started',
+      heading: 'Learn the Moodeng Basics',
+      latestVideo: 'Latest Video Guide',
+      latestVideoTitle: 'Latest Video Guide',
+      lenderBenefitsTitle: 'Lender Benefits',
+      lenderBenefitsDescription: 'See why lending matters',
+      basics: [
+         { title: 'Browse Guides', description: 'Quick Start for New Users' },
+         { title: 'Browse Benefits', description: "See Why It's Worth It" },
+         { title: 'Why Moodeng uses USDC', description: 'Learn how USDC works' },
+         { title: 'Learn Credit Leveling System', description: 'Grow Limits, Build Trust' },
+         { title: 'Learn more at the Academy', description: 'Borrowing, Base wallet, Trust Score, and Credit Level' },
+         { title: 'Read Moodeng Blogs', description: 'Stories on fair credit, loan sharks, and trust' }
+      ]
+   },
+   fil: {
+      title: 'Magsimula',
+      heading: 'Alamin ang basics ng Moodeng',
+      latestVideo: 'Pinakabagong video guide',
+      latestVideoTitle: 'Pinakabagong video guide',
+      lenderBenefitsTitle: 'Benepisyo para sa nagpapahiram',
+      lenderBenefitsDescription: 'Alamin kung bakit mahalaga ang pagpapahiram',
+      basics: [
+         { title: 'Tingnan ang mga gabay', description: 'Quick start para sa bagong users' },
+         { title: 'Tingnan ang benefits', description: 'Alamin kung bakit sulit ito' },
+         { title: 'Bakit USDC ang gamit ng Moodeng', description: 'Alamin kung paano gumagana ang USDC' },
+         { title: 'Alamin ang sistema ng pagpapataas ng antas ng kredito', description: 'Palakihin ang limits, bumuo ng trust' },
+         { title: 'Matuto pa sa Academy', description: 'Paghiram, Base wallet, Trust Score, at antas ng kredito' },
+         { title: 'Basahin ang Moodeng Blogs', description: 'Mga kwento tungkol sa patas na credit, loan sharks, at trust' }
+      ]
+   },
+   id: {
+      title: 'Mulai',
+      heading: 'Pelajari dasar-dasar Moodeng',
+      latestVideo: 'Panduan video terbaru',
+      latestVideoTitle: 'Panduan video terbaru',
+      lenderBenefitsTitle: 'Manfaat pemberi pinjaman',
+      lenderBenefitsDescription: 'Lihat mengapa memberi pinjaman penting',
+      basics: [
+         { title: 'Lihat panduan', description: 'Mulai cepat untuk pengguna baru' },
+         { title: 'Lihat manfaat', description: 'Lihat mengapa ini berguna' },
+         { title: 'Mengapa Moodeng memakai USDC', description: 'Pelajari cara kerja USDC' },
+         { title: 'Pelajari sistem peningkatan level kredit', description: 'Naikkan limit, bangun kepercayaan' },
+         { title: 'Pelajari lebih lanjut di Academy', description: 'Pinjaman, Base wallet, Trust Score, dan level kredit' },
+         { title: 'Baca Blog Moodeng', description: 'Cerita tentang kredit adil, rentenir, dan kepercayaan' }
+      ]
+   },
+   th: {
+      title: 'เริ่มต้น',
+      heading: 'เรียนรู้พื้นฐานของ Moodeng',
+      latestVideo: 'วิดีโอคู่มือล่าสุด',
+      latestVideoTitle: 'วิดีโอคู่มือล่าสุด',
+      lenderBenefitsTitle: 'ประโยชน์สำหรับผู้ให้กู้',
+      lenderBenefitsDescription: 'ดูว่าทำไมการให้กู้จึงสำคัญ',
+      basics: [
+         { title: 'ดูคู่มือ', description: 'เริ่มต้นอย่างรวดเร็วสำหรับผู้ใช้ใหม่' },
+         { title: 'ดูประโยชน์', description: 'ดูว่าทำไมจึงคุ้มค่า' },
+         { title: 'ทำไม Moodeng ใช้ USDC', description: 'เรียนรู้ว่า USDC ทำงานอย่างไร' },
+         { title: 'เรียนรู้ระบบการเพิ่มระดับเครดิต', description: 'เพิ่มวงเงิน สร้างความน่าเชื่อถือ' },
+         { title: 'เรียนรู้เพิ่มเติมที่ Academy', description: 'การยืม, Base wallet, Trust Score และระดับเครดิต' },
+         { title: 'อ่านบล็อก Moodeng', description: 'เรื่องราวเกี่ยวกับเครดิตที่เป็นธรรม เงินกู้นอกระบบ และความน่าเชื่อถือ' }
+      ]
+   },
+   vi: {
+      title: 'Bắt đầu',
+      heading: 'Tìm hiểu cơ bản về Moodeng',
+      latestVideo: 'Video hướng dẫn mới nhất',
+      latestVideoTitle: 'Video hướng dẫn mới nhất',
+      lenderBenefitsTitle: 'Lợi ích cho người cho vay',
+      lenderBenefitsDescription: 'Xem vì sao cho vay quan trọng',
+      basics: [
+         { title: 'Xem hướng dẫn', description: 'Bắt đầu nhanh cho người dùng mới' },
+         { title: 'Xem lợi ích', description: 'Xem vì sao đáng dùng' },
+         { title: 'Vì sao Moodeng dùng USDC', description: 'Tìm hiểu USDC hoạt động ra sao' },
+         { title: 'Tìm hiểu hệ thống nâng hạng tín dụng', description: 'Tăng hạn mức, xây dựng niềm tin' },
+         { title: 'Học thêm tại Academy', description: 'Vay, Base wallet, Trust Score và hạng tín dụng' },
+         { title: 'Đọc Blog Moodeng', description: 'Câu chuyện về tín dụng công bằng, cho vay nặng lãi và niềm tin' }
+      ]
+   }
+} as const;
+
 function ChevronRight() {
    return (
       <div
@@ -76,6 +160,8 @@ function ChevronRight() {
 
 export default function GettingStarted() {
    const navigate = useNavigate();
+   const { locale } = useLocalization();
+   const copy = GETTING_STARTED_COPY[locale] ?? GETTING_STARTED_COPY.en;
    const user = useSelector((state: RootState) => state.auth.user);
    const isLender = user?.userRole === 'lender';
    const basics = useMemo(
@@ -84,23 +170,27 @@ export default function GettingStarted() {
             item.title === 'Browse Benefits' && isLender
                ? {
                     ...item,
-                    title: 'Lender Benefits',
-                    description: 'See why lending matters',
+                    title: copy.lenderBenefitsTitle,
+                    description: copy.lenderBenefitsDescription,
                     path: '/whylend'
                  }
-               : item
+               : {
+                    ...item,
+                    title: copy.basics[BASICS.indexOf(item)].title,
+                    description: copy.basics[BASICS.indexOf(item)].description
+                 }
          ),
-      [isLender]
+      [copy, isLender]
    );
 
    return (
       <div className="min-h-screen bg-md-neutral-200">
          <div className="max-w-[440px] mx-auto pb-28 flex flex-col">
-            <SupportHeader title="Getting started" />
+            <SupportHeader title={copy.title} />
 
             <div className="flex flex-col gap-md-4 p-md-4">
                <div className="flex flex-col">
-                  <h2 className="text-md-h4 font-semibold text-md-heading tracking-[-0.96px] pb-md-2">Learn the Moodeng Basics</h2>
+                  <h2 className="text-md-h4 font-semibold text-md-heading tracking-[-0.96px] pb-md-2">{copy.heading}</h2>
                   {basics.map((item, idx) => (
                      <button
                         key={item.title}
@@ -130,11 +220,11 @@ export default function GettingStarted() {
                </div>
 
                <div className="flex flex-col gap-md-3">
-                  <h2 className="text-md-h4 font-semibold text-md-heading tracking-[-0.96px]">Latest Video Guide</h2>
+                  <h2 className="text-md-h4 font-semibold text-md-heading tracking-[-0.96px]">{copy.latestVideo}</h2>
                   <div className="relative w-full aspect-video rounded-md-lg overflow-hidden bg-md-neutral-400">
                      <iframe
                         src={`https://www.youtube.com/embed/${DEMO_VIDEO_ID}`}
-                        title="Latest Video Guide"
+                        title={copy.latestVideoTitle}
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                         className="absolute inset-0 w-full h-full"

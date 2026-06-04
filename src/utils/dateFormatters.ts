@@ -1,4 +1,5 @@
 import { MONTHS } from '@/constants/dates';
+import type { LocaleCode } from '@/i18n/translations';
 
 /**
  * Safely parse a date that might be a Date object, ISO string, or timestamp
@@ -37,15 +38,30 @@ export const calculateDaysBetween = (date1: Date, date2: Date): number => {
    return Math.round(timeDiff / (1000 * 60 * 60 * 24));
 };
 
+const getDateFormatterLocale = (locale: LocaleCode) => {
+   if (locale === 'fil') return 'fil-PH';
+   if (locale === 'id') return 'id-ID';
+   return 'en-US';
+};
+
+const getDaysLabel = (days: number, locale: LocaleCode) => {
+   if (locale === 'fil') return `${days} araw`;
+   if (locale === 'id') return `${days} hari`;
+   return `${days} ${days === 1 ? 'day' : 'days'}`;
+};
+
 /**
- * Get "Member since" text with date and days count
+ * Get account age text with localized date and days count.
  */
-export const getMemberSinceText = (createdAt: string | Date): string => {
+export const getMemberSinceText = (createdAt: string | Date, locale: LocaleCode = 'en'): string => {
    const date = parseDateSafely(createdAt);
-   const isoString = date.toISOString();
-   const formattedDate = formatDate(isoString);
+   const formattedDate = new Intl.DateTimeFormat(getDateFormatterLocale(locale), {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+   }).format(date);
    const days = calculateDaysBetween(date, new Date());
-   return `${formattedDate} (${days} days)`;
+   return `${formattedDate} (${getDaysLabel(days, locale)})`;
 };
 
 /**

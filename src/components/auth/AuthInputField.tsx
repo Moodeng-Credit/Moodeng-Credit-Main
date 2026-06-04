@@ -1,4 +1,5 @@
 import { type ChangeEvent, type ReactNode, useState } from 'react';
+
 import { AlertTriangle, Eye, EyeOff, HelpCircle } from 'lucide-react';
 
 type ErrorVariant = 'red' | 'amber';
@@ -52,7 +53,7 @@ export function AuthInputField({
          <div className="flex flex-col gap-2">
             <div className="flex flex-row items-center justify-between gap-2">
                <span className="inline-flex items-center gap-2">
-                  <label className="text-base font-semibold text-[#040033] tracking-[-0.02em]">{label}</label>
+                  <label className="text-base font-semibold tracking-[-0.02em] text-[#040033] dark:text-[#F8F4FF]">{label}</label>
                   {tooltip && (
                      <span className="inline-flex">
                         <button
@@ -71,11 +72,7 @@ export function AuthInputField({
                         isAmber ? 'text-[#AE8C00]' : 'text-[#8F030F]'
                      }`}
                   >
-                     <AlertTriangle
-                        className="shrink-0 w-5 h-5"
-                        strokeWidth={1.5}
-                        aria-hidden
-                     />
+                     <AlertTriangle className="shrink-0 w-5 h-5" strokeWidth={1.5} aria-hidden />
                      {errorMessage}
                   </span>
                )}
@@ -87,18 +84,16 @@ export function AuthInputField({
             )}
          </div>
          <div
-            className={`flex items-center gap-2 w-full h-12 rounded-[12px] border bg-[#FDFCFD] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] px-4 py-3 ${errorBorder}`}
+            className={`flex h-12 w-full items-center gap-2 rounded-[12px] border bg-[#FDFCFD] px-4 py-3 shadow-[0px_2px_4px_rgba(27,28,29,0.04)] dark:border-[#40354F] dark:bg-[#17121F] ${errorBorder}`}
          >
-            <span className={`shrink-0 w-6 h-6 flex items-center justify-center [&_svg]:text-inherit ${errorText}`}>
-               {icon}
-            </span>
+            <span className={`shrink-0 w-6 h-6 flex items-center justify-center [&_svg]:text-inherit ${errorText}`}>{icon}</span>
             <input
                type={type}
                placeholder={placeholder}
                value={value}
                onChange={onChange}
                required
-               className={`flex-1 min-w-0 bg-transparent text-base outline-none ${errorPlaceholder} ${errorInputText}`}
+               className={`min-w-0 flex-1 bg-transparent text-base outline-none dark:text-[#F8F4FF] dark:placeholder:text-[#9C8FAF] ${errorPlaceholder} ${errorInputText}`}
             />
             {showEyeToggle && (
                <button

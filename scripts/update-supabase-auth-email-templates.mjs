@@ -20,6 +20,7 @@ const envelopeHippoUrl = `${appUrl}/hippos/hippo-purple-envelope-email.png`;
 const supportUrl = `${appUrl}/support/faq`;
 const telegramUrl = 'https://t.me/jimmymoodengcredit';
 const facebookUrl = 'https://www.facebook.com/profile.php?id=61589106561061';
+const emailConfirmationHref = '{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email';
 
 function buildEmailTemplate({ imageUrl, imageAlt, eyebrow, title, body, cta, footer, code, href = '{{ .ConfirmationURL }}' }) {
    return `
@@ -41,9 +42,6 @@ function buildEmailTemplate({ imageUrl, imageAlt, eyebrow, title, body, cta, foo
             <td align="center" style="padding:0 0 16px;text-align:center;">
               <div style="font-size:22px;line-height:28px;font-weight:800;color:#09012f;">
                 Moodeng Credit
-              </div>
-              <div style="margin-top:4px;font-size:13px;line-height:18px;font-weight:700;color:#8336f0;">
-                Account email
               </div>
             </td>
           </tr>
@@ -118,9 +116,9 @@ const authTemplateConfig = {
       imageAlt: 'Moodeng holding an envelope',
       eyebrow: 'Welcome to Moodeng',
       title: 'Confirm your email',
-      body: 'Enter this code in Moodeng to finish setting up your account. You can also use the secure button below.',
-      code: '{{ .Token }}',
+      body: 'Confirm this email so you can continue setting up your Moodeng account.',
       cta: 'Confirm Email',
+      href: emailConfirmationHref,
       footer: 'If you did not create a Moodeng account, you can ignore this email.'
    }),
    mailer_subjects_recovery: 'Reset your Moodeng password',

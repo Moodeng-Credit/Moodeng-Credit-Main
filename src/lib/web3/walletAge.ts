@@ -1,8 +1,7 @@
 const ALCHEMY_API_KEY = import.meta.env.VITE_ALCHEMY_API_KEY ?? '';
 
 const CHAINS = [
-   { rpcUrl: `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}` },
-   { rpcUrl: `https://base-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}` }
+   { rpcUrl: `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}` }
 ];
 
 export interface WalletAgeInfo {
