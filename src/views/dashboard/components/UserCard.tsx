@@ -132,7 +132,7 @@ export default function UserCard(loan: UserCardProps) {
    const storeUserId = useSelector((state: RootState) => state.auth.user.id);
    const userId = currentUserId || storeUserId;
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
-   const allLoans = useSelector((state: RootState) => state.loans.loans.gloans);
+   const allLoans = useSelector((state: RootState) => state.loans.loans.floans);
    const borrowerProfile = borrowerUserId ? userProfiles[borrowerUserId] : undefined;
    const borrowerFundedLoanCount = borrowerUserId
       ? allLoans.filter((l) => l.borrowerUser === borrowerUserId && l.loanStatus === 'Lent').length
