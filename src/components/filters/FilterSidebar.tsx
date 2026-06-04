@@ -207,7 +207,7 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
                         className={`filter-control flex h-12 shrink-0 items-center justify-center rounded-[10px] border px-3.5 text-md-b3 font-medium leading-none whitespace-nowrap transition-all duration-150 ${
                            activeTab === tab.id
                               ? 'border-[#7C2DFF] bg-[#F7F2FF] text-[#5B16E8] shadow-[0_3px_10px_rgba(96,16,210,0.14),inset_0_0_0_1px_rgba(124,45,255,0.45)]'
-                              : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_2px_8px_rgba(82,57,130,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_3px_10px_rgba(82,57,130,0.11),inset_0_1px_0_rgba(255,255,255,0.92)]'
+                              : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_2px_8px_rgba(82,57,130,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_3px_10px_rgba(82,57,130,0.11),inset_0_1px_0_rgba(255,255,255,0.92)] dark:bg-[#241b3a] dark:shadow-none'
                         }`}
                      >
                         {tab.label}
@@ -332,7 +332,7 @@ function FilterChip({ label, selected, onClick }: { label: string; selected: boo
          className={`filter-control relative flex min-h-[54px] w-full items-center justify-center rounded-[10px] border px-4 py-2.5 pr-7 text-center text-md-b3 font-medium transition-all duration-150 ${
             selected
                ? 'border-[1.5px] border-[#C99BFF] bg-[#FBF7FF] text-[#5B16E8] shadow-[0_2px_8px_rgba(96,16,210,0.16),inset_0_1px_0_rgba(255,255,255,0.92)]'
-               : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_2px_8px_rgba(82,57,130,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_3px_10px_rgba(82,57,130,0.11),inset_0_1px_0_rgba(255,255,255,0.92)]'
+               : 'border-transparent bg-white text-md-neutral-1100 shadow-[0_2px_8px_rgba(82,57,130,0.08),inset_0_1px_0_rgba(255,255,255,0.92)] hover:shadow-[0_3px_10px_rgba(82,57,130,0.11),inset_0_1px_0_rgba(255,255,255,0.92)] dark:bg-[#241b3a] dark:shadow-none'
          }`}
       >
          {label}
