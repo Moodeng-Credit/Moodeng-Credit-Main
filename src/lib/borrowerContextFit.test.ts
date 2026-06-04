@@ -115,7 +115,7 @@ describe('borrower context fit', () => {
          repaidLoanCount: 0
       }));
       expect(result.verdictHTML).toContain('Freelance work');
-      expect(result.verdictHTML).toContain('track');
+      expect(result.verdictHTML).toContain('First loan on Moodeng');
    });
 
    it('unknown — freelance strong history notes they manage regardless', () => {
