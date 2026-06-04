@@ -208,10 +208,16 @@ const buildNeutralResult = (
 });
 
 const historyPhrase = (fundedLoanCount: number | undefined): string => {
-   if (fundedLoanCount === undefined) return 'check their repayment history before funding';
-   if (fundedLoanCount === 0) return 'this is their first funded request — judge fit on their profile and stated needs';
-   if (fundedLoanCount === 1) return 'they have one repaid loan — review that track record before funding';
-   return `they have ${fundedLoanCount} funded loans — lean on that repayment track record`;
+   if (fundedLoanCount === undefined) return 'repayment history is still loading';
+   if (fundedLoanCount === 0) return 'new to Moodeng — no prior defaults, a small loan is a low-risk way to assess fit';
+   if (fundedLoanCount === 1) return 'one completed loan on Moodeng — early track record is clean';
+   if (fundedLoanCount === 2) return 'two completed loans — consistent borrower with a developing track record';
+   return `${fundedLoanCount} completed loans — established repayment history on Moodeng`;
+};
+
+const reasonMatchesPattern = (reason: string, gapReasons: string[]): boolean => {
+   const normalizedReason = reason.toLowerCase();
+   return gapReasons.some((gr) => normalizedReason.includes(gr.toLowerCase()) || gr.toLowerCase().includes(normalizedReason));
 };
 
 const buildVerdict = (input: BorrowerContextInput, fitLevel: BorrowerContextFitLevel, gapDays: number, dueDate: Date): string => {
@@ -221,20 +227,22 @@ const buildVerdict = (input: BorrowerContextInput, fitLevel: BorrowerContextFitL
    const dueLabel = escapeHtml(formatDateLabel(dueDate));
    const absGapDays = Math.abs(gapDays);
    const history = historyPhrase(input.fundedLoanCount);
+   const patternMatch = reasonMatchesPattern(input.reason, input.gapReasons);
+   const patternNote = patternMatch ? ' This request matches their usual borrowing pattern.' : '';
 
    if (fitLevel === 'strong') {
-      return `As ${income} paid ${payday}, ${borrowerName} will have received income before repayment is due. This request bridges a <strong>${absGapDays}-day gap</strong> before their next payday — a short-term need that fits squarely within their stated cash-flow pattern.`;
+      return `As ${income} paid ${payday}, ${borrowerName} will have received income before repayment is due. This request bridges a <strong>${absGapDays}-day gap</strong> before their next payday — a short-term need that fits their cash-flow pattern.${patternNote} ${history}.`;
    }
 
    if (fitLevel === 'ok') {
-      return `Repayment falls on ${dueLabel}, inside their usual ${payday} window, a <strong>${absGapDays}-day gap</strong> from the window opening. As ${income}, income is expected around the same time — this request is likely bridging the final days before pay arrives.`;
+      return `Repayment falls on ${dueLabel}, inside their usual ${payday} pay window. As ${income}, income arrives around the same time — this request is bridging the final days before pay.${patternNote} ${history}.`;
    }
 
    if (gapDays < 0) {
-      return `Repayment is due <strong>${absGapDays} days</strong> before their usual payday window opens. Their profile doesn't clearly explain this timing — ${history}.`;
+      return `Repayment falls <strong>${absGapDays} days</strong> before their typical pay window — they may be managing an expense that can't wait until payday.${patternNote} ${history}.`;
    }
 
-   return `Repayment is due <strong>${absGapDays} days</strong> after their usual payday window closes. Their profile doesn't clearly explain this longer timing — ${history}.`;
+   return `Repayment falls <strong>${absGapDays} days</strong> past their typical pay window — they may be carrying this need across pay cycles.${patternNote} ${history}.`;
 };
 
 export const buildBorrowerContextFit = (input: BorrowerContextInput): BorrowerContextResult => {
@@ -242,35 +250,40 @@ export const buildBorrowerContextFit = (input: BorrowerContextInput): BorrowerCo
    const dueDate = isValidDate(input.dueDate) ? toUtcDay(input.dueDate) : null;
 
    if (!requestDate || !dueDate) {
-      return buildNeutralResult(input, dueDate, null, 'Borrower timing is missing or unclear. Review repayment history before funding.');
+      const history = historyPhrase(input.fundedLoanCount);
+      return buildNeutralResult(input, dueDate, null, `Repayment timing details are incomplete — lean on their track record and stated need. ${history}.`);
    }
 
    const gapDays = input.paydayType === 'irregular' ? null : calculateGapDays(dueDate, input.paydayStart, input.paydayEnd);
 
    if (input.incomeType === 'none') {
       const history = historyPhrase(input.fundedLoanCount);
+      const needLabel = escapeHtml(formatNaturalList(input.gapReasons, 'stated needs'));
       return buildNeutralResult(
          input,
          dueDate,
          gapDays,
-         `No income source shared. This request is based on stated needs alone — ${history}.`
+         `No income source on file — this request is backed by their stated ${needLabel} need and their track record. ${history}.`
       );
    }
 
    if (input.paydayType === 'irregular' || gapDays === null) {
-      const firstGapReason = escapeHtml(cleanList(input.gapReasons)[0] ?? 'stated needs');
       const history = historyPhrase(input.fundedLoanCount);
+      const needLabel = escapeHtml(formatNaturalList(input.gapReasons, 'stated needs'));
+      const patternMatch = reasonMatchesPattern(input.reason, input.gapReasons);
+      const patternNote = patternMatch ? ' This request matches their usual borrowing pattern.' : '';
       return buildNeutralResult(
          input,
          dueDate,
          gapDays,
-         `With irregular income, timing alone isn't a strong signal here. This request is consistent with their stated ${firstGapReason} pattern — ${history}.`
+         `Variable pay timing means the calendar fit varies — focus on the stated ${needLabel} need and their repayment history.${patternNote} ${history}.`
       );
    }
 
    const fitLevel = getFitLevel(input, gapDays);
    if (fitLevel === 'unknown') {
-      return buildNeutralResult(input, dueDate, gapDays, 'Borrower timing is missing or unclear. Review repayment history before funding.');
+      const history = historyPhrase(input.fundedLoanCount);
+      return buildNeutralResult(input, dueDate, gapDays, `Timing details are incomplete — lean on their track record and stated need. ${history}.`);
    }
 
    return {
