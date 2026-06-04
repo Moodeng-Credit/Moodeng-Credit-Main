@@ -286,10 +286,12 @@ export default function TransactionDetail() {
    }, [dispatch, user?.id, loan, isPreview]);
 
    useEffect(() => {
-      if (loan?.lenderUser && !userProfiles[loan.lenderUser]) {
-         dispatch(fetchUserProfiles([loan.lenderUser])).catch((err: Error) => console.error('Error fetching lender profile:', err.message));
+      if (!loan || !user?.id) return;
+      const cpId = loan.lenderUser === user.id ? loan.borrowerUser : loan.lenderUser;
+      if (cpId && !userProfiles[cpId]) {
+         dispatch(fetchUserProfiles([cpId])).catch((err: Error) => console.error('Error fetching counterparty profile:', err.message));
       }
-   }, [dispatch, loan?.lenderUser, userProfiles]);
+   }, [dispatch, loan, user?.id, userProfiles]);
 
    if (isLoansLoading && !loan) {
       return (
@@ -305,8 +307,10 @@ export default function TransactionDetail() {
 
    const status = getLoanStatus(loan);
    const isPendingFunding = status === 'PENDING';
-   const lenderProfile = loan.lenderUser ? userProfiles[loan.lenderUser] : undefined;
-   const lenderName = lenderProfile?.username ?? 'Unknown';
+   const isLender = loan.lenderUser === user?.id;
+   const counterpartyId = isLender ? loan.borrowerUser : loan.lenderUser;
+   const counterpartyProfile = counterpartyId ? userProfiles[counterpartyId] : undefined;
+   const counterpartyName = counterpartyProfile?.username ?? 'Unknown';
    const outstanding = Math.max(0, loan.totalRepaymentAmount - loan.repaidAmount);
 
    return (
@@ -327,11 +331,15 @@ export default function TransactionDetail() {
                {/* Summary card */}
                <div className="bg-white rounded-md-lg shadow-md-card p-md-4 flex flex-col gap-md-3">
                   <div className="flex items-start gap-md-3">
-                     <UserAvatar src={lenderProfile?.avatarUrl} alt={lenderName} size={48} />
+                     <UserAvatar src={counterpartyProfile?.avatarUrl} alt={counterpartyName} size={48} />
                      <div className="flex-1 min-w-0 flex flex-col gap-1">
                         <p className="text-md-b1 font-semibold text-md-primary-2000 line-clamp-2">{loan.reason || 'Loan'}</p>
                         <span className="text-md-b3 text-md-neutral-1200">
-                           {isPendingFunding ? 'Lender has not accepted yet' : `Lent by ${lenderName}`}
+                           {isPendingFunding
+                              ? 'Lender has not accepted yet'
+                              : isLender
+                                ? `Borrowed by ${counterpartyName}`
+                                : `Lent by ${counterpartyName}`}
                         </span>
                      </div>
                   </div>
@@ -387,7 +395,7 @@ export default function TransactionDetail() {
                </div>
 
                {/* Repay CTA for borrower on active/partial/default */}
-               {status === 'ACTIVE' || status === 'PARTIAL' || status === 'DEFAULT' ? (
+               {!isLender && (status === 'ACTIVE' || status === 'PARTIAL' || status === 'DEFAULT') ? (
                   <button
                      type="button"
                      onClick={() => navigate('/repay')}

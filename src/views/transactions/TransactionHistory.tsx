@@ -446,7 +446,7 @@ export default function TransactionHistory() {
                                  variant={isBorrower ? 'borrower' : 'lender'}
                                  showOutOf={activeTab === 'all'}
                                  showBadge={isBorrower || activeTab !== 'all'}
-                                 onClick={isBorrower ? () => navigate(`/history/${loan.id}`) : undefined}
+                                 onClick={() => navigate(`/history/${loan.id}`)}
                               />
                               {i < visibleLoans.length - 1 ? <div className="h-px bg-md-neutral-300 mt-md-4" /> : null}
                            </div>
