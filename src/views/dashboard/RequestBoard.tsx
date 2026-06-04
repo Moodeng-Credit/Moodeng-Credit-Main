@@ -245,7 +245,7 @@ const isRequestBoardPreviewHost = () => {
    );
 };
 
-const shouldShowPreviewRequestBoardLoans = (search: string, loans: Loan[]) => {
+export const shouldShowPreviewRequestBoardLoans = (search: string, loans: Loan[]) => {
    if (!isRequestBoardPreviewHost()) return false;
    if (loans.some((loan) => isRequestBoardLoanVisible(loan))) return false;
 
@@ -255,14 +255,13 @@ const shouldShowPreviewRequestBoardLoans = (search: string, loans: Loan[]) => {
       return false;
    }
 
-   if (import.meta.env.DEV) return true;
+   if (params.has('tour') || params.has('tourPreview') || params.has('lenderTourPreview') || params.has('referralTest')) return true;
 
    if (params.get('previewRequests') === '1') {
-      window.sessionStorage.setItem(REQUEST_BOARD_PREVIEW_REQUESTS_STORAGE_KEY, '1');
       return true;
    }
 
-   return window.sessionStorage.getItem(REQUEST_BOARD_PREVIEW_REQUESTS_STORAGE_KEY) === '1';
+   return false;
 };
 
 type RequestBoardTourStep = {
@@ -396,9 +395,11 @@ function RequestBoard$() {
    const pendingLoanDataRef = useRef<CreateLoanData | null>(null);
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
+   const [hasLoadedRequestBoardLoans, setHasLoadedRequestBoardLoans] = useState(false);
+   const liveRequestBoardLoans = hasLoadedRequestBoardLoans ? floanRequests : [];
    const previewRequestBoardLoans = useMemo(buildPreviewRequestBoardLoans, []);
-   const shouldUsePreviewRequestBoardLoans = shouldShowPreviewRequestBoardLoans(location.search, floanRequests);
-   const requestBoardLoans = shouldUsePreviewRequestBoardLoans ? previewRequestBoardLoans : floanRequests;
+   const shouldUsePreviewRequestBoardLoans = hasLoadedRequestBoardLoans && shouldShowPreviewRequestBoardLoans(location.search, liveRequestBoardLoans);
+   const requestBoardLoans = shouldUsePreviewRequestBoardLoans ? previewRequestBoardLoans : liveRequestBoardLoans;
    const [sortedLoans, setSortedLoans] = useState(floanRequests);
 
    const today = new Date().toISOString().split('T')[0];
@@ -1124,6 +1125,7 @@ function RequestBoard$() {
 
    useEffect(() => {
       const loadLoans = async () => {
+         setHasLoadedRequestBoardLoans(false);
          try {
             const loans = await dispatch(fetchLoans()).unwrap();
             const borrowerUserIds = [...new Set(loans.map((loan: Loan) => loan.borrowerUser).filter(Boolean))] as string[];
@@ -1132,6 +1134,8 @@ function RequestBoard$() {
             }
          } catch (error) {
             console.error('Error fetching data:', (error as Error).message || error);
+         } finally {
+            setHasLoadedRequestBoardLoans(true);
          }
       };
       loadLoans();
@@ -1250,7 +1254,7 @@ function RequestBoard$() {
       return `/account/settings?${params.toString()}`;
    };
    const visibleLoans = shouldShowLenderTour && displayedLoans.length === 0 ? LENDER_TOUR_LOANS : displayedLoans;
-   const isListLoading = isLoading && !shouldShowLenderTour;
+   const isListLoading = (!hasLoadedRequestBoardLoans || isLoading) && !shouldShowLenderTour;
 
    useEffect(() => {
       if (!highlightedRequestId || lastScrolledHighlightedRequestIdRef.current === highlightedRequestId) return;
