@@ -11,8 +11,7 @@ import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
 import { LoanStatus as LoanStatusValue, RepaymentStatus } from '@/types/loanTypes';
-
-type LoanStatus = 'REPAID' | 'ACTIVE' | 'DEFAULT' | 'PENDING' | 'PARTIAL';
+import { getTransactionLoanStatus, type TransactionLoanStatus } from '@/views/transactions/transactionHistoryFilters';
 
 function buildPreviewLoan(): Loan {
    return {
@@ -37,13 +36,6 @@ function buildPreviewLoan(): Loan {
    };
 }
 
-function getLoanStatus(loan: Loan): LoanStatus {
-   if (loan.repaymentStatus === 'Paid') return 'REPAID';
-   if (loan.repaymentStatus === 'Partial') return 'PARTIAL';
-   if (loan.loanStatus === 'Requested') return 'PENDING';
-   if (new Date(loan.dueDate) < new Date()) return 'DEFAULT';
-   return 'ACTIVE';
-}
 
 function formatCurrency(amount: number): string {
    return new Intl.NumberFormat('en-US', {
@@ -59,8 +51,8 @@ function formatDate(dateStr: string | undefined | null): string {
    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
 }
 
-function StatusChip({ status }: { status: LoanStatus }) {
-   const map: Record<LoanStatus, { label: string; className: string; icon: React.ReactNode }> = {
+function StatusChip({ status }: { status: TransactionLoanStatus }) {
+   const map: Record<TransactionLoanStatus, { label: string; className: string; icon: React.ReactNode }> = {
       REPAID: {
          label: 'REPAID',
          className: 'border-md-green-700 text-md-green-700 bg-transparent',
@@ -305,9 +297,9 @@ export default function TransactionDetail() {
       return <Navigate to="/history" replace />;
    }
 
-   const status = getLoanStatus(loan);
+   const status = getTransactionLoanStatus(loan, new Date());
    const isPendingFunding = status === 'PENDING';
-   const isLender = loan.lenderUser === user?.id;
+   const isLender = !!user?.id && loan.lenderUser === user.id;
    const counterpartyId = isLender ? loan.borrowerUser : loan.lenderUser;
    const counterpartyProfile = counterpartyId ? userProfiles[counterpartyId] : undefined;
    const counterpartyName = counterpartyProfile?.username ?? 'Unknown';
@@ -335,10 +327,10 @@ export default function TransactionDetail() {
                      <div className="flex-1 min-w-0 flex flex-col gap-1">
                         <p className="text-md-b1 font-semibold text-md-primary-2000 line-clamp-2">{loan.reason || 'Loan'}</p>
                         <span className="text-md-b3 text-md-neutral-1200">
-                           {isPendingFunding
-                              ? 'Lender has not accepted yet'
-                              : isLender
-                                ? `Borrowed by ${counterpartyName}`
+                           {isLender
+                              ? `Borrowed by ${counterpartyName}`
+                              : isPendingFunding
+                                ? 'Lender has not accepted yet'
                                 : `Lent by ${counterpartyName}`}
                         </span>
                      </div>

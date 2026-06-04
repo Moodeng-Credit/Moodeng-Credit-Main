@@ -91,7 +91,7 @@ interface TransactionRowProps {
    variant: 'lender' | 'borrower';
    showOutOf: boolean;
    showBadge: boolean;
-   onClick?: () => void;
+   onClick: () => void;
 }
 
 function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, showOutOf, showBadge, onClick }: TransactionRowProps) {
@@ -126,14 +126,11 @@ function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, s
       </div>
    );
 
-   if (onClick) {
-      return (
-         <button type="button" onClick={onClick} className="w-full text-left">
-            {Content}
-         </button>
-      );
-   }
-   return Content;
+   return (
+      <button type="button" onClick={onClick} className="w-full text-left">
+         {Content}
+      </button>
+   );
 }
 
 interface FilterModalProps {
