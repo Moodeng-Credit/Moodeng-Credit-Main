@@ -16,7 +16,7 @@ export default function SocialButtons({ onGoogleAuth, onTelegramAuth, onOAuthErr
    return (
       <div className="space-y-3">
          <GoogleAuthButton onSuccess={onGoogleAuth} onError={onOAuthError} text={googleText} />
-         <TelegramAuthButton onAuth={onTelegramAuth} buttonSize="large" />
+         <TelegramAuthButton onAuth={onTelegramAuth} buttonSize="large" useRedirect />
       </div>
    );
 }
