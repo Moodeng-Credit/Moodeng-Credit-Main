@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 
 interface TelegramAuthButtonProps {
-   onAuth: (authData: Record<string, string>) => void;
+   onAuth?: (authData: Record<string, string>) => void;
+   /**
+    * When true, uses data-auth-url redirect mode instead of the popup-based
+    * data-onauth callback. Required on iOS Safari where cross-origin iframe
+    * popups are blocked and land on about:blank.
+    */
+   useRedirect?: boolean;
    buttonSize?: 'large' | 'medium' | 'small';
    /** Hide loading state when embedding in custom-styled buttons */
    hideLoading?: boolean;
@@ -18,6 +24,7 @@ declare global {
 
 export default function TelegramAuthButton({
    onAuth,
+   useRedirect = false,
    buttonSize = 'large',
    hideLoading = false,
    requestWriteAccess = false
@@ -40,7 +47,8 @@ export default function TelegramAuthButton({
          normalizedBotUsername: botUsername,
          buttonSize,
          hideLoading,
-         requestWriteAccess
+         requestWriteAccess,
+         useRedirect,
       });
 
       if (!botUsername) {
@@ -56,18 +64,27 @@ export default function TelegramAuthButton({
       const callbackName = `${widgetId}_callback`;
       const scriptId = `${widgetId}_script`;
 
-      (window as unknown as Record<string, unknown>)[callbackName] = (user: Record<string, string>) => {
-         console.debug(`${debugTag} callback fired`, user);
-         onAuthRef.current(user);
-      };
-
       const script = document.createElement('script');
       script.id = scriptId;
       script.async = true;
       script.src = 'https://telegram.org/js/telegram-widget.js?22';
       script.setAttribute('data-telegram-login', botUsername);
       script.setAttribute('data-size', buttonSize);
-      script.setAttribute('data-onauth', `${callbackName}(user)`);
+
+      if (useRedirect) {
+         // Redirect mode: Telegram sends a postMessage to the parent frame which
+         // then navigates to the callback URL. This avoids the popup that iOS
+         // Safari blocks when triggered from a cross-origin iframe (about:blank bug).
+         const callbackUrl = `${window.location.origin}/auth/telegram/callback`;
+         script.setAttribute('data-auth-url', callbackUrl);
+      } else {
+         (window as unknown as Record<string, unknown>)[callbackName] = (user: Record<string, string>) => {
+            console.debug(`${debugTag} callback fired`, user);
+            onAuthRef.current?.(user);
+         };
+         script.setAttribute('data-onauth', `${callbackName}(user)`);
+      }
+
       if (requestWriteAccess) {
          script.setAttribute('data-request-access', 'write');
       }
@@ -117,12 +134,14 @@ export default function TelegramAuthButton({
 
       return () => {
          console.debug(`${debugTag} cleanup`);
-         const win = window as unknown as Record<string, unknown>;
-         if (win[callbackName]) {
-            delete win[callbackName];
+         if (!useRedirect) {
+            const win = window as unknown as Record<string, unknown>;
+            if (win[callbackName]) {
+               delete win[callbackName];
+            }
          }
       };
-   }, [buttonSize, botUsername, hideLoading, rawBotUsername, requestWriteAccess]);
+   }, [buttonSize, botUsername, hideLoading, rawBotUsername, requestWriteAccess, useRedirect]);
 
    if (!botUsername) {
       console.debug(`${debugTag} returning null because bot username missing`);

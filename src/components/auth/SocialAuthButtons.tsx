@@ -102,7 +102,7 @@ export function SocialAuthButtons({ isSignUp, onTelegramAuth }: SocialAuthButton
          {/* Telegram: show the real Telegram widget directly */}
          {botUsername && (
             <div className="flex min-h-[56px] w-full min-w-0 items-center justify-center overflow-hidden rounded-xl bg-[#1A8DFF] px-3 py-2 shadow-[0px_2px_4px_rgba(27,28,29,0.04)]">
-               <TelegramAuthButton onAuth={onTelegramAuth} buttonSize="large" />
+               <TelegramAuthButton onAuth={onTelegramAuth} buttonSize="large" useRedirect />
             </div>
          )}
       </div>

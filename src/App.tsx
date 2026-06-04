@@ -21,6 +21,7 @@ import AccountRestrictedPage from '@/app/account-restricted/page';
 import AdminPanel from '@/app/admin/page';
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
+import TelegramCallback from '@/app/auth/telegram/callback/page';
 import AuthVerifyCode from '@/app/auth/verify-code/page';
 import Benefits from '@/app/benefits/page';
 import BlogDetailPage from '@/app/blogs/[slug]/page';
@@ -373,6 +374,7 @@ export default function App() {
             <Route path="/auth-success" element={<AuthSuccess />} />
             <Route path="/auth/confirm" element={<AuthConfirm />} />
             <Route path="/auth/verify-code" element={<AuthVerifyCode />} />
+            <Route path="/auth/telegram/callback" element={<TelegramCallback />} />
 
             {/* Help & Support */}
             <Route
