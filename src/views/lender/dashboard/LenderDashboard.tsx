@@ -241,7 +241,7 @@ function FilterDropdown({ isOpen, onClose, filters, onApply, dropdownRef, openUp
    return (
       <div
          ref={dropdownRef}
-         className={`absolute right-0 z-50 w-[200px] bg-md-neutral-100 rounded-md-xl shadow-[0_8px_32px_rgba(0,0,0,0.14)] border border-md-neutral-300 overflow-hidden ${positionClass}`}
+         className={`absolute right-0 z-[60] w-[200px] bg-md-neutral-100 rounded-md-xl shadow-[0_8px_32px_rgba(0,0,0,0.14)] border border-md-neutral-300 overflow-hidden ${positionClass}`}
       >
          {/* Sort By */}
          <div className="px-4 pt-4 pb-2">
