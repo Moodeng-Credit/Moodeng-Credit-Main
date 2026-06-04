@@ -25,6 +25,8 @@ import {
    normalizeBorrowerContextProfile
 } from '@/lib/borrowerContextFit';
 import { fetchLoans, type LoanSideEffectError, updateLoanStatus } from '@/store/slices/loanSlice';
+import { computePointsDelta, computeYearOneIouPointsDelta, formatPointsMajor, getYearOneIouBorrowerBonusPoints } from '@/shared/points';
+
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
@@ -90,15 +92,30 @@ function BorrowerContextLine({ context }: { context: BorrowerContextResult }) {
    );
 }
 
-function BorrowerContextPanel({ context }: { context: BorrowerContextResult }) {
+type LenderIouInfo = { loanAmount: number; borrowerFundedLoanCount: number };
+
+function BorrowerContextPanel({ context, lenderIouInfo }: { context: BorrowerContextResult; lenderIouInfo?: LenderIouInfo }) {
+   const iouLine = lenderIouInfo
+      ? (() => {
+           const prior = lenderIouInfo.borrowerFundedLoanCount;
+           const bonus = getYearOneIouBorrowerBonusPoints(prior);
+           const total = formatPointsMajor(computeYearOneIouPointsDelta(lenderIouInfo.loanAmount, prior));
+           const base = formatPointsMajor(computePointsDelta(lenderIouInfo.loanAmount));
+           const bonusLabel = prior === 0 ? '1st-time borrower bonus' : prior === 1 ? '2nd-loan borrower bonus' : prior === 2 ? '3rd-loan borrower bonus' : '4th+ loan borrower bonus';
+           return `Fund this and earn ${total} IOU points — ${base} for the loan + ${bonus} point ${bonusLabel}.`;
+        })()
+      : null;
+
    return (
       <section className="rounded-[20px] bg-[#f3efff] dark:bg-[#1e1535] p-4">
          <p className="mb-3 text-md-b3 font-bold uppercase tracking-[0.18em] text-md-primary-900 dark:text-[#c4a0ff]">Timing Fit</p>
          <BorrowerContextLine context={context} />
-         <p
-            className={`mt-4 rounded-[18px] p-4 text-md-b2 font-medium leading-[1.55] ${verdictClasses[context.fitLevel]}`}
-            dangerouslySetInnerHTML={{ __html: context.verdictHTML }}
-         />
+         <div className={`mt-4 rounded-[18px] p-4 text-md-b2 font-medium leading-[1.55] ${verdictClasses[context.fitLevel]}`}>
+            <p dangerouslySetInnerHTML={{ __html: context.verdictHTML }} />
+            {iouLine ? (
+               <p className="mt-3 font-semibold">{iouLine}</p>
+            ) : null}
+         </div>
       </section>
    );
 }
@@ -380,7 +397,12 @@ export default function UserCard(loan: UserCardProps) {
                   Back
                </button>
             ) : null}
-            {showBorrowerContext && borrowerContext ? <BorrowerContextPanel context={borrowerContext} /> : null}
+            {showBorrowerContext && borrowerContext ? (
+               <BorrowerContextPanel
+                  context={borrowerContext}
+                  lenderIouInfo={!isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest) ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 } : undefined}
+               />
+            ) : null}
 
             {/* CTA + Borrower Link */}
             <div className="flex flex-col gap-4">
