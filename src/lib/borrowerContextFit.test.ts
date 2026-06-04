@@ -23,7 +23,7 @@ describe('borrower context fit', () => {
       expect(result.fitLevel).toBe('strong');
       expect(result.gapDays).toBe(3);
       expect(result.verdictHTML).toContain('<strong>3-day gap</strong>');
-      expect(result.verdictHTML).toContain('will have received income');
+      expect(result.verdictHTML).toContain('will have income before repayment is due');
    });
 
    it('returns ok when repayment falls inside the payday window', () => {
@@ -45,6 +45,7 @@ describe('borrower context fit', () => {
    it('returns unknown for irregular income timing', () => {
       const result = buildBorrowerContextFit(
          makeInput({
+            incomeType: 'part-time',
             paydayType: 'irregular',
             paydayStart: null,
             paydayEnd: null,
@@ -54,7 +55,7 @@ describe('borrower context fit', () => {
 
       expect(result.fitLevel).toBe('unknown');
       expect(result.gapDays).toBeNull();
-      expect(result.verdictHTML).toContain('Variable pay timing');
+      expect(result.verdictHTML).toContain('Variable hours and pay timing');
       expect(result.verdictHTML).toContain('family needs and bills');
    });
 
