@@ -41,6 +41,16 @@ export default function TelegramAuthButton({
       onAuthRef.current = onAuth;
    });
 
+   // Warm up the telegram-login edge function as soon as the button mounts so
+   // the Deno cold-start (~30-60 s) has already happened by the time the user
+   // finishes Telegram auth and the callback page needs to call it.
+   useEffect(() => {
+      if (!useRedirect) return;
+      const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL ?? '').trim();
+      if (!supabaseUrl) return;
+      fetch(`${supabaseUrl}/functions/v1/telegram-login`, { method: 'OPTIONS' }).catch(() => {});
+   }, [useRedirect]);
+
    useEffect(() => {
       console.debug(`${debugTag} init`, {
          rawBotUsername,
