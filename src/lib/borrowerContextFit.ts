@@ -189,12 +189,12 @@ const escapeHtml = (value: string): string =>
 const trackRecordPhrase = (repaidLoanCount: number | undefined, fundedLoanCount: number | undefined): string => {
    const repaid = repaidLoanCount ?? fundedLoanCount;
 
-   if (repaid === undefined) return 'No repayment history loaded yet';
-   if (repaid === 0)         return 'First loan on Moodeng';
-   if (repaid === 1)         return 'Paid back 1 loan before';
-   if (repaid === 2)         return 'Paid back 2 loans before';
-   if (repaid <= 4)          return `Paid back ${repaid} loans — good track record`;
-   return `Paid back ${repaid} loans — very reliable`;
+   if (repaid === undefined) return '';
+   if (repaid === 0)         return 'First loan on Moodeng — no prior repayment history.';
+   if (repaid === 1)         return 'Repaid 1 loan on Moodeng.';
+   if (repaid === 2)         return 'Repaid 2 loans on Moodeng.';
+   if (repaid <= 4)          return `Repaid ${repaid} loans on Moodeng — clean history.`;
+   return `Repaid ${repaid} loans on Moodeng.`;
 };
 
 // ─── Verification + standing suffix ───────────────────────────────────────
@@ -257,7 +257,7 @@ const buildVerdict = (input: BorrowerContextInput, fitLevel: BorrowerContextFitL
    const track       = trackRecordPhrase(input.repaidLoanCount, input.fundedLoanCount);
    const creds       = credentialsSuffix(input.goodStanding, input.isVerified);
    const patternNote = reasonMatchesPattern(input.reason, input.gapReasons)
-      ? ' Matches their usual reason for borrowing.'
+      ? ' Consistent with their usual borrowing pattern.'
       : '';
 
    const repaid = input.repaidLoanCount ?? input.fundedLoanCount ?? 0;
@@ -265,38 +265,32 @@ const buildVerdict = (input: BorrowerContextInput, fitLevel: BorrowerContextFitL
 
    // STRONG — due 1-7 days after payday window (they'll have just been paid)
    if (fitLevel === 'strong') {
-      if (hasHistory) {
-         return `Timing and history both look good. They get paid ${payday} and repayment isn't due for another <strong>${absGapDays} days</strong> after that — they'll have money in hand.${patternNote} ${track}.${creds}`;
-      }
-      return `Good timing — they get paid ${payday} and repayment is <strong>${absGapDays} days</strong> later. They'll have their pay before they need to repay.${patternNote} ${track}.${creds}`;
+      return `Gets paid ${payday} — repayment is <strong>${absGapDays} days</strong> after that, so they'll have income before they need to pay back.${patternNote} ${track}${creds}`;
    }
 
-   // OK — due inside their payday window (coincides with expected pay)
+   // OK — due inside their payday window
    if (fitLevel === 'ok') {
-      if (hasHistory) {
-         return `Repayment is due on ${dueLabel}, right when they normally get paid ${payday}. This is how they usually borrow.${patternNote} ${track}.${creds}`;
-      }
-      return `Repayment is due on ${dueLabel} — that falls in their ${payday} pay window. They're bridging the last few days until their pay comes in.${patternNote} ${track}.${creds}`;
+      return `Repayment is due ${dueLabel}, right in their ${payday} pay window — income and repayment land at the same time.${patternNote} ${track}${creds}`;
    }
 
    // WEAK — timing is off
    if (gapDays < 0) {
       // Due BEFORE payday window
-      if (hasHistory) {
-         return `Repayment is due <strong>${absGapDays} days</strong> before they usually get paid, but they've shown they handle this — they've repaid before regardless of timing.${patternNote} ${track}.${creds}`;
-      }
       const reasonCat = categorizeReason(input.reason);
       const urgencyNote = (reasonCat === 'emergency' || reasonCat === 'healthcare')
-         ? ` Likely a ${reasonCategoryLabel[reasonCat]} that couldn't wait.`
+         ? ` ${reasonCategoryLabel[reasonCat].charAt(0).toUpperCase() + reasonCategoryLabel[reasonCat].slice(1)} need — likely couldn't wait.`
          : '';
-      return `Repayment is due <strong>${absGapDays} days</strong> before they usually get paid — they'll need to cover this before their next payday.${urgencyNote}${patternNote} ${track}.${creds}`;
+      if (hasHistory) {
+         return `Repayment is <strong>${absGapDays} days</strong> before their usual payday — but they've repaid in similar timing before.${urgencyNote}${patternNote} ${track}${creds}`;
+      }
+      return `Repayment is <strong>${absGapDays} days</strong> before their usual payday — they'll need to cover this before getting paid.${urgencyNote}${patternNote} ${track}${creds}`;
    }
 
-   // Due AFTER payday window closes (> 7 days)
+   // Due AFTER payday window (> 7 days)
    if (hasHistory) {
-      return `Repayment is due <strong>${absGapDays} days</strong> after their usual payday — but they've repaid reliably before, so this hasn't been an issue for them.${patternNote} ${track}.${creds}`;
+      return `Repayment is <strong>${absGapDays} days</strong> after their usual payday — they've repaid this way before though.${patternNote} ${track}${creds}`;
    }
-   return `Repayment is due <strong>${absGapDays} days</strong> after their usual payday — they'll be paying from the following month's income.${patternNote} ${track}.${creds}`;
+   return `Repayment is <strong>${absGapDays} days</strong> after their usual payday — they'll be drawing from the following month's income.${patternNote} ${track}${creds}`;
 };
 
 // ─── Neutral result builder ────────────────────────────────────────────────
@@ -330,7 +324,7 @@ export const buildBorrowerContextFit = (input: BorrowerContextInput): BorrowerCo
    // Missing dates — no timing signal at all
    if (!requestDate || !dueDate) {
       return buildNeutralResult(input, dueDate, null,
-         `No timing info available — go by their stated need (${needLabel}) and repayment history.${patternNote} ${track}.${creds}`
+         `Repayment date is missing — timing can't be assessed. ${track}${creds}`
       );
    }
 
@@ -340,11 +334,11 @@ export const buildBorrowerContextFit = (input: BorrowerContextInput): BorrowerCo
    if (input.incomeType === 'none') {
       if (repaid >= 3) {
          return buildNeutralResult(input, dueDate, gapDays,
-            `No income listed, but they've repaid ${repaid} loans before. Their stated need is ${needLabel}.${patternNote}${creds}`
+            `No income on file — but they've repaid ${repaid} loans before.${patternNote}${creds}`
          );
       }
       return buildNeutralResult(input, dueDate, gapDays,
-         `No income listed. This comes down to their stated need (${needLabel}) and their history.${patternNote} ${track}.${creds}`
+         `No income on file.${patternNote} ${track}${creds}`
       );
    }
 
@@ -354,25 +348,25 @@ export const buildBorrowerContextFit = (input: BorrowerContextInput): BorrowerCo
       // Full-time + irregular — unusual, likely commission or bonus-based
       if (input.incomeType === 'full-time') {
          return buildNeutralResult(input, dueDate, gapDays,
-            `Full-time job but no regular pay schedule — probably commission or bonus-based. Look at their ${needLabel} need and repayment history.${patternNote} ${track}.${creds}`
+            `Full-time employee but pay doesn't follow a regular schedule — likely commission or bonus-based.${patternNote} ${track}${creds}`
          );
       }
 
-      // Freelance + irregular — track record is the main signal
+      // Freelance + irregular
       if (input.incomeType === 'freelance') {
          if (repaid >= 2) {
             return buildNeutralResult(input, dueDate, gapDays,
-               `Freelance pay depends on clients, but they've shown they repay reliably — ${repaid >= 3 ? 'well-established pattern' : 'building a track record'}.${patternNote} ${track}.${creds}`
+               `Freelance income so pay timing varies by project — but they've repaid ${repaid} loans before.${patternNote}${creds}`
             );
          }
          return buildNeutralResult(input, dueDate, gapDays,
-            `Freelance income — pay timing depends on clients. Focus on their stated ${needLabel} need and history.${patternNote} ${track}.${creds}`
+            `Freelance income so pay timing varies by project.${patternNote} ${track}${creds}`
          );
       }
 
       // Part-time + irregular
       return buildNeutralResult(input, dueDate, gapDays,
-         `Hours and pay aren't fixed — focus on their stated ${needLabel} need and repayment history.${patternNote} ${track}.${creds}`
+         `Part-time work with no fixed pay schedule.${patternNote} ${track}${creds}`
       );
    }
 
@@ -380,7 +374,7 @@ export const buildBorrowerContextFit = (input: BorrowerContextInput): BorrowerCo
 
    if (fitLevel === 'unknown') {
       return buildNeutralResult(input, dueDate, gapDays,
-         `Timing info is incomplete — go by their stated ${needLabel} need and repayment history.${patternNote} ${track}.${creds}`
+         `Pay schedule details are incomplete — timing can't be assessed. ${track}${creds}`
       );
    }
 
