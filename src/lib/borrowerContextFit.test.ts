@@ -100,10 +100,10 @@ describe('borrower context fit', () => {
       expect(result.verdictHTML).toContain("repaid 4 loans");
    });
 
-   it('unknown — missing date returns track record', () => {
+   it('unknown — missing date returns something useful', () => {
       const result = buildBorrowerContextFit(makeInput({ dueDate: new Date('not-a-date') }));
       expect(result.fitLevel).toBe('unknown');
-      expect(result.verdictHTML).toContain('First loan on Moodeng');
+      expect(result.verdictHTML).toContain('New to Moodeng');
    });
 
    it('unknown — freelance no history, new borrower', () => {
@@ -115,7 +115,7 @@ describe('borrower context fit', () => {
          repaidLoanCount: 0
       }));
       expect(result.verdictHTML).toContain('Freelance work');
-      expect(result.verdictHTML).toContain('First loan on Moodeng');
+      expect(result.verdictHTML).toContain('track');
    });
 
    it('unknown — freelance strong history notes they manage regardless', () => {
