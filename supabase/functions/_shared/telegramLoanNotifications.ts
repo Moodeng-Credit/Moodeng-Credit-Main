@@ -29,6 +29,7 @@ export type TelegramBorrowerProfile = {
 type BorrowerStats = {
    totalLoans: number;
    loansRepaid: number;
+   priorFundedLoanCount: number;
    maxActiveLoans: number | string;
    avgDaysBetweenLoans?: number;
    typicalPaymentTimeHours?: number;
@@ -74,6 +75,7 @@ const calculateStats = (currentLoanId: string, history: TelegramLoanHistory[], b
    const stats: BorrowerStats = {
       totalLoans: previousLoans.length,
       loansRepaid: paidLoans.length,
+      priorFundedLoanCount: fundedLoans.length,
       maxActiveLoans: borrower?.mal ?? 'N/A'
    };
 
@@ -153,6 +155,22 @@ export const getBestTelegramLoanInsights = (stats: BorrowerStats, maxInsights = 
       .map(([, message]) => message);
 };
 
+const getIouBonusPoints = (priorFundedLoanCount: number): number => {
+   if (priorFundedLoanCount === 0) return 25;
+   if (priorFundedLoanCount === 1) return 20;
+   if (priorFundedLoanCount === 2) return 15;
+   return 10;
+};
+
+const formatIouPoints = (loanAmount: number | string, priorFundedLoanCount: number): string => {
+   const amount = toAmount(loanAmount);
+   const bonus = getIouBonusPoints(priorFundedLoanCount);
+   const total = amount + bonus;
+   const totalStr = total % 1 === 0 ? total.toFixed(0) : total.toFixed(2);
+   const bonusLabel = priorFundedLoanCount === 0 ? 'new borrower bonus' : `${priorFundedLoanCount === 1 ? '2nd' : priorFundedLoanCount === 2 ? '3rd' : '4th+'} loan bonus`;
+   return `${totalStr} IOU pts (${amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(2)} base + ${bonus} ${bonusLabel})`;
+};
+
 export const buildTelegramLoanRequestMessage = (
    loan: TelegramLoanRequest,
    history: TelegramLoanHistory[],
@@ -167,7 +185,11 @@ export const buildTelegramLoanRequestMessage = (
       lines.push(`⏳ Duration: ${durationDays} days`);
    }
 
-   lines.push(`📝 Reason: ${loan.reason?.trim() || 'No reason provided'}`, '');
+   lines.push(
+      `📝 Reason: ${loan.reason?.trim() || 'No reason provided'}`,
+      `🏆 Earn: ${formatIouPoints(loan.loan_amount, stats.priorFundedLoanCount)}`,
+      ''
+   );
 
    if (stats.totalLoans === 0) {
       lines.push('🆕 New Borrower', `🔢 Max Active Loans: ${stats.maxActiveLoans}`, '');
