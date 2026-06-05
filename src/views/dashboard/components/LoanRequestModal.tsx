@@ -190,7 +190,9 @@ export const mapBorrowerContextForSave = (ctx: BorrowerContextState) => {
       paydayEnd:       payday?.end   ?? null,
       gapReasons:      ctx.cashGaps,
       monthlyIncome:   ctx.monthlyIncome,
-      monthlyExpenses: ctx.monthlyExpenses
+      monthlyExpenses: ctx.monthlyExpenses,
+      otherIncome:     ctx.otherIncome  || undefined,
+      profession:      ctx.profession   || undefined
    };
 };
 
@@ -386,6 +388,8 @@ function BorrowerContextLoanStep({
    onIncomeSelect,
    onMonthlyIncomeSelect,
    onMonthlyExpensesSelect,
+   onOtherIncomeChange,
+   onProfessionChange,
    onPaydaySelect,
    onProfileImageClick,
    onProfileNameChange,
@@ -405,12 +409,15 @@ function BorrowerContextLoanStep({
    onIncomeSelect: (value: string) => void;
    onMonthlyIncomeSelect: (value: string) => void;
    onMonthlyExpensesSelect: (value: string) => void;
+   onOtherIncomeChange: (value: string) => void;
+   onProfessionChange: (value: string) => void;
    onPaydaySelect: (value: string) => void;
    onProfileImageClick: () => void;
    onProfileNameChange: (value: string) => void;
    profileName: string;
    profileSaveError: string;
 }) {
+   const [hasOtherIncome, setHasOtherIncome] = useState<boolean>(Boolean(context.otherIncome));
    const canContinue = Boolean(context.incomeSetup && context.paydayWindow && context.cashGaps.length > 0);
    const isBusy = isSubmitting || isSavingProfile;
 
@@ -482,6 +489,19 @@ function BorrowerContextLoanStep({
             selectedValue={context.incomeSetup}
          />
 
+         <div className="flex flex-col gap-1.5">
+            <p className="text-md-b2 font-semibold text-md-heading">What do you do for work?</p>
+            <p className="text-md-b3 text-md-neutral-700">e.g. teacher, nurse, market vendor, driver</p>
+            <input
+               className="w-full rounded-md-input border border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none"
+               maxLength={60}
+               onChange={(e) => onProfessionChange(e.target.value)}
+               placeholder="e.g. teacher"
+               type="text"
+               value={context.profession ?? ''}
+            />
+         </div>
+
          <BorrowerContextChipSection
             helper="Helps lenders see that repayment timing makes sense."
             label="When do you usually get paid?"
@@ -505,6 +525,46 @@ function BorrowerContextLoanStep({
             options={monthlyExpensesOptions}
             selectedValues={[monthlyExpenses]}
          />
+
+         <div className="flex flex-col gap-md-2">
+            <div className="flex items-center justify-between">
+               <div>
+                  <p className="text-md-b2 font-semibold text-md-heading">Any other income sources?</p>
+                  <p className="text-md-b3 text-md-neutral-700">e.g. tutoring, delivery, market trading</p>
+               </div>
+               <div className="flex gap-md-2">
+                  {(['No', 'Yes'] as const).map((opt) => (
+                     <button
+                        key={opt}
+                        type="button"
+                        onClick={() => {
+                           const next = opt === 'Yes';
+                           setHasOtherIncome(next);
+                           if (!next) onOtherIncomeChange('');
+                        }}
+                        className={`rounded-md-pill px-4 py-1.5 text-md-b2 font-semibold transition ${
+                           (opt === 'Yes') === hasOtherIncome
+                              ? 'bg-md-primary-1200 text-white'
+                              : 'border border-md-neutral-400 text-md-neutral-800'
+                        }`}
+                     >
+                        {opt}
+                     </button>
+                  ))}
+               </div>
+            </div>
+            {hasOtherIncome && (
+               <input
+                  autoFocus
+                  className="w-full rounded-md-input border border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none"
+                  maxLength={60}
+                  onChange={(e) => onOtherIncomeChange(e.target.value)}
+                  placeholder="e.g. tutoring on weekends"
+                  type="text"
+                  value={context.otherIncome ?? ''}
+               />
+            )}
+         </div>
 
          <BorrowerContextChipSection
             caption="Pick all that apply."
@@ -1319,6 +1379,8 @@ export default function LoanRequestModal({
                         onIncomeSelect={(value) => setBorrowerContext((current) => ({ ...current, incomeSetup: value }))}
                         onMonthlyIncomeSelect={(v) => setBorrowerContext((prev) => ({ ...prev, monthlyIncome: v }))}
                         onMonthlyExpensesSelect={(v) => setBorrowerContext((prev) => ({ ...prev, monthlyExpenses: v }))}
+                        onOtherIncomeChange={(v) => setBorrowerContext((prev) => ({ ...prev, otherIncome: v }))}
+                        onProfessionChange={(v) => setBorrowerContext((prev) => ({ ...prev, profession: v }))}
                         onPaydaySelect={(value) => setBorrowerContext((current) => ({ ...current, paydayWindow: value }))}
                         onProfileImageClick={() => setShowBorrowerAvatarModal(true)}
                         onProfileNameChange={(value) => {
