@@ -1022,11 +1022,13 @@ function RequestBoard$() {
                const mapped = mapBorrowerContextForSave(borrowerContext);
                pendingLoanDataRef.current = loanData;
                await handleBioSave({
-                  incomeType:  mapped.incomeType,
-                  paydayType:  mapped.paydayType,
-                  paydayStart: mapped.paydayStart,
-                  paydayEnd:   mapped.paydayEnd,
-                  gapReasons:  mapped.gapReasons
+                  incomeType:      mapped.incomeType,
+                  paydayType:      mapped.paydayType,
+                  paydayStart:     mapped.paydayStart,
+                  paydayEnd:       mapped.paydayEnd,
+                  gapReasons:      mapped.gapReasons,
+                  monthlyIncome:   mapped.monthlyIncome,
+                  monthlyExpenses: mapped.monthlyExpenses
                });
                return;
             }
@@ -1081,9 +1083,9 @@ function RequestBoard$() {
       }
    };
 
-   const handleBioSave = async (data: { incomeType: string; paydayType: string; paydayStart?: number | null; paydayEnd?: number | null; gapReasons: string[] }) => {
+   const handleBioSave = async (data: { incomeType: string; paydayType: string; paydayStart?: number | null; paydayEnd?: number | null; gapReasons: string[]; monthlyIncome?: string; monthlyExpenses?: string }) => {
       try {
-         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, paydayStart: data.paydayStart, paydayEnd: data.paydayEnd, gapReasons: data.gapReasons })).unwrap();
+         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, paydayStart: data.paydayStart, paydayEnd: data.paydayEnd, gapReasons: data.gapReasons, monthlyIncome: data.monthlyIncome, monthlyExpenses: data.monthlyExpenses })).unwrap();
       } catch (error) {
          console.error('Failed to save borrower context:', error);
       }

@@ -1,0 +1,12 @@
+'use strict';
+
+var session = require('@worldcoin/idkit-core/session');
+
+
+
+Object.defineProperty(exports, "getSessionCommitment", {
+  enumerable: true,
+  get: function () { return session.getSessionCommitment; }
+});
+//# sourceMappingURL=session.cjs.map
+//# sourceMappingURL=session.cjs.map
