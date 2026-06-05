@@ -46,6 +46,8 @@ export interface User {
    paydayStart?: number | null;
    paydayEnd?: number | null;
    gapReasons?: string[];
+   monthlyIncome?: string;
+   monthlyExpenses?: string;
    /** Whether the user wants account activity notifications (loan approvals, World ID, etc.) */
    notifAccountActivity: boolean;
    /** Whether the user wants transaction notifications (funded, repayment, overdue, due) */
