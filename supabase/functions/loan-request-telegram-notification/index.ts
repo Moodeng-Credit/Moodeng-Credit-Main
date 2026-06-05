@@ -71,7 +71,53 @@ serve(async (req) => {
    }
 
    try {
-      const { loanId, dryRun = false } = await req.json().catch(() => ({}));
+      const { loanId, dryRun = false, mock = false } = await req.json().catch(() => ({}));
+
+      if (mock) {
+         const mockLoan = {
+            id: 'mock-loan-id',
+            tracking_id: 'MOCK-001',
+            loan_amount: 20,
+            coin: 'USDC',
+            due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+            created_at: new Date().toISOString(),
+            reason: 'Groceries and transport for the week',
+            borrower_user_id: 'mock-borrower',
+            loan_status: 'Requested'
+         };
+         const mockBorrower = { username: 'alex_borrower', mal: 3 };
+         const mockHistory = [
+            {
+               id: 'prev-loan-1',
+               loan_amount: 15,
+               created_at: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+               funded_at: new Date(Date.now() - 44 * 24 * 60 * 60 * 1000).toISOString(),
+               updated_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+               loan_status: 'Lent',
+               repayment_status: 'Paid',
+               lender_user_id: 'lender-a',
+               is_deleted: false
+            },
+            {
+               id: 'prev-loan-2',
+               loan_amount: 20,
+               created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+               funded_at: new Date(Date.now() - 19 * 24 * 60 * 60 * 1000).toISOString(),
+               updated_at: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+               loan_status: 'Lent',
+               repayment_status: 'Paid',
+               lender_user_id: 'lender-b',
+               is_deleted: false
+            }
+         ];
+         const mockUrl = buildLoanUrl('mock-loan-id');
+         const message = buildTelegramLoanRequestMessage(mockLoan, mockHistory, mockBorrower, mockUrl);
+         return new Response(JSON.stringify({ message, loanUrl: mockUrl }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+         });
+      }
+
       if (!loanId) {
          return new Response(JSON.stringify({ error: 'loanId is required' }), { status: 400, headers: corsHeaders });
       }
