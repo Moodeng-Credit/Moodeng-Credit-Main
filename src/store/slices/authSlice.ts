@@ -176,6 +176,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    paydayStart: (row as UserRow & { payday_start?: number | null }).payday_start ?? undefined,
    paydayEnd: (row as UserRow & { payday_end?: number | null }).payday_end ?? undefined,
    gapReasons: (row as UserRow & { gap_reasons?: string[] | null }).gap_reasons ?? undefined,
+   profession: (row as any).profession ?? undefined,
    notifAccountActivity: (row as UserRow & { notif_account_activity?: boolean | null }).notif_account_activity ?? true,
    notifTransactionActivity: (row as UserRow & { notif_transaction_activity?: boolean | null }).notif_transaction_activity ?? true,
    notifBlogs: (row as UserRow & { notif_blogs?: boolean | null }).notif_blogs ?? false,
@@ -581,6 +582,7 @@ export interface BorrowerContextPayload {
    paydayStart?: number | null;
    paydayEnd?: number | null;
    gapReasons?: string[];
+   profession?: string;
 }
 
 /** Save borrower context (income/payday/gap info) to the user's profile. Done once after first loan request. */
@@ -602,7 +604,8 @@ export const updateBorrowerContext = createAsyncThunk(
             payday_type: payload.paydayType,
             payday_start: payload.paydayStart ?? null,
             payday_end: payload.paydayEnd ?? null,
-            gap_reasons: payload.gapReasons ?? []
+            gap_reasons: payload.gapReasons ?? [],
+            profession: payload.profession ?? null
          } as Record<string, unknown>)
          .eq('id', user.id)
          .select('*')

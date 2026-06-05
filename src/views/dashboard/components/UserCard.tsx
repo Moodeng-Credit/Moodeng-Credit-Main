@@ -1,7 +1,7 @@
 import { type MouseEvent, useCallback, useMemo, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { format, parseISO } from 'date-fns';
+import { differenceInDays, format, parseISO } from 'date-fns';
 import { ChevronRight, ExternalLink, Send, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
@@ -74,21 +74,24 @@ function BorrowerContextChipView({ chip }: { chip: BorrowerContextChip }) {
 
 function BorrowerContextLine({ context }: { context: BorrowerContextResult }) {
    const chipMap = new Map(context.chips.map((chip) => [chip.id, chip]));
-   const parts = context.contextLine.split(/(\{[a-z-]+\})/g);
+   const lines = context.contextLine.split('\n');
 
    return (
-      <p className="flex flex-wrap items-center gap-x-1 text-md-b2 font-medium leading-[1.55] text-md-neutral-900 dark:text-md-neutral-700">
-         {parts.map((part, index) => {
-            const chipId = part.match(/^\{([a-z-]+)\}$/)?.[1];
-            const chip = chipId ? chipMap.get(chipId) : undefined;
-
-            if (chip) {
-               return <BorrowerContextChipView key={`${chip.id}-${index}`} chip={chip} />;
-            }
-
-            return <span key={`${part}-${index}`}>{part.trim()}</span>;
+      <div className="flex flex-col gap-1">
+         {lines.map((line, lineIndex) => {
+            const parts = line.split(/(\{[a-z-]+\})/g);
+            return (
+               <p key={lineIndex} className="flex flex-wrap items-center gap-x-1 text-md-b2 font-medium leading-[1.55] text-md-neutral-900 dark:text-md-neutral-700">
+                  {parts.map((part, partIndex) => {
+                     const chipId = part.match(/^\{([a-z-]+)\}$/)?.[1];
+                     const chip = chipId ? chipMap.get(chipId) : undefined;
+                     if (chip) return <BorrowerContextChipView key={`${chip.id}-${partIndex}`} chip={chip} />;
+                     return part.trim() ? <span key={`${part}-${partIndex}`}>{part.trim()}</span> : null;
+                  })}
+               </p>
+            );
          })}
-      </p>
+      </div>
    );
 }
 
@@ -285,6 +288,7 @@ export default function UserCard(loan: UserCardProps) {
 
    const loanReason = loanData.reason?.trim() ? loanData.reason.trim() : 'Unknown Reason';
    const dueFormatted = format(due, 'MMM dd yyyy');
+   const daysUntilDue = differenceInDays(due, new Date());
    const isOwnLoan = loanData.borrowerUser === userId;
    const isLent = loanData.loanStatus === 'Lent';
    const canDeleteOwnRequest = Boolean(isAuthenticated && isOwnLoan && loanData.loanStatus === 'Requested' && onDeleteOwnRequest);
@@ -372,9 +376,11 @@ export default function UserCard(loan: UserCardProps) {
                   {/* Network Badge */}
                   <img src="/icons/base-account.svg" alt="Base" className="w-6 h-6 rounded-[3.4px]" />
                   {/* Due Date */}
-                  <div className="flex items-center gap-1 text-md-b2 font-semibold">
-                     <span className="text-[#585858]">Due On</span>
-                     <span className="text-md-red-600">{dueFormatted}</span>
+                  <div className="flex items-center gap-1 text-md-b2 font-semibold flex-wrap">
+                     <span className="text-md-red-600">
+                        {daysUntilDue > 0 ? `${daysUntilDue} day${daysUntilDue === 1 ? '' : 's'} until repayment` : 'Repayment due today'}
+                     </span>
+                     <span className="text-[#585858]">· {dueFormatted}</span>
                   </div>
                </div>
 

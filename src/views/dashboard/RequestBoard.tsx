@@ -35,7 +35,7 @@ import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 import { logoImageSrc } from '@/config/navigationConfig';
-import type { BorrowerContextProfileData } from '@/lib/borrowerContextFit';
+import type { BorrowerContextProfileData, BorrowerContextState } from '@/lib/borrowerContextFit';
 import { getBorrowerActiveLoanCount, getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
@@ -942,7 +942,7 @@ function RequestBoard$() {
       effectiveUser?.id
    ]);
 
-   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+   const handleSubmit = async (e: FormEvent<HTMLFormElement>, borrowerContext?: BorrowerContextState) => {
       e.preventDefault();
       if (isSubmitting) return;
 
@@ -1016,8 +1016,18 @@ function RequestBoard$() {
          parsedLoanAmount > 0 &&
          parsedRepaymentAmount >= parsedLoanAmount + 1
       ) {
-         // If borrower hasn't filled in bio yet, show bio step first
+         // If borrower hasn't filled in bio yet, save context from modal or show bio step
          if (!effectiveUser.incomeType) {
+            if (borrowerContext?.incomeSetup && borrowerContext?.paydayWindow && borrowerContext?.cashGaps.length > 0) {
+               pendingLoanDataRef.current = loanData;
+               await handleBioSave({
+                  incomeType: borrowerContext.incomeSetup,
+                  paydayType: borrowerContext.paydayWindow,
+                  gapReasons: borrowerContext.cashGaps,
+                  profession: borrowerContext.profession
+               });
+               return;
+            }
             pendingLoanDataRef.current = loanData;
             setShowBioStep(true);
             return;
@@ -1069,9 +1079,9 @@ function RequestBoard$() {
       }
    };
 
-   const handleBioSave = async (data: { incomeType: string; paydayType: string; gapReasons: string[] }) => {
+   const handleBioSave = async (data: { incomeType: string; paydayType: string; gapReasons: string[]; profession?: string }) => {
       try {
-         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, gapReasons: data.gapReasons })).unwrap();
+         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, gapReasons: data.gapReasons, profession: data.profession })).unwrap();
       } catch (error) {
          console.error('Failed to save borrower context:', error);
       }

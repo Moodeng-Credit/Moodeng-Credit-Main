@@ -14,6 +14,7 @@ export interface BorrowerContextInput {
    paydayStart: number | null;
    paydayEnd: number | null;
    gapReasons: string[];
+   profession?: string;
    /** How many of their loans have been funded (Lent status) */
    fundedLoanCount?: number;
    /** How many of their funded loans were fully repaid */
@@ -22,6 +23,13 @@ export interface BorrowerContextInput {
    goodStanding?: boolean;
    /** Whether this borrower has verified their World ID */
    isVerified?: boolean;
+}
+
+export interface BorrowerContextState {
+   incomeSetup: string;
+   paydayWindow: string;
+   cashGaps: string[];
+   profession?: string;
 }
 
 export interface BorrowerContextChip {
@@ -40,7 +48,7 @@ export interface BorrowerContextResult {
 
 export type BorrowerContextProfileData = Pick<
    BorrowerContextInput,
-   'incomeType' | 'paydayType' | 'paydayStart' | 'paydayEnd' | 'gapReasons'
+   'incomeType' | 'paydayType' | 'paydayStart' | 'paydayEnd' | 'gapReasons' | 'profession'
 >;
 
 // ─── Reason categories for semantic matching ───────────────────────────────
@@ -266,7 +274,9 @@ const buildChips = (input: BorrowerContextInput, dueDate: Date | null, gapDays: 
          id: 'pay',
          label: input.incomeType === 'none'
             ? incomeLabels.none.chip
-            : `${incomeLabels[input.incomeType].chip}, ${paydayLabels[input.paydayType]} pay`,
+            : input.profession?.trim()
+              ? `${input.profession.trim()} · ${incomeLabels[input.incomeType].chip}, ${paydayLabels[input.paydayType]} pay`
+              : `${incomeLabels[input.incomeType].chip}, ${paydayLabels[input.paydayType]} pay`,
          type: 'pay'
       },
       { id: 'money', label: formatMoneyNeed(input.amount, input.reason),             type: 'money' },
@@ -277,7 +287,7 @@ const buildChips = (input: BorrowerContextInput, dueDate: Date | null, gapDays: 
    return chips;
 };
 
-const buildContextLine = (): string => '{name} — {pay} — is requesting {money}, due {date}, with recurring {need}.';
+const buildContextLine = (): string => '{pay}\nrecurring {need}';
 
 // ─── Core verdict builder ──────────────────────────────────────────────────
 // Covers all meaningful combinations of income type × payday type × fit level × track record
@@ -531,6 +541,7 @@ export const normalizeBorrowerContextProfile = (source: unknown): BorrowerContex
       paydayType,
       paydayStart: normalizeDay(getValue(record, ['paydayStart', 'payday_start', 'borrowerPaydayStart', 'borrower_payday_start'])),
       paydayEnd:   normalizeDay(getValue(record, ['paydayEnd',   'payday_end',   'borrowerPaydayEnd',   'borrower_payday_end'])),
-      gapReasons:  normalizeGapReasons(getValue(record, ['gapReasons', 'gap_reasons', 'borrowerGapReasons', 'borrower_gap_reasons']))
+      gapReasons:  normalizeGapReasons(getValue(record, ['gapReasons', 'gap_reasons', 'borrowerGapReasons', 'borrower_gap_reasons'])),
+      profession: (record['profession'] ?? record['borrowerProfession'] ?? record['borrower_profession'] ?? '') as string || undefined,
    };
 };

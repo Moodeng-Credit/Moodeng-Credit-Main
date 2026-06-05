@@ -103,7 +103,8 @@ const inputShellClass =
 const emptyBorrowerContext: BorrowerContextState = {
    incomeSetup: '',
    paydayWindow: '',
-   cashGaps: []
+   cashGaps: [],
+   profession: ''
 };
 
 const incomeSetupOptions: BorrowerContextOption[] = [
@@ -342,7 +343,9 @@ function BorrowerContextLoanStep({
    onPaydaySelect,
    onProfileImageClick,
    onProfileNameChange,
+   onProfessionChange,
    profileName,
+   profession,
    profileSaveError
 }: {
    context: BorrowerContextState;
@@ -357,7 +360,9 @@ function BorrowerContextLoanStep({
    onPaydaySelect: (value: string) => void;
    onProfileImageClick: () => void;
    onProfileNameChange: (value: string) => void;
+   onProfessionChange: (value: string) => void;
    profileName: string;
+   profession: string;
    profileSaveError: string;
 }) {
    const canContinue = Boolean(context.incomeSetup && context.paydayWindow && context.cashGaps.length > 0);
@@ -414,6 +419,21 @@ function BorrowerContextLoanStep({
                   <span className="shrink-0">{profileName.length}/30</span>
                </span>
                {profileSaveError ? <span className="text-md-b3 font-medium leading-[18px] text-md-red-500">{profileSaveError}</span> : null}
+            </label>
+
+            <label className="mt-md-2 flex flex-col gap-md-1">
+               <span className="text-md-b2 font-[590] text-md-heading">Your profession</span>
+               <input
+                  className="min-h-[48px] rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b1 font-normal text-md-heading shadow-md-card placeholder:text-md-neutral-1200 focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
+                  maxLength={50}
+                  onChange={(event) => onProfessionChange(event.target.value)}
+                  placeholder="e.g. Nurse, Teacher, Software Engineer"
+                  type="text"
+                  value={profession}
+               />
+               <span className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                  Helps lenders understand your income context. Optional.
+               </span>
             </label>
          </section>
 
@@ -1248,6 +1268,8 @@ export default function LoanRequestModal({
                         onContinue={handleBorrowerContextContinue}
                         onIncomeSelect={(value) => setBorrowerContext((current) => ({ ...current, incomeSetup: value }))}
                         onPaydaySelect={(value) => setBorrowerContext((current) => ({ ...current, paydayWindow: value }))}
+                        onProfessionChange={(value) => setBorrowerContext((prev) => ({ ...prev, profession: value }))}
+                        profession={borrowerContext.profession ?? ''}
                         onProfileImageClick={() => setShowBorrowerAvatarModal(true)}
                         onProfileNameChange={(value) => {
                            setBorrowerProfileName(value);
