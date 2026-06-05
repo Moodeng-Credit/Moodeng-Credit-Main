@@ -43,6 +43,7 @@ import OnboardingWelcome from '@/app/onboarding/welcome/page';
 import Home from '@/app/page';
 import Profile from '@/app/profile/page';
 import PrivacyPage from '@/app/privacy/page';
+import PrivacyPolicyPage from '@/app/privacy-policy/page';
 import ResetPassword from '@/app/reset-password/page';
 import RoleSelection from '@/app/role-selection/page';
 import SignUp from '@/app/signup/page';
@@ -426,6 +427,7 @@ export default function App() {
             {/* Public */}
             <Route path="/faq" element={<Navigate to="/support/faq" replace />} />
             <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route
                path="/academy"
