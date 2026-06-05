@@ -104,7 +104,9 @@ const emptyBorrowerContext: BorrowerContextState = {
    incomeSetup: '',
    paydayWindow: '',
    cashGaps: [],
-   profession: ''
+   profession: '',
+   location: '',
+   otherIncome: ''
 };
 
 const incomeSetupOptions: BorrowerContextOption[] = [
@@ -151,6 +153,37 @@ const cashGapOptions: BorrowerContextMultiOption[] = [
    { label: 'Emergency costs', value: 'emergency_costs', icon: TriangleAlert },
    { label: 'Work supplies', value: 'work_supplies', icon: Briefcase }
 ];
+
+// Maps the modal's bio-step option values to the canonical types used by borrowerContextFit
+const INCOME_SETUP_TO_TYPE: Record<string, string> = {
+   full_time:    'full-time',
+   self_employed: 'freelance',
+   irregular:    'none',
+   contract:     'part-time'
+};
+
+type PaydayConfig = { type: string; start: number | null; end: number | null };
+const PAYDAY_WINDOW_TO_CONFIG: Record<string, PaydayConfig> = {
+   '1_5':   { type: 'mid-month',    start: 1,    end: 5   },
+   '10_15': { type: 'mid-month',    start: 10,   end: 15  },
+   '15_20': { type: 'mid-month',    start: 15,   end: 20  },
+   '25_30': { type: 'end-of-month', start: 25,   end: 30  },
+   varies:  { type: 'irregular',    start: null, end: null }
+};
+
+export const mapBorrowerContextForSave = (ctx: BorrowerContextState) => {
+   const payday = PAYDAY_WINDOW_TO_CONFIG[ctx.paydayWindow];
+   return {
+      incomeType:  INCOME_SETUP_TO_TYPE[ctx.incomeSetup]  ?? ctx.incomeSetup,
+      paydayType:  payday?.type  ?? ctx.paydayWindow,
+      paydayStart: payday?.start ?? null,
+      paydayEnd:   payday?.end   ?? null,
+      gapReasons:  ctx.cashGaps,
+      profession:  ctx.profession,
+      location:    ctx.location,
+      otherIncome: ctx.otherIncome
+   };
+};
 
 type TooltipId = 'terms' | 'limit' | 'usdc';
 
@@ -344,8 +377,12 @@ function BorrowerContextLoanStep({
    onProfileImageClick,
    onProfileNameChange,
    onProfessionChange,
+   onLocationChange,
+   onOtherIncomeChange,
    profileName,
    profession,
+   location,
+   otherIncome,
    profileSaveError
 }: {
    context: BorrowerContextState;
@@ -361,8 +398,12 @@ function BorrowerContextLoanStep({
    onProfileImageClick: () => void;
    onProfileNameChange: (value: string) => void;
    onProfessionChange: (value: string) => void;
+   onLocationChange: (v: string) => void;
+   onOtherIncomeChange: (v: string) => void;
    profileName: string;
    profession: string;
+   location: string;
+   otherIncome: string;
    profileSaveError: string;
 }) {
    const canContinue = Boolean(context.incomeSetup && context.paydayWindow && context.cashGaps.length > 0);
@@ -434,6 +475,32 @@ function BorrowerContextLoanStep({
                <span className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
                   Helps lenders understand your income context. Optional.
                </span>
+            </label>
+
+            <label className="mt-md-2 flex flex-col gap-md-1">
+               <span className="text-md-b2 font-[590] text-md-heading">Where are you based?</span>
+               <input
+                  className="min-h-[48px] rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b1 font-normal text-md-heading shadow-md-card placeholder:text-md-neutral-1200 focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
+                  maxLength={60}
+                  onChange={(event) => onLocationChange(event.target.value)}
+                  placeholder="e.g. Lagos, London, New York"
+                  type="text"
+                  value={location}
+               />
+               <span className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">Optional — helps lenders understand your context.</span>
+            </label>
+
+            <label className="mt-md-2 flex flex-col gap-md-1">
+               <span className="text-md-b2 font-[590] text-md-heading">Other income sources</span>
+               <input
+                  className="min-h-[48px] rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b1 font-normal text-md-heading shadow-md-card placeholder:text-md-neutral-1200 focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
+                  maxLength={80}
+                  onChange={(event) => onOtherIncomeChange(event.target.value)}
+                  placeholder="e.g. weekend tutoring, rental income"
+                  type="text"
+                  value={otherIncome}
+               />
+               <span className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">Optional — any side income or additional earnings.</span>
             </label>
          </section>
 
@@ -1032,7 +1099,8 @@ export default function LoanRequestModal({
       if (!isProfileSaved) return;
 
       setBorrowerContextPromptSeen(true);
-      formRef.current?.requestSubmit();
+      // Call handleLoanFormSubmit directly — requestSubmit() is unreliable on older iOS Safari
+      handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
    };
 
    const handleBorrowerContextBack = () => {
@@ -1269,7 +1337,11 @@ export default function LoanRequestModal({
                         onIncomeSelect={(value) => setBorrowerContext((current) => ({ ...current, incomeSetup: value }))}
                         onPaydaySelect={(value) => setBorrowerContext((current) => ({ ...current, paydayWindow: value }))}
                         onProfessionChange={(value) => setBorrowerContext((prev) => ({ ...prev, profession: value }))}
+                        onLocationChange={(v) => setBorrowerContext((prev) => ({ ...prev, location: v }))}
+                        onOtherIncomeChange={(v) => setBorrowerContext((prev) => ({ ...prev, otherIncome: v }))}
                         profession={borrowerContext.profession ?? ''}
+                        location={borrowerContext.location ?? ''}
+                        otherIncome={borrowerContext.otherIncome ?? ''}
                         onProfileImageClick={() => setShowBorrowerAvatarModal(true)}
                         onProfileNameChange={(value) => {
                            setBorrowerProfileName(value);

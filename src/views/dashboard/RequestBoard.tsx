@@ -57,7 +57,7 @@ import type { User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import { type CreateLoanData, type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
-import LoanRequestModal, { type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
+import LoanRequestModal, { mapBorrowerContextForSave, type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
@@ -1020,11 +1020,16 @@ function RequestBoard$() {
          if (!effectiveUser.incomeType) {
             if (borrowerContext?.incomeSetup && borrowerContext?.paydayWindow && borrowerContext?.cashGaps.length > 0) {
                pendingLoanDataRef.current = loanData;
+               const mapped = mapBorrowerContextForSave(borrowerContext);
                await handleBioSave({
-                  incomeType: borrowerContext.incomeSetup,
-                  paydayType: borrowerContext.paydayWindow,
-                  gapReasons: borrowerContext.cashGaps,
-                  profession: borrowerContext.profession
+                  incomeType:  mapped.incomeType,
+                  paydayType:  mapped.paydayType,
+                  paydayStart: mapped.paydayStart,
+                  paydayEnd:   mapped.paydayEnd,
+                  gapReasons:  mapped.gapReasons,
+                  profession:  mapped.profession,
+                  location:    mapped.location,
+                  otherIncome: mapped.otherIncome
                });
                return;
             }
@@ -1079,9 +1084,9 @@ function RequestBoard$() {
       }
    };
 
-   const handleBioSave = async (data: { incomeType: string; paydayType: string; gapReasons: string[]; profession?: string }) => {
+   const handleBioSave = async (data: { incomeType: string; paydayType: string; gapReasons: string[]; profession?: string; location?: string; otherIncome?: string }) => {
       try {
-         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, gapReasons: data.gapReasons, profession: data.profession })).unwrap();
+         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, gapReasons: data.gapReasons, profession: data.profession, location: data.location, otherIncome: data.otherIncome })).unwrap();
       } catch (error) {
          console.error('Failed to save borrower context:', error);
       }
