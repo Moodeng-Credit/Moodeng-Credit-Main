@@ -173,12 +173,13 @@ interface TransactionRowProps {
    loan: Loan;
    borrowerAvatar?: string;
    borrowerName: string;
+   onClick: () => void;
 }
 
-function TransactionRow({ loan, borrowerAvatar, borrowerName }: TransactionRowProps) {
+function TransactionRow({ loan, borrowerAvatar, borrowerName, onClick }: TransactionRowProps) {
    const status = getLoanDisplayStatus(loan);
    return (
-      <div className="bg-md-neutral-100 rounded-md-lg px-4 py-3 flex items-center gap-3 shadow-md-card">
+      <button type="button" onClick={onClick} className="w-full text-left bg-md-neutral-100 rounded-md-lg px-4 py-3 flex items-center gap-3 shadow-md-card">
          {/* Borrower avatar */}
          <UserAvatar src={borrowerAvatar} alt={borrowerName} size={40} />
 
@@ -197,7 +198,7 @@ function TransactionRow({ loan, borrowerAvatar, borrowerName }: TransactionRowPr
             <span className="text-md-b1 font-semibold text-md-heading">{formatCurrency(loan.loanAmount)}</span>
             <StatusChip status={status} />
          </div>
-      </div>
+      </button>
    );
 }
 
@@ -546,6 +547,7 @@ export default function LenderDashboard() {
                               loan={loan}
                               borrowerAvatar={userProfiles[loan.borrowerUser ?? '']?.avatarUrl}
                               borrowerName={userProfiles[loan.borrowerUser ?? '']?.username ?? 'Unknown'}
+                              onClick={() => navigate(`/history/${loan.id}`)}
                            />
                         ))}
                      </div>
