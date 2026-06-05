@@ -91,7 +91,7 @@ interface TransactionRowProps {
    variant: 'lender' | 'borrower';
    showOutOf: boolean;
    showBadge: boolean;
-   onClick?: () => void;
+   onClick: () => void;
 }
 
 function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, showOutOf, showBadge, onClick }: TransactionRowProps) {
@@ -126,14 +126,11 @@ function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, s
       </div>
    );
 
-   if (onClick) {
-      return (
-         <button type="button" onClick={onClick} className="w-full text-left">
-            {Content}
-         </button>
-      );
-   }
-   return Content;
+   return (
+      <button type="button" onClick={onClick} className="w-full text-left">
+         {Content}
+      </button>
+   );
 }
 
 interface FilterModalProps {
@@ -446,7 +443,7 @@ export default function TransactionHistory() {
                                  variant={isBorrower ? 'borrower' : 'lender'}
                                  showOutOf={activeTab === 'all'}
                                  showBadge={isBorrower || activeTab !== 'all'}
-                                 onClick={isBorrower ? () => navigate(`/history/${loan.id}`) : undefined}
+                                 onClick={() => navigate(`/history/${loan.id}`)}
                               />
                               {i < visibleLoans.length - 1 ? <div className="h-px bg-md-neutral-300 mt-md-4" /> : null}
                            </div>
