@@ -128,34 +128,50 @@ const PREVIEW_REQUEST_BOARD_BORROWER_USERNAMES: Record<string, string> = {
 
 const PREVIEW_REQUEST_BOARD_BORROWER_CONTEXTS: Record<string, BorrowerContextProfileData> = {
    'request-board-preview-borrower-maya': {
-      incomeType: 'full-time',
-      paydayType: 'weekly',
-      paydayStart: 1,
-      paydayEnd: 7,
-      gapReasons: ['family needs']
+      incomeType:      'full-time',
+      paydayType:      'end-of-month',
+      paydayStart:     25,
+      paydayEnd:       30,
+      gapReasons:      ['bills_before_payday', 'transport'],
+      monthlyIncome:   '200_400',
+      monthlyExpenses: '50_150',
+      profession:      'teacher',
+      otherIncome:     'tutor'
    },
    'request-board-preview-borrower-jordan': {
-      incomeType: 'part-time',
-      paydayType: 'mid-month',
-      paydayStart: 10,
-      paydayEnd: 15,
-      gapReasons: ['medicine', 'bills']
+      incomeType:      'part-time',
+      paydayType:      'mid-month',
+      paydayStart:     10,
+      paydayEnd:       15,
+      gapReasons:      ['medical', 'family_needs'],
+      monthlyIncome:   'under_200',
+      monthlyExpenses: 'under_50',
+      profession:      'market vendor',
+      otherIncome:     'domestic work'
    },
    'request-board-preview-borrower-ana': {
-      incomeType: 'freelance',
-      paydayType: 'irregular',
-      paydayStart: null,
-      paydayEnd: null,
-      gapReasons: ['payday bridge', 'transport']
+      incomeType:      'freelance',
+      paydayType:      'irregular',
+      paydayStart:     null,
+      paydayEnd:       null,
+      gapReasons:      ['bills_before_payday', 'transport'],
+      monthlyIncome:   '400_700',
+      monthlyExpenses: '150_300',
+      profession:      'graphic designer',
+      otherIncome:     'online sales'
    }
 };
 
 const LENDER_TOUR_BORROWER_CONTEXT: BorrowerContextProfileData = {
-   incomeType: 'full-time',
-   paydayType: 'weekly',
-   paydayStart: 1,
-   paydayEnd: 7,
-   gapReasons: ['family needs']
+   incomeType:      'full-time',
+   paydayType:      'end-of-month',
+   paydayStart:     25,
+   paydayEnd:       30,
+   gapReasons:      ['bills_before_payday', 'transport'],
+   monthlyIncome:   '200_400',
+   monthlyExpenses: '50_150',
+   profession:      'teacher',
+   otherIncome:     'tutor'
 };
 
 const buildPreviewRequestBoardLoan = ({
@@ -206,30 +222,30 @@ const buildPreviewRequestBoardLoans = (): Loan[] => [
       trackingId: 'PREVIEW-REQ-001',
       borrowerUser: 'request-board-preview-borrower-maya',
       borrowerWallet: '0x71c4000000000000000000000000000000009d42',
-      loanAmount: 15,
-      totalRepaymentAmount: 17,
-      reason: 'Emergency groceries',
-      dueInDays: 7
+      loanAmount: 20,
+      totalRepaymentAmount: 23,
+      reason: 'Groceries and transport for the week',
+      dueInDays: 14
    }),
    buildPreviewRequestBoardLoan({
       id: 'request-board-preview-loan-2',
       trackingId: 'PREVIEW-REQ-002',
       borrowerUser: 'request-board-preview-borrower-jordan',
       borrowerWallet: '0x71c4000000000000000000000000000000009d43',
-      loanAmount: 25,
-      totalRepaymentAmount: 28,
-      reason: 'Medicine refill',
-      dueInDays: 14
+      loanAmount: 15,
+      totalRepaymentAmount: 17,
+      reason: 'Medicine and school fees this week',
+      dueInDays: 10
    }),
    buildPreviewRequestBoardLoan({
       id: 'request-board-preview-loan-3',
       trackingId: 'PREVIEW-REQ-003',
       borrowerUser: 'request-board-preview-borrower-ana',
       borrowerWallet: '0x71c4000000000000000000000000000000009d44',
-      loanAmount: 40,
-      totalRepaymentAmount: 45,
-      reason: 'Payday bridge',
-      dueInDays: 30
+      loanAmount: 30,
+      totalRepaymentAmount: 34,
+      reason: 'Bills and transport while waiting on a client payment',
+      dueInDays: 21
    })
 ];
 
@@ -1028,7 +1044,9 @@ function RequestBoard$() {
                   paydayEnd:       mapped.paydayEnd,
                   gapReasons:      mapped.gapReasons,
                   monthlyIncome:   mapped.monthlyIncome,
-                  monthlyExpenses: mapped.monthlyExpenses
+                  monthlyExpenses: mapped.monthlyExpenses,
+                  otherIncome:     mapped.otherIncome,
+                  profession:      mapped.profession
                });
                return;
             }
@@ -1083,9 +1101,9 @@ function RequestBoard$() {
       }
    };
 
-   const handleBioSave = async (data: { incomeType: string; paydayType: string; paydayStart?: number | null; paydayEnd?: number | null; gapReasons: string[]; monthlyIncome?: string; monthlyExpenses?: string }) => {
+   const handleBioSave = async (data: { incomeType: string; paydayType: string; paydayStart?: number | null; paydayEnd?: number | null; gapReasons: string[]; monthlyIncome?: string; monthlyExpenses?: string; otherIncome?: string; profession?: string }) => {
       try {
-         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, paydayStart: data.paydayStart, paydayEnd: data.paydayEnd, gapReasons: data.gapReasons, monthlyIncome: data.monthlyIncome, monthlyExpenses: data.monthlyExpenses })).unwrap();
+         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, paydayStart: data.paydayStart, paydayEnd: data.paydayEnd, gapReasons: data.gapReasons, monthlyIncome: data.monthlyIncome, monthlyExpenses: data.monthlyExpenses, otherIncome: data.otherIncome, profession: data.profession })).unwrap();
       } catch (error) {
          console.error('Failed to save borrower context:', error);
       }

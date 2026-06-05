@@ -16,6 +16,8 @@ export interface BorrowerContextInput {
    gapReasons: string[];
    monthlyIncome?: string;
    monthlyExpenses?: string;
+   otherIncome?: string;
+   profession?: string;
    /** How many of their loans have been funded (Lent status) */
    fundedLoanCount?: number;
    /** How many of their funded loans were fully repaid */
@@ -32,6 +34,8 @@ export interface BorrowerContextState {
    cashGaps: string[];
    monthlyIncome?: string;
    monthlyExpenses?: string;
+   otherIncome?: string;
+   profession?: string;
 }
 
 export interface BorrowerContextChip {
@@ -51,7 +55,7 @@ export interface BorrowerContextResult {
 
 export type BorrowerContextProfileData = Pick<
    BorrowerContextInput,
-   'incomeType' | 'paydayType' | 'paydayStart' | 'paydayEnd' | 'gapReasons' | 'monthlyIncome' | 'monthlyExpenses'
+   'incomeType' | 'paydayType' | 'paydayStart' | 'paydayEnd' | 'gapReasons' | 'monthlyIncome' | 'monthlyExpenses' | 'otherIncome' | 'profession'
 >;
 
 // ─── Reason categories for semantic matching ───────────────────────────────
@@ -161,6 +165,61 @@ const getFitLevel = (input: BorrowerContextInput, gapDays: number | null): Borro
    if (daysAfterWindow >= 1 && daysAfterWindow <= 7) return 'strong';
    return 'weak';
 };
+
+// ─── Bio field value → display label mappings ─────────────────────────────
+// Values stored in DB are slugs (e.g. '200_400'); these map them to readable text.
+
+const MONTHLY_INCOME_LABELS: Record<string, string> = {
+   under_200: 'under $200',
+   '200_400': '$200–$400',
+   '400_700': '$400–$700',
+   '700_plus': 'over $700',
+};
+
+const MONTHLY_EXPENSES_LABELS: Record<string, string> = {
+   under_50:   'under $50',
+   '50_150':   '$50–$150',
+   '150_300':  '$150–$300',
+   '300_plus': 'over $300',
+};
+
+const GAP_REASON_LABELS: Record<string, string> = {
+   gap_before_payday:  '',               // meta — skip in expense list
+   bills_before_payday:'bills',
+   family_needs:       'family needs',
+   transport:          'transport',
+   medical:            'medical',
+   emergency_costs:    'emergency costs',
+   work_supplies:      'work supplies',
+   // pass-through for legacy free-text values
+};
+
+const resolveMonthlyIncome   = (v: string | undefined): string | undefined =>
+   v ? (MONTHLY_INCOME_LABELS[v]   ?? v) || undefined : undefined;
+
+const resolveMonthlyExpenses = (v: string | undefined): string | undefined =>
+   v ? (MONTHLY_EXPENSES_LABELS[v] ?? v) || undefined : undefined;
+
+const resolveGapReasons = (values: string[]): string[] =>
+   values
+      .map((v) => GAP_REASON_LABELS[v] ?? v)   // map slug → label (pass unknown through)
+      .filter(Boolean);                          // drop empty strings (e.g. gap_before_payday)
+
+/** Strip leading articles/sentences, normalise case for use after "being a ___" */
+const sanitizeJobTitle = (raw: string): string => {
+   let s = raw.trim();
+   if (!s) return '';
+   // strip common sentence prefixes people might type
+   s = s.replace(/^(i am an? |i'?m an? |i work as an? |works? as an? |also |an? |the )/i, '');
+   s = s.trim();
+   if (!s) return '';
+   // fully lowercase — job titles sit mid-sentence
+   return s.toLowerCase();
+};
+
+/** Returns "a" or "an" based on the first letter of the word */
+const indefiniteArticle = (word: string): string =>
+   /^[aeiou]/i.test(word.trim()) ? 'an' : 'a';
 
 // ─── Formatting helpers ────────────────────────────────────────────────────
 
@@ -380,57 +439,91 @@ const buildParagraphText = (
    dueDate: Date | null,
    loanDurationDays: number | null
 ): string => {
-   const parts: string[] = [];
    const name = normalizeText(input.borrowerName) ?? 'This borrower';
+
+   // ── Opening: responsible person, small ask ──
+   const incomeRange = input.monthlyIncome ? ` ~${input.monthlyIncome}/mo` : '';
+   const paydayDesc = input.paydayType === 'weekly'      ? ' (paid weekly)'
+      : input.paydayType === 'mid-month'                 ? ' (paid mid-month)'
+      : input.paydayType === 'end-of-month'              ? ' (paid end of the month)'
+      : '';
+
+   const resolvedGapReasons = resolveGapReasons(input.gapReasons);
+   const costList = resolvedGapReasons.length > 0
+      ? formatNaturalList(resolvedGapReasons, 'their expenses')
+      : null;
+   const resolvedIncome   = resolveMonthlyIncome(input.monthlyIncome);
+   const resolvedExpenses = resolveMonthlyExpenses(input.monthlyExpenses);
+
+   const otherIncome = sanitizeJobTitle(input.otherIncome ?? '');
+   const profession  = sanitizeJobTitle(input.profession  ?? '');
+
+   const bioParts: string[] = [];
 
    if (input.incomeType !== 'none') {
       const incomeAdj = input.incomeType === 'full-time' ? 'stable'
          : input.incomeType === 'part-time' ? 'regular'
          : 'project-based';
-      const profession = input.profession?.trim();
-      const otherIncome = input.otherIncome?.trim();
-      let incomeSentence = `Borrower (${name}) demonstrates ${incomeAdj} income`;
+      const incomeAmountNote = resolvedIncome
+         ? ` (${resolvedIncome}${paydayDesc ? ', ' + paydayDesc.replace(/[()]/g, '').trim() : ''})`
+         : paydayDesc;
+
+      let incomeSentence = `${name} demonstrates ${incomeAdj} income${incomeAmountNote}`;
       if (profession) {
-         incomeSentence += ` from being a ${profession} as main source of income`;
-         if (otherIncome) incomeSentence += ` and a ${otherIncome} as other source of income`;
+         const profArticle = indefiniteArticle(profession);
+         incomeSentence += ` from being ${profArticle} ${profession} as main source of income`;
+         if (otherIncome) incomeSentence += `, with ${otherIncome} as other source of income`;
+      } else if (otherIncome) {
+         incomeSentence += `, with ${otherIncome} on the side`;
       }
-      parts.push(incomeSentence + '.');
+      bioParts.push(incomeSentence + '.');
+
+      if (costList) {
+         if (resolvedExpenses) {
+            bioParts.push(`Spends ${resolvedExpenses} a month on ${costList}.`);
+         } else {
+            bioParts.push(`Covers ${costList} each month.`);
+         }
+      }
    } else {
-      parts.push(`Borrower (${name}).`);
+      const need = costList ? `cover ${costList}` : 'cover essentials';
+      bioParts.push(`${name} needs ${formatAmount(input.amount)} to ${need} this cycle.`);
    }
 
-   if (input.monthlyIncome) {
-      parts.push(`Earns around ${input.monthlyIncome} per month.`);
-   }
-
-   if (input.gapReasons.length > 0) {
-      const costList = formatNaturalList(input.gapReasons, 'general needs');
-      const expensesSuffix = input.monthlyExpenses ? ` (around ${input.monthlyExpenses}/month)` : '';
-      parts.push(`Recurring expenses include ${costList}${expensesSuffix}.`);
-   }
-
+   // ── Trust line: history + verification ──
+   const factLines: string[] = [];
    const repaid = input.repaidLoanCount ?? input.fundedLoanCount;
+   const verifiedNote = input.isVerified ? ' · World ID verified' : '';
+
    if (repaid === undefined || repaid === 0) {
-      parts.push('First loan on Moodeng ——— no prior history.');
+      factLines.push(`First time trusting this community${verifiedNote}.`);
    } else if (repaid === 1) {
-      parts.push('Repaid 1 loan on Moodeng.');
+      factLines.push(`Already repaid 1 loan — they follow through${verifiedNote}.`);
+   } else if (repaid <= 4) {
+      factLines.push(`Repaid ${repaid} loans and always came back${verifiedNote}.`);
    } else {
-      parts.push(`Repaid ${repaid} loans on Moodeng.`);
+      factLines.push(`${repaid} loans repaid — one of the community's reliable borrowers${verifiedNote}.`);
    }
 
+   // ── Repayment: frame it as reassuring ──
    if (dueDate) {
       const dueLabel = formatDateLabel(dueDate);
-      const durationNote = loanDurationDays ? ` (${loanDurationDays}-day loan)` : '';
+      const durationNote = loanDurationDays ? ` · ${loanDurationDays}-day loan` : '';
       if (gapDays !== null) {
          const absGap = Math.abs(gapDays);
-         const directionLabel = gapDays < 0 ? 'before payday' : gapDays === 0 ? 'on payday' : 'after payday';
-         parts.push(`Repayment: ${absGap} days ${directionLabel} at ${dueLabel}${durationNote}.`);
+         if (gapDays > 0) {
+            factLines.push(`Paycheck lands ${absGap} days before repayment — income in hand first (${dueLabel}${durationNote}).`);
+         } else if (gapDays === 0) {
+            factLines.push(`Repayment right on payday (${dueLabel}${durationNote}).`);
+         } else {
+            factLines.push(`Due ${dueLabel}${durationNote} — ${absGap} days before their next paycheck.`);
+         }
       } else {
-         parts.push(`Due ${dueLabel}${durationNote}.`);
+         factLines.push(`Due ${dueLabel}${durationNote}.`);
       }
    }
 
-   return parts.join('\n');
+   return [bioParts.join(' '), ...factLines].join('\n');
 };
 
 // ─── Neutral result builder ────────────────────────────────────────────────
@@ -619,6 +712,8 @@ export const normalizeBorrowerContextProfile = (source: unknown): BorrowerContex
       paydayEnd:       normalizeDay(getValue(record, ['paydayEnd',   'payday_end',   'borrowerPaydayEnd',   'borrower_payday_end'])),
       gapReasons:      normalizeGapReasons(getValue(record, ['gapReasons', 'gap_reasons', 'borrowerGapReasons', 'borrower_gap_reasons'])),
       monthlyIncome:   (record['monthlyIncome']   ?? record['monthly_income']   ?? '') as string || undefined,
-      monthlyExpenses: (record['monthlyExpenses'] ?? record['monthly_expenses'] ?? '') as string || undefined
+      monthlyExpenses: (record['monthlyExpenses'] ?? record['monthly_expenses'] ?? '') as string || undefined,
+      otherIncome:     (record['otherIncome']     ?? record['other_income']     ?? '') as string || undefined,
+      profession:      (record['profession']      ?? '') as string || undefined
    };
 };
