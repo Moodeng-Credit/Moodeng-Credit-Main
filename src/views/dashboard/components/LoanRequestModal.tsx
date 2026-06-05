@@ -1132,15 +1132,25 @@ export default function LoanRequestModal({
       handleSubmit(event, showBorrowerContextStep ? borrowerContext : undefined);
    };
 
+   // Synchronous guard — prevents double-tap on "Save bio info" from firing twice
+   // before isSavingProfile state has a chance to re-render and disable the button.
+   const isBioSubmittingRef = useRef(false);
+
    const handleBorrowerContextContinue = async () => {
       if (!canContinueBorrowerContext) return;
+      if (isBioSubmittingRef.current) return;
+      isBioSubmittingRef.current = true;
 
-      const isProfileSaved = await saveBorrowerProfile();
-      if (!isProfileSaved) return;
+      try {
+         const isProfileSaved = await saveBorrowerProfile();
+         if (!isProfileSaved) return;
 
-      setBorrowerContextPromptSeen(true);
-      // Call handleLoanFormSubmit directly — requestSubmit() silently fails on older iOS Safari
-      handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
+         setBorrowerContextPromptSeen(true);
+         // Call handleLoanFormSubmit directly — requestSubmit() silently fails on older iOS Safari
+         handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
+      } finally {
+         isBioSubmittingRef.current = false;
+      }
    };
 
    const handleBorrowerContextBack = () => {

@@ -347,6 +347,9 @@ function RequestBoard$() {
    const [showPurple, setShowPurple] = useState(false);
    const [showBioStep, setShowBioStep] = useState(false);
    const [isSubmitting, setIsSubmitting] = useState(false);
+   // Synchronous guard — prevents a second click from slipping through before
+   // setIsSubmitting(true) has a chance to re-render and disable the button.
+   const isSubmittingRef = useRef(false);
    const [showFilters, setShowFilters] = useState(false);
    const [showLenderNote, setShowLenderNote] = useState(false);
    const [showPublicQuestions, setShowPublicQuestions] = useState(false);
@@ -960,8 +963,12 @@ function RequestBoard$() {
 
    const handleSubmit = async (e: FormEvent<HTMLFormElement>, borrowerContext?: import('@/lib/borrowerContextFit').BorrowerContextState) => {
       e.preventDefault();
-      if (isSubmitting) return;
+      // Check the ref first — it updates synchronously, unlike state which waits for a re-render.
+      // This closes the window where a second click can slip through while the first is in-flight.
+      if (isSubmittingRef.current || isSubmitting) return;
+      isSubmittingRef.current = true;
 
+      try {
       const borrowerWallet = effectiveUser.walletAddress?.trim();
       const trimmedReason = reason.trim();
       const parsedLoanAmount = Number.parseFloat(loanAmount);
@@ -1057,6 +1064,11 @@ function RequestBoard$() {
 
          await doCreateLoan(loanData);
       }
+      } finally {
+         // Always release the synchronous guard when handleSubmit finishes.
+         // doCreateLoan manages isSubmitting state separately for the loading UI.
+         isSubmittingRef.current = false;
+      }
    };
 
    const doCreateLoan = async (loanData: CreateLoanData) => {
@@ -1098,6 +1110,7 @@ function RequestBoard$() {
          );
       } finally {
          setIsSubmitting(false);
+         isSubmittingRef.current = false;
       }
    };
 
