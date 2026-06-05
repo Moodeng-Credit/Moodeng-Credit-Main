@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Moodeng Credit</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #F9F8FA;
+      color: #040033;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    main {
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+
+    @media (min-width: 640px) {
+      main { padding: 48px 24px; }
+    }
+
+    .container {
+      max-width: 768px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    /* Header block */
+    .header {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .back-link {
+      width: fit-content;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #8336F0;
+      text-decoration: none;
+    }
+
+    .back-link:hover { text-decoration: underline; }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: #70617F;
+    }
+
+    h1 {
+      font-size: 34px;
+      font-weight: 590;
+      line-height: 1.2;
+      letter-spacing: -0.04em;
+      color: #040033;
+    }
+
+    .intro {
+      max-width: 672px;
+      font-size: 16px;
+      line-height: 24px;
+      letter-spacing: -0.02em;
+      color: #4D4359;
+    }
+
+    .date {
+      font-size: 14px;
+      line-height: 20px;
+      letter-spacing: -0.02em;
+      color: #70617F;
+    }
+
+    /* Card */
+    .card {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-radius: 20px;
+      border: 1px solid #F2F0F5;
+      background: #FDFBFD;
+      box-shadow: 0px 2px 4px rgba(27, 28, 29, 0.04);
+    }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 20px;
+      border-top: 1px solid #F2F0F5;
+    }
+
+    .section:first-child { border-top: none; }
+
+    @media (min-width: 640px) {
+      .section { padding: 20px 24px; }
+    }
+
+    .section h2 {
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.04em;
+      color: #040033;
+    }
+
+    .section p {
+      font-size: 16px;
+      line-height: 24px;
+      letter-spacing: -0.02em;
+      color: #4D4359;
+    }
+
+    .section ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .section ul li {
+      font-size: 16px;
+      line-height: 24px;
+      letter-spacing: -0.02em;
+      color: #4D4359;
+      padding-left: 16px;
+      position: relative;
+    }
+
+    .section ul li::before {
+      content: '·';
+      position: absolute;
+      left: 4px;
+      color: #914cf2;
+      font-weight: 700;
+    }
+
+    .section a {
+      color: #6010D2;
+      text-decoration: none;
+    }
+
+    .section a:hover { text-decoration: underline; }
+
+    .section .sub-label {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #040033;
+      margin-top: 8px;
+    }
+
+    .section .sub-label:first-child { margin-top: 0; }
+
+    /* Plaid note / highlight row */
+    .highlight-row {
+      background: #F1E9FD;
+      border-top: 1px solid #D6BCFA;
+    }
+
+    .highlight-row h2 { color: #250650; }
+    .highlight-row p, .highlight-row ul li { color: #250650; }
+    .highlight-row ul li::before { color: #6010D2; }
+
+    /* Bottom CTA */
+    .cta {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border-radius: 16px;
+      border: 1px solid #D6BCFA;
+      background: #F1E9FD;
+      padding: 16px 20px;
+    }
+
+    @media (min-width: 640px) {
+      .cta {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 24px;
+      }
+    }
+
+    .cta p {
+      font-size: 14px;
+      line-height: 20px;
+      letter-spacing: -0.02em;
+      color: #250650;
+    }
+
+    .cta a {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #6010D2;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .cta a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<main>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <a href="https://moodeng.credit" class="back-link">← Back to Moodeng Credit</a>
+      <div class="title-block">
+        <p class="eyebrow">Privacy</p>
+        <h1>Privacy Policy</h1>
+        <p class="intro">The short version: Moodeng uses account, wallet, repayment, and financial information to run the platform, prevent fraud, and make borrower history useful to lenders.</p>
+        <p class="date">Last updated: June 2026</p>
+      </div>
+    </div>
+
+    <!-- Sections card -->
+    <div class="card">
+
+      <div class="section">
+        <h2>Introduction</h2>
+        <p>Moodeng Credit ("Moodeng", "we", "our", or "us") respects your privacy and is committed to protecting your personal information. This Privacy Policy explains how we collect, use, store, share, and protect information when you use the Moodeng Credit platform — including our website, mobile applications, lending marketplace, identity verification services, and related products.</p>
+        <p>By using Moodeng Credit, you consent to the collection and processing of information described in this Privacy Policy.</p>
+      </div>
+
+      <div class="section">
+        <h2>Information we collect</h2>
+        <p class="sub-label">Information you provide</p>
+        <ul>
+          <li>Full name, email address, phone number, and date of birth</li>
+          <li>Government-issued identification information</li>
+          <li>Wallet addresses and account credentials</li>
+          <li>Profile information, loan applications, and borrower context</li>
+          <li>Communications with support</li>
+        </ul>
+        <p class="sub-label">Identity verification</p>
+        <ul>
+          <li>Government ID documents and selfie verification images</li>
+          <li>Biometric verification results and identity verification records</li>
+          <li>AML and sanctions screening results</li>
+        </ul>
+        <p class="sub-label">Financial information</p>
+        <ul>
+          <li>Bank account information and Plaid-connected account data</li>
+          <li>Transaction history, income information, and repayment history</li>
+          <li>Loan performance data and credit-related information</li>
+        </ul>
+        <p class="sub-label">Technical information</p>
+        <ul>
+          <li>IP address, device and browser information, operating system</li>
+          <li>Log files, session activity, and security monitoring data</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>How we use information</h2>
+        <ul>
+          <li>Verify identity and prevent fraud</li>
+          <li>Assess borrower eligibility and calculate trust and repayment scores</li>
+          <li>Facilitate peer-to-peer lending and process transactions</li>
+          <li>Monitor platform security and comply with legal obligations</li>
+          <li>Improve our products and provide customer support</li>
+        </ul>
+      </div>
+
+      <div class="section highlight-row">
+        <h2>Plaid data</h2>
+        <p>If you connect a financial account using Plaid, we may receive account ownership information, balances, transaction history, and account verification data.</p>
+        <p>We use Plaid data solely for purposes disclosed to you and permitted by applicable law and our agreements with Plaid. You may disconnect connected accounts at any time, subject to applicable retention requirements.</p>
+      </div>
+
+      <div class="section">
+        <h2>How we share information</h2>
+        <p>We do not sell personal information.</p>
+        <ul>
+          <li>Identity verification and AML screening providers</li>
+          <li>Banking and payment partners</li>
+          <li>Cloud infrastructure providers</li>
+          <li>Legal and regulatory authorities when required by law</li>
+          <li>Service providers acting on our behalf under appropriate agreements</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>Blockchain and public records</h2>
+        <p>Certain repayment history, trust metrics, wallet activity, and transaction records may be recorded on public blockchain networks. Blockchain records may be publicly visible and cannot generally be modified or deleted after publication. Please understand the permanent nature of blockchain transactions before using the platform.</p>
+      </div>
+
+      <div class="section">
+        <h2>Data retention</h2>
+        <p>We retain information only as long as reasonably necessary to operate the platform, maintain security, prevent fraud, comply with legal obligations, resolve disputes, and enforce agreements. Retention periods may vary by jurisdiction.</p>
+      </div>
+
+      <div class="section">
+        <h2>Data security</h2>
+        <p>We implement reasonable administrative, technical, and physical safeguards including TLS encryption in transit, encryption at rest, access controls, role-based permissions, security monitoring, and incident response procedures. No method of storage or transmission is completely secure.</p>
+      </div>
+
+      <div class="section">
+        <h2>Your rights</h2>
+        <p>Depending on your location, you may have rights to access, correct, or delete your information, restrict or object to processing, and receive a portable copy of your data. Submit requests to <a href="mailto:privacy@moodeng.credit">privacy@moodeng.credit</a>.</p>
+      </div>
+
+      <div class="section">
+        <h2>International transfers</h2>
+        <p>Information may be processed and stored in countries different from your country of residence. Where required, we implement safeguards to protect personal information during cross-border transfers.</p>
+      </div>
+
+      <div class="section">
+        <h2>Children's privacy</h2>
+        <p>Moodeng Credit is not intended for individuals under the age of 18. We do not knowingly collect information from minors.</p>
+      </div>
+
+      <div class="section">
+        <h2>Changes to this policy</h2>
+        <p>We may update this Privacy Policy from time to time. Material changes will be communicated through the platform or by other appropriate means.</p>
+      </div>
+
+      <div class="section">
+        <h2>Contact</h2>
+        <p>Privacy requests: <a href="mailto:privacy@moodeng.credit">privacy@moodeng.credit</a><br>General support: <a href="mailto:support@moodeng.credit">support@moodeng.credit</a></p>
+      </div>
+
+    </div>
+
+    <!-- Bottom CTA -->
+    <div class="cta">
+      <p>Need our Terms of Service?</p>
+      <a href="/terms">View Terms of Service →</a>
+    </div>
+
+  </div>
+</main>
+</body>
+</html>
