@@ -57,7 +57,7 @@ import type { User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import { type CreateLoanData, type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
-import LoanRequestModal, { type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
+import LoanRequestModal, { mapBorrowerContextForSave, type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
@@ -942,7 +942,7 @@ function RequestBoard$() {
       effectiveUser?.id
    ]);
 
-   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+   const handleSubmit = async (e: FormEvent<HTMLFormElement>, borrowerContext?: import('@/lib/borrowerContextFit').BorrowerContextState) => {
       e.preventDefault();
       if (isSubmitting) return;
 
@@ -1016,8 +1016,20 @@ function RequestBoard$() {
          parsedLoanAmount > 0 &&
          parsedRepaymentAmount >= parsedLoanAmount + 1
       ) {
-         // If borrower hasn't filled in bio yet, show bio step first
+         // If borrower hasn't filled in bio yet, save from modal context or show bio step
          if (!effectiveUser.incomeType) {
+            if (borrowerContext?.incomeSetup && borrowerContext?.paydayWindow && borrowerContext?.cashGaps.length > 0) {
+               const mapped = mapBorrowerContextForSave(borrowerContext);
+               pendingLoanDataRef.current = loanData;
+               await handleBioSave({
+                  incomeType:  mapped.incomeType,
+                  paydayType:  mapped.paydayType,
+                  paydayStart: mapped.paydayStart,
+                  paydayEnd:   mapped.paydayEnd,
+                  gapReasons:  mapped.gapReasons
+               });
+               return;
+            }
             pendingLoanDataRef.current = loanData;
             setShowBioStep(true);
             return;
@@ -1069,9 +1081,9 @@ function RequestBoard$() {
       }
    };
 
-   const handleBioSave = async (data: { incomeType: string; paydayType: string; gapReasons: string[] }) => {
+   const handleBioSave = async (data: { incomeType: string; paydayType: string; paydayStart?: number | null; paydayEnd?: number | null; gapReasons: string[] }) => {
       try {
-         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, gapReasons: data.gapReasons })).unwrap();
+         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, paydayStart: data.paydayStart, paydayEnd: data.paydayEnd, gapReasons: data.gapReasons })).unwrap();
       } catch (error) {
          console.error('Failed to save borrower context:', error);
       }

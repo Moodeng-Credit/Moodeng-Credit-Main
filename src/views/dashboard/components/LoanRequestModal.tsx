@@ -151,6 +151,31 @@ const cashGapOptions: BorrowerContextMultiOption[] = [
    { label: 'Work supplies', value: 'work_supplies', icon: Briefcase }
 ];
 
+type PaydayConfig = { type: string; start: number | null; end: number | null };
+const PAYDAY_WINDOW_TO_CONFIG: Record<string, PaydayConfig> = {
+   '1_5':   { type: 'mid-month',    start: 1,    end: 5   },
+   '10_15': { type: 'mid-month',    start: 10,   end: 15  },
+   '15_20': { type: 'mid-month',    start: 15,   end: 20  },
+   '25_30': { type: 'end-of-month', start: 25,   end: 30  },
+   varies:  { type: 'irregular',    start: null, end: null }
+};
+const INCOME_SETUP_TO_TYPE: Record<string, string> = {
+   full_time:     'full-time',
+   self_employed: 'freelance',
+   irregular:     'none',
+   contract:      'part-time'
+};
+export const mapBorrowerContextForSave = (ctx: BorrowerContextState) => {
+   const payday = PAYDAY_WINDOW_TO_CONFIG[ctx.paydayWindow];
+   return {
+      incomeType:  INCOME_SETUP_TO_TYPE[ctx.incomeSetup]  ?? ctx.incomeSetup,
+      paydayType:  payday?.type  ?? ctx.paydayWindow,
+      paydayStart: payday?.start ?? null,
+      paydayEnd:   payday?.end   ?? null,
+      gapReasons:  ctx.cashGaps
+   };
+};
+
 type TooltipId = 'terms' | 'limit' | 'usdc';
 
 const tooltipCopy: Record<TooltipId, string> = {
@@ -1012,7 +1037,8 @@ export default function LoanRequestModal({
       if (!isProfileSaved) return;
 
       setBorrowerContextPromptSeen(true);
-      formRef.current?.requestSubmit();
+      // Call handleLoanFormSubmit directly — requestSubmit() silently fails on older iOS Safari
+      handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
    };
 
    const handleBorrowerContextBack = () => {
