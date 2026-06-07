@@ -340,11 +340,11 @@ export default function TransactionDetail() {
                   <div className="h-px bg-md-neutral-300" />
 
                   {isPendingFunding ? (
-                     <div className="rounded-md-md border border-[#ffd7b8] bg-[#fff8ef] px-md-3 py-md-2 flex gap-md-2">
-                        <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#a24a00]" strokeWidth={2.3} />
+                     <div className="rounded-md-md border border-md-yellow-700/40 bg-md-yellow-700/10 px-md-3 py-md-2 flex gap-md-2">
+                        <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-md-yellow-700" strokeWidth={2.3} />
                         <div className="flex flex-col gap-1">
-                           <span className="text-md-b3 font-semibold text-[#7a3600]">Waiting for lender acceptance</span>
-                           <span className="text-md-b4 text-[#7a5a3a]">
+                           <span className="text-md-b3 font-semibold text-md-yellow-700">Waiting for lender acceptance</span>
+                           <span className="text-md-b4 text-md-neutral-1000">
                               This loan is not funded yet. Repayment starts only after a lender accepts.
                            </span>
                         </div>
