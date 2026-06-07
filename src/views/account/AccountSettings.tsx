@@ -861,8 +861,8 @@ export default function AccountSettings() {
                      actionLabel={user?.chatId ? undefined : 'Connect'}
                      onAction={user?.chatId ? undefined : () => setShowTelegramAlertsModal(true)}
                   />
-                  <ReadOnlyField label="WhatsApp" value="Unavailable" />
-                  <ReadOnlyField label="LINE" value="Unavailable" />
+                  <ReadOnlyField label="WhatsApp" value="Coming soon" />
+                  <ReadOnlyField label="LINE" value="Coming soon" />
                   {isBorrower ? (
                      <ReadOnlyField
                         label="Bio Info"
