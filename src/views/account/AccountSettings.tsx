@@ -532,6 +532,121 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
    );
 }
 
+function ChangeDisplayNameModal({
+   isOpen,
+   onClose,
+   currentName
+}: {
+   isOpen: boolean;
+   onClose: () => void;
+   currentName: string;
+}) {
+   const dispatch = useDispatch<AppDispatch>();
+   const { showToast } = useToast();
+   const [name, setName] = useState(currentName);
+   const [error, setError] = useState('');
+   const [isSubmitting, setIsSubmitting] = useState(false);
+
+   useEffect(() => {
+      if (isOpen) {
+         setName(currentName);
+         setError('');
+      }
+   }, [isOpen, currentName]);
+
+   const handleClose = () => {
+      if (isSubmitting) return;
+      setError('');
+      onClose();
+   };
+
+   const handleSave = async () => {
+      const trimmed = name.trim();
+      if (!trimmed) {
+         setError('Display name is required');
+         return;
+      }
+      if (trimmed === currentName) {
+         handleClose();
+         return;
+      }
+
+      setError('');
+      setIsSubmitting(true);
+      const result = await dispatch(updateUser({ displayName: trimmed }));
+      setIsSubmitting(false);
+
+      if (updateUser.fulfilled.match(result)) {
+         showToast(TOAST_TYPES.SUCCESS, 'Display name updated', 'Your display name has been changed.');
+         onClose();
+      } else {
+         setError(result.error?.message || 'Failed to update display name');
+      }
+   };
+
+   if (!isOpen) return null;
+
+   return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#12071f]/50 px-5" onClick={handleClose}>
+         <div
+            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-[17px] items-center"
+            onClick={(e) => e.stopPropagation()}
+         >
+            <div className="flex flex-col gap-md-5 items-center w-full">
+               <div className="flex flex-col gap-2 items-center text-center">
+                  <h2 className="text-md-h4 font-semibold text-md-heading">Change Display Name</h2>
+                  <p className="text-md-b1 text-md-neutral-1200">
+                     This is the name other users will see on your profile and loan requests.
+                  </p>
+               </div>
+               <div className="flex flex-col gap-md-1 w-full">
+                  <p className="text-md-b2 font-semibold text-md-heading">Display Name</p>
+                  <div className="flex items-center bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
+                     <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        autoFocus
+                        maxLength={60}
+                        className="flex-1 bg-transparent text-md-b1 text-md-neutral-1200 outline-none min-w-0"
+                     />
+                  </div>
+               </div>
+            </div>
+            {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
+            <div className="flex flex-col gap-[17px] w-full">
+               <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={handleSave}
+                  className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
+               >
+                  {isSubmitting ? 'Saving...' : 'Save changes'}
+                  {!isSubmitting ? (
+                     <div
+                        className="w-6 h-6 bg-md-neutral-100"
+                        style={{
+                           ...ICON_MASK,
+                           WebkitMaskImage: "url('/icons/chevron-right.svg')",
+                           maskImage: "url('/icons/chevron-right.svg')"
+                        }}
+                     />
+                  ) : null}
+               </button>
+               <button
+                  type="button"
+                  onClick={handleClose}
+                  disabled={isSubmitting}
+                  className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50"
+               >
+                  Cancel
+               </button>
+            </div>
+         </div>
+      </div>
+   );
+}
+
 function TelegramAlertsModal({
    isOpen,
    onClose,
@@ -690,9 +805,7 @@ export default function AccountSettings() {
    const { isDarkMode, setMode } = useThemeMode();
 
    const currentDisplayName = user?.displayName ?? user?.username ?? '';
-   const [isEditingName, setIsEditingName] = useState(false);
-   const [editName, setEditName] = useState(currentDisplayName);
-   const [isSavingName, setIsSavingName] = useState(false);
+   const [showNameModal, setShowNameModal] = useState(false);
    const [showPasswordModal, setShowPasswordModal] = useState(false);
    const [showEmailModal, setShowEmailModal] = useState(false);
    const [showTelegramAlertsModal, setShowTelegramAlertsModal] = useState(false);
@@ -748,8 +861,7 @@ export default function AccountSettings() {
       handledEditTargetRef.current = editTarget;
 
       if (editTarget === 'name') {
-         setEditName(currentDisplayName);
-         setIsEditingName(true);
+         setShowNameModal(true);
          window.requestAnimationFrame(() => {
             document.getElementById('display-name-section')?.scrollIntoView({ block: 'center' });
          });
@@ -769,18 +881,6 @@ export default function AccountSettings() {
       setIsDisconnectWalletPending(false);
       setWalletError('');
    }, [user?.walletAddress]);
-
-   const handleSaveName = async () => {
-      const trimmed = editName.trim();
-      if (!trimmed || trimmed === currentDisplayName) {
-         setIsEditingName(false);
-         return;
-      }
-      setIsSavingName(true);
-      await dispatch(updateUser({ displayName: trimmed }));
-      setIsSavingName(false);
-      setIsEditingName(false);
-   };
 
    const handleCopyWallet = async () => {
       if (!user?.walletAddress) return;
@@ -945,31 +1045,13 @@ export default function AccountSettings() {
                <div id="display-name-section" className="flex flex-col gap-md-1 flex-1 min-w-0">
                   <p className="text-md-b2 font-semibold text-md-heading">Display Name</p>
                   <div className="flex items-center justify-between bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
-                     {isEditingName ? (
-                        <input
-                           type="text"
-                           value={editName}
-                           onChange={(e) => setEditName(e.target.value)}
-                           autoFocus
-                           className="flex-1 bg-transparent text-md-b1 text-md-neutral-1200 outline-none min-w-0"
-                        />
-                     ) : (
-                        <span className="text-md-b1 text-md-neutral-1200 truncate">{currentDisplayName}</span>
-                     )}
+                     <span className="text-md-b1 text-md-neutral-1200 truncate">{currentDisplayName}</span>
                      <button
                         type="button"
-                        disabled={isSavingName}
-                        onClick={() => {
-                           if (isEditingName) {
-                              handleSaveName();
-                           } else {
-                              setEditName(currentDisplayName);
-                              setIsEditingName(true);
-                           }
-                        }}
+                        onClick={() => setShowNameModal(true)}
                         className="text-md-b1 text-md-primary-900 shrink-0 ml-2"
                      >
-                        {isSavingName ? '...' : isEditingName ? 'Save' : 'Edit'}
+                        Change
                      </button>
                   </div>
                </div>
@@ -1384,6 +1466,7 @@ export default function AccountSettings() {
 
          <ChangePasswordModal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
          <ChangeEmailModal isOpen={showEmailModal} onClose={() => setShowEmailModal(false)} />
+         <ChangeDisplayNameModal isOpen={showNameModal} onClose={() => setShowNameModal(false)} currentName={currentDisplayName} />
          <EditBioInfoModal isOpen={showBioInfoModal} onClose={() => setShowBioInfoModal(false)} user={user} />
          <TelegramAlertsModal
             isOpen={showTelegramAlertsModal}

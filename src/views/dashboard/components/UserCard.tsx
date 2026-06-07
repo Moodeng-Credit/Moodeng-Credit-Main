@@ -2,7 +2,7 @@ import { type MouseEvent, useCallback, useMemo, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
-import { ChevronRight, ExternalLink, Send, X } from 'lucide-react';
+import { ChevronRight, ExternalLink, Send, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
@@ -301,9 +301,9 @@ export default function UserCard(loan: UserCardProps) {
                   disabled={isDeletingOwnRequest}
                   aria-label="Delete your loan request"
                   title="Delete request"
-                  className="absolute right-3 top-3 z-10 inline-flex size-11 items-center justify-center rounded-full border border-md-red-500/30 bg-md-red-500/15 text-md-red-300 shadow-[0_8px_20px_rgba(221,4,23,0.25)] backdrop-blur-sm transition active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="absolute right-3 top-3 z-10 inline-flex size-8 items-center justify-center rounded-full border border-md-red-500/30 bg-md-red-500/15 text-md-red-300 shadow-[0_6px_14px_rgba(221,4,23,0.2)] backdrop-blur-sm transition active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50"
                >
-                  <X className="size-5" strokeWidth={2.5} />
+                  <Trash2 className="size-4" strokeWidth={2} />
                </button>
             ) : null}
             {/* Top: Loan Info + Amount Card */}
