@@ -301,7 +301,7 @@ export default function UserCard(loan: UserCardProps) {
                   disabled={isDeletingOwnRequest}
                   aria-label="Delete your loan request"
                   title="Delete request"
-                  className="absolute right-3 top-3 z-10 inline-flex size-11 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 shadow-[0_8px_20px_rgba(185,28,28,0.12)] transition active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="absolute right-3 top-3 z-10 inline-flex size-11 items-center justify-center rounded-full border border-md-red-500/30 bg-md-red-500/15 text-md-red-300 shadow-[0_8px_20px_rgba(221,4,23,0.25)] backdrop-blur-sm transition active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50"
                >
                   <X className="size-5" strokeWidth={2.5} />
                </button>
