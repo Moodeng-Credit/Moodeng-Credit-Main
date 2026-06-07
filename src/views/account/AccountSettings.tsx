@@ -19,7 +19,7 @@ import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getBaseWalletLockStatus, getWalletProviderLabel } from '@/lib/walletProvider';
 import { getWorldIdVerificationLabel } from '@/lib/worldIdVerificationLabel';
-import { fetchUser, updateUser } from '@/store/slices/authSlice';
+import { confirmEmailChange, fetchUser, updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import EditBioInfoModal from '@/views/account/EditBioInfoModal';
@@ -302,14 +302,21 @@ function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
 function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
    const dispatch = useDispatch<AppDispatch>();
+   const { showToast } = useToast();
+
+   const [step, setStep] = useState<'enterEmail' | 'enterCode'>('enterEmail');
    const [newEmail, setNewEmail] = useState('');
    const [confirmEmail, setConfirmEmail] = useState('');
+   const [code, setCode] = useState('');
    const [error, setError] = useState('');
    const [isSubmitting, setIsSubmitting] = useState(false);
+   const [isResending, setIsResending] = useState(false);
 
    const resetForm = () => {
+      setStep('enterEmail');
       setNewEmail('');
       setConfirmEmail('');
+      setCode('');
       setError('');
    };
 
@@ -318,7 +325,16 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       onClose();
    };
 
-   const handleSubmit = async () => {
+   const sendChangeRequest = async (email: string) => {
+      const supabase = getSupabaseBrowserClient();
+      const { error: changeError } = await supabase.auth.updateUser({ email });
+
+      if (changeError) {
+         throw changeError;
+      }
+   };
+
+   const handleSendCode = async () => {
       setError('');
       if (!newEmail || !confirmEmail) {
          setError('All fields are required');
@@ -330,14 +346,55 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       }
 
       setIsSubmitting(true);
-      const result = await dispatch(updateUser({ email: newEmail }));
+      try {
+         await sendChangeRequest(newEmail);
+         setCode('');
+         setStep('enterCode');
+      } catch (sendError) {
+         setError(sendError instanceof Error ? sendError.message : 'Failed to send verification code');
+      } finally {
+         setIsSubmitting(false);
+      }
+   };
+
+   const handleResendCode = async () => {
+      if (isResending || isSubmitting) return;
+
+      setError('');
+      setIsResending(true);
+      try {
+         await sendChangeRequest(newEmail);
+         showToast(TOAST_TYPES.SUCCESS, 'Code resent', `We sent a new verification code to ${newEmail}.`);
+      } catch (resendError) {
+         setError(resendError instanceof Error ? resendError.message : 'Failed to resend verification code');
+      } finally {
+         setIsResending(false);
+      }
+   };
+
+   const handleVerifyCode = async () => {
+      setError('');
+      if (!code.trim()) {
+         setError('Enter the verification code we sent to your new email');
+         return;
+      }
+
+      setIsSubmitting(true);
+      const result = await dispatch(confirmEmailChange({ email: newEmail, token: code.trim() }));
       setIsSubmitting(false);
 
-      if (updateUser.fulfilled.match(result)) {
+      if (confirmEmailChange.fulfilled.match(result)) {
+         showToast(TOAST_TYPES.SUCCESS, 'Email updated', 'Your email address has been changed.');
          handleClose();
       } else {
-         setError(result.error?.message || 'Failed to update email');
+         setError(result.error?.message || 'Invalid or expired code. Please try again.');
       }
+   };
+
+   const handleBack = () => {
+      setError('');
+      setCode('');
+      setStep('enterEmail');
    };
 
    if (!isOpen) return null;
@@ -348,61 +405,128 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-[17px] items-center"
             onClick={(e) => e.stopPropagation()}
          >
-            <div className="flex flex-col gap-md-5 items-center w-full">
-               <h2 className="text-md-h4 font-semibold text-md-heading text-center">Change Email Address</h2>
-               <div className="flex flex-col gap-md-5 w-full">
-                  <div className="flex flex-col gap-md-1 w-full">
-                     <p className="text-md-b2 font-semibold text-md-heading">New Email</p>
-                     <div className="flex items-center bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
-                        <input
-                           type="email"
-                           value={newEmail}
-                           onChange={(e) => setNewEmail(e.target.value)}
-                           className="flex-1 bg-transparent text-md-b1 text-md-neutral-1200 outline-none min-w-0"
-                        />
+            {step === 'enterEmail' ? (
+               <>
+                  <div className="flex flex-col gap-md-5 items-center w-full">
+                     <div className="flex flex-col gap-2 items-center text-center">
+                        <h2 className="text-md-h4 font-semibold text-md-heading">Change Email Address</h2>
+                        <p className="text-md-b1 text-md-neutral-1200">
+                           We'll send a verification code to your new email address to confirm the change.
+                        </p>
+                     </div>
+                     <div className="flex flex-col gap-md-5 w-full">
+                        <div className="flex flex-col gap-md-1 w-full">
+                           <p className="text-md-b2 font-semibold text-md-heading">New Email</p>
+                           <div className="flex items-center bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
+                              <input
+                                 type="email"
+                                 value={newEmail}
+                                 onChange={(e) => setNewEmail(e.target.value)}
+                                 className="flex-1 bg-transparent text-md-b1 text-md-neutral-1200 outline-none min-w-0"
+                              />
+                           </div>
+                        </div>
+                        <div className="flex flex-col gap-md-1 w-full">
+                           <p className="text-md-b2 font-semibold text-md-heading">Confirm Email</p>
+                           <div className="flex items-center bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
+                              <input
+                                 type="email"
+                                 value={confirmEmail}
+                                 onChange={(e) => setConfirmEmail(e.target.value)}
+                                 className="flex-1 bg-transparent text-md-b1 text-md-neutral-1200 outline-none min-w-0"
+                              />
+                           </div>
+                        </div>
                      </div>
                   </div>
-                  <div className="flex flex-col gap-md-1 w-full">
-                     <p className="text-md-b2 font-semibold text-md-heading">Confirm Email</p>
-                     <div className="flex items-center bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
-                        <input
-                           type="email"
-                           value={confirmEmail}
-                           onChange={(e) => setConfirmEmail(e.target.value)}
-                           className="flex-1 bg-transparent text-md-b1 text-md-neutral-1200 outline-none min-w-0"
-                        />
-                     </div>
+                  {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
+                  <div className="flex flex-col gap-[17px] w-full">
+                     <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={handleSendCode}
+                        className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
+                     >
+                        {isSubmitting ? 'Sending code...' : 'Send verification code'}
+                        {!isSubmitting ? (
+                           <div
+                              className="w-6 h-6 bg-md-neutral-100"
+                              style={{
+                                 ...ICON_MASK,
+                                 WebkitMaskImage: "url('/icons/chevron-right.svg')",
+                                 maskImage: "url('/icons/chevron-right.svg')"
+                              }}
+                           />
+                        ) : null}
+                     </button>
+                     <button
+                        type="button"
+                        onClick={handleClose}
+                        className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200"
+                     >
+                        Cancel
+                     </button>
                   </div>
-               </div>
-            </div>
-            {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
-            <div className="flex flex-col gap-[17px] w-full">
-               <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={handleSubmit}
-                  className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
-               >
-                  {isSubmitting ? 'Updating...' : 'Confirm email change'}
-                  {!isSubmitting ? (
-                     <div
-                        className="w-6 h-6 bg-md-neutral-100"
-                        style={{
-                           ...ICON_MASK,
-                           WebkitMaskImage: "url('/icons/chevron-right.svg')",
-                           maskImage: "url('/icons/chevron-right.svg')"
-                        }}
-                     />
-                  ) : null}
-               </button>
-               <button
-                  type="button"
-                  onClick={handleClose}
-                  className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200"
-               >
-                  Cancel
-               </button>
-            </div>
+               </>
+            ) : (
+               <>
+                  <div className="flex flex-col gap-md-5 items-center w-full">
+                     <div className="flex flex-col gap-2 items-center text-center">
+                        <h2 className="text-md-h4 font-semibold text-md-heading">Enter Verification Code</h2>
+                        <p className="text-md-b1 text-md-neutral-1200">
+                           We sent a 6-digit code to <span className="font-semibold">{newEmail}</span>. Enter it below to confirm the
+                           change.
+                        </p>
+                     </div>
+                     <div className="flex flex-col gap-md-1 w-full">
+                        <p className="text-md-b2 font-semibold text-md-heading">Verification Code</p>
+                        <div className="flex items-center bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
+                           <input
+                              type="text"
+                              inputMode="numeric"
+                              maxLength={8}
+                              value={code}
+                              onChange={(e) => setCode(e.target.value)}
+                              placeholder="123456"
+                              className="flex-1 bg-transparent text-md-b1 text-md-neutral-1200 outline-none min-w-0 tracking-[0.3em]"
+                           />
+                        </div>
+                     </div>
+                     <button type="button" onClick={handleResendCode} disabled={isResending || isSubmitting} className="text-md-b2 font-semibold text-md-primary-1200 disabled:opacity-50">
+                        {isResending ? 'Resending...' : "Didn't get a code? Resend"}
+                     </button>
+                  </div>
+                  {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
+                  <div className="flex flex-col gap-[17px] w-full">
+                     <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={handleVerifyCode}
+                        className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
+                     >
+                        {isSubmitting ? 'Verifying...' : 'Confirm email change'}
+                        {!isSubmitting ? (
+                           <div
+                              className="w-6 h-6 bg-md-neutral-100"
+                              style={{
+                                 ...ICON_MASK,
+                                 WebkitMaskImage: "url('/icons/chevron-right.svg')",
+                                 maskImage: "url('/icons/chevron-right.svg')"
+                              }}
+                           />
+                        ) : null}
+                     </button>
+                     <button
+                        type="button"
+                        onClick={handleBack}
+                        disabled={isSubmitting}
+                        className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50"
+                     >
+                        Back
+                     </button>
+                  </div>
+               </>
+            )}
          </div>
       </div>
    );

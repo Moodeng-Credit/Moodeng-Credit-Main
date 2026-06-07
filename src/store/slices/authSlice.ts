@@ -580,6 +580,47 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
    return await fetchCurrentUserProfile();
 });
 
+/**
+ * Confirms a pending email-address change by verifying the one-time code sent to the
+ * new address, then writes the new email to `public.users` only after Supabase Auth
+ * has confirmed the change. This avoids the old behavior where `users.email` (and thus
+ * notification routing) updated immediately, before the user ever proved they own the
+ * new inbox.
+ */
+export const confirmEmailChange = createAsyncThunk(
+   'auth/confirmEmailChange',
+   async ({ email, token }: { email: string; token: string }) => {
+      const supabase = supabaseClient();
+
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+         email,
+         token,
+         type: 'email_change'
+      });
+
+      if (verifyError) {
+         throw verifyError;
+      }
+
+      const {
+         data: { user },
+         error: sessionError
+      } = await supabase.auth.getUser();
+
+      if (sessionError || !user) {
+         throw sessionError ?? new Error('No authenticated user to update');
+      }
+
+      const { error: updateError } = await supabase.from('users').update({ email }).eq('id', user.id);
+
+      if (updateError) {
+         throw updateError;
+      }
+
+      return await fetchCurrentUserProfile();
+   }
+);
+
 export interface BorrowerContextPayload {
    incomeType: string;
    paydayType: string;
