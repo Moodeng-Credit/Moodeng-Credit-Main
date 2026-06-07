@@ -626,7 +626,7 @@ export default function Repay() {
 
             {selectedLoan ? (
                <section className="rounded-md-xl border border-md-neutral-300 bg-white p-4 shadow-[0_10px_28px_rgba(31,28,37,0.05)]">
-                  {!account.isConnected ? (
+                  {account.status === 'disconnected' ? (
                      <div className="mb-3 flex items-center gap-2.5 rounded-md-input border border-md-primary-100 bg-md-primary-100/45 px-3 py-2.5">
                         <ShieldCheck className="h-4 w-4 shrink-0 text-md-primary-1200" aria-hidden="true" />
                         <p className="text-md-b3 font-medium text-md-primary-1200">
