@@ -174,7 +174,7 @@ export default function Repay() {
    const { showToast, showToastByConfig } = useToast();
    const { Transfer } = useWallet();
    const account = useAccount();
-   const { connect, connectors, status: connectStatus } = useConnect();
+   const { connectAsync, connectors, status: connectStatus } = useConnect();
 
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
@@ -197,22 +197,15 @@ export default function Repay() {
    const [repaymentAmount, setRepaymentAmount] = useState('');
    const [isProcessing, setIsProcessing] = useState(false);
    const [completion, setCompletion] = useState<{ reason: string; paidAmount: number; coin: string } | null>(null);
-   const [justConnected, setJustConnected] = useState(false);
    // Synchronous re-entrancy guard. `isProcessing` is React state, so on a fast double-tap
    // both calls read the stale `false` and each fires its own Transfer — opening a second
    // Base Account signing popup that errors ("Something went wrong") since the request is
    // already in flight. A ref flips immediately, so the second tap is dropped.
    const repayInFlightRef = useRef(false);
-
-   // Surface a "wallet connected — now tap Pay Now" highlight the moment the borrower
-   // finishes connecting from the repay flow, then let it fade on the next interaction.
-   const wasConnectedRef = useRef(account.isConnected);
-   useEffect(() => {
-      if (account.isConnected && !wasConnectedRef.current) {
-         setJustConnected(true);
-      }
-      wasConnectedRef.current = account.isConnected;
-   }, [account.isConnected]);
+   // Set when the borrower taps Pay Now while still disconnected. Once the wallet reports
+   // connected, an effect resumes the repayment automatically so connecting and paying are
+   // a single intent rather than two separate taps.
+   const pendingRepayRef = useRef(false);
 
    useEffect(() => {
       if (activeLoans.length === 0) {
@@ -251,12 +244,10 @@ export default function Repay() {
          : null;
 
    const paymentCtaAmount = repaymentAmount ? `$${formatCurrency(parsedRepaymentAmount)}` : 'loan';
-   // Before connecting, the CTA only needs to kick off the wallet connection, so it stays
-   // enabled even without an amount. Once connected, it requires a valid repayment amount.
+   // Pay Now is a single intent: it requires a valid amount whether or not the wallet is
+   // connected. If disconnected, tapping it connects first and then auto-resumes the payment.
    const isRepayDisabled =
-      isProcessing ||
-      connectStatus === 'pending' ||
-      (account.isConnected && (!repaymentAmount || Boolean(amountError) || parsedRepaymentAmount <= 0));
+      isProcessing || connectStatus === 'pending' || !repaymentAmount || Boolean(amountError) || parsedRepaymentAmount <= 0;
    const baseWalletLock = getBaseWalletLockStatus(user);
    const baseAccountConnector = useMemo(() => getBaseAccountConnector(connectors), [connectors]);
    const isUsingLockedBaseWallet = isConnectedToLockedBaseWallet({
@@ -323,8 +314,9 @@ export default function Repay() {
          return;
       }
 
-      // Connecting the Base wallet is the first step of the flow: let the borrower tap
-      // "Connect" before they've entered an amount, then come back and complete the repayment.
+      // Connecting the Base wallet is a prerequisite, not a separate task. If the borrower
+      // taps Pay Now while disconnected, open the connect popup and arm the auto-continue so
+      // the payment resumes by itself once connected — a single intent, not two taps.
       if (!account.isConnected) {
          setCompletion(null);
 
@@ -344,7 +336,15 @@ export default function Repay() {
             return;
          }
 
-         connect({ connector: baseAccountConnector });
+         // Only auto-resume into a payment when there is a valid amount to pay.
+         pendingRepayRef.current = !amountError && parsedRepaymentAmount > 0;
+
+         try {
+            await connectAsync({ connector: baseAccountConnector });
+         } catch {
+            // Borrower dismissed or the connection failed — don't auto-pay.
+            pendingRepayRef.current = false;
+         }
          return;
       }
 
@@ -416,7 +416,6 @@ export default function Repay() {
          ).unwrap();
          await dispatch(getUserLoans({ userId: user.id })).unwrap();
          setRepaymentAmount('');
-         setJustConnected(false);
          if (isFullyRepaid) {
             setCompletion({
                reason: selectedLoan.reason || 'your loan',
@@ -444,7 +443,7 @@ export default function Repay() {
       baseWalletLock.address,
       baseWalletLock.hasStoredWallet,
       canRepayWithConnectedBaseWallet,
-      connect,
+      connectAsync,
       isUsingLockedBaseWallet,
       showToast,
       showToastByConfig,
@@ -459,6 +458,17 @@ export default function Repay() {
       handleRepayRef.current = handleRepay;
    }, [handleRepay]);
 
+   // Auto-continue: once the wallet reports connected, resume the repayment the borrower
+   // already initiated. Reading account.isConnected here (not in the connect callback) avoids
+   // the state-propagation lag that would otherwise re-trigger the connect popup. Declared
+   // after the ref-sync effect so handleRepayRef points at the freshly-connected closure.
+   useEffect(() => {
+      if (account.isConnected && pendingRepayRef.current) {
+         pendingRepayRef.current = false;
+         void handleRepayRef.current();
+      }
+   }, [account.isConnected]);
+
    const handleBottomNavRepay = useCallback(() => {
       void handleRepayRef.current();
    }, []);
@@ -467,12 +477,12 @@ export default function Repay() {
       () =>
          selectedLoan && !completion
             ? {
-                 ariaLabel: account.isConnected ? `Pay now ${paymentCtaAmount}` : 'Connect wallet to repay',
+                 ariaLabel: account.isConnected ? `Pay now ${paymentCtaAmount}` : `Connect and pay ${paymentCtaAmount}`,
                  disabled: isRepayDisabled,
                  icon: 'dollar-circle.svg',
                  id: 'repay-pay-now',
                  isProcessing,
-                 label: connectStatus === 'pending' ? 'Connecting' : account.isConnected ? 'Pay Now' : 'Connect',
+                 label: connectStatus === 'pending' ? 'Connecting' : 'Pay Now',
                  onClick: handleBottomNavRepay,
                  path: '/repay'
               }
@@ -620,15 +630,7 @@ export default function Repay() {
                      <div className="mb-3 flex items-center gap-2.5 rounded-md-input border border-md-primary-100 bg-md-primary-100/45 px-3 py-2.5">
                         <ShieldCheck className="h-4 w-4 shrink-0 text-md-primary-1200" aria-hidden="true" />
                         <p className="text-md-b3 font-medium text-md-primary-1200">
-                           First, connect your Base wallet — tap <span className="font-semibold">Connect</span> below. We’ll bring you right
-                           back here to finish repaying.
-                        </p>
-                     </div>
-                  ) : justConnected ? (
-                     <div className="mb-3 flex items-center gap-2.5 rounded-md-input border border-md-green-100 bg-md-green-100/60 px-3 py-2.5">
-                        <Check className="h-4 w-4 shrink-0 text-md-green-900" aria-hidden="true" />
-                        <p className="text-md-b3 font-medium text-md-green-900">
-                           Wallet connected. Choose an amount and tap <span className="font-semibold">Pay Now</span> to repay.
+                           Tapping <span className="font-semibold">Pay Now</span> connects your Base wallet, then completes the payment.
                         </p>
                      </div>
                   ) : null}
