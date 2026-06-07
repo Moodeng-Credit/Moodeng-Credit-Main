@@ -85,18 +85,26 @@ function ReadOnlyField({
    label,
    value,
    actionLabel,
-   onAction
+   onAction,
+   disabled = false
 }: {
    label: string;
    value: string;
    actionLabel?: string;
    onAction?: () => void;
+   disabled?: boolean;
 }) {
    return (
-      <div className="flex flex-col gap-md-1 w-full">
-         <p className="text-md-b2 font-semibold text-md-heading">{label}</p>
-         <div className="flex items-center justify-between bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
-            <span className="text-md-b1 text-md-neutral-1200 truncate">{value}</span>
+      <div className={`flex flex-col gap-md-1 w-full ${disabled ? 'opacity-50' : ''}`}>
+         <p className={`text-md-b2 font-semibold ${disabled ? 'text-md-neutral-700' : 'text-md-heading'}`}>{label}</p>
+         <div
+            className={`flex items-center justify-between rounded-md-input border px-md-3 py-md-2 overflow-hidden ${
+               disabled
+                  ? 'bg-md-neutral-200 border-md-neutral-400'
+                  : 'bg-md-neutral-100 border-md-neutral-600 shadow-md-card'
+            }`}
+         >
+            <span className={`text-md-b1 truncate ${disabled ? 'text-md-neutral-700' : 'text-md-neutral-1200'}`}>{value}</span>
             {actionLabel && onAction ? (
                <button type="button" onClick={onAction} className="text-md-b1 text-md-primary-900 shrink-0 ml-2">
                   {actionLabel}
@@ -861,8 +869,8 @@ export default function AccountSettings() {
                      actionLabel={user?.chatId ? undefined : 'Connect'}
                      onAction={user?.chatId ? undefined : () => setShowTelegramAlertsModal(true)}
                   />
-                  <ReadOnlyField label="WhatsApp" value="Coming soon" />
-                  <ReadOnlyField label="LINE" value="Coming soon" />
+                  <ReadOnlyField label="WhatsApp" value="Coming soon" disabled />
+                  <ReadOnlyField label="LINE" value="Coming soon" disabled />
                   {isBorrower ? (
                      <ReadOnlyField
                         label="Bio Info"
