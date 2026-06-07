@@ -81,7 +81,7 @@ export type AppliedReferralCode = {
 
 type DismissGestureMode = 'down' | 'side' | 'referral';
 
-type BorrowerContextOption = {
+export type BorrowerContextOption = {
    description?: string;
    icon?: typeof BriefcaseBusiness;
    label: string;
@@ -89,7 +89,7 @@ type BorrowerContextOption = {
    value: string;
 };
 
-type BorrowerContextMultiOption = BorrowerContextOption & {
+export type BorrowerContextMultiOption = BorrowerContextOption & {
    icon: typeof BriefcaseBusiness;
 };
 
@@ -97,10 +97,10 @@ const REFERRAL_TEST_CODES: Record<string, AppliedReferralCode> = {
    BELLE: { id: 'referral-test-belle', code: 'BELLE', boostAmount: 5 }
 };
 
-const inputShellClass =
+export const inputShellClass =
    'border-md-neutral-600 bg-md-neutral-100 shadow-md-card overflow-hidden rounded-md-input border border-solid transition duration-150 ease-out focus-within:border-md-primary-900 focus-within:ring-2 focus-within:ring-md-primary-100 focus:border-md-primary-900 focus:ring-2 focus:ring-md-primary-100';
 
-const emptyBorrowerContext: BorrowerContextState = {
+export const emptyBorrowerContext: BorrowerContextState = {
    incomeSetup: '',
    paydayWindow: '',
    cashGaps: [],
@@ -108,7 +108,7 @@ const emptyBorrowerContext: BorrowerContextState = {
    monthlyExpenses: ''
 };
 
-const incomeSetupOptions: BorrowerContextOption[] = [
+export const incomeSetupOptions: BorrowerContextOption[] = [
    {
       label: 'I have a regular job',
       value: 'full_time',
@@ -135,7 +135,7 @@ const incomeSetupOptions: BorrowerContextOption[] = [
    }
 ];
 
-const paydayWindowOptions: BorrowerContextOption[] = [
+export const paydayWindowOptions: BorrowerContextOption[] = [
    { label: '1st-5th', value: '1_5', icon: Clock3 },
    { label: '10th-15th', value: '10_15', icon: Clock3 },
    { label: '15th-20th', value: '15_20', icon: Clock3 },
@@ -143,7 +143,7 @@ const paydayWindowOptions: BorrowerContextOption[] = [
    { label: 'It varies', value: 'varies', icon: Clock3 }
 ];
 
-const cashGapOptions: BorrowerContextMultiOption[] = [
+export const cashGapOptions: BorrowerContextMultiOption[] = [
    { label: 'Gap before payday', value: 'gap_before_payday', icon: Clock3 },
    { label: 'Bills before payday', value: 'bills_before_payday', icon: FileText },
    { label: 'Family needs', value: 'family_needs', icon: Users },
@@ -153,29 +153,29 @@ const cashGapOptions: BorrowerContextMultiOption[] = [
    { label: 'Work supplies', value: 'work_supplies', icon: Briefcase }
 ];
 
-const monthlyIncomeOptions: BorrowerContextOption[] = [
+export const monthlyIncomeOptions: BorrowerContextOption[] = [
    { label: 'Under $200', value: 'under_200', icon: Clock3 },
    { label: '$200–$400', value: '200_400', icon: Clock3 },
    { label: '$400–$700', value: '400_700', icon: Clock3 },
    { label: 'Over $700', value: '700_plus', icon: Clock3 }
 ];
 
-const monthlyExpensesOptions: BorrowerContextOption[] = [
+export const monthlyExpensesOptions: BorrowerContextOption[] = [
    { label: 'Under $50', value: 'under_50', icon: Clock3 },
    { label: '$50–$150', value: '50_150', icon: Clock3 },
    { label: '$150–$300', value: '150_300', icon: Clock3 },
    { label: 'Over $300', value: '300_plus', icon: Clock3 }
 ];
 
-type PaydayConfig = { type: string; start: number | null; end: number | null };
-const PAYDAY_WINDOW_TO_CONFIG: Record<string, PaydayConfig> = {
+export type PaydayConfig = { type: string; start: number | null; end: number | null };
+export const PAYDAY_WINDOW_TO_CONFIG: Record<string, PaydayConfig> = {
    '1_5':   { type: 'mid-month',    start: 1,    end: 5   },
    '10_15': { type: 'mid-month',    start: 10,   end: 15  },
    '15_20': { type: 'mid-month',    start: 15,   end: 20  },
    '25_30': { type: 'end-of-month', start: 25,   end: 30  },
    varies:  { type: 'irregular',    start: null, end: null }
 };
-const INCOME_SETUP_TO_TYPE: Record<string, string> = {
+export const INCOME_SETUP_TO_TYPE: Record<string, string> = {
    full_time:     'full-time',
    self_employed: 'freelance',
    irregular:     'none',
@@ -622,7 +622,7 @@ function TrustBadge({ label }: { label: string }) {
    return <span className="rounded-md-pill bg-md-primary-1200 px-[6px] py-[2px] text-md-b4 font-[590] text-md-neutral-100">{label}</span>;
 }
 
-function BorrowerContextRadioSection({
+export function BorrowerContextRadioSection({
    label,
    onSelect,
    options,
@@ -687,7 +687,7 @@ function BorrowerContextRadioCard({
    );
 }
 
-function BorrowerContextChipSection({
+export function BorrowerContextChipSection({
    caption,
    helper,
    label,
