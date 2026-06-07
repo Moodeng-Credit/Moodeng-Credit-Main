@@ -1057,7 +1057,8 @@ function RequestBoard$() {
                   monthlyIncome:   mapped.monthlyIncome,
                   monthlyExpenses: mapped.monthlyExpenses,
                   otherIncome:     mapped.otherIncome,
-                  profession:      mapped.profession
+                  profession:      mapped.profession,
+                  incomeDescription: mapped.incomeDescription
                });
                return;
             }
@@ -1118,9 +1119,9 @@ function RequestBoard$() {
       }
    };
 
-   const handleBioSave = async (data: { incomeType: string; paydayType: string; paydayStart?: number | null; paydayEnd?: number | null; gapReasons: string[]; monthlyIncome?: string; monthlyExpenses?: string; otherIncome?: string; profession?: string }) => {
+   const handleBioSave = async (data: { incomeType: string; paydayType: string; paydayStart?: number | null; paydayEnd?: number | null; gapReasons: string[]; monthlyIncome?: string; monthlyExpenses?: string; otherIncome?: string; profession?: string; incomeDescription?: string }) => {
       try {
-         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, paydayStart: data.paydayStart, paydayEnd: data.paydayEnd, gapReasons: data.gapReasons, monthlyIncome: data.monthlyIncome, monthlyExpenses: data.monthlyExpenses, otherIncome: data.otherIncome, profession: data.profession })).unwrap();
+         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, paydayStart: data.paydayStart, paydayEnd: data.paydayEnd, gapReasons: data.gapReasons, monthlyIncome: data.monthlyIncome, monthlyExpenses: data.monthlyExpenses, otherIncome: data.otherIncome, profession: data.profession, incomeDescription: data.incomeDescription })).unwrap();
       } catch (error) {
          console.error('Failed to save borrower context:', error);
       }

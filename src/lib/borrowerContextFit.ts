@@ -36,6 +36,7 @@ export interface BorrowerContextState {
    monthlyExpenses?: string;
    otherIncome?: string;
    profession?: string;
+   incomeDescription?: string;
 }
 
 export interface BorrowerContextChip {

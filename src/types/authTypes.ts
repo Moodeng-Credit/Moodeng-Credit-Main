@@ -50,6 +50,8 @@ export interface User {
    monthlyExpenses?: string;
    otherIncome?: string;
    profession?: string;
+   /** Free-text income explanation for the "Something else" work option. */
+   incomeDescription?: string;
    /** Whether the user wants account activity notifications (loan approvals, World ID, etc.) */
    notifAccountActivity: boolean;
    /** Whether the user wants transaction notifications (funded, repayment, overdue, due) */

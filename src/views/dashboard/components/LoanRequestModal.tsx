@@ -192,7 +192,8 @@ export const mapBorrowerContextForSave = (ctx: BorrowerContextState) => {
       monthlyIncome:   ctx.monthlyIncome,
       monthlyExpenses: ctx.monthlyExpenses,
       otherIncome:     ctx.otherIncome  || undefined,
-      profession:      ctx.profession   || undefined
+      profession:      ctx.profession   || undefined,
+      incomeDescription: ctx.incomeDescription || undefined
    };
 };
 
@@ -390,6 +391,7 @@ function BorrowerContextLoanStep({
    onMonthlyExpensesSelect,
    onOtherIncomeChange,
    onProfessionChange,
+   onIncomeDescriptionChange,
    onPaydaySelect,
    onProfileImageClick,
    onProfileNameChange,
@@ -411,6 +413,7 @@ function BorrowerContextLoanStep({
    onMonthlyExpensesSelect: (value: string) => void;
    onOtherIncomeChange: (value: string) => void;
    onProfessionChange: (value: string) => void;
+   onIncomeDescriptionChange: (value: string) => void;
    onPaydaySelect: (value: string) => void;
    onProfileImageClick: () => void;
    onProfileNameChange: (value: string) => void;
@@ -488,6 +491,22 @@ function BorrowerContextLoanStep({
             options={incomeSetupOptions}
             selectedValue={context.incomeSetup}
          />
+
+         {context.incomeSetup === 'contract' ? (
+            <div className="flex flex-col gap-1.5">
+               <p className="text-md-b2 font-semibold text-md-heading">Describe your situation</p>
+               <p className="text-md-b3 text-md-neutral-700">Tell lenders how you earn, in your own words.</p>
+               <textarea
+                  autoFocus
+                  className="w-full resize-none rounded-md-input border border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none"
+                  maxLength={200}
+                  rows={3}
+                  onChange={(e) => onIncomeDescriptionChange(e.target.value)}
+                  placeholder="e.g. I run a small online shop and income changes month to month"
+                  value={context.incomeDescription ?? ''}
+               />
+            </div>
+         ) : null}
 
          <div className="flex flex-col gap-1.5">
             <p className="text-md-b2 font-semibold text-md-heading">What do you do for work?</p>
@@ -1386,11 +1405,19 @@ export default function LoanRequestModal({
                         onBack={handleBorrowerContextBack}
                         onCashGapToggle={handleCashGapToggle}
                         onContinue={handleBorrowerContextContinue}
-                        onIncomeSelect={(value) => setBorrowerContext((current) => ({ ...current, incomeSetup: value }))}
+                        onIncomeSelect={(value) =>
+                           setBorrowerContext((current) => ({
+                              ...current,
+                              incomeSetup: value,
+                              // Drop the free-text explanation if they move off "Something else".
+                              incomeDescription: value === 'contract' ? current.incomeDescription : ''
+                           }))
+                        }
                         onMonthlyIncomeSelect={(v) => setBorrowerContext((prev) => ({ ...prev, monthlyIncome: v }))}
                         onMonthlyExpensesSelect={(v) => setBorrowerContext((prev) => ({ ...prev, monthlyExpenses: v }))}
                         onOtherIncomeChange={(v) => setBorrowerContext((prev) => ({ ...prev, otherIncome: v }))}
                         onProfessionChange={(v) => setBorrowerContext((prev) => ({ ...prev, profession: v }))}
+                        onIncomeDescriptionChange={(v) => setBorrowerContext((prev) => ({ ...prev, incomeDescription: v }))}
                         onPaydaySelect={(value) => setBorrowerContext((current) => ({ ...current, paydayWindow: value }))}
                         onProfileImageClick={() => setShowBorrowerAvatarModal(true)}
                         onProfileNameChange={(value) => {
