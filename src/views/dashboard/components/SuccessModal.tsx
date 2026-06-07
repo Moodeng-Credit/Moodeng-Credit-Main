@@ -22,6 +22,13 @@ export default function SuccessModal({ clickOutsideRef, isOpen, onClose }: Succe
    };
 
    const startDismissGesture = (event: PointerEvent<HTMLElement>) => {
+      // Don't start the swipe-to-dismiss gesture (which captures the pointer) when the
+      // press begins on an interactive element. Capturing the pointer on the section
+      // re-targets the follow-up click away from the button, swallowing its onClick.
+      if (event.target instanceof HTMLElement && event.target.closest('button, a, input, textarea, select')) {
+         return;
+      }
+
       dismissStartRef.current = event.clientY;
       dismissOffsetRef.current = 0;
       event.currentTarget.setPointerCapture(event.pointerId);

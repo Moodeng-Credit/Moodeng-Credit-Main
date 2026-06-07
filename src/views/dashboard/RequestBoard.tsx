@@ -64,6 +64,11 @@ import UserCard from '@/views/dashboard/components/UserCard';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 import { FAQS } from '@/views/support/data/faqs';
 
+// Stable empty-array identity so memos/selectors that fall back to "no loans" don't
+// produce a fresh [] every render (which would churn downstream useMemos in a loop
+// and crash the page — e.g. a blank screen when navigating Back into the board).
+const EMPTY_LOANS: Loan[] = [];
+
 const LENDER_NOTE_STORAGE_KEY = 'moodeng_lender_note_dismissed';
 const REQUEST_BOARD_PREVIEW_REQUESTS_STORAGE_KEY = 'moodeng-request-board-preview-requests';
 const IS_BORROWER_BASE_WALLET_GATE_ENABLED = true;
@@ -415,11 +420,10 @@ function RequestBoard$() {
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
    const [hasLoadedRequestBoardLoans, setHasLoadedRequestBoardLoans] = useState(false);
-   const liveRequestBoardLoans = hasLoadedRequestBoardLoans ? floanRequests : [];
+   const liveRequestBoardLoans = hasLoadedRequestBoardLoans ? floanRequests : EMPTY_LOANS;
    const previewRequestBoardLoans = useMemo(buildPreviewRequestBoardLoans, []);
    const shouldUsePreviewRequestBoardLoans = hasLoadedRequestBoardLoans && shouldShowPreviewRequestBoardLoans(location.search, liveRequestBoardLoans);
    const requestBoardLoans = shouldUsePreviewRequestBoardLoans ? previewRequestBoardLoans : liveRequestBoardLoans;
-   const [sortedLoans, setSortedLoans] = useState(floanRequests);
 
    const today = new Date().toISOString().split('T')[0];
    const borrowerUserId = effectiveUser?.id || '';
@@ -1196,17 +1200,13 @@ function RequestBoard$() {
       );
    }, [filters, searchLoan, requestBoardLoans, customAmount, userProfiles]);
 
-   useEffect(() => {
-      setSortedLoans(filteredLoans);
-   }, [filteredLoans]);
-
    const {
       displayedItems: displayedLoans,
       displayedCount,
       totalCount,
       handleLoadMore
    } = usePagination({
-      items: sortedLoans,
+      items: filteredLoans,
       resetDependencies: [filters, searchLoan]
    });
 

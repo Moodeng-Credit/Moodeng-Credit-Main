@@ -268,14 +268,15 @@ export default function TransactionDetail() {
    }, [gloans, isPreview, loanId]);
 
    useEffect(() => {
-      if (!user?.id) return;
-      const load = async () => {
-         if (!loan && !isPreview) {
-            await dispatch(getUserLoans({ userId: user.id })).unwrap();
-         }
-      };
-      load().catch((err: Error) => console.error('Error loading loan:', err.message));
-   }, [dispatch, user?.id, loan, isPreview]);
+      if (!user?.id || isPreview) return;
+      // Always refetch on mount — not only when the loan is missing from the
+      // store. A cached loan can be stale (e.g. a lender funded it since the
+      // last fetch), and without this the detail view would keep showing the
+      // old "Pending" status until a full page reload.
+      dispatch(getUserLoans({ userId: user.id }))
+         .unwrap()
+         .catch((err: Error) => console.error('Error loading loan:', err.message));
+   }, [dispatch, user?.id, isPreview]);
 
    useEffect(() => {
       if (!loan || !user?.id) return;
