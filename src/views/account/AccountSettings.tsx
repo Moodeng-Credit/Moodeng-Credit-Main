@@ -22,6 +22,7 @@ import { getWorldIdVerificationLabel } from '@/lib/worldIdVerificationLabel';
 import { fetchUser, updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
+import EditBioInfoModal from '@/views/account/EditBioInfoModal';
 
 const ICON_MASK: React.CSSProperties = {
    WebkitMaskSize: 'contain',
@@ -563,6 +564,7 @@ export default function AccountSettings() {
    const [showPasswordModal, setShowPasswordModal] = useState(false);
    const [showEmailModal, setShowEmailModal] = useState(false);
    const [showTelegramAlertsModal, setShowTelegramAlertsModal] = useState(false);
+   const [showBioInfoModal, setShowBioInfoModal] = useState(false);
    const [showAvatarModal, setShowAvatarModal] = useState(false);
    const [isSavingAvatar, setIsSavingAvatar] = useState(false);
    const [walletCopied, setWalletCopied] = useState(false);
@@ -859,7 +861,16 @@ export default function AccountSettings() {
                      actionLabel={user?.chatId ? undefined : 'Connect'}
                      onAction={user?.chatId ? undefined : () => setShowTelegramAlertsModal(true)}
                   />
-                  <ReadOnlyField label="WhatsApp" value="Not Connected" actionLabel="Connect" />
+                  <ReadOnlyField label="WhatsApp" value="Unavailable" />
+                  <ReadOnlyField label="LINE" value="Unavailable" />
+                  {isBorrower ? (
+                     <ReadOnlyField
+                        label="Bio Info"
+                        value="Work, income, and what you need help with"
+                        actionLabel="Change"
+                        onAction={() => setShowBioInfoModal(true)}
+                     />
+                  ) : null}
                </div>
 
                {/* Language */}
@@ -1241,6 +1252,7 @@ export default function AccountSettings() {
 
          <ChangePasswordModal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
          <ChangeEmailModal isOpen={showEmailModal} onClose={() => setShowEmailModal(false)} />
+         <EditBioInfoModal isOpen={showBioInfoModal} onClose={() => setShowBioInfoModal(false)} user={user} />
          <TelegramAlertsModal
             isOpen={showTelegramAlertsModal}
             onClose={() => setShowTelegramAlertsModal(false)}
