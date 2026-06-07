@@ -59,7 +59,10 @@ export function useWalletSync() {
 
    // Track connection intent to show success toast
    useAccountEffect({
-      onConnect: () => {
+      onConnect: ({ isReconnected }) => {
+         // Silent reconnects on page load (autoconnect) shouldn't fire the "Wallet
+         // Connected" toast — only surface it for an explicit, user-initiated connect.
+         if (isReconnected) return;
          isConnecting.current = true;
       },
       onDisconnect: () => {
