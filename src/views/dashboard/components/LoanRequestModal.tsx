@@ -1142,7 +1142,12 @@ export default function LoanRequestModal({
          return;
       }
 
-      if (requireBorrowerContextStep && !borrowerContextPromptSeen && !showBorrowerContextStep) {
+      // Borrowers who already saved their bio context (income/payday/etc.) shouldn't be
+      // re-prompted on every loan request — that data lives on their profile and persists.
+      // Returning users can update it from Account Settings instead.
+      const hasSavedBorrowerContext = Boolean(user.incomeType);
+
+      if (requireBorrowerContextStep && !hasSavedBorrowerContext && !borrowerContextPromptSeen && !showBorrowerContextStep) {
          event.preventDefault();
          setShowBorrowerContextStep(true);
          return;

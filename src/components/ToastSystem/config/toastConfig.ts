@@ -127,6 +127,22 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       buttonAction: 'retry_transaction'
    },
 
+   transaction_rejected: {
+      toastType: TOAST_TYPES.WARNING,
+      title: 'Transaction Declined',
+      message: 'You declined the transaction in your wallet. No funds were moved.',
+      buttonText: 'Try again?',
+      buttonAction: 'retry_transaction'
+   },
+
+   wrong_network: {
+      toastType: TOAST_TYPES.ERROR,
+      title: 'Wrong Network',
+      message: 'Your wallet is connected to the wrong network. Switch networks and try again.',
+      buttonText: 'Try again?',
+      buttonAction: 'retry_transaction'
+   },
+
    verification_failed: {
       toastType: TOAST_TYPES.ERROR,
       title: 'Verification Failed!',
