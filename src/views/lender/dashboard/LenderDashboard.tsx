@@ -425,7 +425,14 @@ export default function LenderDashboard() {
                <UserAvatar size={70} />
                <div className="flex flex-col gap-1 justify-center pt-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                     <p className="text-[18px] tracking-[-0.04em] leading-[1.2] font-semibold text-md-primary-2000">Hello, {firstName}</p>
+                     <button
+                        type="button"
+                        onClick={() => navigate('/account/settings?edit=name')}
+                        className="text-left text-[18px] tracking-[-0.04em] leading-[1.2] font-semibold text-md-primary-2000 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 rounded-sm"
+                        aria-label="Edit display name"
+                     >
+                        Hello, {firstName}
+                     </button>
                      <span className="inline-flex items-center px-2.5 py-0.5 bg-md-primary-900 rounded-md-sm">
                         <span className="text-md-b3 font-semibold text-md-neutral-100 whitespace-nowrap">IOU {iouPoints}</span>
                      </span>
