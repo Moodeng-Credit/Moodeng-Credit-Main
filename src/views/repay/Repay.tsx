@@ -1,6 +1,6 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowLeft, Check, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
@@ -174,7 +174,7 @@ export default function Repay() {
    const { showToast, showToastByConfig } = useToast();
    const { Transfer } = useWallet();
    const account = useAccount();
-   const { connect, connectors, status: connectStatus } = useConnect();
+   const { connectAsync, connectors, status: connectStatus } = useConnect();
 
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
@@ -196,6 +196,23 @@ export default function Repay() {
    const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
    const [repaymentAmount, setRepaymentAmount] = useState('');
    const [isProcessing, setIsProcessing] = useState(false);
+   const [completion, setCompletion] = useState<{ reason: string; paidAmount: number; coin: string; trustPoints: number } | null>(null);
+   // Acknowledge a partial payment inline (the loan stays active). Shown until the borrower's
+   // next interaction so there's no timer to leak; full payoffs use `completion` instead.
+   const [partialPaid, setPartialPaid] = useState<{ paidAmount: number; remaining: number; coin: string } | null>(null);
+   // The on-chain transfer hash, set the moment Transfer resolves. Drives the "Sending" →
+   // "Confirming" copy on the in-card processing overlay and the explorer link.
+   const [pendingTxHash, setPendingTxHash] = useState<string | null>(null);
+   const amountInputRef = useRef<HTMLInputElement>(null);
+   // Synchronous re-entrancy guard. `isProcessing` is React state, so on a fast double-tap
+   // both calls read the stale `false` and each fires its own Transfer — opening a second
+   // Base Account signing popup that errors ("Something went wrong") since the request is
+   // already in flight. A ref flips immediately, so the second tap is dropped.
+   const repayInFlightRef = useRef(false);
+   // Set when the borrower taps Pay Now while still disconnected. Once the wallet reports
+   // connected, an effect resumes the repayment automatically so connecting and paying are
+   // a single intent rather than two separate taps.
+   const pendingRepayRef = useRef(false);
 
    useEffect(() => {
       if (activeLoans.length === 0) {
@@ -206,10 +223,26 @@ export default function Repay() {
       setSelectedLoanId((currentId) => (currentId && activeLoans.some((loan) => loan.id === currentId) ? currentId : activeLoans[0].id));
    }, [activeLoans]);
 
+   // Focus the amount field when the active loan changes so the borrower can type straight
+   // away. On iOS a programmatic focus highlights the field without forcing the keyboard up,
+   // so this speeds up the common case without hijacking the viewport.
+   useEffect(() => {
+      if (selectedLoanId && !isProcessing) {
+         amountInputRef.current?.focus();
+      }
+      // Only re-run when the selected loan changes, not on every processing toggle.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [selectedLoanId]);
+
    const selectedLoan = activeLoans.find((loan) => loan.id === selectedLoanId) ?? activeLoans[0];
    const selectedRemaining = selectedLoan ? getRemainingAmount(selectedLoan) : 0;
+   // The remaining balance is displayed rounded to cents, so validate against the rounded
+   // value. Otherwise a remaining of e.g. 0.469 shows as "$0.47" but rejects a 0.47 "Full"
+   // payment as exceeding the maximum, leaving the borrower unable to clear the loan.
+   const selectedRemainingRounded = Math.round(selectedRemaining * 100) / 100;
    const parsedRepaymentAmount = toNumber(repaymentAmount);
-   const validPreviewPayment = selectedLoan && parsedRepaymentAmount > 0 ? Math.min(parsedRepaymentAmount, selectedRemaining) : 0;
+   const validPreviewPayment =
+      selectedLoan && parsedRepaymentAmount > 0 ? Math.min(parsedRepaymentAmount, selectedRemainingRounded) : 0;
    const currentProgressPercent = selectedLoan ? getProgressPercent(selectedLoan) : 0;
    const hasExistingRepayment = selectedLoan ? toNumber(selectedLoan.repaidAmount) > 0 : false;
    const previewProgressPercent = selectedLoan ? getPreviewProgressPercent(selectedLoan, validPreviewPayment) : 0;
@@ -223,12 +256,20 @@ export default function Repay() {
       selectedLoan && repaymentAmount
          ? parsedRepaymentAmount <= 0
             ? 'Enter an amount greater than 0.'
-            : parsedRepaymentAmount > selectedRemaining
-              ? `Maximum repayment is $${formatCurrency(selectedRemaining)}.`
+            : parsedRepaymentAmount > selectedRemainingRounded
+              ? `Maximum repayment is $${formatCurrency(selectedRemainingRounded)}.`
               : null
          : null;
 
    const paymentCtaAmount = repaymentAmount ? `$${formatCurrency(parsedRepaymentAmount)}` : 'loan';
+   // Surface the figure on the button itself so the borrower confirms the amount at the
+   // moment of commitment; fall back to a plain label when there's no valid amount yet.
+   const hasValidPayAmount = Boolean(repaymentAmount) && !amountError && parsedRepaymentAmount > 0;
+   const payNowLabel = hasValidPayAmount ? `Pay $${formatCurrency(parsedRepaymentAmount)}` : 'Pay Now';
+   const explorerBaseUrl = account.chain?.blockExplorers?.default?.url;
+   const explorerTxUrl = pendingTxHash && explorerBaseUrl ? `${explorerBaseUrl}/tx/${pendingTxHash}` : null;
+   // Pay Now is a single intent: it requires a valid amount whether or not the wallet is
+   // connected. If disconnected, tapping it connects first and then auto-resumes the payment.
    const isRepayDisabled =
       isProcessing || connectStatus === 'pending' || !repaymentAmount || Boolean(amountError) || parsedRepaymentAmount <= 0;
    const baseWalletLock = getBaseWalletLockStatus(user);
@@ -280,23 +321,32 @@ export default function Repay() {
    const handleSelectLoan = (loanId: string) => {
       setSelectedLoanId(loanId);
       setRepaymentAmount('');
+      setCompletion(null);
+      setPartialPaid(null);
    };
 
    const setQuickAmount = (fraction: number) => {
       if (!selectedLoan) return;
       setRepaymentAmount(formatCurrency(getRemainingAmount(selectedLoan) * fraction));
+      setPartialPaid(null);
    };
 
    const handleAmountChange = (event: ChangeEvent<HTMLInputElement>) => {
       setRepaymentAmount(event.target.value);
+      setPartialPaid(null);
    };
 
    const handleRepay = useCallback(async () => {
-      if (!selectedLoan || isProcessing || amountError || parsedRepaymentAmount <= 0) {
+      if (!selectedLoan || isProcessing || repayInFlightRef.current) {
          return;
       }
 
+      // Connecting the Base wallet is a prerequisite, not a separate task. If the borrower
+      // taps Pay Now while disconnected, open the connect popup and arm the auto-continue so
+      // the payment resumes by itself once connected — a single intent, not two taps.
       if (!account.isConnected) {
+         setCompletion(null);
+
          if (!baseWalletLock.hasStoredWallet) {
             navigate('/onboarding/wallet', { state: { returnTo: 'repay' } });
             return;
@@ -313,7 +363,19 @@ export default function Repay() {
             return;
          }
 
-         connect({ connector: baseAccountConnector });
+         // Only auto-resume into a payment when there is a valid amount to pay.
+         pendingRepayRef.current = !amountError && parsedRepaymentAmount > 0;
+
+         try {
+            await connectAsync({ connector: baseAccountConnector });
+         } catch {
+            // Borrower dismissed or the connection failed — don't auto-pay.
+            pendingRepayRef.current = false;
+         }
+         return;
+      }
+
+      if (amountError || parsedRepaymentAmount <= 0) {
          return;
       }
 
@@ -346,15 +408,24 @@ export default function Repay() {
          return;
       }
 
+      repayInFlightRef.current = true;
       setIsProcessing(true);
 
       try {
-         const newRepaidAmount = toNumber(selectedLoan.repaidAmount) + parsedRepaymentAmount;
-         const newRepaymentStatus = newRepaidAmount >= toNumber(selectedLoan.totalRepaymentAmount) ? 'Paid' : 'Partial';
+         // Never transfer more than is actually owed — the input is validated against the
+         // rounded balance, so a "Full" payment can be a hair above the true remaining.
+         // Round to USDC's 6 decimals so floating-point noise never reaches the transfer
+         // as an unparseable string like "0.4699999999998".
+         const remaining = getRemainingAmount(selectedLoan);
+         const effectiveRepayment = Math.round(Math.min(parsedRepaymentAmount, remaining) * 1e6) / 1e6;
+         const newRepaidAmount = toNumber(selectedLoan.repaidAmount) + effectiveRepayment;
+         const isFullyRepaid = newRepaidAmount >= toNumber(selectedLoan.totalRepaymentAmount) - 0.005;
+         const newRepaymentStatus = isFullyRepaid ? 'Paid' : 'Partial';
          const transferCoin = selectedLoan.coin?.trim() || 'USDC';
+         const earnedTrustPoints = getEstimatedTrustPoints(selectedLoan, effectiveRepayment);
          const transactionHash = await Transfer(
             selectedLoan.lenderWallet || '',
-            parsedRepaymentAmount.toString(),
+            effectiveRepayment.toString(),
             selectedLoan.id,
             transferCoin
          );
@@ -362,6 +433,10 @@ export default function Repay() {
          if (!transactionHash) {
             return;
          }
+
+         // Transfer has cleared on-chain: surface the hash so the overlay flips from
+         // "Sending" to "Confirming" while the DB catches up.
+         setPendingTxHash(transactionHash);
 
          await dispatch(
             updateLoanStatus({
@@ -373,12 +448,31 @@ export default function Repay() {
          ).unwrap();
          await dispatch(getUserLoans({ userId: user.id })).unwrap();
          setRepaymentAmount('');
+         if (isFullyRepaid) {
+            setCompletion({
+               reason: selectedLoan.reason || 'your loan',
+               paidAmount: toNumber(selectedLoan.totalRepaymentAmount),
+               coin: transferCoin,
+               trustPoints: earnedTrustPoints
+            });
+         } else {
+            // Partial payment: the loan stays active, so acknowledge it inline instead of
+            // the full-payoff screen.
+            const remainingAfter = Math.max(0, toNumber(selectedLoan.totalRepaymentAmount) - newRepaidAmount);
+            setPartialPaid({ paidAmount: effectiveRepayment, remaining: remainingAfter, coin: transferCoin });
+         }
+         // A short success buzz on devices that support it makes the payoff feel tactile.
+         if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+            navigator.vibrate(isFullyRepaid ? [12, 40, 12] : 12);
+         }
          showToastByConfig('repayment_success');
       } catch (error) {
          console.error('Repayment failed:', error);
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
       } finally {
          setIsProcessing(false);
+         setPendingTxHash(null);
+         repayInFlightRef.current = false;
       }
    }, [
       selectedLoan,
@@ -392,7 +486,7 @@ export default function Repay() {
       baseWalletLock.address,
       baseWalletLock.hasStoredWallet,
       canRepayWithConnectedBaseWallet,
-      connect,
+      connectAsync,
       isUsingLockedBaseWallet,
       showToast,
       showToastByConfig,
@@ -407,25 +501,36 @@ export default function Repay() {
       handleRepayRef.current = handleRepay;
    }, [handleRepay]);
 
+   // Auto-continue: once the wallet reports connected, resume the repayment the borrower
+   // already initiated. Reading account.isConnected here (not in the connect callback) avoids
+   // the state-propagation lag that would otherwise re-trigger the connect popup. Declared
+   // after the ref-sync effect so handleRepayRef points at the freshly-connected closure.
+   useEffect(() => {
+      if (account.isConnected && pendingRepayRef.current) {
+         pendingRepayRef.current = false;
+         void handleRepayRef.current();
+      }
+   }, [account.isConnected]);
+
    const handleBottomNavRepay = useCallback(() => {
       void handleRepayRef.current();
    }, []);
 
    const bottomNavRepayAction = useMemo(
       () =>
-         selectedLoan
+         selectedLoan && !completion
             ? {
-                 ariaLabel: account.isConnected ? `Pay now ${paymentCtaAmount}` : 'Connect wallet to repay',
+                 ariaLabel: account.isConnected ? `Pay now ${paymentCtaAmount}` : `Connect and pay ${paymentCtaAmount}`,
                  disabled: isRepayDisabled,
                  icon: 'dollar-circle.svg',
                  id: 'repay-pay-now',
                  isProcessing,
-                 label: connectStatus === 'pending' ? 'Connecting' : 'Pay Now',
+                 label: connectStatus === 'pending' ? 'Connecting' : payNowLabel,
                  onClick: handleBottomNavRepay,
                  path: '/repay'
               }
             : null,
-      [account.isConnected, connectStatus, handleBottomNavRepay, isProcessing, isRepayDisabled, paymentCtaAmount, selectedLoan]
+      [account.isConnected, completion, connectStatus, handleBottomNavRepay, isProcessing, isRepayDisabled, paymentCtaAmount, payNowLabel, selectedLoan]
    );
 
    useBottomNavPrimaryAction(bottomNavRepayAction);
@@ -440,6 +545,59 @@ export default function Repay() {
                <div className="h-16 rounded-md-xl bg-md-neutral-300" />
                <div className="h-44 rounded-md-xl bg-md-neutral-300" />
                <div className="h-80 rounded-md-xl bg-md-neutral-300" />
+            </div>
+         </main>
+      );
+   }
+
+   if (completion) {
+      const hasMoreLoans = activeLoans.length > 0;
+
+      return (
+         <main className="repay-page min-h-screen bg-[linear-gradient(180deg,#fbfafd_0%,#ffffff_44%,#fbfafd_100%)] px-4 pb-32 pt-5 text-md-heading sm:px-6">
+            <div className="mx-auto flex w-full max-w-[470px] flex-col gap-3">
+               <section className="flex flex-col items-center rounded-md-xl border border-md-neutral-300 bg-white px-6 py-10 text-center shadow-[0_10px_28px_rgba(31,28,37,0.05)] animate-[repaySuccessIn_0.35s_cubic-bezier(0.16,1,0.3,1)]">
+                  <span className="flex h-16 w-16 items-center justify-center rounded-md-pill bg-md-green-100 text-md-green-900 animate-[repaySuccessPop_0.45s_cubic-bezier(0.16,1,0.3,1)]">
+                     <Check className="h-8 w-8" aria-hidden="true" />
+                  </span>
+                  <h1 className="mt-5 text-md-h4 font-semibold text-md-heading">Loan fully repaid</h1>
+                  <p className="mt-2 max-w-[320px] text-md-b2 text-md-neutral-1200">
+                     You’ve cleared <span className="font-semibold text-md-heading">{completion.reason}</span> — ${formatCurrency(completion.paidAmount)}{' '}
+                     {completion.coin} paid in full. Nice work building your repayment history.
+                  </p>
+                  {completion.trustPoints > 0 ? (
+                     <span className="mt-4 inline-flex items-center gap-1.5 rounded-md-pill bg-md-green-100 px-3 py-1.5 text-md-b3 font-semibold text-md-green-900">
+                        <ShieldCheck className="h-4 w-4" aria-hidden="true" />+{completion.trustPoints} Trust Points earned
+                     </span>
+                  ) : null}
+                  <div className="mt-7 flex w-full flex-col gap-2.5">
+                     {hasMoreLoans ? (
+                        <button
+                           type="button"
+                           onClick={() => setCompletion(null)}
+                           className="inline-flex min-h-[56px] items-center justify-center rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
+                        >
+                           Repay another loan
+                        </button>
+                     ) : null}
+                     <button
+                        type="button"
+                        onClick={() => navigate('/history')}
+                        className="inline-flex min-h-[56px] items-center justify-center rounded-[16px] border border-md-neutral-300 bg-white px-md-4 py-md-3 text-md-b1 font-semibold text-md-primary-1200 active:scale-[0.99]"
+                     >
+                        View repayment history
+                     </button>
+                     {!hasMoreLoans ? (
+                        <button
+                           type="button"
+                           onClick={() => navigate('/dashboard')}
+                           className="inline-flex min-h-[56px] items-center justify-center rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
+                        >
+                           Back to dashboard
+                        </button>
+                     ) : null}
+                  </div>
+               </section>
             </div>
          </main>
       );
@@ -515,7 +673,43 @@ export default function Repay() {
             ) : null}
 
             {selectedLoan ? (
-               <section className="rounded-md-xl border border-md-neutral-300 bg-white p-4 shadow-[0_10px_28px_rgba(31,28,37,0.05)]">
+               <section className="relative overflow-hidden rounded-md-xl border border-md-neutral-300 bg-white p-4 shadow-[0_10px_28px_rgba(31,28,37,0.05)]">
+                  {isProcessing ? (
+                     <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-white/85 px-6 text-center backdrop-blur-sm">
+                        <Loader2 className="h-8 w-8 animate-spin text-md-primary-1200" aria-hidden="true" />
+                        <div>
+                           <p className="text-md-b1 font-semibold text-md-heading">{pendingTxHash ? 'Confirming on Base…' : 'Sending payment…'}</p>
+                           <p className="mt-1 text-md-b3 text-md-neutral-1200">
+                              {pendingTxHash ? 'Recording your repayment — hang tight.' : 'Approve the transaction in your wallet.'}
+                           </p>
+                        </div>
+                        {explorerTxUrl ? (
+                           <a
+                              href={explorerTxUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-md-b3 font-semibold text-md-primary-1200 underline"
+                           >
+                              View transaction
+                           </a>
+                        ) : null}
+                     </div>
+                  ) : null}
+                  {partialPaid ? (
+                     <div className="mb-3 flex items-center gap-2.5 rounded-md-input border border-md-green-100 bg-md-green-100/60 px-3 py-2.5">
+                        <Check className="h-4 w-4 shrink-0 text-md-green-900" aria-hidden="true" />
+                        <p className="text-md-b3 font-medium text-md-green-900">
+                           Paid ${formatCurrency(partialPaid.paidAmount)} {partialPaid.coin} — ${formatCurrency(partialPaid.remaining)} to go.
+                        </p>
+                     </div>
+                  ) : !account.isConnected ? (
+                     <div className="mb-3 flex items-center gap-2.5 rounded-md-input border border-md-primary-100 bg-md-primary-100/45 px-3 py-2.5">
+                        <ShieldCheck className="h-4 w-4 shrink-0 text-md-primary-1200" aria-hidden="true" />
+                        <p className="text-md-b3 font-medium text-md-primary-1200">
+                           Tapping <span className="font-semibold">Pay Now</span> connects your Base wallet, then completes the payment.
+                        </p>
+                     </div>
+                  ) : null}
                   <div className="flex items-start justify-between gap-4">
                      <div className="min-w-0 self-start">
                         <p className="text-md-b3 font-semibold uppercase text-md-neutral-1200">You’re paying</p>
@@ -622,6 +816,7 @@ export default function Repay() {
                               </div>
                               <div className="flex min-w-0 flex-1 items-center gap-2 px-4 py-2">
                                  <input
+                                    ref={amountInputRef}
                                     id="repayment-amount"
                                     type="text"
                                     inputMode="decimal"
@@ -633,7 +828,11 @@ export default function Repay() {
                                  />
                               </div>
                            </div>
-                           {amountError ? <p className="mt-2 text-md-b3 font-semibold text-md-red-600">{amountError}</p> : null}
+                           {amountError ? (
+                              <p className="mt-2 text-md-b3 font-semibold text-md-red-600">{amountError}</p>
+                           ) : !repaymentAmount ? (
+                              <p className="mt-2 text-md-b3 text-md-neutral-1200">Choose a quick amount above or enter your own to continue.</p>
+                           ) : null}
                         </div>
                      </div>
                   </div>
