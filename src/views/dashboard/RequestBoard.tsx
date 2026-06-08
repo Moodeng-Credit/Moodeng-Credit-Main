@@ -1657,10 +1657,25 @@ function RequestBoard$() {
                                  />
                               </div>
                            ))
-                        ) : (
-                           <div className="text-center py-20 text-md-neutral-1200 text-md-b2">
-                              {needsRoleSelection ? 'Public requests will appear here when available.' : 'No loan requests found.'}
+                        ) : needsRoleSelection ? (
+                           <div className="text-center py-20 text-md-neutral-1200 text-md-b2">Public requests will appear here when available.</div>
+                        ) : hasActiveRequestFilters || searchLoan.trim() ? (
+                           <div className="flex flex-col items-center gap-2 py-20 text-center">
+                              <p className="text-md-neutral-1200 text-md-b2">No requests match your filters.</p>
+                              <p className="text-md-neutral-1000 text-md-b3">Try widening your search or clearing your filters.</p>
+                              <button
+                                 type="button"
+                                 onClick={() => {
+                                    resetRequestFilters();
+                                    setSearchLoan('');
+                                 }}
+                                 className="mt-1 text-md-primary-1200 text-md-b3 font-semibold underline underline-offset-2"
+                              >
+                                 Clear filters
+                              </button>
                            </div>
+                        ) : (
+                           <div className="text-center py-20 text-md-neutral-1200 text-md-b2">No loan requests found.</div>
                         )}
                      </div>
 
