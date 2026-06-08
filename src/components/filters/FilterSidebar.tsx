@@ -200,7 +200,7 @@ export default function FilterSidebar({ filters, onFiltersChange, customAmount, 
                   Filters
                </h2>
 
-               <div className="flex items-center gap-1.5 overflow-x-auto px-md-4 pb-3">
+               <div className="flex items-center justify-center gap-1.5 overflow-x-auto px-md-4 pb-3">
                   {tabs.map((tab) => (
                      <button
                         key={tab.id}
