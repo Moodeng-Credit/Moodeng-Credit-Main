@@ -1,4 +1,4 @@
-import { type MouseEvent, useCallback, useMemo, useState } from 'react';
+import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
@@ -238,9 +238,30 @@ export default function UserCard(loan: UserCardProps) {
       showToastByConfig
    ]);
 
+   // Set when the lender taps "Send your help" while disconnected. Once the wallet reports
+   // connected, an effect resumes the lend automatically so connecting and sending are a
+   // single intent rather than two taps. A ref keeps the latest executeLend closure so the
+   // resume runs against fresh state (e.g. the just-connected account).
+   const pendingLendRef = useRef(false);
+   const executeLendRef = useRef(executeLend);
+
+   useEffect(() => {
+      executeLendRef.current = executeLend;
+   }, [executeLend]);
+
+   useEffect(() => {
+      if (isConnected && pendingLendRef.current) {
+         pendingLendRef.current = false;
+         void executeLendRef.current();
+      }
+   }, [isConnected]);
+
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       if (!isConnected) {
+         // Connecting is a prerequisite, not a separate task: arm the lend so it resumes by
+         // itself once the wallet connects, instead of dropping the lender back to a second tap.
+         pendingLendRef.current = true;
          openConnectModal?.();
          return;
       }
@@ -301,7 +322,7 @@ export default function UserCard(loan: UserCardProps) {
                   disabled={isDeletingOwnRequest}
                   aria-label="Delete your loan request"
                   title="Delete request"
-                  className="absolute right-3 top-3 z-10 inline-flex size-8 items-center justify-center rounded-full border border-md-red-500/30 bg-md-red-500/15 text-md-red-300 shadow-[0_6px_14px_rgba(221,4,23,0.2)] backdrop-blur-sm transition active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="absolute right-3 top-3 z-10 inline-flex size-8 items-center justify-center rounded-full border border-md-red-500/30 bg-md-red-500/15 text-md-red-300 shadow-[0_1px_3px_rgba(0,0,0,0.12)] transition active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50"
                >
                   <Trash2 className="size-4" strokeWidth={2} />
                </button>
