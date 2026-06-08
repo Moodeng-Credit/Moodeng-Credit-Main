@@ -56,6 +56,17 @@ const wait = (ms: number) =>
       window.setTimeout(resolve, ms);
    });
 
+/**
+ * iOS Safari will not hand a World ID universal link to the installed World App when the
+ * navigation happens inside a programmatically opened tab (`window.open`). It treats it as a
+ * plain web navigation and falls back to the App Store / an "Open with World" prompt that goes
+ * nowhere. On iOS we must navigate the current tab in direct response to the tap instead.
+ */
+const isIOSDevice = () =>
+   typeof navigator !== 'undefined' &&
+   (/iP(hone|ad|od)/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+
 interface VerificationLaunchOverlayProps {
    state: VerificationLaunchState;
    onRetryOpen: () => void;
@@ -768,6 +779,39 @@ export default function WorldIDVerification({
       setVerificationProcessingStep('confirming');
       setShowVerificationHelp(false);
       setVerificationLaunchState('opening');
+
+      // iOS: navigate the current tab so the universal link opens the installed World App.
+      // A new-tab/popup launch is silently downgraded to the App Store fallback on iOS Safari.
+      if (isIOSDevice()) {
+         const launchInCurrentTab = (request: PreparedWorldIdRequest) => {
+            didLaunchExternalFlowRef.current = true;
+            clearLaunchFallbackTimer();
+            // Start polling before navigating: when the universal link is intercepted by the
+            // World App, Safari keeps this page alive and polling continues to completion.
+            beginPollingWorldIdRequest(request);
+            window.location.href = request.connectorURI;
+         };
+
+         const preparedForIOS = preparedRequestRef.current;
+         if (preparedForIOS) {
+            launchInCurrentTab(preparedForIOS);
+            preparingRef.current = false;
+            return;
+         }
+
+         prepareWorldIdRequest()
+            .then(launchInCurrentTab)
+            .catch((error) => {
+               setVerificationLaunchState('idle');
+               if (error instanceof Error && error.message === 'WORLDID_ALREADY_USED') return;
+               console.error('[WorldID] iOS launch error:', error instanceof Error ? error.message : error);
+               showToastByConfig('server_error');
+            })
+            .finally(() => {
+               preparingRef.current = false;
+            });
+         return;
+      }
 
       if (launchFallbackTimerRef.current !== null) {
          window.clearTimeout(launchFallbackTimerRef.current);
