@@ -378,7 +378,14 @@ function RequestBoard$() {
    const showSubmittedRequestSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.has('submittedRequestSuccessPreview');
    const showTourPreview = forceTourPreview || requestBoardSearchParams.has('tour');
    const shouldStartTourImmediately = requestBoardSearchParams.get('startTour') === '1';
-   const isLenderTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('lenderTourPreview');
+   // A guest who isn't signed in can pick "I want to lend" from the sign-in/sign-up tour
+   // chooser (?tour=1&tourRole=lender). That should run the same mocked-lender preview the
+   // DEV-only `lenderTourPreview` flag drives — minus the DEV gate — so real production
+   // visitors can actually see it. Real, signed-in lenders never match this: it requires
+   // the *real* auth state to be empty, not just `isAuthenticated` (which this very flag feeds).
+   const isRealUserAuthenticated = Boolean(user?.id && username);
+   const wantsGuestLenderTour = showTourPreview && !isRealUserAuthenticated && requestBoardSearchParams.get('tourRole') === 'lender';
+   const isLenderTourPreview = (import.meta.env.DEV && requestBoardSearchParams.has('lenderTourPreview')) || wantsGuestLenderTour;
    const shouldForceReferralTestUser = isReferralTestMode && showTourPreview;
    const effectiveUser = isLenderTourPreview
       ? LENDER_TOUR_USER
@@ -415,6 +422,10 @@ function RequestBoard$() {
       !isBorrower &&
       shouldShowGuidedTour(LENDER_GUIDED_TOUR_ID, tourUserId, forceTourPreview);
    const isGuestBorrowerTour = shouldShowBorrowerTour && !isAuthenticated;
+   // Drives the "continue the tour onto the borrower's profile" link in UserCard — a guest
+   // has no real session, so the link must carry the preview query params itself rather than
+   // relying on a DEV-only check.
+   const isGuestLenderTour = shouldShowLenderTour && wantsGuestLenderTour;
    const recordedTourViewsRef = useRef<Set<string>>(new Set());
    const pendingLoanDataRef = useRef<CreateLoanData | null>(null);
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
@@ -1640,6 +1651,7 @@ function RequestBoard$() {
                                     isPreviewRequest={isPreviewRequestBoardLoan(loan)}
                                     isDeletingOwnRequest={Boolean(isDeletingRequest && requestToDelete?.id === loan.id)}
                                     onDeleteOwnRequest={handleDeleteOwnRequestClick}
+                                    forceTourBorrowerLink={isGuestLenderTour}
                                     tourBorrowerUsername={
                                        loan.id.startsWith('lender-tour')
                                           ? 'maya-demo'
