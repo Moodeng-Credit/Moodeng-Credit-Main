@@ -912,6 +912,10 @@ const UserProfile = () => {
          />
          {showLenderInsightsTour && (
             <GuidedTourPreview
+               // The visitor already opted in on the request board — re-showing the
+               // "Want a quick tour?" intro card here would feel like the tour reset
+               // rather than continued, so jump straight into step 4.
+               startImmediately
                stepOffset={3}
                totalSteps={9}
                steps={lenderInsightsTourSteps}
