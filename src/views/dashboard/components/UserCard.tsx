@@ -2,7 +2,7 @@ import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } fr
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
-import { ChevronRight, ExternalLink, Send, Trash2 } from 'lucide-react';
+import { ChevronRight, ExternalLink, Loader2, Send, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
@@ -107,6 +107,10 @@ export default function UserCard(loan: UserCardProps) {
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
+   // The on-chain transfer hash, set the moment Transfer resolves. Drives the "Sending" →
+   // "Confirming" copy on the in-card processing overlay and the explorer link, mirroring
+   // the repay flow's pattern so lenders get the same on-chain-progress feedback.
+   const [pendingTxHash, setPendingTxHash] = useState<string | null>(null);
    const [showDetails, setShowDetails] = useState(false);
    const { showToast, showToastByConfig } = useToast();
    const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
@@ -166,11 +170,16 @@ export default function UserCard(loan: UserCardProps) {
 
       const transferCoin = loanData.coin?.trim() || 'USDC';
       setIsProcessing(true);
+      setPendingTxHash(null);
 
       try {
          const transactionHash = await Transfer(borrowerWallet, formatNumber(loanData.loanAmount), loanData.id, transferCoin);
 
          if (transactionHash) {
+            // Transfer has cleared on-chain: surface the hash so the overlay flips from
+            // "Sending" to "Confirming" while the DB catches up.
+            setPendingTxHash(transactionHash);
+
             const loanPayload = {
                id: loanData.id,
                wallet: lenderWallet,
@@ -218,6 +227,7 @@ export default function UserCard(loan: UserCardProps) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
       } finally {
          setIsProcessing(false);
+         setPendingTxHash(null);
       }
    }, [
       isProcessing,
@@ -293,6 +303,8 @@ export default function UserCard(loan: UserCardProps) {
          ...borrowerContextProfileData
       });
    }, [borrowerContextProfileData, borrowerDisplayName, borrowerFundedLoanCount, borrowerRepaidLoanCount, borrowerGoodStanding, borrowerIsVerified, due, loanData.createdAt, loanData.loanAmount, loanReason]);
+   const explorerBaseUrl = account.chain?.blockExplorers?.default?.url;
+   const explorerTxUrl = pendingTxHash && explorerBaseUrl ? `${explorerBaseUrl}/tx/${pendingTxHash}` : null;
    const isLenderCard = Boolean(isAuthenticated && !isBorrower && !isOwnLoan && !isLent && !isPreviewRequest);
    const showBorrowerContext = Boolean(borrowerContext && !isBorrower && (!isLenderCard || showDetails));
    const cardClassName = [
@@ -315,6 +327,27 @@ export default function UserCard(loan: UserCardProps) {
             data-tour-target="lender-request-card"
             data-highlighted-request={isHighlighted ? 'true' : undefined}
          >
+            {isProcessing ? (
+               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-[24px] bg-white/85 px-6 text-center backdrop-blur-sm">
+                  <Loader2 className="h-8 w-8 animate-spin text-md-primary-1200" aria-hidden="true" />
+                  <div>
+                     <p className="text-md-b1 font-semibold text-md-heading">{pendingTxHash ? 'Confirming on Base…' : 'Sending your help…'}</p>
+                     <p className="mt-1 text-md-b3 text-md-neutral-1200">
+                        {pendingTxHash ? 'Recording your funding — hang tight.' : 'Approve the transaction in your wallet.'}
+                     </p>
+                  </div>
+                  {explorerTxUrl ? (
+                     <a
+                        href={explorerTxUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-md-b3 font-semibold text-md-primary-1200 underline"
+                     >
+                        View transaction
+                     </a>
+                  ) : null}
+               </div>
+            ) : null}
             {canDeleteOwnRequest ? (
                <button
                   type="button"
