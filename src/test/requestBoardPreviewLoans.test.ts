@@ -1,8 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { shouldShowPreviewRequestBoardLoans } from '@/views/dashboard/RequestBoard';
 
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
+
+// `shouldShowPreviewRequestBoardLoans` checks loan visibility against `new Date()`,
+// so the system clock is pinned here — otherwise whether `requestedLoan` counts as
+// "live" drifts with the real calendar date relative to its hardcoded `createdAt`.
+const NOW = new Date('2026-06-08T00:00:00.000Z');
+const oneDayBefore = (date: Date) => new Date(date.getTime() - 24 * 60 * 60 * 1000).toISOString();
 
 const requestedLoan: Loan = {
    id: 'loan-1',
@@ -17,11 +23,20 @@ const requestedLoan: Loan = {
    loanStatus: LoanStatus.REQUESTED,
    repaymentStatus: RepaymentStatus.UNPAID,
    coin: 'USDC',
-   createdAt: '2026-06-01T00:00:00.000Z',
-   updatedAt: '2026-06-01T00:00:00.000Z'
+   createdAt: oneDayBefore(NOW),
+   updatedAt: oneDayBefore(NOW)
 };
 
 describe('Request Board preview loans', () => {
+   beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(NOW);
+   });
+
+   afterEach(() => {
+      vi.useRealTimers();
+   });
+
    it('does not inject preview requests during normal browsing when live requests are empty', () => {
       expect(shouldShowPreviewRequestBoardLoans('', [])).toBe(false);
    });
