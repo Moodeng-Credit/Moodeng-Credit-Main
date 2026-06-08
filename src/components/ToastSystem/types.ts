@@ -15,6 +15,8 @@ export type ToastSuccessType =
 
 export type ToastErrorType =
    | 'transaction_error'
+   | 'transaction_rejected'
+   | 'wrong_network'
    | 'insufficient_funds'
    | 'funding_error'
    | 'network_error'

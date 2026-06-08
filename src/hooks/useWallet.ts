@@ -1,13 +1,31 @@
 
 
-import { parseUnits } from 'viem';
+import { BaseError, ChainMismatchError, InsufficientFundsError, parseUnits, UserRejectedRequestError } from 'viem';
 import { useWriteContract } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME, getAllowedChainTokenConfig } from '@/config/wagmiConfig';
-import { ERROR_CODES } from '@/types/errorCodes';
+import { ERROR_CODES, type ErrorCode } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
+
+// Inspects the (often deeply-wrapped) wagmi/viem error to route to a toast the
+// user can act on, instead of a generic "transaction failed" they can't self-correct.
+const classifyTransferError = (err: unknown): ErrorCode => {
+   if (err instanceof BaseError) {
+      if (err.walk((cause) => cause instanceof UserRejectedRequestError)) {
+         return ERROR_CODES.TRANSACTION_REJECTED;
+      }
+      if (err.walk((cause) => cause instanceof ChainMismatchError)) {
+         return ERROR_CODES.WRONG_NETWORK;
+      }
+      if (err.walk((cause) => cause instanceof InsufficientFundsError)) {
+         return ERROR_CODES.INSUFFICIENT_FUNDS;
+      }
+   }
+
+   return ERROR_CODES.TRANSACTION_FAILED;
+};
 
 const ERC20_ABI = [
    {
@@ -65,7 +83,7 @@ const useWallet = () => {
          return hash;
       } catch (err) {
          console.error('Tx failed:', err);
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
+         showToastByConfig(getToastKeyFromErrorCode(classifyTransferError(err)));
          return null;
       }
    };
