@@ -22,8 +22,8 @@ interface LenderDiversitySectionProps {
 const STATUS_STYLES: Record<string, { bg: string; text: string; border?: string }> = {
    Excellent: { bg: 'bg-md-green-100', text: 'text-md-green-800' },
    Good: { bg: 'bg-[#dbeafe]', text: 'text-md-blue-700' },
-   Fair: { bg: 'bg-[rgba(211,170,0,0.05)]', text: 'text-[#d3aa00]', border: 'border border-[#d3aa00]' },
-   Low: { bg: 'bg-[#ffedd5]', text: 'text-[#c2410c]' },
+   Fair: { bg: 'bg-[rgba(211,170,0,0.05)]', text: 'text-[#d3aa00] dark:text-[#facc6b]', border: 'border border-[#d3aa00]' },
+   Low: { bg: 'bg-[#ffedd5]', text: 'text-[#c2410c] dark:text-[#fb923c]' },
    'Very Low': { bg: 'bg-md-red-100', text: 'text-md-red-500' }
 };
 
@@ -49,7 +49,7 @@ export default function LenderDiversitySection({
 
    return (
       <div className="relative overflow-hidden rounded-md-lg bg-md-neutral-100 p-4 shadow-md-card">
-         <div className="absolute bottom-0 right-0 h-[128px] w-[128px] rounded-tl-[72px] bg-gradient-to-br from-[#f5f3ff] via-[#ede9fe] to-[#f8f5ff]" />
+         <div className="absolute bottom-0 right-0 h-[128px] w-[128px] rounded-tl-[72px] bg-gradient-to-br from-[#f5f3ff] via-[#ede9fe] to-[#f8f5ff] dark:from-[#1f1435] dark:via-[#2a1740] dark:to-[#1f1435]" />
          <div className="relative z-10 flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
                <h2 className="mb-2 text-md-b1 font-semibold text-md-heading">Lender Diversity Score</h2>

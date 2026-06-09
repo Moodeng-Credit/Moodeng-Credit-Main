@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { Link } from 'react-router-dom';
 
@@ -64,13 +64,34 @@ export default function CreditLevelSection({ currentCs, usedCreditAmount, isVeri
    const availableCredit = Math.max(effectiveLimit - usedCredit, 0);
    const progress = effectiveLimit > 0 ? availableCredit / effectiveLimit : 0;
    const isLocked = !isVerified || levelNumber === 0;
+   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
    return (
       <>
          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
+            <div className="relative flex items-center gap-1.5">
                <h2 className="text-md-h5 font-semibold text-md-heading">Credit Level</h2>
-               <img src="/icons/question_light.svg" alt="Info" className="w-5 h-5" />
+               <button
+                  type="button"
+                  onClick={() => setIsHelpOpen((v) => !v)}
+                  className="flex h-6 w-6 items-center justify-center rounded-full"
+                  aria-label="About credit level"
+               >
+                  <img src="/icons/question_light.svg" alt="" className="w-5 h-5" />
+               </button>
+               {isHelpOpen && (
+                  <>
+                     <div className="fixed inset-0 z-10" onClick={() => setIsHelpOpen(false)} />
+                     <div
+                        role="tooltip"
+                        className="absolute left-0 top-8 z-20 w-[280px] rounded-[10px] bg-[#360975] px-3 py-2 shadow-[0_8px_24px_rgba(20,18,24,0.18)] before:absolute before:left-4 before:top-[-6px] before:h-0 before:w-0 before:border-x-[6px] before:border-b-[6px] before:border-x-transparent before:border-b-[#360975]"
+                     >
+                        <p className="text-center text-[14px] font-normal leading-[21px] tracking-[-0.28px] text-[#f1e9fd]">
+                           Your credit level grows as you borrow and repay on time. Higher levels unlock larger loan amounts.
+                        </p>
+                     </div>
+                  </>
+               )}
             </div>
             <Link to="/support" className="inline-flex items-center gap-1.5 text-md-b3 font-medium text-md-blue-600">
                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0">

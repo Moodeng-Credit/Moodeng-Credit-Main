@@ -122,20 +122,17 @@ export default function ReputationMilestones({ milestones, isLoading = false }: 
                   <img src="/icons/question_light.svg" alt="" className="h-5 w-5" />
                </button>
                {isHelpOpen && (
-                  <div
-                     role="tooltip"
-                     className="absolute left-0 top-8 z-20 w-[300px] rounded-[10px] bg-[#360975] px-3 py-2 shadow-[0_8px_24px_rgba(20,18,24,0.18)] before:absolute before:left-[202px] before:top-[-6px] before:h-0 before:w-0 before:border-x-[6px] before:border-b-[6px] before:border-x-transparent before:border-b-[#360975]"
-                  >
-                     <button
-                        type="button"
-                        aria-label="Close milestone help"
-                        className="absolute inset-0"
-                        onClick={() => setIsHelpOpen(false)}
-                     />
-                     <p className="relative text-center text-[14px] font-normal leading-[21px] tracking-[-0.28px] text-[#f1e9fd]">
-                        Milestones show what to do next to build trust with lenders.
-                     </p>
-                  </div>
+                  <>
+                     <div className="fixed inset-0 z-10" onClick={() => setIsHelpOpen(false)} />
+                     <div
+                        role="tooltip"
+                        className="absolute left-0 top-8 z-20 w-[300px] rounded-[10px] bg-[#360975] px-3 py-2 shadow-[0_8px_24px_rgba(20,18,24,0.18)] before:absolute before:left-[202px] before:top-[-6px] before:h-0 before:w-0 before:border-x-[6px] before:border-b-[6px] before:border-x-transparent before:border-b-[#360975]"
+                     >
+                        <p className="text-center text-[14px] font-normal leading-[21px] tracking-[-0.28px] text-[#f1e9fd]">
+                           Milestones show what to do next to build trust with lenders.
+                        </p>
+                     </div>
+                  </>
                )}
             </div>
             <Link

@@ -51,7 +51,7 @@ function LoanDueCard({ loan }: { loan: Loan & { isDefaulted: boolean } }) {
              };
    const lenderName = loan.lenderUser ? (userProfiles[loan.lenderUser]?.username ?? copy.unknown) : copy.unknown;
    const daysRemaining = calculateDaysRemaining(loan.dueDate);
-   const cardBg = loan.isDefaulted ? 'bg-md-red-100' : 'bg-[#fff6d0]';
+   const cardBg = loan.isDefaulted ? 'bg-md-red-100' : 'bg-[#fff6d0] dark:bg-[#3d2d12]';
 
    return (
       <div className={`${cardBg} rounded-md-lg p-3.5 min-w-[150px] flex-shrink-0 flex flex-col gap-2`}>
@@ -66,7 +66,7 @@ function LoanDueCard({ loan }: { loan: Loan & { isDefaulted: boolean } }) {
          ) : (
             <p className="text-md-b3 text-md-neutral-1500">
                {copy.dueIn}{' '}
-               <span className="text-[#896f00] font-semibold">{daysRemaining > 0 ? copy.dayLabel(daysRemaining) : copy.today}</span>
+               <span className="text-[#896f00] dark:text-[#facc6b] font-semibold">{daysRemaining > 0 ? copy.dayLabel(daysRemaining) : copy.today}</span>
             </p>
          )}
          <p className="text-md-b4 text-md-neutral-700">
