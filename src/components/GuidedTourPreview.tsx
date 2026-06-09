@@ -97,8 +97,10 @@ export default function GuidedTourPreview({
          return;
       }
 
+      // Scroll target to the top of the viewport so the tour card always has
+      // room to sit below it — prevents overlap on small screens like iPhone SE.
       target.scrollIntoView({
-         block: 'nearest',
+         block: 'start',
          behavior: 'auto'
       });
 
