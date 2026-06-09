@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 import { Camera } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -819,6 +819,8 @@ export default function AccountSettings() {
    const [isDisconnectWalletPending, setIsDisconnectWalletPending] = useState(false);
    const [isSavingWallet, setIsSavingWallet] = useState(false);
    const [walletError, setWalletError] = useState('');
+   const [walletSafetyError, setWalletSafetyError] = useState('');
+   const [walletSafetyWarning, setWalletSafetyWarning] = useState('');
    const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
 
    const hasWallet = Boolean(user?.walletAddress);
@@ -889,11 +891,85 @@ export default function AccountSettings() {
       setTimeout(() => setWalletCopied(false), 2000);
    };
 
+   const checkWalletChangeSafety = useCallback(async (): Promise<{ blocked: boolean; warning?: string }> => {
+      if (!user?.id) return { blocked: false };
+      const supabase = getSupabaseBrowserClient();
+      if (isBorrower) {
+         const { count } = await supabase
+            .from('loan_requests')
+            .select('id', { count: 'exact', head: true })
+            .eq('borrower_user_id', user.id)
+            .eq('loan_status', 'Lent')
+            .neq('repayment_status', 'Paid');
+         if ((count ?? 0) > 0) {
+            return { blocked: true };
+         }
+      } else {
+         const { count } = await supabase
+            .from('loan_requests')
+            .select('id', { count: 'exact', head: true })
+            .eq('lender_user_id', user.id)
+            .eq('loan_status', 'Lent')
+            .neq('repayment_status', 'Paid');
+         if ((count ?? 0) > 0) {
+            return {
+               blocked: false,
+               warning:
+                  'You have an active loan you funded. Repayments from that borrower will still go to your current wallet address — not your new one.'
+            };
+         }
+      }
+      return { blocked: false };
+   }, [user?.id, isBorrower]);
+
+   const handleInitiateWalletChange = useCallback(async () => {
+      setWalletSafetyError('');
+      setWalletSafetyWarning('');
+      const { blocked, warning } = await checkWalletChangeSafety();
+      if (blocked) {
+         setWalletSafetyError('You have an active loan that has not been repaid. You cannot change your wallet until it is fully repaid.');
+         setShowWalletActions(true);
+         return;
+      }
+      if (!isBorrower) {
+         // Lenders: navigate directly; show warning inline if needed
+         if (warning) {
+            setWalletSafetyWarning(warning);
+            setShowWalletActions(true);
+         } else {
+            navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } });
+         }
+         return;
+      }
+      if (warning) setWalletSafetyWarning(warning);
+      setShowWalletActions(true);
+      setIsEditingWallet(true);
+      setIsChangeWalletPending(true);
+      setIsDisconnectWalletPending(false);
+   }, [checkWalletChangeSafety, isBorrower, navigate]);
+
+   const handleInitiateWalletDisconnect = useCallback(async () => {
+      setWalletSafetyError('');
+      setWalletSafetyWarning('');
+      const { blocked, warning } = await checkWalletChangeSafety();
+      if (blocked) {
+         setWalletSafetyError('You have an active loan that has not been repaid. You cannot disconnect your wallet until it is fully repaid.');
+         setShowWalletActions(true);
+         return;
+      }
+      if (warning) setWalletSafetyWarning(warning);
+      setIsEditingWallet(true);
+      setIsChangeWalletPending(false);
+      setIsDisconnectWalletPending(true);
+   }, [checkWalletChangeSafety]);
+
    const handleRevertWalletChanges = () => {
       setIsEditingWallet(false);
       setIsChangeWalletPending(false);
       setIsDisconnectWalletPending(false);
       setWalletError('');
+      setWalletSafetyError('');
+      setWalletSafetyWarning('');
    };
 
    const handleSaveWalletChanges = async () => {
@@ -1135,36 +1211,33 @@ export default function AccountSettings() {
                            <>
                               <button
                                  type="button"
-                                 onClick={() => {
-                                    setShowWalletActions((current) => !current);
-                                 }}
-                                 className="flex min-w-0 flex-1 items-center justify-between gap-md-2 text-left"
-                                 aria-expanded={showWalletActions}
+                                 onClick={() => isBorrower && setShowWalletActions((current) => !current)}
+                                 className="flex min-w-0 shrink-0 items-center gap-2 text-md-b1 text-md-neutral-1200 text-left"
+                                 aria-expanded={isBorrower ? showWalletActions : undefined}
                               >
-                                 <span className="flex min-w-0 shrink-0 items-center gap-2 text-md-b1 text-md-neutral-1200">
-                                    <span
-                                       className="block size-4 bg-md-primary-900"
-                                       style={{
-                                          ...ICON_MASK,
-                                          WebkitMaskImage: "url('/icons/locked.svg')",
-                                          maskImage: "url('/icons/locked.svg')"
-                                       }}
-                                    />
-                                    <span className="truncate">{walletLabel}</span>
-                                 </span>
-                                 <span className="mx-md-2 h-6 w-px shrink-0 bg-md-neutral-600" aria-hidden="true" />
-                                 <span className="min-w-0 flex-1 truncate text-right text-md-b2 font-medium text-md-neutral-900">
-                                    {truncateAddress(user?.walletAddress || '')}
-                                 </span>
+                                 <span
+                                    className="block size-4 bg-md-primary-900"
+                                    style={{
+                                       ...ICON_MASK,
+                                       WebkitMaskImage: "url('/icons/locked.svg')",
+                                       maskImage: "url('/icons/locked.svg')"
+                                    }}
+                                 />
+                                 <span className="truncate">{walletLabel}</span>
+                              </button>
+                              <span className="mx-md-2 h-6 w-px shrink-0 bg-md-neutral-600" aria-hidden="true" />
+                              <button
+                                 type="button"
+                                 onClick={handleCopyWallet}
+                                 title="Click to copy wallet address"
+                                 className="min-w-0 flex-1 truncate text-right text-md-b2 font-medium text-md-neutral-900 hover:text-md-primary-900 transition-colors"
+                                 aria-label="Copy wallet address"
+                              >
+                                 {truncateAddress(user?.walletAddress || '')}
                               </button>
                               <button
                                  type="button"
-                                 onClick={() => {
-                                    setShowWalletActions(true);
-                                    setIsEditingWallet(true);
-                                    setIsChangeWalletPending(true);
-                                    setIsDisconnectWalletPending(false);
-                                 }}
+                                 onClick={handleInitiateWalletChange}
                                  className="ml-2 shrink-0 text-md-b2 font-semibold text-md-primary-900"
                               >
                                  Change
@@ -1198,6 +1271,16 @@ export default function AccountSettings() {
                         )}
                      </div>
                   </div>
+
+                  {walletSafetyError ? (
+                     <p className="text-md-b3 font-medium text-md-red-500 rounded-md-input border border-md-red-100 bg-md-red-100/60 px-md-3 py-md-2">
+                        {walletSafetyError}
+                     </p>
+                  ) : walletSafetyWarning ? (
+                     <p className="text-md-b3 font-medium text-md-neutral-1200 rounded-md-input border border-md-yellow-700 bg-md-yellow-100 px-md-3 py-md-2">
+                        ⚠️ {walletSafetyWarning}
+                     </p>
+                  ) : null}
 
                   {borrowerNeedsBaseWallet && hasWallet && showWalletActions ? (
                      <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-primary-900 bg-md-primary-900/10 p-md-3">
@@ -1273,17 +1356,36 @@ export default function AccountSettings() {
                               </button>
                               <button
                                  type="button"
-                                 onClick={() => {
-                                    setIsEditingWallet(true);
-                                    setIsChangeWalletPending(false);
-                                    setIsDisconnectWalletPending(true);
-                                 }}
+                                 onClick={handleInitiateWalletDisconnect}
                                  className="self-start text-md-b2 font-semibold text-md-red-500"
                               >
                                  Disconnect wallet
                               </button>
                            </>
                         )}
+                     </div>
+                  ) : null}
+
+                  {!isBorrower && hasWallet && showWalletActions && walletSafetyWarning ? (
+                     <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-yellow-700 bg-md-yellow-100 p-md-3">
+                        <p className="text-md-b2 font-semibold text-md-heading">Active loan warning</p>
+                        <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">{walletSafetyWarning}</p>
+                        <div className="grid grid-cols-2 gap-md-2">
+                           <button
+                              type="button"
+                              onClick={handleRevertWalletChanges}
+                              className="rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900"
+                           >
+                              Cancel
+                           </button>
+                           <button
+                              type="button"
+                              onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
+                              className="rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100"
+                           >
+                              Change anyway
+                           </button>
+                        </div>
                      </div>
                   ) : null}
 
@@ -1367,7 +1469,7 @@ export default function AccountSettings() {
                                     </button>
                                     <button
                                        type="button"
-                                       onClick={() => setIsDisconnectWalletPending(true)}
+                                       onClick={handleInitiateWalletDisconnect}
                                        className="rounded-md-lg border border-md-red-100 bg-md-red-100/60 px-md-3 py-md-2 text-md-b2 font-semibold text-md-red-500 active:scale-[0.99]"
                                     >
                                        Disconnect wallet

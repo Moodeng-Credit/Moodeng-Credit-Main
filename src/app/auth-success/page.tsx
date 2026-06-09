@@ -3,6 +3,7 @@ import { type JSX, type ReactNode } from 'react';
 import { CheckCircle2, ChevronRight, HelpCircle } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
 type AuthSuccessCardProps = {
@@ -16,12 +17,13 @@ type AuthSuccessCardProps = {
 
 function AuthSuccessShell({ imageSrc, imageAlt, eyebrow, title, body, children }: AuthSuccessCardProps): JSX.Element {
    return (
-      <div className="min-h-screen bg-[#FBFAFD] px-4 py-6 text-[#040033] sm:px-6 sm:py-10">
+      <div className="min-h-screen bg-[#FBFAFD] dark:bg-[#100d17] px-4 py-6 sm:px-6 sm:py-10">
          <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-[480px] flex-col">
-            <div className="mb-5 flex justify-end">
+            <div className="mb-5 flex justify-end gap-3">
+               <ThemeToggle />
                <Link
                   to="/support/faq"
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FDFCFD] text-[#6010D2] shadow-[0_8px_24px_rgba(36,14,62,0.08)] transition hover:bg-[#F2EAFE]"
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FDFCFD] dark:bg-[#1E1530] text-[#6010D2] dark:text-[#C084FC] shadow-[0_8px_24px_rgba(36,14,62,0.08)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.3)] transition hover:bg-[#F2EAFE] dark:hover:bg-[#2A1D40]"
                   aria-label="Help"
                >
                   <HelpCircle className="h-6 w-6" />
@@ -29,9 +31,9 @@ function AuthSuccessShell({ imageSrc, imageAlt, eyebrow, title, body, children }
             </div>
 
             <main className="flex flex-1 flex-col justify-center">
-               <section className="rounded-[28px] border border-[#E7D8FF] bg-[#FDFCFD] px-5 py-7 shadow-[0_18px_50px_rgba(36,14,62,0.08)] sm:px-7">
+               <section className="rounded-[28px] border border-[#E7D8FF] dark:border-white/10 bg-[#FDFCFD] dark:bg-[#1a1425] px-5 py-7 shadow-[0_18px_50px_rgba(36,14,62,0.08)] dark:shadow-[0_18px_50px_rgba(0,0,0,0.4)] sm:px-7">
                   <div className="mb-7 flex flex-col items-center text-center">
-                     <div className="mb-5 flex h-[196px] w-[196px] items-center justify-center overflow-hidden rounded-[28px] border border-[#DCC7FF] bg-white shadow-[0_12px_28px_rgba(36,14,62,0.06)]">
+                     <div className="mb-5 flex h-[196px] w-[196px] items-center justify-center overflow-hidden rounded-[28px] border border-[#DCC7FF] dark:border-white/10 bg-white dark:bg-[#100d17] shadow-[0_12px_28px_rgba(36,14,62,0.06)]">
                         <img
                            src={imageSrc}
                            alt={imageAlt}
@@ -39,8 +41,8 @@ function AuthSuccessShell({ imageSrc, imageAlt, eyebrow, title, body, children }
                         />
                      </div>
                      <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0]">{eyebrow}</p>
-                     <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.04em] text-[#040033]">{title}</h1>
-                     <div className="mt-3 max-w-[350px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F]">{body}</div>
+                     <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.04em] text-[#040033] dark:text-white">{title}</h1>
+                     <div className="mt-3 max-w-[350px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F] dark:text-[#c8b8e8]">{body}</div>
                   </div>
 
                   {children}
@@ -59,19 +61,16 @@ function AccountCreatedView(): JSX.Element {
    };
 
    return (
-      <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#FBFAFD] to-white text-[#040033] max-w-[440px] mx-auto w-full">
+      <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#FBFAFD] to-white dark:from-[#100d17] dark:to-[#100d17] max-w-[440px] mx-auto w-full">
          <OnboardingHeader hideBack />
 
          <main className="flex flex-1 flex-col justify-center px-5 pb-14">
             <section className="mx-auto flex w-full max-w-[400px] flex-col items-center gap-5 text-center">
                <img src="/icons/check-3d.png" alt="" className="h-[124px] w-[124px] object-contain" />
-               <h1
-                  className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em]"
-                  style={{ color: '#040033', WebkitTextFillColor: '#040033' }}
-               >
+               <h1 className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em] text-[#040033] dark:text-white">
                   Your account has been created
                </h1>
-               <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D]">
+               <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D] dark:text-[#c8b8e8]">
                   Your wallet is used to build your Trust Score and receive USDC loans.
                </p>
                <button
@@ -99,12 +98,12 @@ export default function AuthSuccessPage(): JSX.Element {
       <div className="space-y-3">
          <p>Open the latest Moodeng email.</p>
          {email ? (
-            <p className="mx-auto max-w-[300px] text-sm font-semibold leading-5 tracking-[-0.01em] text-[#4D4359] break-words">
+            <p className="mx-auto max-w-[300px] text-sm font-semibold leading-5 tracking-[-0.01em] text-[#4D4359] dark:text-[#c8b8e8] break-words">
                Sent to {email}
             </p>
          ) : null}
          <p>
-            Tap <span className="font-semibold text-[#4D4359]">Confirm Email</span> inside that email to finish setup.
+            Tap <span className="font-semibold text-[#4D4359] dark:text-[#c8b8e8]">Confirm Email</span> inside that email to finish setup.
          </p>
       </div>
    );
@@ -138,11 +137,11 @@ export default function AuthSuccessPage(): JSX.Element {
             ) : null}
             <Link
                to="/sign-in#login"
-               className="flex h-12 w-full items-center justify-center rounded-2xl border border-[#E0D7E8] text-sm font-semibold text-[#4D4359] transition hover:bg-[#F8F4FC]"
+               className="flex h-12 w-full items-center justify-center rounded-2xl border border-[#E0D7E8] dark:border-white/15 text-sm font-semibold text-[#4D4359] dark:text-[#c8b8e8] transition hover:bg-[#F8F4FC] dark:hover:bg-white/5"
             >
                {isConfirmedFlow ? 'Sign in' : 'Back to sign in'}
             </Link>
-            <p className="flex items-start gap-3 rounded-2xl border border-[#E7D8FF] bg-[#F8F4FC] px-4 py-3 text-sm font-semibold leading-5 text-[#4D4359]">
+            <p className="flex items-start gap-3 rounded-2xl border border-[#E7D8FF] dark:border-white/10 bg-[#F8F4FC] dark:bg-white/5 px-4 py-3 text-sm font-semibold leading-5 text-[#4D4359] dark:text-[#c8b8e8]">
                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#8336F0]" />
                If the email is hard to find, check spam or promotions and open the latest Moodeng email.
             </p>

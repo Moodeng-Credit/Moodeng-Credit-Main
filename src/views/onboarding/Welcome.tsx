@@ -128,7 +128,7 @@ export default function Welcome() {
    const walletPath = isPreview ? '/onboarding/wallet-preview' : '/onboarding/wallet';
 
    return (
-      <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
+      <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col max-w-[440px] mx-auto w-full">
          <OnboardingHeader title={copy.title} />
 
          <div className="flex flex-col gap-md-4 p-md-4">
@@ -172,7 +172,7 @@ export default function Welcome() {
                            {copy.recommended}
                         </span>
                      </div>
-                     <p className="text-md-b1 text-md-primary-1500">{copy.setupBody}</p>
+                     <p className="text-md-b1 text-md-primary-1500 dark:text-[#c8a6f8]">{copy.setupBody}</p>
                   </div>
                </div>
 

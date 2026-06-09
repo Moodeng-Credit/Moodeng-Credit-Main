@@ -131,14 +131,14 @@ export default function RoleSelectionPage() {
    };
 
    return (
-      <div className="min-h-screen bg-white flex flex-col max-w-[440px] mx-auto px-5">
+      <div className="min-h-screen bg-white dark:bg-[#100d17] flex flex-col max-w-[440px] mx-auto px-5">
          <div className="flex flex-col flex-1 justify-between py-4">
             <div className="flex flex-col gap-5">
                <img src="/hippos/role-selection.png" alt="Moodeng hippo" className="w-[228px] h-[200px] object-cover" />
 
                <div className="flex flex-col gap-1">
-                  <h1 className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading">{copy.title}</h1>
-                  <p className="text-md-b1 text-md-neutral-700 tracking-[-0.02em]">{copy.subtitle}</p>
+                  <h1 className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading dark:text-white">{copy.title}</h1>
+                  <p className="text-md-b1 text-md-neutral-700 dark:text-md-neutral-500 tracking-[-0.02em]">{copy.subtitle}</p>
                </div>
 
                <button
@@ -146,11 +146,13 @@ export default function RoleSelectionPage() {
                   onClick={() => setSelectedRole('borrower')}
                   className={[
                      'flex flex-col gap-3 items-start p-4 rounded-[12px] border w-full text-left transition-colors',
-                     selectedRole === 'borrower' ? 'bg-md-primary-900/10 border-md-primary-900' : 'bg-md-neutral-100 border-md-neutral-600'
+                     selectedRole === 'borrower'
+                        ? 'bg-md-primary-900/10 border-md-primary-900'
+                        : 'bg-md-neutral-100 dark:bg-white/5 border-md-neutral-600 dark:border-white/10'
                   ].join(' ')}
                >
-                  <span className="text-md-h5 font-semibold tracking-[-0.04em] text-md-heading">{copy.borrowerTitle}</span>
-                  <span className="text-md-b2 text-[#45556c] tracking-[-0.02em] leading-[21px]">{copy.borrowerBody}</span>
+                  <span className="text-md-h5 font-semibold tracking-[-0.04em] text-md-heading dark:text-white">{copy.borrowerTitle}</span>
+                  <span className="text-md-b2 text-[#45556c] dark:text-md-neutral-500 tracking-[-0.02em] leading-[21px]">{copy.borrowerBody}</span>
                </button>
 
                <button
@@ -158,11 +160,13 @@ export default function RoleSelectionPage() {
                   onClick={() => setSelectedRole('lender')}
                   className={[
                      'flex flex-col gap-3 items-start p-4 rounded-[12px] border w-full text-left transition-colors',
-                     selectedRole === 'lender' ? 'bg-md-primary-900/10 border-md-primary-900' : 'bg-md-neutral-100 border-md-neutral-600'
+                     selectedRole === 'lender'
+                        ? 'bg-md-primary-900/10 border-md-primary-900'
+                        : 'bg-md-neutral-100 dark:bg-white/5 border-md-neutral-600 dark:border-white/10'
                   ].join(' ')}
                >
-                  <span className="text-md-h5 font-semibold tracking-[-0.04em] text-md-heading">{copy.lenderTitle}</span>
-                  <span className="text-md-b2 text-[#45556c] tracking-[-0.02em] leading-[21px]">{copy.lenderBody}</span>
+                  <span className="text-md-h5 font-semibold tracking-[-0.04em] text-md-heading dark:text-white">{copy.lenderTitle}</span>
+                  <span className="text-md-b2 text-[#45556c] dark:text-md-neutral-500 tracking-[-0.02em] leading-[21px]">{copy.lenderBody}</span>
                </button>
 
                <button
@@ -176,13 +180,13 @@ export default function RoleSelectionPage() {
             </div>
 
             <div className="flex flex-col gap-4 items-center py-4">
-               <div className="w-full border-t border-md-neutral-500" />
-               <div className="flex gap-5 text-md-b2 text-md-neutral-1500 tracking-[-0.02em]">
+               <div className="w-full border-t border-md-neutral-500 dark:border-white/10" />
+               <div className="flex gap-5 text-md-b2 text-md-neutral-1500 dark:text-md-neutral-800 tracking-[-0.02em]">
                   {copy.footerLinks.map((link) => (
                      <span key={link}>{link}</span>
                   ))}
                </div>
-               <p className="text-[12px] text-md-neutral-1500 tracking-[-0.02em] leading-[18px]">{copy.copyright}</p>
+               <p className="text-[12px] text-md-neutral-1500 dark:text-md-neutral-800 tracking-[-0.02em] leading-[18px]">{copy.copyright}</p>
             </div>
          </div>
       </div>

@@ -18,7 +18,7 @@ export default function SupportHeader({ title }: SupportHeaderProps) {
             className="w-6 h-6 flex items-center justify-center shrink-0"
          >
             <div
-               className="w-6 h-6 bg-md-primary-2000"
+               className="w-6 h-6 bg-md-primary-2000 dark:bg-white"
                style={{
                   ...ICON_MASK_BASE,
                   WebkitMaskImage: "url('/icons/arrow-left.svg')",
@@ -26,7 +26,7 @@ export default function SupportHeader({ title }: SupportHeaderProps) {
                }}
             />
          </button>
-         <h1 className="text-md-h3 font-semibold text-md-primary-2000 tracking-[-0.56px]">{title}</h1>
+         <h1 className="text-md-h3 font-semibold text-md-primary-2000 dark:text-white tracking-[-0.56px]">{title}</h1>
       </div>
    );
 }

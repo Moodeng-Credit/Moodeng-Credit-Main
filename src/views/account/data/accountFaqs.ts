@@ -18,7 +18,7 @@ Loans go directly from the lender's wallet to the borrower's wallet. Repayments 
       question: 'Why does Moodeng use USDC?',
       answer: `USDC is a stablecoin pegged 1:1 to the US dollar. Issued by Circle, a regulated US financial company, it keeps loan values predictable — a $20 loan today is still $20 at repayment, not $15 or $30. Lenders and borrowers don't take on currency risk just by participating.
 
-USDC is also fast to send globally and, when used on Base with a Coinbase Smart Wallet, is completely gasless. That means no network fees eat into your repayment — 100% of what you send reaches your lender.
+USDC is also fast to send globally and, when used on Base with a Base Account, is completely gasless. That means no network fees eat into your repayment — 100% of what you send reaches your lender.
 
 It's also widely accepted: every major crypto exchange supports USDC deposits, and you can convert it to fiat (US dollars, pesos, naira, etc.) almost anywhere. So when you receive a loan or get repaid, you can spend it on-chain, hold it, or cash it out — your choice.`
    },
@@ -137,7 +137,7 @@ Direkta ang loan mula sa wallet ng nagpapahiram papunta sa wallet ng borrower. D
       question: 'Bakit USDC ang ginagamit ng Moodeng?',
       answer: `Ang USDC ay stablecoin na naka-peg 1:1 sa US dollar. Ini-issue ito ng Circle, isang regulated US financial company, kaya predictable ang halaga ng loan. Ang $20 na loan ngayon ay $20 pa rin kapag binayaran, hindi biglang $15 o $30. Hindi nagkakaroon ng currency risk ang lenders at borrowers dahil lang sumali sila.
 
-Mabilis ding ipadala ang USDC globally at, kapag ginamit sa Base gamit ang Coinbase Smart Wallet, gasless ito. Ibig sabihin, walang network fees na kakain sa repayment mo - 100% ng ipinadala mo ang makakarating sa lender.
+Mabilis ding ipadala ang USDC globally at, kapag ginamit sa Base gamit ang Base Account, gasless ito. Ibig sabihin, walang network fees na kakain sa repayment mo - 100% ng ipinadala mo ang makakarating sa lender.
 
 Malawak din itong tinatanggap: supported ang USDC deposits sa major crypto exchanges, at puwede mo itong i-convert sa fiat gaya ng US dollars, pesos, naira, at iba pa. Kapag nakatanggap ka ng loan o repayment, puwede mo itong gamitin on-chain, i-hold, o i-cash out - ikaw ang pipili.`
    },
@@ -254,7 +254,7 @@ Pinjaman berjalan langsung dari wallet pemberi pinjaman ke wallet peminjam. Pemb
       question: 'Mengapa Moodeng memakai USDC?',
       answer: `USDC adalah stablecoin yang dipatok 1:1 ke dolar AS. Diterbitkan oleh Circle, perusahaan keuangan AS yang teregulasi, USDC menjaga nilai pinjaman tetap dapat diprediksi. Pinjaman $20 hari ini tetap $20 saat dibayar, bukan tiba-tiba $15 atau $30. Pemberi pinjaman dan peminjam tidak menanggung risiko mata uang hanya karena memakai platform.
 
-USDC juga cepat dikirim secara global dan, saat dipakai di Base dengan Coinbase Smart Wallet, sepenuhnya gasless. Artinya tidak ada biaya jaringan yang memotong pembayaran kamu: 100% yang kamu kirim sampai ke pemberi pinjaman.
+USDC juga cepat dikirim secara global dan, saat dipakai di Base dengan Base Account, sepenuhnya gasless. Artinya tidak ada biaya jaringan yang memotong pembayaran kamu: 100% yang kamu kirim sampai ke pemberi pinjaman.
 
 USDC juga didukung luas. Hampir semua bursa kripto besar mendukung deposit USDC, dan kamu bisa mengubahnya ke fiat seperti dolar AS, peso, naira, dan lainnya di banyak tempat. Saat menerima pinjaman atau pembayaran, kamu bisa memakai on-chain, menyimpan, atau cash out. Pilihannya ada di kamu.`
    },
@@ -371,7 +371,7 @@ const THAI_SHARED_FAQS: AccountFAQItem[] = [
       question: 'ทำไม Moodeng ใช้ USDC?',
       answer: `USDC เป็น stablecoin ที่ผูก 1:1 กับดอลลาร์สหรัฐ ทำให้มูลค่าเงินกู้คาดเดาได้ เงินกู้ $20 วันนี้ยังเป็น $20 ตอนชำระคืน
 
-USDC ยังส่งได้รวดเร็วทั่วโลก และเมื่อใช้บน Base กับ Coinbase Smart Wallet จะไม่มีค่า gas จึงไม่มีค่าธรรมเนียมเครือข่ายมาหักเงินที่คุณชำระคืน`
+USDC ยังส่งได้รวดเร็วทั่วโลก และเมื่อใช้บน Base กับ Base Account จะไม่มีค่า gas จึงไม่มีค่าธรรมเนียมเครือข่ายมาหักเงินที่คุณชำระคืน`
    },
    {
       id: 'how-to-get-verified',
@@ -462,7 +462,7 @@ Khoản vay đi trực tiếp từ ví người cho vay sang ví người vay. K
       question: 'Vì sao Moodeng dùng USDC?',
       answer: `USDC là stablecoin neo 1:1 với đô la Mỹ, giúp giá trị khoản vay dễ dự đoán. Khoản vay $20 hôm nay vẫn là $20 khi trả, không thành $15 hay $30.
 
-USDC cũng chuyển toàn cầu rất nhanh và khi dùng trên Base với Coinbase Smart Wallet thì hoàn toàn không tốn gas. Điều đó có nghĩa là không có phí mạng ăn vào khoản trả của bạn.`
+USDC cũng chuyển toàn cầu rất nhanh và khi dùng trên Base với Base Account thì hoàn toàn không tốn gas. Điều đó có nghĩa là không có phí mạng ăn vào khoản trả của bạn.`
    },
    {
       id: 'how-to-get-verified',
