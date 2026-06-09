@@ -17,8 +17,8 @@ const requestedLoan: Loan = {
    loanStatus: LoanStatus.REQUESTED,
    repaymentStatus: RepaymentStatus.UNPAID,
    coin: 'USDC',
-   createdAt: '2026-06-01T00:00:00.000Z',
-   updatedAt: '2026-06-01T00:00:00.000Z'
+   createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+   updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 };
 
 describe('Request Board preview loans', () => {
