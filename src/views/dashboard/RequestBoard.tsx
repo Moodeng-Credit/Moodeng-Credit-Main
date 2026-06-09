@@ -424,7 +424,9 @@ function RequestBoard$() {
       showTourPreview &&
       !isGeneralTour &&
       (!isAuthenticated || isBorrower) &&
-      (shouldStartTourImmediately || shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, tourUserId, forceTourPreview));
+      // needsTourRoleChoice means the user explicitly clicked "Take tour" — always show
+      // the chooser regardless of whether they've done a tour before.
+      (needsTourRoleChoice || shouldStartTourImmediately || shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, tourUserId, forceTourPreview));
    const shouldShowLenderTour =
       showTourPreview &&
       isLenderTourPreview &&
