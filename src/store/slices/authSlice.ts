@@ -639,7 +639,15 @@ export const updateUserRole = createAsyncThunk('auth/updateUserRole', async (rol
    const { data: updatedRow, error } = await supabase.from('users').update({ user_role: role }).eq('id', user.id).select('*').single();
 
    if (error || !updatedRow) {
-      throw error ?? new Error('Failed to update user role');
+      // Row may not exist yet (e.g. auth user created before profile row was seeded).
+      // Upsert to create it with the chosen role.
+      const { data: upsertedRow, error: upsertError } = await supabase
+         .from('users')
+         .upsert({ id: user.id, email: user.email ?? '', username: user.email?.split('@')[0] ?? user.id, user_role: role, is_world_id: 'INACTIVE' })
+         .select('*')
+         .single();
+      if (upsertError || !upsertedRow) throw upsertError ?? new Error('Failed to update user role');
+      return mapSupabaseRowToUser(upsertedRow);
    }
 
    return mapSupabaseRowToUser(updatedRow);
