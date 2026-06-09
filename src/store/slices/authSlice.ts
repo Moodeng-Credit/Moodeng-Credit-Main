@@ -76,7 +76,7 @@ export const isObfuscatedExistingSignupUser = (user?: Pick<SupabaseAuthUser, 'id
    Array.isArray(user?.identities) && user.identities.length === 0;
 
 const EXISTING_ACCOUNT_RESET_MESSAGE =
-   'An account with this email already exists. A password reset link has been sent to your email so you can sign in or reset access.';
+   'An account with this email already exists. A password reset code has been sent to your email so you can sign in or reset access.';
 
 const sendExistingAccountReset = async (supabase: SupabaseClientType, email: string) => {
    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
