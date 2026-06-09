@@ -18,6 +18,9 @@ const parseMajorPoints = (value: number | string | bigint | null | undefined) =>
 
 export function useTrustPointTotal({ userId, fallbackPoints, enabled }: UseTrustPointTotalArgs) {
    const [pointsTotal, setPointsTotal] = useState(fallbackPoints);
+   // Starts true whenever a fetch is going to happen, so callers can avoid
+   // rendering a fallback value (e.g. "0 points") as if it were real data.
+   const [isLoading, setIsLoading] = useState(() => enabled && !!userId && isSupabaseBrowserConfigured());
 
    useEffect(() => {
       setPointsTotal(fallbackPoints);
@@ -25,10 +28,12 @@ export function useTrustPointTotal({ userId, fallbackPoints, enabled }: UseTrust
 
    useEffect(() => {
       if (!enabled || !userId || !isSupabaseBrowserConfigured()) {
+         setIsLoading(false);
          return;
       }
 
       let isActive = true;
+      setIsLoading(true);
 
       const fetchTrustPoints = async () => {
          const supabase = getSupabaseBrowserClient();
@@ -39,10 +44,12 @@ export function useTrustPointTotal({ userId, fallbackPoints, enabled }: UseTrust
          if (error) {
             console.error('Failed to fetch Trust Points:', error.message);
             setPointsTotal(fallbackPoints);
+            setIsLoading(false);
             return;
          }
 
          setPointsTotal(data ? parseMajorPoints(data.points_total) : fallbackPoints);
+         setIsLoading(false);
       };
 
       void fetchTrustPoints();
@@ -52,5 +59,5 @@ export function useTrustPointTotal({ userId, fallbackPoints, enabled }: UseTrust
       };
    }, [enabled, fallbackPoints, userId]);
 
-   return { pointsTotal };
+   return { pointsTotal, isLoading };
 }
