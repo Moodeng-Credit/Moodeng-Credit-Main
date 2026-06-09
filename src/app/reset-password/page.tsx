@@ -1,6 +1,7 @@
 import { type FormEvent, type JSX, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Eye, EyeOff, HelpCircle, ShieldCheck } from 'lucide-react';
+import { useDispatch } from 'react-redux';
 
 import Loading from '@/components/Loading';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -12,6 +13,8 @@ import {
    markPasswordRecoveryReady
 } from '@/lib/passwordRecovery';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
+import { fetchUser } from '@/store/slices/authSlice';
+import type { AppDispatch } from '@/store/store';
 
 type RecoveryState = 'checking' | 'ready' | 'invalid';
 
@@ -28,6 +31,7 @@ export default function ResetPasswordPage(): JSX.Element {
    const [loading, setLoading] = useState(false);
    const [recoveryState, setRecoveryState] = useState<RecoveryState>('checking');
    const navigate = useNavigate();
+   const dispatch = useDispatch<AppDispatch>();
    const [searchParams] = useSearchParams();
    const toast = useToast();
 
@@ -194,13 +198,34 @@ export default function ResetPasswordPage(): JSX.Element {
             await supabase.auth.signInWithPassword({ email: userEmail, password });
          }
 
+         // Determine where to send the user:
+         // - Lender → /lender/dashboard
+         // - Borrower with an active (Lent) loan → /dashboard
+         // - Borrower with no active loan → /request-board
+         // - No role yet → /onboarding/role
+         const updatedUser = await dispatch(fetchUser()).unwrap().catch(() => null);
+         let destination = '/request-board';
+         if (updatedUser?.userRole === 'lender') {
+            destination = '/lender/dashboard';
+         } else if (updatedUser?.userRole === 'borrower') {
+            const { data: activeLoans } = await supabase
+               .from('loan_requests')
+               .select('id')
+               .eq('borrower_user_id', updatedUser.id)
+               .eq('loan_status', 'Lent')
+               .limit(1);
+            destination = activeLoans && activeLoans.length > 0 ? '/dashboard' : '/request-board';
+         } else if (!updatedUser?.userRole) {
+            destination = '/onboarding/role';
+         }
+
          clearPasswordRecoveryReady();
          toast.showToast(TOAST_TYPES.SUCCESS, 'Password updated', 'Your account is secure now.');
          setMessage('Password updated. Taking you to your dashboard now.');
          setPassword('');
          setConfirmPassword('');
          window.setTimeout(() => {
-            navigate('/dashboard');
+            navigate(destination);
          }, 1800);
       } catch (resetError) {
          setError(resetError instanceof Error ? resetError.message : 'Could not update your password. Try again in a moment.');
