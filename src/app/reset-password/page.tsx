@@ -175,11 +175,23 @@ export default function ResetPasswordPage(): JSX.Element {
 
       try {
          const supabase = getSupabaseBrowserClient();
+
+         // Capture email before updating — Supabase invalidates the recovery session
+         // after updateUser, which triggers SIGNED_OUT in AuthInitializer and clears
+         // auth state before the navigate('/dashboard') fires.
+         const { data: { user: currentUser } } = await supabase.auth.getUser();
+         const userEmail = currentUser?.email;
+
          const { error: updateError } = await supabase.auth.updateUser({ password });
 
          if (updateError) {
             setError(updateError.message || 'Could not update your password. Try again in a moment.');
             return;
+         }
+
+         // Re-establish a regular session so the user is signed in with the new password.
+         if (userEmail) {
+            await supabase.auth.signInWithPassword({ email: userEmail, password });
          }
 
          clearPasswordRecoveryReady();
