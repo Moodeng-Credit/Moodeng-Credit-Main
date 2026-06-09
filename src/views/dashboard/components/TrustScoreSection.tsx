@@ -46,24 +46,26 @@ function TrustGauge({ progressPercent }: { progressPercent: number }) {
    const arcD = `M ${start.x} ${start.y} A ${GAUGE_R} ${GAUGE_R} 0 ${large} 1 ${fill.x} ${fill.y}`;
 
    return (
-      <svg viewBox="-10 0 320 175" className="w-full max-w-[260px] mx-auto">
-         <defs>
-            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-               <stop offset="0%" stopColor="#0F5B32" />
-               <stop offset="100%" stopColor="#1FC16B" />
-            </linearGradient>
-         </defs>
+      <div className="w-full max-w-[260px] mx-auto overflow-hidden">
+         <svg viewBox="-10 0 320 175" width="100%" style={{ display: 'block' }}>
+            <defs>
+               <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#0F5B32" />
+                  <stop offset="100%" stopColor="#1FC16B" />
+               </linearGradient>
+            </defs>
 
-         <path
-            className="trust-gauge-track"
-            d={`M ${start.x} ${start.y} A ${GAUGE_R} ${GAUGE_R} 0 0 1 ${end.x} ${end.y}`}
-            stroke="#e8e4ed"
-            strokeWidth={STROKE_W}
-            fill="none"
-            strokeLinecap="round"
-         />
-         {pct > 0 && <path d={arcD} stroke={`url(#${gradientId})`} strokeWidth={STROKE_W} fill="none" strokeLinecap="round" />}
-      </svg>
+            <path
+               className="trust-gauge-track"
+               d={`M ${start.x} ${start.y} A ${GAUGE_R} ${GAUGE_R} 0 0 1 ${end.x} ${end.y}`}
+               stroke="#e8e4ed"
+               strokeWidth={STROKE_W}
+               fill="none"
+               strokeLinecap="round"
+            />
+            {pct > 0 && <path d={arcD} stroke={`url(#${gradientId})`} strokeWidth={STROKE_W} fill="none" strokeLinecap="round" />}
+         </svg>
+      </div>
    );
 }
 
