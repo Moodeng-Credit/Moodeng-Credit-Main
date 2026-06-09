@@ -2038,7 +2038,7 @@ function PublicQuestionsMenu({
 
          <div className="mt-md-3 grid grid-cols-2 gap-md-2">
             <Link
-               to={`/request-board?tour=1&startTour=1&tourRun=${Date.now()}`}
+               to={`/request-board?tour=1&tourRun=${Date.now()}`}
                onClick={onClose}
                className="rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-center text-md-b2 font-semibold text-md-neutral-100"
             >
