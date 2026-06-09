@@ -273,7 +273,7 @@ export default function SignInPage() {
                         </Link>
                      </p>
                      <Link
-                        to="/tour-chooser"
+                        to="/request-board?tour=1"
                         className="text-center text-sm font-medium tracking-[-0.02em] text-[#70617F] underline-offset-4 hover:text-[#6010D2] hover:underline"
                      >
                         Take a tour first

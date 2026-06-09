@@ -17,7 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
-import GuidedTourPreview from '@/components/GuidedTourPreview';
+import GuidedTourPreview, { type TourRoleOption } from '@/components/GuidedTourPreview';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar from '@/components/UserAvatar';
@@ -378,13 +378,17 @@ function RequestBoard$() {
    const showSubmittedRequestSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.has('submittedRequestSuccessPreview');
    const showTourPreview = forceTourPreview || requestBoardSearchParams.has('tour');
    const shouldStartTourImmediately = requestBoardSearchParams.get('startTour') === '1';
-   // A guest who isn't signed in can pick "I want to lend" from the sign-in/sign-up tour
-   // chooser (?tour=1&tourRole=lender). That should run the same mocked-lender preview the
-   // DEV-only `lenderTourPreview` flag drives — minus the DEV gate — so real production
+   // When ?tour=1 is present but no tourRole was chosen yet, we show a role chooser inside
+   // the "Want a quick tour?" intro card so the guest can pick borrow / lend / not sure.
+   const tourRole = requestBoardSearchParams.get('tourRole');
+   const needsTourRoleChoice = showTourPreview && !isReferralTestMode && !forceTourPreview && !tourRole;
+   // A guest who isn't signed in can pick "I want to lend" from the role chooser inside the
+   // tour intro card (?tour=1&tourRole=lender). That should run the same mocked-lender preview
+   // the DEV-only `lenderTourPreview` flag drives — minus the DEV gate — so real production
    // visitors can actually see it. Real, signed-in lenders never match this: it requires
    // the *real* auth state to be empty, not just `isAuthenticated` (which this very flag feeds).
    const isRealUserAuthenticated = Boolean(user?.id && username);
-   const wantsGuestLenderTour = showTourPreview && !isRealUserAuthenticated && requestBoardSearchParams.get('tourRole') === 'lender';
+   const wantsGuestLenderTour = showTourPreview && !isRealUserAuthenticated && tourRole === 'lender';
    const isLenderTourPreview = (import.meta.env.DEV && requestBoardSearchParams.has('lenderTourPreview')) || wantsGuestLenderTour;
    const shouldForceReferralTestUser = isReferralTestMode && showTourPreview;
    const effectiveUser = isLenderTourPreview
@@ -721,6 +725,39 @@ function RequestBoard$() {
       Number.isInteger(requestedTourStepIndex) && requestedTourStepIndex >= 0
          ? Math.min(requestedTourStepIndex, Math.max(requestBoardTourStepCount - 1, 0))
          : 0;
+
+   const GUEST_TOUR_ROLE_OPTIONS: TourRoleOption[] = [
+      {
+         id: 'borrower',
+         title: 'I want to borrow',
+         body: 'See how to request a short-term USDC loan and build trust through on-time repayment.'
+      },
+      {
+         id: 'lender',
+         title: 'I want to lend',
+         body: 'See how to fund loan requests, review borrower trust signals, and earn by supporting people you believe in.'
+      },
+      {
+         id: 'unsure',
+         title: 'Not sure yet — just show me around',
+         body: 'Get a quick overview of how Moodeng works before deciding which side to explore.'
+      }
+   ];
+
+   const handleTourRoleSelect = useCallback(
+      (roleId: string) => {
+         if (roleId === 'unsure') {
+            navigate('/tour-overview');
+            return;
+         }
+         const params = new URLSearchParams(location.search);
+         params.set('tourRole', roleId);
+         // startTour=1 makes the tour begin immediately without re-showing the intro card
+         params.set('startTour', '1');
+         navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+      },
+      [location.pathname, location.search, navigate]
+   );
 
    const handleRequestBoardTourFinish = useCallback(
       (reason: 'complete' | 'skip') => {
@@ -1766,8 +1803,10 @@ function RequestBoard$() {
                initialStepIndex={initialBorrowerTourStepIndex}
                startImmediately={shouldStartTourImmediately}
                onFinish={handleRequestBoardTourFinish}
+               onRoleSelect={needsTourRoleChoice ? handleTourRoleSelect : undefined}
                onStepChange={handleRequestBoardTourStepChange}
                onStepNext={handleRequestBoardTourStepNext}
+               roleOptions={needsTourRoleChoice ? GUEST_TOUR_ROLE_OPTIONS : undefined}
                totalSteps={borrowerTourTotalSteps}
                steps={requestBoardTourSteps}
             />

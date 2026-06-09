@@ -216,7 +216,7 @@ export default function SignUpPage() {
                         </Link>
                      </p>
                      <Link
-                        to="/tour-chooser"
+                        to="/request-board?tour=1"
                         className="text-center text-base font-semibold tracking-[-0.02em] text-[#8336F0] hover:underline"
                      >
                         Take a tour first
