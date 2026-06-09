@@ -259,8 +259,7 @@ export default function GuidedTourPreview({
                   <button
                      type="button"
                      onClick={next}
-                     className="min-w-[112px] rounded-full border-2 border-[#d99800] bg-white px-md-3 py-md-1 text-md-b2 font-semibold shadow-sm transition active:scale-[0.98]"
-                     style={{ color: '#3b087b' }}
+                     className="min-w-[112px] rounded-full bg-[#d99800] px-md-3 py-md-1 text-md-b2 font-semibold text-white shadow-sm transition hover:bg-[#c48800] active:scale-[0.98]"
                   >
                      {isFinalGlobalStep ? 'Finished' : 'Next'}
                   </button>
