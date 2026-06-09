@@ -122,7 +122,8 @@ export default function RoleSelectionPage() {
          await dispatch(updateUserRole(selectedRole)).unwrap();
          const next = selectedRole === 'borrower' ? '/onboarding/welcome' : '/onboarding/wallet';
          navigate(next, { replace: true });
-      } catch {
+      } catch (err) {
+         console.error('[RoleSelection] updateUserRole failed:', err);
          showToast(TOAST_TYPES.ERROR, copy.errorTitle, copy.errorBody);
       } finally {
          setIsSubmitting(false);

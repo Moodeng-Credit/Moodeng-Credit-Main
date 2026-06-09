@@ -80,7 +80,7 @@ const EXISTING_ACCOUNT_RESET_MESSAGE =
 
 const sendExistingAccountReset = async (supabase: SupabaseClientType, email: string) => {
    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: getAuthRedirectUrl('/reset-password')
+      redirectTo: getAuthRedirectUrl('/auth/confirm')
    });
 
    if (resetError) throw resetError;
@@ -354,12 +354,10 @@ export const loginUser = createAsyncThunk(
                }
             });
 
-            if (resendError) {
-               console.error('Failed to resend verification email:', resendError);
-            }
-
             const emailNotConfirmedError = new Error(
-               'Please verify your email before signing in. A verification email has been sent to your inbox.'
+               resendError
+                  ? 'Please verify your email before signing in. Check your inbox or request a new verification email.'
+                  : 'Please verify your email before signing in. A verification email has been sent to your inbox.'
             );
             (emailNotConfirmedError as Error & { code: string }).code = 'email_not_confirmed';
             throw emailNotConfirmedError;
