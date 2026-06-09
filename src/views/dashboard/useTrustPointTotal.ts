@@ -16,15 +16,47 @@ const parseMajorPoints = (value: number | string | bigint | null | undefined) =>
    return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const STORAGE_PREFIX = 'moodeng.trustScore';
+const canUseLocalStorage = () => typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+const cacheKey = (userId: string) => `${STORAGE_PREFIX}.${userId}`;
+
+// Last-known points total, persisted across sessions so returning users see
+// their real score immediately instead of a "0 points" flash while the
+// fresh value loads in the background.
+const readCachedPoints = (userId?: string | null): number | null => {
+   if (!userId || !canUseLocalStorage()) return null;
+
+   try {
+      const raw = window.localStorage.getItem(cacheKey(userId));
+      if (raw === null) return null;
+      const parsed = Number(raw);
+      return Number.isFinite(parsed) ? parsed : null;
+   } catch {
+      return null;
+   }
+};
+
+const writeCachedPoints = (userId: string, points: number) => {
+   if (!canUseLocalStorage()) return;
+
+   try {
+      window.localStorage.setItem(cacheKey(userId), String(points));
+   } catch {
+      // Storage unavailable (private browsing, quota, etc.) — safe to ignore.
+   }
+};
+
 export function useTrustPointTotal({ userId, fallbackPoints, enabled }: UseTrustPointTotalArgs) {
-   const [pointsTotal, setPointsTotal] = useState(fallbackPoints);
-   // Starts true whenever a fetch is going to happen, so callers can avoid
-   // rendering a fallback value (e.g. "0 points") as if it were real data.
-   const [isLoading, setIsLoading] = useState(() => enabled && !!userId && isSupabaseBrowserConfigured());
+   const [pointsTotal, setPointsTotal] = useState(() => readCachedPoints(userId) ?? fallbackPoints);
+   // Only true when there's nothing cached to show yet (a user's first-ever
+   // load), so callers can avoid rendering "0 points" as if it were real.
+   const [isLoading, setIsLoading] = useState(
+      () => enabled && !!userId && isSupabaseBrowserConfigured() && readCachedPoints(userId) === null
+   );
 
    useEffect(() => {
-      setPointsTotal(fallbackPoints);
-   }, [fallbackPoints]);
+      setPointsTotal(readCachedPoints(userId) ?? fallbackPoints);
+   }, [fallbackPoints, userId]);
 
    useEffect(() => {
       if (!enabled || !userId || !isSupabaseBrowserConfigured()) {
@@ -33,7 +65,9 @@ export function useTrustPointTotal({ userId, fallbackPoints, enabled }: UseTrust
       }
 
       let isActive = true;
-      setIsLoading(true);
+      if (readCachedPoints(userId) === null) {
+         setIsLoading(true);
+      }
 
       const fetchTrustPoints = async () => {
          const supabase = getSupabaseBrowserClient();
@@ -43,12 +77,13 @@ export function useTrustPointTotal({ userId, fallbackPoints, enabled }: UseTrust
 
          if (error) {
             console.error('Failed to fetch Trust Points:', error.message);
-            setPointsTotal(fallbackPoints);
             setIsLoading(false);
             return;
          }
 
-         setPointsTotal(data ? parseMajorPoints(data.points_total) : fallbackPoints);
+         const resolved = data ? parseMajorPoints(data.points_total) : fallbackPoints;
+         setPointsTotal(resolved);
+         writeCachedPoints(userId, resolved);
          setIsLoading(false);
       };
 
