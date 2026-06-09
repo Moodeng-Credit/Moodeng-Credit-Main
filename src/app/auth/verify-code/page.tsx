@@ -65,7 +65,7 @@ export default function AuthVerifyCodePage(): JSX.Element {
       }
 
       if (code.length !== 6) {
-         setError('Enter the 6-digit code from your email.');
+         setError('Enter the 8-digit code from your email.');
          return;
       }
 
@@ -173,7 +173,7 @@ export default function AuthVerifyCodePage(): JSX.Element {
                         Confirm your email
                      </h1>
                      <p className="mt-3 max-w-[340px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F]">
-                        Enter the 6-digit code from the latest Moodeng email to finish setting up your account.
+                        Enter the 8-digit code from the latest Moodeng email to finish setting up your account.
                      </p>
                   </div>
 

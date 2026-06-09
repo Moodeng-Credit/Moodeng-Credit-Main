@@ -121,13 +121,21 @@ export default function AuthSuccessPage(): JSX.Element {
          title={isLinkFlow ? 'Check your email' : isConfirmedFlow ? 'Email confirmed' : 'Confirm your email'}
          body={
             isLinkFlow
-               ? 'Use the secure link in the latest Moodeng email to set a password for this account.'
+               ? 'Enter the 8-digit code from the latest Moodeng email to set a password for this account.'
                : isConfirmedFlow
                  ? 'Your email link was accepted. Sign in to continue if Moodeng did not open your account automatically.'
                  : confirmationInstructions
          }
       >
          <div className="space-y-3">
+            {isLinkFlow ? (
+               <Link
+                  to="/forgot-password"
+                  className="flex h-12 w-full items-center justify-center rounded-2xl bg-[#6010D2] text-sm font-semibold text-[#FDFCFD] transition hover:opacity-95"
+               >
+                  Enter reset code
+               </Link>
+            ) : null}
             <Link
                to="/sign-in#login"
                className="flex h-12 w-full items-center justify-center rounded-2xl border border-[#E0D7E8] text-sm font-semibold text-[#4D4359] transition hover:bg-[#F8F4FC]"
