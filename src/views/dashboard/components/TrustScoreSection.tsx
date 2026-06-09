@@ -46,7 +46,7 @@ function TrustGauge({ progressPercent }: { progressPercent: number }) {
    const arcD = `M ${start.x} ${start.y} A ${GAUGE_R} ${GAUGE_R} 0 ${large} 1 ${fill.x} ${fill.y}`;
 
    return (
-      <svg viewBox="0 0 300 165" className="w-full max-w-[260px] mx-auto overflow-visible">
+      <svg viewBox="-10 0 320 175" className="w-full max-w-[260px] mx-auto">
          <defs>
             <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
                <stop offset="0%" stopColor="#0F5B32" />
