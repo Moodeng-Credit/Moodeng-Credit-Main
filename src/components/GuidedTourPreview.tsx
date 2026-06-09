@@ -39,7 +39,7 @@ const SPOTLIGHT_INSET = 6;
 const CARD_GAP = 16;
 const CARD_TOP_MARGIN = 72;
 const CARD_BOTTOM_MARGIN = 112;
-const FALLBACK_CARD_HEIGHT = 280;
+const FALLBACK_CARD_HEIGHT = 160;
 
 export default function GuidedTourPreview({
    initialStepIndex = 0,
@@ -97,10 +97,12 @@ export default function GuidedTourPreview({
          return;
       }
 
-      // Scroll target to the top of the viewport so the tour card always has
-      // room to sit below it — prevents overlap on small screens like iPhone SE.
+      // Scroll target into view. For steps where the card sits above the target
+      // (cardPlacement: 'top'), scroll the target to the bottom of the viewport
+      // so there is room above it for the card. For all other steps, scroll to
+      // the top of the viewport so the card can sit below without overlap.
       target.scrollIntoView({
-         block: 'start',
+         block: currentStep?.cardPlacement === 'top' ? 'end' : 'start',
          behavior: 'auto'
       });
 

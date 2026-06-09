@@ -1984,7 +1984,7 @@ function DeleteLoanRequestModal({
 
 function GuestWorldIdTourPreview() {
    return (
-      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#12071f]/40 px-[21px] py-md-4">
+      <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#12071f]/40 px-[21px] pb-[48px]">
          <div data-tour-target="guest-world-id-preview" className="w-full max-w-[398px] overflow-hidden rounded-[20px] bg-white shadow-2xl">
             <VerificationModalHeader onClose={() => undefined} />
             <VerificationModalBody onVerify={() => undefined} onCheckStatus={() => undefined} />
