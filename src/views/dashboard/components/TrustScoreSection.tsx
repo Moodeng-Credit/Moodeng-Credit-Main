@@ -80,8 +80,8 @@ function TrustGauge({ fillPct, trustScore }: { fillPct: number; trustScore: numb
                </linearGradient>
             </defs>
 
-            {/* Grey track */}
-            <path d={trackD} stroke="#e8e4ed" strokeWidth={STROKE_W} fill="none" strokeLinecap="round" />
+            {/* Grey track — trust-gauge-track class picks up dark mode stroke from globals.css */}
+            <path className="trust-gauge-track" d={trackD} stroke="#e8e4ed" strokeWidth={STROKE_W} fill="none" strokeLinecap="round" />
 
             {/* Green fill arc */}
             {pct > 0 && (
