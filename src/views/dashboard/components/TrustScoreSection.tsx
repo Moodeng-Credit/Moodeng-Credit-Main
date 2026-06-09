@@ -23,10 +23,16 @@ const getTrustLabel = (score: number): { label: string; color: string; bgColor: 
    return { label: 'Getting Started', color: 'text-md-neutral-700', bgColor: 'bg-md-neutral-300' };
 };
 
-const GAUGE_CX = 150;
-const GAUGE_CY = 140;
-const GAUGE_R = 120;
-const STROKE_W = 18;
+// Gauge geometry — all coordinates + half stroke-width must fit within viewBox "0 0 240 140"
+// CX=120, CY=115, R=95, STROKE=16 → half-stroke=8
+// Left endpoint:  (120-95, 115) = (25, 115)  → left edge with stroke:  25-8=17  ✓ (≥0)
+// Right endpoint: (120+95, 115) = (215, 115) → right edge with stroke: 215+8=223 ✓ (≤240)
+// Top of arc:     (120, 115-95) = (120, 20)  → top edge with stroke:   20-8=12  ✓ (≥0)
+// Round cap at endpoints extends 8px along tangent → bottom: 115+8=123 ✓ (≤140)
+const GAUGE_CX = 120;
+const GAUGE_CY = 115;
+const GAUGE_R = 95;
+const STROKE_W = 16;
 
 function arcPoint(angle: number) {
    return {
@@ -36,18 +42,27 @@ function arcPoint(angle: number) {
 }
 
 function TrustGauge({ progressPercent }: { progressPercent: number }) {
-   const pct = Math.min(progressPercent / 100, 1);
+   const pct = Math.min(Math.max(progressPercent / 100, 0), 1);
    const gradientId = 'trustGaugeGradient';
 
-   const start = arcPoint(Math.PI);
-   const end = arcPoint(0);
-   const fill = arcPoint(Math.PI * (1 - pct));
-   const large = pct > 0.5 ? 1 : 0;
-   const arcD = `M ${start.x} ${start.y} A ${GAUGE_R} ${GAUGE_R} 0 ${large} 1 ${fill.x} ${fill.y}`;
+   // Track: left endpoint (angle=π) → right endpoint (angle=0), clockwise over the top
+   const left = arcPoint(Math.PI); // (25, 115)
+   const right = arcPoint(0);      // (215, 115)
+
+   // Fill arc: left → some point along the track
+   // fill angle decreases from π (left) toward 0 (right) as pct increases
+   const fillAngle = Math.PI * (1 - pct);
+   const fill = arcPoint(fillAngle);
+
+   // The fill arc is always ≤ 180°, so large-arc-flag is always 0
+   // sweep-flag=1 = clockwise in SVG (y-down), which goes upward over the top
+   const trackD = `M ${left.x} ${left.y} A ${GAUGE_R} ${GAUGE_R} 0 0 1 ${right.x} ${right.y}`;
+   const arcD = `M ${left.x} ${left.y} A ${GAUGE_R} ${GAUGE_R} 0 0 1 ${fill.x} ${fill.y}`;
 
    return (
-      <div className="w-full max-w-[260px] mx-auto overflow-hidden">
-         <svg viewBox="-10 0 320 175" width="100%" style={{ display: 'block' }}>
+      <div className="w-full max-w-[260px] mx-auto">
+         {/* Use className w-full h-auto (no explicit width/height attrs) for correct Safari scaling */}
+         <svg viewBox="0 0 240 140" className="w-full h-auto block">
             <defs>
                <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#0F5B32" />
@@ -55,15 +70,13 @@ function TrustGauge({ progressPercent }: { progressPercent: number }) {
                </linearGradient>
             </defs>
 
-            <path
-               className="trust-gauge-track"
-               d={`M ${start.x} ${start.y} A ${GAUGE_R} ${GAUGE_R} 0 0 1 ${end.x} ${end.y}`}
-               stroke="#e8e4ed"
-               strokeWidth={STROKE_W}
-               fill="none"
-               strokeLinecap="round"
-            />
-            {pct > 0 && <path d={arcD} stroke={`url(#${gradientId})`} strokeWidth={STROKE_W} fill="none" strokeLinecap="round" />}
+            {/* Grey track */}
+            <path d={trackD} stroke="#e8e4ed" strokeWidth={STROKE_W} fill="none" strokeLinecap="round" />
+
+            {/* Green fill arc */}
+            {pct > 0 && (
+               <path d={arcD} stroke={`url(#${gradientId})`} strokeWidth={STROKE_W} fill="none" strokeLinecap="round" />
+            )}
          </svg>
       </div>
    );
