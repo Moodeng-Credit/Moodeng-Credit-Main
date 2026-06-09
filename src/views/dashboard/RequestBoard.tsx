@@ -879,6 +879,7 @@ function RequestBoard$() {
          target: '[data-tour-target="request-latest-list"]',
          title: 'Lenders browse & fund',
          body: 'Lenders scroll through open requests, check each borrower\'s repayment history and trust signals, then fund the ones they believe in.',
+         cardPlacement: 'bottom',
          durationMs: 6000
       },
       {
@@ -943,6 +944,7 @@ function RequestBoard$() {
                  target: '[data-tour-target="request-latest-list"]',
                  title: 'Request Board',
                  body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
+                 cardPlacement: 'bottom',
                  durationMs: 6000
               },
               {
@@ -969,6 +971,7 @@ function RequestBoard$() {
                  target: '[data-tour-target="request-latest-list"]',
                  title: 'Request Board',
                  body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
+                 cardPlacement: 'bottom',
                  durationMs: 6000
               },
               {
@@ -1004,6 +1007,7 @@ function RequestBoard$() {
          target: '[data-tour-target="request-latest-list"]',
          title: 'Find open requests',
          body: 'As a lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.',
+         cardPlacement: 'bottom',
          durationMs: 6500
       },
       {
@@ -1985,7 +1989,7 @@ function DeleteLoanRequestModal({
 function GuestWorldIdTourPreview() {
    return (
       <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#12071f]/40 px-[21px] pb-[48px]">
-         <div data-tour-target="guest-world-id-preview" className="w-full max-w-[398px] overflow-hidden rounded-[20px] bg-white shadow-2xl">
+         <div data-tour-target="guest-world-id-preview" className="w-full max-w-[398px] overflow-hidden rounded-[20px] bg-white shadow-2xl max-h-[45vh]">
             <VerificationModalHeader onClose={() => undefined} />
             <VerificationModalBody onVerify={() => undefined} onCheckStatus={() => undefined} />
             <ModalNote />

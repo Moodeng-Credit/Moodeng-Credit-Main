@@ -4,6 +4,13 @@ type GuidedTourStep = {
    target: string;
    title: string;
    body: string;
+   /**
+    * Controls where the tour card appears relative to the spotlight:
+    * - 'top'    – card sits above the highlighted element (element scrolled to bottom of viewport)
+    * - 'bottom' – card is pinned near the bottom of the viewport so large elements
+    *              remain fully visible above it (ideal for wide/tall containers on small screens)
+    * - omitted  – card goes below by default; falls back to above if there is no room
+    */
    cardPlacement?: 'top' | 'bottom';
    durationMs?: number;
 };
@@ -73,6 +80,12 @@ export default function GuidedTourPreview({
       const belowTarget = bounds.top + bounds.height + CARD_GAP;
       const aboveTarget = bounds.top - cardHeight - CARD_GAP;
 
+      // 'bottom' – pin the card near the bottom of the viewport.  The highlighted
+      // element is scrolled to the top so it sits fully above the card.
+      if (currentStep?.cardPlacement === 'bottom') {
+         return Math.max(CARD_TOP_MARGIN, viewportHeight - CARD_BOTTOM_MARGIN - cardHeight);
+      }
+
       if (currentStep?.cardPlacement === 'top' && aboveTarget >= CARD_TOP_MARGIN) {
          return aboveTarget;
       }
@@ -97,10 +110,10 @@ export default function GuidedTourPreview({
          return;
       }
 
-      // Scroll target into view. For steps where the card sits above the target
-      // (cardPlacement: 'top'), scroll the target to the bottom of the viewport
-      // so there is room above it for the card. For all other steps, scroll to
-      // the top of the viewport so the card can sit below without overlap.
+      // Scroll target into view.
+      // • 'top'    → scroll element to bottom of viewport so the card fits above it
+      // • 'bottom' → scroll element to top so it's fully visible above the bottom card
+      // • default  → scroll element to top so the card sits below it
       target.scrollIntoView({
          block: currentStep?.cardPlacement === 'top' ? 'end' : 'start',
          behavior: 'auto'
