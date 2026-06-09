@@ -126,7 +126,7 @@ export default function TrustScoreSection({ trustScore, isLoading = false }: Tru
                <TrustGauge fillPct={isLoading ? 0 : fillPct} />
                <div className="absolute inset-0 flex flex-col items-center justify-end pb-2">
                   {isLoading ? (
-                     <div className="flex flex-col items-center gap-2">
+                     <div className="flex animate-pulse flex-col items-center gap-2">
                         <div className="h-5 w-24 rounded-full bg-md-neutral-500" />
                         <div className="h-7 w-28 rounded-full bg-md-neutral-500" />
                         <div className="h-4 w-32 rounded-full bg-md-neutral-500" />
