@@ -9,7 +9,7 @@ import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/sup
 
 type Step = 'email' | 'code';
 
-const CODE_LENGTH = 6;
+const CODE_LENGTH = 8;
 
 export default function ForgotPasswordPage(): JSX.Element {
    const navigate = useNavigate();
