@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { getTrustPointRewardProgress, TRUST_POINT_REWARDS } from '@/views/dashboard/trustPointRewards';
 
@@ -113,12 +113,34 @@ export default function TrustScoreSection({ trustScore }: TrustScoreSectionProps
    const { nextReward, pointsToNext } = useMemo(() => getTrustPointRewardProgress(trustScore), [trustScore]);
    const fillPct = useMemo(() => getGaugeFillPct(trustScore), [trustScore]);
    const nextRewardCaption = nextReward ? `${pointsToNext} pts to ${nextReward.title}` : 'Top tier reached';
+   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
    return (
       <>
-         <div className="flex items-center gap-1.5" data-tour-target="dashboard-trust-score-heading">
+         <div className="relative flex items-center gap-1.5" data-tour-target="dashboard-trust-score-heading">
             <h2 className="text-md-h5 font-semibold text-md-heading">Trust Score</h2>
-            <img src="/icons/question_light.svg" alt="Info" className="w-5 h-5" />
+            <button
+               type="button"
+               onClick={() => setIsHelpOpen((v) => !v)}
+               className="flex h-6 w-6 items-center justify-center rounded-full"
+               aria-label="About trust score"
+            >
+               <img src="/icons/question_light.svg" alt="" className="w-5 h-5" />
+            </button>
+            {isHelpOpen && (
+               <>
+                  <div className="fixed inset-0 z-10" onClick={() => setIsHelpOpen(false)} />
+                  <div
+                     role="tooltip"
+                     className="absolute left-0 top-8 z-20 w-[290px] rounded-[10px] bg-[#360975] px-3 py-2 shadow-[0_8px_24px_rgba(20,18,24,0.18)] before:absolute before:left-4 before:top-[-6px] before:h-0 before:w-0 before:border-x-[6px] before:border-b-[6px] before:border-x-transparent before:border-b-[#360975]"
+                  >
+                     <p className="text-center text-[14px] font-normal leading-[21px] tracking-[-0.28px] text-[#f1e9fd]">
+                        Your Trust Score reflects your overall reputation, up to 500 points. The markers on the gauge mark the
+                        Silver, Gold, and Trusted milestones along the way.
+                     </p>
+                  </div>
+               </>
+            )}
          </div>
 
          <div className="flex flex-col items-center -mt-2">
