@@ -197,7 +197,7 @@ export default function ForgotPasswordPage(): JSX.Element {
                                     setCode(event.target.value.replace(/\D/g, '').slice(0, CODE_LENGTH));
                                     setError('');
                                  }}
-                                 placeholder="123456"
+                                 placeholder="12345678"
                                  className="min-w-0 flex-1 bg-transparent text-base tracking-[0.4em] text-[#040033] outline-none placeholder:tracking-normal placeholder:text-[#70617F] dark:text-[#F0EAFF] dark:placeholder:text-[#6B5880]"
                                  required
                               />
