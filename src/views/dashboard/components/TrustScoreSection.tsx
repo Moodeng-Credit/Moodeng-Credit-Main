@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
-import { getTrustPointRewardProgress, TRUST_POINT_REWARDS } from '@/views/dashboard/trustPointRewards';
+import { getTrustPointRewardProgress } from '@/views/dashboard/trustPointRewards';
 
 interface TrustScoreSectionProps {
    trustScore: number;
@@ -47,16 +47,7 @@ function arcPoint(anglePct: number) {
    };
 }
 
-// Milestone dots at Silver, Gold, Trusted — using the same sqrt transform
-// so each dot appears exactly where the fill will end at that score.
-// Top Borrower (500) is implied by the right endpoint of the track itself.
-const MILESTONE_DOTS = TRUST_POINT_REWARDS.slice(0, 3).map((reward) => ({
-   id: reward.id,
-   threshold: reward.threshold,
-   pos: arcPoint(getGaugeFillPct(reward.threshold) / 100)
-}));
-
-function TrustGauge({ fillPct, trustScore }: { fillPct: number; trustScore: number }) {
+function TrustGauge({ fillPct }: { fillPct: number }) {
    const pct = Math.min(Math.max(fillPct / 100, 0), 1);
    const gradientId = 'trustGaugeGradient';
 
@@ -87,22 +78,6 @@ function TrustGauge({ fillPct, trustScore }: { fillPct: number; trustScore: numb
             {pct > 0 && (
                <path d={fillD} stroke={`url(#${gradientId})`} strokeWidth={STROKE_W} fill="none" strokeLinecap="round" />
             )}
-
-            {/* Milestone marker dots — rendered last so they sit on top of the fill */}
-            {MILESTONE_DOTS.map(({ id, threshold, pos }) => {
-               const unlocked = trustScore >= threshold;
-               return (
-                  <circle
-                     key={id}
-                     cx={pos.x}
-                     cy={pos.y}
-                     r={5}
-                     fill={unlocked ? 'white' : 'transparent'}
-                     stroke={unlocked ? '#1FC16B' : '#b0aab8'}
-                     strokeWidth={2}
-                  />
-               );
-            })}
          </svg>
       </div>
    );
@@ -113,17 +88,39 @@ export default function TrustScoreSection({ trustScore }: TrustScoreSectionProps
    const { nextReward, pointsToNext } = useMemo(() => getTrustPointRewardProgress(trustScore), [trustScore]);
    const fillPct = useMemo(() => getGaugeFillPct(trustScore), [trustScore]);
    const nextRewardCaption = nextReward ? `${pointsToNext} pts to ${nextReward.title}` : 'Top tier reached';
+   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
    return (
       <>
-         <div className="flex items-center gap-1.5" data-tour-target="dashboard-trust-score-heading">
+         <div className="relative flex items-center gap-1.5" data-tour-target="dashboard-trust-score-heading">
             <h2 className="text-md-h5 font-semibold text-md-heading">Trust Score</h2>
-            <img src="/icons/question_light.svg" alt="Info" className="w-5 h-5" />
+            <button
+               type="button"
+               onClick={() => setIsHelpOpen((v) => !v)}
+               className="flex h-6 w-6 items-center justify-center rounded-full"
+               aria-label="About trust score"
+            >
+               <img src="/icons/question_light.svg" alt="" className="w-5 h-5" />
+            </button>
+            {isHelpOpen && (
+               <>
+                  <div className="fixed inset-0 z-10" onClick={() => setIsHelpOpen(false)} />
+                  <div
+                     role="tooltip"
+                     className="absolute left-0 top-8 z-20 w-[290px] rounded-[10px] bg-[#360975] px-3 py-2 shadow-[0_8px_24px_rgba(20,18,24,0.18)] before:absolute before:left-4 before:top-[-6px] before:h-0 before:w-0 before:border-x-[6px] before:border-b-[6px] before:border-x-transparent before:border-b-[#360975]"
+                  >
+                     <p className="text-center text-[14px] font-normal leading-[21px] tracking-[-0.28px] text-[#f1e9fd]">
+                        Your Trust Score is your track record on Moodeng, out of 500 points — and counting. It already
+                        unlocks perks, with bigger rewards on the way for top scorers. Keep building it!
+                     </p>
+                  </div>
+               </>
+            )}
          </div>
 
          <div className="flex flex-col items-center -mt-2">
             <div className="relative w-full max-w-[260px]">
-               <TrustGauge fillPct={fillPct} trustScore={trustScore} />
+               <TrustGauge fillPct={fillPct} />
                <div className="absolute inset-0 flex flex-col items-center justify-end pb-2">
                   <span className={`inline-block px-2.5 py-0.5 rounded-full text-md-b4 font-medium ${color} ${bgColor} mb-1`}>
                      {label}
