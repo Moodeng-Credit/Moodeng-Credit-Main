@@ -505,7 +505,8 @@ export default function WorldIDVerification({
          action_description: WORLD_ID_ACTION_DESCRIPTION,
          rp_context: nextRpContext,
          allow_legacy_proofs: false,
-         environment: WORLD_ID_ENVIRONMENT
+         environment: WORLD_ID_ENVIRONMENT,
+         return_to: window.location.href
       }).constraints(CredentialRequest('proof_of_human'));
 
       return request as PreparedWorldIdRequest;
