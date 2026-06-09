@@ -128,7 +128,7 @@ export default function WalletConnected() {
    };
 
    return (
-      <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
+      <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col max-w-[440px] mx-auto w-full">
          <OnboardingHeader hideBack />
 
          <div className="flex flex-1 flex-col items-center justify-center px-md-4 text-center">
@@ -169,7 +169,7 @@ export default function WalletConnected() {
 
 function FailureView({ title, body, onRetry }: { title: string; body: string; onRetry: () => void }) {
    return (
-      <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col max-w-[440px] mx-auto w-full">
+      <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col max-w-[440px] mx-auto w-full">
          <OnboardingHeader title="Connection Failed" />
 
          <div className="flex flex-col flex-1 items-center justify-center px-md-4 gap-md-4">

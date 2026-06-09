@@ -38,13 +38,13 @@ You start at Level 1 with a $15 limit. Each full repayment of a Credit-Building 
    {
       id: 'what-is-a-base-wallet',
       question: 'What is a Base wallet?',
-      answer: `Base is a Layer 2 blockchain network built by Coinbase, designed for fast, cheap, secure crypto transactions. A "Base wallet" is any wallet that can hold and send funds on the Base network — most commonly the Coinbase Smart Wallet, which is tightly integrated with Base.
+      answer: `Base is a Layer 2 blockchain network built by Coinbase, designed for fast, cheap, secure crypto transactions. A "Base wallet" is any wallet that can hold and send funds on the Base network — most commonly the Base Account, which is tightly integrated with Base.
 
-Moodeng uses Base wallets for one big reason: gasless USDC transactions. On Base with a Coinbase Smart Wallet, sending or receiving USDC costs nothing in network fees. When you receive a loan, the full amount lands in your wallet. When you repay, the lender gets every cent back.
+Moodeng uses Base wallets for one big reason: gasless USDC transactions. On Base with a Base Account, sending or receiving USDC costs nothing in network fees. When you receive a loan, the full amount lands in your wallet. When you repay, the lender gets every cent back.
 
-Coinbase Smart Wallet is also passwordless and seedless — you sign in with email or passkey, no 12-word recovery phrase to lose. For a borrowing platform where new users may have never touched crypto, that's a meaningful improvement over older wallets like MetaMask.
+Base Account is also passwordless and seedless — you sign in with email or passkey, no 12-word recovery phrase to lose. For a borrowing platform where new users may have never touched crypto, that's a meaningful improvement over older wallets like MetaMask.
 
-Borrowers on Moodeng must use a Coinbase Smart Wallet on Base. Lenders have more flexibility but we recommend the same setup to keep transactions gasless.`
+Borrowers on Moodeng must use a Base Account on Base. Lenders have more flexibility but we recommend the same setup to keep transactions gasless.`
    },
    {
       id: 'what-is-usdc',
@@ -60,7 +60,7 @@ USDC also moves anywhere in the world in seconds, is widely accepted by every ma
       question: 'Does Moodeng charge fees?',
       answer: `No. Moodeng Credit is free to use. There are no platform fees on borrowing, no fees on lending, no monthly subscriptions, no setup costs. 100% of what a lender funds reaches the borrower, and 100% of a repayment reaches the lender.
 
-Network fees (gas) are also zero when you use a Coinbase Smart Wallet on Base. So the only cost of using Moodeng is the interest rate the borrower offers — and that goes entirely to the lender, not to us.
+Network fees (gas) are also zero when you use a Base Account on Base. So the only cost of using Moodeng is the interest rate the borrower offers — and that goes entirely to the lender, not to us.
 
 How do we keep things free? We don't take a cut. Our future business model is the IOU token, which we'll launch via airdrop to active lenders. Until then, Moodeng is fully fee-free.`
    },
@@ -71,7 +71,7 @@ How do we keep things free? We don't take a cut. Our future business model is th
 
 Moodeng Credit is built as a fairer alternative. Interest rates are set by the borrower and accepted (or passed on) by lenders in a transparent marketplace — no hidden charges, no compounding tricks. Small starter loans ($15–$60 at Credit Levels 1–4) match what borrowers actually need for short-term emergencies, paired with a credit-building system that grows your limit as you prove reliability.
 
-There's no collateral, no government ID, and no bank account required — just a verified World ID and a Coinbase Smart Wallet. Anyone with a phone can access loans. And your reputation travels with you (linked to your wallet and World ID), so you build genuine credit history that lenders trust — instead of staying stuck in a cycle.
+There's no collateral, no government ID, and no bank account required — just a verified World ID and a Base Account. Anyone with a phone can access loans. And your reputation travels with you (linked to your wallet and World ID), so you build genuine credit history that lenders trust — instead of staying stuck in a cycle.
 
 We don't claim to replace banks for everyone. But for the people currently using loan sharks because they have no other option, Moodeng aims to be a safer, fairer, more dignified path.`
    },
@@ -131,13 +131,13 @@ Magsisimula ka sa Level 1 na may $15 limit. Bawat full repayment ng Credit-Build
    {
       id: 'what-is-a-base-wallet',
       question: 'Ano ang Base wallet?',
-      answer: `Ang Base ay Layer 2 blockchain network na ginawa ng Coinbase para sa mabilis, mura, at secure na crypto transactions. Ang "Base wallet" ay kahit anong wallet na kayang mag-hold at magpadala ng funds sa Base network. Pinaka-common dito ang Coinbase Smart Wallet, na tightly integrated sa Base.
+      answer: `Ang Base ay Layer 2 blockchain network na ginawa ng Coinbase para sa mabilis, mura, at secure na crypto transactions. Ang "Base wallet" ay kahit anong wallet na kayang mag-hold at magpadala ng funds sa Base network. Pinaka-common dito ang Base Account, na tightly integrated sa Base.
 
-Ginagamit ng Moodeng ang Base wallets dahil sa isang malaking dahilan: gasless USDC transactions. Sa Base gamit ang Coinbase Smart Wallet, walang network fee ang pagpapadala o pagtanggap ng USDC. Kapag nakatanggap ka ng loan, buong amount ang papasok sa wallet mo. Kapag nagbayad ka, bawat sentimo ay makakarating sa lender.
+Ginagamit ng Moodeng ang Base wallets dahil sa isang malaking dahilan: gasless USDC transactions. Sa Base gamit ang Base Account, walang network fee ang pagpapadala o pagtanggap ng USDC. Kapag nakatanggap ka ng loan, buong amount ang papasok sa wallet mo. Kapag nagbayad ka, bawat sentimo ay makakarating sa lender.
 
-Passwordless at seedless din ang Coinbase Smart Wallet. Nag-sign in ka gamit ang email o passkey, walang 12-word recovery phrase na puwedeng mawala. Para sa borrowing platform kung saan maraming bagong users ang hindi pa sanay sa crypto, malaking improvement ito kumpara sa older wallets tulad ng MetaMask.
+Passwordless at seedless din ang Base Account. Nag-sign in ka gamit ang email o passkey, walang 12-word recovery phrase na puwedeng mawala. Para sa borrowing platform kung saan maraming bagong users ang hindi pa sanay sa crypto, malaking improvement ito kumpara sa older wallets tulad ng MetaMask.
 
-Kailangang gumamit ang borrowers sa Moodeng ng Coinbase Smart Wallet sa Base. Mas flexible ang lenders, pero nirerekomenda rin namin ang parehong setup para manatiling gasless ang transactions.`
+Kailangang gumamit ang borrowers sa Moodeng ng Base Account sa Base. Mas flexible ang lenders, pero nirerekomenda rin namin ang parehong setup para manatiling gasless ang transactions.`
    },
    {
       id: 'what-is-usdc',
@@ -153,7 +153,7 @@ Mabilis ding gumagalaw ang USDC kahit saan sa mundo, accepted ito ng major excha
       question: 'May fees ba ang Moodeng?',
       answer: `Wala. Libre gamitin ang Moodeng Credit. Walang platform fees sa paghiram, walang fees sa pagpapahiram, walang monthly subscriptions, at walang setup costs. 100% ng pini-fund ng lender ay napupunta sa borrower, at 100% ng repayment ay napupunta sa lender.
 
-Zero rin ang network fees o gas kapag gumagamit ka ng Coinbase Smart Wallet sa Base. Kaya ang tanging cost sa paggamit ng Moodeng ay ang interest rate na ino-offer ng borrower, at iyon ay buong napupunta sa lender, hindi sa amin.
+Zero rin ang network fees o gas kapag gumagamit ka ng Base Account sa Base. Kaya ang tanging cost sa paggamit ng Moodeng ay ang interest rate na ino-offer ng borrower, at iyon ay buong napupunta sa lender, hindi sa amin.
 
 Paano namin pinananatiling libre ito? Hindi kami kumukuha ng cut. Ang future business model namin ay ang IOU token, na ilulunsad namin sa pamamagitan ng airdrop sa active lenders. Hanggang doon, ganap na fee-free ang Moodeng.`
    },
@@ -164,7 +164,7 @@ Paano namin pinananatiling libre ito? Hindi kami kumukuha ng cut. Ang future bus
 
 Ginawa ang Moodeng Credit bilang mas patas na alternative. Ang interest rates ay sine-set ng borrower at tinatanggap o nilalagpasan ng lenders sa transparent marketplace. Walang hidden charges at walang compounding tricks. Ang small starter loans, gaya ng $15-$60 sa antas ng kredito 1-4, ay tugma sa short-term emergency needs ng borrowers, kasama ang credit-building system na nagpapalaki ng limit habang napapatunayan mo ang reliability mo.
 
-Walang collateral, walang government ID, at walang bank account na kailangan. Verified World ID at Coinbase Smart Wallet lang. Kahit sinong may phone ay puwedeng maka-access ng loans. At dahil naka-link sa wallet at World ID ang reputation mo, nadadala mo ito at nakakabuo ka ng tunay na credit history na puwedeng pagkatiwalaan ng lenders, sa halip na manatili sa cycle.
+Walang collateral, walang government ID, at walang bank account na kailangan. Verified World ID at Base Account lang. Kahit sinong may phone ay puwedeng maka-access ng loans. At dahil naka-link sa wallet at World ID ang reputation mo, nadadala mo ito at nakakabuo ka ng tunay na credit history na puwedeng pagkatiwalaan ng lenders, sa halip na manatili sa cycle.
 
 Hindi namin sinasabing papalitan namin ang banks para sa lahat. Pero para sa mga taong napipilitang gumamit ng loan sharks dahil wala silang ibang option, layunin ng Moodeng na maging mas ligtas, mas patas, at mas dignified na path.`
    },
@@ -224,13 +224,13 @@ Kamu mulai dari Level 1 dengan limit $15. Setiap pembayaran penuh untuk Credit-B
    {
       id: 'what-is-a-base-wallet',
       question: 'Apa itu Base wallet?',
-      answer: `Base adalah jaringan blockchain Layer 2 dari Coinbase yang dirancang untuk transaksi kripto yang cepat, murah, dan aman. "Base wallet" adalah wallet apa pun yang bisa menyimpan dan mengirim dana di jaringan Base, paling umum Coinbase Smart Wallet yang terintegrasi erat dengan Base.
+      answer: `Base adalah jaringan blockchain Layer 2 dari Coinbase yang dirancang untuk transaksi kripto yang cepat, murah, dan aman. "Base wallet" adalah wallet apa pun yang bisa menyimpan dan mengirim dana di jaringan Base, paling umum Base Account yang terintegrasi erat dengan Base.
 
-Moodeng memakai Base wallet karena satu alasan besar: transaksi USDC tanpa gas. Di Base dengan Coinbase Smart Wallet, mengirim atau menerima USDC tidak memerlukan biaya jaringan. Saat kamu menerima pinjaman, jumlah penuh masuk ke wallet kamu. Saat kamu membayar, pemberi pinjaman menerima seluruh jumlahnya.
+Moodeng memakai Base wallet karena satu alasan besar: transaksi USDC tanpa gas. Di Base dengan Base Account, mengirim atau menerima USDC tidak memerlukan biaya jaringan. Saat kamu menerima pinjaman, jumlah penuh masuk ke wallet kamu. Saat kamu membayar, pemberi pinjaman menerima seluruh jumlahnya.
 
-Coinbase Smart Wallet juga passwordless dan seedless. Kamu masuk dengan email atau passkey, tanpa recovery phrase 12 kata yang bisa hilang. Untuk platform pinjaman dengan banyak pengguna baru yang belum terbiasa dengan kripto, ini jauh lebih mudah dibanding wallet lama seperti MetaMask.
+Base Account juga passwordless dan seedless. Kamu masuk dengan email atau passkey, tanpa recovery phrase 12 kata yang bisa hilang. Untuk platform pinjaman dengan banyak pengguna baru yang belum terbiasa dengan kripto, ini jauh lebih mudah dibanding wallet lama seperti MetaMask.
 
-Peminjam di Moodeng harus memakai Coinbase Smart Wallet di Base. Pemberi pinjaman lebih fleksibel, tetapi kami tetap merekomendasikan setup yang sama agar transaksi tetap gasless.`
+Peminjam di Moodeng harus memakai Base Account di Base. Pemberi pinjaman lebih fleksibel, tetapi kami tetap merekomendasikan setup yang sama agar transaksi tetap gasless.`
    },
    {
       id: 'what-is-usdc',
@@ -246,7 +246,7 @@ USDC juga bergerak ke mana pun di dunia dalam hitungan detik, didukung oleh burs
       question: 'Apakah Moodeng mengenakan biaya?',
       answer: `Tidak. Moodeng Credit gratis digunakan. Tidak ada biaya platform untuk meminjam, tidak ada biaya untuk memberi pinjaman, tidak ada langganan bulanan, dan tidak ada biaya setup. 100% dana dari pemberi pinjaman sampai ke peminjam, dan 100% pembayaran sampai ke pemberi pinjaman.
 
-Biaya jaringan atau gas juga nol saat kamu memakai Coinbase Smart Wallet di Base. Jadi satu-satunya biaya memakai Moodeng adalah rate bunga yang ditawarkan peminjam, dan itu sepenuhnya untuk pemberi pinjaman, bukan untuk kami.
+Biaya jaringan atau gas juga nol saat kamu memakai Base Account di Base. Jadi satu-satunya biaya memakai Moodeng adalah rate bunga yang ditawarkan peminjam, dan itu sepenuhnya untuk pemberi pinjaman, bukan untuk kami.
 
 Bagaimana kami menjaga ini tetap gratis? Kami tidak mengambil potongan. Model bisnis masa depan kami adalah token IOU, yang akan diluncurkan lewat airdrop untuk pemberi pinjaman aktif. Sampai saat itu, Moodeng sepenuhnya bebas biaya.`
    },
@@ -257,7 +257,7 @@ Bagaimana kami menjaga ini tetap gratis? Kami tidak mengambil potongan. Model bi
 
 Moodeng Credit dibuat sebagai alternatif yang lebih adil. Rate bunga ditentukan oleh peminjam dan diterima atau dilewati oleh pemberi pinjaman di marketplace yang transparan. Tidak ada biaya tersembunyi dan tidak ada trik bunga berbunga. Pinjaman awal kecil, seperti $15-$60 di level kredit 1-4, sesuai dengan kebutuhan darurat jangka pendek, ditambah sistem credit-building yang menaikkan limit saat kamu membuktikan keandalan.
 
-Tidak perlu agunan, ID pemerintah, atau rekening bank. Cukup World ID terverifikasi dan Coinbase Smart Wallet. Siapa pun dengan ponsel bisa mengakses pinjaman. Reputasi kamu juga ikut terbawa, karena tertaut ke wallet dan World ID, sehingga kamu membangun riwayat kredit nyata yang bisa dipercaya pemberi pinjaman.
+Tidak perlu agunan, ID pemerintah, atau rekening bank. Cukup World ID terverifikasi dan Base Account. Siapa pun dengan ponsel bisa mengakses pinjaman. Reputasi kamu juga ikut terbawa, karena tertaut ke wallet dan World ID, sehingga kamu membangun riwayat kredit nyata yang bisa dipercaya pemberi pinjaman.
 
 Kami tidak mengklaim bisa menggantikan bank untuk semua orang. Tetapi untuk orang yang memakai rentenir karena tidak ada pilihan lain, Moodeng bertujuan menjadi jalur yang lebih aman, adil, dan bermartabat.`
    },
@@ -317,11 +317,11 @@ Trust Score ของคุณไม่ได้ติดอยู่ในแ�
    {
       id: 'what-is-a-base-wallet',
       question: 'Base wallet คืออะไร?',
-      answer: `Base เป็นเครือข่ายบล็อกเชน Layer 2 จาก Coinbase ที่ออกแบบมาเพื่อธุรกรรมคริปโตที่รวดเร็ว ถูก และปลอดภัย "Base wallet" คือกระเป๋าเงินใด ๆ ที่ถือและส่งเงินบนเครือข่าย Base ได้ โดยที่พบบ่อยคือ Coinbase Smart Wallet
+      answer: `Base เป็นเครือข่ายบล็อกเชน Layer 2 จาก Coinbase ที่ออกแบบมาเพื่อธุรกรรมคริปโตที่รวดเร็ว ถูก และปลอดภัย "Base wallet" คือกระเป๋าเงินใด ๆ ที่ถือและส่งเงินบนเครือข่าย Base ได้ โดยที่พบบ่อยคือ Base Account
 
-Moodeng ใช้ Base wallet เพราะธุรกรรม USDC บน Base ด้วย Coinbase Smart Wallet ไม่มีค่า gas เมื่อคุณได้รับเงินกู้ จำนวนเต็มจะเข้ากระเป๋าของคุณ และเมื่อคุณชำระคืน ผู้ให้กู้จะได้รับเต็มจำนวน
+Moodeng ใช้ Base wallet เพราะธุรกรรม USDC บน Base ด้วย Base Account ไม่มีค่า gas เมื่อคุณได้รับเงินกู้ จำนวนเต็มจะเข้ากระเป๋าของคุณ และเมื่อคุณชำระคืน ผู้ให้กู้จะได้รับเต็มจำนวน
 
-ผู้ยืมบน Moodeng ต้องใช้ Coinbase Smart Wallet บน Base ส่วนผู้ให้กู้ยืดหยุ่นกว่า แต่เราแนะนำวิธีเดียวกันเพื่อให้ธุรกรรมไม่มีค่า gas`
+ผู้ยืมบน Moodeng ต้องใช้ Base Account บน Base ส่วนผู้ให้กู้ยืดหยุ่นกว่า แต่เราแนะนำวิธีเดียวกันเพื่อให้ธุรกรรมไม่มีค่า gas`
    },
    {
       id: 'what-is-usdc',
@@ -335,7 +335,7 @@ Moodeng ใช้ USDC เพราะโอนทั่วโลกได้ร
       question: 'Moodeng คิดค่าธรรมเนียมหรือไม่?',
       answer: `ไม่ Moodeng Credit ใช้งานฟรี ไม่มีค่าธรรมเนียมแพลตฟอร์มสำหรับการยืมหรือให้กู้ ไม่มีค่าสมัครรายเดือน และไม่มีค่าเริ่มต้น เงินที่ผู้ให้กู้ให้ทุนจะถึงผู้ยืม 100% และเงินชำระคืนจะถึงผู้ให้กู้ 100%
 
-ค่า network fee หรือ gas ก็เป็นศูนย์เมื่อใช้ Coinbase Smart Wallet บน Base ค่าใช้จ่ายเดียวคือดอกเบี้ยที่ผู้ยืมเสนอ และเงินส่วนนั้นเป็นของผู้ให้กู้ทั้งหมด ไม่ใช่ของเรา`
+ค่า network fee หรือ gas ก็เป็นศูนย์เมื่อใช้ Base Account บน Base ค่าใช้จ่ายเดียวคือดอกเบี้ยที่ผู้ยืมเสนอ และเงินส่วนนั้นเป็นของผู้ให้กู้ทั้งหมด ไม่ใช่ของเรา`
    },
    {
       id: 'fight-loan-sharks',
@@ -396,11 +396,11 @@ Bạn bắt đầu ở Level 1 với hạn mức $15. Mỗi lần trả đủ m�
    {
       id: 'what-is-a-base-wallet',
       question: 'Base wallet là gì?',
-      answer: `Base là mạng blockchain Layer 2 do Coinbase xây dựng cho giao dịch crypto nhanh, rẻ và an toàn. "Base wallet" là bất kỳ ví nào có thể giữ và gửi tiền trên mạng Base, phổ biến nhất là Coinbase Smart Wallet.
+      answer: `Base là mạng blockchain Layer 2 do Coinbase xây dựng cho giao dịch crypto nhanh, rẻ và an toàn. "Base wallet" là bất kỳ ví nào có thể giữ và gửi tiền trên mạng Base, phổ biến nhất là Base Account.
 
-Moodeng dùng Base wallet vì giao dịch USDC trên Base với Coinbase Smart Wallet không tốn gas. Khi bạn nhận khoản vay, toàn bộ số tiền vào ví của bạn. Khi bạn trả, người cho vay nhận đủ số tiền.
+Moodeng dùng Base wallet vì giao dịch USDC trên Base với Base Account không tốn gas. Khi bạn nhận khoản vay, toàn bộ số tiền vào ví của bạn. Khi bạn trả, người cho vay nhận đủ số tiền.
 
-Người vay trên Moodeng phải dùng Coinbase Smart Wallet trên Base. Người cho vay linh hoạt hơn, nhưng chúng tôi vẫn khuyến nghị cùng cách thiết lập để giao dịch không tốn gas.`
+Người vay trên Moodeng phải dùng Base Account trên Base. Người cho vay linh hoạt hơn, nhưng chúng tôi vẫn khuyến nghị cùng cách thiết lập để giao dịch không tốn gas.`
    },
    {
       id: 'what-is-usdc',
@@ -414,7 +414,7 @@ Moodeng dùng USDC vì nó chuyển toàn cầu nhanh, được các sàn lớn 
       question: 'Moodeng có tính phí không?',
       answer: `Không. Moodeng Credit miễn phí sử dụng. Không có phí nền tảng khi vay, không có phí khi cho vay, không có gói tháng và không có phí thiết lập. 100% tiền người cho vay cấp đến người vay, và 100% tiền trả lại đến người cho vay.
 
-Phí mạng hoặc gas cũng bằng 0 khi bạn dùng Coinbase Smart Wallet trên Base. Chi phí duy nhất là lãi suất người vay tự đề xuất, và phần đó thuộc hoàn toàn về người cho vay.`
+Phí mạng hoặc gas cũng bằng 0 khi bạn dùng Base Account trên Base. Chi phí duy nhất là lãi suất người vay tự đề xuất, và phần đó thuộc hoàn toàn về người cho vay.`
    },
    {
       id: 'fight-loan-sharks',

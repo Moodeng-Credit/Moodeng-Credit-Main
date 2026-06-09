@@ -11,21 +11,20 @@ export const GUIDES: GuideArticle[] = [
    {
       slug: 'how-to-request-your-first-loan',
       title: 'How to Request Your First Loan',
-      lastUpdated: 'Jan 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Follow these streamlined steps to initiate your first loan request on Moodeng Credit. You can also view a video walkthrough of this process here: https://youtube.com/shorts/fKpBC9zD6Hk?si=KoU6NRuIguzLw-Hh.
 
 Step 1: Create Your Account
 Register on the Moodeng platform by entering your preferred username, email, and password. Click "Create Account" to proceed.
 
-Step 2: Initialize BASE Application
+Step 2: Start Your Loan Application
 Once logged in, tap the "Apply for a Loan" button to start the process.
 
-Step 3: Set Up Your BASE Wallet
-Secure transactions on Moodeng require a BASE Wallet. Visit https://account.base.app and follow the registration instructions.
-Refer to How to Create Base Acc 1.jpg and How to Create Base Acc 2.jpg for a visual guide on account setup.
+Step 3: Set Up Your Base Account
+Secure transactions on Moodeng require a Base Account. Visit https://account.base.app and follow the registration instructions.
 
 Step 4: Connect Your Wallet
-Return to the Moodeng platform and tap "Connect Wallet" to securely link your new BASE Wallet to your Moodeng account.
+Return to the Moodeng platform and tap "Connect Wallet" to securely link your new Base Account to your Moodeng account.
 
 Step 5: Verify Your Identity
 To ensure community safety, download the World App and complete your human identity verification at a physical World Orb location.
@@ -41,14 +40,14 @@ Tap "Explore the Request Board" to set your specific loan terms. You will need t
 
 Important Notes on Your Credit Limit
 - Starting Limit: Every new borrower begins with an initial borrowing limit of $15.
-- Credit-Building Loans: This is a full-limit loan that maxes out your current credit limit (e.g., requesting the full $15). Successfully repaying this type of loan is the only way to increase your limit to the next level (e.g., moving from $15 --> $20 --> $40 --> $60 and beyond). You may only have one credit-building loan request active at a time.
+- Credit-Building Loans: This is a full-limit loan that maxes out your current credit limit (e.g., requesting the full $15). Successfully repaying this type of loan is the only way to increase your limit to the next level (e.g., moving from $15 → $20 → $40 → $60 and beyond). You may only have one credit-building loan request active at a time.
 - Trust-Building Loans: These are smaller loans requested for amounts under your current credit limit. While these build your Trust Score with lenders, they do not increase your overall credit limit. You are permitted to have multiple trust-building loan requests active simultaneously, provided the total stays under your current limit.
 - Unlocking the Next Level: To move up, you must borrow and fully repay your entire limit. For example, if your limit is $15 and you only request a trust-building loan of $12 and repay $15, your limit will not increase. You must borrow the full $15 and repay the total agreed amount, including any small interest or additional repayment amount you offered that a lender accepted, to unlock the next level.`
    },
    {
       slug: 'understanding-your-trust-score',
       title: 'Understanding your Trust Score',
-      lastUpdated: 'Jan 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Your Trust Score reflects how reliably you repay loans on Moodeng Credit.
 
 It rises with every on-time repayment and drops when you miss or default. Lenders use it as a quick signal to decide whether to fund your request.
@@ -58,7 +57,7 @@ Because your Trust Score is tied to your wallet, it travels with you — it's no
    {
       slug: 'how-credit-levels-work',
       title: 'How Credit Levels work',
-      lastUpdated: 'Jan 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Credit Levels determine how much you can borrow at a time.
 
 Everyone starts at Level 1 with a $15 limit. As you borrow and fully repay, your limit grows — $15 → $20 → $40 → $60 — and unlocks new levels.
@@ -68,7 +67,7 @@ You only advance by completing a Credit Growth Loan: a loan at your full current
    {
       slug: 'trust-building-vs-credit-building-loans',
       title: 'Trust-Building vs Credit-Building loans',
-      lastUpdated: 'Jan 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Moodeng Credit supports two kinds of loans:
 
 Trust-Building Loans are smaller loans below your current limit. They help you demonstrate reliable repayment but don't increase your limit.
@@ -80,20 +79,14 @@ Most borrowers use both — trust loans to keep activity healthy, credit loans t
    {
       slug: 'how-repayments-affect-your-trust-score',
       title: 'How Repayments Affect Your Trust Score',
-      lastUpdated: 'Jan 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Every repayment for either Credit-Building or Trust-Building loans directly impacts your Trust Score (TS), which serves as your reputation on the platform. Our system is designed to reward consistent, reliable, and honest behavior; small loans repaid cleanly are more valuable for your reputation than large loans repaid sloppily.
 
 Scoring Breakdown
 
 - On-Time, Full Repayments: Completing a 100% repayment on or before the due date maximizes your score (10 TS).
 
-- Partial Repayments: Failing to repay the full amount reduces your score proportionally:
-
-75% Repayment = 7 TS.
-
-50% Repayment = 5 TS.
-
-25% Repayment = 3 TS.
+- Partial Repayments: Failing to repay the full amount reduces your score proportionally — 75% = 7 TS · 50% = 5 TS · 25% = 3 TS.
 
 - Late Repayments: Any payment received after the agreed-upon deadline results in a 0 TS for that transaction.
 
@@ -102,13 +95,13 @@ Scoring Breakdown
    {
       slug: 'what-happens-when-you-repay-a-loan-on-time',
       title: 'The Benefits of On-Time Repayments',
-      lastUpdated: 'Jan 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Submitting your repayment on or before the scheduled deadline is the most effective way to strengthen your standing within the Moodeng Credit ecosystem. All repayments are confirmed on-chain; once the USDC transfer settles, your loan status is automatically updated to "Successfully Repaid."
 
 When you repay on time, the following benefits are applied to your profile:
 
 - Trust Score Enhancement: Your Trust Score increases for either Credit-Building or Trust-Building loans, reflecting your reliability to the community.
-- Credit Limit Progression: For Credit-Building loans, your current borrowing limit increases, successfully unlocking the next credit level (e.g., advancing from $15 --> $20).
+- Credit Limit Progression: For Credit-Building loans, your current borrowing limit increases, successfully unlocking the next credit level (e.g., advancing from $15 → $20).
 - Verified Lending History: Your successful repayment history becomes visible to potential lenders, significantly streamlining the funding process for your future requests.
 
 Repayment Scoring Breakdown
@@ -123,17 +116,17 @@ Your Trust Score (TS) reflects your reliability and determines your future fundi
    {
       slug: 'using-usdc-on-moodeng-credit',
       title: 'Using USDC on Moodeng Credit',
-      lastUpdated: 'Jan 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `All loans on Moodeng Credit are denominated in USDC — a regulated stablecoin pegged 1:1 to the US dollar.
 
 Using USDC means loan values stay consistent. A $20 loan today is still a $20 loan when you repay it, regardless of crypto market movement.
 
-We recommend Coinbase Wallet on Base, where USDC transfers are gasless — you pay no network fees.`
+We recommend using a Base Account on Base, where USDC transfers are gasless — you pay no network fees.`
    },
    {
       slug: 'verification-and-why-its-required',
       title: 'Verification & Security',
-      lastUpdated: 'Jan 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `To maintain a secure and fair environment, Moodeng Credit requires all borrowers to verify their unique human identity via World ID. This process protects our community from automated bots and duplicate accounts without requiring you to upload sensitive personal documents.
 
 Why Verify?
@@ -148,18 +141,18 @@ Step-by-Step Guide
 Install the official app via the Apple App Store or Google Play Store.
 
 2. Locate an Orb
-Inside the World App, go to Settings, select "Find an Orb," and enable "Allow Location" to find the verification center nearest to you (see How to Find Orb.jpg).
+Inside the World App, go to Settings, select "Find an Orb," and enable "Allow Location" to find the verification center nearest to you .
 
 3. Complete In-Person Verification
 Visit your chosen Orb location and follow the on-screen instructions in the app to complete the one-time verification process.
 
 4. Connect to Moodeng
-Once verified, return to the Moodeng platform. Navigate to "Verification," and select "Connect World ID" to link your account and finalize your eligibility (see How to Verify with World ID.jpg).`
+Once verified, return to the Moodeng platform. Navigate to "Verification," and select "Connect World ID" to link your account and finalize your eligibility .`
    },
    {
       slug: 'managing-your-account-and-security-settings',
       title: 'Managing your account and security settings',
-      lastUpdated: 'Jan 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Your account is tied to your wallet, so wallet security is account security.
 
 From the Account screen, you can update your display name, manage your email, change your password, and sign out.`
@@ -169,7 +162,7 @@ From the Account screen, you can update your display name, manage your email, ch
 const FILIPINO_GUIDES: Record<string, LocalizedGuideArticle> = {
    'how-to-request-your-first-loan': {
       title: 'Paano mag-request ng unang loan',
-      lastUpdated: 'Ene 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Sundin ang mga simpleng step na ito para simulan ang unang loan request mo sa Moodeng Credit. Puwede mo ring panoorin ang video walkthrough dito: https://youtube.com/shorts/fKpBC9zD6Hk?si=KoU6NRuIguzLw-Hh.
 
 Step 1: Gumawa ng account
@@ -178,12 +171,12 @@ Mag-register sa Moodeng platform gamit ang preferred username, email, at passwor
 Step 2: Simulan ang BASE application
 Kapag naka-log in ka na, i-tap ang "Apply for a Loan" button para simulan ang proseso.
 
-Step 3: I-set up ang BASE Wallet mo
-Kailangan ng BASE Wallet para sa secure transactions sa Moodeng. Pumunta sa https://account.base.app at sundin ang registration instructions.
-Tingnan ang How to Create Base Acc 1.jpg at How to Create Base Acc 2.jpg para sa visual guide ng account setup.
+Step 3: I-set up ang Base Account mo
+Kailangan ng Base Account para sa secure transactions sa Moodeng. Pumunta sa https://account.base.app at sundin ang registration instructions.
+
 
 Step 4: Ikonek ang wallet mo
-Bumalik sa Moodeng platform at i-tap ang "Connect Wallet" para secure na mai-link ang bagong BASE Wallet mo sa Moodeng account mo.
+Bumalik sa Moodeng platform at i-tap ang "Connect Wallet" para secure na mai-link ang bagong Base Account mo sa Moodeng account mo.
 
 Step 5: I-verify ang identity mo
 Para mapanatiling safe ang community, i-download ang World App at kumpletuhin ang human identity verification sa physical World Orb location.
@@ -199,13 +192,13 @@ I-tap ang "Explore the Request Board" para i-set ang specific loan terms mo. Kai
 
 Important notes tungkol sa credit limit mo
 - Starting limit: Bawat bagong borrower ay nagsisimula sa initial borrowing limit na $15.
-- Credit-building loans: Full-limit loan ito na gumagamit ng buong current credit limit mo, halimbawa full $15 request. Ang successful repayment ng ganitong loan lang ang paraan para tumaas ang limit mo sa next level, halimbawa $15 --> $20 --> $40 --> $60 at pataas. Isang credit-building loan request lang ang puwedeng active at a time.
+- Credit-building loans: Full-limit loan ito na gumagamit ng buong current credit limit mo, halimbawa full $15 request. Ang successful repayment ng ganitong loan lang ang paraan para tumaas ang limit mo sa next level, halimbawa $15 → $20 → $40 → $60 at pataas. Isang credit-building loan request lang ang puwedeng active at a time.
 - Trust-building loans: Mas maliit na loans ito na below sa current credit limit mo. Nakakatulong ito bumuo ng Trust Score mo sa lenders, pero hindi nito tinataas ang overall credit limit mo. Puwede kang magkaroon ng multiple trust-building loan requests at the same time basta ang total ay nasa ilalim ng current limit mo.
 - Pag-unlock ng next level: Para umakyat, kailangan mong hiramin at fully repay ang buong limit mo. Halimbawa, kung $15 ang limit mo at $12 trust-building loan lang ang ni-request mo at nagbayad ka ng $15, hindi tataas ang limit mo. Kailangan mong hiramin ang buong $15 at bayaran ang total agreed amount, kasama ang anumang maliit na interest o additional repayment amount na inoffer mo at tinanggap ng lender, para ma-unlock ang next level.`
    },
    'understanding-your-trust-score': {
       title: 'Pag-unawa sa Trust Score mo',
-      lastUpdated: 'Ene 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Ipinapakita ng Trust Score mo kung gaano ka reliable magbayad ng loans sa Moodeng Credit.
 
 Tumataas ito sa bawat on-time repayment at bumababa kapag late ka o nag-default. Ginagamit ito ng lenders bilang mabilis na signal para mag-decide kung i-fund nila ang request mo.
@@ -214,7 +207,7 @@ Dahil naka-tie ang Trust Score mo sa wallet mo, dala mo ito kahit saan. Hindi it
    },
    'how-credit-levels-work': {
       title: 'Paano gumagana ang mga antas ng kredito',
-      lastUpdated: 'Ene 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Tinutukoy ng mga antas ng kredito kung magkano ang puwede mong hiramin at a time.
 
 Lahat nagsisimula sa Level 1 na may $15 limit. Habang humihiram ka at fully nagbabayad, lumalaki ang limit mo — $15 → $20 → $40 → $60 — at nag-a-unlock ng bagong levels.
@@ -223,7 +216,7 @@ Umakyat ka lang kapag nakumpleto mo ang Credit Growth Loan: loan sa buong curren
    },
    'trust-building-vs-credit-building-loans': {
       title: 'Trust-building vs credit-building loans',
-      lastUpdated: 'Ene 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `May dalawang uri ng loans ang Moodeng Credit:
 
 Ang Trust-building loans ay mas maliit na loans below sa current limit mo. Tinutulungan ka nitong ipakita na reliable kang magbayad, pero hindi nito tinataas ang limit mo.
@@ -234,20 +227,14 @@ Karamihan ng borrowers ay gumagamit ng pareho: trust loans para manatiling healt
    },
    'how-repayments-affect-your-trust-score': {
       title: 'Paano naaapektuhan ng repayments ang Trust Score mo',
-      lastUpdated: 'Ene 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Bawat repayment para sa Credit-building o Trust-building loans ay direktang nakakaapekto sa Trust Score (TS) mo, na nagsisilbing reputation mo sa platform. Dinisenyo ang system namin para i-reward ang consistent, reliable, at honest behavior; mas mahalaga sa reputation mo ang maliit na loans na malinis ang repayment kaysa malaking loans na magulo ang repayment.
 
 Scoring breakdown
 
 - On-time, full repayments: Kapag nakumpleto ang 100% repayment on or before the due date, maximized ang score mo (10 TS).
 
-- Partial repayments: Kapag hindi nabayaran ang buong amount, nababawasan ang score mo proportionally:
-
-75% repayment = 7 TS.
-
-50% repayment = 5 TS.
-
-25% repayment = 3 TS.
+- Partial repayments: Kapag hindi nabayaran ang buong amount, nababawasan ang score mo proportionally — 75% = 7 TS · 50% = 5 TS · 25% = 3 TS.
 
 - Late repayments: Anumang payment na natanggap pagkatapos ng agreed deadline ay nagreresulta sa 0 TS para sa transaction na iyon.
 
@@ -255,7 +242,7 @@ Scoring breakdown
    },
    'what-happens-when-you-repay-a-loan-on-time': {
       title: 'Mga benepisyo ng on-time repayments',
-      lastUpdated: 'Ene 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Ang pag-submit ng repayment on or before the scheduled deadline ang pinaka-effective na paraan para palakasin ang standing mo sa Moodeng Credit ecosystem. Lahat ng repayments ay confirmed on-chain; kapag settled na ang USDC transfer, automatic na maa-update ang loan status mo sa "Successfully Repaid."
 
 Kapag nagbayad ka on time, maa-apply sa profile mo ang mga benepisyong ito:
@@ -275,16 +262,16 @@ Ipinapakita ng Trust Score (TS) mo ang reliability mo at tumutulong sa future fu
    },
    'using-usdc-on-moodeng-credit': {
       title: 'Paggamit ng USDC sa Moodeng Credit',
-      lastUpdated: 'Ene 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Lahat ng loans sa Moodeng Credit ay denominated sa USDC — regulated stablecoin na naka-peg 1:1 sa US dollar.
 
 Kapag USDC ang gamit, consistent ang loan values. Ang $20 loan ngayon ay $20 pa rin kapag binayaran mo ito, kahit gumalaw ang crypto market.
 
-Inirerekomenda namin ang Coinbase Wallet sa Base, kung saan gasless ang USDC transfers — wala kang babayarang network fees.`
+Inirerekomenda namin ang Base Account sa Base, kung saan gasless ang USDC transfers — wala kang babayarang network fees.`
    },
    'verification-and-why-its-required': {
       title: 'Verification at security',
-      lastUpdated: 'Ene 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Para mapanatiling secure at fair ang environment, kailangan ng Moodeng Credit na i-verify ng lahat ng borrowers ang unique human identity nila gamit ang World ID. Pinoprotektahan ng process na ito ang community mula sa automated bots at duplicate accounts nang hindi ka pinapa-upload ng sensitive personal documents.
 
 Bakit kailangan mag-verify?
@@ -299,17 +286,17 @@ Step-by-step guide
 I-install ang official app gamit ang Apple App Store o Google Play Store.
 
 2. Humanap ng Orb
-Sa loob ng World App, pumunta sa Settings, piliin ang "Find an Orb," at i-enable ang "Allow Location" para mahanap ang pinakamalapit na verification center sa iyo (tingnan ang How to Find Orb.jpg).
+Sa loob ng World App, pumunta sa Settings, piliin ang "Find an Orb," at i-enable ang "Allow Location" para mahanap ang pinakamalapit na verification center sa iyo .
 
 3. Kumpletuhin ang in-person verification
 Pumunta sa napili mong Orb location at sundin ang on-screen instructions sa app para makumpleto ang one-time verification process.
 
 4. Kumonek sa Moodeng
-Kapag verified ka na, bumalik sa Moodeng platform. Pumunta sa "Verification," at piliin ang "Connect World ID" para i-link ang account mo at i-finalize ang eligibility mo (tingnan ang How to Verify with World ID.jpg).`
+Kapag verified ka na, bumalik sa Moodeng platform. Pumunta sa "Verification," at piliin ang "Connect World ID" para i-link ang account mo at i-finalize ang eligibility mo .`
    },
    'managing-your-account-and-security-settings': {
       title: 'Pag-manage ng account at security settings mo',
-      lastUpdated: 'Ene 18, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Naka-tie ang account mo sa wallet mo, kaya wallet security ang account security.
 
 Mula sa Account screen, puwede mong i-update ang display name mo, i-manage ang email mo, palitan ang password mo, at mag-sign out.`
@@ -319,21 +306,21 @@ Mula sa Account screen, puwede mong i-update ang display name mo, i-manage ang e
 const INDONESIAN_GUIDES: Record<string, LocalizedGuideArticle> = {
    'how-to-request-your-first-loan': {
       title: 'Cara mengajukan pinjaman pertama',
-      lastUpdated: '18 Jan 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Ikuti langkah sederhana ini untuk memulai permintaan pinjaman pertama kamu di Moodeng Credit. Kamu juga bisa menonton video walkthrough di sini: https://youtube.com/shorts/fKpBC9zD6Hk?si=KoU6NRuIguzLw-Hh.
 
 Langkah 1: Buat akun
 Daftar di platform Moodeng dengan username, email, dan password yang kamu pilih. Klik "Create Account" untuk melanjutkan.
 
-Langkah 2: Mulai aplikasi BASE
+Langkah 2: Mulai aplikasi pinjaman
 Setelah login, tap tombol "Apply for a Loan" untuk memulai proses.
 
-Langkah 3: Siapkan BASE Wallet
-Transaksi aman di Moodeng membutuhkan BASE Wallet. Kunjungi https://account.base.app dan ikuti instruksi pendaftaran.
-Lihat How to Create Base Acc 1.jpg dan How to Create Base Acc 2.jpg untuk panduan visual setup akun.
+Langkah 3: Siapkan Base Account
+Transaksi aman di Moodeng membutuhkan Base Account. Kunjungi https://account.base.app dan ikuti instruksi pendaftaran.
+
 
 Langkah 4: Hubungkan wallet
-Kembali ke platform Moodeng dan tap "Connect Wallet" untuk menautkan BASE Wallet baru kamu ke akun Moodeng dengan aman.
+Kembali ke platform Moodeng dan tap "Connect Wallet" untuk menautkan Base Account baru kamu ke akun Moodeng dengan aman.
 
 Langkah 5: Verifikasi identitas
 Agar komunitas tetap aman, download World App dan selesaikan verifikasi identitas manusia di lokasi World Orb fisik.
@@ -355,7 +342,7 @@ Catatan penting tentang credit limit
    },
    'understanding-your-trust-score': {
       title: 'Memahami Trust Score kamu',
-      lastUpdated: '18 Jan 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Trust Score menunjukkan seberapa andal kamu membayar pinjaman di Moodeng Credit.
 
 Skor ini naik setiap kali kamu membayar tepat waktu dan turun saat kamu terlambat atau gagal bayar. Pemberi pinjaman memakai skor ini sebagai sinyal cepat untuk memutuskan apakah mereka ingin mendanai permintaan kamu.
@@ -364,7 +351,7 @@ Karena Trust Score tertaut ke wallet, skor ini ikut bersama kamu. Skor ini tidak
    },
    'how-credit-levels-work': {
       title: 'Cara kerja level kredit',
-      lastUpdated: '18 Jan 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Level kredit menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu.
 
 Semua orang mulai di Level 1 dengan limit $15. Saat kamu meminjam dan membayar penuh, limit kamu bertambah: $15 -> $20 -> $40 -> $60, dan membuka level baru.
@@ -373,7 +360,7 @@ Kamu hanya naik level dengan menyelesaikan Credit Growth Loan: pinjaman sebesar 
    },
    'trust-building-vs-credit-building-loans': {
       title: 'Trust-building vs credit-building loans',
-      lastUpdated: '18 Jan 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Moodeng Credit mendukung dua jenis pinjaman:
 
 Trust-building loans adalah pinjaman lebih kecil di bawah limit saat ini. Pinjaman ini membantu kamu menunjukkan pembayaran yang andal, tetapi tidak menaikkan limit.
@@ -384,20 +371,14 @@ Sebagian besar peminjam memakai keduanya: trust loans untuk menjaga aktivitas se
    },
    'how-repayments-affect-your-trust-score': {
       title: 'Bagaimana pembayaran memengaruhi Trust Score',
-      lastUpdated: '18 Jan 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Setiap pembayaran untuk Credit-building atau Trust-building loans langsung memengaruhi Trust Score (TS), yaitu reputasi kamu di platform. Sistem kami dirancang untuk memberi reward pada perilaku yang konsisten, andal, dan jujur. Pinjaman kecil yang dibayar rapi lebih bernilai untuk reputasi daripada pinjaman besar yang dibayar berantakan.
 
 Rincian skor
 
 - Pembayaran penuh tepat waktu: Menyelesaikan 100% pembayaran pada atau sebelum jatuh tempo memaksimalkan skor kamu (10 TS).
 
-- Pembayaran sebagian: Jika jumlah penuh tidak dibayar, skor berkurang secara proporsional:
-
-75% pembayaran = 7 TS.
-
-50% pembayaran = 5 TS.
-
-25% pembayaran = 3 TS.
+- Pembayaran sebagian: Jika jumlah penuh tidak dibayar, skor berkurang secara proporsional — 75% = 7 TS · 50% = 5 TS · 25% = 3 TS.
 
 - Pembayaran terlambat: Pembayaran apa pun yang diterima setelah deadline yang disepakati menghasilkan 0 TS untuk transaksi itu.
 
@@ -405,7 +386,7 @@ Rincian skor
    },
    'what-happens-when-you-repay-a-loan-on-time': {
       title: 'Manfaat pembayaran tepat waktu',
-      lastUpdated: '18 Jan 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Mengirim pembayaran pada atau sebelum deadline adalah cara paling efektif untuk memperkuat posisi kamu di ekosistem Moodeng Credit. Semua pembayaran dikonfirmasi on-chain; setelah transfer USDC selesai, status pinjaman otomatis diperbarui menjadi "Successfully Repaid."
 
 Saat kamu membayar tepat waktu, manfaat berikut diterapkan ke profil kamu:
@@ -425,16 +406,16 @@ Trust Score (TS) mencerminkan keandalan kamu dan menentukan peluang pendanaan ke
    },
    'using-usdc-on-moodeng-credit': {
       title: 'Menggunakan USDC di Moodeng Credit',
-      lastUpdated: '18 Jan 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Semua pinjaman di Moodeng Credit memakai USDC, stablecoin teregulasi yang dipatok 1:1 ke dolar AS.
 
 Dengan USDC, nilai pinjaman tetap konsisten. Pinjaman $20 hari ini tetap pinjaman $20 saat kamu membayarnya, terlepas dari pergerakan pasar kripto.
 
-Kami merekomendasikan Coinbase Wallet di Base, tempat transfer USDC gasless sehingga kamu tidak membayar biaya jaringan.`
+Kami merekomendasikan Base Account di Base, tempat transfer USDC gasless sehingga kamu tidak membayar biaya jaringan.`
    },
    'verification-and-why-its-required': {
       title: 'Verifikasi dan keamanan',
-      lastUpdated: '18 Jan 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Untuk menjaga lingkungan yang aman dan adil, Moodeng Credit mewajibkan semua peminjam memverifikasi identitas manusia unik mereka lewat World ID. Proses ini melindungi komunitas dari bot otomatis dan akun duplikat tanpa meminta kamu mengunggah dokumen pribadi sensitif.
 
 Mengapa perlu verifikasi?
@@ -449,17 +430,17 @@ Panduan langkah demi langkah
 Install app resmi melalui Apple App Store atau Google Play Store.
 
 2. Temukan Orb
-Di World App, buka Settings, pilih "Find an Orb," dan aktifkan "Allow Location" untuk menemukan pusat verifikasi terdekat (lihat How to Find Orb.jpg).
+Di World App, buka Settings, pilih "Find an Orb," dan aktifkan "Allow Location" untuk menemukan pusat verifikasi terdekat .
 
 3. Selesaikan verifikasi langsung
 Datang ke lokasi Orb yang kamu pilih dan ikuti instruksi di layar app untuk menyelesaikan proses verifikasi satu kali.
 
 4. Hubungkan ke Moodeng
-Setelah terverifikasi, kembali ke platform Moodeng. Buka "Verification," lalu pilih "Connect World ID" untuk menautkan akun dan menyelesaikan eligibility kamu (lihat How to Verify with World ID.jpg).`
+Setelah terverifikasi, kembali ke platform Moodeng. Buka "Verification," lalu pilih "Connect World ID" untuk menautkan akun dan menyelesaikan eligibility kamu .`
    },
    'managing-your-account-and-security-settings': {
       title: 'Mengelola akun dan pengaturan keamanan',
-      lastUpdated: '18 Jan 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Akun kamu tertaut ke wallet, jadi keamanan wallet adalah keamanan akun.
 
 Dari layar Akun, kamu bisa memperbarui nama tampilan, mengelola email, mengganti password, dan keluar.`
@@ -469,7 +450,7 @@ Dari layar Akun, kamu bisa memperbarui nama tampilan, mengelola email, mengganti
 const THAI_GUIDES: Record<string, LocalizedGuideArticle> = {
    'how-to-request-your-first-loan': {
       title: 'วิธีขอเงินกู้ครั้งแรก',
-      lastUpdated: '18 ม.ค. 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `ทำตามขั้นตอนเหล่านี้เพื่อเริ่มขอเงินกู้ครั้งแรกบน Moodeng Credit
 
 ขั้นตอนที่ 1: สร้างบัญชี
@@ -478,11 +459,11 @@ const THAI_GUIDES: Record<string, LocalizedGuideArticle> = {
 ขั้นตอนที่ 2: เริ่มสมัครเงินกู้
 หลังเข้าสู่ระบบ แตะ "Apply for a Loan" เพื่อเริ่มขั้นตอน
 
-ขั้นตอนที่ 3: ตั้งค่า BASE Wallet
-ธุรกรรมบน Moodeng ต้องใช้ BASE Wallet ไปที่ https://account.base.app และทำตามคำแนะนำ
+ขั้นตอนที่ 3: ตั้งค่า Base Account
+ธุรกรรมบน Moodeng ต้องใช้ Base Account ไปที่ https://account.base.app และทำตามคำแนะนำ
 
 ขั้นตอนที่ 4: เชื่อมต่อกระเป๋า
-กลับมาที่ Moodeng แล้วแตะ "Connect Wallet" เพื่อเชื่อม BASE Wallet กับบัญชี Moodeng
+กลับมาที่ Moodeng แล้วแตะ "Connect Wallet" เพื่อเชื่อม Base Account กับบัญชี Moodeng
 
 ขั้นตอนที่ 5: ยืนยันตัวตน
 ดาวน์โหลด World App และยืนยันตัวตนมนุษย์ที่ World Orb จริง
@@ -500,7 +481,7 @@ const THAI_GUIDES: Record<string, LocalizedGuideArticle> = {
    },
    'understanding-your-trust-score': {
       title: 'ทำความเข้าใจ Trust Score',
-      lastUpdated: '18 ม.ค. 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Trust Score แสดงว่าคุณชำระเงินกู้บน Moodeng Credit ได้สม่ำเสมอแค่ไหน
 
 คะแนนจะเพิ่มขึ้นเมื่อชำระตรงเวลา และลดลงเมื่อชำระล่าช้าหรือผิดนัด ผู้ให้กู้ใช้คะแนนนี้เป็นสัญญาณเร็ว ๆ ในการตัดสินใจว่าจะให้ทุนคำขอของคุณหรือไม่
@@ -509,7 +490,7 @@ const THAI_GUIDES: Record<string, LocalizedGuideArticle> = {
    },
    'how-credit-levels-work': {
       title: 'ระดับเครดิตทำงานอย่างไร',
-      lastUpdated: '18 ม.ค. 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `ระดับเครดิตกำหนดว่าคุณสามารถยืมได้มากแค่ไหนในแต่ละครั้ง
 
 ทุกคนเริ่มที่ Level 1 พร้อมวงเงิน $15 เมื่อคุณยืมและชำระคืนครบถ้วน วงเงินจะเพิ่มขึ้น: $15 → $20 → $40 → $60 และปลดล็อกระดับใหม่
@@ -518,7 +499,7 @@ const THAI_GUIDES: Record<string, LocalizedGuideArticle> = {
    },
    'trust-building-vs-credit-building-loans': {
       title: 'Trust-Building Loan กับ Credit-Building Loan',
-      lastUpdated: '18 ม.ค. 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Moodeng Credit รองรับเงินกู้สองประเภท
 
 Trust-Building Loan คือเงินกู้ขนาดเล็กที่ต่ำกว่าวงเงินปัจจุบัน ช่วยแสดงว่าคุณชำระคืนได้ดี แต่ไม่เพิ่มวงเงิน
@@ -529,14 +510,14 @@ Credit-Building Loan คือเงินกู้เต็มวงเงิ�
    },
    'how-repayments-affect-your-trust-score': {
       title: 'การชำระคืนมีผลต่อ Trust Score อย่างไร',
-      lastUpdated: '18 ม.ค. 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `การชำระคืนของ Credit-Building หรือ Trust-Building Loan มีผลโดยตรงต่อ Trust Score ซึ่งเป็นชื่อเสียงของคุณบนแพลตฟอร์ม
 
 ชำระเต็มจำนวนตรงเวลาจะได้คะแนนสูงสุด การชำระบางส่วนจะลดคะแนนตามสัดส่วน การชำระล่าช้าได้ 0 TS สำหรับธุรกรรมนั้น และการผิดนัดจะทิ้งเครื่องหมายถาวรบนโปรไฟล์ที่ผู้ให้กู้ในอนาคตเห็นได้`
    },
    'what-happens-when-you-repay-a-loan-on-time': {
       title: 'ประโยชน์ของการชำระตรงเวลา',
-      lastUpdated: '18 ม.ค. 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `การชำระในหรือก่อนกำหนดเป็นวิธีที่ดีที่สุดในการเสริมสถานะของคุณในระบบ Moodeng Credit
 
 เมื่อคุณชำระตรงเวลา Trust Score จะเพิ่มขึ้น ประวัติการชำระที่ดีจะมองเห็นได้ต่อผู้ให้กู้ และสำหรับ Credit-Building Loan วงเงินของคุณจะเพิ่มขึ้นเพื่อปลดล็อกระดับถัดไป
@@ -545,16 +526,16 @@ Credit-Building Loan คือเงินกู้เต็มวงเงิ�
    },
    'using-usdc-on-moodeng-credit': {
       title: 'การใช้ USDC บน Moodeng Credit',
-      lastUpdated: '18 ม.ค. 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `เงินกู้ทั้งหมดบน Moodeng Credit ใช้ USDC ซึ่งเป็น stablecoin ที่ผูก 1:1 กับดอลลาร์สหรัฐ
 
 การใช้ USDC ทำให้มูลค่าเงินกู้คงที่ เงินกู้ $20 วันนี้ยังเป็น $20 เมื่อคุณชำระคืน ไม่ขึ้นอยู่กับความผันผวนของตลาดคริปโต
 
-เราแนะนำ Coinbase Wallet บน Base เพราะการโอน USDC ไม่มีค่า gas`
+เราแนะนำ Base Account บน Base เพราะการโอน USDC ไม่มีค่า gas`
    },
    'verification-and-why-its-required': {
       title: 'การยืนยันและความปลอดภัย',
-      lastUpdated: '18 ม.ค. 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `เพื่อให้ชุมชนปลอดภัยและเป็นธรรม Moodeng Credit กำหนดให้ผู้ยืมทุกคนยืนยันตัวตนมนุษย์ที่ไม่ซ้ำกันผ่าน World ID
 
 ทำไมต้องยืนยัน?
@@ -566,7 +547,7 @@ Credit-Building Loan คือเงินกู้เต็มวงเงิ�
    },
    'managing-your-account-and-security-settings': {
       title: 'จัดการบัญชีและการตั้งค่าความปลอดภัย',
-      lastUpdated: '18 ม.ค. 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `บัญชีของคุณผูกกับกระเป๋าเงิน ดังนั้นความปลอดภัยของกระเป๋าคือความปลอดภัยของบัญชี
 
 จากหน้าบัญชี คุณสามารถอัปเดตชื่อที่แสดง จัดการอีเมล เปลี่ยนรหัสผ่าน และออกจากระบบได้`
@@ -576,7 +557,7 @@ Credit-Building Loan คือเงินกู้เต็มวงเงิ�
 const VIETNAMESE_GUIDES: Record<string, LocalizedGuideArticle> = {
    'how-to-request-your-first-loan': {
       title: 'Cách yêu cầu khoản vay đầu tiên',
-      lastUpdated: '18 thg 1, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Làm theo các bước này để bắt đầu yêu cầu khoản vay đầu tiên trên Moodeng Credit.
 
 Bước 1: Tạo tài khoản
@@ -585,11 +566,11 @@ Bước 1: Tạo tài khoản
 Bước 2: Bắt đầu đăng ký vay
 Sau khi đăng nhập, bấm "Apply for a Loan" để bắt đầu.
 
-Bước 3: Thiết lập BASE Wallet
-Giao dịch an toàn trên Moodeng cần BASE Wallet. Vào https://account.base.app và làm theo hướng dẫn.
+Bước 3: Thiết lập Base Account
+Giao dịch an toàn trên Moodeng cần Base Account. Vào https://account.base.app và làm theo hướng dẫn.
 
 Bước 4: Kết nối ví
-Quay lại Moodeng và bấm "Connect Wallet" để liên kết BASE Wallet với tài khoản Moodeng.
+Quay lại Moodeng và bấm "Connect Wallet" để liên kết Base Account với tài khoản Moodeng.
 
 Bước 5: Xác minh danh tính
 Tải World App và hoàn tất xác minh người thật tại địa điểm World Orb.
@@ -607,7 +588,7 @@ Lưu ý về hạn mức tín dụng
    },
    'understanding-your-trust-score': {
       title: 'Hiểu Trust Score của bạn',
-      lastUpdated: '18 thg 1, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Trust Score phản ánh bạn trả các khoản vay trên Moodeng Credit đáng tin cậy đến mức nào.
 
 Điểm tăng với mỗi lần trả đúng hạn và giảm khi bạn trả muộn hoặc vỡ nợ. Người cho vay dùng nó như tín hiệu nhanh để quyết định có cấp vốn cho yêu cầu của bạn không.
@@ -616,7 +597,7 @@ Vì Trust Score gắn với ví của bạn, nó đi cùng bạn và không bị
    },
    'how-credit-levels-work': {
       title: 'Hạng tín dụng hoạt động như thế nào',
-      lastUpdated: '18 thg 1, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Hạng tín dụng xác định bạn có thể vay bao nhiêu trong một lần.
 
 Mọi người bắt đầu ở Level 1 với hạn mức $15. Khi bạn vay và trả đầy đủ, hạn mức tăng: $15 → $20 → $40 → $60 và mở khóa cấp mới.
@@ -625,7 +606,7 @@ Bạn chỉ lên cấp bằng cách hoàn thành Credit Growth Loan: khoản vay
    },
    'trust-building-vs-credit-building-loans': {
       title: 'Trust-Building Loan và Credit-Building Loan',
-      lastUpdated: '18 thg 1, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Moodeng Credit hỗ trợ hai loại khoản vay.
 
 Trust-Building Loan là khoản nhỏ hơn hạn mức hiện tại. Chúng giúp bạn chứng minh khả năng trả đáng tin cậy nhưng không tăng hạn mức.
@@ -636,14 +617,14 @@ Hầu hết người vay dùng cả hai: trust loans để giữ hoạt động 
    },
    'how-repayments-affect-your-trust-score': {
       title: 'Khoản trả ảnh hưởng Trust Score như thế nào',
-      lastUpdated: '18 thg 1, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Mỗi khoản trả cho Credit-Building hoặc Trust-Building Loan ảnh hưởng trực tiếp đến Trust Score, tức uy tín của bạn trên nền tảng.
 
 Trả đủ đúng hạn tối đa hóa điểm. Trả một phần làm giảm điểm theo tỷ lệ. Trả muộn nhận 0 TS cho giao dịch đó. Vỡ nợ để lại dấu vĩnh viễn trên hồ sơ mà người cho vay tương lai có thể thấy.`
    },
    'what-happens-when-you-repay-a-loan-on-time': {
       title: 'Lợi ích của việc trả đúng hạn',
-      lastUpdated: '18 thg 1, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Trả vào hoặc trước hạn là cách hiệu quả nhất để củng cố vị thế của bạn trong hệ sinh thái Moodeng Credit.
 
 Khi bạn trả đúng hạn, Trust Score tăng, lịch sử trả tốt hiển thị với người cho vay, và với Credit-Building Loan, hạn mức hiện tại tăng để mở khóa cấp tiếp theo.
@@ -652,16 +633,16 @@ Mọi khoản trả được xác nhận on-chain; khi chuyển USDC settle, tr�
    },
    'using-usdc-on-moodeng-credit': {
       title: 'Dùng USDC trên Moodeng Credit',
-      lastUpdated: '18 thg 1, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Tất cả khoản vay trên Moodeng Credit được tính bằng USDC, một stablecoin neo 1:1 với đô la Mỹ.
 
 Dùng USDC giúp giá trị khoản vay ổn định. Khoản vay $20 hôm nay vẫn là $20 khi bạn trả, bất kể thị trường crypto biến động.
 
-Chúng tôi khuyến nghị Coinbase Wallet trên Base, nơi chuyển USDC không tốn gas.`
+Chúng tôi khuyến nghị Base Account trên Base, nơi chuyển USDC không tốn gas.`
    },
    'verification-and-why-its-required': {
       title: 'Xác minh và bảo mật',
-      lastUpdated: '18 thg 1, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Để giữ môi trường an toàn và công bằng, Moodeng Credit yêu cầu mọi người vay xác minh danh tính người thật duy nhất qua World ID.
 
 Vì sao cần xác minh?
@@ -673,7 +654,7 @@ Tải World App, tìm Orb gần bạn, hoàn tất xác minh trực tiếp, rồ
    },
    'managing-your-account-and-security-settings': {
       title: 'Quản lý tài khoản và cài đặt bảo mật',
-      lastUpdated: '18 thg 1, 2024 1:00 A.M.',
+      lastUpdated: 'Jun 9, 2026',
       body: `Tài khoản của bạn gắn với ví, nên bảo mật ví cũng là bảo mật tài khoản.
 
 Từ màn hình Tài khoản, bạn có thể cập nhật tên hiển thị, quản lý email, đổi mật khẩu và đăng xuất.`
