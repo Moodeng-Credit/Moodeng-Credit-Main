@@ -59,6 +59,15 @@ export default function AuthConfirmPage() {
 
       let timeoutId: ReturnType<typeof setTimeout> | undefined;
       let unsub: (() => void) | undefined;
+      let sawRecoveryEvent = false;
+
+      // Supabase fires PASSWORD_RECOVERY when a recovery code/token is exchanged.
+      // With the PKCE flow the final redirect URL frequently drops ?type=recovery,
+      // so this event is the only reliable way to tell a password reset apart from a
+      // normal login. Register it before any code exchange so the flag is set in time.
+      const recoverySub = getSupabaseBrowserClient().auth.onAuthStateChange((event) => {
+         if (event === 'PASSWORD_RECOVERY') sawRecoveryEvent = true;
+      });
 
       const finish = (path: string, isRecoveryRedirect = false) => {
          if (finishedRef.current) return;
@@ -162,16 +171,18 @@ export default function AuthConfirmPage() {
             return false;
          }
 
-         if (sessionData.session?.user) return finishFromCurrentSession(isRecoveryRedirect);
+         if (sessionData.session?.user) return finishFromCurrentSession(isRecoveryRedirect || sawRecoveryEvent);
 
-         const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+         const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'PASSWORD_RECOVERY') sawRecoveryEvent = true;
             if (!session?.user || finishedRef.current) return;
             sub.subscription.unsubscribe();
             if (timeoutId) clearTimeout(timeoutId);
+            const isRecovery = isRecoveryRedirect || sawRecoveryEvent;
             void dispatch(fetchUser())
                .unwrap()
-               .then((user) => finish(getAuthConfirmDestination(isRecoveryRedirect, user?.userRole), isRecoveryRedirect))
-               .catch(() => finish(getAuthConfirmDestination(isRecoveryRedirect), isRecoveryRedirect));
+               .then((user) => finish(getAuthConfirmDestination(isRecovery, user?.userRole), isRecovery))
+               .catch(() => finish(getAuthConfirmDestination(isRecovery), isRecovery));
          });
          unsub = () => sub.subscription.unsubscribe();
 
@@ -188,6 +199,7 @@ export default function AuthConfirmPage() {
       return () => {
          if (timeoutId) clearTimeout(timeoutId);
          unsub?.();
+         recoverySub.data.subscription.unsubscribe();
       };
    }, [dispatch, navigate]);
 
