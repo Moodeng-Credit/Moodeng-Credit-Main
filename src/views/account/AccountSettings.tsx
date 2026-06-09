@@ -819,7 +819,6 @@ export default function AccountSettings() {
    const [isDisconnectWalletPending, setIsDisconnectWalletPending] = useState(false);
    const [isSavingWallet, setIsSavingWallet] = useState(false);
    const [walletError, setWalletError] = useState('');
-   const [walletSafetyError, setWalletSafetyError] = useState('');
    const [walletSafetyWarning, setWalletSafetyWarning] = useState('');
    const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
 
@@ -892,47 +891,28 @@ export default function AccountSettings() {
    };
 
    const checkWalletChangeSafety = useCallback(async (): Promise<{ blocked: boolean; warning?: string }> => {
-      if (!user?.id) return { blocked: false };
+      if (!user?.id || isBorrower) return { blocked: false };
       const supabase = getSupabaseBrowserClient();
-      if (isBorrower) {
-         const { count } = await supabase
-            .from('loan_requests')
-            .select('id', { count: 'exact', head: true })
-            .eq('borrower_user_id', user.id)
-            .eq('loan_status', 'Lent')
-            .neq('repayment_status', 'Paid');
-         if ((count ?? 0) > 0) {
-            return { blocked: true };
-         }
-      } else {
-         const { count } = await supabase
-            .from('loan_requests')
-            .select('id', { count: 'exact', head: true })
-            .eq('lender_user_id', user.id)
-            .eq('loan_status', 'Lent')
-            .neq('repayment_status', 'Paid');
-         if ((count ?? 0) > 0) {
-            return {
-               blocked: false,
-               warning:
-                  'You have an active loan you funded. Repayments from that borrower will still go to your current wallet address — not your new one.'
-            };
-         }
+      const { count } = await supabase
+         .from('loan_requests')
+         .select('id', { count: 'exact', head: true })
+         .eq('lender_user_id', user.id)
+         .eq('loan_status', 'Lent')
+         .neq('repayment_status', 'Paid');
+      if ((count ?? 0) > 0) {
+         return {
+            blocked: false,
+            warning:
+               'You have an active loan you funded. Repayments from that borrower will still go to your current wallet address — not your new one.'
+         };
       }
       return { blocked: false };
    }, [user?.id, isBorrower]);
 
    const handleInitiateWalletChange = useCallback(async () => {
-      setWalletSafetyError('');
       setWalletSafetyWarning('');
-      const { blocked, warning } = await checkWalletChangeSafety();
-      if (blocked) {
-         setWalletSafetyError('You have an active loan that has not been repaid. You cannot change your wallet until it is fully repaid.');
-         setShowWalletActions(true);
-         return;
-      }
+      const { warning } = await checkWalletChangeSafety();
       if (!isBorrower) {
-         // Lenders: navigate directly; show warning inline if needed
          if (warning) {
             setWalletSafetyWarning(warning);
             setShowWalletActions(true);
@@ -941,7 +921,6 @@ export default function AccountSettings() {
          }
          return;
       }
-      if (warning) setWalletSafetyWarning(warning);
       setShowWalletActions(true);
       setIsEditingWallet(true);
       setIsChangeWalletPending(true);
@@ -949,14 +928,8 @@ export default function AccountSettings() {
    }, [checkWalletChangeSafety, isBorrower, navigate]);
 
    const handleInitiateWalletDisconnect = useCallback(async () => {
-      setWalletSafetyError('');
       setWalletSafetyWarning('');
-      const { blocked, warning } = await checkWalletChangeSafety();
-      if (blocked) {
-         setWalletSafetyError('You have an active loan that has not been repaid. You cannot disconnect your wallet until it is fully repaid.');
-         setShowWalletActions(true);
-         return;
-      }
+      const { warning } = await checkWalletChangeSafety();
       if (warning) setWalletSafetyWarning(warning);
       setIsEditingWallet(true);
       setIsChangeWalletPending(false);
@@ -968,7 +941,6 @@ export default function AccountSettings() {
       setIsChangeWalletPending(false);
       setIsDisconnectWalletPending(false);
       setWalletError('');
-      setWalletSafetyError('');
       setWalletSafetyWarning('');
    };
 
@@ -1272,11 +1244,7 @@ export default function AccountSettings() {
                      </div>
                   </div>
 
-                  {walletSafetyError ? (
-                     <p className="text-md-b3 font-medium text-md-red-500 rounded-md-input border border-md-red-100 bg-md-red-100/60 px-md-3 py-md-2">
-                        {walletSafetyError}
-                     </p>
-                  ) : walletSafetyWarning ? (
+                  {walletSafetyWarning ? (
                      <p className="text-md-b3 font-medium text-md-neutral-1200 rounded-md-input border border-md-yellow-700 bg-md-yellow-100 px-md-3 py-md-2">
                         ⚠️ {walletSafetyWarning}
                      </p>
