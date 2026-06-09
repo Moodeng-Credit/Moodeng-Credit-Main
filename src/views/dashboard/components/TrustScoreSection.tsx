@@ -110,8 +110,8 @@ export default function TrustScoreSection({ trustScore }: TrustScoreSectionProps
                      className="absolute left-0 top-8 z-20 w-[290px] rounded-[10px] bg-[#360975] px-3 py-2 shadow-[0_8px_24px_rgba(20,18,24,0.18)] before:absolute before:left-4 before:top-[-6px] before:h-0 before:w-0 before:border-x-[6px] before:border-b-[6px] before:border-x-transparent before:border-b-[#360975]"
                   >
                      <p className="text-center text-[14px] font-normal leading-[21px] tracking-[-0.28px] text-[#f1e9fd]">
-                        Your Trust Score reflects your overall reputation, out of 500 points. It grows with every on-time
-                        repayment and unlocks rewards like avatar rings and a Trusted badge along the way.
+                        Your Trust Score is a personal track record, out of 500 points, that grows with every on-time
+                        repayment. It's just for you to watch your progress over time.
                      </p>
                   </div>
                </>
