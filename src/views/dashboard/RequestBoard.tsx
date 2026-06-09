@@ -41,6 +41,7 @@ import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import {
    BORROWER_GUIDED_TOUR_ID,
+   GENERAL_GUIDED_TOUR_ID,
    LENDER_GUIDED_TOUR_ID,
    markGuidedTourCompleted,
    recordGuidedTourShown,
@@ -415,8 +416,13 @@ function RequestBoard$() {
    });
    const lenderIouPoints = isLenderTourPreview ? String(effectiveUser?.cs ?? 0) : formatPointsMajor(lenderPointsData?.points_total ?? 0);
    const tourUserId = effectiveUser?.id;
+   const isGeneralTour = showTourPreview && !isRealUserAuthenticated && tourRole === 'general';
+   const shouldShowGeneralTour =
+      isGeneralTour &&
+      (shouldStartTourImmediately || shouldShowGuidedTour(GENERAL_GUIDED_TOUR_ID, tourUserId, forceTourPreview));
    const shouldShowBorrowerTour =
       showTourPreview &&
+      !isGeneralTour &&
       (!isAuthenticated || isBorrower) &&
       (shouldStartTourImmediately || shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, tourUserId, forceTourPreview));
    const shouldShowLenderTour =
@@ -713,6 +719,23 @@ function RequestBoard$() {
       });
    }, [forceTourPreview, location.pathname, shouldShowLenderTour, tourUserId]);
 
+   useEffect(() => {
+      if (!shouldShowGeneralTour || forceTourPreview) return;
+
+      const viewKey = `${GENERAL_GUIDED_TOUR_ID}:${tourUserId || 'guest'}`;
+      if (recordedTourViewsRef.current.has(viewKey)) return;
+
+      recordedTourViewsRef.current.add(viewKey);
+      const shownCount = recordGuidedTourShown(GENERAL_GUIDED_TOUR_ID, tourUserId);
+      void recordGuidedTourEvent({
+         eventType: 'shown',
+         metadata: { path: location.pathname, role: 'general' },
+         shownCount,
+         tourId: GENERAL_GUIDED_TOUR_ID,
+         userId: tourUserId
+      });
+   }, [forceTourPreview, location.pathname, shouldShowGeneralTour, tourUserId]);
+
    const requestBoardTourStepCount = !isAuthenticated
       ? GUEST_REQUEST_BOARD_TOUR_STEP_COUNT
       : showVerify
@@ -747,7 +770,10 @@ function RequestBoard$() {
    const handleTourRoleSelect = useCallback(
       (roleId: string) => {
          if (roleId === 'unsure') {
-            navigate('/tour-overview');
+            const params = new URLSearchParams(location.search);
+            params.set('tourRole', 'general');
+            params.set('startTour', '1');
+            navigate(`${location.pathname}?${params.toString()}`, { replace: true });
             return;
          }
          const params = new URLSearchParams(location.search);
@@ -820,6 +846,46 @@ function RequestBoard$() {
       },
       [forceTourPreview, location.pathname, navigate, tourUserId]
    );
+   const handleGeneralTourFinish = useCallback(
+      (reason: 'complete' | 'skip') => {
+         if (!forceTourPreview) {
+            markGuidedTourCompleted(GENERAL_GUIDED_TOUR_ID, tourUserId);
+            void recordGuidedTourEvent({
+               eventType: reason === 'skip' ? 'skipped' : 'completed',
+               metadata: { path: location.pathname, role: 'general' },
+               tourId: GENERAL_GUIDED_TOUR_ID,
+               userId: tourUserId
+            });
+         }
+      },
+      [forceTourPreview, location.pathname, tourUserId]
+   );
+   const generalTourSteps = useMemo(() => [
+      {
+         target: '[data-tour-target="request-first-card"]',
+         title: 'The request board',
+         body: 'This is where borrowers post short-term USDC loan requests and lenders browse them. Both sides of Moodeng meet here.',
+         durationMs: 6000
+      },
+      {
+         target: '[data-tour-target="request-apply-card"]',
+         title: 'Borrowers apply here',
+         body: 'A borrower sets their loan amount, repayment date, and reason. Once verified with World ID, their request goes live on this board.',
+         durationMs: 6000
+      },
+      {
+         target: '[data-tour-target="request-latest-list"]',
+         title: 'Lenders browse & fund',
+         body: 'Lenders scroll through open requests, check each borrower\'s repayment history and trust signals, then fund the ones they believe in.',
+         durationMs: 6000
+      },
+      {
+         target: '[data-tour-target="request-auth-actions"]',
+         title: 'Ready to get started?',
+         body: 'Create a free account to borrow or lend. Pick your role after signing up and we\'ll walk you through the rest.',
+         durationMs: 6000
+      }
+   ], []);
    const requestBoardTourSteps = useMemo(() => {
       if (!isAuthenticated) {
          return [
@@ -1817,6 +1883,14 @@ function RequestBoard$() {
                onFinish={handleLenderTourFinish}
                totalSteps={9}
                steps={lenderTourSteps}
+            />
+         )}
+         {shouldShowGeneralTour && (
+            <GuidedTourPreview
+               key={`general-tour-${location.search}`}
+               startImmediately
+               onFinish={handleGeneralTourFinish}
+               steps={generalTourSteps}
             />
          )}
       </>
