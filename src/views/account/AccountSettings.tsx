@@ -19,9 +19,10 @@ import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getBaseWalletLockStatus, getWalletProviderLabel } from '@/lib/walletProvider';
 import { getWorldIdVerificationLabel } from '@/lib/worldIdVerificationLabel';
-import { fetchUser, updateUser } from '@/store/slices/authSlice';
+import { confirmEmailChange, fetchUser, updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
+import EditBioInfoModal from '@/views/account/EditBioInfoModal';
 
 const ICON_MASK: React.CSSProperties = {
    WebkitMaskSize: 'contain',
@@ -84,18 +85,26 @@ function ReadOnlyField({
    label,
    value,
    actionLabel,
-   onAction
+   onAction,
+   disabled = false
 }: {
    label: string;
    value: string;
    actionLabel?: string;
    onAction?: () => void;
+   disabled?: boolean;
 }) {
    return (
-      <div className="flex flex-col gap-md-1 w-full">
-         <p className="text-md-b2 font-semibold text-md-heading">{label}</p>
-         <div className="flex items-center justify-between bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
-            <span className="text-md-b1 text-md-neutral-1200 truncate">{value}</span>
+      <div className={`flex flex-col gap-md-1 w-full ${disabled ? 'opacity-50' : ''}`}>
+         <p className={`text-md-b2 font-semibold ${disabled ? 'text-md-neutral-700' : 'text-md-heading'}`}>{label}</p>
+         <div
+            className={`flex items-center justify-between rounded-md-input border px-md-3 py-md-2 overflow-hidden ${
+               disabled
+                  ? 'bg-md-neutral-200 border-md-neutral-400'
+                  : 'bg-md-neutral-100 border-md-neutral-600 shadow-md-card'
+            }`}
+         >
+            <span className={`text-md-b1 truncate ${disabled ? 'text-md-neutral-700' : 'text-md-neutral-1200'}`}>{value}</span>
             {actionLabel && onAction ? (
                <button type="button" onClick={onAction} className="text-md-b1 text-md-primary-900 shrink-0 ml-2">
                   {actionLabel}
@@ -293,14 +302,21 @@ function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
 function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
    const dispatch = useDispatch<AppDispatch>();
+   const { showToast } = useToast();
+
+   const [step, setStep] = useState<'enterEmail' | 'enterCode'>('enterEmail');
    const [newEmail, setNewEmail] = useState('');
    const [confirmEmail, setConfirmEmail] = useState('');
+   const [code, setCode] = useState('');
    const [error, setError] = useState('');
    const [isSubmitting, setIsSubmitting] = useState(false);
+   const [isResending, setIsResending] = useState(false);
 
    const resetForm = () => {
+      setStep('enterEmail');
       setNewEmail('');
       setConfirmEmail('');
+      setCode('');
       setError('');
    };
 
@@ -309,7 +325,16 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       onClose();
    };
 
-   const handleSubmit = async () => {
+   const sendChangeRequest = async (email: string) => {
+      const supabase = getSupabaseBrowserClient();
+      const { error: changeError } = await supabase.auth.updateUser({ email });
+
+      if (changeError) {
+         throw changeError;
+      }
+   };
+
+   const handleSendCode = async () => {
       setError('');
       if (!newEmail || !confirmEmail) {
          setError('All fields are required');
@@ -321,13 +346,241 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       }
 
       setIsSubmitting(true);
-      const result = await dispatch(updateUser({ email: newEmail }));
+      try {
+         await sendChangeRequest(newEmail);
+         setCode('');
+         setStep('enterCode');
+      } catch (sendError) {
+         setError(sendError instanceof Error ? sendError.message : 'Failed to send verification code');
+      } finally {
+         setIsSubmitting(false);
+      }
+   };
+
+   const handleResendCode = async () => {
+      if (isResending || isSubmitting) return;
+
+      setError('');
+      setIsResending(true);
+      try {
+         await sendChangeRequest(newEmail);
+         showToast(TOAST_TYPES.SUCCESS, 'Code resent', `We sent a new verification code to ${newEmail}.`);
+      } catch (resendError) {
+         setError(resendError instanceof Error ? resendError.message : 'Failed to resend verification code');
+      } finally {
+         setIsResending(false);
+      }
+   };
+
+   const handleVerifyCode = async () => {
+      setError('');
+      if (!code.trim()) {
+         setError('Enter the verification code we sent to your new email');
+         return;
+      }
+
+      setIsSubmitting(true);
+      const result = await dispatch(confirmEmailChange({ email: newEmail, token: code.trim() }));
+      setIsSubmitting(false);
+
+      if (confirmEmailChange.fulfilled.match(result)) {
+         showToast(TOAST_TYPES.SUCCESS, 'Email updated', 'Your email address has been changed.');
+         handleClose();
+      } else {
+         setError(result.error?.message || 'Invalid or expired code. Please try again.');
+      }
+   };
+
+   const handleBack = () => {
+      setError('');
+      setCode('');
+      setStep('enterEmail');
+   };
+
+   if (!isOpen) return null;
+
+   return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#12071f]/50 px-5" onClick={handleClose}>
+         <div
+            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-[17px] items-center"
+            onClick={(e) => e.stopPropagation()}
+         >
+            {step === 'enterEmail' ? (
+               <>
+                  <div className="flex flex-col gap-md-5 items-center w-full">
+                     <div className="flex flex-col gap-2 items-center text-center">
+                        <h2 className="text-md-h4 font-semibold text-md-heading">Change Email Address</h2>
+                        <p className="text-md-b1 text-md-neutral-1200">
+                           We'll send a verification code to your new email address to confirm the change.
+                        </p>
+                     </div>
+                     <div className="flex flex-col gap-md-5 w-full">
+                        <div className="flex flex-col gap-md-1 w-full">
+                           <p className="text-md-b2 font-semibold text-md-heading">New Email</p>
+                           <div className="flex items-center bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
+                              <input
+                                 type="email"
+                                 value={newEmail}
+                                 onChange={(e) => setNewEmail(e.target.value)}
+                                 className="flex-1 bg-transparent text-md-b1 text-md-neutral-1200 outline-none min-w-0"
+                              />
+                           </div>
+                        </div>
+                        <div className="flex flex-col gap-md-1 w-full">
+                           <p className="text-md-b2 font-semibold text-md-heading">Confirm Email</p>
+                           <div className="flex items-center bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
+                              <input
+                                 type="email"
+                                 value={confirmEmail}
+                                 onChange={(e) => setConfirmEmail(e.target.value)}
+                                 className="flex-1 bg-transparent text-md-b1 text-md-neutral-1200 outline-none min-w-0"
+                              />
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                  {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
+                  <div className="flex flex-col gap-[17px] w-full">
+                     <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={handleSendCode}
+                        className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
+                     >
+                        {isSubmitting ? 'Sending code...' : 'Send verification code'}
+                        {!isSubmitting ? (
+                           <div
+                              className="w-6 h-6 bg-md-neutral-100"
+                              style={{
+                                 ...ICON_MASK,
+                                 WebkitMaskImage: "url('/icons/chevron-right.svg')",
+                                 maskImage: "url('/icons/chevron-right.svg')"
+                              }}
+                           />
+                        ) : null}
+                     </button>
+                     <button
+                        type="button"
+                        onClick={handleClose}
+                        className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200"
+                     >
+                        Cancel
+                     </button>
+                  </div>
+               </>
+            ) : (
+               <>
+                  <div className="flex flex-col gap-md-5 items-center w-full">
+                     <div className="flex flex-col gap-2 items-center text-center">
+                        <h2 className="text-md-h4 font-semibold text-md-heading">Enter Verification Code</h2>
+                        <p className="text-md-b1 text-md-neutral-1200">
+                           We sent a 6-digit code to <span className="font-semibold">{newEmail}</span>. Enter it below to confirm the
+                           change.
+                        </p>
+                     </div>
+                     <div className="flex flex-col gap-md-1 w-full">
+                        <p className="text-md-b2 font-semibold text-md-heading">Verification Code</p>
+                        <div className="flex items-center bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
+                           <input
+                              type="text"
+                              inputMode="numeric"
+                              maxLength={8}
+                              value={code}
+                              onChange={(e) => setCode(e.target.value)}
+                              placeholder="123456"
+                              className="flex-1 bg-transparent text-md-b1 text-md-neutral-1200 outline-none min-w-0 tracking-[0.3em]"
+                           />
+                        </div>
+                     </div>
+                     <button type="button" onClick={handleResendCode} disabled={isResending || isSubmitting} className="text-md-b2 font-semibold text-md-primary-1200 disabled:opacity-50">
+                        {isResending ? 'Resending...' : "Didn't get a code? Resend"}
+                     </button>
+                  </div>
+                  {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
+                  <div className="flex flex-col gap-[17px] w-full">
+                     <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={handleVerifyCode}
+                        className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
+                     >
+                        {isSubmitting ? 'Verifying...' : 'Confirm email change'}
+                        {!isSubmitting ? (
+                           <div
+                              className="w-6 h-6 bg-md-neutral-100"
+                              style={{
+                                 ...ICON_MASK,
+                                 WebkitMaskImage: "url('/icons/chevron-right.svg')",
+                                 maskImage: "url('/icons/chevron-right.svg')"
+                              }}
+                           />
+                        ) : null}
+                     </button>
+                     <button
+                        type="button"
+                        onClick={handleBack}
+                        disabled={isSubmitting}
+                        className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50"
+                     >
+                        Back
+                     </button>
+                  </div>
+               </>
+            )}
+         </div>
+      </div>
+   );
+}
+
+function ChangeDisplayNameModal({
+   isOpen,
+   onClose,
+   currentName
+}: {
+   isOpen: boolean;
+   onClose: () => void;
+   currentName: string;
+}) {
+   const dispatch = useDispatch<AppDispatch>();
+   const { showToast } = useToast();
+   const [name, setName] = useState(currentName);
+   const [error, setError] = useState('');
+   const [isSubmitting, setIsSubmitting] = useState(false);
+
+   useEffect(() => {
+      if (isOpen) {
+         setName(currentName);
+         setError('');
+      }
+   }, [isOpen, currentName]);
+
+   const handleClose = () => {
+      if (isSubmitting) return;
+      setError('');
+      onClose();
+   };
+
+   const handleSave = async () => {
+      const trimmed = name.trim();
+      if (!trimmed) {
+         setError('Display name is required');
+         return;
+      }
+      if (trimmed === currentName) {
+         handleClose();
+         return;
+      }
+
+      setError('');
+      setIsSubmitting(true);
+      const result = await dispatch(updateUser({ displayName: trimmed }));
       setIsSubmitting(false);
 
       if (updateUser.fulfilled.match(result)) {
-         handleClose();
+         showToast(TOAST_TYPES.SUCCESS, 'Display name updated', 'Your display name has been changed.');
+         onClose();
       } else {
-         setError(result.error?.message || 'Failed to update email');
+         setError(result.error?.message || 'Failed to update display name');
       }
    };
 
@@ -340,29 +593,23 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             onClick={(e) => e.stopPropagation()}
          >
             <div className="flex flex-col gap-md-5 items-center w-full">
-               <h2 className="text-md-h4 font-semibold text-md-heading text-center">Change Email Address</h2>
-               <div className="flex flex-col gap-md-5 w-full">
-                  <div className="flex flex-col gap-md-1 w-full">
-                     <p className="text-md-b2 font-semibold text-md-heading">New Email</p>
-                     <div className="flex items-center bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
-                        <input
-                           type="email"
-                           value={newEmail}
-                           onChange={(e) => setNewEmail(e.target.value)}
-                           className="flex-1 bg-transparent text-md-b1 text-md-neutral-1200 outline-none min-w-0"
-                        />
-                     </div>
-                  </div>
-                  <div className="flex flex-col gap-md-1 w-full">
-                     <p className="text-md-b2 font-semibold text-md-heading">Confirm Email</p>
-                     <div className="flex items-center bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
-                        <input
-                           type="email"
-                           value={confirmEmail}
-                           onChange={(e) => setConfirmEmail(e.target.value)}
-                           className="flex-1 bg-transparent text-md-b1 text-md-neutral-1200 outline-none min-w-0"
-                        />
-                     </div>
+               <div className="flex flex-col gap-2 items-center text-center">
+                  <h2 className="text-md-h4 font-semibold text-md-heading">Change Display Name</h2>
+                  <p className="text-md-b1 text-md-neutral-1200">
+                     This is the name other users will see on your profile and loan requests.
+                  </p>
+               </div>
+               <div className="flex flex-col gap-md-1 w-full">
+                  <p className="text-md-b2 font-semibold text-md-heading">Display Name</p>
+                  <div className="flex items-center bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
+                     <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        autoFocus
+                        maxLength={60}
+                        className="flex-1 bg-transparent text-md-b1 text-md-neutral-1200 outline-none min-w-0"
+                     />
                   </div>
                </div>
             </div>
@@ -371,10 +618,10 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                <button
                   type="button"
                   disabled={isSubmitting}
-                  onClick={handleSubmit}
+                  onClick={handleSave}
                   className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
                >
-                  {isSubmitting ? 'Updating...' : 'Confirm email change'}
+                  {isSubmitting ? 'Saving...' : 'Save changes'}
                   {!isSubmitting ? (
                      <div
                         className="w-6 h-6 bg-md-neutral-100"
@@ -389,7 +636,8 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                <button
                   type="button"
                   onClick={handleClose}
-                  className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200"
+                  disabled={isSubmitting}
+                  className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50"
                >
                   Cancel
                </button>
@@ -557,12 +805,11 @@ export default function AccountSettings() {
    const { isDarkMode, setMode } = useThemeMode();
 
    const currentDisplayName = user?.displayName ?? user?.username ?? '';
-   const [isEditingName, setIsEditingName] = useState(false);
-   const [editName, setEditName] = useState(currentDisplayName);
-   const [isSavingName, setIsSavingName] = useState(false);
+   const [showNameModal, setShowNameModal] = useState(false);
    const [showPasswordModal, setShowPasswordModal] = useState(false);
    const [showEmailModal, setShowEmailModal] = useState(false);
    const [showTelegramAlertsModal, setShowTelegramAlertsModal] = useState(false);
+   const [showBioInfoModal, setShowBioInfoModal] = useState(false);
    const [showAvatarModal, setShowAvatarModal] = useState(false);
    const [isSavingAvatar, setIsSavingAvatar] = useState(false);
    const [walletCopied, setWalletCopied] = useState(false);
@@ -614,8 +861,7 @@ export default function AccountSettings() {
       handledEditTargetRef.current = editTarget;
 
       if (editTarget === 'name') {
-         setEditName(currentDisplayName);
-         setIsEditingName(true);
+         setShowNameModal(true);
          window.requestAnimationFrame(() => {
             document.getElementById('display-name-section')?.scrollIntoView({ block: 'center' });
          });
@@ -635,18 +881,6 @@ export default function AccountSettings() {
       setIsDisconnectWalletPending(false);
       setWalletError('');
    }, [user?.walletAddress]);
-
-   const handleSaveName = async () => {
-      const trimmed = editName.trim();
-      if (!trimmed || trimmed === currentDisplayName) {
-         setIsEditingName(false);
-         return;
-      }
-      setIsSavingName(true);
-      await dispatch(updateUser({ displayName: trimmed }));
-      setIsSavingName(false);
-      setIsEditingName(false);
-   };
 
    const handleCopyWallet = async () => {
       if (!user?.walletAddress) return;
@@ -811,31 +1045,13 @@ export default function AccountSettings() {
                <div id="display-name-section" className="flex flex-col gap-md-1 flex-1 min-w-0">
                   <p className="text-md-b2 font-semibold text-md-heading">Display Name</p>
                   <div className="flex items-center justify-between bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
-                     {isEditingName ? (
-                        <input
-                           type="text"
-                           value={editName}
-                           onChange={(e) => setEditName(e.target.value)}
-                           autoFocus
-                           className="flex-1 bg-transparent text-md-b1 text-md-neutral-1200 outline-none min-w-0"
-                        />
-                     ) : (
-                        <span className="text-md-b1 text-md-neutral-1200 truncate">{currentDisplayName}</span>
-                     )}
+                     <span className="text-md-b1 text-md-neutral-1200 truncate">{currentDisplayName}</span>
                      <button
                         type="button"
-                        disabled={isSavingName}
-                        onClick={() => {
-                           if (isEditingName) {
-                              handleSaveName();
-                           } else {
-                              setEditName(currentDisplayName);
-                              setIsEditingName(true);
-                           }
-                        }}
+                        onClick={() => setShowNameModal(true)}
                         className="text-md-b1 text-md-primary-900 shrink-0 ml-2"
                      >
-                        {isSavingName ? '...' : isEditingName ? 'Save' : 'Edit'}
+                        Change
                      </button>
                   </div>
                </div>
@@ -859,7 +1075,16 @@ export default function AccountSettings() {
                      actionLabel={user?.chatId ? undefined : 'Connect'}
                      onAction={user?.chatId ? undefined : () => setShowTelegramAlertsModal(true)}
                   />
-                  <ReadOnlyField label="WhatsApp" value="Not Connected" actionLabel="Connect" />
+                  <ReadOnlyField label="WhatsApp" value="Coming soon" disabled />
+                  <ReadOnlyField label="LINE" value="Coming soon" disabled />
+                  {isBorrower ? (
+                     <ReadOnlyField
+                        label="Bio Info"
+                        value="Work, income, and what you need help with"
+                        actionLabel="Change"
+                        onAction={() => setShowBioInfoModal(true)}
+                     />
+                  ) : null}
                </div>
 
                {/* Language */}
@@ -1241,6 +1466,8 @@ export default function AccountSettings() {
 
          <ChangePasswordModal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
          <ChangeEmailModal isOpen={showEmailModal} onClose={() => setShowEmailModal(false)} />
+         <ChangeDisplayNameModal isOpen={showNameModal} onClose={() => setShowNameModal(false)} currentName={currentDisplayName} />
+         <EditBioInfoModal isOpen={showBioInfoModal} onClose={() => setShowBioInfoModal(false)} user={user} />
          <TelegramAlertsModal
             isOpen={showTelegramAlertsModal}
             onClose={() => setShowTelegramAlertsModal(false)}

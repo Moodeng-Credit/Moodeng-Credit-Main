@@ -45,6 +45,8 @@ export const ERROR_CODES = {
    NETWORK_ERROR: 'NETWORK_ERROR',
    NETWORK_REQUIRED: 'NETWORK_REQUIRED',
    TRANSACTION_FAILED: 'TRANSACTION_FAILED',
+   TRANSACTION_REJECTED: 'TRANSACTION_REJECTED',
+   WRONG_NETWORK: 'WRONG_NETWORK',
    INSUFFICIENT_FUNDS: 'INSUFFICIENT_FUNDS',
    WALLET_MISSING: 'WALLET_MISSING',
 
@@ -107,6 +109,8 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
    [ERROR_CODES.NETWORK_ERROR]: 'Network error. Please check your connection.',
    [ERROR_CODES.NETWORK_REQUIRED]: 'Please select a network and coin type.',
    [ERROR_CODES.TRANSACTION_FAILED]: 'Transaction failed. Please try again.',
+   [ERROR_CODES.TRANSACTION_REJECTED]: 'Transaction was declined in your wallet.',
+   [ERROR_CODES.WRONG_NETWORK]: 'Please switch your wallet to the correct network and try again.',
    [ERROR_CODES.INSUFFICIENT_FUNDS]: 'Insufficient funds for this transaction.',
    [ERROR_CODES.WALLET_MISSING]: 'Wallet address is missing. Please connect your wallet.',
 

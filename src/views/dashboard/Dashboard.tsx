@@ -27,6 +27,7 @@ import UserGreeting from '@/views/dashboard/components/UserGreeting';
 import VerificationCTA from '@/views/dashboard/components/VerificationCTA';
 import { buildReputationMilestones, getBorrowerLoans } from '@/views/dashboard/dashboardHelpers';
 import { useDashboardData } from '@/views/profile/components/tabs/useDashboardData';
+import { useTrustPointTotal } from '@/views/dashboard/useTrustPointTotal';
 import { DEMO_LENDER_PROFILES } from '@/views/user-profile/demoBorrowerInsights';
 
 const REQUEST_BOARD_TOUR_STEP_COUNT = 5;
@@ -169,7 +170,12 @@ export default function Dashboard() {
    const previewLoans = useMemo(() => buildPreviewLoans(user.id), [user.id]);
    const isVerified = user.isWorldId === 'ACTIVE';
    const hasBorrowerBaseWallet = getBaseWalletLockStatus(user).isConfirmedBase;
-   const displayTrustScore = isVerified ? user.cs : 0;
+   const { pointsTotal: trustPointsTotal } = useTrustPointTotal({
+      userId: user.id,
+      fallbackPoints: 0,
+      enabled: isVerified
+   });
+   const displayTrustScore = isVerified ? trustPointsTotal : 0;
    const milestoneLoans = isMockRich ? previewLoans : borrowerLoans;
    const displayFundedLoans = useMemo(
       () => (isMockRich ? previewLoans.filter((loan) => loan.loanStatus === LoanStatus.LENT) : fundedLoans),

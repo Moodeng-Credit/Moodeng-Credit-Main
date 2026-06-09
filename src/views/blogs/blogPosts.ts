@@ -451,6 +451,7 @@ export const blogPosts: BlogPost[] = [
          { label: 'World Bank Global Findex on borrowing behavior', href: globalFindexUrl },
          { label: 'CGAP consumer protection in digital credit', href: cgapConsumerProtectionUrl }
       ],
+      sourceLabel: 'From the Moodeng research notes',
       publishedAt: 'May 18, 2026',
       readTime: '6 min read',
       audience: 'Lenders',
@@ -602,7 +603,7 @@ export const blogPosts: BlogPost[] = [
          }
       ],
       sources: [
-         { label: 'Book review source: The Global Game of Oil Pipelines' },
+         { label: 'Book review source: The Global Game of Oil Pipelines, Gulshan Dietl' },
          { label: 'World Bank Global Findex', href: globalFindexUrl },
          { label: 'CGAP digital credit overview', href: cgapDigitalCreditUrl }
       ],
@@ -612,7 +613,7 @@ export const blogPosts: BlogPost[] = [
       audience: 'Everyone',
       image: '/hippos/lender-diversity-piechart.png',
       imageAlt: 'Moodeng hippo reviewing a lender diversity chart',
-      accent: 'blue',
+      accent: 'gold',
       sections: [
          {
             heading: 'Pipelines are not just pipes',
@@ -694,9 +695,9 @@ export const blogPosts: BlogPost[] = [
       publishedAt: 'May 18, 2026',
       readTime: '8 min read',
       audience: 'Everyone',
-      image: '/hippos/community.png',
-      imageAlt: 'Moodeng community hippo representing lender review',
-      accent: 'green',
+      image: '/hippos/welcome.png',
+      imageAlt: 'Moodeng hippo welcoming a new community member',
+      accent: 'violet',
       sections: [
          {
             heading: 'People invent institutions before institutions find them',
@@ -772,7 +773,7 @@ export const blogPosts: BlogPost[] = [
       ],
       sources: [
          { label: 'Book review source: Risk Management in Credit Portfolios' },
-         { label: 'Book review source: The Theory of Money and Credit' },
+         { label: 'Book review source: The Theory of Money and Credit, Ludwig von Mises' },
          { label: 'CGAP digital credit risk overview', href: cgapDigitalCreditUrl },
          { label: 'World Bank Global Findex on borrowing sources', href: globalFindexUrl }
       ],
@@ -782,7 +783,7 @@ export const blogPosts: BlogPost[] = [
       audience: 'Lenders',
       image: '/hippos/thinking.png',
       imageAlt: 'Moodeng hippo thinking about loan types',
-      accent: 'gold',
+      accent: 'blue',
       sections: [
          {
             heading: 'Formal credit starts with the lender problem',
@@ -829,6 +830,7 @@ export const blogPosts: BlogPost[] = [
 ];
 
 export const featuredBlogPost = blogPosts[0];
+export const leadBlogPost = blogPosts[1];
 
 export function findBlogPost(slug: string | undefined): BlogPost | undefined {
    return blogPosts.find((post) => post.slug === slug);

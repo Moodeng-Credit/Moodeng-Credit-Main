@@ -1,0 +1,21 @@
+# Fonts packages
+
+## Установка
+
+```bash
+npm install @qpokychuk/sf-pro-display --save
+```
+
+## Основа использования
+
+Импортируйте нужный шрифт в js или css
+
+```js
+import '@qpokychuk/sf-pro-display/index.css';
+import '@qpokychuk/sf-pro-display/normal.css';
+import '@qpokychuk/sf-pro-display/italic.css';
+```
+
+```css
+font-family: 'SF Pro Display'
+```

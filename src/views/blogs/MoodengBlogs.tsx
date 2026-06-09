@@ -1,13 +1,23 @@
-import { type JSX } from 'react';
+import { type JSX, useMemo, useState } from 'react';
 
 import { ArrowRight, CalendarDays, Clock3, Headphones } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-import { blogPosts, featuredBlogPost, podcastUrl } from '@/views/blogs/blogPosts';
+import { type BlogPost, blogPosts, featuredBlogPost, leadBlogPost, podcastUrl } from '@/views/blogs/blogPosts';
 import '@/views/blogs/MoodengBlogs.css';
 
 export default function MoodengBlogs(): JSX.Element {
-   const latestPosts = blogPosts.filter((post) => post.slug !== featuredBlogPost.slug);
+   const [audienceFilter, setAudienceFilter] = useState<BlogPost['audience'] | 'All'>('All');
+
+   const latestPosts = useMemo(() => blogPosts.filter((post) => post.slug !== featuredBlogPost.slug), []);
+   const audienceFilters = useMemo(
+      () => ['All', ...new Set(latestPosts.map((post) => post.audience))] as Array<BlogPost['audience'] | 'All'>,
+      [latestPosts]
+   );
+   const visiblePosts = useMemo(
+      () => (audienceFilter === 'All' ? latestPosts : latestPosts.filter((post) => post.audience === audienceFilter)),
+      [audienceFilter, latestPosts]
+   );
 
    return (
       <main className="moodeng-blogs">
@@ -20,13 +30,10 @@ export default function MoodengBlogs(): JSX.Element {
                   loans need a different kind of trust.
                </p>
                <div className="blogs-hero__actions">
-                  <Link to={`/blogs/${featuredBlogPost.slug}`} className="blogs-button blogs-button--primary">
+                  <Link to={`/blogs/${leadBlogPost.slug}`} className="blogs-button blogs-button--primary">
                      Read the lead essay
                      <ArrowRight aria-hidden="true" size={18} />
                   </Link>
-                  <a href={podcastUrl} target="_blank" rel="noreferrer" className="blogs-button blogs-button--secondary">
-                     Listen on Spotify
-                  </a>
                </div>
             </div>
 
@@ -67,14 +74,29 @@ export default function MoodengBlogs(): JSX.Element {
          <section className="blogs-feed" aria-labelledby="latest-blogs-heading">
             <div className="blogs-section-heading">
                <p className="blogs-kicker">Latest essays</p>
-               <h2 id="latest-blogs-heading">Beyond guides and FAQs</h2>
+               <h2 id="latest-blogs-heading">More essays to explore</h2>
+            </div>
+
+            <div className="blogs-filter" role="group" aria-label="Filter essays by audience">
+               {audienceFilters.map((option) => (
+                  <button
+                     key={option}
+                     type="button"
+                     className={`blogs-filter__option${audienceFilter === option ? ' blogs-filter__option--active' : ''}`}
+                     aria-pressed={audienceFilter === option}
+                     onClick={() => setAudienceFilter(option)}
+                  >
+                     {option}
+                  </button>
+               ))}
             </div>
 
             <div className="blogs-grid">
-               {latestPosts.map((post) => (
+               {visiblePosts.map((post) => (
                   <article className={`blogs-post-card blogs-post-card--${post.accent}`} key={post.slug}>
                      <div className="blogs-post-card__image">
                         <img src={post.image} alt={post.imageAlt} />
+                        {post.slug === leadBlogPost.slug ? <span className="blogs-post-card__badge">Lead essay</span> : null}
                      </div>
                      <div className="blogs-post-card__content">
                         <div className="blogs-post-meta">

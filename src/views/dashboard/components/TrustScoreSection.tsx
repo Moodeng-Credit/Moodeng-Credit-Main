@@ -1,8 +1,19 @@
 import { useMemo } from 'react';
 
+import { getTrustPointRewardProgress } from '@/views/dashboard/trustPointRewards';
+
 interface TrustScoreSectionProps {
    trustScore: number;
 }
+
+const getTierFillPercent = (score: number, tierFloor: number, tierCeiling: number | null): number => {
+   if (tierCeiling === null) return 100;
+
+   const normalizedPoints = Math.max(0, Math.floor(score));
+   const tierSpan = tierCeiling - tierFloor;
+
+   return tierSpan > 0 ? Math.min(100, Math.max(0, Math.round(((normalizedPoints - tierFloor) / tierSpan) * 100))) : 100;
+};
 
 const getTrustLabel = (score: number): { label: string; color: string; bgColor: string } => {
    if (score >= 100) return { label: 'Excellent', color: 'text-md-green-800', bgColor: 'bg-md-green-100' };
@@ -12,7 +23,6 @@ const getTrustLabel = (score: number): { label: string; color: string; bgColor: 
    return { label: 'Getting Started', color: 'text-md-neutral-700', bgColor: 'bg-md-neutral-300' };
 };
 
-const MAX_SCORE = 140;
 const GAUGE_CX = 150;
 const GAUGE_CY = 140;
 const GAUGE_R = 120;
@@ -25,8 +35,8 @@ function arcPoint(angle: number) {
    };
 }
 
-function TrustGauge({ score }: { score: number }) {
-   const pct = Math.min(score / MAX_SCORE, 1);
+function TrustGauge({ progressPercent }: { progressPercent: number }) {
+   const pct = Math.min(progressPercent / 100, 1);
    const gradientId = 'trustGaugeGradient';
 
    const start = arcPoint(Math.PI);
@@ -59,6 +69,13 @@ function TrustGauge({ score }: { score: number }) {
 
 export default function TrustScoreSection({ trustScore }: TrustScoreSectionProps) {
    const { label, color, bgColor } = useMemo(() => getTrustLabel(trustScore), [trustScore]);
+   const { nextReward, pointsToNext, rewards } = useMemo(() => getTrustPointRewardProgress(trustScore), [trustScore]);
+   const previousReward = useMemo(() => [...rewards].reverse().find((reward) => reward.status === 'unlocked') ?? null, [rewards]);
+   const tierFillPercent = useMemo(
+      () => getTierFillPercent(trustScore, previousReward?.threshold ?? 0, nextReward?.threshold ?? null),
+      [trustScore, previousReward, nextReward]
+   );
+   const nextRewardCaption = nextReward ? `${pointsToNext} pts to ${nextReward.title}` : 'Top tier reached';
 
    return (
       <>
@@ -69,11 +86,11 @@ export default function TrustScoreSection({ trustScore }: TrustScoreSectionProps
 
          <div className="flex flex-col items-center -mt-2">
             <div className="relative w-full max-w-[260px]">
-               <TrustGauge score={trustScore} />
+               <TrustGauge progressPercent={tierFillPercent} />
                <div className="absolute inset-0 flex flex-col items-center justify-end pb-2">
                   <span className={`inline-block px-2.5 py-0.5 rounded-full text-md-b4 font-medium ${color} ${bgColor} mb-1`}>{label}</span>
                   <p className="text-md-h3 font-semibold text-md-heading">{trustScore} points</p>
-                  <p className="text-md-b3 text-md-neutral-700">Trust Score</p>
+                  <p className="text-md-b3 text-md-neutral-700">{nextRewardCaption}</p>
                </div>
             </div>
          </div>

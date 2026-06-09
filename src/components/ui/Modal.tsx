@@ -49,14 +49,14 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', s
          {showCloseButton ? (
             <button
                onClick={onClose}
-               className="fixed top-4 right-4 z-50 text-gray-600 hover:text-gray-800 transition-colors"
+               className="fixed top-4 right-4 z-50 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white transition-colors"
                aria-label="Close modal"
             >
                ✖
             </button>
          ) : null}
          <div
-            className={`bg-white rounded-2xl shadow-md mx-auto flex flex-col ${sizeStyles[size]} ${className}`}
+            className={`bg-white dark:bg-[#21162c] rounded-2xl shadow-md mx-auto flex flex-col ${sizeStyles[size]} ${className}`}
             onClick={(e) => e.stopPropagation()}
          >
             {title ? (

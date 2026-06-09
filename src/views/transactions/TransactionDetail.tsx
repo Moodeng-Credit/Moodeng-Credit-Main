@@ -11,8 +11,7 @@ import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
 import { LoanStatus as LoanStatusValue, RepaymentStatus } from '@/types/loanTypes';
-
-type LoanStatus = 'REPAID' | 'ACTIVE' | 'DEFAULT' | 'PENDING' | 'PARTIAL';
+import { getTransactionLoanStatus, type TransactionLoanStatus } from '@/views/transactions/transactionHistoryFilters';
 
 function buildPreviewLoan(): Loan {
    return {
@@ -37,13 +36,6 @@ function buildPreviewLoan(): Loan {
    };
 }
 
-function getLoanStatus(loan: Loan): LoanStatus {
-   if (loan.repaymentStatus === 'Paid') return 'REPAID';
-   if (loan.repaymentStatus === 'Partial') return 'PARTIAL';
-   if (loan.loanStatus === 'Requested') return 'PENDING';
-   if (new Date(loan.dueDate) < new Date()) return 'DEFAULT';
-   return 'ACTIVE';
-}
 
 function formatCurrency(amount: number): string {
    return new Intl.NumberFormat('en-US', {
@@ -59,8 +51,8 @@ function formatDate(dateStr: string | undefined | null): string {
    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
 }
 
-function StatusChip({ status }: { status: LoanStatus }) {
-   const map: Record<LoanStatus, { label: string; className: string; icon: React.ReactNode }> = {
+function StatusChip({ status }: { status: TransactionLoanStatus }) {
+   const map: Record<TransactionLoanStatus, { label: string; className: string; icon: React.ReactNode }> = {
       REPAID: {
          label: 'REPAID',
          className: 'border-md-green-700 text-md-green-700 bg-transparent',
@@ -276,20 +268,23 @@ export default function TransactionDetail() {
    }, [gloans, isPreview, loanId]);
 
    useEffect(() => {
-      if (!user?.id) return;
-      const load = async () => {
-         if (!loan && !isPreview) {
-            await dispatch(getUserLoans({ userId: user.id })).unwrap();
-         }
-      };
-      load().catch((err: Error) => console.error('Error loading loan:', err.message));
-   }, [dispatch, user?.id, loan, isPreview]);
+      if (!user?.id || isPreview) return;
+      // Always refetch on mount — not only when the loan is missing from the
+      // store. A cached loan can be stale (e.g. a lender funded it since the
+      // last fetch), and without this the detail view would keep showing the
+      // old "Pending" status until a full page reload.
+      dispatch(getUserLoans({ userId: user.id }))
+         .unwrap()
+         .catch((err: Error) => console.error('Error loading loan:', err.message));
+   }, [dispatch, user?.id, isPreview]);
 
    useEffect(() => {
-      if (loan?.lenderUser && !userProfiles[loan.lenderUser]) {
-         dispatch(fetchUserProfiles([loan.lenderUser])).catch((err: Error) => console.error('Error fetching lender profile:', err.message));
+      if (!loan || !user?.id) return;
+      const cpId = loan.lenderUser === user.id ? loan.borrowerUser : loan.lenderUser;
+      if (cpId && !userProfiles[cpId]) {
+         dispatch(fetchUserProfiles([cpId])).catch((err: Error) => console.error('Error fetching counterparty profile:', err.message));
       }
-   }, [dispatch, loan?.lenderUser, userProfiles]);
+   }, [dispatch, loan, user?.id, userProfiles]);
 
    if (isLoansLoading && !loan) {
       return (
@@ -303,10 +298,12 @@ export default function TransactionDetail() {
       return <Navigate to="/history" replace />;
    }
 
-   const status = getLoanStatus(loan);
+   const status = getTransactionLoanStatus(loan, new Date());
    const isPendingFunding = status === 'PENDING';
-   const lenderProfile = loan.lenderUser ? userProfiles[loan.lenderUser] : undefined;
-   const lenderName = lenderProfile?.username ?? 'Unknown';
+   const isLender = !!user?.id && loan.lenderUser === user.id;
+   const counterpartyId = isLender ? loan.borrowerUser : loan.lenderUser;
+   const counterpartyProfile = counterpartyId ? userProfiles[counterpartyId] : undefined;
+   const counterpartyName = counterpartyProfile?.username ?? 'Unknown';
    const outstanding = Math.max(0, loan.totalRepaymentAmount - loan.repaidAmount);
 
    return (
@@ -327,11 +324,15 @@ export default function TransactionDetail() {
                {/* Summary card */}
                <div className="bg-white rounded-md-lg shadow-md-card p-md-4 flex flex-col gap-md-3">
                   <div className="flex items-start gap-md-3">
-                     <UserAvatar src={lenderProfile?.avatarUrl} alt={lenderName} size={48} />
+                     <UserAvatar src={counterpartyProfile?.avatarUrl} alt={counterpartyName} size={48} />
                      <div className="flex-1 min-w-0 flex flex-col gap-1">
                         <p className="text-md-b1 font-semibold text-md-primary-2000 line-clamp-2">{loan.reason || 'Loan'}</p>
                         <span className="text-md-b3 text-md-neutral-1200">
-                           {isPendingFunding ? 'Lender has not accepted yet' : `Lent by ${lenderName}`}
+                           {isLender
+                              ? `Borrowed by ${counterpartyName}`
+                              : isPendingFunding
+                                ? 'Lender has not accepted yet'
+                                : `Lent by ${counterpartyName}`}
                         </span>
                      </div>
                   </div>
@@ -339,11 +340,11 @@ export default function TransactionDetail() {
                   <div className="h-px bg-md-neutral-300" />
 
                   {isPendingFunding ? (
-                     <div className="rounded-md-md border border-[#ffd7b8] bg-[#fff8ef] px-md-3 py-md-2 flex gap-md-2">
-                        <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#a24a00]" strokeWidth={2.3} />
+                     <div className="rounded-md-md border border-md-yellow-700/40 bg-md-yellow-700/10 px-md-3 py-md-2 flex gap-md-2">
+                        <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-md-yellow-700" strokeWidth={2.3} />
                         <div className="flex flex-col gap-1">
-                           <span className="text-md-b3 font-semibold text-[#7a3600]">Waiting for lender acceptance</span>
-                           <span className="text-md-b4 text-[#7a5a3a]">
+                           <span className="text-md-b3 font-semibold text-md-yellow-700">Waiting for lender acceptance</span>
+                           <span className="text-md-b4 text-md-neutral-1000">
                               This loan is not funded yet. Repayment starts only after a lender accepts.
                            </span>
                         </div>
@@ -387,7 +388,7 @@ export default function TransactionDetail() {
                </div>
 
                {/* Repay CTA for borrower on active/partial/default */}
-               {status === 'ACTIVE' || status === 'PARTIAL' || status === 'DEFAULT' ? (
+               {!isLender && (status === 'ACTIVE' || status === 'PARTIAL' || status === 'DEFAULT') ? (
                   <button
                      type="button"
                      onClick={() => navigate('/repay')}

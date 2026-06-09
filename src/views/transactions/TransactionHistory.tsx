@@ -91,14 +91,21 @@ interface TransactionRowProps {
    variant: 'lender' | 'borrower';
    showOutOf: boolean;
    showBadge: boolean;
-   onClick?: () => void;
+   onClick: () => void;
 }
 
 function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, showOutOf, showBadge, onClick }: TransactionRowProps) {
    const status = getTransactionLoanStatus(loan);
    const isBorrower = variant === 'borrower';
-   const amountColor = isBorrower && showBadge ? (status === 'DEFAULT' ? 'text-md-red-500' : 'text-md-green-800') : 'text-md-primary-2000';
-   const amountPrefix = isBorrower && showBadge ? '+' : '';
+   // A still-"Requested" loan has no lender yet — don't claim it's "Lent by" anyone
+   // or show the green "+received" framing as if money already arrived.
+   const isFunded = loan.loanStatus !== 'Requested';
+   const showReceived = isBorrower && showBadge && isFunded;
+   const amountColor = showReceived ? (status === 'DEFAULT' ? 'text-md-red-500' : 'text-md-green-800') : 'text-md-primary-2000';
+   const amountPrefix = showReceived ? '+' : '';
+   const counterpartyLabel = isBorrower
+      ? (isFunded ? `Lent by ${counterpartyName}` : 'Awaiting lender')
+      : `Borrowed by ${counterpartyName}`;
 
    const Content = (
       <div className="flex items-start gap-md-1 py-md-0">
@@ -108,7 +115,7 @@ function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, s
             <p className="text-md-b1 font-semibold text-md-primary-2000 line-clamp-2">{loan.reason || 'Loan'}</p>
             <div className="flex items-center gap-1 flex-wrap">
                <span className="text-md-b3 text-md-neutral-1200">
-                  {isBorrower ? 'Lent by' : 'Borrowed by'} {counterpartyName}
+                  {counterpartyLabel}
                </span>
                <span className="w-1 h-1 rounded-full bg-md-neutral-600 shrink-0" />
                <span className="text-md-b3 text-md-neutral-1200 shrink-0">{formatDate(loan.fundedAt ?? loan.updatedAt)}</span>
@@ -120,20 +127,17 @@ function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, s
                {amountPrefix}
                {formatCurrency(loan.loanAmount)}
             </span>
-            {showOutOf ? <span className="text-md-b3 text-md-neutral-1200">out of {formatCurrency(loan.totalRepaymentAmount)}</span> : null}
+            {showOutOf && isFunded ? <span className="text-md-b3 text-md-neutral-1200">out of {formatCurrency(loan.totalRepaymentAmount)}</span> : null}
             {showBadge ? <StatusChip status={status} /> : null}
          </div>
       </div>
    );
 
-   if (onClick) {
-      return (
-         <button type="button" onClick={onClick} className="w-full text-left">
-            {Content}
-         </button>
-      );
-   }
-   return Content;
+   return (
+      <button type="button" onClick={onClick} className="w-full text-left">
+         {Content}
+      </button>
+   );
 }
 
 interface FilterModalProps {
@@ -446,7 +450,7 @@ export default function TransactionHistory() {
                                  variant={isBorrower ? 'borrower' : 'lender'}
                                  showOutOf={activeTab === 'all'}
                                  showBadge={isBorrower || activeTab !== 'all'}
-                                 onClick={isBorrower ? () => navigate(`/history/${loan.id}`) : undefined}
+                                 onClick={() => navigate(`/history/${loan.id}`)}
                               />
                               {i < visibleLoans.length - 1 ? <div className="h-px bg-md-neutral-300 mt-md-4" /> : null}
                            </div>

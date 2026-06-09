@@ -1,8 +1,8 @@
-import { type MouseEvent, useCallback, useMemo, useState } from 'react';
+import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
-import { ChevronRight, ExternalLink, Send, X } from 'lucide-react';
+import { ChevronRight, ExternalLink, Loader2, Send, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
@@ -16,9 +16,6 @@ import { formatCurrency, formatNumber } from '@/utils/decimalHelpers';
 
 import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import {
-   type BorrowerContextChip,
-   type BorrowerContextChipType,
-   type BorrowerContextFitLevel,
    type BorrowerContextProfileData,
    type BorrowerContextResult,
    buildBorrowerContextFit,
@@ -46,76 +43,43 @@ type UserCardProps = Loan & {
 
 const getSafeProfileText = (value: unknown) => (typeof value === 'string' && value.trim() ? value : undefined);
 
-const contextChipClasses: Record<BorrowerContextChipType, string> = {
-   name: 'bg-[#efe7ff] text-md-primary-1200 dark:bg-[#3a2460] dark:text-[#d4b8ff]',
-   pay: 'bg-[#dce9ff] text-[#1b4db8] dark:bg-[#1a2d4d] dark:text-[#93b8ff]',
-   need: 'bg-[#f0e3ff] text-[#8a22df] dark:bg-[#35194d] dark:text-[#cc88ff]',
-   money: 'bg-[#ccf6e4] text-[#056044] dark:bg-[#0d3326] dark:text-[#5ddba8]',
-   date: 'bg-[#fff0c2] text-[#a34800] dark:bg-[#3d2800] dark:text-[#ffd166]',
-   delta: 'bg-[#e9f9d4] text-[#3d6f00] dark:bg-[#1a3300] dark:text-[#a3e060]'
-};
-
-const verdictClasses: Record<BorrowerContextFitLevel, string> = {
-   strong: 'bg-[#d4f8df] text-[#075e45] dark:bg-[#0d3326] dark:text-[#5ddba8]',
-   ok: 'bg-[#dcf4ff] text-[#064a6a] dark:bg-[#0a2233] dark:text-[#7dd3fc]',
-   weak: 'bg-[#fff0c2] text-[#6d4300] dark:bg-[#3d2800] dark:text-[#ffd166]',
-   unknown: 'bg-[#f8f4ff] text-md-neutral-1000 dark:bg-[#2a2040] dark:text-md-neutral-700'
-};
-
-function BorrowerContextChipView({ chip }: { chip: BorrowerContextChip }) {
-   return (
-      <span
-         className={`inline-flex items-center rounded-md-pill px-2 py-0.5 text-md-b2 font-semibold leading-[1.25] ${contextChipClasses[chip.type]}`}
-      >
-         {chip.label}
-      </span>
-   );
-}
-
-function BorrowerContextLine({ context }: { context: BorrowerContextResult }) {
-   const chipMap = new Map(context.chips.map((chip) => [chip.id, chip]));
-   const parts = context.contextLine.split(/(\{[a-z-]+\})/g);
-
-   return (
-      <p className="flex flex-wrap items-center gap-x-1 text-md-b2 font-medium leading-[1.55] text-md-neutral-900 dark:text-md-neutral-700">
-         {parts.map((part, index) => {
-            const chipId = part.match(/^\{([a-z-]+)\}$/)?.[1];
-            const chip = chipId ? chipMap.get(chipId) : undefined;
-
-            if (chip) {
-               return <BorrowerContextChipView key={`${chip.id}-${index}`} chip={chip} />;
-            }
-
-            return <span key={`${part}-${index}`}>{part.trim()}</span>;
-         })}
-      </p>
-   );
-}
-
 type LenderIouInfo = { loanAmount: number; borrowerFundedLoanCount: number };
 
 function BorrowerContextPanel({ context, lenderIouInfo }: { context: BorrowerContextResult; lenderIouInfo?: LenderIouInfo }) {
-   const iouLine = lenderIouInfo
+   const iouData = lenderIouInfo
       ? (() => {
            const prior = lenderIouInfo.borrowerFundedLoanCount;
            const bonus = getYearOneIouBorrowerBonusPoints(prior);
            const total = formatPointsMajor(computeYearOneIouPointsDelta(lenderIouInfo.loanAmount, prior));
            const base = formatPointsMajor(computePointsDelta(lenderIouInfo.loanAmount));
-           const bonusLabel = prior === 0 ? '1st-time borrower bonus' : prior === 1 ? '2nd-loan borrower bonus' : prior === 2 ? '3rd-loan borrower bonus' : '4th+ loan borrower bonus';
-           return `Fund this and earn ${total} IOU points — ${base} for the loan + ${bonus} point ${bonusLabel}.`;
+           const bonusLabel = prior === 0 ? '1st-time borrower bonus'
+              : prior === 1 ? '2nd-loan borrower bonus'
+              : prior === 2 ? '3rd-loan borrower bonus'
+              : '4th+ loan borrower bonus';
+           return { total, base, bonus, bonusLabel };
         })()
       : null;
 
    return (
       <section className="rounded-[20px] bg-[#f3efff] dark:bg-[#1e1535] p-4">
          <p className="mb-3 text-md-b3 font-bold uppercase tracking-[0.18em] text-md-primary-900 dark:text-[#c4a0ff]">Timing Fit</p>
-         <BorrowerContextLine context={context} />
-         <div className={`mt-4 rounded-[18px] p-4 text-md-b2 font-medium leading-[1.55] ${verdictClasses[context.fitLevel]}`}>
-            <p dangerouslySetInnerHTML={{ __html: context.verdictHTML }} />
-            {iouLine ? (
-               <p className="mt-3 font-semibold">{iouLine}</p>
-            ) : null}
-         </div>
+         <p className="text-md-b2 font-medium leading-[1.65] text-md-neutral-900 dark:text-md-neutral-200 whitespace-pre-line">
+            {context.paragraphText}
+         </p>
+         {iouData && (
+            <div className="mt-4 rounded-[18px] bg-gradient-to-br from-[#fef3c7] to-[#fde68a] dark:from-[#3d2a00] dark:to-[#2a1d00] p-4 flex items-start gap-3">
+               <span className="text-2xl leading-none mt-0.5" aria-hidden="true">🪙</span>
+               <div>
+                  <p className="text-md-b3 font-semibold uppercase tracking-wide text-[#92400e] dark:text-[#fbbf24]">Reward</p>
+                  <p className="text-md-b1 font-bold text-[#92400e] dark:text-[#f59e0b]">
+                     TOTAL EARNED: <span className="text-[#b45309] dark:text-[#fcd34d]">{iouData.total} IOU PTS</span>
+                  </p>
+                  <p className="mt-0.5 text-md-b3 text-[#78350f] dark:text-[#fbbf24]">
+                     Includes {iouData.base} pts for funding the loan + {iouData.bonus} for {iouData.bonusLabel}!
+                  </p>
+               </div>
+            </div>
+         )}
       </section>
    );
 }
@@ -143,6 +107,10 @@ export default function UserCard(loan: UserCardProps) {
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
+   // The on-chain transfer hash, set the moment Transfer resolves. Drives the "Sending" →
+   // "Confirming" copy on the in-card processing overlay and the explorer link, mirroring
+   // the repay flow's pattern so lenders get the same on-chain-progress feedback.
+   const [pendingTxHash, setPendingTxHash] = useState<string | null>(null);
    const [showDetails, setShowDetails] = useState(false);
    const { showToast, showToastByConfig } = useToast();
    const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
@@ -202,11 +170,16 @@ export default function UserCard(loan: UserCardProps) {
 
       const transferCoin = loanData.coin?.trim() || 'USDC';
       setIsProcessing(true);
+      setPendingTxHash(null);
 
       try {
          const transactionHash = await Transfer(borrowerWallet, formatNumber(loanData.loanAmount), loanData.id, transferCoin);
 
          if (transactionHash) {
+            // Transfer has cleared on-chain: surface the hash so the overlay flips from
+            // "Sending" to "Confirming" while the DB catches up.
+            setPendingTxHash(transactionHash);
+
             const loanPayload = {
                id: loanData.id,
                wallet: lenderWallet,
@@ -254,6 +227,7 @@ export default function UserCard(loan: UserCardProps) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
       } finally {
          setIsProcessing(false);
+         setPendingTxHash(null);
       }
    }, [
       isProcessing,
@@ -274,9 +248,30 @@ export default function UserCard(loan: UserCardProps) {
       showToastByConfig
    ]);
 
+   // Set when the lender taps "Send your help" while disconnected. Once the wallet reports
+   // connected, an effect resumes the lend automatically so connecting and sending are a
+   // single intent rather than two taps. A ref keeps the latest executeLend closure so the
+   // resume runs against fresh state (e.g. the just-connected account).
+   const pendingLendRef = useRef(false);
+   const executeLendRef = useRef(executeLend);
+
+   useEffect(() => {
+      executeLendRef.current = executeLend;
+   }, [executeLend]);
+
+   useEffect(() => {
+      if (isConnected && pendingLendRef.current) {
+         pendingLendRef.current = false;
+         void executeLendRef.current();
+      }
+   }, [isConnected]);
+
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       if (!isConnected) {
+         // Connecting is a prerequisite, not a separate task: arm the lend so it resumes by
+         // itself once the wallet connects, instead of dropping the lender back to a second tap.
+         pendingLendRef.current = true;
          openConnectModal?.();
          return;
       }
@@ -308,6 +303,8 @@ export default function UserCard(loan: UserCardProps) {
          ...borrowerContextProfileData
       });
    }, [borrowerContextProfileData, borrowerDisplayName, borrowerFundedLoanCount, borrowerRepaidLoanCount, borrowerGoodStanding, borrowerIsVerified, due, loanData.createdAt, loanData.loanAmount, loanReason]);
+   const explorerBaseUrl = account.chain?.blockExplorers?.default?.url;
+   const explorerTxUrl = pendingTxHash && explorerBaseUrl ? `${explorerBaseUrl}/tx/${pendingTxHash}` : null;
    const isLenderCard = Boolean(isAuthenticated && !isBorrower && !isOwnLoan && !isLent && !isPreviewRequest);
    const showBorrowerContext = Boolean(borrowerContext && !isBorrower && (!isLenderCard || showDetails));
    const cardClassName = [
@@ -330,6 +327,27 @@ export default function UserCard(loan: UserCardProps) {
             data-tour-target="lender-request-card"
             data-highlighted-request={isHighlighted ? 'true' : undefined}
          >
+            {isProcessing ? (
+               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-[24px] bg-white/85 px-6 text-center backdrop-blur-sm">
+                  <Loader2 className="h-8 w-8 animate-spin text-md-primary-1200" aria-hidden="true" />
+                  <div>
+                     <p className="text-md-b1 font-semibold text-md-heading">{pendingTxHash ? 'Confirming on Base…' : 'Sending your help…'}</p>
+                     <p className="mt-1 text-md-b3 text-md-neutral-1200">
+                        {pendingTxHash ? 'Recording your funding — hang tight.' : 'Approve the transaction in your wallet.'}
+                     </p>
+                  </div>
+                  {explorerTxUrl ? (
+                     <a
+                        href={explorerTxUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-md-b3 font-semibold text-md-primary-1200 underline"
+                     >
+                        View transaction
+                     </a>
+                  ) : null}
+               </div>
+            ) : null}
             {canDeleteOwnRequest ? (
                <button
                   type="button"
@@ -337,9 +355,9 @@ export default function UserCard(loan: UserCardProps) {
                   disabled={isDeletingOwnRequest}
                   aria-label="Delete your loan request"
                   title="Delete request"
-                  className="absolute right-3 top-3 z-10 inline-flex size-11 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 shadow-[0_8px_20px_rgba(185,28,28,0.12)] transition active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="absolute right-3 top-3 z-10 inline-flex size-8 items-center justify-center rounded-full border border-md-red-500/30 bg-md-red-500/15 text-md-red-300 shadow-[0_1px_3px_rgba(0,0,0,0.12)] transition active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50"
                >
-                  <X className="size-5" strokeWidth={2.5} />
+                  <Trash2 className="size-4" strokeWidth={2} />
                </button>
             ) : null}
             {/* Top: Loan Info + Amount Card */}

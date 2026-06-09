@@ -76,13 +76,13 @@ const Toast: FC<ToastProps> = ({
    return (
       <div
          className={`
-        relative flex shadow-lg rounded border border-gray-200 bg-white max-w-[320px] mb-4
+        relative flex shadow-lg rounded border border-gray-200 dark:border-[#2e203d] bg-white dark:bg-[#21162c] max-w-[320px] mb-4
         transform transition-all duration-300 ease-in-out
         ${isVisible && !isLeaving ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
         ${isLeaving ? 'translate-x-full opacity-0' : ''}
       `}
       >
-         <button aria-label="Close" className="absolute top-2 right-2 p-1 text-black hover:text-gray-700 z-10" onClick={handleClose}>
+         <button aria-label="Close" className="absolute top-2 right-2 p-1 text-black hover:text-gray-700 dark:text-[#f0e9f8] dark:hover:text-white z-10" onClick={handleClose}>
             <i className="fas fa-times text-xs"></i>
          </button>
 

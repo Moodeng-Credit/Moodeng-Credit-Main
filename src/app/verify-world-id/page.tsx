@@ -56,9 +56,6 @@ export default function WorldIdVerification() {
                <p className="text-md-b1 font-medium text-md-neutral-700">
                   Prove you&rsquo;re a real person with World ID. This is a one-time step.
                </p>
-               <p className="text-md-b3 font-medium text-md-neutral-700">
-                  In Thailand, World App may say token claiming is unavailable. Identity verification still works for Moodeng.
-               </p>
             </div>
 
             <WorldIDVerification

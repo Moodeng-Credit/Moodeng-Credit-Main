@@ -176,6 +176,11 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    paydayStart: (row as UserRow & { payday_start?: number | null }).payday_start ?? undefined,
    paydayEnd: (row as UserRow & { payday_end?: number | null }).payday_end ?? undefined,
    gapReasons: (row as UserRow & { gap_reasons?: string[] | null }).gap_reasons ?? undefined,
+   monthlyIncome:   (row as any).monthly_income   ?? undefined,
+   monthlyExpenses: (row as any).monthly_expenses ?? undefined,
+   otherIncome:     (row as any).other_income     ?? undefined,
+   profession:      (row as any).profession       ?? undefined,
+   incomeDescription: (row as any).income_description ?? undefined,
    notifAccountActivity: (row as UserRow & { notif_account_activity?: boolean | null }).notif_account_activity ?? true,
    notifTransactionActivity: (row as UserRow & { notif_transaction_activity?: boolean | null }).notif_transaction_activity ?? true,
    notifBlogs: (row as UserRow & { notif_blogs?: boolean | null }).notif_blogs ?? false,
@@ -575,12 +580,58 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
    return await fetchCurrentUserProfile();
 });
 
+/**
+ * Confirms a pending email-address change by verifying the one-time code sent to the
+ * new address, then writes the new email to `public.users` only after Supabase Auth
+ * has confirmed the change. This avoids the old behavior where `users.email` (and thus
+ * notification routing) updated immediately, before the user ever proved they own the
+ * new inbox.
+ */
+export const confirmEmailChange = createAsyncThunk(
+   'auth/confirmEmailChange',
+   async ({ email, token }: { email: string; token: string }) => {
+      const supabase = supabaseClient();
+
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+         email,
+         token,
+         type: 'email_change'
+      });
+
+      if (verifyError) {
+         throw verifyError;
+      }
+
+      const {
+         data: { user },
+         error: sessionError
+      } = await supabase.auth.getUser();
+
+      if (sessionError || !user) {
+         throw sessionError ?? new Error('No authenticated user to update');
+      }
+
+      const { error: updateError } = await supabase.from('users').update({ email }).eq('id', user.id);
+
+      if (updateError) {
+         throw updateError;
+      }
+
+      return await fetchCurrentUserProfile();
+   }
+);
+
 export interface BorrowerContextPayload {
    incomeType: string;
    paydayType: string;
    paydayStart?: number | null;
    paydayEnd?: number | null;
    gapReasons?: string[];
+   monthlyIncome?: string;
+   monthlyExpenses?: string;
+   otherIncome?: string;
+   profession?: string;
+   incomeDescription?: string;
 }
 
 /** Save borrower context (income/payday/gap info) to the user's profile. Done once after first loan request. */
@@ -598,11 +649,16 @@ export const updateBorrowerContext = createAsyncThunk(
       const { data: updatedRow, error } = await supabase
          .from('users')
          .update({
-            income_type: payload.incomeType,
-            payday_type: payload.paydayType,
-            payday_start: payload.paydayStart ?? null,
-            payday_end: payload.paydayEnd ?? null,
-            gap_reasons: payload.gapReasons ?? []
+            income_type:      payload.incomeType,
+            payday_type:      payload.paydayType,
+            payday_start:     payload.paydayStart ?? null,
+            payday_end:       payload.paydayEnd ?? null,
+            gap_reasons:      payload.gapReasons ?? [],
+            monthly_income:   payload.monthlyIncome   ?? null,
+            monthly_expenses: payload.monthlyExpenses ?? null,
+            other_income:     payload.otherIncome     ?? null,
+            profession:       payload.profession      ?? null,
+            income_description: payload.incomeDescription ?? null
          } as Record<string, unknown>)
          .eq('id', user.id)
          .select('*')

@@ -59,12 +59,10 @@ export function useWalletSync() {
 
    // Track connection intent to show success toast
    useAccountEffect({
-      onConnect: (data) => {
-         console.log('[WalletSync] onConnect Event:', data);
+      onConnect: () => {
          isConnecting.current = true;
       },
       onDisconnect: () => {
-         console.log('[WalletSync] onDisconnect Event');
          isConnecting.current = false;
       }
    });
@@ -81,19 +79,7 @@ export function useWalletSync() {
    }, [account.address, storedWalletAddress, showSuccessToast]);
 
    useEffect(() => {
-      console.log('[WalletSync] State Check:', {
-         username,
-         storedWalletAddress,
-         isConnected: account.isConnected,
-         accountAddress: account.address,
-         status: account.status,
-         connector: account.connector?.name
-      });
-
       if (!isAuthChecked || !username || !userId || !account.isConnected || !account.address) {
-         if (account.status === 'reconnecting') {
-            console.log('[WalletSync] Still reconnecting...');
-         }
          return;
       }
 
@@ -119,9 +105,6 @@ export function useWalletSync() {
       if (storedWalletAddress) {
          if (!areWalletAddressesEqual(connectedAddress, storedWalletAddress)) {
             // Wallet mismatch - account switch detected, disconnect it
-            console.log(
-               `Wallet mismatch detected - disconnecting wallet (connected: ${formatWalletAddressShort(connectedAddress)}, stored: ${formatWalletAddressShort(storedWalletAddress)})`
-            );
             showToast(
                TOAST_TYPES.ERROR,
                'Saved wallet mismatch',
@@ -148,16 +131,12 @@ export function useWalletSync() {
       userRole
    ]);
 
-   // Show wallet connection reminder if user has stored wallet but not connected
+   // Track when wallet connection reminder has been shown
    useEffect(() => {
       if (!username || !storedWalletAddress || account.isConnected || hasShownWalletPrompt) {
          return;
       }
 
-      // Show a console message reminding user to connect their wallet
-      console.log(
-         `Reminder: You have a wallet address stored (${storedWalletAddress.slice(0, 6)}...${storedWalletAddress.slice(-4)}). Please connect your wallet.`
-      );
       setHasShownWalletPrompt(true);
    }, [username, storedWalletAddress, account.isConnected, hasShownWalletPrompt]);
 
@@ -196,7 +175,7 @@ export function useWalletSync() {
          )
             .unwrap()
             .then(() => {
-               console.log('Wallet details saved successfully');
+               // wallet details saved successfully
             })
             .catch((error) => {
                console.error('Failed to save wallet address:', error);

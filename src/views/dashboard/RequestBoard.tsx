@@ -57,12 +57,17 @@ import type { User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import { type CreateLoanData, type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
-import LoanRequestModal, { type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
+import LoanRequestModal, { mapBorrowerContextForSave, type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 import { FAQS } from '@/views/support/data/faqs';
+
+// Stable empty-array identity so memos/selectors that fall back to "no loans" don't
+// produce a fresh [] every render (which would churn downstream useMemos in a loop
+// and crash the page — e.g. a blank screen when navigating Back into the board).
+const EMPTY_LOANS: Loan[] = [];
 
 const LENDER_NOTE_STORAGE_KEY = 'moodeng_lender_note_dismissed';
 const REQUEST_BOARD_PREVIEW_REQUESTS_STORAGE_KEY = 'moodeng-request-board-preview-requests';
@@ -128,34 +133,50 @@ const PREVIEW_REQUEST_BOARD_BORROWER_USERNAMES: Record<string, string> = {
 
 const PREVIEW_REQUEST_BOARD_BORROWER_CONTEXTS: Record<string, BorrowerContextProfileData> = {
    'request-board-preview-borrower-maya': {
-      incomeType: 'full-time',
-      paydayType: 'weekly',
-      paydayStart: 1,
-      paydayEnd: 7,
-      gapReasons: ['family needs']
+      incomeType:      'full-time',
+      paydayType:      'end-of-month',
+      paydayStart:     25,
+      paydayEnd:       30,
+      gapReasons:      ['bills_before_payday', 'transport'],
+      monthlyIncome:   '200_400',
+      monthlyExpenses: '50_150',
+      profession:      'teacher',
+      otherIncome:     'tutor'
    },
    'request-board-preview-borrower-jordan': {
-      incomeType: 'part-time',
-      paydayType: 'mid-month',
-      paydayStart: 10,
-      paydayEnd: 15,
-      gapReasons: ['medicine', 'bills']
+      incomeType:      'part-time',
+      paydayType:      'mid-month',
+      paydayStart:     10,
+      paydayEnd:       15,
+      gapReasons:      ['medical', 'family_needs'],
+      monthlyIncome:   'under_200',
+      monthlyExpenses: 'under_50',
+      profession:      'market vendor',
+      otherIncome:     'domestic work'
    },
    'request-board-preview-borrower-ana': {
-      incomeType: 'freelance',
-      paydayType: 'irregular',
-      paydayStart: null,
-      paydayEnd: null,
-      gapReasons: ['payday bridge', 'transport']
+      incomeType:      'freelance',
+      paydayType:      'irregular',
+      paydayStart:     null,
+      paydayEnd:       null,
+      gapReasons:      ['bills_before_payday', 'transport'],
+      monthlyIncome:   '400_700',
+      monthlyExpenses: '150_300',
+      profession:      'graphic designer',
+      otherIncome:     'online sales'
    }
 };
 
 const LENDER_TOUR_BORROWER_CONTEXT: BorrowerContextProfileData = {
-   incomeType: 'full-time',
-   paydayType: 'weekly',
-   paydayStart: 1,
-   paydayEnd: 7,
-   gapReasons: ['family needs']
+   incomeType:      'full-time',
+   paydayType:      'end-of-month',
+   paydayStart:     25,
+   paydayEnd:       30,
+   gapReasons:      ['bills_before_payday', 'transport'],
+   monthlyIncome:   '200_400',
+   monthlyExpenses: '50_150',
+   profession:      'teacher',
+   otherIncome:     'tutor'
 };
 
 const buildPreviewRequestBoardLoan = ({
@@ -206,30 +227,30 @@ const buildPreviewRequestBoardLoans = (): Loan[] => [
       trackingId: 'PREVIEW-REQ-001',
       borrowerUser: 'request-board-preview-borrower-maya',
       borrowerWallet: '0x71c4000000000000000000000000000000009d42',
-      loanAmount: 15,
-      totalRepaymentAmount: 17,
-      reason: 'Emergency groceries',
-      dueInDays: 7
+      loanAmount: 20,
+      totalRepaymentAmount: 23,
+      reason: 'Groceries and transport for the week',
+      dueInDays: 14
    }),
    buildPreviewRequestBoardLoan({
       id: 'request-board-preview-loan-2',
       trackingId: 'PREVIEW-REQ-002',
       borrowerUser: 'request-board-preview-borrower-jordan',
       borrowerWallet: '0x71c4000000000000000000000000000000009d43',
-      loanAmount: 25,
-      totalRepaymentAmount: 28,
-      reason: 'Medicine refill',
-      dueInDays: 14
+      loanAmount: 15,
+      totalRepaymentAmount: 17,
+      reason: 'Medicine and school fees this week',
+      dueInDays: 10
    }),
    buildPreviewRequestBoardLoan({
       id: 'request-board-preview-loan-3',
       trackingId: 'PREVIEW-REQ-003',
       borrowerUser: 'request-board-preview-borrower-ana',
       borrowerWallet: '0x71c4000000000000000000000000000000009d44',
-      loanAmount: 40,
-      totalRepaymentAmount: 45,
-      reason: 'Payday bridge',
-      dueInDays: 30
+      loanAmount: 30,
+      totalRepaymentAmount: 34,
+      reason: 'Bills and transport while waiting on a client payment',
+      dueInDays: 21
    })
 ];
 
@@ -331,6 +352,9 @@ function RequestBoard$() {
    const [showPurple, setShowPurple] = useState(false);
    const [showBioStep, setShowBioStep] = useState(false);
    const [isSubmitting, setIsSubmitting] = useState(false);
+   // Synchronous guard — prevents a second click from slipping through before
+   // setIsSubmitting(true) has a chance to re-render and disable the button.
+   const isSubmittingRef = useRef(false);
    const [showFilters, setShowFilters] = useState(false);
    const [showLenderNote, setShowLenderNote] = useState(false);
    const [showPublicQuestions, setShowPublicQuestions] = useState(false);
@@ -396,11 +420,10 @@ function RequestBoard$() {
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
    const [hasLoadedRequestBoardLoans, setHasLoadedRequestBoardLoans] = useState(false);
-   const liveRequestBoardLoans = hasLoadedRequestBoardLoans ? floanRequests : [];
+   const liveRequestBoardLoans = hasLoadedRequestBoardLoans ? floanRequests : EMPTY_LOANS;
    const previewRequestBoardLoans = useMemo(buildPreviewRequestBoardLoans, []);
    const shouldUsePreviewRequestBoardLoans = hasLoadedRequestBoardLoans && shouldShowPreviewRequestBoardLoans(location.search, liveRequestBoardLoans);
    const requestBoardLoans = shouldUsePreviewRequestBoardLoans ? previewRequestBoardLoans : liveRequestBoardLoans;
-   const [sortedLoans, setSortedLoans] = useState(floanRequests);
 
    const today = new Date().toISOString().split('T')[0];
    const borrowerUserId = effectiveUser?.id || '';
@@ -942,10 +965,14 @@ function RequestBoard$() {
       effectiveUser?.id
    ]);
 
-   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+   const handleSubmit = async (e: FormEvent<HTMLFormElement>, borrowerContext?: import('@/lib/borrowerContextFit').BorrowerContextState) => {
       e.preventDefault();
-      if (isSubmitting) return;
+      // Check the ref first — it updates synchronously, unlike state which waits for a re-render.
+      // This closes the window where a second click can slip through while the first is in-flight.
+      if (isSubmittingRef.current || isSubmitting) return;
+      isSubmittingRef.current = true;
 
+      try {
       const borrowerWallet = effectiveUser.walletAddress?.trim();
       const trimmedReason = reason.trim();
       const parsedLoanAmount = Number.parseFloat(loanAmount);
@@ -1016,14 +1043,36 @@ function RequestBoard$() {
          parsedLoanAmount > 0 &&
          parsedRepaymentAmount >= parsedLoanAmount + 1
       ) {
-         // If borrower hasn't filled in bio yet, show bio step first
+         // If borrower hasn't filled in bio yet, save from modal context or show bio step
          if (!effectiveUser.incomeType) {
+            if (borrowerContext?.incomeSetup && borrowerContext?.paydayWindow && borrowerContext?.cashGaps.length > 0) {
+               const mapped = mapBorrowerContextForSave(borrowerContext);
+               pendingLoanDataRef.current = loanData;
+               await handleBioSave({
+                  incomeType:      mapped.incomeType,
+                  paydayType:      mapped.paydayType,
+                  paydayStart:     mapped.paydayStart,
+                  paydayEnd:       mapped.paydayEnd,
+                  gapReasons:      mapped.gapReasons,
+                  monthlyIncome:   mapped.monthlyIncome,
+                  monthlyExpenses: mapped.monthlyExpenses,
+                  otherIncome:     mapped.otherIncome,
+                  profession:      mapped.profession,
+                  incomeDescription: mapped.incomeDescription
+               });
+               return;
+            }
             pendingLoanDataRef.current = loanData;
             setShowBioStep(true);
             return;
          }
 
          await doCreateLoan(loanData);
+      }
+      } finally {
+         // Always release the synchronous guard when handleSubmit finishes.
+         // doCreateLoan manages isSubmitting state separately for the loading UI.
+         isSubmittingRef.current = false;
       }
    };
 
@@ -1066,12 +1115,13 @@ function RequestBoard$() {
          );
       } finally {
          setIsSubmitting(false);
+         isSubmittingRef.current = false;
       }
    };
 
-   const handleBioSave = async (data: { incomeType: string; paydayType: string; gapReasons: string[] }) => {
+   const handleBioSave = async (data: { incomeType: string; paydayType: string; paydayStart?: number | null; paydayEnd?: number | null; gapReasons: string[]; monthlyIncome?: string; monthlyExpenses?: string; otherIncome?: string; profession?: string; incomeDescription?: string }) => {
       try {
-         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, gapReasons: data.gapReasons })).unwrap();
+         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, paydayStart: data.paydayStart, paydayEnd: data.paydayEnd, gapReasons: data.gapReasons, monthlyIncome: data.monthlyIncome, monthlyExpenses: data.monthlyExpenses, otherIncome: data.otherIncome, profession: data.profession, incomeDescription: data.incomeDescription })).unwrap();
       } catch (error) {
          console.error('Failed to save borrower context:', error);
       }
@@ -1151,17 +1201,13 @@ function RequestBoard$() {
       );
    }, [filters, searchLoan, requestBoardLoans, customAmount, userProfiles]);
 
-   useEffect(() => {
-      setSortedLoans(filteredLoans);
-   }, [filteredLoans]);
-
    const {
       displayedItems: displayedLoans,
       displayedCount,
       totalCount,
       handleLoadMore
    } = usePagination({
-      items: sortedLoans,
+      items: filteredLoans,
       resetDependencies: [filters, searchLoan]
    });
 
@@ -1611,10 +1657,25 @@ function RequestBoard$() {
                                  />
                               </div>
                            ))
-                        ) : (
-                           <div className="text-center py-20 text-md-neutral-1200 text-md-b2">
-                              {needsRoleSelection ? 'Public requests will appear here when available.' : 'No loan requests found.'}
+                        ) : needsRoleSelection ? (
+                           <div className="text-center py-20 text-md-neutral-1200 text-md-b2">Public requests will appear here when available.</div>
+                        ) : hasActiveRequestFilters || searchLoan.trim() ? (
+                           <div className="flex flex-col items-center gap-2 py-20 text-center">
+                              <p className="text-md-neutral-1200 text-md-b2">No requests match your filters.</p>
+                              <p className="text-md-neutral-1000 text-md-b3">Try widening your search or clearing your filters.</p>
+                              <button
+                                 type="button"
+                                 onClick={() => {
+                                    resetRequestFilters();
+                                    setSearchLoan('');
+                                 }}
+                                 className="mt-1 text-md-primary-1200 text-md-b3 font-semibold underline underline-offset-2"
+                              >
+                                 Clear filters
+                              </button>
                            </div>
+                        ) : (
+                           <div className="text-center py-20 text-md-neutral-1200 text-md-b2">No loan requests found.</div>
                         )}
                      </div>
 

@@ -81,7 +81,7 @@ export type AppliedReferralCode = {
 
 type DismissGestureMode = 'down' | 'side' | 'referral';
 
-type BorrowerContextOption = {
+export type BorrowerContextOption = {
    description?: string;
    icon?: typeof BriefcaseBusiness;
    label: string;
@@ -89,7 +89,7 @@ type BorrowerContextOption = {
    value: string;
 };
 
-type BorrowerContextMultiOption = BorrowerContextOption & {
+export type BorrowerContextMultiOption = BorrowerContextOption & {
    icon: typeof BriefcaseBusiness;
 };
 
@@ -97,16 +97,18 @@ const REFERRAL_TEST_CODES: Record<string, AppliedReferralCode> = {
    BELLE: { id: 'referral-test-belle', code: 'BELLE', boostAmount: 5 }
 };
 
-const inputShellClass =
+export const inputShellClass =
    'border-md-neutral-600 bg-md-neutral-100 shadow-md-card overflow-hidden rounded-md-input border border-solid transition duration-150 ease-out focus-within:border-md-primary-900 focus-within:ring-2 focus-within:ring-md-primary-100 focus:border-md-primary-900 focus:ring-2 focus:ring-md-primary-100';
 
-const emptyBorrowerContext: BorrowerContextState = {
+export const emptyBorrowerContext: BorrowerContextState = {
    incomeSetup: '',
    paydayWindow: '',
-   cashGaps: []
+   cashGaps: [],
+   monthlyIncome: '',
+   monthlyExpenses: ''
 };
 
-const incomeSetupOptions: BorrowerContextOption[] = [
+export const incomeSetupOptions: BorrowerContextOption[] = [
    {
       label: 'I have a regular job',
       value: 'full_time',
@@ -133,7 +135,7 @@ const incomeSetupOptions: BorrowerContextOption[] = [
    }
 ];
 
-const paydayWindowOptions: BorrowerContextOption[] = [
+export const paydayWindowOptions: BorrowerContextOption[] = [
    { label: '1st-5th', value: '1_5', icon: Clock3 },
    { label: '10th-15th', value: '10_15', icon: Clock3 },
    { label: '15th-20th', value: '15_20', icon: Clock3 },
@@ -141,7 +143,7 @@ const paydayWindowOptions: BorrowerContextOption[] = [
    { label: 'It varies', value: 'varies', icon: Clock3 }
 ];
 
-const cashGapOptions: BorrowerContextMultiOption[] = [
+export const cashGapOptions: BorrowerContextMultiOption[] = [
    { label: 'Gap before payday', value: 'gap_before_payday', icon: Clock3 },
    { label: 'Bills before payday', value: 'bills_before_payday', icon: FileText },
    { label: 'Family needs', value: 'family_needs', icon: Users },
@@ -150,6 +152,50 @@ const cashGapOptions: BorrowerContextMultiOption[] = [
    { label: 'Emergency costs', value: 'emergency_costs', icon: TriangleAlert },
    { label: 'Work supplies', value: 'work_supplies', icon: Briefcase }
 ];
+
+export const monthlyIncomeOptions: BorrowerContextOption[] = [
+   { label: 'Under $200', value: 'under_200', icon: Clock3 },
+   { label: '$200–$400', value: '200_400', icon: Clock3 },
+   { label: '$400–$700', value: '400_700', icon: Clock3 },
+   { label: 'Over $700', value: '700_plus', icon: Clock3 }
+];
+
+export const monthlyExpensesOptions: BorrowerContextOption[] = [
+   { label: 'Under $50', value: 'under_50', icon: Clock3 },
+   { label: '$50–$150', value: '50_150', icon: Clock3 },
+   { label: '$150–$300', value: '150_300', icon: Clock3 },
+   { label: 'Over $300', value: '300_plus', icon: Clock3 }
+];
+
+export type PaydayConfig = { type: string; start: number | null; end: number | null };
+export const PAYDAY_WINDOW_TO_CONFIG: Record<string, PaydayConfig> = {
+   '1_5':   { type: 'mid-month',    start: 1,    end: 5   },
+   '10_15': { type: 'mid-month',    start: 10,   end: 15  },
+   '15_20': { type: 'mid-month',    start: 15,   end: 20  },
+   '25_30': { type: 'end-of-month', start: 25,   end: 30  },
+   varies:  { type: 'irregular',    start: null, end: null }
+};
+export const INCOME_SETUP_TO_TYPE: Record<string, string> = {
+   full_time:     'full-time',
+   self_employed: 'freelance',
+   irregular:     'none',
+   contract:      'part-time'
+};
+export const mapBorrowerContextForSave = (ctx: BorrowerContextState) => {
+   const payday = PAYDAY_WINDOW_TO_CONFIG[ctx.paydayWindow];
+   return {
+      incomeType:      INCOME_SETUP_TO_TYPE[ctx.incomeSetup]  ?? ctx.incomeSetup,
+      paydayType:      payday?.type  ?? ctx.paydayWindow,
+      paydayStart:     payday?.start ?? null,
+      paydayEnd:       payday?.end   ?? null,
+      gapReasons:      ctx.cashGaps,
+      monthlyIncome:   ctx.monthlyIncome,
+      monthlyExpenses: ctx.monthlyExpenses,
+      otherIncome:     ctx.otherIncome  || undefined,
+      profession:      ctx.profession   || undefined,
+      incomeDescription: ctx.incomeDescription || undefined
+   };
+};
 
 type TooltipId = 'terms' | 'limit' | 'usdc';
 
@@ -335,10 +381,17 @@ function BorrowerContextLoanStep({
    currentAvatarUrl,
    isSubmitting,
    isSavingProfile,
+   monthlyIncome,
+   monthlyExpenses,
    onBack,
    onCashGapToggle,
    onContinue,
    onIncomeSelect,
+   onMonthlyIncomeSelect,
+   onMonthlyExpensesSelect,
+   onOtherIncomeChange,
+   onProfessionChange,
+   onIncomeDescriptionChange,
    onPaydaySelect,
    onProfileImageClick,
    onProfileNameChange,
@@ -351,15 +404,23 @@ function BorrowerContextLoanStep({
    isSubmitting: boolean;
    isSavingProfile: boolean;
    onBack: () => void;
+   monthlyIncome: string;
+   monthlyExpenses: string;
    onCashGapToggle: (value: string) => void;
    onContinue: () => void;
    onIncomeSelect: (value: string) => void;
+   onMonthlyIncomeSelect: (value: string) => void;
+   onMonthlyExpensesSelect: (value: string) => void;
+   onOtherIncomeChange: (value: string) => void;
+   onProfessionChange: (value: string) => void;
+   onIncomeDescriptionChange: (value: string) => void;
    onPaydaySelect: (value: string) => void;
    onProfileImageClick: () => void;
    onProfileNameChange: (value: string) => void;
    profileName: string;
    profileSaveError: string;
 }) {
+   const [hasOtherIncome, setHasOtherIncome] = useState<boolean>(Boolean(context.otherIncome));
    const canContinue = Boolean(context.incomeSetup && context.paydayWindow && context.cashGaps.length > 0);
    const isBusy = isSubmitting || isSavingProfile;
 
@@ -431,6 +492,35 @@ function BorrowerContextLoanStep({
             selectedValue={context.incomeSetup}
          />
 
+         {context.incomeSetup === 'contract' ? (
+            <div className="flex flex-col gap-1.5">
+               <p className="text-md-b2 font-semibold text-md-heading">Describe your situation</p>
+               <p className="text-md-b3 text-md-neutral-700">Tell lenders how you earn, in your own words.</p>
+               <textarea
+                  autoFocus
+                  className="w-full resize-none rounded-md-input border border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none"
+                  maxLength={200}
+                  rows={3}
+                  onChange={(e) => onIncomeDescriptionChange(e.target.value)}
+                  placeholder="e.g. I run a small online shop and income changes month to month"
+                  value={context.incomeDescription ?? ''}
+               />
+            </div>
+         ) : null}
+
+         <div className="flex flex-col gap-1.5">
+            <p className="text-md-b2 font-semibold text-md-heading">What do you do for work?</p>
+            <p className="text-md-b3 text-md-neutral-700">e.g. teacher, nurse, market vendor, driver</p>
+            <input
+               className="w-full rounded-md-input border border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none"
+               maxLength={60}
+               onChange={(e) => onProfessionChange(e.target.value)}
+               placeholder="e.g. teacher"
+               type="text"
+               value={context.profession ?? ''}
+            />
+         </div>
+
          <BorrowerContextChipSection
             helper="Helps lenders see that repayment timing makes sense."
             label="When do you usually get paid?"
@@ -438,6 +528,62 @@ function BorrowerContextLoanStep({
             options={paydayWindowOptions}
             selectedValues={[context.paydayWindow]}
          />
+
+         <BorrowerContextChipSection
+            label="What is your approximate monthly income?"
+            helper="Helps lenders gauge repayment capacity."
+            onSelect={onMonthlyIncomeSelect}
+            options={monthlyIncomeOptions}
+            selectedValues={[monthlyIncome]}
+         />
+
+         <BorrowerContextChipSection
+            label="What do your recurring expenses cost per month?"
+            helper="Helps lenders understand your financial commitments."
+            onSelect={onMonthlyExpensesSelect}
+            options={monthlyExpensesOptions}
+            selectedValues={[monthlyExpenses]}
+         />
+
+         <div className="flex flex-col gap-md-2">
+            <div className="flex items-center justify-between">
+               <div>
+                  <p className="text-md-b2 font-semibold text-md-heading">Any other income sources?</p>
+                  <p className="text-md-b3 text-md-neutral-700">e.g. tutoring, delivery, market trading</p>
+               </div>
+               <div className="flex gap-md-2">
+                  {(['No', 'Yes'] as const).map((opt) => (
+                     <button
+                        key={opt}
+                        type="button"
+                        onClick={() => {
+                           const next = opt === 'Yes';
+                           setHasOtherIncome(next);
+                           if (!next) onOtherIncomeChange('');
+                        }}
+                        className={`rounded-md-pill px-4 py-1.5 text-md-b2 font-semibold transition ${
+                           (opt === 'Yes') === hasOtherIncome
+                              ? 'bg-md-primary-1200 text-white'
+                              : 'border border-md-neutral-400 text-md-neutral-800'
+                        }`}
+                     >
+                        {opt}
+                     </button>
+                  ))}
+               </div>
+            </div>
+            {hasOtherIncome && (
+               <input
+                  autoFocus
+                  className="w-full rounded-md-input border border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none"
+                  maxLength={60}
+                  onChange={(e) => onOtherIncomeChange(e.target.value)}
+                  placeholder="e.g. tutoring on weekends"
+                  type="text"
+                  value={context.otherIncome ?? ''}
+               />
+            )}
+         </div>
 
          <BorrowerContextChipSection
             caption="Pick all that apply."
@@ -476,7 +622,7 @@ function TrustBadge({ label }: { label: string }) {
    return <span className="rounded-md-pill bg-md-primary-1200 px-[6px] py-[2px] text-md-b4 font-[590] text-md-neutral-100">{label}</span>;
 }
 
-function BorrowerContextRadioSection({
+export function BorrowerContextRadioSection({
    label,
    onSelect,
    options,
@@ -541,7 +687,7 @@ function BorrowerContextRadioCard({
    );
 }
 
-function BorrowerContextChipSection({
+export function BorrowerContextChipSection({
    caption,
    helper,
    label,
@@ -996,7 +1142,12 @@ export default function LoanRequestModal({
          return;
       }
 
-      if (requireBorrowerContextStep && !borrowerContextPromptSeen && !showBorrowerContextStep) {
+      // Borrowers who already saved their bio context (income/payday/etc.) shouldn't be
+      // re-prompted on every loan request — that data lives on their profile and persists.
+      // Returning users can update it from Account Settings instead.
+      const hasSavedBorrowerContext = Boolean(user.incomeType);
+
+      if (requireBorrowerContextStep && !hasSavedBorrowerContext && !borrowerContextPromptSeen && !showBorrowerContextStep) {
          event.preventDefault();
          setShowBorrowerContextStep(true);
          return;
@@ -1005,14 +1156,25 @@ export default function LoanRequestModal({
       handleSubmit(event, showBorrowerContextStep ? borrowerContext : undefined);
    };
 
+   // Synchronous guard — prevents double-tap on "Save bio info" from firing twice
+   // before isSavingProfile state has a chance to re-render and disable the button.
+   const isBioSubmittingRef = useRef(false);
+
    const handleBorrowerContextContinue = async () => {
       if (!canContinueBorrowerContext) return;
+      if (isBioSubmittingRef.current) return;
+      isBioSubmittingRef.current = true;
 
-      const isProfileSaved = await saveBorrowerProfile();
-      if (!isProfileSaved) return;
+      try {
+         const isProfileSaved = await saveBorrowerProfile();
+         if (!isProfileSaved) return;
 
-      setBorrowerContextPromptSeen(true);
-      formRef.current?.requestSubmit();
+         setBorrowerContextPromptSeen(true);
+         // Call handleLoanFormSubmit directly — requestSubmit() silently fails on older iOS Safari
+         handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
+      } finally {
+         isBioSubmittingRef.current = false;
+      }
    };
 
    const handleBorrowerContextBack = () => {
@@ -1243,10 +1405,24 @@ export default function LoanRequestModal({
                         currentAvatarUrl={user.avatarUrl}
                         isSubmitting={isSubmitting}
                         isSavingProfile={isSavingBorrowerProfile}
+                        monthlyIncome={borrowerContext.monthlyIncome ?? ''}
+                        monthlyExpenses={borrowerContext.monthlyExpenses ?? ''}
                         onBack={handleBorrowerContextBack}
                         onCashGapToggle={handleCashGapToggle}
                         onContinue={handleBorrowerContextContinue}
-                        onIncomeSelect={(value) => setBorrowerContext((current) => ({ ...current, incomeSetup: value }))}
+                        onIncomeSelect={(value) =>
+                           setBorrowerContext((current) => ({
+                              ...current,
+                              incomeSetup: value,
+                              // Drop the free-text explanation if they move off "Something else".
+                              incomeDescription: value === 'contract' ? current.incomeDescription : ''
+                           }))
+                        }
+                        onMonthlyIncomeSelect={(v) => setBorrowerContext((prev) => ({ ...prev, monthlyIncome: v }))}
+                        onMonthlyExpensesSelect={(v) => setBorrowerContext((prev) => ({ ...prev, monthlyExpenses: v }))}
+                        onOtherIncomeChange={(v) => setBorrowerContext((prev) => ({ ...prev, otherIncome: v }))}
+                        onProfessionChange={(v) => setBorrowerContext((prev) => ({ ...prev, profession: v }))}
+                        onIncomeDescriptionChange={(v) => setBorrowerContext((prev) => ({ ...prev, incomeDescription: v }))}
                         onPaydaySelect={(value) => setBorrowerContext((current) => ({ ...current, paydayWindow: value }))}
                         onProfileImageClick={() => setShowBorrowerAvatarModal(true)}
                         onProfileNameChange={(value) => {
