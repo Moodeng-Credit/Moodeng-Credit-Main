@@ -37,6 +37,7 @@ type UserCardProps = Loan & {
    isPreviewRequest?: boolean;
    isDeletingOwnRequest?: boolean;
    onDeleteOwnRequest?: (loan: Loan) => void;
+   forceTourBorrowerLink?: boolean;
    tourBorrowerUsername?: string;
    borrowerContextProfile?: BorrowerContextProfileData;
 };
@@ -94,6 +95,7 @@ export default function UserCard(loan: UserCardProps) {
       isPreviewRequest = false,
       isDeletingOwnRequest = false,
       onDeleteOwnRequest,
+      forceTourBorrowerLink = false,
       tourBorrowerUsername,
       borrowerContextProfile,
       ...loanData
@@ -129,7 +131,7 @@ export default function UserCard(loan: UserCardProps) {
    const borrowerIsVerified = borrowerProfile ? borrowerProfile.isWorldId === 'ACTIVE' : undefined;
    const borrowerUsername = getSafeProfileText(borrowerProfile?.username) ?? getSafeProfileText(tourBorrowerUsername) ?? '';
    const borrowerDetailsHref =
-      tourBorrowerUsername && (import.meta.env.DEV || isPreviewRequest)
+      tourBorrowerUsername && (import.meta.env.DEV || isPreviewRequest || forceTourBorrowerLink)
          ? `/user/${borrowerUsername}?demo=rich&lenderTourPreview=1&tourPreview=1`
          : `/user/${borrowerUsername}`;
    const borrowerDisplayName = getSafeProfileText(borrowerProfile?.displayName) || borrowerUsername || 'Unknown user';

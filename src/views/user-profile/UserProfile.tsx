@@ -80,8 +80,20 @@ const UserProfile = () => {
    const loans = isDemoInsights ? DEMO_BORROWER_INSIGHTS_LOANS : storedLoans;
    const userProfiles = isDemoInsights ? DEMO_LENDER_PROFILES : storedUserProfiles;
    const resolvedUser = isDemoInsights ? DEMO_BORROWER_INSIGHTS_USER : (profileUser ?? (username === user.username ? user : null));
+   const isRealUserAuthenticated = Boolean(user?.id && user?.username);
+   // A guest who follows the lender-tour bridge link from UserCard arrives with
+   // ?demo=rich&lenderTourPreview=1&tourPreview=1 but has no real session — the DEV-only
+   // `forceTourPreview` gate would hide the tour continuation for them in production.
+   const isGuestLenderTourContinuation =
+      !isRealUserAuthenticated && isDemoInsights && searchParams.has('lenderTourPreview') && searchParams.has('tourPreview');
+   const showLenderTourPreview = forceTourPreview || isGuestLenderTourContinuation;
+   // Matches the `LENDER_TOUR_USER.id` RequestBoard uses for guests so the tour's
+   // "shown/completed" state in localStorage carries across the borrower-details bridge.
+   const lenderTourUserId = isRealUserAuthenticated ? user.id : 'lender-tour-user';
    const showLenderInsightsTour =
-      forceTourPreview && searchParams.has('lenderTourPreview') && shouldShowGuidedTour(LENDER_GUIDED_TOUR_ID, user.id, forceTourPreview);
+      showLenderTourPreview &&
+      searchParams.has('lenderTourPreview') &&
+      shouldShowGuidedTour(LENDER_GUIDED_TOUR_ID, lenderTourUserId, forceTourPreview);
 
    useEffect(() => {
       if (hasScrolledToHashRef.current || window.location.hash !== '#loan-summary' || !resolvedUser) return;
@@ -900,20 +912,24 @@ const UserProfile = () => {
          />
          {showLenderInsightsTour && (
             <GuidedTourPreview
+               // The visitor already opted in on the request board — re-showing the
+               // "Want a quick tour?" intro card here would feel like the tour reset
+               // rather than continued, so jump straight into step 4.
+               startImmediately
                stepOffset={3}
                totalSteps={9}
                steps={lenderInsightsTourSteps}
                onFinish={(reason) => {
                   if (!forceTourPreview) {
-                     markGuidedTourCompleted(LENDER_GUIDED_TOUR_ID, user.id);
+                     markGuidedTourCompleted(LENDER_GUIDED_TOUR_ID, lenderTourUserId);
                      void recordGuidedTourEvent({
                         eventType: reason === 'skip' ? 'skipped' : 'completed',
                         metadata: { path: '/user/:username', role: 'lender' },
                         tourId: LENDER_GUIDED_TOUR_ID,
-                        userId: user.id
+                        userId: lenderTourUserId
                      });
                   }
-                  navigate('/request-board?lenderTourPreview=1');
+                  navigate(isGuestLenderTourContinuation ? '/request-board?tour=1&tourRole=lender' : '/request-board?lenderTourPreview=1');
                }}
             />
          )}
