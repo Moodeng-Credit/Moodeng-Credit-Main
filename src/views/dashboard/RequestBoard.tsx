@@ -1882,6 +1882,7 @@ function RequestBoard$() {
          {shouldShowLenderTour && (
             <GuidedTourPreview
                key={`lender-tour-${location.search}`}
+               startImmediately={shouldStartTourImmediately}
                onFinish={handleLenderTourFinish}
                totalSteps={9}
                steps={lenderTourSteps}
