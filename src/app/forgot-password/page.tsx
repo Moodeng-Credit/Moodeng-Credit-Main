@@ -28,7 +28,7 @@ export default function ForgotPasswordPage(): JSX.Element {
 
       const supabase = getSupabaseBrowserClient();
       // redirectTo is kept as a fallback so any link in the email still works;
-      // the primary flow is the 6-digit code from the email template.
+      // the primary flow is the 8-digit code from the email template.
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(targetEmail, {
          redirectTo: getAuthRedirectUrl('/auth/confirm')
       });
@@ -57,7 +57,7 @@ export default function ForgotPasswordPage(): JSX.Element {
          if (await sendCode(trimmedEmail)) {
             setEmail(trimmedEmail);
             setStep('code');
-            setMessage('We sent a 6-digit code to your email. Enter it below to continue.');
+            setMessage('We sent a 8-digit code to your email. Enter it below to continue.');
          }
       } catch (sendError) {
          setError(sendError instanceof Error ? sendError.message : 'Could not send a reset code. Try again in a moment.');
@@ -174,7 +174,7 @@ export default function ForgotPasswordPage(): JSX.Element {
                      <p className="mt-3 max-w-[340px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F] dark:text-[#A89BB8]">
                         {isCodeStep
                            ? `Enter the ${CODE_LENGTH}-digit code we sent to ${email}.`
-                           : 'Enter your email and Moodeng will send a 6-digit code to reset your password.'}
+                           : 'Enter your email and Moodeng will send an 8-digit code to reset your password.'}
                      </p>
                   </div>
 

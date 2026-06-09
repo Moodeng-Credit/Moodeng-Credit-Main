@@ -106,7 +106,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Email Already Registered': 'Registered na ang email',
    'Email verification': 'Pag-verify ng email',
    'Email verification is not configured in this local app.': 'Hindi naka-configure ang email verification sa local app na ito.',
-   'Enter the 6-digit code from your email.': 'Ilagay ang 6-digit code mula sa email mo.',
+   'Enter the 8-digit code from your email.': 'Ilagay ang 8-digit code mula sa email mo.',
    'Enter the email address you used to sign up.': 'Ilagay ang email address na ginamit mo sa pag-sign up.',
    'Enter your code': 'Ilagay ang code mo',
    'Enter your current password and choose a new one.': 'Ilagay ang current password mo at pumili ng bago.',
