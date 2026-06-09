@@ -17,7 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
-import GuidedTourPreview from '@/components/GuidedTourPreview';
+import GuidedTourPreview, { type TourRoleOption } from '@/components/GuidedTourPreview';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar from '@/components/UserAvatar';
@@ -41,6 +41,7 @@ import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import {
    BORROWER_GUIDED_TOUR_ID,
+   GENERAL_GUIDED_TOUR_ID,
    LENDER_GUIDED_TOUR_ID,
    markGuidedTourCompleted,
    recordGuidedTourShown,
@@ -378,13 +379,17 @@ function RequestBoard$() {
    const showSubmittedRequestSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.has('submittedRequestSuccessPreview');
    const showTourPreview = forceTourPreview || requestBoardSearchParams.has('tour');
    const shouldStartTourImmediately = requestBoardSearchParams.get('startTour') === '1';
-   // A guest who isn't signed in can pick "I want to lend" from the sign-in/sign-up tour
-   // chooser (?tour=1&tourRole=lender). That should run the same mocked-lender preview the
-   // DEV-only `lenderTourPreview` flag drives — minus the DEV gate — so real production
+   // When ?tour=1 is present but no tourRole was chosen yet, we show a role chooser inside
+   // the "Want a quick tour?" intro card so the guest can pick borrow / lend / not sure.
+   const tourRole = requestBoardSearchParams.get('tourRole');
+   const needsTourRoleChoice = showTourPreview && !isReferralTestMode && !forceTourPreview && !tourRole;
+   // A guest who isn't signed in can pick "I want to lend" from the role chooser inside the
+   // tour intro card (?tour=1&tourRole=lender). That should run the same mocked-lender preview
+   // the DEV-only `lenderTourPreview` flag drives — minus the DEV gate — so real production
    // visitors can actually see it. Real, signed-in lenders never match this: it requires
    // the *real* auth state to be empty, not just `isAuthenticated` (which this very flag feeds).
    const isRealUserAuthenticated = Boolean(user?.id && username);
-   const wantsGuestLenderTour = showTourPreview && !isRealUserAuthenticated && requestBoardSearchParams.get('tourRole') === 'lender';
+   const wantsGuestLenderTour = showTourPreview && !isRealUserAuthenticated && tourRole === 'lender';
    const isLenderTourPreview = (import.meta.env.DEV && requestBoardSearchParams.has('lenderTourPreview')) || wantsGuestLenderTour;
    const shouldForceReferralTestUser = isReferralTestMode && showTourPreview;
    const effectiveUser = isLenderTourPreview
@@ -411,10 +416,17 @@ function RequestBoard$() {
    });
    const lenderIouPoints = isLenderTourPreview ? String(effectiveUser?.cs ?? 0) : formatPointsMajor(lenderPointsData?.points_total ?? 0);
    const tourUserId = effectiveUser?.id;
+   const isGeneralTour = showTourPreview && !isRealUserAuthenticated && tourRole === 'general';
+   const shouldShowGeneralTour =
+      isGeneralTour &&
+      (shouldStartTourImmediately || shouldShowGuidedTour(GENERAL_GUIDED_TOUR_ID, tourUserId, forceTourPreview));
    const shouldShowBorrowerTour =
       showTourPreview &&
+      !isGeneralTour &&
       (!isAuthenticated || isBorrower) &&
-      (shouldStartTourImmediately || shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, tourUserId, forceTourPreview));
+      // needsTourRoleChoice means the user explicitly clicked "Take tour" — always show
+      // the chooser regardless of whether they've done a tour before.
+      (needsTourRoleChoice || shouldStartTourImmediately || shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, tourUserId, forceTourPreview));
    const shouldShowLenderTour =
       showTourPreview &&
       isLenderTourPreview &&
@@ -709,6 +721,23 @@ function RequestBoard$() {
       });
    }, [forceTourPreview, location.pathname, shouldShowLenderTour, tourUserId]);
 
+   useEffect(() => {
+      if (!shouldShowGeneralTour || forceTourPreview) return;
+
+      const viewKey = `${GENERAL_GUIDED_TOUR_ID}:${tourUserId || 'guest'}`;
+      if (recordedTourViewsRef.current.has(viewKey)) return;
+
+      recordedTourViewsRef.current.add(viewKey);
+      const shownCount = recordGuidedTourShown(GENERAL_GUIDED_TOUR_ID, tourUserId);
+      void recordGuidedTourEvent({
+         eventType: 'shown',
+         metadata: { path: location.pathname, role: 'general' },
+         shownCount,
+         tourId: GENERAL_GUIDED_TOUR_ID,
+         userId: tourUserId
+      });
+   }, [forceTourPreview, location.pathname, shouldShowGeneralTour, tourUserId]);
+
    const requestBoardTourStepCount = !isAuthenticated
       ? GUEST_REQUEST_BOARD_TOUR_STEP_COUNT
       : showVerify
@@ -721,6 +750,42 @@ function RequestBoard$() {
       Number.isInteger(requestedTourStepIndex) && requestedTourStepIndex >= 0
          ? Math.min(requestedTourStepIndex, Math.max(requestBoardTourStepCount - 1, 0))
          : 0;
+
+   const GUEST_TOUR_ROLE_OPTIONS: TourRoleOption[] = [
+      {
+         id: 'borrower',
+         title: 'I want to borrow',
+         body: 'See how to request a short-term USDC loan and build trust through on-time repayment.'
+      },
+      {
+         id: 'lender',
+         title: 'I want to lend',
+         body: 'See how to fund loan requests, review borrower trust signals, and earn by supporting people you believe in.'
+      },
+      {
+         id: 'unsure',
+         title: 'Not sure yet — just show me around',
+         body: 'Get a quick overview of how Moodeng works before deciding which side to explore.'
+      }
+   ];
+
+   const handleTourRoleSelect = useCallback(
+      (roleId: string) => {
+         if (roleId === 'unsure') {
+            const params = new URLSearchParams(location.search);
+            params.set('tourRole', 'general');
+            params.set('startTour', '1');
+            navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+            return;
+         }
+         const params = new URLSearchParams(location.search);
+         params.set('tourRole', roleId);
+         // startTour=1 makes the tour begin immediately without re-showing the intro card
+         params.set('startTour', '1');
+         navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+      },
+      [location.pathname, location.search, navigate]
+   );
 
    const handleRequestBoardTourFinish = useCallback(
       (reason: 'complete' | 'skip') => {
@@ -783,6 +848,47 @@ function RequestBoard$() {
       },
       [forceTourPreview, location.pathname, navigate, tourUserId]
    );
+   const handleGeneralTourFinish = useCallback(
+      (reason: 'complete' | 'skip') => {
+         if (!forceTourPreview) {
+            markGuidedTourCompleted(GENERAL_GUIDED_TOUR_ID, tourUserId);
+            void recordGuidedTourEvent({
+               eventType: reason === 'skip' ? 'skipped' : 'completed',
+               metadata: { path: location.pathname, role: 'general' },
+               tourId: GENERAL_GUIDED_TOUR_ID,
+               userId: tourUserId
+            });
+         }
+      },
+      [forceTourPreview, location.pathname, tourUserId]
+   );
+   const generalTourSteps = useMemo(() => [
+      {
+         target: '[data-tour-target="request-first-card"]',
+         title: 'The request board',
+         body: 'This is where borrowers post short-term USDC loan requests and lenders browse them. Both sides of Moodeng meet here.',
+         durationMs: 6000
+      },
+      {
+         target: '[data-tour-target="request-apply-card"]',
+         title: 'Borrowers apply here',
+         body: 'A borrower sets their loan amount, repayment date, and reason. Once verified with World ID, their request goes live on this board.',
+         durationMs: 6000
+      },
+      {
+         target: '[data-tour-target="request-latest-list"]',
+         title: 'Lenders browse & fund',
+         body: 'Lenders scroll through open requests, check each borrower\'s repayment history and trust signals, then fund the ones they believe in.',
+         cardPlacement: 'bottom',
+         durationMs: 6000
+      },
+      {
+         target: '[data-tour-target="request-auth-actions"]',
+         title: 'Ready to get started?',
+         body: 'Create a free account to borrow or lend. Pick your role after signing up and we\'ll walk you through the rest.',
+         durationMs: 6000
+      }
+   ], []);
    const requestBoardTourSteps = useMemo(() => {
       if (!isAuthenticated) {
          return [
@@ -838,6 +944,7 @@ function RequestBoard$() {
                  target: '[data-tour-target="request-latest-list"]',
                  title: 'Request Board',
                  body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
+                 cardPlacement: 'bottom',
                  durationMs: 6000
               },
               {
@@ -864,6 +971,7 @@ function RequestBoard$() {
                  target: '[data-tour-target="request-latest-list"]',
                  title: 'Request Board',
                  body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
+                 cardPlacement: 'bottom',
                  durationMs: 6000
               },
               {
@@ -899,6 +1007,7 @@ function RequestBoard$() {
          target: '[data-tour-target="request-latest-list"]',
          title: 'Find open requests',
          body: 'As a lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.',
+         cardPlacement: 'bottom',
          durationMs: 6500
       },
       {
@@ -1766,8 +1875,10 @@ function RequestBoard$() {
                initialStepIndex={initialBorrowerTourStepIndex}
                startImmediately={shouldStartTourImmediately}
                onFinish={handleRequestBoardTourFinish}
+               onRoleSelect={needsTourRoleChoice ? handleTourRoleSelect : undefined}
                onStepChange={handleRequestBoardTourStepChange}
                onStepNext={handleRequestBoardTourStepNext}
+               roleOptions={needsTourRoleChoice ? GUEST_TOUR_ROLE_OPTIONS : undefined}
                totalSteps={borrowerTourTotalSteps}
                steps={requestBoardTourSteps}
             />
@@ -1775,9 +1886,18 @@ function RequestBoard$() {
          {shouldShowLenderTour && (
             <GuidedTourPreview
                key={`lender-tour-${location.search}`}
+               startImmediately={shouldStartTourImmediately}
                onFinish={handleLenderTourFinish}
                totalSteps={9}
                steps={lenderTourSteps}
+            />
+         )}
+         {shouldShowGeneralTour && (
+            <GuidedTourPreview
+               key={`general-tour-${location.search}`}
+               startImmediately
+               onFinish={handleGeneralTourFinish}
+               steps={generalTourSteps}
             />
          )}
       </>
@@ -1868,8 +1988,8 @@ function DeleteLoanRequestModal({
 
 function GuestWorldIdTourPreview() {
    return (
-      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#12071f]/40 px-[21px] py-md-4">
-         <div data-tour-target="guest-world-id-preview" className="w-full max-w-[398px] overflow-hidden rounded-[20px] bg-white shadow-2xl">
+      <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#12071f]/40 px-[21px] pb-[48px]">
+         <div data-tour-target="guest-world-id-preview" className="w-full max-w-[398px] overflow-hidden rounded-[20px] bg-white shadow-2xl max-h-[45vh]">
             <VerificationModalHeader onClose={() => undefined} />
             <VerificationModalBody onVerify={() => undefined} onCheckStatus={() => undefined} />
             <ModalNote />
@@ -1925,7 +2045,7 @@ function PublicQuestionsMenu({
 
          <div className="mt-md-3 grid grid-cols-2 gap-md-2">
             <Link
-               to={`/request-board?tour=1&startTour=1&tourRun=${Date.now()}`}
+               to={`/request-board?tour=1&tourRun=${Date.now()}`}
                onClick={onClose}
                className="rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-center text-md-b2 font-semibold text-md-neutral-100"
             >

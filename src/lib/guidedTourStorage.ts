@@ -7,6 +7,7 @@ const STORAGE_PREFIX = 'moodeng.guidedTour';
 
 export const BORROWER_GUIDED_TOUR_ID = 'borrower-onboarding-tour-v1';
 export const LENDER_GUIDED_TOUR_ID = 'lender-onboarding-tour-v1';
+export const GENERAL_GUIDED_TOUR_ID = 'general-onboarding-tour-v1';
 
 const canUseLocalStorage = () => typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
 

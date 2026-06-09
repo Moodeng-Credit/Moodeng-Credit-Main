@@ -51,6 +51,7 @@ import Simple from '@/app/simple/page';
 import SupportFAQPage from '@/app/support/faq/page';
 import SupportGettingStartedPage from '@/app/support/getting-started/page';
 import SupportGuideDetailPage from '@/app/support/guides/[slug]/page';
+import TourOverviewPage from '@/app/tour-overview/page';
 import SupportGuidesPage from '@/app/support/guides/page';
 import SupportPage from '@/app/support/page';
 import SupportUpdateDetailPage from '@/app/support/updates/[slug]/page';
@@ -167,6 +168,7 @@ export default function App() {
             <Route path="/sign-in" element={<Login />} />
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/account-restricted" element={<AccountRestrictedPage />} />
+            <Route path="/tour-overview" element={<TourOverviewPage />} />
 
             {/* Onboarding */}
             <Route
