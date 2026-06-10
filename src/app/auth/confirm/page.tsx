@@ -32,6 +32,32 @@ export function getAuthEmailOtpType(url: URL, hashParams = new URLSearchParams()
    return AUTH_EMAIL_OTP_TYPES.has(type as AuthEmailOtpType) ? (type as AuthEmailOtpType) : null;
 }
 
+/**
+ * Supabase tags the access token's `amr` (Authentication Methods Reference) claim
+ * with `recovery` whenever the session came from a password-reset link/OTP — true
+ * regardless of flow type. The `?type=recovery` query param and PASSWORD_RECOVERY
+ * event are NOT reliable: Supabase's PKCE /verify redirect drops `type=recovery`
+ * from the URL, and exchangeCodeForSession fires SIGNED_IN, not PASSWORD_RECOVERY.
+ * Without this check, an existing user clicking the reset-password email's
+ * "Reset Password" button lands signed in on /dashboard instead of /reset-password.
+ */
+export function sessionHasRecoveryAmr(accessToken?: string | null): boolean {
+   if (!accessToken) return false;
+
+   try {
+      const payload = accessToken.split('.')[1];
+      if (!payload) return false;
+
+      const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+      const decoded = JSON.parse(atob(padded)) as { amr?: Array<{ method?: string }> };
+
+      return Array.isArray(decoded.amr) && decoded.amr.some((entry) => entry?.method === 'recovery');
+   } catch {
+      return false;
+   }
+}
+
 export function getAuthConfirmDestination(isRecoveryRedirect: boolean, userRole?: string | null): string {
    if (isRecoveryRedirect) {
       return RECOVERY_PATH;
@@ -91,10 +117,11 @@ export default function AuthConfirmPage() {
 
          if (!sessionData.session?.user) return false;
 
+         const isRecovery = isRecoveryRedirect || sessionHasRecoveryAmr(sessionData.session.access_token);
          const user = await dispatch(fetchUser())
             .unwrap()
             .catch(() => null);
-         finish(getAuthConfirmDestination(isRecoveryRedirect, user?.userRole), isRecoveryRedirect);
+         finish(getAuthConfirmDestination(isRecovery, user?.userRole), isRecovery);
          return true;
       };
 
@@ -182,7 +209,7 @@ export default function AuthConfirmPage() {
             if (!session?.user || finishedRef.current) return;
             sub.subscription.unsubscribe();
             if (timeoutId) clearTimeout(timeoutId);
-            const isRecovery = isRecoveryRedirect || sawRecoveryEvent;
+            const isRecovery = isRecoveryRedirect || sawRecoveryEvent || sessionHasRecoveryAmr(session?.access_token);
             void dispatch(fetchUser())
                .unwrap()
                .then((user) => finish(getAuthConfirmDestination(isRecovery, user?.userRole), isRecovery))

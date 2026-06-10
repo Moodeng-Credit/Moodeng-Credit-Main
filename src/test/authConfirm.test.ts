@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { getAuthConfirmDestination, getAuthEmailOtpType, isPasswordRecoveryRedirect } from '@/app/auth/confirm/page';
+import { getAuthConfirmDestination, getAuthEmailOtpType, isPasswordRecoveryRedirect, sessionHasRecoveryAmr } from '@/app/auth/confirm/page';
+
+const fakeAccessToken = (payload: Record<string, unknown>) => {
+   const base64url = (input: string) => btoa(input).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+   const body = base64url(JSON.stringify(payload));
+   return `${header}.${body}.signature`;
+};
 
 describe('auth confirm recovery routing', () => {
    it('recognizes Supabase recovery redirects with a recovery type', () => {
@@ -28,5 +35,21 @@ describe('auth confirm recovery routing', () => {
 
    it('accepts email token hash redirects from link-only confirmation emails', () => {
       expect(getAuthEmailOtpType(new URL('https://staging.dashboard.moodeng.app/auth/confirm?token_hash=abc&type=email'))).toBe('email');
+   });
+
+   it('detects a recovery session from the access token amr claim, even without a recovery URL or event', () => {
+      const token = fakeAccessToken({ amr: [{ method: 'recovery', timestamp: 123 }] });
+      expect(sessionHasRecoveryAmr(token)).toBe(true);
+   });
+
+   it('does not flag a normal password/oauth session as recovery', () => {
+      const token = fakeAccessToken({ amr: [{ method: 'password', timestamp: 123 }] });
+      expect(sessionHasRecoveryAmr(token)).toBe(false);
+   });
+
+   it('handles missing or malformed tokens without throwing', () => {
+      expect(sessionHasRecoveryAmr(null)).toBe(false);
+      expect(sessionHasRecoveryAmr(undefined)).toBe(false);
+      expect(sessionHasRecoveryAmr('not-a-jwt')).toBe(false);
    });
 });
