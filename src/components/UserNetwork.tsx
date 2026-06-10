@@ -8,6 +8,7 @@ import { useAccount } from 'wagmi';
 import IouPointHistoryModal from '@/components/IouPointHistoryModal';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID, getNetworkSvg } from '@/config/wagmiConfig';
+import { isWorldIdVerified } from '@/lib/isWorldIdVerified';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { formatPointsMajor } from '@/shared/points';
 import { logoutUser } from '@/store/slices/authSlice';
@@ -22,7 +23,7 @@ export default function UserNetwork() {
    const user = useSelector((state: RootState) => state.auth.user);
    const userId = user.id;
    const isLender = user.userRole === 'lender';
-   const isVerifiedBorrower = user.isWorldId === 'ACTIVE';
+   const isVerifiedBorrower = isWorldIdVerified(user);
    const [pointsTotal, setPointsTotal] = useState<number | null>(null);
    const [isPointsLoading, setIsPointsLoading] = useState(false);
    const [showIouHistory, setShowIouHistory] = useState(false);
