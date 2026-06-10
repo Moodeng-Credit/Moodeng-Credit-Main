@@ -58,6 +58,16 @@ export default function ForgotPasswordPage(): JSX.Element {
          return;
       }
 
+      // A code is already in flight (cooldown still running). Don't request another —
+      // that would invalidate the one already heading to their inbox. Move them straight
+      // to the code screen instead of hitting Supabase's rate limit.
+      if (isCoolingDown) {
+         setEmail(trimmedEmail);
+         setStep('code');
+         setMessage(`A code is already on the way. Enter it below, or request a new one in ${secondsLeft}s.`);
+         return;
+      }
+
       setLoading(true);
       try {
          if (await sendCode(trimmedEmail)) {
@@ -66,7 +76,9 @@ export default function ForgotPasswordPage(): JSX.Element {
             // Lock resend immediately — the code is now in flight and a second request
             // would invalidate it before it arrives.
             startCooldown();
-            setMessage('We sent a 8-digit code to your email. Enter it below to continue.');
+            // Enumeration-safe: Supabase sends nothing for an unregistered email, so we
+            // can't promise a code was sent without leaking which emails have accounts.
+            setMessage('If an account exists for that email, an 8-digit code is on its way. Enter it below to continue.');
          }
       } catch (sendError) {
          setError(sendError instanceof Error ? sendError.message : 'Could not send a reset code. Try again in a moment.');
@@ -280,7 +292,7 @@ export default function ForgotPasswordPage(): JSX.Element {
                            disabled={loading || !email.trim()}
                            className="h-14 w-full rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95 disabled:bg-[#BDB5C7] disabled:text-[#FDFCFD] dark:disabled:bg-[#2D1F4A] dark:disabled:text-[#6B5880]"
                         >
-                           {loading ? 'Sending...' : 'Send reset code'}
+                           {loading ? 'Sending...' : isCoolingDown ? 'Enter your code' : 'Send reset code'}
                         </button>
                      </form>
                   )}
