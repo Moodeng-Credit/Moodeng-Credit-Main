@@ -367,7 +367,7 @@ export default function ResetPasswordPage(): JSX.Element {
                            <p className="text-sm font-medium leading-5 text-[#70617F] dark:text-[#8B7AA0]">Use at least 8 characters.</p>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="mt-4 space-y-2">
                            <label htmlFor="confirmPassword" className="text-base font-semibold tracking-[-0.02em] text-[#040033] dark:text-[#F0EAFF]">
                               Confirm password
                            </label>
