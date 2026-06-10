@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 import BottomNav from '@/components/BottomNav';
+import IouPointHistoryModal from '@/components/IouPointHistoryModal';
 import UserAvatar from '@/components/UserAvatar';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -189,6 +190,7 @@ export default function LenderPerformance() {
    const gloans = useSelector((state: RootState) => state.loans.loans.gloans);
 
    const [activePeriod, setActivePeriod] = useState<TimePeriod>('3D');
+   const [showIouHistory, setShowIouHistory] = useState(false);
 
    // IOU points
    const { data: userPointsData } = useQuery({
@@ -253,9 +255,14 @@ export default function LenderPerformance() {
                      >
                         Hello, {firstName}
                      </button>
-                     <span className="inline-flex items-center self-start px-2 py-1 bg-md-primary-900 rounded-md-sm">
+                     <button
+                        type="button"
+                        onClick={() => setShowIouHistory(true)}
+                        className="inline-flex items-center self-start px-2 py-1 bg-md-primary-900 rounded-md-sm hover:opacity-90 transition-opacity"
+                        title="View IOU point history"
+                     >
                         <span className="text-md-b3 font-semibold capitalize text-md-neutral-100 whitespace-nowrap">IOU {iouPoints}</span>
-                     </span>
+                     </button>
                      <p className="text-md-b3 font-normal text-md-neutral-1400">Member since {memberSince}</p>
                   </div>
                </div>
@@ -390,6 +397,8 @@ export default function LenderPerformance() {
          </div>
 
          <BottomNav />
+
+         <IouPointHistoryModal userId={user?.id} isOpen={showIouHistory} onClose={() => setShowIouHistory(false)} />
       </div>
    );
 }

@@ -18,6 +18,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import GuidedTourPreview, { type TourRoleOption } from '@/components/GuidedTourPreview';
+import IouPointHistoryModal from '@/components/IouPointHistoryModal';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar from '@/components/UserAvatar';
@@ -366,6 +367,7 @@ function RequestBoard$() {
    const [highlightedRequestId, setHighlightedRequestId] = useState<string | null>(null);
    const [requestToDelete, setRequestToDelete] = useState<Loan | null>(null);
    const [isDeletingRequest, setIsDeletingRequest] = useState(false);
+   const [showIouHistory, setShowIouHistory] = useState(false);
    const [isOpeningLoanRequest, setIsOpeningLoanRequest] = useState(false);
 
    const user = useSelector((state: RootState) => state.auth.user);
@@ -1515,11 +1517,16 @@ function RequestBoard$() {
                                  )}
                               </div>
                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-md-primary-900 rounded-md-sm w-fit">
+                              <button
+                                 type="button"
+                                 onClick={() => setShowIouHistory(true)}
+                                 className="inline-flex items-center gap-1 px-2.5 py-1 bg-md-primary-900 rounded-md-sm w-fit hover:opacity-90 transition-opacity"
+                                 title="View IOU point history"
+                              >
                                  <span className="text-md-b3 font-semibold text-md-neutral-100 capitalize whitespace-nowrap">
                                     IOU {lenderIouPoints}
                                  </span>
-                              </span>
+                              </button>
                            )}
                         </div>
                      </div>
@@ -1900,6 +1907,11 @@ function RequestBoard$() {
                steps={generalTourSteps}
             />
          )}
+         <IouPointHistoryModal
+            userId={isLenderTourPreview ? null : effectiveUser?.id}
+            isOpen={showIouHistory}
+            onClose={() => setShowIouHistory(false)}
+         />
       </>
    );
 }
