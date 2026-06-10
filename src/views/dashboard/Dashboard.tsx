@@ -170,7 +170,7 @@ export default function Dashboard() {
    const previewLoans = useMemo(() => buildPreviewLoans(user.id), [user.id]);
    const isVerified = user.isWorldId === 'ACTIVE';
    const hasBorrowerBaseWallet = getBaseWalletLockStatus(user).isConfirmedBase;
-   const { pointsTotal: trustPointsTotal } = useTrustPointTotal({
+   const { pointsTotal: trustPointsTotal, isLoading: isTrustScoreLoading } = useTrustPointTotal({
       userId: user.id,
       fallbackPoints: 0,
       enabled: isVerified
@@ -298,7 +298,7 @@ export default function Dashboard() {
 
             <div className="dashboard-score-card bg-md-neutral-100 rounded-md-lg p-4 shadow-md-card flex flex-col gap-4 bg-gradient-to-b from-white to-[#eee6fa]">
                <div data-tour-target="dashboard-trust-score">
-                  <TrustScoreSection trustScore={displayTrustScore} />
+                  <TrustScoreSection trustScore={displayTrustScore} isLoading={!isMockRich && isTrustScoreLoading} />
                </div>
                <div data-tour-target="dashboard-credit-level">
                   <CreditLevelSection
