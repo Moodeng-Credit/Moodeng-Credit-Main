@@ -35,7 +35,7 @@ import { DayPicker } from 'react-day-picker';
 import { useDispatch } from 'react-redux';
 
 import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import WorldIDVerifyChoice from '@/components/worldId/WorldIDVerifyChoice';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
@@ -1448,7 +1448,7 @@ export default function LoanRequestModal({
                                        Complete a one-time verification to start building trust with lenders.
                                     </p>
                                  </div>
-                                 <WorldIDVerification onSuccess={() => undefined}>
+                                 <WorldIDVerifyChoice onSuccess={() => undefined}>
                                     {({ open }) => (
                                        <button
                                           onClick={open}
@@ -1458,7 +1458,7 @@ export default function LoanRequestModal({
                                           Get Verified
                                        </button>
                                     )}
-                                 </WorldIDVerification>
+                                 </WorldIDVerifyChoice>
                               </div>
                               <img
                                  alt=""

@@ -4,11 +4,11 @@ import { useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import WorldIDVerifyChoice from '@/components/worldId/WorldIDVerifyChoice';
 
+import { isWorldIdVerified } from '@/lib/isWorldIdVerified';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-import { WorldId } from '@/types/authTypes';
 
 interface WorldIDVerificationStatusProps {
    className?: string;
@@ -18,7 +18,7 @@ export default function WorldIDVerificationStatus({ className = '' }: WorldIDVer
    const dispatch = useDispatch<AppDispatch>();
    const user = useSelector((state: RootState) => state.auth.user);
    const [isUnverifying, setIsUnverifying] = useState(false);
-   const isVerified = user.isWorldId === WorldId.ACTIVE;
+   const isVerified = isWorldIdVerified(user);
 
    const isDevMode = import.meta.env.VITE_DEV_MODE === 'true';
 
@@ -72,7 +72,7 @@ export default function WorldIDVerificationStatus({ className = '' }: WorldIDVer
                   ) : null}
                </div>
             ) : (
-               <WorldIDVerification>
+               <WorldIDVerifyChoice>
                   {({ open }) => (
                      <button
                         type="button"
@@ -82,7 +82,7 @@ export default function WorldIDVerificationStatus({ className = '' }: WorldIDVer
                         Verify
                      </button>
                   )}
-               </WorldIDVerification>
+               </WorldIDVerifyChoice>
             )}
          </div>
       </div>

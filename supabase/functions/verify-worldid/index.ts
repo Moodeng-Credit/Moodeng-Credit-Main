@@ -29,7 +29,16 @@ type WorldIdRequestBody = {
   type?: 'rp-signature' | 'verify'
   action?: string
   proof?: Record<string, unknown>
+  // Which World ID credential the frontend used. Optional + backward compatible:
+  // the existing Orb flow omits it. 'passport' is sent by the passport flow.
+  method?: 'orb' | 'passport'
+  credential_type?: 'proof_of_human' | 'passport'
 }
+
+// Whether the request is the Passport/ID flow. Defaults to false so the existing Orb
+// flow (which omits these fields) keeps writing the original is_world_id columns.
+const isPassportRequest = (body: WorldIdRequestBody): boolean =>
+  body.method === 'passport' || body.credential_type === 'passport'
 
 const errorResponse = (error: string, status: number, errorCode = 'SERVER_ERROR', details?: unknown) => {
   return new Response(JSON.stringify({ success: false, error, errorCode, details }), { status, headers: corsHeaders })
@@ -249,10 +258,16 @@ serve(async (req) => {
       getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY', 'SERVER_ERROR')
     )
 
+    // Orb and Passport are tracked in separate columns so the two verification methods
+    // are independent. Each has its own nullifier namespace, so dedup against the matching column.
+    const passportFlow = isPassportRequest(body)
+    const statusColumn = passportFlow ? 'is_world_id_passport' : 'is_world_id'
+    const nullifierColumn = passportFlow ? 'nullifier_hash_passport' : 'nullifier_hash'
+
     const { data: existingUser, error: existingUserError } = await adminSupabase
       .from('users')
       .select('id')
-      .eq('nullifier_hash', nullifierHash)
+      .eq(nullifierColumn, nullifierHash)
       .neq('id', user.id)
       .maybeSingle()
 
@@ -267,8 +282,8 @@ serve(async (req) => {
     const { error: updateError } = await adminSupabase
       .from('users')
       .update({
-        is_world_id: 'ACTIVE',
-        nullifier_hash: nullifierHash
+        [statusColumn]: 'ACTIVE',
+        [nullifierColumn]: nullifierHash
       })
       .eq('id', user.id)
 

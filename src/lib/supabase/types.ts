@@ -657,9 +657,11 @@ export type Database = {
           google_id: string | null
           id: string
           is_world_id: Database["public"]["Enums"]["world_id_status"] | null
+          is_world_id_passport: Database["public"]["Enums"]["world_id_status"] | null
           mal: number | null
           nal: number | null
           nullifier_hash: string | null
+          nullifier_hash_passport: string | null
           reset_token: string | null
           reset_token_expiry: string | null
           redeemed_referral_code_id: string | null
@@ -685,9 +687,11 @@ export type Database = {
           google_id?: string | null
           id: string
           is_world_id?: Database["public"]["Enums"]["world_id_status"] | null
+          is_world_id_passport?: Database["public"]["Enums"]["world_id_status"] | null
           mal?: number | null
           nal?: number | null
           nullifier_hash?: string | null
+          nullifier_hash_passport?: string | null
           reset_token?: string | null
           reset_token_expiry?: string | null
           redeemed_referral_code_id?: string | null
@@ -713,9 +717,11 @@ export type Database = {
           google_id?: string | null
           id?: string
           is_world_id?: Database["public"]["Enums"]["world_id_status"] | null
+          is_world_id_passport?: Database["public"]["Enums"]["world_id_status"] | null
           mal?: number | null
           nal?: number | null
           nullifier_hash?: string | null
+          nullifier_hash_passport?: string | null
           reset_token?: string | null
           reset_token_expiry?: string | null
           redeemed_referral_code_id?: string | null

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { Link } from 'react-router-dom';
 
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import WorldIDVerifyChoice from '@/components/worldId/WorldIDVerifyChoice';
 import { formatMilestoneTrustPoints, type DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
 
 export const MILESTONE_STATUS_CLASSES = {
@@ -157,7 +157,7 @@ export const MilestoneDetailSheet = ({
                   Done
                </button>
             ) : opensWorldId ? (
-               <WorldIDVerification>
+               <WorldIDVerifyChoice>
                   {({ open }) => (
                      <button
                         type="button"
@@ -167,7 +167,7 @@ export const MilestoneDetailSheet = ({
                         {milestone.actionLabel ?? 'Continue'}
                      </button>
                   )}
-               </WorldIDVerification>
+               </WorldIDVerifyChoice>
             ) : (
                <Link to={actionHref} className="rounded-md-lg bg-md-primary-900 px-4 py-3 text-center text-md-b2 font-semibold text-white">
                   {milestone.actionLabel ?? 'Continue'}

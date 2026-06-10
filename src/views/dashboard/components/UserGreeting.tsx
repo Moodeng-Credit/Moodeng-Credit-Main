@@ -2,8 +2,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import BorrowerVerificationBadge from '@/components/BorrowerVerificationBadge';
 import UserAvatar from '@/components/UserAvatar';
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import WorldIDVerifyChoice from '@/components/worldId/WorldIDVerifyChoice';
 import { getMemberSinceText } from '@/utils/dateFormatters';
+import { isWorldIdVerified } from '@/lib/isWorldIdVerified';
 import type { User } from '@/types/authTypes';
 
 interface UserGreetingProps {
@@ -14,7 +15,7 @@ export default function UserGreeting({ user }: UserGreetingProps) {
    const navigate = useNavigate();
    const location = useLocation();
    const firstName = user.displayName?.split(' ')[0] || user.username?.split(' ')[0] || 'there';
-   const isVerified = user.isWorldId === 'ACTIVE';
+   const isVerified = isWorldIdVerified(user);
    const memberSince = user.createdAt ? getMemberSinceText(user.createdAt) : '';
    const accountEditPath = (edit: 'avatar' | 'name') => {
       const params = new URLSearchParams(location.search);
@@ -44,13 +45,13 @@ export default function UserGreeting({ user }: UserGreetingProps) {
             <div className="flex items-center gap-2 flex-wrap">
                <BorrowerVerificationBadge />
                {!isVerified ? (
-                  <WorldIDVerification>
+                  <WorldIDVerifyChoice>
                      {({ open }) => (
                         <button type="button" onClick={open} className="text-md-b4 font-medium text-md-primary-900">
                            Verify World ID &gt;
                         </button>
                      )}
-                  </WorldIDVerification>
+                  </WorldIDVerifyChoice>
                ) : null}
             </div>
             {memberSince ? (

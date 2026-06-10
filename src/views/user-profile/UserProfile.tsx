@@ -36,12 +36,13 @@ import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityS
 
 import { getCreditLevelNumber, getCreditTierKey, isExactCreditTier } from '@/config/creditTiers';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { isWorldIdVerified } from '@/lib/isWorldIdVerified';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { LENDER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
 import { fetchUserProfiles, getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-import { type User, WorldId } from '@/types/authTypes';
+import { type User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
 
 import { DEMO_BORROWER_INSIGHTS_LOANS, DEMO_BORROWER_INSIGHTS_USER, DEMO_LENDER_PROFILES } from './demoBorrowerInsights';
@@ -220,7 +221,7 @@ const UserProfile = () => {
    const totalRepaid = fundedLoans.reduce((sum, l) => sum + toNumber(l.repaidAmount), 0);
    const repaymentLoans = fundedLoans.filter((loan) => toNumber(loan.repaidAmount) > 0);
 
-   const isVerifiedBorrower = resolvedUser.isWorldId === WorldId.ACTIVE;
+   const isVerifiedBorrower = isWorldIdVerified(resolvedUser);
    const displayedCreditLimit = getEffectiveCreditLimit(resolvedUser.cs, isVerifiedBorrower);
    const creditMax = displayedCreditLimit;
    const creditLevel = creditMax > 0 ? getCreditLevelNumber(creditMax) : 0;

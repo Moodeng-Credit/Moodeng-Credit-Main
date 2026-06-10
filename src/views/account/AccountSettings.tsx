@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-import { Camera } from 'lucide-react';
+import { Camera, Globe2, IdCard } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAccount, useDisconnect } from 'wagmi';
@@ -11,6 +11,7 @@ import { useThemeMode } from '@/components/ThemeModeProvider';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar from '@/components/UserAvatar';
+import WorldIDPassportVerification from '@/components/worldId/WorldIDPassportVerification';
 
 import { useAuthProvider } from '@/hooks/useAuthProvider';
 
@@ -823,6 +824,9 @@ export default function AccountSettings() {
    const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
 
    const hasWallet = Boolean(user?.walletAddress);
+   // Orb and Passport are independent World ID verifications, each tracked in its own column.
+   const isOrbVerified = user?.isWorldId === 'ACTIVE';
+   const isPassportVerified = user?.isWorldIdPassport === 'ACTIVE';
    const walletSetupLabel = user?.userRole === 'lender' ? 'Connect' : 'Connect Base Account';
    const isBorrower = user?.userRole === 'borrower';
    const connectedWalletName = connector?.name;
@@ -1155,11 +1159,14 @@ export default function AccountSettings() {
                      <ReadOnlyField label="Password" value="******" actionLabel="Change" onAction={() => setShowPasswordModal(true)} />
                   ) : null}
 
-                  {/* World ID */}
+                  {/* World ID Orb */}
                   <div className="flex flex-col gap-md-1 w-full">
-                     <p className="text-md-b2 font-semibold text-md-heading">World ID</p>
+                     <p className="flex items-center gap-md-1 text-md-b2 font-semibold text-md-heading">
+                        <Globe2 className="h-4 w-4 shrink-0 text-md-primary-1200" aria-hidden="true" />
+                        World ID Orb
+                     </p>
                      <div className="flex items-center gap-2 bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
-                        {user?.isWorldId === 'ACTIVE' ? (
+                        {isOrbVerified ? (
                            <>
                               <img src="/icons/check-fill.svg" alt="" className="w-4 h-4 shrink-0" />
                               <span className="text-md-b1 font-medium text-md-green-900">
@@ -1173,6 +1180,32 @@ export default function AccountSettings() {
                            <span className="text-md-b1 text-md-neutral-1200">Not Verified</span>
                         )}
                      </div>
+                  </div>
+
+                  {/* World ID Passport/ID */}
+                  <div className="flex flex-col gap-md-1 w-full">
+                     <p className="flex items-center gap-md-1 text-md-b2 font-semibold text-md-heading">
+                        <IdCard className="h-4 w-4 shrink-0 text-md-primary-1200" aria-hidden="true" />
+                        World ID Passport/ID
+                     </p>
+                     {isPassportVerified ? (
+                        <div className="flex items-center gap-2 bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
+                           <img src="/icons/check-fill.svg" alt="" className="w-4 h-4 shrink-0" />
+                           <span className="text-md-b1 font-medium text-md-green-900">Verified</span>
+                        </div>
+                     ) : (
+                        <WorldIDPassportVerification onSuccess={() => void dispatch(fetchUser())} className="w-full">
+                           {({ open }) => (
+                              <button
+                                 type="button"
+                                 onClick={open}
+                                 className="flex items-center justify-center gap-md-1 w-full px-md-3 py-md-3 rounded-md-input border border-md-neutral-600 bg-md-neutral-100 shadow-md-card text-md-b1 font-semibold text-md-heading"
+                              >
+                                 Verify with Passport in World App
+                              </button>
+                           )}
+                        </WorldIDPassportVerification>
+                     )}
                   </div>
 
                   {/* Wallet */}

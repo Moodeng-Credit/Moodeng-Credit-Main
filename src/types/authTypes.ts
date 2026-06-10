@@ -31,6 +31,9 @@ export interface User {
    walletProvider?: WalletProvider;
    isWorldId: WorldIdStatus;
    nullifierHash?: string;
+   /** World ID Passport/ID verification status. Independent of the Orb status above. */
+   isWorldIdPassport?: WorldIdStatus;
+   passportNullifierHash?: string;
    telegramUsername?: string;
    telegramId?: string;
    chatId?: string;

@@ -31,11 +31,12 @@ import { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
+import { isWorldIdVerified } from '@/lib/isWorldIdVerified';
 import { getCreditTierKey, getNextCreditTier, isExactCreditTier, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 import { fetchUserProfiles, getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-import { type User, WorldId } from '@/types/authTypes';
+import { type User } from '@/types/authTypes';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 
 import { DEMO_BORROWER_INSIGHTS_USER } from './demoBorrowerInsights';
@@ -275,7 +276,7 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
       }
    ];
 
-   if (borrower.isWorldId === WorldId.ACTIVE) {
+   if (isWorldIdVerified(borrower)) {
       events.push({
          id: `${borrower.id}-verified`,
          type: 'verified_borrower',
@@ -484,7 +485,7 @@ export default function ProgressHistory() {
 
    const borrowerName = borrower.displayName || borrower.username || username || 'Borrower';
    const memberSince = formatDate(normalizeDate(borrower.createdAt).toISOString());
-   const isVerified = borrower.isWorldId === WorldId.ACTIVE;
+   const isVerified = isWorldIdVerified(borrower);
    const defaultCount = timelineLoans.filter(
       (loan) =>
          loan.loanStatus === LoanStatus.LENT &&

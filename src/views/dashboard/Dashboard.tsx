@@ -11,6 +11,7 @@ import type { WalletLivenessData } from '@/utils/diversityScore';
 
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { BORROWER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
+import { isWorldIdVerified } from '@/lib/isWorldIdVerified';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { getWalletAgeInfo } from '@/lib/web3/walletAge';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
@@ -168,7 +169,7 @@ export default function Dashboard() {
    }, [gloanRequests, user.id]);
    const borrowerLoans = useMemo(() => getBorrowerLoans(gloanRequests, user.id), [gloanRequests, user.id]);
    const previewLoans = useMemo(() => buildPreviewLoans(user.id), [user.id]);
-   const isVerified = user.isWorldId === 'ACTIVE';
+   const isVerified = isWorldIdVerified(user);
    const hasBorrowerBaseWallet = getBaseWalletLockStatus(user).isConfirmedBase;
    const { pointsTotal: trustPointsTotal, isLoading: isTrustScoreLoading } = useTrustPointTotal({
       userId: user.id,

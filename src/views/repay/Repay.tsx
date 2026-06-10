@@ -17,6 +17,7 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatCurrency, formatNumber, toNumber } from '@/utils/decimalHelpers';
 
 import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
+import { isWorldIdVerified as checkWorldIdVerified } from '@/lib/isWorldIdVerified';
 import {
    formatWalletAddressShort,
    getBaseAccountConnector,
@@ -286,7 +287,7 @@ export default function Repay() {
       connectorName: account.connector?.name,
       wallet: user
    });
-   const isWorldIdVerified = user.isWorldId === 'ACTIVE';
+   const isWorldIdVerified = checkWorldIdVerified(user);
    const hasCompletedBaseWalletSetup = baseWalletLock.isConfirmedBase;
    const emptyRepayState = !selectedLoan
       ? !isWorldIdVerified && !hasCompletedBaseWalletSetup

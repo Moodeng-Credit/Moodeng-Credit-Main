@@ -11,9 +11,9 @@ import {
    getWalletProviderFromConnector,
    isBaseWalletProvider
 } from '@/lib/walletProvider';
+import { isWorldIdVerified } from '@/lib/isWorldIdVerified';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-import { WorldId } from '@/types/authTypes';
 import { LoanStatus } from '@/types/loanTypes';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
@@ -99,7 +99,7 @@ export default function WalletConnected() {
          navigate('/verify-world-id-preview', { replace: true });
          return;
       }
-      if (user?.userRole === 'borrower' && user.isWorldId !== WorldId.ACTIVE) {
+      if (user?.userRole === 'borrower' && !isWorldIdVerified(user)) {
          navigate('/verify-world-id', { replace: true, state: { returnTo } });
          return;
       }

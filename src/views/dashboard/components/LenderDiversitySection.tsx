@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import WorldIDVerifyChoice from '@/components/worldId/WorldIDVerifyChoice';
 import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
 import type { WalletLivenessData } from '@/utils/diversityScore';
 
@@ -88,7 +88,7 @@ export default function LenderDiversitySection({
                      Pay Loans
                   </Link>
                ) : (
-                  <WorldIDVerification>
+                  <WorldIDVerifyChoice>
                      {({ open }) => (
                         <button
                            type="button"
@@ -98,7 +98,7 @@ export default function LenderDiversitySection({
                            Get Verified
                         </button>
                      )}
-                  </WorldIDVerification>
+                  </WorldIDVerifyChoice>
                )}
             </div>
          </div>

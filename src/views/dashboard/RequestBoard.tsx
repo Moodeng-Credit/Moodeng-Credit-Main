@@ -25,7 +25,7 @@ import UserAvatar from '@/components/UserAvatar';
 import { ModalNote } from '@/components/worldId/modal/ModalNote';
 import { VerificationModalBody } from '@/components/worldId/modal/VerificationModalBody';
 import { VerificationModalHeader } from '@/components/worldId/modal/VerificationModalHeader';
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import WorldIDVerifyChoice from '@/components/worldId/WorldIDVerifyChoice';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
@@ -39,6 +39,7 @@ import { logoImageSrc } from '@/config/navigationConfig';
 import type { BorrowerContextProfileData } from '@/lib/borrowerContextFit';
 import { getBorrowerActiveLoanCount, getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { isWorldIdVerified as checkWorldIdVerified } from '@/lib/isWorldIdVerified';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import {
    BORROWER_GUIDED_TOUR_ID,
@@ -402,7 +403,7 @@ function RequestBoard$() {
    const isAuthenticated = !!(effectiveUser?.id && (username || isReferralTestMode || isLenderTourPreview));
    const hasSelectedRole = Boolean(effectiveUser?.userRole);
    const needsRoleSelection = isAuthenticated && !hasSelectedRole;
-   const isWorldIdVerified = effectiveUser?.isWorldId === 'ACTIVE' || hasWorldIdJustVerified;
+   const isWorldIdVerified = checkWorldIdVerified(effectiveUser) || hasWorldIdJustVerified;
    const showVerify = !isWorldIdVerified;
    const storeIsBorrower = useIsBorrower();
    const isBorrower = isLenderTourPreview ? false : isReferralTestMode || storeIsBorrower;
@@ -460,7 +461,7 @@ function RequestBoard$() {
    const [customAmount, setCustomAmount] = useState('');
    const [searchLoan, setSearchLoan] = useState('');
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
-   const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, effectiveUser.isWorldId === 'ACTIVE') : 0;
+   const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, checkWorldIdVerified(effectiveUser)) : 0;
    const borrowerCreditLoans = useMemo(() => {
       if (!borrowerUserId) return [];
 
@@ -476,7 +477,7 @@ function RequestBoard$() {
       isReferralTestMode ||
       (isAuthenticated &&
          isBorrower &&
-         effectiveUser.isWorldId === 'ACTIVE' &&
+         checkWorldIdVerified(effectiveUser) &&
          effectiveCreditLimit <= STARTING_CREDIT_LIMIT &&
          borrowerCreditLoans.length === 0);
    const hasBorrowerBaseWallet = !IS_BORROWER_BASE_WALLET_GATE_ENABLED || hasWalletAddressOnAccount(effectiveUser);
@@ -1101,11 +1102,11 @@ function RequestBoard$() {
       const parsedRepaymentAmount = Number.parseFloat(totalRepaymentAmount);
       const parsedDueDate = days ? new Date(days) : null;
 
-      if (effectiveUser.isWorldId !== 'ACTIVE' && !hasBorrowerBaseWallet) {
+      if (!checkWorldIdVerified(effectiveUser) && !hasBorrowerBaseWallet) {
          goToBorrowerOnboardingStart('loan-request');
          return;
       }
-      if (effectiveUser.isWorldId !== 'ACTIVE') {
+      if (!checkWorldIdVerified(effectiveUser)) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WORLDID_REQUIRED));
          return;
       }
@@ -1158,7 +1159,7 @@ function RequestBoard$() {
       };
 
       if (
-         effectiveUser.isWorldId === 'ACTIVE' &&
+         checkWorldIdVerified(effectiveUser) &&
          hasBorrowerBaseWallet &&
          !hasReachedActiveLoanLimit &&
          parsedLoanAmount <= availableCreditLimit &&
@@ -1472,7 +1473,7 @@ function RequestBoard$() {
                            ) : isBorrower ? (
                               <div className="flex items-center gap-2">
                                  {showVerify ? (
-                                    <WorldIDVerification
+                                    <WorldIDVerifyChoice
                                        showSuccessToast={false}
                                        onSuccess={() => {
                                           setHasWorldIdJustVerified(true);
@@ -1498,7 +1499,7 @@ function RequestBoard$() {
                                              </span>
                                           </button>
                                        )}
-                                    </WorldIDVerification>
+                                    </WorldIDVerifyChoice>
                                  ) : (
                                     <div className="relative">
                                        <span

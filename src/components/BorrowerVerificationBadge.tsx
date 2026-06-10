@@ -3,8 +3,8 @@ import { useSelector } from 'react-redux';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 
 import { useLocalization } from '@/i18n';
+import { isWorldIdVerified } from '@/lib/isWorldIdVerified';
 import type { RootState } from '@/store/store';
-import { WorldId } from '@/types/authTypes';
 
 const BADGE_COPY = {
    en: {
@@ -23,13 +23,11 @@ const BADGE_COPY = {
 
 export default function BorrowerVerificationBadge() {
    const isBorrower = useIsBorrower();
-   const isWorldId = useSelector((state: RootState) => state.auth.user?.isWorldId);
+   const verified = useSelector((state: RootState) => isWorldIdVerified(state.auth.user));
    const { locale } = useLocalization();
    const copy = BADGE_COPY[locale] ?? BADGE_COPY.en;
 
    if (!isBorrower) return null;
-
-   const verified = isWorldId === WorldId.ACTIVE;
 
    if (verified) {
       return (

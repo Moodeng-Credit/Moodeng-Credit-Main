@@ -3,7 +3,8 @@ import { toNumber } from '@/utils/decimalHelpers';
 
 import { STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
-import { type User, WorldId } from '@/types/authTypes';
+import { isWorldIdVerified } from '@/lib/isWorldIdVerified';
+import { type User } from '@/types/authTypes';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 
 export type SortOption = 'highest' | 'lowest' | 'newest' | 'oldest';
@@ -65,7 +66,7 @@ export const filterByCreditLimit = (loans: Loan[], amount: string, customAmount?
    return loans.filter((loan) => {
       const borrowerProfile = loan.borrowerUser ? userProfiles?.[loan.borrowerUser] : undefined;
       const creditLimit = borrowerProfile
-         ? getEffectiveCreditLimit(borrowerProfile.cs, borrowerProfile.isWorldId === WorldId.ACTIVE)
+         ? getEffectiveCreditLimit(borrowerProfile.cs, isWorldIdVerified(borrowerProfile))
          : toNumber(loan.loanAmount);
 
       return isAmountInRange(creditLimit, amount, customAmount);
@@ -194,7 +195,7 @@ export const filterByBorrowType = (
    return requestedLoans.filter((loan) => {
       const borrowerProfile = loan.borrowerUser ? userProfiles?.[loan.borrowerUser] : undefined;
       const creditLimit = borrowerProfile
-         ? getEffectiveCreditLimit(borrowerProfile.cs, borrowerProfile.isWorldId === WorldId.ACTIVE)
+         ? getEffectiveCreditLimit(borrowerProfile.cs, isWorldIdVerified(borrowerProfile))
          : toNumber(loan.loanAmount);
 
       return borrowTypes.some((borrowType) => {

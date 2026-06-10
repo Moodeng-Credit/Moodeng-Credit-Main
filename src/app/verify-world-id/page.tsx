@@ -3,10 +3,10 @@ import { useCallback, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import WorldIDVerifyChoice from '@/components/worldId/WorldIDVerifyChoice';
 
+import { isWorldIdVerified } from '@/lib/isWorldIdVerified';
 import type { RootState } from '@/store/store';
-import { WorldId } from '@/types/authTypes';
 
 export default function WorldIdVerification() {
    const navigate = useNavigate();
@@ -42,10 +42,10 @@ export default function WorldIdVerification() {
    }, [isPreview, returnTo, navigate]);
 
    useEffect(() => {
-      if (user?.isWorldId === WorldId.ACTIVE) {
+      if (isWorldIdVerified(user)) {
          handleVerified();
       }
-   }, [user?.isWorldId, handleVerified]);
+   }, [user, handleVerified]);
 
    return (
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col items-center justify-center max-w-modal mx-auto w-full px-md-4 py-md-5">
@@ -58,9 +58,8 @@ export default function WorldIdVerification() {
                </p>
             </div>
 
-            <WorldIDVerification
+            <WorldIDVerifyChoice
                onSuccess={handleVerified}
-               className="w-full"
                showSuccessFeedback={shouldShowInlineSuccess}
                showSuccessToast={shouldShowInlineSuccess}
             >
@@ -68,12 +67,12 @@ export default function WorldIdVerification() {
                   <button
                      type="button"
                      onClick={isPreview ? handleVerified : open}
-                     className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100"
+                     className="flex w-full items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100"
                   >
                      Verify with World ID
                   </button>
                )}
-            </WorldIDVerification>
+            </WorldIDVerifyChoice>
          </div>
       </div>
    );
