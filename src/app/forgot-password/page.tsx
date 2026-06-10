@@ -1,8 +1,9 @@
 import { type FormEvent, type JSX, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, HelpCircle, Mail, ShieldCheck } from 'lucide-react';
 
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useResendCooldown } from '@/hooks/useResendCooldown';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { markPasswordRecoveryReady } from '@/lib/passwordRecovery';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
@@ -10,15 +11,20 @@ import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/sup
 type Step = 'email' | 'code';
 
 const CODE_LENGTH = 8;
+const RESEND_COOLDOWN_STORAGE_KEY = 'moodeng_password_reset_resend_at';
 
 export default function ForgotPasswordPage(): JSX.Element {
    const navigate = useNavigate();
+   const [searchParams] = useSearchParams();
    const [step, setStep] = useState<Step>('email');
-   const [email, setEmail] = useState('');
+   // Pre-fill from the "Reset Password" CTA on the signup form so the user doesn't
+   // have to retype the email they just entered.
+   const [email, setEmail] = useState(() => searchParams.get('email')?.trim() ?? '');
    const [code, setCode] = useState('');
    const [message, setMessage] = useState('');
    const [error, setError] = useState('');
    const [loading, setLoading] = useState(false);
+   const { secondsLeft, isCoolingDown, startCooldown } = useResendCooldown(RESEND_COOLDOWN_STORAGE_KEY);
 
    const sendCode = async (targetEmail: string): Promise<boolean> => {
       if (!isSupabaseBrowserConfigured()) {
@@ -52,12 +58,27 @@ export default function ForgotPasswordPage(): JSX.Element {
          return;
       }
 
+      // A code is already in flight (cooldown still running). Don't request another —
+      // that would invalidate the one already heading to their inbox. Move them straight
+      // to the code screen instead of hitting Supabase's rate limit.
+      if (isCoolingDown) {
+         setEmail(trimmedEmail);
+         setStep('code');
+         setMessage(`A code is already on the way. Enter it below, or request a new one in ${secondsLeft}s.`);
+         return;
+      }
+
       setLoading(true);
       try {
          if (await sendCode(trimmedEmail)) {
             setEmail(trimmedEmail);
             setStep('code');
-            setMessage('We sent a 8-digit code to your email. Enter it below to continue.');
+            // Lock resend immediately — the code is now in flight and a second request
+            // would invalidate it before it arrives.
+            startCooldown();
+            // Enumeration-safe: Supabase sends nothing for an unregistered email, so we
+            // can't promise a code was sent without leaking which emails have accounts.
+            setMessage('If an account exists for that email, an 8-digit code is on its way. Enter it below to continue.');
          }
       } catch (sendError) {
          setError(sendError instanceof Error ? sendError.message : 'Could not send a reset code. Try again in a moment.');
@@ -108,11 +129,13 @@ export default function ForgotPasswordPage(): JSX.Element {
    };
 
    const handleResend = async () => {
+      if (isCoolingDown) return;
       setMessage('');
       setError('');
       setLoading(true);
       try {
          if (await sendCode(email.trim())) {
+            startCooldown();
             setMessage('A new code is on its way. Use the latest email from Moodeng.');
          }
       } catch (resendError) {
@@ -227,10 +250,10 @@ export default function ForgotPasswordPage(): JSX.Element {
                         <button
                            type="button"
                            onClick={handleResend}
-                           disabled={loading}
-                           className="flex h-12 w-full items-center justify-center rounded-2xl border border-[#E0D7E8] text-sm font-semibold text-[#4D4359] transition hover:bg-[#F8F4FC] disabled:opacity-60 dark:border-[#2D1F4A] dark:text-[#A89BB8] dark:hover:bg-[#1E1530]"
+                           disabled={loading || isCoolingDown}
+                           className="flex h-12 w-full items-center justify-center rounded-2xl border border-[#E0D7E8] text-sm font-semibold text-[#4D4359] transition hover:bg-[#F8F4FC] disabled:cursor-not-allowed disabled:opacity-60 dark:border-[#2D1F4A] dark:text-[#A89BB8] dark:hover:bg-[#1E1530]"
                         >
-                           Resend code
+                           {isCoolingDown ? `Resend code in ${secondsLeft}s` : 'Resend code'}
                         </button>
                      </form>
                   ) : (
@@ -269,7 +292,7 @@ export default function ForgotPasswordPage(): JSX.Element {
                            disabled={loading || !email.trim()}
                            className="h-14 w-full rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95 disabled:bg-[#BDB5C7] disabled:text-[#FDFCFD] dark:disabled:bg-[#2D1F4A] dark:disabled:text-[#6B5880]"
                         >
-                           {loading ? 'Sending...' : 'Send reset code'}
+                           {loading ? 'Sending...' : isCoolingDown ? 'Enter your code' : 'Send reset code'}
                         </button>
                      </form>
                   )}
