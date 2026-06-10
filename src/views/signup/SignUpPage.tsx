@@ -53,11 +53,17 @@ export default function SignUpPage() {
    const processAuthResult = (result: unknown) => {
       const data = result as {
          isExistingUser?: boolean;
+         loggedIn?: boolean;
          isNewUser?: boolean;
          needsEmailVerification?: boolean;
          user?: { id?: string; userRole?: string | null };
          reason?: 'linked' | 'taken' | 'existing';
       };
+      // Implicit login: existing account, correct password → sign them straight in.
+      if (data?.loggedIn && data.user) {
+         navigate(data.user.userRole ? '/dashboard' : '/onboarding/role');
+         return;
+      }
       if (data?.isExistingUser) {
          setAccountErrorType(data.reason === 'taken' ? 'email_taken' : data.reason === 'linked' ? 'account_linked' : 'account_exist');
          return;
