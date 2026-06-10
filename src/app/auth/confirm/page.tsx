@@ -49,6 +49,9 @@ export default function AuthConfirmPage() {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
    const [error, setError] = useState<string | null>(null);
+   // True when this was a password-reset link, so a dead/consumed link sends the
+   // user back to the 8-digit code screen rather than stranding them on sign-in.
+   const [isRecoveryContext, setIsRecoveryContext] = useState(false);
    const finishedRef = useRef(false);
 
    useEffect(() => {
@@ -102,6 +105,7 @@ export default function AuthConfirmPage() {
          const tokenHash = url.searchParams.get('token_hash');
          const hashParams = new URLSearchParams(window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '');
          const isRecoveryRedirect = isPasswordRecoveryRedirect(url, hashParams);
+         if (isRecoveryRedirect) setIsRecoveryContext(true);
          const emailOtpType = getAuthEmailOtpType(url, hashParams);
          const linkError =
             url.searchParams.get('error_description') ||
@@ -233,7 +237,9 @@ export default function AuthConfirmPage() {
                            This link did not work
                         </h1>
                         <p className="mt-3 max-w-[350px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F] dark:text-[#A89BB8]">
-                           Open the latest Moodeng email and try again, or sign in to request a new link.
+                           {isRecoveryContext
+                              ? 'Reset links can be opened only once and expire quickly. Request a fresh 8-digit code and enter it directly — no link needed.'
+                              : 'Open the latest Moodeng email and try again, or sign in to request a new link.'}
                         </p>
                      </div>
 
@@ -242,11 +248,19 @@ export default function AuthConfirmPage() {
                      </p>
 
                      <Link
-                        to="/sign-in"
+                        to={isRecoveryContext ? '/forgot-password' : '/sign-in'}
                         className="flex h-14 w-full items-center justify-center rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95"
                      >
-                        Back to sign in
+                        {isRecoveryContext ? 'Request a new reset code' : 'Back to sign in'}
                      </Link>
+                     {isRecoveryContext ? (
+                        <Link
+                           to="/sign-in"
+                           className="mt-3 flex h-12 w-full items-center justify-center rounded-2xl border border-[#E0D7E8] text-sm font-semibold text-[#4D4359] transition hover:bg-[#F8F4FC] dark:border-[#2D1F4A] dark:text-[#A89BB8] dark:hover:bg-[#1E1530]"
+                        >
+                           Back to sign in
+                        </Link>
+                     ) : null}
                   </section>
                </main>
             </div>

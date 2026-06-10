@@ -1,5 +1,5 @@
 import { type FormEvent, type JSX, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, HelpCircle, Mail, ShieldCheck } from 'lucide-react';
 
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -15,8 +15,11 @@ const RESEND_COOLDOWN_STORAGE_KEY = 'moodeng_password_reset_resend_at';
 
 export default function ForgotPasswordPage(): JSX.Element {
    const navigate = useNavigate();
+   const [searchParams] = useSearchParams();
    const [step, setStep] = useState<Step>('email');
-   const [email, setEmail] = useState('');
+   // Pre-fill from the "Reset Password" CTA on the signup form so the user doesn't
+   // have to retype the email they just entered.
+   const [email, setEmail] = useState(() => searchParams.get('email')?.trim() ?? '');
    const [code, setCode] = useState('');
    const [message, setMessage] = useState('');
    const [error, setError] = useState('');

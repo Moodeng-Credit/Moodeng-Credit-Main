@@ -6,6 +6,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { AuthFooter, AuthInputField, DividerWithText, SignUpFormErrorAlert, SocialAuthButtons, SocialButton } from '@/components/auth';
 import Loading from '@/components/Loading';
+import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { buildEmailConfirmationPath } from '@/lib/authPaths';
@@ -61,6 +62,7 @@ export default function SignUpPage() {
       };
       // Implicit login: existing account, correct password → sign them straight in.
       if (data?.loggedIn && data.user) {
+         toast.showToast(TOAST_TYPES.INFO, 'Account already exists', 'Logging you in…');
          navigate(data.user.userRole ? '/dashboard' : '/onboarding/role');
          return;
       }
@@ -245,6 +247,7 @@ export default function SignUpPage() {
                            value={username}
                            onChange={(e: ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
                            icon={<Icons.user />}
+                           autoComplete="username"
                         />
 
                         <div className="space-y-2">
@@ -260,19 +263,20 @@ export default function SignUpPage() {
                               error={hasEmailError}
                               errorMessage={
                                  accountErrorType === 'account_linked'
-                                    ? 'Account Already Linked'
+                                    ? 'Already linked'
                                     : accountErrorType === 'account_exist'
-                                      ? 'Account Already Exist'
+                                      ? 'Already registered'
                                       : accountErrorType === 'email_taken'
-                                        ? 'Email Address Taken'
+                                        ? 'Email address taken'
                                         : undefined
                               }
                               errorVariant={accountErrorType === 'account_linked' || accountErrorType === 'account_exist' ? 'amber' : 'red'}
                               icon={<Icons.email />}
+                              autoComplete="email"
                            />
                            {accountErrorType === 'email_taken' && <SignUpFormErrorAlert type="email_taken" />}
                            {(accountErrorType === 'account_linked' || accountErrorType === 'account_exist') && (
-                              <SignUpFormErrorAlert type={accountErrorType} />
+                              <SignUpFormErrorAlert type={accountErrorType} email={email} />
                            )}
                         </div>
 
@@ -291,6 +295,7 @@ export default function SignUpPage() {
                               errorVariant="amber"
                               icon={<Icons.lock />}
                               showEyeToggle
+                              autoComplete="new-password"
                            />
                            {showPassWeak && <SignUpFormErrorAlert type="password_too_weak" />}
                         </div>
