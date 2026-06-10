@@ -4,6 +4,9 @@ import { getTrustPointRewardProgress } from '@/views/dashboard/trustPointRewards
 
 interface TrustScoreSectionProps {
    trustScore: number;
+   /** While true, the score/badge/caption are replaced with skeleton placeholders
+    *  instead of showing "0 points / Getting Started" before the real value loads. */
+   isLoading?: boolean;
 }
 
 // Fixed ceiling — the Top Borrower threshold. The gauge always represents
@@ -83,7 +86,7 @@ function TrustGauge({ fillPct }: { fillPct: number }) {
    );
 }
 
-export default function TrustScoreSection({ trustScore }: TrustScoreSectionProps) {
+export default function TrustScoreSection({ trustScore, isLoading = false }: TrustScoreSectionProps) {
    const { label, color, bgColor } = useMemo(() => getTrustLabel(trustScore), [trustScore]);
    const { nextReward, pointsToNext } = useMemo(() => getTrustPointRewardProgress(trustScore), [trustScore]);
    const fillPct = useMemo(() => getGaugeFillPct(trustScore), [trustScore]);
@@ -120,13 +123,23 @@ export default function TrustScoreSection({ trustScore }: TrustScoreSectionProps
 
          <div className="flex flex-col items-center -mt-2">
             <div className="relative w-full max-w-[260px]">
-               <TrustGauge fillPct={fillPct} />
+               <TrustGauge fillPct={isLoading ? 0 : fillPct} />
                <div className="absolute inset-0 flex flex-col items-center justify-end pb-2">
-                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-md-b4 font-medium ${color} ${bgColor} mb-1`}>
-                     {label}
-                  </span>
-                  <p className="text-md-h3 font-semibold text-md-heading">{trustScore} points</p>
-                  <p className="text-md-b3 text-md-neutral-700">{nextRewardCaption}</p>
+                  {isLoading ? (
+                     <div className="flex animate-pulse flex-col items-center gap-2">
+                        <div className="h-5 w-24 rounded-full bg-md-neutral-500" />
+                        <div className="h-7 w-28 rounded-full bg-md-neutral-500" />
+                        <div className="h-4 w-32 rounded-full bg-md-neutral-500" />
+                     </div>
+                  ) : (
+                     <>
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-md-b4 font-medium ${color} ${bgColor} mb-1`}>
+                           {label}
+                        </span>
+                        <p className="text-md-h3 font-semibold text-md-heading">{trustScore} points</p>
+                        <p className="text-md-b3 text-md-neutral-700">{nextRewardCaption}</p>
+                     </>
+                  )}
                </div>
             </div>
          </div>
