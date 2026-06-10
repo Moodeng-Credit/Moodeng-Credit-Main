@@ -5,6 +5,7 @@ import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, HelpCircle, Search
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 
+import IouPointHistoryModal from '@/components/IouPointHistoryModal';
 import UserAvatar from '@/components/UserAvatar';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -313,6 +314,7 @@ export default function LenderDashboard() {
    const [showFilter, setShowFilter] = useState(false);
    const [openUpward, setOpenUpward] = useState(false);
    const [appliedFilters, setAppliedFilters] = useState<FilterState>({ sortBy: '', status: '' });
+   const [showIouHistory, setShowIouHistory] = useState(false);
 
    const filterBtnRef = useRef<HTMLButtonElement>(null);
    const filterDropdownRef = useClickOutside<HTMLDivElement>(
@@ -433,9 +435,14 @@ export default function LenderDashboard() {
                      >
                         Hello, {firstName}
                      </button>
-                     <span className="inline-flex items-center px-2.5 py-0.5 bg-md-primary-900 rounded-md-sm">
+                     <button
+                        type="button"
+                        onClick={() => setShowIouHistory(true)}
+                        className="inline-flex items-center px-2.5 py-0.5 bg-md-primary-900 rounded-md-sm hover:opacity-90 transition-opacity"
+                        title="View IOU point history"
+                     >
                         <span className="text-md-b3 font-semibold text-md-neutral-100 whitespace-nowrap">IOU {iouPoints}</span>
-                     </span>
+                     </button>
                   </div>
                   <p className="text-md-b3 font-normal text-md-neutral-1400">Member since {memberSince}</p>
                </div>
@@ -571,6 +578,8 @@ export default function LenderDashboard() {
                </div>
             </div>
          </div>
+
+         <IouPointHistoryModal userId={user?.id} isOpen={showIouHistory} onClose={() => setShowIouHistory(false)} />
       </div>
    );
 }
