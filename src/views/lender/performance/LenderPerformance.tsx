@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react';
@@ -191,6 +191,7 @@ export default function LenderPerformance() {
 
    const [activePeriod, setActivePeriod] = useState<TimePeriod>('3D');
    const [showIouHistory, setShowIouHistory] = useState(false);
+   const hasAutoSelectedPeriod = useRef(false);
 
    // IOU points
    const { data: userPointsData } = useQuery({
@@ -214,6 +215,23 @@ export default function LenderPerformance() {
 
    const lenderLoans = useMemo(() => gloans.filter((l) => l.lenderUser === user?.id), [gloans, user?.id]);
    const hasData = lenderLoans.length > 0;
+
+   // Default the chart to the smallest period that still covers the most
+   // recent loan activity, so a lender whose last loan was months ago sees
+   // a chart with data instead of an empty one (only runs once on load).
+   useEffect(() => {
+      if (hasAutoSelectedPeriod.current || !hasData) return;
+      hasAutoSelectedPeriod.current = true;
+
+      const mostRecentActivity = lenderLoans.reduce((latest, l) => {
+         const d = new Date(l.fundedAt ?? l.updatedAt ?? l.createdAt).getTime();
+         return Number.isFinite(d) ? Math.max(latest, d) : latest;
+      }, 0);
+
+      const daysSinceActivity = (Date.now() - mostRecentActivity) / (1000 * 60 * 60 * 24);
+      const period = TIME_PERIODS.find((p) => PERIOD_DAYS[p] >= daysSinceActivity) ?? TIME_PERIODS[TIME_PERIODS.length - 1];
+      setActivePeriod(period);
+   }, [hasData, lenderLoans]);
 
    const { total, changePercent, totalLent, totalLoss } = useMemo(() => computeStats(lenderLoans), [lenderLoans]);
 
@@ -242,7 +260,7 @@ export default function LenderPerformance() {
             </div>
 
             {/* ── Gradient card: profile + overview ── */}
-            <div className="bg-gradient-to-b from-white to-[#eee6fa] rounded-b-[32px] shadow-md-card px-md-4 pt-md-3 pb-md-5 flex flex-col gap-md-3">
+            <div className="lender-performance-header-card bg-gradient-to-b from-white to-[#eee6fa] rounded-b-[32px] shadow-md-card px-md-4 pt-md-3 pb-md-5 flex flex-col gap-md-3">
                {/* Profile row */}
                <div className="flex items-start gap-3">
                   <UserAvatar size={70} />

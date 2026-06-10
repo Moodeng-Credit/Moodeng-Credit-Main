@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { pointsAwardRules } from '@/shared/points';
+import { formatPointsMajor, pointsAwardRules } from '@/shared/points';
 
 interface IouPointHistoryModalProps {
    userId?: string | null;
@@ -94,8 +94,8 @@ export default function IouPointHistoryModal({ userId, isOpen, onClose }: IouPoi
                               </span>
                            </div>
                            <span className={`text-md-b1 font-semibold shrink-0 ${event.delta >= 0 ? 'text-md-green-700' : 'text-md-red-300'}`}>
-                              {event.delta >= 0 ? '+' : ''}
-                              {event.delta} IOU
+                              {event.delta >= 0 ? '+' : '-'}
+                              {formatPointsMajor(Math.abs(event.delta))} IOU
                            </span>
                         </div>
                      );
