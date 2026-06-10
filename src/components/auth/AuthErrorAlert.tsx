@@ -4,33 +4,25 @@ type AuthErrorAlertType = 'incorrect_credentials' | 'email_not_found' | 'new_use
 
 interface AuthErrorAlertProps {
    type: AuthErrorAlertType;
-   attemptsRemaining?: number;
    onRetry?: () => void;
    signupHref?: string;
+   resetPasswordHref?: string;
 }
 
 const DOCS_URL = 'https://moodeng-credit.gitbook.io/moodeng-credit';
 
-export function AuthErrorAlert({ type, attemptsRemaining = 3, onRetry, signupHref = '/sign-up' }: AuthErrorAlertProps) {
+export function AuthErrorAlert({ type, onRetry, signupHref = '/sign-up', resetPasswordHref = '/forgot-password' }: AuthErrorAlertProps) {
    if (type === 'too_many_attempts') {
       return (
          <div className="w-full rounded-[10px] border border-red-200 bg-red-50/80 px-4 py-4">
             <p className="text-sm font-medium text-[#4D4359] tracking-[-0.02em]">
-               We&apos;ve detected multiple failed login attempts from your IP across several accounts. Access has
-               been temporarily restricted.
-            </p>
-            <p className="mt-2 text-sm text-[#4D4359] tracking-[-0.02em]">
-               Please wait 15 minutes before retrying, or contact support if this seems like an error.
+               That password didn&apos;t work. If you&apos;re not sure it&apos;s right, resetting it only takes a
+               minute.
             </p>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
-               <a
-                  href={`${DOCS_URL}/faq`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-semibold text-[#8336F0] hover:underline"
-               >
-                  Why am I seeing this?
-               </a>
+               <Link to={resetPasswordHref} className="text-sm font-semibold text-[#8336F0] hover:underline">
+                  Reset password
+               </Link>
                <a
                   href={`${DOCS_URL}/contact`}
                   target="_blank"
@@ -95,19 +87,18 @@ export function AuthErrorAlert({ type, attemptsRemaining = 3, onRetry, signupHre
             The email or password you entered is incorrect.
          </p>
          <p className="mt-2 text-sm text-[#4D4359] tracking-[-0.02em]">
-            <span className="font-semibold text-red-500">{attemptsRemaining} attempts</span> remaining before
-            you are locked out.{' '}
             {onRetry ? (
-               <button
-                  type="button"
-                  onClick={onRetry}
-                  className="font-semibold text-[#8336F0] hover:underline"
-               >
+               <button type="button" onClick={onRetry} className="font-semibold text-[#8336F0] hover:underline">
                   Try again
                </button>
             ) : (
-               <span className="font-semibold text-red-500">Try again</span>
+               <span className="font-semibold text-[#8336F0]">Try again</span>
             )}
+            {' or '}
+            <Link to={resetPasswordHref} className="font-semibold text-[#8336F0] hover:underline">
+               reset your password
+            </Link>
+            {" if you've forgotten it."}
          </p>
       </div>
    );
