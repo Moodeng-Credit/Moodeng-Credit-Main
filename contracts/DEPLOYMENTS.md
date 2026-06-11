@@ -9,7 +9,7 @@
 | USDC | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
 | Deployed | 2026-06-11 |
 | Compiler | solc 0.8.x (OpenZeppelin v5.6.1) |
-| Verified on Basescan | pending |
+| Verified on Basescan | ✅ https://basescan.org/address/0x15c3999a6E00AEb2Dc41a82b894b5C81CaFE7C89#code |
 
 ### Frontend env (set in the deploy environment, e.g. Vercel; Vite inlines at build time)
 
