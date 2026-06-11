@@ -24,6 +24,8 @@ import {
    isBaseWalletReadyForRepayment,
    isConnectedToLockedBaseWallet
 } from '@/lib/walletProvider';
+import { ensureUsdcAllowance, getLoanManagerService } from '@/lib/web3/loanManager';
+import { usdcToBaseUnits } from '@/lib/loanNotes/api';
 import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -423,12 +425,24 @@ export default function Repay() {
          const newRepaymentStatus = isFullyRepaid ? 'Paid' : 'Partial';
          const transferCoin = selectedLoan.coin?.trim() || 'USDC';
          const earnedTrustPoints = getEstimatedTrustPoints(selectedLoan, effectiveRepayment);
-         const transactionHash = await Transfer(
-            selectedLoan.lenderWallet || '',
-            effectiveRepayment.toString(),
-            selectedLoan.id,
-            transferCoin
-         );
+
+         // Relay loans repay the LoanManager contract, which automatically forwards the
+         // payment to the current Loan Note owner (the lender). Normal loans stay
+         // wallet-to-wallet. From the borrower's perspective the screen is identical.
+         const isRelayLoan = selectedLoan.fundingMethod === 'smart_contract' && Boolean(selectedLoan.onchainLoanId);
+         let transactionHash: string | null;
+         if (isRelayLoan) {
+            const amountBase = usdcToBaseUnits(effectiveRepayment);
+            const payer = account.address?.trim();
+            if (payer) {
+               // Approve the LoanManager to pull the repayment (no-op in mock mode).
+               await ensureUsdcAllowance(payer, amountBase);
+            }
+            const { txHash } = await getLoanManagerService().repay(selectedLoan.onchainLoanId as string, amountBase.toString());
+            transactionHash = txHash;
+         } else {
+            transactionHash = await Transfer(selectedLoan.lenderWallet || '', effectiveRepayment.toString(), selectedLoan.id, transferCoin);
+         }
 
          if (!transactionHash) {
             return;
@@ -481,6 +495,7 @@ export default function Repay() {
       parsedRepaymentAmount,
       account.isConnected,
       account.chain?.id,
+      account.address,
       baseAccountConnector,
       navigate,
       baseWalletLock.address,

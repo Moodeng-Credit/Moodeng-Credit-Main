@@ -20,6 +20,8 @@ export interface Loan {
    createdAt: string;
    updatedAt: string;
    fundedAt?: string; // Timestamp when loan was funded (transitioned to 'Lent' status)
+   fundingMethod?: string; // 'direct' | 'smart_contract' — relay loans repay the LoanManager contract
+   onchainLoanId?: string; // LoanManager loanId / Loan Note tokenId for smart-contract loans
    referralCodeId?: string;
    referralCode?: string;
    referralBoostAmount?: number;
