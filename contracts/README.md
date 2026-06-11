@@ -52,12 +52,40 @@ VITE_USDC_ADDRESS=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
 The frontend ABI lives at `src/lib/web3/loanManager/abi.ts` and already matches this
 contract's external surface (`createAndFundLoan`, `listLoanNote`, `buyLoanNote`, `repay`,
-`getLoan`, `getRemainingOwed`, `getRepaymentRecipient`, `ownerOf`, `listings`,
-`nextLoanId`). After any signature change, refresh it from the compiled artifact:
+`settle`, `getLoan`, `getRemainingOwed`, `getRepaymentRecipient`, `heldRepayments`,
+`ownerOf`, `listings`, `nextLoanId`). After any signature change, refresh it:
 
 ```bash
 forge inspect src/LoanManager.sol:LoanManager abi > /tmp/LoanManager.abi.json
 ```
+
+## Gasless contract calls (optional — Base paymaster)
+
+Plain USDC sends are already gasless for Base smart-wallet users, but LoanManager calls
+(`buyLoanNote`, `repay`, `settle`, `approve`, …) are contract calls and need a paymaster
+to be gasless. Without one they still work — the sender just pays a few cents of Base gas.
+
+To enable sponsorship:
+
+1. In Coinbase Developer Platform → **Paymaster**, pick **Base Mainnet**; copy the endpoint
+   `https://api.developer.coinbase.com/rpc/v1/base/<API_KEY>` → that's `VITE_PAYMASTER_URL`.
+2. **Allowlist** the deployed `LoanManager` address + the sponsored functions
+   (`createAndFundLoan`, `listLoanNote`, `buyLoanNote`, `repay`, `settle`) and USDC `approve`,
+   with per-user / global spend caps. (Order: deploy first, then allowlist that address.)
+3. Set `VITE_PAYMASTER_URL`. The app routes contract writes through EIP-5792
+   `wallet_sendCalls` with the paymaster when the wallet supports it, and falls back to a
+   normal user-paid tx otherwise. No contract change needed.
+
+## Going-live checklist
+
+1. `forge install` (forge-std + OpenZeppelin v5.6.1) → `forge test` (16/16).
+2. `cp .env.example .env`, fill `BASE_RPC_URL`, `DEPLOYER_PRIVATE_KEY`, `USDC_ADDRESS`, `ADMIN_ADDRESS`.
+3. `forge script script/Deploy.s.sol:Deploy --rpc-url "$BASE_RPC_URL" --broadcast --verify --private-key "$DEPLOYER_PRIVATE_KEY"`.
+4. Grant any extra Moodeng funding wallets: `setOriginator(wallet, true)`.
+5. Set frontend env: `VITE_ENABLE_REAL_LOAN_MANAGER=true`, `VITE_LOAN_MANAGER_ADDRESS`, `VITE_USDC_ADDRESS`.
+6. (Optional) Paymaster: allowlist the address + set `VITE_PAYMASTER_URL` (above).
+7. (Optional) Due-date release keeper: schedule a job to call `settle(loanId)` for loans past
+   due with held funds (the admin Liquidity Relay panel has a manual "Release" button meanwhile).
 
 ## Model (matches the Liquidity Relay infographic)
 
