@@ -32,6 +32,19 @@ function slugify(text: string): string {
    );
 }
 
+// dispatch(...).unwrap() throws Redux Toolkit's SerializedError, a plain object
+// (not an Error instance) that still carries the original `message` string. An
+// `instanceof Error` check misses it entirely, so every rejected thunk fell back
+// to the generic 'Authentication failed' regardless of the real failure reason.
+function getErrorMessage(err: unknown, fallback: string): string {
+   if (err instanceof Error) return err.message;
+   if (typeof err === 'object' && err !== null && typeof (err as { message?: unknown }).message === 'string') {
+      const message = (err as { message: string }).message;
+      if (message) return message;
+   }
+   return fallback;
+}
+
 export default function SignUpPage() {
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
@@ -107,7 +120,7 @@ export default function SignUpPage() {
          ).unwrap();
          processAuthResult(result);
       } catch (err) {
-         handleRegisterError(err instanceof Error ? err.message : 'Authentication failed');
+         handleRegisterError(getErrorMessage(err, 'Authentication failed'));
       } finally {
          setIsLoading(false);
       }
@@ -120,7 +133,7 @@ export default function SignUpPage() {
          const result = await dispatch(registerWithGoogle({ googleCredential: credential })).unwrap();
          processAuthResult(result);
       } catch (err) {
-         handleRegisterError(err instanceof Error ? err.message : 'Authentication failed');
+         handleRegisterError(getErrorMessage(err, 'Authentication failed'));
       } finally {
          setIsLoading(false);
       }
@@ -133,7 +146,7 @@ export default function SignUpPage() {
          const result = await dispatch(registerWithTelegram({ telegramAuthData: JSON.stringify(authData) })).unwrap();
          processAuthResult(result);
       } catch (err) {
-         handleRegisterError(err instanceof Error ? err.message : 'Authentication failed');
+         handleRegisterError(getErrorMessage(err, 'Authentication failed'));
       } finally {
          setIsLoading(false);
       }
@@ -141,7 +154,8 @@ export default function SignUpPage() {
 
    const handleRegisterError = (errorMsg: string) => {
       const lower = (errorMsg || '').toLowerCase();
-      const isEmailError = lower.includes('email') || lower.includes('duplicate') || lower.includes('users_email_key');
+      const isEmailError =
+         lower.includes('email') || lower.includes('duplicate') || lower.includes('users_email_key') || lower.includes('already registered');
       if (isEmailError) {
          setAccountErrorType(
             lower.includes('lock')
@@ -150,9 +164,15 @@ export default function SignUpPage() {
                  ? 'account_linked'
                  : 'account_exist'
          );
-      } else {
-         toast.showToastByConfig('register_error', { error: errorMsg });
+         return;
       }
+
+      // "Failed to fetch" / "Load failed" are raw browser fetch errors — meaningless
+      // to a user. Show something actionable instead of echoing them verbatim.
+      const isNetworkError = lower.includes('failed to fetch') || lower.includes('load failed') || lower.includes('network');
+      toast.showToastByConfig('register_error', {
+         error: isNetworkError ? 'Could not reach the server. Check your connection and try again.' : errorMsg
+      });
    };
 
    const handleOAuthError = () => {
@@ -211,7 +231,7 @@ export default function SignUpPage() {
                      />
                      <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" className="my-6" />
                      <SocialButton
-                        icon={<Mail className="w-5 h-5 text-[#250650]" />}
+                        icon={<Mail className="w-5 h-5 text-[#250650] dark:text-[#F8F4FF]" />}
                         text="Sign Up with Email"
                         variant="outline"
                         onClick={() => setShowEmailForm(true)}
