@@ -29,9 +29,12 @@ import {
    upsertAccountRestrictionByUserId,
    upsertLoanRequestReview
 } from './adminSupabase';
+import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
 
-type AdminTab = 'users' | 'points' | 'trust-points' | 'defaults' | 'requests' | 'risk' | 'notifications';
+import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
+
+type AdminTab = 'users' | 'points' | 'trust-points' | 'defaults' | 'requests' | 'risk' | 'notifications' | 'relay';
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
 
 type NoticeTemplate = {
@@ -215,6 +218,9 @@ function initialAdminTab(): AdminTab {
 
 export default function AdminPanel() {
    const reduxUser = useSelector((state: RootState) => state.auth.user);
+   // The Liquidity Relay share panel is gated to the two Moodeng funding admins (George/Emma).
+   const isFundingAdmin = useIsFundingAdmin();
+   const visibleNavItems = isFundingAdmin ? [...navItems, { id: 'relay' as const, label: 'Liquidity Relay' }] : navItems;
    const [activeTab, setActiveTab] = useState<AdminTab>(() => initialAdminTab());
    const [admin, setAdmin] = useState<AdminUser | null>(null);
    const [overview, setOverview] = useState<AdminOverview | null>(null);
@@ -493,7 +499,7 @@ export default function AdminPanel() {
                </div>
 
                <nav className="mt-12 grid gap-4">
-                  {navItems.map((item) => (
+                  {visibleNavItems.map((item) => (
                      <button
                         key={item.id}
                         type="button"
@@ -1321,6 +1327,8 @@ export default function AdminPanel() {
                      }}
                   />
                ) : null}
+
+               {activeTab === 'relay' && isFundingAdmin ? <RelayLinksSection /> : null}
 
                {activeTab === 'notifications' ? (
                   <section className="space-y-6">

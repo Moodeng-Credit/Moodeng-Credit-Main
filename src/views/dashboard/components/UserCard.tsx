@@ -7,9 +7,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
+import FundingMethodModal, { type FundLoanTarget } from '@/components/funding/FundingMethodModal';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
+import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
 import useWallet from '@/hooks/useWallet';
 
 import { formatCurrency, formatNumber } from '@/utils/decimalHelpers';
@@ -107,6 +109,10 @@ export default function UserCard(loan: UserCardProps) {
    const account = useAccount();
    const { isConnected } = account;
    const { openConnectModal } = useConnectModal();
+   // Moodeng funding admins (George/Emma) get the internal two-option modal on "Send Your
+   // Help"; everyone else falls through to the normal lend flow, byte-for-byte unchanged.
+   const isFundingAdmin = useIsFundingAdmin();
+   const [showFundingModal, setShowFundingModal] = useState(false);
    const [showModal, setShowModal] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
    // The on-chain transfer hash, set the moment Transfer resolves. Drives the "Sending" →
@@ -268,16 +274,25 @@ export default function UserCard(loan: UserCardProps) {
       }
    }, [isConnected]);
 
-   const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault();
+   // Runs the existing normal lend flow (used by non-admins, and by admins who pick
+   // "Direct Lend" in the funding modal). Connecting resumes the lend automatically.
+   const runDirectLend = useCallback(() => {
       if (!isConnected) {
-         // Connecting is a prerequisite, not a separate task: arm the lend so it resumes by
-         // itself once the wallet connects, instead of dropping the lender back to a second tap.
          pendingLendRef.current = true;
          openConnectModal?.();
          return;
       }
-      await executeLend();
+      void executeLend();
+   }, [isConnected, openConnectModal, executeLend]);
+
+   const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      // Internal accounts get to choose Direct Lend vs Smart Contract Lend (Liquidity Relay).
+      if (isFundingAdmin) {
+         setShowFundingModal(true);
+         return;
+      }
+      runDirectLend();
    };
 
    const loanReason = loanData.reason?.trim() ? loanData.reason.trim() : 'Unknown Reason';
@@ -508,6 +523,25 @@ export default function UserCard(loan: UserCardProps) {
                ) : null}
             </div>
          </div>
+
+         {/* Internal funding fork (George/Emma only): Direct Lend vs Smart Contract Lend */}
+         {showFundingModal ? (
+            <FundingMethodModal
+               target={
+                  {
+                     loanId: loanData.id,
+                     borrowerWallet: loanData.borrowerWallet ?? null,
+                     borrowerName: borrowerDisplayName,
+                     principal: Number(loanData.loanAmount ?? 0),
+                     totalOwed: Number(loanData.totalRepaymentAmount ?? 0),
+                     dueDate: loanData.dueDate ?? ''
+                  } satisfies FundLoanTarget
+               }
+               onClose={() => setShowFundingModal(false)}
+               onDirectLend={runDirectLend}
+               onFunded={handleFetch}
+            />
+         ) : null}
 
          {/* Fund Success Modal */}
          {showModal && (

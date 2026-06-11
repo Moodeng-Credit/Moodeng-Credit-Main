@@ -9,6 +9,7 @@ import BottomNav from '@/components/BottomNav';
 import { BottomNavActionProvider } from '@/components/BottomNavActionContext';
 import { ExpiredLoanRequestNotifier } from '@/components/ExpiredLoanRequestNotifier';
 import Footer from '@/components/Footer';
+import { LenderFundingPrompt } from '@/components/funding/LenderFundingPrompt';
 import Header from '@/components/Header/Header';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
 import MarketingPageShell from '@/components/marketing/MarketingPageShell';
@@ -16,8 +17,11 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { RoleGuard } from '@/components/RoleGuard';
 
 import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
+import { usePostLoginReturn } from '@/hooks/usePostLoginReturn';
 
 import AccountRestrictedPage from '@/app/account-restricted/page';
+import LendLoanPage from '@/app/lend/loan/[loanId]/page';
+import LenderSupportedPage from '@/app/lender/supported/page';
 import AdminPanel from '@/app/admin/page';
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
@@ -105,6 +109,7 @@ const canShowPreviewRoutes = () => {
 export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
+   usePostLoginReturn();
    const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
    const isAuthenticated = Boolean(user?.id && username);
    const shouldCheckDefaultedBorrower = isAuthChecked && isAuthenticated;
@@ -161,6 +166,7 @@ export default function App() {
       <BottomNavActionProvider key={location.pathname}>
          <WalletLoadingOverlay />
          <ExpiredLoanRequestNotifier />
+         <LenderFundingPrompt />
          <Routes key={location.pathname}>
             <Route path="/" element={<Home />} />
 
@@ -307,6 +313,36 @@ export default function App() {
                      <RoleGuard>
                         <TransactionHistory />
                      </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+
+            {/* Lender Loan Note purchase (direct link only — not in main nav).
+                Public so logged-out users see the borrower/loan preview; the page itself
+                gates the purchase action behind login + wallet. /help/:loanId aliases it. */}
+            <Route
+               path="/lend/loan/:loanId"
+               element={
+                  <Layout>
+                     <LendLoanPage />
+                  </Layout>
+               }
+            />
+            <Route
+               path="/help/:loanId"
+               element={
+                  <Layout>
+                     <LendLoanPage />
+                  </Layout>
+               }
+            />
+            <Route
+               path="/lender/supported"
+               element={
+                  <ProtectedRoute>
+                     <Layout>
+                        <LenderSupportedPage />
+                     </Layout>
                   </ProtectedRoute>
                }
             />
