@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Loading from '@/components/Loading';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
+import { buildEmailConfirmationPath, PENDING_VERIFICATION_EMAIL_KEY } from '@/lib/authPaths';
 import { markPasswordRecoveryReady } from '@/lib/passwordRecovery';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import { fetchUser } from '@/store/slices/authSlice';
@@ -235,6 +236,13 @@ export default function AuthConfirmPage() {
    }, [dispatch, navigate]);
 
    if (error) {
+      // Every confirmation email also contains an 8-digit code, so a stale/expired
+      // signup link doesn't have to be a dead end — point the user at /auth/verify-code
+      // when we know which signup is pending. Recovery links have their own CTA above.
+      const pendingVerificationEmail =
+         typeof window !== 'undefined' ? sessionStorage.getItem(PENDING_VERIFICATION_EMAIL_KEY)?.trim() ?? '' : '';
+      const showCodeRecovery = !isRecoveryContext && !!pendingVerificationEmail;
+
       return (
          <div className="min-h-screen bg-[#FBFAFD] px-4 py-6 text-[#040033] dark:bg-[#0D0B14] dark:text-[#F0EAFF] sm:px-6 sm:py-10">
             <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-[480px] flex-col">
@@ -266,7 +274,9 @@ export default function AuthConfirmPage() {
                         <p className="mt-3 max-w-[350px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F] dark:text-[#A89BB8]">
                            {isRecoveryContext
                               ? 'Reset links can be opened only once and expire quickly. Request a fresh 8-digit code and enter it directly — no link needed.'
-                              : 'Open the latest Moodeng email and try again, or sign in to request a new link.'}
+                              : showCodeRecovery
+                                ? 'Open the latest Moodeng email and enter the 8-digit code below to finish confirming your account.'
+                                : 'Open the latest Moodeng email and try again, or sign in to request a new link.'}
                         </p>
                      </div>
 
@@ -275,12 +285,22 @@ export default function AuthConfirmPage() {
                      </p>
 
                      <Link
-                        to={isRecoveryContext ? '/forgot-password' : '/sign-in'}
+                        to={
+                           isRecoveryContext
+                              ? '/forgot-password'
+                              : showCodeRecovery
+                                ? buildEmailConfirmationPath(pendingVerificationEmail)
+                                : '/sign-in'
+                        }
                         className="flex h-14 w-full items-center justify-center rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95"
                      >
-                        {isRecoveryContext ? 'Request a new reset code' : 'Back to sign in'}
+                        {isRecoveryContext
+                           ? 'Request a new reset code'
+                           : showCodeRecovery
+                             ? 'Enter the code from your email'
+                             : 'Back to sign in'}
                      </Link>
-                     {isRecoveryContext ? (
+                     {isRecoveryContext || showCodeRecovery ? (
                         <Link
                            to="/sign-in"
                            className="mt-3 flex h-12 w-full items-center justify-center rounded-2xl border border-[#E0D7E8] text-sm font-semibold text-[#4D4359] transition hover:bg-[#F8F4FC] dark:border-[#2D1F4A] dark:text-[#A89BB8] dark:hover:bg-[#1E1530]"
