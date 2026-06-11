@@ -68,8 +68,9 @@ export interface TxResult {
  * The full LoanManager service interface. Both mock and real implementations satisfy
  * this contract so callers never branch on the feature flag.
  *
- * There is intentionally NO claimRepayments / getClaimable: repayments are routed
- * automatically to the Note owner by repay().
+ * There is intentionally NO claimRepayments / getClaimable. Repayments are HELD in the
+ * contract by repay() and released to the Note owner on full payoff (auto) or on/after the
+ * due date via settle(). No lender claim step.
  */
 export interface LoanManagerService {
    readonly isMock: boolean;
@@ -80,16 +81,23 @@ export interface LoanManagerService {
    listLoanNote(loanId: string, price: string): Promise<TxResult>;
    buyLoanNote(loanId: string): Promise<TxResult>;
    /**
-    * Borrower repays. Pulls USDC from the borrower and immediately forwards it to the
-    * repayment recipient (listing seller if escrowed/listed, else ownerOf). amount is
-    * USDC base units.
+    * Borrower repays. Pulls USDC from the borrower and HOLDS it in the contract. Released
+    * to the recipient on full payoff (here) or on/after the due date via settle(). amount
+    * is USDC base units.
     */
    repay(loanId: string, amount: string): Promise<TxResult>;
+   /**
+    * Releases held repayments to the recipient. Callable on/after the due date (permissionless).
+    * Full payoff already releases automatically inside repay().
+    */
+   settle(loanId: string): Promise<TxResult>;
 
    // --- Reads ---
    getLoan(loanId: string): Promise<OnchainLoan | null>;
    getRemainingOwed(loanId: string): Promise<string>;
-   /** The wallet that repayments are automatically sent to (listing seller if listed, else owner). */
+   /** USDC currently held (escrowed) for a loan, awaiting release. Base units. */
+   getHeld(loanId: string): Promise<string>;
+   /** The wallet held repayments will be released to (listing seller if listed, else owner). */
    getRepaymentRecipient(loanId: string): Promise<string | null>;
    ownerOf(loanId: string): Promise<string | null>;
    listings(loanId: string): Promise<OnchainListing | null>;

@@ -50,6 +50,9 @@ export interface RelayLoan {
    salePrice: number; // what a lender pays Moodeng (defaults to principal)
    lenderUpside: number; // totalOwed - salePrice
    status: 'Listed' | 'Sold' | 'Repaid' | 'Defaulted';
+   heldInContract: number; // repaid-but-escrowed USDC awaiting release
+   dueDate: string; // ISO — held funds can be released on/after this
+   canRelease: boolean; // past due AND has held funds (settle() will succeed)
 }
 
 /** A Loan Note the lender has funded — repayments auto-route to them, no claim step. */
@@ -62,8 +65,9 @@ export interface FundedLoan {
    status: 'Active' | 'Repaid' | 'Defaulted' | string;
    amountPaid: number; // what the lender paid Moodeng for the Note
    borrowerOwes: number; // totalOwed
-   amountRepaidToYou: number; // repayments already auto-sent to the lender
-   expectedRemaining: number; // remaining owed still to be auto-routed
+   amountReleasedToYou: number; // repayments already released to the lender (payoff/due date)
+   heldInContract: number; // repaid but still escrowed; releases on payoff or due date
+   expectedRemaining: number; // remaining owed still to be repaid
    iouPointsEarned: number;
-   repaymentWallet: string | null; // destination wallet repayments are auto-sent to
+   repaymentWallet: string | null; // wallet held repayments will be released to
 }
