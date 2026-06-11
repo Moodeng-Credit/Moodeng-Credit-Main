@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
 
 import { useLocalization } from '@/i18n/LocalizationProvider';
@@ -7,6 +9,8 @@ type OnboardingHeaderProps = {
    title?: string;
    onBack?: () => void;
    hideBack?: boolean;
+   /** When provided, the help button shows this text in an inline tooltip instead of navigating to /support. */
+   tooltip?: string;
 };
 
 const HEADER_COPY = {
@@ -32,10 +36,11 @@ const HEADER_COPY = {
    }
 } satisfies Record<LocaleCode, { goBack: string; help: string }>;
 
-export function OnboardingHeader({ title, onBack, hideBack = false }: OnboardingHeaderProps) {
+export function OnboardingHeader({ title, onBack, hideBack = false, tooltip }: OnboardingHeaderProps) {
    const navigate = useNavigate();
    const { locale } = useLocalization();
    const copy = HEADER_COPY[locale] ?? HEADER_COPY.en;
+   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
    const handleBack = () => {
       if (onBack) {
@@ -45,8 +50,16 @@ export function OnboardingHeader({ title, onBack, hideBack = false }: Onboarding
       navigate(-1);
    };
 
+   const handleHelpClick = () => {
+      if (tooltip) {
+         setIsHelpOpen((v) => !v);
+         return;
+      }
+      navigate('/support');
+   };
+
    return (
-      <div className="flex items-center justify-between px-md-5 py-md-3 w-full">
+      <div className="relative flex items-center justify-between px-md-5 py-md-3 w-full">
          <div className="flex items-center gap-md-3 flex-1 min-w-0">
             {!hideBack ? (
                <button
@@ -79,7 +92,7 @@ export function OnboardingHeader({ title, onBack, hideBack = false }: Onboarding
          <button
             type="button"
             aria-label={copy.help}
-            onClick={() => navigate('/support')}
+            onClick={handleHelpClick}
             className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-md-pill bg-white shadow-md-card dark:border dark:border-md-primary-900/40 dark:bg-[#191023]"
          >
             <span
@@ -96,6 +109,17 @@ export function OnboardingHeader({ title, onBack, hideBack = false }: Onboarding
                }}
             />
          </button>
+         {tooltip && isHelpOpen ? (
+            <>
+               <div className="fixed inset-0 z-10" onClick={() => setIsHelpOpen(false)} />
+               <div
+                  role="tooltip"
+                  className="absolute right-md-5 top-16 z-20 w-[260px] rounded-[10px] bg-[#360975] px-3 py-2 shadow-[0_8px_24px_rgba(20,18,24,0.18)] before:absolute before:right-4 before:top-[-6px] before:h-0 before:w-0 before:border-x-[6px] before:border-b-[6px] before:border-x-transparent before:border-b-[#360975]"
+               >
+                  <p className="text-center text-[14px] font-normal leading-[21px] tracking-[-0.28px] text-[#f1e9fd]">{tooltip}</p>
+               </div>
+            </>
+         ) : null}
       </div>
    );
 }
