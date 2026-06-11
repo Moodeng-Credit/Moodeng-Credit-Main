@@ -2,6 +2,16 @@ import { useCallback, useEffect, useState } from 'react';
 
 const RESEND_COOLDOWN_MS = 60_000;
 
+function readSecondsLeft(storageKey: string): number {
+   if (typeof window === 'undefined') return 0;
+   try {
+      const availableAt = Number(window.localStorage.getItem(storageKey)) || 0;
+      return Math.max(0, Math.ceil((availableAt - Date.now()) / 1000));
+   } catch {
+      return 0;
+   }
+}
+
 /**
  * Hard-lock countdown for "resend code" style buttons.
  *
@@ -13,17 +23,13 @@ const RESEND_COOLDOWN_MS = 60_000;
  *   - survives tab switches and page refreshes (timestamp persisted in localStorage).
  */
 export function useResendCooldown(storageKey: string) {
-   const [secondsLeft, setSecondsLeft] = useState(0);
+   // Hydrate synchronously from localStorage so a page that loads while the cooldown
+   // is active renders its locked state immediately, instead of flashing the
+   // unlocked state for one frame until the effect below catches up.
+   const [secondsLeft, setSecondsLeft] = useState(() => readSecondsLeft(storageKey));
 
    const recompute = useCallback(() => {
-      if (typeof window === 'undefined') return 0;
-      let availableAt = 0;
-      try {
-         availableAt = Number(window.localStorage.getItem(storageKey)) || 0;
-      } catch {
-         availableAt = 0;
-      }
-      const remaining = Math.max(0, Math.ceil((availableAt - Date.now()) / 1000));
+      const remaining = readSecondsLeft(storageKey);
       setSecondsLeft(remaining);
       return remaining;
    }, [storageKey]);
