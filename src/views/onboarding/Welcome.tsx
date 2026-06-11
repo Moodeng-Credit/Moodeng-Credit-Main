@@ -168,7 +168,7 @@ export default function Welcome() {
                   <div className="flex flex-col gap-md-1 flex-1 min-w-0">
                      <div className="flex flex-wrap items-center gap-md-1">
                         <h3 className="text-md-h5 text-md-heading">{copy.getStartedTitle}</h3>
-                        <span className="inline-flex items-center justify-center px-md-1 py-md-0 rounded-md-sm bg-md-primary-300 dark:bg-md-primary-1500 text-md-b3 font-semibold text-md-primary-1200">
+                        <span className="inline-flex items-center justify-center px-md-1 py-md-0 rounded-md-sm bg-md-primary-300 dark:bg-md-primary-1500 text-md-b3 font-semibold text-md-primary-1200 dark:text-[#f1e9fd]">
                            {copy.recommended}
                         </span>
                      </div>
@@ -245,7 +245,7 @@ export default function Welcome() {
                            {copy.noCommitment}
                         </span>
                      </div>
-                     <p className="text-md-b1 text-md-blue-800">{copy.checkFirstBody}</p>
+                     <p className="text-md-b1 text-md-blue-800 dark:text-md-blue-200">{copy.checkFirstBody}</p>
                      <ul className="flex flex-col gap-md-0 pt-md-1">
                         {copy.previewItems.map((item) => (
                            <li key={item} className="flex gap-md-1 items-center text-md-b2 font-semibold text-md-blue-1000 dark:text-md-blue-200">
