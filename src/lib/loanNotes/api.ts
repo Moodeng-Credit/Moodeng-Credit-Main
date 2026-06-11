@@ -206,16 +206,20 @@ export async function getMyFundedLoans(): Promise<FundedLoan[]> {
       const borrower = loan.borrower_user_id ? nameById.get(loan.borrower_user_id) : undefined;
       const borrowerOwes = toNumber(loan.total_repayment_amount);
 
-      // Repayments auto-route to the owner; "repaid to you" == on-chain amountRepaid.
-      let amountRepaidToYou = toNumber(loan.repaid_amount);
-      let expectedRemaining = Math.max(0, borrowerOwes - amountRepaidToYou);
+      // Hold-and-release: total repaid is split into "released to you" (paid out on payoff /
+      // due date) and "held in contract" (repaid but still escrowed).
+      const totalRepaid = toNumber(loan.repaid_amount);
+      let heldInContract = 0;
+      let amountReleasedToYou = totalRepaid;
+      let expectedRemaining = Math.max(0, borrowerOwes - totalRepaid);
       let repaymentWallet: string | null = (row.buyer_wallet as string) ?? null;
       if (row.onchain_loan_id) {
          try {
             const onchainLoan = await service.getLoan(String(row.onchain_loan_id));
-            if (onchainLoan) {
-               amountRepaidToYou = Number(formatUnits(BigInt(onchainLoan.amountRepaid || '0'), USDC_DECIMALS));
-            }
+            const repaid = onchainLoan ? Number(formatUnits(BigInt(onchainLoan.amountRepaid || '0'), USDC_DECIMALS)) : totalRepaid;
+            const held = Number(formatUnits(BigInt((await service.getHeld(String(row.onchain_loan_id))) || '0'), USDC_DECIMALS));
+            heldInContract = held;
+            amountReleasedToYou = Math.max(0, repaid - held);
             const remaining = await service.getRemainingOwed(String(row.onchain_loan_id));
             expectedRemaining = Number(formatUnits(BigInt(remaining || '0'), USDC_DECIMALS));
             const recipient = await service.getRepaymentRecipient(String(row.onchain_loan_id));
@@ -234,7 +238,8 @@ export async function getMyFundedLoans(): Promise<FundedLoan[]> {
          status: loan.repayment_status === 'Paid' ? 'Repaid' : loan.loan_status === 'Lent' ? 'Active' : loan.loan_status,
          amountPaid: toNumber(row.price),
          borrowerOwes,
-         amountRepaidToYou,
+         amountReleasedToYou,
+         heldInContract,
          expectedRemaining,
          iouPointsEarned: Number(formatUnits(BigInt((row.iou_points_awarded as unknown as string) ?? '0'), 6)),
          repaymentWallet
@@ -252,7 +257,7 @@ export async function getRelayLoans(): Promise<RelayLoan[]> {
    const { data, error } = await supabase
       .from('loans')
       .select(
-         'id, tracking_id, onchain_loan_id, loan_amount, total_repayment_amount, listing_price, is_sellable, loan_status, repayment_status, borrower_user_id, created_at'
+         'id, tracking_id, onchain_loan_id, loan_amount, total_repayment_amount, listing_price, is_sellable, loan_status, repayment_status, due_date, borrower_user_id, created_at'
       )
       .eq('funding_method', 'smart_contract')
       .order('created_at', { ascending: false });
@@ -268,14 +273,27 @@ export async function getRelayLoans(): Promise<RelayLoan[]> {
       }
    }
 
-   return data.map((row) => {
+   const service = getLoanManagerService();
+   const result: RelayLoan[] = [];
+   for (const row of data) {
       const principal = toNumber(row.loan_amount);
       const totalOwed = toNumber(row.total_repayment_amount);
       const salePrice = row.listing_price != null ? toNumber(row.listing_price) : principal;
       const borrower = row.borrower_user_id ? nameById.get(row.borrower_user_id) : undefined;
       const status: RelayLoan['status'] =
          row.repayment_status === 'Paid' ? 'Repaid' : row.is_sellable ? 'Listed' : 'Sold';
-      return {
+
+      let heldInContract = 0;
+      if (row.onchain_loan_id) {
+         try {
+            heldInContract = Number(formatUnits(BigInt((await service.getHeld(String(row.onchain_loan_id))) || '0'), USDC_DECIMALS));
+         } catch {
+            /* ignore */
+         }
+      }
+      const pastDue = row.due_date ? new Date(row.due_date).getTime() <= Date.now() : false;
+
+      result.push({
          loanId: row.id,
          trackingId: row.tracking_id,
          onchainLoanId: row.onchain_loan_id ? String(row.onchain_loan_id) : null,
@@ -285,9 +303,13 @@ export async function getRelayLoans(): Promise<RelayLoan[]> {
          totalOwed,
          salePrice,
          lenderUpside: Math.max(0, totalOwed - salePrice),
-         status
-      };
-   });
+         status,
+         heldInContract,
+         dueDate: row.due_date,
+         canRelease: pastDue && heldInContract > 0
+      });
+   }
+   return result;
 }
 
 /** Reads the current user's total IOU points (major units). */

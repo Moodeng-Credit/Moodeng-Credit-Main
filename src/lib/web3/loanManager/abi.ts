@@ -49,6 +49,20 @@ export const LOAN_MANAGER_ABI = [
    },
    {
       type: 'function',
+      name: 'settle',
+      stateMutability: 'nonpayable',
+      inputs: [{ name: 'loanId', type: 'uint256' }],
+      outputs: []
+   },
+   {
+      type: 'function',
+      name: 'heldRepayments',
+      stateMutability: 'view',
+      inputs: [{ name: 'loanId', type: 'uint256' }],
+      outputs: [{ name: '', type: 'uint256' }]
+   },
+   {
+      type: 'function',
       name: 'getLoan',
       stateMutability: 'view',
       inputs: [{ name: 'loanId', type: 'uint256' }],

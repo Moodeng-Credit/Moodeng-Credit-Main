@@ -30,9 +30,11 @@ interface MockState {
    loans: Record<string, OnchainLoan>;
    owners: Record<string, string>;
    listings: Record<string, OnchainListing>;
+   /** USDC base units held (escrowed) per loanId, awaiting release. */
+   held: Record<string, string>;
 }
 
-const emptyState = (): MockState => ({ nextLoanId: 1, loans: {}, owners: {}, listings: {} });
+const emptyState = (): MockState => ({ nextLoanId: 1, loans: {}, owners: {}, listings: {}, held: {} });
 
 const readState = (): MockState => {
    if (typeof window === 'undefined') return emptyState();
@@ -132,21 +134,36 @@ export const mockLoanManagerService: LoanManagerService = {
       if (!loan) throw new Error('Mock: loan does not exist');
       if (loan.status !== LoanStatus.Active) throw new Error('Mock: loan not active');
 
-      // Recipient resolution mirrors the contract: never address(this) — listing seller
-      // while escrowed, else the owner. In the mock, funds are "forwarded" instantly.
-      const recipient = recipientFor(state, loanId);
-      if (!recipient) throw new Error('Mock: no repayment recipient');
-
+      // Hold the repayment in the contract (do not release yet).
       const remaining = BigInt(loan.totalOwed) - BigInt(loan.amountRepaid);
       const pay = BigInt(amount) > remaining ? remaining : BigInt(amount);
+      state.held[loanId] = (BigInt(state.held[loanId] ?? '0') + pay).toString();
       loan.amountRepaid = (BigInt(loan.amountRepaid) + pay).toString();
+
       if (BigInt(loan.amountRepaid) >= BigInt(loan.totalOwed)) {
          loan.status = LoanStatus.Repaid;
-         // Deactivate any listing once repaid.
          if (state.listings[loanId]) state.listings[loanId].active = false;
+         state.held[loanId] = '0'; // released to the recipient on full payoff
       }
       writeState(state);
       return { txHash: fakeTxHash() };
+   },
+
+   async settle(loanId: string): Promise<TxResult> {
+      await delay();
+      const state = readState();
+      const loan = state.loans[loanId];
+      if (!loan) throw new Error('Mock: loan does not exist');
+      if (Math.floor(Date.now() / 1000) < loan.dueDate) throw new Error('Mock: not yet due');
+      if (BigInt(state.held[loanId] ?? '0') === 0n) throw new Error('Mock: nothing to release');
+      state.held[loanId] = '0'; // released to the recipient
+      writeState(state);
+      return { txHash: fakeTxHash() };
+   },
+
+   async getHeld(loanId: string): Promise<string> {
+      const state = readState();
+      return state.held[loanId] ?? '0';
    },
 
    async getLoan(loanId: string): Promise<OnchainLoan | null> {

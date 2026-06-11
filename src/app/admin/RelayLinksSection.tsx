@@ -1,8 +1,12 @@
 import { useState } from 'react';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
+import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { getRelayLoans } from '@/lib/loanNotes/api';
+import { getLoanManagerService } from '@/lib/web3/loanManager';
 import type { RelayLoan } from '@/lib/loanNotes/types';
 
 const usd = (n: number) => `${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -29,7 +33,24 @@ export default function RelayLinksSection() {
       queryKey: ['admin-relay-loans'],
       queryFn: getRelayLoans
    });
+   const queryClient = useQueryClient();
+   const { showToast } = useToast();
    const [copiedId, setCopiedId] = useState<string | null>(null);
+   const [releasingId, setReleasingId] = useState<string | null>(null);
+
+   const release = async (loan: RelayLoan) => {
+      if (!loan.onchainLoanId) return;
+      setReleasingId(loan.loanId);
+      try {
+         await getLoanManagerService().settle(loan.onchainLoanId);
+         showToast(TOAST_TYPES.SUCCESS, 'Released', `Released held repayments for ${loan.borrowerDisplayName} to the lender.`);
+         queryClient.invalidateQueries({ queryKey: ['admin-relay-loans'] });
+      } catch (err) {
+         showToast(TOAST_TYPES.ERROR, 'Release failed', (err as Error).message || 'Could not release held repayments.');
+      } finally {
+         setReleasingId(null);
+      }
+   };
 
    const copy = async (loan: RelayLoan, withMessage: boolean) => {
       const link = shareUrl(loan.loanId);
@@ -93,8 +114,28 @@ export default function RelayLinksSection() {
                               <dd className="font-bold">${usd(loan.totalOwed)}</dd>
                               <dt className="text-[#6f627e]">Lender upside</dt>
                               <dd className="font-bold text-emerald-600">${usd(loan.lenderUpside)}</dd>
+                              <dt className="text-[#6f627e]">Held in contract</dt>
+                              <dd className="font-bold">${usd(loan.heldInContract)}</dd>
                            </dl>
                         </div>
+
+                        {loan.heldInContract > 0 ? (
+                           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#fbf8ff] px-4 py-3">
+                              <span className="text-base text-[#6f627e]">
+                                 ${usd(loan.heldInContract)} repaid is held in the contract. It releases to the lender automatically on full
+                                 payoff, or on the due date.
+                              </span>
+                              <button
+                                 type="button"
+                                 onClick={() => release(loan)}
+                                 disabled={!loan.canRelease || releasingId === loan.loanId}
+                                 title={loan.canRelease ? 'Release held repayments to the lender' : 'Can release on or after the due date'}
+                                 className="rounded-xl bg-[#8336f0] px-5 py-3 text-base font-black text-white hover:brightness-110 disabled:opacity-40"
+                              >
+                                 {releasingId === loan.loanId ? 'Releasing…' : loan.canRelease ? 'Release to lender' : 'Release on due date'}
+                              </button>
+                           </div>
+                        ) : null}
 
                         <div className="mt-4 flex flex-wrap items-center gap-3">
                            <code className="flex-1 truncate rounded-xl bg-[#f5f1fb] px-4 py-3 text-base text-[#34234f]" title={link}>

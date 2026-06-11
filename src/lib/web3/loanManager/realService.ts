@@ -79,6 +79,16 @@ export const realLoanManagerService: LoanManagerService = {
       return { txHash };
    },
 
+   async settle(loanId: string): Promise<TxResult> {
+      const txHash = await write('settle', [BigInt(loanId)]);
+      return { txHash };
+   },
+
+   async getHeld(loanId: string): Promise<string> {
+      const result = await read<bigint>('heldRepayments', [BigInt(loanId)]);
+      return result.toString();
+   },
+
    async getLoan(loanId: string): Promise<OnchainLoan | null> {
       try {
          const result = await read<{

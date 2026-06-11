@@ -159,18 +159,81 @@ contract LoanManagerTest is Test {
         assertEq(uint8(manager.getLoan(loanId).status), uint8(LoanManager.LoanStatus.Repaid));
     }
 
-    function test_PartialRepayForwardsEachTime() public {
+    function test_PartialIsHeldThenReleasedOnPayoff() public {
         uint256 loanId = _fund(); // not listed -> recipient is owner (Moodeng)
+        uint256 moodengBefore = usdc.balanceOf(moodeng);
+
+        // First partial is HELD in the contract, not forwarded.
+        vm.startPrank(borrower);
+        usdc.approve(address(manager), TOTAL_OWED);
+        manager.repay(loanId, 10e6);
+        vm.stopPrank();
+
+        assertEq(manager.heldRepayments(loanId), 10e6, "partial held in contract");
+        assertEq(usdc.balanceOf(moodeng), moodengBefore, "nothing released yet");
+        assertEq(usdc.balanceOf(address(manager)), 10e6, "contract escrows the partial");
+
+        // Final payment completes the loan and releases everything.
+        vm.prank(borrower);
+        manager.repay(loanId, 12e6);
+
+        assertEq(manager.heldRepayments(loanId), 0, "held cleared on payoff");
+        assertEq(usdc.balanceOf(moodeng), moodengBefore + TOTAL_OWED, "released on full payoff");
+        assertEq(usdc.balanceOf(address(manager)), 0, "contract holds no funds after release");
+        assertEq(uint8(manager.getLoan(loanId).status), uint8(LoanManager.LoanStatus.Repaid));
+    }
+
+    function test_SettleReleasesHeldOnDueDate() public {
+        uint256 loanId = _fund(); // recipient = Moodeng (owner)
         uint256 moodengBefore = usdc.balanceOf(moodeng);
 
         vm.startPrank(borrower);
         usdc.approve(address(manager), TOTAL_OWED);
-        manager.repay(loanId, 10e6);
-        manager.repay(loanId, 12e6);
+        manager.repay(loanId, 10e6); // partial, held
         vm.stopPrank();
 
-        assertEq(usdc.balanceOf(moodeng), moodengBefore + TOTAL_OWED, "all partials forwarded");
-        assertEq(uint8(manager.getLoan(loanId).status), uint8(LoanManager.LoanStatus.Repaid));
+        // Cannot settle before the due date.
+        vm.expectRevert(LoanManager.NotYetDue.selector);
+        manager.settle(loanId);
+
+        // On/after the due date, anyone can release whatever is held.
+        vm.warp(block.timestamp + 31 days);
+        manager.settle(loanId); // permissionless
+
+        assertEq(manager.heldRepayments(loanId), 0, "held released on due date");
+        assertEq(usdc.balanceOf(moodeng), moodengBefore + 10e6, "recipient got the held partial");
+        // Loan stays Active (still owes the remainder) until repaid or defaulted.
+        assertEq(uint8(manager.getLoan(loanId).status), uint8(LoanManager.LoanStatus.Active));
+    }
+
+    function test_SettleWithNothingHeldReverts() public {
+        uint256 loanId = _fund();
+        vm.warp(block.timestamp + 31 days);
+        vm.expectRevert(LoanManager.NothingToRelease.selector);
+        manager.settle(loanId);
+    }
+
+    function test_MarkDefaulted_releasesHeldPartialToOwner() public {
+        uint256 loanId = _fundAndList(PRINCIPAL);
+        // Lender buys, then borrower only partially repays before default.
+        vm.startPrank(lender);
+        usdc.approve(address(manager), PRINCIPAL);
+        manager.buyLoanNote(loanId);
+        vm.stopPrank();
+
+        uint256 lenderBefore = usdc.balanceOf(lender);
+        vm.startPrank(borrower);
+        usdc.approve(address(manager), 10e6);
+        manager.repay(loanId, 10e6);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 31 days);
+        vm.prank(moodeng);
+        manager.markDefaulted(loanId);
+
+        assertEq(manager.heldRepayments(loanId), 0, "held released on default");
+        assertEq(usdc.balanceOf(lender), lenderBefore + 10e6, "lender keeps what was paid");
+        assertEq(uint8(manager.getLoan(loanId).status), uint8(LoanManager.LoanStatus.Defaulted));
     }
 
     // --- Guards --------------------------------------------------------------

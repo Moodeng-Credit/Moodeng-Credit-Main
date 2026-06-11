@@ -17,11 +17,14 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
  *         borrower repays this contract and repayments are AUTOMATICALLY forwarded to the
  *         current Note owner — there is no claim step and no claimable balances.
  *
- * @dev Repayment routing (the key correction vs. a claimable design):
- *      In {repay}, the pulled USDC is immediately forwarded to the repayment recipient:
- *        - if the Note is actively listed (escrowed here) -> the listing seller, because
- *          while listed `ownerOf` is THIS contract and funds must never be sent to it;
- *        - otherwise -> `ownerOf(loanId)` (Moodeng before sale, the lender after).
+ * @dev Repayment model (hold-and-release, not claimable, not immediate-forward):
+ *      {repay} pulls USDC from the borrower and HOLDS it in the contract. Held funds are
+ *      released to the repayment recipient when the loan is fully repaid (auto, inside
+ *      {repay}) or on/after the due date via {settle} (permissionless). On default, held
+ *      partials are released to the lender. The recipient is:
+ *        - the listing seller if the Note is actively listed (escrowed here), because while
+ *          listed `ownerOf` is THIS contract and funds must never be sent to it; otherwise
+ *        - `ownerOf(loanId)` (Moodeng before sale, the lender after).
  *
  *      Roles:
  *        - DEFAULT_ADMIN_ROLE: manages roles.
@@ -76,6 +79,9 @@ contract LoanManager is ERC721, ERC721Holder, AccessControl, ReentrancyGuard {
     mapping(bytes32 requestId => bool) public requestIdUsed;
     mapping(uint256 loanId => Listing) public listings;
 
+    /// @notice USDC repayments currently held (escrowed) in the contract per loan, awaiting release.
+    mapping(uint256 loanId => uint256) public heldRepayments;
+
     // -------------------------------------------------------------------------
     // Events
     // -------------------------------------------------------------------------
@@ -92,8 +98,10 @@ contract LoanManager is ERC721, ERC721Holder, AccessControl, ReentrancyGuard {
     event LoanNoteSold(uint256 indexed loanId, address indexed seller, address indexed buyer, uint256 price);
     event ListingCancelled(uint256 indexed loanId, address indexed seller);
     event RepaymentMade(uint256 indexed loanId, address indexed borrower, uint256 amount, uint256 totalRepaid);
-    /// @notice Emitted when a repayment is automatically forwarded to the Note owner / listing seller.
-    event RepaymentForwarded(uint256 indexed loanId, address indexed recipient, uint256 amount);
+    /// @notice Emitted when a repayment is pulled in and held (escrowed) in the contract.
+    event RepaymentHeld(uint256 indexed loanId, uint256 amount, uint256 totalHeld);
+    /// @notice Emitted when held repayments are released to the Note owner / listing seller.
+    event RepaymentReleased(uint256 indexed loanId, address indexed recipient, uint256 amount);
     event LoanRepaid(uint256 indexed loanId, address indexed borrower);
     event LoanDefaulted(uint256 indexed loanId, address indexed borrower);
     /// @notice Emitted when a repayment is made at or after the due date.
@@ -110,6 +118,8 @@ contract LoanManager is ERC721, ERC721Holder, AccessControl, ReentrancyGuard {
     error NotBorrower();
     error NotActive();
     error OverRepayment();
+    error NotYetDue();
+    error NothingToRelease();
     error NotTokenOwner();
     error ListingNotActive();
     error AlreadyListed();
@@ -238,12 +248,13 @@ contract LoanManager is ERC721, ERC721Holder, AccessControl, ReentrancyGuard {
     }
 
     // -------------------------------------------------------------------------
-    // Repayment — automatic forward (no claim)
+    // Repayment — hold in contract, release on payoff or due date (no claim)
     // -------------------------------------------------------------------------
     /**
-     * @notice Borrower repays. The amount is pulled from the borrower and IMMEDIATELY
-     *         forwarded to the repayment recipient — listing seller if escrowed/listed,
-     *         otherwise the current Note owner. No claimable balances, no claim step.
+     * @notice Borrower repays. The amount is pulled from the borrower and HELD (escrowed)
+     *         in the contract. Held funds are released to the repayment recipient (listing
+     *         seller if escrowed/listed, else the Note owner) when the loan is fully repaid
+     *         (auto, here) or on/after the due date via {settle}. No claim step.
      */
     function repay(uint256 loanId, uint256 amount) external nonReentrant {
         Loan storage loan = _loans[loanId];
@@ -255,23 +266,21 @@ contract LoanManager is ERC721, ERC721Holder, AccessControl, ReentrancyGuard {
         uint256 remaining = loan.totalOwed - loan.amountRepaid;
         if (amount > remaining) revert OverRepayment();
 
-        address recipient = _repaymentRecipient(loanId);
-
-        // Pull from borrower, then immediately forward to the recipient.
+        // Pull from borrower and hold in the contract (do not forward yet).
         usdc.safeTransferFrom(msg.sender, address(this), amount);
-        usdc.safeTransfer(recipient, amount);
-
+        heldRepayments[loanId] += amount;
         loan.amountRepaid += amount;
+
         emit RepaymentMade(loanId, msg.sender, amount, loan.amountRepaid);
-        emit RepaymentForwarded(loanId, recipient, amount);
+        emit RepaymentHeld(loanId, amount, heldRepayments[loanId]);
 
         if (block.timestamp >= loan.dueDate) {
             emit LateRepayment(loanId, amount, loan.dueDate, block.timestamp);
         }
 
         if (loan.amountRepaid == loan.totalOwed) {
-            // Return any escrowed Note to the seller before the loan leaves Active
-            // (transfers are blocked once not Active).
+            // Return any escrowed Note to the seller while still Active (transfers are
+            // blocked once not Active), then mark Repaid and release the held funds.
             Listing storage lst = listings[loanId];
             if (lst.active) {
                 lst.active = false;
@@ -279,18 +288,47 @@ contract LoanManager is ERC721, ERC721Holder, AccessControl, ReentrancyGuard {
             }
             loan.status = LoanStatus.Repaid;
             emit LoanRepaid(loanId, loan.borrower);
+            _release(loanId);
         }
+    }
+
+    /**
+     * @notice Release held repayments for a loan to the current recipient. Callable by
+     *         anyone on/after the due date (e.g. a keeper, the lender, or the admin) so the
+     *         lender is paid out at the due date without a manual claim. Full payoff already
+     *         releases automatically inside {repay}.
+     */
+    function settle(uint256 loanId) external nonReentrant {
+        Loan storage loan = _loans[loanId];
+        if (loan.borrower == address(0)) revert InvalidLoan();
+        if (block.timestamp < loan.dueDate) revert NotYetDue();
+        if (heldRepayments[loanId] == 0) revert NothingToRelease();
+        _release(loanId);
+    }
+
+    /// @dev Sends any held repayments for `loanId` to the current recipient (never address(this)).
+    function _release(uint256 loanId) internal {
+        uint256 amount = heldRepayments[loanId];
+        if (amount == 0) return;
+        heldRepayments[loanId] = 0;
+        address recipient = _repaymentRecipient(loanId);
+        usdc.safeTransfer(recipient, amount);
+        emit RepaymentReleased(loanId, recipient, amount);
     }
 
     // -------------------------------------------------------------------------
     // Defaulting
     // -------------------------------------------------------------------------
-    /// @notice Mark an overdue, still-Active loan as Defaulted; returns any escrowed Note to the seller.
+    /// @notice Mark an overdue, still-Active loan as Defaulted. Any held partial repayments
+    ///         are released to the lender (Note owner), and any escrowed Note is returned to the seller.
     function markDefaulted(uint256 loanId) external nonReentrant onlyRole(ADMIN_ROLE) {
         Loan storage loan = _loans[loanId];
         if (loan.borrower == address(0)) revert InvalidLoan();
         if (loan.status != LoanStatus.Active) revert NotActive();
         if (block.timestamp <= loan.dueDate) revert LoanNotOverdue();
+
+        // The lender keeps whatever the borrower did pay.
+        _release(loanId);
 
         Listing storage lst = listings[loanId];
         if (lst.active) {
@@ -317,7 +355,9 @@ contract LoanManager is ERC721, ERC721Holder, AccessControl, ReentrancyGuard {
         return loan.totalOwed - loan.amountRepaid;
     }
 
-    /// @notice The wallet repayments are automatically sent to (listing seller if listed, else owner).
+    /// @notice USDC currently held (escrowed) for a loan, awaiting release. (auto getter below)
+
+    /// @notice The wallet held repayments will be released to (listing seller if listed, else owner).
     function getRepaymentRecipient(uint256 loanId) external view returns (address) {
         if (_loans[loanId].borrower == address(0)) revert InvalidLoan();
         return _repaymentRecipient(loanId);

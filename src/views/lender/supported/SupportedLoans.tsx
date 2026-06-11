@@ -70,12 +70,12 @@ export default function SupportedLoans() {
                            <dd className="font-medium text-gray-900">{usd(loan.borrowerOwes)}</dd>
                         </div>
                         <div>
-                           <dt className="text-xs text-gray-400">Repaid to you</dt>
-                           <dd className="font-medium text-emerald-600">{usd(loan.amountRepaidToYou)}</dd>
+                           <dt className="text-xs text-gray-400">Released to you</dt>
+                           <dd className="font-medium text-emerald-600">{usd(loan.amountReleasedToYou)}</dd>
                         </div>
                         <div>
-                           <dt className="text-xs text-gray-400">Expected remaining</dt>
-                           <dd className="font-medium text-gray-900">{usd(loan.expectedRemaining)}</dd>
+                           <dt className="text-xs text-gray-400">Held in contract</dt>
+                           <dd className="font-medium text-gray-900">{usd(loan.heldInContract)}</dd>
                         </div>
                         <div>
                            <dt className="text-xs text-gray-400">IOU earned</dt>
@@ -90,7 +90,8 @@ export default function SupportedLoans() {
                      </dl>
 
                      <p className="mt-3 text-xs text-gray-400">
-                        If {loan.borrowerDisplayName} repays, the repayment is automatically routed to your wallet — no claim needed.
+                        Repayments are sent to your wallet automatically — when {loan.borrowerDisplayName} fully repays, or on the due
+                        date for whatever has been paid so far. No claim needed.
                      </p>
                   </div>
                ))}
