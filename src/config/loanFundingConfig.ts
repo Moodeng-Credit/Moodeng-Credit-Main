@@ -87,6 +87,10 @@ export const PAYMASTER_URL = (import.meta.env.VITE_PAYMASTER_URL ?? '').trim();
 /** True when a paymaster URL is configured (and real mode is on). Sponsorship is best-effort. */
 export const isPaymasterEnabled = (): boolean => isRealLoanManagerEnabled() && /^https?:\/\//i.test(PAYMASTER_URL);
 
+/** Basescan explorer links (Base mainnet) — shown to users for a trustable tx record. */
+export const txExplorerUrl = (txHash: string): string => `https://basescan.org/tx/${txHash}`;
+export const addressExplorerUrl = (address: string): string => `https://basescan.org/address/${address}`;
+
 /**
  * IOU points awarded per 1 USDC of Loan Note purchase (lender side).
  * Off-chain points only; not an ERC20. Matches the platform's 1 point / USDC base rate.
