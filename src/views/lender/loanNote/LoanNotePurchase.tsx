@@ -12,7 +12,7 @@ import { txExplorerUrl } from '@/config/loanFundingConfig';
 import { getLoanNotePageData } from '@/lib/loanNotes/api';
 import type { LoanNotePageData } from '@/lib/loanNotes/types';
 import type { RootState } from '@/store/store';
-import { PENDING_FUND_LOAN_KEY } from '@/views/lender/loanNote/fundingPopup';
+import { setPendingFundLoanId } from '@/views/lender/loanNote/fundingPopup';
 import { type BuyResult, useBuyLoanNote } from '@/views/lender/loanNote/useBuyLoanNote';
 
 const usd = (n: number) => `${n.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`;
@@ -46,13 +46,9 @@ export default function LoanNotePurchase() {
    const borrowerName = data?.borrowerDisplayName ?? 'this borrower';
 
    const requireLoginThenPopup = () => {
-      // Stash the loan so the post-login funding popup opens for this borrower
-      // (instead of routing the lender through the request board).
-      try {
-         window.sessionStorage.setItem(PENDING_FUND_LOAN_KEY, loanId);
-      } catch {
-         /* ignore storage errors */
-      }
+      // Stash the loan so onboarding auto-tags them as a lender and the funding popup
+      // opens for this borrower once they're onboarded (instead of the request board).
+      setPendingFundLoanId(loanId);
       navigate('/sign-in');
    };
 
