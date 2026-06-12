@@ -117,7 +117,7 @@ export default function App() {
    const showPreviewRoutes = canShowPreviewRoutes();
    const showBottomNav =
       Boolean(user?.id) &&
-      !shouldShowAccountSupport &&
+      (!shouldShowAccountSupport || canRepayWhileDefaulted) &&
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
          (location.pathname.startsWith('/user/') && !isUserDetailRoute) ||
          location.pathname.startsWith('/support') ||
