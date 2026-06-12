@@ -40,6 +40,7 @@ import type { BorrowerContextProfileData } from '@/lib/borrowerContextFit';
 import { getBorrowerActiveLoanCount, getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
+import { isUserVerified } from '@/lib/isUserVerified';
 import {
    BORROWER_GUIDED_TOUR_ID,
    GENERAL_GUIDED_TOUR_ID,
@@ -402,7 +403,7 @@ function RequestBoard$() {
    const isAuthenticated = !!(effectiveUser?.id && (username || isReferralTestMode || isLenderTourPreview));
    const hasSelectedRole = Boolean(effectiveUser?.userRole);
    const needsRoleSelection = isAuthenticated && !hasSelectedRole;
-   const isWorldIdVerified = effectiveUser?.isWorldId === 'ACTIVE' || hasWorldIdJustVerified;
+   const isWorldIdVerified = isUserVerified(effectiveUser) || hasWorldIdJustVerified;
    const showVerify = !isWorldIdVerified;
    const storeIsBorrower = useIsBorrower();
    const isBorrower = isLenderTourPreview ? false : isReferralTestMode || storeIsBorrower;
@@ -460,7 +461,7 @@ function RequestBoard$() {
    const [customAmount, setCustomAmount] = useState('');
    const [searchLoan, setSearchLoan] = useState('');
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
-   const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, effectiveUser.isWorldId === 'ACTIVE') : 0;
+   const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, isUserVerified(effectiveUser)) : 0;
    const borrowerCreditLoans = useMemo(() => {
       if (!borrowerUserId) return [];
 
@@ -476,7 +477,7 @@ function RequestBoard$() {
       isReferralTestMode ||
       (isAuthenticated &&
          isBorrower &&
-         effectiveUser.isWorldId === 'ACTIVE' &&
+         isUserVerified(effectiveUser) &&
          effectiveCreditLimit <= STARTING_CREDIT_LIMIT &&
          borrowerCreditLoans.length === 0);
    const hasBorrowerBaseWallet = !IS_BORROWER_BASE_WALLET_GATE_ENABLED || hasWalletAddressOnAccount(effectiveUser);
@@ -1158,7 +1159,7 @@ function RequestBoard$() {
       };
 
       if (
-         effectiveUser.isWorldId === 'ACTIVE' &&
+         isUserVerified(effectiveUser) &&
          hasBorrowerBaseWallet &&
          !hasReachedActiveLoanLimit &&
          parsedLoanAmount <= availableCreditLimit &&

@@ -8,6 +8,7 @@ import IouPointHistoryModal from '@/components/IouPointHistoryModal';
 import UserAvatar from '@/components/UserAvatar';
 
 import { type LocaleCode, useLocalization } from '@/i18n';
+import { isUserVerified } from '@/lib/isUserVerified';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { formatPointsMajor } from '@/shared/points';
 import { logoutUser } from '@/store/slices/authSlice';
@@ -266,7 +267,7 @@ export default function Account() {
    const displayName = user?.displayName || user?.username || 'User';
    const hasWallet = Boolean(user?.walletAddress);
    const isLender = user?.userRole === 'lender';
-   const isVerified = user?.isWorldId === 'ACTIVE';
+   const isVerified = isUserVerified(user);
    const copy = ACCOUNT_COPY[locale];
    const walletSetupLabel = isLender ? copy.connectWallet : copy.addBaseWallet;
    const { data: userPointsData } = useQuery({

@@ -179,6 +179,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    walletProvider: (row as UserRow & { wallet_provider?: WalletProvider | null }).wallet_provider ?? undefined,
    isWorldId: row.is_world_id,
    nullifierHash: row.nullifier_hash ?? undefined,
+   isDidit: (row as UserRow & { is_didit?: WorldIdStatus | null }).is_didit ?? undefined,
    telegramUsername: row.telegram_username ?? undefined,
    telegramId: toOptionalString(row.telegram_id),
    chatId: toOptionalString(row.chat_id),

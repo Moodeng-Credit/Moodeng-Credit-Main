@@ -4,6 +4,7 @@ import BorrowerVerificationBadge from '@/components/BorrowerVerificationBadge';
 import UserAvatar from '@/components/UserAvatar';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { getMemberSinceText } from '@/utils/dateFormatters';
+import { isUserVerified } from '@/lib/isUserVerified';
 import type { User } from '@/types/authTypes';
 
 interface UserGreetingProps {
@@ -14,7 +15,7 @@ export default function UserGreeting({ user }: UserGreetingProps) {
    const navigate = useNavigate();
    const location = useLocation();
    const firstName = user.displayName?.split(' ')[0] || user.username?.split(' ')[0] || 'there';
-   const isVerified = user.isWorldId === 'ACTIVE';
+   const isVerified = isUserVerified(user);
    const memberSince = user.createdAt ? getMemberSinceText(user.createdAt) : '';
    const accountEditPath = (edit: 'avatar' | 'name') => {
       const params = new URLSearchParams(location.search);

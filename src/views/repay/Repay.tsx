@@ -24,6 +24,7 @@ import {
    isBaseWalletReadyForRepayment,
    isConnectedToLockedBaseWallet
 } from '@/lib/walletProvider';
+import { isUserVerified } from '@/lib/isUserVerified';
 import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -286,7 +287,7 @@ export default function Repay() {
       connectorName: account.connector?.name,
       wallet: user
    });
-   const isWorldIdVerified = user.isWorldId === 'ACTIVE';
+   const isWorldIdVerified = isUserVerified(user);
    const hasCompletedBaseWalletSetup = baseWalletLock.isConfirmedBase;
    const emptyRepayState = !selectedLoan
       ? !isWorldIdVerified && !hasCompletedBaseWalletSetup

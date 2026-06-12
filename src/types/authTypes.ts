@@ -31,6 +31,8 @@ export interface User {
    walletProvider?: WalletProvider;
    isWorldId: WorldIdStatus;
    nullifierHash?: string;
+   /** Identity verification status via Didit (KYC: ID + liveness + face match). Independent of World ID. */
+   isDidit?: WorldIdStatus;
    telegramUsername?: string;
    telegramId?: string;
    chatId?: string;

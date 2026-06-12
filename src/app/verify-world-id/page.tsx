@@ -74,6 +74,23 @@ export default function WorldIdVerification() {
                   </button>
                )}
             </WorldIDVerification>
+
+            <div className="flex items-center gap-md-2 w-full">
+               <span className="h-px flex-1 bg-md-neutral-300" />
+               <span className="text-md-b3 font-medium text-md-neutral-700">or</span>
+               <span className="h-px flex-1 bg-md-neutral-300" />
+            </div>
+
+            <button
+               type="button"
+               onClick={() => navigate('/verify-didit', { state: returnTo ? { returnTo } : undefined })}
+               className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg border border-md-primary-1200 text-md-b1 font-semibold text-md-primary-1200"
+            >
+               Verify with ID instead
+            </button>
+            <p className="text-md-b3 font-medium text-md-neutral-700">
+               No World ID? Complete a quick ID &amp; selfie check instead.
+            </p>
          </div>
       </div>
    );
