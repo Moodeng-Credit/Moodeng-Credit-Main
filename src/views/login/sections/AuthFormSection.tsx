@@ -8,6 +8,7 @@ import Loading from '@/components/Loading';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import TextWithLine from '@/components/ui/TextWithLine';
 
+import { buildEmailConfirmationPath } from '@/lib/authPaths';
 import {
    loginUser,
    loginWithGoogle,
@@ -86,13 +87,13 @@ export default function AuthFormSection(): JSX.Element {
          const resultAction = await dispatch(action(payload as never) as AsyncThunkAction<unknown, unknown, Record<string, unknown>>);
 
          if (action.fulfilled.match(resultAction)) {
-            const payload = resultAction.payload as any;
-            if (payload?.isExistingUser) {
+            const resultPayload = resultAction.payload as { isExistingUser?: boolean; isNewUser?: boolean };
+            if (resultPayload?.isExistingUser) {
                navigate('/auth-success?type=link');
                return;
             }
-            if (payload?.isNewUser) {
-               navigate('/auth-success?type=verify');
+            if (resultPayload?.isNewUser) {
+               navigate(buildEmailConfirmationPath('email' in payload ? payload.email : undefined));
                return;
             }
             clear();
