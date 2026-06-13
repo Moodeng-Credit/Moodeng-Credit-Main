@@ -111,9 +111,10 @@ export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
    const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
+   const userLoansFetchedAt = useSelector((state: RootState) => state.loans.userLoansFetchedAt);
    const isAuthenticated = Boolean(user?.id && username);
    const shouldCheckDefaultedBorrower = isAuthChecked && isAuthenticated;
-   const defaultedBorrower = useDefaultedBorrowerSupport(shouldCheckDefaultedBorrower ? user.id : null);
+   const defaultedBorrower = useDefaultedBorrowerSupport(shouldCheckDefaultedBorrower ? user.id : null, userLoansFetchedAt);
    const isAccountRestricted = user?.accountStatus === 'blocked' || user?.accountStatus === 'banned';
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
    const repayReturnTo = (location.state as { returnTo?: string } | null)?.returnTo === 'repay';

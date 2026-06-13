@@ -33,12 +33,13 @@ export default function AccountRestrictedPage() {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
    const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
+   const userLoansFetchedAt = useSelector((state: RootState) => state.loans.userLoansFetchedAt);
    const [isRecoveringSession, setIsRecoveringSession] = useState(false);
    const [isSigningOut, setIsSigningOut] = useState(false);
    const mockStatus = getMockStatus();
    const status = mockStatus ?? user?.accountStatus;
    const isRestricted = status === 'blocked' || status === 'banned';
-   const defaultedBorrower = useDefaultedBorrowerSupport(!mockStatus && isAuthChecked ? user?.id : null);
+   const defaultedBorrower = useDefaultedBorrowerSupport(!mockStatus && isAuthChecked ? user?.id : null, userLoansFetchedAt);
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
    const hasProfileSession = Boolean(user?.id && username);
    const isCheckingAuth = !mockStatus && (!isAuthChecked || isRecoveringSession);
