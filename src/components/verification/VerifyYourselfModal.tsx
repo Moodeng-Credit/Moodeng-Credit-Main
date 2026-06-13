@@ -2,57 +2,34 @@ import { useCallback, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+type VerifyMethod = 'worldid' | 'didit';
 
 type VerifyYourselfModalProps = {
    isOpen: boolean;
    onClose: () => void;
-   /** Optional in-app destination to send the user to after they verify. */
+   /**
+    * Where to send the user once verified. A known key (e.g. 'loan-request') maps to a
+    * specific screen; any other value is treated as a path to return to. Defaults to the
+    * caller's current path.
+    */
    returnTo?: string;
-   /** Optional extra callback fired when the World ID path succeeds, before navigation. */
-   onWorldIdSuccess?: () => void;
 };
 
 /**
- * Lets a user pick how to verify their identity: World ID (Orb) or traditional
- * KYC (Didit ID + selfie). Both paths grant the same verified status.
+ * Lets a user pick how to verify their identity: World ID (Orb) or traditional KYC
+ * (Didit ID + selfie). Both paths first run a shared liveness check, so both buttons hand
+ * off to the /verify orchestrator with the chosen method. Both paths grant verified status.
  */
-export default function VerifyYourselfModal({ isOpen, onClose, returnTo, onWorldIdSuccess }: VerifyYourselfModalProps) {
+export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: VerifyYourselfModalProps) {
    const navigate = useNavigate();
 
-   const navigateAfterVerified = useCallback(() => {
-      switch (returnTo) {
-         case 'loan-request':
-            navigate('/request-board', { state: { openLoanRequest: true } });
-            return;
-         case 'account-settings':
-            navigate('/account/settings');
-            return;
-         case 'repay':
-            navigate('/repay');
-            return;
-         case 'milestones':
-            navigate('/milestones');
-            return;
-         case 'dashboard-credit-level':
-            navigate('/dashboard');
-            return;
-         default:
-            // Stay in place; being verified updates the surrounding UI reactively.
-            return;
-      }
-   }, [navigate, returnTo]);
-
-   const handleWorldIdSuccess = useCallback(() => {
-      onWorldIdSuccess?.();
-      onClose();
-      navigateAfterVerified();
-   }, [onClose, navigateAfterVerified, onWorldIdSuccess]);
-
-   const goToTraditionalKyc = useCallback(() => {
-      onClose();
-      navigate('/verify-didit', { state: returnTo ? { returnTo } : undefined });
-   }, [navigate, onClose, returnTo]);
+   const start = useCallback(
+      (method: VerifyMethod) => {
+         onClose();
+         navigate('/verify', { state: { method, returnTo } });
+      },
+      [navigate, onClose, returnTo]
+   );
 
    if (!isOpen) return null;
 
@@ -70,22 +47,18 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo, onWorld
             </div>
 
             <div className="flex flex-col gap-md-2 w-full">
-               <WorldIDVerification onSuccess={handleWorldIdSuccess} className="w-full">
-                  {({ open }) => (
-                     <button
-                        type="button"
-                        onClick={open}
-                        className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg flex flex-col items-center gap-0.5 text-md-neutral-100"
-                     >
-                        <span className="text-md-b1 font-semibold">World ID (Orb)</span>
-                        <span className="text-md-b3 font-medium opacity-90">Fast, privacy-preserving proof you&rsquo;re human</span>
-                     </button>
-                  )}
-               </WorldIDVerification>
+               <button
+                  type="button"
+                  onClick={() => start('worldid')}
+                  className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg flex flex-col items-center gap-0.5 text-md-neutral-100"
+               >
+                  <span className="text-md-b1 font-semibold">World ID (Orb)</span>
+                  <span className="text-md-b3 font-medium opacity-90">Fast, privacy-preserving proof you&rsquo;re human</span>
+               </button>
 
                <button
                   type="button"
-                  onClick={goToTraditionalKyc}
+                  onClick={() => start('didit')}
                   className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg flex flex-col items-center gap-0.5 text-md-primary-1200"
                >
                   <span className="text-md-b1 font-semibold">Traditional KYC</span>
@@ -106,13 +79,16 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo, onWorld
 }
 
 /**
- * Convenience hook for triggering the verification chooser from any bespoke
- * button. Render `modal` somewhere in your tree and call `open` from your button.
+ * Convenience hook for triggering the verification chooser from any bespoke button. Render
+ * `modal` somewhere in your tree and call `open` from your button.
+ *
+ * `returnTo` defaults to the caller's current path so the user lands back where they started.
  */
-export function useVerifyYourself(returnTo?: string, onWorldIdSuccess?: () => void) {
+export function useVerifyYourself(returnTo?: string) {
    const [isOpen, setIsOpen] = useState(false);
    const open = useCallback(() => setIsOpen(true), []);
    const close = useCallback(() => setIsOpen(false), []);
-   const modal = <VerifyYourselfModal isOpen={isOpen} onClose={close} returnTo={returnTo} onWorldIdSuccess={onWorldIdSuccess} />;
+   const effectiveReturnTo = returnTo ?? (typeof window !== 'undefined' ? window.location.pathname : undefined);
+   const modal = <VerifyYourselfModal isOpen={isOpen} onClose={close} returnTo={effectiveReturnTo} />;
    return { open, close, isOpen, modal };
 }

@@ -405,10 +405,7 @@ function RequestBoard$() {
    const needsRoleSelection = isAuthenticated && !hasSelectedRole;
    const isWorldIdVerified = isUserVerified(effectiveUser) || hasWorldIdJustVerified;
    const showVerify = !isWorldIdVerified;
-   const { open: openVerify, modal: verifyModal } = useVerifyYourself(undefined, () => {
-      setHasWorldIdJustVerified(true);
-      setShowWorldIdHighlight(true);
-   });
+   const { open: openVerify, modal: verifyModal } = useVerifyYourself();
    const storeIsBorrower = useIsBorrower();
    const isBorrower = isLenderTourPreview ? false : isReferralTestMode || storeIsBorrower;
    const { data: lenderPointsData } = useQuery({

@@ -60,8 +60,98 @@ type DiditWebhookPayload = {
    webhook_type?: string;
    status?: string;
    session_id?: string;
+   workflow_id?: string;
    vendor_data?: string;
    timestamp?: number;
+   decision?: DiditDecision | null;
+};
+
+// Partial shape of Didit's decision object (only the fields we read). Face Search 1:N results
+// can surface under a few key names depending on workflow config, so we scan defensively.
+type DiditDecision = {
+   face_search?: {
+      status?: string;
+      results?: unknown;
+      detected_faces?: unknown;
+      matches?: unknown;
+   } | null;
+};
+
+const FACE_MATCH_THRESHOLD = 0.8;
+
+const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+
+const readField = (obj: unknown, keys: string[]): unknown => {
+   if (!obj || typeof obj !== 'object') return undefined;
+   const record = obj as Record<string, unknown>;
+   for (const key of keys) {
+      if (record[key] !== undefined && record[key] !== null) return record[key];
+   }
+   return undefined;
+};
+
+// True when face search found a match belonging to a DIFFERENT user (i.e. this live face is
+// already registered). Didit declines the face_search feature when a 1:N match exists; we also
+// scan the match arrays for an above-threshold score tied to another user's vendor_data.
+const hasDuplicateFace = (decision: DiditDecision | null | undefined, currentUserId: string): boolean => {
+   const faceSearch = decision?.face_search;
+   if (!faceSearch) return false;
+
+   const matches = [
+      ...asArray(faceSearch.results),
+      ...asArray(faceSearch.detected_faces),
+      ...asArray(faceSearch.matches)
+   ];
+
+   for (const match of matches) {
+      const score = Number(readField(match, ['score', 'similarity', 'confidence']) ?? 0);
+      const matchedVendor = readField(match, ['vendor_data', 'external_user_id', 'user_id']);
+      const vendorStr = typeof matchedVendor === 'string' ? matchedVendor : undefined;
+      if (score >= FACE_MATCH_THRESHOLD && vendorStr && vendorStr !== currentUserId) {
+         return true;
+      }
+   }
+
+   // Fallback: an explicit Declined face_search status with any matches present.
+   if (typeof faceSearch.status === 'string' && faceSearch.status.toLowerCase() === 'declined' && matches.length > 0) {
+      return true;
+   }
+
+   return false;
+};
+
+// Fetch the full decision when the webhook payload didn't embed it (needed for face-search results).
+const fetchDecision = async (sessionId: string): Promise<DiditDecision | null> => {
+   const apiKey = Deno.env.get('DIDIT_API_KEY');
+   if (!apiKey) {
+      console.error('[didit-webhook] DIDIT_API_KEY not configured — cannot fetch decision for dedup');
+      return null;
+   }
+   const apiBase = (Deno.env.get('DIDIT_API_BASE')?.trim() || 'https://verification.didit.me/v3').replace(/\/$/, '');
+   try {
+      const res = await fetch(`${apiBase}/session/${sessionId}/decision/`, {
+         method: 'GET',
+         headers: { 'x-api-key': apiKey, Accept: 'application/json' }
+      });
+      if (!res.ok) {
+         console.error('[didit-webhook] Decision fetch failed:', res.status);
+         return null;
+      }
+      return (await res.json().catch(() => null)) as DiditDecision | null;
+   } catch (error) {
+      console.error('[didit-webhook] Decision fetch error:', error instanceof Error ? error.message : error);
+      return null;
+   }
+};
+
+type WorkflowKind = 'liveness' | 'id' | 'legacy' | 'unknown';
+
+const classifyWorkflow = (workflowId: string | undefined): WorkflowKind => {
+   if (!workflowId) return 'unknown';
+   if (workflowId === Deno.env.get('DIDIT_LIVENESS_WORKFLOW_ID')) return 'liveness';
+   if (workflowId === Deno.env.get('DIDIT_ID_WORKFLOW_ID')) return 'id';
+   if (workflowId === Deno.env.get('DIDIT_WORKFLOW_ID')) return 'legacy';
+   return 'unknown';
 };
 
 serve(async (req) => {
@@ -123,11 +213,14 @@ serve(async (req) => {
 
       const status = payload.status;
       const vendorData = payload.vendor_data;
+      const sessionId = payload.session_id;
 
-      if (status !== 'Approved' || !vendorData) {
-         console.log(`[didit-webhook] status="${status}" vendor_data="${vendorData}" — no action`);
+      if (!vendorData) {
+         console.log(`[didit-webhook] status="${status}" missing vendor_data — no action`);
          return jsonResponse({ success: true });
       }
+
+      const kind = classifyWorkflow(payload.workflow_id);
 
       const adminSupabase = createClient(
          Deno.env.get('SUPABASE_URL') ?? '',
@@ -135,17 +228,59 @@ serve(async (req) => {
          { auth: { autoRefreshToken: false, persistSession: false } }
       );
 
-      const { error: updateError } = await adminSupabase
-         .from('users')
-         .update({ is_didit: 'ACTIVE' })
-         .eq('id', vendorData);
+      // Liveness pre-gate: resolve the attempt's status (incl. 1:N face-search dedup). Never
+      // touches is_didit — verified status is granted only by the ID/legacy workflow below.
+      if (kind === 'liveness') {
+         // Ignore non-terminal updates so we don't clobber the PENDING state mid-flow.
+         if (status !== 'Approved' && status !== 'Declined' && status !== 'Abandoned' && status !== 'Expired') {
+            return jsonResponse({ success: true });
+         }
 
-      if (updateError) {
-         console.error('[didit-webhook] Failed to update user:', updateError.message);
-         return jsonResponse({ success: false, error: 'Database error' }, 500);
+         let livenessStatus: 'APPROVED' | 'DUPLICATE' | 'DECLINED';
+         if (status === 'Approved') {
+            const decision = payload.decision ?? (sessionId ? await fetchDecision(sessionId) : null);
+            livenessStatus = hasDuplicateFace(decision, vendorData) ? 'DUPLICATE' : 'APPROVED';
+         } else {
+            livenessStatus = 'DECLINED';
+         }
+
+         // Only resolve the attempt this webhook belongs to, so a late event from a previous
+         // session can't overwrite a newer PENDING attempt.
+         let query = adminSupabase.from('users').update({ liveness_status: livenessStatus }).eq('id', vendorData);
+         if (sessionId) query = query.eq('liveness_session_id', sessionId);
+         const { error: livenessError } = await query;
+         if (livenessError) {
+            console.error('[didit-webhook] Failed to update liveness gate:', livenessError.message);
+            return jsonResponse({ success: false, error: 'Database error' }, 500);
+         }
+
+         console.log(`[didit-webhook] Liveness ${livenessStatus} for user ${vendorData} (session ${sessionId ?? 'unknown'})`);
+         return jsonResponse({ success: true });
       }
 
-      console.log(`[didit-webhook] User ${vendorData} verified via Didit (session ${payload.session_id ?? 'unknown'})`);
+      // ID (Traditional KYC) or legacy combined workflow: an approval grants verified status.
+      if (kind === 'id' || kind === 'legacy') {
+         if (status !== 'Approved') {
+            console.log(`[didit-webhook] kind="${kind}" status="${status}" — no action`);
+            return jsonResponse({ success: true });
+         }
+
+         const { error: updateError } = await adminSupabase
+            .from('users')
+            .update({ is_didit: 'ACTIVE' })
+            .eq('id', vendorData);
+
+         if (updateError) {
+            console.error('[didit-webhook] Failed to update user:', updateError.message);
+            return jsonResponse({ success: false, error: 'Database error' }, 500);
+         }
+
+         console.log(`[didit-webhook] User ${vendorData} verified via Didit (${kind}, session ${sessionId ?? 'unknown'})`);
+         return jsonResponse({ success: true });
+      }
+
+      // Unknown workflow id — acknowledge without changing state.
+      console.log(`[didit-webhook] Unrecognized workflow_id="${payload.workflow_id}" — no action`);
       return jsonResponse({ success: true });
    } catch (error) {
       const message = error instanceof Error ? error.message : 'Internal server error';
