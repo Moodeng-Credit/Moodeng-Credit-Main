@@ -95,6 +95,11 @@ const BOTTOM_NAV_ROUTES = [
    '/account/settings'
 ];
 
+// Routes a defaulted borrower passes through when "Pay Now" requires connecting a wallet or
+// verifying World ID first — Repay.tsx sends them here with `state: { returnTo: 'repay' }` so
+// they can complete that detour without getting bounced to /account-restricted mid-flow.
+const REPAY_CONTINUATION_ROUTES = ['/onboarding/wallet', '/onboarding/wallet/connected', '/verify-world-id'];
+
 const canShowPreviewRoutes = () => {
    if (import.meta.env.DEV) return true;
    if (typeof window === 'undefined') return false;
@@ -111,7 +116,10 @@ export default function App() {
    const defaultedBorrower = useDefaultedBorrowerSupport(shouldCheckDefaultedBorrower ? user.id : null);
    const isAccountRestricted = user?.accountStatus === 'blocked' || user?.accountStatus === 'banned';
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
-   const canRepayWhileDefaulted = isDefaultedBorrower && location.pathname === '/repay';
+   const repayReturnTo = (location.state as { returnTo?: string } | null)?.returnTo === 'repay';
+   const canRepayWhileDefaulted =
+      isDefaultedBorrower &&
+      (location.pathname === '/repay' || (repayReturnTo && REPAY_CONTINUATION_ROUTES.includes(location.pathname)));
    const shouldShowAccountSupport = isAccountRestricted || isDefaultedBorrower;
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
    const showPreviewRoutes = canShowPreviewRoutes();
