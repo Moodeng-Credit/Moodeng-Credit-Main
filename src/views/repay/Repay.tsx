@@ -1,6 +1,6 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowLeft, Check, Loader2, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Check, Loader2, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
@@ -771,6 +771,16 @@ export default function Repay() {
                            <p className="mt-1 text-md-b3 text-md-neutral-1200">Select an amount or enter your own.</p>
                         </div>
 
+                        {isLoanOverdue(selectedLoan) ? (
+                           <div className="col-span-4 flex items-start gap-2.5 rounded-md-input border border-[#f4d2d2] bg-[#fff7f7] px-3 py-2.5">
+                              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-md-red-600" aria-hidden="true" />
+                              <p className="text-md-b3 font-medium text-md-red-600">
+                                 Paying less than the full ${formatCurrency(selectedRemaining)} reduces what you owe, but your account stays
+                                 restricted until this loan is fully repaid.
+                              </p>
+                           </div>
+                        ) : null}
+
                         {quickRepaymentFractions.map((option) => {
                            const isQuickSelected = selectedQuickFraction === option.value;
                            const quickAmount = selectedRemaining * option.value;
@@ -842,7 +852,7 @@ export default function Repay() {
                         <div>
                            <p className="text-md-b3 font-semibold text-md-heading">Repayment progress</p>
                         </div>
-                        {validPreviewPayment > 0 ? (
+                        {validPreviewPayment > 0 && !isLoanOverdue(selectedLoan) ? (
                            <span className="inline-flex shrink-0 items-center gap-1 rounded-md-pill bg-md-green-100 px-2.5 py-1 text-md-b3 font-semibold text-md-green-900">
                               <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />+{estimatedTrustPoints} Trust Points
                            </span>
