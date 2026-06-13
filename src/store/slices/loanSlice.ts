@@ -48,6 +48,7 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    // New relay columns (not yet in generated types): surfaced via cast for the repay branch.
    fundingMethod: (row as { funding_method?: string | null }).funding_method ?? undefined,
    onchainLoanId: (row as { onchain_loan_id?: string | null }).onchain_loan_id ?? undefined,
+   isSellable: (row as { is_sellable?: boolean | null }).is_sellable ?? undefined,
    referralCodeId: row.referral_code_id ?? undefined,
    referralCode: row.referral_code ?? undefined,
    referralBoostAmount: row.referral_boost_amount ?? undefined

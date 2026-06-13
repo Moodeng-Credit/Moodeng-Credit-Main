@@ -22,6 +22,7 @@ export interface Loan {
    fundedAt?: string; // Timestamp when loan was funded (transitioned to 'Lent' status)
    fundingMethod?: string; // 'direct' | 'smart_contract' — relay loans repay the LoanManager contract
    onchainLoanId?: string; // LoanManager loanId / Loan Note tokenId for smart-contract loans
+   isSellable?: boolean; // smart-contract loan with a Loan Note a lender can still buy (relay)
    referralCodeId?: string;
    referralCode?: string;
    referralBoostAmount?: number;

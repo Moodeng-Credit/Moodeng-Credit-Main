@@ -1313,13 +1313,27 @@ function RequestBoard$() {
 
    const filteredLoans = useMemo(() => {
       const allFilters: LoanFilters = { ...filters, search: searchLoan, sortBy: filters.sortBy };
-      return filterLoans(
+      const requested = filterLoans(
          requestBoardLoans.filter((loan) => isRequestBoardLoanVisible(loan)),
          allFilters,
          customAmount,
          userProfiles
       );
-   }, [filters, searchLoan, requestBoardLoans, customAmount, userProfiles]);
+
+      // Liquidity Relay: smart-contract loans Moodeng already funded are still "fundable" by
+      // buying the Loan Note. Surface those on the board ONLY to lenders, so they can fund
+      // this way too. They're `Lent` + sellable + not yet bought, and not the viewer's own.
+      if (effectiveUser?.userRole !== 'lender') return requested;
+      const relaySellable = requestBoardLoans.filter(
+         (loan) =>
+            loan.fundingMethod === 'smart_contract' &&
+            loan.isSellable === true &&
+            loan.loanStatus === 'Lent' &&
+            !loan.lenderUser &&
+            loan.borrowerUser !== effectiveUser?.id
+      );
+      return [...relaySellable, ...requested];
+   }, [filters, searchLoan, requestBoardLoans, customAmount, userProfiles, effectiveUser?.userRole, effectiveUser?.id]);
 
    const {
       displayedItems: displayedLoans,
