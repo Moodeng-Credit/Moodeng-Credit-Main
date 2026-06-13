@@ -728,7 +728,7 @@ export default function Repay() {
                   <div
                      className={`mt-3 grid grid-cols-2 gap-x-3 gap-y-1 rounded-md-input border px-3 py-3.5 ${
                         isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan)
-                           ? 'border-[#f4d2d2] bg-[#fff7f7]'
+                           ? 'border-[#f4d2d2] bg-[#fff7f7] dark:border-[#68303a] dark:bg-[#3c171e]'
                            : 'border-md-neutral-300 bg-md-neutral-100'
                      }`}
                   >
@@ -772,7 +772,7 @@ export default function Repay() {
                         </div>
 
                         {isLoanOverdue(selectedLoan) ? (
-                           <div className="col-span-4 flex items-start gap-2.5 rounded-md-input border border-[#f4d2d2] bg-[#fff7f7] px-3 py-2.5">
+                           <div className="col-span-4 flex items-start gap-2.5 rounded-md-input border border-[#f4d2d2] bg-[#fff7f7] px-3 py-2.5 dark:border-[#68303a] dark:bg-[#3c171e]">
                               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-md-red-600" aria-hidden="true" />
                               <p className="text-md-b3 font-medium text-md-red-600">
                                  Paying less than the full ${formatCurrency(selectedRemaining)} reduces what you owe, but your account stays
