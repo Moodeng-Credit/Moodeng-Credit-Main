@@ -35,7 +35,7 @@ export async function fetchDefaultedBorrowerSupport(userId: string): Promise<Def
    return calculateDefaultedBorrowerSupport(data ?? []);
 }
 
-export function useDefaultedBorrowerSupport(userId?: string | null): DefaultedBorrowerSupportState {
+export function useDefaultedBorrowerSupport(userId?: string | null, refreshKey?: unknown): DefaultedBorrowerSupportState {
    const [state, setState] = useState<DefaultedBorrowerSupportState>({
       support: EMPTY_DEFAULTED_BORROWER_SUPPORT,
       isLoading: false,
@@ -109,7 +109,9 @@ export function useDefaultedBorrowerSupport(userId?: string | null): DefaultedBo
       return () => {
          isMounted = false;
       };
-   }, [userId]);
+      // refreshKey deliberately re-runs this fetch when loan data changes elsewhere (e.g. after
+      // a repayment), since overdueAmount would otherwise stay stale for the rest of the session.
+   }, [userId, refreshKey]);
 
    if (userId && state.checkedUserId !== userId) {
       return {
