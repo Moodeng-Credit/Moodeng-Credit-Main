@@ -99,16 +99,16 @@ export default function WalletConnected() {
          navigate('/verify-world-id-preview', { replace: true });
          return;
       }
+      if (returnTo === 'account-settings') {
+         navigate('/account/settings', { replace: true });
+         return;
+      }
       if (user?.userRole === 'borrower' && user.isWorldId !== WorldId.ACTIVE) {
          navigate('/verify-world-id', { replace: true, state: { returnTo } });
          return;
       }
       if (returnTo === 'loan-request') {
          navigate('/request-board', { replace: true, state: { openLoanRequest: true } });
-         return;
-      }
-      if (returnTo === 'account-settings') {
-         navigate('/account/settings', { replace: true });
          return;
       }
       if (returnTo === 'repay') {
