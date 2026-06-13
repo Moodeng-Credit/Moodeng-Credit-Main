@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import type { RootState } from '@/store/store';
@@ -361,11 +362,12 @@ export default function Milestones() {
    const baseWalletLock = getBaseWalletLockStatus(user);
    const hasCompletedBaseWalletSetup = isPreview || baseWalletLock.isConfirmedBase;
    const hasFinishedBorrowerSetup = isVerified && hasCompletedBaseWalletSetup;
+   const { open: openVerify, modal: verifyModal } = useVerifyYourself('milestones');
    const setupCtaLabel =
-      !isVerified && !hasCompletedBaseWalletSetup ? 'Start setup' : !hasCompletedBaseWalletSetup ? 'Add Base Wallet' : 'Verify identity';
+      !isVerified && !hasCompletedBaseWalletSetup ? 'Start setup' : !hasCompletedBaseWalletSetup ? 'Add Base Wallet' : 'Verify Yourself';
    const setupEmptyCopy =
       !isVerified && !hasCompletedBaseWalletSetup
-         ? 'Finish setup with World ID and a Base Wallet to unlock borrowing and start building your public trust record.'
+         ? 'Finish setup with identity verification and a Base Wallet to unlock borrowing and start building your public trust record.'
          : !hasCompletedBaseWalletSetup
            ? 'Add a Base Wallet to unlock borrowing and start building your public trust record.'
            : 'Verify your identity to unlock borrowing and start building your public trust record.';
@@ -380,8 +382,8 @@ export default function Milestones() {
          return;
       }
 
-      navigate('/verify-world-id', { state: { returnTo: 'milestones' } });
-   }, [hasCompletedBaseWalletSetup, isVerified, navigate]);
+      openVerify();
+   }, [hasCompletedBaseWalletSetup, isVerified, navigate, openVerify]);
 
    return (
       <div className="min-h-screen bg-md-neutral-200 [font-family:'SF_Pro_Display','SF_Pro',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]">
@@ -474,6 +476,7 @@ export default function Milestones() {
          </div>
          <MilestoneDetailSheet milestone={selectedMilestone} previewQuery={previewQuery} onClose={() => setSelectedMilestoneId(null)} />
          {isHelpOpen ? <MilestoneHelpSheet onClose={() => setIsHelpOpen(false)} /> : null}
+         {verifyModal}
       </div>
    );
 }

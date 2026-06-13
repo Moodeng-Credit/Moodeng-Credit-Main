@@ -1175,6 +1175,26 @@ export default function AccountSettings() {
                      </div>
                   </div>
 
+                  {/* Traditional KYC */}
+                  <div className="flex flex-col gap-md-1 w-full">
+                     <p className="text-md-b2 font-semibold text-md-heading">Traditional KYC</p>
+                     <div className="flex items-center gap-2 bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
+                        {user?.isDidit === 'ACTIVE' ? (
+                           <>
+                              <img src="/icons/check-fill.svg" alt="" className="w-4 h-4 shrink-0" />
+                              <span className="text-md-b1 font-medium text-md-green-900">
+                                 {getWorldIdVerificationLabel({
+                                    isWorldId: user?.isDidit,
+                                    userRole: user?.userRole
+                                 })}
+                              </span>
+                           </>
+                        ) : (
+                           <span className="text-md-b1 text-md-neutral-1200">Not Verified</span>
+                        )}
+                     </div>
+                  </div>
+
                   {/* Wallet */}
                   <div className="flex flex-col gap-md-1 w-full relative">
                      <p className="text-md-b2 font-semibold text-md-heading">Wallet</p>

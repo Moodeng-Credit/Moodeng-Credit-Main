@@ -9,6 +9,7 @@ import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import UserAvatar from '@/components/UserAvatar';
+import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 
 import { useLoanData } from '@/hooks/useLoanData';
 import useWallet from '@/hooks/useWallet';
@@ -288,21 +289,22 @@ export default function Repay() {
       wallet: user
    });
    const isWorldIdVerified = isUserVerified(user);
+   const { open: openVerify, modal: verifyModal } = useVerifyYourself('repay');
    const hasCompletedBaseWalletSetup = baseWalletLock.isConfirmedBase;
    const emptyRepayState = !selectedLoan
       ? !isWorldIdVerified && !hasCompletedBaseWalletSetup
          ? {
               actionLabel: 'Start Setup',
-              body: 'Verify World ID and add a Base Wallet before requesting loans. Repayments will show here after a lender funds your first loan.',
+              body: 'Verify yourself and add a Base Wallet before requesting loans. Repayments will show here after a lender funds your first loan.',
               onAction: () => navigate('/onboarding/welcome', { state: { returnTo: 'repay' } }),
               title: 'Finish setup to start borrowing'
            }
          : !isWorldIdVerified
            ? {
-                actionLabel: 'Verify World ID',
-                body: 'Your Base Wallet is added. Complete World ID before requesting loans. Repayments will show here after funding.',
-                onAction: () => navigate('/verify-world-id', { state: { returnTo: 'repay' } }),
-                title: 'Verify World ID to borrow'
+                actionLabel: 'Verify Yourself',
+                body: 'Your Base Wallet is added. Complete verification before requesting loans. Repayments will show here after funding.',
+                onAction: openVerify,
+                title: 'Verify yourself to borrow'
              }
            : !hasCompletedBaseWalletSetup
              ? {
@@ -907,6 +909,7 @@ export default function Repay() {
                   ) : null}
                </section>
             )}
+            {verifyModal}
          </div>
       </main>
    );

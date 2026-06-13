@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import BorrowerVerificationBadge from '@/components/BorrowerVerificationBadge';
 import UserAvatar from '@/components/UserAvatar';
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 import { getMemberSinceText } from '@/utils/dateFormatters';
 import { isUserVerified } from '@/lib/isUserVerified';
 import type { User } from '@/types/authTypes';
@@ -16,6 +16,7 @@ export default function UserGreeting({ user }: UserGreetingProps) {
    const location = useLocation();
    const firstName = user.displayName?.split(' ')[0] || user.username?.split(' ')[0] || 'there';
    const isVerified = isUserVerified(user);
+   const { open: openVerify, modal: verifyModal } = useVerifyYourself();
    const memberSince = user.createdAt ? getMemberSinceText(user.createdAt) : '';
    const accountEditPath = (edit: 'avatar' | 'name') => {
       const params = new URLSearchParams(location.search);
@@ -45,15 +46,12 @@ export default function UserGreeting({ user }: UserGreetingProps) {
             <div className="flex items-center gap-2 flex-wrap">
                <BorrowerVerificationBadge />
                {!isVerified ? (
-                  <WorldIDVerification>
-                     {({ open }) => (
-                        <button type="button" onClick={open} className="text-md-b4 font-medium text-md-primary-900">
-                           Verify World ID &gt;
-                        </button>
-                     )}
-                  </WorldIDVerification>
+                  <button type="button" onClick={openVerify} className="text-md-b4 font-medium text-md-primary-900">
+                     Verify Yourself &gt;
+                  </button>
                ) : null}
             </div>
+            {verifyModal}
             {memberSince ? (
                <p className="text-md-b4 text-md-neutral-700">Member since {memberSince}</p>
             ) : null}

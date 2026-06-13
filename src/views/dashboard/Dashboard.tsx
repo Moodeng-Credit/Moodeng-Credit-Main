@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
 import GuidedTourPreview from '@/components/GuidedTourPreview';
+import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 
@@ -170,6 +171,7 @@ export default function Dashboard() {
    const borrowerLoans = useMemo(() => getBorrowerLoans(gloanRequests, user.id), [gloanRequests, user.id]);
    const previewLoans = useMemo(() => buildPreviewLoans(user.id), [user.id]);
    const isVerified = isUserVerified(user);
+   const { open: openVerify, modal: verifyModal } = useVerifyYourself();
    const hasBorrowerBaseWallet = getBaseWalletLockStatus(user).isConfirmedBase;
    const { pointsTotal: trustPointsTotal, isLoading: isTrustScoreLoading } = useTrustPointTotal({
       userId: user.id,
@@ -220,12 +222,12 @@ export default function Dashboard() {
       }
 
       if (!isVerified) {
-         navigate('/verify-world-id', { state: { returnTo: 'dashboard-credit-level' } });
+         openVerify();
          return;
       }
 
       navigate('/request-board');
-   }, [hasBorrowerBaseWallet, isVerified, navigate, user.userRole]);
+   }, [hasBorrowerBaseWallet, isVerified, navigate, openVerify, user.userRole]);
 
    useEffect(() => {
       if (!isBorrower || missingLenderProfileIds.length === 0) return;
@@ -330,6 +332,7 @@ export default function Dashboard() {
                username={user.username}
             />
          </div>
+         {verifyModal}
          {showTourPreview && (
             <GuidedTourPreview
                startImmediately={shouldStartTourImmediately}
