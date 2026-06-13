@@ -19,7 +19,7 @@ export const LENDER_WALLET_OPTIONS: WalletOption[] = [
       iconSrc: '/icons/base-account.svg',
       iconBg: 'bg-transparent',
       iconPadding: 'p-0',
-      tag: { label: 'Top Pick', bgClass: 'bg-md-primary-300', textClass: 'text-md-primary-1200' },
+      tag: { label: 'Top Pick', bgClass: 'bg-md-primary-100', textClass: 'text-md-primary-1200' },
       line1: 'Zero fees',
       line2: 'Best for beginners'
    },
