@@ -51,7 +51,12 @@ export default function WalletConnected() {
       return <Navigate to="/onboarding/role" replace />;
    }
 
-   if (!isPreview && status !== 'reconnecting') {
+   // Only borrowers must lock a Base Account (loans/repayments stay tied to one public
+   // record). Lenders can connect any supported wallet — Phantom, MetaMask, WalletConnect,
+   // etc. — so the Base-only gating below must not apply to them.
+   const isBorrower = user?.userRole === 'borrower';
+
+   if (!isPreview && isBorrower && status !== 'reconnecting') {
       if (isConnectedWrongProvider) {
          return (
             <FailureView
