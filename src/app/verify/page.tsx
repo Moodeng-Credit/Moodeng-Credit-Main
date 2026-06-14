@@ -265,6 +265,13 @@ export default function VerifyFlow() {
 
    const flow = readFlow();
 
+   // Didit ID verification finished — briefly show the success state, then continue on.
+   useEffect(() => {
+      if (step !== 'success') return;
+      const timeout = window.setTimeout(() => navigateAfterVerified(flow?.returnTo), 1500);
+      return () => window.clearTimeout(timeout);
+   }, [step, flow?.returnTo, navigateAfterVerified]);
+
    // After the confirm step for the World ID branch, the modal button opens World ID directly.
    const handleWorldIdSuccess = useCallback(() => {
       navigateAfterVerified(flow?.returnTo);
