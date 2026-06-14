@@ -144,6 +144,7 @@ html.dark [class*='bg-[#fdfcfd'] {
 html.dark .bg-md-neutral-300,
 html.dark .bg-md-neutral-400,
 html.dark .bg-md-neutral-500,
+html.dark .bg-md-timeline-bg,
 html.dark [class*='bg-[#f2f0f5'],
 html.dark [class*='bg-[#f3f4f6'],
 html.dark [class*='bg-[#e5e7eb'] {
@@ -166,7 +167,8 @@ html.dark [class*='bg-[#f0fdf4'] {
 html.dark .bg-md-yellow-100,
 html.dark [class*='bg-[#fff8e1'],
 html.dark [class*='bg-[#ffedd5'],
-html.dark [class*='bg-[#fff7ed'] {
+html.dark [class*='bg-[#fff7ed'],
+html.dark [class*='bg-[#fff5ec'] {
    background-color: #3d2d12;
 }
 
@@ -197,7 +199,9 @@ html.dark [class*='text-[#1c053d'],
 html.dark [class*='text-[#1f2937'],
 html.dark [class*='text-[#070707'],
 html.dark [class*='text-[#000000'],
-html.dark [class*='text-[#333333'] {
+html.dark [class*='text-[#333333'],
+html.dark [class*='text-[#0f172b'],
+html.dark [class*='text-[#0a0a0a'] {
    color: #f8f4ff;
 }
 
@@ -207,6 +211,7 @@ html.dark .text-md-neutral-1000,
 html.dark .text-md-neutral-1200,
 html.dark .text-md-neutral-1400,
 html.dark .text-md-neutral-1500,
+html.dark .text-md-timeline-text,
 html.dark [class*='text-[#4D4359'],
 html.dark [class*='text-[#4d4359'],
 html.dark [class*='text-[#4a4a4a'],
@@ -221,7 +226,8 @@ html.dark [class*='text-[#70617f'],
 html.dark [class*='text-[#766985'],
 html.dark [class*='text-[#877897'],
 html.dark [class*='text-[#9ca3af'],
-html.dark [class*='text-[#a199ad'] {
+html.dark [class*='text-[#a199ad'],
+html.dark [class*='text-[#62748e'] {
    color: #cfc4dd;
 }
 
@@ -263,6 +269,7 @@ html.dark .border-md-neutral-300,
 html.dark .border-md-neutral-400,
 html.dark .border-md-neutral-500,
 html.dark .border-md-neutral-600,
+html.dark .border-md-timeline-border,
 html.dark .divide-md-neutral-300 > :not([hidden]) ~ :not([hidden]),
 html.dark [class*='border-[#dddddd'],
 html.dark [class*='border-[#ded0ef'],
@@ -270,7 +277,8 @@ html.dark [class*='border-[#eadff8'],
 html.dark [class*='border-[#eadfff'],
 html.dark [class*='border-[#ece7f4'],
 html.dark [class*='border-[#f1edf8'],
-html.dark [class*='border-[#f3f4f6'] {
+html.dark [class*='border-[#f3f4f6'],
+html.dark [class*='border-[#ffd7b8'] {
    border-color: #40354f;
 }
 

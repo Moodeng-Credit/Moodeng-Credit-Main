@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { Link } from 'react-router-dom';
 
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import WorldIDVerifyChoice from '@/components/worldId/WorldIDVerifyChoice';
 import { formatMilestoneTrustPoints, type DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
 
 export const MILESTONE_STATUS_CLASSES = {
@@ -121,7 +121,7 @@ export const MilestoneDetailSheet = ({
          </div>
 
          <div className="flex flex-col gap-4 border-t border-[#f1edf8] px-6 py-5">
-            <div className="rounded-[22px] bg-gradient-to-br from-[#efe4ff] to-[#f8f3ff] p-5">
+            <div className="rounded-[22px] bg-gradient-to-br from-[#efe4ff] to-[#f8f3ff] dark:from-[#2a1740] dark:to-[#1f1430] p-5">
                <p className="text-[13px] font-semibold leading-5 text-md-heading">{pointTitle}</p>
                <p className="mt-2 text-[34px] font-semibold leading-none tracking-[-0.68px] text-md-primary-900">{pointReward}</p>
                <p className="mt-3 text-[14px] leading-5 text-md-neutral-900">{pointDescription}</p>
@@ -157,7 +157,7 @@ export const MilestoneDetailSheet = ({
                   Done
                </button>
             ) : opensWorldId ? (
-               <WorldIDVerification>
+               <WorldIDVerifyChoice>
                   {({ open }) => (
                      <button
                         type="button"
@@ -167,7 +167,7 @@ export const MilestoneDetailSheet = ({
                         {milestone.actionLabel ?? 'Continue'}
                      </button>
                   )}
-               </WorldIDVerification>
+               </WorldIDVerifyChoice>
             ) : (
                <Link to={actionHref} className="rounded-md-lg bg-md-primary-900 px-4 py-3 text-center text-md-b2 font-semibold text-white">
                   {milestone.actionLabel ?? 'Continue'}

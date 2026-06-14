@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import { isWorldIdVerified } from '@/lib/isWorldIdVerified';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import type { RootState } from '@/store/store';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
@@ -287,7 +288,7 @@ function TrustPointRewardsPanel({
                <span>Next reward</span>
                <span className="truncate text-right text-md-heading">{nextRewardLabel}</span>
             </div>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f0e9fb]">
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f0e9fb] dark:bg-[#2a2235]">
                <div className="h-full rounded-full bg-md-primary-900" style={{ width: `${progress.progressPercent}%` }} />
             </div>
          </div>
@@ -326,7 +327,7 @@ export default function Milestones() {
    const isMilestoneDataReady = isPreview || isDashboardDataReady;
    const borrowerLoans = useMemo(() => (isPreview ? PREVIEW_REPAID_LOANS : getBorrowerLoans(loans, user.id)), [isPreview, loans, user.id]);
    const milestones = useMemo(
-      () => buildReputationMilestones({ creditLevels, borrowerLoans, isVerified: user.isWorldId === 'ACTIVE' || isPreview }),
+      () => buildReputationMilestones({ creditLevels, borrowerLoans, isVerified: isWorldIdVerified(user) || isPreview }),
       [borrowerLoans, creditLevels, isPreview, user.isWorldId]
    );
    useMilestonePointAwards({
@@ -356,7 +357,7 @@ export default function Milestones() {
    const selectedMilestone = milestones.find((milestone) => milestone.id === selectedMilestoneId) ?? null;
    const previewQuery = searchParams.toString();
    const hasUnlockedMilestones = milestones.some((milestone) => milestone.status === 'unlocked');
-   const isVerified = user.isWorldId === 'ACTIVE' || isPreview;
+   const isVerified = isWorldIdVerified(user) || isPreview;
    const baseWalletLock = getBaseWalletLockStatus(user);
    const hasCompletedBaseWalletSetup = isPreview || baseWalletLock.isConfirmedBase;
    const hasFinishedBorrowerSetup = isVerified && hasCompletedBaseWalletSetup;
