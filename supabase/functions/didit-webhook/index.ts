@@ -87,7 +87,7 @@ type DiditDecision = {
    warnings?: unknown;
 };
 
-// Didit similarity scores are 0–100; treat ≥ 80% as a match.
+// Didit similarity scores are 0-100; treat >= 80% as a match.
 const FACE_MATCH_THRESHOLD = 80;
 
 const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
@@ -109,7 +109,7 @@ const warningsFlagDuplicate = (warnings: unknown): boolean =>
    });
 
 // Inspect one Didit feature block (face_match or face_search) for a 1:N match against a
-// DIFFERENT user — i.e. this live face is already registered.
+// DIFFERENT user - i.e. this live face is already registered.
 const blockHasDuplicate = (block: DiditFeatureBlock, currentUserId: string): boolean => {
    if (!block) return false;
 
@@ -123,7 +123,7 @@ const blockHasDuplicate = (block: DiditFeatureBlock, currentUserId: string): boo
 
    for (const match of matches) {
       const raw = Number(readField(match, ['score', 'similarity', 'confidence']) ?? 0);
-      const score = raw > 0 && raw <= 1 ? raw * 100 : raw; // accept either 0–1 or 0–100 scales
+      const score = raw > 0 && raw <= 1 ? raw * 100 : raw; // accept either 0-1 or 0-100 scales
       const matchedVendor = readField(match, ['vendor_data', 'external_user_id', 'user_id']);
       const vendorStr = typeof matchedVendor === 'string' ? matchedVendor : undefined;
       // A match to a different user is a duplicate. If no vendor is exposed, an above-threshold
@@ -148,7 +148,7 @@ const hasDuplicateFace = (decision: DiditDecision | null | undefined, currentUse
    return (
       blockHasDuplicate(decision.face_match, currentUserId) ||
       blockHasDuplicate(decision.face_search, currentUserId) ||
-      // Liveness exposes 1:N hits under Fraud Signals → "Matches".
+      // Liveness exposes 1:N hits under Fraud Signals -> "Matches".
       blockHasDuplicate(decision.liveness, currentUserId) ||
       warningsFlagDuplicate(decision.warnings)
    );
@@ -158,7 +158,7 @@ const hasDuplicateFace = (decision: DiditDecision | null | undefined, currentUse
 const fetchDecision = async (sessionId: string): Promise<DiditDecision | null> => {
    const apiKey = Deno.env.get('DIDIT_API_KEY');
    if (!apiKey) {
-      console.error('[didit-webhook] DIDIT_API_KEY not configured — cannot fetch decision for dedup');
+      console.error('[didit-webhook] DIDIT_API_KEY not configured - cannot fetch decision for dedup');
       return null;
    }
    const apiBase = (Deno.env.get('DIDIT_API_BASE')?.trim() || 'https://verification.didit.me/v3').replace(/\/$/, '');
@@ -250,7 +250,7 @@ serve(async (req) => {
       const sessionId = payload.session_id;
 
       if (!vendorData) {
-         console.log(`[didit-webhook] status="${status}" missing vendor_data — no action`);
+         console.log(`[didit-webhook] status="${status}" missing vendor_data - no action`);
          return jsonResponse({ success: true });
       }
 
@@ -263,7 +263,7 @@ serve(async (req) => {
       );
 
       // Liveness pre-gate: resolve the attempt's status (incl. 1:N face-search dedup). Never
-      // touches is_didit — verified status is granted only by the ID/legacy workflow below.
+      // touches is_didit - verified status is granted only by the ID/legacy workflow below.
       if (kind === 'liveness') {
          // Ignore non-terminal updates so we don't clobber the PENDING state mid-flow.
          if (status !== 'Approved' && status !== 'Declined' && status !== 'Abandoned' && status !== 'Expired') {
@@ -271,7 +271,7 @@ serve(async (req) => {
          }
 
          // Inspect the decision on both Approved and Declined: the "Duplicated face" rule may be
-         // set to Decline (Didit blocks → status Declined) or Approve (we block here from the
+         // set to Decline (Didit blocks -> status Declined) or Approve (we block here from the
          // decision). Either way a detected duplicate maps to DUPLICATE for correct messaging.
          let livenessStatus: 'APPROVED' | 'DUPLICATE' | 'DECLINED';
          if (status === 'Approved' || status === 'Declined') {
@@ -303,7 +303,7 @@ serve(async (req) => {
       // ID (Traditional KYC) or legacy combined workflow: an approval grants verified status.
       if (kind === 'id' || kind === 'legacy') {
          if (status !== 'Approved') {
-            console.log(`[didit-webhook] kind="${kind}" status="${status}" — no action`);
+            console.log(`[didit-webhook] kind="${kind}" status="${status}" - no action`);
             return jsonResponse({ success: true });
          }
 
@@ -321,8 +321,8 @@ serve(async (req) => {
          return jsonResponse({ success: true });
       }
 
-      // Unknown workflow id — acknowledge without changing state.
-      console.log(`[didit-webhook] Unrecognized workflow_id="${payload.workflow_id}" — no action`);
+      // Unknown workflow id - acknowledge without changing state.
+      console.log(`[didit-webhook] Unrecognized workflow_id="${payload.workflow_id}" - no action`);
       return jsonResponse({ success: true });
    } catch (error) {
       const message = error instanceof Error ? error.message : 'Internal server error';
