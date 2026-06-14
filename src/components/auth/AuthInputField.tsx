@@ -20,6 +20,9 @@ interface AuthInputFieldProps {
    showEyeToggle?: boolean;
    isPasswordVisible?: boolean;
    onTogglePasswordVisibility?: () => void;
+   /** Explicit autocomplete hint so the browser's password manager doesn't guess
+    *  the field purpose and cover the next input with a generator overlay. */
+   autoComplete?: string;
 }
 
 export function AuthInputField({
@@ -35,7 +38,8 @@ export function AuthInputField({
    tooltip,
    showEyeToggle = false,
    isPasswordVisible,
-   onTogglePasswordVisibility
+   onTogglePasswordVisibility,
+   autoComplete
 }: AuthInputFieldProps) {
    const [localShowPassword, setLocalShowPassword] = useState(false);
    const showPassword = isPasswordVisible ?? localShowPassword;
@@ -93,6 +97,7 @@ export function AuthInputField({
                value={value}
                onChange={onChange}
                required
+               autoComplete={autoComplete}
                className={`min-w-0 flex-1 bg-transparent text-base outline-none dark:text-[#F8F4FF] dark:placeholder:text-[#9C8FAF] ${errorPlaceholder} ${errorInputText}`}
             />
             {showEyeToggle && (

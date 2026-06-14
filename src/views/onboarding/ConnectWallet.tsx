@@ -125,7 +125,10 @@ function BorrowerConnectView({
 }) {
    return (
       <div className={CONNECT_WALLET_SCREEN_CLASS}>
-         <OnboardingHeader title="Add Base Wallet" />
+         <OnboardingHeader
+            title="Add Base Wallet"
+            tooltip="Connecting your wallet lets Moodeng read your on-chain activity to build your Trust Score and send USDC loans directly to you. We never ask for your private keys or seed phrase."
+         />
 
          <div className="flex flex-1 flex-col items-center justify-center px-md-4 text-center">
             <img

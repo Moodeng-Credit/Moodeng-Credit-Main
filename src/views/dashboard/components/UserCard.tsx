@@ -24,6 +24,7 @@ import {
    buildBorrowerContextFit,
    normalizeBorrowerContextProfile
 } from '@/lib/borrowerContextFit';
+import { isUserVerified } from '@/lib/isUserVerified';
 import { fetchLoans, type LoanSideEffectError, updateLoanStatus } from '@/store/slices/loanSlice';
 import { computePointsDelta, computeYearOneIouPointsDelta, formatPointsMajor, getYearOneIouBorrowerBonusPoints } from '@/shared/points';
 
@@ -134,7 +135,7 @@ export default function UserCard(loan: UserCardProps) {
       ? allLoans.filter((l) => l.borrowerUser === borrowerUserId && l.repaymentStatus === 'Paid').length
       : undefined;
    const borrowerGoodStanding = borrowerProfile ? (borrowerProfile.cs ?? 0) > 0 : undefined;
-   const borrowerIsVerified = borrowerProfile ? borrowerProfile.isWorldId === 'ACTIVE' : undefined;
+   const borrowerIsVerified = borrowerProfile ? isUserVerified(borrowerProfile) : undefined;
    const borrowerUsername = getSafeProfileText(borrowerProfile?.username) ?? getSafeProfileText(tourBorrowerUsername) ?? '';
    const borrowerDetailsHref =
       tourBorrowerUsername && (import.meta.env.DEV || isPreviewRequest || forceTourBorrowerLink)

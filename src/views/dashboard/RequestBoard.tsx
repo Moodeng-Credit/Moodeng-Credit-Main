@@ -18,13 +18,14 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import GuidedTourPreview, { type TourRoleOption } from '@/components/GuidedTourPreview';
+import IouPointHistoryModal from '@/components/IouPointHistoryModal';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar from '@/components/UserAvatar';
+import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 import { ModalNote } from '@/components/worldId/modal/ModalNote';
 import { VerificationModalBody } from '@/components/worldId/modal/VerificationModalBody';
 import { VerificationModalHeader } from '@/components/worldId/modal/VerificationModalHeader';
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
@@ -39,6 +40,7 @@ import type { BorrowerContextProfileData } from '@/lib/borrowerContextFit';
 import { getBorrowerActiveLoanCount, getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
+import { isUserVerified } from '@/lib/isUserVerified';
 import {
    BORROWER_GUIDED_TOUR_ID,
    GENERAL_GUIDED_TOUR_ID,
@@ -366,6 +368,7 @@ function RequestBoard$() {
    const [highlightedRequestId, setHighlightedRequestId] = useState<string | null>(null);
    const [requestToDelete, setRequestToDelete] = useState<Loan | null>(null);
    const [isDeletingRequest, setIsDeletingRequest] = useState(false);
+   const [showIouHistory, setShowIouHistory] = useState(false);
    const [isOpeningLoanRequest, setIsOpeningLoanRequest] = useState(false);
 
    const user = useSelector((state: RootState) => state.auth.user);
@@ -400,8 +403,9 @@ function RequestBoard$() {
    const isAuthenticated = !!(effectiveUser?.id && (username || isReferralTestMode || isLenderTourPreview));
    const hasSelectedRole = Boolean(effectiveUser?.userRole);
    const needsRoleSelection = isAuthenticated && !hasSelectedRole;
-   const isWorldIdVerified = effectiveUser?.isWorldId === 'ACTIVE' || hasWorldIdJustVerified;
+   const isWorldIdVerified = isUserVerified(effectiveUser) || hasWorldIdJustVerified;
    const showVerify = !isWorldIdVerified;
+   const { open: openVerify, modal: verifyModal } = useVerifyYourself();
    const storeIsBorrower = useIsBorrower();
    const isBorrower = isLenderTourPreview ? false : isReferralTestMode || storeIsBorrower;
    const { data: lenderPointsData } = useQuery({
@@ -458,7 +462,7 @@ function RequestBoard$() {
    const [customAmount, setCustomAmount] = useState('');
    const [searchLoan, setSearchLoan] = useState('');
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
-   const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, effectiveUser.isWorldId === 'ACTIVE') : 0;
+   const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, isUserVerified(effectiveUser)) : 0;
    const borrowerCreditLoans = useMemo(() => {
       if (!borrowerUserId) return [];
 
@@ -474,7 +478,7 @@ function RequestBoard$() {
       isReferralTestMode ||
       (isAuthenticated &&
          isBorrower &&
-         effectiveUser.isWorldId === 'ACTIVE' &&
+         isUserVerified(effectiveUser) &&
          effectiveCreditLimit <= STARTING_CREDIT_LIMIT &&
          borrowerCreditLoans.length === 0);
    const hasBorrowerBaseWallet = !IS_BORROWER_BASE_WALLET_GATE_ENABLED || hasWalletAddressOnAccount(effectiveUser);
@@ -651,17 +655,14 @@ function RequestBoard$() {
       setShowBioStep(false);
       pendingLoanDataRef.current = null;
    }, []);
-   const handleWorldIdHeaderClick = useCallback(
-      (openWorldId: () => void) => {
-         if (!hasBorrowerBaseWallet) {
-            goToBorrowerOnboardingStart();
-            return;
-         }
+   const handleVerifyHeaderClick = useCallback(() => {
+      if (!hasBorrowerBaseWallet) {
+         goToBorrowerOnboardingStart();
+         return;
+      }
 
-         openWorldId();
-      },
-      [goToBorrowerOnboardingStart, hasBorrowerBaseWallet]
-   );
+      openVerify();
+   }, [goToBorrowerOnboardingStart, hasBorrowerBaseWallet, openVerify]);
    const handleRequestBoardTourStepChange = useCallback(
       (index: number) => {
          if (!isAuthenticated) {
@@ -1099,11 +1100,11 @@ function RequestBoard$() {
       const parsedRepaymentAmount = Number.parseFloat(totalRepaymentAmount);
       const parsedDueDate = days ? new Date(days) : null;
 
-      if (effectiveUser.isWorldId !== 'ACTIVE' && !hasBorrowerBaseWallet) {
+      if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
          goToBorrowerOnboardingStart('loan-request');
          return;
       }
-      if (effectiveUser.isWorldId !== 'ACTIVE') {
+      if (!isWorldIdVerified) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WORLDID_REQUIRED));
          return;
       }
@@ -1156,7 +1157,7 @@ function RequestBoard$() {
       };
 
       if (
-         effectiveUser.isWorldId === 'ACTIVE' &&
+         isUserVerified(effectiveUser) &&
          hasBorrowerBaseWallet &&
          !hasReachedActiveLoanLimit &&
          parsedLoanAmount <= availableCreditLimit &&
@@ -1484,33 +1485,23 @@ function RequestBoard$() {
                            ) : isBorrower ? (
                               <div className="flex items-center gap-2">
                                  {showVerify ? (
-                                    <WorldIDVerification
-                                       showSuccessToast={false}
-                                       onSuccess={() => {
-                                          setHasWorldIdJustVerified(true);
-                                          setShowWorldIdHighlight(true);
-                                       }}
+                                    <button
+                                       type="button"
+                                       onClick={handleVerifyHeaderClick}
+                                       className="inline-flex items-center gap-2 rounded-md-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                                       data-tour-target="request-verify-world-id-link"
+                                       aria-label="Verify Yourself"
                                     >
-                                       {({ open }) => (
-                                          <button
-                                             type="button"
-                                             onClick={() => handleWorldIdHeaderClick(open)}
-                                             className="inline-flex items-center gap-2 rounded-md-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                                             data-tour-target="request-verify-world-id-link"
-                                             aria-label="Verify World ID"
-                                          >
-                                             <span className="inline-flex items-center gap-1 px-md-1 py-md-0 bg-md-red-100 rounded-md-sm">
-                                                <span className="w-3 h-3 rounded-full bg-md-red-800 flex items-center justify-center">
-                                                   <span className="text-white text-[8px] font-bold">!</span>
-                                                </span>
-                                                <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
-                                             </span>
-                                             <span className="text-md-b3 font-semibold text-md-primary-900 underline">
-                                                {'Verify World ID >'}
-                                             </span>
-                                          </button>
-                                       )}
-                                    </WorldIDVerification>
+                                       <span className="inline-flex items-center gap-1 px-md-1 py-md-0 bg-md-red-100 rounded-md-sm">
+                                          <span className="w-3 h-3 rounded-full bg-md-red-800 flex items-center justify-center">
+                                             <span className="text-white text-[8px] font-bold">!</span>
+                                          </span>
+                                          <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
+                                       </span>
+                                       <span className="text-md-b3 font-semibold text-md-primary-900 underline">
+                                          {'Verify Yourself >'}
+                                       </span>
+                                    </button>
                                  ) : (
                                     <div className="relative">
                                        <span
@@ -1529,11 +1520,16 @@ function RequestBoard$() {
                                  )}
                               </div>
                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-md-primary-900 rounded-md-sm w-fit">
+                              <button
+                                 type="button"
+                                 onClick={() => setShowIouHistory(true)}
+                                 className="inline-flex items-center gap-1 px-2.5 py-1 bg-md-primary-900 rounded-md-sm w-fit hover:opacity-90 transition-opacity"
+                                 title="View IOU point history"
+                              >
                                  <span className="text-md-b3 font-semibold text-md-neutral-100 capitalize whitespace-nowrap">
                                     IOU {lenderIouPoints}
                                  </span>
-                              </span>
+                              </button>
                            )}
                         </div>
                      </div>
@@ -1914,6 +1910,12 @@ function RequestBoard$() {
                steps={generalTourSteps}
             />
          )}
+         <IouPointHistoryModal
+            userId={isLenderTourPreview ? null : effectiveUser?.id}
+            isOpen={showIouHistory}
+            onClose={() => setShowIouHistory(false)}
+         />
+         {verifyModal}
       </>
    );
 }

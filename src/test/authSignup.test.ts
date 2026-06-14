@@ -17,8 +17,8 @@ describe('signup existing auth detection', () => {
       expect(isObfuscatedExistingSignupUser(null)).toBe(false);
    });
 
-   it('sends new signup users to the email-link confirmation screen', () => {
-      expect(buildEmailConfirmationPath('new.user@example.com')).toBe('/auth-success?type=verify&email=new.user%40example.com');
-      expect(buildEmailConfirmationPath('')).toBe('/auth-success?type=verify');
+   it('sends new signup users to the code-based confirmation screen', () => {
+      expect(buildEmailConfirmationPath('new.user@example.com')).toBe('/auth/verify-code?email=new.user%40example.com');
+      expect(buildEmailConfirmationPath('')).toBe('/auth/verify-code');
    });
 });

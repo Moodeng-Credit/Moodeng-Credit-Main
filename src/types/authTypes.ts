@@ -31,6 +31,15 @@ export interface User {
    walletProvider?: WalletProvider;
    isWorldId: WorldIdStatus;
    nullifierHash?: string;
+   /** Identity verification status via Didit (KYC: ID + face match). Independent of World ID. */
+   isDidit?: WorldIdStatus;
+   /**
+    * State of the most recent liveness pre-check (runs before both World ID and Didit ID steps).
+    * A gate, not a final verified status. See {@link LivenessStatus}.
+    */
+   livenessStatus?: LivenessStatus;
+   /** Didit session id of the most recent liveness attempt, used to resume after redirect. */
+   livenessSessionId?: string;
    telegramUsername?: string;
    telegramId?: string;
    chatId?: string;
@@ -68,6 +77,9 @@ export const WorldId = {
 } as const;
 
 export type WorldIdStatus = (typeof WorldId)[keyof typeof WorldId];
+
+/** Lifecycle of a single liveness pre-check attempt, written by the didit-webhook. */
+export type LivenessStatus = 'PENDING' | 'APPROVED' | 'DUPLICATE' | 'DECLINED';
 
 export interface IUser {
    id: string;

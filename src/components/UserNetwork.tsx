@@ -5,7 +5,10 @@ import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
+import IouPointHistoryModal from '@/components/IouPointHistoryModal';
+
 import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID, getNetworkSvg } from '@/config/wagmiConfig';
+import { isUserVerified } from '@/lib/isUserVerified';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { formatPointsMajor } from '@/shared/points';
 import { logoutUser } from '@/store/slices/authSlice';
@@ -20,9 +23,10 @@ export default function UserNetwork() {
    const user = useSelector((state: RootState) => state.auth.user);
    const userId = user.id;
    const isLender = user.userRole === 'lender';
-   const isVerifiedBorrower = user.isWorldId === 'ACTIVE';
+   const isVerifiedBorrower = isUserVerified(user);
    const [pointsTotal, setPointsTotal] = useState<number | null>(null);
    const [isPointsLoading, setIsPointsLoading] = useState(false);
+   const [showIouHistory, setShowIouHistory] = useState(false);
 
    useEffect(() => {
       if (!isLender || !userId) {
@@ -124,8 +128,10 @@ export default function UserNetwork() {
                      </Link>
                      {isLender ? (
                         <button
+                           onClick={() => setShowIouHistory(true)}
                            className="bg-purple-600 text-white text-xs font-semibold rounded-md px-3 pb-1 pt-[0.375rem] flex items-center gap-1 hover:bg-purple-700 transition-all duration-200 hover:scale-105 hover:shadow-md"
                            type="button"
+                           title="View IOU point history"
                         >
                            <i className="fas fa-coins"></i>{' '}
                            {isPointsLoading ? 'IOU Loading' : `IOU ${formatPointsMajor(pointsTotal ?? 0)}`}
@@ -227,6 +233,8 @@ export default function UserNetwork() {
                </button>
             </section>
          ) : null}
+
+         <IouPointHistoryModal userId={isLender ? userId : null} isOpen={showIouHistory} onClose={() => setShowIouHistory(false)} />
       </div>
    );
 }

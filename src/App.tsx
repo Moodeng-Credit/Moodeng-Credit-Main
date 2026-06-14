@@ -68,6 +68,8 @@ import UserProfile from '@/app/user/[username]/page';
 import UserProgressHistoryPage from '@/app/user/[username]/progress-history/page';
 import Ut from '@/app/ut/page';
 import WorldIdVerification from '@/app/verify-world-id/page';
+import DiditVerification from '@/app/verify-didit/page';
+import VerifyFlow from '@/app/verify/page';
 import WhyLend from '@/app/whylend/page';
 import { type RootState } from '@/store/store';
 import Account from '@/views/account/Account';
@@ -99,6 +101,11 @@ const BOTTOM_NAV_ROUTES = [
    '/account/settings'
 ];
 
+// Routes a defaulted borrower passes through when "Pay Now" requires connecting a wallet or
+// verifying World ID first — Repay.tsx sends them here with `state: { returnTo: 'repay' }` so
+// they can complete that detour without getting bounced to /account-restricted mid-flow.
+const REPAY_CONTINUATION_ROUTES = ['/onboarding/wallet', '/onboarding/wallet/connected', '/verify-world-id'];
+
 const canShowPreviewRoutes = () => {
    if (import.meta.env.DEV) return true;
    if (typeof window === 'undefined') return false;
@@ -111,18 +118,22 @@ export default function App() {
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
    usePostLoginReturn();
    const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
+   const userLoansFetchedAt = useSelector((state: RootState) => state.loans.userLoansFetchedAt);
    const isAuthenticated = Boolean(user?.id && username);
    const shouldCheckDefaultedBorrower = isAuthChecked && isAuthenticated;
-   const defaultedBorrower = useDefaultedBorrowerSupport(shouldCheckDefaultedBorrower ? user.id : null);
+   const defaultedBorrower = useDefaultedBorrowerSupport(shouldCheckDefaultedBorrower ? user.id : null, userLoansFetchedAt);
    const isAccountRestricted = user?.accountStatus === 'blocked' || user?.accountStatus === 'banned';
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
-   const canRepayWhileDefaulted = isDefaultedBorrower && location.pathname === '/repay';
+   const repayReturnTo = (location.state as { returnTo?: string } | null)?.returnTo === 'repay';
+   const canRepayWhileDefaulted =
+      isDefaultedBorrower &&
+      (location.pathname === '/repay' || (repayReturnTo && REPAY_CONTINUATION_ROUTES.includes(location.pathname)));
    const shouldShowAccountSupport = isAccountRestricted || isDefaultedBorrower;
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
    const showPreviewRoutes = canShowPreviewRoutes();
    const showBottomNav =
       Boolean(user?.id) &&
-      !shouldShowAccountSupport &&
+      (!shouldShowAccountSupport || canRepayWhileDefaulted) &&
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
          (location.pathname.startsWith('/user/') && !isUserDetailRoute) ||
          location.pathname.startsWith('/support') ||
@@ -220,6 +231,16 @@ export default function App() {
 
             {/* Verification */}
             <Route
+               path="/verify"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <VerifyFlow />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            <Route
                path="/verify-world-id"
                element={
                   <ProtectedRoute>
@@ -230,6 +251,17 @@ export default function App() {
                }
             />
             {import.meta.env.DEV ? <Route path="/verify-world-id-preview" element={<WorldIdVerification />} /> : null}
+            <Route
+               path="/verify-didit"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <DiditVerification />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            {import.meta.env.DEV ? <Route path="/verify-didit-preview" element={<DiditVerification />} /> : null}
 
             {/* Borrower */}
             <Route

@@ -4,6 +4,7 @@ import { CheckCircle2, ChevronRight, HelpCircle } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { buildEmailConfirmationPath } from '@/lib/authPaths';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
 type AuthSuccessCardProps = {
@@ -94,6 +95,7 @@ export default function AuthSuccessPage(): JSX.Element {
    const isLinkFlow = type === 'link';
    const isCreatedFlow = type === 'created';
    const isConfirmedFlow = type === 'confirmed';
+   const isVerifyFlow = !isLinkFlow && !isConfirmedFlow;
    const confirmationInstructions = (
       <div className="space-y-3">
          <p>Open the latest Moodeng email.</p>
@@ -133,6 +135,14 @@ export default function AuthSuccessPage(): JSX.Element {
                   className="flex h-12 w-full items-center justify-center rounded-2xl bg-[#6010D2] text-sm font-semibold text-[#FDFCFD] transition hover:opacity-95"
                >
                   Enter reset code
+               </Link>
+            ) : null}
+            {isVerifyFlow ? (
+               <Link
+                  to={buildEmailConfirmationPath(email)}
+                  className="flex h-12 w-full items-center justify-center rounded-2xl bg-[#6010D2] text-sm font-semibold text-[#FDFCFD] transition hover:opacity-95"
+               >
+                  Enter the code from your email
                </Link>
             ) : null}
             <Link

@@ -219,13 +219,13 @@ export default function SignInPage() {
                      {showAccount && errorType && (
                         <AuthErrorAlert
                            type={errorType}
-                           attemptsRemaining={attemptsRemaining}
                            onRetry={
                               errorType === 'incorrect_credentials' || errorType === 'email_not_found' || errorType === 'new_user'
                                  ? handleRetry
                                  : undefined
                            }
                            signupHref={`/sign-up?email=${encodeURIComponent(email.trim())}`}
+                           resetPasswordHref={`/forgot-password?email=${encodeURIComponent(email.trim())}`}
                         />
                      )}
 
