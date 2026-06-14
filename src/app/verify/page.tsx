@@ -26,6 +26,7 @@ type FlowState = { method: VerifyMethod; returnTo?: string; livenessSessionId?: 
  */
 type Step =
    | 'loading'
+   | 'worldid-intro'
    | 'liveness-start'
    | 'liveness-pending'
    | 'liveness-waiting'
@@ -240,6 +241,10 @@ export default function VerifyFlow() {
             setStep('duplicate');
             return;
          }
+         if (flow.method === 'worldid') {
+            setStep('worldid-intro');
+            return;
+         }
          void startLiveness(flow);
       };
 
@@ -271,6 +276,17 @@ export default function VerifyFlow() {
    }, [flow?.returnTo, navigateAfterVerified]);
 
    // --- Render ------------------------------------------------------------------
+
+   if (step === 'worldid-intro' && flow) {
+      return (
+         <StatusScreen
+            title="One quick step first"
+            body="Before World ID, we run a quick one-time face check to confirm you're a unique person. This only takes a moment, and you won't need to do it again."
+            action={{ label: 'Continue', onClick: () => void startLiveness(flow) }}
+            secondaryAction={{ label: 'Go back', onClick: () => { clearFlow(); navigate(-1); } }}
+         />
+      );
+   }
 
    if (step === 'liveness-start' || step === 'id-start') {
       return <StatusScreen title="Starting…" body="Setting up your verification. Keep this screen open." />;
