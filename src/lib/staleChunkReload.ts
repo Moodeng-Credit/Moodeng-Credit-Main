@@ -1,12 +1,16 @@
 const RELOAD_FLAG_KEY = 'moodeng_stale_chunk_reload';
-const RELOAD_GUARD_TTL_MS = 10000;
 
-const isStaleChunkError = (message: unknown): boolean => {
+export const isStaleChunkError = (message: unknown): boolean => {
    if (typeof message !== 'string') return false;
    return /dynamically imported module|is not a valid javascript mime type|importing a module script failed/i.test(message);
 };
 
-const reloadOnce = () => {
+/**
+ * Reloads the page at most once per tab session. A broken deploy that fails on
+ * every load will only trigger this once — the second failure is left alone
+ * (shown as a normal error/toast) instead of looping.
+ */
+export const reloadOnceForStaleChunk = () => {
    if (window.sessionStorage.getItem(RELOAD_FLAG_KEY)) return;
    window.sessionStorage.setItem(RELOAD_FLAG_KEY, '1');
    window.location.reload();
@@ -21,19 +25,15 @@ const reloadOnce = () => {
 export function setupStaleChunkReload() {
    if (typeof window === 'undefined') return;
 
-   window.addEventListener('vite:preloadError', reloadOnce as EventListener);
+   window.addEventListener('vite:preloadError', reloadOnceForStaleChunk as EventListener);
 
    window.addEventListener('unhandledrejection', (event) => {
       const reason = event.reason as { message?: unknown } | string | undefined;
       const message = typeof reason === 'string' ? reason : reason?.message;
-      if (isStaleChunkError(message)) reloadOnce();
+      if (isStaleChunkError(message)) reloadOnceForStaleChunk();
    });
 
    window.addEventListener('error', (event) => {
-      if (isStaleChunkError(event.message)) reloadOnce();
+      if (isStaleChunkError(event.message)) reloadOnceForStaleChunk();
    });
-
-   // Once the app has run fine for a bit, clear the guard so a future deploy can
-   // trigger the same one-time reload again.
-   window.setTimeout(() => window.sessionStorage.removeItem(RELOAD_FLAG_KEY), RELOAD_GUARD_TTL_MS);
 }
