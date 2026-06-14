@@ -251,7 +251,7 @@ export default function Congratulations() {
    const requestBoardTourPath = import.meta.env.DEV ? '/request-board?referralTest=1&tourPreview=1' : '/request-board?tour=1';
 
    return (
-      <div className="mx-auto flex min-h-screen w-full max-w-[440px] flex-col overflow-hidden rounded-[20px] bg-gradient-to-b from-[#fbfafd] to-white">
+      <div className="mx-auto flex min-h-screen w-full max-w-[440px] flex-col overflow-hidden rounded-[20px] bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f]">
          <OnboardingHeader title={copy.headerTitle} />
 
          <main className="flex flex-1 flex-col gap-5 px-5 pb-5 pt-3">

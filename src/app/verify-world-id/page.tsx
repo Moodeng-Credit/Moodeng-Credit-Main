@@ -57,7 +57,7 @@ export default function WorldIdVerification() {
    );
 
    return (
-      <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white flex flex-col items-center justify-center max-w-modal mx-auto w-full px-md-4 py-md-5">
+      <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col items-center justify-center max-w-modal mx-auto w-full px-md-4 py-md-5">
          <div className="flex flex-col items-center gap-md-3 text-center w-full">
             <img src="/hippos/hippo-with-id-card.png" alt="" aria-hidden="true" className="w-40" />
             <div className="flex flex-col gap-md-1">

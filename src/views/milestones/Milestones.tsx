@@ -289,7 +289,7 @@ function TrustPointRewardsPanel({
                <span>Next reward</span>
                <span className="truncate text-right text-md-heading">{nextRewardLabel}</span>
             </div>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f0e9fb]">
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f0e9fb] dark:bg-[#2a2235]">
                <div className="h-full rounded-full bg-md-primary-900" style={{ width: `${progress.progressPercent}%` }} />
             </div>
          </div>

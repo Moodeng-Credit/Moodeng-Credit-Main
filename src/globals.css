@@ -197,7 +197,9 @@ html.dark [class*='text-[#1c053d'],
 html.dark [class*='text-[#1f2937'],
 html.dark [class*='text-[#070707'],
 html.dark [class*='text-[#000000'],
-html.dark [class*='text-[#333333'] {
+html.dark [class*='text-[#333333'],
+html.dark [class*='text-[#0f172b'],
+html.dark [class*='text-[#0a0a0a'] {
    color: #f8f4ff;
 }
 
@@ -221,7 +223,8 @@ html.dark [class*='text-[#70617f'],
 html.dark [class*='text-[#766985'],
 html.dark [class*='text-[#877897'],
 html.dark [class*='text-[#9ca3af'],
-html.dark [class*='text-[#a199ad'] {
+html.dark [class*='text-[#a199ad'],
+html.dark [class*='text-[#62748e'] {
    color: #cfc4dd;
 }
 
