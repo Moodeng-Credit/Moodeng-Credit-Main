@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
 import type { WalletLivenessData } from '@/utils/diversityScore';
 
@@ -35,6 +35,7 @@ export default function LenderDiversitySection({
    walletData,
    detailSearch = ''
 }: LenderDiversitySectionProps) {
+   const { open: openVerify, modal: verifyModal } = useVerifyYourself();
    const lenderDiversity = useMemo(
       () => calculateLenderDiversity(fundedLoans, userProfiles, walletData),
       [fundedLoans, userProfiles, walletData]
@@ -88,19 +89,16 @@ export default function LenderDiversitySection({
                      Pay Loans
                   </Link>
                ) : (
-                  <WorldIDVerification>
-                     {({ open }) => (
-                        <button
-                           type="button"
-                           onClick={open}
-                           className="inline-flex items-center rounded-md-md bg-md-primary-1200 px-3 py-2 text-md-b3 font-semibold text-white"
-                        >
-                           Get Verified
-                        </button>
-                     )}
-                  </WorldIDVerification>
+                  <button
+                     type="button"
+                     onClick={openVerify}
+                     className="inline-flex items-center rounded-md-md bg-md-primary-1200 px-3 py-2 text-md-b3 font-semibold text-white"
+                  >
+                     Verify Yourself
+                  </button>
                )}
             </div>
+            {verifyModal}
          </div>
       </div>
    );

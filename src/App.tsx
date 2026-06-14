@@ -64,6 +64,8 @@ import UserProfile from '@/app/user/[username]/page';
 import UserProgressHistoryPage from '@/app/user/[username]/progress-history/page';
 import Ut from '@/app/ut/page';
 import WorldIdVerification from '@/app/verify-world-id/page';
+import DiditVerification from '@/app/verify-didit/page';
+import VerifyFlow from '@/app/verify/page';
 import WhyLend from '@/app/whylend/page';
 import { type RootState } from '@/store/store';
 import Account from '@/views/account/Account';
@@ -223,6 +225,16 @@ export default function App() {
 
             {/* Verification */}
             <Route
+               path="/verify"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <VerifyFlow />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            <Route
                path="/verify-world-id"
                element={
                   <ProtectedRoute>
@@ -233,6 +245,17 @@ export default function App() {
                }
             />
             {import.meta.env.DEV ? <Route path="/verify-world-id-preview" element={<WorldIdVerification />} /> : null}
+            <Route
+               path="/verify-didit"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <DiditVerification />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            {import.meta.env.DEV ? <Route path="/verify-didit-preview" element={<DiditVerification />} /> : null}
 
             {/* Borrower */}
             <Route

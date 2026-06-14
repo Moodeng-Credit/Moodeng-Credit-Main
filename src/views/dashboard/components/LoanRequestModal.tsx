@@ -35,7 +35,7 @@ import { DayPicker } from 'react-day-picker';
 import { useDispatch } from 'react-redux';
 
 import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
@@ -781,6 +781,7 @@ export default function LoanRequestModal({
    startOnReferralStep = true
 }: LoanRequestModalProps) {
    const dispatch = useDispatch<AppDispatch>();
+   const { open: openVerify, modal: verifyModal } = useVerifyYourself();
    const formRef = useRef<HTMLFormElement | null>(null);
    const dateInputRef = useRef<HTMLInputElement | null>(null);
    const reasonTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -1448,17 +1449,13 @@ export default function LoanRequestModal({
                                        Complete a one-time verification to start building trust with lenders.
                                     </p>
                                  </div>
-                                 <WorldIDVerification onSuccess={() => undefined}>
-                                    {({ open }) => (
-                                       <button
-                                          onClick={open}
-                                          className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                                          type="button"
-                                       >
-                                          Get Verified
-                                       </button>
-                                    )}
-                                 </WorldIDVerification>
+                                 <button
+                                    onClick={openVerify}
+                                    className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                                    type="button"
+                                 >
+                                    Verify Yourself
+                                 </button>
                               </div>
                               <img
                                  alt=""
@@ -1468,6 +1465,7 @@ export default function LoanRequestModal({
                               />
                            </div>
                         ) : null}
+                        {verifyModal}
 
                         <div className="flex flex-col gap-md-1" data-tour-target="loan-borrow-amount">
                            <div className="flex items-center justify-between gap-md-2">

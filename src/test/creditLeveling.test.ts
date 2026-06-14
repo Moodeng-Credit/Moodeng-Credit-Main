@@ -162,7 +162,7 @@ describe('LoanRequestModal borrowing gate', () => {
       );
 
       expect(markup).toContain('One quick step to request a loan');
-      expect(markup).toContain('Get Verified');
+      expect(markup).toContain('Verify Yourself');
       expect(markup).toContain('disabled');
    });
 

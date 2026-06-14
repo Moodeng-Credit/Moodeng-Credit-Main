@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { Link } from 'react-router-dom';
 
-import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 import { formatMilestoneTrustPoints, type DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
 
 export const MILESTONE_STATUS_CLASSES = {
@@ -72,6 +72,8 @@ export const MilestoneDetailSheet = ({
    previewQuery: string;
    onClose: () => void;
 }) => {
+   const { open: openVerify, modal: verifyModal } = useVerifyYourself('milestones');
+
    if (!milestone) return null;
 
    const config = MILESTONE_ICON_CONFIG[milestone.status];
@@ -157,23 +159,20 @@ export const MilestoneDetailSheet = ({
                   Done
                </button>
             ) : opensWorldId ? (
-               <WorldIDVerification>
-                  {({ open }) => (
-                     <button
-                        type="button"
-                        onClick={open}
-                        className="rounded-md-lg bg-md-primary-900 px-4 py-3 text-center text-md-b2 font-semibold text-white"
-                     >
-                        {milestone.actionLabel ?? 'Continue'}
-                     </button>
-                  )}
-               </WorldIDVerification>
+               <button
+                  type="button"
+                  onClick={openVerify}
+                  className="rounded-md-lg bg-md-primary-900 px-4 py-3 text-center text-md-b2 font-semibold text-white"
+               >
+                  {milestone.actionLabel ?? 'Continue'}
+               </button>
             ) : (
                <Link to={actionHref} className="rounded-md-lg bg-md-primary-900 px-4 py-3 text-center text-md-b2 font-semibold text-white">
                   {milestone.actionLabel ?? 'Continue'}
                </Link>
             )}
          </div>
+         {verifyModal}
       </SheetShell>
    );
 };

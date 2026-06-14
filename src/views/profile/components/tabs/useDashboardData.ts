@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { CREDIT_TIERS, MAX_CREDIT_LIMIT, getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { isUserVerified } from '@/lib/isUserVerified';
 import { getNextCreditTier } from '@/config/creditTiers';
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
@@ -29,7 +30,7 @@ const buildUnlockDate = (date?: string | null): string | undefined => {
 };
 
 export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLevel[] => {
-   const isVerified = user.isWorldId === 'ACTIVE';
+   const isVerified = isUserVerified(user);
    const currentLimit = getEffectiveCreditLimit(user.cs, isVerified);
    const isPaused = Boolean(user.creditProgressionPaused);
    const paidLoans = loans.filter((loan) => loan.repaymentStatus === 'Paid');
