@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Loading from '@/components/Loading';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
+import { buildEmailConfirmationPath, PENDING_VERIFICATION_EMAIL_KEY } from '@/lib/authPaths';
 import { markPasswordRecoveryReady } from '@/lib/passwordRecovery';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import { fetchUser } from '@/store/slices/authSlice';
@@ -32,6 +33,32 @@ export function getAuthEmailOtpType(url: URL, hashParams = new URLSearchParams()
    return AUTH_EMAIL_OTP_TYPES.has(type as AuthEmailOtpType) ? (type as AuthEmailOtpType) : null;
 }
 
+/**
+ * Supabase tags the access token's `amr` (Authentication Methods Reference) claim
+ * with `recovery` whenever the session came from a password-reset link/OTP — true
+ * regardless of flow type. The `?type=recovery` query param and PASSWORD_RECOVERY
+ * event are NOT reliable: Supabase's PKCE /verify redirect drops `type=recovery`
+ * from the URL, and exchangeCodeForSession fires SIGNED_IN, not PASSWORD_RECOVERY.
+ * Without this check, an existing user clicking the reset-password email's
+ * "Reset Password" button lands signed in on /dashboard instead of /reset-password.
+ */
+export function sessionHasRecoveryAmr(accessToken?: string | null): boolean {
+   if (!accessToken) return false;
+
+   try {
+      const payload = accessToken.split('.')[1];
+      if (!payload) return false;
+
+      const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+      const decoded = JSON.parse(atob(padded)) as { amr?: Array<{ method?: string }> };
+
+      return Array.isArray(decoded.amr) && decoded.amr.some((entry) => entry?.method === 'recovery');
+   } catch {
+      return false;
+   }
+}
+
 export function getAuthConfirmDestination(isRecoveryRedirect: boolean, userRole?: string | null): string {
    if (isRecoveryRedirect) {
       return RECOVERY_PATH;
@@ -49,6 +76,9 @@ export default function AuthConfirmPage() {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
    const [error, setError] = useState<string | null>(null);
+   // True when this was a password-reset link, so a dead/consumed link sends the
+   // user back to the 8-digit code screen rather than stranding them on sign-in.
+   const [isRecoveryContext, setIsRecoveryContext] = useState(false);
    const finishedRef = useRef(false);
 
    useEffect(() => {
@@ -88,10 +118,11 @@ export default function AuthConfirmPage() {
 
          if (!sessionData.session?.user) return false;
 
+         const isRecovery = isRecoveryRedirect || sessionHasRecoveryAmr(sessionData.session.access_token);
          const user = await dispatch(fetchUser())
             .unwrap()
             .catch(() => null);
-         finish(getAuthConfirmDestination(isRecoveryRedirect, user?.userRole), isRecoveryRedirect);
+         finish(getAuthConfirmDestination(isRecovery, user?.userRole), isRecovery);
          return true;
       };
 
@@ -102,6 +133,7 @@ export default function AuthConfirmPage() {
          const tokenHash = url.searchParams.get('token_hash');
          const hashParams = new URLSearchParams(window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '');
          const isRecoveryRedirect = isPasswordRecoveryRedirect(url, hashParams);
+         if (isRecoveryRedirect) setIsRecoveryContext(true);
          const emailOtpType = getAuthEmailOtpType(url, hashParams);
          const linkError =
             url.searchParams.get('error_description') ||
@@ -178,7 +210,7 @@ export default function AuthConfirmPage() {
             if (!session?.user || finishedRef.current) return;
             sub.subscription.unsubscribe();
             if (timeoutId) clearTimeout(timeoutId);
-            const isRecovery = isRecoveryRedirect || sawRecoveryEvent;
+            const isRecovery = isRecoveryRedirect || sawRecoveryEvent || sessionHasRecoveryAmr(session?.access_token);
             void dispatch(fetchUser())
                .unwrap()
                .then((user) => finish(getAuthConfirmDestination(isRecovery, user?.userRole), isRecovery))
@@ -204,6 +236,13 @@ export default function AuthConfirmPage() {
    }, [dispatch, navigate]);
 
    if (error) {
+      // Every confirmation email also contains an 8-digit code, so a stale/expired
+      // signup link doesn't have to be a dead end — point the user at /auth/verify-code
+      // when we know which signup is pending. Recovery links have their own CTA above.
+      const pendingVerificationEmail =
+         typeof window !== 'undefined' ? sessionStorage.getItem(PENDING_VERIFICATION_EMAIL_KEY)?.trim() ?? '' : '';
+      const showCodeRecovery = !isRecoveryContext && !!pendingVerificationEmail;
+
       return (
          <div className="min-h-screen bg-[#FBFAFD] px-4 py-6 text-[#040033] dark:bg-[#0D0B14] dark:text-[#F0EAFF] sm:px-6 sm:py-10">
             <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-[480px] flex-col">
@@ -233,7 +272,11 @@ export default function AuthConfirmPage() {
                            This link did not work
                         </h1>
                         <p className="mt-3 max-w-[350px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F] dark:text-[#A89BB8]">
-                           Open the latest Moodeng email and try again, or sign in to request a new link.
+                           {isRecoveryContext
+                              ? 'Reset links can be opened only once and expire quickly. Request a fresh 8-digit code and enter it directly — no link needed.'
+                              : showCodeRecovery
+                                ? 'Open the latest Moodeng email and enter the 8-digit code below to finish confirming your account.'
+                                : 'Open the latest Moodeng email and try again, or sign in to request a new link.'}
                         </p>
                      </div>
 
@@ -242,11 +285,29 @@ export default function AuthConfirmPage() {
                      </p>
 
                      <Link
-                        to="/sign-in"
+                        to={
+                           isRecoveryContext
+                              ? '/forgot-password'
+                              : showCodeRecovery
+                                ? buildEmailConfirmationPath(pendingVerificationEmail)
+                                : '/sign-in'
+                        }
                         className="flex h-14 w-full items-center justify-center rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95"
                      >
-                        Back to sign in
+                        {isRecoveryContext
+                           ? 'Request a new reset code'
+                           : showCodeRecovery
+                             ? 'Enter the code from your email'
+                             : 'Back to sign in'}
                      </Link>
+                     {isRecoveryContext || showCodeRecovery ? (
+                        <Link
+                           to="/sign-in"
+                           className="mt-3 flex h-12 w-full items-center justify-center rounded-2xl border border-[#E0D7E8] text-sm font-semibold text-[#4D4359] transition hover:bg-[#F8F4FC] dark:border-[#2D1F4A] dark:text-[#A89BB8] dark:hover:bg-[#1E1530]"
+                        >
+                           Back to sign in
+                        </Link>
+                     ) : null}
                   </section>
                </main>
             </div>

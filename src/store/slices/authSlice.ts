@@ -2,10 +2,11 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { clearClientAuthState } from '@/lib/authSessionCleanup';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
-import { type AccountStatus, type AuthState, type User, type UserRole, type WalletProvider, WorldId } from '@/types/authTypes';
+import { type AccountStatus, type AuthState, type LivenessStatus, type User, type UserRole, type WalletProvider, WorldId } from '@/types/authTypes';
 
 type UpdateUserPayload = {
    username?: string;
@@ -75,20 +76,36 @@ const normalizeProfileText = (value: unknown): string | undefined => {
 export const isObfuscatedExistingSignupUser = (user?: Pick<SupabaseAuthUser, 'identities'> | null): boolean =>
    Array.isArray(user?.identities) && user.identities.length === 0;
 
-const EXISTING_ACCOUNT_RESET_MESSAGE =
-   'An account with this email already exists. A password reset code has been sent to your email so you can sign in or reset access.';
+const EXISTING_ACCOUNT_MISMATCH_MESSAGE =
+   'An account with this email already exists. Sign in instead, or reset your password if you need to regain access.';
 
-const sendExistingAccountReset = async (supabase: SupabaseClientType, email: string) => {
-   const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: getAuthRedirectUrl('/auth/confirm')
-   });
+/**
+ * Handles a signup attempt against an email that already has an account.
+ *
+ * "Implicit login": if the password the user typed into the signup form is the
+ * correct password for the existing account, we silently sign them in rather than
+ * stranding them on an "account already exists" dead-end. If the password does not
+ * match, we surface an actionable existing-account state (the signup form shows
+ * Sign In / Reset Password links) — deliberately without firing a reset email, so
+ * impatient users don't trip Supabase's reset rate limit.
+ */
+const resolveExistingAccount = async (supabase: SupabaseClientType, email: string, password: string) => {
+   const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
-   if (resetError) throw resetError;
+   if (!signInError) {
+      const user = await fetchCurrentUserProfile();
+      return {
+         isExistingUser: true as const,
+         loggedIn: true as const,
+         username: user.username,
+         user
+      };
+   }
 
    return {
       isExistingUser: true as const,
       reason: 'existing' as const,
-      message: EXISTING_ACCOUNT_RESET_MESSAGE
+      message: EXISTING_ACCOUNT_MISMATCH_MESSAGE
    };
 };
 
@@ -162,6 +179,9 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    walletProvider: (row as UserRow & { wallet_provider?: WalletProvider | null }).wallet_provider ?? undefined,
    isWorldId: row.is_world_id,
    nullifierHash: row.nullifier_hash ?? undefined,
+   isDidit: (row as UserRow & { is_didit?: WorldIdStatus | null }).is_didit ?? undefined,
+   livenessStatus: (row as UserRow & { liveness_status?: LivenessStatus | null }).liveness_status ?? undefined,
+   livenessSessionId: (row as UserRow & { liveness_session_id?: string | null }).liveness_session_id ?? undefined,
    telegramUsername: row.telegram_username ?? undefined,
    telegramId: toOptionalString(row.telegram_id),
    chatId: toOptionalString(row.chat_id),
@@ -397,12 +417,24 @@ export const registerUser = createAsyncThunk(
    async (userData: { username: string; isWorldId: string; password: string; email: string }) => {
       const supabase = supabaseClient();
 
-      // Check if email already exists in our users table
-      // If it does, it means they likely signed up with Google/Telegram already
+      // Purge any stale session before signing up. Without this, a leftover session
+      // from a previous login (e.g. the user never signed out) gets refreshed by the
+      // global auth listener mid-signup and routes them back into the OLD account's
+      // dashboard instead of the new email's onboarding flow.
+      const {
+         data: { session: staleSession }
+      } = await supabase.auth.getSession();
+      if (staleSession) {
+         await supabase.auth.signOut();
+         clearClientAuthState();
+      }
+
+      // Check if email already exists in our users table.
+      // If it does, attempt an implicit login with the password they just typed.
       const { data: existingProfile } = await supabase.from('users').select('id').eq('email', userData.email).maybeSingle();
 
       if (existingProfile) {
-         return sendExistingAccountReset(supabase, userData.email);
+         return resolveExistingAccount(supabase, userData.email, userData.password);
       }
 
       const redirectUrl = getAuthRedirectUrl();
@@ -421,15 +453,15 @@ export const registerUser = createAsyncThunk(
 
       // Handle actual signup errors (network issues, invalid data, etc.)
       if (error) {
-         // If user already exists (e.g. signed up with Google), trigger password reset to "link" accounts
+         // If the user already exists, fall back to an implicit login with the typed password.
          if (error.message.toLowerCase().includes('already registered') || error.status === 422) {
-            return sendExistingAccountReset(supabase, userData.email);
+            return resolveExistingAccount(supabase, userData.email, userData.password);
          }
          throw error;
       }
 
       if (isObfuscatedExistingSignupUser(data.user)) {
-         return sendExistingAccountReset(supabase, userData.email);
+         return resolveExistingAccount(supabase, userData.email, userData.password);
       }
 
       const {
@@ -698,6 +730,9 @@ export const logoutUser = createAsyncThunk('auth/logout', async () => {
    }
 
    clearAuthCookieClient();
+   // Wipe persisted redux + per-user cache so the next login/signup starts on a
+   // clean slate and never shows the previous account's data.
+   clearClientAuthState();
    return null;
 });
 
@@ -790,17 +825,21 @@ const authSlice = createSlice({
          .addCase(registerUser.fulfilled, (state, action) => {
             state.isLoading = false;
             const p = action.payload;
+            // Implicit login (existing account, correct password) and brand-new
+            // signups with an immediate session both carry a `user` — sign them in.
+            if ('user' in p && p.user) {
+               state.username = p.username ?? null;
+               state.user = p.user;
+               return;
+            }
+            // Existing account with a wrong/absent password — leave state untouched;
+            // the signup form surfaces the actionable existing-account notice.
             if ('isExistingUser' in p && p.isExistingUser) {
                return;
             }
             if ('needsEmailVerification' in p && p.needsEmailVerification) {
                state.user = defaultUser;
                state.username = null;
-               return;
-            }
-            if ('user' in p && p.user) {
-               state.username = p.username ?? null;
-               state.user = p.user;
             }
          })
          .addCase(registerUser.rejected, (state, action) => {

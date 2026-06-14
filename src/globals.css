@@ -310,6 +310,10 @@ html.dark .dashboard-score-card {
    border: 1px solid #40354f;
 }
 
+html.dark .lender-performance-header-card {
+   background: #100d17;
+}
+
 html.dark .trust-gauge-track {
    stroke: #3a3146;
 }

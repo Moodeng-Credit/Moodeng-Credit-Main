@@ -9,6 +9,8 @@ type SignUpErrorType =
 
 interface SignUpFormErrorAlertProps {
    type: SignUpErrorType;
+   /** Email to pre-fill on the Sign In / Reset Password destinations. */
+   email?: string;
 }
 
 const DOCS_URL = 'https://moodeng-credit.gitbook.io/moodeng-credit';
@@ -17,8 +19,11 @@ const amberAlert = 'rounded-[10px] border border-[#FFEDA1] px-4 py-4';
 const redAlert = 'rounded-[10px] border border-[#FDAFB6] px-4 py-4';
 const bodyText = 'text-sm font-medium leading-5 tracking-[-0.01em] text-[#F0EAFF]';
 const linkText = 'font-bold text-[#C084FC] underline';
+const ctaButton =
+   'flex h-11 flex-1 items-center justify-center rounded-xl text-sm font-semibold tracking-[-0.01em] transition';
 
-export function SignUpFormErrorAlert({ type }: SignUpFormErrorAlertProps) {
+export function SignUpFormErrorAlert({ type, email }: SignUpFormErrorAlertProps) {
+   const emailQuery = email ? `?email=${encodeURIComponent(email)}` : '';
    if (type === 'password_too_weak') {
       return (
          <div className={`w-full ${amberAlert}`} style={{ background: 'rgba(255, 219, 67, 0.12)' }}>
@@ -86,16 +91,20 @@ export function SignUpFormErrorAlert({ type }: SignUpFormErrorAlertProps) {
       return (
          <div className={`w-full ${amberAlert}`} style={{ background: 'rgba(255, 219, 67, 0.12)' }}>
             <p className={bodyText}>
-               An account already exists with this email.{' '}
-               <Link to="/sign-in" className={linkText}>
-                  Sign In
-               </Link>{' '}
-               instead, or{' '}
-               <Link to="/forgot-password" className={linkText}>
-                  reset your password
-               </Link>{' '}
-               if you need to regain access.
+               You&apos;re already signed up with this email. Enter your password above to log straight in, or pick an option
+               below.
             </p>
+            <div className="mt-3 flex gap-2">
+               <Link to={`/sign-in${emailQuery}`} className={`${ctaButton} bg-[#6010D2] text-[#FDFCFD] hover:opacity-95`}>
+                  Log In
+               </Link>
+               <Link
+                  to={`/forgot-password${emailQuery}`}
+                  className={`${ctaButton} border border-[#C084FC] text-[#C084FC] hover:bg-[#C084FC]/10`}
+               >
+                  Reset Password
+               </Link>
+            </div>
          </div>
       );
    }

@@ -9,6 +9,7 @@ import BottomNav from '@/components/BottomNav';
 import { BottomNavActionProvider } from '@/components/BottomNavActionContext';
 import { ExpiredLoanRequestNotifier } from '@/components/ExpiredLoanRequestNotifier';
 import Footer from '@/components/Footer';
+import { LenderFundingPrompt } from '@/components/funding/LenderFundingPrompt';
 import Header from '@/components/Header/Header';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
 import MarketingPageShell from '@/components/marketing/MarketingPageShell';
@@ -16,8 +17,11 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { RoleGuard } from '@/components/RoleGuard';
 
 import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
+import { usePostLoginReturn } from '@/hooks/usePostLoginReturn';
 
 import AccountRestrictedPage from '@/app/account-restricted/page';
+import LendLoanPage from '@/app/lend/loan/[loanId]/page';
+import LenderSupportedPage from '@/app/lender/supported/page';
 import AdminPanel from '@/app/admin/page';
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
@@ -64,6 +68,8 @@ import UserProfile from '@/app/user/[username]/page';
 import UserProgressHistoryPage from '@/app/user/[username]/progress-history/page';
 import Ut from '@/app/ut/page';
 import WorldIdVerification from '@/app/verify-world-id/page';
+import DiditVerification from '@/app/verify-didit/page';
+import VerifyFlow from '@/app/verify/page';
 import WhyLend from '@/app/whylend/page';
 import { type RootState } from '@/store/store';
 import Account from '@/views/account/Account';
@@ -95,6 +101,11 @@ const BOTTOM_NAV_ROUTES = [
    '/account/settings'
 ];
 
+// Routes a defaulted borrower passes through when "Pay Now" requires connecting a wallet or
+// verifying World ID first — Repay.tsx sends them here with `state: { returnTo: 'repay' }` so
+// they can complete that detour without getting bounced to /account-restricted mid-flow.
+const REPAY_CONTINUATION_ROUTES = ['/onboarding/wallet', '/onboarding/wallet/connected', '/verify-world-id'];
+
 const canShowPreviewRoutes = () => {
    if (import.meta.env.DEV) return true;
    if (typeof window === 'undefined') return false;
@@ -105,19 +116,24 @@ const canShowPreviewRoutes = () => {
 export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
+   usePostLoginReturn();
    const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
+   const userLoansFetchedAt = useSelector((state: RootState) => state.loans.userLoansFetchedAt);
    const isAuthenticated = Boolean(user?.id && username);
    const shouldCheckDefaultedBorrower = isAuthChecked && isAuthenticated;
-   const defaultedBorrower = useDefaultedBorrowerSupport(shouldCheckDefaultedBorrower ? user.id : null);
+   const defaultedBorrower = useDefaultedBorrowerSupport(shouldCheckDefaultedBorrower ? user.id : null, userLoansFetchedAt);
    const isAccountRestricted = user?.accountStatus === 'blocked' || user?.accountStatus === 'banned';
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
-   const canRepayWhileDefaulted = isDefaultedBorrower && location.pathname === '/repay';
+   const repayReturnTo = (location.state as { returnTo?: string } | null)?.returnTo === 'repay';
+   const canRepayWhileDefaulted =
+      isDefaultedBorrower &&
+      (location.pathname === '/repay' || (repayReturnTo && REPAY_CONTINUATION_ROUTES.includes(location.pathname)));
    const shouldShowAccountSupport = isAccountRestricted || isDefaultedBorrower;
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
    const showPreviewRoutes = canShowPreviewRoutes();
    const showBottomNav =
       Boolean(user?.id) &&
-      !shouldShowAccountSupport &&
+      (!shouldShowAccountSupport || canRepayWhileDefaulted) &&
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
          (location.pathname.startsWith('/user/') && !isUserDetailRoute) ||
          location.pathname.startsWith('/support') ||
@@ -161,6 +177,7 @@ export default function App() {
       <BottomNavActionProvider key={location.pathname}>
          <WalletLoadingOverlay />
          <ExpiredLoanRequestNotifier />
+         <LenderFundingPrompt />
          <Routes key={location.pathname}>
             <Route path="/" element={<Home />} />
 
@@ -214,6 +231,16 @@ export default function App() {
 
             {/* Verification */}
             <Route
+               path="/verify"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <VerifyFlow />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            <Route
                path="/verify-world-id"
                element={
                   <ProtectedRoute>
@@ -224,6 +251,17 @@ export default function App() {
                }
             />
             {import.meta.env.DEV ? <Route path="/verify-world-id-preview" element={<WorldIdVerification />} /> : null}
+            <Route
+               path="/verify-didit"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <DiditVerification />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            {import.meta.env.DEV ? <Route path="/verify-didit-preview" element={<DiditVerification />} /> : null}
 
             {/* Borrower */}
             <Route
@@ -307,6 +345,36 @@ export default function App() {
                      <RoleGuard>
                         <TransactionHistory />
                      </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+
+            {/* Lender Loan Note purchase (direct link only — not in main nav).
+                Public so logged-out users see the borrower/loan preview; the page itself
+                gates the purchase action behind login + wallet. /help/:loanId aliases it. */}
+            <Route
+               path="/lend/loan/:loanId"
+               element={
+                  <Layout>
+                     <LendLoanPage />
+                  </Layout>
+               }
+            />
+            <Route
+               path="/help/:loanId"
+               element={
+                  <Layout>
+                     <LendLoanPage />
+                  </Layout>
+               }
+            />
+            <Route
+               path="/lender/supported"
+               element={
+                  <ProtectedRoute>
+                     <Layout>
+                        <LenderSupportedPage />
+                     </Layout>
                   </ProtectedRoute>
                }
             />

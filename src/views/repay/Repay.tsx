@@ -1,6 +1,6 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowLeft, Check, Loader2, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Check, Loader2, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
@@ -9,6 +9,7 @@ import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import UserAvatar from '@/components/UserAvatar';
+import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 
 import { useLoanData } from '@/hooks/useLoanData';
 import useWallet from '@/hooks/useWallet';
@@ -24,6 +25,9 @@ import {
    isBaseWalletReadyForRepayment,
    isConnectedToLockedBaseWallet
 } from '@/lib/walletProvider';
+import { ensureUsdcAllowance, getLoanManagerService } from '@/lib/web3/loanManager';
+import { usdcToBaseUnits } from '@/lib/loanNotes/api';
+import { isUserVerified } from '@/lib/isUserVerified';
 import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -286,22 +290,23 @@ export default function Repay() {
       connectorName: account.connector?.name,
       wallet: user
    });
-   const isWorldIdVerified = user.isWorldId === 'ACTIVE';
+   const isWorldIdVerified = isUserVerified(user);
+   const { open: openVerify, modal: verifyModal } = useVerifyYourself('repay');
    const hasCompletedBaseWalletSetup = baseWalletLock.isConfirmedBase;
    const emptyRepayState = !selectedLoan
       ? !isWorldIdVerified && !hasCompletedBaseWalletSetup
          ? {
               actionLabel: 'Start Setup',
-              body: 'Verify World ID and add a Base Wallet before requesting loans. Repayments will show here after a lender funds your first loan.',
+              body: 'Verify yourself and add a Base Wallet before requesting loans. Repayments will show here after a lender funds your first loan.',
               onAction: () => navigate('/onboarding/welcome', { state: { returnTo: 'repay' } }),
               title: 'Finish setup to start borrowing'
            }
          : !isWorldIdVerified
            ? {
-                actionLabel: 'Verify World ID',
-                body: 'Your Base Wallet is added. Complete World ID before requesting loans. Repayments will show here after funding.',
-                onAction: () => navigate('/verify-world-id', { state: { returnTo: 'repay' } }),
-                title: 'Verify World ID to borrow'
+                actionLabel: 'Verify Yourself',
+                body: 'Your Base Wallet is added. Complete verification before requesting loans. Repayments will show here after funding.',
+                onAction: openVerify,
+                title: 'Verify yourself to borrow'
              }
            : !hasCompletedBaseWalletSetup
              ? {
@@ -423,12 +428,24 @@ export default function Repay() {
          const newRepaymentStatus = isFullyRepaid ? 'Paid' : 'Partial';
          const transferCoin = selectedLoan.coin?.trim() || 'USDC';
          const earnedTrustPoints = getEstimatedTrustPoints(selectedLoan, effectiveRepayment);
-         const transactionHash = await Transfer(
-            selectedLoan.lenderWallet || '',
-            effectiveRepayment.toString(),
-            selectedLoan.id,
-            transferCoin
-         );
+
+         // Relay loans repay the LoanManager contract, which automatically forwards the
+         // payment to the current Loan Note owner (the lender). Normal loans stay
+         // wallet-to-wallet. From the borrower's perspective the screen is identical.
+         const isRelayLoan = selectedLoan.fundingMethod === 'smart_contract' && Boolean(selectedLoan.onchainLoanId);
+         let transactionHash: string | null;
+         if (isRelayLoan) {
+            const amountBase = usdcToBaseUnits(effectiveRepayment);
+            const payer = account.address?.trim();
+            if (payer) {
+               // Approve the LoanManager to pull the repayment (no-op in mock mode).
+               await ensureUsdcAllowance(payer, amountBase);
+            }
+            const { txHash } = await getLoanManagerService().repay(selectedLoan.onchainLoanId as string, amountBase.toString());
+            transactionHash = txHash;
+         } else {
+            transactionHash = await Transfer(selectedLoan.lenderWallet || '', effectiveRepayment.toString(), selectedLoan.id, transferCoin);
+         }
 
          if (!transactionHash) {
             return;
@@ -481,6 +498,7 @@ export default function Repay() {
       parsedRepaymentAmount,
       account.isConnected,
       account.chain?.id,
+      account.address,
       baseAccountConnector,
       navigate,
       baseWalletLock.address,
@@ -728,7 +746,7 @@ export default function Repay() {
                   <div
                      className={`mt-3 grid grid-cols-2 gap-x-3 gap-y-1 rounded-md-input border px-3 py-3.5 ${
                         isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan)
-                           ? 'border-[#f4d2d2] bg-[#fff7f7]'
+                           ? 'border-[#f4d2d2] bg-[#fff7f7] dark:border-[#68303a] dark:bg-[#3c171e]'
                            : 'border-md-neutral-300 bg-md-neutral-100'
                      }`}
                   >
@@ -770,6 +788,16 @@ export default function Repay() {
                            <p className="text-md-b1 font-semibold text-md-heading">Repay amount</p>
                            <p className="mt-1 text-md-b3 text-md-neutral-1200">Select an amount or enter your own.</p>
                         </div>
+
+                        {isLoanOverdue(selectedLoan) ? (
+                           <div className="col-span-4 flex items-start gap-2.5 rounded-md-input border border-[#f4d2d2] bg-[#fff7f7] px-3 py-2.5 dark:border-[#68303a] dark:bg-[#3c171e]">
+                              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-md-red-600" aria-hidden="true" />
+                              <p className="text-md-b3 font-medium text-md-red-600">
+                                 Paying less than the full ${formatCurrency(selectedRemaining)} reduces what you owe, but your account stays
+                                 restricted until this loan is fully repaid.
+                              </p>
+                           </div>
+                        ) : null}
 
                         {quickRepaymentFractions.map((option) => {
                            const isQuickSelected = selectedQuickFraction === option.value;
@@ -842,7 +870,7 @@ export default function Repay() {
                         <div>
                            <p className="text-md-b3 font-semibold text-md-heading">Repayment progress</p>
                         </div>
-                        {validPreviewPayment > 0 ? (
+                        {validPreviewPayment > 0 && !isLoanOverdue(selectedLoan) ? (
                            <span className="inline-flex shrink-0 items-center gap-1 rounded-md-pill bg-md-green-100 px-2.5 py-1 text-md-b3 font-semibold text-md-green-900">
                               <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />+{estimatedTrustPoints} Trust Points
                            </span>
@@ -906,6 +934,7 @@ export default function Repay() {
                   ) : null}
                </section>
             )}
+            {verifyModal}
          </div>
       </main>
    );

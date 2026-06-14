@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 
 import { Camera } from 'lucide-react';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAccount, useDisconnect } from 'wagmi';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
 
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import TelegramAuthButton from '@/components/TelegramAuthButton';
@@ -17,8 +18,11 @@ import { useAuthProvider } from '@/hooks/useAuthProvider';
 import { useLocalization } from '@/i18n';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { getBaseWalletLockStatus, getWalletProviderLabel } from '@/lib/walletProvider';
+import { getBaseAccountConnector, getBaseWalletLockStatus, getWalletProviderLabel } from '@/lib/walletProvider';
 import { getWorldIdVerificationLabel } from '@/lib/worldIdVerificationLabel';
+import type { WalletConnectorKey } from '@/config/wagmiConfig';
+import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
+import { LENDER_WALLET_OPTIONS } from '@/views/onboarding/walletPickerOptions';
 import { confirmEmailChange, fetchUser, updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
@@ -789,6 +793,274 @@ function TelegramAlertsModal({
    );
 }
 
+// ─── Change Wallet Modal ───
+
+function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+   const dispatch = useDispatch<AppDispatch>();
+   const { showToast } = useToast();
+   const user = useSelector((state: RootState) => state.auth.user);
+   const { connect, connectors, status: connectStatus, reset: resetConnect } = useConnect();
+   const { openConnectModal } = useConnectModal();
+   const { disconnect } = useDisconnect();
+   const isBorrower = user?.userRole === 'borrower';
+
+   const [step, setStep] = useState<'choose' | 'connecting'>('choose');
+   const [selectedKey, setSelectedKey] = useState<WalletConnectorKey | null>(null);
+   const [isClearing, setIsClearing] = useState(false);
+   const [error, setError] = useState('');
+
+   const previousWalletRef = useRef<string | null | undefined>(undefined);
+
+   const connectorsByName = useMemo(() => {
+      const map = new Map<string, (typeof connectors)[number]>();
+      connectors.forEach((c) => map.set(c.name, c));
+      if (!map.has(WALLET_CONNECTOR_NAMES.coinbase)) {
+         const baseConnector = getBaseAccountConnector(connectors);
+         if (baseConnector) map.set(WALLET_CONNECTOR_NAMES.coinbase, baseConnector);
+      }
+      return map;
+   }, [connectors]);
+
+   // Record previous wallet and reset on open/close
+   useEffect(() => {
+      if (!isOpen) {
+         setStep('choose');
+         setSelectedKey(null);
+         setError('');
+         previousWalletRef.current = undefined;
+         return;
+      }
+      previousWalletRef.current = user?.walletAddress ?? null;
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [isOpen]);
+
+   // Auto-close when useWalletSync saves the new wallet
+   useEffect(() => {
+      if (!isOpen || step !== 'connecting') return;
+      if (previousWalletRef.current === undefined) return;
+      if (user?.walletAddress != null && user.walletAddress !== previousWalletRef.current) {
+         showToast(TOAST_TYPES.SUCCESS, 'Wallet changed', 'Your new wallet has been connected.');
+         onClose();
+      }
+   }, [isOpen, step, user?.walletAddress, onClose, showToast]);
+
+   // Surface connection errors back to choose step
+   useEffect(() => {
+      if (step !== 'connecting' || connectStatus !== 'error') return;
+      resetConnect();
+      setStep('choose');
+      setError('Connection was cancelled or failed. Please try again.');
+   }, [connectStatus, step, resetConnect]);
+
+   // Avoid getting stuck on "Connecting…" forever if the wallet app never responds
+   useEffect(() => {
+      if (step !== 'connecting') return;
+      const timeout = setTimeout(() => {
+         resetConnect();
+         setStep('choose');
+         setError('Connection is taking too long. Please try again.');
+      }, 45000);
+      return () => clearTimeout(timeout);
+   }, [step, resetConnect]);
+
+   const clearWallet = async () => {
+      const result = await dispatch(
+         updateUser({
+            walletAddress: null,
+            walletChainId: null,
+            walletConnectorName: null,
+            walletProvider: null
+         })
+      );
+      if (!updateUser.fulfilled.match(result)) {
+         throw new Error(result.error?.message || 'Failed to clear wallet');
+      }
+      disconnect();
+   };
+
+   const handleConnectWithKey = async (key: WalletConnectorKey) => {
+      setIsClearing(true);
+      setError('');
+      try {
+         await clearWallet();
+         const connector = connectorsByName.get(WALLET_CONNECTOR_NAMES[key]);
+         if (!connector) throw new Error(`${WALLET_CONNECTOR_NAMES[key]} is not available right now.`);
+         connect({ connector });
+         setStep('connecting');
+      } catch (err) {
+         setError(err instanceof Error ? err.message : 'Failed to change wallet');
+      } finally {
+         setIsClearing(false);
+      }
+   };
+
+   // For "Other Wallets" — open RainbowKit from the click context, clear async
+   const handleConnectOther = () => {
+      openConnectModal?.();
+      setStep('connecting');
+      clearWallet().catch((err) => {
+         setStep('choose');
+         setError(err instanceof Error ? err.message : 'Failed to change wallet');
+      });
+   };
+
+   const handleClose = () => {
+      resetConnect();
+      setStep('choose');
+      setSelectedKey(null);
+      setError('');
+      onClose();
+   };
+
+   if (!isOpen) return null;
+
+   const isConnecting = isClearing || connectStatus === 'pending';
+
+   return (
+      <div
+         className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-[#12071f]/50 px-5 pb-5 sm:pb-0"
+         onClick={step === 'choose' ? handleClose : undefined}
+      >
+         <div
+            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-3"
+            onClick={(e) => e.stopPropagation()}
+         >
+            {step === 'choose' ? (
+               <>
+                  <div className="flex flex-col gap-md-1 items-center text-center">
+                     <h2 className="text-md-h4 font-semibold text-md-heading">Change Wallet</h2>
+                     <p className="text-md-b1 text-md-neutral-1200">
+                        {isBorrower
+                           ? 'Connect a new Base Account. Your current wallet will be unlinked.'
+                           : 'Connect a new wallet. Your current wallet will be unlinked.'}
+                     </p>
+                  </div>
+
+                  {isBorrower ? (
+                     <button
+                        type="button"
+                        disabled={isConnecting}
+                        onClick={() => void handleConnectWithKey('coinbase')}
+                        className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
+                     >
+                        {isConnecting ? 'Connecting...' : 'Connect Base Account'}
+                        {!isConnecting && (
+                           <div
+                              className="w-6 h-6 bg-md-neutral-100"
+                              style={{
+                                 ...ICON_MASK,
+                                 WebkitMaskImage: "url('/icons/chevron-right.svg')",
+                                 maskImage: "url('/icons/chevron-right.svg')"
+                              }}
+                           />
+                        )}
+                     </button>
+                  ) : (
+                     <div className="flex flex-col gap-md-2">
+                        <div className="grid grid-cols-2 gap-md-2">
+                           {LENDER_WALLET_OPTIONS.map((option) => {
+                              const isSelected = selectedKey === option.key;
+                              return (
+                                 <button
+                                    key={option.key}
+                                    type="button"
+                                    onClick={() => setSelectedKey(option.key)}
+                                    className={[
+                                       'flex flex-col gap-md-1 items-start p-md-2 rounded-md-md border text-left transition-colors',
+                                       isSelected
+                                          ? 'bg-md-primary-900/10 border-md-primary-900'
+                                          : 'bg-md-neutral-100 border-md-neutral-600'
+                                    ].join(' ')}
+                                 >
+                                    <div className="size-7 rounded-md-xs inline-flex items-center justify-center overflow-hidden shrink-0">
+                                       <img src={option.iconSrc} alt={option.name} className="size-7 object-contain" />
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-1">
+                                       <span className="text-md-b2 font-semibold text-md-heading">{option.name}</span>
+                                       {option.tag ? (
+                                          <span className={`text-[9px] font-semibold px-1 rounded ${option.tag.bgClass} ${option.tag.textClass}`}>
+                                             {option.tag.label}
+                                          </span>
+                                       ) : null}
+                                    </div>
+                                 </button>
+                              );
+                           })}
+                        </div>
+                        <button
+                           type="button"
+                           onClick={handleConnectOther}
+                           disabled={isConnecting}
+                           className="flex gap-md-2 items-center p-md-2 rounded-md-md border border-md-neutral-600 bg-md-neutral-200 w-full text-left disabled:opacity-50"
+                        >
+                           <div className="size-7 rounded-md-xs bg-md-slate-600 inline-flex items-center justify-center shrink-0">
+                              <span
+                                 className="block size-4 bg-white"
+                                 style={{
+                                    ...ICON_MASK,
+                                    WebkitMaskImage: "url('/icons/grid-4.svg')",
+                                    maskImage: "url('/icons/grid-4.svg')"
+                                 }}
+                              />
+                           </div>
+                           <div className="flex flex-col gap-0 flex-1 min-w-0">
+                              <span className="text-md-b2 font-semibold text-md-heading">Other Wallets</span>
+                              <span className="text-md-b3 font-medium text-md-neutral-800">Trust, Rainbow &amp; more</span>
+                           </div>
+                        </button>
+                        <button
+                           type="button"
+                           disabled={!selectedKey || isConnecting}
+                           onClick={() => selectedKey && void handleConnectWithKey(selectedKey)}
+                           className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                           {isConnecting ? 'Connecting...' : selectedKey ? 'Connect Wallet' : 'Select a wallet above'}
+                           {!isConnecting && selectedKey ? (
+                              <div
+                                 className="w-6 h-6 bg-md-neutral-100"
+                                 style={{
+                                    ...ICON_MASK,
+                                    WebkitMaskImage: "url('/icons/chevron-right.svg')",
+                                    maskImage: "url('/icons/chevron-right.svg')"
+                                 }}
+                              />
+                           ) : null}
+                        </button>
+                     </div>
+                  )}
+
+                  {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
+
+                  <button
+                     type="button"
+                     onClick={handleClose}
+                     disabled={isConnecting}
+                     className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50"
+                  >
+                     Cancel
+                  </button>
+               </>
+            ) : (
+               <>
+                  <div className="flex flex-col gap-md-2 items-center text-center py-md-2">
+                     <div className="size-12 rounded-full border-4 border-md-primary-900 border-t-transparent animate-spin" />
+                     <h2 className="text-md-h4 font-semibold text-md-heading">Connecting…</h2>
+                     <p className="text-md-b1 text-md-neutral-1200">Approve the connection in your wallet app.</p>
+                  </div>
+                  <button
+                     type="button"
+                     onClick={handleClose}
+                     className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200"
+                  >
+                     Cancel
+                  </button>
+               </>
+            )}
+         </div>
+      </div>
+   );
+}
+
 // ─── Main Component ───
 
 export default function AccountSettings() {
@@ -813,9 +1085,7 @@ export default function AccountSettings() {
    const [showAvatarModal, setShowAvatarModal] = useState(false);
    const [isSavingAvatar, setIsSavingAvatar] = useState(false);
    const [walletCopied, setWalletCopied] = useState(false);
-   const [showWalletActions, setShowWalletActions] = useState(false);
-   const [isEditingWallet, setIsEditingWallet] = useState(false);
-   const [isChangeWalletPending, setIsChangeWalletPending] = useState(false);
+   const [showChangeWalletModal, setShowChangeWalletModal] = useState(false);
    const [isDisconnectWalletPending, setIsDisconnectWalletPending] = useState(false);
    const [isSavingWallet, setIsSavingWallet] = useState(false);
    const [walletError, setWalletError] = useState('');
@@ -877,8 +1147,6 @@ export default function AccountSettings() {
    }, [currentDisplayName, editTarget]);
 
    useEffect(() => {
-      setIsEditingWallet(false);
-      setIsChangeWalletPending(false);
       setIsDisconnectWalletPending(false);
       setWalletError('');
    }, [user?.walletAddress]);
@@ -912,33 +1180,20 @@ export default function AccountSettings() {
    const handleInitiateWalletChange = useCallback(async () => {
       setWalletSafetyWarning('');
       const { warning } = await checkWalletChangeSafety();
-      if (!isBorrower) {
-         if (warning) {
-            setWalletSafetyWarning(warning);
-            setShowWalletActions(true);
-         } else {
-            navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } });
-         }
-         return;
+      if (warning) {
+         setWalletSafetyWarning(warning);
+      } else {
+         setShowChangeWalletModal(true);
       }
-      setShowWalletActions(true);
-      setIsEditingWallet(true);
-      setIsChangeWalletPending(true);
-      setIsDisconnectWalletPending(false);
-   }, [checkWalletChangeSafety, isBorrower, navigate]);
-
-   const handleInitiateWalletDisconnect = useCallback(async () => {
-      setWalletSafetyWarning('');
-      const { warning } = await checkWalletChangeSafety();
-      if (warning) setWalletSafetyWarning(warning);
-      setIsEditingWallet(true);
-      setIsChangeWalletPending(false);
-      setIsDisconnectWalletPending(true);
    }, [checkWalletChangeSafety]);
 
+   const handleInitiateWalletDisconnect = useCallback(() => {
+      setWalletSafetyWarning('');
+      setWalletError('');
+      setIsDisconnectWalletPending(true);
+   }, []);
+
    const handleRevertWalletChanges = () => {
-      setIsEditingWallet(false);
-      setIsChangeWalletPending(false);
       setIsDisconnectWalletPending(false);
       setWalletError('');
       setWalletSafetyWarning('');
@@ -1175,18 +1430,33 @@ export default function AccountSettings() {
                      </div>
                   </div>
 
+                  {/* Traditional KYC */}
+                  <div className="flex flex-col gap-md-1 w-full">
+                     <p className="text-md-b2 font-semibold text-md-heading">Traditional KYC</p>
+                     <div className="flex items-center gap-2 bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
+                        {user?.isDidit === 'ACTIVE' ? (
+                           <>
+                              <img src="/icons/check-fill.svg" alt="" className="w-4 h-4 shrink-0" />
+                              <span className="text-md-b1 font-medium text-md-green-900">
+                                 {getWorldIdVerificationLabel({
+                                    isWorldId: user?.isDidit,
+                                    userRole: user?.userRole
+                                 })}
+                              </span>
+                           </>
+                        ) : (
+                           <span className="text-md-b1 text-md-neutral-1200">Not Verified</span>
+                        )}
+                     </div>
+                  </div>
+
                   {/* Wallet */}
-                  <div className="flex flex-col gap-md-1 w-full relative">
+                  <div className="flex flex-col gap-md-2 w-full relative">
                      <p className="text-md-b2 font-semibold text-md-heading">Wallet</p>
                      <div className="flex items-center justify-between bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
                         {hasWallet ? (
                            <>
-                              <button
-                                 type="button"
-                                 onClick={() => isBorrower && setShowWalletActions((current) => !current)}
-                                 className="flex min-w-0 shrink-0 items-center gap-2 text-md-b1 text-md-neutral-1200 text-left"
-                                 aria-expanded={isBorrower ? showWalletActions : undefined}
-                              >
+                              <div className="flex min-w-0 shrink-0 items-center gap-2 text-md-b1 text-md-neutral-1200">
                                  <span
                                     className="block size-4 bg-md-primary-900"
                                     style={{
@@ -1196,7 +1466,7 @@ export default function AccountSettings() {
                                     }}
                                  />
                                  <span className="truncate">{walletLabel}</span>
-                              </button>
+                              </div>
                               <span className="mx-md-2 h-6 w-px shrink-0 bg-md-neutral-600" aria-hidden="true" />
                               <button
                                  type="button"
@@ -1206,13 +1476,6 @@ export default function AccountSettings() {
                                  aria-label="Copy wallet address"
                               >
                                  {truncateAddress(user?.walletAddress || '')}
-                              </button>
-                              <button
-                                 type="button"
-                                 onClick={handleInitiateWalletChange}
-                                 className="ml-2 shrink-0 text-md-b2 font-semibold text-md-primary-900"
-                              >
-                                 Change
                               </button>
                               <button type="button" onClick={handleCopyWallet} className="shrink-0 ml-2" aria-label="Copy wallet address">
                                  {walletCopied ? (
@@ -1242,45 +1505,15 @@ export default function AccountSettings() {
                            </>
                         )}
                      </div>
-                  </div>
 
-                  {walletSafetyWarning ? (
-                     <p className="text-md-b3 font-medium text-md-neutral-1200 rounded-md-input border border-md-yellow-700 bg-md-yellow-100 px-md-3 py-md-2">
-                        ⚠️ {walletSafetyWarning}
-                     </p>
-                  ) : null}
-
-                  {borrowerNeedsBaseWallet && hasWallet && showWalletActions ? (
-                     <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-primary-900 bg-md-primary-900/10 p-md-3">
-                        {isChangeWalletPending ? (
-                           <div className="flex flex-col gap-md-2 rounded-md-md border border-md-primary-100 bg-md-neutral-100 p-md-2">
-                              <p className="text-md-b2 font-semibold text-md-heading">Change Base Account?</p>
-                              <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                                 Future funded loans and repayments will use the new Base Account. Your existing repayment history stays
-                                 tied to this account.
-                              </p>
-                              <div className="grid grid-cols-2 gap-md-2">
-                                 <button
-                                    type="button"
-                                    onClick={handleRevertWalletChanges}
-                                    className="rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900"
-                                 >
-                                    Cancel
-                                 </button>
-                                 <button
-                                    type="button"
-                                    onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
-                                    className="rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100"
-                                 >
-                                    Continue to change
-                                 </button>
-                              </div>
-                           </div>
-                        ) : isDisconnectWalletPending ? (
+                     {hasWallet ? (
+                        isDisconnectWalletPending ? (
                            <div className="flex flex-col gap-md-2 rounded-md-md border border-md-red-100 bg-md-red-100/60 p-md-2">
                               <p className="text-md-b2 font-semibold text-md-heading">Disconnect wallet?</p>
                               <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                                 Save changes to remove this wallet from your account. You can reconnect a Base Account after.
+                                 {isBorrower
+                                    ? 'This will remove your saved Base Account. You will need to connect one again before borrowing or repaying.'
+                                    : 'This will remove your connected wallet from your account. You can reconnect anytime.'}
                               </p>
                               {walletError ? <p className="text-md-b3 font-medium text-md-red-500">{walletError}</p> : null}
                               <div className="grid grid-cols-2 gap-md-2">
@@ -1303,38 +1536,50 @@ export default function AccountSettings() {
                               </div>
                            </div>
                         ) : (
-                           <>
-                              <div className="flex items-start gap-md-2">
-                                 <img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md shrink-0" />
-                                 <div className="flex min-w-0 flex-1 flex-col gap-md-0">
-                                    <p className="text-md-b1 font-semibold text-md-heading">Confirm your Base Account</p>
-                                    <p className="text-md-b2 font-medium text-md-neutral-1200">
-                                       {borrowerHasNonBaseWallet
-                                          ? `Your account is using ${walletLabel}. Connect a Base Account so funded loans and repayments use the right wallet.`
-                                          : 'Reconnect and confirm this is a Base Account before you borrow or repay.'}
-                                    </p>
-                                 </div>
-                              </div>
+                           <div className="grid grid-cols-2 gap-md-2">
                               <button
                                  type="button"
-                                 onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
-                                 className="inline-flex w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
+                                 onClick={handleInitiateWalletChange}
+                                 className="rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900 active:scale-[0.99]"
                               >
-                                 Confirm Base Account
+                                 Change wallet
                               </button>
                               <button
                                  type="button"
                                  onClick={handleInitiateWalletDisconnect}
-                                 className="self-start text-md-b2 font-semibold text-md-red-500"
+                                 className="rounded-md-lg border border-md-red-100 bg-md-red-100/60 px-md-3 py-md-2 text-md-b2 font-semibold text-md-red-500 active:scale-[0.99]"
                               >
                                  Disconnect wallet
                               </button>
-                           </>
-                        )}
+                           </div>
+                        )
+                     ) : null}
+                  </div>
+
+                  {borrowerNeedsBaseWallet && hasWallet ? (
+                     <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-primary-900 bg-md-primary-900/10 p-md-3">
+                        <div className="flex items-start gap-md-2">
+                           <img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md shrink-0" />
+                           <div className="flex min-w-0 flex-1 flex-col gap-md-0">
+                              <p className="text-md-b1 font-semibold text-md-heading">Confirm your Base Account</p>
+                              <p className="text-md-b2 font-medium text-md-neutral-1200">
+                                 {borrowerHasNonBaseWallet
+                                    ? `Your account is using ${walletLabel}. Connect a Base Account so funded loans and repayments use the right wallet.`
+                                    : 'Reconnect and confirm this is a Base Account before you borrow or repay.'}
+                              </p>
+                           </div>
+                        </div>
+                        <button
+                           type="button"
+                           onClick={() => setShowChangeWalletModal(true)}
+                           className="inline-flex w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
+                        >
+                           Confirm Base Account
+                        </button>
                      </div>
                   ) : null}
 
-                  {!isBorrower && hasWallet && showWalletActions && walletSafetyWarning ? (
+                  {!isBorrower && hasWallet && walletSafetyWarning ? (
                      <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-yellow-700 bg-md-yellow-100 p-md-3">
                         <p className="text-md-b2 font-semibold text-md-heading">Active loan warning</p>
                         <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">{walletSafetyWarning}</p>
@@ -1348,7 +1593,7 @@ export default function AccountSettings() {
                            </button>
                            <button
                               type="button"
-                              onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
+                              onClick={() => { setWalletSafetyWarning(''); setShowChangeWalletModal(true); }}
                               className="rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100"
                            >
                               Change anyway
@@ -1357,103 +1602,16 @@ export default function AccountSettings() {
                      </div>
                   ) : null}
 
-                  {borrowerHasConfirmedBaseWallet && showWalletActions ? (
-                     <div className="flex flex-col gap-md-3 rounded-md-lg border border-md-primary-100 bg-md-primary-900/5 p-md-3">
-                        <div className="flex items-start gap-md-2">
-                           <img src="/icons/base-account.svg" alt="" className="size-8 rounded-md-md shrink-0" />
-                           <div className="min-w-0">
-                              <p className="text-md-b2 font-semibold text-md-heading">Base Account locked</p>
-                              <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                                 This wallet receives funded loans and is used for repayment history. Change it only if this is no longer
-                                 your Base Account.
-                              </p>
-                           </div>
+                  {borrowerHasConfirmedBaseWallet ? (
+                     <div className="flex items-start gap-md-2 rounded-md-lg border border-md-primary-100 bg-md-primary-900/5 p-md-3">
+                        <img src="/icons/base-account.svg" alt="" className="size-8 rounded-md-md shrink-0" />
+                        <div className="min-w-0">
+                           <p className="text-md-b2 font-semibold text-md-heading">Base Account locked</p>
+                           <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
+                              This wallet receives funded loans and is used for repayment history. Change it only if this is no longer
+                              your Base Account.
+                           </p>
                         </div>
-
-                        {isEditingWallet ? (
-                           <div className="flex flex-col gap-md-2">
-                              {isChangeWalletPending ? (
-                                 <div className="flex flex-col gap-md-2 rounded-md-md border border-md-primary-100 bg-md-neutral-100 p-md-2">
-                                    <p className="text-md-b2 font-semibold text-md-heading">Change Base Account?</p>
-                                    <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                                       Future funded loans and repayments will use the new Base Account. Your existing repayment history
-                                       stays tied to this account.
-                                    </p>
-                                    <div className="grid grid-cols-2 gap-md-2">
-                                       <button
-                                          type="button"
-                                          onClick={handleRevertWalletChanges}
-                                          className="rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900"
-                                       >
-                                          Cancel
-                                       </button>
-                                       <button
-                                          type="button"
-                                          onClick={() => navigate('/onboarding/wallet', { state: { returnTo: 'account-settings' } })}
-                                          className="rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100"
-                                       >
-                                          Continue to change
-                                       </button>
-                                    </div>
-                                 </div>
-                              ) : isDisconnectWalletPending ? (
-                                 <div className="flex flex-col gap-md-2 rounded-md-md border border-md-red-100 bg-md-red-100/60 p-md-2">
-                                    <p className="text-md-b2 font-semibold text-md-heading">Disconnect wallet?</p>
-                                    <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                                       Save changes to remove this wallet from your account. You will need to connect a Base Account again
-                                       before borrowing or repaying.
-                                    </p>
-                                    {walletError ? <p className="text-md-b3 font-medium text-md-red-500">{walletError}</p> : null}
-                                    <div className="grid grid-cols-2 gap-md-2">
-                                       <button
-                                          type="button"
-                                          onClick={handleRevertWalletChanges}
-                                          disabled={isSavingWallet}
-                                          className="rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900 disabled:opacity-60"
-                                       >
-                                          Cancel
-                                       </button>
-                                       <button
-                                          type="button"
-                                          onClick={handleSaveWalletChanges}
-                                          disabled={isSavingWallet}
-                                          className="rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100 disabled:opacity-60"
-                                       >
-                                          {isSavingWallet ? 'Saving...' : 'Disconnect'}
-                                       </button>
-                                    </div>
-                                 </div>
-                              ) : (
-                                 <div className="grid grid-cols-2 gap-md-2">
-                                    <button
-                                       type="button"
-                                       onClick={() => {
-                                          setIsChangeWalletPending(true);
-                                          setIsDisconnectWalletPending(false);
-                                       }}
-                                       className="rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900 active:scale-[0.99]"
-                                    >
-                                       Change wallet
-                                    </button>
-                                    <button
-                                       type="button"
-                                       onClick={handleInitiateWalletDisconnect}
-                                       className="rounded-md-lg border border-md-red-100 bg-md-red-100/60 px-md-3 py-md-2 text-md-b2 font-semibold text-md-red-500 active:scale-[0.99]"
-                                    >
-                                       Disconnect wallet
-                                    </button>
-                                 </div>
-                              )}
-                           </div>
-                        ) : (
-                           <button
-                              type="button"
-                              onClick={() => setIsEditingWallet(true)}
-                              className="self-start text-md-b2 font-semibold text-md-primary-900"
-                           >
-                              Change wallet
-                           </button>
-                        )}
                      </div>
                   ) : null}
 
@@ -1538,6 +1696,7 @@ export default function AccountSettings() {
          <ChangeEmailModal isOpen={showEmailModal} onClose={() => setShowEmailModal(false)} />
          <ChangeDisplayNameModal isOpen={showNameModal} onClose={() => setShowNameModal(false)} currentName={currentDisplayName} />
          <EditBioInfoModal isOpen={showBioInfoModal} onClose={() => setShowBioInfoModal(false)} user={user} />
+         <ChangeWalletModal isOpen={showChangeWalletModal} onClose={() => setShowChangeWalletModal(false)} />
          <TelegramAlertsModal
             isOpen={showTelegramAlertsModal}
             onClose={() => setShowTelegramAlertsModal(false)}

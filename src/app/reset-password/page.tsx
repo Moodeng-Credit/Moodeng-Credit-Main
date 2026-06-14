@@ -165,8 +165,8 @@ export default function ResetPasswordPage(): JSX.Element {
          return;
       }
 
-      if (password.length < 6) {
-         setError('Use at least 6 characters for your new password.');
+      if (password.length < 8) {
+         setError('Use at least 8 characters for your new password.');
          return;
       }
 
@@ -186,16 +186,37 @@ export default function ResetPasswordPage(): JSX.Element {
          const { data: { user: currentUser } } = await supabase.auth.getUser();
          const userEmail = currentUser?.email;
 
-         const { error: updateError } = await supabase.auth.updateUser({ password });
-
-         if (updateError) {
-            setError(updateError.message || 'Could not update your password. Try again in a moment.');
-            return;
+         // Update the password. Prefer the reset-password edge function: it sets the
+         // password via the admin API AND guarantees an email/password identity exists
+         // (ensure_email_identity), so accounts created via Google/Telegram can sign in
+         // with the new password afterwards. Fall back to a direct client update if the
+         // function is unavailable, so the common email/password case never regresses.
+         let edgeUpdateOk = false;
+         try {
+            const { error: fnError } = await supabase.functions.invoke('reset-password', { body: { password } });
+            edgeUpdateOk = !fnError;
+         } catch {
+            edgeUpdateOk = false;
          }
 
-         // Re-establish a regular session so the user is signed in with the new password.
+         let clientUpdateError: { message?: string } | null = null;
+         if (!edgeUpdateOk) {
+            const { error: updateError } = await supabase.auth.updateUser({ password });
+            clientUpdateError = updateError ?? null;
+         }
+
+         // Re-establish a regular session with the new password. This sign-in is also the
+         // real proof the password took effect, covering the rare case where the edge
+         // function changed the password but reported a non-fatal follow-up error.
+         let signedIn = false;
          if (userEmail) {
-            await supabase.auth.signInWithPassword({ email: userEmail, password });
+            const { error: signInError } = await supabase.auth.signInWithPassword({ email: userEmail, password });
+            signedIn = !signInError;
+         }
+
+         if (!signedIn && clientUpdateError) {
+            setError(clientUpdateError.message || 'Could not update your password. Try again in a moment.');
+            return;
          }
 
          // Determine where to send the user:
@@ -241,8 +262,8 @@ export default function ResetPasswordPage(): JSX.Element {
    const canSubmit =
       !loading &&
       recoveryState === 'ready' &&
-      password.length >= 6 &&
-      confirmPassword.length >= 6 &&
+      password.length >= 8 &&
+      confirmPassword.length >= 8 &&
       password === confirmPassword;
    const showPasswordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
    const passwordType = showPasswords ? 'text' : 'password';
@@ -343,10 +364,10 @@ export default function ResetPasswordPage(): JSX.Element {
                                  <PasswordToggleIcon className="h-5 w-5" />
                               </button>
                            </div>
-                           <p className="text-sm font-medium leading-5 text-[#70617F] dark:text-[#8B7AA0]">Use at least 6 characters.</p>
+                           <p className="text-sm font-medium leading-5 text-[#70617F] dark:text-[#8B7AA0]">Use at least 8 characters.</p>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="mt-4 space-y-2">
                            <label htmlFor="confirmPassword" className="text-base font-semibold tracking-[-0.02em] text-[#040033] dark:text-[#F0EAFF]">
                               Confirm password
                            </label>

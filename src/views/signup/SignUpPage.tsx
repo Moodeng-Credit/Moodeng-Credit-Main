@@ -6,6 +6,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { AuthFooter, AuthInputField, DividerWithText, SignUpFormErrorAlert, SocialAuthButtons, SocialButton } from '@/components/auth';
 import Loading from '@/components/Loading';
+import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { buildEmailConfirmationPath } from '@/lib/authPaths';
@@ -31,6 +32,19 @@ function slugify(text: string): string {
    );
 }
 
+// dispatch(...).unwrap() throws Redux Toolkit's SerializedError, a plain object
+// (not an Error instance) that still carries the original `message` string. An
+// `instanceof Error` check misses it entirely, so every rejected thunk fell back
+// to the generic 'Authentication failed' regardless of the real failure reason.
+function getErrorMessage(err: unknown, fallback: string): string {
+   if (err instanceof Error) return err.message;
+   if (typeof err === 'object' && err !== null && typeof (err as { message?: unknown }).message === 'string') {
+      const message = (err as { message: string }).message;
+      if (message) return message;
+   }
+   return fallback;
+}
+
 export default function SignUpPage() {
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
@@ -53,11 +67,18 @@ export default function SignUpPage() {
    const processAuthResult = (result: unknown) => {
       const data = result as {
          isExistingUser?: boolean;
+         loggedIn?: boolean;
          isNewUser?: boolean;
          needsEmailVerification?: boolean;
          user?: { id?: string; userRole?: string | null };
          reason?: 'linked' | 'taken' | 'existing';
       };
+      // Implicit login: existing account, correct password → sign them straight in.
+      if (data?.loggedIn && data.user) {
+         toast.showToast(TOAST_TYPES.INFO, 'Account already exists', 'Logging you in…');
+         navigate(data.user.userRole ? '/dashboard' : '/onboarding/role');
+         return;
+      }
       if (data?.isExistingUser) {
          setAccountErrorType(data.reason === 'taken' ? 'email_taken' : data.reason === 'linked' ? 'account_linked' : 'account_exist');
          return;
@@ -99,7 +120,7 @@ export default function SignUpPage() {
          ).unwrap();
          processAuthResult(result);
       } catch (err) {
-         handleRegisterError(err instanceof Error ? err.message : 'Authentication failed');
+         handleRegisterError(getErrorMessage(err, 'Authentication failed'));
       } finally {
          setIsLoading(false);
       }
@@ -112,7 +133,7 @@ export default function SignUpPage() {
          const result = await dispatch(registerWithGoogle({ googleCredential: credential })).unwrap();
          processAuthResult(result);
       } catch (err) {
-         handleRegisterError(err instanceof Error ? err.message : 'Authentication failed');
+         handleRegisterError(getErrorMessage(err, 'Authentication failed'));
       } finally {
          setIsLoading(false);
       }
@@ -125,7 +146,7 @@ export default function SignUpPage() {
          const result = await dispatch(registerWithTelegram({ telegramAuthData: JSON.stringify(authData) })).unwrap();
          processAuthResult(result);
       } catch (err) {
-         handleRegisterError(err instanceof Error ? err.message : 'Authentication failed');
+         handleRegisterError(getErrorMessage(err, 'Authentication failed'));
       } finally {
          setIsLoading(false);
       }
@@ -133,7 +154,8 @@ export default function SignUpPage() {
 
    const handleRegisterError = (errorMsg: string) => {
       const lower = (errorMsg || '').toLowerCase();
-      const isEmailError = lower.includes('email') || lower.includes('duplicate') || lower.includes('users_email_key');
+      const isEmailError =
+         lower.includes('email') || lower.includes('duplicate') || lower.includes('users_email_key') || lower.includes('already registered');
       if (isEmailError) {
          setAccountErrorType(
             lower.includes('lock')
@@ -142,9 +164,15 @@ export default function SignUpPage() {
                  ? 'account_linked'
                  : 'account_exist'
          );
-      } else {
-         toast.showToastByConfig('register_error', { error: errorMsg });
+         return;
       }
+
+      // "Failed to fetch" / "Load failed" are raw browser fetch errors — meaningless
+      // to a user. Show something actionable instead of echoing them verbatim.
+      const isNetworkError = lower.includes('failed to fetch') || lower.includes('load failed') || lower.includes('network');
+      toast.showToastByConfig('register_error', {
+         error: isNetworkError ? 'Could not reach the server. Check your connection and try again.' : errorMsg
+      });
    };
 
    const handleOAuthError = () => {
@@ -203,7 +231,7 @@ export default function SignUpPage() {
                      />
                      <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" className="my-6" />
                      <SocialButton
-                        icon={<Mail className="w-5 h-5 text-[#250650]" />}
+                        icon={<Mail className="w-5 h-5 text-[#250650] dark:text-[#F8F4FF]" />}
                         text="Sign Up with Email"
                         variant="outline"
                         onClick={() => setShowEmailForm(true)}
@@ -239,6 +267,7 @@ export default function SignUpPage() {
                            value={username}
                            onChange={(e: ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
                            icon={<Icons.user />}
+                           autoComplete="username"
                         />
 
                         <div className="space-y-2">
@@ -254,19 +283,20 @@ export default function SignUpPage() {
                               error={hasEmailError}
                               errorMessage={
                                  accountErrorType === 'account_linked'
-                                    ? 'Account Already Linked'
+                                    ? 'Already linked'
                                     : accountErrorType === 'account_exist'
-                                      ? 'Account Already Exist'
+                                      ? 'Already registered'
                                       : accountErrorType === 'email_taken'
-                                        ? 'Email Address Taken'
+                                        ? 'Email address taken'
                                         : undefined
                               }
                               errorVariant={accountErrorType === 'account_linked' || accountErrorType === 'account_exist' ? 'amber' : 'red'}
                               icon={<Icons.email />}
+                              autoComplete="email"
                            />
                            {accountErrorType === 'email_taken' && <SignUpFormErrorAlert type="email_taken" />}
                            {(accountErrorType === 'account_linked' || accountErrorType === 'account_exist') && (
-                              <SignUpFormErrorAlert type={accountErrorType} />
+                              <SignUpFormErrorAlert type={accountErrorType} email={email} />
                            )}
                         </div>
 
@@ -285,6 +315,7 @@ export default function SignUpPage() {
                               errorVariant="amber"
                               icon={<Icons.lock />}
                               showEyeToggle
+                              autoComplete="new-password"
                            />
                            {showPassWeak && <SignUpFormErrorAlert type="password_too_weak" />}
                         </div>

@@ -7,9 +7,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
+import FundingMethodModal, { type FundLoanTarget } from '@/components/funding/FundingMethodModal';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
+import LenderFundLoanModal from '@/views/lender/loanNote/LenderFundLoanModal';
 
+import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
 import useWallet from '@/hooks/useWallet';
 
 import { formatCurrency, formatNumber } from '@/utils/decimalHelpers';
@@ -21,6 +24,7 @@ import {
    buildBorrowerContextFit,
    normalizeBorrowerContextProfile
 } from '@/lib/borrowerContextFit';
+import { isUserVerified } from '@/lib/isUserVerified';
 import { fetchLoans, type LoanSideEffectError, updateLoanStatus } from '@/store/slices/loanSlice';
 import { computePointsDelta, computeYearOneIouPointsDelta, formatPointsMajor, getYearOneIouBorrowerBonusPoints } from '@/shared/points';
 
@@ -67,8 +71,7 @@ function BorrowerContextPanel({ context, lenderIouInfo }: { context: BorrowerCon
          <p className="text-md-b2 font-medium leading-[1.65] text-md-neutral-900 dark:text-md-neutral-200 whitespace-pre-line">
             {context.paragraphText}
          </p>
-         {iouData && (
-            <div className="mt-4 rounded-[18px] bg-gradient-to-br from-[#fef3c7] to-[#fde68a] dark:from-[#3d2a00] dark:to-[#2a1d00] p-4 flex items-start gap-3">
+         {iouData ? <div className="mt-4 rounded-[18px] bg-gradient-to-br from-[#fef3c7] to-[#fde68a] dark:from-[#3d2a00] dark:to-[#2a1d00] p-4 flex items-start gap-3">
                <span className="text-2xl leading-none mt-0.5" aria-hidden="true">🪙</span>
                <div>
                   <p className="text-md-b3 font-semibold uppercase tracking-wide text-[#92400e] dark:text-[#fbbf24]">Reward</p>
@@ -79,8 +82,7 @@ function BorrowerContextPanel({ context, lenderIouInfo }: { context: BorrowerCon
                      Includes {iouData.base} pts for funding the loan + {iouData.bonus} for {iouData.bonusLabel}!
                   </p>
                </div>
-            </div>
-         )}
+            </div> : null}
       </section>
    );
 }
@@ -107,6 +109,11 @@ export default function UserCard(loan: UserCardProps) {
    const account = useAccount();
    const { isConnected } = account;
    const { openConnectModal } = useConnectModal();
+   // Moodeng funding admins (George/Emma) get the internal two-option modal on "Send Your
+   // Help"; everyone else falls through to the normal lend flow, byte-for-byte unchanged.
+   const isFundingAdmin = useIsFundingAdmin();
+   const [showFundingModal, setShowFundingModal] = useState(false);
+   const [showBuyModal, setShowBuyModal] = useState(false);
    const [showModal, setShowModal] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
    // The on-chain transfer hash, set the moment Transfer resolves. Drives the "Sending" →
@@ -128,7 +135,7 @@ export default function UserCard(loan: UserCardProps) {
       ? allLoans.filter((l) => l.borrowerUser === borrowerUserId && l.repaymentStatus === 'Paid').length
       : undefined;
    const borrowerGoodStanding = borrowerProfile ? (borrowerProfile.cs ?? 0) > 0 : undefined;
-   const borrowerIsVerified = borrowerProfile ? borrowerProfile.isWorldId === 'ACTIVE' : undefined;
+   const borrowerIsVerified = borrowerProfile ? isUserVerified(borrowerProfile) : undefined;
    const borrowerUsername = getSafeProfileText(borrowerProfile?.username) ?? getSafeProfileText(tourBorrowerUsername) ?? '';
    const borrowerDetailsHref =
       tourBorrowerUsername && (import.meta.env.DEV || isPreviewRequest || forceTourBorrowerLink)
@@ -268,22 +275,36 @@ export default function UserCard(loan: UserCardProps) {
       }
    }, [isConnected]);
 
-   const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault();
+   // Runs the existing normal lend flow (used by non-admins, and by admins who pick
+   // "Direct Lend" in the funding modal). Connecting resumes the lend automatically.
+   const runDirectLend = useCallback(() => {
       if (!isConnected) {
-         // Connecting is a prerequisite, not a separate task: arm the lend so it resumes by
-         // itself once the wallet connects, instead of dropping the lender back to a second tap.
          pendingLendRef.current = true;
          openConnectModal?.();
          return;
       }
-      await executeLend();
+      void executeLend();
+   }, [isConnected, openConnectModal, executeLend]);
+
+   const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      // Internal accounts get to choose Direct Lend vs Smart Contract Lend (Liquidity Relay).
+      if (isFundingAdmin) {
+         setShowFundingModal(true);
+         return;
+      }
+      runDirectLend();
    };
 
    const loanReason = loanData.reason?.trim() ? loanData.reason.trim() : 'Unknown Reason';
    const dueFormatted = format(due, 'MMM dd yyyy');
    const isOwnLoan = loanData.borrowerUser === userId;
    const isLent = loanData.loanStatus === 'Lent';
+   // A relay loan Moodeng already funded whose Loan Note a lender can still buy. These appear
+   // on the request board for lenders; the card's action opens the buy popup, not normal lend.
+   const isRelaySellable = Boolean(
+      loanData.fundingMethod === 'smart_contract' && loanData.isSellable && isLent && !isOwnLoan && !loanData.lenderUser
+   );
    const canDeleteOwnRequest = Boolean(isAuthenticated && isOwnLoan && loanData.loanStatus === 'Requested' && onDeleteOwnRequest);
    const borrowerContextProfileData = useMemo(
       () => borrowerContextProfile ?? normalizeBorrowerContextProfile(borrowerProfile),
@@ -455,9 +476,20 @@ export default function UserCard(loan: UserCardProps) {
                      <ChevronRight className="w-5 h-5" />
                   </Link>
                ) : isLent ? (
-                  <div className="bg-md-neutral-500 text-md-neutral-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg text-center cursor-not-allowed">
-                     Help Received
-                  </div>
+                  isRelaySellable ? (
+                     <button
+                        type="button"
+                        onClick={() => setShowBuyModal(true)}
+                        className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
+                     >
+                        Send Your Help
+                        <Send className="w-5 h-5" />
+                     </button>
+                  ) : (
+                     <div className="bg-md-neutral-500 text-md-neutral-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg text-center cursor-not-allowed">
+                        Help Received
+                     </div>
+                  )
                ) : isBorrower ? (
                   <Link
                      to={isOwnLoan ? `/loan/${loanData.id}` : borrowerDetailsHref}
@@ -484,7 +516,7 @@ export default function UserCard(loan: UserCardProps) {
                      className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:brightness-100 disabled:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
                   >
                      {isProcessing ? 'Processing...' : 'Send Your Help'}
-                     {!isProcessing && <Send className="w-5 h-5" />}
+                     {!isProcessing ? <Send className="w-5 h-5" /> : null}
                   </button>
                )}
 
@@ -509,9 +541,30 @@ export default function UserCard(loan: UserCardProps) {
             </div>
          </div>
 
+         {/* Internal funding fork (George/Emma only): Direct Lend vs Smart Contract Lend */}
+         {showFundingModal ? (
+            <FundingMethodModal
+               target={
+                  {
+                     loanId: loanData.id,
+                     borrowerWallet: loanData.borrowerWallet ?? null,
+                     borrowerName: borrowerDisplayName,
+                     principal: Number(loanData.loanAmount ?? 0),
+                     totalOwed: Number(loanData.totalRepaymentAmount ?? 0),
+                     dueDate: loanData.dueDate ?? ''
+                  } satisfies FundLoanTarget
+               }
+               onClose={() => setShowFundingModal(false)}
+               onDirectLend={runDirectLend}
+               onFunded={handleFetch}
+            />
+         ) : null}
+
+         {/* Buy the Loan Note (relay-sellable card on the request board) */}
+         {showBuyModal ? <LenderFundLoanModal loanId={loanData.id} onClose={() => setShowBuyModal(false)} /> : null}
+
          {/* Fund Success Modal */}
-         {showModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+         {showModal ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
                <div className="bg-white rounded-2xl shadow-lg max-w-sm mx-auto flex flex-col overflow-hidden" style={{ minWidth: '320px' }}>
                   <div className="bg-gradient-to-r from-[#C55FFF] to-[#7B5FFF] px-6 py-4 flex items-center justify-between">
                      <h3 className="text-white font-bold text-lg">Funded</h3>
@@ -550,8 +603,7 @@ export default function UserCard(loan: UserCardProps) {
                      </button>
                   </div>
                </div>
-            </div>
-         )}
+            </div> : null}
       </>
    );
 }

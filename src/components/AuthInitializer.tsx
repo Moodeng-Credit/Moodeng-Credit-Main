@@ -8,6 +8,11 @@ import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
 import { clearAuth, fetchUser, setAuthChecked, setPreviewAuth } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
+// Pages that run their own auth/session flow. A SIGNED_OUT event on these (e.g. the
+// deliberate session purge before a fresh signup) must NOT bounce the user to
+// /request-board mid-flow.
+const AUTH_FLOW_PATHS = new Set(['/sign-in', '/sign-up', '/request-board', '/forgot-password', '/reset-password']);
+
 export function AuthInitializer() {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
@@ -59,7 +64,7 @@ export function AuthInitializer() {
                clearAuthCookieClient();
                dispatch(clearAuth());
 
-               if (wasAuthenticatedRef.current && pathnameRef.current !== '/sign-in' && pathnameRef.current !== '/request-board') {
+               if (wasAuthenticatedRef.current && !AUTH_FLOW_PATHS.has(pathnameRef.current)) {
                   navigate('/request-board');
                }
             }

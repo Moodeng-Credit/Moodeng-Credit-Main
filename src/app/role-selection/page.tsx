@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useNavigate } from 'react-router-dom';
@@ -11,6 +11,7 @@ import type { LocaleCode } from '@/i18n/translations';
 import { updateUserRole } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { UserRole } from '@/types/authTypes';
+import { hasPendingFundIntent } from '@/views/lender/loanNote/fundingPopup';
 
 const ROLE_SELECTION_COPY = {
    en: {
@@ -110,6 +111,22 @@ export default function RoleSelectionPage() {
    const copy = ROLE_SELECTION_COPY[locale] ?? ROLE_SELECTION_COPY.en;
    const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
    const [isSubmitting, setIsSubmitting] = useState(false);
+
+   // Link arrivals (came from a "fund this loan" link) are lenders by intent — skip the
+   // role question, auto-assign lender, and send them straight into wallet onboarding.
+   const autoLenderRef = useRef(false);
+   useEffect(() => {
+      if (autoLenderRef.current) return;
+      if (user?.id && !user.userRole && hasPendingFundIntent()) {
+         autoLenderRef.current = true;
+         dispatch(updateUserRole('lender'))
+            .unwrap()
+            .then(() => navigate('/onboarding/wallet', { replace: true }))
+            .catch(() => {
+               autoLenderRef.current = false; // fall back to manual selection
+            });
+      }
+   }, [user?.id, user?.userRole, dispatch, navigate]);
 
    if (user?.userRole) {
       return <Navigate to={user.userRole === 'lender' ? '/lender/dashboard' : '/dashboard'} replace />;
