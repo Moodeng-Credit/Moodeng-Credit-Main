@@ -318,11 +318,13 @@ export default function VerifyFlow() {
    }
 
    if (step === 'duplicate') {
+      // A duplicate face can never verify, so don't strand them on a dead-end "Go back" —
+      // let them continue into the app the same way a verified user would exit.
       return (
          <StatusScreen
             title="This identity is already registered"
             body="Our checks found an account already verified with this face. Each person can verify only once. If you think this is a mistake, please contact support."
-            action={{ label: 'Go back', onClick: () => { clearFlow(); navigate(-1); } }}
+            action={{ label: 'Continue to app', onClick: () => navigateAfterVerified(flow?.returnTo) }}
          />
       );
    }
@@ -333,7 +335,7 @@ export default function VerifyFlow() {
             title="Liveness check didn't pass"
             body="We couldn't confirm a live person. Please try again in good lighting with your face clearly visible."
             action={{ label: 'Try again', onClick: () => flow && void startLiveness(flow) }}
-            secondaryAction={{ label: 'Go back', onClick: () => { clearFlow(); navigate(-1); } }}
+            secondaryAction={{ label: 'Continue to app', onClick: () => navigateAfterVerified(flow?.returnTo) }}
          />
       );
    }
