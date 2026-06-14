@@ -10,6 +10,7 @@ import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
 import type { WalletConnectorKey } from '@/config/wagmiConfig';
 import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
+import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkReload';
 import { getBaseAccountConnector } from '@/lib/walletProvider';
 import type { RootState } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
@@ -72,6 +73,10 @@ export default function ConnectWallet() {
       if (status === 'error' && error) {
          setPendingKey(null);
          setUserInitiatedConnection(false);
+         if (isStaleChunkError(error.message)) {
+            reloadOnceForStaleChunk();
+            return;
+         }
          const code = (error as { code?: number | string }).code;
          if (code !== 4001 && !/reject/i.test(error.message)) {
             showToast(TOAST_TYPES.ERROR, 'Connection failed', error.message || 'Could not connect wallet. Please try again.');
