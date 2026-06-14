@@ -83,10 +83,12 @@ type DiditFeatureBlock = {
 type DiditDecision = {
    face_match?: DiditFeatureBlock;
    face_search?: DiditFeatureBlock;
+   liveness?: DiditFeatureBlock;
    warnings?: unknown;
 };
 
-const FACE_MATCH_THRESHOLD = 0.8;
+// Didit similarity scores are 0–100; treat ≥ 80% as a match.
+const FACE_MATCH_THRESHOLD = 80;
 
 const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 
@@ -120,7 +122,8 @@ const blockHasDuplicate = (block: DiditFeatureBlock, currentUserId: string): boo
    ];
 
    for (const match of matches) {
-      const score = Number(readField(match, ['score', 'similarity', 'confidence']) ?? 0);
+      const raw = Number(readField(match, ['score', 'similarity', 'confidence']) ?? 0);
+      const score = raw > 0 && raw <= 1 ? raw * 100 : raw; // accept either 0–1 or 0–100 scales
       const matchedVendor = readField(match, ['vendor_data', 'external_user_id', 'user_id']);
       const vendorStr = typeof matchedVendor === 'string' ? matchedVendor : undefined;
       // A match to a different user is a duplicate. If no vendor is exposed, an above-threshold
@@ -145,6 +148,8 @@ const hasDuplicateFace = (decision: DiditDecision | null | undefined, currentUse
    return (
       blockHasDuplicate(decision.face_match, currentUserId) ||
       blockHasDuplicate(decision.face_search, currentUserId) ||
+      // Liveness exposes 1:N hits under Fraud Signals → "Matches".
+      blockHasDuplicate(decision.liveness, currentUserId) ||
       warningsFlagDuplicate(decision.warnings)
    );
 };

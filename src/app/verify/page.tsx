@@ -229,17 +229,31 @@ export default function VerifyFlow() {
          return;
       }
 
+      // Liveness is sticky: once it has passed (or been blocked as a duplicate), don't re-run it.
+      // Re-running would 1:N-match the user's own prior approved liveness session and lock them out.
+      const resume = (flow: FlowState) => {
+         if (user?.livenessStatus === 'APPROVED') {
+            setStep('confirm');
+            return;
+         }
+         if (user?.livenessStatus === 'DUPLICATE') {
+            setStep('duplicate');
+            return;
+         }
+         void startLiveness(flow);
+      };
+
       // Fresh entry from the chooser modal / onboarding.
       if (routeState?.method) {
          const flow: FlowState = { method: routeState.method, returnTo: routeState.returnTo };
          writeFlow(flow);
-         void startLiveness(flow);
+         resume(flow);
          return;
       }
 
       // Resume an in-progress flow with no usable context, else bail out.
       if (existing) {
-         void startLiveness(existing);
+         resume(existing);
          return;
       }
       navigate('/dashboard', { replace: true });
