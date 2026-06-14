@@ -66,15 +66,24 @@ type DiditWebhookPayload = {
    decision?: DiditDecision | null;
 };
 
-// Partial shape of Didit's decision object (only the fields we read). Face Search 1:N results
-// can surface under a few key names depending on workflow config, so we scan defensively.
+// Partial shape of Didit's decision object (only the fields we read). The 1:N dedup surfaces as
+// the Face Match step's "Duplicated face" rule; depending on workflow/version it can appear under
+// `face_match` or `face_search`, so we scan both defensively.
+type DiditFeatureBlock = {
+   status?: string;
+   score?: number;
+   warnings?: unknown;
+   results?: unknown;
+   matches?: unknown;
+   detected_faces?: unknown;
+   duplicated_faces?: unknown;
+   duplicate_faces?: unknown;
+} | null;
+
 type DiditDecision = {
-   face_search?: {
-      status?: string;
-      results?: unknown;
-      detected_faces?: unknown;
-      matches?: unknown;
-   } | null;
+   face_match?: DiditFeatureBlock;
+   face_search?: DiditFeatureBlock;
+   warnings?: unknown;
 };
 
 const FACE_MATCH_THRESHOLD = 0.8;
@@ -90,37 +99,57 @@ const readField = (obj: unknown, keys: string[]): unknown => {
    return undefined;
 };
 
-// True when face search found a match belonging to a DIFFERENT user (i.e. this live face is
-// already registered). Didit declines the face_search feature when a 1:N match exists; we also
-// scan the match arrays for an above-threshold score tied to another user's vendor_data.
-const hasDuplicateFace = (decision: DiditDecision | null | undefined, currentUserId: string): boolean => {
-   const faceSearch = decision?.face_search;
-   if (!faceSearch) return false;
+// Any warning whose code/type/name mentions "duplicat" flags a duplicate face.
+const warningsFlagDuplicate = (warnings: unknown): boolean =>
+   asArray(warnings).some((w) => {
+      const text = String(readField(w, ['code', 'type', 'name', 'risk', 'message']) ?? '').toLowerCase();
+      return text.includes('duplicat');
+   });
+
+// Inspect one Didit feature block (face_match or face_search) for a 1:N match against a
+// DIFFERENT user — i.e. this live face is already registered.
+const blockHasDuplicate = (block: DiditFeatureBlock, currentUserId: string): boolean => {
+   if (!block) return false;
 
    const matches = [
-      ...asArray(faceSearch.results),
-      ...asArray(faceSearch.detected_faces),
-      ...asArray(faceSearch.matches)
+      ...asArray(block.results),
+      ...asArray(block.matches),
+      ...asArray(block.detected_faces),
+      ...asArray(block.duplicated_faces),
+      ...asArray(block.duplicate_faces)
    ];
 
    for (const match of matches) {
       const score = Number(readField(match, ['score', 'similarity', 'confidence']) ?? 0);
       const matchedVendor = readField(match, ['vendor_data', 'external_user_id', 'user_id']);
       const vendorStr = typeof matchedVendor === 'string' ? matchedVendor : undefined;
-      if (score >= FACE_MATCH_THRESHOLD && vendorStr && vendorStr !== currentUserId) {
+      // A match to a different user is a duplicate. If no vendor is exposed, an above-threshold
+      // match is still treated as a duplicate (the search only returns prior approved sessions).
+      if (score >= FACE_MATCH_THRESHOLD && vendorStr !== currentUserId) {
          return true;
       }
    }
 
-   // Fallback: an explicit Declined face_search status with any matches present.
-   if (typeof faceSearch.status === 'string' && faceSearch.status.toLowerCase() === 'declined' && matches.length > 0) {
-      return true;
-   }
+   if (warningsFlagDuplicate(block.warnings)) return true;
+
+   // The "Duplicated face" rule set to Decline surfaces as a declined feature status with matches.
+   const status = typeof block.status === 'string' ? block.status.toLowerCase() : '';
+   if ((status === 'declined' || status === 'warning') && matches.length > 0) return true;
 
    return false;
 };
 
-// Fetch the full decision when the webhook payload didn't embed it (needed for face-search results).
+// True when the live face matches a previously approved session (Didit's "Duplicated face" rule).
+const hasDuplicateFace = (decision: DiditDecision | null | undefined, currentUserId: string): boolean => {
+   if (!decision) return false;
+   return (
+      blockHasDuplicate(decision.face_match, currentUserId) ||
+      blockHasDuplicate(decision.face_search, currentUserId) ||
+      warningsFlagDuplicate(decision.warnings)
+   );
+};
+
+// Fetch the full decision when the webhook payload didn't embed it (needed for the dedup result).
 const fetchDecision = async (sessionId: string): Promise<DiditDecision | null> => {
    const apiKey = Deno.env.get('DIDIT_API_KEY');
    if (!apiKey) {
@@ -236,11 +265,19 @@ serve(async (req) => {
             return jsonResponse({ success: true });
          }
 
+         // Inspect the decision on both Approved and Declined: the "Duplicated face" rule may be
+         // set to Decline (Didit blocks → status Declined) or Approve (we block here from the
+         // decision). Either way a detected duplicate maps to DUPLICATE for correct messaging.
          let livenessStatus: 'APPROVED' | 'DUPLICATE' | 'DECLINED';
-         if (status === 'Approved') {
+         if (status === 'Approved' || status === 'Declined') {
             const decision = payload.decision ?? (sessionId ? await fetchDecision(sessionId) : null);
-            livenessStatus = hasDuplicateFace(decision, vendorData) ? 'DUPLICATE' : 'APPROVED';
+            if (hasDuplicateFace(decision, vendorData)) {
+               livenessStatus = 'DUPLICATE';
+            } else {
+               livenessStatus = status === 'Approved' ? 'APPROVED' : 'DECLINED';
+            }
          } else {
+            // Abandoned / Expired.
             livenessStatus = 'DECLINED';
          }
 
