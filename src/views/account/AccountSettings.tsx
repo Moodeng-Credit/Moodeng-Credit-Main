@@ -801,7 +801,7 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
    const user = useSelector((state: RootState) => state.auth.user);
    const { connect, connectors, status: connectStatus, reset: resetConnect } = useConnect();
    const { openConnectModal } = useConnectModal();
-   const { disconnect } = useDisconnect();
+   const { disconnectAsync } = useDisconnect();
    const isBorrower = user?.userRole === 'borrower';
 
    const [step, setStep] = useState<'choose' | 'connecting'>('choose');
@@ -864,6 +864,9 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
    }, [step, resetConnect]);
 
    const clearWallet = async () => {
+      // Disconnect first so useWalletSync doesn't re-save the old wallet after we
+      // clear the stored address (same race as the Disconnect flow in settings).
+      await disconnectAsync().catch(() => undefined);
       const result = await dispatch(
          updateUser({
             walletAddress: null,
@@ -875,7 +878,6 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
       if (!updateUser.fulfilled.match(result)) {
          throw new Error(result.error?.message || 'Failed to clear wallet');
       }
-      disconnect();
    };
 
    const handleConnectWithKey = async (key: WalletConnectorKey) => {
@@ -1072,7 +1074,7 @@ export default function AccountSettings() {
    const dispatch = useDispatch<AppDispatch>();
    const user = useSelector((state: RootState) => state.auth.user);
    const { connector, chain } = useAccount();
-   const { disconnect } = useDisconnect();
+   const { disconnectAsync } = useDisconnect();
    const { isEmailPasswordUser } = useAuthProvider();
    const { isDarkMode, setMode } = useThemeMode();
 
@@ -1208,6 +1210,12 @@ export default function AccountSettings() {
       setIsSavingWallet(true);
       setWalletError('');
       try {
+         // Disconnect the live wallet FIRST and wait for it to settle. If we clear
+         // the stored address before the wallet is actually disconnected, useWalletSync
+         // sees a still-connected wallet with no stored address and immediately re-saves
+         // it — which is why disconnect "didn't work" until the second attempt.
+         await disconnectAsync().catch(() => undefined);
+
          const result = await dispatch(
             updateUser({
                walletAddress: null,
@@ -1221,7 +1229,6 @@ export default function AccountSettings() {
             throw new Error(result.error?.message || 'Failed to update wallet.');
          }
 
-         disconnect();
          handleRevertWalletChanges();
       } catch (err) {
          setWalletError(err instanceof Error ? err.message : 'Failed to update wallet.');
