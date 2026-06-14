@@ -354,7 +354,12 @@ export default function VerifyFlow() {
          <ConfirmScreen
             method={flow.method}
             worldIdTrigger={
-               <WorldIDVerification onSuccess={handleWorldIdSuccess} showSuccessToast={false} className="w-full">
+               <WorldIDVerification
+                  onSuccess={handleWorldIdSuccess}
+                  onAlreadyUsed={() => navigateAfterVerified(flow?.returnTo)}
+                  showSuccessToast={false}
+                  className="w-full"
+               >
                   {({ open }) => (
                      <button
                         type="button"

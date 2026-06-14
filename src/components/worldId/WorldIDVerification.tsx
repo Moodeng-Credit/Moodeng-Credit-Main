@@ -20,6 +20,13 @@ import { SUPPORT_FACEBOOK_URL, WORLD_ID_VERIFICATION_SUPPORT_URL } from '@/views
 interface WorldIDVerificationProps {
    children: (props: { open: () => void }) => ReactNode;
    onSuccess?: () => void;
+   /**
+    * Called when the user dismisses the "World ID Already Linked" modal. A World ID that is
+    * already linked to another account can never verify here, so callers that gate a flow on
+    * verification (e.g. the onboarding /verify screen) use this to move the user on instead of
+    * leaving them stuck. Omit it to just close the modal in place.
+    */
+   onAlreadyUsed?: () => void;
    className?: string;
    showSuccessToast?: boolean;
    showSuccessFeedback?: boolean;
@@ -362,6 +369,7 @@ function VerificationFeedbackOverlay({
 export default function WorldIDVerification({
    children,
    onSuccess,
+   onAlreadyUsed,
    className = '',
    showSuccessToast = true,
    showSuccessFeedback = true
@@ -900,7 +908,13 @@ export default function WorldIDVerification({
       <>
          {trigger}
 
-         <AlreadyUsedModal isOpen={showAlreadyUsedModal} onClose={() => setShowAlreadyUsedModal(false)} />
+         <AlreadyUsedModal
+            isOpen={showAlreadyUsedModal}
+            onClose={() => {
+               setShowAlreadyUsedModal(false);
+               onAlreadyUsed?.();
+            }}
+         />
 
          <VerificationLaunchOverlay
             state={verificationLaunchState}
