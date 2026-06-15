@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type GuidedTourStep = {
    target: string;
+   /** Optional: query a sub-element for tap-dot placement. Dot placed at right-end of element (button-style). */
+   dotTarget?: string;
+   /** Override dot placement within the spotlight. 'bottom-right' avoids text in large panels. */
+   dotPlacement?: 'center' | 'bottom-right';
    title: string;
    body: string;
    /**
@@ -156,12 +160,28 @@ export default function GuidedTourPreview({
    useEffect(() => { stepIndexRef.current = stepIndex; }, [stepIndex]);
 
    // When bounds change (new step or scroll/resize), position the dot.
-   // On a genuine step change, slide the dot to the new center then replay the tap animation.
+   // Supports dotTarget (sub-element right-end) and dotPlacement:'bottom-right'.
+   // On a genuine step change, slide the dot to the new position then replay the tap animation.
    // On scroll/resize, just jump the dot without animation so it stays locked to the target.
    useEffect(() => {
       if (!bounds || !hasStarted) return undefined;
-      const cx = bounds.left + bounds.width / 2;
-      const cy = bounds.top + bounds.height / 2;
+
+      // Compute dot target position
+      let cx: number;
+      let cy: number;
+      const dotTargetEl = currentStep?.dotTarget ? document.querySelector<HTMLElement>(currentStep.dotTarget) : null;
+      if (dotTargetEl) {
+         const r = dotTargetEl.getBoundingClientRect();
+         cx = r.left + r.width - r.height * 0.55;
+         cy = r.top + r.height / 2;
+      } else if (currentStep?.dotPlacement === 'bottom-right') {
+         cx = bounds.left + bounds.width - SPOTLIGHT_INSET - 28;
+         cy = bounds.top + bounds.height - SPOTLIGHT_INSET - 28;
+      } else {
+         cx = bounds.left + bounds.width / 2;
+         cy = bounds.top + bounds.height / 2;
+      }
+
       const curStep = stepIndexRef.current;
       const isNewStep = curStep !== lastDotStepRef.current;
       lastDotStepRef.current = curStep;
@@ -193,7 +213,7 @@ export default function GuidedTourPreview({
          setTapNonce(n => n + 1);
       }, 440);
       return () => { window.clearTimeout(tPos); window.clearTimeout(t); };
-   }, [bounds, hasStarted]);
+   }, [bounds, currentStep?.dotPlacement, currentStep?.dotTarget, hasStarted]);
 
    // Show a click burst when the user taps within the spotlight bounds, then hide the dot.
    useEffect(() => {
