@@ -313,7 +313,7 @@ const LENDER_TOUR_USER: User = {
    createdAt: new Date(0).toISOString(),
    updatedAt: new Date(0).toISOString()
 };
-const LENDER_TOUR_LOANS: Loan[] = [
+const TOUR_SAMPLE_LOANS: Loan[] = [
    {
       id: 'lender-tour-loan-1',
       trackingId: 'LENDER-TOUR-001',
@@ -1420,7 +1420,13 @@ function RequestBoard$() {
       params.set('edit', edit);
       return `/account/settings?${params.toString()}`;
    };
-   const visibleLoans = shouldShowLenderTour && displayedLoans.length === 0 ? LENDER_TOUR_LOANS : displayedLoans;
+   // Every guided tour describes this list as "the marketplace where requests appear", so an
+   // empty "No loan requests found" box undercuts the explanation. When the real board is empty
+   // during any tour, show a sample request to point at instead of an empty state.
+   const visibleLoans =
+      (shouldShowGeneralTour || shouldShowBorrowerTour || shouldShowLenderTour) && displayedLoans.length === 0
+         ? TOUR_SAMPLE_LOANS
+         : displayedLoans;
    const isListLoading = (!hasLoadedRequestBoardLoans || isLoading) && !shouldShowLenderTour;
 
    useEffect(() => {
