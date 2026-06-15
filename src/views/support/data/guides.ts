@@ -36,13 +36,7 @@ Step 7: Submit Your Request
 Tap "Explore the Request Board" to set your specific loan terms. You will need to define:
 - The desired loan amount.
 - The repayment amount and date.
-- A clear reason for your borrowing request to help build trust with potential lenders.
-
-Important Notes on Your Credit Limit
-- Starting Limit: Every new borrower begins with an initial borrowing limit of $15.
-- Credit-Building Loans: This is a full-limit loan that maxes out your current credit limit (e.g., requesting the full $15). Successfully repaying this type of loan is the only way to increase your limit to the next level (e.g., moving from $15 → $20 → $40 → $60 and beyond). You may only have one credit-building loan request active at a time.
-- Trust-Building Loans: These are smaller loans requested for amounts under your current credit limit. While these build your Trust Score with lenders, they do not increase your overall credit limit. You are permitted to have multiple trust-building loan requests active simultaneously, provided the total stays under your current limit.
-- Unlocking the Next Level: To move up, you must borrow and fully repay your entire limit. For example, if your limit is $15 and you only request a trust-building loan of $12 and repay $15, your limit will not increase. You must borrow the full $15 and repay the total agreed amount, including any small interest or additional repayment amount you offered that a lender accepted, to unlock the next level.`
+- A clear reason for your borrowing request to help build trust with potential lenders.`
    },
    {
       slug: 'understanding-your-trust-score',
