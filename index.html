@@ -24,6 +24,13 @@
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      <!-- Warm the connection to Telegram's login widget origins during page load so the
+           "Loading Telegram…" button on sign-in/sign-up doesn't wait on a cold DNS+TLS
+           handshake when TelegramAuthButton injects the widget script. -->
+      <link rel="preconnect" href="https://telegram.org" />
+      <link rel="preconnect" href="https://oauth.telegram.org" />
+      <link rel="dns-prefetch" href="https://telegram.org" />
+      <link rel="dns-prefetch" href="https://oauth.telegram.org" />
    </head>
    <body>
       <div id="root"></div>
