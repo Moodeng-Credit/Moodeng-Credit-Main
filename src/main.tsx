@@ -10,12 +10,14 @@ import { BrowserRouter } from 'react-router-dom';
 import { Providers } from '@/components/providers';
 
 import { LocalizationProvider } from '@/i18n';
+import { setupStaleChunkReload } from '@/lib/staleChunkReload';
 import { applyThemeMode, getStoredThemeMode } from '@/lib/themeMode';
 
 import App from './App.tsx';
 import './globals.css';
 
 applyThemeMode(getStoredThemeMode());
+setupStaleChunkReload();
 
 const posthogKey = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
 const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
