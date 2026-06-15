@@ -504,7 +504,20 @@ const UserProfile = () => {
             {/* Header */}
             <div className="flex items-center justify-between px-md-5 py-md-3">
                <div className="flex-1 flex items-center gap-4">
-                  <button onClick={() => navigate(-1)} className="shrink-0 w-6 h-6 flex items-center justify-center">
+                  <button
+                     onClick={() => {
+                        // A guest reached this page inside the simulated "lender-tour" session.
+                        // navigate(-1) would drop them on the lender-preview board with no tour
+                        // overlay, looking like they're signed in as the demo user. Exit cleanly
+                        // to the public board instead.
+                        if (isGuestLenderTourContinuation) {
+                           navigate('/request-board');
+                           return;
+                        }
+                        navigate(-1);
+                     }}
+                     className="shrink-0 w-6 h-6 flex items-center justify-center"
+                  >
                      <ChevronLeft className="w-6 h-6 text-md-primary-2000" />
                   </button>
                   <h1 className="text-md-h3 font-semibold text-md-primary-2000">Borrower Insights</h1>
@@ -920,6 +933,17 @@ const UserProfile = () => {
                stepOffset={3}
                totalSteps={9}
                steps={lenderInsightsTourSteps}
+               // Back on the first step here (global step 4) returns to the request board and
+               // resumes the lender tour at its last step (step 3) with the overlay still active.
+               onStepBack={(index) => {
+                  if (index !== 0) return false;
+                  navigate(
+                     isGuestLenderTourContinuation
+                        ? '/request-board?tour=1&tourRole=lender&startTour=1&tourStep=2'
+                        : '/request-board?lenderTourPreview=1&startTour=1&tourStep=2'
+                  );
+                  return true;
+               }}
                onFinish={(reason) => {
                   if (!forceTourPreview) {
                      markGuidedTourCompleted(LENDER_GUIDED_TOUR_ID, lenderTourUserId);
@@ -930,7 +954,9 @@ const UserProfile = () => {
                         userId: lenderTourUserId
                      });
                   }
-                  navigate(isGuestLenderTourContinuation ? '/request-board?tour=1&tourRole=lender' : '/request-board?lenderTourPreview=1');
+                  // Guests finish/skip in a simulated session, so return them to the public
+                  // board rather than the lender-preview URL that looks like a fake login.
+                  navigate(isGuestLenderTourContinuation ? '/request-board' : '/request-board?lenderTourPreview=1');
                }}
             />
          )}
