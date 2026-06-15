@@ -842,12 +842,16 @@ function RequestBoard$() {
                   userId: tourUserId
                });
             }
+            // A guest's lender tour runs in a simulated "lender-tour" session; leaving them on
+            // this URL would look like they're really signed in as that demo user. Drop the
+            // preview params and return them to the public board.
+            if (isGuestLenderTour) navigate('/request-board');
             return;
          }
 
          navigate('/user/maya-demo?demo=rich&lenderTourPreview=1&tourPreview=1');
       },
-      [forceTourPreview, location.pathname, navigate, tourUserId]
+      [forceTourPreview, isGuestLenderTour, location.pathname, navigate, tourUserId]
    );
    const handleGeneralTourFinish = useCallback(
       (reason: 'complete' | 'skip') => {
@@ -1883,6 +1887,13 @@ function RequestBoard$() {
             <GuidedTourPreview
                key={`lender-tour-${location.search}`}
                startImmediately={shouldStartTourImmediately}
+               // When returning from the Borrower Insights step via Back, resume at the
+               // requested step (?tourStep=) instead of restarting from step 1.
+               initialStepIndex={
+                  Number.isInteger(requestedTourStepIndex) && requestedTourStepIndex >= 0
+                     ? Math.min(requestedTourStepIndex, lenderTourSteps.length - 1)
+                     : 0
+               }
                onFinish={handleLenderTourFinish}
                totalSteps={9}
                steps={lenderTourSteps}
