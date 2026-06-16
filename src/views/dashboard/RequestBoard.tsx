@@ -1023,9 +1023,21 @@ function RequestBoard$() {
          durationMs: 6200
       },
       {
+         target: '[data-tour-target="lender-view-request-button"]',
+         title: 'Open the request',
+         body: 'Tap View Request to see the borrower\'s income type, pay schedule, and the gap reason behind this loan — the context that helps you decide.',
+         durationMs: 6500
+      },
+      {
+         target: '[data-tour-target="lender-borrower-context"]',
+         title: 'Timing Fit',
+         body: 'This section shows how the borrower\'s income timing lines up with the repayment date — a quick signal of whether the request makes sense.',
+         durationMs: 6500
+      },
+      {
          target: '[data-tour-target="lender-borrower-details-link"]',
          title: 'Check Borrower Insights',
-         body: 'Before funding, open Borrower Details to review repayment behavior, credit level, and trust signals. The tour continues there next.',
+         body: 'For a deeper look, open Borrower Details to review repayment history, credit level, and trust signals. The tour continues there next.',
          durationMs: 6500
       }
    ];
@@ -1696,6 +1708,28 @@ function RequestBoard$() {
                      </div>
                   ) : null}
 
+                  {/* Guest tour invite — low-key prompt before the loan list */}
+                  {!isAuthenticated && !showTourPreview && (
+                     <div className="rounded-[18px] border border-md-primary-200 bg-md-primary-50 px-4 py-4">
+                        <p className="text-md-b3 font-semibold text-md-primary-1200 mb-3">New here? See how it works — pick a side:</p>
+                        <div className="flex flex-col gap-2">
+                           {GUEST_TOUR_ROLE_OPTIONS.map((option) => (
+                              <button
+                                 key={option.id}
+                                 type="button"
+                                 onClick={() => navigate(`${location.pathname}?tour=1&tourRole=${option.id === 'unsure' ? 'general' : option.id}&startTour=1`)}
+                                 className="flex items-start gap-2.5 rounded-[12px] border border-md-primary-200 bg-white px-3 py-2.5 text-left transition-colors hover:border-md-primary-900 hover:bg-md-primary-50 active:scale-[0.99]"
+                              >
+                                 <span className="flex flex-col gap-0.5">
+                                    <span className="text-md-b3 font-semibold text-md-heading">{option.title}</span>
+                                    <span className="text-[12px] leading-[1.45] text-md-neutral-1000">{option.body}</span>
+                                 </span>
+                              </button>
+                           ))}
+                        </div>
+                     </div>
+                  )}
+
                   {/* Browse Section */}
                   <div className="flex flex-col gap-5" data-tour-target="request-latest-list">
                      <div className="flex flex-col gap-4">
@@ -1787,6 +1821,7 @@ function RequestBoard$() {
                                     isDeletingOwnRequest={Boolean(isDeletingRequest && requestToDelete?.id === loan.id)}
                                     onDeleteOwnRequest={handleDeleteOwnRequestClick}
                                     forceTourBorrowerLink={isGuestLenderTour}
+                                    forceShowBorrowerContext={isGuestLenderTour}
                                     tourBorrowerUsername={
                                        loan.id.startsWith('lender-tour')
                                           ? 'maya-demo'
@@ -1922,7 +1957,7 @@ function RequestBoard$() {
                      : 0
                }
                onFinish={handleLenderTourFinish}
-               totalSteps={9}
+               totalSteps={11}
                steps={lenderTourSteps}
             />
          )}

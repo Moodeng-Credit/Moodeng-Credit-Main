@@ -39,6 +39,7 @@ type UserCardProps = Loan & {
    isDeletingOwnRequest?: boolean;
    onDeleteOwnRequest?: (loan: Loan) => void;
    forceTourBorrowerLink?: boolean;
+   forceShowBorrowerContext?: boolean;
    tourBorrowerUsername?: string;
    borrowerContextProfile?: BorrowerContextProfileData;
 };
@@ -97,6 +98,7 @@ export default function UserCard(loan: UserCardProps) {
       isDeletingOwnRequest = false,
       onDeleteOwnRequest,
       forceTourBorrowerLink = false,
+      forceShowBorrowerContext = false,
       tourBorrowerUsername,
       borrowerContextProfile,
       ...loanData
@@ -309,7 +311,7 @@ export default function UserCard(loan: UserCardProps) {
    const explorerBaseUrl = account.chain?.blockExplorers?.default?.url;
    const explorerTxUrl = pendingTxHash && explorerBaseUrl ? `${explorerBaseUrl}/tx/${pendingTxHash}` : null;
    const isLenderCard = Boolean(isAuthenticated && !isBorrower && !isOwnLoan && !isLent && !isPreviewRequest);
-   const showBorrowerContext = Boolean(borrowerContext && !isBorrower && (!isLenderCard || showDetails));
+   const showBorrowerContext = Boolean(borrowerContext && !isBorrower && (!isLenderCard || showDetails || forceShowBorrowerContext));
    const cardClassName = [
       'relative flex flex-col gap-4 rounded-[24px] border border-[#f0f0f0] bg-white p-md-4 shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)] transition-[border-color,box-shadow,transform] duration-300',
       isHighlighted ? 'request-board-focus-highlight' : ''
@@ -427,10 +429,12 @@ export default function UserCard(loan: UserCardProps) {
                </button>
             ) : null}
             {showBorrowerContext && borrowerContext ? (
-               <BorrowerContextPanel
-                  context={borrowerContext}
-                  lenderIouInfo={!isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest) ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 } : undefined}
-               />
+               <div data-tour-target="lender-borrower-context">
+                  <BorrowerContextPanel
+                     context={borrowerContext}
+                     lenderIouInfo={!isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest) ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 } : undefined}
+                  />
+               </div>
             ) : null}
 
             {/* CTA + Borrower Link */}
@@ -470,6 +474,7 @@ export default function UserCard(loan: UserCardProps) {
                ) : isLenderCard && !showDetails ? (
                   <button
                      type="button"
+                     data-tour-target="lender-view-request-button"
                      onClick={() => setShowDetails(true)}
                      className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
                   >
