@@ -646,6 +646,53 @@ export type Database = {
           },
         ]
       }
+      user_payout_methods: {
+        Row: {
+          address: string
+          confirmed_at: string
+          created_at: string
+          exchange: string
+          id: string
+          is_active: boolean
+          network: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          confirmed_at?: string
+          created_at?: string
+          exchange: string
+          id?: string
+          is_active?: boolean
+          network?: string
+          token?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          confirmed_at?: string
+          created_at?: string
+          exchange?: string
+          id?: string
+          is_active?: boolean
+          network?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_payout_methods_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           chat_id: number | null

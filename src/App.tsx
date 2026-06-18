@@ -28,6 +28,7 @@ import BlogDetailPage from '@/app/blogs/[slug]/page';
 import BlogsPage from '@/app/blogs/page';
 import CreditLevelingGuidePage from '@/app/credit-leveling-guide/page';
 import ForgotPassword from '@/app/forgot-password/page';
+import FundedSuccessPage from '@/app/funded-success/page';
 import Guide from '@/app/guide/page';
 import LenderDiversityPage from '@/app/lender-diversity/page';
 import LenderDashboard from '@/app/lender/dashboard/page';
@@ -268,6 +269,16 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
+            <Route
+               path="/funded-success"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <FundedSuccessPage />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
             <Route path="/request-board" element={<RequestBoard />} />
             <Route
                path="/repay"
@@ -280,6 +291,7 @@ export default function App() {
                }
             />
             {showPreviewRoutes ? <Route path="/repay-preview" element={<Repay />} /> : null}
+            {showPreviewRoutes ? <Route path="/funded-success-preview" element={<FundedSuccessPage preview />} /> : null}
             <Route
                path="/milestones"
                element={

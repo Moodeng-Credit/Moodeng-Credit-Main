@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { Check } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
 import GuidedTourPreview from '@/components/GuidedTourPreview';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
@@ -18,6 +19,7 @@ import { getWalletAgeInfo } from '@/lib/web3/walletAge';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
+import { formatNumber } from '@/utils/decimalHelpers';
 import CreditLevelSection from '@/views/dashboard/components/CreditLevelSection';
 import DashboardHeader from '@/views/dashboard/components/DashboardHeader';
 import LenderDiversitySection from '@/views/dashboard/components/LenderDiversitySection';
@@ -156,6 +158,9 @@ export default function Dashboard() {
    const showTourPreview =
       (forceTourPreview || searchParams.has('tour')) && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, user.id, forceTourPreview);
    const shouldStartTourImmediately = searchParams.get('tour') === '1' || searchParams.get('startTour') === '1';
+   const [dismissedFundedLoanId, setDismissedFundedLoanId] = useState<string | null>(() =>
+      typeof window === 'undefined' ? null : window.sessionStorage.getItem('dismissedFundedLoanNotice')
+   );
    const dashboardStats = isMockRich
       ? {
            repayments: { count: 3, total: 200 },
@@ -201,6 +206,19 @@ export default function Dashboard() {
            defaultedLoans: previewLoans.filter((loan) => loan.id === 'mock-defaulted-1')
         }
       : loanArrays;
+   const latestFundedLoan = useMemo(
+      () =>
+         [...displayLoanArrays.activeLoans].sort((a, b) => {
+            const aTime = new Date(a.fundedAt ?? a.updatedAt ?? a.createdAt).getTime();
+            const bTime = new Date(b.fundedAt ?? b.updatedAt ?? b.createdAt).getTime();
+            return bTime - aTime;
+         })[0],
+      [displayLoanArrays.activeLoans]
+   );
+   const fundedLoanLenderName = latestFundedLoan?.lenderUser
+      ? displayUserProfiles[latestFundedLoan.lenderUser]?.username ?? 'a lender'
+      : 'a lender';
+   const showFundedNotice = Boolean(latestFundedLoan && latestFundedLoan.id !== dismissedFundedLoanId);
    const usedCreditAmount = useMemo(
       () =>
          [...displayLoanArrays.activeLoans, ...displayLoanArrays.defaultedLoans].reduce(
@@ -228,6 +246,12 @@ export default function Dashboard() {
 
       navigate('/request-board');
    }, [hasBorrowerBaseWallet, isVerified, navigate, openVerify, user.userRole]);
+
+   const handleDismissFundedNotice = useCallback(() => {
+      if (!latestFundedLoan) return;
+      window.sessionStorage.setItem('dismissedFundedLoanNotice', latestFundedLoan.id);
+      setDismissedFundedLoanId(latestFundedLoan.id);
+   }, [latestFundedLoan]);
 
    useEffect(() => {
       if (!isBorrower || missingLenderProfileIds.length === 0) return;
@@ -299,6 +323,30 @@ export default function Dashboard() {
             <DashboardHeader />
             <UserGreeting user={user} />
 
+            {latestFundedLoan ? (
+               <section className="rounded-md-lg bg-md-neutral-100 p-4 shadow-md-card">
+                  <div className="flex items-start gap-3">
+                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-md-green-100 text-md-green-900">
+                        <Check className="h-5 w-5" />
+                     </div>
+                     <div className="min-w-0 flex-1">
+                        <p className="text-md-b2 font-semibold text-md-heading">
+                           You have been funded for ${formatNumber(latestFundedLoan.loanAmount)}
+                        </p>
+                        <p className="mt-1 text-md-b3 text-md-neutral-1200">
+                           {fundedLoanLenderName} funded your request. Continue to withdraw your USDC on Base.
+                        </p>
+                     </div>
+                  </div>
+                  <Link
+                     to="/funded-success"
+                     className="mt-4 flex w-full items-center justify-center rounded-md-lg bg-md-blue-700 px-4 py-3 text-md-b2 font-semibold text-md-neutral-100"
+                  >
+                     Withdraw USDC
+                  </Link>
+               </section>
+            ) : null}
+
             <div className="dashboard-score-card bg-md-neutral-100 rounded-md-lg p-4 shadow-md-card flex flex-col gap-4 bg-gradient-to-b from-white to-[#eee6fa]">
                <div data-tour-target="dashboard-trust-score">
                   <TrustScoreSection trustScore={displayTrustScore} isLoading={!isMockRich && isTrustScoreLoading} />
@@ -333,6 +381,37 @@ export default function Dashboard() {
             />
          </div>
          {verifyModal}
+         {showFundedNotice && latestFundedLoan ? (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-md-4">
+               <div className="w-full max-w-[360px] rounded-md-lg bg-md-neutral-100 p-5 shadow-md-card">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-md-green-100 text-md-green-900">
+                     <Check className="h-6 w-6" />
+                  </div>
+                  <p className="text-md-b2 font-semibold uppercase text-md-green-900">Well done</p>
+                  <h2 className="mt-2 text-md-h4 font-semibold text-md-heading">
+                     You have been funded for ${formatNumber(latestFundedLoan.loanAmount)}
+                  </h2>
+                  <p className="mt-3 text-md-b1 text-md-neutral-1200">
+                     {fundedLoanLenderName} funded your request. You can now withdraw USDC on Base to Binance or Coins.ph.
+                  </p>
+                  <div className="mt-5 flex flex-col gap-3">
+                     <Link
+                        to="/funded-success"
+                        className="flex w-full items-center justify-center rounded-md-lg bg-md-blue-700 px-4 py-3 text-md-b1 font-semibold text-md-neutral-100"
+                     >
+                        Continue to withdraw
+                     </Link>
+                     <button
+                        type="button"
+                        onClick={handleDismissFundedNotice}
+                        className="w-full rounded-md-lg border border-md-neutral-500 px-4 py-3 text-md-b2 font-semibold text-md-neutral-1200"
+                     >
+                        Later
+                     </button>
+                  </div>
+               </div>
+            </div>
+         ) : null}
          {showTourPreview && (
             <GuidedTourPreview
                startImmediately={shouldStartTourImmediately}
