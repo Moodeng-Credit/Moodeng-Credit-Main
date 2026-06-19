@@ -91,10 +91,11 @@ interface TransactionRowProps {
    variant: 'lender' | 'borrower';
    showOutOf: boolean;
    showBadge: boolean;
+   showReturnInterestDot: boolean;
    onClick: () => void;
 }
 
-function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, showOutOf, showBadge, onClick }: TransactionRowProps) {
+function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, showOutOf, showBadge, showReturnInterestDot, onClick }: TransactionRowProps) {
    const status = getTransactionLoanStatus(loan);
    const isBorrower = variant === 'borrower';
    // A still-"Requested" loan has no lender yet — don't claim it's "Lent by" anyone
@@ -109,7 +110,15 @@ function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, s
 
    const Content = (
       <div className="flex items-start gap-md-1 py-md-0">
-         <UserAvatar src={counterpartyAvatar} alt={counterpartyName} size={48} />
+         <div className="relative shrink-0">
+            <UserAvatar src={counterpartyAvatar} alt={counterpartyName} size={48} />
+            {showReturnInterestDot ? (
+               <span
+                  className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-md-green-700 border-2 border-white"
+                  aria-label="Interest can be returned"
+               />
+            ) : null}
+         </div>
 
          <div className="flex-1 min-w-0 flex flex-col gap-md-0 justify-center">
             <p className="text-md-b1 font-semibold text-md-primary-2000 line-clamp-2">{loan.reason || 'Loan'}</p>
@@ -441,6 +450,13 @@ export default function TransactionHistory() {
                      {visibleLoans.map((loan, i) => {
                         const counterpartyId = isBorrower ? loan.lenderUser : loan.borrowerUser;
                         const profile = userProfiles[counterpartyId ?? ''];
+                        const loanStatus = getTransactionLoanStatus(loan);
+                        const interestOwed = loan.totalRepaymentAmount - loan.loanAmount;
+                        const showReturnInterestDot =
+                           !isBorrower &&
+                           loanStatus === 'REPAID' &&
+                           interestOwed > 0.005 &&
+                           !loan.interestReturnedAt;
                         return (
                            <div key={loan.id}>
                               <TransactionRow
@@ -450,6 +466,7 @@ export default function TransactionHistory() {
                                  variant={isBorrower ? 'borrower' : 'lender'}
                                  showOutOf={activeTab === 'all'}
                                  showBadge={isBorrower || activeTab !== 'all'}
+                                 showReturnInterestDot={showReturnInterestDot}
                                  onClick={() => navigate(`/history/${loan.id}`)}
                               />
                               {i < visibleLoans.length - 1 ? <div className="h-px bg-md-neutral-300 mt-md-4" /> : null}

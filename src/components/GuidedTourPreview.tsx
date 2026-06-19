@@ -66,7 +66,17 @@ export default function GuidedTourPreview({
    const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
    const [stepIndex, setStepIndex] = useState(() => Math.min(Math.max(initialStepIndex, 0), Math.max(steps.length - 1, 0)));
    const [bounds, setBounds] = useState<SpotlightBounds | null>(null);
+   const [tapNonce, setTapNonce] = useState(0);
+   // Separate position state for the dot so it can CSS-transition between steps.
+   const [dotPos, setDotPos] = useState<{ x: number; y: number } | null>(null);
+   const [isMoving, setIsMoving] = useState(false);
+   const [hasClickedThisStep, setHasClickedThisStep] = useState(false);
+   const [burst, setBurst] = useState<{ x: number; y: number; nonce: number } | null>(null);
    const cardRef = useRef<HTMLElement>(null);
+   // Refs so effects can read current values without re-subscribing.
+   const stepIndexRef = useRef(stepIndex);
+   const lastDotStepRef = useRef(-1);
+   const dotPosRef = useRef<{ x: number; y: number } | null>(null);
    const currentStep = steps[stepIndex];
    const isLastStep = stepIndex === steps.length - 1;
    const globalStepIndex = stepOffset + stepIndex;
@@ -142,6 +152,70 @@ export default function GuidedTourPreview({
       return () => window.clearTimeout(timer);
    }, [hasStarted, onStepChange, stepIndex, updateBounds]);
 
+   // Keep ref in sync so bounds effect can read stepIndex without re-subscribing.
+   useEffect(() => { stepIndexRef.current = stepIndex; }, [stepIndex]);
+
+   // When bounds change (new step or scroll/resize), position the dot.
+   // On a genuine step change, slide the dot to the new center then replay the tap animation.
+   // On scroll/resize, just jump the dot without animation so it stays locked to the target.
+   useEffect(() => {
+      if (!bounds || !hasStarted) return undefined;
+      const cx = bounds.left + bounds.width / 2;
+      const cy = bounds.top + bounds.height / 2;
+      const curStep = stepIndexRef.current;
+      const isNewStep = curStep !== lastDotStepRef.current;
+      lastDotStepRef.current = curStep;
+      const newPos = { x: cx, y: cy };
+      setHasClickedThisStep(false);
+
+      if (!isNewStep || dotPosRef.current === null) {
+         // First appearance or scroll/resize: snap into place.
+         const wasNull = dotPosRef.current === null;
+         dotPosRef.current = newPos;
+         setDotPos(newPos);
+         if (wasNull) {
+            const t = window.setTimeout(() => setTapNonce(n => n + 1), 100);
+            return () => window.clearTimeout(t);
+         }
+         return undefined;
+      }
+
+      // New step: CSS-transition the dot to the new position, then fire the tap animation.
+      // setIsMoving(true) must commit in its own frame BEFORE dotPos updates, otherwise
+      // React batches them together and the browser never sees the "from" position.
+      setIsMoving(true);
+      const tPos = window.setTimeout(() => {
+         dotPosRef.current = newPos;
+         setDotPos(newPos);
+      }, 20);
+      const t = window.setTimeout(() => {
+         setIsMoving(false);
+         setTapNonce(n => n + 1);
+      }, 440);
+      return () => { window.clearTimeout(tPos); window.clearTimeout(t); };
+   }, [bounds, hasStarted]);
+
+   // Show a click burst when the user taps within the spotlight bounds, then hide the dot.
+   useEffect(() => {
+      if (!bounds || !hasStarted) return undefined;
+      const { left, top, width, height } = bounds;
+      const onDocClick = (e: MouseEvent) => {
+         if (e.clientX >= left && e.clientX <= left + width && e.clientY >= top && e.clientY <= top + height) {
+            setBurst({ x: e.clientX, y: e.clientY, nonce: Date.now() });
+            setHasClickedThisStep(true);
+         }
+      };
+      document.addEventListener('click', onDocClick, true);
+      return () => document.removeEventListener('click', onDocClick, true);
+   }, [bounds, hasStarted]);
+
+   // Auto-clear the burst element once the animation finishes.
+   useEffect(() => {
+      if (!burst) return undefined;
+      const t = window.setTimeout(() => setBurst(null), 650);
+      return () => window.clearTimeout(t);
+   }, [burst]);
+
    useEffect(() => {
       window.addEventListener('resize', updateBounds);
       window.addEventListener('scroll', updateBounds, true);
@@ -192,13 +266,98 @@ export default function GuidedTourPreview({
             <div
                aria-hidden="true"
                className="absolute rounded-[20px] border-[3px] border-md-primary-900 bg-transparent shadow-[0_0_0_9999px_rgba(8,5,18,0.45),0_12px_34px_rgba(20,18,24,0.22)]"
-               style={{
-                  height: bounds.height,
-                  left: bounds.left,
-                  top: bounds.top,
-                  width: bounds.width
-               }}
+               style={{ height: bounds.height, left: bounds.left, top: bounds.top, width: bounds.width }}
             />
+         ) : null}
+
+         {/* Tap cue — slides between steps, hides after the user clicks the spotlit element */}
+         {hasStarted && dotPos ? (
+            <>
+               <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute"
+                  style={{
+                     left: dotPos.x,
+                     top: dotPos.y,
+                     transition: isMoving ? 'left 0.38s cubic-bezier(0.4,0,0.2,1), top 0.38s cubic-bezier(0.4,0,0.2,1)' : undefined
+                  }}
+               >
+                  {isMoving ? (
+                     /* Small trailing dot shown while sliding to the next target */
+                     <span style={{
+                        position: 'absolute', left: 0, top: 0, width: 10, height: 10,
+                        margin: '-5px 0 0 -5px', borderRadius: '9999px',
+                        background: 'rgba(98,16,210,0.85)',
+                        boxShadow: '0 0 0 2px rgba(255,255,255,0.4)'
+                     }} />
+                  ) : !hasClickedThisStep ? (
+                     <>
+                        <span key={`r1-${tapNonce}`} className={`tour-tap-ring-${tapNonce}`} />
+                        <span key={`r2-${tapNonce}`} className={`tour-tap-ring-${tapNonce}`} style={{ animationDelay: '0.4s' }} />
+                        <span key={`d-${tapNonce}`} className={`tour-tap-dot-${tapNonce}`} />
+                     </>
+                  ) : null}
+               </div>
+               <style>{`
+                  .tour-tap-ring-${tapNonce} {
+                     position: absolute; left: 0; top: 0; width: 36px; height: 36px;
+                     margin: -18px 0 0 -18px; border-radius: 9999px;
+                     background: rgba(98, 16, 210, 0.40); opacity: 0;
+                     animation: tourTapRing-${tapNonce} 0.85s ease-out 2 forwards;
+                  }
+                  .tour-tap-dot-${tapNonce} {
+                     position: absolute; left: 0; top: 0; width: 16px; height: 16px;
+                     margin: -8px 0 0 -8px; border-radius: 9999px;
+                     background: rgba(98, 16, 210, 0.95);
+                     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35); opacity: 0;
+                     animation: tourTapDot-${tapNonce} 1.8s ease-out forwards;
+                  }
+                  @keyframes tourTapRing-${tapNonce} {
+                     0% { transform: scale(0.35); opacity: 0.55; }
+                     70% { opacity: 0.12; }
+                     100% { transform: scale(1.7); opacity: 0; }
+                  }
+                  @keyframes tourTapDot-${tapNonce} {
+                     0% { transform: scale(1); opacity: 0; }
+                     10% { opacity: 0.95; }
+                     26% { transform: scale(0.78); }
+                     42% { transform: scale(1); }
+                     80% { opacity: 0.95; }
+                     100% { transform: scale(1); opacity: 0; }
+                  }
+                  @media (prefers-reduced-motion: reduce) {
+                     .tour-tap-ring-${tapNonce}, .tour-tap-dot-${tapNonce} { animation: none; opacity: 0; }
+                  }
+               `}</style>
+            </>
+         ) : null}
+
+         {/* Click burst — fires at the exact tap point when the user clicks the spotlit element */}
+         {burst ? (
+            <div
+               key={burst.nonce}
+               aria-hidden="true"
+               className="pointer-events-none absolute"
+               style={{ left: burst.x, top: burst.y }}
+            >
+               <span className={`tour-click-burst-${burst.nonce}`} />
+               <span className={`tour-click-burst-${burst.nonce}`} style={{ animationDelay: '0.07s' }} />
+               <style>{`
+                  .tour-click-burst-${burst.nonce} {
+                     position: absolute; left: 0; top: 0; width: 44px; height: 44px;
+                     margin: -22px 0 0 -22px; border-radius: 9999px;
+                     background: rgba(98, 16, 210, 0.55); opacity: 0;
+                     animation: tourClickBurst-${burst.nonce} 0.5s ease-out forwards;
+                  }
+                  @keyframes tourClickBurst-${burst.nonce} {
+                     0%   { transform: scale(0.15); opacity: 0.9; }
+                     100% { transform: scale(2.4);  opacity: 0; }
+                  }
+                  @media (prefers-reduced-motion: reduce) {
+                     .tour-click-burst-${burst.nonce} { animation: none; opacity: 0; }
+                  }
+               `}</style>
+            </div>
          ) : null}
 
          {!hasStarted ? (

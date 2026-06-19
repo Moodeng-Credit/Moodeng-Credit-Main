@@ -47,7 +47,10 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    fundedAt: row.funded_at ?? undefined,
    referralCodeId: row.referral_code_id ?? undefined,
    referralCode: row.referral_code ?? undefined,
-   referralBoostAmount: row.referral_boost_amount ?? undefined
+   referralBoostAmount: row.referral_boost_amount ?? undefined,
+   interestReturnedAt: row.interest_returned_at ?? undefined,
+   interestReturnHash: row.interest_return_hash ?? undefined,
+   repaidAt: row.repaid_at ?? undefined
 });
 
 const initialState: LoanState = {
@@ -271,6 +274,17 @@ const loanSlice = createSlice({
          })
          .addCase(deleteLoan.rejected, (state, action) => {
             state.error = (action.error.message as string) || 'Failed to delete loan';
+         })
+         .addCase(recordInterestReturn.fulfilled, (state, action) => {
+            const updatedLoan = action.payload;
+            const gloanIndex = state.loans.gloans.findIndex((loan) => loan.id === updatedLoan.id);
+            if (gloanIndex !== -1) {
+               state.loans.gloans[gloanIndex] = updatedLoan;
+            }
+            const floanIndex = state.loans.floans.findIndex((loan) => loan.id === updatedLoan.id);
+            if (floanIndex !== -1) {
+               state.loans.floans[floanIndex] = updatedLoan;
+            }
          });
    }
 });
@@ -336,8 +350,10 @@ export const updateLoanStatus = createAsyncThunk<
       updates.repaid_amount = repaidAmount;
    }
    if (loanStatus === 'Lent') {
-      // Set funded_at timestamp when loan is funded
       updates.funded_at = new Date().toISOString();
+   }
+   if (repaymentStatus === 'Paid') {
+      updates.repaid_at = new Date().toISOString();
    }
    if (hash) {
       updates.hash = [...(currentLoan?.hash || []), hash];
@@ -417,7 +433,7 @@ export const updateLoanStatus = createAsyncThunk<
       if (borrower) {
          const { data: paidLoans, error: paidLoansError } = await supabase
             .from('loans')
-            .select('loan_amount, repaid_amount, total_repayment_amount, due_date, updated_at')
+            .select('loan_amount, repaid_amount, total_repayment_amount, due_date, repaid_at, updated_at')
             .eq('borrower_user_id', data.borrower_user_id)
             .eq('repayment_status', 'Paid');
 
@@ -426,7 +442,8 @@ export const updateLoanStatus = createAsyncThunk<
          }
 
          const cumulativeBorrowedAmount = (paidLoans ?? []).reduce((sum, loan) => {
-            if (!loan.due_date || !loan.updated_at) {
+            const paidAtSource = loan.repaid_at ?? loan.updated_at;
+            if (!loan.due_date || !paidAtSource) {
                return sum;
             }
 
@@ -438,7 +455,7 @@ export const updateLoanStatus = createAsyncThunk<
                return sum;
             }
 
-            const paidAt = parseDateSafely(loan.updated_at);
+            const paidAt = parseDateSafely(paidAtSource);
             const dueDate = parseDateSafely(loan.due_date);
             const isOnTime = paidAt.getTime() <= dueDate.getTime();
 
@@ -453,7 +470,7 @@ export const updateLoanStatus = createAsyncThunk<
             totalRepaymentAmount: data.total_repayment_amount,
             cumulativeBorrowedAmount,
             dueDate: data.due_date,
-            paidAt: data.updated_at ?? new Date().toISOString()
+            paidAt: data.repaid_at ?? data.updated_at ?? new Date().toISOString()
          });
 
          const userUpdates: Database['public']['Tables']['users']['Update'] = {};
@@ -521,6 +538,30 @@ export const deleteLoan = createAsyncThunk('loans/delete', async (loanId: string
 
    return data.id;
 });
+
+export const recordInterestReturn = createAsyncThunk(
+   'loans/recordInterestReturn',
+   async ({ loanId, hash }: { loanId: string; hash: string }) => {
+      const supabase = supabaseClient();
+
+      const { data, error } = await supabase
+         .from('loans')
+         .update({ interest_returned_at: new Date().toISOString(), interest_return_hash: hash })
+         .eq('id', loanId)
+         .select()
+         .single();
+
+      if (error) {
+         throw new Error(error.message);
+      }
+
+      if (!data) {
+         throw new Error('Failed to record interest return');
+      }
+
+      return mapSupabaseLoanToLoan(data);
+   }
+);
 
 export const getLoans = getUserLoans;
 
