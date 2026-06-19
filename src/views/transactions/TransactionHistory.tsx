@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { AlertCircle, ChevronLeft, ChevronRight, HelpCircle, Search } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight, Gift, HelpCircle, Search } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
@@ -98,6 +98,9 @@ interface TransactionRowProps {
 function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, showOutOf, showBadge, showReturnInterestDot, onClick }: TransactionRowProps) {
    const status = getTransactionLoanStatus(loan);
    const isBorrower = variant === 'borrower';
+   const interestReturned = !isBorrower && loan.interestReturnedAt
+      ? Math.round((loan.totalRepaymentAmount - loan.loanAmount) * 100) / 100
+      : null;
    // A still-"Requested" loan has no lender yet — don't claim it's "Lent by" anyone
    // or show the green "+received" framing as if money already arrived.
    const isFunded = loan.loanStatus !== 'Requested';
@@ -129,6 +132,14 @@ function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, s
                <span className="w-1 h-1 rounded-full bg-md-neutral-600 shrink-0" />
                <span className="text-md-b3 text-md-neutral-1200 shrink-0">{formatDate(loan.fundedAt ?? loan.updatedAt)}</span>
             </div>
+            {interestReturned && interestReturned > 0.005 ? (
+               <div className="flex items-center gap-1 mt-0.5">
+                  <Gift className="h-3 w-3 shrink-0 text-md-green-900" aria-hidden="true" />
+                  <span className="text-md-b3 text-md-green-900">
+                     Returned {interestReturned.toFixed(2)} {loan.coin || 'USDC'}
+                  </span>
+               </div>
+            ) : null}
          </div>
 
          <div className="flex flex-col items-end gap-md-0 shrink-0">
