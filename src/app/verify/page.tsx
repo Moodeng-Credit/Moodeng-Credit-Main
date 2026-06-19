@@ -398,16 +398,17 @@ function ConfirmScreen({
             </div>
 
             {method === 'didit' ? (
-               <div className="flex flex-col gap-md-2 w-full">
-                  <p className="text-md-b2 font-semibold text-md-neutral-700">Supported countries</p>
-                  <div className="grid grid-cols-2 gap-2 w-full">
+               <div className="flex flex-col gap-5 w-full">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-md-neutral-700 text-center">
+                     Supported countries
+                  </p>
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-8 px-4 w-full">
                      {SUPPORTED_DIDIT_COUNTRIES.map(({ code, name, Flag }) => (
-                        <div
-                           key={code}
-                           className="flex items-center gap-2 bg-md-neutral-100 border border-md-neutral-600 rounded-md-input px-md-3 py-md-2"
-                        >
-                           <Flag className="w-6 h-4 rounded-[2px] shrink-0 overflow-hidden" />
-                           <span className="text-md-b2 font-medium text-md-neutral-1200 truncate">{name}</span>
+                        <div key={code} className="flex items-center gap-3">
+                           <div className="shrink-0 overflow-hidden rounded-[3px] shadow-sm shadow-black/10">
+                              <Flag className="w-[30px] h-5 block" />
+                           </div>
+                           <span className="text-[14px] font-medium text-md-heading tracking-[-0.2px] leading-none">{name}</span>
                         </div>
                      ))}
                   </div>
