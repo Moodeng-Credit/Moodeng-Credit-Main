@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { AlertCircle, ChevronLeft, ChevronRight, HelpCircle, Search } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight, Gift, HelpCircle, Search } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
@@ -91,12 +91,16 @@ interface TransactionRowProps {
    variant: 'lender' | 'borrower';
    showOutOf: boolean;
    showBadge: boolean;
+   showReturnInterestDot: boolean;
    onClick: () => void;
 }
 
-function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, showOutOf, showBadge, onClick }: TransactionRowProps) {
+function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, showOutOf, showBadge, showReturnInterestDot, onClick }: TransactionRowProps) {
    const status = getTransactionLoanStatus(loan);
    const isBorrower = variant === 'borrower';
+   const interestReturned = !isBorrower && loan.interestReturnedAt
+      ? Math.round((loan.totalRepaymentAmount - loan.loanAmount) * 100) / 100
+      : null;
    // A still-"Requested" loan has no lender yet — don't claim it's "Lent by" anyone
    // or show the green "+received" framing as if money already arrived.
    const isFunded = loan.loanStatus !== 'Requested';
@@ -109,7 +113,15 @@ function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, s
 
    const Content = (
       <div className="flex items-start gap-md-1 py-md-0">
-         <UserAvatar src={counterpartyAvatar} alt={counterpartyName} size={48} />
+         <div className="relative shrink-0">
+            <UserAvatar src={counterpartyAvatar} alt={counterpartyName} size={48} />
+            {showReturnInterestDot ? (
+               <span
+                  className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-md-green-700 border-2 border-white"
+                  aria-label="Interest can be returned"
+               />
+            ) : null}
+         </div>
 
          <div className="flex-1 min-w-0 flex flex-col gap-md-0 justify-center">
             <p className="text-md-b1 font-semibold text-md-primary-2000 line-clamp-2">{loan.reason || 'Loan'}</p>
@@ -120,6 +132,14 @@ function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, s
                <span className="w-1 h-1 rounded-full bg-md-neutral-600 shrink-0" />
                <span className="text-md-b3 text-md-neutral-1200 shrink-0">{formatDate(loan.fundedAt ?? loan.updatedAt)}</span>
             </div>
+            {interestReturned && interestReturned > 0.005 ? (
+               <div className="flex items-center gap-1 mt-0.5">
+                  <Gift className="h-3 w-3 shrink-0 text-md-green-900" aria-hidden="true" />
+                  <span className="text-md-b3 text-md-green-900">
+                     Returned {interestReturned.toFixed(2)} {loan.coin || 'USDC'}
+                  </span>
+               </div>
+            ) : null}
          </div>
 
          <div className="flex flex-col items-end gap-md-0 shrink-0">
@@ -441,6 +461,13 @@ export default function TransactionHistory() {
                      {visibleLoans.map((loan, i) => {
                         const counterpartyId = isBorrower ? loan.lenderUser : loan.borrowerUser;
                         const profile = userProfiles[counterpartyId ?? ''];
+                        const loanStatus = getTransactionLoanStatus(loan);
+                        const interestOwed = loan.totalRepaymentAmount - loan.loanAmount;
+                        const showReturnInterestDot =
+                           !isBorrower &&
+                           loanStatus === 'REPAID' &&
+                           interestOwed > 0.005 &&
+                           !loan.interestReturnedAt;
                         return (
                            <div key={loan.id}>
                               <TransactionRow
@@ -450,6 +477,7 @@ export default function TransactionHistory() {
                                  variant={isBorrower ? 'borrower' : 'lender'}
                                  showOutOf={activeTab === 'all'}
                                  showBadge={isBorrower || activeTab !== 'all'}
+                                 showReturnInterestDot={showReturnInterestDot}
                                  onClick={() => navigate(`/history/${loan.id}`)}
                               />
                               {i < visibleLoans.length - 1 ? <div className="h-px bg-md-neutral-300 mt-md-4" /> : null}

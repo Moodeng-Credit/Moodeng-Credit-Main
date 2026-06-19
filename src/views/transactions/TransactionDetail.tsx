@@ -1,13 +1,19 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { AlertCircle, ChevronLeft, Clock3 } from 'lucide-react';
+import { AlertCircle, ChevronLeft, Clock3, Gift, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useAccount, useConnect } from 'wagmi';
 
 import UserAvatar from '@/components/UserAvatar';
+import { useToast } from '@/components/ToastSystem/hooks/useToast';
+import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
+import useWallet from '@/hooks/useWallet';
+
+import { getBaseAccountConnector } from '@/lib/walletProvider';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
-import { getUserLoans } from '@/store/slices/loanSlice';
+import { getUserLoans, recordInterestReturn } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
 import { LoanStatus as LoanStatusValue, RepaymentStatus } from '@/types/loanTypes';
@@ -99,7 +105,7 @@ function StatusChip({ status }: { status: TransactionLoanStatus }) {
 type StepState = 'done' | 'active' | 'due' | 'pending';
 
 interface TimelineStep {
-   key: 'requested' | 'funded' | 'partial_repayment' | 'repaid';
+   key: 'requested' | 'funded' | 'partial_repayment' | 'repaid' | 'interest_returned';
    label: string;
    description?: string;
    state: StepState;
@@ -107,6 +113,7 @@ interface TimelineStep {
 
 function getActiveStepKey(loan: Loan): TimelineStep['key'] | null {
    if (loan.loanStatus === 'Requested') return 'funded';
+   if (loan.repaymentStatus === 'Paid' && loan.interestReturnedAt) return null;
    if (loan.repaymentStatus === 'Paid') return null;
    return 'repaid';
 }
@@ -114,9 +121,16 @@ function getActiveStepKey(loan: Loan): TimelineStep['key'] | null {
 function buildTimeline(loan: Loan): TimelineStep[] {
    const activeKey = getActiveStepKey(loan);
    const showPartial = activeKey === 'partial_repayment' || (activeKey === 'repaid' && loan.repaymentStatus === 'Partial');
-   const order: TimelineStep['key'][] = showPartial
-      ? ['requested', 'funded', 'partial_repayment', 'repaid']
-      : ['requested', 'funded', 'repaid'];
+   const interestAmount = loan.totalRepaymentAmount - loan.loanAmount;
+   const showInterestReturned = loan.repaymentStatus === 'Paid' && interestAmount > 0.005 && !!loan.interestReturnedAt;
+
+   const order: TimelineStep['key'][] = [
+      'requested',
+      'funded',
+      ...(showPartial ? (['partial_repayment'] as TimelineStep['key'][]) : []),
+      'repaid',
+      ...(showInterestReturned ? (['interest_returned'] as TimelineStep['key'][]) : [])
+   ];
    const activeIdx = activeKey ? order.indexOf(activeKey) : order.length;
 
    const stateFor = (key: TimelineStep['key'], idx: number): StepState => {
@@ -137,9 +151,12 @@ function buildTimeline(loan: Loan): TimelineStep[] {
          return 'If applicable';
       }
       if (key === 'repaid') {
-         if (state === 'done') return formatDate(loan.updatedAt);
+         if (state === 'done') return formatDate(loan.repaidAt ?? loan.updatedAt);
          if (loan.loanStatus === 'Requested') return 'Available after funding';
          return `Due ${formatDate(loan.dueDate)}`;
+      }
+      if (key === 'interest_returned') {
+         return formatDate(loan.interestReturnedAt);
       }
       return undefined;
    };
@@ -152,7 +169,8 @@ function buildTimeline(loan: Loan): TimelineStep[] {
          requested: 'Requested',
          funded: 'Funded',
          partial_repayment: 'Partial repayment',
-         repaid: 'Repaid'
+         repaid: 'Repaid',
+         interest_returned: 'Interest returned'
       };
       return labels[key];
    };
@@ -250,6 +268,208 @@ function Timeline({ loan }: { loan: Loan }) {
    );
 }
 
+interface ReturnInterestCardProps {
+   name: string;
+   avatarUrl?: string;
+   amount: number;
+   coin: string;
+   onOpen: () => void;
+}
+
+function ReturnInterestCard({ name, avatarUrl, amount, coin, onOpen }: ReturnInterestCardProps) {
+   return (
+      <div className="overflow-hidden rounded-md-xl shadow-md-card">
+         <div className="bg-md-green-900 px-md-4 py-3 flex items-center gap-2">
+            <Gift className="h-4 w-4 text-white/70" aria-hidden="true" />
+            <span className="text-md-b4 font-semibold tracking-widest text-white/90 uppercase">Optional Gift</span>
+         </div>
+         <div className="bg-white px-md-4 py-md-4 flex flex-col gap-md-4">
+            <div className="flex items-center gap-md-3">
+               <UserAvatar src={avatarUrl} alt={name} size={40} />
+               <div className="flex flex-col gap-0.5 min-w-0">
+                  <p className="text-md-b1 font-semibold text-md-primary-2000 truncate">{name} paid back in full</p>
+                  <p className="text-md-b3 text-md-neutral-1000">Would you like to return the interest as a gift?</p>
+               </div>
+            </div>
+            <div className="rounded-[12px] bg-md-green-100 px-md-4 py-md-3 flex items-center justify-between">
+               <span className="text-md-b3 text-md-green-900/80">Interest to return</span>
+               <span className="text-md-b1 font-semibold text-md-green-900">{amount.toFixed(2)} {coin}</span>
+            </div>
+            <button
+               type="button"
+               onClick={onOpen}
+               className="w-full inline-flex min-h-[56px] items-center justify-center gap-2 rounded-[16px] bg-md-green-900 px-md-4 py-md-3 text-md-b1 font-semibold text-white active:scale-[0.99]"
+            >
+               <Gift className="h-4 w-4" aria-hidden="true" />
+               Return {amount.toFixed(2)} {coin}
+            </button>
+         </div>
+      </div>
+   );
+}
+
+interface ReturnInterestSheetProps {
+   open: boolean;
+   name: string;
+   amount: number;
+   coin: string;
+   onConfirm: () => Promise<boolean>;
+   onClose: () => void;
+}
+
+function ReturnInterestSheet({ open, name, amount, coin, onConfirm, onClose }: ReturnInterestSheetProps) {
+   const [step, setStep] = useState<'confirm' | 'sending' | 'success'>('confirm');
+
+   useEffect(() => {
+      if (open) setStep('confirm');
+   }, [open]);
+
+   const handleSend = async () => {
+      setStep('sending');
+      const ok = await onConfirm();
+      if (ok) {
+         setStep('success');
+      } else {
+         setStep('confirm');
+      }
+   };
+
+   if (!open) return null;
+
+   return (
+      <>
+         <style>{`@keyframes returnSheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
+         <div
+            className="fixed inset-0 z-40 bg-black/40"
+            onClick={step !== 'sending' ? onClose : undefined}
+            aria-hidden="true"
+         />
+         <div
+            className="fixed bottom-0 left-0 right-0 z-50 flex justify-center"
+            style={{ animation: 'returnSheetUp 0.28s cubic-bezier(0.32,0.72,0,1) both' }}
+         >
+            <div className="w-full max-w-[440px] bg-white rounded-t-[24px] pt-3 pb-10">
+               <div className="flex justify-center mb-2">
+                  <div className="h-1 w-10 rounded-full bg-md-neutral-300" />
+               </div>
+
+               {step === 'confirm' && (
+                  <div className="flex flex-col gap-md-4">
+                     <div className="flex items-center justify-between px-md-4">
+                        <h3 className="text-md-h5 font-semibold text-md-primary-2000">Return interest?</h3>
+                        <button
+                           type="button"
+                           onClick={onClose}
+                           aria-label="Close"
+                           className="flex h-8 w-8 items-center justify-center rounded-full text-md-neutral-1000 hover:bg-md-neutral-200 active:bg-md-neutral-300"
+                        >
+                           <X className="h-4 w-4" />
+                        </button>
+                     </div>
+                     <div className="mx-md-4 rounded-[16px] bg-md-green-100 px-md-4 py-5 flex flex-col items-center gap-1">
+                        <span className="text-md-b3 text-md-green-900/70">Returning to {name}</span>
+                        <span className="text-[32px] font-semibold leading-tight tracking-tight text-md-green-900">
+                           {amount.toFixed(2)} {coin}
+                        </span>
+                     </div>
+                     <p className="px-md-4 text-md-b3 text-md-neutral-1000 text-center">
+                        This is a voluntary gift — once sent, it can't be reversed.
+                     </p>
+                     <div className="px-md-4 flex flex-col gap-md-2">
+                        <button
+                           type="button"
+                           onClick={() => { void handleSend(); }}
+                           className="w-full inline-flex min-h-[56px] items-center justify-center gap-2 rounded-[16px] bg-md-green-900 px-md-4 py-md-3 text-md-b1 font-semibold text-white active:scale-[0.99]"
+                        >
+                           <Gift className="h-4 w-4" aria-hidden="true" />
+                           Send {amount.toFixed(2)} {coin}
+                        </button>
+                        <button
+                           type="button"
+                           onClick={onClose}
+                           className="w-full py-md-3 text-md-b1 font-semibold text-md-neutral-1200"
+                        >
+                           Cancel
+                        </button>
+                     </div>
+                  </div>
+               )}
+
+               {step === 'sending' && (
+                  <div className="flex flex-col items-center gap-md-4 px-md-4 py-12">
+                     <div className="h-16 w-16 animate-spin rounded-full border-[3px] border-md-green-100 border-t-md-green-900" />
+                     <div className="flex flex-col gap-1 items-center">
+                        <p className="text-md-b1 font-semibold text-md-primary-2000">Sending…</p>
+                        <p className="text-md-b3 text-md-neutral-1000 text-center">
+                           Your wallet is processing the transaction.
+                        </p>
+                     </div>
+                  </div>
+               )}
+
+               {step === 'success' && (
+                  <div className="flex flex-col items-center gap-md-5 px-md-4 py-8">
+                     <div className="flex h-20 w-20 items-center justify-center rounded-full bg-md-green-100">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-md-green-900">
+                           <span className="text-white text-[22px] font-bold leading-none">&#10003;</span>
+                        </div>
+                     </div>
+                     <div className="flex flex-col gap-2 items-center text-center">
+                        <h3 className="text-md-h4 font-semibold text-md-primary-2000">Sent successfully!</h3>
+                        <p className="text-md-b2 text-md-neutral-1000">
+                           You returned {amount.toFixed(2)} {coin} to {name}. That was kind of you.
+                        </p>
+                     </div>
+                     <button
+                        type="button"
+                        onClick={onClose}
+                        className="w-full inline-flex min-h-[56px] items-center justify-center rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
+                     >
+                        Done
+                     </button>
+                  </div>
+               )}
+            </div>
+         </div>
+      </>
+   );
+}
+
+interface InterestBannerProps {
+   amount: number;
+   coin: string;
+   name: string;
+   date: string;
+   variant: 'lender' | 'borrower';
+}
+
+function InterestBanner({ amount, coin, name, date, variant }: InterestBannerProps) {
+   const header = variant === 'lender' ? 'Interest returned' : 'Gift from your lender';
+   const title = variant === 'lender' ? 'You returned the interest' : 'Interest returned!';
+   const body =
+      variant === 'lender'
+         ? `${amount.toFixed(2)} ${coin} was sent back to ${name}${date !== '—' ? ` on ${date}` : ''}.`
+         : `${name} sent back ${amount.toFixed(2)} ${coin}${date !== '—' ? ` on ${date}` : ''}.`;
+
+   return (
+      <div className="overflow-hidden rounded-md-xl shadow-md-card">
+         <div className="bg-md-green-900 px-md-4 py-3 flex items-center gap-2">
+            <Gift className="h-4 w-4 text-white/70" aria-hidden="true" />
+            <span className="text-md-b4 font-semibold tracking-widest text-white/90 uppercase">{header}</span>
+         </div>
+         <div className="bg-md-green-100/40 px-md-4 py-md-4 flex items-start gap-md-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-md-green-900/10 text-md-green-900">
+               <Gift className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div className="flex flex-col gap-1">
+               <p className="text-md-b1 font-semibold text-md-green-900">{title}</p>
+               <p className="text-md-b3 text-md-green-900/80">{body}</p>
+            </div>
+         </div>
+      </div>
+   );
+}
+
 export default function TransactionDetail() {
    const { loanId } = useParams<{ loanId: string }>();
    const navigate = useNavigate();
@@ -260,6 +480,14 @@ export default function TransactionDetail() {
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const isLoansLoading = useSelector((state: RootState) => state.loans.isLoading);
    const isPreview = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
+   const [modalOpen, setModalOpen] = useState(false);
+   const [returnedTxHash, setReturnedTxHash] = useState<string | null>(null);
+   const returnInFlightRef = useRef(false);
+   const { Transfer } = useWallet();
+   const { showToast } = useToast();
+   const account = useAccount();
+   const { connectAsync, connectors } = useConnect();
+   const baseAccountConnector = useMemo(() => getBaseAccountConnector(connectors), [connectors]);
 
    const loan = useMemo(() => {
       const foundLoan = gloans.find((l) => l.id === loanId);
@@ -286,6 +514,48 @@ export default function TransactionDetail() {
       }
    }, [dispatch, loan, user?.id, userProfiles]);
 
+   const handleReturnInterest = useCallback(async (): Promise<boolean> => {
+      if (!loan || returnInFlightRef.current) return false;
+
+      if (!loan.borrowerWallet) {
+         showToast(TOAST_TYPES.ERROR, 'Cannot return interest', 'Borrower wallet address is unavailable.', undefined, undefined);
+         return false;
+      }
+
+      if (!account.isConnected) {
+         if (!baseAccountConnector) {
+            showToast(TOAST_TYPES.ERROR, 'Wallet unavailable', 'Refresh and try again.', undefined, undefined);
+            return false;
+         }
+         try {
+            await connectAsync({ connector: baseAccountConnector });
+         } catch {
+            return false;
+         }
+      }
+
+      returnInFlightRef.current = true;
+
+      try {
+         const interest = Math.round((loan.totalRepaymentAmount - loan.loanAmount) * 100) / 100;
+         const transferCoin = loan.coin?.trim() || 'USDC';
+         const hash = await Transfer(loan.borrowerWallet, interest.toString(), loan.id, transferCoin);
+
+         if (!hash) return false;
+
+         // Hide the card the moment money is on its way — before the DB write —
+         // so a failed DB write can't leave the button visible and trigger a double-send.
+         setReturnedTxHash(hash);
+
+         await dispatch(recordInterestReturn({ loanId: loan.id, hash })).unwrap();
+         return true;
+      } catch {
+         return false;
+      } finally {
+         returnInFlightRef.current = false;
+      }
+   }, [loan, account.isConnected, baseAccountConnector, connectAsync, Transfer, dispatch, showToast]);
+
    if (isLoansLoading && !loan) {
       return (
          <div className="min-h-screen bg-md-neutral-200 flex justify-center items-center">
@@ -305,6 +575,18 @@ export default function TransactionDetail() {
    const counterpartyProfile = counterpartyId ? userProfiles[counterpartyId] : undefined;
    const counterpartyName = counterpartyProfile?.username ?? 'Unknown';
    const outstanding = Math.max(0, loan.totalRepaymentAmount - loan.repaidAmount);
+   const interestAmount = Math.round((loan.totalRepaymentAmount - loan.loanAmount) * 100) / 100;
+   const canReturnInterest =
+      isLender &&
+      status === 'REPAID' &&
+      interestAmount > 0.005 &&
+      !loan.interestReturnedAt &&
+      !returnedTxHash;
+   const didReturnInterest =
+      isLender &&
+      status === 'REPAID' &&
+      interestAmount > 0.005 &&
+      (!!loan.interestReturnedAt || !!returnedTxHash);
 
    return (
       <div className="min-h-screen bg-md-neutral-200">
@@ -397,8 +679,50 @@ export default function TransactionDetail() {
                      Repay Loan
                   </button>
                ) : null}
+
+               {/* Return interest card — lender prompt after full repayment */}
+               {canReturnInterest ? (
+                  <ReturnInterestCard
+                     name={counterpartyName}
+                     avatarUrl={counterpartyProfile?.avatarUrl}
+                     amount={interestAmount}
+                     coin={loan.coin || 'USDC'}
+                     onOpen={() => setModalOpen(true)}
+                  />
+               ) : null}
+
+               {/* Lender banner after interest is returned */}
+               {didReturnInterest ? (
+                  <InterestBanner
+                     variant="lender"
+                     amount={interestAmount}
+                     coin={loan.coin || 'USDC'}
+                     name={counterpartyName}
+                     date={formatDate(loan.interestReturnedAt)}
+                  />
+               ) : null}
+
+               {/* Borrower banner when lender has returned their interest */}
+               {!isLender && loan.interestReturnedAt && interestAmount > 0.005 ? (
+                  <InterestBanner
+                     variant="borrower"
+                     amount={interestAmount}
+                     coin={loan.coin || 'USDC'}
+                     name={counterpartyName}
+                     date={formatDate(loan.interestReturnedAt)}
+                  />
+               ) : null}
             </div>
          </div>
+
+         <ReturnInterestSheet
+            open={modalOpen}
+            name={counterpartyName}
+            amount={interestAmount}
+            coin={loan.coin || 'USDC'}
+            onConfirm={handleReturnInterest}
+            onClose={() => setModalOpen(false)}
+         />
       </div>
    );
 }

@@ -92,12 +92,15 @@ export type Database = {
           funded_at: string | null
           hash: string[] | null
           id: string
+          interest_return_hash: string | null
+          interest_returned_at: string | null
           lender_user_id: string | null
           lender_wallet: string | null
           loan_amount: number
           loan_status: Database["public"]["Enums"]["loan_status"] | null
           reason: string
           repaid_amount: number | null
+          repaid_at: string | null
           repayment_status:
             | Database["public"]["Enums"]["repayment_status"]
             | null
@@ -117,12 +120,15 @@ export type Database = {
           funded_at?: string | null
           hash?: string[] | null
           id?: string
+          interest_return_hash?: string | null
+          interest_returned_at?: string | null
           lender_user_id?: string | null
           lender_wallet?: string | null
           loan_amount: number
           loan_status?: Database["public"]["Enums"]["loan_status"] | null
           reason: string
           repaid_amount?: number | null
+          repaid_at?: string | null
           repayment_status?:
             | Database["public"]["Enums"]["repayment_status"]
             | null
@@ -142,12 +148,15 @@ export type Database = {
           funded_at?: string | null
           hash?: string[] | null
           id?: string
+          interest_return_hash?: string | null
+          interest_returned_at?: string | null
           lender_user_id?: string | null
           lender_wallet?: string | null
           loan_amount?: number
           loan_status?: Database["public"]["Enums"]["loan_status"] | null
           reason?: string
           repaid_amount?: number | null
+          repaid_at?: string | null
           repayment_status?:
             | Database["public"]["Enums"]["repayment_status"]
             | null

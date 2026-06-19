@@ -23,6 +23,9 @@ export interface Loan {
    referralCodeId?: string;
    referralCode?: string;
    referralBoostAmount?: number;
+   interestReturnedAt?: string;
+   interestReturnHash?: string;
+   repaidAt?: string;
 }
 
 export interface CreateLoanData {
@@ -82,4 +85,7 @@ export interface ILoan {
    createdAt: Date;
    updatedAt: Date;
    fundedAt?: Date; // Timestamp when loan was funded (transitioned to 'Lent' status)
+   interestReturnedAt?: Date;
+   interestReturnHash?: string;
+   repaidAt?: Date;
 }
