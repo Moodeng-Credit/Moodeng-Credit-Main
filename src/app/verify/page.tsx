@@ -399,7 +399,7 @@ function ConfirmScreen({
 
             {method === 'didit' ? (
                <div className="flex flex-col gap-5 w-full">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-md-neutral-700 text-center">
+                  <p className="text-md-b3 font-semibold uppercase text-md-neutral-700 text-center">
                      Supported countries
                   </p>
                   <div className="grid grid-cols-2 gap-y-4 gap-x-8 px-4 w-full">
@@ -408,7 +408,7 @@ function ConfirmScreen({
                            <div className="shrink-0 overflow-hidden rounded-[3px] shadow-sm shadow-black/10">
                               <Flag className="w-[30px] h-5 block" />
                            </div>
-                           <span className="text-[14px] font-medium text-md-heading tracking-[-0.2px] leading-none">{name}</span>
+                           <span className="text-md-b2 font-medium text-md-heading">{name}</span>
                         </div>
                      ))}
                   </div>
