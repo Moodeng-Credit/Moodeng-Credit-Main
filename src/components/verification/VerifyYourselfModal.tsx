@@ -75,11 +75,7 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                   type="button"
                   disabled={!selected}
                   onClick={handleContinue}
-                  className="inline-flex min-h-[56px] w-full items-center justify-center rounded-[16px] font-semibold text-md-b1 transition-colors active:scale-[0.99] disabled:cursor-not-allowed"
-                  style={{
-                     background: selected ? '#6010d2' : '#f0f0f0',
-                     color: selected ? '#fdfcfd' : '#6d6d6d',
-                  }}
+                  className={`flex items-center justify-center w-full px-md-4 py-md-3 rounded-md-lg font-semibold text-md-b1 transition-colors active:scale-[0.99] disabled:cursor-not-allowed ${selected ? 'bg-md-primary-1200 text-md-neutral-100' : 'bg-md-neutral-400 text-md-neutral-700'}`}
                >
                   Continue
                </button>
@@ -117,14 +113,14 @@ function OptionCard({
       <button
          type="button"
          onClick={onSelect}
-         className="w-full text-left rounded-xl border-2 p-4 flex items-center gap-3 transition-all duration-150"
+         className="w-full text-left rounded-md-lg border-2 p-4 flex items-center gap-3 transition-all duration-150"
          style={{
             borderColor: selected ? '#6010d2' : '#f0f0f0',
             background: selected ? '#f1e9fd' : '#fff',
          }}
       >
          <div
-            className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors duration-150"
+            className="shrink-0 w-9 h-9 rounded-md-md flex items-center justify-center transition-colors duration-150"
             style={{
                background: selected ? '#6010d2' : '#f2f0f5',
                color: selected ? '#fdfcfd' : '#877897',
