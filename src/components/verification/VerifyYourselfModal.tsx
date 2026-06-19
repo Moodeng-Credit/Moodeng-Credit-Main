@@ -1,3 +1,4 @@
+import { Check, FileText, Scan } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
@@ -7,34 +8,37 @@ type VerifyMethod = 'worldid' | 'didit';
 type VerifyYourselfModalProps = {
    isOpen: boolean;
    onClose: () => void;
-   /**
-    * Where to send the user once verified. A known key (e.g. 'loan-request') maps to a
-    * specific screen; any other value is treated as a path to return to. Defaults to the
-    * caller's current path.
-    */
    returnTo?: string;
 };
 
-/**
- * Lets a user pick how to verify their identity: World ID (Orb) or traditional KYC
- * (Didit ID + selfie). Both paths first run a shared liveness check, so both buttons hand
- * off to the /verify orchestrator with the chosen method. Both paths grant verified status.
- */
 export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: VerifyYourselfModalProps) {
    const navigate = useNavigate();
+   const [selected, setSelected] = useState<VerifyMethod | null>(null);
 
    const start = useCallback(
       (method: VerifyMethod) => {
+         setSelected(null);
          onClose();
          navigate('/verify', { state: { method, returnTo } });
       },
       [navigate, onClose, returnTo]
    );
 
-   if (!isOpen) return null;
+   const handleContinue = useCallback(() => {
+      if (selected) start(selected);
+   }, [selected, start]);
+
+   if (!isOpen) {
+      return null;
+   }
+
+   const handleClose = () => {
+      setSelected(null);
+      onClose();
+   };
 
    return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#12071f]/50 px-5" onClick={onClose}>
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#12071f]/50 px-5" onClick={handleClose}>
          <div
             className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-4 items-center"
             onClick={(e) => e.stopPropagation()}
@@ -46,35 +50,122 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                </p>
             </div>
 
-            <div className="flex flex-col gap-md-2 w-full">
-               <button
-                  type="button"
-                  onClick={() => start('worldid')}
-                  className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg flex flex-col items-center gap-0.5 text-md-neutral-100"
-               >
-                  <span className="text-md-b1 font-semibold">World ID (Orb)</span>
-                  <span className="text-md-b3 font-medium opacity-90">Fast, privacy-preserving proof you&rsquo;re human</span>
-               </button>
-
-               <button
-                  type="button"
-                  onClick={() => start('didit')}
-                  className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg flex flex-col items-center gap-0.5 text-md-primary-1200"
-               >
-                  <span className="text-md-b1 font-semibold">Traditional KYC</span>
-                  <span className="text-md-b3 font-medium opacity-90">Quick ID &amp; selfie check</span>
-               </button>
+            <div className="flex flex-col gap-3 w-full">
+               <OptionCard
+                  method="worldid"
+                  selected={selected === 'worldid'}
+                  onSelect={() => setSelected('worldid')}
+                  icon={<Scan size={18} />}
+                  label="World ID (Orb)"
+                  description="Fast, privacy-preserving proof you&rsquo;re human"
+                  badge="Recommended"
+               />
+               <OptionCard
+                  method="didit"
+                  selected={selected === 'didit'}
+                  onSelect={() => setSelected('didit')}
+                  icon={<FileText size={18} />}
+                  label="Traditional KYC"
+                  description="Quick ID &amp; selfie check"
+               />
             </div>
 
-            <button
-               type="button"
-               onClick={onClose}
-               className="text-md-b2 font-medium text-md-neutral-700 underline underline-offset-2"
-            >
-               Cancel
-            </button>
+            <div className="flex flex-col gap-2 w-full">
+               <button
+                  type="button"
+                  disabled={!selected}
+                  onClick={handleContinue}
+                  className="inline-flex min-h-[56px] w-full items-center justify-center rounded-[16px] font-semibold text-md-b1 transition-colors active:scale-[0.99] disabled:cursor-not-allowed"
+                  style={{
+                     background: selected ? '#6010d2' : '#f0f0f0',
+                     color: selected ? '#fdfcfd' : '#6d6d6d',
+                  }}
+               >
+                  Continue
+               </button>
+               <button
+                  type="button"
+                  onClick={handleClose}
+                  className="text-md-b2 font-medium text-md-neutral-700 underline underline-offset-2 py-1"
+               >
+                  Cancel
+               </button>
+            </div>
          </div>
       </div>
+   );
+}
+
+function OptionCard({
+   method,
+   selected,
+   onSelect,
+   icon,
+   label,
+   description,
+   badge,
+}: {
+   method: VerifyMethod;
+   selected: boolean;
+   onSelect: () => void;
+   icon: React.ReactNode;
+   label: string;
+   description: string;
+   badge?: string;
+}) {
+   return (
+      <button
+         type="button"
+         onClick={onSelect}
+         className="w-full text-left rounded-xl border-2 p-4 flex items-center gap-3 transition-all duration-150"
+         style={{
+            borderColor: selected ? '#6010d2' : '#f0f0f0',
+            background: selected ? '#f1e9fd' : '#fff',
+         }}
+      >
+         <div
+            className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors duration-150"
+            style={{
+               background: selected ? '#6010d2' : '#f2f0f5',
+               color: selected ? '#fdfcfd' : '#877897',
+            }}
+         >
+            {icon}
+         </div>
+
+         <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+               <span
+                  className="text-md-b2 font-semibold"
+                  style={{ color: selected ? '#6010d2' : '#040033' }}
+               >
+                  {label}
+               </span>
+               {badge && (
+                  <span
+                     className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                     style={{
+                        background: selected ? '#d6bcfa' : '#f2f0f5',
+                        color: selected ? '#6010d2' : '#877897',
+                     }}
+                  >
+                     {badge}
+                  </span>
+               )}
+            </div>
+            <p className="text-md-b3 text-md-neutral-1000 mt-0.5 leading-snug">{description}</p>
+         </div>
+
+         <div
+            className="shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-150"
+            style={{
+               borderColor: selected ? '#6010d2' : '#c0b9c8',
+               background: selected ? '#6010d2' : 'transparent',
+            }}
+         >
+            {selected && <Check size={11} strokeWidth={3} color="#fdfcfd" />}
+         </div>
+      </button>
    );
 }
 
