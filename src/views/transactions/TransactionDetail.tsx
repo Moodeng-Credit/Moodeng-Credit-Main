@@ -3,15 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, ChevronLeft, Clock3, Gift, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useAccount, useConnect } from 'wagmi';
-
 import UserAvatar from '@/components/UserAvatar';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
 import useWallet from '@/hooks/useWallet';
 
-import { getBaseAccountConnector } from '@/lib/walletProvider';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import { getUserLoans, recordInterestReturn } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -485,9 +482,6 @@ export default function TransactionDetail() {
    const returnInFlightRef = useRef(false);
    const { Transfer } = useWallet();
    const { showToast } = useToast();
-   const account = useAccount();
-   const { connectAsync, connectors } = useConnect();
-   const baseAccountConnector = useMemo(() => getBaseAccountConnector(connectors), [connectors]);
 
    const loan = useMemo(() => {
       const foundLoan = gloans.find((l) => l.id === loanId);
@@ -522,18 +516,6 @@ export default function TransactionDetail() {
          return false;
       }
 
-      if (!account.isConnected) {
-         if (!baseAccountConnector) {
-            showToast(TOAST_TYPES.ERROR, 'Wallet unavailable', 'Refresh and try again.', undefined, undefined);
-            return false;
-         }
-         try {
-            await connectAsync({ connector: baseAccountConnector });
-         } catch {
-            return false;
-         }
-      }
-
       returnInFlightRef.current = true;
 
       try {
@@ -554,7 +536,7 @@ export default function TransactionDetail() {
       } finally {
          returnInFlightRef.current = false;
       }
-   }, [loan, account.isConnected, baseAccountConnector, connectAsync, Transfer, dispatch, showToast]);
+   }, [loan, Transfer, dispatch, showToast]);
 
    if (isLoansLoading && !loan) {
       return (
