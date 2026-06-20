@@ -478,7 +478,7 @@ export default function VerifyFlow() {
          <StatusScreen
             title="This identity is already registered"
             body="Our checks found an account already verified with this face. Each person can only verify once. If you think this is a mistake, please contact support."
-            action={{ label: 'Go back', onClick: () => { clearFlow(); navigate(-1); } }}
+            action={{ label: 'Continue to app', onClick: () => { clearFlow(); navigate('/dashboard'); } }}
             supportLink
          />
       );
@@ -497,7 +497,7 @@ export default function VerifyFlow() {
                'Make sure your whole face is visible in the frame',
             ]}
             action={{ label: 'Try again', onClick: () => flow && void startLiveness(flow) }}
-            secondaryAction={{ label: 'Go back', onClick: () => { clearFlow(); navigate(-1); } }}
+            secondaryAction={{ label: 'Continue to app', onClick: () => { clearFlow(); navigate('/dashboard'); } }}
             supportLink
          />
       );
@@ -509,7 +509,7 @@ export default function VerifyFlow() {
             title="Something went wrong"
             body={errorMessage || 'Please try again.'}
             action={{ label: 'Try again', onClick: () => flow && void startLiveness(flow) }}
-            secondaryAction={{ label: 'Go back', onClick: () => { clearFlow(); navigate(-1); } }}
+            secondaryAction={{ label: 'Continue to app', onClick: () => { clearFlow(); navigate('/dashboard'); } }}
             supportLink
          />
       );
