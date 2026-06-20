@@ -1,4 +1,4 @@
-import { Check, FileText, Scan } from 'lucide-react';
+import { Check, FileText } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
@@ -57,10 +57,13 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                   method="worldid"
                   selected={selected === 'worldid'}
                   onSelect={() => setSelected('worldid')}
-                  icon={<Scan size={18} />}
+                  icon={
+                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 2C6.477 2 2 6.477 2 12C2 17.523 6.477 22 12 22C17.523 22 22 17.523 22 12C22 6.477 17.523 2 12 2ZM14.18 15.116C13.448 15.116 12.859 14.907 12.413 14.49C12.104 14.202 11.904 13.85 11.81 13.442H18.812C18.74 13.884 18.568 14.41 18.301 15.116H14.18ZM11.812 10.878C11.908 10.497 12.107 10.168 12.413 9.894C12.859 9.472 13.448 9.261 14.18 9.261H18.316C18.58 9.756 18.746 10.283 18.815 10.878H11.812ZM7.394 8.054C7.845 7.315 8.457 6.728 9.232 6.296C10.006 5.862 10.858 5.646 11.788 5.646C12.717 5.646 13.57 5.862 14.344 6.296C14.74 6.517 15.092 6.779 15.402 7.079H12.125C11.383 7.079 10.724 7.225 10.147 7.516C9.57 7.809 9.122 8.209 8.803 8.718C8.579 9.076 8.435 9.464 8.368 9.881H6.757C6.838 9.228 7.05 8.62 7.394 8.054ZM14.344 17.714C13.57 18.148 12.717 18.364 11.788 18.364C10.858 18.364 10.006 18.148 9.232 17.714C8.457 17.279 7.845 16.693 7.394 15.956C7.054 15.397 6.842 14.797 6.758 14.155H8.368C8.435 14.572 8.579 14.959 8.803 15.318C9.122 15.827 9.57 16.228 10.147 16.52C10.724 16.813 11.383 16.957 12.125 16.957H15.377C15.073 17.247 14.728 17.499 14.344 17.717V17.714Z" />
+                     </svg>
+                  }
                   label="World ID (Orb)"
                   description="Fast, privacy-preserving proof you&rsquo;re human. Requires Orb verification."
-                  badge="Recommended"
                />
                <OptionCard
                   method="didit"
