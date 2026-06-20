@@ -391,6 +391,11 @@ export default function UserCard(loan: UserCardProps) {
                      <span className="inline-flex items-center justify-center px-md-1 py-md-0 rounded-[30px] border border-md-green-600 bg-[rgba(0,134,36,0.05)]">
                         <span className="text-md-b4 font-semibold text-md-green-600">Good Standing</span>
                      </span>
+                     {(isPreviewRequest || !!tourBorrowerUsername) && (
+                        <span className="inline-flex items-center justify-center px-md-1 py-md-0 rounded-[30px] border border-md-neutral-600 bg-md-neutral-200">
+                           <span className="text-md-b4 font-semibold text-md-neutral-1000">Example</span>
+                        </span>
+                     )}
                   </div>
                   {/* Network Badge */}
                   <img src="/icons/base-account.svg" alt="Base" className="w-6 h-6 rounded-[3.4px]" />
@@ -432,7 +437,7 @@ export default function UserCard(loan: UserCardProps) {
                <div data-tour-target="lender-borrower-context">
                   <BorrowerContextPanel
                      context={borrowerContext}
-                     lenderIouInfo={!isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest) ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 } : undefined}
+                     lenderIouInfo={!isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest || forceShowBorrowerContext) ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 } : undefined}
                   />
                </div>
             ) : null}
@@ -471,7 +476,7 @@ export default function UserCard(loan: UserCardProps) {
                      View Details
                      <ExternalLink className="w-5 h-5" />
                   </Link>
-               ) : isLenderCard && !showDetails ? (
+               ) : isLenderCard && !showDetails && !forceShowBorrowerContext ? (
                   <button
                      type="button"
                      data-tour-target="lender-view-request-button"

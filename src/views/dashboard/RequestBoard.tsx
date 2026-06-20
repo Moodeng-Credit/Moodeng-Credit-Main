@@ -129,7 +129,7 @@ const getPreviewRequestDate = (dayOffset: number) => {
 };
 
 const PREVIEW_REQUEST_BOARD_BORROWER_USERNAMES: Record<string, string> = {
-   'request-board-preview-borrower-maya': 'maya-demo',
+   'request-board-preview-borrower-maya': 'maya.reyes',
    'request-board-preview-borrower-jordan': 'jordan-demo',
    'request-board-preview-borrower-ana': 'ana-demo'
 };
@@ -370,6 +370,7 @@ function RequestBoard$() {
    const [isDeletingRequest, setIsDeletingRequest] = useState(false);
    const [showIouHistory, setShowIouHistory] = useState(false);
    const [isOpeningLoanRequest, setIsOpeningLoanRequest] = useState(false);
+   const [lenderTourStepIndex, setLenderTourStepIndex] = useState(0);
 
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -831,6 +832,10 @@ function RequestBoard$() {
       },
       [isAuthenticated, isBorrower, navigate, showVerify]
    );
+   const handleLenderTourStepChange = useCallback((idx: number) => {
+      setLenderTourStepIndex(idx);
+   }, []);
+
    const handleLenderTourFinish = useCallback(
       (reason: 'complete' | 'skip') => {
          if (reason === 'skip') {
@@ -850,7 +855,7 @@ function RequestBoard$() {
             return;
          }
 
-         navigate('/user/maya-demo?demo=rich&lenderTourPreview=1&tourPreview=1');
+         navigate('/user/maya.reyes?demo=rich&lenderTourPreview=1&tourPreview=1');
       },
       [forceTourPreview, isGuestLenderTour, location.pathname, navigate, tourUserId]
    );
@@ -1018,8 +1023,9 @@ function RequestBoard$() {
       },
       {
          target: '[data-tour-target="lender-request-card"]',
+         dotTarget: '[data-tour-target="lender-view-request-button"]',
          title: 'Review the request',
-         body: 'Each card shows what the borrower needs, what they plan to repay, and whether their account is in good standing.',
+         body: 'Each card shows the amount, repayment, and whether the account is in good standing. Tap View Request to see borrower context.',
          durationMs: 6200
       },
       {
@@ -1030,6 +1036,7 @@ function RequestBoard$() {
       },
       {
          target: '[data-tour-target="lender-borrower-context"]',
+         dotPlacement: 'bottom-right',
          title: 'Timing Fit',
          body: 'This section shows how the borrower\'s income timing lines up with the repayment date — a quick signal of whether the request makes sense.',
          durationMs: 6500
@@ -1821,10 +1828,10 @@ function RequestBoard$() {
                                     isDeletingOwnRequest={Boolean(isDeletingRequest && requestToDelete?.id === loan.id)}
                                     onDeleteOwnRequest={handleDeleteOwnRequestClick}
                                     forceTourBorrowerLink={isGuestLenderTour}
-                                    forceShowBorrowerContext={isGuestLenderTour}
+                                    forceShowBorrowerContext={shouldShowLenderTour && lenderTourStepIndex >= 3}
                                     tourBorrowerUsername={
                                        loan.id.startsWith('lender-tour')
-                                          ? 'maya-demo'
+                                          ? 'maya.reyes'
                                           : loan.borrowerUser
                                             ? PREVIEW_REQUEST_BOARD_BORROWER_USERNAMES[loan.borrowerUser]
                                             : undefined
@@ -1957,6 +1964,7 @@ function RequestBoard$() {
                      : 0
                }
                onFinish={handleLenderTourFinish}
+               onStepChange={handleLenderTourStepChange}
                totalSteps={11}
                steps={lenderTourSteps}
             />
