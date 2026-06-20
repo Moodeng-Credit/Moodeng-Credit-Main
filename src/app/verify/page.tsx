@@ -308,12 +308,15 @@ export default function VerifyFlow() {
    // --- Render ------------------------------------------------------------------
 
    if (step === 'liveness-redirecting') {
+      const step2Hint = flow?.method === 'worldid'
+         ? 'Step 2 will ask you to verify with World ID.'
+         : 'Step 2 will ask for your national ID.';
       return (
          <StatusScreen
             stepLabel="Step 1 of 2"
             visual="orbit"
             title="Taking you to Didit…"
-            body="You'll complete a quick face scan to confirm you're a real person. Come back here when you're done."
+            body={`Step 1: a quick face scan to confirm you're real. ${step2Hint} Come back here when the face scan is done.`}
          />
       );
    }
@@ -330,11 +333,14 @@ export default function VerifyFlow() {
    }
 
    if (step === 'liveness-pending') {
+      const step2Hint = flow?.method === 'worldid'
+         ? 'Then you\'ll verify with World ID.'
+         : 'Then you\'ll submit your national ID.';
       const body = elapsed > 90
          ? 'Almost there — hang tight while Didit finishes the check.'
          : elapsed > 30
          ? 'Still checking — liveness checks usually take a minute or two.'
-         : 'Waiting for the liveness check to complete. Keep this screen open.';
+         : `Confirming you're a real person. ${step2Hint} Keep this screen open.`;
       return (
          <StatusScreen
             stepLabel="Step 1 of 2"
