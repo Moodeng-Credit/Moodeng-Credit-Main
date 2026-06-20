@@ -413,6 +413,7 @@ export default function VerifyFlow() {
       return (
          <StatusScreen
             stepLabel="Step 1 of 2"
+            visual="orbit"
             title="Almost there"
             body="The liveness check is still finishing up. This usually takes a moment."
             action={{ label: 'Check again', onClick: () => flow && void pollLiveness(flow), loading: isChecking }}
