@@ -41,6 +41,7 @@ type UserCardProps = Loan & {
    forceTourBorrowerLink?: boolean;
    tourBorrowerUsername?: string;
    borrowerContextProfile?: BorrowerContextProfileData;
+   forceShowBorrowerContext?: boolean;
 };
 
 const getSafeProfileText = (value: unknown) => (typeof value === 'string' && value.trim() ? value : undefined);
@@ -99,6 +100,7 @@ export default function UserCard(loan: UserCardProps) {
       forceTourBorrowerLink = false,
       tourBorrowerUsername,
       borrowerContextProfile,
+      forceShowBorrowerContext = false,
       ...loanData
    } = loan;
    const borrowerUserId = loanData.borrowerUser || '';
@@ -309,7 +311,7 @@ export default function UserCard(loan: UserCardProps) {
    const explorerBaseUrl = account.chain?.blockExplorers?.default?.url;
    const explorerTxUrl = pendingTxHash && explorerBaseUrl ? `${explorerBaseUrl}/tx/${pendingTxHash}` : null;
    const isLenderCard = Boolean(isAuthenticated && !isBorrower && !isOwnLoan && !isLent && !isPreviewRequest);
-   const showBorrowerContext = Boolean(borrowerContext && !isBorrower && (!isLenderCard || showDetails));
+   const showBorrowerContext = Boolean(borrowerContext && !isBorrower && (!isLenderCard || showDetails || forceShowBorrowerContext));
    const cardClassName = [
       'relative flex flex-col gap-4 rounded-[24px] border border-[#f0f0f0] bg-white p-md-4 shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)] transition-[border-color,box-shadow,transform] duration-300',
       isHighlighted ? 'request-board-focus-highlight' : ''
@@ -389,6 +391,11 @@ export default function UserCard(loan: UserCardProps) {
                      <span className="inline-flex items-center justify-center px-md-1 py-md-0 rounded-[30px] border border-md-green-600 bg-[rgba(0,134,36,0.05)]">
                         <span className="text-md-b4 font-semibold text-md-green-600">Good Standing</span>
                      </span>
+                     {(isPreviewRequest || !!tourBorrowerUsername) && (
+                        <span className="inline-flex items-center justify-center px-md-1 py-md-0 rounded-[30px] border border-md-neutral-600 bg-md-neutral-200">
+                           <span className="text-md-b4 font-semibold text-md-neutral-1000">Example</span>
+                        </span>
+                     )}
                   </div>
                   {/* Network Badge */}
                   <img src="/icons/base-account.svg" alt="Base" className="w-6 h-6 rounded-[3.4px]" />
@@ -427,10 +434,12 @@ export default function UserCard(loan: UserCardProps) {
                </button>
             ) : null}
             {showBorrowerContext && borrowerContext ? (
-               <BorrowerContextPanel
-                  context={borrowerContext}
-                  lenderIouInfo={!isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest) ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 } : undefined}
-               />
+               <div data-tour-target="lender-timing-fit">
+                  <BorrowerContextPanel
+                     context={borrowerContext}
+                     lenderIouInfo={!isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest || forceShowBorrowerContext) ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 } : undefined}
+                  />
+               </div>
             ) : null}
 
             {/* CTA + Borrower Link */}
@@ -467,10 +476,11 @@ export default function UserCard(loan: UserCardProps) {
                      View Details
                      <ExternalLink className="w-5 h-5" />
                   </Link>
-               ) : isLenderCard && !showDetails ? (
+               ) : isLenderCard && !showDetails && !forceShowBorrowerContext ? (
                   <button
                      type="button"
                      onClick={() => setShowDetails(true)}
+                     data-tour-target="lender-view-request-btn"
                      className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
                   >
                      View Request

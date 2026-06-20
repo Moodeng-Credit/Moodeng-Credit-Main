@@ -129,9 +129,9 @@ const getPreviewRequestDate = (dayOffset: number) => {
 };
 
 const PREVIEW_REQUEST_BOARD_BORROWER_USERNAMES: Record<string, string> = {
-   'request-board-preview-borrower-maya': 'maya-demo',
-   'request-board-preview-borrower-jordan': 'jordan-demo',
-   'request-board-preview-borrower-ana': 'ana-demo'
+   'request-board-preview-borrower-maya': 'maya.reyes',
+   'request-board-preview-borrower-jordan': 'jordan.kim',
+   'request-board-preview-borrower-ana': 'ana.silva'
 };
 
 const PREVIEW_REQUEST_BOARD_BORROWER_CONTEXTS: Record<string, BorrowerContextProfileData> = {
@@ -369,6 +369,7 @@ function RequestBoard$() {
    const [requestToDelete, setRequestToDelete] = useState<Loan | null>(null);
    const [isDeletingRequest, setIsDeletingRequest] = useState(false);
    const [showIouHistory, setShowIouHistory] = useState(false);
+   const [lenderTourStepIndex, setLenderTourStepIndex] = useState(0);
    const [isOpeningLoanRequest, setIsOpeningLoanRequest] = useState(false);
 
    const user = useSelector((state: RootState) => state.auth.user);
@@ -437,7 +438,7 @@ function RequestBoard$() {
       isLenderTourPreview &&
       isAuthenticated &&
       !isBorrower &&
-      shouldShowGuidedTour(LENDER_GUIDED_TOUR_ID, tourUserId, forceTourPreview);
+      (shouldStartTourImmediately || shouldShowGuidedTour(LENDER_GUIDED_TOUR_ID, tourUserId, forceTourPreview));
    const isGuestBorrowerTour = shouldShowBorrowerTour && !isAuthenticated;
    // Drives the "continue the tour onto the borrower's profile" link in UserCard — a guest
    // has no real session, so the link must carry the preview query params itself rather than
@@ -831,6 +832,10 @@ function RequestBoard$() {
       },
       [isAuthenticated, isBorrower, navigate, showVerify]
    );
+   const handleLenderTourStepChange = useCallback((idx: number) => {
+      setLenderTourStepIndex(idx);
+   }, []);
+
    const handleLenderTourFinish = useCallback(
       (reason: 'complete' | 'skip') => {
          if (reason === 'skip') {
@@ -1018,9 +1023,17 @@ function RequestBoard$() {
       },
       {
          target: '[data-tour-target="lender-request-card"]',
+         dotTarget: '[data-tour-target="lender-view-request-btn"]',
          title: 'Review the request',
-         body: 'Each card shows what the borrower needs, what they plan to repay, and whether their account is in good standing.',
+         body: 'Each card shows the amount, repayment, and whether the account is in good standing. Tap View Request to see borrower context.',
          durationMs: 6200
+      },
+      {
+         target: '[data-tour-target="lender-timing-fit"]',
+         dotPlacement: 'bottom-right',
+         title: 'Timing fit',
+         body: 'This section shows whether the borrower\'s timing and amount make sense based on their repayment history — helping you decide if it\'s a good fit.',
+         durationMs: 6500
       },
       {
          target: '[data-tour-target="lender-borrower-details-link"]',
@@ -1787,9 +1800,10 @@ function RequestBoard$() {
                                     isDeletingOwnRequest={Boolean(isDeletingRequest && requestToDelete?.id === loan.id)}
                                     onDeleteOwnRequest={handleDeleteOwnRequestClick}
                                     forceTourBorrowerLink={isGuestLenderTour}
+                                    forceShowBorrowerContext={shouldShowLenderTour && lenderTourStepIndex >= 2}
                                     tourBorrowerUsername={
                                        loan.id.startsWith('lender-tour')
-                                          ? 'maya-demo'
+                                          ? 'maya.reyes'
                                           : loan.borrowerUser
                                             ? PREVIEW_REQUEST_BOARD_BORROWER_USERNAMES[loan.borrowerUser]
                                             : undefined
@@ -1922,7 +1936,8 @@ function RequestBoard$() {
                      : 0
                }
                onFinish={handleLenderTourFinish}
-               totalSteps={9}
+               onStepChange={handleLenderTourStepChange}
+               totalSteps={10}
                steps={lenderTourSteps}
             />
          )}

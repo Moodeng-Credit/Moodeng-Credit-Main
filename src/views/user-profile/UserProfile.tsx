@@ -930,8 +930,8 @@ const UserProfile = () => {
                // "Want a quick tour?" intro card here would feel like the tour reset
                // rather than continued, so jump straight into step 4.
                startImmediately
-               stepOffset={3}
-               totalSteps={9}
+               stepOffset={4}
+               totalSteps={10}
                steps={lenderInsightsTourSteps}
                // Back on the first step here (global step 4) returns to the request board and
                // resumes the lender tour at its last step (step 3) with the overlay still active.

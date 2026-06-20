@@ -2,6 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type GuidedTourStep = {
    target: string;
+   /** Optional override for where the tap-dot is positioned. Useful when the spotlight covers a
+    *  large container but you want the dot to point at a specific interactive element inside it.
+    *  The dot is placed at the right-end of the queried element (button-style positioning). */
+   dotTarget?: string;
+   /** Override dot placement within the spotlight. Defaults to 'center'.
+    *  'bottom-right' places the dot in the lower-right corner of the spotlight — useful when
+    *  the spotlight covers a large text area and center would land on the text. */
+   dotPlacement?: 'center' | 'bottom-right';
    title: string;
    body: string;
    /**
@@ -160,8 +168,30 @@ export default function GuidedTourPreview({
    // On scroll/resize, just jump the dot without animation so it stays locked to the target.
    useEffect(() => {
       if (!bounds || !hasStarted) return undefined;
-      const cx = bounds.left + bounds.width / 2;
-      const cy = bounds.top + bounds.height / 2;
+      // If the step specifies a dotTarget, position the dot on that element (right-end,
+      // button-style) instead of the spotlight center.
+      const currentDotStep = steps[stepIndexRef.current];
+      const dotTargetSel = currentDotStep?.dotTarget;
+      const dotPlacement = currentDotStep?.dotPlacement ?? 'center';
+      let cx: number;
+      let cy: number;
+      if (dotTargetSel) {
+         const dotEl = document.querySelector<HTMLElement>(dotTargetSel);
+         if (dotEl) {
+            const r = dotEl.getBoundingClientRect();
+            cx = r.left + r.width - r.height * 0.55;
+            cy = r.top + r.height / 2;
+         } else {
+            cx = bounds.left + bounds.width / 2;
+            cy = bounds.top + bounds.height / 2;
+         }
+      } else if (dotPlacement === 'bottom-right') {
+         cx = bounds.left + bounds.width - SPOTLIGHT_INSET - 28;
+         cy = bounds.top + bounds.height - SPOTLIGHT_INSET - 28;
+      } else {
+         cx = bounds.left + bounds.width / 2;
+         cy = bounds.top + bounds.height / 2;
+      }
       const curStep = stepIndexRef.current;
       const isNewStep = curStep !== lastDotStepRef.current;
       lastDotStepRef.current = curStep;
