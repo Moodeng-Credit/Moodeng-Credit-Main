@@ -65,6 +65,20 @@ const wasmMimePlugin = (): Plugin => ({
    }
 });
 
+// `vite build` leaves a lingering open handle that keeps the Node process alive
+// after the bundle is written, so the build command never exits. Locally this is
+// invisible; on CI (Vercel) the build hangs until the 45-minute timeout and is
+// marked as failed. `closeBundle` runs only after all output is flushed to disk,
+// so forcing an exit here is safe and only affects build (not dev/preview/test).
+const forceExitAfterBuildPlugin = (): Plugin => ({
+   name: 'force-exit-after-build',
+   closeBundle() {
+      if (process.env.npm_lifecycle_event?.startsWith('build')) {
+         process.exit(0);
+      }
+   }
+});
+
 // https://vite.dev/config/
 // Force re-bundle
 export default defineConfig(() => {
@@ -72,7 +86,7 @@ export default defineConfig(() => {
    const isLocal = process.env.npm_lifecycle_event === 'dev:local';
 
    return {
-      plugins: [wasmMimePlugin(), react(), isLocal ? mkcert() : null].filter(Boolean),
+      plugins: [wasmMimePlugin(), react(), isLocal ? mkcert() : null, forceExitAfterBuildPlugin()].filter(Boolean),
       resolve: {
          alias: {
             '@': path.resolve(__dirname, './src')
