@@ -40,9 +40,9 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
    };
 
    return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#12071f]/50 px-5" onClick={handleClose}>
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#12071f]/50 backdrop-blur-[2px] px-5" onClick={handleClose}>
          <div
-            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-4 items-center overflow-y-auto max-h-[90vh]"
+            className="bg-md-neutral-100 rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-4 items-center overflow-y-auto max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
          >
             <div className="flex flex-col gap-2 items-center text-center">
@@ -59,7 +59,7 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                   onSelect={() => setSelected('worldid')}
                   icon={<Scan size={18} />}
                   label="World ID (Orb)"
-                  description="Fast, privacy-preserving proof you&rsquo;re human"
+                  description="Fast, privacy-preserving proof you&rsquo;re human. Requires Orb verification."
                   badge="Recommended"
                />
                <OptionCard
@@ -143,18 +143,18 @@ function OptionCard({
       <button
          type="button"
          onClick={onSelect}
-         className="w-full text-left rounded-md-lg border-2 p-4 flex items-center gap-3 transition-all duration-150"
-         style={{
-            borderColor: selected ? '#6010d2' : '#f0f0f0',
-            background: selected ? '#f1e9fd' : '#fff',
-         }}
+         className={`w-full text-left rounded-md-lg border-2 p-4 flex items-center gap-3 transition-all duration-150 ${
+            selected
+               ? 'border-md-primary-1200 bg-md-primary-100'
+               : 'border-md-neutral-300 bg-md-neutral-100'
+         }`}
       >
          <div
-            className="shrink-0 w-9 h-9 rounded-md-md flex items-center justify-center transition-colors duration-150"
-            style={{
-               background: selected ? '#6010d2' : '#f2f0f5',
-               color: selected ? '#fdfcfd' : '#877897',
-            }}
+            className={`shrink-0 w-9 h-9 rounded-md-md flex items-center justify-center transition-colors duration-150 ${
+               selected
+                  ? 'bg-md-primary-1200 text-md-neutral-100'
+                  : 'bg-md-neutral-200 text-md-neutral-700'
+            }`}
          >
             {icon}
          </div>
@@ -162,18 +162,19 @@ function OptionCard({
          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
                <span
-                  className="text-md-b2 font-semibold"
-                  style={{ color: selected ? '#6010d2' : '#040033' }}
+                  className={`text-md-b2 font-semibold ${
+                     selected ? 'text-md-primary-1200' : 'text-md-heading'
+                  }`}
                >
                   {label}
                </span>
                {badge && (
                   <span
-                     className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-                     style={{
-                        background: selected ? '#d6bcfa' : '#f2f0f5',
-                        color: selected ? '#6010d2' : '#877897',
-                     }}
+                     className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                        selected
+                           ? 'bg-md-primary-300 text-md-primary-1200'
+                           : 'bg-md-neutral-200 text-md-neutral-700'
+                     }`}
                   >
                      {badge}
                   </span>
@@ -183,13 +184,13 @@ function OptionCard({
          </div>
 
          <div
-            className="shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-150"
-            style={{
-               borderColor: selected ? '#6010d2' : '#c0b9c8',
-               background: selected ? '#6010d2' : 'transparent',
-            }}
+            className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-150 ${
+               selected
+                  ? 'border-md-primary-1200 bg-md-primary-1200'
+                  : 'border-md-neutral-600 bg-transparent'
+            }`}
          >
-            {selected && <Check size={11} strokeWidth={3} color="#fdfcfd" />}
+            {selected && <Check size={11} strokeWidth={3} className="text-md-neutral-100" />}
          </div>
       </button>
    );
