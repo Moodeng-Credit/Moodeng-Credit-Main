@@ -559,7 +559,7 @@ function ConfirmScreen({
                <p className="text-md-b1 font-medium text-md-neutral-700">
                   {method === 'worldid'
                      ? 'Liveness confirmed. Now finish by verifying with World ID.'
-                     : 'Liveness confirmed. Now let’s confirm your identity with your ID.'}
+                     : "Liveness confirmed. Now let's confirm your identity with your ID."}
                </p>
             </div>
 

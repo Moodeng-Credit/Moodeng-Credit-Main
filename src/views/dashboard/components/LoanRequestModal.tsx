@@ -1451,7 +1451,7 @@ export default function LoanRequestModal({
                                     </p>
                                     <p className="text-md-b3 font-normal text-md-neutral-1400">
                                        {isPending
-                                          ? 'Your documents are being reviewed. We'll notify you once confirmed.'
+                                          ? "Your documents are being reviewed. We'll notify you once confirmed."
                                           : 'Complete a one-time verification to start building trust with lenders.'}
                                     </p>
                                  </div>

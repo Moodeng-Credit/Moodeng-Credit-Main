@@ -19,7 +19,7 @@ export default function VerificationCTA() {
             </p>
             <p className="text-md-neutral-700 text-md-b4 mb-3">
                {isPending
-                  ? 'Your documents are being reviewed. We’ll notify you once confirmed.'
+                  ? "Your documents are being reviewed. We'll notify you once confirmed."
                   : 'Complete a one-time verification to start building trust with lenders.'}
             </p>
             <button
