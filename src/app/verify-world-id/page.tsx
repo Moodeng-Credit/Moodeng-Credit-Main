@@ -74,6 +74,9 @@ export default function WorldIdVerification() {
             >
                Verify with World ID
             </button>
+            <p className="text-md-b3 font-medium text-md-neutral-700">
+               Requires Orb-verified World ID.
+            </p>
 
             <div className="flex items-center gap-md-2 w-full">
                <span className="h-px flex-1 bg-md-neutral-300" />

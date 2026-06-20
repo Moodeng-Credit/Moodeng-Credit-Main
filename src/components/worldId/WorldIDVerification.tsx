@@ -107,8 +107,8 @@ function VerificationLaunchOverlay({ state, onRetryOpen, onCancel }: Verificatio
                </h2>
                <p id="world-id-launch-description" className="text-md-b2 font-normal leading-[1.5] tracking-normal text-md-neutral-1200">
                   {isFallback
-                     ? 'Your browser may have blocked the external window. Open World ID manually to continue.'
-                     : "You'll verify with World ID in an external app or window. You'll return to Moodeng to finish."}
+                     ? "Tap \"Open World ID\" to launch World App. If you don't have World App yet, you'll be guided to install it — then return here to finish."
+                     : "World App will open to verify you. If you don't have World App yet, you'll be guided to install it first."}
                </p>
             </div>
 

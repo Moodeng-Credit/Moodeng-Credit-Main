@@ -649,7 +649,19 @@ function ConfirmScreen({
             ) : null}
 
             {method === 'worldid' ? (
-               worldIdTrigger
+               <>
+                  {worldIdTrigger}
+                  <p className="text-md-b3 font-medium text-md-neutral-700">
+                     Requires an Orb-verified World ID.
+                  </p>
+                  <button
+                     type="button"
+                     onClick={onContinueDidit}
+                     className="text-md-b2 font-medium text-md-neutral-700 underline underline-offset-2"
+                  >
+                     Use traditional KYC instead
+                  </button>
+               </>
             ) : (
                <button
                   type="button"
