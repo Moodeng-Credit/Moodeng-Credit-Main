@@ -176,6 +176,15 @@ serve(async (req) => {
          }
       }
 
+      // Mark that the user submitted ID documents so the frontend can show "Verification in
+      // progress" across the app even after they leave the polling screen.
+      if (kind === 'id') {
+         await supabase
+            .from('users')
+            .update({ didit_submitted_at: new Date().toISOString() })
+            .eq('id', user.id);
+      }
+
       return jsonResponse({ url: diditBody.url, sessionId: diditBody.session_id ?? null });
    } catch (error) {
       const message = error instanceof Error ? error.message : 'Internal server error';

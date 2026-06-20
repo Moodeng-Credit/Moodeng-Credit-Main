@@ -3,6 +3,8 @@ import { useCallback, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
+import { SUPPORTED_DIDIT_COUNTRIES } from '@/components/verification/CountryFlags';
+
 type VerifyMethod = 'worldid' | 'didit';
 
 type VerifyYourselfModalProps = {
@@ -40,7 +42,7 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
    return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#12071f]/50 px-5" onClick={handleClose}>
          <div
-            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-4 items-center"
+            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-4 items-center overflow-y-auto max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
          >
             <div className="flex flex-col gap-2 items-center text-center">
@@ -66,9 +68,37 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                   onSelect={() => setSelected('didit')}
                   icon={<FileText size={18} />}
                   label="Traditional KYC"
-                  description="Quick ID &amp; selfie check"
+                  description="Quick ID &amp; selfie check — available in select countries"
                />
             </div>
+
+            {selected === 'didit' && (
+               <div className="flex flex-col gap-3 w-full">
+                  <p className="text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-neutral-700 text-center">
+                     Supported countries
+                  </p>
+                  <div className="grid grid-cols-2 gap-y-3 gap-x-8 px-4 w-full">
+                     {SUPPORTED_DIDIT_COUNTRIES.map(({ code, name, Flag }) => (
+                        <div key={code} className="flex items-center gap-3">
+                           <div className="shrink-0 overflow-hidden rounded-[3px] shadow-sm shadow-black/10">
+                              <Flag className="w-[30px] h-5 block" />
+                           </div>
+                           <span className="text-md-b2 font-medium text-md-heading">{name}</span>
+                        </div>
+                     ))}
+                  </div>
+                  <p className="text-md-b3 text-md-neutral-700 text-center">
+                     Not from these countries?{' '}
+                     <button
+                        type="button"
+                        className="font-semibold text-md-primary-1200 underline underline-offset-2"
+                        onClick={() => setSelected('worldid')}
+                     >
+                        Use World ID instead
+                     </button>
+                  </p>
+               </div>
+            )}
 
             <div className="flex flex-col gap-2 w-full">
                <button

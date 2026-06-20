@@ -4,7 +4,7 @@ import BorrowerVerificationBadge from '@/components/BorrowerVerificationBadge';
 import UserAvatar from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 import { getMemberSinceText } from '@/utils/dateFormatters';
-import { isUserVerified } from '@/lib/isUserVerified';
+import { isUserVerified, isVerificationPending } from '@/lib/isUserVerified';
 import type { User } from '@/types/authTypes';
 
 interface UserGreetingProps {
@@ -16,6 +16,7 @@ export default function UserGreeting({ user }: UserGreetingProps) {
    const location = useLocation();
    const firstName = user.displayName?.split(' ')[0] || user.username?.split(' ')[0] || 'there';
    const isVerified = isUserVerified(user);
+   const isPending = isVerificationPending(user);
    const { open: openVerify, modal: verifyModal } = useVerifyYourself();
    const memberSince = user.createdAt ? getMemberSinceText(user.createdAt) : '';
    const accountEditPath = (edit: 'avatar' | 'name') => {
@@ -46,9 +47,19 @@ export default function UserGreeting({ user }: UserGreetingProps) {
             <div className="flex items-center gap-2 flex-wrap">
                <BorrowerVerificationBadge />
                {!isVerified ? (
-                  <button type="button" onClick={openVerify} className="text-md-b4 font-medium text-md-primary-900">
-                     Verify Yourself &gt;
-                  </button>
+                  isPending ? (
+                     <button
+                        type="button"
+                        onClick={() => navigate('/verify')}
+                        className="text-md-b4 font-medium text-md-primary-900"
+                     >
+                        Verification in progress &gt;
+                     </button>
+                  ) : (
+                     <button type="button" onClick={openVerify} className="text-md-b4 font-medium text-md-primary-900">
+                        Verify Yourself &gt;
+                     </button>
+                  )
                ) : null}
             </div>
             {verifyModal}
