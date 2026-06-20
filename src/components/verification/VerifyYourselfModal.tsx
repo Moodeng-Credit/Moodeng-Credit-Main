@@ -1,4 +1,4 @@
-import { Check, FileText, Scan } from 'lucide-react';
+import { Check, FileText } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
@@ -40,9 +40,9 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
    };
 
    return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#12071f]/50 px-5" onClick={handleClose}>
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#12071f]/50 backdrop-blur-[2px] px-5" onClick={handleClose}>
          <div
-            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-4 items-center overflow-y-auto max-h-[90vh]"
+            className="bg-md-neutral-100 rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-4 items-center overflow-y-auto max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
          >
             <div className="flex flex-col gap-2 items-center text-center">
@@ -57,10 +57,13 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                   method="worldid"
                   selected={selected === 'worldid'}
                   onSelect={() => setSelected('worldid')}
-                  icon={<Scan size={18} />}
+                  icon={
+                     <svg width="18" height="18" viewBox="0 0 445.2 315.2" fill="currentColor" aria-hidden="true">
+                        <path d="M327.6,115.2c-3-7.5-6.8-14.6-11.3-21.3c-20.3-30-54.7-49.7-93.6-49.7c-62.4,0-112.9,50.6-112.9,112.9c0,62.4,50.6,113,112.9,113c39,0,73.3-19.7,93.6-49.7c4.5-6.6,8.2-13.7,11.3-21.2c5.2-13,8.1-27.2,8.1-42C335.6,142.4,332.8,128.2,327.6,115.2z M312.5,145.7H183.2c2-7,5.7-13.2,10.7-18.1c7.6-7.6,18.1-12.3,29.7-12.3H303C307.9,124.6,311.1,134.8,312.5,145.7z M222.1,66.1c25.7,0,49,10.7,65.6,27.9h-61.3c-17.5,0-33.3,7.1-44.7,18.5c-8.9,8.9-15.1,20.3-17.4,33.2h-32.5C137.4,100.8,175.7,66.1,222.1,66.1z M222.1,248.4c-46.4,0-84.7-34.7-90.4-79.6h32.5c5.4,29.4,31.2,51.7,62.2,51.7h61.3C271.2,237.7,247.9,248.4,222.1,248.4z M223.6,199.3c-19.2,0-35.4-12.9-40.4-30.5h129.3c-1.4,10.9-4.7,21.1-9.5,30.5H223.6z" />
+                     </svg>
+                  }
                   label="World ID (Orb)"
-                  description="Fast, privacy-preserving proof you&rsquo;re human"
-                  badge="Recommended"
+                  description="Fast, privacy-preserving proof you&rsquo;re human. Requires Orb verification."
                />
                <OptionCard
                   method="didit"
@@ -143,18 +146,18 @@ function OptionCard({
       <button
          type="button"
          onClick={onSelect}
-         className="w-full text-left rounded-md-lg border-2 p-4 flex items-center gap-3 transition-all duration-150"
-         style={{
-            borderColor: selected ? '#6010d2' : '#f0f0f0',
-            background: selected ? '#f1e9fd' : '#fff',
-         }}
+         className={`w-full text-left rounded-md-lg border-2 p-4 flex items-center gap-3 transition-all duration-150 ${
+            selected
+               ? 'border-md-primary-1200 bg-md-primary-100'
+               : 'border-md-neutral-300 bg-md-neutral-100'
+         }`}
       >
          <div
-            className="shrink-0 w-9 h-9 rounded-md-md flex items-center justify-center transition-colors duration-150"
-            style={{
-               background: selected ? '#6010d2' : '#f2f0f5',
-               color: selected ? '#fdfcfd' : '#877897',
-            }}
+            className={`shrink-0 w-9 h-9 rounded-md-md flex items-center justify-center transition-colors duration-150 ${
+               selected
+                  ? 'bg-md-primary-1200 text-md-neutral-100'
+                  : 'bg-md-neutral-200 text-md-neutral-700'
+            }`}
          >
             {icon}
          </div>
@@ -162,18 +165,19 @@ function OptionCard({
          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
                <span
-                  className="text-md-b2 font-semibold"
-                  style={{ color: selected ? '#6010d2' : '#040033' }}
+                  className={`text-md-b2 font-semibold ${
+                     selected ? 'text-md-primary-1200' : 'text-md-heading'
+                  }`}
                >
                   {label}
                </span>
                {badge && (
                   <span
-                     className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-                     style={{
-                        background: selected ? '#d6bcfa' : '#f2f0f5',
-                        color: selected ? '#6010d2' : '#877897',
-                     }}
+                     className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                        selected
+                           ? 'bg-md-primary-300 text-md-primary-1200'
+                           : 'bg-md-neutral-200 text-md-neutral-700'
+                     }`}
                   >
                      {badge}
                   </span>
@@ -183,13 +187,13 @@ function OptionCard({
          </div>
 
          <div
-            className="shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-150"
-            style={{
-               borderColor: selected ? '#6010d2' : '#c0b9c8',
-               background: selected ? '#6010d2' : 'transparent',
-            }}
+            className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-150 ${
+               selected
+                  ? 'border-md-primary-1200 bg-md-primary-1200'
+                  : 'border-md-neutral-600 bg-transparent'
+            }`}
          >
-            {selected && <Check size={11} strokeWidth={3} color="#fdfcfd" />}
+            {selected && <Check size={11} strokeWidth={3} className="text-md-neutral-100" />}
          </div>
       </button>
    );
