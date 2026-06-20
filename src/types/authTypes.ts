@@ -35,6 +35,8 @@ export interface User {
    isDidit?: WorldIdStatus;
    /** Set when the user submits ID documents to Didit but before the webhook confirms ACTIVE. */
    diditSubmittedAt?: string;
+   /** Raw Didit status string from the last ID-workflow webhook event (e.g. "In Review", "Declined"). Null once Approved. */
+   diditIdStatus?: string;
    /**
     * State of the most recent liveness pre-check (runs before both World ID and Didit ID steps).
     * A gate, not a final verified status. See {@link LivenessStatus}.

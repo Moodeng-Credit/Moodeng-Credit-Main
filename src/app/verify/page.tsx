@@ -33,6 +33,8 @@ type Step =
    | 'id-start'
    | 'id-pending'
    | 'id-waiting'
+   | 'id-review'
+   | 'id-declined'
    | 'duplicate'
    | 'declined'
    | 'success'
@@ -84,6 +86,27 @@ export default function VerifyFlow() {
    const isLivenessPoll = step === 'liveness-pending';
    const isIdPoll = step === 'id-pending';
    const elapsed = useElapsedSeconds(isLivenessPoll || isIdPoll);
+
+   // Background slow-poll while on id-waiting or id-review: check every 60s for a
+   // status change (Approved → success, In Review → id-review, Declined → id-declined).
+   useEffect(() => {
+      if (step !== 'id-waiting' && step !== 'id-review') return;
+      const id = window.setInterval(async () => {
+         try {
+            const refreshed = await dispatch(fetchUser()).unwrap();
+            if (refreshed.isDidit === 'ACTIVE') {
+               setStep('success');
+            } else {
+               const rawStatus = refreshed.diditIdStatus?.toLowerCase() ?? '';
+               if (rawStatus.includes('review')) setStep('id-review');
+               else if (rawStatus === 'declined') setStep('id-declined');
+            }
+         } catch {
+            // Keep polling silently on network errors.
+         }
+      }, 60_000);
+      return () => window.clearInterval(id);
+   }, [step, dispatch]);
 
    const navigateAfterVerified = useCallback(
       (returnTo?: string) => {
@@ -222,19 +245,27 @@ export default function VerifyFlow() {
                setStep('success');
                return;
             }
+            const rawStatus = refreshed.diditIdStatus?.toLowerCase() ?? '';
+            if (rawStatus.includes('review')) {
+               setIsChecking(false);
+               setStep('id-review');
+               return;
+            }
+            if (rawStatus === 'declined') {
+               setIsChecking(false);
+               setStep('id-declined');
+               return;
+            }
          } catch {
             // Ignore transient errors and keep polling.
          }
       }
 
       setIsChecking(false);
-      // After 2 minutes with no result, redirect to dashboard — the webhook will confirm
-      // asynchronously. A pending banner on the dashboard lets them track status.
-      const flow = readFlow();
-      clearFlow();
-      navigate('/dashboard', { replace: true, state: { verificationPending: true } });
-      void flow; // flow is retained in localStorage by navigate; cleared above is intentional
-   }, [dispatch, navigate]);
+      // After 2 minutes with no Approved/Review/Declined, show the waiting screen.
+      // A background slow-poll (useEffect below) keeps checking every 60s from here.
+      setStep('id-waiting');
+   }, [dispatch]);
 
    // --- Mount -------------------------------------------------------------------
 
@@ -394,10 +425,39 @@ export default function VerifyFlow() {
       return (
          <StatusScreen
             stepLabel="Step 2 of 2"
-            title="Documents submitted!"
-            body="Your ID was submitted successfully. Didit typically confirms within a few minutes — occasionally it takes a bit longer. You can leave this screen; we'll update your status automatically."
-            action={{ label: 'Check again', onClick: async () => { setIsChecking(true); await pollDidit(); setIsChecking(false); }, loading: isChecking }}
+            visual="orbit"
+            title="Reviewing your ID…"
+            body="Your documents are with Didit. Most checks finish in a few minutes — we'll update this screen automatically when done."
+            action={{ label: 'Check status', onClick: async () => { setIsChecking(true); await pollDidit(); setIsChecking(false); }, loading: isChecking }}
             secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
+            supportLink
+         />
+      );
+   }
+
+   if (step === 'id-review') {
+      return (
+         <StatusScreen
+            stepLabel="Step 2 of 2"
+            visual="orbit"
+            title="Manual review in progress"
+            body="Didit flagged your ID for a manual review — a human is checking it now. This usually takes a few hours but can take up to 1 business day. We'll update your status automatically."
+            action={{ label: 'Check status', onClick: async () => { setIsChecking(true); await pollDidit(); setIsChecking(false); }, loading: isChecking }}
+            secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
+            supportLink
+         />
+      );
+   }
+
+   if (step === 'id-declined') {
+      return (
+         <StatusScreen
+            stepLabel="Step 2 of 2"
+            title="ID check didn't pass"
+            body="Didit was unable to verify your ID. This can happen if the document image was unclear, expired, or didn't match the face scan. Contact our team — we can help check manually."
+            action={{ label: 'Try again', onClick: () => flow && void startIdSession(flow) }}
+            secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
+            supportLink
          />
       );
    }
@@ -683,12 +743,33 @@ function StatusScreen({
             ) : null}
 
             {supportLink ? (
-               <a
-                  href="/support"
-                  className="text-md-b3 text-md-neutral-700 underline underline-offset-2"
-               >
-                  Contact support
-               </a>
+               <div className="flex flex-col gap-2 w-full pt-md-1">
+                  <p className="text-md-b3 font-semibold text-md-neutral-700 text-center">Need help from our team?</p>
+                  <a
+                     href="https://t.me/jimmymoodengcredit"
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="flex items-center justify-center gap-2 w-full px-md-4 py-md-3 rounded-md-lg border-2 text-md-b2 font-semibold"
+                     style={{ borderColor: '#229ED9', color: '#229ED9' }}
+                  >
+                     <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 shrink-0" aria-hidden="true">
+                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-1.97 9.289c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.48 14.697l-2.95-.924c-.642-.204-.654-.642.136-.953l11.527-4.445c.535-.194 1.003.131.37.873z"/>
+                     </svg>
+                     Message us on Telegram
+                  </a>
+                  <a
+                     href="https://www.facebook.com/profile.php?id=61589106561061"
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="flex items-center justify-center gap-2 w-full px-md-4 py-md-3 rounded-md-lg border-2 text-md-b2 font-semibold"
+                     style={{ borderColor: '#1877F2', color: '#1877F2' }}
+                  >
+                     <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 shrink-0" aria-hidden="true">
+                        <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+                     </svg>
+                     Message us on Facebook
+                  </a>
+               </div>
             ) : null}
          </div>
       </div>
