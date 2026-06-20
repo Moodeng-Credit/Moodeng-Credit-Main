@@ -69,6 +69,12 @@ env.test
 # vercel
 .vercel
 
+# foundry / solidity build artifacts
+/contracts/out/
+/contracts/cache/
+/contracts/broadcast/
+/contracts/lib/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
