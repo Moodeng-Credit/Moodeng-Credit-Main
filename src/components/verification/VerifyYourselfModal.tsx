@@ -80,7 +80,7 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                   <p className="text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-neutral-700 text-center">
                      Supported countries
                   </p>
-                  <div className="grid grid-cols-2 gap-y-3 gap-x-8 px-4 w-full">
+                  <div className="grid grid-cols-2 gap-y-3 gap-x-6 w-fit mx-auto">
                      {SUPPORTED_DIDIT_COUNTRIES.map(({ code, name, Flag }) => (
                         <div key={code} className="flex items-center gap-3">
                            <div className="shrink-0 overflow-hidden rounded-[3px] shadow-sm shadow-black/10">
