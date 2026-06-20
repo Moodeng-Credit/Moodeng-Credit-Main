@@ -144,7 +144,7 @@ export const getLenderRepaidCount = createAsyncThunk('loans/getLenderRepaidCount
       .from('loans')
       .select('*', { count: 'exact', head: true })
       .eq('lender_user_id', lenderUserId)
-      .eq('repayment_status', 'REPAID');
+      .eq('repayment_status', 'Paid');
 
    if (error) {
       throw new Error(error.message);
