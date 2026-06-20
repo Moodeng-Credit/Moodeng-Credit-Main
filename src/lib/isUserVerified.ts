@@ -9,3 +9,11 @@ import type { User } from '@/types/authTypes';
 export const isUserVerified = (
    user: Pick<User, 'isWorldId' | 'isDidit'> | null | undefined
 ): boolean => user?.isWorldId === WorldId.ACTIVE || user?.isDidit === WorldId.ACTIVE;
+
+/**
+ * Whether the user has submitted Didit ID documents but hasn't been confirmed yet.
+ * Lets UI surfaces show "Verification in progress" instead of "Verify Yourself".
+ */
+export const isVerificationPending = (
+   user: Pick<User, 'isDidit' | 'diditSubmittedAt'> | null | undefined
+): boolean => !!(user?.diditSubmittedAt && user?.isDidit !== WorldId.ACTIVE);

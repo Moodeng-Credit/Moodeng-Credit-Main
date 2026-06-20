@@ -300,24 +300,44 @@ serve(async (req) => {
          return jsonResponse({ success: true });
       }
 
-      // ID (Traditional KYC) or legacy combined workflow: an approval grants verified status.
+      // ID (Traditional KYC) or legacy combined workflow.
       if (kind === 'id' || kind === 'legacy') {
-         if (status !== 'Approved') {
-            console.log(`[didit-webhook] kind="${kind}" status="${status}" - no action`);
+         if (!status) {
+            console.log(`[didit-webhook] kind="${kind}" missing status - no action`);
             return jsonResponse({ success: true });
          }
 
-         const { error: updateError } = await adminSupabase
+         if (status === 'Approved') {
+            // Approval: grant verified status and clear any intermediate status.
+            const { error: updateError } = await adminSupabase
+               .from('users')
+               .update({ is_didit: 'ACTIVE', didit_id_status: null })
+               .eq('id', vendorData);
+
+            if (updateError) {
+               console.error('[didit-webhook] Failed to update user:', updateError.message);
+               return jsonResponse({ success: false, error: 'Database error' }, 500);
+            }
+
+            console.log(`[didit-webhook] User ${vendorData} verified via Didit (${kind}, session ${sessionId ?? 'unknown'})`);
+            return jsonResponse({ success: true });
+         }
+
+         // For every non-Approved status (In Review, Declined, Abandoned, Expired, etc.),
+         // store the raw Didit status string so the frontend can surface it.
+         // "In Review" means Didit flagged the session for human review — not a rejection.
+         // "Declined" is a terminal rejection. Abandoned/Expired mean the user didn't finish.
+         const { error: statusError } = await adminSupabase
             .from('users')
-            .update({ is_didit: 'ACTIVE' })
+            .update({ didit_id_status: status })
             .eq('id', vendorData);
 
-         if (updateError) {
-            console.error('[didit-webhook] Failed to update user:', updateError.message);
+         if (statusError) {
+            console.error('[didit-webhook] Failed to write didit_id_status:', statusError.message);
             return jsonResponse({ success: false, error: 'Database error' }, 500);
          }
 
-         console.log(`[didit-webhook] User ${vendorData} verified via Didit (${kind}, session ${sessionId ?? 'unknown'})`);
+         console.log(`[didit-webhook] ID status="${status}" for user ${vendorData} (${kind}, session ${sessionId ?? 'unknown'})`);
          return jsonResponse({ success: true });
       }
 

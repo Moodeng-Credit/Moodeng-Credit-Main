@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
@@ -52,6 +53,7 @@ interface LoanRequestModalProps {
    isOpen: boolean;
    onClose: () => void;
    showVerify: boolean;
+   isPending?: boolean;
    user: User;
    loanAmount: string;
    setLoanAmount: (value: string) => void;
@@ -760,6 +762,7 @@ export default function LoanRequestModal({
    isOpen,
    onClose,
    showVerify,
+   isPending = false,
    user,
    loanAmount,
    setLoanAmount,
@@ -781,6 +784,7 @@ export default function LoanRequestModal({
    startOnReferralStep = true
 }: LoanRequestModalProps) {
    const dispatch = useDispatch<AppDispatch>();
+   const navigate = useNavigate();
    const { open: openVerify, modal: verifyModal } = useVerifyYourself();
    const formRef = useRef<HTMLFormElement | null>(null);
    const dateInputRef = useRef<HTMLInputElement | null>(null);
@@ -1443,18 +1447,20 @@ export default function LoanRequestModal({
                               <div className="flex min-w-0 max-w-[220px] flex-1 flex-col gap-md-1">
                                  <div className="flex flex-col gap-md-0">
                                     <p className="whitespace-nowrap text-md-b2 font-medium text-md-primary-2000">
-                                       One quick step to request a loan
+                                       {isPending ? 'Verification in progress' : 'One quick step to request a loan'}
                                     </p>
                                     <p className="text-md-b3 font-normal text-md-neutral-1400">
-                                       Complete a one-time verification to start building trust with lenders.
+                                       {isPending
+                                          ? "Your documents are being reviewed. We'll notify you once confirmed."
+                                          : 'Complete a one-time verification to start building trust with lenders.'}
                                     </p>
                                  </div>
                                  <button
-                                    onClick={openVerify}
+                                    onClick={isPending ? () => navigate('/verify') : openVerify}
                                     className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
                                     type="button"
                                  >
-                                    Verify Yourself
+                                    {isPending ? 'View status →' : 'Verify Yourself'}
                                  </button>
                               </div>
                               <img
@@ -1465,7 +1471,7 @@ export default function LoanRequestModal({
                               />
                            </div>
                         ) : null}
-                        {verifyModal}
+                        {!isPending && verifyModal}
 
                         <div className="flex flex-col gap-md-1" data-tour-target="loan-borrow-amount">
                            <div className="flex items-center justify-between gap-md-2">
