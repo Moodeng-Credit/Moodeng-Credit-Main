@@ -340,12 +340,12 @@ function ReturnInterestSheet({ open, name, amount, coin, onConfirm, onClose }: R
       <>
          <style>{`@keyframes returnSheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
          <div
-            className="fixed inset-0 z-40 bg-black/40"
+            className="fixed inset-0 z-[60] bg-black/40"
             onClick={step !== 'sending' ? onClose : undefined}
             aria-hidden="true"
          />
          <div
-            className="fixed bottom-0 left-0 right-0 z-50 flex justify-center"
+            className="fixed bottom-0 left-0 right-0 z-[70] flex justify-center"
             style={{ animation: 'returnSheetUp 0.28s cubic-bezier(0.32,0.72,0,1) both' }}
          >
             <div className="w-full max-w-[440px] bg-white rounded-t-[24px] pt-3 pb-10">
