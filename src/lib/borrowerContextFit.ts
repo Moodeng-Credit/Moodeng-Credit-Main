@@ -491,40 +491,31 @@ const buildParagraphText = (
       bioParts.push(`${name} needs ${formatAmount(input.amount)} to ${need} this cycle.`);
    }
 
-   // ── Trust line: history + verification ──
+   // ── Trust line: history + verification + relative due date ──
    const factLines: string[] = [];
    const repaid = input.repaidLoanCount ?? input.fundedLoanCount;
    const verifiedNote = input.isVerified ? ' · World ID verified' : '';
 
+   const dueSuffix = (() => {
+      if (!dueDate) return '';
+      const daysUntilDue = daysBetween(toUtcDay(new Date()), dueDate);
+      if (daysUntilDue < 0) return '';
+      if (daysUntilDue === 0) return ' · due today';
+      if (daysUntilDue === 1) return ' · due tomorrow';
+      return ` · ${loanDurationDays ?? daysUntilDue}-day loan`;
+   })();
+
    if (repaid === undefined || repaid === 0) {
-      factLines.push(`First time trusting this community${verifiedNote}.`);
+      factLines.push(`First time trusting this community${verifiedNote}${dueSuffix}.`);
    } else if (repaid === 1) {
-      factLines.push(`Already repaid 1 loan — they follow through${verifiedNote}.`);
+      factLines.push(`Already repaid 1 loan — they follow through${verifiedNote}${dueSuffix}.`);
    } else if (repaid <= 4) {
-      factLines.push(`Repaid ${repaid} loans and always came back${verifiedNote}.`);
+      factLines.push(`Repaid ${repaid} loans and always came back${verifiedNote}${dueSuffix}.`);
    } else {
-      factLines.push(`${repaid} loans repaid — one of the community's reliable borrowers${verifiedNote}.`);
+      factLines.push(`${repaid} loans repaid — one of the community's reliable borrowers${verifiedNote}${dueSuffix}.`);
    }
 
-   // ── Repayment: frame it as reassuring ──
-   if (dueDate) {
-      const dueLabel = formatDateLabel(dueDate);
-      const durationNote = loanDurationDays ? ` · ${loanDurationDays}-day loan` : '';
-      if (gapDays !== null) {
-         const absGap = Math.abs(gapDays);
-         if (gapDays > 0) {
-            factLines.push(`Paycheck lands ${absGap} days before repayment — income in hand first (${dueLabel}${durationNote}).`);
-         } else if (gapDays === 0) {
-            factLines.push(`Repayment right on payday (${dueLabel}${durationNote}).`);
-         } else {
-            factLines.push(`Due ${dueLabel}${durationNote} — ${absGap} days before their next paycheck.`);
-         }
-      } else {
-         factLines.push(`Due ${dueLabel}${durationNote}.`);
-      }
-   }
-
-   return [bioParts.join(' '), ...factLines].join('\n');
+   return [bioParts.join(' '), '', ...factLines].join('\n');
 };
 
 // ─── Neutral result builder ────────────────────────────────────────────────
