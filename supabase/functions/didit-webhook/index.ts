@@ -154,6 +154,26 @@ const hasDuplicateFace = (decision: DiditDecision | null | undefined, currentUse
    );
 };
 
+// Duplicate detection for the combined Traditional-KYC workflow. Its Face Match step also
+// performs the 1:1 selfie-vs-ID match, whose SUCCESS is a high-score match with no
+// vendor_data — which the generic blockHasDuplicate would misread as a 1:N hit and wrongly
+// flag every legitimate verification. So here we trust only explicit duplicate/blocklist
+// signals: duplicate warnings anywhere, the dedicated face_search (1:N) block, and Face
+// Match's duplicate-specific arrays — never face_match's 1:1 results/matches/score.
+const hasCombinedDuplicate = (decision: DiditDecision | null | undefined, currentUserId: string): boolean => {
+   if (!decision) return false;
+   const faceMatchDuplicate =
+      warningsFlagDuplicate(decision.face_match?.warnings) ||
+      asArray(decision.face_match?.duplicated_faces).length > 0 ||
+      asArray(decision.face_match?.duplicate_faces).length > 0;
+   return (
+      faceMatchDuplicate ||
+      blockHasDuplicate(decision.face_search, currentUserId) ||
+      warningsFlagDuplicate(decision.liveness?.warnings) ||
+      warningsFlagDuplicate(decision.warnings)
+   );
+};
+
 // Fetch the full decision when the webhook payload didn't embed it (needed for the dedup result).
 const fetchDecision = async (sessionId: string): Promise<DiditDecision | null> => {
    const apiKey = Deno.env.get('DIDIT_API_KEY');
@@ -307,13 +327,15 @@ serve(async (req) => {
             return jsonResponse({ success: true });
          }
 
-         // Duplicate-face (1:N) gate. The combined workflow's Face Match "Duplicated face"
-         // rule fires here. Check on both terminal outcomes: if the rule Declines, status is
-         // "Declined" with a duplicate signal; if it only flags (Approve), we must still block
-         // before granting ACTIVE. A detected duplicate maps to DUPLICATE for correct messaging.
-         if (status === 'Approved' || status === 'Declined') {
+         // Duplicate-face (1:N) gate — combined workflow only. Its Face Match "Duplicated
+         // face" rule fires here; check on both terminal outcomes (if the rule Declines,
+         // status is "Declined" with a duplicate signal; if it only flags, we must still
+         // block before granting ACTIVE). Restricted to 'legacy' (the combined workflow):
+         // the legacy 'id' step does a 1:1 face match whose success must NOT be read as a
+         // duplicate, and that flow's dedup already happened at the separate liveness gate.
+         if (kind === 'legacy' && (status === 'Approved' || status === 'Declined')) {
             const decision = payload.decision ?? (sessionId ? await fetchDecision(sessionId) : null);
-            if (hasDuplicateFace(decision, vendorData)) {
+            if (hasCombinedDuplicate(decision, vendorData)) {
                // A duplicate is always a fresh account that was never ACTIVE, so we only
                // record the status — never flip is_didit here.
                const { error: dupError } = await adminSupabase
