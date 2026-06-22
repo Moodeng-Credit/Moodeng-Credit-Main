@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { SUPPORTED_DIDIT_COUNTRIES } from '@/components/verification/CountryFlags';
+import LivenessCapture from '@/components/verification/LivenessCapture';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 import { isUserVerified } from '@/lib/isUserVerified';
@@ -19,14 +20,11 @@ const FLOW_TTL_MS = 60 * 60 * 1000; // 1 hour
 const wait = (ms: number) => new Promise<void>((resolve) => { window.setTimeout(resolve, ms); });
 
 type VerifyMethod = 'worldid' | 'didit';
-type FlowState = { method: VerifyMethod; returnTo?: string; livenessSessionId?: string; ts?: number };
+type FlowState = { method: VerifyMethod; returnTo?: string; ts?: number };
 
 type Step =
    | 'loading'
-   | 'liveness-redirecting'
-   | 'liveness-start'
-   | 'liveness-pending'
-   | 'liveness-waiting'
+   | 'liveness-capture'
    | 'confirm'
    | 'worldid'
    | 'id-redirecting'
@@ -83,9 +81,8 @@ export default function VerifyFlow() {
    const pollCancelRef = useRef(false);
    const startedRef = useRef(false);
 
-   const isLivenessPoll = step === 'liveness-pending';
    const isIdPoll = step === 'id-pending';
-   const elapsed = useElapsedSeconds(isLivenessPoll || isIdPoll);
+   const elapsed = useElapsedSeconds(isIdPoll);
 
    // Background slow-poll while on id-waiting or id-review: check every 60s for a
    // status change (Approved → success, In Review → id-review, Declined → id-declined).
@@ -140,62 +137,22 @@ export default function VerifyFlow() {
 
    // --- Liveness ----------------------------------------------------------------
 
-   const startLiveness = useCallback(async (flow: FlowState) => {
+   // In-app passive-liveness capture (LivenessCapture component). Replaces the old
+   // hosted Didit liveness page and its "You've been verified!" screen — the selfie
+   // is captured in-app, posted to the create-didit-liveness edge function, and the
+   // resolved status comes back inline (no redirect, no polling).
+   const startLiveness = useCallback((_flow: FlowState) => {
       setErrorMessage('');
-      // Brief redirect-warning screen before handing off to Didit
-      setStep('liveness-redirecting');
-      await wait(2000);
-      setStep('liveness-start');
-      try {
-         const supabase = getSupabaseBrowserClient();
-         const { data, error } = await supabase.functions.invoke('create-didit-session', {
-            body: { kind: 'liveness', ...(flow.returnTo ? { returnTo: flow.returnTo } : {}) }
-         });
-         const url = (data as { url?: string; sessionId?: string } | null)?.url;
-         const sessionId = (data as { sessionId?: string } | null)?.sessionId;
-         if (error || !url) {
-            throw new Error('Could not start the liveness check. Please try again.');
-         }
-         writeFlow({ ...flow, livenessSessionId: sessionId ?? undefined });
-         window.location.href = url;
-      } catch (err) {
-         setErrorMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
-         setStep('error');
-      }
+      setStep('liveness-capture');
    }, []);
 
-   const pollLiveness = useCallback(
-      async (flow: FlowState) => {
-         pollCancelRef.current = false;
-         setStep('liveness-pending');
-
-         for (let attempt = 0; attempt < STATUS_REFRESH_RETRIES; attempt++) {
-            if (pollCancelRef.current) return;
-            if (attempt > 0) await wait(STATUS_REFRESH_DELAY_MS);
-            if (pollCancelRef.current) return;
-
-            try {
-               const refreshed = await dispatch(fetchUser()).unwrap();
-               const matchesAttempt = !flow.livenessSessionId || refreshed.livenessSessionId === flow.livenessSessionId;
-               if (!matchesAttempt) continue;
-               if (refreshed.livenessStatus === 'APPROVED') {
-                  setStep('confirm');
-                  return;
-               }
-               if (refreshed.livenessStatus === 'DUPLICATE') {
-                  setStep('duplicate');
-                  return;
-               }
-               if (refreshed.livenessStatus === 'DECLINED') {
-                  setStep('declined');
-                  return;
-               }
-            } catch {
-               // Ignore transient errors and keep polling.
-            }
-         }
-
-         setStep('liveness-waiting');
+   const handleLivenessResult = useCallback(
+      (result: 'APPROVED' | 'DUPLICATE' | 'DECLINED') => {
+         // Keep the Redux user in sync; the ID step's server gate reads the DB directly.
+         void dispatch(fetchUser());
+         if (result === 'APPROVED') setStep('confirm');
+         else if (result === 'DUPLICATE') setStep('duplicate');
+         else setStep('declined');
       },
       [dispatch]
    );
@@ -284,10 +241,6 @@ export default function VerifyFlow() {
       const routeState = location.state as { method?: VerifyMethod; returnTo?: string } | null;
       const existing = readFlow();
 
-      if (kind === 'liveness' && existing) {
-         void pollLiveness(existing);
-         return;
-      }
       if (kind === 'id' && existing) {
          void pollDidit();
          return;
@@ -317,7 +270,7 @@ export default function VerifyFlow() {
          return;
       }
       navigate('/dashboard', { replace: true });
-   }, [location, navigate, navigateAfterVerified, pollDidit, pollLiveness, startLiveness, user]);
+   }, [location, navigate, navigateAfterVerified, pollDidit, startLiveness, user]);
 
    useEffect(() => () => {
       pollCancelRef.current = true;
@@ -338,46 +291,22 @@ export default function VerifyFlow() {
 
    // --- Render ------------------------------------------------------------------
 
-   if (step === 'liveness-redirecting') {
-      const step2Hint = flow?.method === 'worldid'
-         ? 'Step 2 will ask you to verify with World ID.'
-         : 'Step 2 will ask for your national ID.';
+   if (step === 'liveness-capture') {
       return (
-         <StatusScreen
-            stepLabel="Step 1 of 2"
-            visual="orbit"
-            title="Taking you to Didit…"
-            body={`Step 1: a quick face scan to confirm you're real. ${step2Hint} Come back here when the face scan is done.`}
+         <LivenessCapture
+            onResult={handleLivenessResult}
+            onCancel={() => navigate(-1)}
          />
       );
    }
 
-   if (step === 'liveness-start' || step === 'id-start') {
+   if (step === 'id-start') {
       return (
          <StatusScreen
-            stepLabel={step === 'liveness-start' ? 'Step 1 of 2' : 'Step 2 of 2'}
+            stepLabel="Step 2 of 2"
             visual="orbit"
             title="Setting up…"
             body="Starting your verification. Keep this screen open."
-         />
-      );
-   }
-
-   if (step === 'liveness-pending') {
-      const step2Hint = flow?.method === 'worldid'
-         ? 'Then you\'ll verify with World ID.'
-         : 'Then you\'ll submit your national ID.';
-      const body = elapsed > 90
-         ? 'Almost there — hang tight while Didit finishes the check.'
-         : elapsed > 30
-         ? 'Still checking — liveness checks usually take a minute or two.'
-         : `Confirming you're a real person. ${step2Hint} Keep this screen open.`;
-      return (
-         <StatusScreen
-            stepLabel="Step 1 of 2"
-            visual="orbit"
-            title="Checking you're a real person…"
-            body={body}
          />
       );
    }
@@ -405,19 +334,6 @@ export default function VerifyFlow() {
             visual="orbit"
             title="Confirming your ID…"
             body={body}
-         />
-      );
-   }
-
-   if (step === 'liveness-waiting') {
-      return (
-         <StatusScreen
-            stepLabel="Step 1 of 2"
-            visual="orbit"
-            title="Almost there"
-            body="The liveness check is still finishing up. This usually takes a moment."
-            action={{ label: 'Check again', onClick: () => flow && void pollLiveness(flow), loading: isChecking }}
-            secondaryAction={{ label: 'Go back', onClick: () => navigate(-1) }}
          />
       );
    }
@@ -618,15 +534,15 @@ function ConfirmScreen({
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col items-center justify-center max-w-modal mx-auto w-full px-md-4 py-md-5">
          <div className="flex flex-col items-center gap-md-3 text-center w-full">
             <p className="text-md-b3 font-semibold text-md-neutral-700 uppercase tracking-widest">
-               {method === 'worldid' ? 'Step 2 of 2' : 'Step 2 of 2'}
+               Step 1 of 2 done
             </p>
             <img src="/icons/check-fill.svg" alt="" aria-hidden="true" className="w-16 h-16" />
             <div className="flex flex-col gap-md-1">
                <h1 className="text-md-display text-md-heading">You&rsquo;re a real person!</h1>
                <p className="text-md-b1 font-medium text-md-neutral-700">
                   {method === 'worldid'
-                     ? 'Liveness confirmed. Now finish by verifying with World ID.'
-                     : "Liveness confirmed. Now let's confirm your identity with your ID."}
+                     ? "You're not done yet — one last step. Verify with World ID below to finish and unlock your account."
+                     : "You're not done yet — one last step. Verify your national ID below to finish and unlock your account."}
                </p>
             </div>
 
