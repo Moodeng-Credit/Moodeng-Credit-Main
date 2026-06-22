@@ -4,22 +4,24 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // Creates a Didit verification session for the authenticated caller and returns
 // the hosted verification URL to redirect them to.
 //
-// The verification flow is two-step (see src/app/verify/page.tsx):
-//   kind: 'liveness' — shared liveness + 1:N face-search pre-gate (runs before BOTH the
-//                      World ID and the Traditional-KYC paths). Uses a liveness-only workflow.
-//   kind: 'id'       — ID document + face match (Traditional KYC). Uses the ID-only workflow.
-//                      Gated server-side: refused unless the caller's latest liveness is APPROVED.
+// Session kinds (see src/app/verify/page.tsx):
+//   kind: 'combined' — Traditional KYC. A single hosted workflow runs liveness + ID +
+//                      face match (incl. the "Duplicated face" 1:N dedup) end-to-end, so
+//                      there's no intermediate screen between steps. Uses DIDIT_WORKFLOW_ID.
+//   kind: 'liveness' — liveness + 1:N face-search pre-gate for the World ID path (World ID
+//                      can't be merged into a Didit workflow). Uses a liveness-only workflow.
+//   kind: 'id'       — legacy ID-only step (ID document + face match). Gated server-side:
+//                      refused unless the caller's latest liveness is APPROVED.
 //
 // vendor_data is set server-side to the authenticated user's id (never trusted
 // from the client) so the didit-webhook can map the result back to the user.
 //
 // Required Supabase secrets:
 //   DIDIT_API_KEY              — Didit API key (server-side only; never expose to client)
-//   DIDIT_LIVENESS_WORKFLOW_ID — Workflow UUID for the liveness-only pre-gate
-//   DIDIT_ID_WORKFLOW_ID       — Workflow UUID for ID + face match (Traditional KYC)
+//   DIDIT_WORKFLOW_ID          — Workflow UUID for the combined Traditional-KYC workflow
+//   DIDIT_LIVENESS_WORKFLOW_ID — Workflow UUID for the World ID liveness pre-gate
 // Optional:
-//   DIDIT_WORKFLOW_ID   — legacy combined (liveness+ID+facematch) workflow; used as a
-//                         fallback when a kind-specific workflow id is not configured.
+//   DIDIT_ID_WORKFLOW_ID — legacy ID-only workflow (kind: 'id'); falls back to DIDIT_WORKFLOW_ID.
 //   DIDIT_API_BASE      — defaults to https://verification.didit.me/v3
 //   DIDIT_CALLBACK_URL  — frontend return URL after verification (e.g.
 //                         https://app.example.com/verify). Required to send the user back
@@ -44,14 +46,17 @@ const ALLOWED_RETURN_TO = new Set([
    'dashboard-credit-level'
 ]);
 
-type SessionKind = 'liveness' | 'id';
+type SessionKind = 'liveness' | 'id' | 'combined';
 
 const resolveWorkflowId = (kind: SessionKind): string | undefined => {
    const liveness = Deno.env.get('DIDIT_LIVENESS_WORKFLOW_ID');
    const id = Deno.env.get('DIDIT_ID_WORKFLOW_ID');
-   const legacy = Deno.env.get('DIDIT_WORKFLOW_ID');
-   if (kind === 'liveness') return liveness || legacy;
-   return id || legacy;
+   const combined = Deno.env.get('DIDIT_WORKFLOW_ID');
+   // 'combined' is the single Traditional-KYC workflow (liveness + ID + face match in one
+   // hosted session). 'liveness' is the World ID pre-gate; 'id' is the legacy ID-only step.
+   if (kind === 'combined') return combined;
+   if (kind === 'liveness') return liveness || combined;
+   return id || combined;
 };
 
 serve(async (req) => {
@@ -97,7 +102,7 @@ serve(async (req) => {
          if (typeof body?.returnTo === 'string' && ALLOWED_RETURN_TO.has(body.returnTo)) {
             returnTo = body.returnTo;
          }
-         if (body?.kind === 'id' || body?.kind === 'liveness') {
+         if (body?.kind === 'id' || body?.kind === 'liveness' || body?.kind === 'combined') {
             kind = body.kind;
          }
       } catch {
@@ -176,9 +181,9 @@ serve(async (req) => {
          }
       }
 
-      // Mark that the user submitted ID documents so the frontend can show "Verification in
-      // progress" across the app even after they leave the polling screen.
-      if (kind === 'id') {
+      // Mark that the user started the document/verification step so the frontend can show
+      // "Verification in progress" across the app even after they leave the polling screen.
+      if (kind === 'id' || kind === 'combined') {
          await supabase
             .from('users')
             .update({ didit_submitted_at: new Date().toISOString() })
