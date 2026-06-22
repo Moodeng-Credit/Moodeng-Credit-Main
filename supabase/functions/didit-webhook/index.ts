@@ -300,11 +300,33 @@ serve(async (req) => {
          return jsonResponse({ success: true });
       }
 
-      // ID (Traditional KYC) or legacy combined workflow.
+      // ID (Traditional KYC) or legacy/combined workflow.
       if (kind === 'id' || kind === 'legacy') {
          if (!status) {
             console.log(`[didit-webhook] kind="${kind}" missing status - no action`);
             return jsonResponse({ success: true });
+         }
+
+         // Duplicate-face (1:N) gate. The combined workflow's Face Match "Duplicated face"
+         // rule fires here. Check on both terminal outcomes: if the rule Declines, status is
+         // "Declined" with a duplicate signal; if it only flags (Approve), we must still block
+         // before granting ACTIVE. A detected duplicate maps to DUPLICATE for correct messaging.
+         if (status === 'Approved' || status === 'Declined') {
+            const decision = payload.decision ?? (sessionId ? await fetchDecision(sessionId) : null);
+            if (hasDuplicateFace(decision, vendorData)) {
+               // A duplicate is always a fresh account that was never ACTIVE, so we only
+               // record the status — never flip is_didit here.
+               const { error: dupError } = await adminSupabase
+                  .from('users')
+                  .update({ didit_id_status: 'DUPLICATE' })
+                  .eq('id', vendorData);
+               if (dupError) {
+                  console.error('[didit-webhook] Failed to write duplicate status:', dupError.message);
+                  return jsonResponse({ success: false, error: 'Database error' }, 500);
+               }
+               console.log(`[didit-webhook] Duplicate face for user ${vendorData} (${kind}, session ${sessionId ?? 'unknown'})`);
+               return jsonResponse({ success: true });
+            }
          }
 
          if (status === 'Approved') {

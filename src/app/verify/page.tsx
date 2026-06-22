@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { SUPPORTED_DIDIT_COUNTRIES } from '@/components/verification/CountryFlags';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 import { isUserVerified } from '@/lib/isUserVerified';
@@ -98,7 +97,8 @@ export default function VerifyFlow() {
                setStep('success');
             } else {
                const rawStatus = refreshed.diditIdStatus?.toLowerCase() ?? '';
-               if (rawStatus.includes('review')) setStep('id-review');
+               if (rawStatus === 'duplicate') setStep('duplicate');
+               else if (rawStatus.includes('review')) setStep('id-review');
                else if (rawStatus === 'declined') setStep('id-declined');
             }
          } catch {
@@ -200,9 +200,13 @@ export default function VerifyFlow() {
       [dispatch]
    );
 
-   // --- Didit ID step -----------------------------------------------------------
+   // --- Traditional KYC (combined Didit workflow) -------------------------------
 
-   const startIdSession = useCallback(async (flow: FlowState) => {
+   // A single hosted Didit session runs liveness + ID + face match end-to-end, so the
+   // user never sees an intermediate "you've been verified" screen between steps — the
+   // only completion screen is at the true end. We redirect out and poll for
+   // is_didit = ACTIVE (or a duplicate/declined/review status) on return.
+   const startKyc = useCallback(async (flow: FlowState) => {
       setErrorMessage('');
       // Brief redirect-warning screen before handing off to Didit
       setStep('id-redirecting');
@@ -211,22 +215,18 @@ export default function VerifyFlow() {
       try {
          const supabase = getSupabaseBrowserClient();
          const { data, error } = await supabase.functions.invoke('create-didit-session', {
-            body: { kind: 'id', ...(flow.returnTo ? { returnTo: flow.returnTo } : {}) }
+            body: { kind: 'combined', ...(flow.returnTo ? { returnTo: flow.returnTo } : {}) }
          });
          const url = (data as { url?: string } | null)?.url;
          if (error || !url) {
-            throw new Error('LIVENESS_REQUIRED');
+            throw new Error('Could not start verification. Please try again.');
          }
          window.location.href = url;
       } catch (err) {
-         if (err instanceof Error && err.message === 'LIVENESS_REQUIRED') {
-            void startLiveness(flow);
-            return;
-         }
          setErrorMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
          setStep('error');
       }
-   }, [startLiveness]);
+   }, []);
 
    const pollDidit = useCallback(async () => {
       pollCancelRef.current = false;
@@ -246,6 +246,11 @@ export default function VerifyFlow() {
                return;
             }
             const rawStatus = refreshed.diditIdStatus?.toLowerCase() ?? '';
+            if (rawStatus === 'duplicate') {
+               setIsChecking(false);
+               setStep('duplicate');
+               return;
+            }
             if (rawStatus.includes('review')) {
                setIsChecking(false);
                setStep('id-review');
@@ -284,16 +289,20 @@ export default function VerifyFlow() {
       const routeState = location.state as { method?: VerifyMethod; returnTo?: string } | null;
       const existing = readFlow();
 
+      // Returning from a Didit redirect — poll for the result.
+      // 'combined' = Traditional KYC single session; 'id' = legacy callback (still polled
+      // the same way); 'liveness' = World ID's liveness pre-gate.
+      if ((kind === 'combined' || kind === 'id') && existing) {
+         void pollDidit();
+         return;
+      }
       if (kind === 'liveness' && existing) {
          void pollLiveness(existing);
          return;
       }
-      if (kind === 'id' && existing) {
-         void pollDidit();
-         return;
-      }
 
-      const resume = (flow: FlowState) => {
+      // World ID path: liveness pre-gate first, then the World ID confirm screen.
+      const resumeWorldId = (flow: FlowState) => {
          if (user?.livenessStatus === 'APPROVED') {
             setStep('confirm');
             return;
@@ -305,19 +314,26 @@ export default function VerifyFlow() {
          void startLiveness(flow);
       };
 
+      // Traditional KYC runs as one combined Didit session; World ID keeps the
+      // liveness pre-gate (it can't be merged into a Didit workflow).
+      const begin = (flow: FlowState) => {
+         if (flow.method === 'didit') void startKyc(flow);
+         else resumeWorldId(flow);
+      };
+
       if (routeState?.method) {
          const flow: FlowState = { method: routeState.method, returnTo: routeState.returnTo };
          writeFlow(flow);
-         resume(flow);
+         begin(flow);
          return;
       }
 
       if (existing) {
-         resume(existing);
+         begin(existing);
          return;
       }
       navigate('/dashboard', { replace: true });
-   }, [location, navigate, navigateAfterVerified, pollDidit, pollLiveness, startLiveness, user]);
+   }, [location, navigate, navigateAfterVerified, pollDidit, pollLiveness, startKyc, startLiveness, user]);
 
    useEffect(() => () => {
       pollCancelRef.current = true;
@@ -355,7 +371,7 @@ export default function VerifyFlow() {
    if (step === 'liveness-start' || step === 'id-start') {
       return (
          <StatusScreen
-            stepLabel={step === 'liveness-start' ? 'Step 1 of 2' : 'Step 2 of 2'}
+            stepLabel={step === 'liveness-start' ? 'Step 1 of 2' : undefined}
             visual="orbit"
             title="Setting up…"
             body="Starting your verification. Keep this screen open."
@@ -385,10 +401,9 @@ export default function VerifyFlow() {
    if (step === 'id-redirecting') {
       return (
          <StatusScreen
-            stepLabel="Step 2 of 2"
             visual="orbit"
             title="Taking you to Didit…"
-            body="You'll upload your ID and take a selfie. Come back here when you're done."
+            body="You'll take a quick face scan and photograph your ID — all in one go. Come back here when you're done."
          />
       );
    }
@@ -397,13 +412,12 @@ export default function VerifyFlow() {
       const body = elapsed > 90
          ? 'Almost there — Didit is finishing the review.'
          : elapsed > 30
-         ? 'Still confirming — ID checks usually take a minute or two.'
-         : 'Waiting for Didit to confirm your documents. Keep this screen open.';
+         ? 'Still confirming — verification usually takes a minute or two.'
+         : 'Waiting for Didit to confirm your verification. Keep this screen open.';
       return (
          <StatusScreen
-            stepLabel="Step 2 of 2"
             visual="orbit"
-            title="Confirming your ID…"
+            title="Confirming your verification…"
             body={body}
          />
       );
@@ -425,10 +439,9 @@ export default function VerifyFlow() {
    if (step === 'id-waiting') {
       return (
          <StatusScreen
-            stepLabel="Step 2 of 2"
             visual="orbit"
-            title="Reviewing your ID…"
-            body="Your documents are with Didit. Most checks finish in a few minutes — we'll update this screen automatically when done."
+            title="Reviewing your verification…"
+            body="Your details are with Didit. Most checks finish in a few minutes — we'll update this screen automatically when done."
             action={{ label: 'Check status', onClick: async () => { setIsChecking(true); await pollDidit(); setIsChecking(false); }, loading: isChecking }}
             secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
             supportLink
@@ -439,10 +452,9 @@ export default function VerifyFlow() {
    if (step === 'id-review') {
       return (
          <StatusScreen
-            stepLabel="Step 2 of 2"
             visual="orbit"
             title="Manual review in progress"
-            body="Didit flagged your ID for a manual review — a human is checking it now. This usually takes a few hours but can take up to 1 business day. We'll update your status automatically."
+            body="Didit flagged your verification for a manual review — a human is checking it now. This usually takes a few hours but can take up to 1 business day. We'll update your status automatically."
             action={{ label: 'Check status', onClick: async () => { setIsChecking(true); await pollDidit(); setIsChecking(false); }, loading: isChecking }}
             secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
             supportLink
@@ -453,10 +465,9 @@ export default function VerifyFlow() {
    if (step === 'id-declined') {
       return (
          <StatusScreen
-            stepLabel="Step 2 of 2"
-            title="ID check didn't pass"
-            body="Didit was unable to verify your ID. This can happen if the document image was unclear, expired, or didn't match the face scan. Contact our team — we can help check manually."
-            action={{ label: 'Try again', onClick: () => flow && void startIdSession(flow) }}
+            title="Verification didn't pass"
+            body="Didit was unable to verify your identity. This can happen if the document image was unclear, expired, or didn't match your face. Contact our team — we can help check manually."
+            action={{ label: 'Try again', onClick: () => flow && void startKyc(flow) }}
             secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
             supportLink
          />
@@ -518,7 +529,6 @@ export default function VerifyFlow() {
    if (step === 'confirm' && flow) {
       return (
          <ConfirmScreen
-            method={flow.method}
             worldIdTrigger={
                <WorldIDVerification onSuccess={handleWorldIdSuccess} showSuccessToast={false} className="w-full">
                   {({ open }) => (
@@ -532,7 +542,7 @@ export default function VerifyFlow() {
                   )}
                </WorldIDVerification>
             }
-            onContinueDidit={() => void startIdSession(flow)}
+            onUseTraditionalKyc={() => void startKyc(flow)}
          />
       );
    }
@@ -604,73 +614,41 @@ function HippoOrbit({ mode }: { mode: 'orbit' | 'orbit-success' }) {
 }
 
 // --- ConfirmScreen ------------------------------------------------------------
+// Shown only on the World ID path, after the liveness pre-gate passes. (Traditional
+// KYC now runs as one combined Didit session, so it has no intermediate confirm step.)
 
 function ConfirmScreen({
-   method,
    worldIdTrigger,
-   onContinueDidit
+   onUseTraditionalKyc
 }: {
-   method: VerifyMethod;
    worldIdTrigger: ReactNode;
-   onContinueDidit: () => void;
+   onUseTraditionalKyc: () => void;
 }) {
    return (
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col items-center justify-center max-w-modal mx-auto w-full px-md-4 py-md-5">
          <div className="flex flex-col items-center gap-md-3 text-center w-full">
             <p className="text-md-b3 font-semibold text-md-neutral-700 uppercase tracking-widest">
-               {method === 'worldid' ? 'Step 2 of 2' : 'Step 2 of 2'}
+               Step 1 of 2 done
             </p>
             <img src="/icons/check-fill.svg" alt="" aria-hidden="true" className="w-16 h-16" />
             <div className="flex flex-col gap-md-1">
                <h1 className="text-md-display text-md-heading">You&rsquo;re a real person!</h1>
                <p className="text-md-b1 font-medium text-md-neutral-700">
-                  {method === 'worldid'
-                     ? 'Liveness confirmed. Now finish by verifying with World ID.'
-                     : "Liveness confirmed. Now let's confirm your identity with your ID."}
+                  You&rsquo;re not done yet — one last step. Verify with World ID below to finish and unlock your account.
                </p>
             </div>
 
-            {method === 'didit' ? (
-               <div className="flex flex-col gap-4 w-full">
-                  <p className="text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-neutral-700 text-center">
-                     Supported countries
-                  </p>
-                  <div className="grid grid-cols-2 gap-y-4 gap-x-8 px-4 w-full">
-                     {SUPPORTED_DIDIT_COUNTRIES.map(({ code, name, Flag }) => (
-                        <div key={code} className="flex items-center gap-3">
-                           <div className="shrink-0 overflow-hidden rounded-[3px] shadow-sm shadow-black/10">
-                              <Flag className="w-[30px] h-5 block" />
-                           </div>
-                           <span className="text-md-b2 font-medium text-md-heading">{name}</span>
-                        </div>
-                     ))}
-                  </div>
-               </div>
-            ) : null}
-
-            {method === 'worldid' ? (
-               <>
-                  {worldIdTrigger}
-                  <p className="text-md-b3 font-medium text-md-neutral-700">
-                     Requires an Orb-verified World ID.
-                  </p>
-                  <button
-                     type="button"
-                     onClick={onContinueDidit}
-                     className="text-md-b2 font-medium text-md-neutral-700 underline underline-offset-2"
-                  >
-                     Use traditional KYC instead
-                  </button>
-               </>
-            ) : (
-               <button
-                  type="button"
-                  onClick={onContinueDidit}
-                  className="flex items-center justify-center w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100"
-               >
-                  Continue to ID check
-               </button>
-            )}
+            {worldIdTrigger}
+            <p className="text-md-b3 font-medium text-md-neutral-700">
+               Requires an Orb-verified World ID.
+            </p>
+            <button
+               type="button"
+               onClick={onUseTraditionalKyc}
+               className="text-md-b2 font-medium text-md-neutral-700 underline underline-offset-2"
+            >
+               Use traditional KYC instead
+            </button>
          </div>
       </div>
    );
