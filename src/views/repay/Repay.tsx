@@ -1,9 +1,11 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { AlertTriangle, ArrowLeft, Check, Loader2, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, Clock, Copy, ExternalLink, Loader2, ShieldCheck, Wallet } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAccount, useConnect } from 'wagmi';
+import { erc20Abi } from 'viem';
+import { useAccount, useConnect, useReadContract } from 'wagmi';
 
 import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -15,9 +17,9 @@ import { useLoanData } from '@/hooks/useLoanData';
 import useWallet from '@/hooks/useWallet';
 
 import { parseDateSafely } from '@/utils/dateFormatters';
-import { formatCurrency, formatNumber, toNumber } from '@/utils/decimalHelpers';
+import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
 
-import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
+import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import {
    formatWalletAddressShort,
    getBaseAccountConnector,
@@ -39,6 +41,34 @@ const quickRepaymentFractions = [
    { label: 'Full', value: 1 }
 ];
 
+// Places a borrower can buy USDC and send it to their Base Account. The repay flow is the
+// same for all (send USDC on Base to the address below); only the "open" link differs.
+const fundSources = [
+   { id: 'binance', label: 'Binance', action: 'Open Binance', href: 'https://www.binance.com/en/my/wallet/account/main/withdrawal/crypto/USDC' },
+   { id: 'pdax', label: 'PDAX', action: 'Open PDAX', href: 'https://www.pdax.ph' },
+   { id: 'moneybees', label: 'Moneybees', action: 'Find Moneybees', href: 'https://www.moneybees.ph' }
+] as const;
+
+type FundSourceId = (typeof fundSources)[number]['id'];
+
+const renderSourceLogo = (id: FundSourceId) => {
+   if (id === 'binance') {
+      return (
+         <svg className="h-4 w-4 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="7" fill="#F0B90B" />
+            <path
+               d="M5.5 6.5 8 4l2.5 2.5-1 1L8 6 6.5 7.5l-1-1Zm-1.5 1.5L8 4l4 4-1.5 1.5L8 7 5.5 9.5 4 8Zm3.5 3.5L5.5 9.5l1-1L8 10l1.5-1.5 1 1L8 12Z"
+               fill="#fff"
+            />
+         </svg>
+      );
+   }
+   if (id === 'pdax') {
+      return <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-md-pill bg-[#0bb5a3] text-[9px] font-bold text-white">P</span>;
+   }
+   return <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-md-pill bg-[#f5a623] text-[9px] font-bold text-white">M</span>;
+};
+
 const getRemainingAmount = (loan: Loan): number => Math.max(0, toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount));
 
 const getProgressPercent = (loan: Loan): number => {
@@ -46,13 +76,6 @@ const getProgressPercent = (loan: Loan): number => {
    if (total <= 0) return 0;
 
    return Math.min(100, Math.round((toNumber(loan.repaidAmount) / total) * 100));
-};
-
-const getPreviewProgressPercent = (loan: Loan, repaymentAmount: number): number => {
-   const total = toNumber(loan.totalRepaymentAmount);
-   if (total <= 0 || repaymentAmount <= 0) return getProgressPercent(loan);
-
-   return Math.min(100, Math.round(((toNumber(loan.repaidAmount) + repaymentAmount) / total) * 100));
 };
 
 const getDueCountdownCopy = (loan: Loan): string => {
@@ -205,6 +228,13 @@ export default function Repay() {
    // The on-chain transfer hash, set the moment Transfer resolves. Drives the "Sending" →
    // "Confirming" copy on the in-card processing overlay and the explorer link.
    const [pendingTxHash, setPendingTxHash] = useState<string | null>(null);
+   // Top-of-screen, non-custodial "add funds" helper, surfaced only when the borrower is
+   // short on USDC. It shows their own Base Account address + QR and watches their public
+   // on-chain balance — Moodeng never receives or forwards the money.
+   const [showAddFunds, setShowAddFunds] = useState(true);
+   const [fundSource, setFundSource] = useState<FundSourceId>('binance');
+   const [copiedAddress, setCopiedAddress] = useState(false);
+   const activeSource = fundSources.find((source) => source.id === fundSource) ?? fundSources[0];
    const amountInputRef = useRef<HTMLInputElement>(null);
    // Synchronous re-entrancy guard. `isProcessing` is React state, so on a fast double-tap
    // both calls read the stale `false` and each fires its own Transfer — opening a second
@@ -243,12 +273,10 @@ export default function Repay() {
    // payment as exceeding the maximum, leaving the borrower unable to clear the loan.
    const selectedRemainingRounded = Math.round(selectedRemaining * 100) / 100;
    const parsedRepaymentAmount = toNumber(repaymentAmount);
+   const repaySliderPercent =
+      selectedRemainingRounded > 0 ? Math.min(100, (Math.min(parsedRepaymentAmount, selectedRemainingRounded) / selectedRemainingRounded) * 100) : 0;
    const validPreviewPayment =
       selectedLoan && parsedRepaymentAmount > 0 ? Math.min(parsedRepaymentAmount, selectedRemainingRounded) : 0;
-   const currentProgressPercent = selectedLoan ? getProgressPercent(selectedLoan) : 0;
-   const hasExistingRepayment = selectedLoan ? toNumber(selectedLoan.repaidAmount) > 0 : false;
-   const previewProgressPercent = selectedLoan ? getPreviewProgressPercent(selectedLoan, validPreviewPayment) : 0;
-   const remainingAfterPayment = Math.max(0, selectedRemaining - validPreviewPayment);
    const estimatedTrustPoints = selectedLoan ? getEstimatedTrustPoints(selectedLoan, validPreviewPayment) : 0;
    const selectedQuickFraction =
       selectedLoan && validPreviewPayment > 0
@@ -338,6 +366,93 @@ export default function Repay() {
       setRepaymentAmount(event.target.value);
       setPartialPaid(null);
    };
+
+   // The Base Account a top-up should land in. Prefer the locked Base wallet (repayments must
+   // come from it) and fall back to whatever is connected. In the local/preview host there's
+   // no real wallet, so use a sample address purely so the add-funds card can be previewed.
+   const PREVIEW_ADDRESS = '0x1234aBCd5678Ef901234abcd5678ef901234ABcd';
+   const repayWalletAddress = baseWalletLock.address ?? account.address ?? (usePreviewLoans ? PREVIEW_ADDRESS : '');
+
+   const handleCopyAddress = useCallback(async () => {
+      if (!repayWalletAddress) return;
+
+      const markCopied = () => {
+         setCopiedAddress(true);
+         window.setTimeout(() => setCopiedAddress(false), 1800);
+      };
+
+      // The async Clipboard API only works in a secure, focused context — it throws inside
+      // some in-app browsers and iframes. Fall back to a hidden <textarea> + execCommand so
+      // copy still succeeds there before we ever surface an error.
+      try {
+         if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(repayWalletAddress);
+            markCopied();
+            return;
+         }
+      } catch {
+         // fall through to the legacy path
+      }
+
+      try {
+         const textarea = document.createElement('textarea');
+         textarea.value = repayWalletAddress;
+         textarea.setAttribute('readonly', '');
+         textarea.style.position = 'fixed';
+         textarea.style.opacity = '0';
+         document.body.appendChild(textarea);
+         textarea.select();
+         const ok = document.execCommand('copy');
+         document.body.removeChild(textarea);
+         if (ok) {
+            markCopied();
+            return;
+         }
+      } catch {
+         // fall through to the error toast
+      }
+
+      showToast(TOAST_TYPES.ERROR, 'Copy failed', 'Could not copy your wallet address. Copy it manually.', undefined, undefined);
+   }, [repayWalletAddress, showToast]);
+
+   // Watch the borrower's own Base Account USDC balance so we can tell them when their
+   // top-up has landed. This reads a public on-chain balance — it is not custody. Only poll
+   // while the funding helper is open to avoid hammering the RPC for everyone.
+   const { data: usdcBalanceRaw } = useReadContract({
+      abi: erc20Abi,
+      address: BASE_USDC_ADDRESS,
+      functionName: 'balanceOf',
+      args: repayWalletAddress ? [repayWalletAddress as `0x${string}`] : undefined,
+      chainId: ALLOWED_CHAIN_ID,
+      query: {
+         enabled: Boolean(repayWalletAddress) && Boolean(selectedLoan) && !usePreviewLoans,
+         refetchInterval: 12000
+      }
+   });
+   // USDC has 6 decimals. In the preview host, mock a partial balance so the add-funds card,
+   // progress bar, and "need more" state are visible without a real wallet.
+   const usdcBalance = usePreviewLoans ? 18.4 : typeof usdcBalanceRaw === 'bigint' ? Number(usdcBalanceRaw) / 1e6 : null;
+   const fundingShortfall = usdcBalance !== null ? Math.max(0, Math.round((selectedRemaining - usdcBalance) * 100) / 100) : null;
+   const hasEnoughToRepay = usdcBalance !== null && usdcBalance >= selectedRemaining - 0.005;
+   const isShortOnFunds = fundingShortfall !== null && fundingShortfall > 0;
+
+   // When we learn the borrower doesn't hold enough USDC to repay, surface the Binance
+   // top-up helper automatically so the next step is visible without hunting for it. Runs
+   // only when the shortfall state flips or the loan changes, so a manual close stays closed.
+   useEffect(() => {
+      if (isShortOnFunds) {
+         setShowAddFunds(true);
+      }
+   }, [isShortOnFunds, selectedLoanId]);
+
+   // Once the borrower's top-up lands, pre-fill the full remaining so the existing Pay Now
+   // arms itself — they just tap to pay. Only when the add-funds helper is open and they
+   // haven't already typed an amount, so partial-payers keep control.
+   useEffect(() => {
+      if (showAddFunds && hasEnoughToRepay && !repaymentAmount) {
+         setRepaymentAmount(formatCurrency(selectedRemaining));
+      }
+   }, [showAddFunds, hasEnoughToRepay, repaymentAmount, selectedRemaining]);
 
    const handleRepay = useCallback(async () => {
       if (!selectedLoan || isProcessing || repayInFlightRef.current) {
@@ -544,7 +659,7 @@ export default function Repay() {
    if (shouldShowLoanCheckLoading) {
       return (
          <main className="repay-page min-h-screen bg-md-neutral-200 px-5 pb-28 pt-8">
-            <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4">
+            <div className="mx-auto flex w-full max-w-[400px] flex-col gap-4">
                <div className="h-16 rounded-md-xl bg-md-neutral-300" />
                <div className="h-44 rounded-md-xl bg-md-neutral-300" />
                <div className="h-80 rounded-md-xl bg-md-neutral-300" />
@@ -558,7 +673,7 @@ export default function Repay() {
 
       return (
          <main className="repay-page min-h-screen bg-[linear-gradient(180deg,#fbfafd_0%,#ffffff_44%,#fbfafd_100%)] px-4 pb-32 pt-5 text-md-heading sm:px-6">
-            <div className="mx-auto flex w-full max-w-[470px] flex-col gap-3">
+            <div className="mx-auto flex w-full max-w-[400px] flex-col gap-3">
                <section className="flex flex-col items-center rounded-md-xl border border-md-neutral-300 bg-white px-6 py-10 text-center shadow-[0_10px_28px_rgba(31,28,37,0.05)] animate-[repaySuccessIn_0.35s_cubic-bezier(0.16,1,0.3,1)]">
                   <span className="flex h-16 w-16 items-center justify-center rounded-md-pill bg-md-green-100 text-md-green-900 animate-[repaySuccessPop_0.45s_cubic-bezier(0.16,1,0.3,1)]">
                      <Check className="h-8 w-8" aria-hidden="true" />
@@ -608,7 +723,46 @@ export default function Repay() {
 
    return (
       <main className="repay-page min-h-screen bg-[linear-gradient(180deg,#fbfafd_0%,#ffffff_44%,#fbfafd_100%)] px-4 pb-32 pt-5 text-md-heading sm:px-6">
-         <div className="mx-auto flex w-full max-w-[470px] flex-col gap-3">
+         {/* Custom range thumb for the repay-amount slider (scoped to this page). */}
+         <style>{`
+            .repay-page input.repay-slider::-webkit-slider-thumb {
+               -webkit-appearance: none;
+               appearance: none;
+               width: 22px;
+               height: 22px;
+               border-radius: 9999px;
+               background: #ffffff;
+               border: 2.5px solid #6010d2;
+               box-shadow: 0 2px 8px rgba(96, 16, 210, 0.3);
+               cursor: pointer;
+            }
+            .repay-page input.repay-slider::-moz-range-thumb {
+               width: 22px;
+               height: 22px;
+               border-radius: 9999px;
+               background: #ffffff;
+               border: 2.5px solid #6010d2;
+               box-shadow: 0 2px 8px rgba(96, 16, 210, 0.3);
+               cursor: pointer;
+            }
+            /* Indeterminate "watching" bar: a segment bounces left↔right, grayer toward its
+               trailing (right) edge. */
+            .repay-page .repay-watch-bar {
+               width: 32%;
+               background: linear-gradient(90deg, #6010d2 0%, #b3a7d6 100%);
+               animation: repay-watch 1.7s ease-in-out infinite;
+               will-change: transform;
+            }
+            @keyframes repay-watch {
+               0% { transform: translateX(0); }
+               50% { transform: translateX(212%); }
+               100% { transform: translateX(0); }
+            }
+            @media (prefers-reduced-motion: reduce) {
+               .repay-page .repay-watch-bar { animation: none; }
+            }
+         `}</style>
+         <div className="mx-auto flex w-full max-w-[400px] flex-col gap-3">
             <header className="flex items-start justify-between gap-4">
                <div className="flex items-start gap-3">
                   <button
@@ -627,14 +781,146 @@ export default function Repay() {
                <UserAvatar alt={user.displayName ?? user.username ?? 'Profile'} size={48} className="shadow-md-card" />
             </header>
 
+            {selectedLoan && isShortOnFunds ? (
+               <section className="overflow-hidden rounded-md-xl border border-md-primary-300 bg-white shadow-[0_12px_30px_rgba(79,70,229,0.10)]">
+                  <button
+                     type="button"
+                     onClick={() => setShowAddFunds((open) => !open)}
+                     aria-expanded={showAddFunds}
+                     className="flex w-full items-center gap-3 bg-[linear-gradient(135deg,#f4f1ff_0%,#ffffff_60%)] px-4 py-3.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300"
+                  >
+                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md-pill bg-[linear-gradient(135deg,#7c5cff_0%,#4f46e5_100%)] text-white shadow-[0_4px_12px_rgba(79,70,229,0.35)]">
+                        <Wallet className="h-5 w-5" aria-hidden="true" />
+                     </span>
+                     <span className="min-w-0 flex-1">
+                        <span className="block text-md-b1 font-semibold text-md-heading">Add funds to repay</span>
+                        <span className="mt-0.5 block text-md-b3 text-md-neutral-1200">
+                           You need <span className="font-semibold text-md-primary-1200">${formatCurrency(fundingShortfall ?? 0)} more USDC</span> for this loan.
+                        </span>
+                     </span>
+                     <ChevronDown
+                        className={`h-5 w-5 shrink-0 text-md-neutral-1200 transition-transform ${showAddFunds ? 'rotate-180' : ''}`}
+                        aria-hidden="true"
+                     />
+                  </button>
+
+                  {showAddFunds ? (
+                     <div className="px-4 pb-4 pt-1">
+                        {/* Source selector — pick where to buy USDC. The repay flow below is the
+                            same for all; only the "open" link changes. */}
+                        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                           {fundSources.map((source) => {
+                              const isSelected = fundSource === source.id;
+
+                              return (
+                                 <button
+                                    type="button"
+                                    key={source.id}
+                                    onClick={() => setFundSource(source.id)}
+                                    aria-pressed={isSelected}
+                                    className={`inline-flex shrink-0 items-center gap-2 rounded-md-pill px-3.5 py-2 text-md-b2 font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
+                                       isSelected
+                                          ? 'bg-md-primary-1200 text-white shadow-[0_4px_12px_rgba(96,16,210,0.25)]'
+                                          : 'border border-[#e9e3f8] bg-white text-[#8b80b3] hover:border-md-primary-300'
+                                    }`}
+                                 >
+                                    {renderSourceLogo(source.id)}
+                                    {source.label}
+                                    {isSelected ? <Check className="h-4 w-4" aria-hidden="true" /> : null}
+                                 </button>
+                              );
+                           })}
+                        </div>
+
+                        {repayWalletAddress ? (
+                           <div className="mt-3 rounded-md-xl bg-md-primary-100/40 p-3.5">
+                              <div className="flex items-center gap-3">
+                                 <div className="min-w-0 flex-1">
+                                    <p className="text-md-b3 text-md-neutral-1200">Send USDC on Base to</p>
+                                    <p className="mt-1 truncate font-mono text-md-b1 font-semibold text-md-heading">
+                                       {formatWalletAddressShort(repayWalletAddress)}
+                                    </p>
+                                 </div>
+                                 <span className="shrink-0 rounded-md-input bg-white p-1.5 shadow-md-card">
+                                    <QRCodeSVG value={repayWalletAddress} size={56} level="M" marginSize={0} />
+                                 </span>
+                              </div>
+                              <div className="mt-3 flex gap-3">
+                                 <button
+                                    type="button"
+                                    onClick={handleCopyAddress}
+                                    className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-1.5 rounded-md-xl border border-[#e9e3f8] bg-white text-md-b2 font-semibold text-md-heading active:scale-[0.98]"
+                                 >
+                                    {copiedAddress ? <Check className="h-4 w-4 text-md-primary-1200" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
+                                    {copiedAddress ? 'Copied' : 'Copy'}
+                                 </button>
+                                 <a
+                                    href={activeSource.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex min-h-[48px] flex-[2] items-center justify-center gap-1.5 rounded-md-xl bg-[linear-gradient(135deg,#5b21d6_0%,#7c3aed_100%)] text-md-b2 font-semibold text-white shadow-[0_4px_14px_rgba(108,63,224,0.35)] active:scale-[0.98]"
+                                 >
+                                    {activeSource.action}
+                                    <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                                 </a>
+                              </div>
+                           </div>
+                        ) : null}
+
+                        {/* Slim live indicator — the header already states the shortfall, so this
+                            only carries what text can't: the system actively watching for the
+                            transfer, and the moment it lands. */}
+                        <div className="mt-3.5">
+                           <div className="relative h-1.5 w-full overflow-hidden rounded-md-pill bg-md-primary-100">
+                              {hasEnoughToRepay ? (
+                                 <div className="absolute inset-0 rounded-md-pill bg-md-green-900" />
+                              ) : (
+                                 <div className="repay-watch-bar absolute inset-y-0 left-0 rounded-md-pill" />
+                              )}
+                           </div>
+                           <div className="mt-2 flex items-center justify-end">
+                              <span
+                                 className={`flex items-center gap-1.5 text-md-b3 font-semibold ${
+                                    hasEnoughToRepay ? 'text-md-green-900' : 'text-md-primary-1200'
+                                 }`}
+                              >
+                                 {usdcBalance === null ? (
+                                    <>
+                                       <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                                       Checking…
+                                    </>
+                                 ) : hasEnoughToRepay ? (
+                                    <>
+                                       <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                                       Funds ready
+                                    </>
+                                 ) : (
+                                    <>
+                                       <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                                       Watching for your transfer
+                                    </>
+                                 )}
+                              </span>
+                           </div>
+                        </div>
+
+                        <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-md-b3 text-md-neutral-1200">
+                           <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-md-primary-1200" aria-hidden="true" />
+                           Base network only · Moodeng never holds your money.
+                        </p>
+                     </div>
+                  ) : null}
+               </section>
+            ) : null}
+
             {activeLoans.length > 1 ? (
                <section aria-labelledby="loan-picker-title" className="flex flex-col gap-2">
                   <div>
-                     <h2 id="loan-picker-title" className="text-md-b2 font-semibold text-md-heading">
+                     <h2 id="loan-picker-title" className="text-md-b3 font-semibold uppercase tracking-widest text-md-neutral-1200">
                         Pick a loan
                      </h2>
                   </div>
-                  <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="flex gap-3">
                      {activeLoans.map((loan) => {
                         const isSelected = loan.id === selectedLoan?.id;
 
@@ -644,30 +930,35 @@ export default function Repay() {
                               key={loan.id}
                               onClick={() => handleSelectLoan(loan.id)}
                               aria-pressed={isSelected}
-                              className={`min-h-[74px] w-[178px] shrink-0 rounded-md-input border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
+                              className={`min-h-[100px] min-w-0 flex-1 rounded-md-xl p-3.5 text-left transition focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
                                  isSelected
-                                    ? 'border-md-primary-900 bg-md-primary-100 text-md-heading'
-                                    : 'border-md-neutral-300 bg-white text-md-heading shadow-md-card hover:border-md-primary-300'
+                                    ? 'border-2 border-md-primary-1200 bg-[#f8f6fe]'
+                                    : 'border border-[#e9e3f8] bg-white hover:border-md-primary-300'
                               }`}
                            >
                               <div className="flex items-start justify-between gap-2">
-                                 <p className="min-w-0 truncate text-md-b2 font-semibold">{loan.reason || 'Active loan'}</p>
+                                 <p className={`min-w-0 text-md-b2 font-semibold leading-snug ${isSelected ? 'text-md-primary-1200' : 'text-[#8b80b3]'}`}>
+                                    {loan.reason || 'Active loan'}
+                                 </p>
                                  <span
-                                    className={`h-2.5 w-2.5 shrink-0 rounded-md-pill ${
-                                       isSelected ? 'bg-md-primary-1100' : 'bg-md-neutral-500'
+                                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md-pill ${
+                                       isSelected ? 'bg-md-primary-1200' : 'border-2 border-[#d1c4e9]'
                                     }`}
                                     aria-hidden="true"
-                                 />
+                                 >
+                                    {isSelected ? <span className="h-1.5 w-1.5 rounded-md-pill bg-white" /> : null}
+                                 </span>
                               </div>
-                              <div className="mt-3 flex items-end justify-between gap-2">
-                                 <div className="min-w-0">
-                                    <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
-                                    <p className="text-md-b1 font-semibold text-md-heading">${formatCurrency(getRemainingAmount(loan))}</p>
+                              <p className="mt-2 text-md-b3 text-[#8b80b3]">Remaining</p>
+                              <p className="text-md-h5 font-bold tracking-[-0.02em] text-md-heading">${formatCurrency(getRemainingAmount(loan))}</p>
+                              {getProgressPercent(loan) > 0 ? (
+                                 <div className="mt-2">
+                                    <div className="h-1.5 overflow-hidden rounded-md-pill bg-[#f0ebff]">
+                                       <div className="h-full rounded-md-pill bg-md-primary-1200" style={{ width: `${getProgressPercent(loan)}%` }} />
+                                    </div>
+                                    <p className="mt-1 text-md-b3 font-medium text-[#a78bfa]">{getProgressPercent(loan)}% paid</p>
                                  </div>
-                                 {getProgressPercent(loan) > 0 ? (
-                                    <span className="text-md-b3 font-semibold text-md-primary-1200">{getProgressPercent(loan)}% paid</span>
-                                 ) : null}
-                              </div>
+                              ) : null}
                            </button>
                         );
                      })}
@@ -676,7 +967,8 @@ export default function Repay() {
             ) : null}
 
             {selectedLoan ? (
-               <section className="relative overflow-hidden rounded-md-xl border border-md-neutral-300 bg-white p-4 shadow-[0_10px_28px_rgba(31,28,37,0.05)]">
+               <>
+               <section className="relative overflow-hidden rounded-md-xl px-1 pt-1">
                   {isProcessing ? (
                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-white/85 px-6 text-center backdrop-blur-sm">
                         <Loader2 className="h-8 w-8 animate-spin text-md-primary-1200" aria-hidden="true" />
@@ -705,85 +997,69 @@ export default function Repay() {
                            Paid ${formatCurrency(partialPaid.paidAmount)} {partialPaid.coin} — ${formatCurrency(partialPaid.remaining)} to go.
                         </p>
                      </div>
-                  ) : !account.isConnected ? (
-                     <div className="mb-3 flex items-center gap-2.5 rounded-md-input border border-md-primary-100 bg-md-primary-100/45 px-3 py-2.5">
-                        <ShieldCheck className="h-4 w-4 shrink-0 text-md-primary-1200" aria-hidden="true" />
-                        <p className="text-md-b3 font-medium text-md-primary-1200">
-                           Tapping <span className="font-semibold">Pay Now</span> connects your Base wallet, then completes the payment.
-                        </p>
-                     </div>
                   ) : null}
-                  <div className="flex items-start justify-between gap-4">
-                     <div className="min-w-0 self-start">
-                        <p className="text-md-b3 font-semibold uppercase text-md-neutral-1200">You’re paying</p>
-                        <h2 className="mt-1 truncate text-md-h5 text-md-heading">{selectedLoan.reason || 'Active loan'}</h2>
-                     </div>
-                     {!hasExistingRepayment ? (
-                        <div className="shrink-0 pr-3 text-right">
-                           <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
-                           <p className="text-[20px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading">
-                              ${formatCurrency(selectedRemaining)}
+
+                  <div className="pt-1 pb-2 text-center">
+                     <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-[#8b80b3]">Repay amount</p>
+
+                     {isLoanOverdue(selectedLoan) ? (
+                        <div className="mb-3 flex items-start gap-2.5 rounded-md-input border border-[#f4d2d2] bg-[#fff7f7] px-3 py-2.5 text-left dark:border-[#68303a] dark:bg-[#3c171e]">
+                           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-md-red-600" aria-hidden="true" />
+                           <p className="text-md-b3 font-medium text-md-red-600">
+                              Paying less than the full ${formatCurrency(selectedRemaining)} reduces what you owe, but your account stays
+                              restricted until this loan is fully repaid.
                            </p>
                         </div>
                      ) : null}
-                  </div>
 
-                  <div
-                     className={`mt-3 grid grid-cols-2 gap-x-3 gap-y-1 rounded-md-input border px-3 py-3.5 ${
-                        isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan)
-                           ? 'border-[#f4d2d2] bg-[#fff7f7] dark:border-[#68303a] dark:bg-[#3c171e]'
-                           : 'border-md-neutral-300 bg-md-neutral-100'
-                     }`}
-                  >
-                     <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                        {isLoanOverdue(selectedLoan) ? 'Past due' : 'Time left'}
-                     </p>
-                     <p className="text-right text-md-b3 font-medium leading-5 text-md-neutral-1200">Due date</p>
-                     <p
-                        className={`min-w-0 truncate text-[20px] font-semibold leading-6 tracking-[-0.04em] ${
-                           isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan) ? 'text-md-red-600' : 'text-md-primary-1200'
-                        }`}
-                     >
-                        {getDueCountdownCopy(selectedLoan)}
-                     </p>
-                     <div className="text-right">
-                        <p className="text-md-b2 font-semibold leading-6 text-md-heading">{getDueDateShortCopy(selectedLoan)}</p>
-                        <p className="text-md-b3 text-md-neutral-1200">{getDueTimeUtcCopy(selectedLoan)}</p>
-                     </div>
-                  </div>
-
-                  {hasExistingRepayment ? (
-                     <div className="mt-4 grid grid-cols-2 gap-2">
-                        <div className="rounded-md-input bg-md-neutral-100 p-3">
-                           <p className="text-md-b3 text-md-neutral-1200">Remaining</p>
-                           <p className="mt-1 text-[20px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading">
-                              ${formatCurrency(selectedRemaining)}
-                           </p>
-                        </div>
-                        <div className="rounded-md-input bg-md-neutral-100 p-3 text-right">
-                           <p className="text-md-b3 text-md-neutral-1200">Paid so far</p>
-                           <p className="mt-1 text-md-h4 font-semibold text-md-primary-1200">${formatNumber(selectedLoan.repaidAmount)}</p>
-                        </div>
-                     </div>
-                  ) : null}
-
-                  <div className={hasExistingRepayment ? 'mt-4' : 'mt-3'}>
-                     <div className="grid grid-cols-4 gap-2">
-                        <div className="col-span-4">
-                           <p className="text-md-b1 font-semibold text-md-heading">Repay amount</p>
-                           <p className="mt-1 text-md-b3 text-md-neutral-1200">Select an amount or enter your own.</p>
-                        </div>
-
-                        {isLoanOverdue(selectedLoan) ? (
-                           <div className="col-span-4 flex items-start gap-2.5 rounded-md-input border border-[#f4d2d2] bg-[#fff7f7] px-3 py-2.5 dark:border-[#68303a] dark:bg-[#3c171e]">
-                              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-md-red-600" aria-hidden="true" />
-                              <p className="text-md-b3 font-medium text-md-red-600">
-                                 Paying less than the full ${formatCurrency(selectedRemaining)} reduces what you owe, but your account stays
-                                 restricted until this loan is fully repaid.
-                              </p>
+                     <div className="flex flex-col items-center">
+                        <div className="mb-1 flex items-baseline justify-center gap-2">
+                           <div className="flex items-baseline text-4xl font-extrabold tracking-tight text-[#1a1240]">
+                              <span>$</span>
+                              <input
+                                 ref={amountInputRef}
+                                 id="repayment-amount"
+                                 type="text"
+                                 inputMode="decimal"
+                                 value={repaymentAmount}
+                                 onChange={handleAmountChange}
+                                 placeholder="0.00"
+                                 aria-label="Repay amount"
+                                 style={{ width: `${Math.max(3, (repaymentAmount || '0.00').length)}ch` }}
+                                 className="bg-transparent text-4xl font-extrabold tracking-tight text-[#1a1240] caret-md-primary-1100 outline-none placeholder:text-md-neutral-500"
+                              />
                            </div>
+                           <span className="text-sm font-semibold text-[#a78bfa]">{selectedLoan.coin || 'USDC'}</span>
+                        </div>
+                        <p className="text-xs text-[#8b80b3]">of ${formatCurrency(selectedRemaining)} remaining</p>
+                        {validPreviewPayment > 0 && !isLoanOverdue(selectedLoan) && estimatedTrustPoints > 0 ? (
+                           <span className="mt-2 inline-flex items-center gap-1.5 rounded-md-pill bg-md-green-100 px-3 py-1 text-md-b3 font-semibold text-md-green-900">
+                              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                              +{estimatedTrustPoints} Trust Points
+                           </span>
                         ) : null}
+                     </div>
 
+                     <div className="relative px-1 mb-5 mt-6">
+                        <input
+                           type="range"
+                           min={0}
+                           max={selectedRemainingRounded}
+                           step={0.01}
+                           value={Math.min(parsedRepaymentAmount, selectedRemainingRounded)}
+                           onChange={(event) => {
+                              setRepaymentAmount(formatCurrency(Number(event.target.value)));
+                              setPartialPaid(null);
+                           }}
+                           aria-label="Adjust repay amount"
+                           className="repay-slider h-1.5 w-full cursor-pointer appearance-none rounded-full"
+                           style={{
+                              background: `linear-gradient(to right, #6010d2 ${repaySliderPercent}%, #ede8fb ${repaySliderPercent}%)`
+                           }}
+                        />
+                     </div>
+
+                     <div className="mb-5 flex gap-2">
                         {quickRepaymentFractions.map((option) => {
                            const isQuickSelected = selectedQuickFraction === option.value;
                            const quickAmount = selectedRemaining * option.value;
@@ -794,114 +1070,54 @@ export default function Repay() {
                                  key={option.label}
                                  onClick={() => setQuickAmount(option.value)}
                                  aria-pressed={isQuickSelected}
-                                 className={`relative min-h-13 rounded-md-input border px-2 text-md-b2 font-semibold transition focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
+                                 className={`flex flex-1 flex-col items-center justify-center rounded-xl py-2.5 transition focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
                                     isQuickSelected
-                                       ? 'border-md-primary-500 bg-md-primary-100 text-md-primary-1200'
-                                       : 'border-md-primary-100 bg-md-primary-100/45 text-md-primary-1200 hover:border-md-primary-400 hover:bg-md-primary-100'
+                                       ? 'bg-[#6c3fe0] text-white shadow-[0_4px_14px_rgba(108,63,224,0.32)]'
+                                       : 'bg-[#f0ebff] text-[#6c3fe0] hover:bg-md-primary-100'
                                  }`}
                               >
-                                 {isQuickSelected ? (
-                                    <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-md-pill border border-md-primary-500 bg-white text-md-primary-1200 shadow-md-card">
-                                       <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                                    </span>
-                                 ) : null}
-                                 <span className="block">{option.label}</span>
-                                 <span className="mt-0.5 block text-md-b3 font-medium text-md-neutral-1200">
+                                 <span className="text-xs font-bold leading-none">{option.label}</span>
+                                 <span className={`mt-0.5 text-[10px] font-medium leading-none ${isQuickSelected ? 'text-white/75' : 'text-[#a78bfa]'}`}>
                                     ${formatCurrency(quickAmount)}
                                  </span>
                               </button>
                            );
                         })}
-
-                        <div className="col-span-4 min-w-0">
-                           <label htmlFor="repayment-amount" className="sr-only">
-                              Repay amount
-                           </label>
-                           <div className="mt-3 flex min-h-[56px] items-stretch overflow-hidden rounded-md-input border border-md-neutral-500 bg-md-neutral-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition focus-within:border-md-primary-900 focus-within:ring-2 focus-within:ring-md-primary-100">
-                              <div className="flex min-w-[104px] items-center justify-center gap-2 bg-[#2775ca] px-3 text-md-b1 font-semibold text-md-neutral-50">
-                                 <span
-                                    className="flex h-6 w-6 items-center justify-center text-[16px] font-[800] leading-none"
-                                    aria-hidden="true"
-                                 >
-                                    ($)
-                                 </span>
-                                 {selectedLoan.coin || 'USDC'}
-                              </div>
-                              <div className="flex min-w-0 flex-1 items-center gap-2 px-4 py-2">
-                                 <input
-                                    ref={amountInputRef}
-                                    id="repayment-amount"
-                                    type="text"
-                                    inputMode="decimal"
-                                    value={repaymentAmount}
-                                    onChange={handleAmountChange}
-                                    placeholder="0.00"
-                                    aria-label="Repay amount"
-                                    className="w-full min-w-0 bg-transparent text-md-b1 font-normal text-md-heading outline-none placeholder:text-md-neutral-1200"
-                                 />
-                              </div>
-                           </div>
-                           {amountError ? (
-                              <p className="mt-2 text-md-b3 font-semibold text-md-red-600">{amountError}</p>
-                           ) : !repaymentAmount ? (
-                              <p className="mt-2 text-md-b3 text-md-neutral-1200">Choose a quick amount above or enter your own to continue.</p>
-                           ) : null}
-                        </div>
                      </div>
+
+                     {amountError ? <p className="mb-2 text-md-b3 font-semibold text-md-red-600">{amountError}</p> : null}
                   </div>
 
-                  <div className="mt-4 rounded-md-input border border-md-primary-100 bg-md-primary-100/35 p-3">
-                     <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                           <p className="text-md-b3 font-semibold text-md-heading">Repayment progress</p>
-                        </div>
-                        {validPreviewPayment > 0 && !isLoanOverdue(selectedLoan) ? (
-                           <span className="inline-flex shrink-0 items-center gap-1 rounded-md-pill bg-md-green-100 px-2.5 py-1 text-md-b3 font-semibold text-md-green-900">
-                              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />+{estimatedTrustPoints} Trust Points
-                           </span>
-                        ) : null}
-                     </div>
-                     <div className="relative mt-3 h-2.5 overflow-hidden rounded-md-pill bg-[#e3dde9]">
-                        <div
-                           className="absolute inset-y-0 left-0 rounded-md-pill bg-md-primary-1100 transition-[width] duration-200 ease-out"
-                           style={{ width: `${currentProgressPercent}%` }}
-                        />
-                        {previewProgressPercent > currentProgressPercent ? (
-                           <div
-                              className="absolute inset-y-0 rounded-md-pill bg-md-primary-400 transition-all duration-200 ease-out"
-                              style={{
-                                 left: `${currentProgressPercent}%`,
-                                 width: `${previewProgressPercent - currentProgressPercent}%`
-                              }}
-                           />
-                        ) : null}
-                     </div>
-                     {hasExistingRepayment || validPreviewPayment > 0 ? (
-                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-md-b3 text-md-neutral-1200">
-                           <div className="flex flex-wrap items-center gap-2">
-                              {hasExistingRepayment ? (
-                                 <span className="inline-flex items-center gap-1">
-                                    <span className="h-2.5 w-2.5 rounded-md-pill bg-md-primary-1100" aria-hidden="true" />
-                                    {currentProgressPercent}% already paid
-                                 </span>
-                              ) : null}
-                              {validPreviewPayment > 0 ? (
-                                 <span className="inline-flex items-center gap-1">
-                                    <span className="h-2.5 w-2.5 rounded-md-pill bg-md-primary-400" aria-hidden="true" />
-                                    today
-                                 </span>
-                              ) : null}
-                           </div>
-                           {validPreviewPayment > 0 && remainingAfterPayment > 0 ? (
-                              <span className="inline-flex items-center gap-1 font-semibold text-md-heading">
-                                 <span className="h-2.5 w-2.5 rounded-md-pill bg-[#d8d0df]" aria-hidden="true" />
-                                 {`$${formatCurrency(remainingAfterPayment)} remaining after this payment`}
-                              </span>
-                           ) : null}
-                        </div>
-                     ) : null}
+                  <div className="px-5 pb-4 pt-1">
+                     <button
+                        type="button"
+                        onClick={handleRepay}
+                        disabled={isRepayDisabled}
+                        className="w-full rounded-2xl py-4 text-base font-bold text-white transition-all active:scale-[0.98] disabled:opacity-50"
+                        style={{
+                           background: 'linear-gradient(135deg, #5b21d6 0%, #7c3aed 100%)',
+                           boxShadow: '0 6px 20px rgba(108,63,224,0.38)'
+                        }}
+                     >
+                        {hasValidPayAmount ? `Pay Now · $${formatCurrency(parsedRepaymentAmount)} USDC` : 'Pay Now'}
+                     </button>
+                  </div>
+
+                  <div
+                     className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 px-5 pb-3 text-md-b3 ${
+                        isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan) ? 'text-md-red-600' : 'text-md-neutral-1200'
+                     }`}
+                  >
+                     <span className="inline-flex items-center gap-1.5 font-semibold">
+                        <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
+                        {isLoanOverdue(selectedLoan) ? 'Past due' : `${getDueCountdownCopy(selectedLoan)}`}
+                     </span>
+                     <span>
+                        Due {getDueDateShortCopy(selectedLoan)} · {getDueTimeUtcCopy(selectedLoan)}
+                     </span>
                   </div>
                </section>
+               </>
             ) : (
                <section className="flex min-h-[430px] flex-col items-center justify-center px-6 text-center">
                   <h2 className="text-md-h5 font-semibold text-[#040033]">{emptyRepayState?.title ?? 'No repayments yet'}</h2>
