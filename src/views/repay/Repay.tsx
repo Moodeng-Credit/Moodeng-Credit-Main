@@ -48,11 +48,11 @@ const quickRepaymentFractions = [
 // is the featured exchange, GCrypto/PDAX sit under "Other options"; Binance is hidden since
 // it's banned in PH. Abroad those local rails aren't usable, so Binance is shown instead.
 const fundSources = [
-   { id: 'moneybees', label: 'Moneybees', action: 'Chat with Moneybees', href: 'https://www.moneybees.ph' },
-   { id: 'coinsph', label: 'Coins.ph', action: 'Open Coins.ph', href: 'https://coins.ph' },
-   { id: 'gcrypto', label: 'GCrypto', action: 'Open GCrypto', href: 'https://www.gcash.com' },
-   { id: 'pdax', label: 'PDAX', action: 'Open PDAX', href: 'https://www.pdax.ph' },
-   { id: 'binance', label: 'Binance', action: 'Open Binance', href: 'https://www.binance.com/en/my/wallet/account/main/withdrawal/crypto/USDC' }
+   { id: 'moneybees', label: 'Moneybees', action: 'Chat with Moneybees', href: 'https://www.moneybees.ph', deepLink: null },
+   { id: 'coinsph', label: 'Coins.ph', action: 'Open Coins.ph', href: 'https://coins.ph', deepLink: 'coinsph://' },
+   { id: 'gcrypto', label: 'GCrypto', action: 'Open GCrypto', href: 'https://www.gcash.com', deepLink: 'gcash://' },
+   { id: 'pdax', label: 'PDAX', action: 'Open PDAX', href: 'https://www.pdax.ph', deepLink: 'pdax://' },
+   { id: 'binance', label: 'Binance', action: 'Open Binance', href: 'https://www.binance.com/en/my/wallet/account/main/withdrawal/crypto/USDC', deepLink: 'bnc://app.binance.com/' }
 ] as const;
 
 type FundSourceId = (typeof fundSources)[number]['id'];
@@ -535,7 +535,8 @@ export default function Repay() {
                }
       : null;
 
-   const handleSelectLoan = (loanId: string) => {
+   const handleSelectLoan = (loanId: string, e: React.MouseEvent<HTMLButtonElement>) => {
+      (e.currentTarget as HTMLButtonElement).blur();
       setSelectedLoanId(loanId);
       setRepaymentAmount('');
       setCompletion(null);
@@ -1043,7 +1044,7 @@ export default function Repay() {
                            <button
                               type="button"
                               key={loan.id}
-                              onClick={() => handleSelectLoan(loan.id)}
+                              onClick={(e) => handleSelectLoan(loan.id, e)}
                               aria-pressed={isSelected}
                               className={`min-w-0 flex-1 rounded-2xl p-4 text-left transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
                                  isSelected
@@ -1280,15 +1281,25 @@ export default function Repay() {
                               )}
 
                               {/* CTA button */}
-                              <a
-                                 href={activeSource.href}
-                                 target="_blank"
-                                 rel="noopener noreferrer"
+                              <button
+                                 type="button"
+                                 onClick={() => {
+                                    if (!activeSource.deepLink) {
+                                       window.open(activeSource.href, '_blank', 'noopener,noreferrer');
+                                       return;
+                                    }
+                                    // Try app scheme; if app not installed the location change is a no-op,
+                                    // so fall back to the web URL after 1.5 s.
+                                    window.location.href = activeSource.deepLink;
+                                    setTimeout(() => {
+                                       window.open(activeSource.href, '_blank', 'noopener,noreferrer');
+                                    }, 1500);
+                                 }}
                                  className="inline-flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-md-xl bg-[linear-gradient(135deg,#5b21d6_0%,#7c3aed_100%)] text-md-b2 font-semibold text-white shadow-[0_4px_14px_rgba(108,63,224,0.35)] active:scale-[0.98]"
                               >
                                  {activeSource.action}
                                  <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                              </a>
+                              </button>
 
                               {/* Fee attribution — only for paid sources */}
                               {(() => {
