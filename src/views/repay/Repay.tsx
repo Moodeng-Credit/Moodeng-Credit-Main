@@ -297,7 +297,7 @@ export default function Repay() {
    // "Confirming" copy on the in-card processing overlay and the explorer link.
    const [pendingTxHash, setPendingTxHash] = useState<string | null>(null);
    // Top-of-screen, non-custodial "add funds" helper, surfaced only when the borrower is
-   // short on USDC. It shows their own Base Account address + QR and watches their public
+   // short on USDC. It shows their own Base Account address and watches their public
    // on-chain balance — Moodeng never receives or forwards the money.
    const [showAddFunds, setShowAddFunds] = useState(true);
    const [fundSource, setFundSource] = useState<FundSourceId>('moneybees');
@@ -308,7 +308,10 @@ export default function Repay() {
    // Records which loan crossed short→funded so we can show an explicit "money arrived"
    // confirmation. Tying it to the loan id (rather than a bare boolean) means it clears
    // itself on loan switch and never flags borrowers who already had enough on arrival.
-   const [fundedLoanId, setFundedLoanId] = useState<string | null>(null);
+   // In preview mode, ?funded=1 pre-seeds this so the green handoff card is visible
+   // without needing real USDC to arrive.
+   const previewFunded = usePreviewLoans && new URLSearchParams(location.search).get('funded') === '1';
+   const [fundedLoanId, setFundedLoanId] = useState<string | null>(previewFunded ? previewLoans[0].id : null);
    const wasShortRef = useRef(false);
    const activeSource = fundSources.find((source) => source.id === fundSource) ?? fundSources[0];
 
@@ -579,9 +582,10 @@ export default function Repay() {
          refetchInterval: 30000 // backstop if WebSocket misses an event
       }
    });
-   // USDC has 6 decimals. In the preview host, mock a partial balance so the add-funds card,
-   // progress bar, and "need more" state are visible without a real wallet.
-   const usdcBalance = usePreviewLoans ? 18.4 : typeof usdcBalanceRaw === 'bigint' ? Number(usdcBalanceRaw) / 1e6 : null;
+   // USDC has 6 decimals. In the preview host, mock the balance: ?funded=1 gives enough to
+   // cover the loan (triggers the green handoff card); default shows a partial balance so the
+   // add-funds steps and progress bar are visible without a real wallet.
+   const usdcBalance = usePreviewLoans ? (previewFunded ? 130 : 18.4) : typeof usdcBalanceRaw === 'bigint' ? Number(usdcBalanceRaw) / 1e6 : null;
    const fundingShortfall = usdcBalance !== null ? Math.max(0, Math.round((selectedRemaining - usdcBalance) * 100) / 100) : null;
    const hasEnoughToRepay = usdcBalance !== null && usdcBalance >= selectedRemaining - 0.005;
    const isShortOnFunds = fundingShortfall !== null && fundingShortfall > 0;
