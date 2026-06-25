@@ -1370,12 +1370,8 @@ export default function Repay() {
                            </div>
                         )}
 
-                        {/* ── Safety note + help ───────────────────────── */}
-                        <div className="flex items-center justify-between px-0.5 text-[12px]">
-                           <span className="flex items-center gap-1.5 text-[#6b6090] dark:text-[#a095c8]">
-                              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#6c3fe0]" aria-hidden="true" />
-                              Safe · goes to your wallet → loan
-                           </span>
+                        {/* ── Help link ────────────────────────────────── */}
+                        <div className="flex items-center justify-end px-0.5 text-[12px]">
                            <button
                               type="button"
                               onClick={() => navigate('/support')}
@@ -1526,11 +1522,13 @@ export default function Repay() {
                   </div>
 
                   <div
-                     className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 border-t border-[#f5f3ff] px-5 pb-3 pt-3 text-md-b3 ${
-                        isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan) ? 'text-md-red-600' : 'text-md-neutral-1200'
+                     className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 border-t px-5 pb-3 pt-3 text-md-b3 ${
+                        isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan)
+                           ? 'border-red-200 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400'
+                           : 'border-[#f5f3ff] text-md-neutral-1200'
                      }`}
                   >
-                     <span className="inline-flex items-center gap-1.5 font-semibold">
+                     <span className={`inline-flex items-center gap-1.5 font-semibold ${isLoanDueSoon(selectedLoan) ? 'animate-pulse' : ''}`}>
                         <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
                         {isLoanOverdue(selectedLoan) ? 'Past due' : `${getDueCountdownCopy(selectedLoan)}`}
                      </span>
