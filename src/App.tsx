@@ -73,6 +73,7 @@ import AccountSettings from '@/views/account/AccountSettings';
 import Dashboard from '@/views/dashboard/Dashboard';
 import RequestBoard from '@/views/dashboard/RequestBoard';
 import Repay from '@/views/repay/Repay';
+import Withdraw from '@/views/withdraw/Withdraw';
 import TransactionDetail from '@/views/transactions/TransactionDetail';
 import TransactionHistory from '@/views/transactions/TransactionHistory';
 
@@ -280,6 +281,17 @@ export default function App() {
                }
             />
             {showPreviewRoutes ? <Route path="/repay-preview" element={<Repay />} /> : null}
+            <Route
+               path="/withdraw"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <Withdraw />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            {showPreviewRoutes ? <Route path="/withdraw-preview" element={<Withdraw />} /> : null}
             <Route
                path="/milestones"
                element={
