@@ -691,7 +691,7 @@ export default function Repay() {
    // USDC has 6 decimals. In the preview host, mock the balance: ?funded=1 gives enough to
    // cover the loan (triggers the green handoff card); default shows a partial balance so the
    // add-funds steps and progress bar are visible without a real wallet.
-   const usdcBalance = usePreviewLoans ? (previewFunded ? 130 : 18.4) : typeof usdcBalanceRaw === 'bigint' ? Number(usdcBalanceRaw) / 1e6 : null;
+   const usdcBalance = usePreviewLoans ? ((previewFunded || previewModal) ? 130 : 18.4) : typeof usdcBalanceRaw === 'bigint' ? Number(usdcBalanceRaw) / 1e6 : null;
    const fundingShortfall = usdcBalance !== null ? Math.max(0, Math.round((selectedRemaining - usdcBalance) * 100) / 100) : null;
    const hasEnoughToRepay = usdcBalance !== null && usdcBalance >= selectedRemaining - 0.005;
    const isShortOnFunds = fundingShortfall !== null && fundingShortfall > 0;
