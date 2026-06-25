@@ -334,7 +334,8 @@ export default function Repay() {
             key={source.id}
             onClick={() => setFundSource(source.id)}
             aria-pressed={isSelected}
-            className={`flex min-h-[44px] w-full items-center gap-2.5 rounded-2xl px-3.5 py-1.5 text-md-b2 font-semibold transition active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
+            style={{ touchAction: 'manipulation' }}
+            className={`flex min-h-[44px] w-full cursor-pointer items-center gap-2.5 rounded-2xl px-3.5 py-1.5 text-md-b2 font-semibold transition active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
                isSelected
                   ? 'border-2 border-[#6c3fe0] bg-[#f3effe] text-[#1a1240]'
                   : 'border border-[#e9e3f8] bg-white text-[#6b6090] hover:border-md-primary-300'
@@ -362,7 +363,8 @@ export default function Repay() {
             type="button"
             onClick={() => setFundSource(source.id)}
             aria-pressed={isSelected}
-            className={`flex w-full items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-left transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
+            style={{ touchAction: 'manipulation' }}
+            className={`flex w-full cursor-pointer items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-left transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
                isSelected
                   ? 'border-2 border-[#6c3fe0] bg-[#f3effe]'
                   : 'border border-[#c4b0f5] bg-[#f8f5ff] hover:border-md-primary-300'
@@ -899,8 +901,8 @@ export default function Repay() {
       return (
          <main className="repay-page min-h-screen bg-[linear-gradient(180deg,#fbfafd_0%,#ffffff_44%,#fbfafd_100%)] px-4 pb-32 pt-5 text-md-heading sm:px-6">
             <div className="mx-auto flex w-full max-w-[400px] flex-col gap-3">
-               <section className="flex flex-col items-center rounded-md-xl border border-md-neutral-300 bg-white px-6 py-10 text-center shadow-[0_10px_28px_rgba(31,28,37,0.05)] animate-[repaySuccessIn_0.35s_cubic-bezier(0.16,1,0.3,1)]">
-                  <span className="flex h-16 w-16 items-center justify-center rounded-md-pill bg-md-green-100 text-md-green-900 animate-[repaySuccessPop_0.45s_cubic-bezier(0.16,1,0.3,1)]">
+               <section className="repay-success-section flex flex-col items-center rounded-md-xl border border-md-neutral-300 bg-white px-6 py-10 text-center shadow-[0_10px_28px_rgba(31,28,37,0.05)] animate-[repaySuccessIn_0.35s_cubic-bezier(0.16,1,0.3,1)]">
+                  <span className="repay-success-icon flex h-16 w-16 items-center justify-center rounded-md-pill bg-md-green-100 text-md-green-900 animate-[repaySuccessPop_0.45s_cubic-bezier(0.16,1,0.3,1)]">
                      <Check className="h-8 w-8" aria-hidden="true" />
                   </span>
                   <h1 className="mt-5 text-md-h4 font-semibold text-md-heading">Loan fully repaid</h1>
@@ -996,6 +998,10 @@ export default function Repay() {
             @media (prefers-reduced-motion: reduce) {
                .repay-page .repay-watch-bar { animation: none; }
             }
+            @media (prefers-reduced-motion: reduce) {
+               .repay-page .repay-success-section { animation: none; }
+               .repay-page .repay-success-icon { animation: none; }
+            }
          `}</style>
          <div className="mx-auto flex w-full max-w-[400px] flex-col gap-3">
             <header className="flex items-start justify-between gap-4">
@@ -1049,7 +1055,7 @@ export default function Repay() {
                         {/* ── Step 1: Choose your source ────────────────── */}
                         <div>
                            <div className="mb-2 flex items-center gap-2">
-                              <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold text-white">1</span>
+                              <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[11px] font-bold text-white">1</span>
                               <p className="text-sm font-semibold text-[#1a1240]">Choose your source</p>
                            </div>
                            {geoLoading ? (
@@ -1087,7 +1093,8 @@ export default function Repay() {
                                                    type="button"
                                                    onClick={() => setShowMoreSources((value) => !value)}
                                                    aria-expanded={expanded}
-                                                   className="mt-2 flex w-full items-center justify-center gap-1 text-xs font-semibold text-[#6b6090] transition hover:text-[#6c3fe0]"
+                                                   className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-1 cursor-pointer text-xs font-semibold text-[#6b6090] transition hover:text-[#6c3fe0]"
+                                                   style={{ touchAction: 'manipulation' }}
                                                 >
                                                    {expanded ? 'Fewer options' : 'Other options'}
                                                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} aria-hidden="true" />
@@ -1113,7 +1120,7 @@ export default function Repay() {
                         {repayWalletAddress ? (
                            <div>
                               <div className="mb-2 flex items-center gap-2">
-                                 <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold text-white">2</span>
+                                 <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[11px] font-bold text-white">2</span>
                                  <p className="text-sm font-semibold text-[#1a1240]">Copy your wallet address</p>
                               </div>
                               <p className="mb-3 text-xs text-[#6b6090]">
@@ -1156,7 +1163,7 @@ export default function Repay() {
                         {repayWalletAddress && !geoLoading ? (
                            <div>
                               <div className="mb-2 flex items-center gap-2">
-                                 <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold text-white">3</span>
+                                 <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[11px] font-bold text-white">3</span>
                                  <p className="text-sm font-semibold text-[#1a1240]">{activeSource.action}</p>
                               </div>
                               <div className="mb-3 rounded-xl border border-[#e9e3f8] bg-[#f8f5ff] px-3.5 py-3">
@@ -1211,7 +1218,7 @@ export default function Repay() {
                                           </span>
                                        </div>
 
-                                       <p className="mt-2 text-[11px] leading-snug text-[#8b80b3]">
+                                       <p className="mt-2 text-xs leading-snug text-[#6b6090]">
                                           Send a little extra to cover {activeSource.label}'s small fee — Moodeng never charges you to repay.
                                        </p>
                                     </div>
@@ -1354,7 +1361,7 @@ export default function Repay() {
                               }`}
                            >
                               <div className="mb-2 flex items-start justify-between">
-                                 <span className={`line-clamp-1 min-h-[1.25rem] min-w-0 pr-2 text-xs font-semibold leading-snug ${isSelected ? 'text-[#6c3fe0]' : 'text-[#6b6090]'}`}>
+                                 <span title={loan.reason || 'Active loan'} className={`line-clamp-1 min-h-[1.25rem] min-w-0 pr-2 text-xs font-semibold leading-snug ${isSelected ? 'text-[#6c3fe0]' : 'text-[#6b6090]'}`}>
                                     {loan.reason || 'Active loan'}
                                  </span>
                                  <div
@@ -1500,7 +1507,8 @@ export default function Repay() {
                                  key={option.label}
                                  onClick={() => setQuickAmount(option.value)}
                                  aria-pressed={isQuickSelected}
-                                 className={`flex min-h-[44px] flex-1 flex-col items-center justify-center rounded-xl transition active:scale-[0.97] focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
+                                 style={{ touchAction: 'manipulation' }}
+                                 className={`flex min-h-[44px] flex-1 cursor-pointer flex-col items-center justify-center rounded-xl transition active:scale-[0.97] focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
                                     isQuickSelected
                                        ? 'border-2 border-[#6c3fe0] bg-[#f3effe]'
                                        : 'border border-[#e9e3f8] bg-white hover:border-md-primary-300'
@@ -1515,7 +1523,7 @@ export default function Repay() {
                         })}
                      </div>
 
-                     {amountError ? <p className="mb-2 text-md-b3 font-semibold text-md-red-600">{amountError}</p> : null}
+                     {amountError ? <p role="alert" className="mb-2 text-md-b3 font-semibold text-md-red-600">{amountError}</p> : null}
                   </div>
 
                   <div
