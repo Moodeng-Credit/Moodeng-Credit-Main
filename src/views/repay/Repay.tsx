@@ -1330,7 +1330,7 @@ export default function Repay() {
                </section>
             ) : null}
 
-            {activeLoans.length > 1 ? (
+            {activeLoans.length > 1 && !justFunded ? (
                <section aria-labelledby="loan-picker-title">
                   <p id="loan-picker-title" className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#6b6090]">
                      Pick a loan
@@ -1383,7 +1383,7 @@ export default function Repay() {
                </section>
             ) : null}
 
-            {selectedLoan ? (
+            {selectedLoan && !justFunded ? (
                <>
                <section className="relative overflow-hidden rounded-md-xl border border-[#ede8fb] bg-white shadow-[0_8px_24px_rgba(96,16,210,0.07)]">
                   {isProcessing ? (
