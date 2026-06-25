@@ -400,7 +400,7 @@ export default function Repay() {
             className={`flex w-full cursor-pointer items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-left transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
                isSelected
                   ? 'border-2 border-[#6c3fe0] bg-[#f3effe] dark:bg-[#2a1740]'
-                  : 'border border-[#c4b0f5] bg-[#f8f5ff] hover:border-md-primary-300 dark:border-[#3d2a60] dark:bg-[#1e1535]'
+                  : 'border border-[#e9e3f8] bg-[#f8f5ff] hover:border-md-primary-300 dark:border-[#3d2a60] dark:bg-[#1e1535]'
             }`}
          >
             {renderSourceLogo(source.id, false)}
