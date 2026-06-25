@@ -308,11 +308,8 @@ export default function Repay() {
    // Records which loan crossed short→funded so we can show an explicit "money arrived"
    // confirmation. Tying it to the loan id (rather than a bare boolean) means it clears
    // itself on loan switch and never flags borrowers who already had enough on arrival.
-   // In preview mode, ?funded=1 pre-seeds this so the green handoff card is visible
-   // without needing real USDC to arrive.
+   // In preview mode, ?funded=1 mocks a fully-funded wallet so the repay-ready state is visible.
    const previewFunded = usePreviewLoans && new URLSearchParams(location.search).get('funded') === '1';
-   const [fundedLoanId, setFundedLoanId] = useState<string | null>(previewFunded ? previewLoans[0].id : null);
-   const wasShortRef = useRef(false);
    const activeSource = fundSources.find((source) => source.id === fundSource) ?? fundSources[0];
 
    // Compact source button used for Coins.ph and the "Other options" exchanges.
@@ -394,7 +391,6 @@ export default function Repay() {
    // Set when the in-card "Pay partial now" button is tapped: it fills the amount, then an
    // effect fires the payment once that amount commits — so paying is a single tap, not a
    // "fill here, then find Pay in the nav bar" two-step.
-   const pendingAmountPayRef = useRef(false);
 
    useEffect(() => {
       if (activeLoans.length === 0) {
@@ -588,8 +584,6 @@ export default function Repay() {
    const isShortOnFunds = fundingShortfall !== null && fundingShortfall > 0;
    const hasPartialFunds = usdcBalance !== null && usdcBalance > 0 && isShortOnFunds;
    // True only for the loan that just crossed short→funded — drives the success handoff.
-   const justFunded = selectedLoanId !== null && fundedLoanId === selectedLoanId && !isShortOnFunds;
-
    // Subscribe to incoming USDC Transfer events on Base so the UI updates within ~1-2s
    // of the deposit landing — no polling delay. Only active while short on funds.
    useWatchContractEvent({
@@ -635,18 +629,6 @@ export default function Repay() {
          setRepaymentAmount(formatCurrency(usdcBalance));
       }
    }, [showAddFunds, hasEnoughToRepay, hasPartialFunds, usdcBalance, repaymentAmount, selectedRemaining]);
-
-   // Detect the moment the balance crosses from short → enough so we can swap the steps for
-   // an explicit "money arrived — tap Pay" confirmation. Tracking the transition (rather than
-   // just hasEnoughToRepay) means we don't flag borrowers who already had funds on arrival.
-   useEffect(() => {
-      if (isShortOnFunds) {
-         wasShortRef.current = true;
-      } else if (wasShortRef.current && hasEnoughToRepay) {
-         wasShortRef.current = false;
-         setFundedLoanId(selectedLoanId);
-      }
-   }, [isShortOnFunds, hasEnoughToRepay, selectedLoanId]);
 
    const handleRepay = useCallback(async () => {
       if (!selectedLoan || isProcessing || repayInFlightRef.current) {
@@ -828,36 +810,9 @@ export default function Repay() {
       void handleRepayRef.current();
    }, []);
 
-   // Fires the payment once an in-card Pay button's amount has committed to state.
-   // Declared after the ref-sync effect so handleRepayRef points at the up-to-date closure.
-   useEffect(() => {
-      if (pendingAmountPayRef.current && repaymentAmount) {
-         pendingAmountPayRef.current = false;
-         void handleRepayRef.current();
-      }
-   }, [repaymentAmount]);
-
-   // One-tap pay for the in-card buttons (partial top-up + "money arrived" success): set the
-   // amount and pay in the same gesture, so the borrower never has to find Pay in the nav bar
-   // afterwards. If the amount is already set, pay immediately (no state change to await).
-   const payExactAmount = useCallback(
-      (value: number) => {
-         const amount = formatCurrency(value);
-         setShowAddFunds(false);
-         if (repaymentAmount === amount) {
-            void handleRepayRef.current();
-         } else {
-            pendingAmountPayRef.current = true;
-            setRepaymentAmount(amount);
-         }
-      },
-      [repaymentAmount]
-   );
-
    const bottomNavRepayAction = useMemo(
       () =>
-         // Hide the nav Pay button when the funded green card is showing — the card is the CTA.
-         selectedLoan && !completion && !justFunded
+         selectedLoan && !completion
             ? {
                  ariaLabel: account.isConnected ? `Pay now ${paymentCtaAmount}` : `Connect and pay ${paymentCtaAmount}`,
                  disabled: isRepayDisabled,
@@ -869,7 +824,7 @@ export default function Repay() {
                  path: '/repay'
               }
             : null,
-      [account.isConnected, completion, connectStatus, handleBottomNavRepay, isProcessing, isRepayDisabled, justFunded, paymentCtaAmount, payNowLabel, selectedLoan]
+      [account.isConnected, completion, connectStatus, handleBottomNavRepay, isProcessing, isRepayDisabled, paymentCtaAmount, payNowLabel, selectedLoan]
    );
 
    useBottomNavPrimaryAction(bottomNavRepayAction);
@@ -1292,45 +1247,9 @@ export default function Repay() {
                      </div>
                   ) : null}
                </section>
-            ) : selectedLoan && justFunded ? (
-               // Funds just landed. Replace the steps with an explicit confirmation + a Pay
-               // button right here, so success never reads as "the card disappeared".
-               <section className="overflow-hidden rounded-md-xl border border-[#bbf7d0] bg-white shadow-[0_12px_30px_rgba(22,163,74,0.12)]">
-                  <div className="flex flex-col items-center gap-3 px-5 py-6 text-center">
-                     <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#dcfce7]">
-                        <Check className="h-6 w-6 text-[#16a34a]" aria-hidden="true" />
-                     </span>
-                     <div>
-                        <p className="text-md-b1 font-bold text-[#1a1240]">Your money arrived</p>
-                        <p className="mt-1 text-md-b3 text-[#6b6090]">
-                           You have <span className="font-semibold text-[#16a34a]">${formatCurrency(usdcBalance ?? selectedRemaining)} USDC</span> — ready to repay your loan.
-                        </p>
-                     </div>
-                     <button
-                        type="button"
-                        onClick={() => payExactAmount(selectedRemaining)}
-                        disabled={isProcessing || connectStatus === 'pending'}
-                        className="inline-flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-md-xl bg-[linear-gradient(135deg,#5b21d6_0%,#7c3aed_100%)] text-md-b2 font-semibold text-white shadow-[0_4px_14px_rgba(108,63,224,0.35)] transition active:scale-[0.98] disabled:opacity-60"
-                     >
-                        {isProcessing ? (
-                           <>
-                              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                              Paying…
-                           </>
-                        ) : connectStatus === 'pending' ? (
-                           <>
-                              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                              Connecting…
-                           </>
-                        ) : (
-                           `Pay $${formatCurrency(selectedRemaining)}`
-                        )}
-                     </button>
-                  </div>
-               </section>
             ) : null}
 
-            {activeLoans.length > 1 && !justFunded ? (
+            {activeLoans.length > 1 ? (
                <section aria-labelledby="loan-picker-title">
                   <p id="loan-picker-title" className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#6b6090]">
                      Pick a loan
@@ -1383,7 +1302,7 @@ export default function Repay() {
                </section>
             ) : null}
 
-            {selectedLoan && !justFunded ? (
+            {selectedLoan ? (
                <>
                <section className="relative overflow-hidden rounded-md-xl border border-[#ede8fb] bg-white shadow-[0_8px_24px_rgba(96,16,210,0.07)]">
                   {isProcessing ? (
