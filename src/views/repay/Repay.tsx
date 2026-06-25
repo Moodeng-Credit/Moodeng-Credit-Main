@@ -340,7 +340,7 @@ export default function Repay() {
                {sourceFee === 0 ? (
                   <span className="rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[10px] font-bold text-[#16a34a]">Free</span>
                ) : (
-                  <span className="text-[10px] font-medium text-[#9a93b8]">· Small fee</span>
+                  <span className="rounded-full bg-[#ede9f8] px-1.5 py-0.5 text-[10px] font-bold text-[#6b6090]">Small fee</span>
                )}
             </span>
          </button>
@@ -373,7 +373,7 @@ export default function Repay() {
                   {sourceFee === 0 ? (
                      <span className="rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[10px] font-bold text-[#16a34a]">Free</span>
                   ) : (
-                     <span className="text-[10px] font-medium text-[#9a93b8]">· Small fee</span>
+                     <span className="rounded-full bg-[#ede9f8] px-1.5 py-0.5 text-[10px] font-bold text-[#6b6090]">Small fee</span>
                   )}
                </span>
                {subtitle ? <span className="block text-[11px] font-medium text-[#6c3fe0]">{subtitle}</span> : null}
@@ -1153,29 +1153,41 @@ export default function Repay() {
                         ) : null}
 
                         {/* ── Step 3: Open app and send ─────────────────── */}
-                        {/* Gated on geo too: the navigation path and "Open …" target depend on
-                            the resolved source, so we wait rather than flash the wrong app. */}
                         {repayWalletAddress && !geoLoading ? (
                            <div>
                               <div className="mb-2 flex items-center gap-2">
                                  <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[11px] font-bold text-white">3</span>
                                  <p className="text-sm font-semibold text-[#1a1240]">{activeSource.action}</p>
                               </div>
-                              <div className="mb-3 rounded-xl border border-[#e9e3f8] bg-[#f8f5ff] px-3.5 py-3">
-                                 <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#6b6090]">
-                                    {activeSource.id === 'moneybees' ? 'How Moneybees works:' : `In ${activeSource.label}, navigate to:`}
-                                 </p>
-                                 <p className="text-xs font-semibold leading-relaxed text-[#1a1240]">
-                                    {FUND_SOURCE_PATHS[activeSource.id]}
-                                 </p>
-                                 <p className="mt-2 text-[10px] text-[#6b6090]">
-                                    {activeSource.id === 'moneybees' ? (
-                                       <>A real person guides you and sets the <span className="font-semibold text-[#6c3fe0]">Base</span> network for you — no app menus to find.</>
-                                    ) : (
-                                       <>Always select <span className="font-semibold text-[#6c3fe0]">Base</span> as the network — not Ethereum or Polygon.</>
-                                    )}
-                                 </p>
-                              </div>
+
+                              {/* Instruction card */}
+                              {activeSource.id === 'moneybees' ? (
+                                 <div className="mb-3 rounded-xl bg-[#f3effe] px-4 py-3.5">
+                                    <p className="mb-2.5 text-[11px] font-bold uppercase tracking-wide text-[#6c3fe0]">How it works</p>
+                                    <div className="space-y-2">
+                                       {(['Message on Telegram, Viber or WhatsApp', 'Quick ID check — takes about 1 min', 'Share your address · pay only after they confirm'] as const).map((step, i) => (
+                                          <div key={i} className="flex items-start gap-2.5">
+                                             <span className="mt-0.5 flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold text-white">{i + 1}</span>
+                                             <span className="text-[12px] font-medium leading-snug text-[#3d1a8a]">{step}</span>
+                                          </div>
+                                       ))}
+                                    </div>
+                                    <p className="mt-2.5 text-[11px] leading-snug text-[#6b6090]">A real person guides you — no app menus to navigate.</p>
+                                 </div>
+                              ) : (
+                                 <div className="mb-3 rounded-xl bg-[#f3effe] px-4 py-3.5">
+                                    <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-[#6c3fe0]">In {activeSource.label}</p>
+                                    <p className="text-[12px] font-semibold leading-relaxed text-[#1a1240]">
+                                       {FUND_SOURCE_PATHS[activeSource.id]}
+                                    </p>
+                                    <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-[#ede9f8] px-2.5 py-1.5">
+                                       <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#6c3fe0]" aria-hidden="true" />
+                                       <span className="text-[11px] font-semibold text-[#4a1fb8]">Use <strong>Base</strong> network — not Ethereum or Polygon</span>
+                                    </div>
+                                 </div>
+                              )}
+
+                              {/* CTA button */}
                               <a
                                  href={activeSource.href}
                                  target="_blank"
@@ -1185,36 +1197,32 @@ export default function Repay() {
                                  {activeSource.action}
                                  <ExternalLink className="h-4 w-4" aria-hidden="true" />
                               </a>
+
+                              {/* Fee attribution — only for paid sources */}
                               {(() => {
                                  const fee = FUND_SOURCE_FEES[activeSource.id];
-                                 // Free source (Moneybees) — no fee to attribute.
                                  if (fee === 0) return null;
-                                 // We don't show the exact cents (they vary and the exchange shows
-                                 // the real figure anyway). The point is attribution: a small fee,
-                                 // charged by the exchange — shown beside "Moodeng fee — Free".
                                  return (
-                                    <div className="mt-2.5 rounded-xl border border-[#e9e3f8] bg-white px-3.5 py-3 shadow-[0_4px_14px_rgba(96,16,210,0.05)]">
-                                       <div className="flex items-center justify-between py-1 text-[13px]">
+                                    <div className="mt-2.5 rounded-xl bg-[#f8f7fb] px-3.5 py-3">
+                                       <div className="flex items-center justify-between text-[12px]">
                                           <span className="flex items-center gap-2 text-[#6b6090]">
                                              {renderSourceLogo(activeSource.id, false)}
                                              {activeSource.label}'s fee
                                           </span>
-                                          <span className="font-medium text-[#6b6090]">Small fee</span>
+                                          <span className="rounded-full bg-[#ede9f8] px-2 py-0.5 text-[10px] font-bold text-[#6b6090]">Small fee</span>
                                        </div>
-
-                                       <div className="flex items-center justify-between py-1 text-[13px]">
+                                       <div className="mt-2 flex items-center justify-between border-t border-[#ede9f8] pt-2 text-[12px]">
                                           <span className="flex items-center gap-2 text-[#6b6090]">
-                                             <ShieldCheck className="h-4 w-4 text-md-primary-1200" aria-hidden="true" />
+                                             <ShieldCheck className="h-3.5 w-3.5 text-[#6c3fe0]" aria-hidden="true" />
                                              Moodeng fee
                                           </span>
                                           <span className="flex items-center gap-1 font-bold text-[#16a34a]">
                                              Free
-                                             <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                                             <Check className="h-3 w-3" aria-hidden="true" />
                                           </span>
                                        </div>
-
-                                       <p className="mt-2 text-xs leading-snug text-[#6b6090]">
-                                          Send a little extra to cover {activeSource.label}'s small fee — Moodeng never charges you to repay.
+                                       <p className="mt-2 text-[11px] leading-snug text-[#6b6090]">
+                                          Send a little extra to cover {activeSource.label}'s fee — Moodeng never charges to repay.
                                        </p>
                                     </div>
                                  );
@@ -1222,76 +1230,65 @@ export default function Repay() {
                            </div>
                         ) : null}
 
-                        {/* ── Live transfer indicator ───────────────────── */}
-                        <div>
-                           <div className="relative h-1.5 w-full overflow-hidden rounded-md-pill bg-md-primary-100">
-                              {hasEnoughToRepay ? (
-                                 <div className="absolute inset-0 rounded-md-pill bg-md-green-900" />
-                              ) : hasPartialFunds ? (
+                        {/* ── Transfer status card ──────────────────────── */}
+                        {usdcBalance === null ? (
+                           <div className="flex items-center gap-3 rounded-xl bg-[#f3effe] px-4 py-3">
+                              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#6c3fe0]" aria-hidden="true" />
+                              <span className="text-sm font-semibold text-[#3d1a8a]">Checking your balance…</span>
+                           </div>
+                        ) : hasEnoughToRepay ? (
+                           <div className="flex items-center gap-3 rounded-xl bg-[#dcfce7] px-4 py-3">
+                              <Check className="h-4 w-4 shrink-0 text-[#16a34a]" aria-hidden="true" />
+                              <span className="text-sm font-semibold text-[#14532d]">Funds ready</span>
+                           </div>
+                        ) : hasPartialFunds ? (
+                           <div className="rounded-xl bg-[#f3effe] px-4 py-3.5">
+                              <div className="mb-2 flex items-center justify-between text-[12px]">
+                                 <span className="font-semibold text-[#3d1a8a]">${formatCurrency(usdcBalance!)} USDC received</span>
+                                 <span className="text-[#6b6090]">${formatCurrency(selectedRemaining)} needed</span>
+                              </div>
+                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#e0d9f8]">
                                  <div
-                                    className="absolute inset-y-0 left-0 rounded-md-pill bg-[#d97706] transition-all duration-500"
+                                    className="h-full rounded-full bg-[#6c3fe0] transition-all duration-500"
                                     style={{ width: `${Math.min(99, (usdcBalance! / selectedRemaining) * 100)}%` }}
                                  />
-                              ) : (
-                                 <div className="repay-watch-bar absolute inset-y-0 left-0 rounded-md-pill" />
-                              )}
-                           </div>
-                           <div className="mt-2 flex items-center justify-end">
-                              <span
-                                 className={`flex items-center gap-1.5 text-md-b3 font-semibold ${
-                                    hasEnoughToRepay ? 'text-md-green-900' : 'text-md-primary-1200'
-                                 }`}
-                              >
-                                 {usdcBalance === null ? (
-                                    <>
-                                       <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                                       Checking…
-                                    </>
-                                 ) : hasEnoughToRepay ? (
-                                    <>
-                                       <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                                       Funds ready
-                                    </>
-                                 ) : hasPartialFunds ? null : (
-                                    <>
-                                       <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                                       Watching for your transfer…
-                                    </>
-                                 )}
-                              </span>
-                           </div>
-                           {!hasEnoughToRepay && !hasPartialFunds ? (
-                              <p className="mt-1.5 text-center text-[11px] text-[#6b6090]">
-                                 No need to do anything — we detect it automatically, usually under a minute.
-                              </p>
-                           ) : null}
-                        </div>
-
-                        {hasPartialFunds ? (
-                           <button
-                              type="button"
-                              onClick={() => payExactAmount(usdcBalance!)}
-                              disabled={isProcessing}
-                              className="w-full rounded-xl border border-[#fde68a] bg-[#fffbeb] py-2.5 text-md-b3 font-semibold text-[#92400e] transition active:scale-[0.98] disabled:opacity-60"
-                           >
-                              Pay ${formatCurrency(usdcBalance!)} partial now
-                           </button>
-                        ) : null}
-
-                        <div className="space-y-1.5">
-                           <p className="flex items-center justify-center gap-1.5 text-center text-md-b3 text-[#6b6090]">
-                              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-md-primary-1200" aria-hidden="true" />
-                              This goes to your own wallet, then straight to your loan. It's safe.
-                           </p>
-                           <p className="text-center text-md-b3">
+                              </div>
                               <button
                                  type="button"
-                                 onClick={() => navigate('/support')}
-                                 className="font-semibold text-md-primary-1200 underline-offset-2 transition hover:underline"
+                                 onClick={() => payExactAmount(usdcBalance!)}
+                                 disabled={isProcessing}
+                                 style={{ touchAction: 'manipulation' }}
+                                 className="mt-3 inline-flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#6c3fe0] bg-white text-sm font-semibold text-[#4a1fb8] transition active:scale-[0.98] disabled:opacity-60"
                               >
-                                 Stuck? Get help
+                                 Pay ${formatCurrency(usdcBalance!)} partial now
                               </button>
-                           </p>
+                           </div>
+                        ) : (
+                           <div className="flex items-center gap-3 rounded-xl bg-[#f3effe] px-4 py-3.5">
+                              <div className="relative flex h-5 w-5 shrink-0 items-center justify-center">
+                                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#6c3fe0] opacity-25" />
+                                 <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#6c3fe0]" />
+                              </div>
+                              <div>
+                                 <p className="text-sm font-semibold text-[#3d1a8a]">Watching for your transfer</p>
+                                 <p className="text-[11px] text-[#6b6090]">Detects automatically — usually under a minute</p>
+                              </div>
+                           </div>
+                        )}
+
+                        {/* ── Safety note + help ───────────────────────── */}
+                        <div className="flex items-center justify-between px-0.5 text-[12px]">
+                           <span className="flex items-center gap-1.5 text-[#6b6090]">
+                              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#6c3fe0]" aria-hidden="true" />
+                              Safe · goes to your wallet → loan
+                           </span>
+                           <button
+                              type="button"
+                              onClick={() => navigate('/support')}
+                              className="font-semibold text-[#6c3fe0] underline-offset-2 transition hover:underline"
+                           >
+                              Get help
+                           </button>
                         </div>
                      </div>
                   ) : null}
