@@ -856,7 +856,8 @@ export default function Repay() {
 
    const bottomNavRepayAction = useMemo(
       () =>
-         selectedLoan && !completion
+         // Hide the nav Pay button when the funded green card is showing — the card is the CTA.
+         selectedLoan && !completion && !justFunded
             ? {
                  ariaLabel: account.isConnected ? `Pay now ${paymentCtaAmount}` : `Connect and pay ${paymentCtaAmount}`,
                  disabled: isRepayDisabled,
@@ -868,7 +869,7 @@ export default function Repay() {
                  path: '/repay'
               }
             : null,
-      [account.isConnected, completion, connectStatus, handleBottomNavRepay, isProcessing, isRepayDisabled, paymentCtaAmount, payNowLabel, selectedLoan]
+      [account.isConnected, completion, connectStatus, handleBottomNavRepay, isProcessing, isRepayDisabled, justFunded, paymentCtaAmount, payNowLabel, selectedLoan]
    );
 
    useBottomNavPrimaryAction(bottomNavRepayAction);
