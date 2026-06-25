@@ -1308,10 +1308,7 @@ export default function Repay() {
                                              <ShieldCheck className="h-3.5 w-3.5 text-[#6c3fe0]" aria-hidden="true" />
                                              Moodeng fee
                                           </span>
-                                          <span className="flex items-center gap-1 font-bold text-[#16a34a]">
-                                             Free
-                                             <Check className="h-3 w-3" aria-hidden="true" />
-                                          </span>
+                                          <span className="whitespace-nowrap rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-bold text-[#16a34a] dark:bg-[#052e16]">Free ✓</span>
                                        </div>
                                        <p className="mt-2 text-[11px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
                                           Send a little extra to cover {activeSource.label}'s fee — Moodeng never charges to repay.
