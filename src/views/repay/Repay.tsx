@@ -259,6 +259,37 @@ const shouldUsePreviewLoans = (search: string, pathname: string): boolean => {
    return window.sessionStorage.getItem('moodeng-repay-preview-loans') === '1';
 };
 
+function FundedCelebration({ amount }: { amount: number }) {
+   const [barWidth, setBarWidth] = useState(0);
+   useEffect(() => {
+      const raf1 = requestAnimationFrame(() => {
+         const raf2 = requestAnimationFrame(() => setBarWidth(100));
+         return () => cancelAnimationFrame(raf2);
+      });
+      return () => cancelAnimationFrame(raf1);
+   }, []);
+
+   return (
+      <div className="px-4 py-5">
+         <div className="mb-3.5 flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#dcfce7]">
+               <Check className="h-5 w-5 text-[#16a34a]" aria-hidden="true" />
+            </span>
+            <div>
+               <p className="text-[15px] font-semibold text-[#14532d]">Received ${formatCurrency(amount)} USDC</p>
+               <p className="text-[12px] text-[#6b6090]">Preparing your repayment…</p>
+            </div>
+         </div>
+         <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#dcfce7]">
+            <div
+               className="h-full rounded-full bg-[#16a34a]"
+               style={{ width: `${barWidth}%`, transition: 'width 1.8s ease-in-out' }}
+            />
+         </div>
+      </div>
+   );
+}
+
 export default function Repay() {
    const navigate = useNavigate();
    const location = useLocation();
@@ -310,6 +341,12 @@ export default function Repay() {
    // itself on loan switch and never flags borrowers who already had enough on arrival.
    // In preview mode, ?funded=1 mocks a fully-funded wallet so the repay-ready state is visible.
    const previewFunded = usePreviewLoans && new URLSearchParams(location.search).get('funded') === '1';
+   const previewArriving = usePreviewLoans && new URLSearchParams(location.search).get('arriving') === '1';
+   // Tracks when the borrower was previously short so we can detect the short→funded transition
+   // and show a brief "funds received" celebration before revealing the repay section.
+   const wasShortRef = useRef(false);
+   const [justFunded, setJustFunded] = useState<number | null>(null);
+   const effectiveJustFunded = previewArriving ? 121 : justFunded;
    const activeSource = fundSources.find((source) => source.id === fundSource) ?? fundSources[0];
 
    // Compact source button used for Coins.ph and the "Other options" exchanges.
@@ -613,9 +650,15 @@ export default function Repay() {
    // when the shortfall state flips or the loan changes, so a manual close stays closed.
    useEffect(() => {
       if (isShortOnFunds) {
+         wasShortRef.current = true;
          setShowAddFunds(true);
+      } else if (wasShortRef.current && hasEnoughToRepay && usdcBalance !== null) {
+         wasShortRef.current = false;
+         setJustFunded(usdcBalance);
+         const t = setTimeout(() => setJustFunded(null), 2000);
+         return () => clearTimeout(t);
       }
-   }, [isShortOnFunds, selectedLoanId]);
+   }, [isShortOnFunds, hasEnoughToRepay, usdcBalance, selectedLoanId]);
 
    // Once the borrower's top-up lands, pre-fill the amount so the bottom nav Pay button
    // arms itself — they just tap once. Full amount when fully funded; partial balance when
@@ -977,8 +1020,12 @@ export default function Repay() {
                <UserAvatar alt={user.displayName ?? user.username ?? 'Profile'} size={48} className="shadow-md-card" />
             </header>
 
-            {selectedLoan && isShortOnFunds ? (
-               <section className="overflow-hidden rounded-md-xl border border-md-primary-300 bg-white shadow-[0_12px_30px_rgba(79,70,229,0.10)]">
+            {selectedLoan && (isShortOnFunds || effectiveJustFunded !== null) ? (
+               <section className={`overflow-hidden rounded-md-xl border bg-white shadow-[0_12px_30px_rgba(79,70,229,0.10)] ${effectiveJustFunded !== null ? 'border-[#16a34a]' : 'border-md-primary-300'}`}>
+                  {effectiveJustFunded !== null ? (
+                     <FundedCelebration amount={effectiveJustFunded} />
+                  ) : (
+                  <>
                   <button
                      type="button"
                      onClick={() => setShowAddFunds((open) => !open)}
@@ -1246,6 +1293,8 @@ export default function Repay() {
                         </div>
                      </div>
                   ) : null}
+                  </>
+                  )}
                </section>
             ) : null}
 
