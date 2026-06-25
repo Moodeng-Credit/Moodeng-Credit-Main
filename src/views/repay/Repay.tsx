@@ -315,18 +315,11 @@ export default function Repay() {
    const wasShortRef = useRef(false);
    const activeSource = fundSources.find((source) => source.id === fundSource) ?? fundSources[0];
 
-   // Compact source button used for Coins.ph and the "Other options" exchanges. Keeps the
-   // fee/free indicator visible even after selection so the reassurance never disappears.
+   // Compact source button used for Coins.ph and the "Other options" exchanges.
+   // Fee tag sits next to the label; selection is conveyed by border + fill alone (no checkmark).
    const renderSourcePill = (source: (typeof fundSources)[number]) => {
       const isSelected = fundSource === source.id;
       const sourceFee = FUND_SOURCE_FEES[source.id];
-      // Only Moneybees is free; everything else carries a small fee (fixed or variable).
-      const feeTag =
-         sourceFee === 0 ? (
-            <span className="text-[10px] font-bold text-[#16a34a]">Free</span>
-         ) : (
-            <span className="text-[10px] font-semibold text-[#6b6090]">Small fee</span>
-         );
 
       return (
          <button
@@ -335,24 +328,27 @@ export default function Repay() {
             onClick={() => setFundSource(source.id)}
             aria-pressed={isSelected}
             style={{ touchAction: 'manipulation' }}
-            className={`flex min-h-[44px] w-full cursor-pointer items-center gap-2.5 rounded-2xl px-3.5 py-1.5 text-md-b2 font-semibold transition active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
+            className={`flex min-h-[44px] w-full cursor-pointer items-center gap-2 rounded-2xl px-3.5 py-1.5 text-md-b2 font-semibold transition active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
                isSelected
                   ? 'border-2 border-[#6c3fe0] bg-[#f3effe] text-[#1a1240]'
                   : 'border border-[#e9e3f8] bg-white text-[#6b6090] hover:border-md-primary-300'
             }`}
          >
             {renderSourceLogo(source.id, false)}
-            {source.label}
-            <span className="ml-auto flex shrink-0 items-center gap-1.5">
-               {feeTag}
-               {isSelected ? <Check className="h-4 w-4 text-[#6c3fe0]" aria-hidden="true" /> : null}
+            <span className="flex min-w-0 flex-1 items-center gap-1.5">
+               {source.label}
+               {sourceFee === 0 ? (
+                  <span className="rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[10px] font-bold text-[#16a34a]">Free</span>
+               ) : (
+                  <span className="text-[10px] font-medium text-[#9a93b8]">· Small fee</span>
+               )}
             </span>
          </button>
       );
    };
 
-   // Prominent, full-width primary source (Moneybees in PH, Binance abroad). Carries a short
-   // pitch from SOURCE_SUBTITLE plus its fee/free indicator, kept visible after selection.
+   // Prominent, full-width primary source (Moneybees in PH, Binance abroad).
+   // Fee badge sits inline with the name; selection is conveyed by border + fill alone (no checkmark).
    const renderHeroSource = (source: (typeof fundSources)[number]) => {
       const isSelected = fundSource === source.id;
       const sourceFee = FUND_SOURCE_FEES[source.id];
@@ -372,16 +368,15 @@ export default function Repay() {
          >
             {renderSourceLogo(source.id, false)}
             <span className="min-w-0 flex-1">
-               <span className="block text-sm font-bold text-[#1a1240]">{source.label}</span>
+               <span className="flex items-center gap-1.5">
+                  <span className="text-sm font-bold text-[#1a1240]">{source.label}</span>
+                  {sourceFee === 0 ? (
+                     <span className="rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[10px] font-bold text-[#16a34a]">Free</span>
+                  ) : (
+                     <span className="text-[10px] font-medium text-[#9a93b8]">· Small fee</span>
+                  )}
+               </span>
                {subtitle ? <span className="block text-[11px] font-medium text-[#6c3fe0]">{subtitle}</span> : null}
-            </span>
-            <span className="flex shrink-0 items-center gap-1.5">
-               {sourceFee === 0 ? (
-                  <span className="text-[10px] font-bold text-[#16a34a]">Free</span>
-               ) : (
-                  <span className="text-[10px] font-semibold text-[#6b6090]">Small fee</span>
-               )}
-               {isSelected ? <Check className="h-4 w-4 text-[#6c3fe0]" aria-hidden="true" /> : null}
             </span>
          </button>
       );
