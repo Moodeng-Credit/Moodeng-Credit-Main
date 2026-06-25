@@ -1193,32 +1193,36 @@ export default function Repay() {
                                     ? <>This is the same wallet your loan was sent to. Copy it — you'll share it with Moneybees so they send your USDC here.</>
                                     : <>This is the same wallet your loan was sent to. Copy it — you'll paste it into {activeSource.label} as the destination.</>}
                               </p>
-                              <div className="rounded-2xl bg-[#f5f4fa] p-4 dark:bg-[#2a1740]">
-                                 <p className="text-xs text-[#6b6090] dark:text-[#a095c8]">Your USDC wallet</p>
+                              <button
+                                 type="button"
+                                 onClick={handleCopyAddress}
+                                 className={`w-full rounded-2xl p-4 text-left transition-colors duration-200 active:scale-[0.99] ${
+                                    copiedAddress
+                                       ? 'bg-[#dcfce7] ring-2 ring-[#16a34a] dark:bg-[#052e16]'
+                                       : 'bg-[#f5f4fa] ring-2 ring-[#6c3fe0]/30 dark:bg-[#2a1740] dark:ring-[#6c3fe0]/40'
+                                 }`}
+                              >
+                                 <div className="flex items-center justify-between gap-2">
+                                    <p className={`text-xs font-semibold ${copiedAddress ? 'text-[#16a34a]' : 'text-[#6c3fe0] dark:text-[#c4b5fd]'}`}>
+                                       {copiedAddress ? 'Copied!' : 'Tap to copy your wallet address'}
+                                    </p>
+                                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${copiedAddress ? 'bg-[#16a34a]' : 'bg-[#6c3fe0]'}`}>
+                                       {copiedAddress ? (
+                                          <Check className="h-3.5 w-3.5 text-white" aria-hidden="true" />
+                                       ) : (
+                                          <Copy className="h-3.5 w-3.5 text-white" aria-hidden="true" />
+                                       )}
+                                    </span>
+                                 </div>
                                  <p className="mt-1.5 truncate font-mono text-[22px] font-extrabold leading-tight text-[#1a1240] dark:text-white">
                                     {formatWalletAddressShort(repayWalletAddress)}
                                  </p>
-                                 <button
-                                    type="button"
-                                    onClick={handleCopyAddress}
-                                    className={`mt-3 inline-flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-md-xl text-md-b2 font-semibold transition-colors duration-200 active:scale-[0.98] ${
-                                       copiedAddress
-                                          ? 'bg-[#16a34a] text-white'
-                                          : 'border border-[#e9e3f8] bg-white text-md-heading dark:border-[#3d2a60] dark:bg-[#1a1240]'
-                                    }`}
-                                 >
-                                    {copiedAddress ? (
-                                       <Check className="h-4 w-4" aria-hidden="true" />
-                                    ) : (
-                                       <Copy className="h-4 w-4" aria-hidden="true" />
-                                    )}
-                                    {copiedAddress
-                                       ? activeSource.id === 'moneybees'
-                                          ? 'Copied! Now message Moneybees below'
-                                          : 'Copied! Now open the app below'
-                                       : 'Copy wallet address'}
-                                 </button>
-                              </div>
+                                 {copiedAddress && (
+                                    <p className="mt-1.5 text-[12px] font-medium text-[#16a34a]">
+                                       {activeSource.id === 'moneybees' ? 'Now message Moneybees below →' : 'Now paste it into the app below →'}
+                                    </p>
+                                 )}
+                              </button>
                            </div>
                         ) : null}
 
