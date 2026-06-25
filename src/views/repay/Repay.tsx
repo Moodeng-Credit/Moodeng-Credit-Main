@@ -290,6 +290,77 @@ function FundedCelebration({ amount }: { amount: number }) {
    );
 }
 
+function FundedModal({ amount, dueDate, onRepay, onDismiss }: { amount: number; dueDate: string; onRepay: () => void; onDismiss: () => void }) {
+   return (
+      <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/60" onClick={onDismiss}>
+         <div
+            className="w-full max-w-md overflow-hidden rounded-t-3xl bg-white pb-8 dark:bg-[#1a1240]"
+            onClick={(e) => e.stopPropagation()}
+         >
+            <div className="mx-auto mt-3 mb-6 h-1 w-10 rounded-full bg-[#e9e3f8] dark:bg-[#3d2a60]" />
+
+            <div className="px-6 pb-5 text-center">
+               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#dcfce7] dark:bg-[#052e16]">
+                  <Check className="h-7 w-7 text-[#16a34a]" aria-hidden="true" />
+               </div>
+               <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-[#16a34a]">Funds received</p>
+               <p className="text-[28px] font-semibold leading-tight text-[#1a1240] dark:text-white">${formatCurrency(amount)} USDC</p>
+               <p className="mt-1 text-[13px] text-[#6b6090] dark:text-[#a095c8]">arrived in your wallet</p>
+            </div>
+
+            <div className="mx-5 mb-5 rounded-2xl bg-[#f8f7fb] px-4 py-3 dark:bg-[#2a1740]">
+               <div className="flex items-center justify-between py-2 text-[13px]">
+                  <span className="flex items-center gap-2 text-[#6b6090] dark:text-[#a095c8]">
+                     <Wallet className="h-3.5 w-3.5 text-[#6c3fe0]" aria-hidden="true" />
+                     Wallet balance
+                  </span>
+                  <span className="font-semibold text-[#16a34a]">${formatCurrency(amount)} USDC</span>
+               </div>
+               <div className="border-t border-[#ede9f8] dark:border-[#3d2a60]" />
+               <div className="flex items-center justify-between py-2 text-[13px]">
+                  <span className="flex items-center gap-2 text-[#6b6090] dark:text-[#a095c8]">
+                     <ShieldCheck className="h-3.5 w-3.5 text-[#6c3fe0]" aria-hidden="true" />
+                     Amount due
+                  </span>
+                  <span className="font-semibold text-[#1a1240] dark:text-white">${formatCurrency(amount)} USDC</span>
+               </div>
+               <div className="border-t border-[#ede9f8] dark:border-[#3d2a60]" />
+               <div className="flex items-center justify-between py-2 text-[13px]">
+                  <span className="flex items-center gap-2 text-[#6b6090] dark:text-[#a095c8]">
+                     <Clock className="h-3.5 w-3.5 text-[#6c3fe0]" aria-hidden="true" />
+                     Due
+                  </span>
+                  <span className="font-semibold text-[#1a1240] dark:text-white">{dueDate}</span>
+               </div>
+            </div>
+
+            <div className="px-5 pb-3">
+               <button
+                  type="button"
+                  onClick={onRepay}
+                  className="w-full rounded-full bg-[#6c3fe0] py-4 text-[15px] font-semibold text-white active:scale-[0.98]"
+               >
+                  Repay my loan now
+               </button>
+            </div>
+            <div className="px-5">
+               <button
+                  type="button"
+                  onClick={onDismiss}
+                  className="w-full rounded-full border border-[#e9e3f8] py-3.5 text-[14px] font-semibold text-[#6b6090] dark:border-[#3d2a60] dark:text-[#a095c8]"
+               >
+                  Remind me later
+               </button>
+            </div>
+            <p className="mt-4 px-5 text-center text-[12px] text-[#6b6090] dark:text-[#a095c8]">
+               <ShieldCheck className="mr-1 inline h-3.5 w-3.5 text-[#6c3fe0]" aria-hidden="true" />
+               Funds go directly to your loan — not to Moodeng
+            </p>
+         </div>
+      </div>
+   );
+}
+
 export default function Repay() {
    const navigate = useNavigate();
    const location = useLocation();
@@ -342,6 +413,7 @@ export default function Repay() {
    // In preview mode, ?funded=1 mocks a fully-funded wallet so the repay-ready state is visible.
    const previewFunded = usePreviewLoans && new URLSearchParams(location.search).get('funded') === '1';
    const previewArriving = usePreviewLoans && new URLSearchParams(location.search).get('arriving') === '1';
+   const previewModal = usePreviewLoans && new URLSearchParams(location.search).get('modal') === '1';
    // Tracks when the borrower was previously short so we can detect the short→funded transition
    // and show a brief "funds received" celebration before revealing the repay section.
    // shortLoanIdRef pins the detection to a specific loan so switching to a different loan
@@ -959,6 +1031,14 @@ export default function Repay() {
 
    return (
       <main className="repay-page min-h-screen bg-[linear-gradient(180deg,#fbfafd_0%,#ffffff_44%,#fbfafd_100%)] px-4 pb-32 pt-5 text-md-heading sm:px-6">
+         {previewModal && selectedLoan && (
+            <FundedModal
+               amount={getRemainingAmount(selectedLoan)}
+               dueDate={`${getDueDateShortCopy(selectedLoan)} · ${getDueTimeUtcCopy(selectedLoan)}`}
+               onRepay={() => navigate('/repay')}
+               onDismiss={() => navigate('/repay-preview')}
+            />
+         )}
          {/* Custom range thumb for the repay-amount slider (scoped to this page). */}
          <style>{`
             .repay-page input.repay-slider::-webkit-slider-thumb {
