@@ -344,7 +344,10 @@ export default function Repay() {
    const previewArriving = usePreviewLoans && new URLSearchParams(location.search).get('arriving') === '1';
    // Tracks when the borrower was previously short so we can detect the short→funded transition
    // and show a brief "funds received" celebration before revealing the repay section.
+   // shortLoanIdRef pins the detection to a specific loan so switching to a different loan
+   // (one they already have enough for) doesn't misfire the celebration.
    const wasShortRef = useRef(false);
+   const shortLoanIdRef = useRef<string | null>(null);
    const [justFunded, setJustFunded] = useState<number | null>(null);
    const effectiveJustFunded = previewArriving ? 121 : justFunded;
    const activeSource = fundSources.find((source) => source.id === fundSource) ?? fundSources[0];
@@ -651,12 +654,19 @@ export default function Repay() {
    useEffect(() => {
       if (isShortOnFunds) {
          wasShortRef.current = true;
+         shortLoanIdRef.current = selectedLoanId;
          setShowAddFunds(true);
-      } else if (wasShortRef.current && hasEnoughToRepay && usdcBalance !== null) {
+      } else if (wasShortRef.current && shortLoanIdRef.current === selectedLoanId && hasEnoughToRepay && usdcBalance !== null) {
+         // Same loan went short→funded: balance arrived — show celebration
          wasShortRef.current = false;
+         shortLoanIdRef.current = null;
          setJustFunded(usdcBalance);
          const t = setTimeout(() => setJustFunded(null), 2000);
          return () => clearTimeout(t);
+      } else if (wasShortRef.current && shortLoanIdRef.current !== selectedLoanId) {
+         // User switched to a different loan — reset without celebrating
+         wasShortRef.current = false;
+         shortLoanIdRef.current = null;
       }
    }, [isShortOnFunds, hasEnoughToRepay, usdcBalance, selectedLoanId]);
 
@@ -1020,6 +1030,59 @@ export default function Repay() {
                <UserAvatar alt={user.displayName ?? user.username ?? 'Profile'} size={48} className="shadow-md-card" />
             </header>
 
+            {activeLoans.length > 1 ? (
+               <section aria-labelledby="loan-picker-title">
+                  <p id="loan-picker-title" className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#6b6090] dark:text-[#a095c8]">
+                     Pick a loan
+                  </p>
+                  <div className="flex gap-3">
+                     {activeLoans.map((loan) => {
+                        const isSelected = loan.id === selectedLoan?.id;
+
+                        return (
+                           <button
+                              type="button"
+                              key={loan.id}
+                              onClick={() => handleSelectLoan(loan.id)}
+                              aria-pressed={isSelected}
+                              className={`min-w-0 flex-1 rounded-2xl p-4 text-left transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
+                                 isSelected
+                                    ? 'border-2 border-[#6c3fe0] bg-[#f8f6fe] dark:bg-[#2a1740]'
+                                    : 'border-[1.5px] border-[#e9e3f8] bg-white hover:border-md-primary-300 dark:border-[#3d2a60] dark:bg-[#1e1535]'
+                              }`}
+                           >
+                              <div className="mb-2 flex items-start justify-between">
+                                 <span title={loan.reason || 'Active loan'} className={`line-clamp-1 min-h-[1.25rem] min-w-0 pr-2 text-xs font-semibold leading-snug ${isSelected ? 'text-[#6c3fe0]' : 'text-[#6b6090] dark:text-[#a095c8]'}`}>
+                                    {loan.reason || 'Active loan'}
+                                 </span>
+                                 <div
+                                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
+                                       isSelected ? 'border-[#6c3fe0] bg-[#6c3fe0]' : 'border-[#d1c4e9] bg-white dark:border-[#3d2a60] dark:bg-[#1e1535]'
+                                    }`}
+                                    aria-hidden="true"
+                                 >
+                                    {isSelected ? <div className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
+                                 </div>
+                              </div>
+                              <p className="mb-1.5 text-xs text-[#6b6090] dark:text-[#a095c8]">Remaining</p>
+                              <p className="text-lg font-bold text-[#1a1240] dark:text-white">${formatCurrency(getRemainingAmount(loan))}</p>
+                              <div className="mt-2">
+                                 <div className="h-1 overflow-hidden rounded-full bg-[#f0ebff] dark:bg-[#2a1f4f]">
+                                    <div className="h-full rounded-full bg-[#6c3fe0] transition-[width] duration-300" style={{ width: `${getProgressPercent(loan)}%` }} />
+                                 </div>
+                                 {getProgressPercent(loan) > 0 ? (
+                                    <p className="mt-1 text-[10px] font-medium text-[#6b6090] dark:text-[#a095c8]">{getProgressPercent(loan)}% paid</p>
+                                 ) : (
+                                    <p className="mt-1 text-[10px] font-medium text-[#6b6090] dark:text-[#a095c8]">Not yet paid</p>
+                                 )}
+                              </div>
+                           </button>
+                        );
+                     })}
+                  </div>
+               </section>
+            ) : null}
+
             {selectedLoan && (isShortOnFunds || effectiveJustFunded !== null) ? (
                <section className={`overflow-hidden rounded-md-xl border bg-white shadow-[0_12px_30px_rgba(79,70,229,0.10)] dark:bg-[#1a1240] ${effectiveJustFunded !== null ? 'border-[#16a34a]' : 'border-md-primary-300'}`}>
                   {effectiveJustFunded !== null ? (
@@ -1295,59 +1358,6 @@ export default function Repay() {
                   ) : null}
                   </>
                   )}
-               </section>
-            ) : null}
-
-            {activeLoans.length > 1 ? (
-               <section aria-labelledby="loan-picker-title">
-                  <p id="loan-picker-title" className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#6b6090] dark:text-[#a095c8]">
-                     Pick a loan
-                  </p>
-                  <div className="flex gap-3">
-                     {activeLoans.map((loan) => {
-                        const isSelected = loan.id === selectedLoan?.id;
-
-                        return (
-                           <button
-                              type="button"
-                              key={loan.id}
-                              onClick={() => handleSelectLoan(loan.id)}
-                              aria-pressed={isSelected}
-                              className={`min-w-0 flex-1 rounded-2xl p-4 text-left transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
-                                 isSelected
-                                    ? 'border-2 border-[#6c3fe0] bg-[#f8f6fe] dark:bg-[#2a1740]'
-                                    : 'border-[1.5px] border-[#e9e3f8] bg-white hover:border-md-primary-300 dark:border-[#3d2a60] dark:bg-[#1e1535]'
-                              }`}
-                           >
-                              <div className="mb-2 flex items-start justify-between">
-                                 <span title={loan.reason || 'Active loan'} className={`line-clamp-1 min-h-[1.25rem] min-w-0 pr-2 text-xs font-semibold leading-snug ${isSelected ? 'text-[#6c3fe0]' : 'text-[#6b6090] dark:text-[#a095c8]'}`}>
-                                    {loan.reason || 'Active loan'}
-                                 </span>
-                                 <div
-                                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
-                                       isSelected ? 'border-[#6c3fe0] bg-[#6c3fe0]' : 'border-[#d1c4e9] bg-white dark:border-[#3d2a60] dark:bg-[#1e1535]'
-                                    }`}
-                                    aria-hidden="true"
-                                 >
-                                    {isSelected ? <div className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
-                                 </div>
-                              </div>
-                              <p className="mb-1.5 text-xs text-[#6b6090] dark:text-[#a095c8]">Remaining</p>
-                              <p className="text-lg font-bold text-[#1a1240] dark:text-white">${formatCurrency(getRemainingAmount(loan))}</p>
-                              <div className="mt-2">
-                                 <div className="h-1 overflow-hidden rounded-full bg-[#f0ebff] dark:bg-[#2a1f4f]">
-                                    <div className="h-full rounded-full bg-[#6c3fe0] transition-[width] duration-300" style={{ width: `${getProgressPercent(loan)}%` }} />
-                                 </div>
-                                 {getProgressPercent(loan) > 0 ? (
-                                    <p className="mt-1 text-[10px] font-medium text-[#6b6090] dark:text-[#a095c8]">{getProgressPercent(loan)}% paid</p>
-                                 ) : (
-                                    <p className="mt-1 text-[10px] font-medium text-[#6b6090] dark:text-[#a095c8]">Not yet paid</p>
-                                 )}
-                              </div>
-                           </button>
-                        );
-                     })}
-                  </div>
                </section>
             ) : null}
 
