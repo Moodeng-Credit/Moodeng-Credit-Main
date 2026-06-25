@@ -623,14 +623,18 @@ export default function Repay() {
       }
    }, [isShortOnFunds, selectedLoanId]);
 
-   // Once the borrower's top-up lands, pre-fill the full remaining so the existing Pay Now
-   // arms itself — they just tap to pay. Only when the add-funds helper is open and they
-   // haven't already typed an amount, so partial-payers keep control.
+   // Once the borrower's top-up lands, pre-fill the amount so the bottom nav Pay button
+   // arms itself — they just tap once. Full amount when fully funded; partial balance when
+   // only some USDC has arrived. Only when the add-funds helper is open and they haven't
+   // already typed an amount.
    useEffect(() => {
-      if (showAddFunds && hasEnoughToRepay && !repaymentAmount) {
+      if (!showAddFunds || repaymentAmount) return;
+      if (hasEnoughToRepay) {
          setRepaymentAmount(formatCurrency(selectedRemaining));
+      } else if (hasPartialFunds && usdcBalance !== null) {
+         setRepaymentAmount(formatCurrency(usdcBalance));
       }
-   }, [showAddFunds, hasEnoughToRepay, repaymentAmount, selectedRemaining]);
+   }, [showAddFunds, hasEnoughToRepay, hasPartialFunds, usdcBalance, repaymentAmount, selectedRemaining]);
 
    // Detect the moment the balance crosses from short → enough so we can swap the steps for
    // an explicit "money arrived — tap Pay" confirmation. Tracking the transition (rather than
@@ -1253,15 +1257,9 @@ export default function Repay() {
                                     style={{ width: `${Math.min(99, (usdcBalance! / selectedRemaining) * 100)}%` }}
                                  />
                               </div>
-                              <button
-                                 type="button"
-                                 onClick={() => payExactAmount(usdcBalance!)}
-                                 disabled={isProcessing}
-                                 style={{ touchAction: 'manipulation' }}
-                                 className="mt-3 inline-flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#6c3fe0] bg-white text-sm font-semibold text-[#4a1fb8] transition active:scale-[0.98] disabled:opacity-60"
-                              >
-                                 Pay ${formatCurrency(usdcBalance!)} partial now
-                              </button>
+                              <p className="mt-2.5 text-[11px] text-[#6b6090]">
+                                 Tap <span className="font-semibold text-[#4a1fb8]">Pay ${formatCurrency(usdcBalance!)}</span> below to pay now, or keep waiting for the rest to arrive.
+                              </p>
                            </div>
                         ) : (
                            <div className="flex items-center gap-3 rounded-xl bg-[#f3effe] px-4 py-3.5">
