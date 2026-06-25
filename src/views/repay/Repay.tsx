@@ -272,15 +272,15 @@ function FundedCelebration({ amount }: { amount: number }) {
    return (
       <div className="px-4 py-5">
          <div className="mb-3.5 flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#dcfce7]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#dcfce7] dark:bg-[#052e16]">
                <Check className="h-5 w-5 text-[#16a34a]" aria-hidden="true" />
             </span>
             <div>
-               <p className="text-[15px] font-semibold text-[#14532d]">Received ${formatCurrency(amount)} USDC</p>
-               <p className="text-[12px] text-[#6b6090]">Preparing your repayment…</p>
+               <p className="text-[15px] font-semibold text-[#14532d] dark:text-[#86efac]">Received ${formatCurrency(amount)} USDC</p>
+               <p className="text-[12px] text-[#6b6090] dark:text-[#a095c8]">Preparing your repayment…</p>
             </div>
          </div>
-         <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#dcfce7]">
+         <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#dcfce7] dark:bg-[#052e16]">
             <div
                className="h-full rounded-full bg-[#16a34a]"
                style={{ width: `${barWidth}%`, transition: 'width 1.8s ease-in-out' }}
@@ -364,17 +364,17 @@ export default function Repay() {
             style={{ touchAction: 'manipulation' }}
             className={`flex min-h-[44px] w-full cursor-pointer items-center gap-2 rounded-2xl px-3.5 py-1.5 text-md-b2 font-semibold transition active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
                isSelected
-                  ? 'border-2 border-[#6c3fe0] bg-[#f3effe] text-[#1a1240]'
-                  : 'border border-[#e9e3f8] bg-white text-[#6b6090] hover:border-md-primary-300'
+                  ? 'border-2 border-[#6c3fe0] bg-[#f3effe] text-[#1a1240] dark:bg-[#2a1740] dark:text-white'
+                  : 'border border-[#e9e3f8] bg-white text-[#6b6090] hover:border-md-primary-300 dark:border-[#3d2a60] dark:bg-[#1e1535] dark:text-[#a095c8]'
             }`}
          >
             {renderSourceLogo(source.id, false)}
             <span className="flex min-w-0 flex-1 items-center gap-1.5">
                {source.label}
                {sourceFee === 0 ? (
-                  <span className="rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[10px] font-bold text-[#16a34a]">Free</span>
+                  <span className="rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[10px] font-bold text-[#16a34a] dark:bg-[#052e16]">Free</span>
                ) : (
-                  <span className="rounded-full bg-[#ede9f8] px-1.5 py-0.5 text-[10px] font-bold text-[#6b6090]">Small fee</span>
+                  <span className="rounded-full bg-[#ede9f8] px-1.5 py-0.5 text-[10px] font-bold text-[#6b6090] dark:bg-[#2a1f4f] dark:text-[#a095c8]">Small fee</span>
                )}
             </span>
          </button>
@@ -396,14 +396,14 @@ export default function Repay() {
             style={{ touchAction: 'manipulation' }}
             className={`flex w-full cursor-pointer items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-left transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
                isSelected
-                  ? 'border-2 border-[#6c3fe0] bg-[#f3effe]'
-                  : 'border border-[#c4b0f5] bg-[#f8f5ff] hover:border-md-primary-300'
+                  ? 'border-2 border-[#6c3fe0] bg-[#f3effe] dark:bg-[#2a1740]'
+                  : 'border border-[#c4b0f5] bg-[#f8f5ff] hover:border-md-primary-300 dark:border-[#3d2a60] dark:bg-[#1e1535]'
             }`}
          >
             {renderSourceLogo(source.id, false)}
             <span className="min-w-0 flex-1">
                <span className="flex items-center gap-1.5">
-                  <span className="text-sm font-bold text-[#1a1240]">{source.label}</span>
+                  <span className="text-sm font-bold text-[#1a1240] dark:text-white">{source.label}</span>
                   {sourceFee === 0 ? (
                      <span className="rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[10px] font-bold text-[#16a34a]">Free</span>
                   ) : (
@@ -1021,7 +1021,7 @@ export default function Repay() {
             </header>
 
             {selectedLoan && (isShortOnFunds || effectiveJustFunded !== null) ? (
-               <section className={`overflow-hidden rounded-md-xl border bg-white shadow-[0_12px_30px_rgba(79,70,229,0.10)] ${effectiveJustFunded !== null ? 'border-[#16a34a]' : 'border-md-primary-300'}`}>
+               <section className={`overflow-hidden rounded-md-xl border bg-white shadow-[0_12px_30px_rgba(79,70,229,0.10)] dark:bg-[#1a1240] ${effectiveJustFunded !== null ? 'border-[#16a34a]' : 'border-md-primary-300'}`}>
                   {effectiveJustFunded !== null ? (
                      <FundedCelebration amount={effectiveJustFunded} />
                   ) : (
@@ -1030,7 +1030,7 @@ export default function Repay() {
                      type="button"
                      onClick={() => setShowAddFunds((open) => !open)}
                      aria-expanded={showAddFunds}
-                     className="flex w-full items-center gap-3 bg-[linear-gradient(135deg,#f4f1ff_0%,#ffffff_60%)] px-4 py-3.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300"
+                     className="flex w-full items-center gap-3 bg-[linear-gradient(135deg,#f4f1ff_0%,#ffffff_60%)] px-4 py-3.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 dark:bg-none dark:bg-[#1e1535]"
                   >
                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md-pill bg-[linear-gradient(135deg,#7c5cff_0%,#4f46e5_100%)] text-white shadow-[0_4px_12px_rgba(79,70,229,0.35)]">
                         <Wallet className="h-5 w-5" aria-hidden="true" />
@@ -1058,10 +1058,10 @@ export default function Repay() {
                         <div>
                            <div className="mb-2 flex items-center gap-2">
                               <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[11px] font-bold text-white">1</span>
-                              <p className="text-sm font-semibold text-[#1a1240]">Choose your source</p>
+                              <p className="text-sm font-semibold text-[#1a1240] dark:text-white">Choose your source</p>
                            </div>
                            {geoLoading ? (
-                              <div className="flex items-center justify-center gap-2 py-6 text-sm text-[#6b6090]">
+                              <div className="flex items-center justify-center gap-2 py-6 text-sm text-[#6b6090] dark:text-[#a095c8]">
                                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                                  Loading your options…
                               </div>
@@ -1095,7 +1095,7 @@ export default function Repay() {
                                                    type="button"
                                                    onClick={() => setShowMoreSources((value) => !value)}
                                                    aria-expanded={expanded}
-                                                   className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-1 cursor-pointer text-xs font-semibold text-[#6b6090] transition hover:text-[#6c3fe0]"
+                                                   className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-1 cursor-pointer text-xs font-semibold text-[#6b6090] transition hover:text-[#6c3fe0] dark:text-[#a095c8]"
                                                    style={{ touchAction: 'manipulation' }}
                                                 >
                                                    {expanded ? 'Fewer options' : 'Other options'}
@@ -1123,16 +1123,16 @@ export default function Repay() {
                            <div>
                               <div className="mb-2 flex items-center gap-2">
                                  <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[11px] font-bold text-white">2</span>
-                                 <p className="text-sm font-semibold text-[#1a1240]">Copy your wallet address</p>
+                                 <p className="text-sm font-semibold text-[#1a1240] dark:text-white">Copy your wallet address</p>
                               </div>
-                              <p className="mb-3 text-xs text-[#6b6090]">
+                              <p className="mb-3 text-xs text-[#6b6090] dark:text-[#a095c8]">
                                  {activeSource.id === 'moneybees'
                                     ? <>This is the same wallet your loan was sent to. Copy it — you'll share it with Moneybees so they send your USDC here.</>
                                     : <>This is the same wallet your loan was sent to. Copy it — you'll paste it into {activeSource.label} as the destination.</>}
                               </p>
-                              <div className="rounded-2xl bg-[#f5f4fa] p-4">
-                                 <p className="text-xs text-[#6b6090]">Your USDC wallet</p>
-                                 <p className="mt-1.5 truncate font-mono text-[22px] font-extrabold leading-tight text-[#1a1240]">
+                              <div className="rounded-2xl bg-[#f5f4fa] p-4 dark:bg-[#2a1740]">
+                                 <p className="text-xs text-[#6b6090] dark:text-[#a095c8]">Your USDC wallet</p>
+                                 <p className="mt-1.5 truncate font-mono text-[22px] font-extrabold leading-tight text-[#1a1240] dark:text-white">
                                     {formatWalletAddressShort(repayWalletAddress)}
                                  </p>
                                  <button
@@ -1141,7 +1141,7 @@ export default function Repay() {
                                     className={`mt-3 inline-flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-md-xl text-md-b2 font-semibold transition-colors duration-200 active:scale-[0.98] ${
                                        copiedAddress
                                           ? 'bg-[#16a34a] text-white'
-                                          : 'border border-[#e9e3f8] bg-white text-md-heading'
+                                          : 'border border-[#e9e3f8] bg-white text-md-heading dark:border-[#3d2a60] dark:bg-[#1a1240]'
                                     }`}
                                  >
                                     {copiedAddress ? (
@@ -1164,32 +1164,32 @@ export default function Repay() {
                            <div>
                               <div className="mb-2 flex items-center gap-2">
                                  <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[11px] font-bold text-white">3</span>
-                                 <p className="text-sm font-semibold text-[#1a1240]">{activeSource.action}</p>
+                                 <p className="text-sm font-semibold text-[#1a1240] dark:text-white">{activeSource.action}</p>
                               </div>
 
                               {/* Instruction card */}
                               {activeSource.id === 'moneybees' ? (
-                                 <div className="mb-3 rounded-xl bg-[#f3effe] px-4 py-3.5">
+                                 <div className="mb-3 rounded-xl bg-[#f3effe] px-4 py-3.5 dark:bg-[#1e1535]">
                                     <p className="mb-2.5 text-[11px] font-bold uppercase tracking-wide text-[#6c3fe0]">How it works</p>
                                     <div className="space-y-2">
                                        {(['Message on Telegram, Viber or WhatsApp', 'Quick ID check — takes about 1 min', 'Share your address · pay only after they confirm'] as const).map((step, i) => (
                                           <div key={i} className="flex items-start gap-2.5">
                                              <span className="mt-0.5 flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold text-white">{i + 1}</span>
-                                             <span className="text-[12px] font-medium leading-snug text-[#3d1a8a]">{step}</span>
+                                             <span className="text-[12px] font-medium leading-snug text-[#3d1a8a] dark:text-[#c4b5fd]">{step}</span>
                                           </div>
                                        ))}
                                     </div>
-                                    <p className="mt-2.5 text-[11px] leading-snug text-[#6b6090]">A real person guides you — no app menus to navigate.</p>
+                                    <p className="mt-2.5 text-[11px] leading-snug text-[#6b6090] dark:text-[#a095c8]">A real person guides you — no app menus to navigate.</p>
                                  </div>
                               ) : (
-                                 <div className="mb-3 rounded-xl bg-[#f3effe] px-4 py-3.5">
+                                 <div className="mb-3 rounded-xl bg-[#f3effe] px-4 py-3.5 dark:bg-[#1e1535]">
                                     <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-[#6c3fe0]">In {activeSource.label}</p>
-                                    <p className="text-[12px] font-semibold leading-relaxed text-[#1a1240]">
+                                    <p className="text-[12px] font-semibold leading-relaxed text-[#1a1240] dark:text-white">
                                        {FUND_SOURCE_PATHS[activeSource.id]}
                                     </p>
-                                    <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-[#ede9f8] px-2.5 py-1.5">
+                                    <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-[#ede9f8] px-2.5 py-1.5 dark:bg-[#2a1f4f]">
                                        <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#6c3fe0]" aria-hidden="true" />
-                                       <span className="text-[11px] font-semibold text-[#4a1fb8]">Use <strong>Base</strong> network — not Ethereum or Polygon</span>
+                                       <span className="text-[11px] font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">Use <strong>Base</strong> network — not Ethereum or Polygon</span>
                                     </div>
                                  </div>
                               )}
@@ -1210,16 +1210,16 @@ export default function Repay() {
                                  const fee = FUND_SOURCE_FEES[activeSource.id];
                                  if (fee === 0) return null;
                                  return (
-                                    <div className="mt-2.5 rounded-xl bg-[#f8f7fb] px-3.5 py-3">
+                                    <div className="mt-2.5 rounded-xl bg-[#f8f7fb] px-3.5 py-3 dark:bg-[#1e1535]">
                                        <div className="flex items-center justify-between text-[12px]">
-                                          <span className="flex items-center gap-2 text-[#6b6090]">
+                                          <span className="flex items-center gap-2 text-[#6b6090] dark:text-[#a095c8]">
                                              {renderSourceLogo(activeSource.id, false)}
                                              {activeSource.label}'s fee
                                           </span>
-                                          <span className="rounded-full bg-[#ede9f8] px-2 py-0.5 text-[10px] font-bold text-[#6b6090]">Small fee</span>
+                                          <span className="rounded-full bg-[#ede9f8] px-2 py-0.5 text-[10px] font-bold text-[#6b6090] dark:bg-[#2a1f4f] dark:text-[#a095c8]">Small fee</span>
                                        </div>
-                                       <div className="mt-2 flex items-center justify-between border-t border-[#ede9f8] pt-2 text-[12px]">
-                                          <span className="flex items-center gap-2 text-[#6b6090]">
+                                       <div className="mt-2 flex items-center justify-between border-t border-[#ede9f8] pt-2 text-[12px] dark:border-[#2a1f4f]">
+                                          <span className="flex items-center gap-2 text-[#6b6090] dark:text-[#a095c8]">
                                              <ShieldCheck className="h-3.5 w-3.5 text-[#6c3fe0]" aria-hidden="true" />
                                              Moodeng fee
                                           </span>
@@ -1228,7 +1228,7 @@ export default function Repay() {
                                              <Check className="h-3 w-3" aria-hidden="true" />
                                           </span>
                                        </div>
-                                       <p className="mt-2 text-[11px] leading-snug text-[#6b6090]">
+                                       <p className="mt-2 text-[11px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
                                           Send a little extra to cover {activeSource.label}'s fee — Moodeng never charges to repay.
                                        </p>
                                     </div>
@@ -1239,47 +1239,47 @@ export default function Repay() {
 
                         {/* ── Transfer status card ──────────────────────── */}
                         {usdcBalance === null ? (
-                           <div className="flex items-center gap-3 rounded-xl bg-[#f3effe] px-4 py-3">
+                           <div className="flex items-center gap-3 rounded-xl bg-[#f3effe] px-4 py-3 dark:bg-[#1e1535]">
                               <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#6c3fe0]" aria-hidden="true" />
-                              <span className="text-sm font-semibold text-[#3d1a8a]">Checking your balance…</span>
+                              <span className="text-sm font-semibold text-[#3d1a8a] dark:text-[#c4b5fd]">Checking your balance…</span>
                            </div>
                         ) : hasEnoughToRepay ? (
-                           <div className="flex items-center gap-3 rounded-xl bg-[#dcfce7] px-4 py-3">
+                           <div className="flex items-center gap-3 rounded-xl bg-[#dcfce7] px-4 py-3 dark:bg-[#052e16]">
                               <Check className="h-4 w-4 shrink-0 text-[#16a34a]" aria-hidden="true" />
-                              <span className="text-sm font-semibold text-[#14532d]">Funds ready</span>
+                              <span className="text-sm font-semibold text-[#14532d] dark:text-[#86efac]">Funds ready</span>
                            </div>
                         ) : hasPartialFunds ? (
-                           <div className="rounded-xl bg-[#f3effe] px-4 py-3.5">
+                           <div className="rounded-xl bg-[#f3effe] px-4 py-3.5 dark:bg-[#1e1535]">
                               <div className="mb-2 flex items-center justify-between text-[12px]">
-                                 <span className="font-semibold text-[#3d1a8a]">${formatCurrency(usdcBalance!)} USDC received</span>
-                                 <span className="text-[#6b6090]">${formatCurrency(selectedRemaining)} needed</span>
+                                 <span className="font-semibold text-[#3d1a8a] dark:text-[#c4b5fd]">${formatCurrency(usdcBalance!)} USDC received</span>
+                                 <span className="text-[#6b6090] dark:text-[#a095c8]">${formatCurrency(selectedRemaining)} needed</span>
                               </div>
-                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#e0d9f8]">
+                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#e0d9f8] dark:bg-[#2a1f4f]">
                                  <div
                                     className="h-full rounded-full bg-[#6c3fe0] transition-all duration-500"
                                     style={{ width: `${Math.min(99, (usdcBalance! / selectedRemaining) * 100)}%` }}
                                  />
                               </div>
-                              <p className="mt-2.5 text-[11px] text-[#6b6090]">
-                                 Tap <span className="font-semibold text-[#4a1fb8]">Pay ${formatCurrency(usdcBalance!)}</span> below to pay now, or keep waiting for the rest to arrive.
+                              <p className="mt-2.5 text-[11px] text-[#6b6090] dark:text-[#a095c8]">
+                                 Tap <span className="font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">Pay ${formatCurrency(usdcBalance!)}</span> below to pay now, or keep waiting for the rest to arrive.
                               </p>
                            </div>
                         ) : (
-                           <div className="flex items-center gap-3 rounded-xl bg-[#f3effe] px-4 py-3.5">
+                           <div className="flex items-center gap-3 rounded-xl bg-[#f3effe] px-4 py-3.5 dark:bg-[#1e1535]">
                               <div className="relative flex h-5 w-5 shrink-0 items-center justify-center">
                                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#6c3fe0] opacity-25" />
                                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#6c3fe0]" />
                               </div>
                               <div>
-                                 <p className="text-sm font-semibold text-[#3d1a8a]">Watching for your transfer</p>
-                                 <p className="text-[11px] text-[#6b6090]">Detects automatically — usually under a minute</p>
+                                 <p className="text-sm font-semibold text-[#3d1a8a] dark:text-[#c4b5fd]">Watching for your transfer</p>
+                                 <p className="text-[11px] text-[#6b6090] dark:text-[#a095c8]">Detects automatically — usually under a minute</p>
                               </div>
                            </div>
                         )}
 
                         {/* ── Safety note + help ───────────────────────── */}
                         <div className="flex items-center justify-between px-0.5 text-[12px]">
-                           <span className="flex items-center gap-1.5 text-[#6b6090]">
+                           <span className="flex items-center gap-1.5 text-[#6b6090] dark:text-[#a095c8]">
                               <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#6c3fe0]" aria-hidden="true" />
                               Safe · goes to your wallet → loan
                            </span>
