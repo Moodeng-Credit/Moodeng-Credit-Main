@@ -1,11 +1,10 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AlertTriangle, ArrowLeft, Check, ChevronDown, Clock, Copy, ExternalLink, Loader2, ShieldCheck, Wallet } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
-import { useAccount, useConnect, useReadContract } from 'wagmi';
+import { useAccount, useConnect, useReadContract, useWatchContractEvent } from 'wagmi';
 
 import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -13,6 +12,7 @@ import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import UserAvatar from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 
+import { useGeoCheck } from '@/hooks/useGeoCheck';
 import { useLoanData } from '@/hooks/useLoanData';
 import useWallet from '@/hooks/useWallet';
 
@@ -43,30 +43,97 @@ const quickRepaymentFractions = [
 
 // Places a borrower can buy USDC and send it to their Base Account. The repay flow is the
 // same for all (send USDC on Base to the address below); only the "open" link differs.
+// The source list is geo-tailored (see `inPhilippines`). In the Philippines we surface the
+// local cash-out rails — Moneybees leads (it has live chat, best for first-timers), Coins.ph
+// is the featured exchange, GCrypto/PDAX sit under "Other options"; Binance is hidden since
+// it's banned in PH. Abroad those local rails aren't usable, so Binance is shown instead.
 const fundSources = [
-   { id: 'binance', label: 'Binance', action: 'Open Binance', href: 'https://www.binance.com/en/my/wallet/account/main/withdrawal/crypto/USDC' },
+   { id: 'moneybees', label: 'Moneybees', action: 'Chat with Moneybees', href: 'https://www.moneybees.ph' },
+   { id: 'coinsph', label: 'Coins.ph', action: 'Open Coins.ph', href: 'https://coins.ph' },
+   { id: 'gcrypto', label: 'GCrypto', action: 'Open GCrypto', href: 'https://www.gcash.com' },
    { id: 'pdax', label: 'PDAX', action: 'Open PDAX', href: 'https://www.pdax.ph' },
-   { id: 'moneybees', label: 'Moneybees', action: 'Find Moneybees', href: 'https://www.moneybees.ph' }
+   { id: 'binance', label: 'Binance', action: 'Open Binance', href: 'https://www.binance.com/en/my/wallet/account/main/withdrawal/crypto/USDC' }
 ] as const;
 
 type FundSourceId = (typeof fundSources)[number]['id'];
 
-const renderSourceLogo = (id: FundSourceId) => {
-   if (id === 'binance') {
+// Only the free/not-free distinction is shown to users now (0 = free, anything else = a small
+// fee). The exact cents are no longer displayed — they vary and the exchange shows the real
+// figure at withdrawal — but the values are kept here as the free-vs-small-fee signal.
+const FUND_SOURCE_FEES: Record<FundSourceId, number | null> = {
+   moneybees: 0,
+   coinsph: null,
+   gcrypto: 0.08,
+   pdax: 0.08,
+   binance: 0.20
+};
+
+// Short pitch shown under the hero (primary) source so the recommendation explains itself.
+const SOURCE_SUBTITLE: Partial<Record<FundSourceId, string>> = {
+   moneybees: 'Recommended · live chat if you get stuck',
+   binance: 'Best option outside the Philippines'
+};
+
+// Step-by-step path shown to the user. The exchanges are self-service apps; Moneybees is an
+// assisted, chat-based OTC service (no in-app deposit-address flow), so its "path" is the chat
+// hand-off. Interim wording until the official Moneybees partnership is in place.
+const FUND_SOURCE_PATHS: Record<FundSourceId, string> = {
+   moneybees: 'Message on Telegram, Viber or WhatsApp → quick ID check → share your wallet address → pay only after they confirm',
+   coinsph: 'Crypto → USDC → Withdraw → Network: Base → Paste wallet address',
+   gcrypto: 'GCash app → GCrypto → USDC → Withdraw → Network: Base',
+   pdax: 'Wallet → USDC → Withdraw → Network: Base → Paste wallet address',
+   binance: 'Wallet → Withdraw → USDC → Network: Base → Paste wallet address',
+};
+
+const renderSourceLogo = (id: FundSourceId, isSelected = false) => {
+   if (id === 'moneybees') {
+      // Yellow hexagon stays readable on both white and purple backgrounds
       return (
-         <svg className="h-4 w-4 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <circle cx="8" cy="8" r="7" fill="#F0B90B" />
-            <path
-               d="M5.5 6.5 8 4l2.5 2.5-1 1L8 6 6.5 7.5l-1-1Zm-1.5 1.5L8 4l4 4-1.5 1.5L8 7 5.5 9.5 4 8Zm3.5 3.5L5.5 9.5l1-1L8 10l1.5-1.5 1 1L8 12Z"
-               fill="#fff"
-            />
+         <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M10 1L17.5 5.25V13.75L10 18L2.5 13.75V5.25L10 1Z" fill="#F7B700" stroke={isSelected ? 'rgba(255,255,255,0.4)' : '#111'} strokeWidth="1.8" strokeLinejoin="round" />
+            <path d="M10 5.5L14 7.75L10 10L6 7.75L10 5.5Z" fill="white" />
+            <path d="M6 7.75V11.75L10 14V10L6 7.75Z" fill="#e5a800" />
+            <path d="M14 7.75V11.75L10 14V10L14 7.75Z" fill={isSelected ? 'rgba(0,0,0,0.35)' : '#1a1a1a'} />
+         </svg>
+      );
+   }
+   if (id === 'gcrypto') {
+      return (
+         <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="9" cy="10" r="8.5" stroke={isSelected ? 'rgba(255,255,255,0.6)' : '#00AEEF'} strokeWidth="1.5" fill="none" />
+            <path d="M14 8.5H10V10.5H12.5C12.1 11.8 10.9 12.5 9.5 12.5C7.6 12.5 6 11 6 9C6 7 7.6 5.5 9.5 5.5C10.4 5.5 11.3 5.9 11.9 6.5L13.3 5.1C12.3 4.2 10.9 3.5 9.5 3.5C6.5 3.5 4 6 4 9C4 12 6.5 14.5 9.5 14.5C12.5 14.5 15 12 15 9V8.5H14Z" fill={isSelected ? 'white' : '#0050A0'} />
          </svg>
       );
    }
    if (id === 'pdax') {
-      return <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-md-pill bg-[#0bb5a3] text-[9px] font-bold text-white">P</span>;
+      return (
+         <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            {!isSelected && <circle cx="10" cy="10" r="10" fill="#1B2A4A" />}
+            <path d="M5 14.5L7.8 5.5H10.2L7.4 14.5H5Z" fill={isSelected ? 'white' : '#00D097'} />
+            <path d="M9.8 14.5L12.6 5.5H15L12.2 14.5H9.8Z" fill={isSelected ? 'white' : '#00D097'} />
+         </svg>
+      );
    }
-   return <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-md-pill bg-[#f5a623] text-[9px] font-bold text-white">M</span>;
+   if (id === 'coinsph') {
+      // Gold ring + blue circle + white C — colors stay distinct on both white and purple backgrounds
+      return (
+         <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="10" fill="#E9A200" />
+            <circle cx="10" cy="10" r="8" fill="#3B60C4" />
+            <path d="M13.2 6.2 A5 5 0 1 0 13.2 13.8" stroke="white" strokeWidth="2.8" strokeLinecap="round" />
+         </svg>
+      );
+   }
+   if (id === 'binance') {
+      // Black circle + yellow BNB diamond mark
+      return (
+         <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="12" fill="#0B0E11" />
+            <path fill="#F3BA2F" d="m16.624 13.92 2.717 2.716-7.353 7.353-7.352-7.352 2.717-2.717 4.636 4.66 4.635-4.66zm4.637-4.636L24 12l-2.715 2.716L18.568 12l2.693-2.716zm-9.272 0 2.716 2.692-2.717 2.717L9.272 12l2.716-2.715zm-9.273 0L5.41 12l-2.692 2.692L0 12l2.716-2.716zM11.99.01l7.352 7.33-2.717 2.715-4.636-4.636-4.635 4.66-2.717-2.716L11.989.011z" />
+         </svg>
+      );
+   }
+   return null;
 };
 
 const getRemainingAmount = (loan: Loan): number => Math.max(0, toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount));
@@ -204,6 +271,7 @@ export default function Repay() {
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
    const usePreviewLoans = shouldUsePreviewLoans(location.search, location.pathname);
+   const { allowed: geoAllowed, loading: geoLoading } = useGeoCheck(usePreviewLoans);
    const repayLoans = usePreviewLoans ? previewLoans : loans;
    const { hasFetched: hasCheckedRepayLoans, isLoading: isCheckingRepayLoans } = useLoanData({
       userId: user.id,
@@ -232,9 +300,87 @@ export default function Repay() {
    // short on USDC. It shows their own Base Account address + QR and watches their public
    // on-chain balance — Moodeng never receives or forwards the money.
    const [showAddFunds, setShowAddFunds] = useState(true);
-   const [fundSource, setFundSource] = useState<FundSourceId>('binance');
+   const [fundSource, setFundSource] = useState<FundSourceId>('moneybees');
    const [copiedAddress, setCopiedAddress] = useState(false);
+   // The two recommended sources (Moneybees, Coins.ph) show by default; GCrypto/PDAX stay
+   // collapsed so a first-timer isn't asked to evaluate four exchanges at once.
+   const [showMoreSources, setShowMoreSources] = useState(false);
+   // Records which loan crossed short→funded so we can show an explicit "money arrived"
+   // confirmation. Tying it to the loan id (rather than a bare boolean) means it clears
+   // itself on loan switch and never flags borrowers who already had enough on arrival.
+   const [fundedLoanId, setFundedLoanId] = useState<string | null>(null);
+   const wasShortRef = useRef(false);
    const activeSource = fundSources.find((source) => source.id === fundSource) ?? fundSources[0];
+
+   // Compact source button used for Coins.ph and the "Other options" exchanges. Keeps the
+   // fee/free indicator visible even after selection so the reassurance never disappears.
+   const renderSourcePill = (source: (typeof fundSources)[number]) => {
+      const isSelected = fundSource === source.id;
+      const sourceFee = FUND_SOURCE_FEES[source.id];
+      // Only Moneybees is free; everything else carries a small fee (fixed or variable).
+      const feeTag =
+         sourceFee === 0 ? (
+            <span className="text-[10px] font-bold text-[#16a34a]">Free</span>
+         ) : (
+            <span className="text-[10px] font-semibold text-[#6b6090]">Small fee</span>
+         );
+
+      return (
+         <button
+            type="button"
+            key={source.id}
+            onClick={() => setFundSource(source.id)}
+            aria-pressed={isSelected}
+            className={`flex min-h-[44px] w-full items-center gap-2.5 rounded-2xl px-3.5 py-1.5 text-md-b2 font-semibold transition active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
+               isSelected
+                  ? 'border-2 border-[#6c3fe0] bg-[#f3effe] text-[#1a1240]'
+                  : 'border border-[#e9e3f8] bg-white text-[#6b6090] hover:border-md-primary-300'
+            }`}
+         >
+            {renderSourceLogo(source.id, false)}
+            {source.label}
+            <span className="ml-auto flex shrink-0 items-center gap-1.5">
+               {feeTag}
+               {isSelected ? <Check className="h-4 w-4 text-[#6c3fe0]" aria-hidden="true" /> : null}
+            </span>
+         </button>
+      );
+   };
+
+   // Prominent, full-width primary source (Moneybees in PH, Binance abroad). Carries a short
+   // pitch from SOURCE_SUBTITLE plus its fee/free indicator, kept visible after selection.
+   const renderHeroSource = (source: (typeof fundSources)[number]) => {
+      const isSelected = fundSource === source.id;
+      const sourceFee = FUND_SOURCE_FEES[source.id];
+      const subtitle = SOURCE_SUBTITLE[source.id];
+
+      return (
+         <button
+            type="button"
+            onClick={() => setFundSource(source.id)}
+            aria-pressed={isSelected}
+            className={`flex w-full items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-left transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
+               isSelected
+                  ? 'border-2 border-[#6c3fe0] bg-[#f3effe]'
+                  : 'border border-[#c4b0f5] bg-[#f8f5ff] hover:border-md-primary-300'
+            }`}
+         >
+            {renderSourceLogo(source.id, false)}
+            <span className="min-w-0 flex-1">
+               <span className="block text-sm font-bold text-[#1a1240]">{source.label}</span>
+               {subtitle ? <span className="block text-[11px] font-medium text-[#6c3fe0]">{subtitle}</span> : null}
+            </span>
+            <span className="flex shrink-0 items-center gap-1.5">
+               {sourceFee === 0 ? (
+                  <span className="text-[10px] font-bold text-[#16a34a]">Free</span>
+               ) : (
+                  <span className="text-[10px] font-semibold text-[#6b6090]">Small fee</span>
+               )}
+               {isSelected ? <Check className="h-4 w-4 text-[#6c3fe0]" aria-hidden="true" /> : null}
+            </span>
+         </button>
+      );
+   };
    const amountInputRef = useRef<HTMLInputElement>(null);
    // Synchronous re-entrancy guard. `isProcessing` is React state, so on a fast double-tap
    // both calls read the stale `false` and each fires its own Transfer — opening a second
@@ -245,6 +391,10 @@ export default function Repay() {
    // connected, an effect resumes the repayment automatically so connecting and paying are
    // a single intent rather than two separate taps.
    const pendingRepayRef = useRef(false);
+   // Set when the in-card "Pay partial now" button is tapped: it fills the amount, then an
+   // effect fires the payment once that amount commits — so paying is a single tap, not a
+   // "fill here, then find Pay in the nav bar" two-step.
+   const pendingAmountPayRef = useRef(false);
 
    useEffect(() => {
       if (activeLoans.length === 0) {
@@ -418,7 +568,7 @@ export default function Repay() {
    // Watch the borrower's own Base Account USDC balance so we can tell them when their
    // top-up has landed. This reads a public on-chain balance — it is not custody. Only poll
    // while the funding helper is open to avoid hammering the RPC for everyone.
-   const { data: usdcBalanceRaw } = useReadContract({
+   const { data: usdcBalanceRaw, refetch: refetchBalance } = useReadContract({
       abi: erc20Abi,
       address: BASE_USDC_ADDRESS,
       functionName: 'balanceOf',
@@ -426,7 +576,7 @@ export default function Repay() {
       chainId: ALLOWED_CHAIN_ID,
       query: {
          enabled: Boolean(repayWalletAddress) && Boolean(selectedLoan) && !usePreviewLoans,
-         refetchInterval: 12000
+         refetchInterval: 30000 // backstop if WebSocket misses an event
       }
    });
    // USDC has 6 decimals. In the preview host, mock a partial balance so the add-funds card,
@@ -435,10 +585,37 @@ export default function Repay() {
    const fundingShortfall = usdcBalance !== null ? Math.max(0, Math.round((selectedRemaining - usdcBalance) * 100) / 100) : null;
    const hasEnoughToRepay = usdcBalance !== null && usdcBalance >= selectedRemaining - 0.005;
    const isShortOnFunds = fundingShortfall !== null && fundingShortfall > 0;
+   const hasPartialFunds = usdcBalance !== null && usdcBalance > 0 && isShortOnFunds;
+   // True only for the loan that just crossed short→funded — drives the success handoff.
+   const justFunded = selectedLoanId !== null && fundedLoanId === selectedLoanId && !isShortOnFunds;
 
-   // When we learn the borrower doesn't hold enough USDC to repay, surface the Binance
-   // top-up helper automatically so the next step is visible without hunting for it. Runs
-   // only when the shortfall state flips or the loan changes, so a manual close stays closed.
+   // Subscribe to incoming USDC Transfer events on Base so the UI updates within ~1-2s
+   // of the deposit landing — no polling delay. Only active while short on funds.
+   useWatchContractEvent({
+      address: BASE_USDC_ADDRESS,
+      abi: erc20Abi,
+      eventName: 'Transfer',
+      args: repayWalletAddress ? { to: repayWalletAddress as `0x${string}` } : undefined,
+      chainId: ALLOWED_CHAIN_ID,
+      enabled: Boolean(repayWalletAddress) && Boolean(selectedLoan) && !usePreviewLoans && isShortOnFunds,
+      onLogs: () => { refetchBalance(); }
+   });
+
+   // Keep the selected source valid for the user's location once geo resolves: abroad only
+   // Binance is offered, while in PH Binance is hidden, so fall back to the recommended
+   // local rail. Skipped during loading so we don't flip away from the PH default.
+   useEffect(() => {
+      if (geoLoading) return;
+      if (!geoAllowed) {
+         setFundSource('binance');
+      } else {
+         setFundSource((current) => (current === 'binance' ? 'moneybees' : current));
+      }
+   }, [geoAllowed, geoLoading]);
+
+   // When we learn the borrower doesn't hold enough USDC to repay, surface the add-funds
+   // helper automatically so the next step is visible without hunting for it. Runs only
+   // when the shortfall state flips or the loan changes, so a manual close stays closed.
    useEffect(() => {
       if (isShortOnFunds) {
          setShowAddFunds(true);
@@ -453,6 +630,18 @@ export default function Repay() {
          setRepaymentAmount(formatCurrency(selectedRemaining));
       }
    }, [showAddFunds, hasEnoughToRepay, repaymentAmount, selectedRemaining]);
+
+   // Detect the moment the balance crosses from short → enough so we can swap the steps for
+   // an explicit "money arrived — tap Pay" confirmation. Tracking the transition (rather than
+   // just hasEnoughToRepay) means we don't flag borrowers who already had funds on arrival.
+   useEffect(() => {
+      if (isShortOnFunds) {
+         wasShortRef.current = true;
+      } else if (wasShortRef.current && hasEnoughToRepay) {
+         wasShortRef.current = false;
+         setFundedLoanId(selectedLoanId);
+      }
+   }, [isShortOnFunds, hasEnoughToRepay, selectedLoanId]);
 
    const handleRepay = useCallback(async () => {
       if (!selectedLoan || isProcessing || repayInFlightRef.current) {
@@ -634,6 +823,32 @@ export default function Repay() {
       void handleRepayRef.current();
    }, []);
 
+   // Fires the payment once an in-card Pay button's amount has committed to state.
+   // Declared after the ref-sync effect so handleRepayRef points at the up-to-date closure.
+   useEffect(() => {
+      if (pendingAmountPayRef.current && repaymentAmount) {
+         pendingAmountPayRef.current = false;
+         void handleRepayRef.current();
+      }
+   }, [repaymentAmount]);
+
+   // One-tap pay for the in-card buttons (partial top-up + "money arrived" success): set the
+   // amount and pay in the same gesture, so the borrower never has to find Pay in the nav bar
+   // afterwards. If the amount is already set, pay immediately (no state change to await).
+   const payExactAmount = useCallback(
+      (value: number) => {
+         const amount = formatCurrency(value);
+         setShowAddFunds(false);
+         if (repaymentAmount === amount) {
+            void handleRepayRef.current();
+         } else {
+            pendingAmountPayRef.current = true;
+            setRepaymentAmount(amount);
+         }
+      },
+      [repaymentAmount]
+   );
+
    const bottomNavRepayAction = useMemo(
       () =>
          selectedLoan && !completion
@@ -652,6 +867,12 @@ export default function Repay() {
    );
 
    useBottomNavPrimaryAction(bottomNavRepayAction);
+
+   // Geo no longer gates the page — anyone (including Filipinos abroad) can repay. It only
+   // tailors the fund-source list: in the Philippines we surface the local cash-out rails;
+   // abroad those aren't usable, so Binance leads instead. We don't assume a location while
+   // the check is still resolving — the source list shows a loader until `geoLoading` clears.
+   const inPhilippines = geoAllowed;
 
    const shouldShowLoanCheckLoading =
       !usePreviewLoans && Boolean(user.id) && activeLoans.length === 0 && (!hasCheckedRepayLoans || isCheckingRepayLoans);
@@ -728,22 +949,32 @@ export default function Repay() {
             .repay-page input.repay-slider::-webkit-slider-thumb {
                -webkit-appearance: none;
                appearance: none;
-               width: 22px;
-               height: 22px;
+               width: 18px;
+               height: 18px;
                border-radius: 9999px;
                background: #ffffff;
-               border: 2.5px solid #6010d2;
-               box-shadow: 0 2px 8px rgba(96, 16, 210, 0.3);
+               border: 2px solid #6010d2;
+               box-shadow: 0 2px 6px rgba(96, 16, 210, 0.25);
                cursor: pointer;
             }
             .repay-page input.repay-slider::-moz-range-thumb {
-               width: 22px;
-               height: 22px;
+               width: 18px;
+               height: 18px;
                border-radius: 9999px;
                background: #ffffff;
-               border: 2.5px solid #6010d2;
-               box-shadow: 0 2px 8px rgba(96, 16, 210, 0.3);
+               border: 2px solid #6010d2;
+               box-shadow: 0 2px 6px rgba(96, 16, 210, 0.25);
                cursor: pointer;
+            }
+            @keyframes trust-badge-in {
+               from { opacity: 0; transform: scale(0.82) translateY(6px); }
+               to   { opacity: 1; transform: scale(1)    translateY(0); }
+            }
+            .repay-page .trust-badge {
+               animation: trust-badge-in 0.2s cubic-bezier(0.34,1.56,0.64,1) both;
+            }
+            @media (prefers-reduced-motion: reduce) {
+               .repay-page .trust-badge { animation: none; }
             }
             /* Indeterminate "watching" bar: a segment bounces left↔right, grayer toward its
                trailing (right) edge. */
@@ -775,7 +1006,7 @@ export default function Repay() {
                   </button>
                   <div>
                      <h1 className="text-md-h3 font-semibold text-md-heading">Repay</h1>
-                     <p className="mt-1 text-md-b2 text-md-neutral-1200">Choose a loan, enter an amount, and confirm.</p>
+                     <p className="mt-1 text-md-b2 text-md-neutral-1200">Choose a loan and enter an amount.</p>
                   </div>
                </div>
                <UserAvatar alt={user.displayName ?? user.username ?? 'Profile'} size={48} className="shadow-md-card" />
@@ -795,7 +1026,11 @@ export default function Repay() {
                      <span className="min-w-0 flex-1">
                         <span className="block text-md-b1 font-semibold text-md-heading">Add funds to repay</span>
                         <span className="mt-0.5 block text-md-b3 text-md-neutral-1200">
-                           You need <span className="font-semibold text-md-primary-1200">${formatCurrency(fundingShortfall ?? 0)} more USDC</span> for this loan.
+                           {hasPartialFunds ? (
+                              <>You have <span className="font-semibold text-[#d97706]">${formatCurrency(usdcBalance!)} USDC</span> — still need <span className="font-semibold text-md-primary-1200">${formatCurrency(fundingShortfall ?? 0)} more</span>.</>
+                           ) : (
+                              <>You need <span className="font-semibold text-md-primary-1200">${formatCurrency(fundingShortfall ?? 0)} more USDC</span> to repay.</>
+                           )}
                         </span>
                      </span>
                      <ChevronDown
@@ -805,75 +1040,192 @@ export default function Repay() {
                   </button>
 
                   {showAddFunds ? (
-                     <div className="px-4 pb-4 pt-1">
-                        {/* Source selector — pick where to buy USDC. The repay flow below is the
-                            same for all; only the "open" link changes. */}
-                        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                           {fundSources.map((source) => {
-                              const isSelected = fundSource === source.id;
+                     <div className="space-y-5 px-4 pb-5 pt-2">
 
-                              return (
-                                 <button
-                                    type="button"
-                                    key={source.id}
-                                    onClick={() => setFundSource(source.id)}
-                                    aria-pressed={isSelected}
-                                    className={`inline-flex shrink-0 items-center gap-2 rounded-md-pill px-3.5 py-2 text-md-b2 font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
-                                       isSelected
-                                          ? 'bg-md-primary-1200 text-white shadow-[0_4px_12px_rgba(96,16,210,0.25)]'
-                                          : 'border border-[#e9e3f8] bg-white text-[#8b80b3] hover:border-md-primary-300'
-                                    }`}
-                                 >
-                                    {renderSourceLogo(source.id)}
-                                    {source.label}
-                                    {isSelected ? <Check className="h-4 w-4" aria-hidden="true" /> : null}
-                                 </button>
-                              );
-                           })}
+                        {/* ── Step 1: Choose your source ────────────────── */}
+                        <div>
+                           <div className="mb-2 flex items-center gap-2">
+                              <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold text-white">1</span>
+                              <p className="text-sm font-semibold text-[#1a1240]">Choose your source</p>
+                           </div>
+                           {geoLoading ? (
+                              <div className="flex items-center justify-center gap-2 py-6 text-sm text-[#6b6090]">
+                                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                                 Loading your options…
+                              </div>
+                           ) : (
+                              <>
+                                 <p className="mb-3 text-xs text-[#6b6090]">
+                                    {inPhilippines ? (
+                                       <>
+                                          Pick where you'll buy or withdraw USDC. New to this?{' '}
+                                          <span className="font-semibold text-[#6c3fe0]">Moneybees</span> is easiest — it has live chat if you get stuck.
+                                       </>
+                                    ) : (
+                                       <>Outside the Philippines, withdraw USDC from <span className="font-semibold text-[#6c3fe0]">Binance</span> on the Base network.</>
+                                    )}
+                                 </p>
+
+                                 {inPhilippines ? (
+                                    <>
+                                       {renderHeroSource(fundSources[0])}
+
+                                       <div className="mt-1.5">{renderSourcePill(fundSources[1])}</div>
+
+                                       {(() => {
+                                          const otherSources = fundSources.filter((source) => source.id === 'gcrypto' || source.id === 'pdax');
+                                          const otherSelected = otherSources.some((source) => source.id === fundSource);
+                                          const expanded = showMoreSources || otherSelected;
+
+                                          return (
+                                             <>
+                                                <button
+                                                   type="button"
+                                                   onClick={() => setShowMoreSources((value) => !value)}
+                                                   aria-expanded={expanded}
+                                                   className="mt-2 flex w-full items-center justify-center gap-1 text-xs font-semibold text-[#6b6090] transition hover:text-[#6c3fe0]"
+                                                >
+                                                   {expanded ? 'Fewer options' : 'Other options'}
+                                                   <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} aria-hidden="true" />
+                                                </button>
+
+                                                {expanded ? (
+                                                   <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                                                      {otherSources.map((source) => renderSourcePill(source))}
+                                                   </div>
+                                                ) : null}
+                                             </>
+                                          );
+                                       })()}
+                                    </>
+                                 ) : (
+                                    renderHeroSource(fundSources.find((source) => source.id === 'binance') ?? fundSources[0])
+                                 )}
+                              </>
+                           )}
                         </div>
 
+                        {/* ── Step 2: Copy your wallet address ─────────── */}
                         {repayWalletAddress ? (
-                           <div className="mt-3 rounded-md-xl bg-md-primary-100/40 p-3.5">
-                              <div className="flex items-center gap-3">
-                                 <div className="min-w-0 flex-1">
-                                    <p className="text-md-b3 text-md-neutral-1200">Send USDC on Base to</p>
-                                    <p className="mt-1 truncate font-mono text-md-b1 font-semibold text-md-heading">
-                                       {formatWalletAddressShort(repayWalletAddress)}
-                                    </p>
-                                 </div>
-                                 <span className="shrink-0 rounded-md-input bg-white p-1.5 shadow-md-card">
-                                    <QRCodeSVG value={repayWalletAddress} size={56} level="M" marginSize={0} />
-                                 </span>
+                           <div>
+                              <div className="mb-2 flex items-center gap-2">
+                                 <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold text-white">2</span>
+                                 <p className="text-sm font-semibold text-[#1a1240]">Copy your wallet address</p>
                               </div>
-                              <div className="mt-3 flex gap-3">
+                              <p className="mb-3 text-xs text-[#6b6090]">
+                                 {activeSource.id === 'moneybees'
+                                    ? <>This is the same wallet your loan was sent to. Copy it — you'll share it with Moneybees so they send your USDC here.</>
+                                    : <>This is the same wallet your loan was sent to. Copy it — you'll paste it into {activeSource.label} as the destination.</>}
+                              </p>
+                              <div className="rounded-2xl bg-[#f5f4fa] p-4">
+                                 <p className="text-xs text-[#6b6090]">Your USDC wallet</p>
+                                 <p className="mt-1.5 truncate font-mono text-[22px] font-extrabold leading-tight text-[#1a1240]">
+                                    {formatWalletAddressShort(repayWalletAddress)}
+                                 </p>
                                  <button
                                     type="button"
                                     onClick={handleCopyAddress}
-                                    className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-1.5 rounded-md-xl border border-[#e9e3f8] bg-white text-md-b2 font-semibold text-md-heading active:scale-[0.98]"
+                                    className={`mt-3 inline-flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-md-xl text-md-b2 font-semibold transition-colors duration-200 active:scale-[0.98] ${
+                                       copiedAddress
+                                          ? 'bg-[#16a34a] text-white'
+                                          : 'border border-[#e9e3f8] bg-white text-md-heading'
+                                    }`}
                                  >
-                                    {copiedAddress ? <Check className="h-4 w-4 text-md-primary-1200" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
-                                    {copiedAddress ? 'Copied' : 'Copy'}
+                                    {copiedAddress ? (
+                                       <Check className="h-4 w-4" aria-hidden="true" />
+                                    ) : (
+                                       <Copy className="h-4 w-4" aria-hidden="true" />
+                                    )}
+                                    {copiedAddress
+                                       ? activeSource.id === 'moneybees'
+                                          ? 'Copied! Now message Moneybees below'
+                                          : 'Copied! Now open the app below'
+                                       : 'Copy wallet address'}
                                  </button>
-                                 <a
-                                    href={activeSource.href}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex min-h-[48px] flex-[2] items-center justify-center gap-1.5 rounded-md-xl bg-[linear-gradient(135deg,#5b21d6_0%,#7c3aed_100%)] text-md-b2 font-semibold text-white shadow-[0_4px_14px_rgba(108,63,224,0.35)] active:scale-[0.98]"
-                                 >
-                                    {activeSource.action}
-                                    <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                                 </a>
                               </div>
                            </div>
                         ) : null}
 
-                        {/* Slim live indicator — the header already states the shortfall, so this
-                            only carries what text can't: the system actively watching for the
-                            transfer, and the moment it lands. */}
-                        <div className="mt-3.5">
+                        {/* ── Step 3: Open app and send ─────────────────── */}
+                        {/* Gated on geo too: the navigation path and "Open …" target depend on
+                            the resolved source, so we wait rather than flash the wrong app. */}
+                        {repayWalletAddress && !geoLoading ? (
+                           <div>
+                              <div className="mb-2 flex items-center gap-2">
+                                 <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold text-white">3</span>
+                                 <p className="text-sm font-semibold text-[#1a1240]">{activeSource.action}</p>
+                              </div>
+                              <div className="mb-3 rounded-xl border border-[#e9e3f8] bg-[#f8f5ff] px-3.5 py-3">
+                                 <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#6b6090]">
+                                    {activeSource.id === 'moneybees' ? 'How Moneybees works:' : `In ${activeSource.label}, navigate to:`}
+                                 </p>
+                                 <p className="text-xs font-semibold leading-relaxed text-[#1a1240]">
+                                    {FUND_SOURCE_PATHS[activeSource.id]}
+                                 </p>
+                                 <p className="mt-2 text-[10px] text-[#6b6090]">
+                                    {activeSource.id === 'moneybees' ? (
+                                       <>A real person guides you and sets the <span className="font-semibold text-[#6c3fe0]">Base</span> network for you — no app menus to find.</>
+                                    ) : (
+                                       <>Always select <span className="font-semibold text-[#6c3fe0]">Base</span> as the network — not Ethereum or Polygon.</>
+                                    )}
+                                 </p>
+                              </div>
+                              <a
+                                 href={activeSource.href}
+                                 target="_blank"
+                                 rel="noopener noreferrer"
+                                 className="inline-flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-md-xl bg-[linear-gradient(135deg,#5b21d6_0%,#7c3aed_100%)] text-md-b2 font-semibold text-white shadow-[0_4px_14px_rgba(108,63,224,0.35)] active:scale-[0.98]"
+                              >
+                                 {activeSource.action}
+                                 <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                              </a>
+                              {(() => {
+                                 const fee = FUND_SOURCE_FEES[activeSource.id];
+                                 // Free source (Moneybees) — no fee to attribute.
+                                 if (fee === 0) return null;
+                                 // We don't show the exact cents (they vary and the exchange shows
+                                 // the real figure anyway). The point is attribution: a small fee,
+                                 // charged by the exchange — shown beside "Moodeng fee — Free".
+                                 return (
+                                    <div className="mt-2.5 rounded-xl border border-[#e9e3f8] bg-white px-3.5 py-3 shadow-[0_4px_14px_rgba(96,16,210,0.05)]">
+                                       <div className="flex items-center justify-between py-1 text-[13px]">
+                                          <span className="flex items-center gap-2 text-[#6b6090]">
+                                             {renderSourceLogo(activeSource.id, false)}
+                                             {activeSource.label}'s fee
+                                          </span>
+                                          <span className="font-medium text-[#6b6090]">Small fee</span>
+                                       </div>
+
+                                       <div className="flex items-center justify-between py-1 text-[13px]">
+                                          <span className="flex items-center gap-2 text-[#6b6090]">
+                                             <ShieldCheck className="h-4 w-4 text-md-primary-1200" aria-hidden="true" />
+                                             Moodeng fee
+                                          </span>
+                                          <span className="flex items-center gap-1 font-bold text-[#16a34a]">
+                                             Free
+                                             <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                                          </span>
+                                       </div>
+
+                                       <p className="mt-2 text-[11px] leading-snug text-[#8b80b3]">
+                                          Send a little extra to cover {activeSource.label}'s small fee — Moodeng never charges you to repay.
+                                       </p>
+                                    </div>
+                                 );
+                              })()}
+                           </div>
+                        ) : null}
+
+                        {/* ── Live transfer indicator ───────────────────── */}
+                        <div>
                            <div className="relative h-1.5 w-full overflow-hidden rounded-md-pill bg-md-primary-100">
                               {hasEnoughToRepay ? (
                                  <div className="absolute inset-0 rounded-md-pill bg-md-green-900" />
+                              ) : hasPartialFunds ? (
+                                 <div
+                                    className="absolute inset-y-0 left-0 rounded-md-pill bg-[#d97706] transition-all duration-500"
+                                    style={{ width: `${Math.min(99, (usdcBalance! / selectedRemaining) * 100)}%` }}
+                                 />
                               ) : (
                                  <div className="repay-watch-bar absolute inset-y-0 left-0 rounded-md-pill" />
                               )}
@@ -894,32 +1246,93 @@ export default function Repay() {
                                        <Check className="h-3.5 w-3.5" aria-hidden="true" />
                                        Funds ready
                                     </>
-                                 ) : (
+                                 ) : hasPartialFunds ? null : (
                                     <>
                                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                                       Watching for your transfer
+                                       Watching for your transfer…
                                     </>
                                  )}
                               </span>
                            </div>
+                           {!hasEnoughToRepay && !hasPartialFunds ? (
+                              <p className="mt-1.5 text-center text-[11px] text-[#6b6090]">
+                                 No need to do anything — we detect it automatically, usually under a minute.
+                              </p>
+                           ) : null}
                         </div>
 
-                        <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-md-b3 text-md-neutral-1200">
-                           <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-md-primary-1200" aria-hidden="true" />
-                           Base network only · Moodeng never holds your money.
-                        </p>
+                        {hasPartialFunds ? (
+                           <button
+                              type="button"
+                              onClick={() => payExactAmount(usdcBalance!)}
+                              disabled={isProcessing}
+                              className="w-full rounded-xl border border-[#fde68a] bg-[#fffbeb] py-2.5 text-md-b3 font-semibold text-[#92400e] transition active:scale-[0.98] disabled:opacity-60"
+                           >
+                              Pay ${formatCurrency(usdcBalance!)} partial now
+                           </button>
+                        ) : null}
+
+                        <div className="space-y-1.5">
+                           <p className="flex items-center justify-center gap-1.5 text-center text-md-b3 text-[#6b6090]">
+                              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-md-primary-1200" aria-hidden="true" />
+                              This goes to your own wallet, then straight to your loan. It's safe.
+                           </p>
+                           <p className="text-center text-md-b3">
+                              <button
+                                 type="button"
+                                 onClick={() => navigate('/support')}
+                                 className="font-semibold text-md-primary-1200 underline-offset-2 transition hover:underline"
+                              >
+                                 Stuck? Get help
+                              </button>
+                           </p>
+                        </div>
                      </div>
                   ) : null}
+               </section>
+            ) : selectedLoan && justFunded ? (
+               // Funds just landed. Replace the steps with an explicit confirmation + a Pay
+               // button right here, so success never reads as "the card disappeared".
+               <section className="overflow-hidden rounded-md-xl border border-[#bbf7d0] bg-white shadow-[0_12px_30px_rgba(22,163,74,0.12)]">
+                  <div className="flex flex-col items-center gap-3 px-5 py-6 text-center">
+                     <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#dcfce7]">
+                        <Check className="h-6 w-6 text-[#16a34a]" aria-hidden="true" />
+                     </span>
+                     <div>
+                        <p className="text-md-b1 font-bold text-[#1a1240]">Your money arrived</p>
+                        <p className="mt-1 text-md-b3 text-[#6b6090]">
+                           You have <span className="font-semibold text-[#16a34a]">${formatCurrency(usdcBalance ?? selectedRemaining)} USDC</span> — ready to repay your loan.
+                        </p>
+                     </div>
+                     <button
+                        type="button"
+                        onClick={() => payExactAmount(selectedRemaining)}
+                        disabled={isProcessing || connectStatus === 'pending'}
+                        className="inline-flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-md-xl bg-[linear-gradient(135deg,#5b21d6_0%,#7c3aed_100%)] text-md-b2 font-semibold text-white shadow-[0_4px_14px_rgba(108,63,224,0.35)] transition active:scale-[0.98] disabled:opacity-60"
+                     >
+                        {isProcessing ? (
+                           <>
+                              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                              Paying…
+                           </>
+                        ) : connectStatus === 'pending' ? (
+                           <>
+                              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                              Connecting…
+                           </>
+                        ) : (
+                           `Pay $${formatCurrency(selectedRemaining)}`
+                        )}
+                     </button>
+                  </div>
                </section>
             ) : null}
 
             {activeLoans.length > 1 ? (
-               <section aria-labelledby="loan-picker-title" className="flex flex-col gap-2">
-                  <div>
-                     <h2 id="loan-picker-title" className="text-md-b3 font-semibold uppercase tracking-widest text-md-neutral-1200">
-                        Pick a loan
-                     </h2>
-                  </div>
+               <section aria-labelledby="loan-picker-title">
+                  <p id="loan-picker-title" className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#6b6090]">
+                     Pick a loan
+                  </p>
                   <div className="flex gap-3">
                      {activeLoans.map((loan) => {
                         const isSelected = loan.id === selectedLoan?.id;
@@ -930,35 +1343,37 @@ export default function Repay() {
                               key={loan.id}
                               onClick={() => handleSelectLoan(loan.id)}
                               aria-pressed={isSelected}
-                              className={`min-h-[100px] min-w-0 flex-1 rounded-md-xl p-3.5 text-left transition focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
+                              className={`min-w-0 flex-1 rounded-2xl p-4 text-left transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
                                  isSelected
-                                    ? 'border-2 border-md-primary-1200 bg-[#f8f6fe]'
-                                    : 'border border-[#e9e3f8] bg-white hover:border-md-primary-300'
+                                    ? 'border-2 border-[#6c3fe0] bg-[#f8f6fe]'
+                                    : 'border-[1.5px] border-[#e9e3f8] bg-white hover:border-md-primary-300'
                               }`}
                            >
-                              <div className="flex items-start justify-between gap-2">
-                                 <p className={`min-w-0 text-md-b2 font-semibold leading-snug ${isSelected ? 'text-md-primary-1200' : 'text-[#8b80b3]'}`}>
+                              <div className="mb-2 flex items-start justify-between">
+                                 <span className={`line-clamp-1 min-h-[1.25rem] min-w-0 pr-2 text-xs font-semibold leading-snug ${isSelected ? 'text-[#6c3fe0]' : 'text-[#6b6090]'}`}>
                                     {loan.reason || 'Active loan'}
-                                 </p>
-                                 <span
-                                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md-pill ${
-                                       isSelected ? 'bg-md-primary-1200' : 'border-2 border-[#d1c4e9]'
+                                 </span>
+                                 <div
+                                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
+                                       isSelected ? 'border-[#6c3fe0] bg-[#6c3fe0]' : 'border-[#d1c4e9] bg-white'
                                     }`}
                                     aria-hidden="true"
                                  >
-                                    {isSelected ? <span className="h-1.5 w-1.5 rounded-md-pill bg-white" /> : null}
-                                 </span>
-                              </div>
-                              <p className="mt-2 text-md-b3 text-[#8b80b3]">Remaining</p>
-                              <p className="text-md-h5 font-bold tracking-[-0.02em] text-md-heading">${formatCurrency(getRemainingAmount(loan))}</p>
-                              {getProgressPercent(loan) > 0 ? (
-                                 <div className="mt-2">
-                                    <div className="h-1.5 overflow-hidden rounded-md-pill bg-[#f0ebff]">
-                                       <div className="h-full rounded-md-pill bg-md-primary-1200" style={{ width: `${getProgressPercent(loan)}%` }} />
-                                    </div>
-                                    <p className="mt-1 text-md-b3 font-medium text-[#a78bfa]">{getProgressPercent(loan)}% paid</p>
+                                    {isSelected ? <div className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
                                  </div>
-                              ) : null}
+                              </div>
+                              <p className="mb-1.5 text-xs text-[#6b6090]">Remaining</p>
+                              <p className="text-lg font-bold text-[#1a1240]">${formatCurrency(getRemainingAmount(loan))}</p>
+                              <div className="mt-2">
+                                 <div className="h-1 overflow-hidden rounded-full bg-[#f0ebff]">
+                                    <div className="h-full rounded-full bg-[#6c3fe0] transition-[width] duration-300" style={{ width: `${getProgressPercent(loan)}%` }} />
+                                 </div>
+                                 {getProgressPercent(loan) > 0 ? (
+                                    <p className="mt-1 text-[10px] font-medium text-[#6b6090]">{getProgressPercent(loan)}% paid</p>
+                                 ) : (
+                                    <p className="mt-1 text-[10px] font-medium text-[#6b6090]">Not yet paid</p>
+                                 )}
+                              </div>
                            </button>
                         );
                      })}
@@ -968,7 +1383,7 @@ export default function Repay() {
 
             {selectedLoan ? (
                <>
-               <section className="relative overflow-hidden rounded-md-xl px-1 pt-1">
+               <section className="relative overflow-hidden rounded-md-xl border border-[#ede8fb] bg-white shadow-[0_8px_24px_rgba(96,16,210,0.07)]">
                   {isProcessing ? (
                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-white/85 px-6 text-center backdrop-blur-sm">
                         <Loader2 className="h-8 w-8 animate-spin text-md-primary-1200" aria-hidden="true" />
@@ -999,8 +1414,7 @@ export default function Repay() {
                      </div>
                   ) : null}
 
-                  <div className="pt-1 pb-2 text-center">
-                     <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-[#8b80b3]">Repay amount</p>
+                  <div className="px-5 pt-5 pb-2 text-center">
 
                      {isLoanOverdue(selectedLoan) ? (
                         <div className="mb-3 flex items-start gap-2.5 rounded-md-input border border-[#f4d2d2] bg-[#fff7f7] px-3 py-2.5 text-left dark:border-[#68303a] dark:bg-[#3c171e]">
@@ -1012,10 +1426,17 @@ export default function Repay() {
                         </div>
                      ) : null}
 
-                     <div className="flex flex-col items-center">
-                        <div className="mb-1 flex items-baseline justify-center gap-2">
-                           <div className="flex items-baseline text-4xl font-extrabold tracking-tight text-[#1a1240]">
-                              <span>$</span>
+                     <p className="mb-1.5 text-xs font-medium text-[#6b6090]">You're paying</p>
+                     <div className="flex items-end justify-center gap-2 mb-1">
+                        {/* Invisible mirror of the unit so the big number is OPTICALLY centered,
+                            not just the number+unit group (which pulls the number left). */}
+                        <span className="invisible mb-0.5 text-sm font-semibold" aria-hidden="true">{selectedLoan.coin || 'USDC'}</span>
+                        {/* Dashed underline signals the amount is tappable/editable — without it
+                            the input reads as static display text and the feature goes undiscovered. */}
+                        <div className="flex items-end border-b border-dashed border-[#c9bdf0] pb-0.5">
+                           <span className={`text-4xl font-bold tracking-tight leading-none ${repaymentAmount ? 'text-[#1a1240]' : 'text-[#1a1240]/30'}`}>$</span>
+                           <span className="relative inline-block leading-none">
+                              <span className="invisible whitespace-pre text-4xl font-bold tracking-tight leading-none" aria-hidden="true">{repaymentAmount || '0.00'}</span>
                               <input
                                  ref={amountInputRef}
                                  id="repayment-amount"
@@ -1025,22 +1446,27 @@ export default function Repay() {
                                  onChange={handleAmountChange}
                                  placeholder="0.00"
                                  aria-label="Repay amount"
-                                 style={{ width: `${Math.max(3, (repaymentAmount || '0.00').length)}ch` }}
-                                 className="bg-transparent text-4xl font-extrabold tracking-tight text-[#1a1240] caret-md-primary-1100 outline-none placeholder:text-md-neutral-500"
+                                 className="absolute inset-0 w-full border-0 bg-transparent p-0 text-4xl font-bold tracking-tight leading-none text-[#1a1240] caret-md-primary-1100 outline-none placeholder:text-[#1a1240]/30"
                               />
-                           </div>
-                           <span className="text-sm font-semibold text-[#a78bfa]">{selectedLoan.coin || 'USDC'}</span>
-                        </div>
-                        <p className="text-xs text-[#8b80b3]">of ${formatCurrency(selectedRemaining)} remaining</p>
-                        {validPreviewPayment > 0 && !isLoanOverdue(selectedLoan) && estimatedTrustPoints > 0 ? (
-                           <span className="mt-2 inline-flex items-center gap-1.5 rounded-md-pill bg-md-green-100 px-3 py-1 text-md-b3 font-semibold text-md-green-900">
-                              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                              +{estimatedTrustPoints} Trust Points
                            </span>
-                        ) : null}
+                        </div>
+                        <span className="mb-0.5 text-sm font-semibold text-[#6b6090]">{selectedLoan.coin || 'USDC'}</span>
                      </div>
+                     {validPreviewPayment <= 0 ? (
+                        <p className="text-xs text-[#6b6490]">of ${formatCurrency(selectedRemaining)} remaining</p>
+                     ) : validPreviewPayment >= selectedRemainingRounded ? (
+                        <p className="text-xs font-semibold text-md-green-900">Clears this loan ✓</p>
+                     ) : (
+                        <p className="text-xs text-[#6b6090]">leaves <span className="font-semibold text-[#6010d2]">${formatCurrency(Math.max(0, selectedRemaining - validPreviewPayment))}</span> remaining</p>
+                     )}
+                     {validPreviewPayment > 0 && !isLoanOverdue(selectedLoan) && estimatedTrustPoints > 0 ? (
+                        <span className="trust-badge mt-3 mb-2 inline-flex items-center gap-1.5 rounded-md-pill border border-[#e9e3f8] bg-[#f0ebff] px-3 py-1 text-md-b3 font-semibold text-[#6c3fe0]">
+                           <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                           +{estimatedTrustPoints} Trust Points
+                        </span>
+                     ) : null}
 
-                     <div className="relative px-1 mb-5 mt-6">
+                     <div className="relative mb-4 mt-3">
                         <input
                            type="range"
                            min={0}
@@ -1052,7 +1478,7 @@ export default function Repay() {
                               setPartialPaid(null);
                            }}
                            aria-label="Adjust repay amount"
-                           className="repay-slider h-1.5 w-full cursor-pointer appearance-none rounded-full"
+                           className="repay-slider h-2 w-full cursor-pointer appearance-none rounded-full"
                            style={{
                               background: `linear-gradient(to right, #6010d2 ${repaySliderPercent}%, #ede8fb ${repaySliderPercent}%)`
                            }}
@@ -1070,14 +1496,14 @@ export default function Repay() {
                                  key={option.label}
                                  onClick={() => setQuickAmount(option.value)}
                                  aria-pressed={isQuickSelected}
-                                 className={`flex flex-1 flex-col items-center justify-center rounded-xl py-2.5 transition focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
+                                 className={`flex min-h-[44px] flex-1 flex-col items-center justify-center rounded-xl transition active:scale-[0.97] focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
                                     isQuickSelected
-                                       ? 'bg-[#6c3fe0] text-white shadow-[0_4px_14px_rgba(108,63,224,0.32)]'
-                                       : 'bg-[#f0ebff] text-[#6c3fe0] hover:bg-md-primary-100'
+                                       ? 'border-2 border-[#6c3fe0] bg-[#f3effe]'
+                                       : 'border border-[#e9e3f8] bg-white hover:border-md-primary-300'
                                  }`}
                               >
-                                 <span className="text-xs font-bold leading-none">{option.label}</span>
-                                 <span className={`mt-0.5 text-[10px] font-medium leading-none ${isQuickSelected ? 'text-white/75' : 'text-[#a78bfa]'}`}>
+                                 <span className={`text-xs font-bold leading-none ${isQuickSelected ? 'text-[#1a1240]' : 'text-[#6b6090]'}`}>{option.label}</span>
+                                 <span className={`mt-0.5 text-[10px] font-medium leading-none ${isQuickSelected ? 'text-[#6c3fe0]' : 'text-[#9a93b8]'}`}>
                                     ${formatCurrency(quickAmount)}
                                  </span>
                               </button>
@@ -1088,23 +1514,8 @@ export default function Repay() {
                      {amountError ? <p className="mb-2 text-md-b3 font-semibold text-md-red-600">{amountError}</p> : null}
                   </div>
 
-                  <div className="px-5 pb-4 pt-1">
-                     <button
-                        type="button"
-                        onClick={handleRepay}
-                        disabled={isRepayDisabled}
-                        className="w-full rounded-2xl py-4 text-base font-bold text-white transition-all active:scale-[0.98] disabled:opacity-50"
-                        style={{
-                           background: 'linear-gradient(135deg, #5b21d6 0%, #7c3aed 100%)',
-                           boxShadow: '0 6px 20px rgba(108,63,224,0.38)'
-                        }}
-                     >
-                        {hasValidPayAmount ? `Pay Now · $${formatCurrency(parsedRepaymentAmount)} USDC` : 'Pay Now'}
-                     </button>
-                  </div>
-
                   <div
-                     className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 px-5 pb-3 text-md-b3 ${
+                     className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 border-t border-[#f5f3ff] px-5 pb-3 pt-3 text-md-b3 ${
                         isLoanOverdue(selectedLoan) || isLoanDueSoon(selectedLoan) ? 'text-md-red-600' : 'text-md-neutral-1200'
                      }`}
                   >

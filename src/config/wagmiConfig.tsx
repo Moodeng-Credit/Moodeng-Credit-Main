@@ -11,6 +11,7 @@ import {
    walletConnectWallet
 } from '@rainbow-me/rainbowkit/wallets';
 import { createConfig, http } from 'wagmi';
+import { fallback, webSocket } from 'viem';
 import { arbitrum, base, baseSepolia, bsc, type Chain, optimism, polygon, sepolia } from 'wagmi/chains';
 
 import { installBaseAccountPopupSizePatch } from '@/lib/baseAccountPopup';
@@ -262,7 +263,7 @@ const chainsTuple = chainsWithIcons as unknown as [Chain, ...Chain[]];
 export const config = createConfig({
    chains: chainsTuple,
    connectors,
-   transports: Object.fromEntries(chainsTuple.map((chain) => [chain.id, http()])),
+   transports: Object.fromEntries(chainsTuple.map((chain) => [chain.id, fallback([webSocket(), http()])])),
    ssr: false
 });
 
