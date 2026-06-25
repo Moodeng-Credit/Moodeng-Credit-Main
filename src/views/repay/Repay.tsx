@@ -79,9 +79,9 @@ const SOURCE_SUBTITLE: Partial<Record<FundSourceId, string>> = {
 // hand-off. Interim wording until the official Moneybees partnership is in place.
 const FUND_SOURCE_PATHS: Record<FundSourceId, string> = {
    moneybees: 'Message on Telegram, Viber or WhatsApp → quick ID check → share your wallet address → pay only after they confirm',
-   coinsph: 'Crypto → USDC → Withdraw → Network: Base → Paste wallet address',
-   gcrypto: 'GCash app → GCrypto → USDC → Withdraw → Network: Base',
-   pdax: 'Wallet → USDC → Withdraw → Network: Base → Paste wallet address',
+   coinsph: 'Crypto → USDCBASE → Withdraw → Paste wallet address',
+   gcrypto: 'GCash app → GCrypto → USDCBASE → Withdraw',
+   pdax: 'Wallet → USDCBASE → Withdraw → Paste wallet address',
    binance: 'Wallet → Withdraw → USDC → Network: Base → Paste wallet address',
 };
 
@@ -377,7 +377,7 @@ export default function Repay() {
                {sourceFee === 0 ? (
                   <span className="rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[10px] font-bold text-[#16a34a] dark:bg-[#052e16]">Free</span>
                ) : (
-                  <span className="rounded-full bg-[#ede9f8] px-1.5 py-0.5 text-[10px] font-bold text-[#6b6090] dark:bg-[#2a1f4f] dark:text-[#a095c8]">Small fee</span>
+                  <span className="whitespace-nowrap rounded-full bg-[#ede9f8] px-1.5 py-0.5 text-[10px] font-bold text-[#6b6090] dark:bg-[#2a1f4f] dark:text-[#a095c8]">Small fee</span>
                )}
             </span>
          </button>
@@ -410,7 +410,7 @@ export default function Repay() {
                   {sourceFee === 0 ? (
                      <span className="rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[10px] font-bold text-[#16a34a]">Free</span>
                   ) : (
-                     <span className="rounded-full bg-[#ede9f8] px-1.5 py-0.5 text-[10px] font-bold text-[#6b6090]">Small fee</span>
+                     <span className="whitespace-nowrap rounded-full bg-[#ede9f8] px-1.5 py-0.5 text-[10px] font-bold text-[#6b6090]">Small fee</span>
                   )}
                </span>
                {subtitle ? <span className="block text-[11px] font-medium text-[#6c3fe0]">{subtitle}</span> : null}
@@ -1252,7 +1252,11 @@ export default function Repay() {
                                     </p>
                                     <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-[#ede9f8] px-2.5 py-1.5 dark:bg-[#2a1f4f]">
                                        <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#6c3fe0]" aria-hidden="true" />
-                                       <span className="text-[11px] font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">Use <strong>Base</strong> network — not Ethereum or Polygon</span>
+                                       {activeSource.id === 'binance' ? (
+                                          <span className="text-[11px] font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">Use <strong>Base</strong> network — not Ethereum or Polygon</span>
+                                       ) : (
+                                          <span className="text-[11px] font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">Look for <strong>USDCBASE</strong> — not USDC or other tokens</span>
+                                       )}
                                     </div>
                                  </div>
                               )}
@@ -1279,7 +1283,7 @@ export default function Repay() {
                                              {renderSourceLogo(activeSource.id, false)}
                                              {activeSource.label}'s fee
                                           </span>
-                                          <span className="rounded-full bg-[#ede9f8] px-2 py-0.5 text-[10px] font-bold text-[#6b6090] dark:bg-[#2a1f4f] dark:text-[#a095c8]">Small fee</span>
+                                          <span className="whitespace-nowrap rounded-full bg-[#ede9f8] px-2 py-0.5 text-[10px] font-bold text-[#6b6090] dark:bg-[#2a1f4f] dark:text-[#a095c8]">Small fee</span>
                                        </div>
                                        <div className="mt-2 flex items-center justify-between border-t border-[#ede9f8] pt-2 text-[12px] dark:border-[#2a1f4f]">
                                           <span className="flex items-center gap-2 text-[#6b6090] dark:text-[#a095c8]">
