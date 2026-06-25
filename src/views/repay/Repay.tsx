@@ -1300,7 +1300,7 @@ export default function Repay() {
 
             {activeLoans.length > 1 ? (
                <section aria-labelledby="loan-picker-title">
-                  <p id="loan-picker-title" className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#6b6090]">
+                  <p id="loan-picker-title" className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#6b6090] dark:text-[#a095c8]">
                      Pick a loan
                   </p>
                   <div className="flex gap-3">
@@ -1315,33 +1315,33 @@ export default function Repay() {
                               aria-pressed={isSelected}
                               className={`min-w-0 flex-1 rounded-2xl p-4 text-left transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-md-primary-300 ${
                                  isSelected
-                                    ? 'border-2 border-[#6c3fe0] bg-[#f8f6fe]'
-                                    : 'border-[1.5px] border-[#e9e3f8] bg-white hover:border-md-primary-300'
+                                    ? 'border-2 border-[#6c3fe0] bg-[#f8f6fe] dark:bg-[#2a1740]'
+                                    : 'border-[1.5px] border-[#e9e3f8] bg-white hover:border-md-primary-300 dark:border-[#3d2a60] dark:bg-[#1e1535]'
                               }`}
                            >
                               <div className="mb-2 flex items-start justify-between">
-                                 <span title={loan.reason || 'Active loan'} className={`line-clamp-1 min-h-[1.25rem] min-w-0 pr-2 text-xs font-semibold leading-snug ${isSelected ? 'text-[#6c3fe0]' : 'text-[#6b6090]'}`}>
+                                 <span title={loan.reason || 'Active loan'} className={`line-clamp-1 min-h-[1.25rem] min-w-0 pr-2 text-xs font-semibold leading-snug ${isSelected ? 'text-[#6c3fe0]' : 'text-[#6b6090] dark:text-[#a095c8]'}`}>
                                     {loan.reason || 'Active loan'}
                                  </span>
                                  <div
                                     className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
-                                       isSelected ? 'border-[#6c3fe0] bg-[#6c3fe0]' : 'border-[#d1c4e9] bg-white'
+                                       isSelected ? 'border-[#6c3fe0] bg-[#6c3fe0]' : 'border-[#d1c4e9] bg-white dark:border-[#3d2a60] dark:bg-[#1e1535]'
                                     }`}
                                     aria-hidden="true"
                                  >
                                     {isSelected ? <div className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
                                  </div>
                               </div>
-                              <p className="mb-1.5 text-xs text-[#6b6090]">Remaining</p>
-                              <p className="text-lg font-bold text-[#1a1240]">${formatCurrency(getRemainingAmount(loan))}</p>
+                              <p className="mb-1.5 text-xs text-[#6b6090] dark:text-[#a095c8]">Remaining</p>
+                              <p className="text-lg font-bold text-[#1a1240] dark:text-white">${formatCurrency(getRemainingAmount(loan))}</p>
                               <div className="mt-2">
-                                 <div className="h-1 overflow-hidden rounded-full bg-[#f0ebff]">
+                                 <div className="h-1 overflow-hidden rounded-full bg-[#f0ebff] dark:bg-[#2a1f4f]">
                                     <div className="h-full rounded-full bg-[#6c3fe0] transition-[width] duration-300" style={{ width: `${getProgressPercent(loan)}%` }} />
                                  </div>
                                  {getProgressPercent(loan) > 0 ? (
-                                    <p className="mt-1 text-[10px] font-medium text-[#6b6090]">{getProgressPercent(loan)}% paid</p>
+                                    <p className="mt-1 text-[10px] font-medium text-[#6b6090] dark:text-[#a095c8]">{getProgressPercent(loan)}% paid</p>
                                  ) : (
-                                    <p className="mt-1 text-[10px] font-medium text-[#6b6090]">Not yet paid</p>
+                                    <p className="mt-1 text-[10px] font-medium text-[#6b6090] dark:text-[#a095c8]">Not yet paid</p>
                                  )}
                               </div>
                            </button>
@@ -1353,7 +1353,7 @@ export default function Repay() {
 
             {selectedLoan ? (
                <>
-               <section className="relative overflow-hidden rounded-md-xl border border-[#ede8fb] bg-white shadow-[0_8px_24px_rgba(96,16,210,0.07)]">
+               <section className="relative overflow-hidden rounded-md-xl border border-[#ede8fb] bg-white shadow-[0_8px_24px_rgba(96,16,210,0.07)] dark:border-[#3d2a60] dark:bg-[#1a1240]">
                   {isProcessing ? (
                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-white/85 px-6 text-center backdrop-blur-sm">
                         <Loader2 className="h-8 w-8 animate-spin text-md-primary-1200" aria-hidden="true" />
@@ -1396,7 +1396,7 @@ export default function Repay() {
                         </div>
                      ) : null}
 
-                     <p className="mb-1.5 text-xs font-medium text-[#6b6090]">You're paying</p>
+                     <p className="mb-1.5 text-xs font-medium text-[#6b6090] dark:text-[#a095c8]">You're paying</p>
                      <div className="flex items-end justify-center gap-2 mb-1">
                         {/* Invisible mirror of the unit so the big number is OPTICALLY centered,
                             not just the number+unit group (which pulls the number left). */}
@@ -1404,7 +1404,7 @@ export default function Repay() {
                         {/* Dashed underline signals the amount is tappable/editable — without it
                             the input reads as static display text and the feature goes undiscovered. */}
                         <div className="flex items-end border-b border-dashed border-[#c9bdf0] pb-0.5">
-                           <span className={`text-4xl font-bold tracking-tight leading-none ${repaymentAmount ? 'text-[#1a1240]' : 'text-[#1a1240]/30'}`}>$</span>
+                           <span className={`text-4xl font-bold tracking-tight leading-none ${repaymentAmount ? 'text-[#1a1240] dark:text-white' : 'text-[#1a1240]/30 dark:text-white/30'}`}>$</span>
                            <span className="relative inline-block leading-none">
                               <span className="invisible whitespace-pre text-4xl font-bold tracking-tight leading-none" aria-hidden="true">{repaymentAmount || '0.00'}</span>
                               <input
@@ -1416,7 +1416,7 @@ export default function Repay() {
                                  onChange={handleAmountChange}
                                  placeholder="0.00"
                                  aria-label="Repay amount"
-                                 className="absolute inset-0 w-full border-0 bg-transparent p-0 text-4xl font-bold tracking-tight leading-none text-[#1a1240] caret-md-primary-1100 outline-none placeholder:text-[#1a1240]/30"
+                                 className="absolute inset-0 w-full border-0 bg-transparent p-0 text-4xl font-bold tracking-tight leading-none text-[#1a1240] caret-md-primary-1100 outline-none placeholder:text-[#1a1240]/30 dark:text-white dark:placeholder:text-white/30"
                               />
                            </span>
                         </div>
