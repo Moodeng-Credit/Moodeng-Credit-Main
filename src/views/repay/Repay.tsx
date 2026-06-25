@@ -1241,12 +1241,12 @@ export default function Repay() {
                                     <div className="space-y-2">
                                        {(['Message on Telegram, Viber or WhatsApp', 'Quick ID check — takes about 1 min'] as const).map((step, i) => (
                                           <div key={i} className="flex items-start gap-2.5">
-                                             <span className="mt-0.5 flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold text-white">{i + 1}</span>
+                                             <span className="mt-0.5 flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold text-white">{String.fromCharCode(97 + i)}</span>
                                              <span className="text-[12px] font-medium leading-snug text-[#3d1a8a] dark:text-[#c4b5fd]">{step}</span>
                                           </div>
                                        ))}
                                        <div className="flex items-start gap-2.5">
-                                          <span className="mt-0.5 flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold text-white">3</span>
+                                          <span className="mt-0.5 flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold text-white">c</span>
                                           <span className="text-[12px] font-medium leading-snug text-[#3d1a8a] dark:text-[#c4b5fd]">
                                              Share your address —{' '}
                                              <button
