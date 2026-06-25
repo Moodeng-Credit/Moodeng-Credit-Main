@@ -277,7 +277,7 @@ function FundedCelebration({ amount }: { amount: number }) {
             </span>
             <div>
                <p className="text-[15px] font-semibold text-[#14532d] dark:text-[#86efac]">Received ${formatCurrency(amount)} USDC</p>
-               <p className="text-[12px] text-[#6b6090] dark:text-[#a095c8]">Preparing your repayment…</p>
+               <p className="text-[12px] text-[#6b6090] dark:text-[#a095c8]">Taking you to pay now…</p>
             </div>
          </div>
          <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#dcfce7] dark:bg-[#052e16]">
