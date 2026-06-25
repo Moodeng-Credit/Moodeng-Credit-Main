@@ -1239,12 +1239,26 @@ export default function Repay() {
                                  <div className="mb-3 rounded-xl bg-[#f3effe] px-4 py-3.5 dark:bg-[#1e1535]">
                                     <p className="mb-2.5 text-[11px] font-bold uppercase tracking-wide text-[#6c3fe0]">How it works</p>
                                     <div className="space-y-2">
-                                       {(['Message on Telegram, Viber or WhatsApp', 'Quick ID check — takes about 1 min', 'Share your address · pay only after they confirm'] as const).map((step, i) => (
+                                       {(['Message on Telegram, Viber or WhatsApp', 'Quick ID check — takes about 1 min'] as const).map((step, i) => (
                                           <div key={i} className="flex items-start gap-2.5">
                                              <span className="mt-0.5 flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold text-white">{i + 1}</span>
                                              <span className="text-[12px] font-medium leading-snug text-[#3d1a8a] dark:text-[#c4b5fd]">{step}</span>
                                           </div>
                                        ))}
+                                       <div className="flex items-start gap-2.5">
+                                          <span className="mt-0.5 flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold text-white">3</span>
+                                          <span className="text-[12px] font-medium leading-snug text-[#3d1a8a] dark:text-[#c4b5fd]">
+                                             Share your address —{' '}
+                                             <button
+                                                type="button"
+                                                onClick={handleCopyAddress}
+                                                className="inline-flex items-center gap-1 font-semibold text-[#6c3fe0] underline underline-offset-2 active:opacity-70"
+                                             >
+                                                {copiedAddress ? <><Check className="inline h-3 w-3" /> Copied!</> : <><Copy className="inline h-3 w-3" /> copy it here</>}
+                                             </button>
+                                             {' '}· pay only after they confirm
+                                          </span>
+                                       </div>
                                     </div>
                                     <p className="mt-2.5 text-[11px] leading-snug text-[#6b6090] dark:text-[#a095c8]">A real person guides you — no app menus to navigate.</p>
                                  </div>
