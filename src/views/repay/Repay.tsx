@@ -79,7 +79,7 @@ const SOURCE_SUBTITLE: Partial<Record<FundSourceId, string>> = {
 // hand-off. Interim wording until the official Moneybees partnership is in place.
 const FUND_SOURCE_PATHS: Record<FundSourceId, string> = {
    moneybees: 'Message on Telegram, Viber or WhatsApp → quick ID check → share your wallet address → pay only after they confirm',
-   coinsph: 'Crypto → USDCBASE → Withdraw → Paste wallet address',
+   coinsph: 'Transfer → Send Crypto → USDC → External Wallet → paste address → Base network → confirm',
    gcrypto: 'GCash app → GCrypto → USDCBASE → Withdraw',
    pdax: 'Wallet → USDCBASE → Withdraw → Paste wallet address',
    binance: 'Wallet → Withdraw → USDC → Network: Base → Paste wallet address',
@@ -1270,8 +1270,8 @@ export default function Repay() {
                                     </p>
                                     <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-[#ede9f8] px-2.5 py-1.5 dark:bg-[#2a1f4f]">
                                        <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#6c3fe0]" aria-hidden="true" />
-                                       {activeSource.id === 'binance' ? (
-                                          <span className="text-[11px] font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">Use <strong>Base</strong> network — not Ethereum or Polygon</span>
+                                       {activeSource.id === 'binance' || activeSource.id === 'coinsph' ? (
+                                          <span className="text-[11px] font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">Select <strong>Base</strong> network — not Ethereum or Polygon</span>
                                        ) : (
                                           <span className="text-[11px] font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">Look for <strong>USDCBASE</strong> — not USDC or other tokens</span>
                                        )}
