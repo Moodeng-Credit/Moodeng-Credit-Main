@@ -260,10 +260,28 @@ const connectors = connectorsForWallets(
 
 const chainsTuple = chainsWithIcons as unknown as [Chain, ...Chain[]];
 
+// Route Base traffic through our provisioned Alchemy endpoint when available,
+// with the public Base RPC as a genuine last-resort fallback. Previously this
+// was bare `fallback([webSocket(), http()])` with no URL, so both legs pointed
+// at the same public infra — meaning a public-RPC outage took down every wallet
+// read, the USDC transfer, and the confirmation watch with no real failover.
+const ALCHEMY_ID = import.meta.env.VITE_ALCHEMY_ID ?? '';
+const transportForChain = (chain: Chain) => {
+   if (chain.id === base.id && ALCHEMY_ID) {
+      return fallback([
+         http(`https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}`),
+         webSocket(`wss://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}`),
+         http() // public Base RPC — last resort if Alchemy is unreachable
+      ]);
+   }
+   // No key (or non-Base chain): keep the original public-RPC behaviour.
+   return fallback([webSocket(), http()]);
+};
+
 export const config = createConfig({
    chains: chainsTuple,
    connectors,
-   transports: Object.fromEntries(chainsTuple.map((chain) => [chain.id, fallback([webSocket(), http()])])),
+   transports: Object.fromEntries(chainsTuple.map((chain) => [chain.id, transportForChain(chain)])),
    ssr: false
 });
 
