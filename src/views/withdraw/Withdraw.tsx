@@ -487,6 +487,48 @@ function useRegion(): Region {
 }
 
 /* ─── SCREEN 1: Withdraw your USDC ────────────────────────────────── */
+type PickerRowProps = {
+  id: Provider;
+  selected: Provider;
+  onSelect: (id: Provider) => void;
+  icon: React.ReactNode;
+  name: string;
+  line1: string;
+  line2: string;
+  recommended?: boolean;
+  warn?: boolean;
+};
+
+function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommended, warn }: PickerRowProps) {
+  const active = selected === id;
+  return (
+    <button onClick={() => onSelect(id)} className="relative w-full text-left outline-none">
+      {recommended && (
+        <div className="absolute -top-[9px] left-[14px] z-10 bg-[var(--primary)] rounded-full px-[7px] py-[2px] shadow-sm flex items-center justify-center">
+          <span className="text-[8px] font-bold text-white uppercase tracking-[0.4px] leading-none">Recommended</span>
+        </div>
+      )}
+      {warn && !recommended && (
+        <div className="absolute -top-[9px] left-[14px] z-10 bg-[var(--amber-icon)] rounded-full px-[7px] py-[2px] shadow-sm flex items-center justify-center">
+          <span className="text-[8px] font-bold text-white uppercase tracking-[0.4px] leading-none">Verify Base first</span>
+        </div>
+      )}
+      <div className={`rounded-[18px] p-[14px] border-2 flex items-center gap-[14px] transition-all ${active ? "bg-[var(--surface-2)] border-[var(--primary)]" : "bg-[var(--surface)] border-[var(--border-card)] hover:border-[var(--border-4)]"}`}
+        style={{ boxShadow: active ? "0px 4px 14px rgba(96,16,210,0.10)" : "0px 1px 3px rgba(27,28,29,0.05)" }}>
+        <div className="shrink-0">{icon}</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[16px] text-[var(--ink)] leading-[20px]" style={{ fontWeight: 590 }}>{name}</p>
+          <p className="text-[12px] text-[var(--text-muted)] leading-[16px] mt-[2px]">{line1}</p>
+          <p className="text-[12px] text-[var(--text-faint)] leading-[16px]">{line2}</p>
+        </div>
+        <div className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 ${active ? "bg-[var(--primary)] border-[var(--primary)]" : "border-[var(--border-input)]"}`}>
+          {active && <Check className="w-[12px] h-[12px] text-white" strokeWidth={3.5} />}
+        </div>
+      </div>
+    </button>
+  );
+}
+
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
   const { available: LOAN_USDC, repayUsdc: REPAY_USDC, dueDate: DUE_DATE } = useWithdrawData();
   const region = useRegion();
@@ -501,46 +543,6 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
   const NAMES: Record<Provider, string> = {
     moneybees: "Moneybees", binance: "Binance", coinsph: "Coins.ph",
     gcash: "GCrypto", pdax: "PDAX",
-  };
-
-  type RowProps = {
-    id: Provider;
-    icon: React.ReactNode;
-    name: string;
-    line1: string;
-    line2: string;
-    recommended?: boolean;
-    warn?: boolean;
-  };
-
-  const Row = ({ id, icon, name, line1, line2, recommended, warn }: RowProps) => {
-    const active = selected === id;
-    return (
-      <button onClick={() => setSelected(id)} className="relative w-full text-left outline-none">
-        {recommended && (
-          <div className="absolute -top-[9px] left-[14px] z-10 bg-[var(--primary)] rounded-full px-[7px] py-[2px] shadow-sm flex items-center justify-center">
-            <span className="text-[8px] font-bold text-white uppercase tracking-[0.4px] leading-none">Recommended</span>
-          </div>
-        )}
-        {warn && !recommended && (
-          <div className="absolute -top-[9px] left-[14px] z-10 bg-[var(--amber-icon)] rounded-full px-[7px] py-[2px] shadow-sm flex items-center justify-center">
-            <span className="text-[8px] font-bold text-white uppercase tracking-[0.4px] leading-none">Verify Base first</span>
-          </div>
-        )}
-        <div className={`rounded-[18px] p-[14px] border-2 flex items-center gap-[14px] transition-all ${active ? "bg-[var(--surface-2)] border-[var(--primary)]" : "bg-[var(--surface)] border-[var(--border-card)] hover:border-[var(--border-4)]"}`}
-          style={{ boxShadow: active ? "0px 4px 14px rgba(96,16,210,0.10)" : "0px 1px 3px rgba(27,28,29,0.05)" }}>
-          <div className="shrink-0">{icon}</div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[16px] text-[var(--ink)] leading-[20px]" style={{ fontWeight: 590 }}>{name}</p>
-            <p className="text-[12px] text-[var(--text-muted)] leading-[16px] mt-[2px]">{line1}</p>
-            <p className="text-[12px] text-[var(--text-faint)] leading-[16px]">{line2}</p>
-          </div>
-          <div className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 ${active ? "bg-[var(--primary)] border-[var(--primary)]" : "border-[var(--border-input)]"}`}>
-            {active && <Check className="w-[12px] h-[12px] text-white" strokeWidth={3.5} />}
-          </div>
-        </div>
-      </button>
-    );
   };
 
   return (
@@ -573,16 +575,16 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
         <p className="text-[18px] text-[var(--ink)] mt-[10px] mb-[18px]" style={{ fontWeight: 590, letterSpacing: "-0.02em" }}>How would you like to cash out?</p>
         <div className="space-y-[10px]">
           {isPH ? (<>
-            <Row id="moneybees" recommended icon={<MoneybeesAppIcon className="w-[46px] h-[46px]" />} name="Moneybees" line1="Assisted cash-out · BSP-registered" line2="Bank, GCash or Maya · ~1 business day" />
-            <Row id="coinsph" icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />} name="Coins.ph" line1="Sell for pesos, withdraw to bank or GCash" line2="Bank or GCash · ~30 min" />
-            <Row id="gcash" icon={<GCashAppIcon className="w-[46px] h-[46px]" />} name="GCrypto" line1="Cash out straight to your GCash" line2="GCash balance · ~5 min" />
-            <Row id="pdax" icon={<PdaxAppIcon className="w-[46px] h-[46px]" />} name="PDAX" line1="Sell for pesos, withdraw to bank or e-wallet" line2="Bank, GCash or Maya · ~30 min" />
-            <Row id="binance" icon={<BinanceAppIcon className="w-[46px] h-[46px]" />} name="Binance" line1="Sell for local currency via P2P marketplace" line2="GCash, Maya or Bank · 30 min–hours" />
+            <PickerRow selected={selected} onSelect={setSelected} id="moneybees" recommended icon={<MoneybeesAppIcon className="w-[46px] h-[46px]" />} name="Moneybees" line1="Assisted cash-out · BSP-registered" line2="Bank, GCash or Maya · ~1 business day" />
+            <PickerRow selected={selected} onSelect={setSelected} id="coinsph" icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />} name="Coins.ph" line1="Sell for pesos, withdraw to bank or GCash" line2="Bank or GCash · ~30 min" />
+            <PickerRow selected={selected} onSelect={setSelected} id="gcash" icon={<GCashAppIcon className="w-[46px] h-[46px]" />} name="GCrypto" line1="Cash out straight to your GCash" line2="GCash balance · ~5 min" />
+            <PickerRow selected={selected} onSelect={setSelected} id="pdax" icon={<PdaxAppIcon className="w-[46px] h-[46px]" />} name="PDAX" line1="Sell for pesos, withdraw to bank or e-wallet" line2="Bank, GCash or Maya · ~30 min" />
+            <PickerRow selected={selected} onSelect={setSelected} id="binance" icon={<BinanceAppIcon className="w-[46px] h-[46px]" />} name="Binance" line1="Sell for local currency via P2P marketplace" line2="GCash, Maya or Bank · 30 min–hours" />
           </>) : (<>
-            <Row id="binance" recommended icon={<BinanceAppIcon className="w-[46px] h-[46px]" />} name="Binance" line1="Sell for local currency via P2P marketplace" line2="Bank transfer · 30 min–hours" />
-            <Row id="gcash" icon={<GCashAppIcon className="w-[46px] h-[46px]" />} name="GCrypto" line1="Cash out straight to your GCash" line2="GCash balance · ~5 min" />
-            <Row id="pdax" icon={<PdaxAppIcon className="w-[46px] h-[46px]" />} name="PDAX" line1="Sell for pesos, withdraw to bank or e-wallet" line2="Bank, GCash or Maya · ~30 min" />
-            <Row id="coinsph" icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />} name="Coins.ph" line1="Sell for pesos, withdraw to bank or GCash" line2="Bank or GCash · ~30 min" />
+            <PickerRow selected={selected} onSelect={setSelected} id="binance" recommended icon={<BinanceAppIcon className="w-[46px] h-[46px]" />} name="Binance" line1="Sell for local currency via P2P marketplace" line2="Bank transfer · 30 min–hours" />
+            <PickerRow selected={selected} onSelect={setSelected} id="gcash" icon={<GCashAppIcon className="w-[46px] h-[46px]" />} name="GCrypto" line1="Cash out straight to your GCash" line2="GCash balance · ~5 min" />
+            <PickerRow selected={selected} onSelect={setSelected} id="pdax" icon={<PdaxAppIcon className="w-[46px] h-[46px]" />} name="PDAX" line1="Sell for pesos, withdraw to bank or e-wallet" line2="Bank, GCash or Maya · ~30 min" />
+            <PickerRow selected={selected} onSelect={setSelected} id="coinsph" icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />} name="Coins.ph" line1="Sell for pesos, withdraw to bank or GCash" line2="Bank or GCash · ~30 min" />
           </>)}
         </div>
 
