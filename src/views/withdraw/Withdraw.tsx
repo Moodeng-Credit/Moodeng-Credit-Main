@@ -884,9 +884,8 @@ const GCASH_FLOW: AppFlowConfig = {
   payout: "GCash balance",
   howItWorks: "Send USDC from your Moodeng wallet to your GCash GCrypto account. Once it arrives, sell it for pesos — it lands in your GCash wallet instantly.",
   steps: [
-    { icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Open GCash → GCrypto", desc: "Tap Enjoy → GCrypto → Receive. Choose USDC and select Base as the network.", guide: { title: "How to open GCrypto in GCash", video: "m5-cD7v4SLg", link: { label: "Official GCash guide", url: GCASH_HELP }, steps: [
-      "Open the GCash app and tap \"Enjoy\".",
-      "Tap \"GCrypto\" — you need a fully-verified GCash account.",
+    { icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Open GCrypto in GCash", desc: "Open GCrypto, then tap Receive. Choose USDC and select Base as the network.", guide: { title: "How to open GCrypto in GCash", video: "m5-cD7v4SLg", link: { label: "Official GCash guide", url: GCASH_HELP }, steps: [
+      "Open the GCash app and open \"GCrypto\" — find it under \"View All\" or search for it. You'll need a fully-verified GCash account.",
       "Select USDC, then tap \"Receive\".",
       "Choose \"Base\" as the network.",
     ] } },
@@ -898,11 +897,16 @@ const GCASH_FLOW: AppFlowConfig = {
     { icon: <ClipboardCheck className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Paste it below", desc: "Paste the address in the field below, then confirm and send." },
   ],
   cashOutTitle: "Cash out to pesos in GCash",
-  cashOutIntro: "Once your USDC is in GCrypto, sell it for pesos — it lands in your GCash wallet in under a minute.",
+  cashOutIntro: "Once your USDC is in GCrypto, cashing out is two quick steps: sell it for pesos, then move those pesos to your main GCash balance.",
   cashOutSteps: [
-    { title: <>In GCrypto, tap <span className="font-bold">Sell</span></> },
-    { title: "Choose USDC and enter the amount" },
-    { title: "Confirm the sale — pesos go straight to your GCash balance" },
+    {
+      title: <>In GCrypto, open <span className="font-bold">USDC</span> and tap <span className="font-bold">Sell</span></>,
+      helper: "Enter the amount in USDC or pesos and confirm. The pesos land in your GCrypto trading wallet."
+    },
+    {
+      title: <>Go to your <span className="font-bold">trading wallet</span> and tap <span className="font-bold">Withdraw</span></>,
+      helper: "Move the pesos to your main GCash balance — it usually arrives within a few minutes."
+    },
   ],
 };
 
