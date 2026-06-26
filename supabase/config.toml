@@ -25,6 +25,9 @@ verify_jwt = true
 [functions.loan-funded-notification]
 verify_jwt = true
 
+[functions.withdrawal-notification]
+verify_jwt = true
+
 [functions.loan-due-notifications]
 verify_jwt = false
 
