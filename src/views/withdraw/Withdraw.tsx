@@ -5,11 +5,13 @@ import {
   PlayCircle, Download, CreditCard, MessageCircle, Landmark, ClipboardCheck,
   Lock, Loader2, Clock,
 } from "lucide-react";
+import posthog from "posthog-js";
 import { useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { erc20Abi } from "viem";
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from "wagmi";
 
+import { openSupportContacts } from "@/components/support/supportContacts";
 import { useGeoCheck } from "@/hooks/useGeoCheck";
 import { useLoanData } from "@/hooks/useLoanData";
 import useWallet from "@/hooks/useWallet";
@@ -22,6 +24,12 @@ import "./withdraw-theme.css";
 
 const FONT = `-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", sans-serif`;
 
+// Withdraw-funnel analytics. PostHog only initialises in production (see main.tsx),
+// so this is a no-op in dev/preview — capture() is safe to call regardless.
+function track(event: string, props?: Record<string, unknown>) {
+  if (import.meta.env.PROD) posthog.capture(event, props);
+}
+
 type Screen = "celebrate" | "withdraw";
 type Provider = "moneybees" | "binance" | "coinsph" | "gcash" | "pdax";
 
@@ -30,7 +38,13 @@ type Provider = "moneybees" | "binance" | "coinsph" | "gcash" | "pdax";
 // LOAN_USDC; `send` replaces the simulated transfer with a real on-chain USDC
 // Transfer; `repayUsdc`/`dueDate` come from the borrower's funded loan.
 type WithdrawData = {
+  // Display estimate of what the borrower can cash out (on-chain balance, or the
+  // funded-loan amount as a fallback before the balance loads). Used for copy only.
   available: number;
+  // Hard cap for the amount field + Max button: the *verified* on-chain balance,
+  // never the loan estimate. `null` while it's still loading — send stays disabled
+  // until we can prove the wallet holds the funds, so we can't authorise an over-send.
+  spendable: number | null;
   repayUsdc: number | null;
   dueDate: string | null;
   walletAddress: string;
@@ -516,44 +530,84 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
 }
 
 /* ─── Send confirmation (real on-chain receipt watch) ───────────── */
-type SentStatus = "idle" | "in-progress" | "arrived" | "failed";
+type SentStatus = "idle" | "in-progress" | "delayed" | "arrived" | "failed";
 
-// Tracks a withdrawal send through to on-chain confirmation. After the review
-// sheet broadcasts the transfer it calls `onSent(hash)`; we then watch the
-// transaction receipt on Base and only flip to "arrived" once it actually mines
-// successfully (or "failed" if it reverts / errors). In preview there's no chain,
-// so a short timer stands in.
+// After ~40s with no receipt we soften "Processing…" to "taking longer than
+// usual". The transfer is already broadcast by then, so this is reassurance —
+// never a failure, and never a retry (that would risk a double-send).
+const CONFIRM_SLOW_MS = 40000;
+
+// Tracks a withdrawal send through to on-chain confirmation. The send button
+// broadcasts the transfer and calls `onSent(hash)`; we then watch the receipt on
+// Base. Outcomes:
+//   • mined OK            → "arrived"  (→ celebration)
+//   • mined but reverted  → "failed"   (nothing moved — safe to retry)
+//   • no receipt yet >40s → "delayed"  (sent, just unconfirmed — keep watching)
+// A receipt-fetch *error* (RPC hiccup) is NOT treated as failure: the tx is out
+// there, so we let the timeout move us to "delayed" rather than offer a retry.
 function useSendStatus(isPreview: boolean) {
   const [status, setStatus] = useState<SentStatus>("idle");
   const [txHash, setTxHash] = useState<string | null>(null);
 
-  const { data: receipt, isError } = useWaitForTransactionReceipt({
+  // Preview-only: ?sim=delayed|failed exercises the non-happy states locally.
+  const sim = isPreview && typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("sim")
+    : null;
+
+  const { data: receipt } = useWaitForTransactionReceipt({
     hash: !isPreview && txHash ? (txHash as `0x${string}`) : undefined,
     chainId: ALLOWED_CHAIN_ID,
     query: { enabled: !isPreview && Boolean(txHash) }
   });
 
+  // Resolve once we have a mined receipt (works from in-progress or delayed).
   useEffect(() => {
-    if (status !== "in-progress") return;
     if (isPreview) {
-      const t = setTimeout(() => setStatus("arrived"), 2500);
+      if (status !== "in-progress") return;
+      const next: SentStatus = sim === "failed" ? "failed" : sim === "delayed" ? "delayed" : "arrived";
+      const t = setTimeout(() => setStatus(next), sim ? 1500 : 2500);
       return () => clearTimeout(t);
     }
+    if (status !== "in-progress" && status !== "delayed") return;
     if (receipt) setStatus(receipt.status === "success" ? "arrived" : "failed");
-    else if (isError) setStatus("failed");
-  }, [status, isPreview, receipt, isError]);
+  }, [status, isPreview, receipt, sim]);
+
+  // Soften the copy if the receipt still hasn't landed (real chain only).
+  useEffect(() => {
+    if (status !== "in-progress" || isPreview) return;
+    const t = setTimeout(() => setStatus((s) => (s === "in-progress" ? "delayed" : s)), CONFIRM_SLOW_MS);
+    return () => clearTimeout(t);
+  }, [status, isPreview]);
 
   return {
     status,
     txHash,
-    onSent: (hash: string) => { setTxHash(hash); setStatus("in-progress"); }
+    onSent: (hash: string) => { setTxHash(hash); setStatus("in-progress"); },
+    reset: () => { setTxHash(null); setStatus("idle"); }
   };
 }
 
-function SentStatusCard({ exchange, amount, status, txHash, isPreview }: {
-  exchange: string; amount: number; status: Exclude<SentStatus, "idle" | "arrived">; txHash: string | null; isPreview: boolean;
+function shortRef(hash: string) {
+  return `${hash.slice(0, 6)}…${hash.slice(-4)}`;
+}
+
+function SentStatusCard({ exchange, amount, status, txHash, isPreview, onRetry }: {
+  exchange: string; amount: number;
+  status: "in-progress" | "delayed" | "failed";
+  txHash: string | null; isPreview: boolean; onRetry: () => void;
 }) {
+  const navigate = useNavigate();
   const failed = status === "failed";
+  const [copied, setCopied] = useState(false);
+  const reference = txHash && !isPreview ? txHash : null;
+
+  const copyRef = () => {
+    if (!reference) return;
+    navigator.clipboard?.writeText(reference)
+      .then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); })
+      .catch(() => { /* clipboard blocked — non-critical */ });
+  };
+
   return (
     <Card className="p-[18px]">
       <div className="flex items-center gap-[14px]">
@@ -564,20 +618,50 @@ function SentStatusCard({ exchange, amount, status, txHash, isPreview }: {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[16px] font-semibold text-[var(--ink)] tracking-[-0.4px]">
-            {failed ? "Transfer not completed" : `Sending ${amount} USDC to ${exchange}`}
+            {failed ? "Transfer didn't go through" : `Sending ${amount} USDC to ${exchange}`}
           </p>
           <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[3px]">
             {failed
-              ? "Something went wrong — please try again or contact support"
-              : "Processing…"}
+              ? "Nothing left your wallet — you can try again."
+              : status === "delayed"
+                ? "Still processing — this is taking a little longer than usual. Your transfer is on its way."
+                : "Processing…"}
           </p>
         </div>
       </div>
-      {failed && !isPreview && txHash && (
-        <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
-          className="mt-[12px] inline-flex items-center gap-[5px] text-[12px] font-semibold text-[var(--accent)] hover:text-[var(--primary)] transition-colors">
-          View transaction details <ArrowUpRight className="w-[13px] h-[13px]" />
-        </a>
+
+      {/* Failure only: a safe retry — the reverted transfer moved no funds. */}
+      {failed && (
+        <button onClick={onRetry}
+          className="mt-[14px] w-full rounded-[12px] py-[11px] text-[14px] font-semibold text-[var(--primary)] border border-[var(--border-2)] bg-[var(--surface-1)] hover:bg-[var(--hover-1)] transition-colors active:scale-[0.98]">
+          Try again
+        </button>
+      )}
+
+      {/* Delayed: the money is already sent, so let the user leave gracefully. */}
+      {status === "delayed" && (
+        <button onClick={() => navigate("/dashboard")}
+          className="mt-[14px] w-full rounded-[12px] py-[11px] text-[14px] font-semibold text-[var(--primary)] border border-[var(--border-2)] bg-[var(--surface-1)] hover:bg-[var(--hover-1)] transition-colors active:scale-[0.98]">
+          Done
+        </button>
+      )}
+
+      {/* Delayed or failed: get help, with a copyable reference (no block explorer). */}
+      {(status === "delayed" || failed) && (
+        <div className="mt-[12px] flex items-center justify-between gap-[10px] flex-wrap">
+          <button onClick={() => openSupportContacts("general")}
+            className="inline-flex items-center gap-[5px] text-[12px] font-semibold text-[var(--accent)] hover:text-[var(--primary)] transition-colors">
+            <MessageCircle className="w-[13px] h-[13px]" /> Contact support
+          </button>
+          {reference && (
+            <button onClick={copyRef}
+              className="inline-flex items-center gap-[5px] text-[12px] text-[var(--text-muted)] hover:text-[var(--ink)] transition-colors">
+              {copied
+                ? <><Check className="w-[12px] h-[12px] text-[var(--green-2)]" strokeWidth={3} /> Copied</>
+                : <><Copy className="w-[12px] h-[12px]" /> Ref {shortRef(reference)}</>}
+            </button>
+          )}
+        </div>
       )}
     </Card>
   );
@@ -659,36 +743,42 @@ type AppFlowConfig = {
 };
 
 function AppFlow({ cfg, onConfirmed }: { cfg: AppFlowConfig; onConfirmed: (amount: number) => void }) {
-  const { available: LOAN_USDC, isPreview, send } = useWithdrawData();
+  const { available: LOAN_USDC, spendable, isPreview, send } = useWithdrawData();
   const [address, setAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [sending, setSending] = useState(false);
   const [showCashOut, setShowCashOut] = useState(true);
-  const { status: sentStatus, txHash, onSent } = useSendStatus(isPreview);
+  const { status: sentStatus, txHash, onSent, reset } = useSendStatus(isPreview);
   const addrValid = isValidAddress(address);
   const amtNum = parseFloat(amount);
-  const amtValid = !isNaN(amtNum) && amtNum > 0 && amtNum <= LOAN_USDC;
+  // The cap is the verified on-chain balance — never the loan estimate. Until it
+  // loads (`spendable == null`) the amount can't be validated, so send stays off.
+  const amtValid = spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable;
   const canSend = addrValid && amtValid && !sending;
   const sentAmountRef = useRef(0);
 
   useEffect(() => {
-    if (sentStatus === "arrived") onConfirmed(sentAmountRef.current);
-  }, [sentStatus, onConfirmed]);
+    if (sentStatus === "arrived") { track("withdraw_confirmed", { exchange: cfg.name, amount: sentAmountRef.current }); onConfirmed(sentAmountRef.current); }
+    else if (sentStatus === "failed") track("withdraw_failed", { exchange: cfg.name, amount: sentAmountRef.current });
+    else if (sentStatus === "delayed") track("withdraw_delayed", { exchange: cfg.name, amount: sentAmountRef.current });
+  }, [sentStatus, onConfirmed, cfg.name]);
 
   async function handleSend() {
     if (!canSend) return;
+    track("withdraw_send_initiated", { exchange: cfg.name, amount: amtNum });
     setSending(true);
     const hash = await send(address.trim(), String(amtNum));
     setSending(false);
-    if (hash) { sentAmountRef.current = amtNum; onSent(hash); }
+    if (hash) { sentAmountRef.current = amtNum; track("withdraw_sent", { exchange: cfg.name, amount: amtNum }); onSent(hash); }
+    else track("withdraw_send_rejected", { exchange: cfg.name, amount: amtNum });
   }
 
   return (
     <div className="space-y-[12px]">
       {cfg.topWarning}
 
-      {sentStatus === "in-progress" || sentStatus === "failed" ? (
-        <SentStatusCard exchange={cfg.name} amount={sentAmountRef.current || amtNum} status={sentStatus} txHash={txHash} isPreview={isPreview} />
+      {sentStatus === "in-progress" || sentStatus === "delayed" || sentStatus === "failed" ? (
+        <SentStatusCard exchange={cfg.name} amount={sentAmountRef.current || amtNum} status={sentStatus} txHash={txHash} isPreview={isPreview} onRetry={reset} />
       ) : sentStatus !== "arrived" ? (
         <>
           <AmountCard
@@ -724,10 +814,13 @@ function AppFlow({ cfg, onConfirmed }: { cfg: AppFlowConfig; onConfirmed: (amoun
                 <div aria-hidden className="absolute inset-0 rounded-[12px] border border-[var(--border-strong)] pointer-events-none" />
                 <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0"
                   className="flex-1 min-w-0 px-[16px] py-[12px] bg-transparent text-[16px] leading-[24px] tracking-[-0.32px] text-[var(--ink)] placeholder:text-[var(--text-muted)] focus:outline-none" />
-                <button onClick={() => setAmount(String(LOAN_USDC))} className="text-[12px] text-[var(--accent)] font-semibold pr-[10px] shrink-0 hover:underline">Max</button>
+                <button onClick={() => { if (spendable != null) setAmount(String(spendable)); }} disabled={spendable == null} className="text-[12px] text-[var(--accent)] font-semibold pr-[10px] shrink-0 hover:underline disabled:opacity-40 disabled:no-underline">Max</button>
                 <span className="pr-[16px] text-[14px] font-semibold text-[var(--text-muted)] shrink-0">USDC</span>
               </div>
-              <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">Available: {LOAN_USDC} USDC</p>
+              <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">{spendable == null ? "Checking your balance…" : `Available: ${spendable} USDC`}</p>
+              {amount !== "" && spendable != null && amtNum > spendable && (
+                <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1"><AlertTriangle className="w-3 h-3" />That's more than your available balance.</p>
+              )}
             </div>
           </Card>
 
@@ -901,36 +994,41 @@ const COINSPH_FLOW: AppFlowConfig = {
 
 /* ─── Binance flow (custom — has P2P cash-out guide with video) ──── */
 function BinanceFlow({ onConfirmed }: { onConfirmed: (amount: number) => void }) {
-  const { available: LOAN_USDC, isPreview, send } = useWithdrawData();
+  const { available: LOAN_USDC, spendable, isPreview, send } = useWithdrawData();
   const region = useRegion();
   const isPH = region !== "other";
   const [address, setAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [sending, setSending] = useState(false);
   const [showP2P, setShowP2P] = useState(false);
-  const { status: sentStatus, txHash, onSent } = useSendStatus(isPreview);
+  const { status: sentStatus, txHash, onSent, reset } = useSendStatus(isPreview);
   const addrValid = isValidAddress(address);
   const amtNum = parseFloat(amount);
-  const amtValid = !isNaN(amtNum) && amtNum > 0 && amtNum <= LOAN_USDC;
+  // Cap on the verified on-chain balance only; send stays off until it loads.
+  const amtValid = spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable;
   const canSend = addrValid && amtValid && !sending;
   const sentAmountRef = useRef(0);
 
   useEffect(() => {
-    if (sentStatus === "arrived") onConfirmed(sentAmountRef.current);
+    if (sentStatus === "arrived") { track("withdraw_confirmed", { exchange: "Binance", amount: sentAmountRef.current }); onConfirmed(sentAmountRef.current); }
+    else if (sentStatus === "failed") track("withdraw_failed", { exchange: "Binance", amount: sentAmountRef.current });
+    else if (sentStatus === "delayed") track("withdraw_delayed", { exchange: "Binance", amount: sentAmountRef.current });
   }, [sentStatus, onConfirmed]);
 
   async function handleSend() {
     if (!canSend) return;
+    track("withdraw_send_initiated", { exchange: "Binance", amount: amtNum });
     setSending(true);
     const hash = await send(address.trim(), String(amtNum));
     setSending(false);
-    if (hash) { sentAmountRef.current = amtNum; onSent(hash); }
+    if (hash) { sentAmountRef.current = amtNum; track("withdraw_sent", { exchange: "Binance", amount: amtNum }); onSent(hash); }
+    else track("withdraw_send_rejected", { exchange: "Binance", amount: amtNum });
   }
 
   return (
     <div className="space-y-[12px]">
-      {sentStatus === "in-progress" || sentStatus === "failed" ? (
-        <SentStatusCard exchange="Binance" amount={sentAmountRef.current || amtNum} status={sentStatus} txHash={txHash} isPreview={isPreview} />
+      {sentStatus === "in-progress" || sentStatus === "delayed" || sentStatus === "failed" ? (
+        <SentStatusCard exchange="Binance" amount={sentAmountRef.current || amtNum} status={sentStatus} txHash={txHash} isPreview={isPreview} onRetry={reset} />
       ) : sentStatus !== "arrived" ? (
         <>
           <AmountCard
@@ -980,10 +1078,13 @@ function BinanceFlow({ onConfirmed }: { onConfirmed: (amount: number) => void })
                 <div aria-hidden className="absolute inset-0 rounded-[12px] border border-[var(--border-strong)] pointer-events-none" />
                 <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0"
                   className="flex-1 min-w-0 px-[16px] py-[12px] bg-transparent text-[16px] leading-[24px] tracking-[-0.32px] text-[var(--ink)] placeholder:text-[var(--text-muted)] focus:outline-none" />
-                <button onClick={() => setAmount(String(LOAN_USDC))} className="text-[12px] text-[var(--accent)] font-semibold pr-[10px] shrink-0 hover:underline">Max</button>
+                <button onClick={() => { if (spendable != null) setAmount(String(spendable)); }} disabled={spendable == null} className="text-[12px] text-[var(--accent)] font-semibold pr-[10px] shrink-0 hover:underline disabled:opacity-40 disabled:no-underline">Max</button>
                 <span className="pr-[16px] text-[14px] font-semibold text-[var(--text-muted)] shrink-0">USDC</span>
               </div>
-              <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">Available: {LOAN_USDC} USDC</p>
+              <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">{spendable == null ? "Checking your balance…" : `Available: ${spendable} USDC`}</p>
+              {amount !== "" && spendable != null && amtNum > spendable && (
+                <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1"><AlertTriangle className="w-3 h-3" />That's more than your available balance.</p>
+              )}
             </div>
           </Card>
 
@@ -1178,6 +1279,7 @@ function WithdrawFlow() {
   const [confirmed, setConfirmed] = useState<ConfirmedState | null>(null);
 
   function goWithdraw(p: Provider) {
+    track("withdraw_exchange_selected", { exchange: p });
     setProvider(p);
     setScreen("withdraw");
     requestAnimationFrame(() => requestAnimationFrame(() => setWithdrawVisible(true)));
@@ -1240,6 +1342,9 @@ export default function Withdraw() {
   useLoanData({ userId: user.id, enabled: Boolean(user.id) && !isPreview });
   // Touch geo so the edge function is warmed for the in-flow region copy.
   useGeoCheck(isPreview);
+  // Funnel entry — drop-off between this and withdraw_send_initiated is the
+  // address/amount step; between exchange_selected and send_initiated the paste step.
+  useEffect(() => { track("withdraw_opened"); }, []);
 
   // The borrower's funded loans = the disbursed USDC they can now cash out.
   const fundedLoans = useMemo(
@@ -1264,10 +1369,17 @@ export default function Withdraw() {
 
   const fundedTotal = fundedLoans.reduce((sum, loan) => sum + Number(loan.loanAmount || 0), 0);
   const onChainBalance = typeof usdcBalanceRaw === "bigint" ? Number(usdcBalanceRaw) / 1e6 : null;
+  // Display estimate: real balance if we have it, else the funded-loan amount.
   const available = isPreview ? 50 : Math.round((onChainBalance ?? fundedTotal) * 100) / 100;
+  // Hard send cap: verified on-chain balance only. `null` until it loads, which
+  // disables the send button so we never authorise more than the wallet holds.
+  // Floor (not round) to 2dp so "Max" can never land a hair above the real balance
+  // and revert on-chain — sub-cent dust is left behind rather than over-sent.
+  const spendable = isPreview ? 50 : onChainBalance != null ? Math.floor(onChainBalance * 100) / 100 : null;
 
   const data = useMemo<WithdrawData>(() => ({
     available,
+    spendable,
     repayUsdc: isPreview ? 55 : primaryLoan ? Math.round(Number(primaryLoan.totalRepaymentAmount) * 100) / 100 : null,
     dueDate: isPreview
       ? "July 18, 2026"
@@ -1283,7 +1395,7 @@ export default function Withdraw() {
       }
       return await Transfer(toAddress.trim(), amount, primaryLoan?.id ?? "withdraw", "USDC");
     }
-  }), [available, isPreview, primaryLoan, walletAddress, Transfer]);
+  }), [available, spendable, isPreview, primaryLoan, walletAddress, Transfer]);
 
   return (
     <WithdrawDataContext.Provider value={data}>
