@@ -8,7 +8,7 @@ import {
 import { useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { erc20Abi } from "viem";
-import { useAccount, useReadContract } from "wagmi";
+import { useAccount, useReadContract, useWaitForTransactionReceipt } from "wagmi";
 
 import { useGeoCheck } from "@/hooks/useGeoCheck";
 import { useLoanData } from "@/hooks/useLoanData";
@@ -34,7 +34,9 @@ type WithdrawData = {
   repayUsdc: number | null;
   dueDate: string | null;
   walletAddress: string;
-  send: (toAddress: string, amount: string) => Promise<boolean>;
+  isPreview: boolean;
+  // Returns the on-chain tx hash (or null if the send failed / was rejected).
+  send: (toAddress: string, amount: string) => Promise<string | null>;
 };
 const WithdrawDataContext = createContext<WithdrawData | null>(null);
 function useWithdrawData(): WithdrawData {
@@ -113,15 +115,15 @@ function CopyButton({ value, className = "" }: { value: string; className?: stri
 }
 
 function ReviewModal({ exchange, amount, address, onClose, onSent }: {
-  exchange: string; amount: number; address: string; onClose: () => void; onSent: () => void;
+  exchange: string; amount: number; address: string; onClose: () => void; onSent: (hash: string) => void;
 }) {
   const [sending, setSending] = useState(false);
   const { send: sendUsdc } = useWithdrawData();
 
   async function send() {
     setSending(true);
-    const ok = await sendUsdc(address, String(amount));
-    if (ok) { onSent(); onClose(); }
+    const hash = await sendUsdc(address, String(amount));
+    if (hash) { onSent(hash); onClose(); }
     else setSending(false);
   }
 
@@ -604,6 +606,79 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
   );
 }
 
+/* ─── Send confirmation (real on-chain receipt watch) ───────────── */
+type SentStatus = "idle" | "in-progress" | "arrived" | "failed";
+
+// Tracks a withdrawal send through to on-chain confirmation. After the review
+// sheet broadcasts the transfer it calls `onSent(hash)`; we then watch the
+// transaction receipt on Base and only flip to "arrived" once it actually mines
+// successfully (or "failed" if it reverts / errors). In preview there's no chain,
+// so a short timer stands in.
+function useSendStatus(isPreview: boolean) {
+  const [status, setStatus] = useState<SentStatus>("idle");
+  const [txHash, setTxHash] = useState<string | null>(null);
+
+  const { data: receipt, isError } = useWaitForTransactionReceipt({
+    hash: !isPreview && txHash ? (txHash as `0x${string}`) : undefined,
+    chainId: ALLOWED_CHAIN_ID,
+    query: { enabled: !isPreview && Boolean(txHash) }
+  });
+
+  useEffect(() => {
+    if (status !== "in-progress") return;
+    if (isPreview) {
+      const t = setTimeout(() => setStatus("arrived"), 2500);
+      return () => clearTimeout(t);
+    }
+    if (receipt) setStatus(receipt.status === "success" ? "arrived" : "failed");
+    else if (isError) setStatus("failed");
+  }, [status, isPreview, receipt, isError]);
+
+  return {
+    status,
+    txHash,
+    onSent: (hash: string) => { setTxHash(hash); setStatus("in-progress"); }
+  };
+}
+
+function SentStatusCard({ exchange, amount, status, txHash, isPreview }: {
+  exchange: string; amount: number; status: Exclude<SentStatus, "idle">; txHash: string | null; isPreview: boolean;
+}) {
+  const failed = status === "failed";
+  return (
+    <Card className="p-[18px]">
+      <div className="flex items-center gap-[14px]">
+        <div className={`w-[44px] h-[44px] rounded-full flex items-center justify-center shrink-0 ${failed ? "bg-[var(--danger-bg)]" : "bg-[var(--green-bg)]"}`}>
+          {failed
+            ? <AlertTriangle className="w-[22px] h-[22px] text-[var(--danger)]" />
+            : <CheckCircle2 className="w-[24px] h-[24px] text-[var(--green-2)]" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[16px] font-semibold text-[var(--ink)] tracking-[-0.4px]">{amount} USDC sent to {exchange}</p>
+          <div className="flex items-center gap-[6px] mt-[3px]">
+            {status === "in-progress" && <Loader2 className="w-[13px] h-[13px] text-[var(--primary)] animate-spin shrink-0" />}
+            {status === "arrived" && <Check className="w-[13px] h-[13px] text-[var(--green-2)] shrink-0" strokeWidth={3} />}
+            {failed && <AlertTriangle className="w-[13px] h-[13px] text-[var(--danger)] shrink-0" />}
+            <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
+              {status === "in-progress"
+                ? "Confirming on the Base network…"
+                : status === "arrived"
+                  ? `Confirmed on-chain · ${exchange} will credit you shortly`
+                  : "We couldn't confirm this transfer — check the status below"}
+            </p>
+          </div>
+        </div>
+      </div>
+      {!isPreview && txHash && (
+        <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
+          className="mt-[12px] inline-flex items-center gap-[5px] text-[12px] font-semibold text-[var(--accent)] hover:text-[var(--primary)] transition-colors">
+          View on BaseScan <ArrowUpRight className="w-[13px] h-[13px]" />
+        </a>
+      )}
+    </Card>
+  );
+}
+
 /* ─── Shared address + amount form ──────────────────────────────── */
 type AppFlowConfig = {
   name: string;
@@ -620,46 +695,23 @@ type AppFlowConfig = {
 };
 
 function AppFlow({ cfg }: { cfg: AppFlowConfig }) {
-  const { available: LOAN_USDC } = useWithdrawData();
+  const { available: LOAN_USDC, isPreview } = useWithdrawData();
   const [address, setAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [showReview, setShowReview] = useState(false);
   const [showCashOut, setShowCashOut] = useState(true);
-  const [sentStatus, setSentStatus] = useState<"idle" | "in-progress" | "arrived">("idle");
+  const { status: sentStatus, txHash, onSent } = useSendStatus(isPreview);
   const addrValid = isValidAddress(address);
   const amtNum = parseFloat(amount);
   const amtValid = !isNaN(amtNum) && amtNum > 0 && amtNum <= LOAN_USDC;
   const canReview = addrValid && amtValid;
-
-  useEffect(() => {
-    if (sentStatus === "in-progress") {
-      const t = setTimeout(() => setSentStatus("arrived"), 8000);
-      return () => clearTimeout(t);
-    }
-  }, [sentStatus]);
 
   return (
     <div className="space-y-[12px]">
       {cfg.topWarning}
 
       {sentStatus !== "idle" ? (
-        <Card className="p-[18px] flex items-center gap-[14px]">
-          <div className="w-[44px] h-[44px] rounded-full bg-[var(--green-bg)] flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-[24px] h-[24px] text-[var(--green-2)]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[16px] font-semibold text-[var(--ink)] tracking-[-0.4px]">{amtNum} USDC sent to {cfg.name}</p>
-            <div className="flex items-center gap-[6px] mt-[3px]">
-              {sentStatus === "in-progress"
-                ? <Loader2 className="w-[13px] h-[13px] text-[var(--primary)] animate-spin shrink-0" />
-                : <Check className="w-[13px] h-[13px] text-[var(--green-2)] shrink-0" strokeWidth={3} />
-              }
-              <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
-                {sentStatus === "in-progress" ? "Your transfer is in progress" : "Your money has arrived"}
-              </p>
-            </div>
-          </div>
-        </Card>
+        <SentStatusCard exchange={cfg.name} amount={amtNum} status={sentStatus} txHash={txHash} isPreview={isPreview} />
       ) : (
         <>
           <AmountCard
@@ -744,7 +796,7 @@ function AppFlow({ cfg }: { cfg: AppFlowConfig }) {
         )}
       </Card>
 
-      {showReview && <ReviewModal exchange={cfg.name} amount={parseFloat(amount)} address={address} onClose={() => setShowReview(false)} onSent={() => setSentStatus("in-progress")} />}
+      {showReview && <ReviewModal exchange={cfg.name} amount={parseFloat(amount)} address={address} onClose={() => setShowReview(false)} onSent={onSent} />}
     </div>
   );
 }
@@ -870,46 +922,23 @@ const COINSPH_FLOW: AppFlowConfig = {
 
 /* ─── Binance flow (custom — has P2P cash-out guide with video) ──── */
 function BinanceFlow() {
-  const { available: LOAN_USDC } = useWithdrawData();
+  const { available: LOAN_USDC, isPreview } = useWithdrawData();
   const region = useRegion();
   const isPH = region !== "other";
   const [address, setAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [showReview, setShowReview] = useState(false);
   const [showP2P, setShowP2P] = useState(false);
-  const [sentStatus, setSentStatus] = useState<"idle" | "in-progress" | "arrived">("idle");
+  const { status: sentStatus, txHash, onSent } = useSendStatus(isPreview);
   const addrValid = isValidAddress(address);
   const amtNum = parseFloat(amount);
   const amtValid = !isNaN(amtNum) && amtNum > 0 && amtNum <= LOAN_USDC;
   const canReview = addrValid && amtValid;
 
-  useEffect(() => {
-    if (sentStatus === "in-progress") {
-      const t = setTimeout(() => setSentStatus("arrived"), 8000);
-      return () => clearTimeout(t);
-    }
-  }, [sentStatus]);
-
   return (
     <div className="space-y-[12px]">
       {sentStatus !== "idle" ? (
-        <Card className="p-[18px] flex items-center gap-[14px]">
-          <div className="w-[44px] h-[44px] rounded-full bg-[var(--green-bg)] flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-[24px] h-[24px] text-[var(--green-2)]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[16px] font-semibold text-[var(--ink)] tracking-[-0.4px]">{amtNum} USDC sent to Binance</p>
-            <div className="flex items-center gap-[6px] mt-[3px]">
-              {sentStatus === "in-progress"
-                ? <Loader2 className="w-[13px] h-[13px] text-[var(--primary)] animate-spin shrink-0" />
-                : <Check className="w-[13px] h-[13px] text-[var(--green-2)] shrink-0" strokeWidth={3} />
-              }
-              <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
-                {sentStatus === "in-progress" ? "Your transfer is in progress" : "Your money has arrived"}
-              </p>
-            </div>
-          </div>
-        </Card>
+        <SentStatusCard exchange="Binance" amount={amtNum} status={sentStatus} txHash={txHash} isPreview={isPreview} />
       ) : (
         <>
           <AmountCard
@@ -1008,7 +1037,7 @@ function BinanceFlow() {
         )}
       </Card>
 
-      {showReview && <ReviewModal exchange="Binance" amount={parseFloat(amount)} address={address} onClose={() => setShowReview(false)} onSent={() => setSentStatus("in-progress")} />}
+      {showReview && <ReviewModal exchange="Binance" amount={parseFloat(amount)} address={address} onClose={() => setShowReview(false)} onSent={onSent} />}
     </div>
   );
 }
@@ -1236,13 +1265,13 @@ export default function Withdraw() {
         ? parseDateSafely(primaryLoan.dueDate).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
         : null,
     walletAddress,
+    isPreview,
     send: async (toAddress: string, amount: string) => {
       if (isPreview) {
         await new Promise((r) => setTimeout(r, 1500));
-        return true;
+        return "0xpreview";
       }
-      const hash = await Transfer(toAddress.trim(), amount, primaryLoan?.id ?? "withdraw", "USDC");
-      return Boolean(hash);
+      return await Transfer(toAddress.trim(), amount, primaryLoan?.id ?? "withdraw", "USDC");
     }
   }), [available, isPreview, primaryLoan, walletAddress, Transfer]);
 
