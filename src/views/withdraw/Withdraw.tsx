@@ -12,6 +12,7 @@ import { erc20Abi } from "viem";
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from "wagmi";
 
 import { openSupportContacts } from "@/components/support/supportContacts";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useGeoCheck } from "@/hooks/useGeoCheck";
 import { useLoanData } from "@/hooks/useLoanData";
 import useWallet from "@/hooks/useWallet";
@@ -50,7 +51,8 @@ type WithdrawData = {
   walletAddress: string;
   isPreview: boolean;
   // Returns the on-chain tx hash (or null if the send failed / was rejected).
-  send: (toAddress: string, amount: string) => Promise<string | null>;
+  // `exchange` labels the destination for the withdrawal record + notification.
+  send: (toAddress: string, amount: string, exchange: string) => Promise<string | null>;
 };
 const WithdrawDataContext = createContext<WithdrawData | null>(null);
 function useWithdrawData(): WithdrawData {
@@ -767,7 +769,7 @@ function AppFlow({ cfg, onConfirmed }: { cfg: AppFlowConfig; onConfirmed: (amoun
     if (!canSend) return;
     track("withdraw_send_initiated", { exchange: cfg.name, amount: amtNum });
     setSending(true);
-    const hash = await send(address.trim(), String(amtNum));
+    const hash = await send(address.trim(), String(amtNum), cfg.name);
     setSending(false);
     if (hash) { sentAmountRef.current = amtNum; track("withdraw_sent", { exchange: cfg.name, amount: amtNum }); onSent(hash); }
     else track("withdraw_send_rejected", { exchange: cfg.name, amount: amtNum });
@@ -1019,7 +1021,7 @@ function BinanceFlow({ onConfirmed }: { onConfirmed: (amount: number) => void })
     if (!canSend) return;
     track("withdraw_send_initiated", { exchange: "Binance", amount: amtNum });
     setSending(true);
-    const hash = await send(address.trim(), String(amtNum));
+    const hash = await send(address.trim(), String(amtNum), "Binance");
     setSending(false);
     if (hash) { sentAmountRef.current = amtNum; track("withdraw_sent", { exchange: "Binance", amount: amtNum }); onSent(hash); }
     else track("withdraw_send_rejected", { exchange: "Binance", amount: amtNum });
@@ -1325,6 +1327,36 @@ function WithdrawFlow() {
 /* ─── Root — provides real on-chain data to the flow ─────────────── */
 const PREVIEW_ADDRESS = "0x1234aBCd5678Ef901234abcd5678ef901234ABcd";
 
+// After a withdrawal transfer is broadcast, persist a standalone record (for the
+// borrower's transaction history + support) and fire the "on its way" notification.
+// Fire-and-forget: the money is already sent, so a logging failure must never block
+// or fail the user's flow — we only log it. The unique tx_hash index dedupes retries.
+async function recordWithdrawal(args: {
+  userId: string; amount: number; exchange: string; address: string; txHash: string;
+}) {
+  try {
+    const supabase = getSupabaseBrowserClient();
+    const { data, error } = await supabase
+      .from("withdrawals")
+      .insert({
+        borrower_user_id: args.userId,
+        amount: args.amount,
+        exchange: args.exchange,
+        destination_address: args.address,
+        tx_hash: args.txHash,
+      })
+      .select("id")
+      .single();
+    if (error) { console.error("[withdraw] record failed:", error.message); return; }
+    const { error: notifyError } = await supabase.functions.invoke("withdrawal-notification", {
+      body: { withdrawalId: data.id },
+    });
+    if (notifyError) console.error("[withdraw] notification failed:", notifyError.message);
+  } catch (err) {
+    console.error("[withdraw] record/notify error:", err instanceof Error ? err.message : err);
+  }
+}
+
 export default function Withdraw() {
   const location = useLocation();
   const account = useAccount();
@@ -1388,14 +1420,19 @@ export default function Withdraw() {
         : null,
     walletAddress,
     isPreview,
-    send: async (toAddress: string, amount: string) => {
+    send: async (toAddress: string, amount: string, exchange: string) => {
       if (isPreview) {
         await new Promise((r) => setTimeout(r, 1500));
         return "0xpreview";
       }
-      return await Transfer(toAddress.trim(), amount, primaryLoan?.id ?? "withdraw", "USDC");
+      const hash = await Transfer(toAddress.trim(), amount, primaryLoan?.id ?? "withdraw", "USDC");
+      if (hash && user.id) {
+        // Don't await — recording/notifying must not delay the confirmation UI.
+        void recordWithdrawal({ userId: user.id, amount: Number(amount), exchange, address: toAddress.trim(), txHash: hash });
+      }
+      return hash;
     }
-  }), [available, spendable, isPreview, primaryLoan, walletAddress, Transfer]);
+  }), [available, spendable, isPreview, primaryLoan, walletAddress, Transfer, user.id]);
 
   return (
     <WithdrawDataContext.Provider value={data}>
