@@ -1,4 +1,4 @@
-const ALCHEMY_API_KEY = import.meta.env.VITE_ALCHEMY_API_KEY ?? '';
+const ALCHEMY_API_KEY = import.meta.env.VITE_ALCHEMY_ID ?? '';
 
 const CHAINS = [
    { rpcUrl: `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}` }
