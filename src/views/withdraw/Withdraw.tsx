@@ -5,6 +5,7 @@ import {
   PlayCircle, Download, CreditCard, MessageCircle, Landmark, ClipboardCheck,
   Lock, Loader2, Clock,
 } from "lucide-react";
+import posthog from "posthog-js";
 import { useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { erc20Abi } from "viem";
@@ -22,6 +23,12 @@ import { parseDateSafely } from "@/utils/dateFormatters";
 import "./withdraw-theme.css";
 
 const FONT = `-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", sans-serif`;
+
+// Withdraw-funnel analytics. PostHog only initialises in production (see main.tsx),
+// so this is a no-op in dev/preview — capture() is safe to call regardless.
+function track(event: string, props?: Record<string, unknown>) {
+  if (import.meta.env.PROD) posthog.capture(event, props);
+}
 
 type Screen = "celebrate" | "withdraw";
 type Provider = "moneybees" | "binance" | "coinsph" | "gcash" | "pdax";
@@ -751,15 +758,19 @@ function AppFlow({ cfg, onConfirmed }: { cfg: AppFlowConfig; onConfirmed: (amoun
   const sentAmountRef = useRef(0);
 
   useEffect(() => {
-    if (sentStatus === "arrived") onConfirmed(sentAmountRef.current);
-  }, [sentStatus, onConfirmed]);
+    if (sentStatus === "arrived") { track("withdraw_confirmed", { exchange: cfg.name, amount: sentAmountRef.current }); onConfirmed(sentAmountRef.current); }
+    else if (sentStatus === "failed") track("withdraw_failed", { exchange: cfg.name, amount: sentAmountRef.current });
+    else if (sentStatus === "delayed") track("withdraw_delayed", { exchange: cfg.name, amount: sentAmountRef.current });
+  }, [sentStatus, onConfirmed, cfg.name]);
 
   async function handleSend() {
     if (!canSend) return;
+    track("withdraw_send_initiated", { exchange: cfg.name, amount: amtNum });
     setSending(true);
     const hash = await send(address.trim(), String(amtNum));
     setSending(false);
-    if (hash) { sentAmountRef.current = amtNum; onSent(hash); }
+    if (hash) { sentAmountRef.current = amtNum; track("withdraw_sent", { exchange: cfg.name, amount: amtNum }); onSent(hash); }
+    else track("withdraw_send_rejected", { exchange: cfg.name, amount: amtNum });
   }
 
   return (
@@ -999,15 +1010,19 @@ function BinanceFlow({ onConfirmed }: { onConfirmed: (amount: number) => void })
   const sentAmountRef = useRef(0);
 
   useEffect(() => {
-    if (sentStatus === "arrived") onConfirmed(sentAmountRef.current);
+    if (sentStatus === "arrived") { track("withdraw_confirmed", { exchange: "Binance", amount: sentAmountRef.current }); onConfirmed(sentAmountRef.current); }
+    else if (sentStatus === "failed") track("withdraw_failed", { exchange: "Binance", amount: sentAmountRef.current });
+    else if (sentStatus === "delayed") track("withdraw_delayed", { exchange: "Binance", amount: sentAmountRef.current });
   }, [sentStatus, onConfirmed]);
 
   async function handleSend() {
     if (!canSend) return;
+    track("withdraw_send_initiated", { exchange: "Binance", amount: amtNum });
     setSending(true);
     const hash = await send(address.trim(), String(amtNum));
     setSending(false);
-    if (hash) { sentAmountRef.current = amtNum; onSent(hash); }
+    if (hash) { sentAmountRef.current = amtNum; track("withdraw_sent", { exchange: "Binance", amount: amtNum }); onSent(hash); }
+    else track("withdraw_send_rejected", { exchange: "Binance", amount: amtNum });
   }
 
   return (
@@ -1264,6 +1279,7 @@ function WithdrawFlow() {
   const [confirmed, setConfirmed] = useState<ConfirmedState | null>(null);
 
   function goWithdraw(p: Provider) {
+    track("withdraw_exchange_selected", { exchange: p });
     setProvider(p);
     setScreen("withdraw");
     requestAnimationFrame(() => requestAnimationFrame(() => setWithdrawVisible(true)));
@@ -1326,6 +1342,9 @@ export default function Withdraw() {
   useLoanData({ userId: user.id, enabled: Boolean(user.id) && !isPreview });
   // Touch geo so the edge function is warmed for the in-flow region copy.
   useGeoCheck(isPreview);
+  // Funnel entry — drop-off between this and withdraw_send_initiated is the
+  // address/amount step; between exchange_selected and send_initiated the paste step.
+  useEffect(() => { track("withdraw_opened"); }, []);
 
   // The borrower's funded loans = the disbursed USDC they can now cash out.
   const fundedLoans = useMemo(
