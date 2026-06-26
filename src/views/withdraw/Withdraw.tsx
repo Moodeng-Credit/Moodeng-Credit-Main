@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   CheckCircle2, ChevronLeft, ChevronRight, Copy, Wallet, ArrowUpRight,
   AlertTriangle, Info, ShieldAlert, Check, X, ArrowRight, ArrowDownLeft,
@@ -551,40 +551,95 @@ function useSendStatus(isPreview: boolean) {
 }
 
 function SentStatusCard({ exchange, amount, status, txHash, isPreview }: {
-  exchange: string; amount: number; status: Exclude<SentStatus, "idle">; txHash: string | null; isPreview: boolean;
+  exchange: string; amount: number; status: Exclude<SentStatus, "idle" | "arrived">; txHash: string | null; isPreview: boolean;
 }) {
   const failed = status === "failed";
   return (
     <Card className="p-[18px]">
       <div className="flex items-center gap-[14px]">
-        <div className={`w-[44px] h-[44px] rounded-full flex items-center justify-center shrink-0 ${failed ? "bg-[var(--danger-bg)]" : "bg-[var(--green-bg)]"}`}>
+        <div className={`w-[44px] h-[44px] rounded-full flex items-center justify-center shrink-0 ${failed ? "bg-[var(--danger-bg)]" : "bg-[var(--surface-1)]"}`}>
           {failed
             ? <AlertTriangle className="w-[22px] h-[22px] text-[var(--danger)]" />
-            : <CheckCircle2 className="w-[24px] h-[24px] text-[var(--green-2)]" />}
+            : <Loader2 className="w-[22px] h-[22px] text-[var(--primary)] animate-spin" />}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[16px] font-semibold text-[var(--ink)] tracking-[-0.4px]">{amount} USDC sent to {exchange}</p>
-          <div className="flex items-center gap-[6px] mt-[3px]">
-            {status === "in-progress" && <Loader2 className="w-[13px] h-[13px] text-[var(--primary)] animate-spin shrink-0" />}
-            {status === "arrived" && <Check className="w-[13px] h-[13px] text-[var(--green-2)] shrink-0" strokeWidth={3} />}
-            {failed && <AlertTriangle className="w-[13px] h-[13px] text-[var(--danger)] shrink-0" />}
-            <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
-              {status === "in-progress"
-                ? "Confirming on the Base network…"
-                : status === "arrived"
-                  ? `Confirmed on-chain · ${exchange} will credit you shortly`
-                  : "We couldn't confirm this transfer — check the status below"}
-            </p>
-          </div>
+          <p className="text-[16px] font-semibold text-[var(--ink)] tracking-[-0.4px]">
+            {failed ? "Transfer not completed" : `Sending ${amount} USDC to ${exchange}`}
+          </p>
+          <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[3px]">
+            {failed
+              ? "Something went wrong — please try again or contact support"
+              : "Processing…"}
+          </p>
         </div>
       </div>
-      {!isPreview && txHash && (
+      {failed && !isPreview && txHash && (
         <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
           className="mt-[12px] inline-flex items-center gap-[5px] text-[12px] font-semibold text-[var(--accent)] hover:text-[var(--primary)] transition-colors">
-          View on BaseScan <ArrowUpRight className="w-[13px] h-[13px]" />
+          View transaction details <ArrowUpRight className="w-[13px] h-[13px]" />
         </a>
       )}
     </Card>
+  );
+}
+
+/* ─── Full-screen celebration shown after on-chain confirmation ──── */
+const PROVIDER_NAMES: Record<Provider, string> = {
+  moneybees: "Moneybees", binance: "Binance", coinsph: "Coins.ph",
+  gcash: "GCrypto", pdax: "PDAX",
+};
+
+function ExchangeBadge({ provider }: { provider: Provider }) {
+  const cls = "w-[52px] h-[52px]";
+  if (provider === "moneybees") return <MoneybeesAppIcon className={cls} />;
+  if (provider === "binance") return <BinanceAppIcon className={cls} />;
+  if (provider === "coinsph") return <CoinsPhAppIcon className={cls} />;
+  if (provider === "gcash") return <GCashAppIcon className={cls} />;
+  return <PdaxAppIcon className={cls} />;
+}
+
+function ConfirmationScreen({ provider, amount, onDone }: {
+  provider: Provider; amount: number; onDone: () => void;
+}) {
+  const name = PROVIDER_NAMES[provider];
+  return (
+    <div className="absolute inset-0 z-[60] flex flex-col" style={{ background: "#0c0818" }}>
+      {/* Hippo image fills top */}
+      <div className="relative flex-1 min-h-0 overflow-hidden">
+        <img src="/hippos/party.png" alt="" className="w-full h-full object-cover object-top" />
+        {/* Subtle gradient at bottom so exchange badge reads cleanly */}
+        <div className="absolute inset-x-0 bottom-0 h-[80px]" style={{ background: "linear-gradient(to top, #0c0818, transparent)" }} />
+        {/* Exchange logo badge — bottom-right corner */}
+        <div className="absolute bottom-[16px] right-[20px] z-10 rounded-[18px] bg-[#0c0818] p-[4px] shadow-xl">
+          <ExchangeBadge provider={provider} />
+        </div>
+      </div>
+
+      {/* Success info */}
+      <div className="px-[24px] pt-[24px] pb-[max(28px,env(safe-area-inset-bottom))] space-y-[20px]"
+        style={{ background: "#0c0818" }}>
+        <div className="flex flex-col items-center text-center gap-[10px]">
+          <div className="w-[56px] h-[56px] rounded-full flex items-center justify-center"
+            style={{ background: "var(--green)" }}>
+            <Check className="w-[28px] h-[28px] text-white" strokeWidth={3} />
+          </div>
+          <p className="text-[26px] font-bold text-white leading-[1.15] tracking-[-0.03em]">
+            Withdrawn to {name}!
+          </p>
+          <p className="text-[15px] leading-[1.4]" style={{ color: "#c4a8f0" }}>
+            {amount} USDC sent from your wallet
+          </p>
+          <p className="text-[13px]" style={{ color: "#7a6b9a" }}>
+            Arriving in your {name} account in a few minutes.
+          </p>
+        </div>
+        <button onClick={onDone}
+          className="w-full rounded-[16px] py-[16px] text-[16px] font-semibold text-white"
+          style={{ background: "var(--primary)" }}>
+          Done
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -603,7 +658,7 @@ type AppFlowConfig = {
   topWarning?: React.ReactNode;
 };
 
-function AppFlow({ cfg }: { cfg: AppFlowConfig }) {
+function AppFlow({ cfg, onConfirmed }: { cfg: AppFlowConfig; onConfirmed: (amount: number) => void }) {
   const { available: LOAN_USDC, isPreview, send } = useWithdrawData();
   const [address, setAddress] = useState("");
   const [amount, setAmount] = useState("");
@@ -614,25 +669,27 @@ function AppFlow({ cfg }: { cfg: AppFlowConfig }) {
   const amtNum = parseFloat(amount);
   const amtValid = !isNaN(amtNum) && amtNum > 0 && amtNum <= LOAN_USDC;
   const canSend = addrValid && amtValid && !sending;
+  const sentAmountRef = useRef(0);
 
-  // Tapping send goes straight to the wallet — the Base Account popup is the
-  // only confirmation step. While it's open and the tx broadcasts, the button
-  // shows progress; once it returns a hash the form is replaced by the status.
+  useEffect(() => {
+    if (sentStatus === "arrived") onConfirmed(sentAmountRef.current);
+  }, [sentStatus, onConfirmed]);
+
   async function handleSend() {
     if (!canSend) return;
     setSending(true);
     const hash = await send(address.trim(), String(amtNum));
     setSending(false);
-    if (hash) onSent(hash);
+    if (hash) { sentAmountRef.current = amtNum; onSent(hash); }
   }
 
   return (
     <div className="space-y-[12px]">
       {cfg.topWarning}
 
-      {sentStatus !== "idle" ? (
-        <SentStatusCard exchange={cfg.name} amount={amtNum} status={sentStatus} txHash={txHash} isPreview={isPreview} />
-      ) : (
+      {sentStatus === "in-progress" || sentStatus === "failed" ? (
+        <SentStatusCard exchange={cfg.name} amount={sentAmountRef.current || amtNum} status={sentStatus} txHash={txHash} isPreview={isPreview} />
+      ) : sentStatus !== "arrived" ? (
         <>
           <AmountCard
             receive={<ReceiveEstimate currency={cfg.receiveCurrency} usdcAmount={amtValid ? amtNum : LOAN_USDC} />}
@@ -680,7 +737,7 @@ function AppFlow({ cfg }: { cfg: AppFlowConfig }) {
               : <>Send {amount || "0"} USDC to {cfg.short} <ArrowRight className="w-4 h-4" /></>}
           </PrimaryBtn>
         </>
-      )}
+      ) : null}
 
       {/* After it arrives — always expanded */}
       <Card className="overflow-hidden">
@@ -792,12 +849,12 @@ const PDAX_FLOW: AppFlowConfig = {
     },
     {
       title: <>Go to <span className="font-bold">Wallet → Withdraw PHP</span></>,
-      helper: "Choose your payout destination: bank account, GCash, or Maya. PDAX withdrawals usually arrive within a few hours."
+      helper: "Choose your payout destination: bank account, GCash, or Maya. GCash and Maya withdrawals arrive in minutes; bank transfers clear same day."
     },
   ],
 };
 
-const COINSPH_DEPOSIT_HELP = "https://support.coins.ph/hc/en-us/articles/26036127886873-How-to-deposit-cryptocurrency-to-your-Coins-ph-account";
+const COINSPH_DEPOSIT_HELP = "https://support.coins.ph/hc/en-us/articles/41270627740953-Starting-your-Coins-Journey-How-to-Deposit-Cryptocurrency-and-Cash-in-PHP-on-Coins-ph";
 const COINSPH_FLOW: AppFlowConfig = {
   name: "Coins.ph",
   short: "Coins.ph",
@@ -805,17 +862,18 @@ const COINSPH_FLOW: AppFlowConfig = {
   payout: "Bank or GCash",
   howItWorks: "Send USDC from your Moodeng wallet to your Coins.ph account. Once it arrives, sell it for pesos and cash out to your bank or GCash.",
   steps: [
-    { icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Open Coins.ph → Portfolio → USDC → Receive", desc: "Go to your Portfolio, select USDC, then tap Receive. Choose Base as the network.", guide: { title: "How to receive funds on Coins.ph", link: { label: "Official Coins.ph guide", url: COINSPH_DEPOSIT_HELP }, steps: [
+    { icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Open Coins.ph → Portfolio → USDC → Receive", desc: "Go to your Portfolio, select USDC, then tap Receive. Choose Base as the network.", guide: { title: "How to find your Coins.ph receiving address", video: "8jgQIuqp5E4?start=45", link: { label: "Official Coins.ph guide", url: COINSPH_DEPOSIT_HELP }, steps: [
       "Open the Coins.ph app and go to your Portfolio.",
       "Select USDC, then tap \"Receive\".",
       "Choose Base as the network.",
+      "Tap to copy the address shown on screen.",
     ] } },
     { icon: <Copy className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Copy your Coins.ph address", desc: "Tap to copy the address shown on screen." },
     { icon: <ClipboardCheck className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Paste it below", desc: "Paste the address in the field below, then confirm and send." },
   ],
   cashOutTitle: "Cash out to pesos with Coins.ph",
-  cashOutIntro: "Once your USDC arrives (usually under 1 minute), sell it for pesos and send directly to your bank or e-wallet.",
-  cashOutVideo: "mlxowanx6j4",
+  cashOutIntro: "Once your USDC arrives (usually a few minutes), sell it for pesos and send directly to your bank or GCash.",
+  cashOutVideo: "T-lsJRfBYIk?start=18",
   cashOutSteps: [
     {
       title: <>Tap <span className="font-bold">Trade → Sell</span>, then select <span className="font-bold">USDC</span></>,
@@ -842,7 +900,7 @@ const COINSPH_FLOW: AppFlowConfig = {
 };
 
 /* ─── Binance flow (custom — has P2P cash-out guide with video) ──── */
-function BinanceFlow() {
+function BinanceFlow({ onConfirmed }: { onConfirmed: (amount: number) => void }) {
   const { available: LOAN_USDC, isPreview, send } = useWithdrawData();
   const region = useRegion();
   const isPH = region !== "other";
@@ -855,20 +913,25 @@ function BinanceFlow() {
   const amtNum = parseFloat(amount);
   const amtValid = !isNaN(amtNum) && amtNum > 0 && amtNum <= LOAN_USDC;
   const canSend = addrValid && amtValid && !sending;
+  const sentAmountRef = useRef(0);
+
+  useEffect(() => {
+    if (sentStatus === "arrived") onConfirmed(sentAmountRef.current);
+  }, [sentStatus, onConfirmed]);
 
   async function handleSend() {
     if (!canSend) return;
     setSending(true);
     const hash = await send(address.trim(), String(amtNum));
     setSending(false);
-    if (hash) onSent(hash);
+    if (hash) { sentAmountRef.current = amtNum; onSent(hash); }
   }
 
   return (
     <div className="space-y-[12px]">
-      {sentStatus !== "idle" ? (
-        <SentStatusCard exchange="Binance" amount={amtNum} status={sentStatus} txHash={txHash} isPreview={isPreview} />
-      ) : (
+      {sentStatus === "in-progress" || sentStatus === "failed" ? (
+        <SentStatusCard exchange="Binance" amount={sentAmountRef.current || amtNum} status={sentStatus} txHash={txHash} isPreview={isPreview} />
+      ) : sentStatus !== "arrived" ? (
         <>
           <AmountCard
             receive={<ReceiveEstimate currency="PHP" usdcAmount={amtValid ? amtNum : LOAN_USDC} />}
@@ -930,7 +993,7 @@ function BinanceFlow() {
               : <>Send {amount || "0"} USDC to Binance <ArrowRight className="w-4 h-4" /></>}
           </PrimaryBtn>
         </>
-      )}
+      ) : null}
 
       <Card className="overflow-hidden">
         <button onClick={() => setShowP2P(v => !v)} className="w-full flex items-center gap-[12px] px-[16px] py-[14px] text-left">
@@ -1073,7 +1136,7 @@ const PROVIDER_TITLES: Record<Provider, string> = {
   pdax: "Send to PDAX",
 };
 
-function WithdrawScreen({ provider, onBack }: { provider: Provider; onBack: () => void }) {
+function WithdrawScreen({ provider, onBack, onConfirmed }: { provider: Provider; onBack: () => void; onConfirmed: (amount: number) => void }) {
   return (
     <div className="absolute inset-0 bg-[var(--app-bg)] flex flex-col pt-[env(safe-area-inset-top,0px)] w-full">
       <div className="sticky top-0 z-20 bg-[var(--app-bg)]/80 backdrop-blur-md px-[24px] pt-[20px] pb-[16px] shrink-0 mt-[10px]">
@@ -1094,27 +1157,44 @@ function WithdrawScreen({ provider, onBack }: { provider: Provider; onBack: () =
       <div className="flex-1 overflow-y-auto pb-[40px]">
         <div className="px-[16px] pt-[12px]">
           {provider === "moneybees" ? <MoneybeesFlow />
-            : provider === "binance" ? <BinanceFlow />
-            : provider === "gcash" ? <AppFlow cfg={GCASH_FLOW} />
-            : provider === "pdax" ? <AppFlow cfg={PDAX_FLOW} />
-            : <AppFlow cfg={COINSPH_FLOW} />}
+            : provider === "binance" ? <BinanceFlow onConfirmed={onConfirmed} />
+            : provider === "gcash" ? <AppFlow cfg={GCASH_FLOW} onConfirmed={onConfirmed} />
+            : provider === "pdax" ? <AppFlow cfg={PDAX_FLOW} onConfirmed={onConfirmed} />
+            : <AppFlow cfg={COINSPH_FLOW} onConfirmed={onConfirmed} />}
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── Screen switcher (celebrate → withdraw) ─────────────────────── */
+/* ─── Screen switcher (celebrate → withdraw → confirmation) ─────── */
+type ConfirmedState = { provider: Provider; amount: number };
+
 function WithdrawFlow() {
   const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>("celebrate");
   const [withdrawVisible, setWithdrawVisible] = useState(false);
   const [provider, setProvider] = useState<Provider>("moneybees");
+  const [confirmed, setConfirmed] = useState<ConfirmedState | null>(null);
 
   function goWithdraw(p: Provider) {
     setProvider(p);
     setScreen("withdraw");
     requestAnimationFrame(() => requestAnimationFrame(() => setWithdrawVisible(true)));
+  }
+
+  const handleConfirmed = useCallback((amount: number) => {
+    setConfirmed({ provider, amount });
+  }, [provider]);
+
+  if (confirmed) {
+    return (
+      <ConfirmationScreen
+        provider={confirmed.provider}
+        amount={confirmed.amount}
+        onDone={() => navigate("/dashboard")}
+      />
+    );
   }
 
   return (
@@ -1124,7 +1204,7 @@ function WithdrawFlow() {
           className="transition-opacity duration-300 flex-1 min-h-0 flex flex-col relative z-0"
           style={{ opacity: withdrawVisible ? 1 : 0 }}
         >
-          <WithdrawScreen provider={provider} onBack={() => {
+          <WithdrawScreen provider={provider} onConfirmed={handleConfirmed} onBack={() => {
             setWithdrawVisible(false);
             setTimeout(() => setScreen("celebrate"), 50);
           }} />
