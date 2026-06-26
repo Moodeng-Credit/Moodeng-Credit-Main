@@ -1,0 +1,105 @@
+/*
+ * Withdrawal-flow palette tokens, ported from the prototype's theme.css but
+ * SCOPED to `.withdraw-flow` so they never leak into the app's global design
+ * system. Light tokens apply on `.withdraw-flow`; dark tokens apply when the
+ * app sets `.dark` on <html> (its theme mechanism), via `.dark .withdraw-flow`.
+ */
+.withdraw-flow {
+  --app-bg: #f7f6f9;
+  --surface: #fdfcfd;
+  --ink: #040033;
+  --ink-2: #1c053d;
+  --text-2: #594d65;
+  --text-muted: #70617f;
+  --text-faint: #877897;
+  --border-strong: #b5acbe;
+  --border-input: #cfc8d8;
+  --disabled: #a99fb4;
+  --primary: #6010d2;
+  --primary-hover: #4e0bab;
+  --accent: #8336f0;
+  --accent-text: #3e0a88;
+  --on-muted: #8b7caf;
+  --surface-1: #f1e9fd;
+  --surface-2: #f6f1fe;
+  --border-1: #e7dafb;
+  --border-2: #d8c3f9;
+  --hover-1: #ede0fd;
+  --border-3: #e0d3f7;
+  --border-4: #cdb8f5;
+  --dot-1: #c9b3f5;
+  --border-card: #ece9f0;
+  --border-card-2: #e2dee5;
+  --surface-grey: #efedf1;
+  --divider: #f0eef4;
+  --divider-2: #ece4f8;
+  --danger: #fa1024;
+  --danger-bg: #fff0f1;
+  --danger-border: #ffc9cd;
+  --danger-text: #7a0010;
+  --amber-bg: #fff8e0;
+  --amber-bg-2: #fff6d0;
+  --amber-border: #f5e280;
+  --amber-border-2: #f0e8a0;
+  --amber-icon: #a07800;
+  --amber-text: #5a4400;
+  --amber-icon-2: #d97706;
+  --green: #2c9553;
+  --green-2: #16884b;
+  --green-bg: #e7f7ee;
+  --green-border: #bfe6cf;
+  --green-text: #2c6b48;
+  --green-text-2: #0f5c34;
+  --card-shadow: 0px 4px 16px rgba(88, 92, 95, 0.1);
+  --sheet-shadow: 0px -8px 32px rgba(88, 92, 95, 0.16);
+}
+
+.dark .withdraw-flow {
+  --app-bg: #0d0e12;
+  --surface: #191b21;
+  --ink: #f3f1f7;
+  --ink-2: #ebe7f2;
+  --text-2: #b6afc1;
+  --text-muted: #a49cb0;
+  --text-faint: #8c83a0;
+  --border-strong: #4c4855;
+  --border-input: #4c4855;
+  --disabled: #3b3845;
+  --primary: #7c4dff;
+  --primary-hover: #6a3fe0;
+  --accent: #a98bff;
+  --accent-text: #ccb8f6;
+  --on-muted: #9a90ad;
+  --surface-1: #252035;
+  --surface-2: #1e192b;
+  --border-1: #372e4f;
+  --border-2: #453960;
+  --hover-1: #2a2340;
+  --border-3: #372e4f;
+  --border-4: #594c78;
+  --dot-1: #594c78;
+  --border-card: #2b2d35;
+  --border-card-2: #2b2d35;
+  --surface-grey: #1f2129;
+  --divider: #1f2129;
+  --divider-2: #292336;
+  --danger: #ff4d5e;
+  --danger-bg: #2a1215;
+  --danger-border: #582228;
+  --danger-text: #ffaeb5;
+  --amber-bg: #292310;
+  --amber-bg-2: #292310;
+  --amber-border: #54481c;
+  --amber-border-2: #54481c;
+  --amber-icon: #d8b340;
+  --amber-text: #e5d386;
+  --amber-icon-2: #f59e0b;
+  --green: #46c77f;
+  --green-2: #34cf80;
+  --green-bg: #0f2618;
+  --green-border: #1d5032;
+  --green-text: #9ddfba;
+  --green-text-2: #b4ebcd;
+  --card-shadow: 0px 4px 16px rgba(0, 0, 0, 0.45);
+  --sheet-shadow: 0px -8px 32px rgba(0, 0, 0, 0.6);
+}

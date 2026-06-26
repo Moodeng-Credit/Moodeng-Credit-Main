@@ -1,20 +1,49 @@
-import { useState, useEffect, useMemo } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   CheckCircle2, ChevronLeft, ChevronRight, Copy, Wallet, ArrowUpRight,
   AlertTriangle, Info, ShieldAlert, Check, X, ArrowRight, ArrowDownLeft,
   PlayCircle, Download, CreditCard, MessageCircle, Landmark, ClipboardCheck,
-  Lock, Loader2, Sun, Moon,
+  Lock, Loader2, Clock,
 } from "lucide-react";
+import { useSelector } from "react-redux";
+import { useLocation, useNavigate } from "react-router-dom";
+import { erc20Abi } from "viem";
+import { useAccount, useReadContract, useWaitForTransactionReceipt } from "wagmi";
+
+import { useGeoCheck } from "@/hooks/useGeoCheck";
+import { useLoanData } from "@/hooks/useLoanData";
+import useWallet from "@/hooks/useWallet";
+import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from "@/config/wagmiConfig";
+import { getBaseWalletLockStatus } from "@/lib/walletProvider";
+import type { RootState } from "@/store/store";
+import { parseDateSafely } from "@/utils/dateFormatters";
+
+import "./withdraw-theme.css";
 
 const FONT = `-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", sans-serif`;
 
-type Screen = "celebrate" | "withdraw" | "dismissed";
+type Screen = "celebrate" | "withdraw";
 type Provider = "moneybees" | "binance" | "coinsph" | "gcash" | "pdax";
-type PHDestination = "bank" | "maya" | "gcash" | "other";
 
-const LOAN_USDC = 50;
-const REPAY_USDC = 55;
-const DUE_DATE = "July 18, 2026";
+// Real data + actions provided by the page root and consumed by the ported
+// prototype components. `available` replaces the prototype's hardcoded
+// LOAN_USDC; `send` replaces the simulated transfer with a real on-chain USDC
+// Transfer; `repayUsdc`/`dueDate` come from the borrower's funded loan.
+type WithdrawData = {
+  available: number;
+  repayUsdc: number | null;
+  dueDate: string | null;
+  walletAddress: string;
+  isPreview: boolean;
+  // Returns the on-chain tx hash (or null if the send failed / was rejected).
+  send: (toAddress: string, amount: string) => Promise<string | null>;
+};
+const WithdrawDataContext = createContext<WithdrawData | null>(null);
+function useWithdrawData(): WithdrawData {
+  const ctx = useContext(WithdrawDataContext);
+  if (!ctx) throw new Error("useWithdrawData must be used within Withdraw");
+  return ctx;
+}
 
 function isValidAddress(a: string) {
   return /^0x[0-9a-fA-F]{40}$/.test(a.trim());
@@ -53,94 +82,6 @@ function SecondaryBtn({ children, onClick }: { children: React.ReactNode; onClic
   );
 }
 
-function WarnBox({ children, variant = "red" }: { children: React.ReactNode; variant?: "red" | "amber" | "blue" }) {
-  const s = {
-    red:   { bg: "var(--danger-bg)", border: "var(--danger-border)", icon: "var(--danger)", text: "var(--danger-text)" },
-    amber: { bg: "var(--amber-bg)", border: "var(--amber-border)", icon: "var(--amber-icon)", text: "var(--amber-text)" },
-    blue:  { bg: "var(--surface-1)", border: "var(--border-2)", icon: "var(--accent)", text: "var(--accent-text)" },
-  }[variant];
-  const Icon = variant === "blue" ? Info : AlertTriangle;
-  return (
-    <div className="rounded-[14px] px-[14px] py-[12px] flex gap-[10px]"
-      style={{ background: s.bg, border: `1px solid ${s.border}` }}>
-      <Icon className="w-[15px] h-[15px] shrink-0 mt-[2px]" style={{ color: s.icon }} />
-      <p className="text-[12px] leading-[18px] tracking-[-0.24px]" style={{ color: s.text }}>{children}</p>
-    </div>
-  );
-}
-
-function CopyButton({ value, className = "" }: { value: string; className?: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      onClick={async () => {
-        try { await navigator.clipboard.writeText(value); } catch { /* clipboard unavailable */ }
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      }}
-      className={`shrink-0 inline-flex items-center gap-[4px] text-[var(--accent)] ${className}`}>
-      {copied ? <Check className="w-4 h-4 text-[var(--green)]" /> : <Copy className="w-4 h-4" />}
-      {copied && <span className="text-[12px] font-semibold text-[var(--green)]">Copied</span>}
-    </button>
-  );
-}
-
-function ReviewModal({ exchange, amount, address, onClose, onSent }: {
-  exchange: string; amount: number; address: string; onClose: () => void; onSent: () => void;
-}) {
-  const [sending, setSending] = useState(false);
-
-  function send() {
-    setSending(true);
-    setTimeout(() => { onSent(); onClose(); }, 1700);
-  }
-
-  return (
-    <div className="absolute inset-0 bg-black/40 flex items-end justify-center z-50" onClick={sending ? undefined : onClose}>
-      <div className="w-full h-auto bg-[var(--surface)] rounded-t-[24px] p-[20px] space-y-[16px] pb-[max(20px,env(safe-area-inset-bottom))]"
-        style={{ boxShadow: "var(--sheet-shadow)" }}
-        onClick={e => e.stopPropagation()}>
-
-        {sending ? (
-          <div className="flex flex-col items-center text-center py-[28px]">
-            <Loader2 className="w-[40px] h-[40px] text-[var(--primary)] animate-spin mb-[16px]" />
-            <p className="text-[18px] font-semibold tracking-[-0.4px] text-[var(--ink)]">Sending {amount} USDC…</p>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between">
-              <p className="text-[20px] font-semibold leading-[1.2] tracking-[-0.8px] text-[var(--ink)]">Review withdrawal</p>
-              <button onClick={onClose} className="opacity-50 hover:opacity-100 transition-opacity">
-                <X className="w-5 h-5 text-[var(--ink)]" />
-              </button>
-            </div>
-            <div className="bg-[var(--app-bg)] rounded-[12px] divide-y divide-[var(--border-card-2)] overflow-hidden">
-              {[["To", exchange], ["Amount", `${amount} USDC`], ["Network", "Base"]].map(([k, v]) => (
-                <div key={k} className="flex justify-between items-center px-[14px] py-[10px]">
-                  <span className="text-[14px] text-[var(--text-muted)] leading-[21px] tracking-[-0.28px]">{k}</span>
-                  <span className={`text-[14px] font-semibold leading-[21px] tracking-[-0.28px] ${k === "Network" ? "text-[var(--accent)]" : "text-[var(--ink)]"}`}>{v}</span>
-                </div>
-              ))}
-              <div className="px-[14px] py-[10px] space-y-[4px]">
-                <span className="text-[14px] text-[var(--text-muted)] block">Address</span>
-                <div className="flex items-center justify-between gap-[8px]">
-                  <span className="text-[12px] font-mono text-[var(--ink)] break-all leading-relaxed">{address}</span>
-                  <CopyButton value={address} />
-                </div>
-              </div>
-            </div>
-            <WarnBox variant="amber">
-              Double-check that {exchange} shows <strong>USDC on Base</strong>. This cannot be undone.
-            </WarnBox>
-            <PrimaryBtn onClick={send}>Send USDC</PrimaryBtn>
-            <p className="text-[12px] text-[var(--text-faint)] text-center">Moodeng cannot reverse this once sent.</p>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /* Live USDC → fiat rate from CoinGecko's free endpoint. Falls back to an approximate
    fixed rate if the request is blocked/rate-limited, so a payout estimate always shows. */
 const FALLBACK_RATE: Record<"php" | "usd", number> = { php: 58.5, usd: 1 };
@@ -175,34 +116,6 @@ function ReceiveEstimate({ currency, usdcAmount }: { currency: string; usdcAmoun
 }
 
 /* ─── Brand / flag SVGs ──────────────────────────────────────────── */
-function PHFlag({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 60 40" className={className} preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-      <rect width="60" height="20" fill="#0038A8" />
-      <rect y="20" width="60" height="20" fill="#CE1126" />
-      <path d="M0 0 L26 20 L0 40 Z" fill="#FFFFFF" />
-      <circle cx="8.6" cy="20" r="3.1" fill="#FCD116" />
-      {Array.from({ length: 8 }).map((_, i) => {
-        const a = (i * Math.PI) / 4;
-        return <line key={i} x1={8.6 + Math.cos(a) * 4} y1={20 + Math.sin(a) * 4} x2={8.6 + Math.cos(a) * 6.4} y2={20 + Math.sin(a) * 6.4} stroke="#FCD116" strokeWidth="1.1" strokeLinecap="round" />;
-      })}
-      <g fill="#FCD116">
-        <circle cx="3.4" cy="3.8" r="1.1" />
-        <circle cx="3.4" cy="36.2" r="1.1" />
-        <circle cx="22.4" cy="20" r="1.1" />
-      </g>
-    </svg>
-  );
-}
-
-function BinanceMark({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
-      <path fill="#FFFFFF" d="m16.624 13.92 2.717 2.716-7.353 7.353-7.352-7.352 2.717-2.717 4.636 4.66 4.635-4.66zm4.637-4.636L24 12l-2.715 2.716L18.568 12l2.693-2.716zm-9.272 0 2.716 2.692-2.717 2.717L9.272 12l2.716-2.715zm-9.273 0L5.41 12l-2.692 2.692L0 12l2.716-2.716zM11.99.01l7.352 7.33-2.717 2.715-4.636-4.636-4.635 4.66-2.717-2.716L11.989.011z" />
-    </svg>
-  );
-}
-
 function BinanceMarkGold({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -318,6 +231,7 @@ function CoinsPhAppIcon({ className = "" }: { className?: string }) {
 }
 
 function AmountCard({ receive, payout }: { receive: React.ReactNode; payout: React.ReactNode }) {
+  const { available: LOAN_USDC } = useWithdrawData();
   return (
     <Card className="overflow-hidden">
       <div className="flex">
@@ -357,7 +271,7 @@ function HowThisWorks({ children }: { children: React.ReactNode }) {
 }
 
 type Guide = { title: string; steps: string[]; video?: string; link?: { label: string; url: string } };
-type FlowStep = { icon: React.ReactNode; title: string; desc: string; guide?: Guide; extra?: React.ReactNode };
+type FlowStep = { icon?: React.ReactNode; title: string; desc: string; guide?: Guide; extra?: React.ReactNode };
 
 function HowToButton({ guide }: { guide: Guide }) {
   const [open, setOpen] = useState(false);
@@ -484,7 +398,50 @@ function useRegion(): Region {
 }
 
 /* ─── SCREEN 1: Withdraw your USDC ────────────────────────────────── */
+type PickerRowProps = {
+  id: Provider;
+  selected: Provider;
+  onSelect: (id: Provider) => void;
+  icon: React.ReactNode;
+  name: string;
+  line1: string;
+  line2: string;
+  recommended?: boolean;
+  warn?: boolean;
+};
+
+function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommended, warn }: PickerRowProps) {
+  const active = selected === id;
+  return (
+    <button onClick={() => onSelect(id)} className="relative w-full text-left outline-none">
+      {recommended && (
+        <div className="absolute -top-[9px] left-[14px] z-10 bg-[var(--primary)] rounded-full px-[7px] py-[2px] shadow-sm flex items-center justify-center">
+          <span className="text-[8px] font-bold text-white uppercase tracking-[0.4px] leading-none">Recommended</span>
+        </div>
+      )}
+      {warn && !recommended && (
+        <div className="absolute -top-[9px] left-[14px] z-10 bg-[var(--amber-icon)] rounded-full px-[7px] py-[2px] shadow-sm flex items-center justify-center">
+          <span className="text-[8px] font-bold text-white uppercase tracking-[0.4px] leading-none">Verify Base first</span>
+        </div>
+      )}
+      <div className={`rounded-[18px] p-[14px] border-2 flex items-center gap-[14px] transition-all ${active ? "bg-[var(--surface-2)] border-[var(--primary)]" : "bg-[var(--surface)] border-[var(--border-card)] hover:border-[var(--border-4)]"}`}
+        style={{ boxShadow: active ? "0px 4px 14px rgba(96,16,210,0.10)" : "0px 1px 3px rgba(27,28,29,0.05)" }}>
+        <div className="shrink-0">{icon}</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[16px] text-[var(--ink)] leading-[20px]" style={{ fontWeight: 590 }}>{name}</p>
+          <p className="text-[12px] text-[var(--text-muted)] leading-[16px] mt-[2px]">{line1}</p>
+          <p className="text-[12px] text-[var(--text-faint)] leading-[16px]">{line2}</p>
+        </div>
+        <div className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 ${active ? "bg-[var(--primary)] border-[var(--primary)]" : "border-[var(--border-input)]"}`}>
+          {active && <Check className="w-[12px] h-[12px] text-white" strokeWidth={3.5} />}
+        </div>
+      </div>
+    </button>
+  );
+}
+
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
+  const { available: LOAN_USDC, repayUsdc: REPAY_USDC, dueDate: DUE_DATE } = useWithdrawData();
   const region = useRegion();
   const isPH = region !== "other";
   const [selected, setSelected] = useState<Provider>("moneybees");
@@ -497,46 +454,6 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
   const NAMES: Record<Provider, string> = {
     moneybees: "Moneybees", binance: "Binance", coinsph: "Coins.ph",
     gcash: "GCrypto", pdax: "PDAX",
-  };
-
-  type RowProps = {
-    id: Provider;
-    icon: React.ReactNode;
-    name: string;
-    line1: string;
-    line2: string;
-    recommended?: boolean;
-    warn?: boolean;
-  };
-
-  const Row = ({ id, icon, name, line1, line2, recommended, warn }: RowProps) => {
-    const active = selected === id;
-    return (
-      <button onClick={() => setSelected(id)} className="relative w-full text-left outline-none">
-        {recommended && (
-          <div className="absolute -top-[9px] left-[14px] z-10 bg-[var(--primary)] rounded-full px-[7px] py-[2px] shadow-sm flex items-center justify-center">
-            <span className="text-[8px] font-bold text-white uppercase tracking-[0.4px] leading-none">Recommended</span>
-          </div>
-        )}
-        {warn && !recommended && (
-          <div className="absolute -top-[9px] left-[14px] z-10 bg-[var(--amber-icon)] rounded-full px-[7px] py-[2px] shadow-sm flex items-center justify-center">
-            <span className="text-[8px] font-bold text-white uppercase tracking-[0.4px] leading-none">Verify Base first</span>
-          </div>
-        )}
-        <div className={`rounded-[18px] p-[14px] border-2 flex items-center gap-[14px] transition-all ${active ? "bg-[var(--surface-2)] border-[var(--primary)]" : "bg-[var(--surface)] border-[var(--border-card)] hover:border-[var(--border-4)]"}`}
-          style={{ boxShadow: active ? "0px 4px 14px rgba(96,16,210,0.10)" : "0px 1px 3px rgba(27,28,29,0.05)" }}>
-          <div className="shrink-0">{icon}</div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[16px] text-[var(--ink)] leading-[20px]" style={{ fontWeight: 590 }}>{name}</p>
-            <p className="text-[12px] text-[var(--text-muted)] leading-[16px] mt-[2px]">{line1}</p>
-            <p className="text-[12px] text-[var(--text-faint)] leading-[16px]">{line2}</p>
-          </div>
-          <div className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 ${active ? "bg-[var(--primary)] border-[var(--primary)]" : "border-[var(--border-input)]"}`}>
-            {active && <Check className="w-[12px] h-[12px] text-white" strokeWidth={3.5} />}
-          </div>
-        </div>
-      </button>
-    );
   };
 
   return (
@@ -559,23 +476,26 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
           </div>
           <h1 className="text-[27px] text-[var(--ink)]" style={{ fontWeight: 590, lineHeight: 1.1, letterSpacing: "-0.04em" }}>Withdraw your USDC</h1>
           <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[6px]">
-            {LOAN_USDC} USDC available · Repay <span className="font-semibold text-[var(--primary)]">{REPAY_USDC} USDC</span> by {DUE_DATE}
+            {LOAN_USDC} USDC available
+            {REPAY_USDC != null && DUE_DATE
+              ? <> · Repay <span className="font-semibold text-[var(--primary)]">{REPAY_USDC} USDC</span> by {DUE_DATE}</>
+              : null}
           </p>
         </div>
 
         <p className="text-[18px] text-[var(--ink)] mt-[10px] mb-[18px]" style={{ fontWeight: 590, letterSpacing: "-0.02em" }}>How would you like to cash out?</p>
         <div className="space-y-[10px]">
           {isPH ? (<>
-            <Row id="moneybees" recommended icon={<MoneybeesAppIcon className="w-[46px] h-[46px]" />} name="Moneybees" line1="Assisted cash-out · BSP-registered" line2="Bank, GCash or Maya · ~1 business day" />
-            <Row id="coinsph" icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />} name="Coins.ph" line1="Sell for pesos, withdraw to bank or GCash" line2="Bank or GCash · ~30 min" />
-            <Row id="gcash" icon={<GCashAppIcon className="w-[46px] h-[46px]" />} name="GCrypto" line1="Cash out straight to your GCash" line2="GCash balance · ~5 min" />
-            <Row id="pdax" icon={<PdaxAppIcon className="w-[46px] h-[46px]" />} name="PDAX" line1="Sell for pesos, withdraw to bank or e-wallet" line2="Bank, GCash or Maya · ~30 min" />
-            <Row id="binance" icon={<BinanceAppIcon className="w-[46px] h-[46px]" />} name="Binance" line1="Sell for local currency via P2P marketplace" line2="GCash, Maya or Bank · 30 min–hours" />
+            <PickerRow selected={selected} onSelect={setSelected} id="moneybees" recommended icon={<MoneybeesAppIcon className="w-[46px] h-[46px]" />} name="Moneybees" line1="Assisted cash-out · BSP-registered" line2="Bank, GCash or Maya · ~1 business day" />
+            <PickerRow selected={selected} onSelect={setSelected} id="coinsph" icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />} name="Coins.ph" line1="Sell for pesos, withdraw to bank or GCash" line2="Bank or GCash · ~30 min" />
+            <PickerRow selected={selected} onSelect={setSelected} id="gcash" icon={<GCashAppIcon className="w-[46px] h-[46px]" />} name="GCrypto" line1="Cash out straight to your GCash" line2="GCash balance · ~5 min" />
+            <PickerRow selected={selected} onSelect={setSelected} id="pdax" icon={<PdaxAppIcon className="w-[46px] h-[46px]" />} name="PDAX" line1="Sell for pesos, withdraw to bank or e-wallet" line2="Bank, GCash or Maya · ~30 min" />
+            <PickerRow selected={selected} onSelect={setSelected} id="binance" icon={<BinanceAppIcon className="w-[46px] h-[46px]" />} name="Binance" line1="Sell for local currency via P2P marketplace" line2="GCash, Maya or Bank · 30 min–hours" />
           </>) : (<>
-            <Row id="binance" recommended icon={<BinanceAppIcon className="w-[46px] h-[46px]" />} name="Binance" line1="Sell for local currency via P2P marketplace" line2="Bank transfer · 30 min–hours" />
-            <Row id="gcash" icon={<GCashAppIcon className="w-[46px] h-[46px]" />} name="GCrypto" line1="Cash out straight to your GCash" line2="GCash balance · ~5 min" />
-            <Row id="pdax" icon={<PdaxAppIcon className="w-[46px] h-[46px]" />} name="PDAX" line1="Sell for pesos, withdraw to bank or e-wallet" line2="Bank, GCash or Maya · ~30 min" />
-            <Row id="coinsph" icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />} name="Coins.ph" line1="Sell for pesos, withdraw to bank or GCash" line2="Bank or GCash · ~30 min" />
+            <PickerRow selected={selected} onSelect={setSelected} id="binance" recommended icon={<BinanceAppIcon className="w-[46px] h-[46px]" />} name="Binance" line1="Sell for local currency via P2P marketplace" line2="Bank transfer · 30 min–hours" />
+            <PickerRow selected={selected} onSelect={setSelected} id="gcash" icon={<GCashAppIcon className="w-[46px] h-[46px]" />} name="GCrypto" line1="Cash out straight to your GCash" line2="GCash balance · ~5 min" />
+            <PickerRow selected={selected} onSelect={setSelected} id="pdax" icon={<PdaxAppIcon className="w-[46px] h-[46px]" />} name="PDAX" line1="Sell for pesos, withdraw to bank or e-wallet" line2="Bank, GCash or Maya · ~30 min" />
+            <PickerRow selected={selected} onSelect={setSelected} id="coinsph" icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />} name="Coins.ph" line1="Sell for pesos, withdraw to bank or GCash" line2="Bank or GCash · ~30 min" />
           </>)}
         </div>
 
@@ -589,6 +509,134 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
         </PrimaryBtn>
 <button onClick={onLater} className="w-full text-center text-[14px] font-semibold text-[var(--primary)] py-[6px] hover:underline">
           I'll do this later
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Send confirmation (real on-chain receipt watch) ───────────── */
+type SentStatus = "idle" | "in-progress" | "arrived" | "failed";
+
+// Tracks a withdrawal send through to on-chain confirmation. After the review
+// sheet broadcasts the transfer it calls `onSent(hash)`; we then watch the
+// transaction receipt on Base and only flip to "arrived" once it actually mines
+// successfully (or "failed" if it reverts / errors). In preview there's no chain,
+// so a short timer stands in.
+function useSendStatus(isPreview: boolean) {
+  const [status, setStatus] = useState<SentStatus>("idle");
+  const [txHash, setTxHash] = useState<string | null>(null);
+
+  const { data: receipt, isError } = useWaitForTransactionReceipt({
+    hash: !isPreview && txHash ? (txHash as `0x${string}`) : undefined,
+    chainId: ALLOWED_CHAIN_ID,
+    query: { enabled: !isPreview && Boolean(txHash) }
+  });
+
+  useEffect(() => {
+    if (status !== "in-progress") return;
+    if (isPreview) {
+      const t = setTimeout(() => setStatus("arrived"), 2500);
+      return () => clearTimeout(t);
+    }
+    if (receipt) setStatus(receipt.status === "success" ? "arrived" : "failed");
+    else if (isError) setStatus("failed");
+  }, [status, isPreview, receipt, isError]);
+
+  return {
+    status,
+    txHash,
+    onSent: (hash: string) => { setTxHash(hash); setStatus("in-progress"); }
+  };
+}
+
+function SentStatusCard({ exchange, amount, status, txHash, isPreview }: {
+  exchange: string; amount: number; status: Exclude<SentStatus, "idle" | "arrived">; txHash: string | null; isPreview: boolean;
+}) {
+  const failed = status === "failed";
+  return (
+    <Card className="p-[18px]">
+      <div className="flex items-center gap-[14px]">
+        <div className={`w-[44px] h-[44px] rounded-full flex items-center justify-center shrink-0 ${failed ? "bg-[var(--danger-bg)]" : "bg-[var(--surface-1)]"}`}>
+          {failed
+            ? <AlertTriangle className="w-[22px] h-[22px] text-[var(--danger)]" />
+            : <Loader2 className="w-[22px] h-[22px] text-[var(--primary)] animate-spin" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[16px] font-semibold text-[var(--ink)] tracking-[-0.4px]">
+            {failed ? "Transfer not completed" : `Sending ${amount} USDC to ${exchange}`}
+          </p>
+          <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[3px]">
+            {failed
+              ? "Something went wrong — please try again or contact support"
+              : "Processing…"}
+          </p>
+        </div>
+      </div>
+      {failed && !isPreview && txHash && (
+        <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
+          className="mt-[12px] inline-flex items-center gap-[5px] text-[12px] font-semibold text-[var(--accent)] hover:text-[var(--primary)] transition-colors">
+          View transaction details <ArrowUpRight className="w-[13px] h-[13px]" />
+        </a>
+      )}
+    </Card>
+  );
+}
+
+/* ─── Full-screen celebration shown after on-chain confirmation ──── */
+const PROVIDER_NAMES: Record<Provider, string> = {
+  moneybees: "Moneybees", binance: "Binance", coinsph: "Coins.ph",
+  gcash: "GCrypto", pdax: "PDAX",
+};
+
+function ExchangeBadge({ provider }: { provider: Provider }) {
+  const cls = "w-[52px] h-[52px]";
+  if (provider === "moneybees") return <MoneybeesAppIcon className={cls} />;
+  if (provider === "binance") return <BinanceAppIcon className={cls} />;
+  if (provider === "coinsph") return <CoinsPhAppIcon className={cls} />;
+  if (provider === "gcash") return <GCashAppIcon className={cls} />;
+  return <PdaxAppIcon className={cls} />;
+}
+
+function ConfirmationScreen({ provider, amount, onDone }: {
+  provider: Provider; amount: number; onDone: () => void;
+}) {
+  const name = PROVIDER_NAMES[provider];
+  return (
+    <div className="absolute inset-0 z-[60] flex flex-col" style={{ background: "#0c0818" }}>
+      {/* Hippo image fills top */}
+      <div className="relative flex-1 min-h-0 overflow-hidden">
+        <img src="/hippos/party.png" alt="" className="w-full h-full object-cover object-top" />
+        {/* Subtle gradient at bottom so exchange badge reads cleanly */}
+        <div className="absolute inset-x-0 bottom-0 h-[80px]" style={{ background: "linear-gradient(to top, #0c0818, transparent)" }} />
+        {/* Exchange logo badge — bottom-right corner */}
+        <div className="absolute bottom-[16px] right-[20px] z-10 rounded-[18px] bg-[#0c0818] p-[4px] shadow-xl">
+          <ExchangeBadge provider={provider} />
+        </div>
+      </div>
+
+      {/* Success info */}
+      <div className="px-[24px] pt-[24px] pb-[max(28px,env(safe-area-inset-bottom))] space-y-[20px]"
+        style={{ background: "#0c0818" }}>
+        <div className="flex flex-col items-center text-center gap-[10px]">
+          <div className="w-[56px] h-[56px] rounded-full flex items-center justify-center"
+            style={{ background: "var(--green)" }}>
+            <Check className="w-[28px] h-[28px] text-white" strokeWidth={3} />
+          </div>
+          <p className="text-[26px] font-bold text-white leading-[1.15] tracking-[-0.03em]">
+            Withdrawn to {name}!
+          </p>
+          <p className="text-[15px] leading-[1.4]" style={{ color: "#c4a8f0" }}>
+            {amount} USDC sent from your wallet
+          </p>
+          <p className="text-[13px]" style={{ color: "#7a6b9a" }}>
+            Arriving in your {name} account in a few minutes.
+          </p>
+        </div>
+        <button onClick={onDone}
+          className="w-full rounded-[16px] py-[16px] text-[16px] font-semibold text-white"
+          style={{ background: "var(--primary)" }}>
+          Done
         </button>
       </div>
     </div>
@@ -610,48 +658,38 @@ type AppFlowConfig = {
   topWarning?: React.ReactNode;
 };
 
-function AppFlow({ cfg }: { cfg: AppFlowConfig }) {
+function AppFlow({ cfg, onConfirmed }: { cfg: AppFlowConfig; onConfirmed: (amount: number) => void }) {
+  const { available: LOAN_USDC, isPreview, send } = useWithdrawData();
   const [address, setAddress] = useState("");
   const [amount, setAmount] = useState("");
-  const [confirmed, setConfirmed] = useState(false);
-  const [showReview, setShowReview] = useState(false);
+  const [sending, setSending] = useState(false);
   const [showCashOut, setShowCashOut] = useState(true);
-  const [sentStatus, setSentStatus] = useState<"idle" | "in-progress" | "arrived">("idle");
+  const { status: sentStatus, txHash, onSent } = useSendStatus(isPreview);
   const addrValid = isValidAddress(address);
   const amtNum = parseFloat(amount);
   const amtValid = !isNaN(amtNum) && amtNum > 0 && amtNum <= LOAN_USDC;
-  const canReview = addrValid && amtValid;
+  const canSend = addrValid && amtValid && !sending;
+  const sentAmountRef = useRef(0);
 
   useEffect(() => {
-    if (sentStatus === "in-progress") {
-      const t = setTimeout(() => setSentStatus("arrived"), 8000);
-      return () => clearTimeout(t);
-    }
-  }, [sentStatus]);
+    if (sentStatus === "arrived") onConfirmed(sentAmountRef.current);
+  }, [sentStatus, onConfirmed]);
+
+  async function handleSend() {
+    if (!canSend) return;
+    setSending(true);
+    const hash = await send(address.trim(), String(amtNum));
+    setSending(false);
+    if (hash) { sentAmountRef.current = amtNum; onSent(hash); }
+  }
 
   return (
     <div className="space-y-[12px]">
       {cfg.topWarning}
 
-      {sentStatus !== "idle" ? (
-        <Card className="p-[18px] flex items-center gap-[14px]">
-          <div className="w-[44px] h-[44px] rounded-full bg-[var(--green-bg)] flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-[24px] h-[24px] text-[var(--green-2)]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[16px] font-semibold text-[var(--ink)] tracking-[-0.4px]">{amtNum} USDC sent to {cfg.name}</p>
-            <div className="flex items-center gap-[6px] mt-[3px]">
-              {sentStatus === "in-progress"
-                ? <Loader2 className="w-[13px] h-[13px] text-[var(--primary)] animate-spin shrink-0" />
-                : <Check className="w-[13px] h-[13px] text-[var(--green-2)] shrink-0" strokeWidth={3} />
-              }
-              <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
-                {sentStatus === "in-progress" ? "Your transfer is in progress" : "Your money has arrived"}
-              </p>
-            </div>
-          </div>
-        </Card>
-      ) : (
+      {sentStatus === "in-progress" || sentStatus === "failed" ? (
+        <SentStatusCard exchange={cfg.name} amount={sentAmountRef.current || amtNum} status={sentStatus} txHash={txHash} isPreview={isPreview} />
+      ) : sentStatus !== "arrived" ? (
         <>
           <AmountCard
             receive={<ReceiveEstimate currency={cfg.receiveCurrency} usdcAmount={amtValid ? amtNum : LOAN_USDC} />}
@@ -693,11 +731,13 @@ function AppFlow({ cfg }: { cfg: AppFlowConfig }) {
             </div>
           </Card>
 
-          <PrimaryBtn disabled={!canReview} onClick={() => setShowReview(true)}>
-            Send {amount || "0"} USDC to {cfg.short} <ArrowRight className="w-4 h-4" />
+          <PrimaryBtn disabled={!canSend} onClick={handleSend}>
+            {sending
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Confirm in your wallet…</>
+              : <>Send {amount || "0"} USDC to {cfg.short} <ArrowRight className="w-4 h-4" /></>}
           </PrimaryBtn>
         </>
-      )}
+      ) : null}
 
       {/* After it arrives — always expanded */}
       <Card className="overflow-hidden">
@@ -735,7 +775,6 @@ function AppFlow({ cfg }: { cfg: AppFlowConfig }) {
         )}
       </Card>
 
-      {showReview && <ReviewModal exchange={cfg.name} amount={parseFloat(amount)} address={address} onClose={() => setShowReview(false)} onSent={() => setSentStatus("in-progress")} />}
     </div>
   );
 }
@@ -773,7 +812,6 @@ const GCASH_FLOW: AppFlowConfig = {
 };
 
 const PDAX_DEPOSIT_HELP = "https://support.pdax.ph/support/solutions/articles/1060000097399-how-to-deposit-cryptocurrency-into-your-pdax-wallet-";
-const PDAX_SELL_HELP = "https://support.pdax.ph/support/solutions/articles/1060000097427";
 const PDAX_FLOW: AppFlowConfig = {
   name: "PDAX",
   short: "PDAX",
@@ -811,12 +849,12 @@ const PDAX_FLOW: AppFlowConfig = {
     },
     {
       title: <>Go to <span className="font-bold">Wallet → Withdraw PHP</span></>,
-      helper: "Choose your payout destination: bank account, GCash, or Maya. PDAX withdrawals usually arrive within a few hours."
+      helper: "Choose your payout destination: bank account, GCash, or Maya. GCash and Maya withdrawals arrive in minutes; bank transfers clear same day."
     },
   ],
 };
 
-const COINSPH_DEPOSIT_HELP = "https://support.coins.ph/hc/en-us/articles/26036127886873-How-to-deposit-cryptocurrency-to-your-Coins-ph-account";
+const COINSPH_DEPOSIT_HELP = "https://support.coins.ph/hc/en-us/articles/41270627740953-Starting-your-Coins-Journey-How-to-Deposit-Cryptocurrency-and-Cash-in-PHP-on-Coins-ph";
 const COINSPH_FLOW: AppFlowConfig = {
   name: "Coins.ph",
   short: "Coins.ph",
@@ -824,17 +862,18 @@ const COINSPH_FLOW: AppFlowConfig = {
   payout: "Bank or GCash",
   howItWorks: "Send USDC from your Moodeng wallet to your Coins.ph account. Once it arrives, sell it for pesos and cash out to your bank or GCash.",
   steps: [
-    { icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Open Coins.ph → Portfolio → USDC → Receive", desc: "Go to your Portfolio, select USDC, then tap Receive. Choose Base as the network.", guide: { title: "How to receive funds on Coins.ph", link: { label: "Official Coins.ph guide", url: COINSPH_DEPOSIT_HELP }, steps: [
+    { icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Open Coins.ph → Portfolio → USDC → Receive", desc: "Go to your Portfolio, select USDC, then tap Receive. Choose Base as the network.", guide: { title: "How to find your Coins.ph receiving address", video: "8jgQIuqp5E4?start=45", link: { label: "Official Coins.ph guide", url: COINSPH_DEPOSIT_HELP }, steps: [
       "Open the Coins.ph app and go to your Portfolio.",
       "Select USDC, then tap \"Receive\".",
       "Choose Base as the network.",
+      "Tap to copy the address shown on screen.",
     ] } },
     { icon: <Copy className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Copy your Coins.ph address", desc: "Tap to copy the address shown on screen." },
     { icon: <ClipboardCheck className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Paste it below", desc: "Paste the address in the field below, then confirm and send." },
   ],
   cashOutTitle: "Cash out to pesos with Coins.ph",
-  cashOutIntro: "Once your USDC arrives (usually under 1 minute), sell it for pesos and send directly to your bank or e-wallet.",
-  cashOutVideo: "mlxowanx6j4",
+  cashOutIntro: "Once your USDC arrives (usually a few minutes), sell it for pesos and send directly to your bank or GCash.",
+  cashOutVideo: "T-lsJRfBYIk?start=18",
   cashOutSteps: [
     {
       title: <>Tap <span className="font-bold">Trade → Sell</span>, then select <span className="font-bold">USDC</span></>,
@@ -861,48 +900,38 @@ const COINSPH_FLOW: AppFlowConfig = {
 };
 
 /* ─── Binance flow (custom — has P2P cash-out guide with video) ──── */
-function BinanceFlow() {
+function BinanceFlow({ onConfirmed }: { onConfirmed: (amount: number) => void }) {
+  const { available: LOAN_USDC, isPreview, send } = useWithdrawData();
   const region = useRegion();
   const isPH = region !== "other";
   const [address, setAddress] = useState("");
   const [amount, setAmount] = useState("");
-  const [confirmed, setConfirmed] = useState(false);
-  const [showReview, setShowReview] = useState(false);
+  const [sending, setSending] = useState(false);
   const [showP2P, setShowP2P] = useState(false);
-  const [sentStatus, setSentStatus] = useState<"idle" | "in-progress" | "arrived">("idle");
+  const { status: sentStatus, txHash, onSent } = useSendStatus(isPreview);
   const addrValid = isValidAddress(address);
   const amtNum = parseFloat(amount);
   const amtValid = !isNaN(amtNum) && amtNum > 0 && amtNum <= LOAN_USDC;
-  const canReview = addrValid && amtValid;
+  const canSend = addrValid && amtValid && !sending;
+  const sentAmountRef = useRef(0);
 
   useEffect(() => {
-    if (sentStatus === "in-progress") {
-      const t = setTimeout(() => setSentStatus("arrived"), 8000);
-      return () => clearTimeout(t);
-    }
-  }, [sentStatus]);
+    if (sentStatus === "arrived") onConfirmed(sentAmountRef.current);
+  }, [sentStatus, onConfirmed]);
+
+  async function handleSend() {
+    if (!canSend) return;
+    setSending(true);
+    const hash = await send(address.trim(), String(amtNum));
+    setSending(false);
+    if (hash) { sentAmountRef.current = amtNum; onSent(hash); }
+  }
 
   return (
     <div className="space-y-[12px]">
-      {sentStatus !== "idle" ? (
-        <Card className="p-[18px] flex items-center gap-[14px]">
-          <div className="w-[44px] h-[44px] rounded-full bg-[var(--green-bg)] flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-[24px] h-[24px] text-[var(--green-2)]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[16px] font-semibold text-[var(--ink)] tracking-[-0.4px]">{amtNum} USDC sent to Binance</p>
-            <div className="flex items-center gap-[6px] mt-[3px]">
-              {sentStatus === "in-progress"
-                ? <Loader2 className="w-[13px] h-[13px] text-[var(--primary)] animate-spin shrink-0" />
-                : <Check className="w-[13px] h-[13px] text-[var(--green-2)] shrink-0" strokeWidth={3} />
-              }
-              <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
-                {sentStatus === "in-progress" ? "Your transfer is in progress" : "Your money has arrived"}
-              </p>
-            </div>
-          </div>
-        </Card>
-      ) : (
+      {sentStatus === "in-progress" || sentStatus === "failed" ? (
+        <SentStatusCard exchange="Binance" amount={sentAmountRef.current || amtNum} status={sentStatus} txHash={txHash} isPreview={isPreview} />
+      ) : sentStatus !== "arrived" ? (
         <>
           <AmountCard
             receive={<ReceiveEstimate currency="PHP" usdcAmount={amtValid ? amtNum : LOAN_USDC} />}
@@ -958,11 +987,13 @@ function BinanceFlow() {
             </div>
           </Card>
 
-          <PrimaryBtn disabled={!canReview} onClick={() => setShowReview(true)}>
-            Send {amount || "0"} USDC to Binance <ArrowRight className="w-4 h-4" />
+          <PrimaryBtn disabled={!canSend} onClick={handleSend}>
+            {sending
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Confirm in your wallet…</>
+              : <>Send {amount || "0"} USDC to Binance <ArrowRight className="w-4 h-4" /></>}
           </PrimaryBtn>
         </>
-      )}
+      ) : null}
 
       <Card className="overflow-hidden">
         <button onClick={() => setShowP2P(v => !v)} className="w-full flex items-center gap-[12px] px-[16px] py-[14px] text-left">
@@ -1000,7 +1031,6 @@ function BinanceFlow() {
         )}
       </Card>
 
-      {showReview && <ReviewModal exchange="Binance" amount={parseFloat(amount)} address={address} onClose={() => setShowReview(false)} onSent={() => setSentStatus("in-progress")} />}
     </div>
   );
 }
@@ -1037,6 +1067,7 @@ function WhatsappIcon({ className = "" }: { className?: string }) {
 
 /* ─── Moneybees flow ─────────────────────────────────────────────── */
 function MoneybeesFlow() {
+  const { available: LOAN_USDC } = useWithdrawData();
   const [phase, setPhase] = useState<"form" | "pending" | "done">("form");
 
   const steps: FlowStep[] = [
@@ -1105,7 +1136,7 @@ const PROVIDER_TITLES: Record<Provider, string> = {
   pdax: "Send to PDAX",
 };
 
-function WithdrawScreen({ provider, onBack }: { provider: Provider; onBack: () => void }) {
+function WithdrawScreen({ provider, onBack, onConfirmed }: { provider: Provider; onBack: () => void; onConfirmed: (amount: number) => void }) {
   return (
     <div className="absolute inset-0 bg-[var(--app-bg)] flex flex-col pt-[env(safe-area-inset-top,0px)] w-full">
       <div className="sticky top-0 z-20 bg-[var(--app-bg)]/80 backdrop-blur-md px-[24px] pt-[20px] pb-[16px] shrink-0 mt-[10px]">
@@ -1126,30 +1157,25 @@ function WithdrawScreen({ provider, onBack }: { provider: Provider; onBack: () =
       <div className="flex-1 overflow-y-auto pb-[40px]">
         <div className="px-[16px] pt-[12px]">
           {provider === "moneybees" ? <MoneybeesFlow />
-            : provider === "binance" ? <BinanceFlow />
-            : provider === "gcash" ? <AppFlow cfg={GCASH_FLOW} />
-            : provider === "pdax" ? <AppFlow cfg={PDAX_FLOW} />
-            : <AppFlow cfg={COINSPH_FLOW} />}
+            : provider === "binance" ? <BinanceFlow onConfirmed={onConfirmed} />
+            : provider === "gcash" ? <AppFlow cfg={GCASH_FLOW} onConfirmed={onConfirmed} />
+            : provider === "pdax" ? <AppFlow cfg={PDAX_FLOW} onConfirmed={onConfirmed} />
+            : <AppFlow cfg={COINSPH_FLOW} onConfirmed={onConfirmed} />}
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── Root ───────────────────────────────────────────────────────── */
-export default function App() {
+/* ─── Screen switcher (celebrate → withdraw → confirmation) ─────── */
+type ConfirmedState = { provider: Provider; amount: number };
+
+function WithdrawFlow() {
+  const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>("celebrate");
   const [withdrawVisible, setWithdrawVisible] = useState(false);
   const [provider, setProvider] = useState<Provider>("moneybees");
-  const [dark, setDark] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const saved = localStorage.getItem("wf-theme");
-    if (saved) return saved === "dark";
-    return !!window.matchMedia?.("(prefers-color-scheme: dark)").matches;
-  });
-  useEffect(() => {
-    try { localStorage.setItem("wf-theme", dark ? "dark" : "light"); } catch { /* ignore */ }
-  }, [dark]);
+  const [confirmed, setConfirmed] = useState<ConfirmedState | null>(null);
 
   function goWithdraw(p: Provider) {
     setProvider(p);
@@ -1157,55 +1183,115 @@ export default function App() {
     requestAnimationFrame(() => requestAnimationFrame(() => setWithdrawVisible(true)));
   }
 
+  const handleConfirmed = useCallback((amount: number) => {
+    setConfirmed({ provider, amount });
+  }, [provider]);
+
+  if (confirmed) {
+    return (
+      <ConfirmationScreen
+        provider={confirmed.provider}
+        amount={confirmed.amount}
+        onDone={() => navigate("/dashboard")}
+      />
+    );
+  }
+
   return (
-    <div style={{ fontFamily: FONT }} className="min-h-screen sm:min-h-[100dvh] bg-[#1a1a1a] sm:bg-[#000] flex items-center justify-center sm:p-[40px]">
-      <div className={`${dark ? "dark" : ""} w-full h-[100dvh] sm:h-[844px] sm:w-[390px] bg-[var(--app-bg)] sm:rounded-[44px] sm:shadow-[0_0_0_8px_#111,0_0_0_12px_#333,0_30px_60px_rgba(0,0,0,0.5)] relative overflow-hidden flex flex-col`}>
-        <div className="hidden sm:block absolute top-0 inset-x-0 h-[34px] z-[60] pointer-events-none">
-          <div className="mx-auto w-[120px] h-[34px] bg-[#111] rounded-b-[20px]" />
+    <>
+      {screen === "withdraw" && (
+        <div
+          className="transition-opacity duration-300 flex-1 min-h-0 flex flex-col relative z-0"
+          style={{ opacity: withdrawVisible ? 1 : 0 }}
+        >
+          <WithdrawScreen provider={provider} onConfirmed={handleConfirmed} onBack={() => {
+            setWithdrawVisible(false);
+            setTimeout(() => setScreen("celebrate"), 50);
+          }} />
         </div>
+      )}
 
-        <button onClick={() => setDark(d => !d)} aria-label="Toggle dark mode"
-          className="absolute top-[max(12px,env(safe-area-inset-top))] right-[14px] z-[70] w-[34px] h-[34px] rounded-full bg-[var(--surface)] border border-[var(--border-card-2)] flex items-center justify-center text-[var(--accent)] transition-colors hover:bg-[var(--surface-grey)]"
-          style={{ boxShadow: "0px 2px 8px rgba(0,0,0,0.12)" }}>
-          {dark ? <Sun className="w-[17px] h-[17px]" /> : <Moon className="w-[17px] h-[17px]" />}
-        </button>
+      {screen === "celebrate" && (
+        <div className="absolute inset-0 bg-[var(--app-bg)] flex items-end justify-center z-10">
+          <CelebrateScreen onWithdraw={goWithdraw} onLater={() => navigate("/dashboard")} />
+        </div>
+      )}
+    </>
+  );
+}
 
-        {screen === "withdraw" && (
-          <div
-            className="transition-opacity duration-300 flex-1 min-h-0 flex flex-col relative z-0"
-            style={{ opacity: withdrawVisible ? 1 : 0 }}
-          >
-            <WithdrawScreen provider={provider} onBack={() => {
-              setWithdrawVisible(false);
-              setTimeout(() => setScreen("celebrate"), 50);
-            }} />
-          </div>
-        )}
+/* ─── Root — provides real on-chain data to the flow ─────────────── */
+const PREVIEW_ADDRESS = "0x1234aBCd5678Ef901234abcd5678ef901234ABcd";
 
-        {screen === "celebrate" && (
-          <div className="absolute inset-0 bg-[var(--app-bg)] flex items-end justify-center z-10">
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 opacity-20">
-              <div className="w-48 h-3 bg-[var(--border-strong)] rounded-full" />
-              <div className="w-32 h-3 bg-[var(--border-strong)] rounded-full" />
-            </div>
-            <CelebrateScreen
-              onWithdraw={goWithdraw}
-              onLater={() => setScreen("dismissed")}
-            />
-          </div>
-        )}
+export default function Withdraw() {
+  const location = useLocation();
+  const account = useAccount();
+  const { Transfer } = useWallet();
+  const user = useSelector((state: RootState) => state.auth.user);
+  const loans = useSelector((state: RootState) => state.loans.loans.gloans);
 
-        {screen === "dismissed" && (
-          <div className="absolute bottom-[max(24px,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-50">
-            <button
-              onClick={() => setScreen("celebrate")}
-              className="flex items-center gap-2 bg-[var(--primary)] text-white text-[14px] font-semibold px-[20px] py-[12px] rounded-full shadow-lg hover:bg-[var(--primary-hover)] transition-all active:scale-[0.97] whitespace-nowrap"
-            >
-              <ArrowRight className="w-4 h-4" /> Withdraw your USDC
-            </button>
-          </div>
-        )}
+  const isPreview = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const host = window.location.hostname;
+    const previewHost = ["127.0.0.1", "localhost"].includes(host) || host.endsWith(".vercel.app");
+    return previewHost && location.pathname === "/withdraw-preview";
+  }, [location.pathname]);
+
+  useLoanData({ userId: user.id, enabled: Boolean(user.id) && !isPreview });
+  // Touch geo so the edge function is warmed for the in-flow region copy.
+  useGeoCheck(isPreview);
+
+  // The borrower's funded loans = the disbursed USDC they can now cash out.
+  const fundedLoans = useMemo(
+    () => loans.filter((loan) => loan.borrowerUser === user.id && loan.loanStatus === "Lent"),
+    [loans, user.id]
+  );
+  const primaryLoan = useMemo(
+    () => [...fundedLoans].sort((a, b) => parseDateSafely(a.dueDate).getTime() - parseDateSafely(b.dueDate).getTime())[0],
+    [fundedLoans]
+  );
+
+  const walletAddress = getBaseWalletLockStatus(user).address ?? account.address ?? (isPreview ? PREVIEW_ADDRESS : "");
+
+  const { data: usdcBalanceRaw } = useReadContract({
+    abi: erc20Abi,
+    address: BASE_USDC_ADDRESS,
+    functionName: "balanceOf",
+    args: walletAddress ? [walletAddress as `0x${string}`] : undefined,
+    chainId: ALLOWED_CHAIN_ID,
+    query: { enabled: Boolean(walletAddress) && !isPreview, refetchInterval: 30000 }
+  });
+
+  const fundedTotal = fundedLoans.reduce((sum, loan) => sum + Number(loan.loanAmount || 0), 0);
+  const onChainBalance = typeof usdcBalanceRaw === "bigint" ? Number(usdcBalanceRaw) / 1e6 : null;
+  const available = isPreview ? 50 : Math.round((onChainBalance ?? fundedTotal) * 100) / 100;
+
+  const data = useMemo<WithdrawData>(() => ({
+    available,
+    repayUsdc: isPreview ? 55 : primaryLoan ? Math.round(Number(primaryLoan.totalRepaymentAmount) * 100) / 100 : null,
+    dueDate: isPreview
+      ? "July 18, 2026"
+      : primaryLoan
+        ? parseDateSafely(primaryLoan.dueDate).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+        : null,
+    walletAddress,
+    isPreview,
+    send: async (toAddress: string, amount: string) => {
+      if (isPreview) {
+        await new Promise((r) => setTimeout(r, 1500));
+        return "0xpreview";
+      }
+      return await Transfer(toAddress.trim(), amount, primaryLoan?.id ?? "withdraw", "USDC");
+    }
+  }), [available, isPreview, primaryLoan, walletAddress, Transfer]);
+
+  return (
+    <WithdrawDataContext.Provider value={data}>
+      <div style={{ fontFamily: FONT, backgroundColor: "var(--app-bg)" }} className="withdraw-flow fixed inset-0 z-50 overflow-hidden flex justify-center">
+        <div className="relative h-full w-full max-w-[440px] flex flex-col">
+          <WithdrawFlow />
+        </div>
       </div>
-    </div>
+    </WithdrawDataContext.Provider>
   );
 }

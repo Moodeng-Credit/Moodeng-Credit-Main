@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { ArrowUpRight, Wallet } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -312,6 +313,23 @@ export default function Dashboard() {
                   />
                </div>
             </div>
+
+            {displayFundedLoans.length > 0 ? (
+               <button
+                  type="button"
+                  onClick={() => navigate('/withdraw')}
+                  className="flex w-full items-center gap-3 rounded-md-lg border border-md-primary-300 bg-white p-4 text-left shadow-md-card transition active:scale-[0.99]"
+               >
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f3effe]">
+                     <Wallet className="h-5 w-5 text-[#6c3fe0]" aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                     <span className="block text-md-b1 font-semibold text-md-heading">Withdraw your USDC</span>
+                     <span className="mt-0.5 block text-md-b3 text-md-neutral-1200">Cash out your funded loan to local currency.</span>
+                  </span>
+                  <ArrowUpRight className="h-5 w-5 shrink-0 text-[#6c3fe0]" aria-hidden="true" />
+               </button>
+            ) : null}
 
             <div data-tour-target="dashboard-milestones">
                <ReputationMilestones milestones={milestones} isLoading={!isMockRich && !isDashboardDataReady} />
