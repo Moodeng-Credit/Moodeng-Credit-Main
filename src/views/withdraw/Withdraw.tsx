@@ -589,6 +589,7 @@ function SentStatusCard({ exchange, amount, status, txHash, isPreview, onRetry }
   status: "in-progress" | "delayed" | "failed";
   txHash: string | null; isPreview: boolean; onRetry: () => void;
 }) {
+  const navigate = useNavigate();
   const failed = status === "failed";
   const [copied, setCopied] = useState(false);
   const reference = txHash && !isPreview ? txHash : null;
@@ -627,6 +628,14 @@ function SentStatusCard({ exchange, amount, status, txHash, isPreview, onRetry }
         <button onClick={onRetry}
           className="mt-[14px] w-full rounded-[12px] py-[11px] text-[14px] font-semibold text-[var(--primary)] border border-[var(--border-2)] bg-[var(--surface-1)] hover:bg-[var(--hover-1)] transition-colors active:scale-[0.98]">
           Try again
+        </button>
+      )}
+
+      {/* Delayed: the money is already sent, so let the user leave gracefully. */}
+      {status === "delayed" && (
+        <button onClick={() => navigate("/dashboard")}
+          className="mt-[14px] w-full rounded-[12px] py-[11px] text-[14px] font-semibold text-[var(--primary)] border border-[var(--border-2)] bg-[var(--surface-1)] hover:bg-[var(--hover-1)] transition-colors active:scale-[0.98]">
+          Done
         </button>
       )}
 
@@ -798,6 +807,9 @@ function AppFlow({ cfg, onConfirmed }: { cfg: AppFlowConfig; onConfirmed: (amoun
                 <span className="pr-[16px] text-[14px] font-semibold text-[var(--text-muted)] shrink-0">USDC</span>
               </div>
               <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">{spendable == null ? "Checking your balance…" : `Available: ${spendable} USDC`}</p>
+              {amount !== "" && spendable != null && amtNum > spendable && (
+                <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1"><AlertTriangle className="w-3 h-3" />That's more than your available balance.</p>
+              )}
             </div>
           </Card>
 
@@ -1055,6 +1067,9 @@ function BinanceFlow({ onConfirmed }: { onConfirmed: (amount: number) => void })
                 <span className="pr-[16px] text-[14px] font-semibold text-[var(--text-muted)] shrink-0">USDC</span>
               </div>
               <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">{spendable == null ? "Checking your balance…" : `Available: ${spendable} USDC`}</p>
+              {amount !== "" && spendable != null && amtNum > spendable && (
+                <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1"><AlertTriangle className="w-3 h-3" />That's more than your available balance.</p>
+              )}
             </div>
           </Card>
 
@@ -1339,7 +1354,9 @@ export default function Withdraw() {
   const available = isPreview ? 50 : Math.round((onChainBalance ?? fundedTotal) * 100) / 100;
   // Hard send cap: verified on-chain balance only. `null` until it loads, which
   // disables the send button so we never authorise more than the wallet holds.
-  const spendable = isPreview ? 50 : onChainBalance != null ? Math.round(onChainBalance * 100) / 100 : null;
+  // Floor (not round) to 2dp so "Max" can never land a hair above the real balance
+  // and revert on-chain — sub-cent dust is left behind rather than over-sent.
+  const spendable = isPreview ? 50 : onChainBalance != null ? Math.floor(onChainBalance * 100) / 100 : null;
 
   const data = useMemo<WithdrawData>(() => ({
     available,
