@@ -742,7 +742,19 @@ type AppFlowConfig = {
   cashOutVideo?: string;
   cashOutSteps: { title: React.ReactNode; helper?: React.ReactNode; danger?: React.ReactNode }[];
   topWarning?: React.ReactNode;
+  // One-line KYC prerequisite shown above the transfer steps, so first-timers
+  // know they need a verified account before they can receive + cash out.
+  prereq?: string;
 };
+
+function PrereqNote({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mb-[10px] flex items-start gap-[8px] rounded-[10px] bg-[var(--surface-2)] border border-[var(--border-1)] px-[12px] py-[9px]">
+      <Info className="w-[14px] h-[14px] text-[var(--accent)] shrink-0 mt-[1px]" />
+      <p className="text-[12px] leading-[17px] text-[var(--text-2)]">{children}</p>
+    </div>
+  );
+}
 
 function AppFlow({ cfg, onConfirmed }: { cfg: AppFlowConfig; onConfirmed: (amount: number) => void }) {
   const { available: LOAN_USDC, spendable, isPreview, send } = useWithdrawData();
@@ -790,6 +802,7 @@ function AppFlow({ cfg, onConfirmed }: { cfg: AppFlowConfig; onConfirmed: (amoun
 
           <div>
             <p className="text-[14px] font-semibold text-[var(--ink)] mb-[10px] px-[2px]">How to transfer to {cfg.short}</p>
+            {cfg.prereq && <PrereqNote>{cfg.prereq}</PrereqNote>}
             <StepList steps={cfg.steps} />
           </div>
 
@@ -882,6 +895,7 @@ const GCASH_FLOW: AppFlowConfig = {
   short: "GCrypto",
   receiveCurrency: "PHP",
   payout: "GCash balance",
+  prereq: "First time? You'll need a fully-verified GCash account with GCrypto activated to receive USDC and cash out.",
   howItWorks: "Send USDC from your Moodeng wallet to your GCash GCrypto account. Once it arrives, sell it for pesos — it lands in your GCash wallet instantly.",
   steps: [
     { icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Open GCrypto in GCash", desc: "Open GCrypto, then tap Receive. Choose USDC and select Base as the network.", guide: { title: "How to open GCrypto in GCash", video: "m5-cD7v4SLg", link: { label: "Official GCash guide", url: GCASH_HELP }, steps: [
@@ -916,6 +930,7 @@ const PDAX_FLOW: AppFlowConfig = {
   short: "PDAX",
   receiveCurrency: "PHP",
   payout: "Bank, GCash or Maya",
+  prereq: "First time? You'll need a verified PDAX account to receive USDC and cash out.",
   howItWorks: "Send USDC from your Moodeng wallet to your PDAX account. Once it arrives, sell it for pesos and withdraw to your bank or e-wallet.",
   steps: [
     { icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Open PDAX → Portfolio → USDC → Receive", desc: "Select USDC, tap Receive, then choose Base as the network.", guide: { title: "How to find your PDAX receiving address", video: "q8F8H1UzBEU", link: { label: "Official PDAX guide", url: PDAX_DEPOSIT_HELP }, steps: [
@@ -959,6 +974,7 @@ const COINSPH_FLOW: AppFlowConfig = {
   short: "Coins.ph",
   receiveCurrency: "PHP",
   payout: "Bank or GCash",
+  prereq: "First time? You'll need a verified Coins.ph account to receive USDC and cash out.",
   howItWorks: "Send USDC from your Moodeng wallet to your Coins.ph account. Once it arrives, sell it for pesos and cash out to your bank or GCash.",
   steps: [
     { icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Open Coins.ph → Portfolio → USDC → Receive", desc: "Go to your Portfolio, select USDC, then tap Receive. Choose Base as the network.", guide: { title: "How to find your Coins.ph receiving address", video: "8jgQIuqp5E4?start=45", link: { label: "Official Coins.ph guide", url: COINSPH_DEPOSIT_HELP }, steps: [
@@ -1044,6 +1060,7 @@ function BinanceFlow({ onConfirmed }: { onConfirmed: (amount: number) => void })
 
           <div>
             <p className="text-[14px] font-semibold text-[var(--ink)] mb-[10px] px-[2px]">How to transfer to Binance</p>
+            <PrereqNote>First time? You'll need a verified Binance account to receive USDC and cash out.</PrereqNote>
             <StepList steps={[
               { title: "Open Binance → Wallet → Receive", desc: "Tap Wallet, then Receive. Search for USDC and choose Base as the network.", guide: { title: "How to find your Binance receiving address", video: "KAuoySzS0Mc", steps: [
                 "Open the Binance app and sign in.",
