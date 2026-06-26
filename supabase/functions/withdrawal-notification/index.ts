@@ -2,7 +2,6 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { sendEmail } from '../_shared/email.ts';
-import { getBorrowerTelegramNotificationsEnabled } from '../_shared/borrowerNotificationDelivery.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 const corsHeaders = {
@@ -12,6 +11,18 @@ const corsHeaders = {
 };
 
 type SupabaseClient = ReturnType<typeof createClient>;
+
+// Whether borrower Telegram notifications are globally enabled (admin toggle).
+// Inlined from borrowerNotificationDelivery.ts so this function doesn't drag in
+// the loan-notification builder graph it would otherwise pull through.
+const getBorrowerTelegramNotificationsEnabled = async (supabase: SupabaseClient) => {
+   const { data } = await supabase
+      .from('telegram_bot_settings')
+      .select('value')
+      .eq('key', 'borrower_notifications_enabled')
+      .maybeSingle();
+   return data?.value === 'true';
+};
 
 const formatAmount = (amount: number) =>
    Number.isFinite(amount) ? amount.toLocaleString('en-US', { maximumFractionDigits: 2 }) : String(amount);
