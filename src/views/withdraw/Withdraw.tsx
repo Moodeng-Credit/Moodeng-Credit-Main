@@ -82,97 +82,6 @@ function SecondaryBtn({ children, onClick }: { children: React.ReactNode; onClic
   );
 }
 
-function WarnBox({ children, variant = "red" }: { children: React.ReactNode; variant?: "red" | "amber" | "blue" }) {
-  const s = {
-    red:   { bg: "var(--danger-bg)", border: "var(--danger-border)", icon: "var(--danger)", text: "var(--danger-text)" },
-    amber: { bg: "var(--amber-bg)", border: "var(--amber-border)", icon: "var(--amber-icon)", text: "var(--amber-text)" },
-    blue:  { bg: "var(--surface-1)", border: "var(--border-2)", icon: "var(--accent)", text: "var(--accent-text)" },
-  }[variant];
-  const Icon = variant === "blue" ? Info : AlertTriangle;
-  return (
-    <div className="rounded-[14px] px-[14px] py-[12px] flex gap-[10px]"
-      style={{ background: s.bg, border: `1px solid ${s.border}` }}>
-      <Icon className="w-[15px] h-[15px] shrink-0 mt-[2px]" style={{ color: s.icon }} />
-      <p className="text-[12px] leading-[18px] tracking-[-0.24px]" style={{ color: s.text }}>{children}</p>
-    </div>
-  );
-}
-
-function CopyButton({ value, className = "" }: { value: string; className?: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      onClick={async () => {
-        try { await navigator.clipboard.writeText(value); } catch { /* clipboard unavailable */ }
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      }}
-      className={`shrink-0 inline-flex items-center gap-[4px] text-[var(--accent)] ${className}`}>
-      {copied ? <Check className="w-4 h-4 text-[var(--green)]" /> : <Copy className="w-4 h-4" />}
-      {copied && <span className="text-[12px] font-semibold text-[var(--green)]">Copied</span>}
-    </button>
-  );
-}
-
-function ReviewModal({ exchange, amount, address, onClose, onSent }: {
-  exchange: string; amount: number; address: string; onClose: () => void; onSent: (hash: string) => void;
-}) {
-  const [sending, setSending] = useState(false);
-  const { send: sendUsdc } = useWithdrawData();
-
-  async function send() {
-    setSending(true);
-    const hash = await sendUsdc(address, String(amount));
-    if (hash) { onSent(hash); onClose(); }
-    else setSending(false);
-  }
-
-  return (
-    <div className="absolute inset-0 bg-black/40 flex items-end justify-center z-50" onClick={sending ? undefined : onClose}>
-      <div className="w-full h-auto bg-[var(--surface)] rounded-t-[24px] p-[20px] space-y-[16px] pb-[max(20px,env(safe-area-inset-bottom))]"
-        style={{ boxShadow: "var(--sheet-shadow)" }}
-        onClick={e => e.stopPropagation()}>
-
-        {sending ? (
-          <div className="flex flex-col items-center text-center py-[28px]">
-            <Loader2 className="w-[40px] h-[40px] text-[var(--primary)] animate-spin mb-[16px]" />
-            <p className="text-[18px] font-semibold tracking-[-0.4px] text-[var(--ink)]">Sending {amount} USDC…</p>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between">
-              <p className="text-[20px] font-semibold leading-[1.2] tracking-[-0.8px] text-[var(--ink)]">Review withdrawal</p>
-              <button onClick={onClose} className="opacity-50 hover:opacity-100 transition-opacity">
-                <X className="w-5 h-5 text-[var(--ink)]" />
-              </button>
-            </div>
-            <div className="bg-[var(--app-bg)] rounded-[12px] divide-y divide-[var(--border-card-2)] overflow-hidden">
-              {[["To", exchange], ["Amount", `${amount} USDC`], ["Network", "Base"]].map(([k, v]) => (
-                <div key={k} className="flex justify-between items-center px-[14px] py-[10px]">
-                  <span className="text-[14px] text-[var(--text-muted)] leading-[21px] tracking-[-0.28px]">{k}</span>
-                  <span className={`text-[14px] font-semibold leading-[21px] tracking-[-0.28px] ${k === "Network" ? "text-[var(--accent)]" : "text-[var(--ink)]"}`}>{v}</span>
-                </div>
-              ))}
-              <div className="px-[14px] py-[10px] space-y-[4px]">
-                <span className="text-[14px] text-[var(--text-muted)] block">Address</span>
-                <div className="flex items-center justify-between gap-[8px]">
-                  <span className="text-[12px] font-mono text-[var(--ink)] break-all leading-relaxed">{address}</span>
-                  <CopyButton value={address} />
-                </div>
-              </div>
-            </div>
-            <WarnBox variant="amber">
-              Double-check that {exchange} shows <strong>USDC on Base</strong>. This cannot be undone.
-            </WarnBox>
-            <PrimaryBtn onClick={send}>Send USDC</PrimaryBtn>
-            <p className="text-[12px] text-[var(--text-faint)] text-center">Moodeng cannot reverse this once sent.</p>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /* Live USDC → fiat rate from CoinGecko's free endpoint. Falls back to an approximate
    fixed rate if the request is blocked/rate-limited, so a payout estimate always shows. */
 const FALLBACK_RATE: Record<"php" | "usd", number> = { php: 58.5, usd: 1 };
@@ -695,16 +604,27 @@ type AppFlowConfig = {
 };
 
 function AppFlow({ cfg }: { cfg: AppFlowConfig }) {
-  const { available: LOAN_USDC, isPreview } = useWithdrawData();
+  const { available: LOAN_USDC, isPreview, send } = useWithdrawData();
   const [address, setAddress] = useState("");
   const [amount, setAmount] = useState("");
-  const [showReview, setShowReview] = useState(false);
+  const [sending, setSending] = useState(false);
   const [showCashOut, setShowCashOut] = useState(true);
   const { status: sentStatus, txHash, onSent } = useSendStatus(isPreview);
   const addrValid = isValidAddress(address);
   const amtNum = parseFloat(amount);
   const amtValid = !isNaN(amtNum) && amtNum > 0 && amtNum <= LOAN_USDC;
-  const canReview = addrValid && amtValid;
+  const canSend = addrValid && amtValid && !sending;
+
+  // Tapping send goes straight to the wallet — the Base Account popup is the
+  // only confirmation step. While it's open and the tx broadcasts, the button
+  // shows progress; once it returns a hash the form is replaced by the status.
+  async function handleSend() {
+    if (!canSend) return;
+    setSending(true);
+    const hash = await send(address.trim(), String(amtNum));
+    setSending(false);
+    if (hash) onSent(hash);
+  }
 
   return (
     <div className="space-y-[12px]">
@@ -754,8 +674,10 @@ function AppFlow({ cfg }: { cfg: AppFlowConfig }) {
             </div>
           </Card>
 
-          <PrimaryBtn disabled={!canReview} onClick={() => setShowReview(true)}>
-            Send {amount || "0"} USDC to {cfg.short} <ArrowRight className="w-4 h-4" />
+          <PrimaryBtn disabled={!canSend} onClick={handleSend}>
+            {sending
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Confirm in your wallet…</>
+              : <>Send {amount || "0"} USDC to {cfg.short} <ArrowRight className="w-4 h-4" /></>}
           </PrimaryBtn>
         </>
       )}
@@ -796,7 +718,6 @@ function AppFlow({ cfg }: { cfg: AppFlowConfig }) {
         )}
       </Card>
 
-      {showReview && <ReviewModal exchange={cfg.name} amount={parseFloat(amount)} address={address} onClose={() => setShowReview(false)} onSent={onSent} />}
     </div>
   );
 }
@@ -922,18 +843,26 @@ const COINSPH_FLOW: AppFlowConfig = {
 
 /* ─── Binance flow (custom — has P2P cash-out guide with video) ──── */
 function BinanceFlow() {
-  const { available: LOAN_USDC, isPreview } = useWithdrawData();
+  const { available: LOAN_USDC, isPreview, send } = useWithdrawData();
   const region = useRegion();
   const isPH = region !== "other";
   const [address, setAddress] = useState("");
   const [amount, setAmount] = useState("");
-  const [showReview, setShowReview] = useState(false);
+  const [sending, setSending] = useState(false);
   const [showP2P, setShowP2P] = useState(false);
   const { status: sentStatus, txHash, onSent } = useSendStatus(isPreview);
   const addrValid = isValidAddress(address);
   const amtNum = parseFloat(amount);
   const amtValid = !isNaN(amtNum) && amtNum > 0 && amtNum <= LOAN_USDC;
-  const canReview = addrValid && amtValid;
+  const canSend = addrValid && amtValid && !sending;
+
+  async function handleSend() {
+    if (!canSend) return;
+    setSending(true);
+    const hash = await send(address.trim(), String(amtNum));
+    setSending(false);
+    if (hash) onSent(hash);
+  }
 
   return (
     <div className="space-y-[12px]">
@@ -995,8 +924,10 @@ function BinanceFlow() {
             </div>
           </Card>
 
-          <PrimaryBtn disabled={!canReview} onClick={() => setShowReview(true)}>
-            Send {amount || "0"} USDC to Binance <ArrowRight className="w-4 h-4" />
+          <PrimaryBtn disabled={!canSend} onClick={handleSend}>
+            {sending
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Confirm in your wallet…</>
+              : <>Send {amount || "0"} USDC to Binance <ArrowRight className="w-4 h-4" /></>}
           </PrimaryBtn>
         </>
       )}
@@ -1037,7 +968,6 @@ function BinanceFlow() {
         )}
       </Card>
 
-      {showReview && <ReviewModal exchange="Binance" amount={parseFloat(amount)} address={address} onClose={() => setShowReview(false)} onSent={onSent} />}
     </div>
   );
 }
