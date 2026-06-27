@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { ChevronRight, LoaderCircle, X } from 'lucide-react';
+import { ChevronRight, ExternalLink, LoaderCircle, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
@@ -58,6 +58,7 @@ const CHAIN_CHIPS = [
 export default function FundWalletSheet({ isOpen, onClose, walletAddress }: FundWalletSheetProps) {
    const navigate = useNavigate();
    const [coinbaseLoading, setCoinbaseLoading] = useState(false);
+   const [coinbaseError, setCoinbaseError] = useState<string | null>(null);
 
    useEffect(() => {
       if (!isOpen) return;
@@ -87,6 +88,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
    const handleCoinbase = useCallback(async () => {
       if (coinbaseLoading) return;
       setCoinbaseLoading(true);
+      setCoinbaseError(null);
 
       // Open the popup synchronously (before the await) so it isn't blocked as a
       // non-user-gesture popup, then navigate it once the token resolves.
@@ -100,21 +102,22 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
          const token = (data as { token?: string } | null)?.token;
 
          if (error || !token) {
-            throw new Error('Could not start Coinbase. Please try again.');
+            throw new Error((data as { error?: string } | null)?.error || 'Could not start Coinbase.');
          }
 
          const url = `${COINBASE_PAY_URL}?sessionToken=${encodeURIComponent(token)}&defaultNetwork=base&fiatCurrency=USD`;
          if (popup) {
             popup.location.href = url;
          } else {
-            // Popup blocked — fall back to a same-context navigation in a new tab.
+            // Popup blocked — same-context navigation in a new tab still carries the token.
             window.open(url, '_blank', 'noopener,noreferrer');
          }
       } catch {
-         // Token mint failed (not yet configured, no wallet, etc.) — fall back to the
-         // hosted Coinbase page so the option still works.
+         // Token mint failed (secrets not configured, no wallet, etc.). The bare hosted URL
+         // would just hit Coinbase's error page (Secure Init needs the token), so show an
+         // inline message instead of bouncing the user out.
          popup?.close();
-         window.open(EXTERNAL_LINKS.fund.coinbaseOnramp, '_blank', 'noopener,noreferrer');
+         setCoinbaseError('Card purchases aren’t available just yet — try a bridge below.');
       } finally {
          setCoinbaseLoading(false);
       }
@@ -195,6 +198,12 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                   </div>
                </button>
 
+               {coinbaseError && (
+                  <p className="-mt-1 px-1 text-[12px] font-medium text-md-red-500" role="alert">
+                     {coinbaseError}
+                  </p>
+               )}
+
                {/* Eco Bridge */}
                <button
                   onClick={handleEcoBridge}
@@ -247,10 +256,10 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                      <div className="flex-1 min-w-0">
                         <p className="text-[14px] font-semibold text-md-heading leading-tight">Bridge from Solana</p>
                         <p className="text-[12px] font-normal text-md-neutral-800 leading-tight mt-0.5">
-                           SOL and USDC to Base
+                           SOL and USDC to Base &middot; opens Superbridge
                         </p>
                      </div>
-                     <ChevronRight className="h-5 w-5 shrink-0 text-md-neutral-800" />
+                     <ExternalLink className="h-[18px] w-[18px] shrink-0 text-md-neutral-800" />
                   </div>
                   <div className="flex flex-wrap items-center gap-1">
                      <span className="rounded-full bg-md-primary-100 px-2 py-0.5 text-[10px] font-semibold text-md-primary-1200">
