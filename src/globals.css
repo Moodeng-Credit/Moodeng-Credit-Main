@@ -157,6 +157,10 @@ html.dark [class*='bg-[#f3e8ff'] {
    background-color: #2a1740;
 }
 
+html.dark .bg-md-primary-300 {
+   background-color: #3a1f5c;
+}
+
 html.dark .bg-md-green-100,
 html.dark [class*='bg-md-green-100\/'],
 html.dark [class*='bg-[#dcfce7'],
@@ -266,6 +270,10 @@ html.dark [class*='text-[#AE8C00'],
 html.dark [class*='text-[#a24a00'],
 html.dark [class*='text-[#ea580c'] {
    color: #facc6b;
+}
+
+html.dark .bg-md-neutral-1700 {
+   background-color: #4a3f58;
 }
 
 html.dark .border-md-neutral-300,
