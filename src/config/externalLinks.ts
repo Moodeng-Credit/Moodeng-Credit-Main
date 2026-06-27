@@ -19,6 +19,10 @@ export const EXTERNAL_LINKS = {
    support: {
       messenger: 'https://m.me/61589106561061?ref=blocked_account',
       messengerDefaulted: 'https://m.me/61589106561061?ref=defaulted_loan'
+   },
+   fund: {
+      coinbaseOnramp: 'https://pay.coinbase.com/buy/select-asset',
+      baseSolanaBridge: 'https://superbridge.app/base'
    }
 } as const;
 

@@ -60,6 +60,7 @@ import type { User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import { type CreateLoanData, type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
+import FundWalletSheet from '@/views/fund/FundWalletSheet';
 import LoanRequestModal, { mapBorrowerContextForSave, type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
@@ -369,6 +370,7 @@ function RequestBoard$() {
    const [requestToDelete, setRequestToDelete] = useState<Loan | null>(null);
    const [isDeletingRequest, setIsDeletingRequest] = useState(false);
    const [showIouHistory, setShowIouHistory] = useState(false);
+   const [showFundSheet, setShowFundSheet] = useState(false);
    const [isOpeningLoanRequest, setIsOpeningLoanRequest] = useState(false);
 
    const user = useSelector((state: RootState) => state.auth.user);
@@ -1696,6 +1698,36 @@ function RequestBoard$() {
                      </div>
                   ) : null}
 
+                  {/* Fund Wallet Card — visible for authenticated lenders */}
+                  {isAuthenticated && !isBorrower && (
+                     <div className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3">
+                        <div className="flex flex-col gap-4 relative z-10">
+                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
+                              <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Need USDC on Base?</p>
+                              <p className="text-md-b2 font-medium text-md-neutral-700">
+                                 <span className="max-[374px]:hidden">
+                                    Buy or bridge USDC to fund
+                                    <br />
+                                    loans on the platform.
+                                 </span>
+                                 <span className="hidden max-[374px]:inline">Buy or bridge USDC to fund loans.</span>
+                              </p>
+                           </div>
+                           <button
+                              onClick={() => setShowFundSheet(true)}
+                              className="inline-flex min-h-[56px] w-fit items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 shadow-md-card transition-all duration-150 hover:brightness-110 active:scale-[0.97] active:brightness-90 max-[374px]:min-h-12 max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
+                           >
+                              Fund Wallet
+                           </button>
+                        </div>
+                        <img
+                           src="/hippos/thumb-up-right.png"
+                           alt=""
+                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:bottom-0 max-[374px]:right-[-42px] max-[374px]:top-auto max-[374px]:h-[76%]"
+                        />
+                     </div>
+                  )}
+
                   {/* Browse Section */}
                   <div className="flex flex-col gap-5" data-tour-target="request-latest-list">
                      <div className="flex flex-col gap-4">
@@ -1940,6 +1972,11 @@ function RequestBoard$() {
             onClose={() => setShowIouHistory(false)}
          />
          {verifyModal}
+         <FundWalletSheet
+            isOpen={showFundSheet}
+            onClose={() => setShowFundSheet(false)}
+            walletAddress={effectiveUser?.walletAddress}
+         />
       </>
    );
 }
