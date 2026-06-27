@@ -157,8 +157,9 @@ html.dark [class*='bg-[#f3e8ff'] {
    background-color: #2a1740;
 }
 
-html.dark .bg-md-primary-300 {
-   background-color: #3a1f5c;
+html.dark .bg-md-primary-300,
+html.dark [class*='bg-[#d6bcfa'] {
+   background-color: #362058;
 }
 
 html.dark .bg-md-green-100,
