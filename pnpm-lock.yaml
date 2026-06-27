@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@coinbase/cbpay-js':
-        specifier: ^2.4.0
-        version: 2.4.0
       '@dotenvx/dotenvx':
         specifier: ^1.51.2
         version: 1.51.4
@@ -347,15 +344,6 @@ packages:
   '@bcoe/v8-coverage@1.0.2':
     resolution: {integrity: sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA==}
     engines: {node: '>=18'}
-
-  '@coinbase/cbpay-js@2.4.0':
-    resolution: {integrity: sha512-7Zy1P6v5CTaBuFYowFmvKJ4KyBngVjsPpLkjSi4DWJhVHMgLIkDUINSloRU0Idgt2rFA/PLIm2gXneR3OoQbrA==}
-    engines: {node: '>= 14'}
-    peerDependencies:
-      regenerator-runtime: ^0.13.9
-    peerDependenciesMeta:
-      regenerator-runtime:
-        optional: true
 
   '@coinbase/cdp-sdk@1.41.0':
     resolution: {integrity: sha512-9EhtD9XvnIYoS5LAQfVh3w9Rnp2gqh7tQvjwWwmPXLSeqYefS/13r6XzV+o/3M12LQIrQ4PaWmQ4+jXiFgQw2A==}
@@ -6150,8 +6138,6 @@ snapshots:
       - zod
 
   '@bcoe/v8-coverage@1.0.2': {}
-
-  '@coinbase/cbpay-js@2.4.0': {}
 
   '@coinbase/cdp-sdk@1.41.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)':
     dependencies:

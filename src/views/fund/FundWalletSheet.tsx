@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { initOnRamp, type CBPayInstanceType } from '@coinbase/cbpay-js';
-import { ChevronRight, X } from 'lucide-react';
+import { ChevronRight, LoaderCircle, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 interface FundWalletSheetProps {
    isOpen: boolean;
@@ -12,7 +12,7 @@ interface FundWalletSheetProps {
    walletAddress?: string;
 }
 
-const CDP_CLIENT_KEY = import.meta.env.VITE_CDP_CLIENT_KEY as string;
+const COINBASE_PAY_URL = 'https://pay.coinbase.com/buy/select-asset';
 
 const COINBASE_LOGO = (
    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -57,7 +57,7 @@ const CHAIN_CHIPS = [
 
 export default function FundWalletSheet({ isOpen, onClose, walletAddress }: FundWalletSheetProps) {
    const navigate = useNavigate();
-   const onrampInstanceRef = useRef<CBPayInstanceType | null>(null);
+   const [coinbaseLoading, setCoinbaseLoading] = useState(false);
 
    useEffect(() => {
       if (!isOpen) return;
@@ -79,52 +79,46 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
       };
    }, [isOpen]);
 
-   useEffect(() => {
-      if (!walletAddress || !CDP_CLIENT_KEY) return;
+   // Opens the Coinbase buy widget. Coinbase's "Secure Initialization" requires a
+   // short-lived session token minted server-side (browser never sees the secret key),
+   // so we fetch one from the `coinbase-onramp-token` edge function, then open the widget
+   // as a centered popup window on top of the app. A true inline iframe isn't possible —
+   // Coinbase blocks it because bank 2FA/3DS can't run in an iframe.
+   const handleCoinbase = useCallback(async () => {
+      if (coinbaseLoading) return;
+      setCoinbaseLoading(true);
 
-      initOnRamp(
-         {
-            appId: CDP_CLIENT_KEY,
-            widgetParameters: {
-               addresses: { [walletAddress]: ['base'] },
-               assets: ['USDC'],
-               defaultNetwork: 'base',
-               defaultExperience: 'buy',
-            },
-            experienceLoggedIn: 'popup',
-            experienceLoggedOut: 'popup',
-            closeOnExit: true,
-            closeOnSuccess: true,
-            onSuccess: () => {
-               onClose();
-            },
-            onExit: () => {
-               // User closed the Coinbase widget
-            },
-         },
-         (err, instance) => {
-            if (instance) {
-               onrampInstanceRef.current = instance;
-            }
-         },
-      );
+      // Open the popup synchronously (before the await) so it isn't blocked as a
+      // non-user-gesture popup, then navigate it once the token resolves.
+      const popup = window.open('', 'coinbase-onramp', 'width=460,height=720,menubar=no,toolbar=no');
 
-      return () => {
-         onrampInstanceRef.current?.destroy();
-         onrampInstanceRef.current = null;
-      };
-   }, [walletAddress, onClose]);
+      try {
+         const supabase = getSupabaseBrowserClient();
+         const { data, error } = await supabase.functions.invoke('coinbase-onramp-token', {
+            body: walletAddress ? { address: walletAddress } : {},
+         });
+         const token = (data as { token?: string } | null)?.token;
 
-   const handleCoinbase = useCallback(() => {
-      if (onrampInstanceRef.current) {
-         onrampInstanceRef.current.open();
-      } else {
-         const url = walletAddress
-            ? `${EXTERNAL_LINKS.fund.coinbaseOnramp}?addresses={"${walletAddress}":["base"]}&assets=["USDC"]`
-            : EXTERNAL_LINKS.fund.coinbaseOnramp;
-         window.open(url, '_blank', 'noopener,noreferrer');
+         if (error || !token) {
+            throw new Error('Could not start Coinbase. Please try again.');
+         }
+
+         const url = `${COINBASE_PAY_URL}?sessionToken=${encodeURIComponent(token)}&defaultNetwork=base&fiatCurrency=USD`;
+         if (popup) {
+            popup.location.href = url;
+         } else {
+            // Popup blocked — fall back to a same-context navigation in a new tab.
+            window.open(url, '_blank', 'noopener,noreferrer');
+         }
+      } catch {
+         // Token mint failed (not yet configured, no wallet, etc.) — fall back to the
+         // hosted Coinbase page so the option still works.
+         popup?.close();
+         window.open(EXTERNAL_LINKS.fund.coinbaseOnramp, '_blank', 'noopener,noreferrer');
+      } finally {
+         setCoinbaseLoading(false);
       }
-   }, [walletAddress]);
+   }, [coinbaseLoading, walletAddress]);
 
    if (!isOpen) return null;
 
@@ -171,7 +165,8 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                {/* Coinbase Onramp */}
                <button
                   onClick={handleCoinbase}
-                  className="flex flex-col gap-2 rounded-xl border border-md-neutral-400 bg-white px-3 py-3 text-left transition-all hover:border-md-primary-400 hover:shadow-md-card active:scale-[0.98]"
+                  disabled={coinbaseLoading}
+                  className="flex flex-col gap-2 rounded-xl border border-md-neutral-400 bg-white px-3 py-3 text-left transition-all hover:border-md-primary-400 hover:shadow-md-card active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
                >
                   <div className="flex w-full items-center gap-3">
                      <div className="shrink-0">{COINBASE_LOGO}</div>
@@ -181,7 +176,11 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                            Visa / Mastercard &middot; Apple Pay &middot; Google Pay
                         </p>
                      </div>
-                     <ChevronRight className="h-5 w-5 shrink-0 text-md-neutral-800" />
+                     {coinbaseLoading ? (
+                        <LoaderCircle className="h-5 w-5 shrink-0 animate-spin text-md-neutral-800" />
+                     ) : (
+                        <ChevronRight className="h-5 w-5 shrink-0 text-md-neutral-800" />
+                     )}
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">
                      <span className="rounded-full bg-md-primary-100 px-2 py-0.5 text-[10px] font-semibold text-md-primary-1200">
