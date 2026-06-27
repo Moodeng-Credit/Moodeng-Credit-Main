@@ -669,63 +669,25 @@ function SentStatusCard({ exchange, amount, status, txHash, isPreview, onRetry }
   );
 }
 
-/* ─── Full-screen celebration shown after on-chain confirmation ──── */
+/* ─── Inline success banner shown after on-chain confirmation ───── */
 const PROVIDER_NAMES: Record<Provider, string> = {
   moneybees: "Moneybees", binance: "Binance", coinsph: "Coins.ph",
   gcash: "GCrypto", pdax: "PDAX",
 };
 
-function ExchangeBadge({ provider }: { provider: Provider }) {
-  const cls = "w-[52px] h-[52px]";
-  if (provider === "moneybees") return <MoneybeesAppIcon className={cls} />;
-  if (provider === "binance") return <BinanceAppIcon className={cls} />;
-  if (provider === "coinsph") return <CoinsPhAppIcon className={cls} />;
-  if (provider === "gcash") return <GCashAppIcon className={cls} />;
-  return <PdaxAppIcon className={cls} />;
-}
-
-function ConfirmationScreen({ provider, amount, onDone }: {
-  provider: Provider; amount: number; onDone: () => void;
-}) {
-  const name = PROVIDER_NAMES[provider];
+function SuccessBanner({ exchange, amount }: { exchange: string; amount: number }) {
   return (
-    <div className="absolute inset-0 z-[60] flex flex-col" style={{ background: "#0c0818" }}>
-      {/* Hippo image fills top */}
-      <div className="relative flex-1 min-h-0 overflow-hidden">
-        <img src="/hippos/party.png" alt="" className="w-full h-full object-cover object-top" />
-        {/* Subtle gradient at bottom so exchange badge reads cleanly */}
-        <div className="absolute inset-x-0 bottom-0 h-[80px]" style={{ background: "linear-gradient(to top, #0c0818, transparent)" }} />
-        {/* Exchange logo badge — bottom-right corner */}
-        <div className="absolute bottom-[16px] right-[20px] z-10 rounded-[18px] bg-[#0c0818] p-[4px] shadow-xl">
-          <ExchangeBadge provider={provider} />
+    <Card className="overflow-hidden">
+      <div className="bg-[var(--green-bg)] px-[16px] py-[14px] flex items-center gap-[14px]">
+        <div className="w-[44px] h-[44px] rounded-full flex items-center justify-center shrink-0" style={{ background: "var(--green)" }}>
+          <Check className="w-[22px] h-[22px] text-white" strokeWidth={3} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[16px] font-semibold text-[var(--ink)] tracking-[-0.4px]">Sent to {exchange}!</p>
+          <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[2px]">{amount} USDC is on its way — arriving in a few minutes.</p>
         </div>
       </div>
-
-      {/* Success info */}
-      <div className="px-[24px] pt-[24px] pb-[max(28px,env(safe-area-inset-bottom))] space-y-[20px]"
-        style={{ background: "#0c0818" }}>
-        <div className="flex flex-col items-center text-center gap-[10px]">
-          <div className="w-[56px] h-[56px] rounded-full flex items-center justify-center"
-            style={{ background: "var(--green)" }}>
-            <Check className="w-[28px] h-[28px] text-white" strokeWidth={3} />
-          </div>
-          <p className="text-[26px] font-bold text-white leading-[1.15] tracking-[-0.03em]">
-            Withdrawn to {name}!
-          </p>
-          <p className="text-[15px] leading-[1.4]" style={{ color: "#c4a8f0" }}>
-            {amount} USDC sent from your wallet
-          </p>
-          <p className="text-[13px]" style={{ color: "#7a6b9a" }}>
-            Arriving in your {name} account in a few minutes.
-          </p>
-        </div>
-        <button onClick={onDone}
-          className="w-full rounded-[16px] py-[16px] text-[16px] font-semibold text-white"
-          style={{ background: "var(--primary)" }}>
-          Done
-        </button>
-      </div>
-    </div>
+    </Card>
   );
 }
 
@@ -756,11 +718,12 @@ function PrereqNote({ children }: { children: React.ReactNode }) {
   );
 }
 
-function AppFlow({ cfg, onConfirmed }: { cfg: AppFlowConfig; onConfirmed: (amount: number) => void }) {
+function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed: (amount: number) => void; onDone: () => void }) {
   const { available: LOAN_USDC, spendable, isPreview, send } = useWithdrawData();
   const [address, setAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [sending, setSending] = useState(false);
+  const arrived = sentStatus === "arrived";
   const [showCashOut, setShowCashOut] = useState(true);
   const { status: sentStatus, txHash, onSent, reset } = useSendStatus(isPreview);
   const addrValid = isValidAddress(address);
@@ -791,9 +754,11 @@ function AppFlow({ cfg, onConfirmed }: { cfg: AppFlowConfig; onConfirmed: (amoun
     <div className="space-y-[12px]">
       {cfg.topWarning}
 
-      {sentStatus === "in-progress" || sentStatus === "delayed" || sentStatus === "failed" ? (
+      {sentStatus === "arrived" ? (
+        <SuccessBanner exchange={cfg.name} amount={sentAmountRef.current} />
+      ) : sentStatus === "in-progress" || sentStatus === "delayed" || sentStatus === "failed" ? (
         <SentStatusCard exchange={cfg.name} amount={sentAmountRef.current || amtNum} status={sentStatus} txHash={txHash} isPreview={isPreview} onRetry={reset} />
-      ) : sentStatus !== "arrived" ? (
+      ) : (
         <>
           <AmountCard
             receive={<ReceiveEstimate currency={cfg.receiveCurrency} usdcAmount={amtValid ? amtNum : LOAN_USDC} />}
@@ -845,7 +810,7 @@ function AppFlow({ cfg, onConfirmed }: { cfg: AppFlowConfig; onConfirmed: (amoun
               : <>Send {amount || "0"} USDC to {cfg.short} <ArrowRight className="w-4 h-4" /></>}
           </PrimaryBtn>
         </>
-      ) : null}
+      )}
 
       {/* After it arrives — always expanded */}
       <Card className="overflow-hidden">
@@ -883,6 +848,11 @@ function AppFlow({ cfg, onConfirmed }: { cfg: AppFlowConfig; onConfirmed: (amoun
         )}
       </Card>
 
+      {arrived && (
+        <PrimaryBtn onClick={onDone}>
+          Done <Check className="w-4 h-4" />
+        </PrimaryBtn>
+      )}
     </div>
   );
 }
@@ -1015,7 +985,7 @@ const COINSPH_FLOW: AppFlowConfig = {
 };
 
 /* ─── Binance flow (custom — has P2P cash-out guide with video) ──── */
-function BinanceFlow({ onConfirmed }: { onConfirmed: (amount: number) => void }) {
+function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) => void; onDone: () => void }) {
   const { available: LOAN_USDC, spendable, isPreview, send } = useWithdrawData();
   const region = useRegion();
   const isPH = region !== "other";
@@ -1049,9 +1019,11 @@ function BinanceFlow({ onConfirmed }: { onConfirmed: (amount: number) => void })
 
   return (
     <div className="space-y-[12px]">
-      {sentStatus === "in-progress" || sentStatus === "delayed" || sentStatus === "failed" ? (
+      {sentStatus === "arrived" ? (
+        <SuccessBanner exchange="Binance" amount={sentAmountRef.current} />
+      ) : sentStatus === "in-progress" || sentStatus === "delayed" || sentStatus === "failed" ? (
         <SentStatusCard exchange="Binance" amount={sentAmountRef.current || amtNum} status={sentStatus} txHash={txHash} isPreview={isPreview} onRetry={reset} />
-      ) : sentStatus !== "arrived" ? (
+      ) : (
         <>
           <AmountCard
             receive={<ReceiveEstimate currency="PHP" usdcAmount={amtValid ? amtNum : LOAN_USDC} />}
@@ -1155,6 +1127,11 @@ function BinanceFlow({ onConfirmed }: { onConfirmed: (amount: number) => void })
         )}
       </Card>
 
+      {sentStatus === "arrived" && (
+        <PrimaryBtn onClick={onDone}>
+          Done <Check className="w-4 h-4" />
+        </PrimaryBtn>
+      )}
     </div>
   );
 }
@@ -1260,7 +1237,7 @@ const PROVIDER_TITLES: Record<Provider, string> = {
   pdax: "Send to PDAX",
 };
 
-function WithdrawScreen({ provider, onBack, onConfirmed }: { provider: Provider; onBack: () => void; onConfirmed: (amount: number) => void }) {
+function WithdrawScreen({ provider, onBack, onConfirmed, onDone }: { provider: Provider; onBack: () => void; onConfirmed: (amount: number) => void; onDone: () => void }) {
   return (
     <div className="absolute inset-0 bg-[var(--app-bg)] flex flex-col pt-[env(safe-area-inset-top,0px)] w-full">
       <div className="sticky top-0 z-20 bg-[var(--app-bg)]/80 backdrop-blur-md px-[24px] pt-[20px] pb-[16px] shrink-0 mt-[10px]">
@@ -1281,25 +1258,23 @@ function WithdrawScreen({ provider, onBack, onConfirmed }: { provider: Provider;
       <div className="flex-1 overflow-y-auto pb-[40px]">
         <div className="px-[16px] pt-[12px]">
           {provider === "moneybees" ? <MoneybeesFlow />
-            : provider === "binance" ? <BinanceFlow onConfirmed={onConfirmed} />
-            : provider === "gcash" ? <AppFlow cfg={GCASH_FLOW} onConfirmed={onConfirmed} />
-            : provider === "pdax" ? <AppFlow cfg={PDAX_FLOW} onConfirmed={onConfirmed} />
-            : <AppFlow cfg={COINSPH_FLOW} onConfirmed={onConfirmed} />}
+            : provider === "binance" ? <BinanceFlow onConfirmed={onConfirmed} onDone={onDone} />
+            : provider === "gcash" ? <AppFlow cfg={GCASH_FLOW} onConfirmed={onConfirmed} onDone={onDone} />
+            : provider === "pdax" ? <AppFlow cfg={PDAX_FLOW} onConfirmed={onConfirmed} onDone={onDone} />
+            : <AppFlow cfg={COINSPH_FLOW} onConfirmed={onConfirmed} onDone={onDone} />}
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── Screen switcher (celebrate → withdraw → confirmation) ─────── */
-type ConfirmedState = { provider: Provider; amount: number };
+/* ─── Screen switcher (celebrate → withdraw) ─────────────────────── */
 
 function WithdrawFlow() {
   const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>("celebrate");
   const [withdrawVisible, setWithdrawVisible] = useState(false);
   const [provider, setProvider] = useState<Provider>("moneybees");
-  const [confirmed, setConfirmed] = useState<ConfirmedState | null>(null);
 
   function goWithdraw(p: Provider) {
     track("withdraw_exchange_selected", { exchange: p });
@@ -1308,19 +1283,12 @@ function WithdrawFlow() {
     requestAnimationFrame(() => requestAnimationFrame(() => setWithdrawVisible(true)));
   }
 
-  const handleConfirmed = useCallback((amount: number) => {
-    setConfirmed({ provider, amount });
-  }, [provider]);
+  const handleConfirmed = useCallback((_amount: number) => {
+    // No-op: the inline SuccessBanner now handles the confirmed state
+    // within the flow component itself, keeping the cash-out instructions visible.
+  }, []);
 
-  if (confirmed) {
-    return (
-      <ConfirmationScreen
-        provider={confirmed.provider}
-        amount={confirmed.amount}
-        onDone={() => navigate("/dashboard")}
-      />
-    );
-  }
+  const handleDone = useCallback(() => navigate("/dashboard"), [navigate]);
 
   return (
     <>
@@ -1329,7 +1297,7 @@ function WithdrawFlow() {
           className="transition-opacity duration-300 flex-1 min-h-0 flex flex-col relative z-0"
           style={{ opacity: withdrawVisible ? 1 : 0 }}
         >
-          <WithdrawScreen provider={provider} onConfirmed={handleConfirmed} onBack={() => {
+          <WithdrawScreen provider={provider} onConfirmed={handleConfirmed} onDone={handleDone} onBack={() => {
             setWithdrawVisible(false);
             setTimeout(() => setScreen("celebrate"), 50);
           }} />
