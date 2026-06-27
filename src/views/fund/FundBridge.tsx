@@ -2,16 +2,27 @@ import { useCallback, useState } from 'react';
 
 import { ArrowLeft, Check, ChevronDown, LoaderCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { formatUnits, parseUnits } from 'viem';
 import { arbitrum, base, bsc, optimism, polygon } from 'wagmi/chains';
+import { useAccount } from 'wagmi';
 
-import { getNetworkSvg } from '@/config/wagmiConfig';
+import { BASE_USDC_ADDRESS, getNetworkSvg } from '@/config/wagmiConfig';
 
+// Eco Routes V3 quote API — permissionless, CORS-open (Access-Control-Allow-Origin: *),
+// no auth needed for quotes. Returns a solver-guaranteed destinationAmount on Base.
+const ECO_QUOTE_URL = 'https://quotes.eco.com/api/v3/quotes/single';
+const ECO_DAPP_ID = 'moodeng-credit';
+const BASE_CHAIN_ID = base.id; // 8453
+const BASE_USDC_DECIMALS = 6;
+
+// Each supported source chain + its native USDC (address + decimals). Note BNB USDC is
+// 18 decimals; all others are 6 — the amount is encoded in the source token's units.
 const SOURCE_CHAINS = [
-   { id: 1, name: 'Ethereum', shortName: 'ETH' },
-   { id: arbitrum.id, name: 'Arbitrum', shortName: 'ARB' },
-   { id: optimism.id, name: 'Optimism', shortName: 'OP' },
-   { id: polygon.id, name: 'Polygon', shortName: 'POL' },
-   { id: bsc.id, name: 'BNB Chain', shortName: 'BNB' },
+   { id: 1, name: 'Ethereum', usdc: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decimals: 6 },
+   { id: arbitrum.id, name: 'Arbitrum', usdc: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', decimals: 6 },
+   { id: optimism.id, name: 'Optimism', usdc: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85', decimals: 6 },
+   { id: polygon.id, name: 'Polygon', usdc: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', decimals: 6 },
+   { id: bsc.id, name: 'BNB Chain', usdc: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', decimals: 18 },
 ] as const;
 
 const ETH_ICON = (
@@ -32,42 +43,83 @@ function getChainIcon(chainId: number) {
    return getNetworkSvg(chainId);
 }
 
-interface MockQuote {
-   inputAmount: string;
-   outputAmount: string;
-   fee: string;
+const formatEta = (sec: number): string => {
+   if (!Number.isFinite(sec) || sec <= 0) return '~1 min';
+   if (sec < 90) return `~${Math.max(1, Math.round(sec))} sec`;
+   return `~${Math.round(sec / 60)} min`;
+};
+
+interface Quote {
+   sendAmount: string; // human, source USDC
+   receiveAmount: string; // human, Base USDC
+   costAmount: string; // human, send - receive
    estimatedTime: string;
 }
 
 export default function FundBridge() {
    const navigate = useNavigate();
+   const { address } = useAccount();
    const [selectedChain, setSelectedChain] = useState<number | null>(null);
    const [amount, setAmount] = useState('');
    const [isLoadingQuote, setIsLoadingQuote] = useState(false);
-   const [quote, setQuote] = useState<MockQuote | null>(null);
+   const [quote, setQuote] = useState<Quote | null>(null);
+   const [quoteError, setQuoteError] = useState<string | null>(null);
    const [showChainPicker, setShowChainPicker] = useState(false);
 
    const selectedChainInfo = SOURCE_CHAINS.find((c) => c.id === selectedChain);
 
    const handleGetQuote = useCallback(async () => {
-      if (!selectedChain || !amount || parseFloat(amount) <= 0) return;
+      if (!selectedChainInfo || !amount || parseFloat(amount) <= 0) return;
+
       setIsLoadingQuote(true);
       setQuote(null);
+      setQuoteError(null);
 
-      // Mock: simulate API latency, real Eco Routes call goes here
-      await new Promise((r) => setTimeout(r, 1500));
+      try {
+         // Quotes are rate-only and address-independent, so we preview them before the
+         // wallet is connected. The real bridge tx will use the connected wallet as
+         // funder + recipient; until then a placeholder lets us fetch the live rate.
+         const quoteAddress = address ?? '0x0000000000000000000000000000000000000001';
+         const sourceAmount = parseUnits(amount, selectedChainInfo.decimals).toString();
+         const res = await fetch(ECO_QUOTE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+               dAppID: ECO_DAPP_ID,
+               quoteRequest: {
+                  sourceChainID: selectedChainInfo.id,
+                  destinationChainID: BASE_CHAIN_ID,
+                  sourceToken: selectedChainInfo.usdc,
+                  destinationToken: BASE_USDC_ADDRESS,
+                  sourceAmount,
+                  funder: quoteAddress,
+                  recipient: quoteAddress,
+               },
+            }),
+         });
 
-      const inputNum = parseFloat(amount);
-      const feeRate = 0.003;
-      const fee = inputNum * feeRate;
-      setQuote({
-         inputAmount: inputNum.toFixed(2),
-         outputAmount: (inputNum - fee).toFixed(2),
-         fee: fee.toFixed(4),
-         estimatedTime: '~2 min',
-      });
-      setIsLoadingQuote(false);
-   }, [selectedChain, amount]);
+         const body = await res.json().catch(() => null);
+         const q = body?.data?.quoteResponse;
+         if (!res.ok || !q?.destinationAmount) {
+            throw new Error(body?.message || 'No route available for this amount.');
+         }
+
+         const sendNum = parseFloat(amount);
+         const receiveNum = parseFloat(formatUnits(BigInt(q.destinationAmount), BASE_USDC_DECIMALS));
+         const cost = Math.max(0, sendNum - receiveNum);
+
+         setQuote({
+            sendAmount: sendNum.toFixed(2),
+            receiveAmount: receiveNum.toFixed(2),
+            costAmount: cost.toFixed(2),
+            estimatedTime: formatEta(Number(q.estimatedFulfillTimeSec)),
+         });
+      } catch (err) {
+         setQuoteError(err instanceof Error ? err.message : 'Could not fetch a quote. Please try again.');
+      } finally {
+         setIsLoadingQuote(false);
+      }
+   }, [selectedChainInfo, amount, address]);
 
    const canGetQuote = selectedChain !== null && amount !== '' && parseFloat(amount) > 0;
 
@@ -114,6 +166,7 @@ export default function FundBridge() {
                            setSelectedChain(chain.id);
                            setShowChainPicker(false);
                            setQuote(null);
+                           setQuoteError(null);
                         }}
                         className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
                            selectedChain === chain.id
@@ -150,6 +203,7 @@ export default function FundBridge() {
                   onChange={(e) => {
                      setAmount(e.target.value);
                      setQuote(null);
+                     setQuoteError(null);
                   }}
                   className="flex-1 bg-transparent text-md-b1 font-medium text-md-heading outline-none placeholder:text-md-neutral-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                />
@@ -170,7 +224,7 @@ export default function FundBridge() {
          <button
             onClick={handleGetQuote}
             disabled={!canGetQuote || isLoadingQuote}
-            className="mb-5 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-md-primary-1200 px-6 py-3.5 text-md-b1 font-semibold text-white shadow-md-card transition-all hover:brightness-110 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+            className="mb-3 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-md-primary-1200 px-6 py-3.5 text-md-b1 font-semibold text-white shadow-md-card transition-all hover:brightness-110 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
          >
             {isLoadingQuote ? (
                <>
@@ -182,6 +236,12 @@ export default function FundBridge() {
             )}
          </button>
 
+         {quoteError && (
+            <p className="mb-3 text-center text-[13px] font-medium text-md-red-500" role="alert">
+               {quoteError}
+            </p>
+         )}
+
          {/* Quote result */}
          {quote && (
             <div className="flex flex-col gap-3 rounded-2xl border border-md-neutral-300 bg-md-neutral-100 p-4">
@@ -189,15 +249,15 @@ export default function FundBridge() {
                <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                      <span className="text-md-b3 font-normal text-md-neutral-800">You send</span>
-                     <span className="text-md-b2 font-medium text-md-heading">{quote.inputAmount} USDC</span>
+                     <span className="text-md-b2 font-medium text-md-heading">{quote.sendAmount} USDC</span>
                   </div>
                   <div className="flex items-center justify-between">
-                     <span className="text-md-b3 font-normal text-md-neutral-800">You receive</span>
-                     <span className="text-md-b2 font-semibold text-md-heading">{quote.outputAmount} USDC</span>
+                     <span className="text-md-b3 font-normal text-md-neutral-800">You receive on Base</span>
+                     <span className="text-md-b2 font-semibold text-md-heading">{quote.receiveAmount} USDC</span>
                   </div>
                   <div className="flex items-center justify-between">
-                     <span className="text-md-b3 font-normal text-md-neutral-800">Bridge fee</span>
-                     <span className="text-md-b3 font-normal text-md-neutral-800">{quote.fee} USDC</span>
+                     <span className="text-md-b3 font-normal text-md-neutral-800">Network + bridge cost</span>
+                     <span className="text-md-b3 font-normal text-md-neutral-800">{quote.costAmount} USDC</span>
                   </div>
                   <div className="flex items-center justify-between">
                      <span className="text-md-b3 font-normal text-md-neutral-800">Estimated time</span>
@@ -212,7 +272,7 @@ export default function FundBridge() {
                      Bridge — Coming Soon
                   </button>
                   <p className="mt-2 text-center text-[12px] font-normal text-md-neutral-800">
-                     Powered by Eco &middot; Hyperlane
+                     Live quote &middot; Powered by Eco
                   </p>
                </div>
             </div>
