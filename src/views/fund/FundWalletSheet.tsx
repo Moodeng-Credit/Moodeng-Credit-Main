@@ -182,7 +182,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                      {coinbaseLoading ? (
                         <LoaderCircle className="h-5 w-5 shrink-0 animate-spin text-md-neutral-800" />
                      ) : (
-                        <ChevronRight className="h-5 w-5 shrink-0 text-md-neutral-800" />
+                        <ExternalLink className="h-[18px] w-[18px] shrink-0 text-md-neutral-800" />
                      )}
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">
