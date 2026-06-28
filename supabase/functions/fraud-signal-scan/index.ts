@@ -21,6 +21,14 @@ type Signal = {
    loan_id?: string;
    tracking_id?: string;
    wallet?: string;
+   user_id?: string;
+   username?: string;
+   asn_org?: string;
+   hosting_logins?: number;
+   location_a?: string;
+   location_b?: string;
+   distance_km?: number;
+   hours_apart?: number;
 };
 
 const describe = (s: Signal): string => {
@@ -35,6 +43,10 @@ const describe = (s: Signal): string => {
          return `Loan ${s.tracking_id ?? s.loan_id}: lender & borrower share a wallet in their history\n  wallet: ${s.wallet}`;
       case 'counterparty_shared_ip':
          return `Loan ${s.tracking_id ?? s.loan_id}: lender & borrower logged in from the same IP`;
+      case 'datacenter_ip':
+         return `${s.username ?? s.user_id} logged in from a datacenter/hosting IP (${s.asn_org}) — ${s.hosting_logins} time(s)`;
+      case 'impossible_travel':
+         return `${s.username ?? s.user_id} impossible travel: ${s.location_a} → ${s.location_b} (${s.distance_km} km in ${s.hours_apart} h)`;
       default:
          return `${s.type}: ${JSON.stringify(s)}`;
    }
