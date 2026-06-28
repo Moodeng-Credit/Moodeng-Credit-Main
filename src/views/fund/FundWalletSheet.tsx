@@ -175,6 +175,9 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                         No account needed
                      </span>
                   </div>
+                  <p className="text-[11px] text-md-neutral-800 leading-tight">
+                     Supported in US, EU, UK &amp; AU only
+                  </p>
                </button>
 
                {coinbaseError && (
