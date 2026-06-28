@@ -1,6 +1,24 @@
--- Powers the admin "Detection" page: cross-listings of accounts that share a
--- wallet, an IP, or a canonical email. Admin-gated, read-only, computed live so
--- it reflects current data (whitelisted accounts are still shown, just badged).
+-- Powers the admin "Self-lending?" page: cross-listings of accounts that share a
+-- wallet, an IP, a subnet, or a canonical email, plus realized self-lending loans
+-- (a borrower and lender that are linked accounts on the same loan). Admin-gated,
+-- read-only, computed live so it reflects current data (whitelisted accounts are
+-- still shown, just badged).
+
+-- Collapse an email to its canonical form so Gmail dot/plus tricks
+-- (a.b+test@gmail -> ab@gmail) don't spawn "different" addresses.
+create or replace function app_private.canonical_email(addr text)
+returns text
+language sql
+immutable
+set search_path = public, pg_temp
+as $$
+  select case
+    when addr is null or btrim(addr) = '' then null
+    when lower(split_part(addr, '@', 2)) in ('gmail.com', 'googlemail.com')
+      then regexp_replace(split_part(split_part(lower(addr), '@', 1), '+', 1), '\.', '', 'g') || '@gmail.com'
+    else lower(addr)
+  end;
+$$;
 
 create or replace function public.admin_get_detection_overview()
 returns jsonb
@@ -117,18 +135,85 @@ begin
                     'whitelisted', wl.user_id is not null))
                ) as x
         from (
-          select u.id, u.username, u.email,
-                 case
-                   when lower(split_part(u.email, '@', 2)) in ('gmail.com', 'googlemail.com')
-                     then regexp_replace(split_part(split_part(lower(u.email), '@', 1), '+', 1), '\.', '', 'g') || '@gmail.com'
-                   else lower(u.email)
-                 end as canonical_email
+          select u.id, u.username, u.email, app_private.canonical_email(u.email) as canonical_email
           from public.users u
           where coalesce(u.email, '') <> ''
         ) c
         left join public.fraud_detection_whitelist wl on wl.user_id = c.id
         group by c.canonical_email
         having count(*) > 1
+      ) s
+    ), '[]'::jsonb),
+
+    -- Realized self-lending: loans whose borrower and lender are DIFFERENT accounts
+    -- but linked by a shared wallet / IP / subnet / canonical email. The strongest
+    -- signal — someone actually lending to themselves across two accounts. Each
+    -- loan reports every link type found; 'wallet'/'email' are strong, 'ip'/'subnet'
+    -- are circumstantial (could be a shared household/office).
+    'self_lending_loans', coalesce((
+      select jsonb_agg(x order by (x->>'created_at') desc)
+      from (
+        select jsonb_build_object(
+                 'loan_id', l.id,
+                 'tracking_id', l.tracking_id,
+                 'loan_amount', l.loan_amount,
+                 'coin', l.coin,
+                 'loan_status', l.loan_status,
+                 'created_at', l.created_at,
+                 'borrower', jsonb_build_object(
+                    'user_id', bu.id, 'username', bu.username, 'email', bu.email,
+                    'whitelisted', wlb.user_id is not null),
+                 'lender', jsonb_build_object(
+                    'user_id', lu.id, 'username', lu.username, 'email', lu.email,
+                    'whitelisted', wll.user_id is not null),
+                 'links', links.arr,
+                 'strongest', case
+                    when links.arr ?| array['same_wallet_on_loan','shared_wallet','shared_email'] then 'strong'
+                    else 'circumstantial'
+                 end
+               ) as x
+        from public.loans l
+        join public.users bu on bu.id = l.borrower_user_id
+        join public.users lu on lu.id = l.lender_user_id
+        left join public.fraud_detection_whitelist wlb on wlb.user_id = l.borrower_user_id
+        left join public.fraud_detection_whitelist wll on wll.user_id = l.lender_user_id
+        cross join lateral (
+          select coalesce(jsonb_agg(distinct link), '[]'::jsonb) as arr
+          from (
+            select 'same_wallet_on_loan' as link
+            where l.borrower_wallet is not null and l.lender_wallet is not null
+              and lower(btrim(l.borrower_wallet)) = lower(btrim(l.lender_wallet))
+            union all
+            select 'shared_wallet'
+            where exists (
+              select 1 from public.wallet_usage_log wb
+              join public.wallet_usage_log wl2 on wl2.wallet_address = wb.wallet_address
+              where wb.user_id = l.borrower_user_id and wl2.user_id = l.lender_user_id
+            )
+            union all
+            select 'shared_email'
+            where app_private.canonical_email(bu.email) is not null
+              and app_private.canonical_email(bu.email) = app_private.canonical_email(lu.email)
+            union all
+            select 'shared_ip'
+            where exists (
+              select 1 from public.auth_ip_log ib
+              join public.auth_ip_log il2 on il2.ip_hash = ib.ip_hash
+              where ib.user_id = l.borrower_user_id and il2.user_id = l.lender_user_id
+            )
+            union all
+            select 'shared_subnet'
+            where exists (
+              select 1 from public.auth_ip_log ib
+              join public.auth_ip_log il2 on il2.subnet_hash = ib.subnet_hash
+              where ib.user_id = l.borrower_user_id and il2.user_id = l.lender_user_id
+                and ib.subnet_hash is not null
+            )
+          ) found_links
+        ) links
+        where l.borrower_user_id is not null and l.lender_user_id is not null
+          and l.borrower_user_id <> l.lender_user_id
+          and jsonb_array_length(links.arr) > 0
       ) s
     ), '[]'::jsonb)
   ) into result;

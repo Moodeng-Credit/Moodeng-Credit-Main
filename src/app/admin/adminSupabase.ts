@@ -984,3 +984,95 @@ export async function saveDefaultRecoveryPlan(input: {
          .single()
    );
 }
+
+// ---------------------------------------------------------------------------
+// Self-lending / detection overview (admin_get_detection_overview RPC)
+// ---------------------------------------------------------------------------
+export type DetectionLinkType =
+   | 'same_wallet_on_loan'
+   | 'shared_wallet'
+   | 'shared_email'
+   | 'shared_ip'
+   | 'shared_subnet';
+
+export interface DetectionAccount {
+   user_id: string;
+   username: string | null;
+   email?: string | null;
+   role?: UserRole | null;
+   whitelisted?: boolean;
+}
+
+export interface SelfLendingLoan {
+   loan_id: string;
+   tracking_id: string | null;
+   loan_amount: number | null;
+   coin: string | null;
+   loan_status: string | null;
+   created_at: string | null;
+   borrower: DetectionAccount;
+   lender: DetectionAccount;
+   links: DetectionLinkType[];
+   strongest: 'strong' | 'circumstantial';
+}
+
+export interface SharedWalletCluster {
+   wallet_address: string;
+   account_count: number;
+   all_whitelisted: boolean;
+   has_borrower: boolean;
+   has_lender: boolean;
+   accounts: DetectionAccount[];
+}
+
+export interface SharedIpCluster {
+   ip_hash_short: string;
+   account_count: number;
+   all_whitelisted: boolean;
+   country?: string | null;
+   city?: string | null;
+   asn_org?: string | null;
+   is_hosting?: boolean;
+   accounts: DetectionAccount[];
+}
+
+export interface SubnetCluster {
+   subnet_hash_short: string;
+   account_count: number;
+   all_whitelisted: boolean;
+   asn_org?: string | null;
+   country?: string | null;
+   accounts: DetectionAccount[];
+}
+
+export interface EmailCollision {
+   canonical_email: string;
+   account_count: number;
+   accounts: DetectionAccount[];
+}
+
+export interface DetectionOverview {
+   generated_at: string;
+   shared_wallets: SharedWalletCluster[];
+   shared_ips: SharedIpCluster[];
+   hosting_ips: unknown[];
+   subnet_clusters: SubnetCluster[];
+   email_collisions: EmailCollision[];
+   self_lending_loans: SelfLendingLoan[];
+}
+
+export async function getDetectionOverview(): Promise<DetectionOverview> {
+   const supabase = getSupabaseBrowserClient();
+   const { data, error } = await supabase.rpc('admin_get_detection_overview');
+   if (error) throw error;
+   const o = (data ?? {}) as Partial<DetectionOverview>;
+   return {
+      generated_at: o.generated_at ?? new Date().toISOString(),
+      shared_wallets: o.shared_wallets ?? [],
+      shared_ips: o.shared_ips ?? [],
+      hosting_ips: o.hosting_ips ?? [],
+      subnet_clusters: o.subnet_clusters ?? [],
+      email_collisions: o.email_collisions ?? [],
+      self_lending_loans: o.self_lending_loans ?? []
+   };
+}

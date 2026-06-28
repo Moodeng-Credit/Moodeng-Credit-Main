@@ -30,8 +30,9 @@ import {
    upsertLoanRequestReview
 } from './adminSupabase';
 import RiskAssessmentSection from './RiskAssessmentSection';
+import SelfLendingSection from './SelfLendingSection';
 
-type AdminTab = 'users' | 'points' | 'trust-points' | 'defaults' | 'requests' | 'risk' | 'notifications';
+type AdminTab = 'users' | 'points' | 'trust-points' | 'defaults' | 'requests' | 'risk' | 'self-lending' | 'notifications';
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
 
 type NoticeTemplate = {
@@ -48,6 +49,7 @@ const navItems: Array<{ id: AdminTab; label: string }> = [
    { id: 'defaults', label: 'Default recovery' },
    { id: 'requests', label: 'Loan request review' },
    { id: 'risk', label: 'Risk assessment' },
+   { id: 'self-lending', label: 'Self-lending?' },
    { id: 'notifications', label: 'Notifications' }
 ];
 
@@ -1321,6 +1323,8 @@ export default function AdminPanel() {
                      }}
                   />
                ) : null}
+
+               {activeTab === 'self-lending' ? <SelfLendingSection /> : null}
 
                {activeTab === 'notifications' ? (
                   <section className="space-y-6">
