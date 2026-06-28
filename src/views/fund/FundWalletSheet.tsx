@@ -92,7 +92,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
             throw new Error((data as { error?: string } | null)?.error || 'Could not start Coinbase.');
          }
 
-         const url = `${COINBASE_PAY_URL}?sessionToken=${encodeURIComponent(token)}&defaultNetwork=base&fiatCurrency=USD`;
+         const url = `${COINBASE_PAY_URL}?sessionToken=${encodeURIComponent(token)}&defaultNetwork=base&fiatCurrency=USD&defaultPaymentMethod=CARD`;
          if (popup) {
             popup.location.href = url;
          } else {
@@ -180,7 +180,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                         Powered by Coinbase
                      </span>
                      <span className="rounded-full bg-md-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-md-neutral-1400">
-                        No account needed
+                        Coinbase account needed
                      </span>
                   </div>
                   <div className="flex items-center gap-2">
