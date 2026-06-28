@@ -87,11 +87,11 @@ const noticeTemplates: NoticeTemplate[] = [
 ];
 
 function badgeTone(value: string) {
-   if (['banned', 'blocked', 'deleted', 'high', 'overdue', 'needs_review'].includes(value)) return 'bg-red-100 text-red-800';
-   if (['watchlist', 'reported', 'duplicate', 'medium', 'Partial'].includes(value)) return 'bg-amber-100 text-amber-900';
-   if (['active', 'kept', 'low', 'Paid', 'ACTIVE'].includes(value)) return 'bg-emerald-100 text-emerald-800';
-   if (['lender', 'Lent'].includes(value)) return 'bg-blue-100 text-blue-800';
-   return 'bg-purple-100 text-purple-800';
+   if (['banned', 'blocked', 'deleted', 'high', 'overdue', 'needs_review'].includes(value)) return 'bg-red-900/50 text-red-300';
+   if (['watchlist', 'reported', 'duplicate', 'medium', 'Partial'].includes(value)) return 'bg-amber-900/50 text-amber-300';
+   if (['active', 'kept', 'low', 'Paid', 'ACTIVE'].includes(value)) return 'bg-emerald-900/50 text-emerald-300';
+   if (['lender', 'Lent'].includes(value)) return 'bg-blue-900/50 text-blue-300';
+   return 'bg-purple-900/50 text-purple-300';
 }
 
 function Badge({ children, tone = 'default' }: { children: ReactNode; tone?: string }) {
@@ -102,10 +102,10 @@ function Badge({ children, tone = 'default' }: { children: ReactNode; tone?: str
 
 function StatCard({ label, value, note }: { label: string; value: number; note: string }) {
    return (
-      <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
-         <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">{label}</p>
-         <strong className="mt-3 block text-5xl font-black text-[#1c053d]">{value}</strong>
-         <p className="mt-2 text-sm font-bold text-[#6f627e]">{note}</p>
+      <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6">
+         <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">{label}</p>
+         <strong className="mt-3 block text-5xl font-black text-white">{value}</strong>
+         <p className="mt-2 text-sm font-bold text-[#a89bb8]">{note}</p>
       </div>
    );
 }
@@ -113,16 +113,16 @@ function StatCard({ label, value, note }: { label: string; value: number; note: 
 function DirectoryMetric({ label, value, tone = 'default' }: { label: string; value: ReactNode; tone?: string }) {
    return (
       <div
-         className={`rounded-2xl border p-4 ${tone === 'danger' ? 'border-red-200 bg-red-50' : tone === 'warning' ? 'border-amber-200 bg-amber-50' : tone === 'success' ? 'border-emerald-200 bg-emerald-50' : 'border-[#eadff8] bg-[#fbf8ff]'}`}
+         className={`rounded-2xl border p-4 ${tone === 'danger' ? 'border-red-900 bg-red-950/60' : tone === 'warning' ? 'border-amber-900 bg-amber-950/60' : tone === 'success' ? 'border-emerald-900 bg-emerald-950/60' : 'border-[#2a1453] bg-[#241044]'}`}
       >
-         <p className="text-xs font-black uppercase tracking-wide text-[#6f627e]">{label}</p>
-         <strong className="mt-1 block break-words text-lg font-black text-[#1c053d]">{value}</strong>
+         <p className="text-xs font-black uppercase tracking-wide text-[#a89bb8]">{label}</p>
+         <strong className="mt-1 block break-words text-lg font-black text-white">{value}</strong>
       </div>
    );
 }
 
 function EmptyPanel({ message }: { message: string }) {
-   return <div className="rounded-3xl border border-[#eadff8] bg-white p-6 text-lg font-bold text-[#6f627e]">{message}</div>;
+   return <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 text-lg font-bold text-[#a89bb8]">{message}</div>;
 }
 
 function formatMoney(value: number | null | undefined) {
@@ -462,19 +462,19 @@ export default function AdminPanel() {
 
    if (!admin) {
       return (
-         <main className="min-h-screen bg-[#f7f5fb] p-6">
-            <section className="mx-auto max-w-xl rounded-3xl border border-red-200 bg-white p-8 shadow-sm">
-               <p className="text-sm font-black uppercase tracking-wide text-red-600">Admin panel</p>
-               <h1 className="mt-3 text-4xl font-black text-[#08002f]">You do not have access</h1>
-               <p className="mt-3 text-lg text-slate-600">Only approved Moodeng admins can open this panel.</p>
-               {error ? <p className="mt-5 rounded-2xl bg-red-50 p-4 text-red-700">{error}</p> : null}
+         <main className="min-h-screen bg-[#120429] p-6">
+            <section className="mx-auto max-w-xl rounded-3xl border border-red-900 bg-[#1c0a3a] p-8">
+               <p className="text-sm font-black uppercase tracking-wide text-red-400">Admin panel</p>
+               <h1 className="mt-3 text-4xl font-black text-white">You do not have access</h1>
+               <p className="mt-3 text-lg text-[#a89bb8]">Only approved Moodeng admins can open this panel.</p>
+               {error ? <p className="mt-5 rounded-2xl bg-red-950/60 p-4 text-red-300">{error}</p> : null}
             </section>
          </main>
       );
    }
 
    return (
-      <main className="min-h-screen bg-[#f7f5fb] text-[#1c053d]">
+      <main className="min-h-screen bg-[#120429] text-white">
          <div className="grid min-h-screen lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
             <aside className="overflow-hidden bg-[#120429] p-6 text-white sm:p-8 lg:sticky lg:top-0 lg:h-screen">
                <div className="flex min-w-0 items-center gap-4">
@@ -514,21 +514,21 @@ export default function AdminPanel() {
 
             <section className="min-w-0 p-5 sm:p-8 lg:p-10">
                {error ? (
-                  <div className="mb-5 rounded-3xl border border-red-200 bg-red-50 p-5 text-lg font-bold text-red-800">{error}</div>
+                  <div className="mb-5 rounded-3xl border border-red-900 bg-red-950/60 p-5 text-lg font-bold text-red-300">{error}</div>
                ) : null}
                {statusMessage ? (
-                  <div className="mb-5 rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-lg font-bold text-emerald-800">
+                  <div className="mb-5 rounded-3xl border border-emerald-900 bg-emerald-950/60 p-5 text-lg font-bold text-emerald-300">
                      {statusMessage}
                   </div>
                ) : null}
                {integrityRun?.status && integrityRun.status !== 'success' ? (
-                  <div className="mb-5 rounded-3xl border border-amber-200 bg-amber-50 p-5 text-lg font-bold text-amber-900">
+                  <div className="mb-5 rounded-3xl border border-amber-900 bg-amber-950/60 p-5 text-lg font-bold text-amber-300">
                      Daily data check found {integrityRun.issue_count} item{integrityRun.issue_count === 1 ? '' : 's'} to review. Last
                      checked {formatDateTime(integrityRun.created_at)}.
                   </div>
                ) : null}
                {adminDataLoading ? (
-                  <div className="mb-5 rounded-3xl border border-purple-200 bg-purple-50 p-5 text-lg font-bold text-purple-900">
+                  <div className="mb-5 rounded-3xl border border-purple-900 bg-purple-950/60 p-5 text-lg font-bold text-purple-300">
                      Loading live Supabase data...
                   </div>
                ) : null}
@@ -537,25 +537,25 @@ export default function AdminPanel() {
                   <section className="space-y-6">
                      <div>
                         <h2 className="break-words text-4xl font-black tracking-normal sm:text-5xl">User directory</h2>
-                        <p className="mt-3 max-w-3xl text-2xl text-[#6f627e]">
+                        <p className="mt-3 max-w-3xl text-2xl text-[#a89bb8]">
                            Search live borrowers and lenders, review real wallet/account details, and flag accounts for follow-up.
                         </p>
                      </div>
 
-                     <form onSubmit={handleSearch} className="rounded-3xl border border-[#eadff8] bg-white p-5 shadow-sm">
+                     <form onSubmit={handleSearch} className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-5 ">
                         <input
                            value={search}
                            onChange={(event) => setSearch(event.target.value)}
                            placeholder="Search users, wallets, emails"
-                           className="h-16 w-full rounded-2xl border border-[#ded0ef] px-6 text-2xl text-[#1c053d]"
+                           className="h-16 w-full rounded-2xl border border-[#3d1f6e] bg-[#241044] px-6 text-2xl text-white placeholder:text-[#a89bb8]"
                         />
-                        <div className="mt-4 grid grid-cols-4 overflow-hidden rounded-2xl border border-[#ded0ef] text-center text-lg font-black">
+                        <div className="mt-4 grid grid-cols-4 overflow-hidden rounded-2xl border border-[#3d1f6e] text-center text-lg font-black">
                            {(['all', 'borrower', 'lender', 'unset'] as const).map((role) => (
                               <button
                                  key={role}
                                  type="button"
                                  onClick={() => setRoleFilter(role)}
-                                 className={`py-4 capitalize ${roleFilter === role ? 'bg-[#8336f0] text-white' : 'bg-white text-[#6f627e]'}`}
+                                 className={`py-4 capitalize ${roleFilter === role ? 'bg-[#8336f0] text-white' : 'bg-[#241044] text-[#a89bb8]'}`}
                               >
                                  {role === 'all' ? 'Everyone' : role === 'unset' ? 'No role' : `${role}s`}
                               </button>
@@ -576,11 +576,11 @@ export default function AdminPanel() {
                         />
                      </div>
 
-                     <div className="overflow-hidden rounded-3xl border border-[#eadff8] bg-white shadow-sm">
+                     <div className="overflow-hidden rounded-3xl border border-[#2a1453] bg-[#1c0a3a] ">
                         {!adminDataLoaded ? <EmptyPanel message="Loading user directory from Supabase..." /> : null}
                         {adminDataLoaded
                            ? filteredDirectory.map((user) => (
-                                <article key={user.id} className="border-b border-[#eadff8] last:border-b-0">
+                                <article key={user.id} className="border-b border-[#2a1453] last:border-b-0">
                                    <div className="grid gap-5 p-6">
                                       <div className="flex flex-wrap items-start justify-between gap-4">
                                          <div className="flex min-w-0 gap-4">
@@ -610,7 +610,7 @@ export default function AdminPanel() {
                                                      <Badge tone={user.restriction.status}>admin {user.restriction.status}</Badge>
                                                   ) : null}
                                                </div>
-                                               <p className="mt-3 break-all text-xl text-[#6f627e]">
+                                               <p className="mt-3 break-all text-xl text-[#a89bb8]">
                                                   {user.email ?? 'No email'} · {walletLabel(user)} · joined {formatDate(user.created_at)}
                                                </p>
                                             </div>
@@ -676,63 +676,63 @@ export default function AdminPanel() {
                                       </div>
                                    </div>
                                    {selectedUser?.id === user.id ? (
-                                      <div className="border-t border-[#eadff8] bg-[#fbf8ff] p-6">
+                                      <div className="border-t border-[#2a1453] bg-[#241044] p-6">
                                          <div className="flex flex-wrap items-center justify-between gap-3">
                                             <h3 className="text-3xl font-black">Selected account</h3>
                                             <button
                                                type="button"
                                                onClick={() => setSelectedUserId('')}
-                                               className="rounded-full border border-[#ded0ef] bg-white px-5 py-3 text-lg font-black text-[#6b21a8]"
+                                               className="rounded-full border border-[#3d1f6e] bg-[#241044] px-5 py-3 text-lg font-black text-purple-300"
                                             >
                                                Collapse
                                             </button>
                                          </div>
                                          <div className="mt-5 grid gap-4 md:grid-cols-2">
-                                            <div className="rounded-2xl border border-[#eadff8] bg-white p-5">
-                                               <p className="text-sm font-black uppercase text-[#6f627e]">Name</p>
+                                            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                                               <p className="text-sm font-black uppercase text-[#a89bb8]">Name</p>
                                                <strong className="mt-2 block break-words text-3xl">{user.username}</strong>
                                             </div>
-                                            <div className="rounded-2xl border border-[#eadff8] bg-white p-5">
-                                               <p className="text-sm font-black uppercase text-[#6f627e]">Wallet</p>
+                                            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                                               <p className="text-sm font-black uppercase text-[#a89bb8]">Wallet</p>
                                                <strong className="mt-2 block break-all text-2xl">{shortWallet(user.wallet_address)}</strong>
-                                               <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                                               <p className="mt-2 text-lg font-bold text-[#a89bb8]">
                                                   {user.wallet_provider ?? user.wallet_connector_name ?? 'No wallet provider saved'}
                                                </p>
                                             </div>
-                                            <div className="rounded-2xl border border-[#eadff8] bg-white p-5">
-                                               <p className="text-sm font-black uppercase text-[#6f627e]">Borrower activity</p>
+                                            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                                               <p className="text-sm font-black uppercase text-[#a89bb8]">Borrower activity</p>
                                                <strong className="mt-2 block text-2xl">
                                                   {user.openRequestCount} open requests · {user.activeLoanCount} active ·{' '}
                                                   {user.paidLoanCount} paid
                                                </strong>
                                             </div>
-                                            <div className="rounded-2xl border border-[#eadff8] bg-white p-5">
-                                               <p className="text-sm font-black uppercase text-[#6f627e]">Outstanding</p>
+                                            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                                               <p className="text-sm font-black uppercase text-[#a89bb8]">Outstanding</p>
                                                <strong className="mt-2 block text-3xl">{formatMoney(user.outstandingDue)}</strong>
-                                               <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                                               <p className="mt-2 text-lg font-bold text-[#a89bb8]">
                                                   {user.overdueLoanCount} overdue loans
                                                </p>
                                             </div>
-                                            <div className="rounded-2xl border border-[#eadff8] bg-white p-5">
-                                               <p className="text-sm font-black uppercase text-[#6f627e]">Credit</p>
+                                            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                                               <p className="text-sm font-black uppercase text-[#a89bb8]">Credit</p>
                                                <strong className="mt-2 block text-3xl">${user.cs ?? 0}</strong>
-                                               <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                                               <p className="mt-2 text-lg font-bold text-[#a89bb8]">
                                                   MAL {user.mal ?? 0} · NAL {user.nal ?? 0}
                                                </p>
                                             </div>
-                                            <div className="rounded-2xl border border-[#eadff8] bg-white p-5">
-                                               <p className="text-sm font-black uppercase text-[#6f627e]">IOU balance</p>
+                                            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                                               <p className="text-sm font-black uppercase text-[#a89bb8]">IOU balance</p>
                                                <strong className="mt-2 block text-3xl">{formatPointsMajor(user.pointsTotal)}</strong>
-                                               <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                                               <p className="mt-2 text-lg font-bold text-[#a89bb8]">
                                                   {user.pointEventCount} recent events loaded · updated {formatDate(user.pointsUpdatedAt)}
                                                </p>
                                             </div>
-                                            <div className="rounded-2xl border border-[#eadff8] bg-white p-5">
-                                               <p className="text-sm font-black uppercase text-[#6f627e]">Admin status</p>
+                                            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                                               <p className="text-sm font-black uppercase text-[#a89bb8]">Admin status</p>
                                                <strong className="mt-2 block text-2xl">
                                                   {user.restriction?.status ?? user.account_status}
                                                </strong>
-                                               <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                                               <p className="mt-2 text-lg font-bold text-[#a89bb8]">
                                                   {user.restriction?.admin_note ?? 'No admin restriction note.'}
                                                </p>
                                             </div>
@@ -776,7 +776,7 @@ export default function AdminPanel() {
                                                Clear restriction
                                             </button>
                                          </div>
-                                         <p className="mt-3 text-base font-bold text-[#6f627e]">
+                                         <p className="mt-3 text-base font-bold text-[#a89bb8]">
                                             Flag ban review does not ban anyone. It records an admin review item only.
                                          </p>
                                       </div>
@@ -794,27 +794,27 @@ export default function AdminPanel() {
                      <div>
                         <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Source of truth</p>
                         <h2 className="break-words text-4xl font-black sm:text-5xl">IOU points</h2>
-                        <p className="mt-3 max-w-4xl text-2xl text-[#6f627e]">
-                           Lender-only points from <span className="font-black text-[#1c053d]">user_points</span> and{' '}
-                           <span className="font-black text-[#1c053d]">point_events</span>. The guide below reads from the shared points
+                        <p className="mt-3 max-w-4xl text-2xl text-[#a89bb8]">
+                           Lender-only points from <span className="font-black text-white">user_points</span> and{' '}
+                           <span className="font-black text-white">point_events</span>. The guide below reads from the shared points
                            rules used by the funding code.
                         </p>
                      </div>
 
                      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-                        <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
-                           <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Live rule</p>
-                           <h3 className="mt-2 text-3xl font-black text-[#1c053d]">
+                        <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
+                           <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Live rule</p>
+                           <h3 className="mt-2 text-3xl font-black text-white">
                               {loanFundingPointsPerUsdc} IOU per 1 USDC funded + borrower bonus
                            </h3>
-                           <p className="mt-3 text-lg font-bold leading-8 text-[#6f627e]">
+                           <p className="mt-3 text-lg font-bold leading-8 text-[#a89bb8]">
                               Example: a $20 loan to a first-time borrower earns $20 base IOU + 25 bonus IOU = 45 IOU.
                            </p>
                         </div>
-                        <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
-                           <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Reference guide</p>
-                           <h3 className="mt-2 text-3xl font-black text-[#1c053d]">IOU guide only</h3>
-                           <p className="mt-3 text-lg font-bold leading-8 text-[#6f627e]">
+                        <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
+                           <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Reference guide</p>
+                           <h3 className="mt-2 text-3xl font-black text-white">IOU guide only</h3>
+                           <p className="mt-3 text-lg font-bold leading-8 text-[#a89bb8]">
                               This is separate from borrower credit, borrower trust, Academy display rewards, and risk scoring.
                            </p>
                            <a
@@ -845,18 +845,18 @@ export default function AdminPanel() {
                         <StatCard label="Point system" value={1} note="IOU points only" />
                      </div>
 
-                     <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                     <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
                         <h3 className="text-3xl font-black">Current IOU balances</h3>
-                        <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                        <p className="mt-2 text-lg font-bold text-[#a89bb8]">
                            Sorted by highest IOU point balance in the currently loaded admin directory.
                         </p>
                         <div className="mt-5 grid gap-4 lg:grid-cols-2">
                            {usersByIouPoints.map((user) => (
-                              <article key={user.id} className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5">
+                              <article key={user.id} className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
                                  <div className="flex items-start justify-between gap-4">
                                     <div>
                                        <h4 className="break-words text-2xl font-black">{user.username}</h4>
-                                       <p className="mt-1 text-lg font-bold text-[#6f627e]">{roleLabel(user.user_role)}</p>
+                                       <p className="mt-1 text-lg font-bold text-[#a89bb8]">{roleLabel(user.user_role)}</p>
                                     </div>
                                     <strong className="rounded-2xl bg-[#1c053d] px-4 py-3 text-2xl font-black text-white">
                                        {formatPointsMajor(user.pointsTotal)}
@@ -869,19 +869,19 @@ export default function AdminPanel() {
                                  {user.recentPointEvents.length ? (
                                     <div className="mt-4 space-y-3">
                                        {user.recentPointEvents.map((event) => (
-                                          <div key={event.id} className="rounded-2xl border border-[#eadff8] bg-white p-4">
+                                          <div key={event.id} className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4">
                                              <div className="flex flex-wrap items-center justify-between gap-3">
-                                                <strong className="text-lg font-black text-[#1c053d]">
+                                                <strong className="text-lg font-black text-white">
                                                    {pointEventRuleLabel(event.event_type, event.source_type)}
                                                 </strong>
                                                 <Badge tone="active">+{formatPointsMajor(event.delta)} IOU</Badge>
                                              </div>
-                                             <p className="mt-2 text-base font-bold text-[#6f627e]">{formatDateTime(event.created_at)}</p>
+                                             <p className="mt-2 text-base font-bold text-[#a89bb8]">{formatDateTime(event.created_at)}</p>
                                           </div>
                                        ))}
                                     </div>
                                  ) : (
-                                    <p className="mt-4 rounded-2xl border border-[#eadff8] bg-white p-4 text-lg font-bold text-[#6f627e]">
+                                    <p className="mt-4 rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4 text-lg font-bold text-[#a89bb8]">
                                        No recent IOU point events loaded.
                                     </p>
                                  )}
@@ -892,50 +892,50 @@ export default function AdminPanel() {
                      </div>
 
                      <section id="iou-points-reference-guide" className="space-y-5 scroll-mt-8">
-                        <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                        <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
                            <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Reference guide</p>
-                           <h3 className="mt-2 text-4xl font-black text-[#1c053d]">IOU points reference guide</h3>
-                           <p className="mt-3 text-xl font-bold leading-8 text-[#6f627e]">
+                           <h3 className="mt-2 text-4xl font-black text-white">IOU points reference guide</h3>
+                           <p className="mt-3 text-xl font-bold leading-8 text-[#a89bb8]">
                               Year 1 only. Later-year tokenomics stay manual until we choose to wire them into the product.
                            </p>
                         </div>
                         <div className="grid gap-5 xl:grid-cols-2">
                            {iouPointsAwardRules.map((rule) => (
-                              <article key={rule.id} className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                              <article key={rule.id} className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
                                  <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div>
-                                       <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">{rule.system}</p>
-                                       <h4 className="mt-2 text-3xl font-black text-[#1c053d]">{rule.action}</h4>
+                                       <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">{rule.system}</p>
+                                       <h4 className="mt-2 text-3xl font-black text-white">{rule.action}</h4>
                                     </div>
                                     <Badge tone={rule.status === 'live' ? 'active' : 'watchlist'}>{ruleStatusLabel(rule.status)}</Badge>
                                  </div>
                                  <dl className="mt-5 grid gap-4">
                                     <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Points</dt>
-                                       <dd className="mt-1 text-2xl font-black text-[#1c053d]">{rule.points}</dd>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Points</dt>
+                                       <dd className="mt-1 text-2xl font-black text-white">{rule.points}</dd>
                                     </div>
                                     <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Who gets it</dt>
-                                       <dd className="mt-1 text-2xl font-black text-[#1c053d]">{rule.actor}</dd>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Who gets it</dt>
+                                       <dd className="mt-1 text-2xl font-black text-white">{rule.actor}</dd>
                                     </div>
                                     <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Criteria</dt>
-                                       <dd className="mt-1 text-xl font-bold leading-8 text-[#6f627e]">{rule.criteria}</dd>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Criteria</dt>
+                                       <dd className="mt-1 text-xl font-bold leading-8 text-[#a89bb8]">{rule.criteria}</dd>
                                     </div>
                                     <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Example</dt>
-                                       <dd className="mt-1 text-xl font-black text-[#1c053d]">{rule.example}</dd>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Example</dt>
+                                       <dd className="mt-1 text-xl font-black text-white">{rule.example}</dd>
                                     </div>
                                  </dl>
                                  {rule.bonusTiers?.length ? (
                                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
                                        {rule.bonusTiers.map((tier) => (
-                                          <div key={tier.id} className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-4">
-                                             <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">
+                                          <div key={tier.id} className="rounded-2xl border border-[#2a1453] bg-[#241044] p-4">
+                                             <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">
                                                 {tier.borrowerLoanNumber}
                                              </p>
-                                             <p className="mt-1 text-2xl font-black text-[#1c053d]">+{tier.bonusPoints} IOU</p>
-                                             <p className="mt-1 text-base font-bold text-[#6f627e]">{tier.criteria}</p>
+                                             <p className="mt-1 text-2xl font-black text-white">+{tier.bonusPoints} IOU</p>
+                                             <p className="mt-1 text-base font-bold text-[#a89bb8]">{tier.criteria}</p>
                                           </div>
                                        ))}
                                     </div>
@@ -952,25 +952,25 @@ export default function AdminPanel() {
                      <div>
                         <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Source of truth</p>
                         <h2 className="break-words text-4xl font-black sm:text-5xl">Trust points</h2>
-                        <p className="mt-3 max-w-4xl text-2xl text-[#6f627e]">
-                           Borrower-only Trust Points from <span className="font-black text-[#1c053d]">user_trust_points</span> and{' '}
-                           <span className="font-black text-[#1c053d]">trust_point_events</span>. These are separate from lender IOU points.
+                        <p className="mt-3 max-w-4xl text-2xl text-[#a89bb8]">
+                           Borrower-only Trust Points from <span className="font-black text-white">user_trust_points</span> and{' '}
+                           <span className="font-black text-white">trust_point_events</span>. These are separate from lender IOU points.
                         </p>
                      </div>
 
                      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-                        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
-                           <p className="text-sm font-black uppercase tracking-wide text-emerald-800">Current storage</p>
-                           <h3 className="mt-2 text-3xl font-black text-[#1c053d]">Live Trust Point ledger</h3>
-                           <p className="mt-3 text-lg font-bold leading-8 text-emerald-900">
+                        <div className="rounded-3xl border border-emerald-900 bg-emerald-950/60 p-6 ">
+                           <p className="text-sm font-black uppercase tracking-wide text-emerald-300">Current storage</p>
+                           <h3 className="mt-2 text-3xl font-black text-white">Live Trust Point ledger</h3>
+                           <p className="mt-3 text-lg font-bold leading-8 text-emerald-300">
                               Milestone completions write borrower Trust Point events into Supabase. Credit limit fields such as users.cs stay
                               separate.
                            </p>
                         </div>
-                        <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
-                           <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Reference guide</p>
-                           <h3 className="mt-2 text-3xl font-black text-[#1c053d]">Trust guide only</h3>
-                           <p className="mt-3 text-lg font-bold leading-8 text-[#6f627e]">
+                        <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
+                           <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Reference guide</p>
+                           <h3 className="mt-2 text-3xl font-black text-white">Trust guide only</h3>
+                           <p className="mt-3 text-lg font-bold leading-8 text-[#a89bb8]">
                               This page is intentionally separate from lender IOU points so we do not mix borrower trust with lender
                               rewards.
                            </p>
@@ -998,18 +998,18 @@ export default function AdminPanel() {
                         <StatCard label="Trust point tables" value={2} note="Balance + event ledger" />
                      </div>
 
-                     <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                     <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
                         <h3 className="text-3xl font-black">Current Trust Point balances</h3>
-                        <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                        <p className="mt-2 text-lg font-bold text-[#a89bb8]">
                            Sorted by highest stored Trust Point balance in the currently loaded admin directory.
                         </p>
                         <div className="mt-5 grid gap-4 lg:grid-cols-2">
                            {usersByTrustPoints.map((user) => (
-                              <article key={user.id} className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5">
+                              <article key={user.id} className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
                                  <div className="flex flex-wrap items-start justify-between gap-4">
                                     <div>
                                        <h4 className="break-words text-2xl font-black">{user.username}</h4>
-                                       <p className="mt-1 text-lg font-bold text-[#6f627e]">
+                                       <p className="mt-1 text-lg font-bold text-[#a89bb8]">
                                           {user.is_world_id === 'ACTIVE' ? 'Verified borrower' : 'Not verified'}
                                        </p>
                                     </div>
@@ -1026,17 +1026,17 @@ export default function AdminPanel() {
                                  {user.recentTrustPointEvents.length ? (
                                     <div className="mt-4 space-y-3">
                                        {user.recentTrustPointEvents.map((event) => (
-                                          <div key={event.id} className="rounded-2xl border border-[#eadff8] bg-white p-4">
+                                          <div key={event.id} className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4">
                                              <div className="flex flex-wrap items-center justify-between gap-3">
-                                                <strong className="text-lg font-black text-[#1c053d]">{trustPointEventRuleLabel(event)}</strong>
+                                                <strong className="text-lg font-black text-white">{trustPointEventRuleLabel(event)}</strong>
                                                 <Badge tone="active">+{formatPointsMajor(event.delta)} Trust</Badge>
                                              </div>
-                                             <p className="mt-2 text-base font-bold text-[#6f627e]">{formatDateTime(event.created_at)}</p>
+                                             <p className="mt-2 text-base font-bold text-[#a89bb8]">{formatDateTime(event.created_at)}</p>
                                           </div>
                                        ))}
                                     </div>
                                  ) : (
-                                    <p className="mt-4 rounded-2xl border border-[#eadff8] bg-white p-4 text-lg font-bold text-[#6f627e]">
+                                    <p className="mt-4 rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4 text-lg font-bold text-[#a89bb8]">
                                        No Trust Point events loaded yet.
                                     </p>
                                  )}
@@ -1047,39 +1047,39 @@ export default function AdminPanel() {
                      </div>
 
                      <section id="trust-points-reference-guide" className="space-y-5 scroll-mt-8">
-                        <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                        <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
                            <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Reference guide</p>
-                           <h3 className="mt-2 text-4xl font-black text-[#1c053d]">Trust points reference guide</h3>
-                           <p className="mt-3 text-xl font-bold leading-8 text-[#6f627e]">
+                           <h3 className="mt-2 text-4xl font-black text-white">Trust points reference guide</h3>
+                           <p className="mt-3 text-xl font-bold leading-8 text-[#a89bb8]">
                               These live rules are stored as milestone definitions and awarded through the borrower Trust Point ledger.
                            </p>
                         </div>
                         <div className="grid gap-5 xl:grid-cols-2">
                            {trustPointsAwardRules.map((rule) => (
-                              <article key={rule.id} className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                              <article key={rule.id} className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
                                  <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div>
-                                       <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">{rule.system}</p>
-                                       <h4 className="mt-2 text-3xl font-black text-[#1c053d]">{rule.action}</h4>
+                                       <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">{rule.system}</p>
+                                       <h4 className="mt-2 text-3xl font-black text-white">{rule.action}</h4>
                                     </div>
                                     <Badge tone={rule.status === 'live' ? 'active' : 'watchlist'}>{ruleStatusLabel(rule.status)}</Badge>
                                  </div>
                                  <dl className="mt-5 grid gap-4">
                                     <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Points</dt>
-                                       <dd className="mt-1 text-2xl font-black text-[#1c053d]">{rule.points}</dd>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Points</dt>
+                                       <dd className="mt-1 text-2xl font-black text-white">{rule.points}</dd>
                                     </div>
                                     <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Who gets it</dt>
-                                       <dd className="mt-1 text-2xl font-black text-[#1c053d]">{rule.actor}</dd>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Who gets it</dt>
+                                       <dd className="mt-1 text-2xl font-black text-white">{rule.actor}</dd>
                                     </div>
                                     <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Criteria</dt>
-                                       <dd className="mt-1 text-xl font-bold leading-8 text-[#6f627e]">{rule.criteria}</dd>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Criteria</dt>
+                                       <dd className="mt-1 text-xl font-bold leading-8 text-[#a89bb8]">{rule.criteria}</dd>
                                     </div>
                                     <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Example</dt>
-                                       <dd className="mt-1 text-xl font-black text-[#1c053d]">{rule.example}</dd>
+                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Example</dt>
+                                       <dd className="mt-1 text-xl font-black text-white">{rule.example}</dd>
                                     </div>
                                  </dl>
                               </article>
@@ -1093,7 +1093,7 @@ export default function AdminPanel() {
                   <section className="space-y-6">
                      <div>
                         <h2 className="break-words text-4xl font-black sm:text-5xl">Default recovery</h2>
-                        <p className="mt-3 text-2xl text-[#6f627e]">
+                        <p className="mt-3 text-2xl text-[#a89bb8]">
                            Live overdue loans plus active recovery cases. Saving a path creates or updates a recovery case and audit action.
                         </p>
                      </div>
@@ -1106,7 +1106,7 @@ export default function AdminPanel() {
                      {!defaultCases.length ? <EmptyPanel message="No overdue loans or active recovery cases found." /> : null}
                      {defaultCases.length ? (
                         <div className="grid items-start gap-5 xl:grid-cols-[minmax(360px,520px)_minmax(0,1fr)]">
-                           <div className="self-start overflow-hidden rounded-3xl border border-[#eadff8] bg-white shadow-sm">
+                           <div className="self-start overflow-hidden rounded-3xl border border-[#2a1453] bg-[#1c0a3a] ">
                               {defaultCases.map((item) => (
                                  <button
                                     key={item.id}
@@ -1116,14 +1116,14 @@ export default function AdminPanel() {
                                        setSelectedRecoveryPath(item.recovery_path ?? 'repay_now');
                                        setRecoveryNote(item.admin_note ?? '');
                                     }}
-                                    className={`block w-full border-b border-[#eadff8] p-5 text-left transition last:border-b-0 hover:bg-[#fbf8ff] ${
-                                       selectedDefaultCase?.id === item.id ? 'bg-[#fbf8ff]' : 'bg-white'
+                                    className={`block w-full border-b border-[#2a1453] p-5 text-left transition last:border-b-0 hover:bg-[#241044] ${
+                                       selectedDefaultCase?.id === item.id ? 'bg-[#241044]' : 'bg-[#1c0a3a]'
                                     }`}
                                  >
                                     <div className="flex items-start justify-between gap-4">
                                        <div>
                                           <h3 className="text-2xl font-black">{item.borrower}</h3>
-                                          <p className="mt-2 text-lg text-[#6f627e]">
+                                          <p className="mt-2 text-lg text-[#a89bb8]">
                                              Lender: {item.lender} · due {formatDate(item.due_date)}
                                           </p>
                                        </div>
@@ -1134,18 +1134,18 @@ export default function AdminPanel() {
                                        <Badge tone={item.status}>{item.status.replace('_', ' ')}</Badge>
                                        <Badge tone={item.source}>{item.source === 'overdue_loan' ? 'live loan' : 'recovery case'}</Badge>
                                     </div>
-                                    <p className="mt-4 text-lg leading-7 text-[#6f627e]">
+                                    <p className="mt-4 text-lg leading-7 text-[#a89bb8]">
                                        {item.evidence_summary ?? item.borrower_explanation ?? 'No admin evidence note yet.'}
                                     </p>
                                  </button>
                               ))}
                            </div>
                            {selectedDefaultCase ? (
-                              <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                              <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
                                  <div className="flex flex-wrap items-start justify-between gap-4">
                                     <div>
                                        <h3 className="text-3xl font-black">Recovery plan</h3>
-                                       <p className="mt-2 text-lg font-bold text-[#6f627e]">
+                                       <p className="mt-2 text-lg font-bold text-[#a89bb8]">
                                           {selectedDefaultCase.borrower} owes {formatMoney(selectedDefaultCase.amount_due)}.
                                        </p>
                                     </div>
@@ -1159,24 +1159,24 @@ export default function AdminPanel() {
                                           onClick={() => setSelectedRecoveryPath(path.name)}
                                           className={`rounded-2xl border p-5 text-left transition ${
                                              selectedRecoveryPath === path.name
-                                                ? 'border-[#8336f0] bg-[#f4edff] shadow-[0_0_0_3px_rgba(131,54,240,0.12)]'
-                                                : 'border-[#ded0ef] bg-[#fbf8ff] hover:border-[#8336f0]'
+                                                ? 'border-[#8336f0] bg-[#2a1453] shadow-[0_0_0_3px_rgba(131,54,240,0.12)]'
+                                                : 'border-[#3d1f6e] bg-[#241044] hover:border-[#8336f0]'
                                           }`}
                                        >
-                                          <span className="mb-3 inline-flex rounded-full bg-white px-3 py-1 text-sm font-black uppercase tracking-wide text-[#8336f0]">
+                                          <span className="mb-3 inline-flex rounded-full bg-[#241044] px-3 py-1 text-sm font-black uppercase tracking-wide text-[#8336f0]">
                                              {selectedRecoveryPath === path.name ? 'Selected' : 'Choose'}
                                           </span>
                                           <strong className="block text-2xl font-black">{path.label}</strong>
-                                          <span className="mt-2 block text-lg text-[#6f627e]">{path.detail}</span>
+                                          <span className="mt-2 block text-lg text-[#a89bb8]">{path.detail}</span>
                                        </button>
                                     ))}
                                  </div>
-                                 <label className="mt-5 grid gap-2 text-sm font-black uppercase tracking-wide text-[#6f627e]">
+                                 <label className="mt-5 grid gap-2 text-sm font-black uppercase tracking-wide text-[#a89bb8]">
                                     Admin note
                                     <textarea
                                        value={recoveryNote}
                                        onChange={(event) => setRecoveryNote(event.target.value)}
-                                       className="min-h-28 rounded-2xl border border-[#ded0ef] p-4 text-lg font-bold normal-case tracking-normal text-[#1c053d]"
+                                       className="min-h-28 rounded-2xl border border-[#3d1f6e] bg-[#241044] p-4 text-lg font-bold normal-case tracking-normal text-white placeholder:text-[#a89bb8]"
                                        placeholder="Record the team decision or next step"
                                     />
                                  </label>
@@ -1187,7 +1187,7 @@ export default function AdminPanel() {
                                  >
                                     Save recovery plan
                                  </button>
-                                 <p className="mt-3 text-base font-bold text-[#6f627e]">
+                                 <p className="mt-3 text-base font-bold text-[#a89bb8]">
                                     This records the plan and audit action. It does not silently change repayment amounts or send money.
                                  </p>
                               </div>
@@ -1201,20 +1201,20 @@ export default function AdminPanel() {
                   <section className="space-y-6">
                      <div>
                         <h2 className="break-words text-4xl font-black sm:text-5xl">Loan request review</h2>
-                        <p className="mt-3 text-2xl text-[#6f627e]">
+                        <p className="mt-3 text-2xl text-[#a89bb8]">
                            Live open requests from the request board. Review actions write to admin review records.
                         </p>
                      </div>
                      {!loanRequests.length ? <EmptyPanel message="No open loan requests found." /> : null}
                      {loanRequests.length ? (
                         <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
-                           <div className="overflow-hidden rounded-3xl border border-[#eadff8] bg-white shadow-sm">
+                           <div className="overflow-hidden rounded-3xl border border-[#2a1453] bg-[#1c0a3a] ">
                               {loanRequests.map((request) => (
                                  <button
                                     key={request.id}
                                     type="button"
                                     onClick={() => setSelectedRequestId(request.id)}
-                                    className={`block w-full border-b border-[#eadff8] p-6 text-left last:border-b-0 ${selectedRequest?.id === request.id ? 'bg-[#fbf8ff]' : 'bg-white'}`}
+                                    className={`block w-full border-b border-[#2a1453] p-6 text-left last:border-b-0 ${selectedRequest?.id === request.id ? 'bg-[#241044]' : 'bg-[#1c0a3a]'}`}
                                  >
                                     <div className="flex items-center justify-between gap-4">
                                        <h3 className="text-3xl font-black underline underline-offset-4">
@@ -1231,50 +1231,50 @@ export default function AdminPanel() {
                                           {request.borrower?.is_world_id === 'ACTIVE' ? 'verified' : 'not verified'}
                                        </Badge>
                                     </div>
-                                    <p className="mt-3 text-xl text-[#6f627e]">{request.reason}</p>
+                                    <p className="mt-3 text-xl text-[#a89bb8]">{request.reason}</p>
                                  </button>
                               ))}
                            </div>
                            {selectedRequest ? (
-                              <div className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                              <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
                                  <h3 className="text-3xl font-black">Request detail</h3>
-                                 <p className="mt-2 text-xl text-[#6f627e]">Review clearly. This does not ban the borrower.</p>
+                                 <p className="mt-2 text-xl text-[#a89bb8]">Review clearly. This does not ban the borrower.</p>
                                  <div className="mt-5 grid gap-4">
-                                    <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5">
-                                       <p className="text-sm font-black uppercase text-[#6f627e]">Borrower</p>
+                                    <div className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
+                                       <p className="text-sm font-black uppercase text-[#a89bb8]">Borrower</p>
                                        <strong className="mt-2 block text-3xl underline">
                                           {selectedRequest.borrower?.username ?? 'Unknown borrower'}
                                        </strong>
                                     </div>
-                                    <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5">
-                                       <p className="text-sm font-black uppercase text-[#6f627e]">Terms</p>
+                                    <div className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
+                                       <p className="text-sm font-black uppercase text-[#a89bb8]">Terms</p>
                                        <strong className="mt-2 block text-2xl">
                                           {formatMoney(selectedRequest.loan_amount)} request ·{' '}
                                           {formatMoney(selectedRequest.total_repayment_amount)} repay · due{' '}
                                           {formatDate(selectedRequest.due_date)}
                                        </strong>
                                     </div>
-                                    <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5">
-                                       <p className="text-sm font-black uppercase text-[#6f627e]">Reason</p>
+                                    <div className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
+                                       <p className="text-sm font-black uppercase text-[#a89bb8]">Reason</p>
                                        <strong className="mt-2 block text-2xl">{selectedRequest.reason}</strong>
                                     </div>
-                                    <div className="rounded-2xl border border-[#eadff8] bg-[#fbf8ff] p-5">
-                                       <p className="text-sm font-black uppercase text-[#6f627e]">Posted</p>
+                                    <div className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
+                                       <p className="text-sm font-black uppercase text-[#a89bb8]">Posted</p>
                                        <strong className="mt-2 block text-2xl">{formatDate(selectedRequest.created_at)}</strong>
                                     </div>
                                     {selectedRequest.review ? (
-                                       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                                          <p className="text-sm font-black uppercase text-emerald-700">Review status</p>
-                                          <strong className="mt-2 block text-2xl text-emerald-800">{selectedRequest.review.status}</strong>
+                                       <div className="rounded-2xl border border-emerald-900 bg-emerald-950/60 p-5">
+                                          <p className="text-sm font-black uppercase text-emerald-400">Review status</p>
+                                          <strong className="mt-2 block text-2xl text-emerald-300">{selectedRequest.review.status}</strong>
                                        </div>
                                     ) : null}
                                  </div>
-                                 <label className="mt-5 grid gap-2 text-sm font-black uppercase tracking-wide text-[#6f627e]">
+                                 <label className="mt-5 grid gap-2 text-sm font-black uppercase tracking-wide text-[#a89bb8]">
                                     Review note
                                     <textarea
                                        value={requestReviewNote}
                                        onChange={(event) => setRequestReviewNote(event.target.value)}
-                                       className="min-h-28 rounded-2xl border border-[#ded0ef] p-4 text-lg font-bold normal-case tracking-normal text-[#1c053d]"
+                                       className="min-h-28 rounded-2xl border border-[#3d1f6e] bg-[#241044] p-4 text-lg font-bold normal-case tracking-normal text-white placeholder:text-[#a89bb8]"
                                     />
                                  </label>
                                  <button
@@ -1287,7 +1287,7 @@ export default function AdminPanel() {
                                  <button
                                     type="button"
                                     onClick={() => handleLoanRequestAction('keep')}
-                                    className="mt-3 w-full rounded-2xl border border-[#ded0ef] bg-white px-5 py-4 text-xl font-black text-[#34234f]"
+                                    className="mt-3 w-full rounded-2xl border border-[#3d1f6e] bg-[#241044] px-5 py-4 text-xl font-black text-white"
                                  >
                                     Reviewed, keep visible
                                  </button>
@@ -1326,7 +1326,7 @@ export default function AdminPanel() {
                   <section className="space-y-6">
                      <div>
                         <h2 className="break-words text-4xl font-black sm:text-5xl">Notifications</h2>
-                        <p className="mt-3 text-2xl text-[#6f627e]">
+                        <p className="mt-3 text-2xl text-[#a89bb8]">
                            Send in-app notices to real users. These appear when they open Moodeng.
                         </p>
                      </div>
@@ -1337,27 +1337,27 @@ export default function AdminPanel() {
                                  key={template.id}
                                  type="button"
                                  onClick={() => setSelectedTemplateId(template.id)}
-                                 className={`rounded-3xl border p-6 text-left shadow-sm ${selectedTemplateId === template.id ? 'border-[#8336f0] bg-[#fbf8ff]' : 'border-[#eadff8] bg-white'}`}
+                                 className={`rounded-3xl border p-6 text-left  ${selectedTemplateId === template.id ? 'border-[#8336f0] bg-[#241044]' : 'border-[#2a1453] bg-[#1c0a3a]'}`}
                               >
                                  <Badge tone={template.audience}>{template.audience.replace('_', ' ')}</Badge>
                                  <h3 className="mt-4 text-3xl font-black">{template.title}</h3>
-                                 <p className="mt-3 text-xl text-[#6f627e]">{template.body}</p>
+                                 <p className="mt-3 text-xl text-[#a89bb8]">{template.body}</p>
                               </button>
                            ))}
                         </div>
-                        <form onSubmit={handleSendNotice} className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm">
+                        <form onSubmit={handleSendNotice} className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
                            <h3 className="text-3xl font-black">Send notification</h3>
-                           <p className="mt-2 text-xl text-[#6f627e]">Selected: {selectedTemplate.title}</p>
+                           <p className="mt-2 text-xl text-[#a89bb8]">Selected: {selectedTemplate.title}</p>
                            <input
                               value={noticeUsername}
                               onChange={(event) => setNoticeUsername(event.target.value)}
                               placeholder="Username"
-                              className="mt-5 h-16 w-full rounded-2xl border border-[#ded0ef] px-5 text-2xl"
+                              className="mt-5 h-16 w-full rounded-2xl border border-[#3d1f6e] bg-[#241044] px-5 text-2xl text-white placeholder:text-[#a89bb8]"
                            />
-                           <div className="mt-4 rounded-3xl border border-[#eadff8] bg-white">
-                              <div className="border-b border-[#eadff8] p-4">
-                                 <p className="text-sm font-black uppercase tracking-wide text-[#6f627e]">Matching users</p>
-                                 <p className="mt-1 text-base font-bold text-[#6f627e]">
+                           <div className="mt-4 rounded-3xl border border-[#2a1453] bg-[#1c0a3a]">
+                              <div className="border-b border-[#2a1453] p-4">
+                                 <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Matching users</p>
+                                 <p className="mt-1 text-base font-bold text-[#a89bb8]">
                                     Click a person below to fill the username before sending.
                                  </p>
                               </div>
@@ -1368,16 +1368,16 @@ export default function AdminPanel() {
                                           key={user.id}
                                           type="button"
                                           onClick={() => setNoticeUsername(user.username)}
-                                          className={`flex w-full items-start gap-3 border-b border-[#f0e8fb] p-4 text-left last:border-b-0 ${
-                                             noticeUsername === user.username ? 'bg-[#fbf8ff]' : 'bg-white hover:bg-[#fbf8ff]'
+                                          className={`flex w-full items-start gap-3 border-b border-[#2a1453] p-4 text-left last:border-b-0 ${
+                                             noticeUsername === user.username ? 'bg-[#241044]' : 'bg-[#1c0a3a] hover:bg-[#241044]'
                                           }`}
                                        >
                                           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#8336f0] text-lg font-black text-white">
                                              {user.username.charAt(0).toUpperCase()}
                                           </span>
                                           <span className="min-w-0 flex-1">
-                                             <span className="block break-words text-xl font-black text-[#1c053d]">{user.username}</span>
-                                             <span className="mt-1 block break-all text-base font-bold text-[#6f627e]">
+                                             <span className="block break-words text-xl font-black text-white">{user.username}</span>
+                                             <span className="mt-1 block break-all text-base font-bold text-[#a89bb8]">
                                                 {shortWallet(user.wallet_address)}
                                              </span>
                                           </span>
@@ -1385,7 +1385,7 @@ export default function AdminPanel() {
                                        </button>
                                     ))
                                  ) : (
-                                    <div className="p-5 text-lg font-bold text-[#6f627e]">
+                                    <div className="p-5 text-lg font-bold text-[#a89bb8]">
                                        {adminDataLoading && !adminDataLoaded
                                           ? 'Loading matching users from Supabase...'
                                           : 'No matching users found. Check the spelling or search by wallet.'}
@@ -1393,10 +1393,10 @@ export default function AdminPanel() {
                                  )}
                               </div>
                            </div>
-                           <div className="mt-5 rounded-3xl border border-[#eadff8] bg-[#fbf8ff] p-5">
+                           <div className="mt-5 rounded-3xl border border-[#2a1453] bg-[#241044] p-5">
                               <Badge tone={selectedTemplate.audience}>{selectedTemplate.audience.replace('_', ' ')}</Badge>
                               <h4 className="mt-4 text-3xl font-black">{selectedTemplate.title}</h4>
-                              <p className="mt-3 text-xl text-[#6f627e]">{selectedTemplate.body}</p>
+                              <p className="mt-3 text-xl text-[#a89bb8]">{selectedTemplate.body}</p>
                            </div>
                            <button className="mt-5 w-full rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white">
                               Send notification
