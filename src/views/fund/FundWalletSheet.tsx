@@ -284,6 +284,11 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                      </div>
                      <ExternalLink className="h-[18px] w-[18px] shrink-0 text-md-neutral-800" />
                   </div>
+                  <div className="flex flex-wrap items-center gap-1">
+                     <span className="rounded-full bg-[#e6f9ef] px-2 py-0.5 text-[10px] font-semibold text-[#1a8c4e]">
+                        Gas only
+                     </span>
+                  </div>
                </button>
             </div>
          </section>
