@@ -62,13 +62,13 @@ function bandFor(score: number | null | undefined): Band {
 function bandClass(band: Band): string {
    switch (band) {
       case 'Low':
-         return 'bg-emerald-900/40 text-emerald-300';
+         return 'bg-emerald-900/50 text-emerald-300';
       case 'Medium':
-         return 'bg-amber-900/40 text-amber-300';
+         return 'bg-amber-900/50 text-amber-300';
       case 'High':
-         return 'bg-orange-900/40 text-orange-300';
+         return 'bg-orange-900/50 text-orange-300';
       case 'Critical':
-         return 'bg-red-900/40 text-red-300';
+         return 'bg-red-900/50 text-red-300';
    }
 }
 
@@ -312,7 +312,7 @@ export default function RiskAssessmentSection({
                              </span>
                              <span className="text-lg font-bold text-[#a89bb8]">/ 100</span>
                              {profile?.override_score != null ? (
-                                <span className="ml-2 rounded-full bg-purple-900/40 px-2 py-0.5 text-xs font-black uppercase text-purple-300">
+                                <span className="ml-2 rounded-full bg-purple-900/50 px-2 py-0.5 text-xs font-black uppercase text-purple-300">
                                    manual override
                                 </span>
                              ) : null}
@@ -370,7 +370,7 @@ export default function RiskAssessmentSection({
                           </label>
 
                           {statusByUsername[user.username ?? ''] ? (
-                             <div className="mt-4 rounded-2xl border border-emerald-800/50 bg-emerald-900/20 p-4 text-lg font-black text-emerald-300">
+                             <div className="mt-4 rounded-2xl border border-emerald-900 bg-emerald-950/60 p-4 text-lg font-black text-emerald-300">
                                 {statusByUsername[user.username ?? '']}
                              </div>
                           ) : null}

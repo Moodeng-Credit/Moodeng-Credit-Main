@@ -87,11 +87,11 @@ const noticeTemplates: NoticeTemplate[] = [
 ];
 
 function badgeTone(value: string) {
-   if (['banned', 'blocked', 'deleted', 'high', 'overdue', 'needs_review'].includes(value)) return 'bg-red-900/40 text-red-300';
-   if (['watchlist', 'reported', 'duplicate', 'medium', 'Partial'].includes(value)) return 'bg-amber-900/40 text-amber-300';
-   if (['active', 'kept', 'low', 'Paid', 'ACTIVE'].includes(value)) return 'bg-emerald-900/40 text-emerald-300';
-   if (['lender', 'Lent'].includes(value)) return 'bg-blue-900/40 text-blue-300';
-   return 'bg-purple-900/40 text-purple-300';
+   if (['banned', 'blocked', 'deleted', 'high', 'overdue', 'needs_review'].includes(value)) return 'bg-red-900/50 text-red-300';
+   if (['watchlist', 'reported', 'duplicate', 'medium', 'Partial'].includes(value)) return 'bg-amber-900/50 text-amber-300';
+   if (['active', 'kept', 'low', 'Paid', 'ACTIVE'].includes(value)) return 'bg-emerald-900/50 text-emerald-300';
+   if (['lender', 'Lent'].includes(value)) return 'bg-blue-900/50 text-blue-300';
+   return 'bg-purple-900/50 text-purple-300';
 }
 
 function Badge({ children, tone = 'default' }: { children: ReactNode; tone?: string }) {
@@ -113,7 +113,7 @@ function StatCard({ label, value, note }: { label: string; value: number; note: 
 function DirectoryMetric({ label, value, tone = 'default' }: { label: string; value: ReactNode; tone?: string }) {
    return (
       <div
-         className={`rounded-2xl border p-4 ${tone === 'danger' ? 'border-red-800/50 bg-red-900/20' : tone === 'warning' ? 'border-amber-800/50 bg-amber-900/20' : tone === 'success' ? 'border-emerald-800/50 bg-emerald-900/20' : 'border-[#2a1453] bg-[#241044]'}`}
+         className={`rounded-2xl border p-4 ${tone === 'danger' ? 'border-red-900 bg-red-950/60' : tone === 'warning' ? 'border-amber-900 bg-amber-950/60' : tone === 'success' ? 'border-emerald-900 bg-emerald-950/60' : 'border-[#2a1453] bg-[#241044]'}`}
       >
          <p className="text-xs font-black uppercase tracking-wide text-[#a89bb8]">{label}</p>
          <strong className="mt-1 block break-words text-lg font-black text-white">{value}</strong>
@@ -463,11 +463,11 @@ export default function AdminPanel() {
    if (!admin) {
       return (
          <main className="min-h-screen bg-[#120429] p-6">
-            <section className="mx-auto max-w-xl rounded-3xl border border-red-800/50 bg-[#1c0a3a] p-8">
+            <section className="mx-auto max-w-xl rounded-3xl border border-red-900 bg-[#1c0a3a] p-8">
                <p className="text-sm font-black uppercase tracking-wide text-red-400">Admin panel</p>
                <h1 className="mt-3 text-4xl font-black text-white">You do not have access</h1>
                <p className="mt-3 text-lg text-[#a89bb8]">Only approved Moodeng admins can open this panel.</p>
-               {error ? <p className="mt-5 rounded-2xl bg-red-900/30 p-4 text-red-300">{error}</p> : null}
+               {error ? <p className="mt-5 rounded-2xl bg-red-950/60 p-4 text-red-300">{error}</p> : null}
             </section>
          </main>
       );
@@ -514,21 +514,21 @@ export default function AdminPanel() {
 
             <section className="min-w-0 p-5 sm:p-8 lg:p-10">
                {error ? (
-                  <div className="mb-5 rounded-3xl border border-red-800/50 bg-red-900/20 p-5 text-lg font-bold text-red-300">{error}</div>
+                  <div className="mb-5 rounded-3xl border border-red-900 bg-red-950/60 p-5 text-lg font-bold text-red-300">{error}</div>
                ) : null}
                {statusMessage ? (
-                  <div className="mb-5 rounded-3xl border border-emerald-800/50 bg-emerald-900/20 p-5 text-lg font-bold text-emerald-300">
+                  <div className="mb-5 rounded-3xl border border-emerald-900 bg-emerald-950/60 p-5 text-lg font-bold text-emerald-300">
                      {statusMessage}
                   </div>
                ) : null}
                {integrityRun?.status && integrityRun.status !== 'success' ? (
-                  <div className="mb-5 rounded-3xl border border-amber-800/50 bg-amber-900/20 p-5 text-lg font-bold text-amber-300">
+                  <div className="mb-5 rounded-3xl border border-amber-900 bg-amber-950/60 p-5 text-lg font-bold text-amber-300">
                      Daily data check found {integrityRun.issue_count} item{integrityRun.issue_count === 1 ? '' : 's'} to review. Last
                      checked {formatDateTime(integrityRun.created_at)}.
                   </div>
                ) : null}
                {adminDataLoading ? (
-                  <div className="mb-5 rounded-3xl border border-purple-800/50 bg-purple-900/20 p-5 text-lg font-bold text-purple-300">
+                  <div className="mb-5 rounded-3xl border border-purple-900 bg-purple-950/60 p-5 text-lg font-bold text-purple-300">
                      Loading live Supabase data...
                   </div>
                ) : null}
@@ -959,7 +959,7 @@ export default function AdminPanel() {
                      </div>
 
                      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-                        <div className="rounded-3xl border border-emerald-800/50 bg-emerald-900/20 p-6 ">
+                        <div className="rounded-3xl border border-emerald-900 bg-emerald-950/60 p-6 ">
                            <p className="text-sm font-black uppercase tracking-wide text-emerald-300">Current storage</p>
                            <h3 className="mt-2 text-3xl font-black text-white">Live Trust Point ledger</h3>
                            <p className="mt-3 text-lg font-bold leading-8 text-emerald-300">
@@ -1263,7 +1263,7 @@ export default function AdminPanel() {
                                        <strong className="mt-2 block text-2xl">{formatDate(selectedRequest.created_at)}</strong>
                                     </div>
                                     {selectedRequest.review ? (
-                                       <div className="rounded-2xl border border-emerald-800/50 bg-emerald-900/20 p-5">
+                                       <div className="rounded-2xl border border-emerald-900 bg-emerald-950/60 p-5">
                                           <p className="text-sm font-black uppercase text-emerald-400">Review status</p>
                                           <strong className="mt-2 block text-2xl text-emerald-300">{selectedRequest.review.status}</strong>
                                        </div>
