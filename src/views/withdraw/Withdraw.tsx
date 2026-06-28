@@ -867,6 +867,7 @@ const GCASH_FLOW: AppFlowConfig = {
     { icon: <ClipboardCheck className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Paste it below", desc: "Paste the address in the field below, then confirm and send." },
   ],
   cashOutTitle: "Cash out to pesos in GCash",
+  cashOutVideo: "SUN94mXH1WA?start=85",
   cashOutIntro: "Once your USDC is in GCrypto, cashing out is two quick steps: sell it for pesos, then move those pesos to your main GCash balance.",
   cashOutSteps: [
     {
