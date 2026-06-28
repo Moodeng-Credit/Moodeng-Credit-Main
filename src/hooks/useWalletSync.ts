@@ -101,8 +101,17 @@ export function useWalletSync() {
          return;
       }
 
-      // If user has a stored wallet that doesn't match the connected one
-      if (storedWalletAddress) {
+      // Mismatch enforcement is borrower-only on purpose. A borrower's saved wallet is
+      // their locked Base Account — their on-chain identity/repayment anchor — so a
+      // different wallet must be rejected. A lender's saved wallet is NOT load-bearing:
+      // funding uses the live-connected wallet (UserCard) and repayment uses the per-loan
+      // lender_wallet snapshot (UserPay), so locking lenders to one address protects
+      // nothing and only causes friction. Previously this ran for everyone, which showed
+      // lenders a "reconnect your saved wallet" toast at the same instant the save effect
+      // below silently overwrote that saved wallet — a contradiction. For lenders we let
+      // the saved value simply follow the connected wallet; fraud is handled out-of-band
+      // (detection + review), not by gating the wallet UX here.
+      if (userRole === 'borrower' && storedWalletAddress) {
          if (!areWalletAddressesEqual(connectedAddress, storedWalletAddress)) {
             // Wallet mismatch - account switch detected, disconnect it
             showToast(
@@ -115,7 +124,7 @@ export function useWalletSync() {
             disconnect();
          }
       }
-      // If no stored wallet, allow the connection (initial connection scenario)
+      // Lenders, or anyone with no stored wallet: allow the connection.
    }, [
       account.address,
       account.connector?.id,
