@@ -73,7 +73,6 @@ import AccountSettings from '@/views/account/AccountSettings';
 import Dashboard from '@/views/dashboard/Dashboard';
 import RequestBoard from '@/views/dashboard/RequestBoard';
 import Repay from '@/views/repay/Repay';
-import FundBridge from '@/views/fund/FundBridge';
 import Withdraw from '@/views/withdraw/Withdraw';
 import TransactionDetail from '@/views/transactions/TransactionDetail';
 import TransactionHistory from '@/views/transactions/TransactionHistory';
@@ -351,16 +350,6 @@ export default function App() {
                   <ProtectedRoute>
                      <RoleGuard>
                         <TransactionHistory />
-                     </RoleGuard>
-                  </ProtectedRoute>
-               }
-            />
-            <Route
-               path="/fund/bridge"
-               element={
-                  <ProtectedRoute>
-                     <RoleGuard>
-                        <FundBridge />
                      </RoleGuard>
                   </ProtectedRoute>
                }
