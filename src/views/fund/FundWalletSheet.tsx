@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { initOnRamp, type CBPayInstanceType } from '@coinbase/cbpay-js';
-import { ChevronRight, X } from 'lucide-react';
+import { ChevronRight, ExternalLink, LoaderCircle, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 interface FundWalletSheetProps {
    isOpen: boolean;
@@ -12,39 +12,18 @@ interface FundWalletSheetProps {
    walletAddress?: string;
 }
 
-const CDP_CLIENT_KEY = import.meta.env.VITE_CDP_CLIENT_KEY as string;
+const COINBASE_PAY_URL = 'https://pay.coinbase.com/buy/select-asset';
 
 const COINBASE_LOGO = (
-   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="40" height="40" rx="10" fill="#0052FF" />
-      <circle cx="20" cy="20" r="10" fill="white" />
-      <rect x="16.5" y="17" width="3" height="6" rx="1" fill="#0052FF" />
-      <rect x="20.5" y="17" width="3" height="6" rx="1" fill="#0052FF" />
-   </svg>
+   <img src="/hippos/hippo-debit-card.png" alt="" className="h-12 w-12 object-contain" />
 );
 
 const BRIDGE_LOGO = (
-   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="40" height="40" rx="10" fill="#1a1a2e" />
-      <path d="M12 16.5H24.5M24.5 16.5L21 13M24.5 16.5L21 20" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M28 23.5H15.5M15.5 23.5L19 20M15.5 23.5L19 27" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-   </svg>
+   <img src="/hippos/hippo-bridge-swap.png" alt="" className="h-12 w-12 object-contain" />
 );
 
 const SOLANA_LOGO = (
-   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="40" height="40" rx="10" fill="#1a1a2e" />
-      <defs>
-         <linearGradient id="sol-grad-sheet" x1="10" y1="28" x2="30" y2="12" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#9945FF" />
-            <stop offset="0.5" stopColor="#14F195" />
-            <stop offset="1" stopColor="#00D1FF" />
-         </linearGradient>
-      </defs>
-      <path d="M11 25.5L14 22.5H29L26 25.5H11Z" fill="url(#sol-grad-sheet)" />
-      <path d="M11 14.5L14 17.5H29L26 14.5H11Z" fill="url(#sol-grad-sheet)" />
-      <path d="M11 20L14 17H29L26 20H11Z" fill="url(#sol-grad-sheet)" />
-   </svg>
+   <img src="/hippos/hippo-solana-bridge.png" alt="" className="h-12 w-12 object-contain" />
 );
 
 const CHAIN_CHIPS = [
@@ -57,7 +36,8 @@ const CHAIN_CHIPS = [
 
 export default function FundWalletSheet({ isOpen, onClose, walletAddress }: FundWalletSheetProps) {
    const navigate = useNavigate();
-   const onrampInstanceRef = useRef<CBPayInstanceType | null>(null);
+   const [coinbaseLoading, setCoinbaseLoading] = useState(false);
+   const [coinbaseError, setCoinbaseError] = useState<string | null>(null);
 
    useEffect(() => {
       if (!isOpen) return;
@@ -79,52 +59,48 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
       };
    }, [isOpen]);
 
-   useEffect(() => {
-      if (!walletAddress || !CDP_CLIENT_KEY) return;
+   // Opens the Coinbase buy widget. Coinbase's "Secure Initialization" requires a
+   // short-lived session token minted server-side (browser never sees the secret key),
+   // so we fetch one from the `coinbase-onramp-token` edge function, then open the widget
+   // as a centered popup window on top of the app. A true inline iframe isn't possible —
+   // Coinbase blocks it because bank 2FA/3DS can't run in an iframe.
+   const handleCoinbase = useCallback(async () => {
+      if (coinbaseLoading) return;
+      setCoinbaseLoading(true);
+      setCoinbaseError(null);
 
-      initOnRamp(
-         {
-            appId: CDP_CLIENT_KEY,
-            widgetParameters: {
-               addresses: { [walletAddress]: ['base'] },
-               assets: ['USDC'],
-               defaultNetwork: 'base',
-               defaultExperience: 'buy',
-            },
-            experienceLoggedIn: 'popup',
-            experienceLoggedOut: 'popup',
-            closeOnExit: true,
-            closeOnSuccess: true,
-            onSuccess: () => {
-               onClose();
-            },
-            onExit: () => {
-               // User closed the Coinbase widget
-            },
-         },
-         (err, instance) => {
-            if (instance) {
-               onrampInstanceRef.current = instance;
-            }
-         },
-      );
+      // Open the popup synchronously (before the await) so it isn't blocked as a
+      // non-user-gesture popup, then navigate it once the token resolves.
+      const popup = window.open('', 'coinbase-onramp', 'width=460,height=720,menubar=no,toolbar=no');
 
-      return () => {
-         onrampInstanceRef.current?.destroy();
-         onrampInstanceRef.current = null;
-      };
-   }, [walletAddress, onClose]);
+      try {
+         const supabase = getSupabaseBrowserClient();
+         const { data, error } = await supabase.functions.invoke('coinbase-onramp-token', {
+            body: walletAddress ? { address: walletAddress } : {},
+         });
+         const token = (data as { token?: string } | null)?.token;
 
-   const handleCoinbase = useCallback(() => {
-      if (onrampInstanceRef.current) {
-         onrampInstanceRef.current.open();
-      } else {
-         const url = walletAddress
-            ? `${EXTERNAL_LINKS.fund.coinbaseOnramp}?addresses={"${walletAddress}":["base"]}&assets=["USDC"]`
-            : EXTERNAL_LINKS.fund.coinbaseOnramp;
-         window.open(url, '_blank', 'noopener,noreferrer');
+         if (error || !token) {
+            throw new Error((data as { error?: string } | null)?.error || 'Could not start Coinbase.');
+         }
+
+         const url = `${COINBASE_PAY_URL}?sessionToken=${encodeURIComponent(token)}&defaultNetwork=base&fiatCurrency=USD`;
+         if (popup) {
+            popup.location.href = url;
+         } else {
+            // Popup blocked — same-context navigation in a new tab still carries the token.
+            window.open(url, '_blank', 'noopener,noreferrer');
+         }
+      } catch {
+         // Token mint failed (secrets not configured, no wallet, etc.). The bare hosted URL
+         // would just hit Coinbase's error page (Secure Init needs the token), so show an
+         // inline message instead of bouncing the user out.
+         popup?.close();
+         setCoinbaseError('Card purchases aren’t available just yet — try a bridge below.');
+      } finally {
+         setCoinbaseLoading(false);
       }
-   }, [walletAddress]);
+   }, [coinbaseLoading, walletAddress]);
 
    if (!isOpen) return null;
 
@@ -171,7 +147,8 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                {/* Coinbase Onramp */}
                <button
                   onClick={handleCoinbase}
-                  className="flex flex-col gap-2 rounded-xl border border-md-neutral-400 bg-white px-3 py-3 text-left transition-all hover:border-md-primary-400 hover:shadow-md-card active:scale-[0.98]"
+                  disabled={coinbaseLoading}
+                  className="flex flex-col gap-2 rounded-xl border border-md-neutral-400 bg-white px-3 py-3 text-left transition-all hover:border-md-primary-400 hover:shadow-md-card active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
                >
                   <div className="flex w-full items-center gap-3">
                      <div className="shrink-0">{COINBASE_LOGO}</div>
@@ -181,7 +158,11 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                            Visa / Mastercard &middot; Apple Pay &middot; Google Pay
                         </p>
                      </div>
-                     <ChevronRight className="h-5 w-5 shrink-0 text-md-neutral-800" />
+                     {coinbaseLoading ? (
+                        <LoaderCircle className="h-5 w-5 shrink-0 animate-spin text-md-neutral-800" />
+                     ) : (
+                        <ExternalLink className="h-[18px] w-[18px] shrink-0 text-md-neutral-800" />
+                     )}
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">
                      <span className="rounded-full bg-md-primary-100 px-2 py-0.5 text-[10px] font-semibold text-md-primary-1200">
@@ -195,6 +176,12 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                      </span>
                   </div>
                </button>
+
+               {coinbaseError && (
+                  <p className="-mt-1 px-1 text-[12px] font-medium text-md-red-500" role="alert">
+                     {coinbaseError}
+                  </p>
+               )}
 
                {/* Eco Bridge */}
                <button
@@ -248,10 +235,10 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                      <div className="flex-1 min-w-0">
                         <p className="text-[14px] font-semibold text-md-heading leading-tight">Bridge from Solana</p>
                         <p className="text-[12px] font-normal text-md-neutral-800 leading-tight mt-0.5">
-                           SOL and USDC to Base
+                           SOL and USDC to Base &middot; opens Superbridge
                         </p>
                      </div>
-                     <ChevronRight className="h-5 w-5 shrink-0 text-md-neutral-800" />
+                     <ExternalLink className="h-[18px] w-[18px] shrink-0 text-md-neutral-800" />
                   </div>
                   <div className="flex flex-wrap items-center gap-1">
                      <span className="rounded-full bg-md-primary-100 px-2 py-0.5 text-[10px] font-semibold text-md-primary-1200">
