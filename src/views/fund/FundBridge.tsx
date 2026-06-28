@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { ArrowLeft, Check, ChevronDown, ExternalLink, LoaderCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { createPublicClient, createWalletClient, custom, erc20Abi, formatUnits, http, parseUnits, type Address, type Chain, type Hex } from 'viem';
 import { arbitrum, base, bsc, mainnet, optimism, polygon } from 'wagmi/chains';
 import { useAccount } from 'wagmi';
@@ -148,8 +147,7 @@ interface Quote {
 type ExecState = 'idle' | 'preparing' | 'approving' | 'publishing' | 'submitted' | 'done' | 'error';
 const IN_FLIGHT: ExecState[] = ['preparing', 'approving', 'publishing', 'submitted'];
 
-export default function FundBridge() {
-   const navigate = useNavigate();
+export default function FundBridge({ onClose }: { onClose: () => void }) {
    const { address, connector } = useAccount();
    const { openConnectModal } = useConnectModal();
    const [selectedChain, setSelectedChain] = useState<number | null>(null);
@@ -336,19 +334,35 @@ export default function FundBridge() {
    })();
 
    return (
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[440px] flex-col bg-white px-5 pb-10 pt-4">
-         {/* Header */}
-         <div className="flex items-center gap-3 pb-6">
-            <button
-               onClick={() => navigate(-1)}
-               className="rounded-full p-1.5 transition-colors hover:bg-md-neutral-200 active:bg-md-neutral-300"
-               aria-label="Go back"
-            >
-               <ArrowLeft className="h-5 w-5 text-md-heading" strokeWidth={2} />
-            </button>
-            <h1 className="text-md-h5 font-semibold text-md-heading">Bridge to Base</h1>
-         </div>
+      <div className="fixed inset-0 z-[90] flex items-end justify-center">
+         <button
+            className="absolute inset-0 bg-[#12071f]/40 backdrop-blur-sm"
+            onClick={onClose}
+            aria-label="Close overlay"
+         />
+         <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="fund-bridge-title"
+            className="relative mx-auto flex max-h-[92dvh] w-full max-w-[440px] flex-col rounded-t-[28px] bg-white shadow-[0_-8px_32px_rgba(20,18,24,0.22)] animate-[slideUp_0.25s_ease-out]"
+         >
+            <div className="pt-2.5 pb-0.5">
+               <div className="mx-auto h-1 w-10 rounded-full bg-[#c9c3d4]" />
+            </div>
 
+            {/* Header */}
+            <div className="flex items-center gap-3 px-5 pb-4 pt-2">
+               <button
+                  onClick={onClose}
+                  className="rounded-full p-1.5 transition-colors hover:bg-md-neutral-200 active:bg-md-neutral-300"
+                  aria-label="Go back"
+               >
+                  <ArrowLeft className="h-5 w-5 text-md-heading" strokeWidth={2} />
+               </button>
+               <h2 id="fund-bridge-title" className="text-md-h5 font-semibold text-md-heading">Bridge to Base</h2>
+            </div>
+
+            <div className="flex flex-col overflow-y-auto px-5 pb-[max(24px,env(safe-area-inset-bottom))]">
          {/* Source chain picker */}
          <div className="flex flex-col gap-2 pb-5">
             <label className="text-md-b3 font-semibold text-md-neutral-1400">From chain</label>
@@ -470,7 +484,7 @@ export default function FundBridge() {
          <button
             onClick={handleBridge}
             disabled={!quote || isLoadingQuote || isBridging || execState === 'done'}
-            className={`mt-auto inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-md-b1 font-semibold transition-all disabled:pointer-events-none ${
+            className={`mt-2 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-md-b1 font-semibold transition-all disabled:pointer-events-none ${
                execState === 'done'
                   ? 'bg-[#e6f9ef] text-[#1a8c4e]'
                   : quote && !isLoadingQuote && !isBridging
@@ -512,6 +526,8 @@ export default function FundBridge() {
                Live quote &middot; Powered by Eco
             </p>
          )}
+            </div>
+         </section>
       </div>
    );
 }
