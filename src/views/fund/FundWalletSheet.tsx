@@ -208,9 +208,6 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                      <span className="rounded-full bg-md-primary-100 px-2 py-0.5 text-[10px] font-semibold text-md-primary-1200">
                         ~1.5% fee
                      </span>
-                     <span className="rounded-full bg-[#e8f0ff] px-2 py-0.5 text-[10px] font-semibold text-[#0052FF]">
-                        Powered by Coinbase
-                     </span>
                      <span className="rounded-full bg-md-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-md-neutral-1400">
                         Coinbase account needed
                      </span>
