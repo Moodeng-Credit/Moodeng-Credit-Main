@@ -58,7 +58,7 @@ export default function LegalPage({ type }: LegalPageProps) {
       ? 'The short version: use Moodeng honestly, review loan terms before accepting funds, and keep your wallet secure.'
       : 'The short version: Moodeng uses account, wallet, and repayment information to run the product, reduce abuse, and make borrower history useful.';
    const sections = isTerms ? termsSections : privacySections;
-   const alternateHref = isTerms ? '/privacy' : '/terms';
+   const alternateHref = isTerms ? '/privacy-policy' : '/terms';
    const alternateLabel = isTerms ? 'Privacy Policy' : 'Terms of Service';
 
    return (
