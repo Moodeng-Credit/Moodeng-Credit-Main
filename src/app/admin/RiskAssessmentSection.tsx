@@ -62,13 +62,13 @@ function bandFor(score: number | null | undefined): Band {
 function bandClass(band: Band): string {
    switch (band) {
       case 'Low':
-         return 'bg-emerald-100 text-emerald-800';
+         return 'bg-emerald-900/40 text-emerald-300';
       case 'Medium':
-         return 'bg-amber-100 text-amber-900';
+         return 'bg-amber-900/40 text-amber-300';
       case 'High':
-         return 'bg-orange-100 text-orange-900';
+         return 'bg-orange-900/40 text-orange-300';
       case 'Critical':
-         return 'bg-red-100 text-red-800';
+         return 'bg-red-900/40 text-red-300';
    }
 }
 
@@ -253,7 +253,7 @@ export default function RiskAssessmentSection({
          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
                <h2 className="break-words text-4xl font-black sm:text-5xl">Risk assessment</h2>
-               <p className="mt-3 text-2xl text-[#6f627e]">
+               <p className="mt-3 text-2xl text-[#a89bb8]">
                   Consensus risk score (v1) across 7 signals: identity, velocity, repayment, network /
                   self-lending, amount, engagement, bot patterns.
                </p>
@@ -270,7 +270,7 @@ export default function RiskAssessmentSection({
 
          <div className="grid gap-5 xl:grid-cols-2">
             {adminDataLoading && !adminDataLoaded ? (
-               <div className="rounded-3xl border border-[#eadff8] bg-white p-6 text-2xl font-black">
+               <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 text-2xl font-black">
                   Loading users before risk review…
                </div>
             ) : null}
@@ -293,7 +293,7 @@ export default function RiskAssessmentSection({
                     return (
                        <article
                           key={user.id}
-                          className="rounded-3xl border border-[#eadff8] bg-white p-6 shadow-sm"
+                          className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 "
                        >
                           <div className="flex items-start justify-between gap-3">
                              <h3 className="break-words text-3xl font-black">
@@ -307,12 +307,12 @@ export default function RiskAssessmentSection({
                           </div>
 
                           <div className="mt-3 flex items-baseline gap-2">
-                             <span className="text-5xl font-black text-[#1c053d]">
+                             <span className="text-5xl font-black text-white">
                                 {score == null ? '—' : score}
                              </span>
-                             <span className="text-lg font-bold text-[#6f627e]">/ 100</span>
+                             <span className="text-lg font-bold text-[#a89bb8]">/ 100</span>
                              {profile?.override_score != null ? (
-                                <span className="ml-2 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-black uppercase text-purple-700">
+                                <span className="ml-2 rounded-full bg-purple-900/40 px-2 py-0.5 text-xs font-black uppercase text-purple-300">
                                    manual override
                                 </span>
                              ) : null}
@@ -326,10 +326,10 @@ export default function RiskAssessmentSection({
                                    return (
                                       <div
                                          key={k}
-                                         className="rounded-xl bg-[#fbf8ff] p-2 text-center"
+                                         className="rounded-xl bg-[#241044] p-2 text-center"
                                          title={SIGNAL_LABEL[k]}
                                       >
-                                         <div className="text-xs font-black uppercase text-[#6f627e]">
+                                         <div className="text-xs font-black uppercase text-[#a89bb8]">
                                             {k}
                                          </div>
                                          <div className="text-lg font-black">{node.score}</div>
@@ -339,10 +339,10 @@ export default function RiskAssessmentSection({
                              </div>
                           ) : null}
 
-                          <div className="mt-4 rounded-2xl bg-[#fbf8ff] p-5">
-                             <p className="text-sm font-black uppercase text-[#6f627e]">Risk factors</p>
+                          <div className="mt-4 rounded-2xl bg-[#241044] p-5">
+                             <p className="text-sm font-black uppercase text-[#a89bb8]">Risk factors</p>
                              {factorList.length ? (
-                                <ul className="mt-2 space-y-1 text-lg font-bold text-[#1c053d]">
+                                <ul className="mt-2 space-y-1 text-lg font-bold text-white">
                                    {factorList.map((f, i) => (
                                       <li key={i}>• {f}</li>
                                    ))}
@@ -354,7 +354,7 @@ export default function RiskAssessmentSection({
                              )}
                           </div>
 
-                          <label className="mt-5 grid gap-2 text-sm font-black uppercase tracking-wide text-[#6f627e]">
+                          <label className="mt-5 grid gap-2 text-sm font-black uppercase tracking-wide text-[#a89bb8]">
                              Review note
                              <textarea
                                 value={notes[user.username ?? ''] ?? ''}
@@ -365,12 +365,12 @@ export default function RiskAssessmentSection({
                                    }))
                                 }
                                 placeholder="Add a manual override reason or context"
-                                className="min-h-28 rounded-2xl border border-[#ded0ef] p-4 text-lg font-bold normal-case tracking-normal text-[#1c053d]"
+                                className="min-h-28 rounded-2xl border border-[#3d1f6e] bg-[#241044] p-4 text-lg font-bold normal-case tracking-normal text-white placeholder:text-[#a89bb8]"
                              />
                           </label>
 
                           {statusByUsername[user.username ?? ''] ? (
-                             <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-lg font-black text-emerald-800">
+                             <div className="mt-4 rounded-2xl border border-emerald-800/50 bg-emerald-900/20 p-4 text-lg font-black text-emerald-300">
                                 {statusByUsername[user.username ?? '']}
                              </div>
                           ) : null}
@@ -380,7 +380,7 @@ export default function RiskAssessmentSection({
                                 type="button"
                                 onClick={() => recompute(user.id, user.username)}
                                 disabled={busy === `recompute:${user.id}`}
-                                className="rounded-2xl border border-[#1c053d] bg-white px-5 py-4 text-lg font-black text-[#1c053d] disabled:opacity-50"
+                                className="rounded-2xl border border-[#3d1f6e] bg-[#241044] px-5 py-4 text-lg font-black text-white disabled:opacity-50"
                              >
                                 {busy === `recompute:${user.id}` ? '…' : 'Recompute'}
                              </button>
@@ -414,7 +414,7 @@ export default function RiskAssessmentSection({
                : null}
 
             {adminDataLoaded && !directoryRows.length ? (
-               <div className="rounded-3xl border border-[#eadff8] bg-white p-6 text-2xl font-black">
+               <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 text-2xl font-black">
                   No users loaded for risk review.
                </div>
             ) : null}
