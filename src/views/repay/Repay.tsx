@@ -1277,6 +1277,18 @@ export default function Repay() {
                                           <span className="text-[11px] font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">Look for <strong>USDCBASE</strong> — not USDC or other tokens</span>
                                        )}
                                     </div>
+                                    {activeSource.id === 'pdax' ? (
+                                       <div className="mt-3 overflow-hidden rounded-lg">
+                                          <iframe
+                                             className="w-full"
+                                             height="195"
+                                             src="https://www.youtube.com/embed/tuHmz4J7I2o"
+                                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                             allowFullScreen
+                                             title="How to withdraw USDC from PDAX to your wallet"
+                                          />
+                                       </div>
+                                    ) : null}
                                  </div>
                               )}
 
