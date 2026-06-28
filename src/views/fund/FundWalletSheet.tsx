@@ -85,17 +85,31 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
       // about:blank flash while the session token is minted. Replaced by the
       // Coinbase page once the token resolves (or closed on error).
       popup?.document.write(`
-         <!doctype html><html><head><meta charset="utf-8"><title>Connecting to Coinbase…</title>
+         <!doctype html><html><head><meta charset="utf-8"><title>Opening Coinbase…</title>
          <style>
             html,body{height:100%;margin:0}
-            body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+            body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+               padding:0 36px;text-align:center;box-sizing:border-box;
                background:#0a0b0d;color:#e6e8eb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
             .spinner{width:34px;height:34px;border:3px solid rgba(255,255,255,.15);border-top-color:#0052FF;
                border-radius:50%;animation:spin .8s linear infinite}
-            p{margin:0;font-size:14px;color:#9aa0a6}
+            .title{margin:4px 0 0;font-size:15px;font-weight:600;color:#e6e8eb}
+            .steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;
+               font-size:13px;line-height:1.4;color:#9aa0a6;max-width:300px;text-align:left}
+            .steps li{display:flex;gap:8px;align-items:flex-start}
+            .steps b{flex:none;width:18px;height:18px;border-radius:50%;background:#1c2230;color:#7aa7ff;
+               font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center}
             @keyframes spin{to{transform:rotate(360deg)}}
          </style></head>
-         <body><div class="spinner"></div><p>Connecting to Coinbase…</p></body></html>
+         <body>
+            <div class="spinner"></div>
+            <p class="title">Opening Coinbase…</p>
+            <ol class="steps">
+               <li><b>1</b><span>On the next screen, choose <strong style="color:#e6e8eb;font-weight:600">Buy with debit card</strong>.</span></li>
+               <li><b>2</b><span>Sign in to Coinbase (or create an account).</span></li>
+               <li><b>3</b><span>Pay with your card — USDC lands in your wallet.</span></li>
+            </ol>
+         </body></html>
       `);
       popup?.document.close();
 
@@ -210,6 +224,9 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                         </span>
                      ))}
                      <span className="text-[11px] text-md-neutral-800 leading-tight">only</span>
+                  </div>
+                  <div className="rounded-lg bg-md-neutral-100 px-2.5 py-2 text-[11px] font-normal leading-snug text-md-neutral-800">
+                     On Coinbase: choose <span className="font-semibold text-md-heading">Buy with debit card</span> &middot; sign in &middot; pay by card.
                   </div>
                </button>
 
