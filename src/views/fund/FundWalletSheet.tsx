@@ -81,6 +81,24 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
       // non-user-gesture popup, then navigate it once the token resolves.
       const popup = window.open('', 'coinbase-onramp', 'width=460,height=720,menubar=no,toolbar=no');
 
+      // Paint a branded loader into the blank popup so it isn't an ugly white
+      // about:blank flash while the session token is minted. Replaced by the
+      // Coinbase page once the token resolves (or closed on error).
+      popup?.document.write(`
+         <!doctype html><html><head><meta charset="utf-8"><title>Connecting to Coinbase…</title>
+         <style>
+            html,body{height:100%;margin:0}
+            body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+               background:#0a0b0d;color:#e6e8eb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+            .spinner{width:34px;height:34px;border:3px solid rgba(255,255,255,.15);border-top-color:#0052FF;
+               border-radius:50%;animation:spin .8s linear infinite}
+            p{margin:0;font-size:14px;color:#9aa0a6}
+            @keyframes spin{to{transform:rotate(360deg)}}
+         </style></head>
+         <body><div class="spinner"></div><p>Connecting to Coinbase…</p></body></html>
+      `);
+      popup?.document.close();
+
       try {
          const supabase = getSupabaseBrowserClient();
          const { data, error } = await supabase.functions.invoke('coinbase-onramp-token', {
@@ -92,7 +110,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
             throw new Error((data as { error?: string } | null)?.error || 'Could not start Coinbase.');
          }
 
-         const url = `${COINBASE_PAY_URL}?sessionToken=${encodeURIComponent(token)}&defaultNetwork=base&fiatCurrency=USD`;
+         const url = `${COINBASE_PAY_URL}?sessionToken=${encodeURIComponent(token)}&defaultNetwork=base&fiatCurrency=USD&defaultPaymentMethod=CARD`;
          if (popup) {
             popup.location.href = url;
          } else {
@@ -180,7 +198,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                         Powered by Coinbase
                      </span>
                      <span className="rounded-full bg-md-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-md-neutral-1400">
-                        No account needed
+                        Coinbase account needed
                      </span>
                   </div>
                   <div className="flex items-center gap-2">
