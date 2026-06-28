@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { ChevronRight, ExternalLink, LoaderCircle, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { FlagUS, FlagEU, FlagGB, FlagAU } from '@/components/verification/CountryFlags';
+import FundBridge from '@/views/fund/FundBridge';
 
 const COINBASE_SUPPORTED_REGIONS = [
    { Flag: FlagUS, label: 'US' },
@@ -43,7 +43,7 @@ const CHAIN_CHIPS = [
 ];
 
 export default function FundWalletSheet({ isOpen, onClose, walletAddress }: FundWalletSheetProps) {
-   const navigate = useNavigate();
+   const [showBridge, setShowBridge] = useState(false);
    const [coinbaseLoading, setCoinbaseLoading] = useState(false);
    const [coinbaseError, setCoinbaseError] = useState<string | null>(null);
 
@@ -110,7 +110,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
             throw new Error((data as { error?: string } | null)?.error || 'Could not start Coinbase.');
          }
 
-         const url = `${COINBASE_PAY_URL}?sessionToken=${encodeURIComponent(token)}&defaultNetwork=base&fiatCurrency=USD&defaultPaymentMethod=CARD`;
+         const url = `${COINBASE_PAY_URL}?sessionToken=${encodeURIComponent(token)}&defaultNetwork=base&fiatCurrency=USD`;
          if (popup) {
             popup.location.href = url;
          } else {
@@ -131,8 +131,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
    if (!isOpen) return null;
 
    const handleEcoBridge = () => {
-      onClose();
-      navigate('/fund/bridge');
+      setShowBridge(true);
    };
 
    const handleSolanaBridge = () => {
@@ -140,6 +139,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
    };
 
    return (
+      <>
       <div className="fixed inset-0 z-[80] flex items-end justify-center">
          <button
             className="absolute inset-0 bg-[#12071f]/40 backdrop-blur-sm"
@@ -244,9 +244,6 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                            {chain.name}
                         </span>
                      ))}
-                     <span className="rounded-full bg-md-neutral-200 px-2 py-0.5 text-[10px] font-medium text-md-neutral-800">
-                        +10 more
-                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1">
                      <span className="rounded-full bg-[#e6f9ef] px-2 py-0.5 text-[10px] font-semibold text-[#1a8c4e]">
@@ -295,5 +292,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
             }
          `}</style>
       </div>
+      {showBridge && <FundBridge onClose={() => setShowBridge(false)} />}
+      </>
    );
 }
