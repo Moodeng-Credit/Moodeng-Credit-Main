@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
    type DetectionAccount,
@@ -9,6 +9,9 @@ import {
    type SelfLendingLoan,
    getDetectionOverview
 } from './adminSupabase';
+
+// Heavy canvas lib — code-split so it only loads when this tab is opened.
+const SelfLendingGraph = lazy(() => import('./SelfLendingGraph'));
 
 const LINK_LABEL: Record<DetectionLinkType, string> = {
    same_wallet_on_loan: 'Same wallet on this loan',
@@ -212,6 +215,19 @@ export default function SelfLendingSection() {
             <div className="rounded-3xl border border-red-900 bg-red-950/60 p-6 text-2xl font-black text-red-300">
                {error}
             </div>
+         ) : null}
+
+         {/* 0. Hotspot map — the whole detection graph at a glance */}
+         {data ? (
+            <Suspense
+               fallback={
+                  <div className="rounded-3xl border border-[#2a1453] bg-[#160a2e] p-6 text-xl font-black text-[#a89bb8]">
+                     Loading graph…
+                  </div>
+               }
+            >
+               <SelfLendingGraph data={data} />
+            </Suspense>
          ) : null}
 
          {/* 1. Realized self-lending — actual loans linking two accounts */}
