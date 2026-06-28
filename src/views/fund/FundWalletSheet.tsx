@@ -105,8 +105,8 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
             <div class="spinner"></div>
             <p class="title">Opening Coinbase…</p>
             <ol class="steps">
-               <li><b>1</b><span>On the next screen, choose <strong style="color:#e6e8eb;font-weight:600">Buy with debit card</strong>.</span></li>
-               <li><b>2</b><span>Sign in to Coinbase (or create an account).</span></li>
+               <li><b>1</b><span>Coinbase checks if you’re already signed in.</span></li>
+               <li><b>2</b><span>If not, you’ll sign in (or create an account).</span></li>
                <li><b>3</b><span>Pay with your card — USDC lands in your wallet.</span></li>
             </ol>
          </body></html>
@@ -226,7 +226,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                      <span className="text-[11px] text-md-neutral-800 leading-tight">only</span>
                   </div>
                   <div className="rounded-lg bg-md-neutral-100 px-2.5 py-2 text-[11px] font-normal leading-snug text-md-neutral-800">
-                     On Coinbase: choose <span className="font-semibold text-md-heading">Buy with debit card</span> &middot; sign in &middot; pay by card.
+                     Coinbase checks if you’re signed in — if not, you’ll sign in first, then pay by card.
                   </div>
                </button>
 
