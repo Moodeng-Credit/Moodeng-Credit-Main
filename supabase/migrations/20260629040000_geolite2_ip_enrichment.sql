@@ -12,10 +12,14 @@ alter table public.auth_ip_log
   add column if not exists longitude     double precision,
   add column if not exists asn_number    integer,
   add column if not exists asn_org       text,
-  add column if not exists is_hosting    boolean not null default false;
+  add column if not exists is_hosting    boolean not null default false,
+  -- Salted hash of the IP's /24 (IPv6 /48) block. Lets the scan cluster accounts
+  -- that rotate IPs within one block without ever storing a raw IP.
+  add column if not exists subnet_hash   text;
 
 create index if not exists auth_ip_log_country_idx on public.auth_ip_log (country_iso);
 create index if not exists auth_ip_log_hosting_idx on public.auth_ip_log (is_hosting) where is_hosting;
+create index if not exists auth_ip_log_subnet_idx on public.auth_ip_log (subnet_hash);
 
 -- ---------------------------------------------------------------------------
 -- 2. Scan function: adds datacenter_ip + impossible_travel signals on top of
@@ -211,6 +215,39 @@ begin
           'distance_km', round(dist_km::numeric),
           'hours_apart', round(hours_gap::numeric, 1));
       end if;
+    end if;
+  end loop;
+
+  -- G. Subnet clustering: 3+ accounts logging in from the same /24 (or /48) block
+  --    within the window. Catches farms that rotate IPs inside one block even when
+  --    no two full IPs match. Skip if every account in the block is whitelisted.
+  for rec in
+    select i.subnet_hash,
+           count(distinct i.user_id) as account_count,
+           max(i.asn_org) as asn_org,
+           max(i.country_iso) as country_iso,
+           jsonb_agg(distinct jsonb_build_object(
+             'user_id', i.user_id, 'username', u.username, 'role', u.user_role)) as accounts
+    from public.auth_ip_log i
+    join public.users u on u.id = i.user_id
+    left join public.fraud_detection_whitelist wl on wl.user_id = i.user_id
+    where i.subnet_hash is not null
+      and i.last_seen_at >= now() - make_interval(days => ip_window_days)
+    group by i.subnet_hash
+    having count(distinct i.user_id) >= 3
+       and bool_or(wl.user_id is null)
+  loop
+    if not exists (select 1 from public.fraud_signal_alerts a
+                   where a.signal_type = 'subnet_cluster' and a.subject_key = rec.subnet_hash) then
+      insert into public.fraud_signal_alerts (signal_type, subject_key, details)
+      values ('subnet_cluster', rec.subnet_hash,
+              jsonb_build_object('subnet_hash', rec.subnet_hash, 'account_count', rec.account_count,
+                                 'asn_org', rec.asn_org, 'country_iso', rec.country_iso,
+                                 'accounts', rec.accounts));
+      new_signals := new_signals || jsonb_build_object(
+        'type', 'subnet_cluster', 'severity', 'warning',
+        'subnet_hash', rec.subnet_hash, 'account_count', rec.account_count,
+        'asn_org', rec.asn_org, 'accounts', rec.accounts);
     end if;
   end loop;
 
