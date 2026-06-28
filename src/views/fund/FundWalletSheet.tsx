@@ -85,17 +85,23 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
       // about:blank flash while the session token is minted. Replaced by the
       // Coinbase page once the token resolves (or closed on error).
       popup?.document.write(`
-         <!doctype html><html><head><meta charset="utf-8"><title>Connecting to Coinbase…</title>
+         <!doctype html><html><head><meta charset="utf-8"><title>Opening Coinbase…</title>
          <style>
             html,body{height:100%;margin:0}
-            body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+            body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+               padding:0 32px;text-align:center;box-sizing:border-box;
                background:#0a0b0d;color:#e6e8eb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
             .spinner{width:34px;height:34px;border:3px solid rgba(255,255,255,.15);border-top-color:#0052FF;
                border-radius:50%;animation:spin .8s linear infinite}
-            p{margin:0;font-size:14px;color:#9aa0a6}
+            .title{margin:4px 0 0;font-size:15px;font-weight:600;color:#e6e8eb}
+            .sub{margin:0;font-size:13px;line-height:1.45;color:#9aa0a6;max-width:280px}
             @keyframes spin{to{transform:rotate(360deg)}}
          </style></head>
-         <body><div class="spinner"></div><p>Connecting to Coinbase…</p></body></html>
+         <body>
+            <div class="spinner"></div>
+            <p class="title">Opening Coinbase…</p>
+            <p class="sub">If you’re not already signed in, you’ll sign in first — then buy USDC with your debit card.</p>
+         </body></html>
       `);
       popup?.document.close();
 
@@ -211,6 +217,9 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                      ))}
                      <span className="text-[11px] text-md-neutral-800 leading-tight">only</span>
                   </div>
+                  <p className="rounded-lg bg-md-neutral-100 px-2.5 py-2 text-[11px] font-normal leading-snug text-md-neutral-800">
+                     Opens Coinbase in a new window. If you’re not signed in, you’ll sign in first — then pay by card.
+                  </p>
                </button>
 
                {coinbaseError && (
