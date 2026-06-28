@@ -185,14 +185,23 @@ export function useWalletSync() {
                const errorCode = error?.code || '';
 
                if (errorCode === '23505' && errorMessage.includes('users_wallet_address_key')) {
-                  // Wallet is already attached to another account
-                  showToast(
-                     TOAST_TYPES.ERROR,
-                     'Wallet Already Attached',
-                     'This wallet is already connected to another account. Please use a different wallet or disconnect it from the other account first.',
-                     undefined,
-                     undefined
-                  );
+                  // Wallet is already saved on another account. For borrowers this matters
+                  // (their saved wallet is their locked identity), so keep the hard message.
+                  // For lenders it's toothless — funding uses the live-connected wallet, not
+                  // this saved field, so blocking the *display* value just adds friction. We
+                  // let lenders keep using the wallet and leave the cross-account overlap to
+                  // the out-of-band fraud detection (wallet_usage_log + daily scan).
+                  if (userRole === 'borrower') {
+                     showToast(
+                        TOAST_TYPES.ERROR,
+                        'Wallet Already Attached',
+                        'This wallet is already connected to another account. Please use a different wallet or disconnect it from the other account first.',
+                        undefined,
+                        undefined
+                     );
+                     disconnect();
+                  }
+                  return;
                } else if (/auth|session|jwt|authenticated/i.test(errorMessage)) {
                   showToast(
                      TOAST_TYPES.ERROR,
