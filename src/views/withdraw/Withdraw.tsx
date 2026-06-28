@@ -904,6 +904,7 @@ const PDAX_FLOW: AppFlowConfig = {
   ],
   cashOutTitle: "Cash out to pesos with PDAX",
   cashOutIntro: "Once your USDC arrives in PDAX (usually under 1 minute), sell it for pesos and withdraw to your bank, GCash, or Maya.",
+  cashOutVideo: "4JNXv7s_Trs",
   cashOutSteps: [
     {
       title: <>In PDAX, go to <span className="font-bold">Trade → Sell</span></>,
