@@ -15,36 +15,15 @@ interface FundWalletSheetProps {
 const COINBASE_PAY_URL = 'https://pay.coinbase.com/buy/select-asset';
 
 const COINBASE_LOGO = (
-   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="40" height="40" rx="10" fill="#0052FF" />
-      <circle cx="20" cy="20" r="10" fill="white" />
-      <rect x="16.5" y="17" width="3" height="6" rx="1" fill="#0052FF" />
-      <rect x="20.5" y="17" width="3" height="6" rx="1" fill="#0052FF" />
-   </svg>
+   <img src="/hippos/hippo-debit-card.png" alt="" className="h-12 w-12 object-contain" />
 );
 
 const BRIDGE_LOGO = (
-   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="40" height="40" rx="10" fill="#1a1a2e" />
-      <path d="M12 16.5H24.5M24.5 16.5L21 13M24.5 16.5L21 20" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M28 23.5H15.5M15.5 23.5L19 20M15.5 23.5L19 27" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-   </svg>
+   <img src="/hippos/hippo-bridge-swap.png" alt="" className="h-12 w-12 object-contain" />
 );
 
 const SOLANA_LOGO = (
-   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="40" height="40" rx="10" fill="#1a1a2e" />
-      <defs>
-         <linearGradient id="sol-grad-sheet" x1="10" y1="28" x2="30" y2="12" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#9945FF" />
-            <stop offset="0.5" stopColor="#14F195" />
-            <stop offset="1" stopColor="#00D1FF" />
-         </linearGradient>
-      </defs>
-      <path d="M11 25.5L14 22.5H29L26 25.5H11Z" fill="url(#sol-grad-sheet)" />
-      <path d="M11 14.5L14 17.5H29L26 14.5H11Z" fill="url(#sol-grad-sheet)" />
-      <path d="M11 20L14 17H29L26 20H11Z" fill="url(#sol-grad-sheet)" />
-   </svg>
+   <img src="/hippos/hippo-solana-bridge.png" alt="" className="h-12 w-12 object-contain" />
 );
 
 const CHAIN_CHIPS = [
