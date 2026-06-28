@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { ArrowLeft, Check, ChevronDown, ExternalLink, LoaderCircle } from 'lucide-react';
 import { createPublicClient, createWalletClient, custom, erc20Abi, formatUnits, http, parseUnits, type Address, type Chain, type Hex } from 'viem';
 import { arbitrum, base, bsc, mainnet, optimism, polygon } from 'wagmi/chains';
-import { useAccount, useConnect } from 'wagmi';
+import { useAccount, useDisconnect, type Connector } from 'wagmi';
 
 import { BASE_USDC_ADDRESS, getNetworkSvg } from '@/config/wagmiConfig';
-import { getBaseAccountConnector } from '@/lib/walletProvider';
 
 // Eco Routes V3 quote API — permissionless, CORS-open (Access-Control-Allow-Origin: *),
 // no auth needed for quotes. Returns a solver-guaranteed destinationAmount on Base.
@@ -149,8 +149,8 @@ const IN_FLIGHT: ExecState[] = ['preparing', 'approving', 'publishing', 'submitt
 
 export default function FundBridge({ onClose }: { onClose: () => void }) {
    const { address, connector } = useAccount();
-   const { connectAsync, connectors } = useConnect();
-   const baseAccountConnector = useMemo(() => getBaseAccountConnector(connectors), [connectors]);
+   const { openConnectModal } = useConnectModal();
+   const { disconnect } = useDisconnect();
    const [selectedChain, setSelectedChain] = useState<number | null>(null);
    const [amount, setAmount] = useState('');
    const [isLoadingQuote, setIsLoadingQuote] = useState(false);
@@ -160,6 +160,13 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
    const [execState, setExecState] = useState<ExecState>('idle');
    const [execError, setExecError] = useState<string | null>(null);
    const [txHash, setTxHash] = useState<Hex | null>(null);
+   // Set when the lender taps "Bridge to Base" while no wallet is connected: the picker
+   // opens, and an effect fires the bridge once a wallet connects — connect + sign as one
+   // intent, no second tap (mirrors Repay.tsx's pendingRepayRef).
+   const pendingBridgeRef = useRef(false);
+   // Set when "Change wallet" disconnects the current wallet so an effect can reopen the
+   // picker for the lender to choose a different source wallet.
+   const pendingPickRef = useRef(false);
 
    const selectedChainInfo = SOURCE_CHAINS.find((c) => c.id === selectedChain);
 
@@ -216,118 +223,152 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
       return () => clearTimeout(t);
    }, [selectedChain, amount, handleGetQuote, selectedChainInfo]);
 
-   // Executes the bridge: switch to the source chain, re-quote with the real wallet,
-   // approve USDC to the Portal, then publishAndFund. Uses a scoped viem client built
-   // from the connected wallet's provider — the app's global wagmi config is untouched.
-   const handleBridge = useCallback(async () => {
-      if (!selectedChainInfo || !amount || parseFloat(amount) <= 0) return;
+   // Executes the bridge with an already-connected source wallet: switch to the source
+   // chain, re-quote, approve USDC to the Portal, then publishAndFund. Uses a scoped viem
+   // client built from the wallet's provider — the app's global wagmi config is untouched.
+   // The lender bridges into the same wallet on Base (funder === recipient).
+   const executeBridge = useCallback(
+      async (sourceAddress: Address, sourceConnector: Connector) => {
+         if (!selectedChainInfo || !amount || parseFloat(amount) <= 0) return;
 
-      // Connect-to-sign: if there's no wallet yet, open Base Account and chain
-      // straight into the bridge within this same tap — matches the rest of the
-      // app (no second click). connectAsync is fired from a user gesture here.
-      let activeAddress = address as Address | undefined;
-      let activeConnector = connector;
-      if (!activeAddress || !activeConnector) {
-         if (!baseAccountConnector) {
-            setExecError('Wallet unavailable — refresh and try again.');
+         const viemChain = VIEM_CHAINS[selectedChainInfo.id];
+         if (!viemChain) {
+            setExecError('Unsupported source chain.');
             setExecState('error');
             return;
          }
+
+         setExecError(null);
+         setTxHash(null);
+         setExecState('preparing');
+
          try {
-            const res = await connectAsync({ connector: baseAccountConnector });
-            activeAddress = res.accounts[0] as Address;
-            activeConnector = baseAccountConnector as typeof connector;
-         } catch {
-            return; // user dismissed the connect popup
-         }
-      }
-      if (!activeAddress || !activeConnector) return;
+            const provider = (await sourceConnector.getProvider()) as Parameters<typeof custom>[0];
+            const walletClient = createWalletClient({ account: sourceAddress, chain: viemChain, transport: custom(provider) });
+            const publicClient = createPublicClient({ chain: viemChain, transport: http() });
 
-      const viemChain = VIEM_CHAINS[selectedChainInfo.id];
-      if (!viemChain) {
-         setExecError('Unsupported source chain.');
-         setExecState('error');
-         return;
-      }
-
-      setExecError(null);
-      setTxHash(null);
-      setExecState('preparing');
-
-      try {
-         const provider = (await activeConnector.getProvider()) as Parameters<typeof custom>[0];
-         const walletClient = createWalletClient({ account: activeAddress, chain: viemChain, transport: custom(provider) });
-         const publicClient = createPublicClient({ chain: viemChain, transport: http() });
-
-         // Make sure the wallet is on the source chain.
-         try {
-            await walletClient.switchChain({ id: viemChain.id });
-         } catch (switchErr) {
-            const e = switchErr as { code?: number; message?: string };
-            if (e?.code === 4902 || /unrecognized chain|not been added/i.test(e?.message ?? '')) {
-               await walletClient.addChain({ chain: viemChain });
+            // Make sure the wallet is on the source chain.
+            try {
                await walletClient.switchChain({ id: viemChain.id });
-            } else {
-               throw switchErr;
+            } catch (switchErr) {
+               const e = switchErr as { code?: number; message?: string };
+               if (e?.code === 4902 || /unrecognized chain|not been added/i.test(e?.message ?? '')) {
+                  await walletClient.addChain({ chain: viemChain });
+                  await walletClient.switchChain({ id: viemChain.id });
+               } else {
+                  throw switchErr;
+               }
             }
-         }
 
-         // Re-quote bound to the real wallet (correct recipient + a fresh deadline).
-         const sourceAmount = parseUnits(amount, selectedChainInfo.decimals);
-         const data = await requestEcoQuote(selectedChainInfo, sourceAmount.toString(), activeAddress);
-         const qr = data.quoteResponse;
-         const portal = data.contracts.sourcePortal;
-         const amt = BigInt(qr.sourceAmount);
+            // Re-quote bound to the real wallet (correct recipient + a fresh deadline).
+            const sourceAmount = parseUnits(amount, selectedChainInfo.decimals);
+            const data = await requestEcoQuote(selectedChainInfo, sourceAmount.toString(), sourceAddress);
+            const qr = data.quoteResponse;
+            const portal = data.contracts.sourcePortal;
+            const amt = BigInt(qr.sourceAmount);
 
-         // Approve the Portal to pull the source USDC, if the allowance is short.
-         setExecState('approving');
-         const allowance = (await publicClient.readContract({
-            address: selectedChainInfo.usdc as Address,
-            abi: erc20Abi,
-            functionName: 'allowance',
-            args: [activeAddress, portal],
-         })) as bigint;
-         if (allowance < amt) {
-            const approveHash = await walletClient.writeContract({
+            // Approve the Portal to pull the source USDC, if the allowance is short.
+            setExecState('approving');
+            const allowance = (await publicClient.readContract({
                address: selectedChainInfo.usdc as Address,
                abi: erc20Abi,
-               functionName: 'approve',
-               args: [portal, amt],
-               chain: viemChain,
-               account: activeAddress,
-            });
-            await publicClient.waitForTransactionReceipt({ hash: approveHash });
-         }
+               functionName: 'allowance',
+               args: [sourceAddress, portal],
+            })) as bigint;
+            if (allowance < amt) {
+               const approveHash = await walletClient.writeContract({
+                  address: selectedChainInfo.usdc as Address,
+                  abi: erc20Abi,
+                  functionName: 'approve',
+                  args: [portal, amt],
+                  chain: viemChain,
+                  account: sourceAddress,
+               });
+               await publicClient.waitForTransactionReceipt({ hash: approveHash });
+            }
 
-         // Publish + fund the intent on the source Portal. Solver fulfils on Base.
-         setExecState('publishing');
-         const reward = {
-            deadline: BigInt(qr.deadline),
-            creator: activeAddress,
-            prover: data.contracts.prover,
-            nativeAmount: 0n,
-            tokens: [{ token: qr.sourceToken, amount: amt }],
-         };
-         const hash = await walletClient.writeContract({
-            address: portal,
-            abi: PORTAL_ABI,
-            functionName: 'publishAndFund',
-            args: [BigInt(BASE_CHAIN_ID), qr.encodedRoute, reward, false],
-            chain: viemChain,
-            account: activeAddress,
-            value: 0n,
-         });
-         setTxHash(hash);
-         setExecState('submitted');
-         await publicClient.waitForTransactionReceipt({ hash });
-         setExecState('done');
-      } catch (err) {
-         const e = err as { shortMessage?: string; message?: string };
-         const msg = e?.shortMessage || e?.message || 'Bridge failed. Please try again.';
-         setExecError(/User rejected|denied|cancell?ed/i.test(msg) ? 'Transaction cancelled.' : msg);
-         setExecState('error');
+            // Publish + fund the intent on the source Portal. Solver fulfils on Base.
+            setExecState('publishing');
+            const reward = {
+               deadline: BigInt(qr.deadline),
+               creator: sourceAddress,
+               prover: data.contracts.prover,
+               nativeAmount: 0n,
+               tokens: [{ token: qr.sourceToken, amount: amt }],
+            };
+            const hash = await walletClient.writeContract({
+               address: portal,
+               abi: PORTAL_ABI,
+               functionName: 'publishAndFund',
+               args: [BigInt(BASE_CHAIN_ID), qr.encodedRoute, reward, false],
+               chain: viemChain,
+               account: sourceAddress,
+               value: 0n,
+            });
+            setTxHash(hash);
+            setExecState('submitted');
+            await publicClient.waitForTransactionReceipt({ hash });
+            setExecState('done');
+         } catch (err) {
+            const e = err as { shortMessage?: string; message?: string };
+            const msg = e?.shortMessage || e?.message || 'Bridge failed. Please try again.';
+            setExecError(/User rejected|denied|cancell?ed/i.test(msg) ? 'Transaction cancelled.' : msg);
+            setExecState('error');
+         }
+      },
+      [selectedChainInfo, amount]
+   );
+
+   // Keep a ref to the latest executor so the auto-continue effect (which reacts to the
+   // connection landing, not to a render) always fires the freshly-connected closure.
+   const executeBridgeRef = useRef(executeBridge);
+   useEffect(() => {
+      executeBridgeRef.current = executeBridge;
+   }, [executeBridge]);
+
+   // Auto-continue: once a wallet connects via the picker, fire the bridge the lender
+   // already initiated — connect + sign as one intent, no second tap. Mirrors Repay.tsx.
+   useEffect(() => {
+      if (address && connector && pendingBridgeRef.current) {
+         pendingBridgeRef.current = false;
+         void executeBridgeRef.current(address as Address, connector);
       }
-   }, [selectedChainInfo, amount, address, connector, connectAsync, baseAccountConnector]);
+   }, [address, connector]);
+
+   // "Change wallet": after we disconnect, reopen the picker so the lender can pick a
+   // different source wallet (e.g. the one holding their Arbitrum USDC).
+   useEffect(() => {
+      if (!address && pendingPickRef.current) {
+         pendingPickRef.current = false;
+         openConnectModal?.();
+      }
+   }, [address, openConnectModal]);
+
+   // Primary action. Picker-first: the lender chooses the wallet holding their source-chain
+   // USDC. If one is connected, bridge with it in this tap; otherwise open the picker and
+   // auto-continue once connected so it stays a single intent (no second click).
+   const handleBridge = () => {
+      if (!selectedChainInfo || !amount || parseFloat(amount) <= 0) return;
+      if (address && connector) {
+         void executeBridgeRef.current(address as Address, connector);
+         return;
+      }
+      pendingBridgeRef.current = true;
+      openConnectModal?.();
+   };
+
+   // Let the lender swap to a different wallet. Login is Supabase-based and independent of
+   // the wagmi connection, so disconnecting here never logs them out.
+   const handleChangeWallet = () => {
+      resetExec();
+      pendingBridgeRef.current = false;
+      if (address) {
+         pendingPickRef.current = true;
+         disconnect();
+      } else {
+         openConnectModal?.();
+      }
+   };
 
    const isBridging = IN_FLIGHT.includes(execState);
    const explorerUrl =
@@ -498,6 +539,30 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
                </div>
             </div>
          )}
+
+         {/* Source wallet — the lender picks any wallet holding their cross-chain USDC.
+             Independent of the wallet they logged in with; "Change" lets them swap it. */}
+         <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl border border-md-neutral-300 bg-md-neutral-100 px-4 py-3">
+            <div className="flex min-w-0 flex-col">
+               <span className="text-[11px] font-semibold uppercase tracking-wide text-md-neutral-800">Pay from</span>
+               {address ? (
+                  <span className="truncate text-md-b3 font-medium text-md-heading">
+                     {connector?.name ? `${connector.name} · ` : ''}
+                     {`${address.slice(0, 6)}…${address.slice(-4)}`}
+                  </span>
+               ) : (
+                  <span className="text-md-b3 font-medium text-md-neutral-800">No wallet connected</span>
+               )}
+            </div>
+            <button
+               type="button"
+               onClick={handleChangeWallet}
+               disabled={isBridging}
+               className="shrink-0 rounded-full border border-md-primary-300 px-3 py-1.5 text-[12px] font-semibold text-md-primary-1200 transition-colors hover:bg-md-primary-100 disabled:pointer-events-none disabled:opacity-50"
+            >
+               {address ? 'Change' : 'Connect'}
+            </button>
+         </div>
 
          {/* Single primary action — grey until a live quote is ready, then purple */}
          <button
