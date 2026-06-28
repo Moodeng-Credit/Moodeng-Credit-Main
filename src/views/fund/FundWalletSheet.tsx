@@ -234,9 +234,15 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                      <span className="rounded-full bg-[#e6f9ef] px-2 py-0.5 text-[10px] font-semibold text-[#1a8c4e]">
                         &lt; 0.5% fee
                      </span>
-                     <span className="rounded-full bg-[#e6f9ef] px-2 py-0.5 text-[10px] font-semibold text-[#1a8c4e]">
+                     <a
+                        href="https://eco.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-full bg-[#e6f9ef] px-2 py-0.5 text-[10px] font-semibold text-[#1a8c4e] hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                     >
                         Powered by Eco
-                     </span>
+                     </a>
                      <span className="rounded-full bg-md-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-md-neutral-1400">
                         ~30 sec
                      </span>
