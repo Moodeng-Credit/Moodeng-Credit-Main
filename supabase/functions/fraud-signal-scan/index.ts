@@ -29,6 +29,7 @@ type Signal = {
    location_b?: string;
    distance_km?: number;
    hours_apart?: number;
+   subnet_hash?: string;
 };
 
 const describe = (s: Signal): string => {
@@ -47,6 +48,10 @@ const describe = (s: Signal): string => {
          return `${s.username ?? s.user_id} logged in from a datacenter/hosting IP (${s.asn_org}) — ${s.hosting_logins} time(s)`;
       case 'impossible_travel':
          return `${s.username ?? s.user_id} impossible travel: ${s.location_a} → ${s.location_b} (${s.distance_km} km in ${s.hours_apart} h)`;
+      case 'subnet_cluster':
+         return `${s.account_count} accounts from the same network block${s.asn_org ? ` (${s.asn_org})` : ''}\n  accounts: ${(s.accounts ?? [])
+            .map((a) => `${a.username ?? a.user_id} (${a.role})`)
+            .join('; ')}`;
       default:
          return `${s.type}: ${JSON.stringify(s)}`;
    }

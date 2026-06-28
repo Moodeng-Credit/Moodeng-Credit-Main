@@ -82,6 +82,29 @@ begin
       ) s
     ), '[]'::jsonb),
 
+    -- 2+ accounts from the same /24 (or /48) network block
+    'subnet_clusters', coalesce((
+      select jsonb_agg(x order by (x->>'account_count')::int desc)
+      from (
+        select jsonb_build_object(
+                 'subnet_hash_short', left(i.subnet_hash, 12),
+                 'account_count', count(distinct i.user_id),
+                 'all_whitelisted', bool_and(wl.user_id is not null),
+                 'asn_org', max(i.asn_org),
+                 'country', max(i.country_iso),
+                 'accounts', jsonb_agg(distinct jsonb_build_object(
+                    'user_id', u.id, 'username', u.username, 'role', u.user_role,
+                    'whitelisted', wl.user_id is not null))
+               ) as x
+        from public.auth_ip_log i
+        join public.users u on u.id = i.user_id
+        left join public.fraud_detection_whitelist wl on wl.user_id = i.user_id
+        where i.subnet_hash is not null
+        group by i.subnet_hash
+        having count(distinct i.user_id) > 1
+      ) s
+    ), '[]'::jsonb),
+
     -- Accounts whose canonical email collides (Gmail dot/plus tricks collapsed)
     'email_collisions', coalesce((
       select jsonb_agg(x order by (x->>'account_count')::int desc)
