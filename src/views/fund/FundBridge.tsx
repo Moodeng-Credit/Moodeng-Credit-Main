@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { ArrowLeft, Check, ChevronDown, ExternalLink, LoaderCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -201,6 +201,20 @@ export default function FundBridge() {
       }
    }, [selectedChainInfo, amount, address]);
 
+   // Auto-fetch the quote (debounced) once a chain + valid amount are set, so there's no
+   // separate "Get Quote" step — the rate just appears, then "Bridge to Base" lights up.
+   useEffect(() => {
+      if (!selectedChainInfo || !amount || parseFloat(amount) <= 0) {
+         setQuote(null);
+         setQuoteError(null);
+         return;
+      }
+      const t = setTimeout(() => {
+         handleGetQuote();
+      }, 500);
+      return () => clearTimeout(t);
+   }, [selectedChain, amount, handleGetQuote, selectedChainInfo]);
+
    // Executes the bridge: switch to the source chain, re-quote with the real wallet,
    // approve USDC to the Portal, then publishAndFund. Uses a scoped viem client built
    // from the connected wallet's provider — the app's global wagmi config is untouched.
@@ -297,7 +311,6 @@ export default function FundBridge() {
       }
    }, [selectedChainInfo, amount, address, connector]);
 
-   const canGetQuote = selectedChain !== null && amount !== '' && parseFloat(amount) > 0;
    const isBridging = IN_FLIGHT.includes(execState);
    const explorerUrl =
       selectedChainInfo && txHash
@@ -416,97 +429,87 @@ export default function FundBridge() {
             </div>
          </div>
 
-         {/* Get Quote button */}
-         <button
-            onClick={handleGetQuote}
-            disabled={!canGetQuote || isLoadingQuote || isBridging}
-            className="mb-3 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-md-primary-1200 px-6 py-3.5 text-md-b1 font-semibold text-white shadow-md-card transition-all hover:brightness-110 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
-         >
-            {isLoadingQuote ? (
-               <>
-                  <LoaderCircle className="h-5 w-5 animate-spin" />
-                  Getting quote...
-               </>
-            ) : (
-               'Get Quote'
-            )}
-         </button>
+         {/* Quote area — appears automatically once a chain + amount are set */}
+         {isLoadingQuote && (
+            <div className="mb-4 flex items-center justify-center gap-2 rounded-2xl border border-md-neutral-300 bg-md-neutral-100 px-4 py-5 text-md-b3 font-medium text-md-neutral-800">
+               <LoaderCircle className="h-4 w-4 animate-spin" />
+               Fetching best rate…
+            </div>
+         )}
 
-         {quoteError && (
-            <p className="mb-3 text-center text-[13px] font-medium text-md-red-500" role="alert">
+         {quoteError && !isLoadingQuote && (
+            <p className="mb-4 text-center text-[13px] font-medium text-md-red-500" role="alert">
                {quoteError}
             </p>
          )}
 
-         {/* Quote result */}
-         {quote && (
-            <div className="flex flex-col gap-3 rounded-2xl border border-md-neutral-300 bg-md-neutral-100 p-4">
-               <p className="text-md-b3 font-semibold text-md-neutral-1400">Quote Details</p>
-               <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                     <span className="text-md-b3 font-normal text-md-neutral-800">You send</span>
-                     <span className="text-md-b2 font-medium text-md-heading">{quote.sendAmount} USDC</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                     <span className="text-md-b3 font-normal text-md-neutral-800">You receive on Base</span>
-                     <span className="text-md-b2 font-semibold text-md-heading">{quote.receiveAmount} USDC</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                     <span className="text-md-b3 font-normal text-md-neutral-800">Network + bridge cost</span>
-                     <span className="text-md-b3 font-normal text-md-neutral-800">{quote.costAmount} USDC</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                     <span className="text-md-b3 font-normal text-md-neutral-800">Estimated time</span>
-                     <span className="text-md-b3 font-normal text-md-neutral-800">{quote.estimatedTime}</span>
-                  </div>
+         {quote && !isLoadingQuote && (
+            <div className="mb-4 flex flex-col gap-2 rounded-2xl border border-md-neutral-300 bg-md-neutral-100 p-4">
+               <p className="pb-1 text-md-b3 font-semibold text-md-neutral-1400">Quote Details</p>
+               <div className="flex items-center justify-between">
+                  <span className="text-md-b3 font-normal text-md-neutral-800">You send</span>
+                  <span className="text-md-b2 font-medium text-md-heading">{quote.sendAmount} USDC</span>
                </div>
-
-               <div className="border-t border-md-neutral-300 pt-3">
-                  <button
-                     onClick={handleBridge}
-                     disabled={isBridging || execState === 'done'}
-                     className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-md-primary-1200 px-6 py-3 text-md-b2 font-semibold text-white shadow-md-card transition-all hover:brightness-110 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
-                  >
-                     {isBridging && <LoaderCircle className="h-5 w-5 animate-spin" />}
-                     {bridgeLabel}
-                  </button>
-
-                  {execError && (
-                     <p className="mt-2 text-center text-[12px] font-medium text-md-red-500" role="alert">
-                        {execError}
-                     </p>
-                  )}
-
-                  {execState === 'submitted' && (
-                     <p className="mt-2 text-center text-[12px] font-normal text-md-neutral-800">
-                        Submitted — funds arrive on Base in {quote.estimatedTime}.
-                     </p>
-                  )}
-
-                  {execState === 'done' && (
-                     <p className="mt-2 text-center text-[12px] font-semibold text-[#1a8c4e]">
-                        Bridged! Your USDC is on Base.
-                     </p>
-                  )}
-
-                  {explorerUrl && (
-                     <a
-                        href={explorerUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 inline-flex w-full items-center justify-center gap-1 text-[12px] font-medium text-md-primary-1200"
-                     >
-                        View transaction <ExternalLink className="h-3 w-3" />
-                     </a>
-                  )}
-
-                  {!isBridging && execState !== 'submitted' && execState !== 'done' && (
-                     <p className="mt-2 text-center text-[12px] font-normal text-md-neutral-800">
-                        Live quote &middot; Powered by Eco
-                     </p>
-                  )}
+               <div className="flex items-center justify-between">
+                  <span className="text-md-b3 font-normal text-md-neutral-800">You receive on Base</span>
+                  <span className="text-md-b2 font-semibold text-md-heading">{quote.receiveAmount} USDC</span>
+               </div>
+               <div className="flex items-center justify-between">
+                  <span className="text-md-b3 font-normal text-md-neutral-800">Network + bridge cost</span>
+                  <span className="text-md-b3 font-normal text-md-neutral-800">{quote.costAmount} USDC</span>
+               </div>
+               <div className="flex items-center justify-between">
+                  <span className="text-md-b3 font-normal text-md-neutral-800">Estimated time</span>
+                  <span className="text-md-b3 font-normal text-md-neutral-800">{quote.estimatedTime}</span>
                </div>
             </div>
+         )}
+
+         {/* Single primary action — grey until a live quote is ready, then purple */}
+         <button
+            onClick={handleBridge}
+            disabled={!quote || isLoadingQuote || isBridging || execState === 'done'}
+            className={`mt-auto inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-md-b1 font-semibold transition-all disabled:pointer-events-none ${
+               execState === 'done'
+                  ? 'bg-[#e6f9ef] text-[#1a8c4e]'
+                  : quote && !isLoadingQuote && !isBridging
+                    ? 'bg-md-primary-1200 text-white shadow-md-card hover:brightness-110 active:scale-[0.98]'
+                    : isBridging
+                      ? 'bg-md-primary-1200 text-white shadow-md-card'
+                      : 'bg-md-neutral-400 text-md-neutral-800'
+            }`}
+         >
+            {isBridging && <LoaderCircle className="h-5 w-5 animate-spin" />}
+            {bridgeLabel}
+         </button>
+
+         {execError && (
+            <p className="mt-2 text-center text-[12px] font-medium text-md-red-500" role="alert">
+               {execError}
+            </p>
+         )}
+
+         {execState === 'submitted' && quote && (
+            <p className="mt-2 text-center text-[12px] font-normal text-md-neutral-800">
+               Submitted — funds arrive on Base in {quote.estimatedTime}.
+            </p>
+         )}
+
+         {explorerUrl && (
+            <a
+               href={explorerUrl}
+               target="_blank"
+               rel="noopener noreferrer"
+               className="mt-2 inline-flex w-full items-center justify-center gap-1 text-[12px] font-medium text-md-primary-1200"
+            >
+               View transaction <ExternalLink className="h-3 w-3" />
+            </a>
+         )}
+
+         {quote && !isBridging && execState !== 'submitted' && execState !== 'done' && (
+            <p className="mt-2 text-center text-[12px] font-normal text-md-neutral-800">
+               Live quote &middot; Powered by Eco
+            </p>
          )}
       </div>
    );
