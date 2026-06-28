@@ -984,3 +984,178 @@ export async function saveDefaultRecoveryPlan(input: {
          .single()
    );
 }
+
+// ---------------------------------------------------------------------------
+// Self-lending / detection overview (admin_get_detection_overview RPC)
+// ---------------------------------------------------------------------------
+export type DetectionLinkType =
+   | 'same_wallet_on_loan'
+   | 'shared_wallet'
+   | 'shared_email'
+   | 'shared_ip'
+   | 'shared_subnet';
+
+export interface DetectionAccount {
+   user_id: string;
+   username: string | null;
+   email?: string | null;
+   role?: UserRole | null;
+   whitelisted?: boolean;
+}
+
+export interface SelfLendingLoan {
+   loan_id: string;
+   tracking_id: string | null;
+   loan_amount: number | null;
+   coin: string | null;
+   loan_status: string | null;
+   created_at: string | null;
+   borrower: DetectionAccount;
+   lender: DetectionAccount;
+   links: DetectionLinkType[];
+   strongest: 'strong' | 'circumstantial';
+}
+
+export interface SharedWalletCluster {
+   wallet_address: string;
+   account_count: number;
+   all_whitelisted: boolean;
+   has_borrower: boolean;
+   has_lender: boolean;
+   accounts: DetectionAccount[];
+}
+
+export interface SharedIpCluster {
+   ip_hash_short: string;
+   account_count: number;
+   all_whitelisted: boolean;
+   country?: string | null;
+   city?: string | null;
+   asn_org?: string | null;
+   is_hosting?: boolean;
+   accounts: DetectionAccount[];
+}
+
+export interface SubnetCluster {
+   subnet_hash_short: string;
+   account_count: number;
+   all_whitelisted: boolean;
+   asn_org?: string | null;
+   country?: string | null;
+   accounts: DetectionAccount[];
+}
+
+export interface EmailCollision {
+   canonical_email: string;
+   account_count: number;
+   accounts: DetectionAccount[];
+}
+
+export interface HostingIp {
+   user_id: string;
+   username: string | null;
+   email: string | null;
+   asn_org: string | null;
+   country: string | null;
+   login_count: number;
+   whitelisted: boolean;
+}
+
+export interface DetectionOverview {
+   generated_at: string;
+   shared_wallets: SharedWalletCluster[];
+   shared_ips: SharedIpCluster[];
+   hosting_ips: HostingIp[];
+   subnet_clusters: SubnetCluster[];
+   email_collisions: EmailCollision[];
+   self_lending_loans: SelfLendingLoan[];
+}
+
+export async function getDetectionOverview(): Promise<DetectionOverview> {
+   const supabase = getSupabaseBrowserClient();
+   const { data, error } = await supabase.rpc('admin_get_detection_overview');
+   if (error) throw error;
+   const o = (data ?? {}) as Partial<DetectionOverview>;
+   return {
+      generated_at: o.generated_at ?? new Date().toISOString(),
+      shared_wallets: o.shared_wallets ?? [],
+      shared_ips: o.shared_ips ?? [],
+      hosting_ips: o.hosting_ips ?? [],
+      subnet_clusters: o.subnet_clusters ?? [],
+      email_collisions: o.email_collisions ?? [],
+      self_lending_loans: o.self_lending_loans ?? []
+   };
+}
+
+// ---------------------------------------------------------------------------
+// Fraud alert review queue (fraud_signal_alerts + review_status)
+// ---------------------------------------------------------------------------
+export type FraudAlertStatus = 'open' | 'ignored' | 'confirmed';
+
+export interface FraudAlert {
+   id: string;
+   signal_type: string;
+   subject_key: string;
+   details: Record<string, unknown>;
+   review_status: FraudAlertStatus;
+   reviewed_at: string | null;
+   reviewed_note: string | null;
+   created_at: string;
+}
+
+export async function listFraudAlerts(): Promise<FraudAlert[]> {
+   const supabase = getSupabaseBrowserClient();
+   const { data, error } = await supabase
+      .from('fraud_signal_alerts')
+      .select('id, signal_type, subject_key, details, review_status, reviewed_at, reviewed_note, created_at')
+      .order('created_at', { ascending: false });
+   if (error) throw error;
+   return (data ?? []) as FraudAlert[];
+}
+
+export async function setFraudAlertStatus(alertId: string, status: FraudAlertStatus, note?: string | null) {
+   const supabase = getSupabaseBrowserClient();
+   const { error } = await supabase.rpc('admin_set_fraud_alert_status', {
+      p_alert_id: alertId,
+      p_status: status,
+      p_note: note ?? null
+   });
+   if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// Whitelist management (fraud_detection_whitelist) — RLS allows admin write.
+// ---------------------------------------------------------------------------
+export async function addToWhitelist(userId: string, reason?: string | null) {
+   const supabase = getSupabaseBrowserClient();
+   const { error } = await supabase
+      .from('fraud_detection_whitelist')
+      .upsert({ user_id: userId, reason: reason ?? 'muted from admin panel' }, { onConflict: 'user_id' });
+   if (error) throw error;
+}
+
+export async function removeFromWhitelist(userId: string) {
+   const supabase = getSupabaseBrowserClient();
+   const { error } = await supabase.from('fraud_detection_whitelist').delete().eq('user_id', userId);
+   if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// Login geo points for the hotspot map (admin_get_login_geo RPC)
+// ---------------------------------------------------------------------------
+export interface LoginGeoPoint {
+   lat: number;
+   lon: number;
+   city: string | null;
+   country: string | null;
+   is_hosting: boolean;
+   account_count: number;
+   accounts: Array<{ user_id: string; username: string | null; role?: UserRole | null }>;
+}
+
+export async function getLoginGeo(): Promise<LoginGeoPoint[]> {
+   const supabase = getSupabaseBrowserClient();
+   const { data, error } = await supabase.rpc('admin_get_login_geo');
+   if (error) throw error;
+   return (data ?? []) as LoginGeoPoint[];
+}

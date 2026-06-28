@@ -7,13 +7,33 @@ const corsHeaders = {
    'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
-// We never store a raw IP. This is a one-way salted hash used only to spot a
+// We never store a raw IP. These are one-way salted hashes used only to spot a
 // borrower and a lender on the same loan signing in from the same place.
-const hashIp = async (ip: string, salt: string) => {
-   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${salt}:${ip}`));
+const hashValue = async (value: string, salt: string) => {
+   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${salt}:${value}`));
    return Array.from(new Uint8Array(digest))
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
+};
+
+// Derive the network block an IP belongs to, so accounts that rotate IPs within
+// the same block (the classic farm pattern) collide on a shared subnet hash even
+// when no two full IPs match. IPv4 -> /24 (first 3 octets); IPv6 -> /48 (first 3
+// hextets). Returns null if the IP doesn't parse, so we just skip the subnet hash.
+const subnetKey = (ip: string): string | null => {
+   if (ip.includes(':')) {
+      // IPv6 (may be compressed). Expand to full groups, keep the first 3.
+      const groups = ip.split('::');
+      const head = groups[0].split(':').filter(Boolean);
+      const tail = groups.length > 1 ? groups[1].split(':').filter(Boolean) : [];
+      const missing = 8 - head.length - tail.length;
+      const full = [...head, ...Array(Math.max(missing, 0)).fill('0'), ...tail];
+      if (full.length < 3) return null;
+      return full.slice(0, 3).map((h) => h.padStart(4, '0')).join(':') + '::/48';
+   }
+   const octets = ip.split('.');
+   if (octets.length !== 4 || octets.some((o) => o === '' || Number.isNaN(Number(o)))) return null;
+   return `${octets[0]}.${octets[1]}.${octets[2]}.0/24`;
 };
 
 const HOSTING_ASN_PATTERNS = [
@@ -104,12 +124,17 @@ serve(async (req) => {
    // If MaxMind is down or unconfigured, we still record the hash.
    const geo = await lookupGeo(ip);
 
-   const ipHash = await hashIp(ip, salt);
+   const ipHash = await hashValue(ip, salt);
+   // Salted hash of the IP's /24 (or IPv6 /48) block — lets us spot accounts
+   // rotating IPs within the same subnet without ever storing a raw IP.
+   const subnet = subnetKey(ip);
+   const subnetHash = subnet ? await hashValue(subnet, salt) : null;
    const today = new Date().toISOString().slice(0, 10);
 
    const row: Record<string, unknown> = {
       user_id: userId,
       ip_hash: ipHash,
+      subnet_hash: subnetHash,
       seen_on: today,
       last_seen_at: new Date().toISOString()
    };
