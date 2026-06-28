@@ -5,6 +5,14 @@ import { useNavigate } from 'react-router-dom';
 
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { FlagUS, FlagEU, FlagGB, FlagAU } from '@/components/verification/CountryFlags';
+
+const COINBASE_SUPPORTED_REGIONS = [
+   { Flag: FlagUS, label: 'US' },
+   { Flag: FlagEU, label: 'EU' },
+   { Flag: FlagGB, label: 'UK' },
+   { Flag: FlagAU, label: 'AU' },
+];
 
 interface FundWalletSheetProps {
    isOpen: boolean;
@@ -175,9 +183,16 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                         No account needed
                      </span>
                   </div>
-                  <p className="text-[11px] text-md-neutral-800 leading-tight">
-                     Supported in US, EU, UK &amp; AU only
-                  </p>
+                  <div className="flex items-center gap-2">
+                     <span className="text-[11px] text-md-neutral-800 leading-tight">Supported in</span>
+                     {COINBASE_SUPPORTED_REGIONS.map(({ Flag, label }) => (
+                        <span key={label} className="inline-flex items-center gap-1">
+                           <Flag className="h-[10px] w-[15px] rounded-[1px]" />
+                           <span className="text-[11px] text-md-neutral-800">{label}</span>
+                        </span>
+                     ))}
+                     <span className="text-[11px] text-md-neutral-800 leading-tight">only</span>
+                  </div>
                </button>
 
                {coinbaseError && (

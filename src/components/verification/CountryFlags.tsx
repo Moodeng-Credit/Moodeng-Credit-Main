@@ -99,6 +99,64 @@ export const FlagTH = ({ className }: FlagProps) => (
    </svg>
 );
 
+export const FlagUS = ({ className }: FlagProps) => (
+   <svg viewBox="0 0 30 20" className={className} xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      {[0,1,2,3,4,5,6,7,8,9,10,11,12].map(i => (
+         <rect key={i} x="0" y={i * (20/13)} width="30" height={20/13} fill={i % 2 === 0 ? '#B22234' : 'white'} />
+      ))}
+      <rect width="12" height={20 * 7/13} fill="#3C3B6E" />
+      {[0,1,2,3,4,5,7,8,9].map((_, i) => {
+         const col = i % 6;
+         const row = Math.floor(i / 6);
+         return <circle key={i} cx={1 + col * 2} cy={1 + row * 2.2} r="0.55" fill="white" />;
+      })}
+   </svg>
+);
+
+export const FlagEU = ({ className }: FlagProps) => (
+   <svg viewBox="0 0 30 20" className={className} xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="30" height="20" fill="#003399" />
+      {[0,1,2,3,4,5,6,7,8,9,10,11].map(i => {
+         const angle = (i * 30 - 90) * Math.PI / 180;
+         const cx = 15 + 5.5 * Math.cos(angle);
+         const cy = 10 + 5.5 * Math.sin(angle);
+         return (
+            <polygon key={i}
+               points={`${cx},${cy - 1.1} ${cx + 0.35},${cy - 0.35} ${cx + 1.1},${cy - 0.35} ${cx + 0.55},${cy + 0.2} ${cx + 0.7},${cy + 1.1} ${cx},${cy + 0.65} ${cx - 0.7},${cy + 1.1} ${cx - 0.55},${cy + 0.2} ${cx - 1.1},${cy - 0.35} ${cx - 0.35},${cy - 0.35}`}
+               fill="#FFCC00" />
+         );
+      })}
+   </svg>
+);
+
+export const FlagGB = ({ className }: FlagProps) => (
+   <svg viewBox="0 0 30 20" className={className} xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="30" height="20" fill="#012169" />
+      <path d="M0,0 L30,20 M30,0 L0,20" stroke="white" strokeWidth="4" />
+      <path d="M0,0 L30,20 M30,0 L0,20" stroke="#C8102E" strokeWidth="2.5" />
+      <path d="M15,0 V20 M0,10 H30" stroke="white" strokeWidth="6" />
+      <path d="M15,0 V20 M0,10 H30" stroke="#C8102E" strokeWidth="4" />
+   </svg>
+);
+
+export const FlagAU = ({ className }: FlagProps) => (
+   <svg viewBox="0 0 30 20" className={className} xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="30" height="20" fill="#00008B" />
+      {/* Union Jack */}
+      <path d="M0,0 L15,10 M15,0 L0,10" stroke="white" strokeWidth="2.5" />
+      <path d="M0,0 L15,10 M15,0 L0,10" stroke="#CC0000" strokeWidth="1.5" />
+      <path d="M7.5,0 V10 M0,5 H15" stroke="white" strokeWidth="3.5" />
+      <path d="M7.5,0 V10 M0,5 H15" stroke="#CC0000" strokeWidth="2" />
+      {/* Commonwealth Star */}
+      <polygon points="7.5,12.5 8,14 9.5,14 8.3,15 8.7,16.5 7.5,15.5 6.3,16.5 6.7,15 5.5,14 7,14" fill="white" />
+      {/* Southern Cross — 4 main stars */}
+      <polygon points="22,4 22.3,5 23.3,5 22.5,5.6 22.8,6.6 22,6 21.2,6.6 21.5,5.6 20.7,5 21.7,5" fill="white" />
+      <polygon points="26,8 26.3,9 27.3,9 26.5,9.6 26.8,10.6 26,10 25.2,10.6 25.5,9.6 24.7,9 25.7,9" fill="white" />
+      <polygon points="22,13 22.3,14 23.3,14 22.5,14.6 22.8,15.6 22,15 21.2,15.6 21.5,14.6 20.7,14 21.7,14" fill="white" />
+      <polygon points="18,9.5 18.25,10.3 19.1,10.3 18.4,10.8 18.65,11.6 18,11.1 17.35,11.6 17.6,10.8 16.9,10.3 17.75,10.3" fill="white" />
+   </svg>
+);
+
 export const SUPPORTED_DIDIT_COUNTRIES: { code: string; name: string; Flag: ComponentType<FlagProps> }[] = [
    { code: 'VN', name: 'Vietnam', Flag: FlagVN },
    { code: 'TW', name: 'Taiwan', Flag: FlagTW },
