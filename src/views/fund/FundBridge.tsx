@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { ArrowLeft, Check, ChevronDown, ExternalLink, LoaderCircle } from 'lucide-react';
-import { createPublicClient, createWalletClient, custom, erc20Abi, formatUnits, http, parseUnits, type Address, type Chain, type Hex } from 'viem';
+import { createPublicClient, createWalletClient, custom, erc20Abi, fallback, formatUnits, http, parseUnits, type Address, type Chain, type Hex } from 'viem';
 import { arbitrum, base, bsc, mainnet, optimism, polygon } from 'wagmi/chains';
 import { useAccount, useDisconnect, type Connector } from 'wagmi';
 
@@ -245,7 +245,13 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
          try {
             const provider = (await sourceConnector.getProvider()) as Parameters<typeof custom>[0];
             const walletClient = createWalletClient({ account: sourceAddress, chain: viemChain, transport: custom(provider) });
-            const publicClient = createPublicClient({ chain: viemChain, transport: http() });
+            // Read allowance + poll the receipt through the connected wallet's own RPC first.
+            // A bare http() falls back to the chain's default public RPC (e.g. polygon-rpc.com),
+            // which rate-limits/CORS-blocks browser calls — that surfaced as "HTTP request
+            // failed" before any signing. The wallet provider always has a working RPC for the
+            // chain it's on; http() stays only as a last-resort fallback. Works for every source
+            // chain, including BNB (which Alchemy doesn't support).
+            const publicClient = createPublicClient({ chain: viemChain, transport: fallback([custom(provider), http()]) });
 
             // Make sure the wallet is on the source chain.
             try {
