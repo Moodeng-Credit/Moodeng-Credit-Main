@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import LineLoginButton from '@/components/LineLoginButton';
 import TelegramAuthButton from '@/components/TelegramAuthButton';
 
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
@@ -105,6 +106,9 @@ export function SocialAuthButtons({ isSignUp, onTelegramAuth }: SocialAuthButton
                <TelegramAuthButton onAuth={onTelegramAuth} buttonSize="large" useRedirect />
             </div>
          )}
+
+         {/* LINE: redirects to LINE Login OAuth, handled by the line-login edge fn */}
+         <LineLoginButton isSignUp={isSignUp} />
       </div>
    );
 }

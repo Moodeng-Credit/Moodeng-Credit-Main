@@ -1,6 +1,7 @@
 import { type JSX } from 'react';
 
 import GoogleAuthButton from '@/components/GoogleAuthButton';
+import LineLoginButton from '@/components/LineLoginButton';
 import TelegramAuthButton from '@/components/TelegramAuthButton';
 
 interface SocialButtonsProps {
@@ -17,6 +18,7 @@ export default function SocialButtons({ onGoogleAuth, onTelegramAuth, onOAuthErr
       <div className="space-y-3">
          <GoogleAuthButton onSuccess={onGoogleAuth} onError={onOAuthError} text={googleText} />
          <TelegramAuthButton onAuth={onTelegramAuth} buttonSize="large" useRedirect />
+         <LineLoginButton isSignUp={isSignUp} />
       </div>
    );
 }
