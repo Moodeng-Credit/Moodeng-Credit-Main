@@ -3,6 +3,7 @@ import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { clearClientAuthState } from '@/lib/authSessionCleanup';
+import { recordSessionIp } from '@/lib/recordSessionIp';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
@@ -220,6 +221,10 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
    if (sessionError || !user) {
       throw sessionError ?? new Error('Unable to resolve authenticated user');
    }
+
+   // Fire-and-forget: log a salted hash of this session's IP for out-of-band
+   // fraud detection (borrower & lender from the same place). Throttled, never blocks.
+   recordSessionIp();
 
    const { data: profile, error: profileError } = await supabase.from('users').select('*').eq('id', user.id).maybeSingle();
 
