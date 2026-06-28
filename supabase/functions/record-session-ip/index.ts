@@ -16,6 +16,60 @@ const hashIp = async (ip: string, salt: string) => {
       .join('');
 };
 
+const HOSTING_ASN_PATTERNS = [
+   'amazon', 'aws', 'google cloud', 'google llc', 'microsoft', 'azure',
+   'digitalocean', 'ovh', 'hetzner', 'linode', 'akamai connected cloud',
+   'vultr', 'cloudflare', 'oracle', 'alibaba', 'tencent cloud',
+   'choopa', 'contabo', 'hostinger', 'ionos', 'kamatera',
+   'scaleway', 'upcloud', 'hostwinds', 'liquidweb'
+];
+
+const isHostingAsn = (orgName: string | undefined): boolean => {
+   if (!orgName) return false;
+   const lower = orgName.toLowerCase();
+   return HOSTING_ASN_PATTERNS.some((p) => lower.includes(p));
+};
+
+type GeoResult = {
+   country_iso: string | null;
+   city_name: string | null;
+   latitude: number | null;
+   longitude: number | null;
+   asn_number: number | null;
+   asn_org: string | null;
+   is_hosting: boolean;
+};
+
+const lookupGeo = async (ip: string): Promise<GeoResult | null> => {
+   const accountId = Deno.env.get('MAXMIND_ACCOUNT_ID');
+   const licenseKey = Deno.env.get('MAXMIND_LICENSE_KEY');
+   if (!accountId || !licenseKey) return null;
+
+   try {
+      const res = await fetch(`https://geolite.info/geoip/v2.1/city/${ip}`, {
+         headers: {
+            Authorization: 'Basic ' + btoa(`${accountId}:${licenseKey}`)
+         }
+      });
+      if (!res.ok) return null;
+
+      const data = await res.json();
+      const asnOrg: string | undefined = data.traits?.autonomous_system_organization;
+
+      return {
+         country_iso: data.country?.iso_code ?? null,
+         city_name: data.city?.names?.en ?? null,
+         latitude: data.location?.latitude ?? null,
+         longitude: data.location?.longitude ?? null,
+         asn_number: data.traits?.autonomous_system_number ?? null,
+         asn_org: asnOrg ?? null,
+         is_hosting: isHostingAsn(asnOrg)
+      };
+   } catch {
+      return null;
+   }
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') {
       return new Response('ok', { headers: corsHeaders });
@@ -46,13 +100,31 @@ serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, skipped: 'no-ip' }), { status: 200, headers: corsHeaders });
    }
 
+   // Query GeoLite2 BEFORE hashing — we need the raw IP for the lookup.
+   // If MaxMind is down or unconfigured, we still record the hash.
+   const geo = await lookupGeo(ip);
+
    const ipHash = await hashIp(ip, salt);
    const today = new Date().toISOString().slice(0, 10);
 
-   const { error } = await supabase.from('auth_ip_log').upsert(
-      { user_id: userId, ip_hash: ipHash, seen_on: today, last_seen_at: new Date().toISOString() },
-      { onConflict: 'user_id,ip_hash,seen_on' }
-   );
+   const row: Record<string, unknown> = {
+      user_id: userId,
+      ip_hash: ipHash,
+      seen_on: today,
+      last_seen_at: new Date().toISOString()
+   };
+
+   if (geo) {
+      row.country_iso = geo.country_iso;
+      row.city_name = geo.city_name;
+      row.latitude = geo.latitude;
+      row.longitude = geo.longitude;
+      row.asn_number = geo.asn_number;
+      row.asn_org = geo.asn_org;
+      row.is_hosting = geo.is_hosting;
+   }
+
+   const { error } = await supabase.from('auth_ip_log').upsert(row, { onConflict: 'user_id,ip_hash,seen_on' });
 
    if (error) {
       return new Response(JSON.stringify({ ok: false, error: error.message }), { status: 200, headers: corsHeaders });
