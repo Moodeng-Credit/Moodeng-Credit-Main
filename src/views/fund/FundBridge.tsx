@@ -1,12 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { ArrowLeft, Check, ChevronDown, ExternalLink, LoaderCircle } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import { createPublicClient, createWalletClient, custom, erc20Abi, fallback, formatUnits, http, parseUnits, type Address, type Chain, type Hex } from 'viem';
 import { arbitrum, base, bsc, mainnet, optimism, polygon } from 'wagmi/chains';
-import { useAccount, useDisconnect, type Connector } from 'wagmi';
+import { useAccount, useConnect, useDisconnect, type Connector } from 'wagmi';
 
 import { BASE_USDC_ADDRESS, getNetworkSvg } from '@/config/wagmiConfig';
+import { getBaseAccountConnector } from '@/lib/walletProvider';
+import type { RootState } from '@/store/store';
 
 // Eco Routes V3 quote API — permissionless, CORS-open (Access-Control-Allow-Origin: *),
 // no auth needed for quotes. Returns a solver-guaranteed destinationAmount on Base.
@@ -149,8 +152,19 @@ const IN_FLIGHT: ExecState[] = ['preparing', 'approving', 'publishing', 'submitt
 
 export default function FundBridge({ onClose }: { onClose: () => void }) {
    const { address, connector } = useAccount();
+   const { connectAsync, connectors } = useConnect();
    const { openConnectModal } = useConnectModal();
    const { disconnect } = useDisconnect();
+   const storedConnectorName = useSelector((s: RootState) => s.auth.user?.walletConnectorName);
+   // The wallet to connect for the default one-tap bridge when disconnected: the lender's
+   // last-used / saved wallet, so connecting + paying is a single action with no picker
+   // (mirrors Repay). Falls back to Base Account, then whatever connector exists. The
+   // "Bridge from a different wallet" checkbox opens the picker instead.
+   const preferredConnector = useMemo(() => {
+      const byName = storedConnectorName ? connectors.find((c) => c.name === storedConnectorName) : undefined;
+      return byName ?? getBaseAccountConnector(connectors) ?? connectors[0];
+   }, [connectors, storedConnectorName]);
+   const [useDifferentWallet, setUseDifferentWallet] = useState(false);
    const [selectedChain, setSelectedChain] = useState<number | null>(null);
    const [amount, setAmount] = useState('');
    const [isLoadingQuote, setIsLoadingQuote] = useState(false);
@@ -332,8 +346,9 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
       executeBridgeRef.current = executeBridge;
    }, [executeBridge]);
 
-   // Auto-continue: once a wallet connects via the picker, fire the bridge the lender
-   // already initiated — connect + sign as one intent, no second tap. Mirrors Repay.tsx.
+   // Auto-continue: once the wallet connects (via the default connectAsync, or the picker
+   // for a different wallet), fire the bridge the lender already initiated — connect + sign
+   // as one action, no second tap. Same pendingRef + effect pattern as Repay.tsx.
    useEffect(() => {
       if (address && connector && pendingBridgeRef.current) {
          pendingBridgeRef.current = false;
@@ -350,21 +365,31 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
       }
    }, [address, openConnectModal]);
 
-   // Primary action. Picker-first: the lender chooses the wallet holding their source-chain
-   // USDC. If one is connected, bridge with it in this tap; otherwise open the picker and
-   // auto-continue once connected so it stays a single intent (no second click).
+   // Primary action — one tap connects + pays. If a wallet is already connected, bridge with
+   // it. If not, connect the lender's usual wallet directly (connectAsync, no picker) and the
+   // auto-continue effect fires the bridge once connected — a single action, like Repay.
+   // Choosing a non-default source wallet is the "Bridge from a different wallet" checkbox.
    const handleBridge = () => {
       if (!selectedChainInfo || !amount || parseFloat(amount) <= 0) return;
       if (address && connector) {
          void executeBridgeRef.current(address as Address, connector);
          return;
       }
+      if (!preferredConnector) {
+         setExecError('Wallet unavailable — refresh and try again.');
+         setExecState('error');
+         return;
+      }
       pendingBridgeRef.current = true;
-      openConnectModal?.();
+      connectAsync({ connector: preferredConnector }).catch(() => {
+         // Lender dismissed the connect prompt — don't auto-bridge.
+         pendingBridgeRef.current = false;
+      });
    };
 
-   // Let the lender swap to a different wallet. Login is Supabase-based and independent of
-   // the wagmi connection, so disconnecting here never logs them out.
+   // "Bridge from a different wallet": open the picker so the lender connects the wallet that
+   // actually holds their source-chain USDC. Login is Supabase-based and independent of the
+   // wagmi connection, so disconnecting here never logs them out.
    const handleChangeWallet = () => {
       resetExec();
       pendingBridgeRef.current = false;
@@ -395,7 +420,8 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
          case 'done':
             return 'Sent to Base ✓';
          default:
-            return 'Bridge to Base';
+            // When disconnected, the tap connects first — say so up front.
+            return address ? 'Bridge to Base' : 'Connect & Bridge';
       }
    })();
 
@@ -546,28 +572,31 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
             </div>
          )}
 
-         {/* Source wallet — the lender picks any wallet holding their cross-chain USDC.
-             Independent of the wallet they logged in with; "Change" lets them swap it. */}
-         <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl border border-md-neutral-300 bg-md-neutral-100 px-4 py-3">
-            <div className="flex min-w-0 flex-col">
-               <span className="text-[11px] font-semibold uppercase tracking-wide text-md-neutral-800">Pay from</span>
-               {address ? (
-                  <span className="truncate text-md-b3 font-medium text-md-heading">
-                     {connector?.name ? `${connector.name} · ` : ''}
-                     {`${address.slice(0, 6)}…${address.slice(-4)}`}
-                  </span>
-               ) : (
-                  <span className="text-md-b3 font-medium text-md-neutral-800">No wallet connected</span>
-               )}
-            </div>
-            <button
-               type="button"
-               onClick={handleChangeWallet}
-               disabled={isBridging}
-               className="shrink-0 rounded-full border border-md-primary-300 px-3 py-1.5 text-[12px] font-semibold text-md-primary-1200 transition-colors hover:bg-md-primary-100 disabled:pointer-events-none disabled:opacity-50"
-            >
-               {address ? 'Change' : 'Connect'}
-            </button>
+         {/* Source wallet. The default is one tap: bridge from the wallet you're already
+             using, or — if disconnected — connect your usual wallet and pay in the same
+             action. Only tick the box if your cross-chain USDC sits in a different wallet,
+             which reveals the picker. */}
+         <div className="mb-3 flex flex-col gap-1.5">
+            {address ? (
+               <p className="text-[12px] text-md-neutral-800">
+                  Paying from{' '}
+                  <span className="font-semibold text-md-heading">{connector?.name || 'your wallet'}</span>
+                  <span className="text-md-neutral-1000"> · {`${address.slice(0, 6)}…${address.slice(-4)}`}</span>
+               </p>
+            ) : null}
+            <label className="flex w-fit cursor-pointer items-center gap-2 text-[12px] font-medium text-md-neutral-1000">
+               <input
+                  type="checkbox"
+                  checked={useDifferentWallet}
+                  disabled={isBridging}
+                  onChange={(e) => {
+                     setUseDifferentWallet(e.target.checked);
+                     if (e.target.checked) handleChangeWallet();
+                  }}
+                  className="h-4 w-4 rounded border-md-neutral-400 accent-md-primary-1200"
+               />
+               Bridge from a different wallet
+            </label>
          </div>
 
          {/* Single primary action — grey until a live quote is ready, then purple */}
