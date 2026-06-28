@@ -613,7 +613,8 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
 
          {quote && !isBridging && execState !== 'submitted' && execState !== 'done' && (
             <p className="mt-2 text-center text-[12px] font-normal text-md-neutral-800">
-               Live quote &middot; Powered by Eco
+               Live quote &middot; Powered by{' '}
+               <a href="https://eco.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-md-neutral-1000">Eco</a>
             </p>
          )}
             </div>
