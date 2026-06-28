@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPublicClient, createWalletClient, custom, erc20Abi, formatUnits, http, parseUnits, type Address, type Chain, type Hex } from 'viem';
 import { arbitrum, base, bsc, mainnet, optimism, polygon } from 'wagmi/chains';
 import { useAccount } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 
 import { BASE_USDC_ADDRESS, getNetworkSvg } from '@/config/wagmiConfig';
 
@@ -150,6 +151,7 @@ const IN_FLIGHT: ExecState[] = ['preparing', 'approving', 'publishing', 'submitt
 export default function FundBridge() {
    const navigate = useNavigate();
    const { address, connector } = useAccount();
+   const { openConnectModal } = useConnectModal();
    const [selectedChain, setSelectedChain] = useState<number | null>(null);
    const [amount, setAmount] = useState('');
    const [isLoadingQuote, setIsLoadingQuote] = useState(false);
@@ -221,8 +223,7 @@ export default function FundBridge() {
    const handleBridge = useCallback(async () => {
       if (!selectedChainInfo || !amount || parseFloat(amount) <= 0) return;
       if (!address || !connector) {
-         setExecError('Connect your wallet to bridge.');
-         setExecState('error');
+         openConnectModal?.();
          return;
       }
       const viemChain = VIEM_CHAINS[selectedChainInfo.id];
