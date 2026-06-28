@@ -987,6 +987,10 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
   const sentAmountRef = useRef(0);
 
   useEffect(() => {
+    if (arrived) setShowP2P(true);
+  }, [arrived]);
+
+  useEffect(() => {
     if (sentStatus === "arrived") { track("withdraw_confirmed", { exchange: "Binance", amount: sentAmountRef.current }); onConfirmed(sentAmountRef.current); }
     else if (sentStatus === "failed") track("withdraw_failed", { exchange: "Binance", amount: sentAmountRef.current });
     else if (sentStatus === "delayed") track("withdraw_delayed", { exchange: "Binance", amount: sentAmountRef.current });
