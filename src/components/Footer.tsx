@@ -92,7 +92,7 @@ export default function Footer() {
                         <a href="#" className="mt-3 hover:text-blue-300 transition-colors">
                            Contact
                         </a>
-                        <Link to="/privacy" className="mt-3 hover:text-blue-300 transition-colors">
+                        <Link to="/privacy-policy" className="mt-3 hover:text-blue-300 transition-colors">
                            Privacy Policy
                         </Link>
                         <Link to="/terms" className="mt-3 hover:text-blue-300 transition-colors">
