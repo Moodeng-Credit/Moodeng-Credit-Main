@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ArrowLeft, Check, ChevronDown, ExternalLink, LoaderCircle } from 'lucide-react';
 import { createPublicClient, createWalletClient, custom, erc20Abi, formatUnits, http, parseUnits, type Address, type Chain, type Hex } from 'viem';
 import { arbitrum, base, bsc, mainnet, optimism, polygon } from 'wagmi/chains';
-import { useAccount } from 'wagmi';
-import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { useAccount, useConnect } from 'wagmi';
 
 import { BASE_USDC_ADDRESS, getNetworkSvg } from '@/config/wagmiConfig';
+import { getBaseAccountConnector } from '@/lib/walletProvider';
 
 // Eco Routes V3 quote API — permissionless, CORS-open (Access-Control-Allow-Origin: *),
 // no auth needed for quotes. Returns a solver-guaranteed destinationAmount on Base.
@@ -149,7 +149,8 @@ const IN_FLIGHT: ExecState[] = ['preparing', 'approving', 'publishing', 'submitt
 
 export default function FundBridge({ onClose }: { onClose: () => void }) {
    const { address, connector } = useAccount();
-   const { openConnectModal } = useConnectModal();
+   const { connectAsync, connectors } = useConnect();
+   const baseAccountConnector = useMemo(() => getBaseAccountConnector(connectors), [connectors]);
    const [selectedChain, setSelectedChain] = useState<number | null>(null);
    const [amount, setAmount] = useState('');
    const [isLoadingQuote, setIsLoadingQuote] = useState(false);
@@ -220,10 +221,28 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
    // from the connected wallet's provider — the app's global wagmi config is untouched.
    const handleBridge = useCallback(async () => {
       if (!selectedChainInfo || !amount || parseFloat(amount) <= 0) return;
-      if (!address || !connector) {
-         openConnectModal?.();
-         return;
+
+      // Connect-to-sign: if there's no wallet yet, open Base Account and chain
+      // straight into the bridge within this same tap — matches the rest of the
+      // app (no second click). connectAsync is fired from a user gesture here.
+      let activeAddress = address as Address | undefined;
+      let activeConnector = connector;
+      if (!activeAddress || !activeConnector) {
+         if (!baseAccountConnector) {
+            setExecError('Wallet unavailable — refresh and try again.');
+            setExecState('error');
+            return;
+         }
+         try {
+            const res = await connectAsync({ connector: baseAccountConnector });
+            activeAddress = res.accounts[0] as Address;
+            activeConnector = baseAccountConnector as typeof connector;
+         } catch {
+            return; // user dismissed the connect popup
+         }
       }
+      if (!activeAddress || !activeConnector) return;
+
       const viemChain = VIEM_CHAINS[selectedChainInfo.id];
       if (!viemChain) {
          setExecError('Unsupported source chain.');
@@ -236,8 +255,8 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
       setExecState('preparing');
 
       try {
-         const provider = (await connector.getProvider()) as Parameters<typeof custom>[0];
-         const walletClient = createWalletClient({ account: address as Address, chain: viemChain, transport: custom(provider) });
+         const provider = (await activeConnector.getProvider()) as Parameters<typeof custom>[0];
+         const walletClient = createWalletClient({ account: activeAddress, chain: viemChain, transport: custom(provider) });
          const publicClient = createPublicClient({ chain: viemChain, transport: http() });
 
          // Make sure the wallet is on the source chain.
@@ -255,7 +274,7 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
 
          // Re-quote bound to the real wallet (correct recipient + a fresh deadline).
          const sourceAmount = parseUnits(amount, selectedChainInfo.decimals);
-         const data = await requestEcoQuote(selectedChainInfo, sourceAmount.toString(), address as Address);
+         const data = await requestEcoQuote(selectedChainInfo, sourceAmount.toString(), activeAddress);
          const qr = data.quoteResponse;
          const portal = data.contracts.sourcePortal;
          const amt = BigInt(qr.sourceAmount);
@@ -266,7 +285,7 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
             address: selectedChainInfo.usdc as Address,
             abi: erc20Abi,
             functionName: 'allowance',
-            args: [address as Address, portal],
+            args: [activeAddress, portal],
          })) as bigint;
          if (allowance < amt) {
             const approveHash = await walletClient.writeContract({
@@ -275,7 +294,7 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
                functionName: 'approve',
                args: [portal, amt],
                chain: viemChain,
-               account: address as Address,
+               account: activeAddress,
             });
             await publicClient.waitForTransactionReceipt({ hash: approveHash });
          }
@@ -284,7 +303,7 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
          setExecState('publishing');
          const reward = {
             deadline: BigInt(qr.deadline),
-            creator: address as Address,
+            creator: activeAddress,
             prover: data.contracts.prover,
             nativeAmount: 0n,
             tokens: [{ token: qr.sourceToken, amount: amt }],
@@ -295,7 +314,7 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
             functionName: 'publishAndFund',
             args: [BigInt(BASE_CHAIN_ID), qr.encodedRoute, reward, false],
             chain: viemChain,
-            account: address as Address,
+            account: activeAddress,
             value: 0n,
          });
          setTxHash(hash);
@@ -308,7 +327,7 @@ export default function FundBridge({ onClose }: { onClose: () => void }) {
          setExecError(/User rejected|denied|cancell?ed/i.test(msg) ? 'Transaction cancelled.' : msg);
          setExecState('error');
       }
-   }, [selectedChainInfo, amount, address, connector]);
+   }, [selectedChainInfo, amount, address, connector, connectAsync, baseAccountConnector]);
 
    const isBridging = IN_FLIGHT.includes(execState);
    const explorerUrl =
