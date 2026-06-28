@@ -1379,14 +1379,6 @@ export default function AccountSettings() {
                      actionLabel={emailActionLabel}
                      onAction={canEditEmail ? () => setShowEmailModal(true) : undefined}
                   />
-                  <ReadOnlyField
-                     label="Telegram Alerts"
-                     value={telegramAlertsValue}
-                     actionLabel={user?.chatId ? undefined : 'Connect'}
-                     onAction={user?.chatId ? undefined : () => setShowTelegramAlertsModal(true)}
-                  />
-                  <ReadOnlyField label="WhatsApp" value="Coming soon" disabled />
-                  <ReadOnlyField label="LINE" value="Coming soon" disabled />
                   {isBorrower ? (
                      <ReadOnlyField
                         label="Bio Info"
@@ -1397,20 +1389,35 @@ export default function AccountSettings() {
                   ) : null}
                </div>
 
-               {/* Language */}
+               {/* Preferences (Appearance + Language) */}
                <div className="flex flex-col gap-3">
-                  <h2 className="text-md-h5 font-semibold text-md-heading">{t('language.label')}</h2>
-                  <p className="text-md-b2 font-medium text-md-neutral-700">{t('language.settingsDescription')}</p>
-                  <div className="rounded-md-input border border-md-neutral-600 bg-md-neutral-100 p-3 shadow-md-card">
-                     <LanguageSwitcher tone="light" variant="full" />
+                  <h2 className="text-md-h5 font-semibold text-md-heading">Preferences</h2>
+                  <p className="text-md-b2 font-medium text-md-neutral-700">Choose how Moodeng looks and reads on this device.</p>
+
+                  {/* Dark Mode */}
+                  <div className="flex flex-col gap-2">
+                     <div className="flex items-center justify-between">
+                        <p className="text-md-b2 font-semibold text-md-heading">Dark Mode</p>
+                        <Toggle checked={isDarkMode} onChange={(checked) => setMode(checked ? 'dark' : 'light')} />
+                     </div>
+                     <p className="text-md-b3 font-medium text-md-neutral-1400">Use darker app surfaces across the website.</p>
+                  </div>
+
+                  {/* Language */}
+                  <div className="flex flex-col gap-md-1">
+                     <p className="text-md-b2 font-semibold text-md-heading">{t('language.label')}</p>
+                     <p className="text-md-b3 font-medium text-md-neutral-1400">{t('language.settingsDescription')}</p>
+                     <div className="rounded-md-input border border-md-neutral-600 bg-md-neutral-100 p-3 shadow-md-card">
+                        <LanguageSwitcher tone="light" variant="full" />
+                     </div>
                   </div>
                </div>
 
                {/* Security */}
                <div className="flex flex-col gap-3">
-                  <h2 className="text-md-h5 font-semibold text-md-heading">Security</h2>
+                  <h2 className="text-md-h5 font-semibold text-md-heading">Security &amp; Verification</h2>
                   <p className="text-md-b2 font-medium text-md-neutral-700">
-                     This information will be shown publicly so be careful what information you provide
+                     Manage how you sign in and the identity verification on your account.
                   </p>
 
                   {isEmailPasswordUser ? (
@@ -1457,9 +1464,19 @@ export default function AccountSettings() {
                      </div>
                   </div>
 
-                  {/* Wallet */}
+               </div>
+
+               {/* Wallet */}
+               <div className="flex flex-col gap-3">
+                  <h2 className="text-md-h5 font-semibold text-md-heading">Wallet</h2>
+                  <p className="text-md-b2 font-medium text-md-neutral-700">
+                     {isBorrower
+                        ? 'The Base Account that receives funded loans and is used for repayments.'
+                        : 'The wallet you use to fund loans and receive repayments.'}
+                  </p>
+
                   <div className="flex flex-col gap-md-2 w-full relative">
-                     <p className="text-md-b2 font-semibold text-md-heading">Wallet</p>
+                     <p className="text-md-b2 font-semibold text-md-heading">Connected Wallet</p>
                      <div className="flex items-center justify-between bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
                         {hasWallet ? (
                            <>
@@ -1633,28 +1650,24 @@ export default function AccountSettings() {
                   ) : null}
                </div>
 
-               {/* Appearance */}
-               <div className="flex flex-col gap-3">
-                  <h2 className="text-md-h5 font-semibold text-md-heading">Appearance</h2>
-                  <p className="text-md-b2 font-medium text-md-neutral-700">Choose how Moodeng looks on this device.</p>
-
-                  <div className="flex flex-col gap-2">
-                     <div className="flex items-center justify-between">
-                        <p className="text-md-b2 font-semibold text-md-heading">Dark Mode</p>
-                        <Toggle checked={isDarkMode} onChange={(checked) => setMode(checked ? 'dark' : 'light')} />
-                     </div>
-                     <p className="text-md-b3 font-medium text-md-neutral-1400">Use darker app surfaces across the website.</p>
-                  </div>
-               </div>
-
                {/* Notifications */}
                <div className="flex flex-col gap-3">
                   <h2 className="text-md-h5 font-semibold text-md-heading">Notifications</h2>
                   <p className="text-md-b2 font-medium text-md-neutral-700">
                      {hasTelegramPlaceholderEmail
                         ? 'Add a real email address before turning on email notifications.'
-                        : 'Get notified of activity going on with your account. Notifications will be sent to the email that you have provided.'}
+                        : 'Choose where to receive alerts and which account activity to be notified about.'}
                   </p>
+
+                  {/* Delivery channels */}
+                  <ReadOnlyField
+                     label="Telegram Alerts"
+                     value={telegramAlertsValue}
+                     actionLabel={user?.chatId ? undefined : 'Connect'}
+                     onAction={user?.chatId ? undefined : () => setShowTelegramAlertsModal(true)}
+                  />
+                  <ReadOnlyField label="WhatsApp" value="Coming soon" disabled />
+                  <ReadOnlyField label="LINE" value="Coming soon" disabled />
 
                   <div className="flex flex-col gap-2">
                      {/* Account Activity */}
