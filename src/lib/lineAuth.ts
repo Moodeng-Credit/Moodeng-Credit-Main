@@ -2,23 +2,8 @@ const LINE_AUTHORIZE_URL = 'https://access.line.me/oauth2/v2.1/authorize';
 
 export const LINE_OAUTH_STATE_KEY = 'line_oauth_state';
 
-/**
- * Cookie `domain` attribute so the state cookie is shared across every
- * moodeng.app subdomain (apex, dashboard, staging.dashboard). If login is ever
- * initiated on one subdomain and LINE returns to another, a host-only cookie
- * would be invisible to the callback and produce a spurious "state mismatch".
- *
- * Returns '' for hosts where a `.moodeng.app` cookie can't be set (localhost,
- * preview deploys) — there a host-only cookie is correct and a foreign domain
- * attribute would be silently rejected by the browser.
- */
-function lineStateCookieDomain(): string {
-   if (typeof window === 'undefined') return '';
-   const host = window.location.hostname;
-   return host === 'moodeng.app' || host.endsWith('.moodeng.app')
-      ? '; domain=.moodeng.app'
-      : '';
-}
+/** Max number of concurrent in-flight login states we remember at once. */
+const MAX_TRACKED_STATES = 10;
 
 /** Public LINE Login channel id (safe to expose to the browser). */
 export function getLineChannelId(): string {
@@ -45,53 +30,103 @@ export function getLineRedirectUri(): string {
    return `${origin}/auth/line/callback`;
 }
 
-/**
- * Persist the CSRF `state` so the callback can verify it after the round-trip.
- *
- * Uses a cookie as the primary store because `sessionStorage` is NOT reliable
- * across an OAuth redirect on every browser (mobile in-app browsers / Safari can
- * return into a fresh tab where per-tab sessionStorage is empty, producing a
- * spurious "state mismatch"). A `SameSite=Lax` cookie is sent on the top-level
- * GET redirect back from LINE and survives those cases. sessionStorage/localStorage
- * are kept as belt-and-suspenders fallbacks.
- */
-export function writeLineState(state: string): void {
+// --- state persistence -------------------------------------------------------
+//
+// We persist a SET of recently-issued CSRF states, not a single value. A single
+// shared slot (one cookie / one localStorage key) cannot survive *concurrent*
+// logins: opening LINE login in a second tab overwrites the first tab's state,
+// so when the first tab returns its `state` no longer matches and the callback
+// reports a spurious "state mismatch". Tracking a small rolling set lets every
+// in-flight login round-trip independently while keeping CSRF protection (the
+// returned state must still have been minted by THIS browser, is high-entropy,
+// and is short-lived).
+//
+// Storage layers, in order of reliability across an OAuth redirect:
+//   - cookie:        SameSite=Lax, sent on the top-level GET redirect back from
+//                    LINE; survives returns into a fresh tab where per-tab
+//                    sessionStorage would be empty.
+//   - localStorage:  shared across tabs, survives reloads.
+//   - sessionStorage: belt-and-suspenders for the same-tab case.
+// States are comma-joined; UUIDs contain no commas so no escaping is needed.
+
+function cookieAttributes(): string {
+   const secure =
+      typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
+   // 10-minute lifetime. Lax so the cookie rides the redirect back from LINE.
+   return `; path=/; max-age=600; SameSite=Lax${secure}`;
+}
+
+function readCookieStates(): string[] {
+   if (typeof document === 'undefined') return [];
+   const match = document.cookie.match(new RegExp(`(?:^|; )${LINE_OAUTH_STATE_KEY}=([^;]*)`));
+   if (!match?.[1]) return [];
+   return decodeURIComponent(match[1]).split(',').filter(Boolean);
+}
+
+function readStorageStates(store: Storage | undefined): string[] {
+   try {
+      const raw = store?.getItem(LINE_OAUTH_STATE_KEY);
+      return raw ? raw.split(',').filter(Boolean) : [];
+   } catch {
+      return [];
+   }
+}
+
+/** Union of every known state across all stores. */
+function readAllStates(): string[] {
+   const all = [
+      ...readCookieStates(),
+      ...readStorageStates(typeof localStorage !== 'undefined' ? localStorage : undefined),
+      ...readStorageStates(typeof sessionStorage !== 'undefined' ? sessionStorage : undefined)
+   ];
+   return Array.from(new Set(all));
+}
+
+/** Overwrite every store with `states` (empty array clears them). */
+function persistStates(states: string[]): void {
+   const value = states.join(',');
    if (typeof document !== 'undefined') {
-      // 10-minute lifetime; cleared on the callback. Lax so it rides the redirect back.
-      document.cookie = `${LINE_OAUTH_STATE_KEY}=${state}; path=/; max-age=600; SameSite=Lax${lineStateCookieDomain()}`;
+      if (states.length === 0) {
+         document.cookie = `${LINE_OAUTH_STATE_KEY}=${cookieAttributes().replace('max-age=600', 'max-age=0')}`;
+      } else {
+         document.cookie = `${LINE_OAUTH_STATE_KEY}=${value}${cookieAttributes()}`;
+      }
    }
    try {
-      sessionStorage.setItem(LINE_OAUTH_STATE_KEY, state);
-      localStorage.setItem(LINE_OAUTH_STATE_KEY, state);
+      if (states.length === 0) {
+         localStorage.removeItem(LINE_OAUTH_STATE_KEY);
+         sessionStorage.removeItem(LINE_OAUTH_STATE_KEY);
+      } else {
+         localStorage.setItem(LINE_OAUTH_STATE_KEY, value);
+         sessionStorage.setItem(LINE_OAUTH_STATE_KEY, value);
+      }
    } catch {
       // storage disabled — cookie still covers us
    }
 }
 
-/** Read the stored CSRF state from any available store (cookie first). */
-export function readLineState(): string | null {
-   if (typeof document !== 'undefined') {
-      const match = document.cookie.match(new RegExp(`(?:^|; )${LINE_OAUTH_STATE_KEY}=([^;]*)`));
-      if (match?.[1]) return decodeURIComponent(match[1]);
-   }
-   try {
-      return sessionStorage.getItem(LINE_OAUTH_STATE_KEY) ?? localStorage.getItem(LINE_OAUTH_STATE_KEY);
-   } catch {
-      return null;
-   }
+/** Remember a freshly-issued CSRF `state` (kept alongside other in-flight ones). */
+export function writeLineState(state: string): void {
+   const next = [...readAllStates().filter((s) => s !== state), state].slice(-MAX_TRACKED_STATES);
+   persistStates(next);
 }
 
-/** Clear the stored CSRF state from every store. */
+/**
+ * Verify a returned `state` and consume it (one-time use). Returns true if the
+ * state was one we issued. Other in-flight states are preserved so logins in
+ * other tabs can still complete.
+ */
+export function consumeLineState(returned: string | null | undefined): boolean {
+   if (!returned) return false;
+   const all = readAllStates();
+   if (!all.includes(returned)) return false;
+   persistStates(all.filter((s) => s !== returned));
+   return true;
+}
+
+/** Clear every stored CSRF state (e.g. on hard logout). */
 export function clearLineState(): void {
-   if (typeof document !== 'undefined') {
-      document.cookie = `${LINE_OAUTH_STATE_KEY}=; path=/; max-age=0; SameSite=Lax${lineStateCookieDomain()}`;
-   }
-   try {
-      sessionStorage.removeItem(LINE_OAUTH_STATE_KEY);
-      localStorage.removeItem(LINE_OAUTH_STATE_KEY);
-   } catch {
-      // ignore
-   }
+   persistStates([]);
 }
 
 /**
