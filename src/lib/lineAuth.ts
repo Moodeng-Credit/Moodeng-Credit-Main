@@ -2,6 +2,24 @@ const LINE_AUTHORIZE_URL = 'https://access.line.me/oauth2/v2.1/authorize';
 
 export const LINE_OAUTH_STATE_KEY = 'line_oauth_state';
 
+/**
+ * Cookie `domain` attribute so the state cookie is shared across every
+ * moodeng.app subdomain (apex, dashboard, staging.dashboard). If login is ever
+ * initiated on one subdomain and LINE returns to another, a host-only cookie
+ * would be invisible to the callback and produce a spurious "state mismatch".
+ *
+ * Returns '' for hosts where a `.moodeng.app` cookie can't be set (localhost,
+ * preview deploys) — there a host-only cookie is correct and a foreign domain
+ * attribute would be silently rejected by the browser.
+ */
+function lineStateCookieDomain(): string {
+   if (typeof window === 'undefined') return '';
+   const host = window.location.hostname;
+   return host === 'moodeng.app' || host.endsWith('.moodeng.app')
+      ? '; domain=.moodeng.app'
+      : '';
+}
+
 /** Public LINE Login channel id (safe to expose to the browser). */
 export function getLineChannelId(): string {
    const id = import.meta.env.VITE_LINE_CHANNEL_ID as string | undefined;
@@ -40,7 +58,7 @@ export function getLineRedirectUri(): string {
 export function writeLineState(state: string): void {
    if (typeof document !== 'undefined') {
       // 10-minute lifetime; cleared on the callback. Lax so it rides the redirect back.
-      document.cookie = `${LINE_OAUTH_STATE_KEY}=${state}; path=/; max-age=600; SameSite=Lax`;
+      document.cookie = `${LINE_OAUTH_STATE_KEY}=${state}; path=/; max-age=600; SameSite=Lax${lineStateCookieDomain()}`;
    }
    try {
       sessionStorage.setItem(LINE_OAUTH_STATE_KEY, state);
@@ -66,7 +84,7 @@ export function readLineState(): string | null {
 /** Clear the stored CSRF state from every store. */
 export function clearLineState(): void {
    if (typeof document !== 'undefined') {
-      document.cookie = `${LINE_OAUTH_STATE_KEY}=; path=/; max-age=0; SameSite=Lax`;
+      document.cookie = `${LINE_OAUTH_STATE_KEY}=; path=/; max-age=0; SameSite=Lax${lineStateCookieDomain()}`;
    }
    try {
       sessionStorage.removeItem(LINE_OAUTH_STATE_KEY);
