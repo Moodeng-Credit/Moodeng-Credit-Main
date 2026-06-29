@@ -1,7 +1,8 @@
 import { useState } from 'react';
 
 import LineLoginButton from '@/components/LineLoginButton';
-import TelegramAuthButton from '@/components/TelegramAuthButton';
+
+import TelegramIconTile from './TelegramIconTile';
 
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
@@ -100,15 +101,14 @@ export function SocialAuthButtons({ isSignUp, onTelegramAuth }: SocialAuthButton
          )}
          {googleError ? <p className="text-sm font-medium leading-5 text-[#B91C1C]">{googleError}</p> : null}
 
-         {/* Telegram: show the real Telegram widget directly */}
-         {botUsername && (
-            <div className="flex min-h-[56px] w-full min-w-0 items-center justify-center overflow-hidden rounded-xl bg-[#1A8DFF] px-3 py-2 shadow-[0px_2px_4px_rgba(27,28,29,0.04)]">
-               <TelegramAuthButton onAuth={onTelegramAuth} buttonSize="large" useRedirect />
-            </div>
-         )}
+         {/* Secondary providers as small logo-square tiles in a centered row (Polymarket-style) */}
+         <div className="flex w-full min-w-0 items-center justify-center gap-3">
+            {/* Telegram: clean logo tile with the working widget layered invisibly on top */}
+            {botUsername && <TelegramIconTile onAuth={onTelegramAuth} />}
 
-         {/* LINE: redirects to LINE Login OAuth, handled by the line-login edge fn */}
-         <LineLoginButton isSignUp={isSignUp} />
+            {/* LINE: redirects to LINE Login OAuth, handled by the line-login edge fn */}
+            <LineLoginButton isSignUp={isSignUp} iconOnly />
+         </div>
       </div>
    );
 }
