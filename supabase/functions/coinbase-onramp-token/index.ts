@@ -23,14 +23,34 @@ import { SignJWT, importJWK, importPKCS8, base64url } from 'npm:jose@5';
 // Optional:
 //   CDP_ONRAMP_HOST    — defaults to api.developer.coinbase.com
 
-const corsHeaders = {
-   'Access-Control-Allow-Origin': '*',
-   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-   'Access-Control-Allow-Methods': 'POST, OPTIONS'
+// Coinbase Onramp's security requirements forbid a wildcard Access-Control-Allow-Origin on
+// the token-minting endpoint. We reflect the caller's Origin only when it's an allow-listed
+// Moodeng frontend; otherwise no ACAO header is sent and the browser blocks the response.
+// An extra origin can be added at runtime via the CDP_EXTRA_ALLOWED_ORIGIN secret (e.g. a
+// Vercel preview deploy) without a code change.
+const ALLOWED_ORIGINS = new Set(
+   [
+      'http://localhost:3000',
+      'https://staging.dashboard.moodeng.app',
+      'https://dashboard.moodeng.app',
+      Deno.env.get('CDP_EXTRA_ALLOWED_ORIGIN')?.trim()
+   ].filter((origin): origin is string => Boolean(origin))
+);
+
+const corsHeadersFor = (origin: string | null): Record<string, string> => {
+   const headers: Record<string, string> = {
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      Vary: 'Origin'
+   };
+   if (origin && ALLOWED_ORIGINS.has(origin)) {
+      headers['Access-Control-Allow-Origin'] = origin;
+   }
+   return headers;
 };
 
-const jsonResponse = (body: Record<string, unknown>, status = 200) =>
-   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+const jsonResponse = (body: Record<string, unknown>, status = 200, cors: Record<string, string> = {}) =>
+   new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
 const isEvmAddress = (value: unknown): value is string =>
    typeof value === 'string' && /^0x[a-fA-F0-9]{40}$/.test(value);
@@ -102,12 +122,14 @@ async function generateCdpJwt(
 }
 
 serve(async (req) => {
+   const cors = corsHeadersFor(req.headers.get('Origin'));
+
    if (req.method === 'OPTIONS') {
-      return new Response('ok', { headers: corsHeaders });
+      return new Response('ok', { headers: cors });
    }
 
    if (req.method !== 'POST') {
-      return jsonResponse({ error: 'Method not allowed' }, 405);
+      return jsonResponse({ error: 'Method not allowed' }, 405, cors);
    }
 
    try {
@@ -115,12 +137,12 @@ serve(async (req) => {
       const apiKeySecret = Deno.env.get('CDP_API_KEY_SECRET');
       if (!apiKeyId || !apiKeySecret) {
          console.error('[coinbase-onramp-token] CDP_API_KEY_ID / CDP_API_KEY_SECRET not configured');
-         return jsonResponse({ error: 'Server misconfigured' }, 500);
+         return jsonResponse({ error: 'Server misconfigured' }, 500, cors);
       }
 
       const accessToken = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '').trim();
       if (!accessToken) {
-         return jsonResponse({ error: 'Missing authorization token' }, 401);
+         return jsonResponse({ error: 'Missing authorization token' }, 401, cors);
       }
 
       const supabase = createClient(
@@ -135,7 +157,7 @@ serve(async (req) => {
       } = await supabase.auth.getUser(accessToken);
 
       if (userError || !user) {
-         return jsonResponse({ error: 'Invalid authorization token' }, 401);
+         return jsonResponse({ error: 'Invalid authorization token' }, 401, cors);
       }
 
       // Destination address: prefer the caller-supplied connected wallet (validated), else
@@ -159,7 +181,7 @@ serve(async (req) => {
       }
 
       if (!address) {
-         return jsonResponse({ error: 'No destination wallet address available', code: 'NO_WALLET' }, 400);
+         return jsonResponse({ error: 'No destination wallet address available', code: 'NO_WALLET' }, 400, cors);
       }
 
       const host = (Deno.env.get('CDP_ONRAMP_HOST')?.trim() || 'api.developer.coinbase.com').replace(/^https?:\/\//, '');
@@ -186,13 +208,13 @@ serve(async (req) => {
 
       if (!cdpResponse.ok || !cdpBody?.token) {
          console.error('[coinbase-onramp-token] CDP token request failed:', cdpResponse.status, cdpBody);
-         return jsonResponse({ error: 'Failed to create Coinbase session' }, 502);
+         return jsonResponse({ error: 'Failed to create Coinbase session' }, 502, cors);
       }
 
-      return jsonResponse({ token: cdpBody.token });
+      return jsonResponse({ token: cdpBody.token }, 200, cors);
    } catch (error) {
       const message = error instanceof Error ? error.message : 'Internal server error';
       console.error('[coinbase-onramp-token] Unhandled error:', message);
-      return jsonResponse({ error: message }, 500);
+      return jsonResponse({ error: message }, 500, cors);
    }
 });
