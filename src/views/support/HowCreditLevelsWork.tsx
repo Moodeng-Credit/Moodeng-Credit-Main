@@ -627,6 +627,19 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                ))}
             </div>
             <p className="hclw-loan-footnote">Most borrowers use both — trust loans to stay active, credit loans to climb.</p>
+
+            <figure className="hclw-trust-scene">
+               <p className="hclw-trust-scene__lead">Trust is the currency before the credit.</p>
+               <img
+                  src="/hippos/trust-building-scene.png"
+                  alt="A borrower hippo and a squirrel building trust with a lender at the Moodeng lending desk"
+                  loading="lazy"
+               />
+               <figcaption>
+                  Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that lenders can
+                  see. That trust is what gets your next request funded faster.
+               </figcaption>
+            </figure>
          </section>
 
          <section className="credit-leveling-section hclw-tips-section">
