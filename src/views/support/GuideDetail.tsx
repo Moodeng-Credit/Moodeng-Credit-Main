@@ -1,6 +1,7 @@
 import { Navigate, useParams } from 'react-router-dom';
 
 import { useLocalization } from '@/i18n';
+import HowCreditLevelsWork from '@/views/support/HowCreditLevelsWork';
 import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
 import SupportHeader from '@/views/support/components/SupportHeader';
 import { getGuideForLocale } from '@/views/support/data/guides';
@@ -46,6 +47,11 @@ export default function GuideDetail() {
 
    if (!guide) {
       return <Navigate to="/support/guides" replace />;
+   }
+
+   // This guide gets a richer, SEO-optimized layout with custom graphics.
+   if (slug === 'how-credit-levels-work') {
+      return <HowCreditLevelsWork />;
    }
 
    return (
