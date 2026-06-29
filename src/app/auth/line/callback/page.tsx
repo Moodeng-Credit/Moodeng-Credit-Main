@@ -3,6 +3,7 @@ import { type JSX, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
+import { setLastUsedAuth } from '@/lib/lastUsedAuth';
 import { LINE_OAUTH_STATE_KEY, getLineRedirectUri } from '@/lib/lineAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
@@ -54,6 +55,8 @@ export default function LineCallbackPage(): JSX.Element {
             setError(sessionError.message);
             return;
          }
+
+         setLastUsedAuth('line');
 
          const { data: sessionData } = await supabase.auth.getSession();
          const userId = sessionData?.session?.user?.id;
