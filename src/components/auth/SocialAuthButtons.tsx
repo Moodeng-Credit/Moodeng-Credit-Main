@@ -2,9 +2,11 @@ import { useState } from 'react';
 
 import LineLoginButton from '@/components/LineLoginButton';
 
+import LastUsedBadge from './LastUsedBadge';
 import TelegramIconTile from './TelegramIconTile';
 
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { getLastUsedAuth } from '@/lib/lastUsedAuth';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 interface SocialAuthButtonsProps {
@@ -43,6 +45,7 @@ export function SocialAuthButtons({ isSignUp, onTelegramAuth }: SocialAuthButton
    const botUsername = 'moodengnewbranchbot';
    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
    const [googleError, setGoogleError] = useState('');
+   const [lastUsed] = useState(getLastUsedAuth);
 
    const googleLabel = isSignUp ? 'Sign Up with Google' : 'Sign In with Google';
    const hasGoogleClientId = typeof clientId === 'string' && clientId.trim().length > 0 && !clientId.startsWith('encrypted:');
@@ -82,32 +85,43 @@ export function SocialAuthButtons({ isSignUp, onTelegramAuth }: SocialAuthButton
       <div className="flex w-full max-w-[400px] min-w-0 flex-col gap-4">
          {/* Google: uses Supabase OAuth redirect flow */}
          {clientId && (
-            <button
-               type="button"
-               onClick={handleGoogleClick}
-               disabled={isGoogleLoading}
-               className={`${btnBase} border border-[#B5ACBE] bg-[#FDFCFD] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] dark:border-[#40354F] dark:bg-[#17121F] ${
-                  isGoogleLoading ? 'opacity-60 cursor-not-allowed' : ''
-               }`}
-            >
-               <GoogleLogo />
-               <span
-                  className="min-w-0 truncate text-base font-medium tracking-[-0.02em] text-[#141218] dark:text-[#F8F4FF]"
-                  style={{ fontFamily: 'SF Pro Display, sans-serif' }}
+            <div className="relative w-full">
+               <button
+                  type="button"
+                  onClick={handleGoogleClick}
+                  disabled={isGoogleLoading}
+                  className={`${btnBase} border border-[#B5ACBE] bg-[#FDFCFD] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] dark:border-[#40354F] dark:bg-[#17121F] ${
+                     isGoogleLoading ? 'opacity-60 cursor-not-allowed' : ''
+                  }`}
                >
-                  {isGoogleLoading ? 'Redirecting...' : googleLabel}
-               </span>
-            </button>
+                  <GoogleLogo />
+                  <span
+                     className="min-w-0 truncate text-base font-medium tracking-[-0.02em] text-[#141218] dark:text-[#F8F4FF]"
+                     style={{ fontFamily: 'SF Pro Display, sans-serif' }}
+                  >
+                     {isGoogleLoading ? 'Redirecting...' : googleLabel}
+                  </span>
+               </button>
+               {lastUsed === 'google' && <LastUsedBadge className="-top-2 right-3" />}
+            </div>
          )}
          {googleError ? <p className="text-sm font-medium leading-5 text-[#B91C1C]">{googleError}</p> : null}
 
          {/* Secondary providers as small logo-square tiles in a centered row (Polymarket-style) */}
          <div className="flex w-full min-w-0 items-center justify-center gap-3">
             {/* Telegram: clean logo tile with the working widget layered invisibly on top */}
-            {botUsername && <TelegramIconTile onAuth={onTelegramAuth} />}
+            {botUsername && (
+               <div className="relative">
+                  <TelegramIconTile onAuth={onTelegramAuth} />
+                  {lastUsed === 'telegram' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
+               </div>
+            )}
 
             {/* LINE: redirects to LINE Login OAuth, handled by the line-login edge fn */}
-            <LineLoginButton isSignUp={isSignUp} iconOnly />
+            <div className="relative">
+               <LineLoginButton isSignUp={isSignUp} iconOnly />
+               {lastUsed === 'line' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
+            </div>
          </div>
       </div>
    );

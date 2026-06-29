@@ -3,6 +3,7 @@ import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { clearClientAuthState } from '@/lib/authSessionCleanup';
+import { setLastUsedAuth } from '@/lib/lastUsedAuth';
 import { recordSessionIp } from '@/lib/recordSessionIp';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
@@ -396,6 +397,7 @@ export const loginUser = createAsyncThunk(
       }
 
       const user = await fetchCurrentUserProfile();
+      setLastUsedAuth('email');
       return {
          username: user.username,
          user
@@ -405,6 +407,7 @@ export const loginUser = createAsyncThunk(
 
 export const loginWithGoogle = createAsyncThunk('auth/loginWithGoogle', async ({ googleCredential }: { googleCredential: string }) => {
    const user = await signInWithGoogleCredential(googleCredential);
+   setLastUsedAuth('google');
    return {
       username: user.username,
       user
@@ -413,6 +416,7 @@ export const loginWithGoogle = createAsyncThunk('auth/loginWithGoogle', async ({
 
 export const loginWithTelegram = createAsyncThunk('auth/loginWithTelegram', async ({ telegramAuthData }: { telegramAuthData: string }) => {
    const user = await completeTelegramAuth(telegramAuthData);
+   setLastUsedAuth('telegram');
    return {
       username: user.username,
       user
