@@ -19,10 +19,10 @@ const PAGE_DESCRIPTION =
 const CANONICAL_PATH = '/learn/how-credit-levels-work';
 
 const levels = [
-   { level: 'Level 1', limit: '$15', state: 'Start', note: 'Everyone starts here', unlock: 'Verify with World ID and make your first request.' },
-   { level: 'Level 2', limit: '$20', state: 'Next', note: 'First unlock', unlock: 'Repay a $15 Credit Growth Loan in full and on time.' },
-   { level: 'Level 3', limit: '$40', state: 'Locked', note: 'Keep climbing', unlock: 'Repay a $20 Credit Growth Loan in full and on time.' },
-   { level: 'Level 4', limit: '$60', state: 'Locked', note: 'Higher limit', unlock: 'Repay a $40 Credit Growth Loan in full and on time.' }
+   { level: 'Level 1', limit: '$15', state: 'Start', unlock: 'Verify, then make your first request' },
+   { level: 'Level 2', limit: '$20', state: 'Next', unlock: 'Repay your $15 loan on time' },
+   { level: 'Level 3', limit: '$40', state: 'Locked', unlock: 'Repay your $20 loan on time' },
+   { level: 'Level 4', limit: '$60', state: 'Locked', unlock: 'Repay your $40 loan on time' }
 ];
 
 const pillars = [
@@ -55,28 +55,21 @@ const loanTypes = [
       tag: 'Below your current limit',
       title: 'Trust-Building Loan',
       altName: null,
-      definition: 'Any loan for less than your current limit. It lets you prove you repay reliably without borrowing your full cap.',
+      definition: 'A loan for less than your current limit.',
       effectLimit: 'Stays the same',
       effectTrust: 'Goes up',
-      useWhen: 'You need a smaller amount, or want to build a track record before going for your full limit.'
+      useWhen: 'you need a smaller amount, or want to build trust first.'
    },
    {
       tone: 'credit',
       tag: 'Your full current limit',
       title: 'Credit-Building Loan',
       altName: 'also called a Credit Growth Loan',
-      definition: 'A loan for your full current limit, repaid on the agreed terms by the due date. This is the level-up loan.',
+      definition: 'A loan for your full current limit. The level-up loan.',
       effectLimit: 'Unlocks the next level',
       effectTrust: 'Goes up',
-      useWhen: 'You are confident you can repay on time and want to grow your borrowing limit.'
+      useWhen: 'you’re ready to grow your limit and sure you can repay on time.'
    }
-];
-
-const journey = [
-   { phase: 'Cycle 1', title: 'Borrow $15 · repay on time', detail: 'Your first Credit Growth Loan clears cleanly. Your limit unlocks $20.' },
-   { phase: 'Cycle 2', title: 'Borrow $20 · repay on time', detail: 'A second on-time repayment. Your limit unlocks $40.' },
-   { phase: 'Cycle 3', title: 'Borrow $40 · repay on time', detail: 'Your track record is building and lenders fund you faster. Your limit unlocks $60.' },
-   { phase: 'Reached', title: 'Borrowing at $60', detail: 'Four clean cycles take you from $15 to $60 — plus a Trust Score that travels with your wallet.' }
 ];
 
 const tips = [
@@ -85,13 +78,6 @@ const tips = [
    { kind: 'dont', text: 'Do not take a full-limit loan you are unsure about — one missed repayment pauses your progress.' },
    { kind: 'dont', text: 'Do not expect extra or early payments to skip a level. Growth is always one step at a time.' }
 ] as const;
-
-const takeaways = [
-   'Everyone starts at Level 1 with a $15 borrowing limit.',
-   'Limits grow one step at a time: $15 → $20 → $40 → $60.',
-   'Only a full-limit Credit Growth Loan, repaid on time, levels you up.',
-   'Smaller loans build your Trust Score but keep your limit the same.'
-];
 
 const relatedGuides = [
    {
@@ -415,6 +401,41 @@ function useGuideSeo(variant: CreditLevelsVariant): void {
    }, [variant]);
 }
 
+function PillarIcon({ name }: { name: string }): JSX.Element {
+   const props = {
+      width: 26,
+      height: 26,
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      strokeWidth: 2,
+      strokeLinecap: 'round' as const,
+      strokeLinejoin: 'round' as const
+   };
+   if (name === 'wallet') {
+      return (
+         <svg {...props} aria-hidden="true">
+            <path d="M3 8a2 2 0 0 1 2-2h12v12H5a2 2 0 0 1-2-2V8Z" />
+            <path d="M17 6V4.6a1.6 1.6 0 0 0-2.1-1.5L4.4 6.2" />
+            <circle cx="15.5" cy="12" r="1.3" />
+         </svg>
+      );
+   }
+   if (name === 'trending') {
+      return (
+         <svg {...props} aria-hidden="true">
+            <polyline points="3 16 9 10 13 14 21 6" />
+            <polyline points="15 6 21 6 21 12" />
+         </svg>
+      );
+   }
+   return (
+      <svg {...props} aria-hidden="true">
+         <path d="M3 20h4v-4h4v-4h4v-4h6" />
+      </svg>
+   );
+}
+
 interface HowCreditLevelsWorkProps {
    variant?: CreditLevelsVariant;
 }
@@ -480,15 +501,9 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                </div>
                <h1>How Credit Levels work</h1>
                <p>
-                  Credit Levels set how much you can borrow at a time. Everyone starts at $15 — then your limit grows
-                  each time you take a full-limit loan and repay it on time. Here is exactly how the ladder works and
-                  how to climb it.
+                  Your Credit Level is your borrowing limit. Everyone starts at $15 — and it grows each time you repay
+                  a full-limit loan on time.
                </p>
-               <ul className="hclw-takeaways" aria-label="Key takeaways">
-                  {takeaways.map((point) => (
-                     <li key={point}>{point}</li>
-                  ))}
-               </ul>
                <div className="credit-leveling-hero__actions">
                   <Link to="/request-board">Request a loan</Link>
                   <Link to="/credit-leveling-guide">Deep dive</Link>
@@ -536,14 +551,19 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                </div>
                <img src="/hippos/thinking.png" alt="" className="hclw-section-mascot" loading="lazy" />
             </div>
-            <div className="credit-leveling-how-list">
-               {pillars.map((item) => (
-                  <article key={item.step}>
-                     <span>{item.step}</span>
-                     <div>
-                        <h3>{item.title}</h3>
-                        <p>{item.body}</p>
+            <div className="hclw-pillars">
+               {pillars.map((item, index) => (
+                  <article className="hclw-pillar" key={item.title}>
+                     <div className="hclw-pillar__top">
+                        <span className="hclw-pillar__icon">
+                           <PillarIcon name={item.icon} />
+                        </span>
+                        <span className="hclw-pillar__index">0{index + 1}</span>
                      </div>
+                     <span className="hclw-pillar__eyebrow">{item.eyebrow}</span>
+                     <h3>{item.title}</h3>
+                     <p className="hclw-pillar__lead">{item.lead}</p>
+                     <p className="hclw-pillar__detail">{item.detail}</p>
                   </article>
                ))}
             </div>
@@ -567,7 +587,6 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                      </div>
                      <div className="credit-leveling-ladder__limit">{item.limit}</div>
                      <div className="credit-leveling-ladder__body">
-                        <strong>{item.note}</strong>
                         <p>{item.unlock}</p>
                      </div>
                   </article>
@@ -607,32 +626,7 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                   </article>
                ))}
             </div>
-            <p className="hclw-loan-footnote">
-               Most borrowers use both — Trust-Building Loans to stay active and keep their reputation healthy, Credit-Building Loans
-               to climb the ladder over time.
-            </p>
-         </section>
-
-         <section className="credit-leveling-section hclw-journey-section">
-            <div className="hclw-section-head">
-               <div className="credit-leveling-section__header">
-                  <div className="credit-leveling-kicker">Worked example</div>
-                  <h2>From $15 to $60, step by step</h2>
-                  <p>Here is what a clean run up the ladder looks like — four full-limit loans, each repaid on time.</p>
-               </div>
-               <img src="/hippos/borrower-insights-trophy.png" alt="" className="hclw-section-mascot" loading="lazy" />
-            </div>
-            <ol className="hclw-journey">
-               {journey.map((item, index) => (
-                  <li className={index === journey.length - 1 ? 'is-final' : undefined} key={item.phase}>
-                     <span className="hclw-journey__phase">{item.phase}</span>
-                     <div className="hclw-journey__body">
-                        <strong>{item.title}</strong>
-                        <p>{item.detail}</p>
-                     </div>
-                  </li>
-               ))}
-            </ol>
+            <p className="hclw-loan-footnote">Most borrowers use both — trust loans to stay active, credit loans to climb.</p>
          </section>
 
          <section className="credit-leveling-section hclw-tips-section">
