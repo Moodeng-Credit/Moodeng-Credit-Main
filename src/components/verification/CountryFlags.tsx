@@ -157,6 +157,19 @@ export const FlagAU = ({ className }: FlagProps) => (
    </svg>
 );
 
+export const FlagCA = ({ className }: FlagProps) => (
+   <svg viewBox="0 0 30 20" className={className} xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="30" height="20" fill="white" />
+      <rect width="7.5" height="20" fill="#D52B1E" />
+      <rect x="22.5" width="7.5" height="20" fill="#D52B1E" />
+      {/* Maple leaf */}
+      <path
+         d="M15,4 L15.7,6.4 L17.9,5.6 L16.9,7.9 L18.5,8.3 L16.6,9.9 L17.1,10.6 L15.1,10.3 L15.4,13 L14.6,13 L14.9,10.3 L12.9,10.6 L13.4,9.9 L11.5,8.3 L13.1,7.9 L12.1,5.6 L14.3,6.4 Z"
+         fill="#D52B1E"
+      />
+   </svg>
+);
+
 export const SUPPORTED_DIDIT_COUNTRIES: { code: string; name: string; Flag: ComponentType<FlagProps> }[] = [
    { code: 'VN', name: 'Vietnam', Flag: FlagVN },
    { code: 'TW', name: 'Taiwan', Flag: FlagTW },

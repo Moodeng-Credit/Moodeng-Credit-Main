@@ -4,13 +4,14 @@ import { ChevronRight, ExternalLink, LoaderCircle, X } from 'lucide-react';
 
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { FlagUS, FlagEU, FlagGB, FlagAU } from '@/components/verification/CountryFlags';
+import { FlagUS, FlagEU, FlagGB, FlagAU, FlagCA } from '@/components/verification/CountryFlags';
 import FundBridge from '@/views/fund/FundBridge';
 
 const COINBASE_SUPPORTED_REGIONS = [
    { Flag: FlagUS, label: 'US' },
    { Flag: FlagEU, label: 'EU' },
    { Flag: FlagGB, label: 'UK' },
+   { Flag: FlagCA, label: 'CA' },
    { Flag: FlagAU, label: 'AU' },
 ];
 
