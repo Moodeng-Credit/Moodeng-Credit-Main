@@ -107,8 +107,8 @@ export function SocialAuthButtons({ isSignUp, onTelegramAuth }: SocialAuthButton
          )}
          {googleError ? <p className="text-sm font-medium leading-5 text-[#B91C1C]">{googleError}</p> : null}
 
-         {/* Secondary providers as small logo-square tiles in a centered row (Polymarket-style) */}
-         <div className="flex w-full min-w-0 items-center justify-center gap-3">
+         {/* Secondary providers as small logo-square tiles, left-aligned under the Google button */}
+         <div className="flex w-full min-w-0 items-center justify-start gap-3">
             {/* Telegram: clean logo tile with the working widget layered invisibly on top */}
             {botUsername && (
                <div className="relative">

@@ -24,8 +24,8 @@ export default function SocialButtons({ onGoogleAuth, onTelegramAuth, onOAuthErr
             <GoogleAuthButton onSuccess={onGoogleAuth} onError={onOAuthError} text={googleText} />
             {lastUsed === 'google' && <LastUsedBadge className="-top-2 right-3" />}
          </div>
-         {/* Secondary providers as small logo-square tiles in a centered row (Polymarket-style) */}
-         <div className="flex items-center justify-center gap-3">
+         {/* Secondary providers as small logo-square tiles, left-aligned under the Google button */}
+         <div className="flex items-center justify-start gap-3">
             <div className="relative">
                <TelegramIconTile onAuth={onTelegramAuth} />
                {lastUsed === 'telegram' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}

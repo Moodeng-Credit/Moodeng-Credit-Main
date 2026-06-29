@@ -1,4 +1,4 @@
-import { type JSX } from 'react';
+import { type JSX, useState } from 'react';
 
 import { isLineConfigured, startLineLogin } from '@/lib/lineAuth';
 
@@ -7,6 +7,13 @@ interface LineLoginButtonProps {
    /** Render a compact logo-only square (for the social icon row) instead of a full-width labelled bar. */
    iconOnly?: boolean;
 }
+
+const Spinner = ({ className = '' }: { className?: string }) => (
+   <svg className={`animate-spin ${className}`} width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+   </svg>
+);
 
 /** Self-contained LINE app icon (green rounded square + white bubble + green wordmark). */
 const LineLogo = ({ size = 22 }: { size?: number }) => (
@@ -34,20 +41,34 @@ const LineLogo = ({ size = 22 }: { size?: number }) => (
 );
 
 export default function LineLoginButton({ isSignUp = false, iconOnly = false }: LineLoginButtonProps): JSX.Element | null {
+   const [isLoading, setIsLoading] = useState(false);
+
    if (!isLineConfigured()) return null;
 
    const label = isSignUp ? 'Sign Up with LINE' : 'Sign In with LINE';
+
+   const handleClick = () => {
+      if (isLoading) return;
+      // Show the spinner first, then redirect on the next frame so the loading
+      // state actually paints before the browser navigates away to LINE.
+      setIsLoading(true);
+      requestAnimationFrame(() => requestAnimationFrame(() => startLineLogin()));
+   };
 
    if (iconOnly) {
       return (
          <button
             type="button"
-            onClick={startLineLogin}
+            onClick={handleClick}
+            disabled={isLoading}
             aria-label={label}
+            aria-busy={isLoading}
             title={label}
-            className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#B5ACBE] bg-[#FDFCFD] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] transition-opacity hover:opacity-95 dark:border-[#40354F] dark:bg-[#17121F]"
+            className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#B5ACBE] bg-[#FDFCFD] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] transition-opacity hover:opacity-95 dark:border-[#40354F] dark:bg-[#17121F] ${
+               isLoading ? 'cursor-not-allowed opacity-70' : ''
+            }`}
          >
-            <LineLogo size={30} />
+            {isLoading ? <Spinner className="text-[#06C755]" /> : <LineLogo size={30} />}
          </button>
       );
    }
@@ -55,15 +76,19 @@ export default function LineLoginButton({ isSignUp = false, iconOnly = false }: 
    return (
       <button
          type="button"
-         onClick={startLineLogin}
-         className="flex h-[56px] min-h-[56px] w-full min-w-0 flex-row items-center justify-center gap-2.5 overflow-hidden rounded-xl bg-[#06C755] px-4 py-4 shadow-[0px_2px_4px_rgba(27,28,29,0.04)] transition-opacity hover:opacity-95"
+         onClick={handleClick}
+         disabled={isLoading}
+         aria-busy={isLoading}
+         className={`flex h-[56px] min-h-[56px] w-full min-w-0 flex-row items-center justify-center gap-2.5 overflow-hidden rounded-xl bg-[#06C755] px-4 py-4 shadow-[0px_2px_4px_rgba(27,28,29,0.04)] transition-opacity hover:opacity-95 ${
+            isLoading ? 'cursor-not-allowed opacity-80' : ''
+         }`}
       >
-         <LineLogo />
+         {isLoading ? <Spinner className="text-white" /> : <LineLogo />}
          <span
             className="min-w-0 truncate text-base font-medium tracking-[-0.02em] text-white"
             style={{ fontFamily: 'SF Pro Display, sans-serif' }}
          >
-            {label}
+            {isLoading ? 'Connecting…' : label}
          </span>
       </button>
    );
