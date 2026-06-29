@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
-type AuthProvider = 'email' | 'google' | 'telegram' | null;
+type AuthProvider = 'email' | 'google' | 'telegram' | 'line' | null;
 
 /**
  * Returns the auth provider from the Supabase session's `app_metadata.provider`.
@@ -34,6 +34,8 @@ export function useAuthProvider(): { provider: AuthProvider; isEmailPasswordUser
                setProvider('google');
             } else if (p === 'telegram' || data.user.app_metadata?.providers?.includes('telegram')) {
                setProvider('telegram');
+            } else if (p === 'line' || data.user.app_metadata?.providers?.includes('line')) {
+               setProvider('line');
             } else {
                setProvider('email');
             }

@@ -263,16 +263,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                      <span className="rounded-full bg-[#e6f9ef] px-2 py-0.5 text-[10px] font-semibold text-[#1a8c4e]">
                         &lt; 0.5% fee
                      </span>
-                     <a
-                        href="https://eco.com/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-full bg-[#e6f9ef] px-2 py-0.5 text-[10px] font-semibold text-[#1a8c4e] hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                     >
-                        Powered by Eco
-                     </a>
-                     <span className="rounded-full bg-md-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-md-neutral-1400">
+<span className="rounded-full bg-md-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-md-neutral-1400">
                         ~30 sec
                      </span>
                   </div>
@@ -294,11 +285,8 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                      <ExternalLink className="h-[18px] w-[18px] shrink-0 text-md-neutral-800" />
                   </div>
                   <div className="flex flex-wrap items-center gap-1">
-                     <span className="rounded-full bg-md-primary-100 px-2 py-0.5 text-[10px] font-semibold text-md-primary-1200">
-                        Official Base bridge
-                     </span>
-                     <span className="rounded-full bg-md-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-md-neutral-1400">
-                        SOL &middot; USDC
+                     <span className="rounded-full bg-[#e6f9ef] px-2 py-0.5 text-[10px] font-semibold text-[#1a8c4e]">
+                        Gas only
                      </span>
                   </div>
                </button>

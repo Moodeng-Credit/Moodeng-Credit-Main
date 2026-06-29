@@ -16,6 +16,9 @@ verify_jwt = false
 [functions.telegram-login]
 verify_jwt = false
 
+[functions.line-login]
+verify_jwt = false
+
 [functions.connect-telegram-notifications]
 verify_jwt = true
 
