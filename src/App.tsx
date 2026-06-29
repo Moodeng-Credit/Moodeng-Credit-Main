@@ -43,6 +43,7 @@ import OnboardingWelcome from '@/app/onboarding/welcome/page';
 // Import pages
 import Home from '@/app/page';
 import Profile from '@/app/profile/page';
+import DataDeletionPage from '@/app/data-deletion/page';
 import PrivacyPage from '@/app/privacy/page';
 import PrivacyPolicyPage from '@/app/privacy-policy/page';
 import ResetPassword from '@/app/reset-password/page';
@@ -476,6 +477,7 @@ export default function App() {
             <Route path="/faq" element={<Navigate to="/support/faq" replace />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/data-deletion" element={<DataDeletionPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route
                path="/academy"

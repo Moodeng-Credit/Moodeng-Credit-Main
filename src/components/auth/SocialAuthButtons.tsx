@@ -19,6 +19,15 @@ interface SocialAuthButtonsProps {
 const btnBase =
    'w-full min-w-0 flex flex-row justify-center items-center gap-2.5 px-4 py-4 h-[56px] min-h-[56px] rounded-xl transition-opacity hover:opacity-95 cursor-pointer overflow-hidden';
 
+const FacebookLogo = ({ size = 30 }: { size?: number }) => (
+   <svg width={size} height={size} viewBox="0 0 24 24" className="shrink-0" aria-hidden="true">
+      <path
+         fill="#1877F2"
+         d="M24 12c0-6.627-5.373-12-12-12S0 5.373 0 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078V12h3.047V9.356c0-3.007 1.792-4.668 4.533-4.668 1.312 0 2.686.234 2.686.234v2.953H15.83c-1.491 0-1.956.925-1.956 1.874V12h3.328l-.532 3.469h-2.796v8.385C19.612 22.954 24 17.99 24 12z"
+      />
+   </svg>
+);
+
 const GoogleLogo = () => (
    <svg width="20" height="20" viewBox="0 0 24 24" className="shrink-0">
       <path
@@ -45,9 +54,12 @@ export function SocialAuthButtons({ isSignUp, onTelegramAuth }: SocialAuthButton
    const botUsername = 'moodengnewbranchbot';
    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
    const [googleError, setGoogleError] = useState('');
+   const [isFacebookLoading, setIsFacebookLoading] = useState(false);
+   const [facebookError, setFacebookError] = useState('');
    const [lastUsed] = useState(getLastUsedAuth);
 
    const googleLabel = isSignUp ? 'Sign Up with Google' : 'Sign In with Google';
+   const facebookLabel = isSignUp ? 'Sign Up with Facebook' : 'Sign In with Facebook';
    const hasGoogleClientId = typeof clientId === 'string' && clientId.trim().length > 0 && !clientId.startsWith('encrypted:');
 
    const handleGoogleClick = async () => {
@@ -78,6 +90,37 @@ export function SocialAuthButtons({ isSignUp, onTelegramAuth }: SocialAuthButton
          console.error('[SocialAuthButtons] Google OAuth exception:', err);
          setGoogleError(err instanceof Error ? err.message : 'Google sign-up could not start. Please try again.');
          setIsGoogleLoading(false);
+      }
+   };
+
+   const handleFacebookClick = async () => {
+      if (isFacebookLoading) return;
+      setFacebookError('');
+
+      if (!isSupabaseBrowserConfigured()) {
+         setFacebookError('Facebook sign-up is not configured in this local app. Ask for the .env.keys file, then restart the dev server.');
+         return;
+      }
+
+      setIsFacebookLoading(true);
+      try {
+         const supabase = getSupabaseBrowserClient();
+         const redirectTo = getAuthRedirectUrl();
+
+         const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'facebook',
+            options: { redirectTo }
+         });
+         if (error) {
+            console.error('[SocialAuthButtons] Facebook OAuth error:', error.message);
+            setFacebookError(error.message || 'Facebook sign-up could not start. Please try again.');
+            setIsFacebookLoading(false);
+         }
+         // If successful, the browser redirects — no need to reset loading state
+      } catch (err) {
+         console.error('[SocialAuthButtons] Facebook OAuth exception:', err);
+         setFacebookError(err instanceof Error ? err.message : 'Facebook sign-up could not start. Please try again.');
+         setIsFacebookLoading(false);
       }
    };
 
@@ -122,7 +165,26 @@ export function SocialAuthButtons({ isSignUp, onTelegramAuth }: SocialAuthButton
                <LineLoginButton isSignUp={isSignUp} iconOnly />
                {lastUsed === 'line' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
             </div>
+
+            {/* Facebook: Supabase OAuth redirect flow (provider configured in the Supabase dashboard) */}
+            <div className="relative">
+               <button
+                  type="button"
+                  onClick={handleFacebookClick}
+                  disabled={isFacebookLoading}
+                  aria-label={facebookLabel}
+                  aria-busy={isFacebookLoading}
+                  title={facebookLabel}
+                  className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#B5ACBE] bg-[#FDFCFD] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] transition-opacity hover:opacity-95 dark:border-[#40354F] dark:bg-[#17121F] ${
+                     isFacebookLoading ? 'cursor-not-allowed opacity-70' : ''
+                  }`}
+               >
+                  <FacebookLogo />
+               </button>
+               {lastUsed === 'facebook' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
+            </div>
          </div>
+         {facebookError ? <p className="text-sm font-medium leading-5 text-[#B91C1C]">{facebookError}</p> : null}
       </div>
    );
 }

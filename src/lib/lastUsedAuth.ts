@@ -3,7 +3,7 @@
  * screens can surface a "Last used" hint on that provider (à la Polymarket).
  * Stored in localStorage; best-effort and non-critical.
  */
-export type AuthMethod = 'google' | 'telegram' | 'line' | 'email';
+export type AuthMethod = 'google' | 'facebook' | 'telegram' | 'line' | 'email';
 
 const STORAGE_KEY = 'moodeng:last-auth-method';
 
@@ -18,7 +18,7 @@ export function setLastUsedAuth(method: AuthMethod): void {
 export function getLastUsedAuth(): AuthMethod | null {
    try {
       const v = localStorage.getItem(STORAGE_KEY);
-      return v === 'google' || v === 'telegram' || v === 'line' || v === 'email' ? v : null;
+      return v === 'google' || v === 'facebook' || v === 'telegram' || v === 'line' || v === 'email' ? v : null;
    } catch {
       return null;
    }
