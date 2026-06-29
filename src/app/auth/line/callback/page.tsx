@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
 import { setLastUsedAuth } from '@/lib/lastUsedAuth';
-import { LINE_OAUTH_STATE_KEY, getLineRedirectUri } from '@/lib/lineAuth';
+import { clearLineState, getLineRedirectUri, readLineState } from '@/lib/lineAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export default function LineCallbackPage(): JSX.Element {
@@ -23,8 +23,8 @@ export default function LineCallbackPage(): JSX.Element {
             return;
          }
 
-         const expectedState = sessionStorage.getItem(LINE_OAUTH_STATE_KEY);
-         sessionStorage.removeItem(LINE_OAUTH_STATE_KEY);
+         const expectedState = readLineState();
+         clearLineState();
 
          if (!code) {
             setError('Missing LINE authorization code. Please try again.');
