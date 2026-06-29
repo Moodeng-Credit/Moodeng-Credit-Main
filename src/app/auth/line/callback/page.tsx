@@ -1,17 +1,23 @@
-import { type JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useRef, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
 import { setLastUsedAuth } from '@/lib/lastUsedAuth';
-import { clearLineState, getLineRedirectUri, readLineState } from '@/lib/lineAuth';
+import { consumeLineState, getLineRedirectUri } from '@/lib/lineAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export default function LineCallbackPage(): JSX.Element {
    const navigate = useNavigate();
    const [error, setError] = useState<string | null>(null);
+   // The auth code is single-use; guard against the effect running twice
+   // (StrictMode / remount) which would consume the state then fail the rerun.
+   const handledRef = useRef(false);
 
    useEffect(() => {
+      if (handledRef.current) return;
+      handledRef.current = true;
+
       const run = async () => {
          const params = new URLSearchParams(window.location.search);
          const code = params.get('code');
@@ -23,14 +29,11 @@ export default function LineCallbackPage(): JSX.Element {
             return;
          }
 
-         const expectedState = readLineState();
-         clearLineState();
-
          if (!code) {
             setError('Missing LINE authorization code. Please try again.');
             return;
          }
-         if (!state || !expectedState || state !== expectedState) {
+         if (!consumeLineState(state)) {
             setError('LINE login state mismatch. Please try again.');
             return;
          }
