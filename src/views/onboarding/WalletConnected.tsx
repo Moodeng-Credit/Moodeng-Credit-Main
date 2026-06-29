@@ -51,7 +51,13 @@ export default function WalletConnected() {
       return <Navigate to="/onboarding/role" replace />;
    }
 
-   if (!isPreview && status !== 'reconnecting') {
+   // The Base Account lock is borrower-only: borrowers must connect (and stay on) a single
+   // Base Account so loans/repayments are tied to one wallet. Lenders are deliberately NOT
+   // locked to one wallet — they can use any connector, and fraud is handled by the detection
+   // layer rather than by restricting the wallet here.
+   const isBorrower = user?.userRole === 'borrower';
+
+   if (!isPreview && isBorrower && status !== 'reconnecting') {
       if (isConnectedWrongProvider) {
          return (
             <FailureView
