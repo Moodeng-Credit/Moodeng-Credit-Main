@@ -29,15 +29,15 @@ export default function TelegramIconTile({ onAuth }: TelegramIconTileProps): JSX
          </span>
          {/*
             The real Telegram widget renders at its natural size (fitContent) and is
-            centered + scaled up so its clickable "Log in with Telegram" link fully
-            covers the 56px tile. It sits invisibly (opacity-0) on top of the logo, so
-            a click anywhere on the tile goes through the official Telegram auth flow.
-            The tile's overflow-hidden keeps the oversized widget clipped to the square.
+            centered over the logo, invisibly (opacity-0), so a tap on the tile goes
+            through the official Telegram auth flow. The widget is wider/shorter than
+            the tile; the tile's overflow-hidden clips it to the square. IMPORTANT: do
+            NOT apply a CSS transform (scale/translate) to the widget — a transformed
+            ancestor stops mouse clicks from being delivered into the cross-origin
+            Telegram iframe, so the button silently does nothing.
          */}
          <div className="absolute inset-0 flex items-center justify-center opacity-0">
-            <div className="scale-[1.8]">
-               <TelegramAuthButton onAuth={onAuth} buttonSize="large" useRedirect hideLoading fitContent />
-            </div>
+            <TelegramAuthButton onAuth={onAuth} buttonSize="large" useRedirect hideLoading fitContent />
          </div>
       </div>
    );
