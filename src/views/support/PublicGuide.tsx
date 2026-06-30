@@ -21,6 +21,7 @@ function GuideArticleView({ guide, slug, locale }: { guide: GuideArticle; slug: 
    const related = getGuidesForLocale(locale)
       .filter((item) => item.slug !== slug)
       .slice(0, 3);
+   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://moodeng.app';
 
    usePageSeo({
       title: `${guide.title} | Moodeng Credit`,
@@ -36,7 +37,7 @@ function GuideArticleView({ guide, slug, locale }: { guide: GuideArticle; slug: 
             dateModified: guide.lastUpdated,
             author: { '@type': 'Organization', name: 'Moodeng Credit' },
             publisher: { '@type': 'Organization', name: 'Moodeng Credit' },
-            mainEntityOfPage: `https://home.moodeng.app/learn/${slug}`
+            mainEntityOfPage: `${origin}/learn/${slug}`
          }
       ]
    });
