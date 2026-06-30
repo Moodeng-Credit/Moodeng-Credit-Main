@@ -28,6 +28,9 @@ import Benefits from '@/app/benefits/page';
 import BlogDetailPage from '@/app/blogs/[slug]/page';
 import BlogsPage from '@/app/blogs/page';
 import CreditLevelingGuidePage from '@/app/credit-leveling-guide/page';
+import LearnHowCreditLevelsWorkPage from '@/app/learn/how-credit-levels-work/page';
+import LearnIndexPage from '@/app/learn/page';
+import PublicGuidePage from '@/app/learn/[slug]/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
 import LenderDiversityPage from '@/app/lender-diversity/page';
@@ -493,6 +496,30 @@ export default function App() {
                element={
                   <MarketingPageShell>
                      <CreditLevelingGuidePage />
+                  </MarketingPageShell>
+               }
+            />
+            <Route
+               path="/learn/how-credit-levels-work"
+               element={
+                  <MarketingPageShell>
+                     <LearnHowCreditLevelsWorkPage />
+                  </MarketingPageShell>
+               }
+            />
+            <Route
+               path="/learn"
+               element={
+                  <MarketingPageShell>
+                     <LearnIndexPage />
+                  </MarketingPageShell>
+               }
+            />
+            <Route
+               path="/learn/:slug"
+               element={
+                  <MarketingPageShell>
+                     <PublicGuidePage />
                   </MarketingPageShell>
                }
             />
