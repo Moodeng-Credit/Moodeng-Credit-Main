@@ -12,6 +12,14 @@ interface TelegramAuthButtonProps {
    /** Hide loading state when embedding in custom-styled buttons */
    hideLoading?: boolean;
    requestWriteAccess?: boolean;
+   /**
+    * Render the raw widget at its natural size (no full-width clamp / overflow
+    * clip) so a parent can position it freely — e.g. centered + scaled inside a
+    * compact icon tile. Without this the widget is clamped to the parent width,
+    * which makes Telegram reflow the "large" button into a tall, mostly-unclickable
+    * column whose login link falls outside the visible tile.
+    */
+   fitContent?: boolean;
 }
 
 declare global {
@@ -27,7 +35,8 @@ export default function TelegramAuthButton({
    useRedirect = false,
    buttonSize = 'large',
    hideLoading = false,
-   requestWriteAccess = false
+   requestWriteAccess = false,
+   fitContent = false
 }: TelegramAuthButtonProps) {
    const containerRef = useRef<HTMLDivElement>(null);
    const widgetIdRef = useRef(`telegram_auth_${Math.random().toString(36).slice(2)}`);
@@ -159,7 +168,7 @@ export default function TelegramAuthButton({
    }
 
    return (
-      <div className="w-full min-w-0">
+      <div className={fitContent ? 'inline-block' : 'w-full min-w-0'}>
          {!hideLoading && isLoading ? (
             <div className="flex justify-center py-4">
                <div className="flex flex-col items-center gap-3 w-full px-4">
@@ -193,8 +202,8 @@ export default function TelegramAuthButton({
          ) : null}
          <div
             ref={containerRef}
-            className="flex w-full min-w-0 min-h-0 justify-center overflow-hidden [&>iframe]:max-w-full"
-            style={{ display: hideLoading || !isLoading ? 'flex' : 'none' }}
+            className={fitContent ? 'justify-center' : 'flex w-full min-w-0 min-h-0 justify-center overflow-hidden [&>iframe]:max-w-full'}
+            style={{ display: hideLoading || !isLoading ? (fitContent ? 'inline-flex' : 'flex') : 'none' }}
          />
       </div>
    );
