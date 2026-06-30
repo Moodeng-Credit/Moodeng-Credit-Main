@@ -3,7 +3,7 @@ import { useState } from 'react';
 import LineLoginButton from '@/components/LineLoginButton';
 
 import LastUsedBadge from './LastUsedBadge';
-import TelegramIconTile from './TelegramIconTile';
+import TelegramLoginTile from './TelegramLoginTile';
 
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { getLastUsedAuth } from '@/lib/lastUsedAuth';
@@ -49,9 +49,8 @@ const GoogleLogo = () => (
    </svg>
 );
 
-export function SocialAuthButtons({ isSignUp, onTelegramAuth }: SocialAuthButtonsProps) {
+export function SocialAuthButtons({ isSignUp }: SocialAuthButtonsProps) {
    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-   const botUsername = 'moodengnewbranchbot';
    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
    const [googleError, setGoogleError] = useState('');
    const [isFacebookLoading, setIsFacebookLoading] = useState(false);
@@ -152,13 +151,11 @@ export function SocialAuthButtons({ isSignUp, onTelegramAuth }: SocialAuthButton
 
          {/* Secondary providers as small logo-square tiles, left-aligned under the Google button */}
          <div className="flex w-full min-w-0 items-center justify-start gap-3">
-            {/* Telegram: clean logo tile with the working widget layered invisibly on top */}
-            {botUsername && (
-               <div className="relative">
-                  <TelegramIconTile onAuth={onTelegramAuth} />
-                  {lastUsed === 'telegram' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
-               </div>
-            )}
+            {/* Telegram: plain icon tile that redirects to Telegram OAuth (no embedded widget) */}
+            <div className="relative">
+               <TelegramLoginTile />
+               {lastUsed === 'telegram' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
+            </div>
 
             {/* LINE: redirects to LINE Login OAuth, handled by the line-login edge fn */}
             <div className="relative">

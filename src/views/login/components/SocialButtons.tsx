@@ -3,7 +3,7 @@ import { type JSX, useState } from 'react';
 import GoogleAuthButton from '@/components/GoogleAuthButton';
 import LineLoginButton from '@/components/LineLoginButton';
 import LastUsedBadge from '@/components/auth/LastUsedBadge';
-import TelegramIconTile from '@/components/auth/TelegramIconTile';
+import TelegramLoginTile from '@/components/auth/TelegramLoginTile';
 
 import { getLastUsedAuth } from '@/lib/lastUsedAuth';
 
@@ -14,7 +14,7 @@ interface SocialButtonsProps {
    isSignUp: boolean;
 }
 
-export default function SocialButtons({ onGoogleAuth, onTelegramAuth, onOAuthError, isSignUp }: SocialButtonsProps): JSX.Element {
+export default function SocialButtons({ onGoogleAuth, onOAuthError, isSignUp }: SocialButtonsProps): JSX.Element {
    const googleText = isSignUp ? 'signup_with' : 'signin_with';
    const [lastUsed] = useState(getLastUsedAuth);
 
@@ -27,7 +27,7 @@ export default function SocialButtons({ onGoogleAuth, onTelegramAuth, onOAuthErr
          {/* Secondary providers as small logo-square tiles, left-aligned under the Google button */}
          <div className="flex items-center justify-start gap-3">
             <div className="relative">
-               <TelegramIconTile onAuth={onTelegramAuth} />
+               <TelegramLoginTile />
                {lastUsed === 'telegram' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
             </div>
             <div className="relative">
