@@ -592,6 +592,19 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                   </article>
                ))}
             </div>
+
+            <figure className="hclw-scene">
+               <p className="hclw-scene__lead">Repay on time, and the next level unlocks itself.</p>
+               <img
+                  src="/hippos/credit-building-scene.png"
+                  alt="A borrower hippo at a Moodeng kiosk following the credit-building flow: request, repay on time, then level up"
+                  loading="lazy"
+               />
+               <figcaption>
+                  Request a loan, repay it by the due date, and your limit steps up automatically — your borrowing
+                  power compounds with every clean repayment.
+               </figcaption>
+            </figure>
          </section>
 
          <section className="credit-leveling-section">
@@ -628,8 +641,8 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
             </div>
             <p className="hclw-loan-footnote">Most borrowers use both — trust loans to stay active, credit loans to climb.</p>
 
-            <figure className="hclw-trust-scene">
-               <p className="hclw-trust-scene__lead">Trust is the currency before the credit.</p>
+            <figure className="hclw-scene">
+               <p className="hclw-scene__lead">Trust is the currency before the credit.</p>
                <img
                   src="/hippos/trust-building-scene.png"
                   alt="A borrower hippo and a squirrel building trust with a lender at the Moodeng lending desk"

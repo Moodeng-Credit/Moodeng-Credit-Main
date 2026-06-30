@@ -549,14 +549,14 @@
    }
 }
 
-/* Trust-building scene --------------------------------------------------- */
-.hclw-trust-scene {
+/* Illustrated scenes (trust + credit building) -------------------------- */
+.hclw-scene {
    margin: 28px auto 0;
    max-width: 720px;
    text-align: center;
 }
 
-.hclw-trust-scene__lead {
+.hclw-scene__lead {
    margin-bottom: 16px;
    color: #171420;
    font-size: clamp(1.2rem, 2.6vw, 1.6rem);
@@ -564,7 +564,7 @@
    line-height: 1.25;
 }
 
-.hclw-trust-scene img {
+.hclw-scene img {
    display: block;
    width: 100%;
    height: auto;
@@ -573,7 +573,7 @@
    box-shadow: 0 20px 46px -22px rgb(46 26 82 / 0.5);
 }
 
-.hclw-trust-scene figcaption {
+.hclw-scene figcaption {
    margin-top: 16px;
    color: #4b465a;
    font-size: 1.02rem;
