@@ -21,6 +21,7 @@ function firstLine(body: string): string {
 export default function PublicGuidesIndex(): JSX.Element {
    const { locale } = useLocalization();
    const guides = getGuidesForLocale(locale);
+   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://moodeng.app';
 
    usePageSeo({
       title: `${PAGE_TITLE} | Moodeng Credit`,
@@ -38,7 +39,7 @@ export default function PublicGuidesIndex(): JSX.Element {
                   '@type': 'ListItem',
                   position: index + 1,
                   name: guide.title,
-                  url: `https://home.moodeng.app/learn/${guide.slug}`
+                  url: `${origin}/learn/${guide.slug}`
                }))
             }
          }

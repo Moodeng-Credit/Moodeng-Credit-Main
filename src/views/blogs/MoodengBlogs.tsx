@@ -12,6 +12,7 @@ const BLOG_INDEX_DESCRIPTION =
 
 export default function MoodengBlogs(): JSX.Element {
    const [audienceFilter, setAudienceFilter] = useState<BlogPost['audience'] | 'All'>('All');
+   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://moodeng.app';
 
    usePageSeo({
       title: 'Moodeng Blog — The human side of fair credit | Moodeng Credit',
@@ -23,11 +24,11 @@ export default function MoodengBlogs(): JSX.Element {
             '@type': 'Blog',
             name: 'Moodeng Blog',
             description: BLOG_INDEX_DESCRIPTION,
-            url: 'https://home.moodeng.app/blogs',
+            url: `${origin}/blogs`,
             blogPost: blogPosts.map((post) => ({
                '@type': 'BlogPosting',
                headline: post.title,
-               url: `https://home.moodeng.app/blogs/${post.slug}`
+               url: `${origin}/blogs/${post.slug}`
             }))
          }
       ]
