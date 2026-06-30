@@ -26,6 +26,13 @@ const TelegramLogo = ({ size = 30 }: { size?: number }) => (
    </svg>
 );
 
+const Spinner = ({ className = '' }: { className?: string }) => (
+   <svg className={`animate-spin ${className}`} width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+   </svg>
+);
+
 export default function TelegramLoginTile(): JSX.Element {
    const [isLoading, setIsLoading] = useState(false);
 
@@ -38,7 +45,13 @@ export default function TelegramLoginTile(): JSX.Element {
          `https://oauth.telegram.org/auth?bot_id=${TELEGRAM_BOT_ID}` +
          `&origin=${encodeURIComponent(origin)}` +
          `&return_to=${encodeURIComponent(returnTo)}`;
-      window.location.href = url;
+      // Paint the spinner first, then navigate on the next frame so the loading
+      // state actually shows before the browser leaves for Telegram (mirrors LINE).
+      requestAnimationFrame(() =>
+         requestAnimationFrame(() => {
+            window.location.href = url;
+         })
+      );
    };
 
    return (
@@ -53,7 +66,7 @@ export default function TelegramLoginTile(): JSX.Element {
             isLoading ? 'cursor-not-allowed opacity-70' : ''
          }`}
       >
-         <TelegramLogo />
+         {isLoading ? <Spinner className="text-[#229ED9]" /> : <TelegramLogo />}
       </button>
    );
 }
