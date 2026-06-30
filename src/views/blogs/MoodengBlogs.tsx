@@ -3,11 +3,35 @@ import { type JSX, useMemo, useState } from 'react';
 import { ArrowRight, CalendarDays, Clock3, Headphones } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import { usePageSeo } from '@/hooks/usePageSeo';
 import { type BlogPost, blogPosts, featuredBlogPost, leadBlogPost, podcastUrl } from '@/views/blogs/blogPosts';
 import '@/views/blogs/MoodengBlogs.css';
 
+const BLOG_INDEX_DESCRIPTION =
+   'Essays and podcast companions from Moodeng Credit on loan sharks, credit invisibility, borrower dignity, and why fair small-USDC lending needs a different kind of trust.';
+
 export default function MoodengBlogs(): JSX.Element {
    const [audienceFilter, setAudienceFilter] = useState<BlogPost['audience'] | 'All'>('All');
+
+   usePageSeo({
+      title: 'Moodeng Blog — The human side of fair credit | Moodeng Credit',
+      description: BLOG_INDEX_DESCRIPTION,
+      canonicalPath: '/blogs',
+      jsonLd: [
+         {
+            '@context': 'https://schema.org',
+            '@type': 'Blog',
+            name: 'Moodeng Blog',
+            description: BLOG_INDEX_DESCRIPTION,
+            url: 'https://home.moodeng.app/blogs',
+            blogPost: blogPosts.map((post) => ({
+               '@type': 'BlogPosting',
+               headline: post.title,
+               url: `https://home.moodeng.app/blogs/${post.slug}`
+            }))
+         }
+      ]
+   });
 
    const latestPosts = useMemo(() => blogPosts.filter((post) => post.slug !== featuredBlogPost.slug), []);
    const audienceFilters = useMemo(
