@@ -439,10 +439,12 @@ function PillarIcon({ name }: { name: string }): JSX.Element {
    );
 }
 
+const PILLAR_SHOT_CTA = '/request-board';
+
 function PillarShot({ kind }: { kind: 'limit' | 'apply' | 'levelup' }): JSX.Element {
    if (kind === 'limit') {
       return (
-         <div className="hclw-shot" aria-hidden="true">
+         <Link to={PILLAR_SHOT_CTA} className="hclw-shot hclw-shot--link" aria-label="See your credit limit on the request board">
             <div className="hclw-shot__bar">
                <span>Your credit</span>
                <b>Level 1</b>
@@ -455,12 +457,12 @@ function PillarShot({ kind }: { kind: 'limit' | 'apply' | 'levelup' }): JSX.Elem
                <i style={{ width: '25%' }} />
             </div>
             <div className="hclw-shot__hint">$15 → $20 → $40 → $60</div>
-         </div>
+         </Link>
       );
    }
    if (kind === 'apply') {
       return (
-         <div className="hclw-shot" aria-hidden="true">
+         <Link to={PILLAR_SHOT_CTA} className="hclw-shot hclw-shot--link" aria-label="Apply for a loan on the request board">
             <div className="hclw-shot__bar">
                <span>Request a loan</span>
             </div>
@@ -474,11 +476,11 @@ function PillarShot({ kind }: { kind: 'limit' | 'apply' | 'levelup' }): JSX.Elem
                <i>$20</i>
             </div>
             <div className="hclw-shot__cta">Apply for loan</div>
-         </div>
+         </Link>
       );
    }
    return (
-      <div className="hclw-shot" aria-hidden="true">
+      <Link to={PILLAR_SHOT_CTA} className="hclw-shot hclw-shot--link" aria-label="See live requests on the request board">
          <div className="hclw-shot__bar">
             <span>Repayment complete</span>
             <b className="ok">Paid</b>
@@ -489,7 +491,7 @@ function PillarShot({ kind }: { kind: 'limit' | 'apply' | 'levelup' }): JSX.Elem
             <span className="to">$20</span>
          </div>
          <div className="hclw-shot__unlocked">Level 2 unlocked</div>
-      </div>
+      </Link>
    );
 }
 

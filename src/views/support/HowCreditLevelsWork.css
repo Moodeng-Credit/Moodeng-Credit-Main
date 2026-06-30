@@ -316,6 +316,34 @@
    padding: 16px;
 }
 
+.hclw-shot--link {
+   text-decoration: none;
+   cursor: pointer;
+   transition:
+      border-color 0.15s ease,
+      transform 0.15s ease,
+      box-shadow 0.15s ease;
+}
+
+.hclw-shot--link:hover {
+   border-color: #c4b2f3;
+   transform: translateY(-2px);
+   box-shadow: 0 14px 30px -20px rgb(46 26 82 / 0.5);
+}
+
+.hclw-shot--link:focus-visible {
+   outline: 2px solid #7c3aed;
+   outline-offset: 3px;
+}
+
+.hclw-shot__cta {
+   transition: filter 0.15s ease;
+}
+
+.hclw-shot--link:hover .hclw-shot__cta {
+   filter: brightness(1.06);
+}
+
 .hclw-shot__bar {
    display: flex;
    align-items: center;
