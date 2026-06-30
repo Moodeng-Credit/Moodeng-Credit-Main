@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+
+# Private, logged-in app sections (no public content, redirect to sign-in)
+Disallow: /dashboard
+Disallow: /lender/
+Disallow: /account
+Disallow: /admin
+Disallow: /repay
+Disallow: /withdraw
+Disallow: /history/
+Disallow: /onboarding/
+Disallow: /auth/
+Disallow: /verify
+Disallow: /role-selection
+Disallow: /profile
+Disallow: /milestones
+Disallow: /login
+Disallow: /sign-up
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /user/
+
+Sitemap: https://home.moodeng.app/sitemap.xml

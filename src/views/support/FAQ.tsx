@@ -1,10 +1,14 @@
 import { useMemo, useState } from 'react';
 
+import { usePageSeo } from '@/hooks/usePageSeo';
 import { useLocalization } from '@/i18n';
 import SearchBar from '@/views/support/components/SearchBar';
 import SupportHeader from '@/views/support/components/SupportHeader';
 import { ICON_MASK_BASE } from '@/views/support/constants';
 import { getFaqsForLocale } from '@/views/support/data/faqs';
+
+const FAQ_SEO_DESCRIPTION =
+   'Answers about how Moodeng Credit works — borrowing in USDC, Trust Scores, Credit Levels, Base wallets, fees, and staying safe from loan sharks.';
 
 const FAQ_CATEGORIES = {
    general: 'General',
@@ -39,6 +43,23 @@ export default function FAQ() {
    const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('All');
    const [showCategoryFilters, setShowCategoryFilters] = useState(false);
    const faqs = useMemo(() => getFaqsForLocale(locale), [locale]);
+
+   usePageSeo({
+      title: 'Frequently Asked Questions | Moodeng Credit',
+      description: FAQ_SEO_DESCRIPTION,
+      canonicalPath: '/support/faq',
+      jsonLd: [
+         {
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqs.map((item) => ({
+               '@type': 'Question',
+               name: item.question,
+               acceptedAnswer: { '@type': 'Answer', text: item.answer }
+            }))
+         }
+      ]
+   });
 
    const copy =
       locale === 'fil'
