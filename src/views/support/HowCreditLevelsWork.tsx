@@ -31,21 +31,24 @@ const pillars = [
       eyebrow: 'What it is',
       title: 'A level is a limit',
       lead: 'Your level sets the most you can borrow at once.',
-      detail: 'Level 1 unlocks $15 — small on purpose, since you have no history yet.'
+      detail: 'Level 1 unlocks $15 — small on purpose, since you have no history yet.',
+      shot: 'limit' as const
    },
    {
       icon: 'trending',
       eyebrow: 'How you grow',
       title: 'Repay your full limit',
       lead: 'A full-limit loan repaid on time raises your cap.',
-      detail: 'That single clean repayment is what moves you up — nothing else does.'
+      detail: 'That single clean repayment is what moves you up — nothing else does.',
+      shot: 'apply' as const
    },
    {
       icon: 'stairs',
       eyebrow: 'The pace',
       title: 'One level at a time',
       lead: 'Limits step up $15 → $20 → $40 → $60.',
-      detail: 'No skipping or buying ahead — each level is earned from the one before.'
+      detail: 'No skipping or buying ahead — each level is earned from the one before.',
+      shot: 'levelup' as const
    }
 ];
 
@@ -436,6 +439,60 @@ function PillarIcon({ name }: { name: string }): JSX.Element {
    );
 }
 
+function PillarShot({ kind }: { kind: 'limit' | 'apply' | 'levelup' }): JSX.Element {
+   if (kind === 'limit') {
+      return (
+         <div className="hclw-shot" aria-hidden="true">
+            <div className="hclw-shot__bar">
+               <span>Your credit</span>
+               <b>Level 1</b>
+            </div>
+            <div className="hclw-shot__limit">
+               <span>Available credit limit</span>
+               <strong>$15</strong>
+            </div>
+            <div className="hclw-shot__track">
+               <i style={{ width: '25%' }} />
+            </div>
+            <div className="hclw-shot__hint">$15 → $20 → $40 → $60</div>
+         </div>
+      );
+   }
+   if (kind === 'apply') {
+      return (
+         <div className="hclw-shot" aria-hidden="true">
+            <div className="hclw-shot__bar">
+               <span>Request a loan</span>
+            </div>
+            <div className="hclw-shot__field">
+               <span>Borrow amount</span>
+               <strong>$15</strong>
+            </div>
+            <div className="hclw-shot__chips">
+               <i>$10</i>
+               <i className="on">$15</i>
+               <i>$20</i>
+            </div>
+            <div className="hclw-shot__cta">Apply for loan</div>
+         </div>
+      );
+   }
+   return (
+      <div className="hclw-shot" aria-hidden="true">
+         <div className="hclw-shot__bar">
+            <span>Repayment complete</span>
+            <b className="ok">Paid</b>
+         </div>
+         <div className="hclw-shot__levelup">
+            <span className="from">$15</span>
+            <span className="arrow">→</span>
+            <span className="to">$20</span>
+         </div>
+         <div className="hclw-shot__unlocked">Level 2 unlocked</div>
+      </div>
+   );
+}
+
 interface HowCreditLevelsWorkProps {
    variant?: CreditLevelsVariant;
 }
@@ -564,6 +621,7 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                      <h3>{item.title}</h3>
                      <p className="hclw-pillar__lead">{item.lead}</p>
                      <p className="hclw-pillar__detail">{item.detail}</p>
+                     <PillarShot kind={item.shot} />
                   </article>
                ))}
             </div>
