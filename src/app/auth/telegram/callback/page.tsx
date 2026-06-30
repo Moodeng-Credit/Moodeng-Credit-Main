@@ -11,7 +11,24 @@ export default function TelegramCallbackPage(): JSX.Element {
 
    useEffect(() => {
       const run = async () => {
-         const params = Object.fromEntries(new URLSearchParams(window.location.search));
+         let params: Record<string, string> = Object.fromEntries(new URLSearchParams(window.location.search));
+
+         // Telegram's OAuth redirect can return the signed payload either as query
+         // params (?id=…&hash=…) or as a `#tgAuthResult=<base64 JSON>` fragment,
+         // depending on the flow. Handle both so the plain-redirect tile works.
+         if (!params.hash && window.location.hash) {
+            const match = window.location.hash.match(/tgAuthResult=([^&]+)/);
+            if (match) {
+               try {
+                  const b64 = decodeURIComponent(match[1]).replace(/-/g, '+').replace(/_/g, '/');
+                  const padded = b64.padEnd(b64.length + ((4 - (b64.length % 4)) % 4), '=');
+                  const decoded = JSON.parse(atob(padded)) as Record<string, unknown>;
+                  params = Object.fromEntries(Object.entries(decoded).map(([key, value]) => [key, String(value)]));
+               } catch {
+                  // fall through to the missing-hash error below
+               }
+            }
+         }
 
          if (!params.hash) {
             setError('Missing Telegram auth data. Please try again.');
