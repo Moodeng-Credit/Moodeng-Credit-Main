@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { ChevronRight, ExternalLink, LoaderCircle, X } from 'lucide-react';
+import { useAccount } from 'wagmi';
 
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -48,6 +49,13 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
    const [coinbaseLoading, setCoinbaseLoading] = useState(false);
    const [coinbaseError, setCoinbaseError] = useState<string | null>(null);
 
+   // Destination for onramp/funding: prefer the saved profile wallet, but fall back to the
+   // wallet the user has connected in this session. The saved value can lag (e.g. just after
+   // connecting, or when it never persisted), so relying on it alone wrongly reports "no
+   // wallet" for someone who clearly has one connected.
+   const { address: connectedAddress } = useAccount();
+   const effectiveWalletAddress = walletAddress || connectedAddress;
+
    useEffect(() => {
       if (!isOpen) return;
       const handleEscape = (e: KeyboardEvent) => {
@@ -75,6 +83,15 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
    // Coinbase blocks it because bank 2FA/3DS can't run in an iframe.
    const handleCoinbase = useCallback(async () => {
       if (coinbaseLoading) return;
+
+      // Coinbase needs a destination wallet to send the USDC to. Without one, the token
+      // mint fails with NO_WALLET — so short-circuit with an honest message ("connect a
+      // wallet first") instead of opening a popup that dead-ends on the generic error.
+      if (!effectiveWalletAddress) {
+         setCoinbaseError('Connect a wallet first so we know where to send your USDC.');
+         return;
+      }
+
       setCoinbaseLoading(true);
       setCoinbaseError(null);
 
@@ -117,7 +134,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
       try {
          const supabase = getSupabaseBrowserClient();
          const { data, error } = await supabase.functions.invoke('coinbase-onramp-token', {
-            body: walletAddress ? { address: walletAddress } : {},
+            body: effectiveWalletAddress ? { address: effectiveWalletAddress } : {},
          });
          const token = (data as { token?: string } | null)?.token;
 
@@ -141,7 +158,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
       } finally {
          setCoinbaseLoading(false);
       }
-   }, [coinbaseLoading, walletAddress]);
+   }, [coinbaseLoading, effectiveWalletAddress]);
 
    if (!isOpen) return null;
 

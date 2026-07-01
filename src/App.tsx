@@ -41,6 +41,7 @@ import LenderRequestBoard from '@/app/lender/request-board/page';
 import Login from '@/app/login/page';
 import MilestonesPage from '@/app/milestones/page';
 import CongratulationsPage from '@/app/onboarding/congratulations/page';
+import WalletBlocked from '@/app/onboarding/wallet/blocked/page';
 import WalletConnected from '@/app/onboarding/wallet/connected/page';
 import WalletConnect from '@/app/onboarding/wallet/page';
 import OnboardingWelcome from '@/app/onboarding/welcome/page';
@@ -218,6 +219,14 @@ export default function App() {
                }
             />
             <Route
+               path="/onboarding/wallet/blocked"
+               element={
+                  <ProtectedRoute>
+                     <WalletBlocked />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
                path="/onboarding/congratulations"
                element={
                   <ProtectedRoute>
@@ -228,6 +237,7 @@ export default function App() {
             {import.meta.env.DEV ? <Route path="/onboarding/start-preview" element={<OnboardingWelcome />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/wallet-preview" element={<WalletConnect />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/wallet-connected-preview" element={<WalletConnected />} /> : null}
+            {import.meta.env.DEV ? <Route path="/onboarding/wallet-blocked-preview" element={<WalletBlocked />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/congratulations-preview" element={<CongratulationsPage />} /> : null}
 
             {/* Verification */}
