@@ -67,6 +67,14 @@ const isIOSDevice = () =>
    (/iP(hone|ad|od)/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
 
+const isAndroidDevice = () => typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+
+// Mobile browsers (iOS + Android) only hand a World ID universal link to the installed
+// World App when the navigation happens on the current tab in direct response to the tap.
+// A programmatic new tab/popup is downgraded to the App Store / Play Store fallback page —
+// the "sent me to the Play Store, then a second attempt opened the app" double-launch bug.
+const needsCurrentTabWorldAppLaunch = () => isIOSDevice() || isAndroidDevice();
+
 interface VerificationLaunchOverlayProps {
    state: VerificationLaunchState;
    onRetryOpen: () => void;
@@ -336,21 +344,32 @@ function VerificationFeedbackOverlay({
                ) : null}
 
                {state === 'error' ? (
-                  <div className="grid w-full grid-cols-2 gap-md-2">
-                     <button
-                        type="button"
-                        onClick={onDismiss}
-                        className="inline-flex min-h-12 items-center justify-center rounded-md-lg border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-heading"
-                     >
-                        Back
-                     </button>
-                     <button
-                        type="button"
-                        onClick={onTryAgain}
-                        className="inline-flex min-h-12 items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-neutral-100"
-                     >
-                        Try again
-                     </button>
+                  <div className="flex w-full flex-col gap-md-2">
+                     <div className="grid w-full grid-cols-2 gap-md-2">
+                        <button
+                           type="button"
+                           onClick={onDismiss}
+                           className="inline-flex min-h-12 items-center justify-center rounded-md-lg border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-heading"
+                        >
+                           Back
+                        </button>
+                        <button
+                           type="button"
+                           onClick={onTryAgain}
+                           className="inline-flex min-h-12 items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b2 font-semibold tracking-normal text-md-neutral-100"
+                        >
+                           Try again
+                        </button>
+                     </div>
+                     {!isShowingHelp ? (
+                        <button
+                           type="button"
+                           onClick={onNeedHelp}
+                           className="inline-flex min-h-12 w-full items-center justify-center rounded-md-lg px-md-3 py-md-2 text-md-b2 font-semibold tracking-normal text-md-primary-1600 underline underline-offset-2"
+                        >
+                           Still stuck? Contact support
+                        </button>
+                     ) : null}
                   </div>
                ) : null}
             </div>
@@ -781,21 +800,23 @@ export default function WorldIDVerification({
       setShowVerificationHelp(false);
       setVerificationLaunchState('opening');
 
-      // iOS: navigate the current tab so the universal link opens the installed World App.
-      // A new-tab/popup launch is silently downgraded to the App Store fallback on iOS Safari.
-      if (isIOSDevice()) {
+      // Mobile (iOS + Android): navigate the current tab so the universal link opens the
+      // installed World App. A programmatic new-tab/popup launch is downgraded to the
+      // App Store / Play Store fallback page, which is what produced the "Play Store first,
+      // then a second tap opened the app" double-launch behaviour on Android.
+      if (needsCurrentTabWorldAppLaunch()) {
          const launchInCurrentTab = (request: PreparedWorldIdRequest) => {
             didLaunchExternalFlowRef.current = true;
             clearLaunchFallbackTimer();
             // Start polling before navigating: when the universal link is intercepted by the
-            // World App, Safari keeps this page alive and polling continues to completion.
+            // World App, the browser keeps this page alive and polling continues to completion.
             beginPollingWorldIdRequest(request);
             window.location.href = request.connectorURI;
          };
 
-         const preparedForIOS = preparedRequestRef.current;
-         if (preparedForIOS) {
-            launchInCurrentTab(preparedForIOS);
+         const preparedForMobile = preparedRequestRef.current;
+         if (preparedForMobile) {
+            launchInCurrentTab(preparedForMobile);
             preparingRef.current = false;
             return;
          }
@@ -805,7 +826,7 @@ export default function WorldIDVerification({
             .catch((error) => {
                setVerificationLaunchState('idle');
                if (error instanceof Error && error.message === 'WORLDID_ALREADY_USED') return;
-               console.error('[WorldID] iOS launch error:', error instanceof Error ? error.message : error);
+               console.error('[WorldID] mobile launch error:', error instanceof Error ? error.message : error);
                showToastByConfig('server_error');
             })
             .finally(() => {
