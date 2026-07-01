@@ -11,6 +11,7 @@ import { useIsBorrower } from '@/hooks/useIsBorrower';
 
 import type { WalletLivenessData } from '@/utils/diversityScore';
 
+import { getBorrowerUsedCreditAmount } from '@/lib/borrowerCreditUsage';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { BORROWER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
 import { isUserVerified } from '@/lib/isUserVerified';
@@ -202,12 +203,10 @@ export default function Dashboard() {
            defaultedLoans: previewLoans.filter((loan) => loan.id === 'mock-defaulted-1')
         }
       : loanArrays;
+   // Use the shared expiry-aware helper (same as the request board) so an unfunded
+   // request that has passed REQUEST_EXPIRATION_DAYS stops consuming credit here too.
    const usedCreditAmount = useMemo(
-      () =>
-         [...displayLoanArrays.activeLoans, ...displayLoanArrays.defaultedLoans].reduce(
-            (sum, loan) => sum + Number(loan.loanAmount || 0),
-            0
-         ),
+      () => getBorrowerUsedCreditAmount([...displayLoanArrays.activeLoans, ...displayLoanArrays.defaultedLoans]),
       [displayLoanArrays.activeLoans, displayLoanArrays.defaultedLoans]
    );
    const milestones = buildReputationMilestones({ creditLevels, borrowerLoans: milestoneLoans, isVerified });
