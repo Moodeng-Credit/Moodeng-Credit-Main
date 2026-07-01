@@ -1571,7 +1571,7 @@ export default function AccountSettings() {
                               <button
                                  type="button"
                                  onClick={handleInitiateWalletDisconnect}
-                                 className="rounded-md-lg border border-md-red-100 bg-md-red-100/60 px-md-3 py-md-2 text-md-b2 font-semibold text-md-red-500 active:scale-[0.99]"
+                                 className="rounded-md-lg border border-md-red-100 bg-md-red-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-red-500 active:scale-[0.99]"
                               >
                                  Disconnect wallet
                               </button>
