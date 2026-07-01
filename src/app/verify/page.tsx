@@ -22,7 +22,6 @@ type FlowState = { method: VerifyMethod; returnTo?: string; livenessSessionId?: 
 
 type Step =
    | 'loading'
-   | 'liveness-redirecting'
    | 'liveness-start'
    | 'liveness-pending'
    | 'liveness-waiting'
@@ -79,6 +78,7 @@ export default function VerifyFlow() {
    const [step, setStep] = useState<Step>('loading');
    const [errorMessage, setErrorMessage] = useState('');
    const [isChecking, setIsChecking] = useState(false);
+   const [livenessUrl, setLivenessUrl] = useState<string | null>(null);
    const pollCancelRef = useRef(false);
    const startedRef = useRef(false);
 
@@ -140,11 +140,12 @@ export default function VerifyFlow() {
 
    // --- Liveness ----------------------------------------------------------------
 
+   // Fetches a Didit liveness URL and shows the "Open face scan" button.
+   // Does NOT navigate the current tab away — the user opens Didit in a new tab
+   // via handleOpenLiveness so we can keep polling here.
    const startLiveness = useCallback(async (flow: FlowState) => {
       setErrorMessage('');
-      // Brief redirect-warning screen before handing off to Didit
-      setStep('liveness-redirecting');
-      await wait(2000);
+      setLivenessUrl(null);
       setStep('liveness-start');
       try {
          const supabase = getSupabaseBrowserClient();
@@ -157,7 +158,7 @@ export default function VerifyFlow() {
             throw new Error('Could not start the liveness check. Please try again.');
          }
          writeFlow({ ...flow, livenessSessionId: sessionId ?? undefined });
-         window.location.href = url;
+         setLivenessUrl(url);
       } catch (err) {
          setErrorMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
          setStep('error');
@@ -199,6 +200,21 @@ export default function VerifyFlow() {
       },
       [dispatch]
    );
+
+   // Called by the "Open face scan" button — must be a synchronous click handler so
+   // window.open is treated as a user gesture and isn't blocked as a popup.
+   const handleOpenLiveness = useCallback(() => {
+      if (!livenessUrl) return;
+      const opened = window.open(livenessUrl, '_blank');
+      if (!opened) {
+         // Popup blocked — fall back to navigating the current tab (old behaviour).
+         window.location.href = livenessUrl;
+         return;
+      }
+      opened.opener = null;
+      const currentFlow = readFlow();
+      if (currentFlow) void pollLiveness(currentFlow);
+   }, [livenessUrl, pollLiveness]);
 
    // --- Traditional KYC (combined Didit workflow) -------------------------------
 
@@ -311,6 +327,13 @@ export default function VerifyFlow() {
             setStep('duplicate');
             return;
          }
+         // Session already created (status set to PENDING by create-didit-session) — the user
+         // returned manually before Didit redirected back. Poll for the result instead of
+         // restarting a new session.
+         if (user?.livenessStatus === 'PENDING') {
+            void pollLiveness(flow);
+            return;
+         }
          void startLiveness(flow);
       };
 
@@ -354,24 +377,34 @@ export default function VerifyFlow() {
 
    // --- Render ------------------------------------------------------------------
 
-   if (step === 'liveness-redirecting') {
-      const step2Hint = flow?.method === 'worldid'
-         ? 'Step 2 will ask you to verify with World ID.'
-         : 'Step 2 will ask for your national ID.';
+   if (step === 'liveness-start') {
+      if (livenessUrl) {
+         const step2Hint = flow?.method === 'worldid'
+            ? "Then you'll verify with World ID in this tab."
+            : "Then you'll submit your national ID in this tab.";
+         return (
+            <StatusScreen
+               stepLabel="Step 1 of 2"
+               visual="orbit"
+               title="Ready for face scan"
+               body={`Tap the button to open the face scan in a new tab. Keep this page open — it will update automatically when done. ${step2Hint}`}
+               action={{ label: 'Open face scan', onClick: handleOpenLiveness }}
+            />
+         );
+      }
       return (
          <StatusScreen
             stepLabel="Step 1 of 2"
             visual="orbit"
-            title="Taking you to Didit…"
-            body={`Step 1: a quick face scan to confirm you're real. ${step2Hint} Come back here when the face scan is done.`}
+            title="Setting up…"
+            body="Starting your verification. Keep this screen open."
          />
       );
    }
 
-   if (step === 'liveness-start' || step === 'id-start') {
+   if (step === 'id-start') {
       return (
          <StatusScreen
-            stepLabel={step === 'liveness-start' ? 'Step 1 of 2' : undefined}
             visual="orbit"
             title="Setting up…"
             body="Starting your verification. Keep this screen open."
@@ -380,19 +413,16 @@ export default function VerifyFlow() {
    }
 
    if (step === 'liveness-pending') {
-      const step2Hint = flow?.method === 'worldid'
-         ? 'Then you\'ll verify with World ID.'
-         : 'Then you\'ll submit your national ID.';
       const body = elapsed > 90
          ? 'Almost there — hang tight while Didit finishes the check.'
          : elapsed > 30
          ? 'Still checking — liveness checks usually take a minute or two.'
-         : `Confirming you're a real person. ${step2Hint} Keep this screen open.`;
+         : 'Face scan in progress. Complete it in the tab that just opened — this page will update automatically when done.';
       return (
          <StatusScreen
             stepLabel="Step 1 of 2"
             visual="orbit"
-            title="Checking you're a real person…"
+            title="Waiting for face scan…"
             body={body}
          />
       );
