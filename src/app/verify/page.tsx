@@ -7,18 +7,20 @@ import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import {
+   clearVerifyFlow,
+   readVerifyFlow,
+   writeVerifyFlow,
+   type FlowState,
+   type VerifyMethod
+} from '@/lib/verifyFlow';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
 const STATUS_REFRESH_RETRIES = 40;
 const STATUS_REFRESH_DELAY_MS = 3000;
-const FLOW_KEY = 'verify_flow';
-const FLOW_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 const wait = (ms: number) => new Promise<void>((resolve) => { window.setTimeout(resolve, ms); });
-
-type VerifyMethod = 'worldid' | 'didit';
-type FlowState = { method: VerifyMethod; returnTo?: string; livenessSessionId?: string; ts?: number };
 
 type Step =
    | 'loading'
@@ -43,24 +45,11 @@ type Step =
 // flickering back to a button-less waiting screen when a poll (re)starts.
 const TERMINAL_STEPS = new Set<Step>(['confirm', 'duplicate', 'declined', 'success', 'id-review', 'id-declined']);
 
-// localStorage with 1-hour TTL — survives tab kills during Didit redirects unlike sessionStorage
-const readFlow = (): FlowState | null => {
-   try {
-      const raw = window.localStorage.getItem(FLOW_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as FlowState;
-      if (parsed.ts && Date.now() - parsed.ts > FLOW_TTL_MS) {
-         window.localStorage.removeItem(FLOW_KEY);
-         return null;
-      }
-      return parsed;
-   } catch {
-      return null;
-   }
-};
-const writeFlow = (flow: FlowState) =>
-   window.localStorage.setItem(FLOW_KEY, JSON.stringify({ ...flow, ts: Date.now() }));
-const clearFlow = () => window.localStorage.removeItem(FLOW_KEY);
+// Flow persistence lives in a shared module so the request board can read the
+// same "started verifying but never finished" signal to show its support modal.
+const readFlow = readVerifyFlow;
+const writeFlow = writeVerifyFlow;
+const clearFlow = clearVerifyFlow;
 
 // Tracks seconds since mount — used to show dynamic copy after 30s of polling
 function useElapsedSeconds(active: boolean): number {

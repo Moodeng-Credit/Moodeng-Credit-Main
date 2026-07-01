@@ -22,6 +22,7 @@ import IouPointHistoryModal from '@/components/IouPointHistoryModal';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar from '@/components/UserAvatar';
+import { VerificationUnsuccessfulModal } from '@/components/verification/VerificationUnsuccessfulModal';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 import { ModalNote } from '@/components/worldId/modal/ModalNote';
 import { VerificationModalBody } from '@/components/worldId/modal/VerificationModalBody';
@@ -41,6 +42,7 @@ import { getBorrowerActiveLoanCount, getBorrowerUsedCreditAmount, isRequestBoard
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { isUserVerified, isVerificationPending } from '@/lib/isUserVerified';
+import { clearVerifyFlow, readVerifyFlow, type VerifyMethod } from '@/lib/verifyFlow';
 import {
    BORROWER_GUIDED_TOUR_ID,
    GENERAL_GUIDED_TOUR_ID,
@@ -372,6 +374,8 @@ function RequestBoard$() {
    const [showIouHistory, setShowIouHistory] = useState(false);
    const [showFundSheet, setShowFundSheet] = useState(false);
    const [isOpeningLoanRequest, setIsOpeningLoanRequest] = useState(false);
+   const [failedVerifyMethod, setFailedVerifyMethod] = useState<VerifyMethod | null>(null);
+   const verifyFailCheckedRef = useRef(false);
 
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -381,6 +385,8 @@ function RequestBoard$() {
    const isReferralTestMode = import.meta.env.DEV && requestBoardSearchParams.has('referralTest');
    const forceTourPreview = import.meta.env.DEV && requestBoardSearchParams.has('tourPreview');
    const showWorldIdSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.has('worldIdSuccessPreview');
+   // DEV-only: ?verifyFailedPreview=worldid|didit force-shows the "we couldn't verify you" modal.
+   const verifyFailedPreview = import.meta.env.DEV ? requestBoardSearchParams.get('verifyFailedPreview') : null;
    const showSubmittedRequestSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.has('submittedRequestSuccessPreview');
    const showTourPreview = forceTourPreview || requestBoardSearchParams.has('tour');
    const shouldStartTourImmediately = requestBoardSearchParams.get('startTour') === '1';
@@ -408,6 +414,23 @@ function RequestBoard$() {
    const isWorldIdVerified = isUserVerified(effectiveUser) || hasWorldIdJustVerified;
    const showVerify = !isWorldIdVerified;
    const isPending = isVerificationPending(effectiveUser);
+
+   // One-shot: a user who started a verification (World ID or the traditional ID
+   // check) but landed back here without finishing — declined, or the World App
+   // handoff dropped them out — gets a friendly "we couldn't verify you" modal
+   // with a route to support. The verify_flow key is cleared on success, so its
+   // presence alongside an unverified, non-pending user means the attempt didn't
+   // complete. Covers both methods via the flow's `method`.
+   useEffect(() => {
+      if (verifyFailCheckedRef.current || !isRealUserAuthenticated) return;
+      verifyFailCheckedRef.current = true;
+      if (isUserVerified(user) || isVerificationPending(user)) return;
+      const pendingFlow = readVerifyFlow();
+      if (pendingFlow) {
+         setFailedVerifyMethod(pendingFlow.method);
+         clearVerifyFlow();
+      }
+   }, [isRealUserAuthenticated, user]);
    const { open: openVerify, modal: verifyModal } = useVerifyYourself();
    const storeIsBorrower = useIsBorrower();
    const isBorrower = isLenderTourPreview ? false : isReferralTestMode || storeIsBorrower;
@@ -1972,6 +1995,11 @@ function RequestBoard$() {
             onClose={() => setShowIouHistory(false)}
          />
          {verifyModal}
+         <VerificationUnsuccessfulModal
+            isOpen={failedVerifyMethod !== null || verifyFailedPreview !== null}
+            method={failedVerifyMethod ?? (verifyFailedPreview === 'didit' ? 'didit' : 'worldid')}
+            onClose={() => setFailedVerifyMethod(null)}
+         />
          <FundWalletSheet
             isOpen={showFundSheet}
             onClose={() => setShowFundSheet(false)}
