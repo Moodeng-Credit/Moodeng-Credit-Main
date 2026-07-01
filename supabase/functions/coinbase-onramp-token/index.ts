@@ -33,6 +33,8 @@ const ALLOWED_ORIGINS = new Set(
       'http://localhost:3000',
       'https://staging.dashboard.moodeng.app',
       'https://dashboard.moodeng.app',
+      'https://moodeng.app',
+      'https://www.moodeng.app',
       Deno.env.get('CDP_EXTRA_ALLOWED_ORIGIN')?.trim()
    ].filter((origin): origin is string => Boolean(origin))
 );

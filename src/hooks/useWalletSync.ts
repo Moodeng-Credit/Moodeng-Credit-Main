@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { useAccount, useAccountEffect, useDisconnect } from 'wagmi';
 
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
@@ -30,6 +31,7 @@ export function useWalletSync() {
    const dispatch = useDispatch<AppDispatch>();
    const account = useAccount();
    const { disconnect } = useDisconnect();
+   const navigate = useNavigate();
    const { openConnectModal } = useConnectModal();
    const { showToast } = useToast();
 
@@ -194,12 +196,15 @@ export function useWalletSync() {
                const errorCode = error?.code || '';
 
                if (errorCode === '23505' && errorMessage.includes('users_wallet_address_key')) {
-                  // Wallet is already saved on another account. For borrowers this matters
-                  // (their saved wallet is their locked identity), so keep the hard message.
-                  // For lenders it's toothless — funding uses the live-connected wallet, not
-                  // this saved field, so blocking the *display* value just adds friction. We
-                  // let lenders keep using the wallet and leave the cross-account overlap to
-                  // the out-of-band fraud detection (wallet_usage_log + daily scan).
+                  // Wallet is already saved on another account. Each wallet may belong to only
+                  // one account — this is what prevents self-lending (the same person acting as
+                  // both borrower and lender on one wallet) and the fraud it enables. Borrowers
+                  // get the hard toast (their saved wallet is their locked identity). Lenders
+                  // were previously swallowed here silently, which left the wallet connected in
+                  // the browser but never saved — an invisible dead end that also broke the
+                  // Coinbase onramp (no destination wallet on file). Route lenders to a dedicated
+                  // page that explains the rule and offers a way forward.
+                  disconnect();
                   if (userRole === 'borrower') {
                      showToast(
                         TOAST_TYPES.ERROR,
@@ -208,7 +213,8 @@ export function useWalletSync() {
                         undefined,
                         undefined
                      );
-                     disconnect();
+                  } else {
+                     navigate('/onboarding/wallet/blocked', { replace: true });
                   }
                   return;
                } else if (/auth|session|jwt|authenticated/i.test(errorMessage)) {
@@ -252,7 +258,8 @@ export function useWalletSync() {
       userRole,
       dispatch,
       showToast,
-      disconnect
+      disconnect,
+      navigate
    ]);
 
    return {
