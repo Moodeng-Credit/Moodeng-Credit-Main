@@ -11,6 +11,7 @@ import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
 import useWallet from '@/hooks/useWallet';
 
+import { isExpiredUnfundedRequest } from '@/lib/borrowerCreditUsage';
 import { getBaseAccountConnector } from '@/lib/walletProvider';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import { getUserLoans, recordInterestReturn } from '@/store/slices/loanSlice';
@@ -91,6 +92,15 @@ function StatusChip({ status }: { status: TransactionLoanStatus }) {
          label: 'PARTIAL',
          className: 'border-md-yellow-700 text-md-yellow-700 bg-md-yellow-700/15',
          icon: null
+      },
+      EXPIRED: {
+         label: 'EXPIRED',
+         className: 'border-md-neutral-600 text-md-neutral-700 bg-transparent',
+         icon: (
+            <span className="w-3 h-3 rounded-full border-[1.5px] border-md-neutral-600 flex items-center justify-center shrink-0">
+               <span className="text-[8px] font-bold leading-none">&times;</span>
+            </span>
+         )
       }
    };
    const { label, className, icon } = map[status];
@@ -175,7 +185,7 @@ function buildTimeline(loan: Loan): TimelineStep[] {
       return labels[key];
    };
 
-   return order.map((key, idx) => {
+   const steps = order.map((key, idx) => {
       const state = stateFor(key, idx);
       return {
          key,
@@ -184,6 +194,18 @@ function buildTimeline(loan: Loan): TimelineStep[] {
          state
       };
    });
+
+   // Expired request: the funding step never happened and never will, so show it
+   // as a dead grey "Expired" step rather than a live orange "Waiting for lender".
+   if (isExpiredUnfundedRequest(loan)) {
+      return steps.map((step) =>
+         step.key === 'funded'
+            ? { ...step, state: 'pending' as StepState, label: 'Expired', description: 'Request expired' }
+            : step
+      );
+   }
+
+   return steps;
 }
 
 function StepDot({ state }: { state: StepState }) {
@@ -570,6 +592,9 @@ export default function TransactionDetail() {
 
    const status = getTransactionLoanStatus(loan, new Date());
    const isPendingFunding = status === 'PENDING';
+   const isExpiredRequest = status === 'EXPIRED';
+   // Both are unfunded requests (no lender, no repayment) and share that layout.
+   const isUnfunded = isPendingFunding || isExpiredRequest;
    const isLender = !!user?.id && loan.lenderUser === user.id;
    const counterpartyId = isLender ? loan.borrowerUser : loan.lenderUser;
    const counterpartyProfile = counterpartyId ? userProfiles[counterpartyId] : undefined;
@@ -612,9 +637,11 @@ export default function TransactionDetail() {
                         <span className="text-md-b3 text-md-neutral-1200">
                            {isLender
                               ? `Borrowed by ${counterpartyName}`
-                              : isPendingFunding
-                                ? 'Lender has not accepted yet'
-                                : `Lent by ${counterpartyName}`}
+                              : isExpiredRequest
+                                ? 'Request expired before funding'
+                                : isPendingFunding
+                                  ? 'Lender has not accepted yet'
+                                  : `Lent by ${counterpartyName}`}
                         </span>
                      </div>
                   </div>
@@ -628,6 +655,16 @@ export default function TransactionDetail() {
                            <span className="text-md-b3 font-semibold text-md-yellow-700">Waiting for lender acceptance</span>
                            <span className="text-md-b4 text-md-neutral-1000">
                               This loan is not funded yet. Repayment starts only after a lender accepts.
+                           </span>
+                        </div>
+                     </div>
+                  ) : isExpiredRequest ? (
+                     <div className="rounded-md-md border border-md-neutral-600/40 bg-md-neutral-300/40 px-md-3 py-md-2 flex gap-md-2">
+                        <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-md-neutral-700" strokeWidth={2.3} />
+                        <div className="flex flex-col gap-1">
+                           <span className="text-md-b3 font-semibold text-md-neutral-700">Request expired</span>
+                           <span className="text-md-b4 text-md-neutral-1000">
+                              No lender funded this request in time, so it expired. It no longer uses your credit — you can post a new request anytime.
                            </span>
                         </div>
                      </div>
@@ -650,14 +687,14 @@ export default function TransactionDetail() {
                      </div>
                      <div className="flex flex-col gap-1">
                         <span className="text-md-b3 text-md-neutral-1000">Outstanding</span>
-                        <span className={`text-md-b1 font-semibold ${isPendingFunding ? 'text-md-neutral-600' : 'text-md-red-500'}`}>
-                           {isPendingFunding ? 'Not active' : formatCurrency(outstanding)}
+                        <span className={`text-md-b1 font-semibold ${isUnfunded ? 'text-md-neutral-600' : 'text-md-red-500'}`}>
+                           {isUnfunded ? 'Not active' : formatCurrency(outstanding)}
                         </span>
                      </div>
                      <div className="flex flex-col gap-1 col-span-2">
-                        <span className="text-md-b3 text-md-neutral-1000">{isPendingFunding ? 'Requested on' : 'Due Date'}</span>
+                        <span className="text-md-b3 text-md-neutral-1000">{isUnfunded ? 'Requested on' : 'Due Date'}</span>
                         <span className="text-md-b1 font-semibold text-md-primary-2000">
-                           {isPendingFunding ? formatDate(loan.createdAt) : formatDate(loan.dueDate)}
+                           {isUnfunded ? formatDate(loan.createdAt) : formatDate(loan.dueDate)}
                         </span>
                      </div>
                   </div>

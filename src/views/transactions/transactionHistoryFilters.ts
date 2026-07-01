@@ -1,3 +1,4 @@
+import { isExpiredUnfundedRequest } from '@/lib/borrowerCreditUsage';
 import { toNumber } from '@/utils/decimalHelpers';
 
 import type { User } from '@/types/authTypes';
@@ -12,13 +13,17 @@ export interface TransactionHistoryFilterState {
    status: TransactionHistoryStatusFilter;
 }
 
-export type TransactionLoanStatus = 'REPAID' | 'ACTIVE' | 'DEFAULT' | 'PENDING' | 'PARTIAL';
+export type TransactionLoanStatus = 'REPAID' | 'ACTIVE' | 'DEFAULT' | 'PENDING' | 'PARTIAL' | 'EXPIRED';
 
 export const DEFAULT_TRANSACTION_HISTORY_FILTERS: TransactionHistoryFilterState = { sortBy: '', status: '' };
 
 export function getTransactionLoanStatus(loan: Loan, now = new Date()): TransactionLoanStatus {
    if (loan.repaymentStatus === RepaymentStatus.PAID) return 'REPAID';
-   if (loan.loanStatus === LoanStatusValue.REQUESTED) return 'PENDING';
+   if (loan.loanStatus === LoanStatusValue.REQUESTED) {
+      // An unfunded request past the 7-day window is dead — surface it as EXPIRED
+      // (it no longer consumes credit) instead of a perpetual PENDING.
+      return isExpiredUnfundedRequest(loan, now) ? 'EXPIRED' : 'PENDING';
+   }
 
    const dueTime = new Date(loan.dueDate).getTime();
    const isPastDue = Number.isFinite(dueTime) && dueTime < now.getTime();
@@ -81,8 +86,9 @@ export function filterTransactionHistoryLoans({
 
    let result = loans.filter((loan) => {
       const status = getTransactionLoanStatus(loan, now);
-      if (activeTab === 'active' && status === 'REPAID') return false;
-      if (activeTab === 'completed' && status !== 'REPAID') return false;
+      // Expired requests are done, not active — group them with completed.
+      if (activeTab === 'active' && (status === 'REPAID' || status === 'EXPIRED')) return false;
+      if (activeTab === 'completed' && status !== 'REPAID' && status !== 'EXPIRED') return false;
       if (!matchesStatusFilter(status, filters.status)) return false;
 
       if (!normalizedSearch) return true;

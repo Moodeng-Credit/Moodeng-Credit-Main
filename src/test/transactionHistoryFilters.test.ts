@@ -83,6 +83,25 @@ describe('transactionHistoryFilters', () => {
       expect(getFilteredIds(loans, { sortBy: 'low-to-high', status: 'active' })).toEqual(['active-small', 'active-large']);
    });
 
+   it('marks unfunded requests EXPIRED after the 7-day window and PENDING before it', () => {
+      const now = new Date('2026-05-23T00:00:00.000Z');
+      const fresh = makeLoan({ id: 'fresh', loanStatus: LoanStatus.REQUESTED, fundedAt: undefined, createdAt: '2026-05-20T00:00:00.000Z' });
+      const stale = makeLoan({ id: 'stale', loanStatus: LoanStatus.REQUESTED, fundedAt: undefined, createdAt: '2026-05-01T00:00:00.000Z' });
+
+      expect(getTransactionLoanStatus(fresh, now)).toBe('PENDING');
+      expect(getTransactionLoanStatus(stale, now)).toBe('EXPIRED');
+   });
+
+   it('groups expired requests with completed, not active', () => {
+      const now = new Date('2026-05-23T00:00:00.000Z');
+      const stale = makeLoan({ id: 'stale', loanStatus: LoanStatus.REQUESTED, fundedAt: undefined, createdAt: '2026-05-01T00:00:00.000Z' });
+      const inTab = (activeTab: 'active' | 'completed') =>
+         filterTransactionHistoryLoans({ loans: [stale], activeTab, searchQuery: '', filters: { sortBy: '', status: '' }, isBorrower: true, userProfiles: {}, now }).map((l) => l.id);
+
+      expect(inTab('active')).toEqual([]);
+      expect(inTab('completed')).toEqual(['stale']);
+   });
+
    it('sorts oldest to newest through the sort field', () => {
       const loans = [
          makeLoan({ id: 'newer', fundedAt: '2026-05-20T00:00:00.000Z' }),
