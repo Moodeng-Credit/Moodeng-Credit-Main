@@ -29,6 +29,7 @@ import BlogDetailPage from '@/app/blogs/[slug]/page';
 import BlogsPage from '@/app/blogs/page';
 import CreditLevelingGuidePage from '@/app/credit-leveling-guide/page';
 import LearnHowCreditLevelsWorkPage from '@/app/learn/how-credit-levels-work/page';
+import LearnWhyWeUseUsdcPage from '@/app/learn/why-we-use-usdc/page';
 import LearnIndexPage from '@/app/learn/page';
 import PublicGuidePage from '@/app/learn/[slug]/page';
 import ForgotPassword from '@/app/forgot-password/page';
@@ -504,6 +505,14 @@ export default function App() {
                element={
                   <MarketingPageShell>
                      <LearnHowCreditLevelsWorkPage />
+                  </MarketingPageShell>
+               }
+            />
+            <Route
+               path="/learn/why-we-use-usdc"
+               element={
+                  <MarketingPageShell>
+                     <LearnWhyWeUseUsdcPage />
                   </MarketingPageShell>
                }
             />

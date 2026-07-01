@@ -1,0 +1,218 @@
+/* "Why Moodeng uses USDC" — a USDC-blue reskin of the shared Academy guide
+   layout (.credit-leveling-* / .hclw-*). Everything here is scoped to
+   .why-usdc so it never touches the Credit Levels guide. Palette leans on the
+   USDC brand blue (#2775CA) with a teal counterpoint, in a soft, rounded,
+   friendly register inspired by MAKE by KBank. */
+
+/* Accents: teal → USDC blue --------------------------------------------- */
+.why-usdc .credit-leveling-kicker {
+   color: #4d9bff;
+}
+
+.why-usdc .credit-leveling-hero__copy {
+   background:
+      radial-gradient(circle at 82% 10%, rgb(39 117 202 / 0.34), transparent 34%),
+      radial-gradient(circle at 12% 90%, rgb(51 214 168 / 0.14), transparent 34%),
+      linear-gradient(135deg, #10162a 0%, #101326 54%, #0c0c14 100%);
+}
+
+.why-usdc .hclw-pillar__icon {
+   background: #e5f0ff;
+   color: #2775ca;
+}
+
+.why-usdc .hclw-pillar__index {
+   color: #b9d4f5;
+}
+
+.why-usdc .hclw-pillar__eyebrow {
+   color: #2775ca;
+}
+
+/* Hero visual: the 1 USDC = $1.00 peg card ------------------------------ */
+.why-usdc-hero-visual {
+   display: flex;
+   min-height: 520px;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   gap: 22px;
+   border-radius: 34px;
+   border: 1px solid rgb(255 255 255 / 0.12);
+   background:
+      radial-gradient(circle at 50% 22%, rgb(39 117 202 / 0.42), transparent 46%),
+      linear-gradient(160deg, #16203c 0%, #111531 58%, #0b0c16 100%);
+   padding: clamp(24px, 4vw, 40px);
+   box-shadow: 0 28px 80px rgb(0 0 0 / 0.24);
+}
+
+.why-usdc-coin {
+   position: relative;
+   display: grid;
+   width: 132px;
+   height: 132px;
+   place-items: center;
+   border-radius: 999px;
+   background: linear-gradient(150deg, #2775ca 0%, #1e63b0 100%);
+   box-shadow:
+      0 18px 40px -12px rgb(39 117 202 / 0.7),
+      inset 0 2px 6px rgb(255 255 255 / 0.35);
+}
+
+.why-usdc-coin__mark {
+   color: #ffffff;
+   font-size: 4rem;
+   font-weight: 900;
+   line-height: 1;
+}
+
+.why-usdc-coin__ticker {
+   position: absolute;
+   bottom: 14px;
+   color: rgb(255 255 255 / 0.85);
+   font-size: 0.72rem;
+   font-weight: 900;
+   letter-spacing: 0.14em;
+}
+
+.why-usdc-peg {
+   display: flex;
+   align-items: center;
+   gap: 14px;
+   color: #f7f9ff;
+   font-size: clamp(1.6rem, 4vw, 2.3rem);
+   font-weight: 950;
+}
+
+.why-usdc-peg__eq {
+   color: #4d9bff;
+}
+
+.why-usdc-peg__note {
+   margin: 0;
+   color: rgb(210 224 245 / 0.78);
+   font-size: 0.95rem;
+   font-weight: 750;
+   text-align: center;
+}
+
+/* Real-world vs DeFi use-case cards ------------------------------------- */
+.why-usdc-usecase {
+   gap: 12px;
+}
+
+.why-usdc-usecase--real {
+   background: #e8eeff;
+}
+
+.why-usdc-usecase--defi {
+   background: #e6fbf4;
+}
+
+.why-usdc-usecase--real .hclw-loan-tag {
+   color: #2352d6;
+}
+
+.why-usdc-usecase--defi .hclw-loan-tag {
+   color: #0e7a58;
+}
+
+.why-usdc-usecase__list {
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+   margin: 4px 0 2px;
+   padding: 0;
+   list-style: none;
+}
+
+.why-usdc-usecase__list li {
+   position: relative;
+   padding-left: 26px;
+   color: #35304a;
+   font-size: 0.98rem;
+   font-weight: 700;
+   line-height: 1.4;
+}
+
+.why-usdc-usecase__list li::before {
+   content: '✓';
+   position: absolute;
+   left: 0;
+   top: 0;
+   display: grid;
+   width: 18px;
+   height: 18px;
+   place-items: center;
+   border-radius: 999px;
+   font-size: 0.72rem;
+   font-weight: 900;
+   color: #ffffff;
+}
+
+.why-usdc-usecase--real .why-usdc-usecase__list li::before {
+   background: #2775ca;
+}
+
+.why-usdc-usecase--defi .why-usdc-usecase__list li::before {
+   background: #12a07a;
+}
+
+/* Definitions glossary --------------------------------------------------- */
+.why-usdc-glossary {
+   display: grid;
+   grid-template-columns: repeat(2, minmax(0, 1fr));
+   gap: 16px;
+   margin-top: 26px;
+}
+
+.why-usdc-term {
+   border-radius: 22px;
+   border: 1px solid #e4ecf8;
+   background: #ffffff;
+   padding: 22px 24px;
+   box-shadow: 0 10px 26px -20px rgb(21 46 90 / 0.5);
+}
+
+.why-usdc-term dt {
+   color: #14315a;
+   font-size: 1.1rem;
+   font-weight: 950;
+}
+
+.why-usdc-term dd {
+   margin: 8px 0 0;
+   color: #4a4a5c;
+   font-size: 0.98rem;
+   font-weight: 650;
+   line-height: 1.5;
+}
+
+.why-usdc-callout {
+   margin-top: 22px;
+   border-radius: 22px;
+   border: 1px solid rgb(39 117 202 / 0.28);
+   background: linear-gradient(135deg, #eef5ff 0%, #e6fbf4 100%);
+   padding: 24px 26px;
+   color: #2b3a53;
+   font-size: 1.02rem;
+   font-weight: 650;
+   line-height: 1.55;
+}
+
+.why-usdc-callout strong {
+   color: #14315a;
+   font-weight: 950;
+}
+
+/* "What is USDC" intro copy — let <strong> pop in USDC blue */
+.why-usdc-what .credit-leveling-section__header p strong {
+   color: #2775ca;
+   font-weight: 900;
+}
+
+@media (max-width: 720px) {
+   .why-usdc-glossary {
+      grid-template-columns: 1fr;
+   }
+}

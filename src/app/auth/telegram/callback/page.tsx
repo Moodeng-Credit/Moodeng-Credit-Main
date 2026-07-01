@@ -3,6 +3,7 @@ import { type JSX, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
+import { setLastUsedAuth } from '@/lib/lastUsedAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export default function TelegramCallbackPage(): JSX.Element {
@@ -55,6 +56,8 @@ export default function TelegramCallbackPage(): JSX.Element {
             setError(sessionError.message);
             return;
          }
+
+         setLastUsedAuth('telegram');
 
          // Check whether the user has a completed profile (username set) to decide
          // whether to send them to onboarding or straight to the app.

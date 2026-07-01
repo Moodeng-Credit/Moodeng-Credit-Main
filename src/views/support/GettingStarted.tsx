@@ -37,7 +37,7 @@ const BASICS: BasicsItem[] = [
       description: 'Learn how USDC works',
       icon: 'usdc.svg',
       bg: 'bg-[#2775ca]',
-      path: '/support/guides/using-usdc-on-moodeng-credit'
+      path: '/learn/why-we-use-usdc'
    },
    {
       title: 'Learn Credit Leveling System',

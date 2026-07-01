@@ -22,4 +22,4 @@ Disallow: /forgot-password
 Disallow: /reset-password
 Disallow: /user/
 
-Sitemap: https://home.moodeng.app/sitemap.xml
+Sitemap: https://moodeng.app/sitemap.xml
