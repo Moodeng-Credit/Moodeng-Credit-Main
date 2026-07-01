@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import LineLoginButton from '@/components/LineLoginButton';
 
@@ -6,7 +6,7 @@ import LastUsedBadge from './LastUsedBadge';
 import TelegramLoginTile from './TelegramLoginTile';
 
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
-import { getLastUsedAuth } from '@/lib/lastUsedAuth';
+import { getLastUsedAuth, setLastUsedAuth } from '@/lib/lastUsedAuth';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 interface SocialAuthButtonsProps {
@@ -53,12 +53,23 @@ export function SocialAuthButtons({ isSignUp }: SocialAuthButtonsProps) {
    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
    const [googleError, setGoogleError] = useState('');
-   const [isFacebookLoading, setIsFacebookLoading] = useState(false);
-   const [facebookError, setFacebookError] = useState('');
    const [lastUsed] = useState(getLastUsedAuth);
+   const [showFacebookSoon, setShowFacebookSoon] = useState(false);
+   const facebookSoonTimer = useRef<number | null>(null);
 
    const googleLabel = isSignUp ? 'Sign Up with Google' : 'Sign In with Google';
-   const facebookLabel = isSignUp ? 'Sign Up with Facebook' : 'Sign In with Facebook';
+   // Facebook login is not live yet — the tile is grayed out; tapping it flashes a "Soon" hint.
+   const facebookLabel = 'Facebook sign-in coming soon';
+
+   const handleFacebookComingSoon = () => {
+      if (facebookSoonTimer.current) window.clearTimeout(facebookSoonTimer.current);
+      setShowFacebookSoon(true);
+      facebookSoonTimer.current = window.setTimeout(() => setShowFacebookSoon(false), 1800);
+   };
+
+   useEffect(() => () => {
+      if (facebookSoonTimer.current) window.clearTimeout(facebookSoonTimer.current);
+   }, []);
    const hasGoogleClientId = typeof clientId === 'string' && clientId.trim().length > 0 && !clientId.startsWith('encrypted:');
 
    const handleGoogleClick = async () => {
@@ -75,6 +86,10 @@ export function SocialAuthButtons({ isSignUp }: SocialAuthButtonsProps) {
          const supabase = getSupabaseBrowserClient();
          const redirectTo = getAuthRedirectUrl();
 
+         // Record the provider before we redirect away — the OAuth redirect flow returns
+         // through AuthInitializer, which has no way to know which tile was tapped. Best-effort.
+         setLastUsedAuth('google');
+
          const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: { redirectTo }
@@ -89,37 +104,6 @@ export function SocialAuthButtons({ isSignUp }: SocialAuthButtonsProps) {
          console.error('[SocialAuthButtons] Google OAuth exception:', err);
          setGoogleError(err instanceof Error ? err.message : 'Google sign-up could not start. Please try again.');
          setIsGoogleLoading(false);
-      }
-   };
-
-   const handleFacebookClick = async () => {
-      if (isFacebookLoading) return;
-      setFacebookError('');
-
-      if (!isSupabaseBrowserConfigured()) {
-         setFacebookError('Facebook sign-up is not configured in this local app. Ask for the .env.keys file, then restart the dev server.');
-         return;
-      }
-
-      setIsFacebookLoading(true);
-      try {
-         const supabase = getSupabaseBrowserClient();
-         const redirectTo = getAuthRedirectUrl();
-
-         const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'facebook',
-            options: { redirectTo }
-         });
-         if (error) {
-            console.error('[SocialAuthButtons] Facebook OAuth error:', error.message);
-            setFacebookError(error.message || 'Facebook sign-up could not start. Please try again.');
-            setIsFacebookLoading(false);
-         }
-         // If successful, the browser redirects — no need to reset loading state
-      } catch (err) {
-         console.error('[SocialAuthButtons] Facebook OAuth exception:', err);
-         setFacebookError(err instanceof Error ? err.message : 'Facebook sign-up could not start. Please try again.');
-         setIsFacebookLoading(false);
       }
    };
 
@@ -163,25 +147,25 @@ export function SocialAuthButtons({ isSignUp }: SocialAuthButtonsProps) {
                {lastUsed === 'line' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
             </div>
 
-            {/* Facebook: Supabase OAuth redirect flow (provider configured in the Supabase dashboard) */}
+            {/* Facebook: not live yet — grayed out; tapping it flashes a "Soon" hint */}
             <div className="relative">
                <button
                   type="button"
-                  onClick={handleFacebookClick}
-                  disabled={isFacebookLoading}
+                  onClick={handleFacebookComingSoon}
+                  aria-disabled="true"
                   aria-label={facebookLabel}
-                  aria-busy={isFacebookLoading}
                   title={facebookLabel}
-                  className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#B5ACBE] bg-[#FDFCFD] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] transition-opacity hover:opacity-95 dark:border-[#40354F] dark:bg-[#17121F] ${
-                     isFacebookLoading ? 'cursor-not-allowed opacity-70' : ''
-                  }`}
+                  className="flex h-14 w-14 shrink-0 cursor-not-allowed items-center justify-center overflow-hidden rounded-xl border border-[#B5ACBE] bg-[#F3F1F5] opacity-60 grayscale transition-opacity hover:opacity-70 dark:border-[#40354F] dark:bg-[#17121F]"
                >
                   <FacebookLogo />
                </button>
-               {lastUsed === 'facebook' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
+               {showFacebookSoon ? (
+                  <span className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#6B6577] px-2 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm dark:bg-[#4B4256]">
+                     Soon
+                  </span>
+               ) : null}
             </div>
          </div>
-         {facebookError ? <p className="text-sm font-medium leading-5 text-[#B91C1C]">{facebookError}</p> : null}
       </div>
    );
 }
