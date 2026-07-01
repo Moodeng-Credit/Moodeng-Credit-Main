@@ -38,6 +38,11 @@ type Step =
    | 'success'
    | 'error';
 
+// Steps a poll must never overwrite back to a "pending" screen. Guarding the
+// initial setStep against these prevents the confirm/success screen from
+// flickering back to a button-less waiting screen when a poll (re)starts.
+const TERMINAL_STEPS = new Set<Step>(['confirm', 'duplicate', 'declined', 'success', 'id-review', 'id-declined']);
+
 // localStorage with 1-hour TTL — survives tab kills during Didit redirects unlike sessionStorage
 const readFlow = (): FlowState | null => {
    try {
@@ -79,7 +84,9 @@ export default function VerifyFlow() {
    const [errorMessage, setErrorMessage] = useState('');
    const [isChecking, setIsChecking] = useState(false);
    const [livenessUrl, setLivenessUrl] = useState<string | null>(null);
-   const pollCancelRef = useRef(false);
+   // Monotonic run token: only the latest poll may mutate step. Bumping it makes
+   // any earlier poll bail on its next check, so a superseded loop can't stomp state.
+   const pollRunRef = useRef(0);
    const startedRef = useRef(false);
 
    const isLivenessPoll = step === 'liveness-pending';
@@ -167,16 +174,19 @@ export default function VerifyFlow() {
 
    const pollLiveness = useCallback(
       async (flow: FlowState) => {
-         pollCancelRef.current = false;
-         setStep('liveness-pending');
+         const runId = (pollRunRef.current += 1);
+         // Don't yank a confirm/terminal screen back to a pending screen if this
+         // poll starts after we've already advanced.
+         setStep((prev) => (TERMINAL_STEPS.has(prev) ? prev : 'liveness-pending'));
 
          for (let attempt = 0; attempt < STATUS_REFRESH_RETRIES; attempt++) {
-            if (pollCancelRef.current) return;
+            if (pollRunRef.current !== runId) return;
             if (attempt > 0) await wait(STATUS_REFRESH_DELAY_MS);
-            if (pollCancelRef.current) return;
+            if (pollRunRef.current !== runId) return;
 
             try {
                const refreshed = await dispatch(fetchUser()).unwrap();
+               if (pollRunRef.current !== runId) return;
                const matchesAttempt = !flow.livenessSessionId || refreshed.livenessSessionId === flow.livenessSessionId;
                if (!matchesAttempt) continue;
                if (refreshed.livenessStatus === 'APPROVED') {
@@ -196,7 +206,7 @@ export default function VerifyFlow() {
             }
          }
 
-         setStep('liveness-waiting');
+         if (pollRunRef.current === runId) setStep('liveness-waiting');
       },
       [dispatch]
    );
@@ -245,17 +255,28 @@ export default function VerifyFlow() {
    }, []);
 
    const pollDidit = useCallback(async () => {
-      pollCancelRef.current = false;
+      const runId = (pollRunRef.current += 1);
       setIsChecking(true);
-      setStep('id-pending');
+      // Don't yank a terminal screen back to a pending screen if this poll starts late.
+      setStep((prev) => (TERMINAL_STEPS.has(prev) ? prev : 'id-pending'));
 
       for (let attempt = 0; attempt < STATUS_REFRESH_RETRIES; attempt++) {
-         if (pollCancelRef.current) return;
+         if (pollRunRef.current !== runId) {
+            setIsChecking(false);
+            return;
+         }
          if (attempt > 0) await wait(STATUS_REFRESH_DELAY_MS);
-         if (pollCancelRef.current) return;
+         if (pollRunRef.current !== runId) {
+            setIsChecking(false);
+            return;
+         }
 
          try {
             const refreshed = await dispatch(fetchUser()).unwrap();
+            if (pollRunRef.current !== runId) {
+               setIsChecking(false);
+               return;
+            }
             if (refreshed.isDidit === 'ACTIVE') {
                setIsChecking(false);
                setStep('success');
@@ -282,6 +303,7 @@ export default function VerifyFlow() {
          }
       }
 
+      if (pollRunRef.current !== runId) return;
       setIsChecking(false);
       // After 2 minutes with no Approved/Review/Declined, show the waiting screen.
       // A background slow-poll (useEffect below) keeps checking every 60s from here.
@@ -358,8 +380,9 @@ export default function VerifyFlow() {
       navigate('/dashboard', { replace: true });
    }, [location, navigate, navigateAfterVerified, pollDidit, pollLiveness, startKyc, startLiveness, user]);
 
+   // On unmount, bump the run token so any in-flight poll bails on its next check.
    useEffect(() => () => {
-      pollCancelRef.current = true;
+      pollRunRef.current += 1;
    }, []);
 
    const flow = readFlow();
