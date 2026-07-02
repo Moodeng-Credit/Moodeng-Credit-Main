@@ -245,13 +245,13 @@ export default function VerifyFlow() {
       }
    }, []);
 
-   const pollDidit = useCallback(async () => {
+   const pollDidit = useCallback(async (retries: number = STATUS_REFRESH_RETRIES) => {
       const runId = (pollRunRef.current += 1);
       setIsChecking(true);
       // Don't yank a terminal screen back to a pending screen if this poll starts late.
       setStep((prev) => (TERMINAL_STEPS.has(prev) ? prev : 'id-pending'));
 
-      for (let attempt = 0; attempt < STATUS_REFRESH_RETRIES; attempt++) {
+      for (let attempt = 0; attempt < retries; attempt++) {
          if (pollRunRef.current !== runId) {
             setIsChecking(false);
             return;
@@ -433,8 +433,10 @@ export default function VerifyFlow() {
          return;
       }
       if (user?.diditSubmittedAt) {
-         // Submitted but no webhook verdict yet — poll, then park on the waiting screen.
-         void pollDidit();
+         // Submitted but no webhook verdict yet — short poll (~15s), then park on the
+         // waiting screen. A long blind poll here would strand users who quit Didit
+         // mid-session (no verdict exists yet) on a button-less spinner for 2 minutes.
+         void pollDidit(5);
          return;
       }
 
@@ -451,6 +453,9 @@ export default function VerifyFlow() {
    }, []);
 
    const flow = readFlow();
+   // Fallback flow for retry buttons on screens reached via status-resume, where the
+   // localStorage flow has expired (it has a 1h TTL — manual reviews take longer).
+   const retryFlow: FlowState = flow ?? { method: 'didit' };
 
    // Success: brief celebration then navigate
    useEffect(() => {
@@ -559,9 +564,10 @@ export default function VerifyFlow() {
          <StatusScreen
             visual="orbit"
             title="Reviewing your verification…"
-            body="Your details are with Didit. Most checks finish in a few minutes — we'll update this screen automatically when done."
-            action={{ label: 'Check status', onClick: async () => { setIsChecking(true); await pollDidit(); setIsChecking(false); }, loading: isChecking }}
-            secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
+            body="Your details are with Didit. Most checks finish in a few minutes — we'll update this screen automatically when done. Left before finishing all the steps? Start over below."
+            action={{ label: 'Check status', onClick: async () => { setIsChecking(true); await pollDidit(5); setIsChecking(false); }, loading: isChecking }}
+            secondaryAction={{ label: 'Start over', onClick: () => void startKyc(retryFlow) }}
+            tertiaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
             supportLink
          />
       );
@@ -579,10 +585,6 @@ export default function VerifyFlow() {
          />
       );
    }
-
-   // Fallback flow for retry buttons on screens reached via status-resume, where the
-   // localStorage flow has expired (it has a 1h TTL — manual reviews take longer).
-   const retryFlow: FlowState = flow ?? { method: 'didit' };
 
    if (step === 'id-declined') {
       return (
@@ -798,6 +800,7 @@ function StatusScreen({
    tips,
    action,
    secondaryAction,
+   tertiaryAction,
    supportLink,
 }: {
    stepLabel?: string;
@@ -807,6 +810,7 @@ function StatusScreen({
    tips?: string[];
    action?: { label: string; onClick: () => void; loading?: boolean };
    secondaryAction?: { label: string; onClick: () => void };
+   tertiaryAction?: { label: string; onClick: () => void };
    supportLink?: boolean;
 }) {
    return (
@@ -864,6 +868,16 @@ function StatusScreen({
                   className="text-md-b2 font-medium text-md-neutral-700 underline underline-offset-2"
                >
                   {secondaryAction.label}
+               </button>
+            ) : null}
+
+            {tertiaryAction ? (
+               <button
+                  type="button"
+                  onClick={tertiaryAction.onClick}
+                  className="text-md-b2 font-medium text-md-neutral-700 underline underline-offset-2"
+               >
+                  {tertiaryAction.label}
                </button>
             ) : null}
 
