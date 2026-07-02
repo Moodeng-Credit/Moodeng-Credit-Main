@@ -13,6 +13,11 @@ import type { AppDispatch, RootState } from '@/store/store';
 // /request-board mid-flow.
 const AUTH_FLOW_PATHS = new Set(['/sign-in', '/sign-up', '/request-board', '/forgot-password', '/reset-password']);
 
+// Minimum gap between focus-triggered profile refreshes. Without this, server-side
+// changes (e.g. a Didit webhook approving the user) stay invisible until the hourly
+// token refresh — users saw stale "unverified" state long after approval.
+const FOCUS_REFRESH_MIN_INTERVAL_MS = 60_000;
+
 export function AuthInitializer() {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
@@ -29,6 +34,32 @@ export function AuthInitializer() {
       wasAuthenticatedRef.current = wasAuthenticated;
       pathnameRef.current = location.pathname;
    }, [wasAuthenticated, location.pathname]);
+
+   // Refresh the profile when the tab regains focus so server-side changes (webhook
+   // verification approvals, admin edits) show up without a manual reload. Throttled
+   // so rapid tab switching doesn't spam the API.
+   const lastFocusRefreshRef = useRef(0);
+   useEffect(() => {
+      if (!isSupabaseBrowserConfigured()) return;
+
+      const onFocus = () => {
+         if (document.visibilityState !== 'visible') return;
+         if (!wasAuthenticatedRef.current) return;
+         const now = Date.now();
+         if (now - lastFocusRefreshRef.current < FOCUS_REFRESH_MIN_INTERVAL_MS) return;
+         lastFocusRefreshRef.current = now;
+         dispatch(fetchUser()).catch(() => {
+            // Transient network failure — the next focus or token refresh will retry.
+         });
+      };
+
+      window.addEventListener('focus', onFocus);
+      document.addEventListener('visibilitychange', onFocus);
+      return () => {
+         window.removeEventListener('focus', onFocus);
+         document.removeEventListener('visibilitychange', onFocus);
+      };
+   }, [dispatch]);
 
    // Subscription + initial session check — runs once.
    useEffect(() => {

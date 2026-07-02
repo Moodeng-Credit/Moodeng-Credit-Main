@@ -8,6 +8,7 @@ import { AdminGuard } from '@/components/AdminGuard';
 import BottomNav from '@/components/BottomNav';
 import { BottomNavActionProvider } from '@/components/BottomNavActionContext';
 import { ExpiredLoanRequestNotifier } from '@/components/ExpiredLoanRequestNotifier';
+import { VerifiedCelebrationNotifier } from '@/components/verification/VerifiedCelebrationNotifier';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header/Header';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
@@ -180,6 +181,7 @@ export default function App() {
       <BottomNavActionProvider key={location.pathname}>
          <WalletLoadingOverlay />
          <ExpiredLoanRequestNotifier />
+         <VerifiedCelebrationNotifier />
          <Routes key={location.pathname}>
             <Route path="/" element={<Home />} />
 
