@@ -1628,6 +1628,21 @@ function RequestBoard$() {
                      </p>
                   </div>
 
+                  {/* Visible tour prompt for visitors — previously buried in the hamburger menu. */}
+                  {!isAuthenticated ? (
+                     <div className="flex items-center justify-between gap-md-3 rounded-md-lg border border-md-primary-200 bg-md-primary-100 px-md-3 py-md-2">
+                        <p className="min-w-0 text-md-b2 font-medium text-md-heading">
+                           New to Moodeng? See how borrowing and lending work.
+                        </p>
+                        <Link
+                           to={`/request-board?tour=1&tourRun=${Date.now()}`}
+                           className="shrink-0 rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100"
+                        >
+                           Start tour
+                        </Link>
+                     </div>
+                  ) : null}
+
                   {needsRoleSelection ? (
                      <div className="relative overflow-hidden rounded-md-lg border border-md-primary-300 bg-md-primary-100 p-4 pr-[120px] shadow-md-card max-[374px]:pr-[104px]">
                         <div className="relative z-10 flex flex-col gap-3">
@@ -2117,6 +2132,10 @@ function PublicQuestionsMenu({
    clickOutsideRef: RefObject<HTMLDivElement>;
    onClose: () => void;
 }) {
+   // Answers are clamped to 3 lines by default; tapping a question expands the full
+   // text. Previously the clamp produced a dead "…" with no way to read the rest.
+   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
+
    if (!isOpen) return null;
 
    return (
@@ -2143,14 +2162,30 @@ function PublicQuestionsMenu({
             className="max-h-[56vh] overflow-y-auto overscroll-contain flex flex-col divide-y divide-md-neutral-400 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100"
             data-tour-target="request-common-questions-panel"
          >
-            {PUBLIC_COMMON_QUESTIONS.map((item) => (
-               <div key={item.question} className="px-md-3 py-md-3">
-                  <p className="text-md-b2 font-semibold text-md-heading">{item.question}</p>
-                  <p className="mt-1 line-clamp-3 whitespace-pre-line text-md-b3 font-medium leading-[1.45] text-md-neutral-800">
-                     {item.answer}
-                  </p>
-               </div>
-            ))}
+            {PUBLIC_COMMON_QUESTIONS.map((item) => {
+               const isExpanded = expandedQuestion === item.question;
+               return (
+                  <button
+                     key={item.question}
+                     type="button"
+                     onClick={() => setExpandedQuestion(isExpanded ? null : item.question)}
+                     aria-expanded={isExpanded}
+                     className="px-md-3 py-md-3 text-left"
+                  >
+                     <p className="text-md-b2 font-semibold text-md-heading">{item.question}</p>
+                     <p
+                        className={`mt-1 whitespace-pre-line text-md-b3 font-medium leading-[1.45] text-md-neutral-800 ${
+                           isExpanded ? '' : 'line-clamp-3'
+                        }`}
+                     >
+                        {item.answer}
+                     </p>
+                     <span className="mt-1 inline-block text-md-b3 font-semibold text-md-primary-1200">
+                        {isExpanded ? 'Show less' : 'Read more'}
+                     </span>
+                  </button>
+               );
+            })}
          </div>
 
          <div className="mt-md-3 grid grid-cols-2 gap-md-2">

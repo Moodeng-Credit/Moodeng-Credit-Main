@@ -7,7 +7,7 @@ import { useLocalization } from '@/i18n';
 import type { RootState } from '@/store/store';
 import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
 import SupportHeader from '@/views/support/components/SupportHeader';
-import { DEMO_VIDEO_ID, ICON_MASK_BASE } from '@/views/support/constants';
+import { ICON_MASK_BASE } from '@/views/support/constants';
 
 interface BasicsItem {
    title: string;
@@ -44,7 +44,9 @@ const BASICS: BasicsItem[] = [
       description: 'Grow Limits, Build Trust',
       icon: 'book-open.svg',
       bg: 'bg-[#9810fa]',
-      path: '/support/guides/how-credit-levels-work'
+      // Public /learn twin of the signed-in guide — new users should be able to read
+      // how credit levels work before creating an account.
+      path: '/learn/how-credit-levels-work'
    },
    {
       title: 'Learn more at the Academy',
@@ -219,17 +221,26 @@ export default function GettingStarted() {
                   ))}
                </div>
 
+               {/* The old embed here was the Base→Binance withdrawal video — wrong first
+                   video for brand-new users; it now lives with the withdrawal guides.
+                   Until a "How Moodeng Works" video is recorded, the interactive tour is
+                   the best walkthrough of the basic flow. */}
                <div className="flex flex-col gap-md-3">
-                  <h2 className="text-md-h4 font-semibold text-md-heading tracking-[-0.96px]">{copy.latestVideo}</h2>
-                  <div className="relative w-full aspect-video rounded-md-lg overflow-hidden bg-md-neutral-400">
-                     <iframe
-                        src={`https://www.youtube.com/embed/${DEMO_VIDEO_ID}`}
-                        title={copy.latestVideoTitle}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        className="absolute inset-0 w-full h-full"
-                     />
-                  </div>
+                  <h2 className="text-md-h4 font-semibold text-md-heading tracking-[-0.96px]">See how Moodeng works</h2>
+                  <button
+                     type="button"
+                     onClick={() => navigate(`/request-board?tour=1&tourRun=${Date.now()}`)}
+                     className="flex items-center gap-md-3 rounded-md-lg border border-md-primary-200 bg-md-primary-100 p-md-3 text-left transition-colors hover:bg-md-primary-200 active:scale-[0.99]"
+                  >
+                     <img src="/hippos/welcome.png" alt="" aria-hidden="true" className="h-14 w-14 shrink-0 object-contain" />
+                     <div className="min-w-0 flex-1">
+                        <p className="text-md-b1 font-semibold text-md-heading">Take the interactive tour</p>
+                        <p className="mt-0.5 text-md-b3 font-medium text-md-neutral-1000">
+                           A 2-minute walkthrough: choose a role, verify, request or fund a loan, repay and build credit.
+                        </p>
+                     </div>
+                     <ChevronRight />
+                  </button>
                </div>
 
                <NeedMoreHelp showTeamLink />
