@@ -27,12 +27,9 @@ Step 4: Connect Your Wallet
 Return to the Moodeng platform and tap "Connect Wallet" to securely link your new Base Account to your Moodeng account.
 
 Step 5: Verify Your Identity
-To ensure community safety, download the World App and complete your human identity verification at a physical World Orb location.
+To ensure community safety, tap "Verify Yourself" and complete the quick ID + selfie check ("Verify Your ID") — it takes about 3 minutes. Already a World App user? You can choose "Verify with World ID" instead.
 
-Step 6: Link World ID
-After verifying at an Orb, return to Moodeng and tap "Verify with World ID." Scan the provided QR code to finalize the link between your World ID and your Moodeng account.
-
-Step 7: Submit Your Request
+Step 6: Submit Your Request
 Tap "Explore the Request Board" to set your specific loan terms. You will need to define:
 - The desired loan amount.
 - The repayment amount and date.
@@ -108,6 +105,36 @@ Your Trust Score (TS) reflects your reliability and determines your future fundi
 - Default: Unpaid loans result in a permanent mark on your public on-chain profile.`
    },
    {
+      slug: 'withdrawing-to-your-bank',
+      title: 'Withdrawing your funds to a bank account',
+      lastUpdated: 'Jul 3, 2026',
+      body: `You can withdraw by sending your USDC to a supported exchange or service, selling it there, and transferring the local currency to your bank account.
+
+Video walkthrough — sending USDC from your Base account to Binance: https://www.youtube.com/watch?v=Bqc2u3utbwc
+
+Common options:
+
+Binance P2P
+Send USDC to your Binance account (always choose the Base network), then sell it through Binance P2P and receive local currency straight to your bank or e-wallet.
+
+PDAX
+A BSP-regulated Philippine exchange. Deposit USDC, sell for PHP, and withdraw to your bank account.
+
+Coins.ph
+Deposit USDC, convert to PHP, and cash out to your bank or GCash.
+
+GCrypto (GCash)
+If crypto is enabled in your GCash app, you can receive supported crypto and convert inside GCash.
+
+Moneybees (external option)
+Moneybees is an external over-the-counter service some users may use to buy or sell crypto through Moneybees' own process. You'll need to follow Moneybees' instructions directly at https://www.moneybees.ph/.
+
+Another wallet or exchange
+You can always send USDC to any wallet or exchange you already use — just make sure it supports USDC on the Base network before sending.
+
+The key detail: always select Base as the network when depositing to an exchange. Using the wrong network can result in lost funds.`
+   },
+   {
       slug: 'using-usdc-on-moodeng-credit',
       title: 'Using USDC on Moodeng Credit',
       lastUpdated: 'Jun 9, 2026',
@@ -121,27 +148,22 @@ We recommend using a Base Account on Base, where USDC transfers are gasless — 
       slug: 'verification-and-why-its-required',
       title: 'Verification & Security',
       lastUpdated: 'Jun 9, 2026',
-      body: `To maintain a secure and fair environment, Moodeng Credit requires all borrowers to verify their unique human identity via World ID. This process protects our community from automated bots and duplicate accounts without requiring you to upload sensitive personal documents.
+      body: `To keep Moodeng safe and fair, all borrowers complete a short one-time identity verification. This protects the community from fake and duplicate accounts, and it's what lets lenders trust the requests they fund.
 
-Why Verify?
-- Security: Ensures every request comes from a real person, preventing fraud.
+Why verify?
+- Security: ensures every request comes from a real, unique person, preventing fraud.
+- Access: completed verification unlocks loan requests and starts your Trust Score.
 
-- Rewards: New users can claim approximately $10 in Worldcoin rewards upon successful verification.
+The recommended way: Verify Your ID
+1. Tap "Verify Yourself" in the app and choose "Verify Your ID".
+2. Have your physical national ID ready and find good, even lighting.
+3. Complete the quick ID photo + selfie check — it takes about 3 minutes.
+4. Most checks finish in minutes. If yours needs a human review, we'll notify you as soon as it's done (usually within a few hours, at most 1 business day).
 
-- Access: Completed verification enables you to request loans and begin building your community trust score.
+Your ID is checked by our secure verification partner and is never stored by Moodeng.
 
-Step-by-Step Guide
-1. Download the World App
-Install the official app via the Apple App Store or Google Play Store.
-
-2. Locate an Orb
-Inside the World App, go to Settings, select "Find an Orb," and enable "Allow Location" to find the verification center nearest to you .
-
-3. Complete In-Person Verification
-Visit your chosen Orb location and follow the on-screen instructions in the app to complete the one-time verification process.
-
-4. Connect to Moodeng
-Once verified, return to the Moodeng platform. Navigate to "Verification," and select "Connect World ID" to link your account and finalize your eligibility .`
+Alternative: Verify with World ID
+If you already use World App — verified in person at an Orb or with a biometric passport — you can choose "Verify with World ID" instead and confirm through the World App.`
    },
    {
       slug: 'managing-your-account-and-security-settings',

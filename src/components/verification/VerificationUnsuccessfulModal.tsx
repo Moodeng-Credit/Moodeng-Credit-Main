@@ -1,5 +1,7 @@
 import { type FC } from 'react';
 
+import { useNavigate } from 'react-router-dom';
+
 import { ModalOverlay } from '@/components/worldId/modal/ModalOverlay';
 
 import type { VerifyMethod } from '@/lib/verifyFlow';
@@ -22,6 +24,7 @@ interface VerificationUnsuccessfulModalProps {
  * reassuring + a route to human support; it never changes verification state.
  */
 export const VerificationUnsuccessfulModal: FC<VerificationUnsuccessfulModalProps> = ({ isOpen, method, onClose }) => {
+   const navigate = useNavigate();
    const isWorldIdMethod = method === 'worldid' || method === 'worldid-passport';
    const methodLabel = isWorldIdMethod ? 'World ID' : 'your ID';
    const telegramUrl = isWorldIdMethod ? WORLD_ID_VERIFICATION_SUPPORT_URL : TELEGRAM_SUPPORT_URL;
@@ -80,22 +83,49 @@ export const VerificationUnsuccessfulModal: FC<VerificationUnsuccessfulModalProp
                   If you need help, our team is here for you.
                </p>
 
-               {/* Support CTAs */}
+               {/* Restart + support CTAs */}
                <div className="flex w-full flex-col gap-3 pt-1">
+                  <button
+                     type="button"
+                     onClick={() => {
+                        onClose();
+                        navigate('/verify', { state: { method } });
+                     }}
+                     className="flex w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-colors hover:opacity-90 active:scale-[0.99]"
+                  >
+                     Try verification again
+                  </button>
                   <a
                      href={telegramUrl}
                      target="_blank"
                      rel="noopener noreferrer"
-                     className="flex w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-colors hover:opacity-90 active:scale-[0.99]"
+                     className="flex w-full items-center justify-center gap-2 rounded-md-lg px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-colors hover:brightness-105 active:scale-[0.99]"
+                     style={{ backgroundColor: '#0088CC' }}
                   >
+                     <img src="/icons/telegram-classic-filled.png" alt="" className="h-5 w-5 shrink-0" />
                      Contact support on Telegram
                   </a>
                   <a
                      href={SUPPORT_FACEBOOK_URL}
                      target="_blank"
                      rel="noopener noreferrer"
-                     className="flex w-full items-center justify-center rounded-md-lg border border-md-neutral-300 px-md-4 py-md-3 text-md-b1 font-semibold text-md-heading transition-colors hover:bg-md-neutral-200 active:scale-[0.99]"
+                     className="flex w-full items-center justify-center gap-2 rounded-md-lg px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-colors hover:brightness-105 active:scale-[0.99]"
+                     style={{ backgroundColor: '#1877F2' }}
                   >
+                     <span
+                        className="h-5 w-5 shrink-0 bg-md-neutral-100"
+                        aria-hidden="true"
+                        style={{
+                           WebkitMaskImage: "url('/icons/facebook.svg')",
+                           maskImage: "url('/icons/facebook.svg')",
+                           WebkitMaskSize: 'contain',
+                           maskSize: 'contain',
+                           WebkitMaskRepeat: 'no-repeat',
+                           maskRepeat: 'no-repeat',
+                           WebkitMaskPosition: 'center',
+                           maskPosition: 'center'
+                        }}
+                     />
                      Contact support on Facebook
                   </a>
                   <button
