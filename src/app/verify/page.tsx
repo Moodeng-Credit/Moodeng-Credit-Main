@@ -154,7 +154,7 @@ export default function VerifyFlow() {
          const url = (data as { url?: string; sessionId?: string } | null)?.url;
          const sessionId = (data as { sessionId?: string } | null)?.sessionId;
          if (error || !url) {
-            throw new Error('Could not start the liveness check. Please try again.');
+            throw new Error('Could not start the face scan. Please try again.');
          }
          writeFlow({ ...flow, livenessSessionId: sessionId ?? undefined });
          setLivenessUrl(url);
@@ -539,9 +539,9 @@ export default function VerifyFlow() {
 
    if (step === 'liveness-pending') {
       const body = elapsed > 90
-         ? 'Almost there — hang tight while Didit finishes the check.'
+         ? 'Almost there — hang tight while we finish the check.'
          : elapsed > 30
-         ? 'Still checking — liveness checks usually take a minute or two.'
+         ? 'Still checking — face scans usually take a minute or two.'
          : 'Face scan in progress. Complete it in the tab that just opened — this page will update automatically when done.';
       return (
          <StatusScreen
@@ -555,10 +555,10 @@ export default function VerifyFlow() {
 
    if (step === 'id-pending') {
       const body = elapsed > 90
-         ? 'Almost there — Didit is finishing the review.'
+         ? 'Almost there — we’re finishing the review.'
          : elapsed > 30
          ? 'Still confirming — verification usually takes a minute or two.'
-         : 'Finish the steps in the Didit tab — this page updates automatically when you’re done.';
+         : 'Finish the steps in the verification tab — this page updates automatically when you’re done.';
       return (
          <StatusScreen
             visual="orbit"
@@ -574,7 +574,7 @@ export default function VerifyFlow() {
             stepLabel="Step 1 of 2"
             visual="orbit"
             title="Almost there"
-            body="The liveness check is still finishing up. This usually takes a moment."
+            body="Your face scan is still finishing up. This usually takes a moment."
             action={{ label: 'Check again', onClick: () => flow && void pollLiveness(flow), loading: isChecking }}
             secondaryAction={{ label: 'Go back', onClick: () => navigate(-1) }}
          />
@@ -586,7 +586,7 @@ export default function VerifyFlow() {
          <StatusScreen
             visual="orbit"
             title="Reviewing your verification…"
-            body="Your details are with Didit. Most checks finish in a few minutes — we'll update this screen automatically when done. Left before finishing all the steps? Start over below."
+            body="Your details are being reviewed. Most checks finish in a few minutes — we'll update this screen automatically when done. Left before finishing all the steps? Start over below."
             action={{ label: 'Check status', onClick: async () => { setIsChecking(true); await pollDidit(5); setIsChecking(false); }, loading: isChecking }}
             secondaryAction={{ label: 'Start over', onClick: () => void startKyc(retryFlow) }}
             tertiaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
@@ -614,8 +614,8 @@ export default function VerifyFlow() {
             title="Verification didn't pass"
             body={
                user?.diditDeclineReason
-                  ? `Didit was unable to verify your identity. Reason: ${user.diditDeclineReason}. Fix this and try again, or contact our team — we can help check manually.`
-                  : "Didit was unable to verify your identity. This can happen if the document image was unclear, expired, or didn't match your face. Contact our team — we can help check manually."
+                  ? `We weren't able to verify your identity. Reason: ${user.diditDeclineReason}. Fix this and try again, or contact our team — we can help check manually.`
+                  : "We weren't able to verify your identity. This can happen if the document image was unclear, expired, or didn't match your face. Contact our team — we can help check manually."
             }
             action={{ label: 'Try again', onClick: () => void startKyc(retryFlow) }}
             secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
@@ -638,7 +638,7 @@ export default function VerifyFlow() {
             body={
                resumeUrl
                   ? 'It looks like you left before completing all the steps. Pick up right where you left off, or start over with a fresh session.'
-                  : "It looks like the verification was closed before all the steps were completed, so Didit couldn't finish checking your identity. No problem — you can start over any time."
+                  : "It looks like the verification was closed before all the steps were completed, so we couldn't finish checking your identity. No problem — you can start over any time."
             }
             action={
                resumeUrl
@@ -681,7 +681,7 @@ export default function VerifyFlow() {
       return (
          <StatusScreen
             stepLabel="Step 1 of 2"
-            title="Liveness check didn't pass"
+            title="Face scan didn't pass"
             body="We couldn't confirm a live person. A few things that help:"
             tips={[
                'Good, even lighting — avoid bright backlighting',
@@ -743,10 +743,10 @@ export default function VerifyFlow() {
             }
             requirementHint={
                isPassport
-                  ? 'Requires a World ID with a passport or eID added in World App.'
-                  : 'Requires an Orb-verified World ID.'
+                  ? 'Requires a passport added to your World App.'
+                  : 'Requires a World ID verified at an Orb.'
             }
-            onUseTraditionalKyc={() => void startKyc(flow)}
+            onVerifyWithId={() => void startKyc(flow)}
          />
       );
    }
@@ -824,11 +824,11 @@ function HippoOrbit({ mode }: { mode: 'orbit' | 'orbit-success' }) {
 function ConfirmScreen({
    worldIdTrigger,
    requirementHint,
-   onUseTraditionalKyc
+   onVerifyWithId
 }: {
    worldIdTrigger: ReactNode;
    requirementHint: string;
-   onUseTraditionalKyc: () => void;
+   onVerifyWithId: () => void;
 }) {
    return (
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col items-center justify-center max-w-modal mx-auto w-full px-md-4 py-md-5">
@@ -850,10 +850,10 @@ function ConfirmScreen({
             </p>
             <button
                type="button"
-               onClick={onUseTraditionalKyc}
+               onClick={onVerifyWithId}
                className="text-md-b2 font-medium text-md-neutral-700 underline underline-offset-2"
             >
-               Use traditional KYC instead
+               No World ID? Verify with your ID instead
             </button>
          </div>
       </div>

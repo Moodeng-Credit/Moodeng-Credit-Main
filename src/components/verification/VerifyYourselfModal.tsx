@@ -182,14 +182,14 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                      onClick={() => start('worldid')}
                      className="w-full rounded-md-lg bg-md-primary-1200 text-md-neutral-100 p-4 text-md-b1 font-semibold transition-all duration-150 active:scale-[0.99]"
                   >
-                     I have been to World Orb
+                     I&rsquo;ve been verified at an Orb
                   </button>
                   <button
                      type="button"
                      onClick={() => setStep('passport-info')}
                      className="w-full rounded-md-lg border-2 border-md-primary-1200 text-md-primary-1200 p-4 text-md-b1 font-semibold transition-all duration-150 active:scale-[0.99]"
                   >
-                     I have World ID Passport
+                     I&rsquo;ll verify with my passport
                   </button>
                </div>
 
@@ -316,17 +316,24 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                </div>
             </div>
 
-            {/* Secondary, de-emphasised path: World ID (Orb) — logo-only, bottom-left. */}
+            {/* Secondary, de-emphasised path: World ID (Orb/passport). Labeled — an icon-only
+                button here confused users into not knowing what to tap. */}
             <div className="flex flex-col gap-1.5 w-full border-t border-md-neutral-300 pt-md-3">
                <p className="text-md-b3 text-md-neutral-700">Not in a supported country?</p>
                <button
                   type="button"
                   onClick={() => setStep('orb-info')}
-                  aria-label="Verify with World ID (Orb)"
-                  title="Verify with World ID (Orb)"
-                  className="shrink-0 w-11 h-11 rounded-md-md flex items-center justify-center bg-md-neutral-200 text-md-neutral-700 transition-colors hover:bg-md-neutral-300 active:scale-95"
+                  className="w-full rounded-md-lg border border-md-neutral-300 p-3.5 flex items-center gap-3 text-left transition-colors hover:bg-md-neutral-200 active:scale-[0.99]"
                >
-                  <WorldIdOrb size={24} />
+                  <div className="shrink-0 w-10 h-10 rounded-md-md flex items-center justify-center bg-md-neutral-200 text-md-neutral-700">
+                     <WorldIdOrb size={24} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                     <span className="text-md-b1 font-semibold text-md-heading">Verify with World ID</span>
+                     <p className="text-md-b3 text-md-neutral-1000 mt-0.5 leading-snug">
+                        For World App users — verified at an Orb or with a passport.
+                     </p>
+                  </div>
                </button>
             </div>
 

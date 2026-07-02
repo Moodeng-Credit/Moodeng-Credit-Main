@@ -1444,9 +1444,9 @@ export default function AccountSettings() {
                      </div>
                   </div>
 
-                  {/* Traditional KYC */}
+                  {/* ID verification (Didit) */}
                   <div className="flex flex-col gap-md-1 w-full">
-                     <p className="text-md-b2 font-semibold text-md-heading">Traditional KYC</p>
+                     <p className="text-md-b2 font-semibold text-md-heading">ID Verification</p>
                      <div className="flex items-center gap-2 bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
                         {user?.isDidit === 'ACTIVE' ? (
                            <>

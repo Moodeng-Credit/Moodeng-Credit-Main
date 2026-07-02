@@ -825,7 +825,7 @@ export default function LoanRequestModal({
          : verifyUiState === 'unfinished'
            ? 'You left before finishing all the steps. Tap below to continue or start over.'
            : verifyUiState === 'declined'
-             ? 'Didit could not verify your identity. Tap below to try again or contact us.'
+             ? "We couldn't verify your identity. Tap below to try again or contact us."
              : "Your documents are being reviewed. We'll notify you once confirmed.";
    const verifyPendingCta = `${VERIFICATION_STATE_CTA[verifyUiState]} →`;
    const limitAmount = Math.max(availableCreditLimit, 0);
