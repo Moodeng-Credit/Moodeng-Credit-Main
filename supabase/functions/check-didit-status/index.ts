@@ -1,6 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { claimDiditNotification, notifyAdmins, notifyUser } from '../_shared/diditNotifications.ts';
+
 // On-demand Didit status sync for the authenticated caller.
 //
 // The didit-webhook is the primary way verification statuses reach our database — but
@@ -11,10 +13,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 //
 // This function asks Didit's API for the session's current status and applies the same
 // database transitions the webhook would have, then returns the fresh status so the
-// frontend can route immediately. It deliberately does NOT send user/admin
-// notifications — the user is looking at the screen, and the webhook (if it arrives
-// later) stays the single notification source. All writes are idempotent with the
-// webhook's.
+// frontend can route immediately. It also sends the same user/admin notifications the
+// webhook would — deduplicated against the webhook via users.didit_notify_marker
+// (claimDiditNotification), so a status only ever produces one notification no matter
+// which path discovers it first. All writes are idempotent with the webhook's.
 //
 // Body: { kind: 'liveness' | 'id' } — which of the caller's sessions to sync.
 // Response: { synced: boolean, status?: string } where status is Didit's raw session
@@ -308,6 +310,9 @@ serve(async (req) => {
                return jsonResponse({ error: 'Database error' }, 500);
             }
             console.log(`[check-didit-status] Duplicate face for user ${user.id} (session ${sessionId})`);
+            if (await claimDiditNotification(supabase, user.id, 'duplicate', sessionId)) {
+               await notifyAdmins(supabase, user.id, '🚫 Duplicate face — blocked', sessionId);
+            }
             return jsonResponse({ synced: true, status: 'Declined' });
          }
 
@@ -321,6 +326,10 @@ serve(async (req) => {
             return jsonResponse({ error: 'Database error' }, 500);
          }
          console.log(`[check-didit-status] User ${user.id} verified via status sync (session ${sessionId})`);
+         if (await claimDiditNotification(supabase, user.id, 'approved', sessionId)) {
+            await notifyAdmins(supabase, user.id, '✅ Approved — user is now verified', sessionId);
+            await notifyUser(supabase, user.id, 'approved');
+         }
          return jsonResponse({ synced: true, status });
       }
 
@@ -345,6 +354,31 @@ serve(async (req) => {
             return jsonResponse({ error: 'Database error' }, 500);
          }
          console.log(`[check-didit-status] ID status="${status}" for user ${user.id} (session ${sessionId})`);
+      }
+
+      // Mirror the webhook's notifications for outcomes the user should hear about.
+      // "Not Started"/"In Progress" are deliberately silent — the user is in-app looking
+      // at the unfinished screen, and nagging them mid-flow would be noise.
+      const isNotifiable =
+         normalized.includes('review') || normalized === 'declined' || normalized === 'abandoned' || normalized === 'expired';
+      if (isNotifiable) {
+         const claimKey = normalized.includes('review') ? 'review' : normalized;
+         if (await claimDiditNotification(supabase, user.id, claimKey, sessionId)) {
+            const adminOutcome = normalized.includes('review')
+               ? '👀 IN MANUAL REVIEW — check the Didit dashboard to expedite'
+               : normalized === 'declined'
+                 ? `❌ Declined${declineReason ? ` — ${declineReason}` : ''}`
+                 : `⚠️ ${status}`;
+            await notifyAdmins(supabase, user.id, adminOutcome, sessionId);
+
+            if (normalized.includes('review')) {
+               await notifyUser(supabase, user.id, 'review');
+            } else if (normalized === 'declined') {
+               await notifyUser(supabase, user.id, 'declined', declineReason);
+            } else {
+               await notifyUser(supabase, user.id, 'abandoned');
+            }
+         }
       }
 
       return jsonResponse({ synced: true, status });
