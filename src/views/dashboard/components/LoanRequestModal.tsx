@@ -39,6 +39,7 @@ import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
+import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { updateUser } from '@/store/slices/authSlice';
@@ -809,6 +810,24 @@ export default function LoanRequestModal({
    const [isSavingBorrowerAvatar, setIsSavingBorrowerAvatar] = useState(false);
 
    const isVerified = !showVerify;
+   const verifyUiState = getVerificationUiState(user);
+   const verifyPendingTitle =
+      verifyUiState === 'review'
+         ? 'Manual review in progress'
+         : verifyUiState === 'unfinished'
+           ? 'Verification not finished'
+           : verifyUiState === 'declined'
+             ? "Verification didn't pass"
+             : 'Verification in progress';
+   const verifyPendingBody =
+      verifyUiState === 'review'
+         ? 'A human reviewer is double-checking your documents — this can take up to 1 business day.'
+         : verifyUiState === 'unfinished'
+           ? 'You left before finishing all the steps. Tap below to continue or start over.'
+           : verifyUiState === 'declined'
+             ? 'Didit could not verify your identity. Tap below to try again or contact us.'
+             : "Your documents are being reviewed. We'll notify you once confirmed.";
+   const verifyPendingCta = `${VERIFICATION_STATE_CTA[verifyUiState]} →`;
    const limitAmount = Math.max(availableCreditLimit, 0);
    const selectedDate = days ? days.slice(0, 10) : '';
    const selectedCalendarDate = parseIsoDate(selectedDate);
@@ -1447,11 +1466,11 @@ export default function LoanRequestModal({
                               <div className="flex min-w-0 max-w-[220px] flex-1 flex-col gap-md-1">
                                  <div className="flex flex-col gap-md-0">
                                     <p className="whitespace-nowrap text-md-b2 font-medium text-md-primary-2000">
-                                       {isPending ? 'Verification in progress' : 'One quick step to request a loan'}
+                                       {isPending ? verifyPendingTitle : 'One quick step to request a loan'}
                                     </p>
                                     <p className="text-md-b3 font-normal text-md-neutral-1400">
                                        {isPending
-                                          ? "Your documents are being reviewed. We'll notify you once confirmed."
+                                          ? verifyPendingBody
                                           : 'Complete a one-time verification to start building trust with lenders.'}
                                     </p>
                                  </div>
@@ -1460,7 +1479,7 @@ export default function LoanRequestModal({
                                     className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
                                     type="button"
                                  >
-                                    {isPending ? 'View status →' : 'Verify Yourself'}
+                                    {isPending ? verifyPendingCta : 'Verify Yourself'}
                                  </button>
                               </div>
                               <img

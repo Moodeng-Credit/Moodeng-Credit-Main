@@ -42,6 +42,8 @@ export interface User {
    diditIdStatus?: string;
    /** Human-readable reason extracted from Didit's decision when the last attempt was Declined. Null otherwise. */
    diditDeclineReason?: string;
+   /** Hosted URL of the most recent Didit KYC session, so an unfinished session can be resumed. */
+   diditSessionUrl?: string;
    /**
     * State of the most recent liveness pre-check (runs before both World ID and Didit ID steps).
     * A gate, not a final verified status. See {@link LivenessStatus}.
