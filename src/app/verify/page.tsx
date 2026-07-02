@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import WorldIDPassportVerification from '@/components/worldId/WorldIDPassportVerification';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
+import { isAndroidDevice, isIOSDevice } from '@/components/worldId/worldIdLaunch';
 
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -29,6 +30,41 @@ const wait = (ms: number) => new Promise<void>((resolve) => { window.setTimeout(
 // webhook for these until its own abandon timeout, so they're only visible via sync.
 const isUnfinishedDiditStatus = (status: string | null): boolean =>
    status === 'Not Started' || status === 'In Progress';
+
+// On phones the Didit check runs in THIS tab (Didit redirects back here when done) —
+// the desktop two-tab pattern is confusing on mobile, where tabs are hidden away.
+const isMobileDevice = () => isIOSDevice() || isAndroidDevice();
+
+// Turn Didit's raw decline reason into concrete things the user can fix before
+// retrying. Keyword-matched: reasons are free-form text like "document image unclear"
+// or "face mismatch". Falls back to general document/selfie tips.
+const declineFixTips = (reason?: string | null): string[] => {
+   const r = (reason ?? '').toLowerCase();
+   const tips: string[] = [];
+   if (/blur|unclear|quality|unreadable|glare|dark/.test(r)) {
+      tips.push('Retake in bright, even light — no glare or shadows on the ID', 'Lay the ID flat and fill the frame; make sure all text is sharp');
+   }
+   if (/expire/.test(r)) {
+      tips.push('Use a currently valid (not expired) ID document');
+   }
+   if (/mismatch|match|face|selfie/.test(r)) {
+      tips.push('Remove hats, glasses and masks for the selfie', 'Face the camera straight on, with your whole face visible');
+   }
+   if (/crop|edge|cut|partial|corner/.test(r)) {
+      tips.push('Capture the entire ID — all four corners must be visible');
+   }
+   if (/type|unsupported|document/.test(r) && tips.length === 0) {
+      tips.push('Use a government-issued national ID or passport');
+   }
+   if (tips.length === 0) {
+      tips.push(
+         'Retake photos in bright, even light',
+         'Lay the ID flat with all four corners visible',
+         'Remove hats and glasses for the selfie'
+      );
+   }
+   return tips;
+};
 
 // Ask the server to fetch this session's live status from Didit's API and apply it to
 // our database. Statuses normally arrive via the didit-webhook, but webhooks can be
@@ -255,11 +291,18 @@ export default function VerifyFlow() {
 
    // Called by the "Open face scan" button — must be a synchronous click handler so
    // window.open is treated as a user gesture and isn't blocked as a popup.
+   // Mobile: navigate THIS tab. Didit's callback brings the user back to /verify with
+   // ?kind=liveness, and the status-aware resume + Didit sync recover everything —
+   // no two-tab juggling. Desktop keeps the side tab so this page can poll live.
    const handleOpenLiveness = useCallback(() => {
       if (!livenessUrl) return;
+      if (isMobileDevice()) {
+         window.location.href = livenessUrl;
+         return;
+      }
       const opened = window.open(livenessUrl, '_blank');
       if (!opened) {
-         // Popup blocked — fall back to navigating the current tab (old behaviour).
+         // Popup blocked — fall back to navigating the current tab.
          window.location.href = livenessUrl;
          return;
       }
@@ -375,14 +418,19 @@ export default function VerifyFlow() {
       setStep('id-waiting');
    }, [dispatch]);
 
-   // Same new-tab pattern as the liveness path: Didit opens in its own tab and this
-   // page polls underneath, so Back/refresh in the Didit tab can never strand the
-   // session. Must be a synchronous click handler so window.open isn't popup-blocked.
+   // Same pattern as the liveness path: on mobile navigate this tab (Didit's callback
+   // returns to /verify?kind=combined and the resume + sync recover state); on desktop
+   // open a side tab and poll underneath. Must be a synchronous click handler so
+   // window.open isn't popup-blocked.
    const handleOpenKyc = useCallback(() => {
       if (!kycUrl) return;
+      if (isMobileDevice()) {
+         window.location.href = kycUrl;
+         return;
+      }
       const opened = window.open(kycUrl, '_blank');
       if (!opened) {
-         // Popup blocked — fall back to navigating the current tab (old behaviour).
+         // Popup blocked — fall back to navigating the current tab.
          window.location.href = kycUrl;
          return;
       }
@@ -606,14 +654,17 @@ export default function VerifyFlow() {
    if (step === 'liveness-start') {
       if (livenessUrl) {
          const step2Hint = flow?.method === 'didit'
-            ? "Then you'll submit your national ID in this tab."
-            : "Then you'll verify with World ID in this tab.";
+            ? "Then you'll submit your national ID."
+            : "Then you'll verify with World ID.";
+         const openHint = isMobileDevice()
+            ? "Tap the button to start the face scan — you'll be brought back here automatically when it's done."
+            : 'Tap the button to open the face scan in a new tab. Keep this page open — it will update automatically when done.';
          return (
             <StatusScreen
                stepLabel="Step 1 of 2"
                visual="orbit"
                title="Ready for face scan"
-               body={`Tap the button to open the face scan in a new tab. Keep this page open — it will update automatically when done. ${step2Hint}`}
+               body={`${openHint} ${step2Hint}`}
                action={{ label: 'Open face scan', onClick: handleOpenLiveness }}
             />
          );
@@ -632,7 +683,11 @@ export default function VerifyFlow() {
       return (
          <StatusScreen
             title="Before you start"
-            body="A quick ID + selfie check — about 3 minutes. It opens in a new tab; keep this page open and it will update automatically."
+            body={`A quick ID + selfie check — about 3 minutes. ${
+               isMobileDevice()
+                  ? "You'll be brought back here automatically when it's done."
+                  : 'It opens in a new tab; keep this page open and it will update automatically.'
+            } Your ID is checked by our secure verification partner and is never stored by Moodeng.`}
             tips={[
                'Have your physical national ID with you',
                'Find good, even lighting for the selfie',
@@ -661,6 +716,20 @@ export default function VerifyFlow() {
             visual="orbit"
             title="Waiting for face scan…"
             body={body}
+            // Never a dead spinner: after 15s offer a way off, to the screen with
+            // Check again / Start over.
+            secondaryAction={
+               elapsed > 15
+                  ? {
+                       label: 'More options',
+                       onClick: () => {
+                          pollRunRef.current += 1;
+                          setIsChecking(false);
+                          setStep('liveness-waiting');
+                       }
+                    }
+                  : undefined
+            }
          />
       );
    }
@@ -676,6 +745,20 @@ export default function VerifyFlow() {
             visual="orbit"
             title="Confirming your verification…"
             body={body}
+            // Never a dead spinner: after 15s offer a way off, to the screen with
+            // Check status / Start over.
+            secondaryAction={
+               elapsed > 15
+                  ? {
+                       label: 'More options',
+                       onClick: () => {
+                          pollRunRef.current += 1;
+                          setIsChecking(false);
+                          setStep('id-waiting');
+                       }
+                    }
+                  : undefined
+            }
          />
       );
    }
@@ -740,9 +823,10 @@ export default function VerifyFlow() {
             title="Verification didn't pass"
             body={
                user?.diditDeclineReason
-                  ? `We weren't able to verify your identity. Reason: ${user.diditDeclineReason}. Fix this and try again, or contact our team — we can help check manually.`
-                  : "We weren't able to verify your identity. This can happen if the document image was unclear, expired, or didn't match your face. Contact our team — we can help check manually."
+                  ? `We weren't able to verify your identity. Reason: ${user.diditDeclineReason}. A few things that usually fix it:`
+                  : "We weren't able to verify your identity. This can happen if the document image was unclear, expired, or didn't match your face. A few things that usually fix it:"
             }
+            tips={declineFixTips(user?.diditDeclineReason)}
             action={{ label: 'Try again', onClick: () => void startKyc(retryFlow) }}
             secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
             supportLink
@@ -768,15 +852,20 @@ export default function VerifyFlow() {
             }
             action={
                resumeUrl
-                  ? { label: 'Continue verification', onClick: () => { window.location.href = resumeUrl; } }
+                  ? {
+                       // Visible feedback the instant it's tapped — a silent button that
+                       // "does nothing" while Didit's page loads reads as broken.
+                       label: 'Continue verification',
+                       onClick: () => {
+                          setIsChecking(true);
+                          window.location.href = resumeUrl;
+                       },
+                       loading: isChecking,
+                       loadingLabel: 'Opening…'
+                    }
                   : { label: 'Start over', onClick: () => void startKyc(retryFlow) }
             }
-            secondaryAction={
-               resumeUrl
-                  ? { label: 'Start over', onClick: () => void startKyc(retryFlow) }
-                  : { label: 'Go to dashboard', onClick: () => navigate('/dashboard') }
-            }
-            tertiaryAction={resumeUrl ? { label: 'Go to dashboard', onClick: () => navigate('/dashboard') } : undefined}
+            secondaryAction={resumeUrl ? { label: 'Start over', onClick: () => void startKyc(retryFlow) } : undefined}
             supportLink
          />
       );

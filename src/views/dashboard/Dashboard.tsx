@@ -6,6 +6,7 @@ import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
 import GuidedTourPreview from '@/components/GuidedTourPreview';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
+import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 
@@ -140,6 +141,8 @@ const buildPreviewLoans = (borrowerUser: string): Loan[] => [
 
 export default function Dashboard() {
    const dispatch = useDispatch<AppDispatch>();
+   // Keep the verification badge honest: pull the real Didit status for pending users.
+   useVerificationStatusSync();
    const user = useSelector((state: RootState) => state.auth.user);
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const gloanRequests = useSelector((state: RootState) => state.loans.loans.gloans || []);
