@@ -3,6 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { hmac } from 'https://esm.sh/@noble/hashes@1.8.0/hmac?target=deno';
 import { sha256 } from 'https://esm.sh/@noble/hashes@1.8.0/sha2?target=deno';
 
+import { sendTelegramMessage } from '../_shared/telegram.ts';
+
 // Didit webhook receiver.
 // Verifies the HMAC-SHA256 signature over the raw request body (X-Signature),
 // enforces a 5-minute timestamp window to block replays, and on an Approved
@@ -23,6 +25,43 @@ const TIMESTAMP_TOLERANCE_SEC = 300;
 
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+// Fire-and-forget Telegram alert so the team hears about KYC outcomes (especially
+// manual reviews, which otherwise sit invisible until the user complains).
+// Destination = telegram_bot_settings key 'kyc_alert_chat_id'; no-ops when unset.
+// Never throws — an alert failure must not fail the webhook.
+const notifyAdmins = async (
+   // deno-lint-ignore no-explicit-any
+   adminSupabase: any,
+   userId: string,
+   outcome: string,
+   sessionId?: string
+) => {
+   try {
+      const { data: setting } = await adminSupabase
+         .from('telegram_bot_settings')
+         .select('value')
+         .eq('key', 'kyc_alert_chat_id')
+         .maybeSingle();
+      const chatId = (setting as { value?: string } | null)?.value?.trim();
+      if (!chatId) return;
+
+      const { data: profile } = await adminSupabase
+         .from('users')
+         .select('email, username')
+         .eq('id', userId)
+         .maybeSingle();
+      const p = profile as { email?: string; username?: string } | null;
+      const who = [p?.username, p?.email].filter(Boolean).join(' · ') || userId;
+
+      await sendTelegramMessage(
+         chatId,
+         `🪪 Didit KYC — ${outcome}\nUser: ${who}\nUser ID: ${userId}${sessionId ? `\nSession: ${sessionId}` : ''}`
+      );
+   } catch (err) {
+      console.error('[didit-webhook] Admin alert failed:', err instanceof Error ? err.message : err);
+   }
+};
 
 const toHex = (bytes: Uint8Array) => Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 
@@ -347,6 +386,7 @@ serve(async (req) => {
                   return jsonResponse({ success: false, error: 'Database error' }, 500);
                }
                console.log(`[didit-webhook] Duplicate face for user ${vendorData} (${kind}, session ${sessionId ?? 'unknown'})`);
+               await notifyAdmins(adminSupabase, vendorData, '🚫 Duplicate face — blocked', sessionId);
                return jsonResponse({ success: true });
             }
          }
@@ -364,6 +404,7 @@ serve(async (req) => {
             }
 
             console.log(`[didit-webhook] User ${vendorData} verified via Didit (${kind}, session ${sessionId ?? 'unknown'})`);
+            await notifyAdmins(adminSupabase, vendorData, '✅ Approved — user is now verified', sessionId);
             return jsonResponse({ success: true });
          }
 
@@ -382,6 +423,13 @@ serve(async (req) => {
          }
 
          console.log(`[didit-webhook] ID status="${status}" for user ${vendorData} (${kind}, session ${sessionId ?? 'unknown'})`);
+         const normalized = status.toLowerCase();
+         const outcome = normalized.includes('review')
+            ? '👀 IN MANUAL REVIEW — check the Didit dashboard to expedite'
+            : normalized === 'declined'
+              ? '❌ Declined'
+              : `⚠️ ${status}`; // Abandoned / Expired / anything else
+         await notifyAdmins(adminSupabase, vendorData, outcome, sessionId);
          return jsonResponse({ success: true });
       }
 
