@@ -20,8 +20,29 @@ import type { AppDispatch, RootState } from '@/store/store';
 
 const STATUS_REFRESH_RETRIES = 40;
 const STATUS_REFRESH_DELAY_MS = 3000;
+// Sync against Didit's API every Nth poll attempt (~30s at 3s per attempt).
+const SYNC_EVERY_N_ATTEMPTS = 10;
 
 const wait = (ms: number) => new Promise<void>((resolve) => { window.setTimeout(resolve, ms); });
+
+// Ask the server to fetch this session's live status from Didit's API and apply it to
+// our database. Statuses normally arrive via the didit-webhook, but webhooks can be
+// lost or never sent (a session the user closed sits in "Not Started"/"In Progress"
+// indefinitely) — without this, "Check status" only re-reads a row that by definition
+// hasn't changed, and the user is stuck forever. Best-effort: returns Didit's raw
+// status string, or null when the sync couldn't reach Didit (caller falls back to the
+// webhook-driven flow).
+const syncDiditStatus = async (kind: 'liveness' | 'id'): Promise<string | null> => {
+   try {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase.functions.invoke('check-didit-status', { body: { kind } });
+      if (error) return null;
+      const status = (data as { synced?: boolean; status?: string } | null)?.status;
+      return typeof status === 'string' ? status : null;
+   } catch {
+      return null;
+   }
+};
 
 type Step =
    | 'loading'
@@ -84,12 +105,14 @@ export default function VerifyFlow() {
    const isIdPoll = step === 'id-pending';
    const elapsed = useElapsedSeconds(isLivenessPoll || isIdPoll);
 
-   // Background slow-poll while on id-waiting or id-review: check every 60s for a
-   // status change (Approved → success, In Review → id-review, Declined → id-declined).
+   // Background slow-poll while on id-waiting or id-review: every 60s, sync the live
+   // status from Didit (webhooks can be lost) and route on the result (Approved →
+   // success, In Review → id-review, Declined → id-declined, unfinished → id-abandoned).
    useEffect(() => {
       if (step !== 'id-waiting' && step !== 'id-review') return;
       const id = window.setInterval(async () => {
          try {
+            await syncDiditStatus('id');
             const refreshed = await dispatch(fetchUser()).unwrap();
             if (refreshed.isDidit === 'ACTIVE') {
                setStep('success');
@@ -98,7 +121,14 @@ export default function VerifyFlow() {
                if (rawStatus === 'duplicate') setStep('duplicate');
                else if (rawStatus.includes('review')) setStep('id-review');
                else if (rawStatus === 'declined') setStep('id-declined');
-               else if (rawStatus === 'abandoned' || rawStatus === 'expired') setStep('id-abandoned');
+               else if (
+                  rawStatus === 'abandoned' ||
+                  rawStatus === 'expired' ||
+                  rawStatus === 'not started' ||
+                  rawStatus === 'in progress'
+               ) {
+                  setStep('id-abandoned');
+               }
             }
          } catch {
             // Keep polling silently on network errors.
@@ -177,6 +207,13 @@ export default function VerifyFlow() {
             if (pollRunRef.current !== runId) return;
 
             try {
+               // Periodically pull the truth from Didit itself so a lost webhook can't
+               // strand the user. Safe here: the sync never writes non-terminal liveness
+               // statuses, so an in-progress scan is left alone.
+               if (attempt % SYNC_EVERY_N_ATTEMPTS === 0) {
+                  await syncDiditStatus('liveness');
+                  if (pollRunRef.current !== runId) return;
+               }
                const refreshed = await dispatch(fetchUser()).unwrap();
                if (pollRunRef.current !== runId) return;
                const matchesAttempt = !flow.livenessSessionId || refreshed.livenessSessionId === flow.livenessSessionId;
@@ -245,7 +282,7 @@ export default function VerifyFlow() {
       }
    }, []);
 
-   const pollDidit = useCallback(async (retries: number = STATUS_REFRESH_RETRIES) => {
+   const pollDidit = useCallback(async (retries: number = STATUS_REFRESH_RETRIES, syncFirst = false) => {
       const runId = (pollRunRef.current += 1);
       setIsChecking(true);
       // Don't yank a terminal screen back to a pending screen if this poll starts late.
@@ -263,6 +300,17 @@ export default function VerifyFlow() {
          }
 
          try {
+            // Every ~30s, pull the truth from Didit so a lost webhook can't strand the
+            // user on this spinner. On attempt 0 only when the caller asks (status
+            // resume): right after "Open verification" the session is legitimately Not
+            // Started and needs no sync.
+            if ((attempt > 0 && attempt % SYNC_EVERY_N_ATTEMPTS === 0) || (attempt === 0 && syncFirst)) {
+               await syncDiditStatus('id');
+               if (pollRunRef.current !== runId) {
+                  setIsChecking(false);
+                  return;
+               }
+            }
             const refreshed = await dispatch(fetchUser()).unwrap();
             if (pollRunRef.current !== runId) {
                setIsChecking(false);
@@ -294,6 +342,14 @@ export default function VerifyFlow() {
                setStep('id-abandoned');
                return;
             }
+            // Unfinished session statuses only route in resume contexts (syncFirst).
+            // During an active flow the user is still working in the Didit tab, and
+            // "In Progress" is exactly what we expect — keep waiting for the webhook.
+            if (syncFirst && (rawStatus === 'not started' || rawStatus === 'in progress')) {
+               setIsChecking(false);
+               setStep('id-abandoned');
+               return;
+            }
          } catch {
             // Ignore transient errors and keep polling.
          }
@@ -321,11 +377,14 @@ export default function VerifyFlow() {
       void pollDidit();
    }, [kycUrl, pollDidit]);
 
-   // One-shot status check for parked screens (waiting/review). Used on tab focus so
-   // returning from the Didit tab updates instantly without restarting the 2-min poll
-   // loop (which would demote the screen back to a button-less spinner).
+   // One-shot status check for parked screens (waiting/review). Used by the "Check
+   // status" buttons and on tab focus. Syncs against Didit's API first — a lost webhook
+   // means our own row never changes, so re-reading it alone can never unstick the user.
+   // Never demotes the screen to a button-less spinner.
    const checkStatusOnce = useCallback(async () => {
+      setIsChecking(true);
       try {
+         await syncDiditStatus('id');
          const refreshed = await dispatch(fetchUser()).unwrap();
          if (refreshed.isDidit === 'ACTIVE') {
             setStep('success');
@@ -335,9 +394,40 @@ export default function VerifyFlow() {
          if (rawStatus === 'duplicate') setStep('duplicate');
          else if (rawStatus.includes('review')) setStep('id-review');
          else if (rawStatus === 'declined') setStep('id-declined');
-         else if (rawStatus === 'abandoned' || rawStatus === 'expired') setStep('id-abandoned');
+         else if (
+            rawStatus === 'abandoned' ||
+            rawStatus === 'expired' ||
+            rawStatus === 'not started' ||
+            rawStatus === 'in progress'
+         ) {
+            // The session never finished — route to the screen that offers "Continue
+            // verification" (same session) and "Start over" instead of waiting forever.
+            setStep('id-abandoned');
+         }
       } catch {
          // Transient network error — the background slow-poll will catch up.
+      } finally {
+         setIsChecking(false);
+      }
+   }, [dispatch]);
+
+   // Liveness twin of checkStatusOnce, for the liveness-waiting screen: sync the face
+   // scan's real status from Didit, then route on what came back. Returns without
+   // demoting the screen when the scan is genuinely still in progress.
+   const checkLivenessOnce = useCallback(async (flow: FlowState) => {
+      setIsChecking(true);
+      try {
+         await syncDiditStatus('liveness');
+         const refreshed = await dispatch(fetchUser()).unwrap();
+         const matchesAttempt = !flow.livenessSessionId || refreshed.livenessSessionId === flow.livenessSessionId;
+         if (!matchesAttempt) return;
+         if (refreshed.livenessStatus === 'APPROVED') setStep('confirm');
+         else if (refreshed.livenessStatus === 'DUPLICATE') setStep('duplicate');
+         else if (refreshed.livenessStatus === 'DECLINED') setStep('declined');
+      } catch {
+         // Transient network error — stay parked; the user can check again.
+      } finally {
+         setIsChecking(false);
       }
    }, [dispatch]);
 
@@ -352,7 +442,7 @@ export default function VerifyFlow() {
          }
          if (step === 'liveness-waiting') {
             const currentFlow = readFlow();
-            if (currentFlow) void pollLiveness(currentFlow);
+            if (currentFlow) void checkLivenessOnce(currentFlow);
          }
       };
       window.addEventListener('focus', onFocus);
@@ -361,7 +451,7 @@ export default function VerifyFlow() {
          window.removeEventListener('focus', onFocus);
          document.removeEventListener('visibilitychange', onFocus);
       };
-   }, [step, checkStatusOnce, pollLiveness]);
+   }, [step, checkStatusOnce, checkLivenessOnce]);
 
    // --- Mount -------------------------------------------------------------------
 
@@ -387,7 +477,9 @@ export default function VerifyFlow() {
       // 'combined' = Traditional KYC single session; 'id' = legacy callback (still polled
       // the same way); 'liveness' = World ID's liveness pre-gate.
       if ((kind === 'combined' || kind === 'id') && existing) {
-         void pollDidit();
+         // Sync-first: the user just came back from Didit, so Didit's API already knows
+         // the outcome even if the webhook is delayed or lost.
+         void pollDidit(STATUS_REFRESH_RETRIES, true);
          return;
       }
       if (kind === 'liveness' && existing) {
@@ -454,10 +546,10 @@ export default function VerifyFlow() {
          return;
       }
       if (user?.diditSubmittedAt) {
-         // Submitted but no webhook verdict yet — short poll (~15s), then park on the
-         // waiting screen. A long blind poll here would strand users who quit Didit
-         // mid-session (no verdict exists yet) on a button-less spinner for 2 minutes.
-         void pollDidit(5);
+         // Submitted but no webhook verdict yet — sync the real status from Didit, then
+         // short-poll (~15s) and park on the waiting screen. The sync is what rescues
+         // users whose webhook was lost: without it this row can never change.
+         void pollDidit(5, true);
          return;
       }
 
@@ -574,9 +666,10 @@ export default function VerifyFlow() {
             stepLabel="Step 1 of 2"
             visual="orbit"
             title="Almost there"
-            body="Your face scan is still finishing up. This usually takes a moment."
-            action={{ label: 'Check again', onClick: () => flow && void pollLiveness(flow), loading: isChecking }}
-            secondaryAction={{ label: 'Go back', onClick: () => navigate(-1) }}
+            body="Your face scan is still finishing up. This usually takes a moment. Left before finishing the scan? Start over below for a fresh one."
+            action={{ label: 'Check again', onClick: () => flow && void checkLivenessOnce(flow), loading: isChecking }}
+            secondaryAction={{ label: 'Start over', onClick: () => flow && void startLiveness(flow) }}
+            tertiaryAction={{ label: 'Go back', onClick: () => navigate(-1) }}
          />
       );
    }
@@ -587,7 +680,7 @@ export default function VerifyFlow() {
             visual="orbit"
             title="Reviewing your verification…"
             body="Your details are being reviewed. Most checks finish in a few minutes — we'll update this screen automatically when done. Left before finishing all the steps? Start over below."
-            action={{ label: 'Check status', onClick: async () => { setIsChecking(true); await pollDidit(5); setIsChecking(false); }, loading: isChecking }}
+            action={{ label: 'Check status', onClick: () => void checkStatusOnce(), loading: isChecking }}
             secondaryAction={{ label: 'Start over', onClick: () => void startKyc(retryFlow) }}
             tertiaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
             supportLink
@@ -601,7 +694,7 @@ export default function VerifyFlow() {
             visual="orbit"
             title="Manual review in progress"
             body="Your verification needs a quick human review — this usually takes a few hours but can take up to 1 business day. We'll update your status automatically. Want it faster? Message us below and we'll expedite your review."
-            action={{ label: 'Check status', onClick: async () => { setIsChecking(true); await pollDidit(); setIsChecking(false); }, loading: isChecking }}
+            action={{ label: 'Check status', onClick: () => void checkStatusOnce(), loading: isChecking }}
             secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
             supportLink
          />
@@ -682,7 +775,7 @@ export default function VerifyFlow() {
          <StatusScreen
             stepLabel="Step 1 of 2"
             title="Face scan didn't pass"
-            body="We couldn't confirm a live person. A few things that help:"
+            body="The scan didn't finish successfully — either it was closed early or we couldn't confirm a live person. Tap Try again for a fresh scan. A few things that help:"
             tips={[
                'Good, even lighting — avoid bright backlighting',
                'Hold your phone steady and face the camera directly',
