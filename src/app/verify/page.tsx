@@ -25,6 +25,11 @@ const SYNC_EVERY_N_ATTEMPTS = 10;
 
 const wait = (ms: number) => new Promise<void>((resolve) => { window.setTimeout(resolve, ms); });
 
+// Didit statuses meaning "the user never completed the session" — Didit sends no
+// webhook for these until its own abandon timeout, so they're only visible via sync.
+const isUnfinishedDiditStatus = (status: string | null): boolean =>
+   status === 'Not Started' || status === 'In Progress';
+
 // Ask the server to fetch this session's live status from Didit's API and apply it to
 // our database. Statuses normally arrive via the didit-webhook, but webhooks can be
 // lost or never sent (a session the user closed sits in "Not Started"/"In Progress"
@@ -49,6 +54,7 @@ type Step =
    | 'liveness-start'
    | 'liveness-pending'
    | 'liveness-waiting'
+   | 'liveness-unfinished'
    | 'confirm'
    | 'worldid'
    | 'id-prep'
@@ -65,7 +71,7 @@ type Step =
 // Steps a poll must never overwrite back to a "pending" screen. Guarding the
 // initial setStep against these prevents the confirm/success screen from
 // flickering back to a button-less waiting screen when a poll (re)starts.
-const TERMINAL_STEPS = new Set<Step>(['confirm', 'duplicate', 'declined', 'success', 'id-review', 'id-declined', 'id-abandoned']);
+const TERMINAL_STEPS = new Set<Step>(['confirm', 'duplicate', 'declined', 'success', 'id-review', 'id-declined', 'id-abandoned', 'liveness-unfinished']);
 
 // Flow persistence lives in a shared module so the request board can read the
 // same "started verifying but never finished" signal to show its support modal.
@@ -195,7 +201,7 @@ export default function VerifyFlow() {
    }, []);
 
    const pollLiveness = useCallback(
-      async (flow: FlowState) => {
+      async (flow: FlowState, promptIfUnfinished = false) => {
          const runId = (pollRunRef.current += 1);
          // Don't yank a confirm/terminal screen back to a pending screen if this
          // poll starts after we've already advanced.
@@ -211,8 +217,15 @@ export default function VerifyFlow() {
                // strand the user. Safe here: the sync never writes non-terminal liveness
                // statuses, so an in-progress scan is left alone.
                if (attempt % SYNC_EVERY_N_ATTEMPTS === 0) {
-                  await syncDiditStatus('liveness');
+                  const diditStatus = await syncDiditStatus('liveness');
                   if (pollRunRef.current !== runId) return;
+                  // Resume contexts only (returning to the app, not mid-scan): a session
+                  // Didit reports as never completed gets the explicit "scan not
+                  // finished" screen with a restart, instead of an endless wait.
+                  if (promptIfUnfinished && attempt === 0 && isUnfinishedDiditStatus(diditStatus)) {
+                     setStep('liveness-unfinished');
+                     return;
+                  }
                }
                const refreshed = await dispatch(fetchUser()).unwrap();
                if (pollRunRef.current !== runId) return;
@@ -417,13 +430,18 @@ export default function VerifyFlow() {
    const checkLivenessOnce = useCallback(async (flow: FlowState) => {
       setIsChecking(true);
       try {
-         await syncDiditStatus('liveness');
+         const diditStatus = await syncDiditStatus('liveness');
          const refreshed = await dispatch(fetchUser()).unwrap();
          const matchesAttempt = !flow.livenessSessionId || refreshed.livenessSessionId === flow.livenessSessionId;
          if (!matchesAttempt) return;
          if (refreshed.livenessStatus === 'APPROVED') setStep('confirm');
          else if (refreshed.livenessStatus === 'DUPLICATE') setStep('duplicate');
          else if (refreshed.livenessStatus === 'DECLINED') setStep('declined');
+         else if (isUnfinishedDiditStatus(diditStatus)) {
+            // Didit says the scan was never completed — tell the user plainly and offer
+            // a fresh scan instead of leaving them on "still finishing up".
+            setStep('liveness-unfinished');
+         }
       } catch {
          // Transient network error — stay parked; the user can check again.
       } finally {
@@ -483,7 +501,9 @@ export default function VerifyFlow() {
          return;
       }
       if (kind === 'liveness' && existing) {
-         void pollLiveness(existing);
+         // Returning from the Didit tab: if the scan was closed unfinished, say so
+         // immediately instead of parking on a wait screen.
+         void pollLiveness(existing, true);
          return;
       }
 
@@ -499,9 +519,9 @@ export default function VerifyFlow() {
          }
          // Session already created (status set to PENDING by create-didit-session) — the user
          // returned manually before Didit redirected back. Poll for the result instead of
-         // restarting a new session.
+         // restarting a new session; an unfinished scan gets the explicit restart screen.
          if (user?.livenessStatus === 'PENDING') {
-            void pollLiveness(flow);
+            void pollLiveness(flow, true);
             return;
          }
          void startLiveness(flow);
@@ -670,6 +690,19 @@ export default function VerifyFlow() {
             action={{ label: 'Check again', onClick: () => flow && void checkLivenessOnce(flow), loading: isChecking }}
             secondaryAction={{ label: 'Start over', onClick: () => flow && void startLiveness(flow) }}
             tertiaryAction={{ label: 'Go back', onClick: () => navigate(-1) }}
+         />
+      );
+   }
+
+   if (step === 'liveness-unfinished') {
+      return (
+         <StatusScreen
+            stepLabel="Step 1 of 2"
+            title="Face scan not finished"
+            body="It looks like the face scan was closed before it was completed. No problem — start a new scan below. It only takes about 30 seconds."
+            action={{ label: 'Start new face scan', onClick: () => flow && void startLiveness(flow) }}
+            secondaryAction={{ label: 'Go back', onClick: () => navigate(-1) }}
+            supportLink
          />
       );
    }
