@@ -24,6 +24,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar from '@/components/UserAvatar';
 import { VerificationUnsuccessfulModal } from '@/components/verification/VerificationUnsuccessfulModal';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
+import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 import { ModalNote } from '@/components/worldId/modal/ModalNote';
 import { VerificationModalBody } from '@/components/worldId/modal/VerificationModalBody';
 import { VerificationModalHeader } from '@/components/worldId/modal/VerificationModalHeader';
@@ -434,6 +435,8 @@ function RequestBoard$() {
       }
    }, [isRealUserAuthenticated, user]);
    const { open: openVerify, modal: verifyModal } = useVerifyYourself();
+   // Keep the verification badge honest: pull the real Didit status for pending users.
+   useVerificationStatusSync();
    const storeIsBorrower = useIsBorrower();
    const isBorrower = isLenderTourPreview ? false : isReferralTestMode || storeIsBorrower;
    const { data: lenderPointsData } = useQuery({

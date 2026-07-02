@@ -61,21 +61,22 @@ export default function WorldIdVerification() {
          <div className="flex flex-col items-center gap-md-3 text-center w-full">
             <img src="/hippos/hippo-with-id-card.png" alt="" aria-hidden="true" className="w-40" />
             <div className="flex flex-col gap-md-1">
-               <h1 className="text-md-display text-md-heading">Verify You&rsquo;re Human</h1>
+               <h1 className="text-md-display text-md-heading">Verify Your Identity</h1>
                <p className="text-md-b1 font-medium text-md-neutral-700">
-                  Prove you&rsquo;re a real person with World ID. This is a one-time step.
+                  To keep Moodeng safe and prevent fake or duplicate accounts, borrowers complete a short
+                  one-time identity check.
                </p>
             </div>
 
             <button
                type="button"
-               onClick={() => startVerification('worldid')}
+               onClick={() => startVerification('didit')}
                className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100"
             >
-               Verify with World ID
+               Verify Your ID
             </button>
             <p className="text-md-b3 font-medium text-md-neutral-700">
-               Requires Orb-verified World ID.
+               Quick national ID &amp; selfie check — about 3 minutes.
             </p>
 
             <div className="flex items-center gap-md-2 w-full">
@@ -86,13 +87,13 @@ export default function WorldIdVerification() {
 
             <button
                type="button"
-               onClick={() => startVerification('didit')}
+               onClick={() => startVerification('worldid')}
                className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg border border-md-primary-1200 text-md-b1 font-semibold text-md-primary-1200"
             >
-               Verify with ID instead
+               Verify with World ID
             </button>
             <p className="text-md-b3 font-medium text-md-neutral-700">
-               No World ID? Complete a quick ID &amp; selfie check instead.
+               For World App users — verified at an Orb or with a passport.
             </p>
          </div>
       </div>
