@@ -30,8 +30,7 @@ type Step =
    | 'liveness-waiting'
    | 'confirm'
    | 'worldid'
-   | 'id-redirecting'
-   | 'id-start'
+   | 'id-prep'
    | 'id-pending'
    | 'id-waiting'
    | 'id-review'
@@ -75,6 +74,7 @@ export default function VerifyFlow() {
    const [errorMessage, setErrorMessage] = useState('');
    const [isChecking, setIsChecking] = useState(false);
    const [livenessUrl, setLivenessUrl] = useState<string | null>(null);
+   const [kycUrl, setKycUrl] = useState<string | null>(null);
    // Monotonic run token: only the latest poll may mutate step. Bumping it makes
    // any earlier poll bail on its next check, so a superseded loop can't stomp state.
    const pollRunRef = useRef(0);
@@ -222,14 +222,13 @@ export default function VerifyFlow() {
 
    // A single hosted Didit session runs liveness + ID + face match end-to-end, so the
    // user never sees an intermediate "you've been verified" screen between steps — the
-   // only completion screen is at the true end. We redirect out and poll for
-   // is_didit = ACTIVE (or a duplicate/declined/review status) on return.
+   // only completion screen is at the true end. The session is created in the
+   // background while the user reads the prep checklist, so the "Open verification"
+   // button is usually ready before they finish reading — no dead wait screens.
    const startKyc = useCallback(async (flow: FlowState) => {
       setErrorMessage('');
-      // Brief redirect-warning screen before handing off to Didit
-      setStep('id-redirecting');
-      await wait(2000);
-      setStep('id-start');
+      setKycUrl(null);
+      setStep('id-prep');
       try {
          const supabase = getSupabaseBrowserClient();
          const { data, error } = await supabase.functions.invoke('create-didit-session', {
@@ -239,7 +238,7 @@ export default function VerifyFlow() {
          if (error || !url) {
             throw new Error('Could not start verification. Please try again.');
          }
-         window.location.href = url;
+         setKycUrl(url);
       } catch (err) {
          setErrorMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
          setStep('error');
@@ -307,6 +306,21 @@ export default function VerifyFlow() {
       setStep('id-waiting');
    }, [dispatch]);
 
+   // Same new-tab pattern as the liveness path: Didit opens in its own tab and this
+   // page polls underneath, so Back/refresh in the Didit tab can never strand the
+   // session. Must be a synchronous click handler so window.open isn't popup-blocked.
+   const handleOpenKyc = useCallback(() => {
+      if (!kycUrl) return;
+      const opened = window.open(kycUrl, '_blank');
+      if (!opened) {
+         // Popup blocked — fall back to navigating the current tab (old behaviour).
+         window.location.href = kycUrl;
+         return;
+      }
+      opened.opener = null;
+      void pollDidit();
+   }, [kycUrl, pollDidit]);
+
    // One-shot status check for parked screens (waiting/review). Used on tab focus so
    // returning from the Didit tab updates instantly without restarting the 2-min poll
    // loop (which would demote the screen back to a button-less spinner).
@@ -365,6 +379,9 @@ export default function VerifyFlow() {
       const kind = params.get('kind');
       const routeState = location.state as { method?: VerifyMethod; returnTo?: string } | null;
       const existing = readFlow();
+      // Keep an in-progress flow alive: re-stamp ts on every /verify visit so the
+      // method/returnTo survive long waits (e.g. manual review) between check-ins.
+      if (existing) writeFlow(existing);
 
       // Returning from a Didit redirect — poll for the result.
       // 'combined' = Traditional KYC single session; 'id' = legacy callback (still polled
@@ -496,12 +513,23 @@ export default function VerifyFlow() {
       );
    }
 
-   if (step === 'id-start') {
+   if (step === 'id-prep') {
       return (
          <StatusScreen
-            visual="orbit"
-            title="Setting up…"
-            body="Starting your verification. Keep this screen open."
+            title="Before you start"
+            body="A quick ID + selfie check — about 3 minutes. It opens in a new tab; keep this page open and it will update automatically."
+            tips={[
+               'Have your physical national ID with you',
+               'Find good, even lighting for the selfie',
+               'Allow camera access when asked'
+            ]}
+            action={{
+               label: 'Open verification',
+               onClick: handleOpenKyc,
+               loading: !kycUrl,
+               loadingLabel: 'Setting up…'
+            }}
+            secondaryAction={{ label: 'Go back', onClick: () => navigate(-1) }}
          />
       );
    }
@@ -522,22 +550,12 @@ export default function VerifyFlow() {
       );
    }
 
-   if (step === 'id-redirecting') {
-      return (
-         <StatusScreen
-            visual="orbit"
-            title="Taking you to Didit…"
-            body="You'll take a quick face scan and photograph your ID — all in one go. Come back here when you're done."
-         />
-      );
-   }
-
    if (step === 'id-pending') {
       const body = elapsed > 90
          ? 'Almost there — Didit is finishing the review.'
          : elapsed > 30
          ? 'Still confirming — verification usually takes a minute or two.'
-         : 'Waiting for Didit to confirm your verification. Keep this screen open.';
+         : 'Finish the steps in the Didit tab — this page updates automatically when you’re done.';
       return (
          <StatusScreen
             visual="orbit"
@@ -591,7 +609,11 @@ export default function VerifyFlow() {
       return (
          <StatusScreen
             title="Verification didn't pass"
-            body="Didit was unable to verify your identity. This can happen if the document image was unclear, expired, or didn't match your face. Contact our team — we can help check manually."
+            body={
+               user?.diditDeclineReason
+                  ? `Didit was unable to verify your identity. Reason: ${user.diditDeclineReason}. Fix this and try again, or contact our team — we can help check manually.`
+                  : "Didit was unable to verify your identity. This can happen if the document image was unclear, expired, or didn't match your face. Contact our team — we can help check manually."
+            }
             action={{ label: 'Try again', onClick: () => void startKyc(retryFlow) }}
             secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
             supportLink
@@ -833,7 +855,7 @@ function StatusScreen({
    title: string;
    body: string;
    tips?: string[];
-   action?: { label: string; onClick: () => void; loading?: boolean };
+   action?: { label: string; onClick: () => void; loading?: boolean; loadingLabel?: string };
    secondaryAction?: { label: string; onClick: () => void };
    tertiaryAction?: { label: string; onClick: () => void };
    supportLink?: boolean;
@@ -880,7 +902,7 @@ function StatusScreen({
                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                         </svg>
-                        Checking…
+                        {action.loadingLabel ?? 'Checking…'}
                      </>
                   ) : action.label}
                </button>

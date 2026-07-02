@@ -17,7 +17,12 @@ export type FlowState = {
 };
 
 export const VERIFY_FLOW_KEY = 'verify_flow';
-export const VERIFY_FLOW_TTL_MS = 60 * 60 * 1000; // 1 hour
+// Long enough to span a Didit manual review (up to ~1 business day), so retry
+// buttons on parked status screens keep the original method and returnTo instead
+// of falling back to a synthesized flow that dumps the user on the dashboard.
+// The /verify page refreshes ts on every visit, so an active flow only expires
+// after the user has stayed away this long.
+export const VERIFY_FLOW_TTL_MS = 48 * 60 * 60 * 1000; // 48 hours
 
 export const readVerifyFlow = (): FlowState | null => {
    try {
