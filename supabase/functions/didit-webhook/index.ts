@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { hmac } from 'https://esm.sh/@noble/hashes@1.8.0/hmac?target=deno';
 import { sha256 } from 'https://esm.sh/@noble/hashes@1.8.0/sha2?target=deno';
 
+import { sendEmail } from '../_shared/email.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // Didit webhook receiver.
@@ -60,6 +61,78 @@ const notifyAdmins = async (
       );
    } catch (err) {
       console.error('[didit-webhook] Admin alert failed:', err instanceof Error ? err.message : err);
+   }
+};
+
+// User-facing outcome notification (email + Telegram when connected), respecting the
+// account-activity notification preference. This closes the "silent webhook" gap: a
+// manual review finishing (or an abandoned session) otherwise produces no signal the
+// user ever sees unless they happen to reopen the app. Never throws.
+type UserNotifyOutcome = 'approved' | 'review' | 'declined' | 'abandoned';
+
+const USER_NOTIFY_COPY: Record<UserNotifyOutcome, { subject: string; body: (reason?: string) => string; cta: string }> = {
+   approved: {
+      subject: 'You’re verified on Moodeng! 🎉',
+      body: () =>
+         'Great news — your identity verification is complete and your Moodeng account is fully unlocked. You can now request loans and start building trust with lenders.',
+      cta: 'Open Moodeng'
+   },
+   review: {
+      subject: 'Your Moodeng verification is in manual review',
+      body: () =>
+         'Your documents need a quick human review — this usually takes a few hours and at most 1 business day. We’ll message you the moment it’s done. No action needed.',
+      cta: 'Check status'
+   },
+   declined: {
+      subject: 'Your Moodeng verification didn’t pass',
+      body: (reason) =>
+         `We couldn’t verify your identity this time.${reason ? ` Reason: ${reason}.` : ''} You can try again any time — or message our team and we’ll help you sort it out.`,
+      cta: 'Try again'
+   },
+   abandoned: {
+      subject: 'Finish your Moodeng verification',
+      body: () =>
+         'You were almost done! Your verification session was closed before all the steps were finished. It only takes about 3 minutes to complete — pick up where you left off.',
+      cta: 'Finish verifying'
+   }
+};
+
+const notifyUser = async (
+   // deno-lint-ignore no-explicit-any
+   adminSupabase: any,
+   userId: string,
+   outcome: UserNotifyOutcome,
+   reason?: string
+) => {
+   try {
+      const { data } = await adminSupabase
+         .from('users')
+         .select('email, chat_id, notif_account_activity')
+         .eq('id', userId)
+         .maybeSingle();
+      const user = data as { email?: string | null; chat_id?: string | number | null; notif_account_activity?: boolean | null } | null;
+      if (!user || user.notif_account_activity === false) return;
+
+      const copy = USER_NOTIFY_COPY[outcome];
+      const siteUrl = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? 'https://dashboard.moodeng.app').replace(/\/$/, '');
+      const verifyUrl = `${siteUrl}/verify`;
+      const text = `${copy.body(reason)}\n\n${copy.cta}: ${verifyUrl}`;
+
+      const email = user.email?.trim();
+      if (email) {
+         await sendEmail(email, copy.subject, text).catch((err: unknown) => {
+            console.error('[didit-webhook] User email notification failed:', err instanceof Error ? err.message : err);
+         });
+      }
+      if (user.chat_id) {
+         await sendTelegramMessage(user.chat_id, `${copy.subject}\n\n${copy.body(reason)}`, {
+            inlineKeyboard: [[{ text: copy.cta, url: verifyUrl }]]
+         }).catch((err: unknown) => {
+            console.error('[didit-webhook] User Telegram notification failed:', err instanceof Error ? err.message : err);
+         });
+      }
+   } catch (err) {
+      console.error('[didit-webhook] User notification failed:', err instanceof Error ? err.message : err);
    }
 };
 
@@ -149,7 +222,7 @@ const warningsFlagDuplicate = (warnings: unknown): boolean =>
 
 // Inspect one Didit feature block (face_match or face_search) for a 1:N match against a
 // DIFFERENT user - i.e. this live face is already registered.
-const blockHasDuplicate = (block: DiditFeatureBlock, currentUserId: string): boolean => {
+const blockHasDuplicate = (block: DiditFeatureBlock | undefined, currentUserId: string): boolean => {
    if (!block) return false;
 
    const matches = [
@@ -211,6 +284,33 @@ const hasCombinedDuplicate = (decision: DiditDecision | null | undefined, curren
       warningsFlagDuplicate(decision.liveness?.warnings) ||
       warningsFlagDuplicate(decision.warnings)
    );
+};
+
+// Best-effort human-readable decline reason from Didit's decision payload. Didit
+// attaches warnings to each feature block (id_verification, face_match, liveness, …)
+// with short descriptions; collect the distinct ones so the user knows what to fix
+// before retrying, instead of guessing from a generic error screen.
+const extractDeclineReason = (decision: unknown): string | undefined => {
+   if (!decision || typeof decision !== 'object') return undefined;
+   const reasons = new Set<string>();
+   const visit = (value: unknown, depth: number) => {
+      if (!value || typeof value !== 'object' || depth > 4) return;
+      const record = value as Record<string, unknown>;
+      for (const w of asArray(record.warnings)) {
+         const text = readField(w, ['short_description', 'message', 'description', 'risk', 'code']);
+         if (typeof text === 'string' && text.trim()) reasons.add(text.trim().replace(/_/g, ' '));
+      }
+      for (const key of ['status_detail', 'reason', 'decline_reason']) {
+         const v = record[key];
+         if (typeof v === 'string' && v.trim()) reasons.add(v.trim().replace(/_/g, ' '));
+      }
+      for (const v of Object.values(record)) {
+         if (v && typeof v === 'object' && !Array.isArray(v)) visit(v, depth + 1);
+      }
+   };
+   visit(decision, 0);
+   if (reasons.size === 0) return undefined;
+   return Array.from(reasons).slice(0, 3).join('; ').slice(0, 300);
 };
 
 // Fetch the full decision when the webhook payload didn't embed it (needed for the dedup result).
@@ -372,8 +472,9 @@ serve(async (req) => {
          // block before granting ACTIVE). Restricted to 'legacy' (the combined workflow):
          // the legacy 'id' step does a 1:1 face match whose success must NOT be read as a
          // duplicate, and that flow's dedup already happened at the separate liveness gate.
+         let decision: DiditDecision | null = payload.decision ?? null;
          if (kind === 'legacy' && (status === 'Approved' || status === 'Declined')) {
-            const decision = payload.decision ?? (sessionId ? await fetchDecision(sessionId) : null);
+            decision = decision ?? (sessionId ? await fetchDecision(sessionId) : null);
             if (hasCombinedDuplicate(decision, vendorData)) {
                // A duplicate is always a fresh account that was never ACTIVE, so we only
                // record the status — never flip is_didit here.
@@ -392,10 +493,10 @@ serve(async (req) => {
          }
 
          if (status === 'Approved') {
-            // Approval: grant verified status and clear any intermediate status.
+            // Approval: grant verified status and clear any intermediate status/reason.
             const { error: updateError } = await adminSupabase
                .from('users')
-               .update({ is_didit: 'ACTIVE', didit_id_status: null })
+               .update({ is_didit: 'ACTIVE', didit_id_status: null, didit_decline_reason: null })
                .eq('id', vendorData);
 
             if (updateError) {
@@ -405,6 +506,7 @@ serve(async (req) => {
 
             console.log(`[didit-webhook] User ${vendorData} verified via Didit (${kind}, session ${sessionId ?? 'unknown'})`);
             await notifyAdmins(adminSupabase, vendorData, '✅ Approved — user is now verified', sessionId);
+            await notifyUser(adminSupabase, vendorData, 'approved');
             return jsonResponse({ success: true });
          }
 
@@ -412,9 +514,19 @@ serve(async (req) => {
          // store the raw Didit status string so the frontend can surface it.
          // "In Review" means Didit flagged the session for human review — not a rejection.
          // "Declined" is a terminal rejection. Abandoned/Expired mean the user didn't finish.
+         const normalized = status.toLowerCase();
+         let declineReason: string | undefined;
+         if (normalized === 'declined') {
+            decision = decision ?? (sessionId ? await fetchDecision(sessionId) : null);
+            declineReason = extractDeclineReason(decision);
+         }
+
          const { error: statusError } = await adminSupabase
             .from('users')
-            .update({ didit_id_status: status })
+            .update({
+               didit_id_status: status,
+               ...(normalized === 'declined' ? { didit_decline_reason: declineReason ?? null } : {})
+            })
             .eq('id', vendorData);
 
          if (statusError) {
@@ -423,13 +535,20 @@ serve(async (req) => {
          }
 
          console.log(`[didit-webhook] ID status="${status}" for user ${vendorData} (${kind}, session ${sessionId ?? 'unknown'})`);
-         const normalized = status.toLowerCase();
          const outcome = normalized.includes('review')
             ? '👀 IN MANUAL REVIEW — check the Didit dashboard to expedite'
             : normalized === 'declined'
-              ? '❌ Declined'
+              ? `❌ Declined${declineReason ? ` — ${declineReason}` : ''}`
               : `⚠️ ${status}`; // Abandoned / Expired / anything else
          await notifyAdmins(adminSupabase, vendorData, outcome, sessionId);
+
+         if (normalized.includes('review')) {
+            await notifyUser(adminSupabase, vendorData, 'review');
+         } else if (normalized === 'declined') {
+            await notifyUser(adminSupabase, vendorData, 'declined', declineReason);
+         } else if (normalized === 'abandoned' || normalized === 'expired') {
+            await notifyUser(adminSupabase, vendorData, 'abandoned');
+         }
          return jsonResponse({ success: true });
       }
 
