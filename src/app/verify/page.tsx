@@ -655,7 +655,16 @@ export default function VerifyFlow() {
          <StatusScreen
             title="Something went wrong"
             body={errorMessage || 'Please try again.'}
-            action={{ label: 'Try again', onClick: () => flow && void startLiveness(flow) }}
+            action={{
+               label: 'Try again',
+               // Retry the path that actually failed: KYC errors restart the combined
+               // Didit session, not the World ID liveness pre-gate.
+               onClick: () => {
+                  if (!flow) return;
+                  if (flow.method === 'didit') void startKyc(flow);
+                  else void startLiveness(flow);
+               }
+            }}
             secondaryAction={{ label: 'Continue to app', onClick: () => { clearFlow(); navigate('/dashboard'); } }}
             supportLink
          />

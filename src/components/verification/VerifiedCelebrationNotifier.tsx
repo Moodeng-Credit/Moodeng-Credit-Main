@@ -65,7 +65,12 @@ export function VerifiedCelebrationNotifier() {
          const flag = readPending(user.id);
          if (flag) {
             clearPending(user.id);
-            setCelebration(flag === 'review' ? 'review' : 'pending');
+            // If approval landed while the user was live-polling on /verify, that page
+            // shows its own success screen (then navigates to a congratulations page) —
+            // arming the modal here would double-celebrate. Clearing the flag is enough.
+            if (!window.location.pathname.startsWith('/verify')) {
+               setCelebration(flag === 'review' ? 'review' : 'pending');
+            }
          }
       }
    }, [user]);
