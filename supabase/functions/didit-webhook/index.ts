@@ -3,8 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { hmac } from 'https://esm.sh/@noble/hashes@1.8.0/hmac?target=deno';
 import { sha256 } from 'https://esm.sh/@noble/hashes@1.8.0/sha2?target=deno';
 
-import { sendEmail } from '../_shared/email.ts';
-import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { claimDiditNotification, notifyAdmins, notifyUser } from '../_shared/diditNotifications.ts';
 
 // Didit webhook receiver.
 // Verifies the HMAC-SHA256 signature over the raw request body (X-Signature),
@@ -26,115 +25,6 @@ const TIMESTAMP_TOLERANCE_SEC = 300;
 
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-
-// Fire-and-forget Telegram alert so the team hears about KYC outcomes (especially
-// manual reviews, which otherwise sit invisible until the user complains).
-// Destination = telegram_bot_settings key 'kyc_alert_chat_id'; no-ops when unset.
-// Never throws — an alert failure must not fail the webhook.
-const notifyAdmins = async (
-   // deno-lint-ignore no-explicit-any
-   adminSupabase: any,
-   userId: string,
-   outcome: string,
-   sessionId?: string
-) => {
-   try {
-      const { data: setting } = await adminSupabase
-         .from('telegram_bot_settings')
-         .select('value')
-         .eq('key', 'kyc_alert_chat_id')
-         .maybeSingle();
-      const chatId = (setting as { value?: string } | null)?.value?.trim();
-      if (!chatId) return;
-
-      const { data: profile } = await adminSupabase
-         .from('users')
-         .select('email, username')
-         .eq('id', userId)
-         .maybeSingle();
-      const p = profile as { email?: string; username?: string } | null;
-      const who = [p?.username, p?.email].filter(Boolean).join(' · ') || userId;
-
-      await sendTelegramMessage(
-         chatId,
-         `🪪 Didit KYC — ${outcome}\nUser: ${who}\nUser ID: ${userId}${sessionId ? `\nSession: ${sessionId}` : ''}`
-      );
-   } catch (err) {
-      console.error('[didit-webhook] Admin alert failed:', err instanceof Error ? err.message : err);
-   }
-};
-
-// User-facing outcome notification (email + Telegram when connected), respecting the
-// account-activity notification preference. This closes the "silent webhook" gap: a
-// manual review finishing (or an abandoned session) otherwise produces no signal the
-// user ever sees unless they happen to reopen the app. Never throws.
-type UserNotifyOutcome = 'approved' | 'review' | 'declined' | 'abandoned';
-
-const USER_NOTIFY_COPY: Record<UserNotifyOutcome, { subject: string; body: (reason?: string) => string; cta: string }> = {
-   approved: {
-      subject: 'You’re verified on Moodeng! 🎉',
-      body: () =>
-         'Great news — your identity verification is complete and your Moodeng account is fully unlocked. You can now request loans and start building trust with lenders.',
-      cta: 'Open Moodeng'
-   },
-   review: {
-      subject: 'Your Moodeng verification is in manual review',
-      body: () =>
-         'Your documents need a quick human review — this usually takes a few hours and at most 1 business day. We’ll message you the moment it’s done. No action needed.',
-      cta: 'Check status'
-   },
-   declined: {
-      subject: 'Your Moodeng verification didn’t pass',
-      body: (reason) =>
-         `We couldn’t verify your identity this time.${reason ? ` Reason: ${reason}.` : ''} You can try again any time — or message our team and we’ll help you sort it out.`,
-      cta: 'Try again'
-   },
-   abandoned: {
-      subject: 'Finish your Moodeng verification',
-      body: () =>
-         'You were almost done! Your verification session was closed before all the steps were finished. It only takes about 3 minutes to complete — pick up where you left off.',
-      cta: 'Finish verifying'
-   }
-};
-
-const notifyUser = async (
-   // deno-lint-ignore no-explicit-any
-   adminSupabase: any,
-   userId: string,
-   outcome: UserNotifyOutcome,
-   reason?: string
-) => {
-   try {
-      const { data } = await adminSupabase
-         .from('users')
-         .select('email, chat_id, notif_account_activity')
-         .eq('id', userId)
-         .maybeSingle();
-      const user = data as { email?: string | null; chat_id?: string | number | null; notif_account_activity?: boolean | null } | null;
-      if (!user || user.notif_account_activity === false) return;
-
-      const copy = USER_NOTIFY_COPY[outcome];
-      const siteUrl = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? 'https://dashboard.moodeng.app').replace(/\/$/, '');
-      const verifyUrl = `${siteUrl}/verify`;
-      const text = `${copy.body(reason)}\n\n${copy.cta}: ${verifyUrl}`;
-
-      const email = user.email?.trim();
-      if (email) {
-         await sendEmail(email, copy.subject, text).catch((err: unknown) => {
-            console.error('[didit-webhook] User email notification failed:', err instanceof Error ? err.message : err);
-         });
-      }
-      if (user.chat_id) {
-         await sendTelegramMessage(user.chat_id, `${copy.subject}\n\n${copy.body(reason)}`, {
-            inlineKeyboard: [[{ text: copy.cta, url: verifyUrl }]]
-         }).catch((err: unknown) => {
-            console.error('[didit-webhook] User Telegram notification failed:', err instanceof Error ? err.message : err);
-         });
-      }
-   } catch (err) {
-      console.error('[didit-webhook] User notification failed:', err instanceof Error ? err.message : err);
-   }
-};
 
 const toHex = (bytes: Uint8Array) => Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 
@@ -487,7 +377,9 @@ serve(async (req) => {
                   return jsonResponse({ success: false, error: 'Database error' }, 500);
                }
                console.log(`[didit-webhook] Duplicate face for user ${vendorData} (${kind}, session ${sessionId ?? 'unknown'})`);
-               await notifyAdmins(adminSupabase, vendorData, '🚫 Duplicate face — blocked', sessionId);
+               if (await claimDiditNotification(adminSupabase, vendorData, 'duplicate', sessionId)) {
+                  await notifyAdmins(adminSupabase, vendorData, '🚫 Duplicate face — blocked', sessionId);
+               }
                return jsonResponse({ success: true });
             }
          }
@@ -505,8 +397,12 @@ serve(async (req) => {
             }
 
             console.log(`[didit-webhook] User ${vendorData} verified via Didit (${kind}, session ${sessionId ?? 'unknown'})`);
-            await notifyAdmins(adminSupabase, vendorData, '✅ Approved — user is now verified', sessionId);
-            await notifyUser(adminSupabase, vendorData, 'approved');
+            // The pull sync (check-didit-status) may have already told the user — the
+            // marker claim ensures exactly one of the two paths sends.
+            if (await claimDiditNotification(adminSupabase, vendorData, 'approved', sessionId)) {
+               await notifyAdmins(adminSupabase, vendorData, '✅ Approved — user is now verified', sessionId);
+               await notifyUser(adminSupabase, vendorData, 'approved');
+            }
             return jsonResponse({ success: true });
          }
 
@@ -540,14 +436,19 @@ serve(async (req) => {
             : normalized === 'declined'
               ? `❌ Declined${declineReason ? ` — ${declineReason}` : ''}`
               : `⚠️ ${status}`; // Abandoned / Expired / anything else
-         await notifyAdmins(adminSupabase, vendorData, outcome, sessionId);
+         // One claim per (session, normalized status): the pull sync may already have
+         // notified this outcome, and a later different status is a new claim key.
+         const claimKey = normalized.includes('review') ? 'review' : normalized;
+         if (await claimDiditNotification(adminSupabase, vendorData, claimKey, sessionId)) {
+            await notifyAdmins(adminSupabase, vendorData, outcome, sessionId);
 
-         if (normalized.includes('review')) {
-            await notifyUser(adminSupabase, vendorData, 'review');
-         } else if (normalized === 'declined') {
-            await notifyUser(adminSupabase, vendorData, 'declined', declineReason);
-         } else if (normalized === 'abandoned' || normalized === 'expired') {
-            await notifyUser(adminSupabase, vendorData, 'abandoned');
+            if (normalized.includes('review')) {
+               await notifyUser(adminSupabase, vendorData, 'review');
+            } else if (normalized === 'declined') {
+               await notifyUser(adminSupabase, vendorData, 'declined', declineReason);
+            } else if (normalized === 'abandoned' || normalized === 'expired') {
+               await notifyUser(adminSupabase, vendorData, 'abandoned');
+            }
          }
          return jsonResponse({ success: true });
       }
