@@ -572,7 +572,7 @@ export default function VerifyFlow() {
          <StatusScreen
             visual="orbit"
             title="Manual review in progress"
-            body="Didit flagged your verification for a manual review — a human is checking it now. This usually takes a few hours but can take up to 1 business day. We'll update your status automatically."
+            body="Your verification needs a quick human review — this usually takes a few hours but can take up to 1 business day. We'll update your status automatically. Want it faster? Message us below and we'll expedite your review."
             action={{ label: 'Check status', onClick: async () => { setIsChecking(true); await pollDidit(); setIsChecking(false); }, loading: isChecking }}
             secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
             supportLink
