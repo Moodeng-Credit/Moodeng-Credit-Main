@@ -35,6 +35,7 @@ type Step =
    | 'id-waiting'
    | 'id-review'
    | 'id-declined'
+   | 'id-abandoned'
    | 'duplicate'
    | 'declined'
    | 'success'
@@ -43,7 +44,7 @@ type Step =
 // Steps a poll must never overwrite back to a "pending" screen. Guarding the
 // initial setStep against these prevents the confirm/success screen from
 // flickering back to a button-less waiting screen when a poll (re)starts.
-const TERMINAL_STEPS = new Set<Step>(['confirm', 'duplicate', 'declined', 'success', 'id-review', 'id-declined']);
+const TERMINAL_STEPS = new Set<Step>(['confirm', 'duplicate', 'declined', 'success', 'id-review', 'id-declined', 'id-abandoned']);
 
 // Flow persistence lives in a shared module so the request board can read the
 // same "started verifying but never finished" signal to show its support modal.
@@ -96,6 +97,7 @@ export default function VerifyFlow() {
                if (rawStatus === 'duplicate') setStep('duplicate');
                else if (rawStatus.includes('review')) setStep('id-review');
                else if (rawStatus === 'declined') setStep('id-declined');
+               else if (rawStatus === 'abandoned' || rawStatus === 'expired') setStep('id-abandoned');
             }
          } catch {
             // Keep polling silently on network errors.
@@ -287,6 +289,11 @@ export default function VerifyFlow() {
                setStep('id-declined');
                return;
             }
+            if (rawStatus === 'abandoned' || rawStatus === 'expired') {
+               setIsChecking(false);
+               setStep('id-abandoned');
+               return;
+            }
          } catch {
             // Ignore transient errors and keep polling.
          }
@@ -298,6 +305,48 @@ export default function VerifyFlow() {
       // A background slow-poll (useEffect below) keeps checking every 60s from here.
       setStep('id-waiting');
    }, [dispatch]);
+
+   // One-shot status check for parked screens (waiting/review). Used on tab focus so
+   // returning from the Didit tab updates instantly without restarting the 2-min poll
+   // loop (which would demote the screen back to a button-less spinner).
+   const checkStatusOnce = useCallback(async () => {
+      try {
+         const refreshed = await dispatch(fetchUser()).unwrap();
+         if (refreshed.isDidit === 'ACTIVE') {
+            setStep('success');
+            return;
+         }
+         const rawStatus = refreshed.diditIdStatus?.toLowerCase() ?? '';
+         if (rawStatus === 'duplicate') setStep('duplicate');
+         else if (rawStatus.includes('review')) setStep('id-review');
+         else if (rawStatus === 'declined') setStep('id-declined');
+         else if (rawStatus === 'abandoned' || rawStatus === 'expired') setStep('id-abandoned');
+      } catch {
+         // Transient network error — the background slow-poll will catch up.
+      }
+   }, [dispatch]);
+
+   // Instant re-check when the user returns to this tab (e.g. after finishing —
+   // or abandoning — the Didit tab), instead of waiting for the next slow poll.
+   useEffect(() => {
+      const onFocus = () => {
+         if (document.visibilityState !== 'visible') return;
+         if (step === 'id-waiting' || step === 'id-review') {
+            void checkStatusOnce();
+            return;
+         }
+         if (step === 'liveness-waiting') {
+            const currentFlow = readFlow();
+            if (currentFlow) void pollLiveness(currentFlow);
+         }
+      };
+      window.addEventListener('focus', onFocus);
+      document.addEventListener('visibilitychange', onFocus);
+      return () => {
+         window.removeEventListener('focus', onFocus);
+         document.removeEventListener('visibilitychange', onFocus);
+      };
+   }, [step, checkStatusOnce, pollLiveness]);
 
    // --- Mount -------------------------------------------------------------------
 
@@ -359,6 +408,33 @@ export default function VerifyFlow() {
          const flow: FlowState = { method: routeState.method, returnTo: routeState.returnTo };
          writeFlow(flow);
          begin(flow);
+         return;
+      }
+
+      // Status-aware resume: the user already submitted Didit documents in an earlier
+      // session (dashboard "View status" lands here with no flow state, and the
+      // localStorage flow expires after 1h). Surface their real status from the DB
+      // instead of bouncing to the dashboard or — worse — restarting a new session.
+      const rawStatus = user?.diditIdStatus?.toLowerCase() ?? '';
+      if (rawStatus === 'duplicate') {
+         setStep('duplicate');
+         return;
+      }
+      if (rawStatus.includes('review')) {
+         setStep('id-review');
+         return;
+      }
+      if (rawStatus === 'declined') {
+         setStep('id-declined');
+         return;
+      }
+      if (rawStatus === 'abandoned' || rawStatus === 'expired') {
+         setStep('id-abandoned');
+         return;
+      }
+      if (user?.diditSubmittedAt) {
+         // Submitted but no webhook verdict yet — poll, then park on the waiting screen.
+         void pollDidit();
          return;
       }
 
@@ -504,12 +580,28 @@ export default function VerifyFlow() {
       );
    }
 
+   // Fallback flow for retry buttons on screens reached via status-resume, where the
+   // localStorage flow has expired (it has a 1h TTL — manual reviews take longer).
+   const retryFlow: FlowState = flow ?? { method: 'didit' };
+
    if (step === 'id-declined') {
       return (
          <StatusScreen
             title="Verification didn't pass"
             body="Didit was unable to verify your identity. This can happen if the document image was unclear, expired, or didn't match your face. Contact our team — we can help check manually."
-            action={{ label: 'Try again', onClick: () => flow && void startKyc(flow) }}
+            action={{ label: 'Try again', onClick: () => void startKyc(retryFlow) }}
+            secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
+            supportLink
+         />
+      );
+   }
+
+   if (step === 'id-abandoned') {
+      return (
+         <StatusScreen
+            title="Verification wasn't finished"
+            body="It looks like the verification was closed before all the steps were completed, so Didit couldn't finish checking your identity. No problem — you can start over any time."
+            action={{ label: 'Start over', onClick: () => void startKyc(retryFlow) }}
             secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
             supportLink
          />

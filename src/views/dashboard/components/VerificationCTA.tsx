@@ -11,16 +11,23 @@ export default function VerificationCTA() {
    const isPending = isVerificationPending(user);
    const { open, modal } = useVerifyYourself('loan-request');
 
+   // Differentiate the pending copy by the actual Didit status the webhook recorded.
+   const rawStatus = user?.diditIdStatus?.toLowerCase() ?? '';
+   const pendingTitle = rawStatus.includes('review') ? 'Manual review in progress' : 'Verification in progress';
+   const pendingBody = rawStatus.includes('review')
+      ? 'A human reviewer is double-checking your documents — this can take up to 1 business day.'
+      : rawStatus === 'abandoned' || rawStatus === 'expired'
+        ? "Your last verification wasn't finished. Tap below to start over."
+        : "Your documents are being reviewed. We'll notify you once confirmed.";
+
    return (
       <div className="bg-md-yellow-100 rounded-md-lg p-4 flex gap-3 items-center shadow-md-card">
          <div className="flex-1">
             <p className="text-md-heading text-md-b2 font-semibold mb-1">
-               {isPending ? 'Verification in progress' : 'One quick step to request a loan'}
+               {isPending ? pendingTitle : 'One quick step to request a loan'}
             </p>
             <p className="text-md-neutral-700 text-md-b4 mb-3">
-               {isPending
-                  ? "Your documents are being reviewed. We'll notify you once confirmed."
-                  : 'Complete a one-time verification to start building trust with lenders.'}
+               {isPending ? pendingBody : 'Complete a one-time verification to start building trust with lenders.'}
             </p>
             <button
                type="button"
