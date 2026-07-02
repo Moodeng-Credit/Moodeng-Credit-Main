@@ -28,7 +28,7 @@ export default function VerificationCTA() {
          : uiState === 'unfinished'
            ? 'You left before finishing all the steps. Tap below to continue or start over.'
            : uiState === 'declined'
-             ? 'Didit could not verify your identity. Tap below to try again or contact us.'
+             ? "We couldn't verify your identity. Tap below to try again or contact us."
              : "Your documents are being reviewed. We'll notify you once confirmed.";
    const pendingCta = `${VERIFICATION_STATE_CTA[uiState]} →`;
 
