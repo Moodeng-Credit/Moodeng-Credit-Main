@@ -5,7 +5,9 @@
 // so a lingering flow means "started verifying but never finished" — which the
 // request board reads to show the "we couldn't verify you" modal.
 
-export type VerifyMethod = 'worldid' | 'didit';
+// 'worldid' = Orb (Proof of Human) credential; 'worldid-passport' = World ID
+// Passport/ID (NFC document) credential. Both share the liveness pre-gate.
+export type VerifyMethod = 'worldid' | 'worldid-passport' | 'didit';
 
 export type FlowState = {
    method: VerifyMethod;

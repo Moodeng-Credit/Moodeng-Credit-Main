@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import WorldIDPassportVerification from '@/components/worldId/WorldIDPassportVerification';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 
 import { isUserVerified } from '@/lib/isUserVerified';
@@ -472,9 +473,9 @@ export default function VerifyFlow() {
 
    if (step === 'liveness-start') {
       if (livenessUrl) {
-         const step2Hint = flow?.method === 'worldid'
-            ? "Then you'll verify with World ID in this tab."
-            : "Then you'll submit your national ID in this tab.";
+         const step2Hint = flow?.method === 'didit'
+            ? "Then you'll submit your national ID in this tab."
+            : "Then you'll verify with World ID in this tab.";
          return (
             <StatusScreen
                stepLabel="Step 1 of 2"
@@ -663,20 +664,33 @@ export default function VerifyFlow() {
    }
 
    if (step === 'confirm' && flow) {
+      const isPassport = flow.method === 'worldid-passport';
+      const trigger = ({ open }: { open: () => void }) => (
+         <button
+            type="button"
+            onClick={open}
+            className="flex items-center justify-center w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100"
+         >
+            Continue to World ID
+         </button>
+      );
       return (
          <ConfirmScreen
             worldIdTrigger={
-               <WorldIDVerification onSuccess={handleWorldIdSuccess} showSuccessToast={false} className="w-full">
-                  {({ open }) => (
-                     <button
-                        type="button"
-                        onClick={open}
-                        className="flex items-center justify-center w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100"
-                     >
-                        Continue to World ID
-                     </button>
-                  )}
-               </WorldIDVerification>
+               isPassport ? (
+                  <WorldIDPassportVerification onSuccess={handleWorldIdSuccess} showSuccessToast={false} className="w-full">
+                     {trigger}
+                  </WorldIDPassportVerification>
+               ) : (
+                  <WorldIDVerification onSuccess={handleWorldIdSuccess} showSuccessToast={false} className="w-full">
+                     {trigger}
+                  </WorldIDVerification>
+               )
+            }
+            requirementHint={
+               isPassport
+                  ? 'Requires a World ID with a passport or eID added in World App.'
+                  : 'Requires an Orb-verified World ID.'
             }
             onUseTraditionalKyc={() => void startKyc(flow)}
          />
@@ -755,9 +769,11 @@ function HippoOrbit({ mode }: { mode: 'orbit' | 'orbit-success' }) {
 
 function ConfirmScreen({
    worldIdTrigger,
+   requirementHint,
    onUseTraditionalKyc
 }: {
    worldIdTrigger: ReactNode;
+   requirementHint: string;
    onUseTraditionalKyc: () => void;
 }) {
    return (
@@ -776,7 +792,7 @@ function ConfirmScreen({
 
             {worldIdTrigger}
             <p className="text-md-b3 font-medium text-md-neutral-700">
-               Requires an Orb-verified World ID.
+               {requirementHint}
             </p>
             <button
                type="button"

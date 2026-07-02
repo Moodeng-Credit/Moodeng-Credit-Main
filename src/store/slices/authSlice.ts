@@ -181,6 +181,9 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    walletProvider: (row as UserRow & { wallet_provider?: WalletProvider | null }).wallet_provider ?? undefined,
    isWorldId: row.is_world_id,
    nullifierHash: row.nullifier_hash ?? undefined,
+   isWorldIdPassport: (row as UserRow & { is_world_id_passport?: WorldIdStatus | null }).is_world_id_passport ?? undefined,
+   passportNullifierHash:
+      (row as UserRow & { nullifier_hash_passport?: string | null }).nullifier_hash_passport ?? undefined,
    isDidit: (row as UserRow & { is_didit?: WorldIdStatus | null }).is_didit ?? undefined,
    diditSubmittedAt: (row as UserRow & { didit_submitted_at?: string | null }).didit_submitted_at ?? undefined,
    diditIdStatus: (row as UserRow & { didit_id_status?: string | null }).didit_id_status ?? undefined,

@@ -10,7 +10,11 @@ export const EXTERNAL_LINKS = {
    },
    worldcoin: {
       main: 'https://worldcoin.org/',
-      docs: 'https://docs.worldcoin.org/'
+      docs: 'https://docs.worldcoin.org/',
+      findOrb: 'https://world.org/find-orb',
+      downloadApp: 'https://world.org/download',
+      passportHelp:
+         'https://support.world.org/hc/en-us/articles/39241733838227-I-m-having-issues-verifying-my-passport-national-ID-or-My-Number-Card'
    },
    social: {
       twitter: 'https://twitter.com/begfi',

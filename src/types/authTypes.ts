@@ -31,6 +31,9 @@ export interface User {
    walletProvider?: WalletProvider;
    isWorldId: WorldIdStatus;
    nullifierHash?: string;
+   /** World ID Passport/ID verification status. Independent of the Orb status above. */
+   isWorldIdPassport?: WorldIdStatus;
+   passportNullifierHash?: string;
    /** Identity verification status via Didit (KYC: ID + face match). Independent of World ID. */
    isDidit?: WorldIdStatus;
    /** Set when the user submits ID documents to Didit but before the webhook confirms ACTIVE. */
