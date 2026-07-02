@@ -188,6 +188,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    diditSubmittedAt: (row as UserRow & { didit_submitted_at?: string | null }).didit_submitted_at ?? undefined,
    diditIdStatus: (row as UserRow & { didit_id_status?: string | null }).didit_id_status ?? undefined,
    diditDeclineReason: (row as UserRow & { didit_decline_reason?: string | null }).didit_decline_reason ?? undefined,
+   diditSessionUrl: (row as UserRow & { didit_session_url?: string | null }).didit_session_url ?? undefined,
    livenessStatus: (row as UserRow & { liveness_status?: LivenessStatus | null }).liveness_status ?? undefined,
    livenessSessionId: (row as UserRow & { liveness_session_id?: string | null }).liveness_session_id ?? undefined,
    telegramUsername: row.telegram_username ?? undefined,

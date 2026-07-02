@@ -446,7 +446,10 @@ export default function VerifyFlow() {
          setStep('id-declined');
          return;
       }
-      if (rawStatus === 'abandoned' || rawStatus === 'expired') {
+      if (rawStatus === 'abandoned' || rawStatus === 'expired' || rawStatus === 'not started' || rawStatus === 'in progress') {
+         // The user started a Didit session but never completed it (Didit reports
+         // "Not Started"/"In Progress" until its own abandon timeout). Nothing is being
+         // reviewed — offer continue/restart instead of a fake "reviewing" screen.
          setStep('id-abandoned');
          return;
       }
@@ -622,12 +625,32 @@ export default function VerifyFlow() {
    }
 
    if (step === 'id-abandoned') {
+      // If the session was merely left unfinished (not yet expired/abandoned by Didit)
+      // and we know its hosted URL, the user can jump back into the SAME session.
+      const rawStatus = user?.diditIdStatus?.toLowerCase() ?? '';
+      const resumeUrl =
+         user?.diditSessionUrl && (rawStatus === 'not started' || rawStatus === 'in progress')
+            ? user.diditSessionUrl
+            : null;
       return (
          <StatusScreen
             title="Verification wasn't finished"
-            body="It looks like the verification was closed before all the steps were completed, so Didit couldn't finish checking your identity. No problem — you can start over any time."
-            action={{ label: 'Start over', onClick: () => void startKyc(retryFlow) }}
-            secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
+            body={
+               resumeUrl
+                  ? 'It looks like you left before completing all the steps. Pick up right where you left off, or start over with a fresh session.'
+                  : "It looks like the verification was closed before all the steps were completed, so Didit couldn't finish checking your identity. No problem — you can start over any time."
+            }
+            action={
+               resumeUrl
+                  ? { label: 'Continue verification', onClick: () => { window.location.href = resumeUrl; } }
+                  : { label: 'Start over', onClick: () => void startKyc(retryFlow) }
+            }
+            secondaryAction={
+               resumeUrl
+                  ? { label: 'Start over', onClick: () => void startKyc(retryFlow) }
+                  : { label: 'Go to dashboard', onClick: () => navigate('/dashboard') }
+            }
+            tertiaryAction={resumeUrl ? { label: 'Go to dashboard', onClick: () => navigate('/dashboard') } : undefined}
             supportLink
          />
       );

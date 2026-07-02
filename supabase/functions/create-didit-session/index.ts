@@ -183,10 +183,18 @@ serve(async (req) => {
 
       // Mark that the user started the document/verification step so the frontend can show
       // "Verification in progress" across the app even after they leave the polling screen.
+      // Store the session id/url so an unfinished session can be resumed ("Continue
+      // verification" on /verify), and clear any stale verdict from a previous attempt so
+      // an old Declined/Abandoned status can't mask this fresh session.
       if (kind === 'id' || kind === 'combined') {
          await supabase
             .from('users')
-            .update({ didit_submitted_at: new Date().toISOString() })
+            .update({
+               didit_submitted_at: new Date().toISOString(),
+               didit_session_id: diditBody.session_id ?? null,
+               didit_session_url: diditBody.url,
+               didit_id_status: null
+            })
             .eq('id', user.id);
       }
 

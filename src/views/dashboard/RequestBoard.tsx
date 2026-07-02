@@ -42,6 +42,7 @@ import { getBorrowerActiveLoanCount, getBorrowerUsedCreditAmount, isRequestBoard
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { isUserVerified, isVerificationPending } from '@/lib/isUserVerified';
+import { getVerificationUiState, VERIFICATION_STATE_CTA, VERIFICATION_STATE_LABEL } from '@/lib/verificationUiState';
 import { clearVerifyFlow, readVerifyFlow, type VerifyMethod } from '@/lib/verifyFlow';
 import {
    BORROWER_GUIDED_TOUR_ID,
@@ -414,6 +415,7 @@ function RequestBoard$() {
    const isWorldIdVerified = isUserVerified(effectiveUser) || hasWorldIdJustVerified;
    const showVerify = !isWorldIdVerified;
    const isPending = isVerificationPending(effectiveUser);
+   const verifyUiState = getVerificationUiState(effectiveUser);
 
    // One-shot: a user who started a verification (World ID or the traditional ID
    // check) but landed back here without finishing — declined, or the World App
@@ -1518,10 +1520,10 @@ function RequestBoard$() {
                                              <span className="w-3 h-3 rounded-full bg-md-primary-1200 flex items-center justify-center">
                                                 <span className="text-white text-[8px] font-bold">&#8987;</span>
                                              </span>
-                                             <span className="text-md-b3 font-semibold text-md-primary-1200">Pending</span>
+                                             <span className="text-md-b3 font-semibold text-md-primary-1200">{VERIFICATION_STATE_LABEL[verifyUiState]}</span>
                                           </span>
                                           <span className="text-md-b3 font-semibold text-md-primary-900 underline">
-                                             {'View status >'}
+                                             {`${VERIFICATION_STATE_CTA[verifyUiState]} >`}
                                           </span>
                                        </button>
                                     ) : (
