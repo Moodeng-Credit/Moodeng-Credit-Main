@@ -3,12 +3,13 @@ import type { User } from '@/types/authTypes';
 
 /**
  * Whether a user has completed identity verification by any supported method
- * (World ID or Didit KYC). Use this for "is this borrower verified" gating so
- * both methods grant the same status.
+ * (World ID Orb, World ID Passport/ID, or Didit KYC). Use this for "is this
+ * borrower verified" gating so all methods grant the same status.
  */
 export const isUserVerified = (
-   user: Pick<User, 'isWorldId' | 'isDidit'> | null | undefined
-): boolean => user?.isWorldId === WorldId.ACTIVE || user?.isDidit === WorldId.ACTIVE;
+   user: Pick<User, 'isWorldId' | 'isWorldIdPassport' | 'isDidit'> | null | undefined
+): boolean =>
+   user?.isWorldId === WorldId.ACTIVE || user?.isWorldIdPassport === WorldId.ACTIVE || user?.isDidit === WorldId.ACTIVE;
 
 /**
  * Whether the user has submitted Didit ID documents but hasn't been confirmed yet.

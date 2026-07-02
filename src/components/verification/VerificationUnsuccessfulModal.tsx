@@ -22,8 +22,9 @@ interface VerificationUnsuccessfulModalProps {
  * reassuring + a route to human support; it never changes verification state.
  */
 export const VerificationUnsuccessfulModal: FC<VerificationUnsuccessfulModalProps> = ({ isOpen, method, onClose }) => {
-   const methodLabel = method === 'worldid' ? 'World ID' : 'your ID';
-   const telegramUrl = method === 'worldid' ? WORLD_ID_VERIFICATION_SUPPORT_URL : TELEGRAM_SUPPORT_URL;
+   const isWorldIdMethod = method === 'worldid' || method === 'worldid-passport';
+   const methodLabel = isWorldIdMethod ? 'World ID' : 'your ID';
+   const telegramUrl = isWorldIdMethod ? WORLD_ID_VERIFICATION_SUPPORT_URL : TELEGRAM_SUPPORT_URL;
 
    return (
       <ModalOverlay
