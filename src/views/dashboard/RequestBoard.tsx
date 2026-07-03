@@ -1764,13 +1764,13 @@ function RequestBoard$() {
                      <div className="flex items-center justify-between gap-md-3 rounded-md-lg border border-md-primary-200 bg-md-primary-100 px-md-3 py-md-3">
                         <div className="flex min-w-0 flex-col gap-0.5">
                            <p className="text-md-b2 font-semibold text-md-heading">New here? Take the 60-sec tour</p>
-                           <p className="text-md-b3 font-medium text-md-neutral-700">
-                              See the full loop: request, fund, repay, build trust.
+                           <p className="text-md-b3 font-medium text-md-neutral-700 [text-wrap:balance]">
+                              See how requests, funding, repayment, and trust fit together.
                            </p>
                         </div>
                         <Link
                            to={`/request-board?tour=1&tourRun=${Date.now()}`}
-                           className="shrink-0 rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100 transition-all duration-150 hover:brightness-110 active:scale-[0.97]"
+                           className="shrink-0 rounded-full bg-md-primary-1200 px-md-3 py-1.5 text-md-b3 font-semibold text-md-neutral-100 transition-all duration-150 hover:brightness-110 active:scale-[0.97]"
                         >
                            Start tour
                         </Link>
