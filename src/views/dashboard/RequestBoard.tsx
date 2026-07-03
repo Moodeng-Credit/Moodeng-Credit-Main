@@ -1628,21 +1628,6 @@ function RequestBoard$() {
                      </p>
                   </div>
 
-                  {/* Visible tour prompt for visitors — previously buried in the hamburger menu. */}
-                  {!isAuthenticated ? (
-                     <div className="flex items-center justify-between gap-md-3 rounded-md-lg border border-md-primary-200 bg-md-primary-100 px-md-3 py-md-2">
-                        <p className="min-w-0 text-md-b2 font-medium text-md-heading">
-                           New to Moodeng? See how borrowing and lending work.
-                        </p>
-                        <Link
-                           to={`/request-board?tour=1&tourRun=${Date.now()}`}
-                           className="shrink-0 rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100"
-                        >
-                           Start tour
-                        </Link>
-                     </div>
-                  ) : null}
-
                   {needsRoleSelection ? (
                      <div className="relative overflow-hidden rounded-md-lg border border-md-primary-300 bg-md-primary-100 p-4 pr-[120px] shadow-md-card max-[374px]:pr-[104px]">
                         <div className="relative z-10 flex flex-col gap-3">
@@ -1770,6 +1755,27 @@ function RequestBoard$() {
                         />
                      </div>
                   )}
+
+                  {/* Tour explainer for visitors — a secondary helper below the Apply card
+                      (Apply stays the primary action). Explains the whole Moodeng loop, so
+                      the copy works for borrowers and lenders alike; no mascot, smaller
+                      footprint than the Apply card. */}
+                  {!isAuthenticated ? (
+                     <div className="flex items-center justify-between gap-md-3 rounded-md-lg border border-md-primary-200 bg-md-primary-100 px-md-3 py-md-3">
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                           <p className="text-md-b2 font-semibold text-md-heading">New here? Take the 60-sec tour</p>
+                           <p className="text-md-b3 font-medium text-md-neutral-700">
+                              See the full loop: request, fund, repay, build trust.
+                           </p>
+                        </div>
+                        <Link
+                           to={`/request-board?tour=1&tourRun=${Date.now()}`}
+                           className="shrink-0 rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100 transition-all duration-150 hover:brightness-110 active:scale-[0.97]"
+                        >
+                           Start tour
+                        </Link>
+                     </div>
+                  ) : null}
 
                   {/* Browse Section */}
                   <div className="flex flex-col gap-5" data-tour-target="request-latest-list">
