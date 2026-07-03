@@ -174,7 +174,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
 
    return (
       <>
-      <div className="fixed inset-0 z-[80] flex items-end justify-center">
+      <div className="fixed inset-0 z-[80] flex flex-col items-center justify-end">
          <button
             className="absolute inset-0 bg-[#12071f]/40 backdrop-blur-sm"
             onClick={onClose}
@@ -314,7 +314,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
          </section>
 
          {/* Other ways to add funds (exchanges, P2P, local services, other wallets). */}
-         <p className="px-1 pb-2 text-[12px] font-normal leading-snug text-md-neutral-800">
+         <p className="w-full max-w-[440px] px-4 pb-2 text-[12px] font-normal leading-snug text-md-neutral-800">
             Prefer another way? You can also buy USDC on an exchange (Binance P2P, Coins.ph, PDAX, GCrypto),
             through an external service like Moneybees, or send it from any wallet — always on the Base network.{' '}
             <button
