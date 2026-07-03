@@ -44,12 +44,14 @@ const quickRepaymentFractions = [
 // Places a borrower can buy USDC and send it to their Base Account. The repay flow is the
 // same for all (send USDC on Base to the address below); only the "open" link differs.
 // The source list is geo-tailored (see `inPhilippines`). In the Philippines we surface the
-// local cash-out rails — Moneybees leads (it has live chat, best for first-timers), Coins.ph
-// is the featured exchange, GCrypto/PDAX sit under "Other options"; Binance is hidden since
-// it's banned in PH. Abroad those local rails aren't usable, so Binance is shown instead.
+// local rails — Coins.ph leads as the featured exchange, Moneybees is offered as an
+// EXTERNAL user-directed option (no Moodeng partnership; they drive their own process),
+// GCrypto/PDAX sit under "Other options"; Binance is hidden since it's banned in PH.
+// Abroad those local rails aren't usable, so Binance is shown instead. Order matters:
+// index 0 renders as the hero card, index 1 as the pill below it.
 const fundSources = [
-   { id: 'moneybees', label: 'Moneybees', action: 'Chat with Moneybees', href: 'https://www.moneybees.ph', deepLink: null },
    { id: 'coinsph', label: 'Coins.ph', action: 'Open Coins.ph', href: 'https://coins.ph', deepLink: 'coinsph://' },
+   { id: 'moneybees', label: 'Moneybees', action: 'Visit Moneybees', href: 'https://www.moneybees.ph', deepLink: null },
    { id: 'gcrypto', label: 'GCrypto', action: 'Open GCrypto', href: 'https://www.gcash.com', deepLink: 'gcash://' },
    { id: 'pdax', label: 'PDAX', action: 'Open PDAX', href: 'https://www.pdax.ph', deepLink: 'pdax://' },
    { id: 'binance', label: 'Binance', action: 'Open Binance', href: 'https://www.binance.com/en/my/wallet/account/main/withdrawal/crypto/USDC', deepLink: 'bnc://app.binance.com/' }
@@ -61,7 +63,7 @@ type FundSourceId = (typeof fundSources)[number]['id'];
 // fee). The exact cents are no longer displayed — they vary and the exchange shows the real
 // figure at withdrawal — but the values are kept here as the free-vs-small-fee signal.
 const FUND_SOURCE_FEES: Record<FundSourceId, number | null> = {
-   moneybees: 0,
+   moneybees: null,
    coinsph: null,
    gcrypto: 0.08,
    pdax: 0.08,
@@ -70,15 +72,16 @@ const FUND_SOURCE_FEES: Record<FundSourceId, number | null> = {
 
 // Short pitch shown under the hero (primary) source so the recommendation explains itself.
 const SOURCE_SUBTITLE: Partial<Record<FundSourceId, string>> = {
-   moneybees: 'Recommended · live chat if you get stuck',
+   coinsph: 'Recommended · buy USDC with PHP, cash out to bank or GCash',
+   moneybees: "External option · you follow Moneybees' own process",
    binance: 'Best option outside the Philippines'
 };
 
 // Step-by-step path shown to the user. The exchanges are self-service apps; Moneybees is an
-// assisted, chat-based OTC service (no in-app deposit-address flow), so its "path" is the chat
-// hand-off. Interim wording until the official Moneybees partnership is in place.
+// external OTC service with no Moodeng integration — users drive Moneybees' own process
+// directly from moneybees.ph.
 const FUND_SOURCE_PATHS: Record<FundSourceId, string> = {
-   moneybees: 'Message on Telegram, Viber or WhatsApp → quick ID check → share your wallet address → pay only after they confirm',
+   moneybees: "Visit moneybees.ph → follow their own process → share your wallet address → pay only after they confirm",
    coinsph: 'Transfer → Send Crypto → USDC → External Wallet → paste address → Base network → confirm',
    gcrypto: 'GCash app → GCrypto → USDCBASE → Withdraw',
    pdax: 'Wallet → USDCBASE → Withdraw → Paste wallet address',
@@ -331,7 +334,7 @@ export default function Repay() {
    // short on USDC. It shows their own Base Account address and watches their public
    // on-chain balance — Moodeng never receives or forwards the money.
    const [showAddFunds, setShowAddFunds] = useState(true);
-   const [fundSource, setFundSource] = useState<FundSourceId>('moneybees');
+   const [fundSource, setFundSource] = useState<FundSourceId>('coinsph');
    const [copiedAddress, setCopiedAddress] = useState(false);
    // The two recommended sources (Moneybees, Coins.ph) show by default; GCrypto/PDAX stay
    // collapsed so a first-timer isn't asked to evaluate four exchanges at once.
@@ -645,7 +648,7 @@ export default function Repay() {
       if (!geoAllowed) {
          setFundSource('binance');
       } else {
-         setFundSource((current) => (current === 'binance' ? 'moneybees' : current));
+         setFundSource((current) => (current === 'binance' ? 'coinsph' : current));
       }
    }, [geoAllowed, geoLoading]);
 
@@ -1134,8 +1137,8 @@ export default function Repay() {
                                  <p className="mb-3 text-xs text-[#6b6090]">
                                     {inPhilippines ? (
                                        <>
-                                          Pick where you'll buy or withdraw USDC. New to this?{' '}
-                                          <span className="font-semibold text-[#6c3fe0]">Moneybees</span> is easiest — it has live chat if you get stuck.
+                                          Pick where you'll buy or withdraw USDC.{' '}
+                                          <span className="font-semibold text-[#6c3fe0]">Coins.ph</span> works well for most people in the Philippines.
                                        </>
                                     ) : (
                                        <>Outside the Philippines, withdraw USDC from <span className="font-semibold text-[#6c3fe0]">Binance</span> on the Base network.</>
@@ -1178,6 +1181,16 @@ export default function Repay() {
                                  ) : (
                                     renderHeroSource(fundSources.find((source) => source.id === 'binance') ?? fundSources[0])
                                  )}
+                                 <p className="mt-2 text-xs text-[#6b6090] dark:text-[#a095c8]">
+                                    You can repay from a wallet, an exchange, a P2P platform, or a local crypto service — whatever is available in your country.{' '}
+                                    <button
+                                       type="button"
+                                       onClick={() => navigate('/support/guides/repaying-your-loan')}
+                                       className="font-semibold text-[#6c3fe0] underline underline-offset-2"
+                                    >
+                                       Learn more
+                                    </button>
+                                 </p>
                               </>
                            )}
                         </div>
@@ -1220,7 +1233,7 @@ export default function Repay() {
                                  </p>
                                  {copiedAddress && (
                                     <p className="mt-1.5 text-[12px] font-medium text-[#16a34a]">
-                                       {activeSource.id === 'moneybees' ? 'Now message Moneybees below →' : 'Now paste it into the app below →'}
+                                       {activeSource.id === 'moneybees' ? 'Now open Moneybees below →' : 'Now paste it into the app below →'}
                                     </p>
                                  )}
                               </button>
@@ -1240,7 +1253,7 @@ export default function Repay() {
                                  <div className="mb-3 rounded-xl bg-[#f3effe] px-4 py-3.5 dark:bg-[#1e1535]">
                                     <p className="mb-2.5 text-[11px] font-bold uppercase tracking-wide text-[#6c3fe0]">How it works</p>
                                     <div className="space-y-2">
-                                       {(['Message on Telegram, Viber or WhatsApp', 'Quick ID check — takes about 1 min'] as const).map((step, i) => (
+                                       {(['Visit moneybees.ph and follow their own process', 'They handle ID checks and the rate directly with you'] as const).map((step, i) => (
                                           <div key={i} className="flex items-start gap-2.5">
                                              <span className="mt-0.5 flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold leading-none text-white">{String.fromCharCode(97 + i)}</span>
                                              <span className="text-[12px] font-medium leading-snug text-[#3d1a8a] dark:text-[#c4b5fd]">{step}</span>
@@ -1261,7 +1274,7 @@ export default function Repay() {
                                           </span>
                                        </div>
                                     </div>
-                                    <p className="mt-2.5 text-[11px] leading-snug text-[#6b6090] dark:text-[#a095c8]">A real person guides you — no app menus to navigate.</p>
+                                    <p className="mt-2.5 text-[11px] leading-snug text-[#6b6090] dark:text-[#a095c8]">Moneybees is an external service — you transact with them directly; Moodeng isn&rsquo;t part of the transaction.</p>
                                  </div>
                               ) : (
                                  <div className="mb-3 rounded-xl bg-[#f3effe] px-4 py-3.5 dark:bg-[#1e1535]">

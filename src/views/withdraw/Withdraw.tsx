@@ -459,12 +459,13 @@ function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommend
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
   const { available: LOAN_USDC, repayUsdc: REPAY_USDC, dueDate: DUE_DATE } = useWithdrawData();
   const region = useRegion();
+  const navigate = useNavigate();
   const isPH = region !== "other";
-  const [selected, setSelected] = useState<Provider>("moneybees");
+  const [selected, setSelected] = useState<Provider>("coinsph");
 
   useEffect(() => {
     if (region === "other") setSelected("binance");
-    else if (region === "ph") setSelected("moneybees");
+    else if (region === "ph") setSelected("coinsph");
   }, [region]);
 
   const NAMES: Record<Provider, string> = {
@@ -499,14 +500,17 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
           </p>
         </div>
 
-        <p className="text-[18px] text-[var(--ink)] mt-[10px] mb-[18px]" style={{ fontWeight: 590, letterSpacing: "-0.02em" }}>How would you like to cash out?</p>
+        <p className="text-[18px] text-[var(--ink)] mt-[10px] mb-[6px]" style={{ fontWeight: 590, letterSpacing: "-0.02em" }}>How would you like to cash out?</p>
+        <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mb-[14px]">
+          Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto service.
+        </p>
         <div className="space-y-[10px]">
           {isPH ? (<>
-            <PickerRow selected={selected} onSelect={setSelected} id="moneybees" recommended icon={<MoneybeesAppIcon className="w-[46px] h-[46px]" />} name="Moneybees" line1="Assisted cash-out · BSP-registered" line2="Bank, GCash or Maya · ~1 business day" />
-            <PickerRow selected={selected} onSelect={setSelected} id="coinsph" icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />} name="Coins.ph" line1="Sell for pesos, withdraw to bank or GCash" line2="Bank or GCash · ~30 min" />
+            <PickerRow selected={selected} onSelect={setSelected} id="coinsph" recommended icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />} name="Coins.ph" line1="Sell for pesos, withdraw to bank or GCash" line2="Bank or GCash · ~30 min" />
             <PickerRow selected={selected} onSelect={setSelected} id="gcash" icon={<GCashAppIcon className="w-[46px] h-[46px]" />} name="GCrypto" line1="Cash out straight to your GCash" line2="GCash balance · ~5 min" />
             <PickerRow selected={selected} onSelect={setSelected} id="pdax" icon={<PdaxAppIcon className="w-[46px] h-[46px]" />} name="PDAX" line1="Sell for pesos, withdraw to bank or e-wallet" line2="Bank, GCash or Maya · ~30 min" />
             <PickerRow selected={selected} onSelect={setSelected} id="binance" icon={<BinanceAppIcon className="w-[46px] h-[46px]" />} name="Binance" line1="Sell for local currency via P2P marketplace" line2="GCash, Maya or Bank · 30 min–hours" />
+            <PickerRow selected={selected} onSelect={setSelected} id="moneybees" icon={<MoneybeesAppIcon className="w-[46px] h-[46px]" />} name="Moneybees" line1="External option · buy and sell via their own process" line2="You follow Moneybees' instructions directly" />
           </>) : (<>
             <PickerRow selected={selected} onSelect={setSelected} id="binance" recommended icon={<BinanceAppIcon className="w-[46px] h-[46px]" />} name="Binance" line1="Sell for local currency via P2P marketplace" line2="Bank transfer · 30 min–hours" />
             <PickerRow selected={selected} onSelect={setSelected} id="gcash" icon={<GCashAppIcon className="w-[46px] h-[46px]" />} name="GCrypto" line1="Cash out straight to your GCash" line2="GCash balance · ~5 min" />
@@ -516,6 +520,12 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
         </div>
 
         {selected !== "moneybees" && <BaseOnlyNotice className="mt-[12px]" />}
+        <button
+          onClick={() => navigate("/support/guides/withdrawing-to-your-bank")}
+          className="w-full text-center text-[13px] font-semibold text-[var(--accent)] py-[10px] hover:underline"
+        >
+          Learn more about withdrawal options
+        </button>
         <div className="h-[12px]" />
       </div>
 
@@ -1157,7 +1167,46 @@ function WhatsappIcon({ className = "" }: { className?: string }) {
 }
 
 /* ─── Moneybees flow ─────────────────────────────────────────────── */
+// Moneybees KYB with Moodeng wasn't completed, so the integrated chat/KYC hand-off is
+// disabled: Moneybees is presented as an EXTERNAL option users drive themselves on
+// moneybees.ph. Flip this flag to bring the integrated flow back once a partnership
+// is in place (MoneybeesIntegratedFlow below is kept compiled for exactly that).
+const MONEYBEES_INTEGRATED_FLOW = false;
+
 function MoneybeesFlow() {
+  return MONEYBEES_INTEGRATED_FLOW ? <MoneybeesIntegratedFlow /> : <MoneybeesExternalFlow />;
+}
+
+function MoneybeesExternalFlow() {
+  const { available: LOAN_USDC } = useWithdrawData();
+
+  const steps: FlowStep[] = [
+    { icon: <Landmark className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Visit moneybees.ph", desc: "Start from their official website and follow their process." },
+    { icon: <ClipboardCheck className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Arrange your cash-out with them", desc: "Moneybees handles ID checks, the rate, and the payout directly with you." },
+    { icon: <Lock className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />, title: "Send only after their instructions", desc: `Send your ${LOAN_USDC} USDC only once Moneybees confirms the details.` },
+  ];
+
+  return (
+    <div className="space-y-[12px]">
+      <HowThisWorks>
+        Moneybees is an external option some users may use to buy or sell crypto through
+        Moneybees&rsquo; own process. It isn&rsquo;t operated by Moodeng — you&rsquo;ll need to follow
+        Moneybees&rsquo; instructions directly.
+      </HowThisWorks>
+
+      <div>
+        <p className="text-[16px] text-[var(--ink)] mb-[8px]" style={{ fontWeight: 590, letterSpacing: "-0.02em" }}>How it works</p>
+        <StepList steps={steps} />
+      </div>
+
+      <PrimaryBtn onClick={() => window.open("https://www.moneybees.ph/", "_blank", "noopener,noreferrer")}>
+        Visit moneybees.ph <ArrowUpRight className="w-4 h-4" />
+      </PrimaryBtn>
+    </div>
+  );
+}
+
+function MoneybeesIntegratedFlow() {
   const { available: LOAN_USDC } = useWithdrawData();
   const [phase, setPhase] = useState<"form" | "pending" | "done">("form");
 

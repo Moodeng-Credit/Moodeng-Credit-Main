@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { ChevronRight, ExternalLink, LoaderCircle, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
@@ -45,6 +46,7 @@ const CHAIN_CHIPS = [
 ];
 
 export default function FundWalletSheet({ isOpen, onClose, walletAddress }: FundWalletSheetProps) {
+   const navigate = useNavigate();
    const [showBridge, setShowBridge] = useState(false);
    const [coinbaseLoading, setCoinbaseLoading] = useState(false);
    const [coinbaseError, setCoinbaseError] = useState<string | null>(null);
@@ -310,6 +312,22 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                </button>
             </div>
          </section>
+
+         {/* Other ways to add funds (exchanges, P2P, local services, other wallets). */}
+         <p className="px-1 pb-2 text-[12px] font-normal leading-snug text-md-neutral-800">
+            Prefer another way? You can also buy USDC on an exchange (Binance P2P, Coins.ph, PDAX, GCrypto),
+            through an external service like Moneybees, or send it from any wallet — always on the Base network.{' '}
+            <button
+               type="button"
+               onClick={() => {
+                  onClose();
+                  navigate('/support/guides/adding-funds-to-your-wallet');
+               }}
+               className="font-semibold text-md-primary-1200 underline underline-offset-2"
+            >
+               Learn more
+            </button>
+         </p>
 
          <style>{`
             @keyframes slideUp {
