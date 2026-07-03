@@ -105,6 +105,53 @@ Your Trust Score (TS) reflects your reliability and determines your future fundi
 - Default: Unpaid loans result in a permanent mark on your public on-chain profile.`
    },
    {
+      slug: 'repaying-your-loan',
+      title: 'Ways to repay your loan',
+      lastUpdated: 'Jul 3, 2026',
+      body: `To repay, send the required USDC amount to the repayment address shown in Moodeng (the Repay screen shows the exact amount and lets you copy the address). You can send from a wallet, an exchange, a P2P platform, or a local crypto service — whatever is available in your country.
+
+Sending from a wallet
+If you already hold USDC in any wallet, send the repayment amount to the address shown in Moodeng. Make sure the network is Base.
+
+Sending from an exchange
+Withdraw USDC from your exchange account directly to the repayment address. Choose USDC and select Base as the network.
+
+Buying USDC first, then repaying
+If you don't hold USDC yet, buy it first and send it to your wallet, then repay from there:
+- Binance P2P: buy USDC with local currency from other users, then withdraw on the Base network.
+- Coins.ph: buy USDC with PHP, then use Send Crypto → External Wallet → Base network.
+- GCrypto (GCash): if crypto is enabled in your GCash app, buy USDC and withdraw via USDCBASE.
+- PDAX: buy USDC with PHP and withdraw to your wallet on Base.
+- Moneybees (external option): an over-the-counter service some users may use to buy crypto through Moneybees' own process. Follow their instructions directly at https://www.moneybees.ph/.
+
+The key detail: always select Base as the network when sending USDC. Using the wrong network can result in lost funds.`
+   },
+   {
+      slug: 'adding-funds-to-your-wallet',
+      title: 'Ways to add USDC to your wallet',
+      lastUpdated: 'Jul 3, 2026',
+      body: `Your Moodeng wallet works with USDC on the Base network. Besides the in-app options (card purchase and bridging from another chain), here are common ways to get USDC into your wallet:
+
+Buy on an exchange
+Buy USDC on an exchange you already use, then withdraw it to your wallet address. Always select USDC and the Base network when withdrawing.
+
+Binance P2P
+Buy USDC with local currency directly from other users, then withdraw on the Base network.
+
+Philippine services
+- Coins.ph: buy USDC with PHP, then Send Crypto → External Wallet → Base network.
+- PDAX: buy USDC with PHP and withdraw to your wallet on Base.
+- GCrypto (GCash): if crypto is enabled in your GCash app, buy and withdraw via USDCBASE.
+
+Moneybees (external option)
+Moneybees is an external over-the-counter service some users may use to buy crypto through Moneybees' own process. You'll need to follow Moneybees' instructions directly at https://www.moneybees.ph/.
+
+Send from another wallet
+If you hold USDC elsewhere, send it to your Moodeng wallet address — on the Base network.
+
+The key detail: always choose Base as the network. Sending on the wrong network can result in lost funds.`
+   },
+   {
       slug: 'withdrawing-to-your-bank',
       title: 'Withdrawing your funds to a bank account',
       lastUpdated: 'Jul 3, 2026',
