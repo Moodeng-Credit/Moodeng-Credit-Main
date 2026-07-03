@@ -777,8 +777,8 @@ const authSlice = createSlice({
          state.user = {
             ...defaultUser,
             id: 'preview-borrower',
-            username: 'Cookiemonster1337',
-            displayName: 'Cookiemonster1337',
+            username: 'alex.cruz',
+            displayName: 'Alex Cruz',
             email: 'preview@moodeng.local',
             walletAddress: '0x71c...9d42',
             isWorldId: isFilled ? WorldId.ACTIVE : WorldId.INACTIVE,

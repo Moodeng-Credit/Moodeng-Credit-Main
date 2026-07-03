@@ -40,6 +40,7 @@ type UserCardProps = Loan & {
    onDeleteOwnRequest?: (loan: Loan) => void;
    forceTourBorrowerLink?: boolean;
    tourBorrowerUsername?: string;
+   tourBorrowerDisplayName?: string;
    borrowerContextProfile?: BorrowerContextProfileData;
 };
 
@@ -98,6 +99,7 @@ export default function UserCard(loan: UserCardProps) {
       onDeleteOwnRequest,
       forceTourBorrowerLink = false,
       tourBorrowerUsername,
+      tourBorrowerDisplayName,
       borrowerContextProfile,
       ...loanData
    } = loan;
@@ -135,7 +137,11 @@ export default function UserCard(loan: UserCardProps) {
       tourBorrowerUsername && (import.meta.env.DEV || isPreviewRequest || forceTourBorrowerLink)
          ? `/user/${borrowerUsername}?demo=rich&lenderTourPreview=1&tourPreview=1`
          : `/user/${borrowerUsername}`;
-   const borrowerDisplayName = getSafeProfileText(borrowerProfile?.displayName) || borrowerUsername || 'Unknown user';
+   const borrowerDisplayName =
+      getSafeProfileText(borrowerProfile?.displayName) ||
+      getSafeProfileText(tourBorrowerDisplayName) ||
+      borrowerUsername ||
+      'Unknown user';
    const due = parseISO(loanData.dueDate);
 
    const handleFetch = async () => {
