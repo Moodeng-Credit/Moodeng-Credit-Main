@@ -928,14 +928,14 @@ function RequestBoard$() {
             {
                target: '[data-tour-target="request-first-card"]',
                title: 'Request Board',
-               body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
-               durationMs: 6000
+               body: 'This is the marketplace. Once a request is live, lenders review the amount, repayment, and borrower before funding.',
+               durationMs: 5200
             },
             {
                target: '[data-tour-target="request-apply-card"]',
                title: 'Apply for a loan',
-               body: 'When you are ready to borrow, this card opens the loan request flow.',
-               durationMs: 6000
+               body: 'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.',
+               durationMs: 6500
             },
             {
                target: '[data-tour-target="guest-world-id-preview"]',
@@ -953,15 +953,15 @@ function RequestBoard$() {
             {
                target: '[data-tour-target="request-latest-list"]',
                title: 'Get funded, then repay',
-               body: 'Once a lender funds your request, USDC lands directly in your wallet. Repay on time and your Trust Score — and how much you can borrow next time — both grow.',
+               body: 'A lender funds your request and USDC lands in your wallet. Repay on time and your Trust Score — and your next limit — grow. Miss a repayment and it shows on your public profile, so lenders lend on trust.',
                cardPlacement: 'bottom',
-               durationMs: 7000
+               durationMs: 7500
             },
             {
                target: '[data-tour-target="request-first-card"]',
                title: 'Browse open requests',
-               body: 'You can look through current requests before creating an account. Each card shows the amount, repayment, borrower, and reason.',
-               durationMs: 6400
+               body: 'Look through open requests before signing up — each card shows the amount, repayment, borrower, and reason.',
+               durationMs: 5600
             },
             {
                target: '[data-tour-target="request-common-questions-panel"]',
@@ -971,8 +971,8 @@ function RequestBoard$() {
             },
             {
                target: '[data-tour-target="request-auth-actions"]',
-               title: 'Continue when ready',
-               body: 'Sign up to request or fund a loan. Sign in if you already have a Moodeng account.',
+               title: 'Ready to build credit?',
+               body: 'Create your account to request your first loan — or sign in if you already have one.',
                durationMs: 5600
             }
          ].map(slowTourStep);
