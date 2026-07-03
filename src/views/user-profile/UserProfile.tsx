@@ -930,17 +930,18 @@ const UserProfile = () => {
                // "Want a quick tour?" intro card here would feel like the tour reset
                // rather than continued, so jump straight into step 4.
                startImmediately
-               stepOffset={3}
-               totalSteps={9}
+               stepOffset={5}
+               totalSteps={11}
                steps={lenderInsightsTourSteps}
-               // Back on the first step here (global step 4) returns to the request board and
-               // resumes the lender tour at its last step (step 3) with the overlay still active.
+               // Back on the first step here (global step 6) returns to the request board and
+               // resumes the lender tour at its last step (step 5, "Check Borrower Insights")
+               // with the overlay still active.
                onStepBack={(index) => {
                   if (index !== 0) return false;
                   navigate(
                      isGuestLenderTourContinuation
-                        ? '/request-board?tour=1&tourRole=lender&startTour=1&tourStep=2'
-                        : '/request-board?lenderTourPreview=1&startTour=1&tourStep=2'
+                        ? '/request-board?tour=1&tourRole=lender&startTour=1&tourStep=4'
+                        : '/request-board?lenderTourPreview=1&startTour=1&tourStep=4'
                   );
                   return true;
                }}

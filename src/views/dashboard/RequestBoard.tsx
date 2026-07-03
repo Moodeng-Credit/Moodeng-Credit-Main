@@ -12,7 +12,7 @@ import {
 } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, HelpCircle, LoaderCircle, Menu, Search, X } from 'lucide-react';
+import { AlertTriangle, FileText, HelpCircle, LoaderCircle, Menu, Search, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
@@ -25,9 +25,6 @@ import UserAvatar from '@/components/UserAvatar';
 import { VerificationUnsuccessfulModal } from '@/components/verification/VerificationUnsuccessfulModal';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
-import { ModalNote } from '@/components/worldId/modal/ModalNote';
-import { VerificationModalBody } from '@/components/worldId/modal/VerificationModalBody';
-import { VerificationModalHeader } from '@/components/worldId/modal/VerificationModalHeader';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
@@ -82,7 +79,7 @@ const REQUEST_BOARD_PREVIEW_REQUESTS_STORAGE_KEY = 'moodeng-request-board-previe
 const IS_BORROWER_BASE_WALLET_GATE_ENABLED = true;
 const VERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT = 5;
 const UNVERIFIED_REQUEST_BOARD_TOUR_STEP_COUNT = 4;
-const GUEST_REQUEST_BOARD_TOUR_STEP_COUNT = 7;
+const GUEST_REQUEST_BOARD_TOUR_STEP_COUNT = 8;
 const DASHBOARD_TOUR_STEP_COUNT = 3;
 const TOUR_STEP_EXTRA_DURATION_MS = 3500;
 const REQUEST_BOARD_COMPLETION_HIGHLIGHT_MS = 5000;
@@ -699,9 +696,9 @@ function RequestBoard$() {
          if (!isAuthenticated) {
             setShowGuestWorldIdPreview(index === 2);
             setShowModal(index === 3);
-            setShowPublicQuestions(index === 5);
+            setShowPublicQuestions(index === 6);
 
-            if (index === 5) {
+            if (index === 6) {
                window.setTimeout(() => {
                   const questionsPanel = document.querySelector<HTMLElement>('[data-tour-target="request-common-questions-panel"]');
                   questionsPanel?.scrollTo({ top: questionsPanel.scrollHeight, behavior: 'smooth' });
@@ -908,7 +905,7 @@ function RequestBoard$() {
       {
          target: '[data-tour-target="request-apply-card"]',
          title: 'Borrowers apply here',
-         body: 'A borrower sets their loan amount, repayment date, and reason. Once verified with World ID, their request goes live on this board.',
+         body: 'A borrower sets their loan amount, repayment date, and reason. Once verified, their request goes live on this board.',
          durationMs: 6000
       },
       {
@@ -943,7 +940,7 @@ function RequestBoard$() {
             {
                target: '[data-tour-target="guest-world-id-preview"]',
                title: 'Verify first',
-               body: 'Borrowers complete this one-time World ID step before requesting a loan. It helps lenders know they are funding a real person.',
+               body: 'Borrowers complete a one-time identity check before requesting a loan. It helps lenders know they are funding a real person.',
                cardPlacement: 'top',
                durationMs: 6500
             },
@@ -952,6 +949,13 @@ function RequestBoard$() {
                title: 'Set your terms',
                body: 'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.',
                durationMs: 6000
+            },
+            {
+               target: '[data-tour-target="request-latest-list"]',
+               title: 'Get funded, then repay',
+               body: 'Once a lender funds your request, USDC lands directly in your wallet. Repay on time and your Trust Score — and how much you can borrow next time — both grow.',
+               cardPlacement: 'bottom',
+               durationMs: 7000
             },
             {
                target: '[data-tour-target="request-first-card"]',
@@ -992,7 +996,7 @@ function RequestBoard$() {
               {
                  target: '[data-tour-target="request-verify-world-id-link"]',
                  title: 'Verify first',
-                 body: 'Before an unverified borrower can request a loan, Moodeng sends them through the World ID verification screen.',
+                 body: 'Before an unverified borrower can request a loan, Moodeng sends them through a quick identity verification screen.',
                  durationMs: 6500
               },
               {
@@ -1051,6 +1055,19 @@ function RequestBoard$() {
          title: 'Review the request',
          body: 'Each card shows what the borrower needs, what they plan to repay, and whether their account is in good standing.',
          durationMs: 6200
+      },
+      {
+         target: '[data-tour-target="lender-send-help-button"]',
+         title: 'Fund with one tap',
+         body: 'Tap Send Your Help to fund a request. USDC moves from your wallet straight to the borrower once you approve the transaction.',
+         durationMs: 6500
+      },
+      {
+         target: '[data-tour-target="request-latest-list"]',
+         title: 'Get repaid, watch for the fee',
+         body: 'Repayment comes back to your wallet by the due date shown on each request. After your third funded loan, a small platform fee applies to help cover operating costs.',
+         cardPlacement: 'bottom',
+         durationMs: 7500
       },
       {
          target: '[data-tour-target="lender-borrower-details-link"]',
@@ -2003,7 +2020,7 @@ function RequestBoard$() {
                      : 0
                }
                onFinish={handleLenderTourFinish}
-               totalSteps={9}
+               totalSteps={11}
                steps={lenderTourSteps}
             />
          )}
@@ -2117,13 +2134,39 @@ function DeleteLoanRequestModal({
    );
 }
 
+// Inert preview of the real "Verify Yourself" chooser (see VerifyYourselfModal) for the
+// tour to spotlight — mirrors its current copy (ID + selfie primary, World ID secondary)
+// instead of rendering the legacy World-ID-only modal.
 function GuestWorldIdTourPreview() {
    return (
       <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#12071f]/40 px-[21px] pb-[48px]">
-         <div data-tour-target="guest-world-id-preview" className="w-full max-w-[398px] overflow-hidden rounded-[20px] bg-white shadow-2xl max-h-[45vh]">
-            <VerificationModalHeader onClose={() => undefined} />
-            <VerificationModalBody onVerify={() => undefined} onCheckStatus={() => undefined} />
-            <ModalNote />
+         <div
+            data-tour-target="guest-world-id-preview"
+            className="flex w-full max-w-[398px] flex-col gap-md-3 overflow-hidden rounded-[20px] bg-white p-md-4 shadow-2xl max-h-[45vh]"
+         >
+            <div className="flex flex-col items-center gap-1 text-center">
+               <h2 className="text-md-h4 font-semibold text-md-heading">Verify Yourself</h2>
+               <p className="text-md-b2 text-md-neutral-1200">
+                  Confirm your identity to unlock your account — a one-time check that takes about 3 minutes.
+               </p>
+            </div>
+            <div className="w-full rounded-md-lg border-2 border-md-primary-1200 bg-md-primary-100 p-4 flex items-center gap-3">
+               <div className="shrink-0 w-10 h-10 rounded-md-md flex items-center justify-center bg-md-primary-1200 text-md-neutral-100">
+                  <FileText size={20} />
+               </div>
+               <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                     <span className="text-md-b1 font-semibold text-md-primary-1200">Verify Your ID</span>
+                     <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-md-primary-1200 text-md-neutral-100">
+                        Recommended
+                     </span>
+                  </div>
+                  <p className="text-md-b3 text-md-neutral-1000 mt-0.5 leading-snug">
+                     Quick national ID &amp; selfie check — available in select countries.
+                  </p>
+               </div>
+            </div>
+            <p className="text-md-b3 text-md-neutral-700 text-center">World App users can verify with World ID instead.</p>
          </div>
       </div>
    );
