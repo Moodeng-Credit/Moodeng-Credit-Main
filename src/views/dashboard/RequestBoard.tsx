@@ -1130,8 +1130,8 @@ function RequestBoard$() {
       {
          target: '[data-tour-target="lender-send-help-button"]',
          title: 'Fund with one tap',
-         body: 'Tap Send Your Help to fund a request. USDC moves from your wallet straight to the borrower once you approve the transaction.',
-         durationMs: 6500
+         body: 'Tap Send Your Help. USDC goes straight from your wallet to the borrower once you approve.',
+         durationMs: 5500
       },
       {
          target: '[data-tour-target="request-latest-list"]',

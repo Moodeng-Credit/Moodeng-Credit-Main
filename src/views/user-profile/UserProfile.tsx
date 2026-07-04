@@ -246,10 +246,10 @@ const UserProfile = () => {
           : 'Balanced Loan Mix';
    const lenderInsightsTourSteps = [
       {
-         target: '[data-tour-target="borrower-dark-mode"]',
-         title: 'Change reading mode',
-         body: 'Use dark mode if it makes this profile easier to review. It does not change the borrower data or lending decision.',
-         durationMs: 6000
+         target: '[data-tour-target="borrower-identity"]',
+         title: 'Start with who they are',
+         body: 'Read the borrower context first — whether they are a verified human, how long they have been a member, and how they earn and repay. It frames every number below and tells you whether their reason to borrow fits their situation.',
+         durationMs: 7500
       },
       {
          target: '[data-tour-target="borrower-credit-level"]',
@@ -280,6 +280,12 @@ const UserProfile = () => {
          title: 'Review recent loans',
          body: 'Use the recent loan table to confirm the borrower has a repayment history that matches the request you are thinking about funding.',
          durationMs: 7200
+      },
+      {
+         target: '[data-tour-target="borrower-dark-mode"]',
+         title: 'Change reading mode',
+         body: 'Optional: switch to dark mode if it makes this profile easier to read. It changes nothing about the borrower data or your lending decision.',
+         durationMs: 5000
       }
    ];
 
@@ -579,6 +585,11 @@ const UserProfile = () => {
                         </span>
                      </div>
                      <p className="mt-2 text-[13px] font-medium leading-none text-md-neutral-1400">Member since {memberSince}</p>
+                     {resolvedUser.incomeDescription ? (
+                        <p className="borrower-identity-context mt-2 text-[13px] font-medium leading-snug text-md-neutral-1400">
+                           {resolvedUser.incomeDescription}
+                        </p>
+                     ) : null}
                   </div>
                </div>
 
