@@ -57,6 +57,19 @@ const jsonResponse = (body: Record<string, unknown>, status = 200, cors: Record<
 const isEvmAddress = (value: unknown): value is string =>
    typeof value === 'string' && /^0x[a-fA-F0-9]{40}$/.test(value);
 
+// Extracts the true end-user client IP. The function runs behind Supabase's proxy, so the
+// original browser IP arrives in x-forwarded-for (leftmost entry is the client; the rest are
+// proxy hops). Coinbase requires this in the session-token payload for full Onramp access.
+const clientIpFrom = (req: Request): string | undefined => {
+   const forwarded = req.headers.get('x-forwarded-for');
+   if (forwarded) {
+      const first = forwarded.split(',')[0]?.trim();
+      if (first) return first;
+   }
+   const realIp = req.headers.get('x-real-ip')?.trim();
+   return realIp || undefined;
+};
+
 const hexNonce = (): string => {
    const bytes = new Uint8Array(16);
    crypto.getRandomValues(bytes);
@@ -191,6 +204,13 @@ serve(async (req) => {
 
       const jwt = await generateCdpJwt(apiKeyId, apiKeySecret, 'POST', host, requestPath);
 
+      const clientIp = clientIpFrom(req);
+      if (!clientIp) {
+         // Shouldn't happen behind Supabase's proxy, but log it — a missing IP will make the
+         // CDP call fail the compliance check rather than silently mint an unusable token.
+         console.warn('[coinbase-onramp-token] No client IP resolved from request headers');
+      }
+
       const cdpResponse = await fetch(`https://${host}${requestPath}`, {
          method: 'POST',
          headers: {
@@ -200,7 +220,8 @@ serve(async (req) => {
          },
          body: JSON.stringify({
             addresses: [{ address, blockchains: ['base'] }],
-            assets: ['USDC']
+            assets: ['USDC'],
+            ...(clientIp ? { clientIp } : {})
          })
       });
 
