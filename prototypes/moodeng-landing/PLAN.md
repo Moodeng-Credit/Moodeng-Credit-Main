@@ -53,7 +53,10 @@ Each section = one trust question, answered:
 
 ## The "Moment Cards" system (agreed 2026-07-05)
 
-Tilt's phone cards are NOT screenshots — they're staged, simplified recreations of app moments (3–4 elements, giant type, no nav clutter) inside rounded colored panels. We do the same, based on the REAL request-board card (`src/views/dashboard/components/UserCard.tsx`, fields: reason, Borrowing USDC, Get back USDC, Due On, Good Standing, Funded):
+Tilt's phone cards are NOT screenshots — they're staged, simplified recreations of app moments (3–4 elements, giant type, no nav clutter) inside rounded colored panels. We do the same, based on the REAL request-board card (`src/views/dashboard/components/UserCard.tsx`, fields: reason, Borrowing USDC, Get back USDC, Due On, Good Standing, Funded).
+
+**LOCKED ANATOMY (George approved a rendered preview, 2026-07-05): use Tilt's full PHONE-FRAME treatment, not a flat card.** Recipe per card:
+textured lavender panel (painterly grain over #C9A8F5-ish, like Tilt's brushstroke chartreuse) → white rounded phone frame, slightly rotated → app header (back arrow + spaced-caps title e.g. "YOUR LOAN") → hippo PNG overlapping the top edge of a tinted inner card (#F7F0FE) where Tilt puts the 3D coins → giant statement + amount in a bright lavender pill (ours: **"Real people can fund you" [$15]** — subject is PEOPLE, not algorithm eligibility) → stacked option pills ($15 selected w/ lavender border, $10, $5) → black pill CTA "CONTINUE WITH $15" → and the Moodeng twist Tilt doesn't have: terms line under the CTA, **"You'd give back $18 on Jul 30 — shown before you confirm."** (Tilt hides terms behind the button; we put them on the marketing card — that's the trust pitch.)
 
 - **Moment 1 — clear terms** (hero + section 3): 🏥 Medicine · Borrow **$15** → Get back **$18** · Due **Jul 30**.
 - **Moment 2 — funded by real people** (section 2): same card, progress bar full, "Funded ✓", three small avatars.
@@ -84,11 +87,15 @@ Build as hand-coded HTML/CSS with DESIGN.md tokens (zero-weight, crisp, editable
 - Sibling prototype `prototypes/withdrawal-flow/` shows the repo prototype convention (Vite+React+Tailwind4), but this landing can be a single self-contained `index.html` for lightness — that was the working intent.
 - Font subs for Tilt's (ABC Gravity/Suisse/EmpowerSerif): condensed black display (e.g. Archivo Black) + system sans + serif italic accent, or system stack for zero-load. Tilt chartreuse #e4e24e NOT used.
 
+## Peso context (George, 2026-07-05 — DECIDED, build it)
+
+1. **Show ₱ equivalents next to $ amounts.** Loans are in USDC/$ but the page should geo-detect (IP check — e.g. a free geo API or CDN country header; graceful fallback to $-only) and show approximate peso values: "$15 ≈ ₱850" style hints on the moment cards and amount mentions. Approximate is fine — label it "≈" so it's honest. Static fallback rate baked in if the lookup fails; never block render on it.
+2. **Add a copy moment about moving money to pesos and back.** Somewhere on the page (likely inside "How it works" get-the-money step, or its own small strip) say plainly that it's easy to turn the loan into pesos and back when repaying — jargon-free, no exchange/crypto words. Real cash-out rails exist (GCash via Coins.ph etc. — see repo memory withdrawal-offramp-options); don't overpromise "instant", just "easy". Copy TBD with George.
+
 ## Open questions for George
 
 1. Testimonials: real or illustrative (label honestly if illustrative)?
 2. Where does the CTA link — app signup URL?
-3. Peso amounts alongside dollars? (Copy examples currently use $; hero mentions "from $15" — showing ₱ equivalents may read more local. Ask before deciding.)
 
 ## Verify
 
