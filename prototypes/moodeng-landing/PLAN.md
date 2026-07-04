@@ -1,7 +1,12 @@
 # Moodeng Landing Page — Build Plan (handoff doc)
 
-Status (2026-07-05): design direction locked, **copy direction locked to the TRUST SPINE below** (several earlier copy decks were rejected — read "Copy history" before writing ANY copy). Assets copied. **Taste test built + approved by George** (hero + Trust Q2), 5 sections still to build.
-Next step: build the remaining trust-spine sections (Q1 real person, Q3 dark, Q4 level-up, Q5 testimonials, final CTA) into `index.html`.
+Status (2026-07-05): design direction locked, **copy direction locked to the TRUST SPINE below**. Built so far in `index.html`: **hero (card-led v2), Q1 real-person (Moment Card 2 funded state), Q2 clear-terms (Tilt claim tiles), level-up (ladder + Moment Card 3)**. Still to build: dark safety section (Q3), testimonials, final CTA, pesos-in/out strip, zero-fees point.
+
+**George's course-corrections while building (binding):**
+- **Hero = card-led, show-don't-tell.** Compact text (label + headline + one line), Moment Card in the first viewport, CTA *below* the card (see terms → then the button; reverse of Tilt, that's our trust move). No SaaS text-stack heroes.
+- **No naked text lists — every claim gets a staged visual.** Tilt tile anatomy: tinted panel → staged white stat-card inside → italic-accent headline below ("*No* rollover", mirroring Tilt's "*Yes* when you repay") → 2-line gray caption. The ✓-bullet version was rejected.
+- **The page must demo the PRODUCT, not just argue trust** — Tilt shows its products doing things for you. Our one product has three powers, each gets its moment: borrow (hero card) / funded-by-people (Card 2: "3 people said yes", avatars, Funded ✓) / grows-with-you (ladder $15→$20→$40→$60+ + Card 3 level-up).
+- **No hippos on the moment cards for now** — placement to be figured out later.
 
 **Named drafts** are frozen in `drafts/` and cataloged in `README.md` — every version George explicitly likes gets snapshotted there so we never lose it. First one: `drafts/tilt-cards-v1__first-draft-idea.html` ("First draft idea on Tilt cards"). `index.html` is the moving/working version.
 

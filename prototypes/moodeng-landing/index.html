@@ -49,7 +49,7 @@
   /* ---------- HERO ---------- */
   .hero {
     position: relative;
-    padding: 64px 0 44px;
+    padding: 28px 0 44px;
     background:
       radial-gradient(120% 80% at 50% -10%, #ffffff 0%, var(--lavender-bg) 42%, #DCC4FA 100%);
     overflow: hidden;
@@ -60,7 +60,7 @@
     filter: drop-shadow(0 8px 18px rgba(96,16,210,0.08));
     animation: drift 26s ease-in-out infinite;
   }
-  .cloud.c1 { width: 120px; top: 70px;  left: -26px; animation-delay: -2s; }
+  .cloud.c1 { width: 90px;  top: 6px;   left: -34px; opacity: 0.75; animation-delay: -2s; }
   .cloud.c2 { width: 90px;  top: 150px; right: -18px; animation-delay: -9s; }
   .cloud.c3 { width: 70px;  top: 34px;  right: 40px; opacity: 0.7; animation-delay: -15s; }
   @keyframes drift {
@@ -69,19 +69,19 @@
   }
   @media (prefers-reduced-motion: reduce) { .cloud, .hippo-float { animation: none !important; } }
 
-  .brand { display: flex; align-items: center; gap: 8px; margin-bottom: 40px; }
-  .brand img { height: 30px; width: auto; }
+  .brand { display: flex; align-items: center; gap: 8px; margin-bottom: 22px; }
+  .brand img { height: 26px; width: auto; }
 
   h1.hero-h {
     font-family: var(--display);
-    font-size: 40px; line-height: 1.02; letter-spacing: -0.02em;
+    font-size: 31px; line-height: 1.06; letter-spacing: -0.02em;
     color: var(--heading);
-    margin: 14px 0 0;
+    margin: 8px 0 0;
   }
   h1.hero-h .accent { font-weight: 500; color: var(--purple); }
   .hero-sub {
-    margin: 18px 0 0; font-size: 16.5px; line-height: 1.5;
-    color: var(--text-soft); max-width: 30ch;
+    margin: 10px 0 0; font-size: 15px; line-height: 1.45;
+    color: var(--text-soft); max-width: 34ch;
   }
   .hero-sub b { color: var(--heading); font-weight: 700; }
 
@@ -94,6 +94,9 @@
     box-shadow: 0 10px 24px rgba(4,0,51,0.22);
     transition: transform .15s ease, box-shadow .15s ease;
   }
+  /* hero = card-led: CTA block sits under the card, centered */
+  .hero-cta-block { text-align: center; }
+  .hero-cta-block .cta { margin-top: 24px; }
   .cta:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(4,0,51,0.28); }
   .cta .arrow { transition: transform .15s ease; }
   .cta:hover .arrow { transform: translateX(3px); }
@@ -103,7 +106,7 @@
   }
 
   /* ---------- MOMENT CARD (phone frame) ---------- */
-  .stage { position: relative; margin: 40px auto 0; width: 300px; max-width: 86%; }
+  .stage { position: relative; margin: 30px auto 0; width: 300px; max-width: 86%; }
   .stage-panel {
     position: relative;
     background:
@@ -204,19 +207,82 @@
     margin-top: 16px; font-size: 16.5px; color: var(--text-soft);
     max-width: 32ch;
   }
-  .nolist { list-style: none; margin: 26px 0 0; padding: 0; }
-  .nolist li {
-    display: flex; align-items: flex-start; gap: 12px;
-    font-size: 16px; font-weight: 600; color: var(--heading);
-    padding: 11px 0; border-bottom: 1px solid var(--surface-muted);
+  /* Tilt-style claim tiles: staged visual panel + headline + caption under it */
+  .tiles { margin-top: 30px; display: grid; gap: 38px; }
+  .tile-panel {
+    border-radius: 24px; padding: 34px 22px;
+    display: grid; place-items: center;
+    background: radial-gradient(120% 100% at 30% 0%, #F2E6FE 0%, #E4CFFB 100%);
   }
-  .nolist li:last-child { border-bottom: 0; }
-  .nolist .x {
-    flex: none; width: 24px; height: 24px; border-radius: var(--pill);
+  .tile-panel.dark { background: radial-gradient(120% 100% at 30% 0%, #2B0F55 0%, var(--deep) 100%); }
+  .mini {
+    background: #fff; border-radius: 16px; padding: 16px 20px;
+    box-shadow: 0 10px 26px rgba(28,5,61,0.16);
+    text-align: center; min-width: 190px;
+  }
+  .mini .k { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); }
+  .mini .big { font-family: var(--display); font-size: 30px; color: var(--heading); line-height: 1.1; margin-top: 4px; }
+  .mini .lock { font-size: 14px; vertical-align: middle; margin-left: 6px; }
+  .mini .row { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 700; color: var(--heading); font-size: 15px; }
+  .mini .row + .row { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--lavender-border); }
+  .mini .row .when { font-size: 11.5px; font-weight: 600; color: var(--text-muted); width: 76px; text-align: left; }
+  .mini .row .amt { font-family: var(--display); font-size: 20px; }
+  .mini .tiny { font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-top: 8px; }
+  .tile-h {
+    font-family: var(--display); font-size: 23px; letter-spacing: -0.01em;
+    color: var(--heading); margin: 16px 0 0; line-height: 1.15;
+  }
+  .tile-h .accent { color: var(--purple); font-weight: 500; }
+  .tile-cap { margin-top: 7px; font-size: 14.5px; color: var(--text-muted); line-height: 1.45; max-width: 34ch; }
+
+  /* ---------- SECTION: TRUST Q1 (real people) ---------- */
+  .sec-people { background: var(--surface); padding: 62px 0 64px; }
+  .stage.right .phone { transform: rotate(2.5deg); }
+  .stage .stage-panel.tint2 {
+    background: radial-gradient(120% 90% at 75% 8%, #EFDFFD 0%, #D5B8F8 62%, #C09AF3 100%);
+  }
+  .funded-badge {
+    display: inline-flex; align-items: center; gap: 6px;
     background: var(--success-bg); color: var(--success);
-    display: grid; place-items: center; font-size: 13px; font-weight: 900;
+    font-size: 12px; font-weight: 800; letter-spacing: .04em;
+    padding: 5px 12px; border-radius: var(--pill);
   }
-  .nolist li small { display:block; font-weight: 500; color: var(--text-muted); font-size: 13.5px; margin-top: 1px; }
+  .avatars { display: flex; align-items: center; margin: 12px 0 4px; }
+  .avatars .av {
+    width: 34px; height: 34px; border-radius: var(--pill);
+    display: grid; place-items: center;
+    font-size: 13px; font-weight: 800; color: #fff;
+    border: 2.5px solid #fff; margin-left: -8px;
+  }
+  .avatars .av:first-child { margin-left: 0; }
+  .av.a1 { background: #8336F0; } .av.a2 { background: #34AFD9; } .av.a3 { background: #E88A3A; }
+  .avatars .who { margin-left: 10px; font-size: 12px; font-weight: 600; color: var(--text-soft); }
+  .progress {
+    height: 10px; border-radius: var(--pill); background: #EFE4FD;
+    overflow: hidden; margin-top: 10px;
+  }
+  .progress i { display: block; height: 100%; border-radius: var(--pill); background: linear-gradient(90deg, var(--lavender), var(--reward-green, #34D981)); }
+  .progress.full i { width: 100%; }
+  .progress.third i { width: 34%; }
+
+  /* ---------- SECTION: LEVEL UP ---------- */
+  .sec-level {
+    background: radial-gradient(130% 90% at 50% 0%, #ffffff 0%, var(--lavender-bg) 55%, #E4D2FB 100%);
+    padding: 62px 0 70px; overflow: hidden; position: relative;
+  }
+  .ladder { display: flex; align-items: flex-end; gap: 9px; margin-top: 30px; }
+  .rung {
+    flex: 1; background: #fff; border: 1px solid var(--lavender-border);
+    border-radius: 14px 14px 10px 10px; text-align: center;
+    padding: 10px 4px 12px; box-shadow: 0 8px 20px rgba(96,16,210,0.08);
+    display: flex; flex-direction: column; justify-content: flex-end; gap: 2px;
+  }
+  .rung .amt { font-family: var(--display); font-size: 18px; color: var(--heading); }
+  .rung .lv { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
+  .rung.h1x { height: 66px; } .rung.h2x { height: 84px; } .rung.h3x { height: 102px; } .rung.h4x { height: 120px; }
+  .rung.now { border: 2px solid var(--lavender); box-shadow: 0 10px 24px rgba(131,54,240,0.22); }
+  .rung.now .lv { color: var(--purple); }
+  .level-arrow { font-family: var(--display); color: var(--purple); }
 
   /* reveal on scroll */
   .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
@@ -241,15 +307,12 @@
         <img src="assets/brand/moodeng-logo.png" alt="Moodeng" />
       </div>
       <p class="label">When payday feels far away</p>
-      <h1 class="hero-h">Sudden expense?<br />There are people who <span class="accent">want to help.</span></h1>
-      <p class="hero-sub">Borrow small — <b>from $15</b> — for the moment you can’t wait for payday. You’ll know exactly what you’ll pay back, and when, <b>before you say yes.</b></p>
-      <a class="cta" href="#">Ask for what you need <span class="arrow">→</span></a>
-      <p class="reassure">Not instant. Not pushy. Not a trap.</p>
+      <h1 class="hero-h">Sudden expense? There are people who <span class="accent">want to help.</span></h1>
+      <p class="hero-sub">Borrow small — <b>from $15</b> — and know exactly what you’ll give back, <b>before you say yes.</b></p>
 
-      <!-- Moment Card 1 -->
+      <!-- Moment Card 1: the hero IS the card (Tilt/MAKE: show, don't tell) -->
       <div class="stage">
         <div class="stage-panel">
-          <img class="hippo-peek" src="assets/hippos/thinking.png" alt="" />
           <div class="phone">
             <div class="phone-head"><span class="back">‹</span> Your loan</div>
             <div class="inner">
@@ -273,8 +336,42 @@
           </div>
         </div>
       </div>
+
+      <div class="hero-cta-block">
+        <a class="cta" href="#">Ask for what you need <span class="arrow">→</span></a>
+        <p class="reassure">Not instant. Not pushy. Not a trap.</p>
+      </div>
     </div>
   </header>
+
+  <!-- ============= TRUST Q1: REAL PEOPLE ============= -->
+  <section class="sec-people">
+    <div class="wrap reveal">
+      <p class="label">Real people</p>
+      <h2 class="sec-h">Your loan comes from a <span class="accent">real person.</span></h2>
+      <p class="sec-lead">Not a company. Not an algorithm. A real person read your request and chose to help.</p>
+
+      <!-- Moment Card 2: the funded state -->
+      <div class="stage right">
+        <div class="stage-panel tint2">
+          <div class="phone">
+            <div class="phone-head"><span class="back">‹</span> Your request</div>
+            <div class="inner">
+              <div class="reason"><span class="emoji">🏥</span>Medicine · can’t wait for payday</div>
+              <div class="statement">3 people said <span style="color:var(--purple)">yes.</span></div>
+              <div class="avatars">
+                <span class="av a1">P</span><span class="av a2">M</span><span class="av a3">J</span>
+                <span class="who">funded your $15</span>
+              </div>
+              <div class="progress full"><i></i></div>
+              <div style="margin-top:12px"><span class="funded-badge">Funded ✓</span></div>
+              <p class="card-foot">$15 is on its way to you.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- ============= TRUST Q2: CLEAR TERMS ============= -->
   <section class="sec-terms">
@@ -282,11 +379,78 @@
       <p class="label">Clear terms</p>
       <h2 class="sec-h">You know <span class="accent">everything</span> before you borrow.</h2>
       <p class="sec-lead">The amount you pay back is set the moment you ask. <span data-peso-inline>$15 becomes $18</span> — and it stays $18.</p>
-      <ul class="nolist">
-        <li><span class="x">✓</span><div>No rollover<small>The due date doesn’t move, and neither does the price.</small></div></li>
-        <li><span class="x">✓</span><div>No penalty that appears overnight<small>Nothing is added while you sleep. What you saw is what you pay.</small></div></li>
-        <li><span class="x">✓</span><div>No fine print<small>The one number you owe is on the screen before you say yes.</small></div></li>
-      </ul>
+      <div class="tiles">
+
+        <!-- Tile 1: No rollover — the due date, locked -->
+        <div class="tile">
+          <div class="tile-panel">
+            <div class="mini">
+              <div class="k">Due date</div>
+              <div class="big">Jul 30<span class="lock">🔒</span></div>
+              <div class="tiny">set when you ask — it doesn’t move</div>
+            </div>
+          </div>
+          <h3 class="tile-h"><span class="accent">No</span> rollover</h3>
+          <p class="tile-cap">The due date doesn’t move, and neither does the price.</p>
+        </div>
+
+        <!-- Tile 2: No overnight penalty — tonight = tomorrow -->
+        <div class="tile">
+          <div class="tile-panel">
+            <div class="mini">
+              <div class="row"><span class="when">🌙 tonight</span><span class="amt">$18</span></div>
+              <div class="row"><span class="when">☀️ tomorrow</span><span class="amt">$18</span></div>
+            </div>
+          </div>
+          <h3 class="tile-h"><span class="accent">No</span> penalty that appears overnight</h3>
+          <p class="tile-cap">Nothing is added while you sleep. What you saw is what you pay.</p>
+        </div>
+
+        <!-- Tile 3: No fine print — the whole contract is one number (dark tile) -->
+        <div class="tile">
+          <div class="tile-panel dark">
+            <div class="mini">
+              <div class="big">$18</div>
+              <div class="tiny">that’s the whole deal</div>
+            </div>
+          </div>
+          <h3 class="tile-h"><span class="accent">No</span> fine print</h3>
+          <p class="tile-cap">The one number you owe is on the screen before you say yes.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= TRUST Q4: LEVEL UP ============= -->
+  <section class="sec-level">
+    <div class="wrap reveal">
+      <p class="label">It grows with you</p>
+      <h2 class="sec-h">Today it’s $15. Next time you’re covered for <span class="accent">more.</span></h2>
+      <p class="sec-lead">Every on-time repayment raises your limit. No paperwork — just keep your word.</p>
+
+      <!-- MAKE-style ascending ladder -->
+      <div class="ladder">
+        <div class="rung h1x now"><span class="amt">$15</span><span class="lv">Today</span></div>
+        <div class="rung h2x"><span class="amt">$20</span><span class="lv">Next</span></div>
+        <div class="rung h3x"><span class="amt">$40</span><span class="lv">Then</span></div>
+        <div class="rung h4x"><span class="amt">$60+</span><span class="lv">Soon</span></div>
+      </div>
+
+      <!-- Moment Card 3: the level-up moment -->
+      <div class="stage">
+        <div class="stage-panel">
+          <div class="phone">
+            <div class="phone-head"><span class="back">‹</span> Your limit</div>
+            <div class="inner">
+              <div class="reason"><span class="emoji">🔓</span>Repaid on time</div>
+              <div class="statement">You leveled up: $15 <span class="level-arrow">▸</span> <span class="amt-pill">$20</span></div>
+              <div class="progress third"><i></i></div>
+              <p class="card-foot">on your way to <b>$60+</b> — one repayment at a time.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
