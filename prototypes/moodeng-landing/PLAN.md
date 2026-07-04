@@ -19,10 +19,10 @@ Next step: build hero + one content section as a taste test, screenshot it, iter
 - ZERO jargon in user copy: no "stablecoin", "borderless", "on-chain", "World ID", "KYC" in headlines. Say "verify you're a real person". Avoid the word "lending" where possible ("too scammy") — prefer "real people fund you".
 - Playful, not corporate. Filipino audience; KAPWA = borrowing as a relationship, not a trap.
 - **Low bandwidth** (PH users): decorations are SVG/CSS only, hippos are the only PNGs, no video, no heavy JS libs. Scroll effects = CSS + small IntersectionObserver.
-- Borrowers are primary audience; lenders get one section (§7).
+- **This page is for BORROWERS ONLY** (George, 2026-07-05). No lender section — the FigJam board's lender content (LENDERS' TRUST, "Earn yield...", governance tokens) is for a separate future page. Don't mention earning yield anywhere on this page.
 - One palette: Moodeng lavender (`#F3E8FF` bg → `#c8a6f8` → white; primary `#8336F0`, deep `#6010D2`, heading `#040033` — full tokens in repo `DESIGN.md`). Dark sections use near-black with cloud silhouettes so it stays in the same world.
 
-## Section map (9 sections)
+## Section map (8 sections — borrower-only)
 
 1. **Hero** — sky gradient + parallax clouds + `welcome.png` hippo bobbing on a cloud. H1 "Get a fair, stress-free loan." Stacked: No hidden fees / No rollovers / No data theft. Sub: "Just real lenders helping real people." CTA pill APPLY LOAN NOW. Trust strip: "Not instant. Not pushy. Not a trap."
 2. **Here's what you can do** — Tilt-style 3 cards: Borrow Small From Real People (from $15) / You Set Your Own Terms / Your History Is YOURS. Hippos: `thumb-up-right`, `hippo-debit-card`, `journal-hippo` (journal one is in `public/hippos/`, not yet copied). Tag: "Real lenders. Fair terms. Zero traps."
@@ -30,9 +30,8 @@ Next step: build hero + one content section as a taste test, screenshot it, iter
 4. **Why we're different** — comparison table Local Loans (✗ collateral, rolling fees, surprise charges, company owns your history) vs Moodeng (✓ global funders in $, no collateral, fair rates, no hidden fees, you own your history). `thinking.png`.
 5. **How it works** — 4 numbered steps: Verify you're a real person → Connect your wallet → Post your loan request (amount, interest, payback date) → Repay & level up. `hippo-with-id-card`. App-moment chips (e.g. "You leveled up: $15 → $20") drawn as styled divs, Tilt-mockup style.
 6. **Safety is the foundation** (DARK section) — "Safety isn't a feature. It's the foundation." ✔ verified real humans (one person = one account, biometric converted to non-reversible code, raw biometrics never stored) ✔ stay anonymous ✔ no harassment / contact scraping ✔ no data selling, ever ✔ your history belongs to you. `hippo-friendly-lock`. Dark cloud silhouettes.
-7. **For lenders** — "Earn yield. Empower people. Keep your data." 100% of interest goes to you (no platform skim) / choose who you fund, see their story + repayment history / your data never for sale. `community.png`, `lender-diversity-piechart`. Warm gradient variant (MAKE sunset radials).
-8. **Testimonials** — MAKE-style quote carousel, realistic examples: "Short-term medical expense. Borrow $15 → repay $18 within 14–21 days. Clear expectations = peace of mind." Verified-human check badges.
-9. **Final CTA** — "Start your first $15 loan today." / "Borrow small. Build trust. Unlock your future." GET STARTED NOW + `party.png` + logo. Balloons drift up.
+7. **Testimonials** — MAKE-style quote carousel, realistic examples: "Short-term medical expense. Borrow $15 → repay $18 within 14–21 days. Clear expectations = peace of mind." Verified-human check badges. The "real people fund you" trust angle can live here (community.png) — framed as who's behind your loan, NOT as a pitch to become a lender.
+8. **Final CTA** — "Start your first $15 loan today." / "Borrow small. Build trust. Unlock your future." GET STARTED NOW + `party.png` + logo. Balloons drift up.
 
 ## What exists already
 
