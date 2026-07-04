@@ -10,6 +10,7 @@ export const DEMO_BORROWER_INSIGHTS_USER: User = {
    mal: 0,
    nal: 0,
    cs: 20,
+   incomeDescription: 'Runs a small sari-sari store in Cebu. Steady daily cash flow from the store, plus weekend online reselling — usually repays from the following week’s sales.',
    createdAt: '2026-04-01T10:00:00.000Z',
    updatedAt: '2026-05-03T10:00:00.000Z',
    userRole: 'borrower'

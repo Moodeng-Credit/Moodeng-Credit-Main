@@ -246,6 +246,12 @@ const UserProfile = () => {
           : 'Balanced Loan Mix';
    const lenderInsightsTourSteps = [
       {
+         target: '[data-tour-target="borrower-identity"]',
+         title: 'Start with who they are',
+         body: 'Read the borrower context first — whether they are a verified human, how long they have been a member, and how they earn and repay. It frames every number below and tells you whether their reason to borrow fits their situation.',
+         durationMs: 7500
+      },
+      {
          target: '[data-tour-target="borrower-credit-level"]',
          title: 'Check Credit Level',
          body: 'Credit Level is the borrower tier. It helps you understand how much trust they have already unlocked through prior behavior.',
@@ -579,6 +585,11 @@ const UserProfile = () => {
                         </span>
                      </div>
                      <p className="mt-2 text-[13px] font-medium leading-none text-md-neutral-1400">Member since {memberSince}</p>
+                     {resolvedUser.incomeDescription ? (
+                        <p className="borrower-identity-context mt-2 text-[13px] font-medium leading-snug text-md-neutral-1400">
+                           {resolvedUser.incomeDescription}
+                        </p>
+                     ) : null}
                   </div>
                </div>
 
