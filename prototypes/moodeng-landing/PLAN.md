@@ -5,6 +5,8 @@ Next step: build hero + one content section as a taste test, screenshot it, iter
 
 ## Concept
 
+**The vibe test (George, 2026-07-05): a Filipino visitor should instantly think "this looks like a Southeast Asian fintech" (MAKE/GCash/Maya-familiar: friendly mascot, soft sky colors, rounded cards, approachable) — but with a Gen-Z edge from Tilt (huge confident type, italic-serif accent words, dark sections, bold attitude).** SEA-fintech is the first impression; Tilt is the seasoning, not the base.
+
 "Tilt's skeleton and voice, MAKE by KBank's skin and weather, Moodeng's cast of characters."
 
 - **Tilt** (tilt.com, saved in `~/Downloads/Cash Advances & Credit Cards—Powered by Your Potential _ Tilt.html` + `_files/`): section structure, huge bold display type with italic-serif accent words, alternating light/dark sections, small-caps label above headlines, pill CTA buttons, stacked ❌/✔ checklists, app-moment mockup chips.
