@@ -130,25 +130,17 @@ const getPreviewRequestDate = (dayOffset: number) => {
    return date.toISOString();
 };
 
-// Demo borrowers shown on the guest request board and lender tour. Real-ish names with
-// clean handles (no "-demo" suffix, no repeats) so the sample board reads like a genuine
+// Demo borrowers shown on the guest request board and lender tour. Moodeng is
+// username-only (borrowers stay anonymous), so these are realistic self-chosen handles —
+// distinct, with no "-demo" suffix or repeats — so the sample board reads like a genuine
 // marketplace rather than placeholder data. Keyed by the loan's borrowerUser id.
 const DEMO_BORROWER_HANDLES: Record<string, string> = {
-   'request-board-preview-borrower-maya': 'maria.santos',
-   'request-board-preview-borrower-jordan': 'jun.delacruz',
-   'request-board-preview-borrower-ana': 'ana.reyes',
-   'lender-tour-borrower-grace': 'grace.lim',
-   'lender-tour-borrower-noah': 'noah.villanueva',
-   'lender-tour-borrower-liway': 'liway.cruz'
-};
-
-const DEMO_BORROWER_NAMES: Record<string, string> = {
-   'request-board-preview-borrower-maya': 'Maria Santos',
-   'request-board-preview-borrower-jordan': 'Jun Dela Cruz',
-   'request-board-preview-borrower-ana': 'Ana Reyes',
-   'lender-tour-borrower-grace': 'Grace Lim',
-   'lender-tour-borrower-noah': 'Noah Villanueva',
-   'lender-tour-borrower-liway': 'Liway Cruz'
+   'request-board-preview-borrower-maya': 'mangorina23',
+   'request-board-preview-borrower-jordan': 'jaycee88ph',
+   'request-board-preview-borrower-ana': 'anareyna_07',
+   'lender-tour-borrower-grace': 'graceling21',
+   'lender-tour-borrower-noah': 'nikorider',
+   'lender-tour-borrower-liway': 'sarisari_liwa'
 };
 
 // URL slug the lender tour's "Check Borrower Insights" step deep-links to. The demo
@@ -1965,7 +1957,6 @@ function RequestBoard$() {
                                     onDeleteOwnRequest={handleDeleteOwnRequestClick}
                                     forceTourBorrowerLink={isGuestLenderTour}
                                     tourBorrowerUsername={loan.borrowerUser ? DEMO_BORROWER_HANDLES[loan.borrowerUser] : undefined}
-                                    tourBorrowerDisplayName={loan.borrowerUser ? DEMO_BORROWER_NAMES[loan.borrowerUser] : undefined}
                                     borrowerContextProfile={
                                        loan.borrowerUser ? PREVIEW_REQUEST_BOARD_BORROWER_CONTEXTS[loan.borrowerUser] : undefined
                                     }

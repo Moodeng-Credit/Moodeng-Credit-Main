@@ -3,9 +3,9 @@ import { LoanStatus, RepaymentStatus, type Loan } from '@/types/loanTypes';
 
 export const DEMO_BORROWER_INSIGHTS_USER: User = {
    id: 'demo-borrower-insights-user',
-   username: 'grace.lim',
+   username: 'graceling21',
    email: 'demo-borrower-insights@moodeng.app',
-   displayName: 'Grace Lim',
+   displayName: 'graceling21',
    isWorldId: WorldId.ACTIVE,
    mal: 0,
    nal: 0,
