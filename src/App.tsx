@@ -320,6 +320,7 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
+            {showPreviewRoutes ? <Route path="/milestones-preview" element={<MilestonesPage />} /> : null}
             <Route
                path="/lender-diversity"
                element={
