@@ -9,7 +9,6 @@ import { evaluateCreditProgression } from '@/lib/creditLeveling';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
-import { computeYearOneIouPointsDelta, getYearOneIouBorrowerBonusPoints, loanFundingPointsPerUsdc } from '@/shared/points';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { RootState } from '@/store/store';
 import { type CreateLoanData, type Loan, type LoanState } from '@/types/loanTypes';
@@ -370,51 +369,18 @@ export const updateLoanStatus = createAsyncThunk<
    }
 
    if (loanStatus === 'Lent' && data.lender_user_id) {
-      if (!data.borrower_user_id) {
-         const message = 'Could not award IOU points because the funded loan has no borrower user id.';
-         console.error(message);
-         sideEffectErrors.push({ type: 'award_points', message });
-      } else {
-         const { count: borrowerPriorFundedLoanCount, error: borrowerLoanCountError } = await supabase
-            .from('loans')
-            .select('id', { count: 'exact', head: true })
-            .eq('borrower_user_id', data.borrower_user_id)
-            .eq('loan_status', 'Lent')
-            .neq('id', data.id);
+      // Award IOU (Trust Points) reward points to the lender. This runs server-side in the
+      // `award-loan-points` edge function: it re-derives the lender, amount and point delta
+      // from the loan under service_role, so the client can't forge arbitrary points (the
+      // underlying award_points RPC is no longer callable from the browser). Non-blocking —
+      // funding already succeeded above; a points failure is logged, not thrown.
+      const { error: pointsError } = await supabase.functions.invoke('award-loan-points', {
+         body: { loan_id: data.id }
+      });
 
-         if (borrowerLoanCountError) {
-            console.error('Failed to calculate borrower IOU bonus:', borrowerLoanCountError.message);
-            sideEffectErrors.push({ type: 'award_points', message: borrowerLoanCountError.message });
-         } else {
-            const priorFundedLoanCount = borrowerPriorFundedLoanCount ?? 0;
-            const borrowerBonusPoints = getYearOneIouBorrowerBonusPoints(priorFundedLoanCount);
-            const pointsDelta = computeYearOneIouPointsDelta(String(data.loan_amount), priorFundedLoanCount);
-            const pointsMetadata = {
-               loan_id: data.id,
-               loan_amount: String(data.loan_amount),
-               loan_tracking_id: data.tracking_id,
-               loan_funded_at: data.funded_at,
-               reward_year: 1,
-               base_points_per_usdc: loanFundingPointsPerUsdc,
-               borrower_prior_funded_loan_count: priorFundedLoanCount,
-               borrower_loan_number: priorFundedLoanCount + 1,
-               borrower_bonus_points: borrowerBonusPoints
-            };
-
-            const { error: pointsError } = await supabase.rpc('award_points', {
-               user_id_input: data.lender_user_id,
-               source_type_input: 'loan',
-               source_id_input: data.id,
-               event_type_input: 'funded',
-               delta_input: pointsDelta.toString(),
-               metadata_input: pointsMetadata
-            });
-
-            if (pointsError) {
-               console.error('Failed to award points:', pointsError.message);
-               sideEffectErrors.push({ type: 'award_points', message: pointsError.message });
-            }
-         }
+      if (pointsError) {
+         console.error('Failed to award points:', pointsError.message);
+         sideEffectErrors.push({ type: 'award_points', message: pointsError.message });
       }
    }
 
