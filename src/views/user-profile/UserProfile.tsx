@@ -246,12 +246,6 @@ const UserProfile = () => {
           : 'Balanced Loan Mix';
    const lenderInsightsTourSteps = [
       {
-         target: '[data-tour-target="borrower-dark-mode"]',
-         title: 'Change reading mode',
-         body: 'Use dark mode if it makes this profile easier to review. It does not change the borrower data or lending decision.',
-         durationMs: 6000
-      },
-      {
          target: '[data-tour-target="borrower-credit-level"]',
          title: 'Check Credit Level',
          body: 'Credit Level is the borrower tier. It helps you understand how much trust they have already unlocked through prior behavior.',
@@ -280,6 +274,12 @@ const UserProfile = () => {
          title: 'Review recent loans',
          body: 'Use the recent loan table to confirm the borrower has a repayment history that matches the request you are thinking about funding.',
          durationMs: 7200
+      },
+      {
+         target: '[data-tour-target="borrower-dark-mode"]',
+         title: 'Change reading mode',
+         body: 'Optional: switch to dark mode if it makes this profile easier to read. It changes nothing about the borrower data or your lending decision.',
+         durationMs: 5000
       }
    ];
 
