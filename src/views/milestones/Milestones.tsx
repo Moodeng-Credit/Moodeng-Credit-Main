@@ -20,7 +20,14 @@ import {
    getBorrowerLoans,
    getMilestoneSummary
 } from '@/views/dashboard/dashboardHelpers';
-import { getEarnedMilestonePoints, getTrustPointRewardProgress, type TrustPointRewardProgress } from '@/views/dashboard/trustPointRewards';
+import {
+   getEarnedMilestonePoints,
+   getOwnedSpecialCollectibles,
+   getTrustPointRewardProgress,
+   SPECIAL_COLLECTIBLES,
+   type SpecialCollectible,
+   type TrustPointRewardProgress
+} from '@/views/dashboard/trustPointRewards';
 import { useMilestonePointAwards } from '@/views/dashboard/useMilestonePointAwards';
 import { useTrustPointTotal } from '@/views/dashboard/useTrustPointTotal';
 import { useTrustRewardOwnership } from '@/views/dashboard/useTrustRewardOwnership';
@@ -316,6 +323,39 @@ function TrustPointRewardsPanel({
    );
 }
 
+function CollectiblesSection({ collectibles }: { collectibles: SpecialCollectible[] }) {
+   if (collectibles.length === 0) {
+      return null;
+   }
+
+   return (
+      <section className="flex flex-col gap-4">
+         <h2 className="text-[18px] font-[590] leading-[1.2] tracking-[-0.72px] text-md-heading">Collectibles</h2>
+         <div className="flex flex-col gap-3">
+            {collectibles.map((collectible) => (
+               <div
+                  key={collectible.id}
+                  className="flex items-center gap-4 rounded-[18px] border border-md-primary-100 bg-white p-4 shadow-[0_10px_28px_rgba(36,13,72,0.06)]"
+               >
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[16px] bg-[#fff7d6]">
+                     <img src={collectible.image} alt={collectible.title} className="h-14 w-14 object-contain" />
+                  </div>
+                  <div className="min-w-0">
+                     <span className="inline-flex rounded-full bg-[#fdeec2] px-2.5 py-1 text-[10px] font-[590] uppercase leading-none tracking-[0.04em] text-[#8a5a00]">
+                        {collectible.occasion} · You won this
+                     </span>
+                     <p className="mt-2 text-[15px] font-[590] leading-5 tracking-[-0.3px] text-md-heading">{collectible.title}</p>
+                     <p className="mt-1 text-[12px] font-normal leading-[18px] tracking-[-0.24px] text-md-neutral-700">
+                        {collectible.description}
+                     </p>
+                  </div>
+               </div>
+            ))}
+         </div>
+      </section>
+   );
+}
+
 export default function Milestones() {
    const navigate = useNavigate();
    const user = useSelector((state: RootState) => state.auth.user);
@@ -428,6 +468,14 @@ export default function Milestones() {
                   unlockedRewardIds={isPreview ? undefined : unlockedRewardIds}
                   avatarUrl={user.avatarUrl}
                   avatarBackground={user.avatarBackground}
+               />
+            ) : null}
+
+            {isMilestoneDataReady ? (
+               <CollectiblesSection
+                  collectibles={getOwnedSpecialCollectibles(
+                     isPreview ? SPECIAL_COLLECTIBLES.map((collectible) => collectible.id) : unlockedRewardIds
+                  )}
                />
             ) : null}
 

@@ -77,6 +77,34 @@ export const getTrustPointRewardProgress = (pointsTotal: number, unlockedRewardI
    };
 };
 
+/**
+ * Special collectibles are one-off, non-threshold rewards (e.g. commemorative gifts).
+ * They are granted directly into `user_rewards` and never auto-unlock from Trust Points,
+ * so they are kept out of the {@link TRUST_POINT_REWARDS} progression ladder.
+ */
+export interface SpecialCollectible {
+   id: string;
+   title: string;
+   description: string;
+   /** Public path to the collectible artwork. */
+   image: string;
+   /** Short label for why it was awarded, e.g. "First-time user". */
+   occasion: string;
+}
+
+export const SPECIAL_COLLECTIBLES: SpecialCollectible[] = [
+   {
+      id: 'first-user-lucky-cat',
+      title: 'Founding Lucky Cat',
+      description: 'A lucky cat for being one of the first Moodeng borrowers.',
+      image: '/rewards/lucky-neko.png',
+      occasion: 'First-time user'
+   }
+];
+
+export const getOwnedSpecialCollectibles = (unlockedRewardIds: readonly string[]): SpecialCollectible[] =>
+   SPECIAL_COLLECTIBLES.filter((collectible) => unlockedRewardIds.includes(collectible.id));
+
 export type AvatarRingRewardId = 'silver-avatar-ring' | 'gold-avatar-ring';
 
 export const getAvatarRingRewardId = (unlockedRewardIds: readonly string[]): AvatarRingRewardId | null => {
