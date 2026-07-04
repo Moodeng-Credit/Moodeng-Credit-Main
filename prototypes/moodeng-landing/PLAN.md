@@ -1,7 +1,9 @@
 # Moodeng Landing Page — Build Plan (handoff doc)
 
-Status (2026-07-05): design direction locked, **copy direction locked to the TRUST SPINE below** (several earlier copy decks were rejected — read "Copy history" before writing ANY copy). Assets copied. **Build not started yet.**
-Next step: build hero + one content section as a taste test, screenshot it for George, iterate, then fill in all sections.
+Status (2026-07-05): design direction locked, **copy direction locked to the TRUST SPINE below** (several earlier copy decks were rejected — read "Copy history" before writing ANY copy). Assets copied. **Taste test built + approved by George** (hero + Trust Q2), 5 sections still to build.
+Next step: build the remaining trust-spine sections (Q1 real person, Q3 dark, Q4 level-up, Q5 testimonials, final CTA) into `index.html`.
+
+**Named drafts** are frozen in `drafts/` and cataloged in `README.md` — every version George explicitly likes gets snapshotted there so we never lose it. First one: `drafts/tilt-cards-v1__first-draft-idea.html` ("First draft idea on Tilt cards"). `index.html` is the moving/working version.
 
 ## Concept
 
