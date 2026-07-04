@@ -423,7 +423,18 @@ export default function Account() {
                               <ChevronDown isOpen={isOpen} />
                            </button>
                            {isOpen ? (
-                              <div className="px-md-5 pb-md-3 text-md-b2 text-md-neutral-1200 whitespace-pre-line">{item.answer}</div>
+                              <div className="px-md-5 pb-md-3 text-md-b2 text-md-neutral-1200 whitespace-pre-line">
+                                 {item.answer}
+                                 {item.readMorePath ? (
+                                    <button
+                                       type="button"
+                                       onClick={() => navigate(item.readMorePath!)}
+                                       className="mt-md-2 block text-md-b2 font-semibold text-md-primary-1200 underline underline-offset-2"
+                                    >
+                                       {item.readMoreLabel ?? 'Read the full guide'}
+                                    </button>
+                                 ) : null}
+                              </div>
                            ) : null}
                         </div>
                      );

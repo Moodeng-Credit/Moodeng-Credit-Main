@@ -130,11 +130,23 @@ const getPreviewRequestDate = (dayOffset: number) => {
    return date.toISOString();
 };
 
-const PREVIEW_REQUEST_BOARD_BORROWER_USERNAMES: Record<string, string> = {
-   'request-board-preview-borrower-maya': 'maya-demo',
-   'request-board-preview-borrower-jordan': 'jordan-demo',
-   'request-board-preview-borrower-ana': 'ana-demo'
+// Demo borrowers shown on the guest request board and lender tour. Moodeng is
+// username-only (borrowers stay anonymous), so these are realistic self-chosen handles —
+// distinct, with no "-demo" suffix or repeats — so the sample board reads like a genuine
+// marketplace rather than placeholder data. Keyed by the loan's borrowerUser id.
+const DEMO_BORROWER_HANDLES: Record<string, string> = {
+   'request-board-preview-borrower-maya': 'mangorina23',
+   'request-board-preview-borrower-jordan': 'jaycee88ph',
+   'request-board-preview-borrower-ana': 'anareyna_07',
+   'lender-tour-borrower-grace': 'graceling21',
+   'lender-tour-borrower-noah': 'nikorider',
+   'lender-tour-borrower-liway': 'sarisari_liwa'
 };
+
+// URL slug the lender tour's "Check Borrower Insights" step deep-links to. The demo
+// profile page ignores the slug (it renders the shared demo insights user via ?demo=rich),
+// so this just needs to look like a real handle rather than "maya-demo".
+const LENDER_TOUR_BORROWER_HANDLE = DEMO_BORROWER_HANDLES['lender-tour-borrower-grace'];
 
 const PREVIEW_REQUEST_BOARD_BORROWER_CONTEXTS: Record<string, BorrowerContextProfileData> = {
    'request-board-preview-borrower-maya': {
@@ -169,19 +181,40 @@ const PREVIEW_REQUEST_BOARD_BORROWER_CONTEXTS: Record<string, BorrowerContextPro
       monthlyExpenses: '150_300',
       profession:      'graphic designer',
       otherIncome:     'online sales'
+   },
+   'lender-tour-borrower-grace': {
+      incomeType:      'full-time',
+      paydayType:      'end-of-month',
+      paydayStart:     25,
+      paydayEnd:       30,
+      gapReasons:      ['bills_before_payday', 'transport'],
+      monthlyIncome:   '200_400',
+      monthlyExpenses: '50_150',
+      profession:      'teacher',
+      otherIncome:     'tutor'
+   },
+   'lender-tour-borrower-noah': {
+      incomeType:      'part-time',
+      paydayType:      'mid-month',
+      paydayStart:     15,
+      paydayEnd:       20,
+      gapReasons:      ['transport', 'family_needs'],
+      monthlyIncome:   '200_400',
+      monthlyExpenses: '50_150',
+      profession:      'delivery rider',
+      otherIncome:     'weekend driving'
+   },
+   'lender-tour-borrower-liway': {
+      incomeType:      'full-time',
+      paydayType:      'irregular',
+      paydayStart:     null,
+      paydayEnd:       null,
+      gapReasons:      ['bills_before_payday', 'family_needs'],
+      monthlyIncome:   '400_700',
+      monthlyExpenses: '150_300',
+      profession:      'sari-sari store owner',
+      otherIncome:     'online sales'
    }
-};
-
-const LENDER_TOUR_BORROWER_CONTEXT: BorrowerContextProfileData = {
-   incomeType:      'full-time',
-   paydayType:      'end-of-month',
-   paydayStart:     25,
-   paydayEnd:       30,
-   gapReasons:      ['bills_before_payday', 'transport'],
-   monthlyIncome:   '200_400',
-   monthlyExpenses: '50_150',
-   profession:      'teacher',
-   otherIncome:     'tutor'
 };
 
 const buildPreviewRequestBoardLoan = ({
@@ -321,7 +354,7 @@ const TOUR_SAMPLE_LOANS: Loan[] = [
       trackingId: 'LENDER-TOUR-001',
       borrowerWallet: '0x71c4000000000000000000000000000000009d42',
       lenderWallet: '',
-      borrowerUser: 'lender-tour-borrower',
+      borrowerUser: 'lender-tour-borrower-grace',
       lenderUser: '',
       loanAmount: 15,
       repaidAmount: 0,
@@ -330,6 +363,44 @@ const TOUR_SAMPLE_LOANS: Loan[] = [
       loanStatus: LoanStatus.REQUESTED,
       repaymentStatus: RepaymentStatus.UNPAID,
       dueDate: getPreviewRequestDate(7),
+      coin: 'USDC',
+      hash: [],
+      createdAt: getPreviewRequestDate(-1),
+      updatedAt: getPreviewRequestDate(-1)
+   },
+   {
+      id: 'lender-tour-loan-2',
+      trackingId: 'LENDER-TOUR-002',
+      borrowerWallet: '0x71c4000000000000000000000000000000009d45',
+      lenderWallet: '',
+      borrowerUser: 'lender-tour-borrower-noah',
+      lenderUser: '',
+      loanAmount: 25,
+      repaidAmount: 0,
+      totalRepaymentAmount: 28,
+      reason: 'Motorbike repair for delivery work',
+      loanStatus: LoanStatus.REQUESTED,
+      repaymentStatus: RepaymentStatus.UNPAID,
+      dueDate: getPreviewRequestDate(12),
+      coin: 'USDC',
+      hash: [],
+      createdAt: getPreviewRequestDate(-2),
+      updatedAt: getPreviewRequestDate(-2)
+   },
+   {
+      id: 'lender-tour-loan-3',
+      trackingId: 'LENDER-TOUR-003',
+      borrowerWallet: '0x71c4000000000000000000000000000000009d46',
+      lenderWallet: '',
+      borrowerUser: 'lender-tour-borrower-liway',
+      lenderUser: '',
+      loanAmount: 40,
+      repaidAmount: 0,
+      totalRepaymentAmount: 45,
+      reason: 'Restock for my sari-sari store',
+      loanStatus: LoanStatus.REQUESTED,
+      repaymentStatus: RepaymentStatus.UNPAID,
+      dueDate: getPreviewRequestDate(18),
       coin: 'USDC',
       hash: [],
       createdAt: getPreviewRequestDate(-1),
@@ -877,7 +948,7 @@ function RequestBoard$() {
             return;
          }
 
-         navigate('/user/maya-demo?demo=rich&lenderTourPreview=1&tourPreview=1');
+         navigate(`/user/${LENDER_TOUR_BORROWER_HANDLE}?demo=rich&lenderTourPreview=1&tourPreview=1`);
       },
       [forceTourPreview, isGuestLenderTour, location.pathname, navigate, tourUserId]
    );
@@ -1885,19 +1956,9 @@ function RequestBoard$() {
                                     isDeletingOwnRequest={Boolean(isDeletingRequest && requestToDelete?.id === loan.id)}
                                     onDeleteOwnRequest={handleDeleteOwnRequestClick}
                                     forceTourBorrowerLink={isGuestLenderTour}
-                                    tourBorrowerUsername={
-                                       loan.id.startsWith('lender-tour')
-                                          ? 'maya-demo'
-                                          : loan.borrowerUser
-                                            ? PREVIEW_REQUEST_BOARD_BORROWER_USERNAMES[loan.borrowerUser]
-                                            : undefined
-                                    }
+                                    tourBorrowerUsername={loan.borrowerUser ? DEMO_BORROWER_HANDLES[loan.borrowerUser] : undefined}
                                     borrowerContextProfile={
-                                       loan.id.startsWith('lender-tour')
-                                          ? LENDER_TOUR_BORROWER_CONTEXT
-                                          : loan.borrowerUser
-                                            ? PREVIEW_REQUEST_BOARD_BORROWER_CONTEXTS[loan.borrowerUser]
-                                            : undefined
+                                       loan.borrowerUser ? PREVIEW_REQUEST_BOARD_BORROWER_CONTEXTS[loan.borrowerUser] : undefined
                                     }
                                  />
                               </div>

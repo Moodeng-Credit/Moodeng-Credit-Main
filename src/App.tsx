@@ -35,6 +35,8 @@ import LearnIndexPage from '@/app/learn/page';
 import PublicGuidePage from '@/app/learn/[slug]/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
+import MoneyGuide from '@/views/academy/MoneyGuide';
+import MoneyGuideTopic from '@/views/academy/MoneyGuideTopic';
 import LenderDiversityPage from '@/app/lender-diversity/page';
 import LenderDashboard from '@/app/lender/dashboard/page';
 import LenderPerformance from '@/app/lender/performance/page';
@@ -501,6 +503,22 @@ export default function App() {
                element={
                   <MarketingPageShell>
                      <Guide />
+                  </MarketingPageShell>
+               }
+            />
+            <Route
+               path="/academy/money"
+               element={
+                  <MarketingPageShell>
+                     <MoneyGuide />
+                  </MarketingPageShell>
+               }
+            />
+            <Route
+               path="/academy/money/:topic"
+               element={
+                  <MarketingPageShell>
+                     <MoneyGuideTopic />
                   </MarketingPageShell>
                }
             />
