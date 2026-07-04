@@ -235,6 +235,51 @@
   .tile-h .accent { color: var(--purple); font-weight: 500; }
   .tile-cap { margin-top: 7px; font-size: 14.5px; color: var(--text-muted); line-height: 1.45; max-width: 34ch; }
 
+  /* ---------- SECTION: UNLOCK (product moment #2) ---------- */
+  .sec-unlock { background: var(--surface); padding: 58px 0 62px; }
+  .stage-panel.sky {
+    background: linear-gradient(180deg, #FFFFFF 0%, #F1E6FE 55%, #E2CEFB 100%);
+    border: 1px solid var(--lavender-border);
+    box-shadow: 0 24px 50px rgba(96,16,210,0.16);
+  }
+  .stage-panel.sky::before { display: none; }
+  .stage-panel.sky .sky-cloud { position: absolute; opacity: .9; pointer-events: none; }
+  .phone.upright { transform: none; }
+  .stage.big { width: 320px; }
+  .stage-panel.pad-lg { padding: 40px 24px 36px; }
+  /* Tilt-style clean phone: all white, generous air, no inner tint */
+  .phone.tall { padding: 18px 18px 22px; border-radius: 26px; text-align: center; }
+  .phone.tall .phone-head { justify-content: center; position: relative; padding-bottom: 0; }
+  .phone.tall .phone-head .back { position: absolute; left: 2px; top: 0; }
+  .lock-badge { width: 74px; height: 74px; margin: 34px auto 18px; display: block; filter: drop-shadow(0 6px 10px rgba(96,16,210,0.22)); }
+  .phone.tall .statement { font-size: 22px; margin: 0 0 30px; }
+  .meter-box {
+    position: relative; background: #F6F3FA; border-radius: 14px;
+    padding: 22px 14px 13px; margin: 0 2px;
+  }
+  .meter-box .chip-up {
+    position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+    background: var(--heading); color: #fff;
+    font-family: var(--display); font-size: 13px; padding: 6px 14px;
+    border-radius: var(--pill); white-space: nowrap;
+  }
+  .meter-box .bar { height: 8px; border-radius: var(--pill); background: #E7DDF2; overflow: hidden; }
+  .meter-box .bar i { display: block; height: 100%; width: 33%; border-radius: var(--pill); background: var(--lavender); }
+  .meter-box .marks { display: flex; justify-content: space-between; margin-top: 9px; }
+  .meter-box .marks span { font-size: 10.5px; font-weight: 600; color: #B9AECB; line-height: 1.4; text-align: left; }
+  .meter-box .marks b { display: block; font-size: 13.5px; font-weight: 800; }
+  .meter-box .marks .pre b { color: #9B8BB5; }
+  .meter-box .marks .mid { text-align: center; color: var(--text-soft); }
+  .meter-box .marks .mid b { color: var(--heading); }
+  .meter-box .marks .goal { text-align: right; }
+  .meter-box .marks .goal b { color: #C4BAD4; }
+  .cta-caps {
+    display: block; margin-top: 46px;
+    background: var(--purple); color: #fff;
+    font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 16px; border-radius: var(--pill);
+  }
+
   /* ---------- SECTION: TRUST Q1 (real people) ---------- */
   .sec-people { background: var(--surface); padding: 62px 0 64px; }
   .stage.right .phone { transform: rotate(2.5deg); }
@@ -283,6 +328,53 @@
   .rung.now { border: 2px solid var(--lavender); box-shadow: 0 10px 24px rgba(131,54,240,0.22); }
   .rung.now .lv { color: var(--purple); }
   .level-arrow { font-family: var(--display); color: var(--purple); }
+
+  /* ---------- SECTION: TRUST Q3 (DARK — how we treat you) ---------- */
+  .sec-dark { background: #100626; padding: 66px 0 70px; position: relative; overflow: hidden; }
+  .sec-dark .label { color: #C9A8F5; }
+  .sec-dark .sec-h { color: #fff; }
+  .sec-dark .sec-h .accent { color: #C9A8F5; }
+  .sec-dark .sec-lead { color: #B6A8CC; }
+  .sec-dark .tile-h { color: #fff; }
+  .sec-dark .tile-h .accent { color: #C9A8F5; }
+  .sec-dark .tile-cap { color: #9C8CB8; }
+  .tile-panel.night {
+    background: radial-gradient(120% 100% at 30% 0%, #2B1650 0%, #1C0B3E 100%);
+    border: 1px solid rgba(201,168,245,0.14);
+  }
+  /* dark cloud silhouettes */
+  .sec-dark .dcloud { position: absolute; opacity: 0.5; filter: brightness(0.24) saturate(0.6); pointer-events: none; }
+  .bubble {
+    background: #fff; border-radius: 16px 16px 16px 4px;
+    padding: 13px 16px; max-width: 230px; text-align: left;
+    font-size: 13.5px; font-weight: 600; color: var(--heading); line-height: 1.45;
+    box-shadow: 0 10px 26px rgba(0,0,0,0.35);
+  }
+  .bubble .from { display: block; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--purple); margin-bottom: 4px; }
+  .verify-note {
+    margin-top: 40px; padding: 18px 20px; border-radius: 16px;
+    background: rgba(201,168,245,0.08); border: 1px solid rgba(201,168,245,0.16);
+    font-size: 14px; line-height: 1.5; color: #C4B5DD;
+  }
+  .verify-note b { color: #fff; }
+
+  /* ---------- PESO STRIP ---------- */
+  .strip {
+    background: var(--lavender-bg); padding: 40px 0 44px;
+  }
+  .strip .mini { display: inline-block; margin-top: 18px; }
+  .strip .row { display: flex; align-items: center; justify-content: center; gap: 12px; font-weight: 700; color: var(--heading); font-size: 15px; }
+  .strip .row .amt { font-family: var(--display); font-size: 20px; }
+  .strip .row .arr { color: var(--purple); font-family: var(--display); }
+
+  /* ---------- FINAL CTA ---------- */
+  .sec-final {
+    text-align: center; padding: 70px 0 78px; overflow: hidden; position: relative;
+    background: radial-gradient(130% 100% at 50% 100%, #DCC4FA 0%, var(--lavender-bg) 55%, #ffffff 100%);
+  }
+  .sec-final .sec-h { font-size: 30px; }
+  .sec-final .hippo { width: 110px; margin: 0 auto 6px; filter: drop-shadow(0 10px 20px rgba(96,16,210,0.2)); animation: bob 5s ease-in-out infinite; }
+  .sec-final .reassure { margin-top: 12px; }
 
   /* reveal on scroll */
   .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
@@ -344,6 +436,44 @@
     </div>
   </header>
 
+  <!-- ============= PRODUCT MOMENT #2: UNLOCK ============= -->
+  <section class="sec-unlock">
+    <div class="wrap reveal">
+      <p class="label">It grows with you</p>
+      <h2 class="sec-h">Pay back on time, unlock <span class="accent">more.</span></h2>
+      <p class="sec-lead">Every on-time repayment raises your limit. No paperwork — just keep your word.</p>
+
+      <div class="stage big">
+        <div class="stage-panel sky pad-lg">
+          <img class="sky-cloud" src="assets/clouds/cloud-3.svg" style="width:64px; top:14px; left:-8px" alt="" />
+          <img class="sky-cloud" src="assets/clouds/cloud-1.svg" style="width:80px; bottom:20px; right:-14px" alt="" />
+          <div class="phone upright tall">
+            <div class="phone-head"><span class="back">‹</span> Your credit</div>
+            <!-- placeholder for 3D open-padlock asset (#12) -->
+            <svg class="lock-badge" viewBox="0 0 74 74" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M26 34v-9a12 12 0 0 1 23.6-3" stroke="#C9A8F5" stroke-width="7" stroke-linecap="round" fill="none"/>
+              <rect x="17" y="34" width="40" height="30" rx="9" fill="#8336F0"/>
+              <rect x="22" y="39" width="30" height="20" rx="6" fill="#9D5CF5" opacity=".5"/>
+              <circle cx="37" cy="46" r="4.4" fill="#F7F0FE"/>
+              <rect x="35" y="48" width="4" height="8" rx="2" fill="#F7F0FE"/>
+            </svg>
+            <div class="statement">You’ve unlocked<br />your next level!</div>
+            <div class="meter-box">
+              <span class="chip-up">+$5</span>
+              <div class="bar"><i></i></div>
+              <div class="marks">
+                <span class="pre">Before<b>$15</b></span>
+                <span class="mid">New limit<b>$20</b></span>
+                <span class="goal">Goal<b>$60+</b></span>
+              </div>
+            </div>
+            <span class="cta-caps">Accept new limit</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ============= TRUST Q1: REAL PEOPLE ============= -->
   <section class="sec-people">
     <div class="wrap reveal">
@@ -369,6 +499,18 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= PESO STRIP (copy strawman — George to approve) ============= -->
+  <section class="strip">
+    <div class="wrap reveal" style="text-align:center">
+      <p class="label">Pesos in, pesos out</p>
+      <h3 class="tile-h">Easy to turn into <span class="accent">pesos.</span></h3>
+      <p class="tile-cap" style="margin:8px auto 0">When it lands, moving it into pesos is simple — and moving it back when you repay is just as easy.</p>
+      <div class="mini">
+        <div class="row"><span class="amt">$15</span><span class="arr">→</span><span class="amt peso-amt" data-peso-big="15">≈ ₱855</span></div>
       </div>
     </div>
   </section>
@@ -418,7 +560,72 @@
           <p class="tile-cap">The one number you owe is on the screen before you say yes.</p>
         </div>
 
+        <!-- Tile 4: zero fees from our side (copy strawman — George to approve) -->
+        <div class="tile">
+          <div class="tile-panel">
+            <div class="mini">
+              <div class="k">Our fees</div>
+              <div class="big">$0</div>
+              <div class="tiny">that’s not a promo — it’s how we’re built</div>
+            </div>
+          </div>
+          <h3 class="tile-h"><span class="accent">No</span> fees from our side</h3>
+          <p class="tile-cap">New technology makes Moodeng almost free to run — so we don’t need to add fees to survive.</p>
+        </div>
+
       </div>
+    </div>
+  </section>
+
+  <!-- ============= TRUST Q3: HOW WE TREAT YOU (DARK) ============= -->
+  <section class="sec-dark">
+    <img class="dcloud" src="assets/clouds/cloud-2.svg" style="width:130px; top:30px; right:-30px" alt="" />
+    <img class="dcloud" src="assets/clouds/cloud-1.svg" style="width:100px; bottom:40px; left:-30px" alt="" />
+    <div class="wrap reveal">
+      <p class="label">If things go wrong</p>
+      <h2 class="sec-h">We treat you like a <span class="accent">person.</span></h2>
+      <p class="sec-lead">You’ve seen what other apps do when someone struggles. Here’s what we do instead — and what we will never do.</p>
+
+      <div class="tiles">
+
+        <div class="tile">
+          <div class="tile-panel night">
+            <div class="mini">
+              <div class="k">Your contacts</div>
+              <div class="big">Never called</div>
+              <div class="tiny">we don’t even ask for your contact list</div>
+            </div>
+          </div>
+          <h3 class="tile-h">We <span class="accent">never</span> call your contacts.</h3>
+          <p class="tile-cap">We don’t have them. We couldn’t call them if we wanted to.</p>
+        </div>
+
+        <div class="tile">
+          <div class="tile-panel night">
+            <div class="mini">
+              <div class="k">Your information</div>
+              <div class="big">Not for sale</div>
+              <div class="tiny">not to anyone, not ever</div>
+            </div>
+          </div>
+          <h3 class="tile-h">We <span class="accent">never</span> sell your information.</h3>
+          <p class="tile-cap">What you share stays between you and Moodeng.</p>
+        </div>
+
+        <div class="tile">
+          <div class="tile-panel night">
+            <div class="bubble">
+              <span class="from">Moodeng</span>
+              Hi! Your $18 is due Jul 30. If it’s a hard week, message us — we’ll figure it out together.
+            </div>
+          </div>
+          <h3 class="tile-h">We <span class="accent">never</span> shame you.</h3>
+          <p class="tile-cap">This is the only kind of reminder we send. No public posts. No calls to your family.</p>
+        </div>
+
+      </div>
+
+      <p class="verify-note">You prove you’re <b>one real person, once</b> — and nothing about you is stored. That’s why funders trust you fast, without us digging through your life.</p>
     </div>
   </section>
 
@@ -437,20 +644,16 @@
         <div class="rung h4x"><span class="amt">$60+</span><span class="lv">Soon</span></div>
       </div>
 
-      <!-- Moment Card 3: the level-up moment -->
-      <div class="stage">
-        <div class="stage-panel">
-          <div class="phone">
-            <div class="phone-head"><span class="back">‹</span> Your limit</div>
-            <div class="inner">
-              <div class="reason"><span class="emoji">🔓</span>Repaid on time</div>
-              <div class="statement">You leveled up: $15 <span class="level-arrow">▸</span> <span class="amt-pill">$20</span></div>
-              <div class="progress third"><i></i></div>
-              <p class="card-foot">on your way to <b>$60+</b> — one repayment at a time.</p>
-            </div>
-          </div>
-        </div>
-      </div>
+    </div>
+  </section>
+
+  <!-- ============= FINAL CTA ============= -->
+  <section class="sec-final">
+    <div class="wrap reveal">
+      <img class="hippo" src="assets/hippos/party.png" alt="" />
+      <h2 class="sec-h">Next time you’re short, you have somewhere to <span class="accent">turn.</span></h2>
+      <a class="cta" href="#">Start with your first small loan <span class="arrow">→</span></a>
+      <p class="reassure">Not instant. Not pushy. Not a trap.</p>
     </div>
   </section>
 
@@ -462,8 +665,8 @@
     return "≈ ₱" + Math.round(usd * PHP_PER_USD).toLocaleString("en-PH");
   }
   function paintPesos() {
-    document.querySelectorAll("[data-peso]").forEach(function (el) {
-      var usd = parseFloat(el.getAttribute("data-peso"));
+    document.querySelectorAll("[data-peso],[data-peso-big]").forEach(function (el) {
+      var usd = parseFloat(el.getAttribute("data-peso") || el.getAttribute("data-peso-big"));
       if (!isNaN(usd)) el.textContent = peso(usd);
     });
   }

@@ -3,10 +3,34 @@
 Status (2026-07-05): design direction locked, **copy direction locked to the TRUST SPINE below**. Built so far in `index.html`: **hero (card-led v2), Q1 real-person (Moment Card 2 funded state), Q2 clear-terms (Tilt claim tiles), level-up (ladder + Moment Card 3)**. Still to build: dark safety section (Q3), testimonials, final CTA, pesos-in/out strip, zero-fees point.
 
 **George's course-corrections while building (binding):**
-- **Hero = card-led, show-don't-tell.** Compact text (label + headline + one line), Moment Card in the first viewport, CTA *below* the card (see terms → then the button; reverse of Tilt, that's our trust move). No SaaS text-stack heroes.
+- **The current top block is NOT the hero (George, 2026-07-05).** George has his own ideas for the hero — slot stays open. The card-led "Sudden expense?" block is the FIRST BELOW-HERO section (like Tilt: hero is its own thing, the product phone-card sections come after). Don't design a hero without George; build the below-hero area first. Within that area the rules hold: show-don't-tell, compact text, CTA below the card.
 - **No naked text lists — every claim gets a staged visual.** Tilt tile anatomy: tinted panel → staged white stat-card inside → italic-accent headline below ("*No* rollover", mirroring Tilt's "*Yes* when you repay") → 2-line gray caption. The ✓-bullet version was rejected.
 - **The page must demo the PRODUCT, not just argue trust** — Tilt shows its products doing things for you. Our one product has three powers, each gets its moment: borrow (hero card) / funded-by-people (Card 2: "3 people said yes", avatars, Funded ✓) / grows-with-you (ladder $15→$20→$40→$60+ + Card 3 level-up).
 - **No hippos on the moment cards for now** — placement to be figured out later.
+- **No emojis as icons — George is making real 3D assets.** Emojis on the cards/tiles read amateurish. A 13-slot asset list was agreed (see "Asset list" below); George generates them Tilt-style (3D clay/toy, transparent PNG) and they get swapped into the already-built slots.
+- **Unlock section placement (George decided):** "You've unlocked your next level" card sits DIRECTLY BELOW the first card block ("Real people can fund you"), as product moment #2 — consistent with the moment-card family but deliberately different weather (upright centered phone in an airy MAKE-sky panel with clouds, vs Card 1's tilted phone on flat lavender). Down-page level-up section keeps ONLY the ladder (Card 3 was removed as duplicate).
+- **Cards must be text-light like Tilt's (George, after comparing side-by-side):** Tilt's unlock card is ~80% whitespace — one object, one short statement, a quiet meter in a soft gray group-box, one spaced-caps button ("ACCEPT OFFER"). Section text lives ABOVE the card, never inside it. Our first unlock version was rejected as "amateurish, too much text": no tinted inner sub-card, no chatty button copy, no caption line inside the phone. Current index.html has the corrected version (statement + meter-box w/ overlapping +$5 chip + "ACCEPT NEW LIMIT" caps pill); **not yet visually verified** — next session: screenshot it first.
+- Tilt build detail worth copying (from George's devtools screenshot): their panel texture is a `textured-bg.webp` background-image over a flat chartreuse div, `rounded-3xl`, phone constrained to a max-width inside — i.e. texture is an IMAGE overlay, not CSS-generated.
+
+## Asset list — 3D icons George is making (Tilt-style: clay/toy render, ¾ view, top-left light, transparent PNG ~800px, lavender #8336F0/#C9A8F5 + gold for money)
+
+Priority: **#1 coins, #6 closed padlock, #12 open padlock** carry the page; then 5, 7, 9; rest garnish.
+
+1. Moment Card 1, overlapping tinted card's top edge (where Tilt puts coins): **stack of 3–4 gold coins, slightly toppled**
+2. Moment Card 1 reason row (replaces 🏥): **small first-aid kit / medicine bottle, white + lavender cross**
+3. Real-people avatars (optional; CSS circles OK): 3 head-blobs, different colors
+4. Real-people funded state: **3D green checkmark badge**
+5. Peso strip: **two coins side by side — $ coin and ₱ coin, gold**
+6. "No rollover" tile (replaces 🔒): **closed padlock, lavender** — hero asset of tiles section
+7. "No overnight penalty" tile (replaces 🌙/☀️): **small crescent moon + sun pair**
+8. "No fine print" dark tile (optional): **receipt/paper scroll with one line, floating**
+9. "$0 fees" tile: **blank price tag** (or tag being cut)
+10. Dark "never call contacts": **phone lying face-down, peaceful**
+11. Dark "not for sale": **folder/box with shield, lavender on dark**
+12. Unlock card (replaces inline SVG placeholder): **OPEN padlock, shackle popped — same design as #6 but open** (locked terms / unlocked credit visual rhyme)
+13. Ladder top $60+ rung (optional): **small trophy or flag**
+
+Drop finished assets in `~/Downloads`, they get copied into `assets/` and swapped into the built slots.
 
 **Named drafts** are frozen in `drafts/` and cataloged in `README.md` — every version George explicitly likes gets snapshotted there so we never lose it. First one: `drafts/tilt-cards-v1__first-draft-idea.html` ("First draft idea on Tilt cards"). `index.html` is the moving/working version.
 
