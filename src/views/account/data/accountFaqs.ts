@@ -2,6 +2,10 @@ export interface AccountFAQItem {
    id: string;
    question: string;
    answer: string;
+   /** App path this FAQ links to for the full academy-style guide (e.g. /academy/money/repay). */
+   readMorePath?: string;
+   /** Localized label for the read-more link. */
+   readMoreLabel?: string;
 }
 
 // Shown to both borrowers and lenders
@@ -25,15 +29,11 @@ It's also widely accepted: every major crypto exchange supports USDC deposits, a
    {
       id: 'how-to-get-verified',
       question: 'How do I get verified?',
-      answer: `We use World ID — it's the only method we accept. To get verified, you need to scan your eyes at a World ID Orb. Here's how:
+      answer: `Verification is a quick, one-time identity check. The recommended way is "Verify Your ID" — a short national ID photo + selfie check that takes about 3 minutes and works in supported countries. If you already use World App, you can verify with World ID instead.
 
-First, download the World App on your phone (iOS or Android).
-
-Then find a verification location near you. Open https://world.org/find-orb to see a map of every Orb in your country. Some locations let you book an appointment in advance; many you can just walk into.
-
-Go to the Orb. Open the World App, follow the prompts, and let the Orb scan your eyes — it takes about a minute. The scan is converted into an anonymous proof; your biometrics never leave the device.
-
-Once verified in the World App, come back to Moodeng and tap "Verify with World ID" — that links your World ID to your account in seconds, and you're done.`
+Tap "Verify Yourself" in the app to start. Most checks finish within minutes.`,
+      readMorePath: '/academy/money/verify',
+      readMoreLabel: 'Read the full guide'
    }
 ];
 
@@ -42,24 +42,20 @@ export const BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
       question: 'How do I convert my loan into my local bank account?',
-      answer: `Once you receive USDC in your Base account, here's how to get it into your local bank:
+      answer: `Send your USDC to an exchange or local service — Binance P2P, Coins.ph, PDAX, GCrypto (GCash), and more — sell it there, and withdraw the local currency straight to your bank or e-wallet.
 
-1. Open your exchange (e.g. Binance) and find your USDC deposit address. Make sure the network is set to Base — this is important, as it keeps transfers completely free.
-2. Withdraw from your Base account to that deposit address.
-3. Once it arrives on the exchange, withdraw to your local bank account. If your exchange supports direct bank withdrawals, use that. If not, use the P2P feature to sell USDC and receive local currency directly to your bank.
-
-The key detail: always select Base as the network when depositing to your exchange. Using the wrong network can result in lost funds.`
+The key detail: always choose Base as the network when sending USDC. The full guide has a video walkthrough and step-by-step instructions for each service.`,
+      readMorePath: '/academy/money/withdraw',
+      readMoreLabel: 'Read the full guide'
    },
    {
       id: 'how-to-repay',
       question: 'How do I repay my loan?',
-      answer: `Repaying is the reverse of receiving your loan:
+      answer: `Open the Repay screen — it shows the exact amount due and the repayment address. Send USDC there from any wallet, exchange, or local service. If you don't hold USDC yet, buy it first (Binance P2P, Coins.ph, PDAX, GCrypto, and more) — always on the Base network.
 
-1. Deposit from your local bank account to your exchange (e.g. Binance) — use the P2P feature to buy USDC with local currency, or transfer from your bank if the exchange supports it.
-2. Once you have USDC on the exchange, withdraw it to your Base account. Get the deposit address from your Base wallet and make sure the network is set to Base so the transfer is free.
-3. Once the USDC is in your Base account, go to the Repay section in the app and follow the steps to send it to your lender.
-
-Always repay before the due date — on-time repayment builds your Trust Score and unlocks higher credit levels.`
+Repay before the due date — on-time repayment builds your Trust Score and unlocks higher credit levels. The full guide walks through each way to repay.`,
+      readMorePath: '/academy/money/repay',
+      readMoreLabel: 'Read the full guide'
    },
    {
       id: 'borrow-below-limit',
@@ -95,9 +91,11 @@ IOU is for lenders only — borrowers build their Trust Score and Credit Level i
    {
       id: 'how-borrowers-verify',
       question: 'How do borrowers verify?',
-      answer: `Borrowers verify through World ID. This is a one-time biometric verification that confirms each borrower is a unique real person, which helps prevent fake accounts and bots.
+      answer: `Every borrower completes a one-time identity verification — a national ID photo + selfie check with duplicate detection, or World ID for those who use World App. Either way, it confirms each borrower is a unique real person, which prevents fake accounts and bots.
 
-Each person can only create one verified account, so lenders know the borrower profile and repayment history belong to the same real individual. If someone is banned, they cannot simply come back with a new account — one World ID equals one person.`
+Each person can only verify one account, so the borrower profile and repayment history you see belong to the same real individual — and banned users can't simply return with a new account.`,
+      readMorePath: '/academy/money/verify',
+      readMoreLabel: 'Read the full guide'
    },
    {
       id: 'how-borrowers-increase-credit-limit',
@@ -144,15 +142,11 @@ Malawak din itong tinatanggap: supported ang USDC deposits sa major crypto excha
    {
       id: 'how-to-get-verified',
       question: 'Paano ako ma-ve-verify?',
-      answer: `World ID ang ginagamit namin, at ito lang ang tinatanggap naming verification method. Para ma-verify, kailangan mong ipa-scan ang mata mo sa World ID Orb. Ganito ang proseso:
+      answer: `Ang verification ay mabilis at one-time lang na identity check. Ang inirerekomendang paraan ay "Verify Your ID" — maikling national ID photo + selfie check na mga 3 minuto lang at available sa supported countries. Kung gumagamit ka na ng World App, puwede ka ring mag-verify gamit ang World ID.
 
-Una, i-download ang World App sa phone mo, iOS man o Android.
-
-Pagkatapos, maghanap ng verification location malapit sa iyo. Buksan ang https://world.org/find-orb para makita ang mapa ng mga Orb sa bansa mo. May ilang location na puwedeng mag-book ng appointment in advance, at marami rin ang tumatanggap ng walk-in.
-
-Pumunta sa Orb. Buksan ang World App, sundin ang prompts, at hayaan ang Orb na i-scan ang mata mo. Mga isang minuto lang ito. Kino-convert ang scan sa anonymous proof; hindi umaalis sa device ang biometrics mo.
-
-Kapag verified ka na sa World App, bumalik sa Moodeng at i-tap ang "Verify with World ID". Ili-link nito ang World ID mo sa account mo sa loob ng ilang segundo, at tapos ka na.`
+I-tap ang "Verify Yourself" sa app para magsimula. Karamihan ng checks ay tapos sa loob ng ilang minuto.`,
+      readMorePath: '/academy/money/verify',
+      readMoreLabel: 'Basahin ang buong guide'
    }
 ];
 
@@ -160,24 +154,20 @@ const FILIPINO_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
       question: 'Paano ko ililipat ang loan ko sa local bank account ko?',
-      answer: `Kapag natanggap mo na ang USDC sa Base account mo, ganito mo ito maililipat sa local bank:
+      answer: `Ipadala ang USDC mo sa exchange o local service — Binance P2P, Coins.ph, PDAX, GCrypto (GCash), at iba pa — ibenta ito doon, at i-withdraw ang local currency direkta sa bank o e-wallet mo.
 
-1. Buksan ang exchange mo, halimbawa Binance, at hanapin ang USDC deposit address mo. Siguraduhin na Base ang napiling network. Mahalaga ito dahil libre ang transfer sa Base.
-2. Mag-withdraw mula sa Base account mo papunta sa deposit address na iyon.
-3. Kapag dumating na sa exchange, mag-withdraw papunta sa local bank account mo. Kung may direct bank withdrawal ang exchange mo, iyon ang gamitin. Kung wala, gamitin ang P2P feature para ibenta ang USDC at tumanggap ng local currency direkta sa bank mo.
-
-Ang importanteng detalye: palaging piliin ang Base bilang network kapag nagde-deposit sa exchange. Kapag maling network ang ginamit, puwedeng mawala ang funds.`
+Ang importanteng detalye: palaging piliin ang Base bilang network kapag nagpapadala ng USDC. May video walkthrough at step-by-step na instructions para sa bawat service sa buong guide.`,
+      readMorePath: '/academy/money/withdraw',
+      readMoreLabel: 'Basahin ang buong guide'
    },
    {
       id: 'how-to-repay',
       question: 'Paano ko babayaran ang loan ko?',
-      answer: `Ang repayment ay kabaligtaran ng pagtanggap ng loan:
+      answer: `Buksan ang Magbayad screen — makikita mo doon ang eksaktong halaga at ang repayment address. Magpadala ng USDC doon mula sa kahit anong wallet, exchange, o local service. Kung wala ka pang USDC, bumili muna (Binance P2P, Coins.ph, PDAX, GCrypto, at iba pa) — palaging sa Base network.
 
-1. Mag-deposit mula sa local bank account mo papunta sa exchange mo, halimbawa Binance. Gamitin ang P2P feature para bumili ng USDC gamit ang local currency, o mag-transfer mula sa bank kung supported ito ng exchange.
-2. Kapag may USDC ka na sa exchange, i-withdraw ito papunta sa Base account mo. Kunin ang deposit address mula sa Base wallet mo at siguraduhing Base ang network para libre ang transfer.
-3. Kapag nasa Base account mo na ang USDC, pumunta sa Magbayad section ng app at sundin ang steps para ipadala ito sa lender mo.
-
-Palaging magbayad bago ang due date. Ang on-time repayment ay nagpapataas ng Trust Score mo at nag-u-unlock ng mas mataas na antas ng kredito.`
+Magbayad bago ang due date — ang on-time repayment ay nagpapataas ng Trust Score mo at nag-u-unlock ng mas mataas na antas ng kredito. Nasa buong guide ang bawat paraan ng pagbabayad.`,
+      readMorePath: '/academy/money/repay',
+      readMoreLabel: 'Basahin ang buong guide'
    },
    {
       id: 'borrow-below-limit',
@@ -212,9 +202,11 @@ Para sa lenders lang ang IOU. Ang borrowers naman ay bumubuo ng Trust Score at a
    {
       id: 'how-borrowers-verify',
       question: 'Paano nave-verify ang borrowers?',
-      answer: `Nave-verify ang borrowers gamit ang World ID. Isa itong one-time biometric verification na kumukumpirma na unique at totoong tao ang bawat borrower, kaya nakakatulong itong pigilan ang fake accounts at bots.
+      answer: `Bawat borrower ay dumadaan sa one-time identity verification — national ID photo + selfie check na may duplicate detection, o World ID para sa mga gumagamit ng World App. Kinukumpirma nito na unique at totoong tao ang bawat borrower, kaya napipigilan ang fake accounts at bots.
 
-Isang verified account lang ang magagawa ng bawat tao, kaya alam ng lenders na ang borrower profile at repayment history ay pag-aari ng iisang totoong individual. Kapag na-ban ang isang tao, hindi siya basta makakabalik gamit ang bagong account. Isang World ID ay katumbas ng isang tao.`
+Isang verified account lang ang magagawa ng bawat tao, kaya ang borrower profile at repayment history na nakikita mo ay pag-aari ng iisang totoong individual — at hindi basta makakabalik ang na-ban gamit ang bagong account.`,
+      readMorePath: '/academy/money/verify',
+      readMoreLabel: 'Basahin ang buong guide'
    },
    {
       id: 'how-borrowers-increase-credit-limit',
@@ -261,15 +253,11 @@ USDC juga didukung luas. Hampir semua bursa kripto besar mendukung deposit USDC,
    {
       id: 'how-to-get-verified',
       question: 'Bagaimana cara saya diverifikasi?',
-      answer: `Kami memakai World ID, dan itu satu-satunya metode verifikasi yang kami terima. Untuk diverifikasi, kamu perlu memindai mata di World ID Orb. Begini caranya:
+      answer: `Verifikasi adalah pemeriksaan identitas satu kali yang cepat. Cara yang direkomendasikan adalah "Verify Your ID" — pemeriksaan singkat foto KTP/ID nasional + selfie yang memakan waktu sekitar 3 menit dan tersedia di negara yang didukung. Jika kamu sudah memakai World App, kamu bisa verifikasi dengan World ID.
 
-Pertama, download World App di ponsel kamu, iOS atau Android.
-
-Lalu cari lokasi verifikasi terdekat. Buka https://world.org/find-orb untuk melihat peta Orb di negara kamu. Beberapa lokasi memungkinkan booking janji temu sebelumnya; banyak juga yang menerima walk-in.
-
-Datang ke Orb. Buka World App, ikuti instruksi, dan biarkan Orb memindai mata kamu. Prosesnya sekitar satu menit. Pemindaian diubah menjadi proof anonim; biometrik kamu tidak keluar dari perangkat.
-
-Setelah terverifikasi di World App, kembali ke Moodeng dan tap "Verify with World ID". Ini menautkan World ID ke akun kamu dalam hitungan detik, lalu selesai.`
+Tap "Verify Yourself" di app untuk mulai. Sebagian besar pemeriksaan selesai dalam hitungan menit.`,
+      readMorePath: '/academy/money/verify',
+      readMoreLabel: 'Baca panduan lengkap'
    }
 ];
 
@@ -277,24 +265,20 @@ const INDONESIAN_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
       question: 'Bagaimana cara mengubah pinjaman saya ke rekening bank lokal?',
-      answer: `Setelah menerima USDC di Base account, begini cara memindahkannya ke bank lokal:
+      answer: `Kirim USDC kamu ke exchange atau layanan lokal — Binance P2P, Coins.ph, PDAX, GCrypto (GCash), dan lainnya — jual di sana, lalu withdraw mata uang lokal langsung ke bank atau e-wallet kamu.
 
-1. Buka exchange kamu, misalnya Binance, dan cari alamat deposit USDC. Pastikan network disetel ke Base. Ini penting karena transfer di Base gratis.
-2. Withdraw dari Base account kamu ke alamat deposit tersebut.
-3. Setelah tiba di exchange, withdraw ke rekening bank lokal. Jika exchange mendukung direct bank withdrawal, gunakan itu. Jika tidak, gunakan fitur P2P untuk menjual USDC dan menerima mata uang lokal langsung ke bank.
-
-Detail penting: selalu pilih Base sebagai network saat deposit ke exchange. Memakai network yang salah bisa menyebabkan dana hilang.`
+Detail penting: selalu pilih Base sebagai network saat mengirim USDC. Panduan lengkap berisi video walkthrough dan langkah-langkah untuk setiap layanan.`,
+      readMorePath: '/academy/money/withdraw',
+      readMoreLabel: 'Baca panduan lengkap'
    },
    {
       id: 'how-to-repay',
       question: 'Bagaimana cara membayar pinjaman saya?',
-      answer: `Pembayaran adalah kebalikan dari menerima pinjaman:
+      answer: `Buka layar Bayar — di sana terlihat jumlah pasti dan alamat pembayaran. Kirim USDC ke sana dari wallet, exchange, atau layanan lokal mana pun. Jika belum punya USDC, beli dulu (Binance P2P, Coins.ph, PDAX, GCrypto, dan lainnya) — selalu di network Base.
 
-1. Deposit dari rekening bank lokal ke exchange, misalnya Binance. Gunakan fitur P2P untuk membeli USDC dengan mata uang lokal, atau transfer dari bank jika exchange mendukungnya.
-2. Setelah punya USDC di exchange, withdraw ke Base account kamu. Ambil alamat deposit dari Base wallet dan pastikan network disetel ke Base agar transfer gratis.
-3. Setelah USDC ada di Base account, buka bagian Bayar di app dan ikuti langkah untuk mengirimnya ke pemberi pinjaman.
-
-Selalu bayar sebelum tanggal jatuh tempo. Pembayaran tepat waktu membangun Trust Score dan membuka level kredit yang lebih tinggi.`
+Bayar sebelum tanggal jatuh tempo — pembayaran tepat waktu membangun Trust Score dan membuka level kredit lebih tinggi. Panduan lengkap menjelaskan setiap cara membayar.`,
+      readMorePath: '/academy/money/repay',
+      readMoreLabel: 'Baca panduan lengkap'
    },
    {
       id: 'borrow-below-limit',
@@ -329,9 +313,11 @@ IOU hanya untuk pemberi pinjaman. Peminjam membangun Trust Score dan level kredi
    {
       id: 'how-borrowers-verify',
       question: 'Bagaimana peminjam diverifikasi?',
-      answer: `Peminjam diverifikasi melalui World ID. Ini adalah verifikasi biometrik satu kali yang memastikan setiap peminjam adalah orang sungguhan yang unik, sehingga membantu mencegah akun palsu dan bot.
+      answer: `Setiap peminjam menyelesaikan verifikasi identitas satu kali — foto ID nasional + selfie dengan deteksi duplikat, atau World ID bagi pengguna World App. Keduanya memastikan setiap peminjam adalah orang sungguhan yang unik, sehingga mencegah akun palsu dan bot.
 
-Setiap orang hanya bisa membuat satu akun terverifikasi, sehingga pemberi pinjaman tahu profil peminjam dan riwayat pembayarannya milik orang nyata yang sama. Jika seseorang diblokir, mereka tidak bisa begitu saja kembali dengan akun baru. Satu World ID sama dengan satu orang.`
+Setiap orang hanya bisa memverifikasi satu akun, sehingga profil peminjam dan riwayat pembayaran yang kamu lihat milik satu orang nyata — dan yang diblokir tidak bisa kembali dengan akun baru.`,
+      readMorePath: '/academy/money/verify',
+      readMoreLabel: 'Baca panduan lengkap'
    },
    {
       id: 'how-borrowers-increase-credit-limit',
@@ -376,9 +362,11 @@ USDC ยังส่งได้รวดเร็วทั่วโลก แ�
    {
       id: 'how-to-get-verified',
       question: 'ฉันจะยืนยันตัวตนได้อย่างไร?',
-      answer: `เราใช้ World ID เท่านั้น คุณต้องสแกนดวงตาที่ World ID Orb
+      answer: `การยืนยันตัวตนเป็นการตรวจสอบครั้งเดียวที่รวดเร็ว วิธีที่แนะนำคือ "Verify Your ID" — ถ่ายรูปบัตรประชาชน + เซลฟี่ ใช้เวลาประมาณ 3 นาที และใช้ได้ในประเทศที่รองรับ หากคุณใช้ World App อยู่แล้ว สามารถยืนยันด้วย World ID แทนได้
 
-ดาวน์โหลด World App บนโทรศัพท์ ค้นหาสถานที่ยืนยันใกล้คุณที่ https://world.org/find-orb ไปที่ Orb แล้วทำตามขั้นตอนในแอป หลังจากยืนยันใน World App แล้วกลับมาที่ Moodeng และแตะ "Verify with World ID" เพื่อเชื่อมบัญชี`
+แตะ "Verify Yourself" ในแอปเพื่อเริ่มต้น ส่วนใหญ่เสร็จภายในไม่กี่นาที`,
+      readMorePath: '/academy/money/verify',
+      readMoreLabel: 'อ่านคู่มือฉบับเต็ม'
    }
 ];
 
@@ -386,18 +374,20 @@ const THAI_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
       question: 'ฉันจะแปลงเงินกู้เข้าบัญชีธนาคารท้องถิ่นได้อย่างไร?',
-      answer: `เมื่อได้รับ USDC ในบัญชี Base แล้ว ให้ฝาก USDC เข้า exchange ของคุณ เช่น Binance โดยเลือกเครือข่าย Base จากนั้นถอนเป็นสกุลเงินท้องถิ่นเข้าธนาคาร หาก exchange ไม่มีถอนธนาคารโดยตรง ให้ใช้ P2P เพื่อขาย USDC
+      answer: `ส่ง USDC ของคุณไปยัง exchange หรือบริการท้องถิ่น — Binance P2P, Coins.ph, PDAX, GCrypto (GCash) และอื่น ๆ — ขายที่นั่น แล้วถอนสกุลเงินท้องถิ่นเข้าธนาคารหรือ e-wallet ของคุณโดยตรง
 
-รายละเอียดสำคัญคือเลือก Base เป็นเครือข่ายเสมอ การเลือกผิดเครือข่ายอาจทำให้เงินหายได้`
+รายละเอียดสำคัญ: เลือก Base เป็นเครือข่ายเสมอเมื่อส่ง USDC คู่มือฉบับเต็มมีวิดีโอสาธิตและขั้นตอนของแต่ละบริการ`,
+      readMorePath: '/academy/money/withdraw',
+      readMoreLabel: 'อ่านคู่มือฉบับเต็ม'
    },
    {
       id: 'how-to-repay',
       question: 'ฉันจะชำระคืนเงินกู้ได้อย่างไร?',
-      answer: `การชำระคืนคือกระบวนการย้อนกลับจากการรับเงินกู้
+      answer: `เปิดหน้าชำระเงิน — จะแสดงจำนวนเงินที่ต้องชำระและที่อยู่สำหรับชำระคืน ส่ง USDC ไปที่นั่นจากกระเป๋า, exchange หรือบริการท้องถิ่นใดก็ได้ หากยังไม่มี USDC ให้ซื้อก่อน (Binance P2P, Coins.ph, PDAX, GCrypto และอื่น ๆ) — ใช้เครือข่าย Base เสมอ
 
-ซื้อหรือฝาก USDC ผ่าน exchange ของคุณ จากนั้นถอน USDC ไปยังบัญชี Base ตรวจสอบว่าเลือกเครือข่าย Base เพื่อให้โอนฟรี เมื่อ USDC อยู่ในบัญชี Base แล้ว ไปที่ส่วนชำระในแอปและทำตามขั้นตอนเพื่อส่งให้ผู้ให้กู้
-
-ชำระก่อนวันครบกำหนดเสมอ เพราะการชำระตรงเวลาช่วยเพิ่ม Trust Score และปลดล็อกระดับเครดิตที่สูงขึ้น`
+ชำระก่อนวันครบกำหนด — การชำระตรงเวลาช่วยเพิ่ม Trust Score และปลดล็อกระดับเครดิตที่สูงขึ้น คู่มือฉบับเต็มอธิบายทุกวิธีการชำระ`,
+      readMorePath: '/academy/money/repay',
+      readMoreLabel: 'อ่านคู่มือฉบับเต็ม'
    },
    {
       id: 'borrow-below-limit',
@@ -426,7 +416,11 @@ const THAI_LENDER_FAQS: AccountFAQItem[] = [
    {
       id: 'how-borrowers-verify',
       question: 'ผู้ยืมยืนยันตัวตนอย่างไร?',
-      answer: `ผู้ยืมยืนยันผ่าน World ID ซึ่งเป็นการยืนยันชีวภาพครั้งเดียวเพื่อยืนยันว่าแต่ละคนเป็นบุคคลจริงที่ไม่ซ้ำกัน สิ่งนี้ช่วยป้องกันบัญชีปลอมและบอท`
+      answer: `ผู้ยืมทุกคนผ่านการยืนยันตัวตนครั้งเดียว — ถ่ายรูปบัตรประชาชน + เซลฟี่พร้อมระบบตรวจจับใบหน้าซ้ำ หรือ World ID สำหรับผู้ที่ใช้ World App ทั้งสองวิธียืนยันว่าผู้ยืมแต่ละคนเป็นบุคคลจริงที่ไม่ซ้ำกัน ช่วยป้องกันบัญชีปลอมและบอท
+
+แต่ละคนยืนยันได้เพียงหนึ่งบัญชี ดังนั้นโปรไฟล์และประวัติการชำระที่คุณเห็นเป็นของบุคคลจริงคนเดียวกัน`,
+      readMorePath: '/academy/money/verify',
+      readMoreLabel: 'อ่านคู่มือฉบับเต็ม'
    },
    {
       id: 'how-borrowers-increase-credit-limit',
@@ -467,9 +461,11 @@ USDC cũng chuyển toàn cầu rất nhanh và khi dùng trên Base với Base 
    {
       id: 'how-to-get-verified',
       question: 'Tôi xác minh bằng cách nào?',
-      answer: `Chúng tôi dùng World ID và chỉ chấp nhận phương thức này. Bạn cần quét mắt tại World ID Orb.
+      answer: `Xác minh là một lần kiểm tra danh tính nhanh chóng. Cách được khuyến nghị là "Verify Your ID" — chụp ảnh giấy tờ tùy thân + selfie, mất khoảng 3 phút và áp dụng ở các quốc gia được hỗ trợ. Nếu bạn đã dùng World App, bạn có thể xác minh bằng World ID.
 
-Tải World App trên điện thoại, tìm địa điểm Orb gần bạn tại https://world.org/find-orb, đến Orb và làm theo hướng dẫn trong app. Khi đã xác minh trong World App, quay lại Moodeng và bấm "Verify with World ID" để liên kết tài khoản.`
+Bấm "Verify Yourself" trong app để bắt đầu. Hầu hết hoàn tất trong vài phút.`,
+      readMorePath: '/academy/money/verify',
+      readMoreLabel: 'Đọc hướng dẫn đầy đủ'
    }
 ];
 
@@ -477,18 +473,20 @@ const VIETNAMESE_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
       question: 'Làm sao chuyển khoản vay về tài khoản ngân hàng địa phương?',
-      answer: `Khi bạn nhận USDC trong tài khoản Base, hãy gửi USDC vào sàn của bạn, ví dụ Binance, và nhớ chọn mạng Base. Sau khi USDC đến sàn, rút về ngân hàng địa phương. Nếu sàn không hỗ trợ rút ngân hàng trực tiếp, dùng P2P để bán USDC và nhận nội tệ.
+      answer: `Gửi USDC của bạn đến sàn giao dịch hoặc dịch vụ địa phương — Binance P2P, Coins.ph, PDAX, GCrypto (GCash) và nhiều nơi khác — bán ở đó, rồi rút nội tệ thẳng về ngân hàng hoặc ví điện tử của bạn.
 
-Chi tiết quan trọng: luôn chọn Base khi nạp vào sàn. Chọn sai mạng có thể làm mất tiền.`
+Chi tiết quan trọng: luôn chọn Base làm mạng khi gửi USDC. Hướng dẫn đầy đủ có video minh họa và các bước cho từng dịch vụ.`,
+      readMorePath: '/academy/money/withdraw',
+      readMoreLabel: 'Đọc hướng dẫn đầy đủ'
    },
    {
       id: 'how-to-repay',
       question: 'Tôi trả khoản vay bằng cách nào?',
-      answer: `Việc trả nợ là chiều ngược lại của lúc nhận khoản vay.
+      answer: `Mở màn hình Trả nợ — ở đó hiển thị số tiền chính xác và địa chỉ trả nợ. Gửi USDC đến đó từ bất kỳ ví, sàn giao dịch hoặc dịch vụ địa phương nào. Nếu chưa có USDC, hãy mua trước (Binance P2P, Coins.ph, PDAX, GCrypto và nhiều nơi khác) — luôn dùng mạng Base.
 
-Mua hoặc nạp USDC qua sàn của bạn, sau đó rút USDC về tài khoản Base. Lấy địa chỉ nạp từ ví Base và đảm bảo mạng là Base để chuyển miễn phí. Khi USDC đã ở tài khoản Base, vào phần Trả nợ trong app và làm theo các bước để gửi cho người cho vay.
-
-Luôn trả trước ngày đến hạn. Trả đúng hạn giúp tăng Trust Score và mở khóa hạng tín dụng cao hơn.`
+Trả trước ngày đến hạn — trả đúng hạn giúp tăng Trust Score và mở khóa hạng tín dụng cao hơn. Hướng dẫn đầy đủ mô tả từng cách trả nợ.`,
+      readMorePath: '/academy/money/repay',
+      readMoreLabel: 'Đọc hướng dẫn đầy đủ'
    },
    {
       id: 'borrow-below-limit',
@@ -517,7 +515,11 @@ Hiện tại IOU chỉ là điểm. Về sau chúng tôi sẽ ra mắt token cũ
    {
       id: 'how-borrowers-verify',
       question: 'Người vay xác minh bằng cách nào?',
-      answer: `Người vay xác minh qua World ID. Đây là xác minh sinh trắc học một lần để xác nhận mỗi người vay là một người thật duy nhất, giúp ngăn tài khoản giả và bot.`
+      answer: `Mỗi người vay hoàn thành xác minh danh tính một lần — chụp ảnh giấy tờ tùy thân + selfie với hệ thống phát hiện trùng khuôn mặt, hoặc World ID cho người dùng World App. Cả hai cách đều xác nhận mỗi người vay là một người thật duy nhất, giúp ngăn tài khoản giả và bot.
+
+Mỗi người chỉ xác minh được một tài khoản, nên hồ sơ và lịch sử trả nợ bạn thấy thuộc về đúng một người thật.`,
+      readMorePath: '/academy/money/verify',
+      readMoreLabel: 'Đọc hướng dẫn đầy đủ'
    },
    {
       id: 'how-borrowers-increase-credit-limit',
