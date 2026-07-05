@@ -201,6 +201,8 @@
   .mini .big { font-family: var(--display); font-size: 26px; color: var(--heading); line-height: 1.1; margin-top: 4px; }
   .mini .tiny { font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-top: 8px; }
   .mini .strike { text-decoration: line-through; color: #B9AECB; }
+  .tile-obj { position: absolute; pointer-events: none; z-index: 1; left: 50%; transform: translateX(-50%); filter: drop-shadow(0 10px 14px rgba(28,5,61,0.2)); }
+  .tile-panel.dark2, .tile-panel.lav { position: relative; }
   .tile-panel.dark2 { background: radial-gradient(120% 100% at 30% 0%, #2B0F55 0%, var(--deep) 100%); border-radius: 24px; padding: 34px 22px; display: grid; place-items: center; }
   .tile-panel.lav { background: radial-gradient(120% 100% at 30% 0%, #F2E6FE 0%, #E4CFFB 100%); border-radius: 24px; padding: 34px 22px; display: grid; place-items: center; }
   .team { margin-top: 28px; display: grid; gap: 16px; }
@@ -285,10 +287,11 @@
       <p class="chap-k">Where it started</p>
       <h2 class="tile-h">We watched the <span class="accent">sharks</span> work.</h2>
       <p class="tile-cap">Around here everyone knows the deal: borrow small, owe big by next week — and the number keeps growing until the collector stops coming. We watched it eat people we know. Not statistics. <b>Neighbors.</b></p>
-      <!-- ASSET SLOT (George): graphic #1 — the 5-6 deal / collector scene -->
+      <!-- George's asset: loan-shark wrapped around chained coins (2026-07-06) -->
       <div class="stage">
         <div class="tile-panel dark2">
-          <div class="mini">
+          <img class="tile-obj" src="/landing/assets/about/shark-chains.png" alt="" style="height:82px; top:2px" loading="lazy" />
+          <div class="mini" style="padding-top:46px">
             <div class="k">The corner deal</div>
             <div class="big">Borrow ₱1,000</div>
             <div class="tiny">owe ₱1,200 next week — <b>and it grows every week you can’t pay</b></div>
@@ -304,10 +307,11 @@
       <p class="chap-k">Then came the apps</p>
       <h2 class="tile-h">The “better way” was <span class="accent">worse.</span></h2>
       <p class="tile-cap">Loan apps promised to replace the sharks. Instead they scraped your contacts and shamed your family when you were late. Whole communities online exist just for the victims. And the pricing trick: <b>“0% interest”</b> in the ad — with the real cost hidden as a <b>“service fee”</b>, so the law’s interest caps don’t apply.</p>
-      <!-- ASSET SLOT (George): graphic #2 — phone with harassment notifications / the service-fee price tag -->
+      <!-- George's asset: price tag in a burglar mask — 'same shark, new clothes' (2026-07-06) -->
       <div class="stage right">
         <div class="tile-panel lav">
-          <div class="mini">
+          <img class="tile-obj" src="/landing/assets/about/masked-tag.png" alt="" style="height:78px; top:4px" loading="lazy" />
+          <div class="mini" style="padding-top:44px">
             <div class="k">The ad said</div>
             <div class="big">0% interest!</div>
             <div class="tiny">the receipt said: <b>+ ₱500 “service fee”</b> — same shark, new clothes</div>
@@ -323,10 +327,11 @@
       <p class="chap-k">The turn</p>
       <h2 class="tile-h">Then money itself got <span class="accent">better.</span></h2>
       <p class="tile-cap">Digital dollars (USDC) changed the math: money that moves anywhere, in minutes, for basically nothing. No banks in the middle taking a cut — which means a loan service doesn’t <b>need</b> fees to survive. The excuse every “service fee” hid behind was gone.</p>
-      <!-- ASSET SLOT (George): graphic #3 — digital dollar transfer / zero-fee moment -->
+      <!-- George's asset: coin flying whole through the arch — nothing skimmed (2026-07-06) -->
       <div class="stage">
         <div class="tile-panel lav">
-          <div class="mini">
+          <img class="tile-obj" src="/landing/assets/about/clean-transfer.png" alt="" style="height:86px; top:0" loading="lazy" />
+          <div class="mini" style="padding-top:48px">
             <div class="k">Sending money, now</div>
             <div class="big">$15 → $15</div>
             <div class="tiny">what leaves is what arrives. fee: <b>$0</b></div>
@@ -357,14 +362,14 @@
       <p class="chap-k">The humans</p>
       <h2 class="tile-h">Real people work <span class="accent">here, too.</span></h2>
       <p class="tile-cap">Message us and one of us answers — usually the same day.</p>
-      <!-- TODO(George): real photos + bio lines to replace the stand-in hippos & draft bios -->
+      <!-- TODO(George): swap in real photos + final bio lines when ready (hippo personas by George, 2026-07-06) -->
       <div class="team">
         <div class="team-card">
-          <img src="/landing/assets/hippos/thumb-up-right.png" alt="" loading="lazy" />
+          <img src="/landing/assets/about/team-george.png" alt="" loading="lazy" />
           <div><b>George</b><span>Builds Moodeng. Reads every support message himself.</span></div>
         </div>
         <div class="team-card">
-          <img src="/landing/assets/hippos/community.png" alt="" loading="lazy" />
+          <img src="/landing/assets/about/team-emma.png" alt="" loading="lazy" />
           <div><b>Emma</b><span>Makes Moodeng speak like a person, not a bank.</span></div>
         </div>
       </div>
