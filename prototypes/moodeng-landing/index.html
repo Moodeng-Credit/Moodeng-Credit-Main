@@ -580,6 +580,16 @@
     position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
     height: 110px; width: auto; max-width: none;
   }
+  /* full-scene cover art (George's generated cards, 2026-07-05): art carries its own
+     baked logo badge, so the CSS title/clouds/badge go; scale hides baked corner radius */
+  .tips-card.has-art .cover { height: auto; aspect-ratio: 700 / 498; background: #DDEFF8; }
+  .tips-card.has-art .cover .ct,
+  .tips-card.has-art .cover .cl,
+  .tips-card.has-art .cover .badge { display: none; }
+  .tips-card.has-art .cover .art {
+    position: absolute; inset: 0; left: 0; bottom: auto;
+    width: 100%; height: 100%; object-fit: cover; transform: scale(1.05);
+  }
   .tips-card .body { padding: 16px 18px 18px; }
   .tips-card .t { margin: 0 0 6px; font-size: 17px; font-weight: 800; color: var(--heading); line-height: 1.32; }
   .tips-card .dek {
@@ -1021,14 +1031,14 @@
         <a class="tips-more" href="#">See all +</a>
       </div>
       <div class="tips-list">
-        <a class="tips-card" href="#">
+        <a class="tips-card has-art" href="#">
           <span class="cover">
             <img class="cl c1" src="assets/clouds/cloud-1.svg" alt="" />
             <img class="cl c2" src="assets/clouds/cloud-2.svg" alt="" />
             <img class="cl c3" src="assets/clouds/cloud.svg" alt="" />
             <p class="ct"><b>Emergency expense checklist</b><small>what to ask before you say yes</small></p>
             <span class="badge"><img src="assets/brand/moodenglogo.png" alt="" /></span>
-            <!-- George's cover graphic: <img class="art" src="..." alt="" /> -->
+            <img class="art" src="assets/tips/tip-1.jpg" alt="" />
           </span>
           <span class="body">
             <p class="t">Emergency expense checklist: what to ask before you borrow</p>
@@ -1040,14 +1050,14 @@
             <span class="tags"><span># Money basics</span></span>
           </span>
         </a>
-        <a class="tips-card" href="#">
+        <a class="tips-card has-art" href="#">
           <span class="cover">
             <img class="cl c1" src="assets/clouds/cloud-2.svg" alt="" />
             <img class="cl c2" src="assets/clouds/cloud-1.svg" alt="" />
             <img class="cl c3" src="assets/clouds/cloud.svg" alt="" />
             <p class="ct"><b>Stretching to payday</b><small>a calm plan for the tight week</small></p>
             <span class="badge"><img src="assets/brand/moodenglogo.png" alt="" /></span>
-            <!-- George's cover graphic: <img class="art" src="..." alt="" /> -->
+            <img class="art" src="assets/tips/tip-2.jpg" alt="" />
           </span>
           <span class="body">
             <p class="t">Stretching to payday: a calm plan for the tight week</p>
@@ -1059,14 +1069,14 @@
             <span class="tags"><span># Money basics</span><span># Payday gap</span></span>
           </span>
         </a>
-        <a class="tips-card" href="#">
+        <a class="tips-card has-art" href="#">
           <span class="cover">
             <img class="cl c1" src="assets/clouds/cloud-3.svg" alt="" />
             <img class="cl c2" src="assets/clouds/cloud-2.svg" alt="" />
             <img class="cl c3" src="assets/clouds/cloud.svg" alt="" />
             <p class="ct"><b>From $15 to $60</b><small>how your limit grows</small></p>
             <span class="badge"><img src="assets/brand/moodenglogo.png" alt="" /></span>
-            <!-- George's cover graphic: <img class="art" src="..." alt="" /> -->
+            <img class="art" src="assets/tips/tip-3.jpg" alt="" />
           </span>
           <span class="body">
             <p class="t">From $15 to $60: how your limit grows</p>
