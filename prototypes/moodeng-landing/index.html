@@ -100,9 +100,22 @@
   }
   @media (prefers-reduced-motion: reduce) { .cloud, .hippo-float { animation: none !important; } }
 
-  .brand { display: flex; align-items: center; gap: 8px; margin-bottom: 22px; }
-  .brand img { height: 26px; width: auto; }
-  .brand b { font-family: var(--display); font-size: 19px; color: var(--heading); letter-spacing: -0.01em; }
+  /* minimal Klarna-style bar: menu pill · wordmark · account circle */
+  .site-head {
+    position: sticky; top: 0; z-index: 50;
+    background: #fff; border-bottom: 1px solid rgba(4,0,51,0.07);
+  }
+  .site-head .wrap { display: flex; align-items: center; gap: 14px; padding-top: 8px; padding-bottom: 8px; }
+  .menu-pill {
+    width: 62px; height: 44px; border: 0; cursor: pointer;
+    border-radius: var(--pill); background: #EFDFFD;
+    display: grid; place-items: center;
+  }
+  .head-word { font-family: var(--display); font-size: 23px; color: var(--heading); letter-spacing: -0.01em; margin-right: auto; }
+  .acct {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--heading); display: grid; place-items: center;
+  }
 
   .hero-h {
     font-family: var(--display);
@@ -646,14 +659,28 @@
   <!-- ===================== HERO (Klarna anatomy, Moodeng world) =====================
        Video = PLACEHOLDER composite (tracked overlay, stutters) — swap assets/hero/
        hero-loop.mp4 + hero-poster.jpg when George's final Veo take lands. -->
+  <nav class="site-head">
+    <div class="wrap">
+      <button class="menu-pill" aria-label="Menu" type="button">
+        <svg width="20" height="14" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1 1h18M1 7h18M1 13h18" stroke="#040033" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <b class="head-word">Moodeng</b>
+      <!-- TODO(George): point at the real app URL before shipping -->
+      <a class="acct" href="#" aria-label="Open the app">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="9" cy="5.4" r="3.4" fill="#fff"/>
+          <path d="M2.2 16.2c1-3.1 3.7-4.7 6.8-4.7s5.8 1.6 6.8 4.7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </a>
+    </div>
+  </nav>
+
   <header class="hero-top">
     <img class="cloud c1" src="assets/clouds/cloud-1.svg" alt="" />
     <img class="cloud c3" src="assets/clouds/cloud-3.svg" alt="" />
     <div class="wrap">
-      <div class="brand">
-        <img src="assets/brand/moodeng-logo.png" alt="" />
-        <b>Moodeng</b>
-      </div>
       <div class="hero-video">
         <video id="heroVid" autoplay muted loop playsinline preload="none" poster="assets/hero/hero-poster.jpg" aria-label="A phone with a small Moodeng loan on screen, hanging from a belt with a plush hippo charm"></video>
       </div>
