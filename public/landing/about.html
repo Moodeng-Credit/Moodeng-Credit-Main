@@ -211,7 +211,12 @@
     background: #fff; border: 1px solid var(--lavender-border); border-radius: 20px;
     padding: 18px 18px; box-shadow: 0 12px 28px rgba(96,16,210,0.10);
   }
-  .team-card img { width: 64px; height: 64px; object-fit: contain; }
+  /* real photo = primary avatar; hippo persona = little buddy peeking over the corner */
+  .tc-ava { position: relative; flex: 0 0 auto; margin-right: 8px; }
+  .tc-photo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2.5px solid #E4CFFB; display: block; }
+  .tc-buddy { position: absolute; height: 38px; right: -13px; bottom: -7px; filter: drop-shadow(0 3px 6px rgba(28,5,61,0.22)); }
+  .tc-li { display: inline-block; margin-top: 6px; font-size: 12.5px; font-weight: 700; color: var(--purple); text-decoration: none; }
+  .tc-li:hover { text-decoration: underline; }
   .team-card b { font-family: var(--display); font-size: 18px; color: var(--heading); display: block; }
   .team-card span { font-size: 13.5px; color: var(--text-muted); line-height: 1.45; display: block; margin-top: 3px; }
 
@@ -290,8 +295,8 @@
       <!-- George's asset: loan-shark wrapped around chained coins (2026-07-06) -->
       <div class="stage">
         <div class="tile-panel dark2">
-          <img class="tile-obj" src="/landing/assets/about/shark-chains.png" alt="" style="height:82px; top:2px" loading="lazy" />
-          <div class="mini" style="padding-top:46px">
+          <img class="tile-obj" src="/landing/assets/about/shark-chains.png" alt="" style="height:56px; top:2px" loading="lazy" />
+          <div class="mini" style="padding-top:36px">
             <div class="k">The corner deal</div>
             <div class="big">Borrow ₱1,000</div>
             <div class="tiny">owe ₱1,200 next week — <b>and it grows every week you can’t pay</b></div>
@@ -310,8 +315,8 @@
       <!-- George's asset: price tag in a burglar mask — 'same shark, new clothes' (2026-07-06) -->
       <div class="stage right">
         <div class="tile-panel lav">
-          <img class="tile-obj" src="/landing/assets/about/masked-tag.png" alt="" style="height:78px; top:4px" loading="lazy" />
-          <div class="mini" style="padding-top:44px">
+          <img class="tile-obj" src="/landing/assets/about/masked-tag.png" alt="" style="height:54px; top:4px" loading="lazy" />
+          <div class="mini" style="padding-top:36px">
             <div class="k">The ad said</div>
             <div class="big">0% interest!</div>
             <div class="tiny">the receipt said: <b>+ ₱500 “service fee”</b> — same shark, new clothes</div>
@@ -330,8 +335,8 @@
       <!-- George's asset: coin flying whole through the arch — nothing skimmed (2026-07-06) -->
       <div class="stage">
         <div class="tile-panel lav">
-          <img class="tile-obj" src="/landing/assets/about/clean-transfer.png" alt="" style="height:86px; top:0" loading="lazy" />
-          <div class="mini" style="padding-top:48px">
+          <img class="tile-obj" src="/landing/assets/about/clean-transfer.png" alt="" style="height:56px; top:2px" loading="lazy" />
+          <div class="mini" style="padding-top:36px">
             <div class="k">Sending money, now</div>
             <div class="big">$15 → $15</div>
             <div class="tiny">what leaves is what arrives. fee: <b>$0</b></div>
@@ -362,15 +367,21 @@
       <p class="chap-k">The humans</p>
       <h2 class="tile-h">Real people work <span class="accent">here, too.</span></h2>
       <p class="tile-cap">Message us and one of us answers — usually the same day.</p>
-      <!-- TODO(George): swap in real photos + final bio lines when ready (hippo personas by George, 2026-07-06) -->
+      <!-- TODO(George): final bio lines when ready. Photos = the app's own /team assets (public/team/) -->
       <div class="team">
         <div class="team-card">
-          <img src="/landing/assets/about/team-george.png" alt="" loading="lazy" />
-          <div><b>George</b><span>Builds Moodeng. Reads every support message himself.</span></div>
+          <div class="tc-ava">
+            <img class="tc-photo" src="/team/george.jpeg" alt="George" loading="lazy" />
+            <img class="tc-buddy" src="/landing/assets/about/team-george.png" alt="" loading="lazy" />
+          </div>
+          <div><b>George</b><span>Builds Moodeng. Reads every support message himself.</span><a class="tc-li" href="https://www.linkedin.com/in/george-l-25a4b844/" target="_blank" rel="noreferrer">LinkedIn ↗</a></div>
         </div>
         <div class="team-card">
-          <img src="/landing/assets/about/team-emma.png" alt="" loading="lazy" />
-          <div><b>Emma</b><span>Makes Moodeng speak like a person, not a bank.</span></div>
+          <div class="tc-ava">
+            <img class="tc-photo" src="/team/emma-moodeng.jpeg" alt="Emma" loading="lazy" />
+            <img class="tc-buddy" src="/landing/assets/about/team-emma.png" alt="" loading="lazy" />
+          </div>
+          <div><b>Emma</b><span>Makes Moodeng speak like a person, not a bank.</span><a class="tc-li" href="https://www.linkedin.com/in/cincharoensak/" target="_blank" rel="noreferrer">LinkedIn ↗</a></div>
         </div>
       </div>
     </div>
