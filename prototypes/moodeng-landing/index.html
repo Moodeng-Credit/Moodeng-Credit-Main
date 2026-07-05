@@ -485,23 +485,36 @@
     font-size: 13px; font-weight: 800; padding: 11px 20px; border-radius: var(--pill);
   }
 
-  /* ---------- BLOG STRIP (real posts from /blogs) ---------- */
+  /* ---------- BLOG STRIP (real posts from /blogs — MAKE bottom-section card anatomy) ---------- */
   .sec-blog { background: #FBF8FF; padding: 56px 0 60px; }
   .sec-blog .label { color: var(--purple); }
-  .blog-list { display: flex; flex-direction: column; gap: 10px; margin-top: 22px; }
+  .blog-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+  .blog-more { flex: 0 0 auto; font-size: 14px; font-weight: 800; color: #6010D2; text-decoration: none; padding-bottom: 4px; }
+  .blog-list { display: flex; flex-direction: column; gap: 16px; margin-top: 22px; }
   .blog-card {
-    display: flex; align-items: center; gap: 14px; text-decoration: none;
-    background: #fff; border: 1px solid #EFE6FB; border-radius: 18px; padding: 12px 16px 12px 12px;
-    box-shadow: 0 2px 10px rgba(96,16,210,0.05);
+    display: block; text-decoration: none; background: #fff; border-radius: 20px; overflow: hidden;
+    border: 1px solid #EFE6FB; box-shadow: 0 4px 16px rgba(96,16,210,0.06);
   }
-  .blog-card .thumb {
-    width: 64px; height: 64px; flex: 0 0 64px; border-radius: 14px;
-    background: #F3E8FF; object-fit: contain; padding: 6px; box-sizing: border-box;
+  .blog-card .cover {
+    height: 170px; background: linear-gradient(180deg, #E9DAFB 0%, #D5BCF8 100%);
+    display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
   }
-  .blog-card .cat { font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #6010D2; }
-  .blog-card .t { margin: 4px 0 3px; font-size: 15px; font-weight: 800; color: var(--heading); line-height: 1.3; }
-  .blog-card .rt { font-size: 12px; color: var(--text-muted); font-weight: 600; }
-  .blog-more { display: inline-block; margin-top: 18px; font-size: 14px; font-weight: 800; color: #6010D2; text-decoration: none; }
+  .blog-card .cover img { width: 100%; height: 88%; object-fit: contain; object-position: bottom; }
+  .blog-card .body { padding: 16px 18px 18px; }
+  .blog-card .t { margin: 0 0 6px; font-size: 17px; font-weight: 800; color: var(--heading); line-height: 1.32; }
+  .blog-card .dek {
+    margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-muted);
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .blog-card .byline { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+  .blog-card .byline img { width: 26px; height: 26px; border-radius: 50%; background: #F3E8FF; object-fit: contain; }
+  .blog-card .byline .who { font-size: 12.5px; color: var(--text-muted); font-weight: 600; line-height: 1.35; }
+  .blog-card .byline .who b { display: block; color: var(--heading); font-weight: 800; }
+  .blog-card .tags { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .blog-card .tags span {
+    background: #F3E8FF; color: #6010D2; font-size: 11.5px; font-weight: 700;
+    padding: 5px 11px; border-radius: var(--pill);
+  }
 
   /* ---------- FAQ (native details/summary, zero JS) ---------- */
   .sec-faq { background: var(--surface); padding: 56px 0 62px; }
@@ -886,35 +899,51 @@
   <!-- ============= BLOG STRIP (REAL posts — slugs live at /blogs on the app) ============= -->
   <section class="sec-blog">
     <div class="wrap reveal">
-      <p class="label">Read more</p>
-      <h3 class="tile-h">Why we built it this <span class="accent">way.</span></h3>
+      <div class="blog-head">
+        <div>
+          <p class="label">Read more</p>
+          <h3 class="tile-h">Why we built it this <span class="accent">way.</span></h3>
+        </div>
+        <a class="blog-more" href="/blogs">See all +</a>
+      </div>
       <div class="blog-list">
         <a class="blog-card" href="/blogs/first-credit-record-should-not-belong-to-a-loan-shark">
-          <img class="thumb" src="assets/blog/journal-hippo-no-eyebrows.png" alt="" />
-          <span>
-            <span class="cat">Shadow systems</span>
+          <span class="cover"><img src="assets/blog/journal-cover.webp" alt="" /></span>
+          <span class="body">
             <p class="t">Your first credit record should not belong to a loan shark</p>
-            <span class="rt">11 min read</span>
+            <p class="dek">The app that says yes first gets to write your financial story. In the Philippines, that app is often unregistered, run from overseas, and designed around your contacts, not your creditworthiness.</p>
+            <span class="byline">
+              <img src="assets/brand/moodenglogo.png" alt="" loading="lazy" />
+              <span class="who"><b>Moodeng</b>May 2026 · 11 min read</span>
+            </span>
+            <span class="tags"><span># Shadow systems</span></span>
           </span>
         </a>
         <a class="blog-card" href="/blogs/contact-list-collateral-and-the-shame-tax">
-          <img class="thumb" src="assets/blog/community.png" alt="" />
-          <span>
-            <span class="cat">Borrower dignity</span>
+          <span class="cover"><img src="assets/blog/community-cover.webp" alt="" /></span>
+          <span class="body">
             <p class="t">Contact-list collateral and the shame tax</p>
-            <span class="rt">7 min read</span>
+            <p class="dek">Loan sharks do not need a car title when they can threaten your mother, coworkers, customers, or group chat.</p>
+            <span class="byline">
+              <img src="assets/brand/moodenglogo.png" alt="" loading="lazy" />
+              <span class="who"><b>Moodeng</b>May 18, 2026 · 7 min read</span>
+            </span>
+            <span class="tags"><span># Borrower dignity</span></span>
           </span>
         </a>
         <a class="blog-card" href="/blogs/small-loans-are-infrastructure">
-          <img class="thumb" src="assets/blog/hippo-with-id-card.png" alt="" />
-          <span>
-            <span class="cat">Market view</span>
+          <span class="cover"><img src="assets/blog/idcard-cover.webp" alt="" /></span>
+          <span class="body">
             <p class="t">$15 loans are infrastructure, not a gimmick</p>
-            <span class="rt">6 min read</span>
+            <p class="dek">The amount is small because the missing rail is small: identity, settlement, borrower-owned history, and lender confidence at the size banks refuse to touch.</p>
+            <span class="byline">
+              <img src="assets/brand/moodenglogo.png" alt="" loading="lazy" />
+              <span class="who"><b>Moodeng</b>May 18, 2026 · 6 min read</span>
+            </span>
+            <span class="tags"><span># Market view</span></span>
           </span>
         </a>
       </div>
-      <a class="blog-more" href="/blogs">All posts →</a>
     </div>
   </section>
 
