@@ -559,7 +559,7 @@
   .tips-head .tile-h { max-width: 24ch; }
   .tips-more { flex: 0 0 auto; font-size: 14px; font-weight: 800; color: #6010D2; text-decoration: none; padding-top: 8px; }
   .tips-list {
-    display: flex; gap: 14px; margin-top: 24px;
+    display: flex; align-items: flex-start; gap: 14px; margin-top: 24px;
     overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
     scrollbar-width: none; padding: 6px 2px 12px;
   }
@@ -594,16 +594,9 @@
     position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
     height: 110px; width: auto; max-width: none;
   }
-  /* full-scene cover art (George's generated cards, 2026-07-05): art carries its own
-     baked logo badge, so the CSS title/clouds/badge go; scale hides baked corner radius */
-  .tips-card.has-art .cover { height: auto; aspect-ratio: 700 / 498; background: #DDEFF8; }
-  .tips-card.has-art .cover .ct,
-  .tips-card.has-art .cover .cl,
-  .tips-card.has-art .cover .badge { display: none; }
-  .tips-card.has-art .cover .art {
-    position: absolute; inset: 0; left: 0; bottom: auto;
-    width: 100%; height: 100%; object-fit: cover; transform: scale(1.05);
-  }
+  /* George's cards ARE the design (2026-07-05: "you put text on top of it, weird") —
+     the full generated card ships as one image, no HTML text re-rendered over/under it */
+  .tips-card .card-img { display: block; width: 100%; height: auto; }
   .tips-card .body { padding: 16px 18px 18px; }
   .tips-card .t { margin: 0 0 6px; font-size: 17px; font-weight: 800; color: var(--heading); line-height: 1.32; }
   .tips-card .dek {
@@ -1052,62 +1045,14 @@
         <a class="tips-more" href="#">See all +</a>
       </div>
       <div class="tips-list">
-        <a class="tips-card has-art" href="#">
-          <span class="cover">
-            <img class="cl c1" src="assets/clouds/cloud-1.svg" alt="" />
-            <img class="cl c2" src="assets/clouds/cloud-2.svg" alt="" />
-            <img class="cl c3" src="assets/clouds/cloud.svg" alt="" />
-            <p class="ct"><b>Emergency expense checklist</b><small>what to ask before you say yes</small></p>
-            <span class="badge"><img src="assets/brand/moodenglogo.png" alt="" /></span>
-            <img class="art" src="assets/tips/tip-1.jpg" alt="" />
-          </span>
-          <span class="body">
-            <p class="t">Emergency expense checklist: what to ask before you borrow</p>
-            <p class="dek">Five quick questions that tell you whether a loan will help this week or hurt next month.</p>
-            <span class="byline">
-              <img src="assets/brand/moodenglogo.png" alt="" />
-              <span class="who"><b>Moodeng</b>Jul 2026 · 4 min read</span>
-            </span>
-            <span class="tags"><span># Money basics</span></span>
-          </span>
+        <a class="tips-card" href="#">
+          <img class="card-img" src="assets/tips/tip-1-card.jpg" alt="Emergency expense checklist: what to ask before you borrow — Moodeng, Jul 2026, 4 min read" />
         </a>
-        <a class="tips-card has-art" href="#">
-          <span class="cover">
-            <img class="cl c1" src="assets/clouds/cloud-2.svg" alt="" />
-            <img class="cl c2" src="assets/clouds/cloud-1.svg" alt="" />
-            <img class="cl c3" src="assets/clouds/cloud.svg" alt="" />
-            <p class="ct"><b>Stretching to payday</b><small>a calm plan for the tight week</small></p>
-            <span class="badge"><img src="assets/brand/moodenglogo.png" alt="" /></span>
-            <img class="art" src="assets/tips/tip-2.jpg" alt="" />
-          </span>
-          <span class="body">
-            <p class="t">Stretching to payday: a calm plan for the tight week</p>
-            <p class="dek">A practical way to split what’s left between food, fare, and load — without borrowing more than you need.</p>
-            <span class="byline">
-              <img src="assets/brand/moodenglogo.png" alt="" />
-              <span class="who"><b>Moodeng</b>Jul 2026 · 5 min read</span>
-            </span>
-            <span class="tags"><span># Money basics</span><span># Payday gap</span></span>
-          </span>
+        <a class="tips-card" href="#">
+          <img class="card-img" src="assets/tips/tip-2-card.jpg" alt="Stretching to payday: a calm plan for the tight week — Moodeng, Jul 2026, 5 min read" />
         </a>
-        <a class="tips-card has-art" href="#">
-          <span class="cover">
-            <img class="cl c1" src="assets/clouds/cloud-3.svg" alt="" />
-            <img class="cl c2" src="assets/clouds/cloud-2.svg" alt="" />
-            <img class="cl c3" src="assets/clouds/cloud.svg" alt="" />
-            <p class="ct"><b>From $15 to $60</b><small>how your limit grows</small></p>
-            <span class="badge"><img src="assets/brand/moodenglogo.png" alt="" /></span>
-            <img class="art" src="assets/tips/tip-3.jpg" alt="" />
-          </span>
-          <span class="body">
-            <p class="t">From $15 to $60: how your limit grows</p>
-            <p class="dek">Every on-time repayment raises what you can borrow next time. The full ladder, step by step.</p>
-            <span class="byline">
-              <img src="assets/brand/moodenglogo.png" alt="" />
-              <span class="who"><b>Moodeng</b>Jul 2026 · 3 min read</span>
-            </span>
-            <span class="tags"><span># Level up</span></span>
-          </span>
+        <a class="tips-card" href="#">
+          <img class="card-img" src="assets/tips/tip-3-card.jpg" alt="From $15 to $60: how your limit grows — Moodeng, Jul 2026, 3 min read" />
         </a>
       </div>
       <div class="tips-dots" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
