@@ -1,20 +1,22 @@
-# Moodeng Landing — prototype
+# Moodeng Landing — prototype workshop
 
-Self-contained landing page prototype. See [PLAN.md](PLAN.md) for the full design/copy direction (trust spine, rejected copy, moment-card spec, peso decisions).
+⚠️ **The live page moved to [`public/landing/index.html`](../../public/landing/index.html)** — it deploys with the app and is served at `moodeng.app/` via the root route in `vercel.json`. Iterate on THAT file. This directory keeps the plan, drafts, and tooling.
+
+See [PLAN.md](PLAN.md) for the full design/copy direction (trust spine, rejected copy, moment-card spec, peso decisions).
 
 ## How to run
 
 Static, no build step:
 
 ```bash
-python3 -m http.server 4322 --directory .
-# then open http://localhost:4322
+python3 -m http.server 4322 --directory public   # from repo root
+# then open http://localhost:4322/landing/
 ```
 
-(A `landing-prototype` config also exists in `.claude/launch.json` for the preview panel.)
+(The `landing-prototype` config in `.claude/launch.json` does the same for the preview panel. The page is also visible on the app dev server at `localhost:3000/landing/index.html`.)
 
-- `index.html` — the **working / current** version. This is what gets iterated on.
-- `assets/` — hippos (PNGs), clouds (SVGs from MAKE), brand logos.
+- `../../public/landing/index.html` — the **working / current** version. This is what gets iterated on.
+- `../../public/landing/assets/` — hippos, clouds, brand logos, icons, hero video, tips cards.
 
 ## Named drafts (so we never lose a version we liked)
 

@@ -1,19 +1,12 @@
 {
-  "headers": [
+  "routes": [
+    { "src": "^/$", "dest": "/landing/index.html" },
     {
-      "source": "/assets/(.*)\\.wasm",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/wasm"
-        }
-      ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+      "src": "^/assets/(.*)\\.wasm$",
+      "headers": { "Content-Type": "application/wasm" },
+      "continue": true
+    },
+    { "handle": "filesystem" },
+    { "src": "^/.*$", "dest": "/index.html" }
   ]
 }
