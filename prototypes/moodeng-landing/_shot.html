@@ -1,0 +1,37 @@
+<!doctype html><meta charset="utf-8">
+<style>html{overflow:hidden}html,body{margin:0;background:#fff;display:flex;justify-content:center}</style>
+<div id="clip" style="width:375px;overflow:hidden;position:relative">
+  <iframe id="f" src="index.html" style="width:375px;height:6000px;border:0;display:block"></iframe>
+</div>
+<script>
+  const f = document.getElementById('f');
+  f.onload = () => {
+    const d = f.contentDocument;
+    f.style.height = (d.documentElement.scrollHeight + 50) + 'px';
+    d.documentElement.style.overflow = 'hidden';
+    const params = new URLSearchParams(location.search);
+    let s;
+    if (params.get('mode') === 'phone') {
+      // hero request card as a flat app screen (for compositing onto photo mockups)
+      s = d.querySelector('header.hero .phone');
+      s.classList.remove('has-obj');
+      s.style.transform = 'none';
+      s.style.boxShadow = 'none';
+      s.querySelector('.card-obj').style.display = 'none';
+      s.querySelector('.inner').classList.remove('pad-obj');
+    } else {
+      s = d.querySelector(params.get('sel') || '.sec-unlock');
+    }
+    const r = s.getBoundingClientRect();
+    const clip = document.getElementById('clip');
+    clip.style.height = Math.ceil(r.height) + 'px';
+    if (params.get('mode') === 'phone') {
+      clip.style.position = 'fixed';
+      clip.style.left = '0'; clip.style.top = '0';
+      clip.style.width = Math.ceil(r.width) + 'px';
+      f.style.marginLeft = (-Math.floor(r.left)) + 'px';
+    }
+    f.style.marginTop = (-Math.floor(r.top)) + 'px';
+    document.title = 'H=' + Math.ceil(r.height) + ' W=' + Math.ceil(r.width);
+  };
+</script>
