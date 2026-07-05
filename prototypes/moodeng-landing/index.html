@@ -485,36 +485,68 @@
     font-size: 13px; font-weight: 800; padding: 11px 20px; border-radius: var(--pill);
   }
 
-  /* ---------- BLOG STRIP (real posts from /blogs — MAKE bottom-section card anatomy) ---------- */
-  .sec-blog { background: #FBF8FF; padding: 56px 0 60px; }
-  .sec-blog .label { color: var(--purple); }
-  .blog-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
-  .blog-more { flex: 0 0 auto; font-size: 14px; font-weight: 800; color: #6010D2; text-decoration: none; padding-bottom: 4px; }
-  .blog-list { display: flex; flex-direction: column; gap: 16px; margin-top: 22px; }
-  .blog-card {
-    display: block; text-decoration: none; background: #fff; border-radius: 20px; overflow: hidden;
-    border: 1px solid #EFE6FB; box-shadow: 0 4px 16px rgba(96,16,210,0.06);
+  /* ---------- TIPS CAROUSEL — direct copy of MAKE's bottom section, Moodeng skin ----------
+     MAKE mobile anatomy: header (title left, "See all +" right) → swipe carousel, one card
+     + next peeking → card = sky cover (title & sub baked in, logo badge top-right,
+     illustration center) → white body (title, 2-line excerpt, byline, hashtag chips) → dots. */
+  .sec-tips { background: #FBF8FF; padding: 56px 0 60px; }
+  .tips-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .tips-head .tile-h { max-width: 24ch; }
+  .tips-more { flex: 0 0 auto; font-size: 14px; font-weight: 800; color: #6010D2; text-decoration: none; padding-top: 8px; }
+  .tips-list {
+    display: flex; gap: 14px; margin-top: 24px;
+    overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; padding: 6px 2px 12px;
   }
-  .blog-card .cover {
-    height: 170px; background: linear-gradient(180deg, #E9DAFB 0%, #D5BCF8 100%);
-    display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+  .tips-list::-webkit-scrollbar { display: none; }
+  .tips-card {
+    flex: 0 0 82%; scroll-snap-align: center;
+    display: block; text-decoration: none; background: #fff; border-radius: 24px; overflow: hidden;
+    box-shadow: 0 8px 26px rgba(96,16,210,0.10);
   }
-  .blog-card .cover img { width: 100%; height: 88%; object-fit: contain; object-position: bottom; }
-  .blog-card .body { padding: 16px 18px 18px; }
-  .blog-card .t { margin: 0 0 6px; font-size: 17px; font-weight: 800; color: var(--heading); line-height: 1.32; }
-  .blog-card .dek {
+  .tips-card .cover {
+    position: relative; height: 230px; overflow: hidden; display: block;
+    background: linear-gradient(180deg, #C9A8F5 0%, #E9DCFA 62%, #FDFBFF 100%);
+  }
+  .tips-card .cover .ct {
+    position: absolute; top: 22px; left: 52px; right: 52px; margin: 0; text-align: center;
+    color: var(--heading);
+  }
+  .tips-card .cover .ct b { display: block; font-size: 16px; font-weight: 800; line-height: 1.3; }
+  .tips-card .cover .ct small { display: block; margin-top: 3px; font-size: 12px; font-weight: 600; color: #4C3A78; }
+  .tips-card .cover .badge {
+    position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border-radius: 11px;
+    background: #fff; box-shadow: 0 2px 8px rgba(96,16,210,0.14);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tips-card .cover .badge img { width: 26px; height: 26px; object-fit: contain; }
+  .tips-card .cover .cl { position: absolute; pointer-events: none; }
+  .tips-card .cover .cl.c1 { width: 84px; left: -16px; top: 76px; opacity: 0.85; }
+  .tips-card .cover .cl.c2 { width: 64px; right: -8px; top: 58px; opacity: 0.65; }
+  .tips-card .cover .cl.c3 { width: 190px; left: 50%; transform: translateX(-50%); bottom: -22px; opacity: 0.95; }
+  /* George's cover graphics drop in here (one per card, MAKE-style scene) */
+  .tips-card .cover .art {
+    position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+    height: 110px; width: auto; max-width: none;
+  }
+  .tips-card .body { padding: 16px 18px 18px; }
+  .tips-card .t { margin: 0 0 6px; font-size: 17px; font-weight: 800; color: var(--heading); line-height: 1.32; }
+  .tips-card .dek {
     margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-muted);
-    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
-  .blog-card .byline { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
-  .blog-card .byline img { width: 26px; height: 26px; border-radius: 50%; background: #F3E8FF; object-fit: contain; }
-  .blog-card .byline .who { font-size: 12.5px; color: var(--text-muted); font-weight: 600; line-height: 1.35; }
-  .blog-card .byline .who b { display: block; color: var(--heading); font-weight: 800; }
-  .blog-card .tags { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
-  .blog-card .tags span {
+  .tips-card .byline { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+  .tips-card .byline img { width: 26px; height: 26px; border-radius: 50%; background: #F3E8FF; object-fit: contain; }
+  .tips-card .byline .who { font-size: 12.5px; color: var(--text-muted); font-weight: 600; line-height: 1.35; }
+  .tips-card .byline .who b { display: block; color: var(--heading); font-weight: 800; }
+  .tips-card .tags { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .tips-card .tags span {
     background: #F3E8FF; color: #6010D2; font-size: 11.5px; font-weight: 700;
     padding: 5px 11px; border-radius: var(--pill);
   }
+  .tips-dots { display: flex; justify-content: center; gap: 6px; margin-top: 6px; }
+  .tips-dots span { width: 7px; height: 7px; border-radius: 99px; background: #DCC8F5; transition: all 0.25s; }
+  .tips-dots span.on { width: 22px; background: var(--purple); }
 
   /* ---------- FAQ (native details/summary, zero JS) ---------- */
   .sec-faq { background: var(--surface); padding: 56px 0 62px; }
@@ -896,54 +928,76 @@
     </div>
   </section>
 
-  <!-- ============= BLOG STRIP (REAL posts — slugs live at /blogs on the app) ============= -->
-  <section class="sec-blog">
+  <!-- ============= TIPS CAROUSEL (copy of MAKE's bottom section, Moodeng skin) =============
+       ⚠️ ALL THREE ARTICLES ARE PLACEHOLDERS — titles, excerpts, dates, read times and links
+       are invented to fill the MAKE layout. Do not ship until each is a real article.
+       George supplies the cover graphics (one scene per card, replaces the .art slot). -->
+  <section class="sec-tips">
     <div class="wrap reveal">
-      <div class="blog-head">
-        <div>
-          <p class="label">Read more</p>
-          <h3 class="tile-h">Why we built it this <span class="accent">way.</span></h3>
-        </div>
-        <a class="blog-more" href="/blogs">See all +</a>
+      <div class="tips-head">
+        <h3 class="tile-h">Money tips by <span class="accent">Moodeng.</span></h3>
+        <a class="tips-more" href="#">See all +</a>
       </div>
-      <div class="blog-list">
-        <a class="blog-card" href="/blogs/first-credit-record-should-not-belong-to-a-loan-shark">
-          <span class="cover"><img src="assets/blog/journal-cover.webp" alt="" /></span>
+      <div class="tips-list">
+        <a class="tips-card" href="#">
+          <span class="cover">
+            <img class="cl c1" src="assets/clouds/cloud-1.svg" alt="" />
+            <img class="cl c2" src="assets/clouds/cloud-2.svg" alt="" />
+            <img class="cl c3" src="assets/clouds/cloud.svg" alt="" />
+            <p class="ct"><b>Emergency expense checklist</b><small>what to ask before you say yes</small></p>
+            <span class="badge"><img src="assets/brand/moodenglogo.png" alt="" /></span>
+            <!-- George's cover graphic: <img class="art" src="..." alt="" /> -->
+          </span>
           <span class="body">
-            <p class="t">Your first credit record should not belong to a loan shark</p>
-            <p class="dek">The app that says yes first gets to write your financial story. In the Philippines, that app is often unregistered, run from overseas, and designed around your contacts, not your creditworthiness.</p>
+            <p class="t">Emergency expense checklist: what to ask before you borrow</p>
+            <p class="dek">Five quick questions that tell you whether a loan will help this week or hurt next month.</p>
             <span class="byline">
-              <img src="assets/brand/moodenglogo.png" alt="" loading="lazy" />
-              <span class="who"><b>Moodeng</b>May 2026 · 11 min read</span>
+              <img src="assets/brand/moodenglogo.png" alt="" />
+              <span class="who"><b>Moodeng</b>Jul 2026 · 4 min read</span>
             </span>
-            <span class="tags"><span># Shadow systems</span></span>
+            <span class="tags"><span># Money basics</span></span>
           </span>
         </a>
-        <a class="blog-card" href="/blogs/contact-list-collateral-and-the-shame-tax">
-          <span class="cover"><img src="assets/blog/community-cover.webp" alt="" /></span>
+        <a class="tips-card" href="#">
+          <span class="cover">
+            <img class="cl c1" src="assets/clouds/cloud-2.svg" alt="" />
+            <img class="cl c2" src="assets/clouds/cloud-1.svg" alt="" />
+            <img class="cl c3" src="assets/clouds/cloud.svg" alt="" />
+            <p class="ct"><b>Stretching to payday</b><small>a calm plan for the tight week</small></p>
+            <span class="badge"><img src="assets/brand/moodenglogo.png" alt="" /></span>
+            <!-- George's cover graphic: <img class="art" src="..." alt="" /> -->
+          </span>
           <span class="body">
-            <p class="t">Contact-list collateral and the shame tax</p>
-            <p class="dek">Loan sharks do not need a car title when they can threaten your mother, coworkers, customers, or group chat.</p>
+            <p class="t">Stretching to payday: a calm plan for the tight week</p>
+            <p class="dek">A practical way to split what’s left between food, fare, and load — without borrowing more than you need.</p>
             <span class="byline">
-              <img src="assets/brand/moodenglogo.png" alt="" loading="lazy" />
-              <span class="who"><b>Moodeng</b>May 18, 2026 · 7 min read</span>
+              <img src="assets/brand/moodenglogo.png" alt="" />
+              <span class="who"><b>Moodeng</b>Jul 2026 · 5 min read</span>
             </span>
-            <span class="tags"><span># Borrower dignity</span></span>
+            <span class="tags"><span># Money basics</span><span># Payday gap</span></span>
           </span>
         </a>
-        <a class="blog-card" href="/blogs/small-loans-are-infrastructure">
-          <span class="cover"><img src="assets/blog/idcard-cover.webp" alt="" /></span>
+        <a class="tips-card" href="#">
+          <span class="cover">
+            <img class="cl c1" src="assets/clouds/cloud-3.svg" alt="" />
+            <img class="cl c2" src="assets/clouds/cloud-2.svg" alt="" />
+            <img class="cl c3" src="assets/clouds/cloud.svg" alt="" />
+            <p class="ct"><b>From $15 to $60</b><small>how your limit grows</small></p>
+            <span class="badge"><img src="assets/brand/moodenglogo.png" alt="" /></span>
+            <!-- George's cover graphic: <img class="art" src="..." alt="" /> -->
+          </span>
           <span class="body">
-            <p class="t">$15 loans are infrastructure, not a gimmick</p>
-            <p class="dek">The amount is small because the missing rail is small: identity, settlement, borrower-owned history, and lender confidence at the size banks refuse to touch.</p>
+            <p class="t">From $15 to $60: how your limit grows</p>
+            <p class="dek">Every on-time repayment raises what you can borrow next time. The full ladder, step by step.</p>
             <span class="byline">
-              <img src="assets/brand/moodenglogo.png" alt="" loading="lazy" />
-              <span class="who"><b>Moodeng</b>May 18, 2026 · 6 min read</span>
+              <img src="assets/brand/moodenglogo.png" alt="" />
+              <span class="who"><b>Moodeng</b>Jul 2026 · 3 min read</span>
             </span>
-            <span class="tags"><span># Market view</span></span>
+            <span class="tags"><span># Level up</span></span>
           </span>
         </a>
       </div>
+      <div class="tips-dots" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
     </div>
   </section>
 
@@ -1044,6 +1098,25 @@
       })
       .catch(function () {});
   } catch (e) {}
+
+  // ---- Blog carousel dots (IntersectionObserver — scroll events are unreliable in some data-saver browsers) ----
+  (function () {
+    var list = document.querySelector(".tips-list");
+    var cards = list ? list.querySelectorAll(".tips-card") : [];
+    var dots = document.querySelectorAll(".tips-dots span");
+    if (!list || !cards.length || !dots.length) return;
+    function setDot(i) { dots.forEach(function (d, j) { d.classList.toggle("on", j === i); }); }
+    var cio = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) setDot(Array.prototype.indexOf.call(cards, e.target));
+      });
+    }, { root: list, threshold: 0.6 });
+    cards.forEach(function (c) { cio.observe(c); });
+    // redundant trigger: some browsers throttle IO in nested scrollers
+    list.addEventListener("scroll", function () {
+      setDot(Math.round(list.scrollLeft / (list.scrollWidth - list.clientWidth) * (dots.length - 1)));
+    }, { passive: true });
+  })();
 
   // ---- Reveal on scroll (tiny IntersectionObserver) ----
   var io = new IntersectionObserver(function (entries) {
