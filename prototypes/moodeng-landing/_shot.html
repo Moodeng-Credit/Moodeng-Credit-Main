@@ -1,0 +1,18 @@
+<!doctype html><meta charset="utf-8">
+<style>html{overflow:hidden}html,body{margin:0;background:#fff;display:flex;justify-content:center}</style>
+<div id="clip" style="width:375px;overflow:hidden;position:relative">
+  <iframe id="f" src="index.html" style="width:375px;height:6000px;border:0;display:block"></iframe>
+</div>
+<script>
+  const f = document.getElementById('f');
+  f.onload = () => {
+    const d = f.contentDocument;
+    f.style.height = (d.documentElement.scrollHeight + 50) + 'px';
+    d.documentElement.style.overflow = 'hidden';
+    const s = d.querySelector(new URLSearchParams(location.search).get('sel') || '.sec-unlock');
+    const r = s.getBoundingClientRect();
+    document.getElementById('clip').style.height = Math.ceil(r.height) + 'px';
+    f.style.marginTop = (-Math.floor(r.top)) + 'px';
+    document.title = 'H=' + Math.ceil(r.height);
+  };
+</script>
