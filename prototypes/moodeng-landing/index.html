@@ -379,6 +379,30 @@
   .sec-final .sec-h { font-size: 30px; }
   .sec-final .hippo { width: 110px; margin: 0 auto 6px; filter: drop-shadow(0 10px 20px rgba(96,16,210,0.2)); animation: bob 5s ease-in-out infinite; }
   .sec-final .reassure { margin-top: 12px; }
+  .sec-final .wrap { position: relative; z-index: 1; }
+  /* Balloons drifting up (spine item 7, MAKE flourish) — pure CSS, no assets */
+  .balloon {
+    position: absolute; bottom: -70px; width: 34px; height: 42px;
+    border-radius: 50% 50% 48% 48% / 56% 56% 44% 44%;
+    opacity: 0; animation: balloon-up 11s linear infinite;
+  }
+  .balloon::after {
+    content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 34px;
+    background: rgba(96,16,210,0.25);
+  }
+  .balloon.b1 { left: 8%;  background: #C9A8F5; animation-delay: 0s; }
+  .balloon.b2 { left: 24%; background: #8336F0; width: 26px; height: 33px; animation-delay: 3.5s; animation-duration: 13s; }
+  .balloon.b3 { left: 72%; background: #E3CFFB; animation-delay: 1.5s; animation-duration: 12s; }
+  .balloon.b4 { left: 88%; background: #A97DF2; width: 28px; height: 35px; animation-delay: 5s; }
+  .balloon.b5 { left: 50%; background: #DCC4FA; width: 22px; height: 28px; animation-delay: 7.5s; animation-duration: 14s; }
+  @keyframes balloon-up {
+    0%   { transform: translateY(0) translateX(0) rotate(-2deg); opacity: 0; }
+    8%   { opacity: 0.85; }
+    50%  { transform: translateY(-46vh) translateX(10px) rotate(3deg); }
+    92%  { opacity: 0.85; }
+    100% { transform: translateY(-92vh) translateX(-6px) rotate(-2deg); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .balloon { display: none; } }
 
   /* ---------- SECTION: PROOF (testimonials — ⚠️ MOCK NUMBERS, see HTML comment) ---------- */
   .sec-proof {
@@ -822,6 +846,7 @@
 
   <!-- ============= FINAL CTA ============= -->
   <section class="sec-final">
+    <span class="balloon b1"></span><span class="balloon b2"></span><span class="balloon b3"></span><span class="balloon b4"></span><span class="balloon b5"></span>
     <div class="wrap reveal">
       <img class="hippo" src="assets/hippos/party.png" alt="" />
       <h2 class="sec-h">Next time you’re short, you have somewhere to <span class="accent">turn.</span></h2>
