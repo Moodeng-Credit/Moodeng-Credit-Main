@@ -100,23 +100,9 @@
   }
   @media (prefers-reduced-motion: reduce) { .cloud, .hippo-float { animation: none !important; } }
 
-  /* sticky site header, Klarna-style bar */
-  .site-head {
-    position: sticky; top: 0; z-index: 50;
-    background: #fff; border-bottom: 1px solid var(--lavender-border);
-  }
-  .site-head .wrap {
-    display: flex; align-items: center; justify-content: space-between;
-    padding-top: 10px; padding-bottom: 10px;
-  }
-  .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+  .brand { display: flex; align-items: center; gap: 8px; margin-bottom: 22px; }
   .brand img { height: 26px; width: auto; }
   .brand b { font-family: var(--display); font-size: 19px; color: var(--heading); letter-spacing: -0.01em; }
-  .head-cta {
-    background: var(--purple); color: #fff; text-decoration: none;
-    font-weight: 700; font-size: 13.5px;
-    padding: 9px 18px; border-radius: var(--pill);
-  }
 
   .hero-h {
     font-family: var(--display);
@@ -660,21 +646,14 @@
   <!-- ===================== HERO (Klarna anatomy, Moodeng world) =====================
        Video = PLACEHOLDER composite (tracked overlay, stutters) — swap assets/hero/
        hero-loop.mp4 + hero-poster.jpg when George's final Veo take lands. -->
-  <nav class="site-head">
-    <div class="wrap">
-      <a class="brand" href="#">
-        <img src="assets/brand/moodeng-logo.png" alt="" />
-        <b>moodeng</b>
-      </a>
-      <!-- TODO(George): point at the real app URL before shipping -->
-      <a class="head-cta" href="#">Open app</a>
-    </div>
-  </nav>
-
   <header class="hero-top">
     <img class="cloud c1" src="assets/clouds/cloud-1.svg" alt="" />
     <img class="cloud c3" src="assets/clouds/cloud-3.svg" alt="" />
     <div class="wrap">
+      <div class="brand">
+        <img src="assets/brand/moodeng-logo.png" alt="" />
+        <b>Moodeng</b>
+      </div>
       <div class="hero-video">
         <video id="heroVid" autoplay muted loop playsinline preload="none" poster="assets/hero/hero-poster.jpg" aria-label="A phone with a small Moodeng loan on screen, hanging from a belt with a plush hippo charm"></video>
       </div>
@@ -1102,7 +1081,7 @@
     <div class="wrap">
       <div class="f-brand">
         <img src="assets/brand/moodenglogo.png" alt="" />
-        <b>moodeng</b>
+        <b>Moodeng</b>
       </div>
       <p class="f-tag">Small loans, funded by real people.</p>
       <div class="f-cols">
