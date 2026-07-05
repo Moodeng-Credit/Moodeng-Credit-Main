@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>How to repay a Moodeng loan — on your terms, never a fee</title>
-<meta name="description" content="Repaying a Moodeng loan: the amount and date never change, you can pay in parts, every payment earns Trust Points, and Moodeng never charges a repayment fee." />
+<title>Our story — why Moodeng Credit exists</title>
+<meta name="description" content="We watched loan sharks and predatory loan apps hurt people we know. Then money itself got better. Moodeng Credit is the loan we wished existed — small, honest, funded by real people, zero fees from our side." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..700&family=Archivo+Black&family=Fraunces:ital,opsz,wght@1,9..144,400..600&display=swap" rel="stylesheet" />
@@ -191,6 +191,28 @@
   .d-sub a:hover { color: #C9A8F5; }
   body.drawer-lock { overflow: hidden; }
 
+  /* about: chapter kicker + team cards */
+  .chap-k { font-size: 12px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); }
+  .mini {
+    background: #fff; border-radius: 16px; padding: 18px 20px;
+    box-shadow: 0 10px 26px rgba(28,5,61,0.16); text-align: center; min-width: 200px;
+  }
+  .mini .k { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); }
+  .mini .big { font-family: var(--display); font-size: 26px; color: var(--heading); line-height: 1.1; margin-top: 4px; }
+  .mini .tiny { font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-top: 8px; }
+  .mini .strike { text-decoration: line-through; color: #B9AECB; }
+  .tile-panel.dark2 { background: radial-gradient(120% 100% at 30% 0%, #2B0F55 0%, var(--deep) 100%); border-radius: 24px; padding: 34px 22px; display: grid; place-items: center; }
+  .tile-panel.lav { background: radial-gradient(120% 100% at 30% 0%, #F2E6FE 0%, #E4CFFB 100%); border-radius: 24px; padding: 34px 22px; display: grid; place-items: center; }
+  .team { margin-top: 28px; display: grid; gap: 16px; }
+  .team-card {
+    display: flex; align-items: center; gap: 16px; text-align: left;
+    background: #fff; border: 1px solid var(--lavender-border); border-radius: 20px;
+    padding: 18px 18px; box-shadow: 0 12px 28px rgba(96,16,210,0.10);
+  }
+  .team-card img { width: 64px; height: 64px; object-fit: contain; }
+  .team-card b { font-family: var(--display); font-size: 18px; color: var(--heading); display: block; }
+  .team-card span { font-size: 13.5px; color: var(--text-muted); line-height: 1.45; display: block; margin-top: 3px; }
+
   /* reveal on scroll */
   .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
   .reveal.in { opacity: 1; transform: none; }
@@ -251,93 +273,111 @@
 
   <header class="hiw-hero">
     <div class="wrap">
-      <p class="label">Repay guide</p>
-      <h1>Repaying is <span class="accent">your</span> move.</h1>
-      <p class="sub">The number never changes, the date never moves — and you can pay in parts. Here’s the whole thing, on real screens.</p>
+      <p class="label">Our story</p>
+      <h1>We hated what borrowing looked like. <span class="accent">So we changed it.</span></h1>
+      <p class="sub">Moodeng exists because of what we watched happen to people we know — and because the technology finally arrived to do it right.</p>
     </div>
   </header>
 
+  <!-- CH 1: the sharks -->
   <section class="sec-step">
     <div class="wrap reveal">
-      <span class="step-num">1</span>
-      <h2 class="tile-h">The number never <span class="accent">moved.</span></h2>
-      <p class="tile-cap">What you saw when you asked is what you pay at the end — same amount, same date. No rollover, no overnight penalty, no surprise charges.</p>
+      <p class="chap-k">Where it started</p>
+      <h2 class="tile-h">We watched the <span class="accent">sharks</span> work.</h2>
+      <p class="tile-cap">Around here everyone knows the deal: borrow small, owe big by next week — and the number keeps growing until the collector stops coming. We watched it eat people we know. Not statistics. <b>Neighbors.</b></p>
+      <!-- ASSET SLOT (George): graphic #1 — the 5-6 deal / collector scene -->
       <div class="stage">
-        <div class="stage-panel">
-          <div class="phone upright tall">
-            <div class="phone-head"><span class="back">‹</span> Your loan</div>
-            <img class="coin-badge" src="/landing/assets/icons/lock-closed.png" alt="" loading="lazy" style="height:52px" />
-            <div class="statement">$18 on Jul 30. Still.</div>
-            <div class="swap-box">
-              <span class="cell"><span class="k">You pay</span><b>$18</b></span>
-              <span class="arr">·</span>
-              <span class="cell right"><span class="k">Due</span><b>Jul 30</b></span>
-            </div>
-            <span class="cta-caps">The same as day one</span>
+        <div class="tile-panel dark2">
+          <div class="mini">
+            <div class="k">The corner deal</div>
+            <div class="big">Borrow ₱1,000</div>
+            <div class="tiny">owe ₱1,200 next week — <b>and it grows every week you can’t pay</b></div>
           </div>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- CH 2: the apps were worse -->
   <section class="sec-step">
     <div class="wrap reveal">
-      <span class="step-num">2</span>
-      <h2 class="tile-h">Bring pesos <span class="accent">back.</span></h2>
-      <p class="tile-cap">The same routes that turned your loan into pesos work in reverse — GCash back to digital dollars, in minutes.</p>
+      <p class="chap-k">Then came the apps</p>
+      <h2 class="tile-h">The “better way” was <span class="accent">worse.</span></h2>
+      <p class="tile-cap">Loan apps promised to replace the sharks. Instead they scraped your contacts and shamed your family when you were late. Whole communities online exist just for the victims. And the pricing trick: <b>“0% interest”</b> in the ad — with the real cost hidden as a <b>“service fee”</b>, so the law’s interest caps don’t apply.</p>
+      <!-- ASSET SLOT (George): graphic #2 — phone with harassment notifications / the service-fee price tag -->
       <div class="stage right">
-        <div class="stage-panel">
-          <div class="phone upright tall">
-            <div class="phone-head"><span class="back">‹</span> Top up</div>
-            <img class="coin-badge" src="/landing/assets/icons/usd-php-coins.png" alt="" loading="lazy" />
-            <div class="statement">Pesos back to dollars.</div>
-            <div class="swap-box">
-              <span class="cell"><span class="k">From</span><b>GCash</b></span>
-              <span class="arr">→</span>
-              <span class="cell right"><span class="k">To</span><b>Your wallet</b></span>
-            </div>
-            <span class="cta-caps">Same doors, reversed</span>
+        <div class="tile-panel lav">
+          <div class="mini">
+            <div class="k">The ad said</div>
+            <div class="big">0% interest!</div>
+            <div class="tiny">the receipt said: <b>+ ₱500 “service fee”</b> — same shark, new clothes</div>
           </div>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- CH 3: money got better -->
   <section class="sec-step">
     <div class="wrap reveal">
-      <span class="step-num">3</span>
-      <h2 class="tile-h">Pay all of it — or <span class="accent">part now.</span></h2>
-      <p class="tile-cap">The slider is yours: a quarter, half, or the whole thing. Every payment earns Trust Points — and <b>Moodeng never charges a fee to repay.</b></p>
+      <p class="chap-k">The turn</p>
+      <h2 class="tile-h">Then money itself got <span class="accent">better.</span></h2>
+      <p class="tile-cap">Digital dollars (USDC) changed the math: money that moves anywhere, in minutes, for basically nothing. No banks in the middle taking a cut — which means a loan service doesn’t <b>need</b> fees to survive. The excuse every “service fee” hid behind was gone.</p>
+      <!-- ASSET SLOT (George): graphic #3 — digital dollar transfer / zero-fee moment -->
       <div class="stage">
-        <div class="stage-panel">
-          <div class="phone"><img class="screen" src="/landing/assets/app/repay-slider.jpg" alt="The real Moodeng repay screen: a payment slider with 25%, 50%, 75% and full options, Trust Points earned per payment, and Moodeng’s fee shown as Free." loading="lazy" /></div>
+        <div class="tile-panel lav">
+          <div class="mini">
+            <div class="k">Sending money, now</div>
+            <div class="big">$15 → $15</div>
+            <div class="tiny">what leaves is what arrives. fee: <b>$0</b></div>
+          </div>
         </div>
       </div>
-      <p class="shot-note">The actual repay screen in the app.</p>
     </div>
   </section>
 
+  <!-- CH 4: so we built it -->
   <section class="sec-step">
     <div class="wrap reveal">
-      <span class="step-num">4</span>
-      <h2 class="tile-h">Your limit <span class="accent">grows.</span></h2>
-      <p class="tile-cap">On-time repayment is how your record gets built — <b>$15 → $20 → $40 → $60+</b>. Lenders see it, and your next ask gets easier.</p>
+      <p class="chap-k">So we built it</p>
+      <h2 class="tile-h">The loan we wished <span class="accent">existed.</span></h2>
+      <p class="tile-cap">Small amounts. One number you owe, on the screen before you say yes — and it never moves. Funded by real people who chose your request. No fees from our side, ever. And we never touch your contacts, so nobody can call your family. <b>The opposite of everything we watched.</b></p>
       <div class="stage right">
         <div class="stage-panel">
-          <div class="phone"><img class="screen" src="/landing/assets/app/step4-insights-top.jpg" alt="A real Moodeng borrower profile showing credit level and repayment record — what lenders see." loading="lazy" /></div>
+          <div class="phone"><img class="screen" src="/landing/assets/app/step2-board-cards.jpg" alt="The Moodeng request board — small loan requests funded by real people." loading="lazy" /></div>
         </div>
       </div>
-      <p class="shot-note">A borrower profile as lenders see it — sample account.</p>
+      <p class="shot-note">The request board today — sample requests shown.</p>
     </div>
   </section>
 
-  <!-- FINAL: back to the board -->
+  <!-- TEAM -->
+  <section class="sec-step">
+    <div class="wrap reveal">
+      <p class="chap-k">The humans</p>
+      <h2 class="tile-h">Real people work <span class="accent">here, too.</span></h2>
+      <p class="tile-cap">Message us and one of us answers — usually the same day.</p>
+      <!-- TODO(George): real photos + bio lines to replace the stand-in hippos & draft bios -->
+      <div class="team">
+        <div class="team-card">
+          <img src="/landing/assets/hippos/thumb-up-right.png" alt="" loading="lazy" />
+          <div><b>George</b><span>Builds Moodeng. Reads every support message himself.</span></div>
+        </div>
+        <div class="team-card">
+          <img src="/landing/assets/hippos/community.png" alt="" loading="lazy" />
+          <div><b>Emma</b><span>Makes Moodeng speak like a person, not a bank.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL -->
   <section class="sec-final">
     <div class="wrap reveal">
-      <p class="label">That’s the whole loop</p>
-      <h2>Ask. Get funded. Repay. <span class="accent">Grow.</span></h2>
-      <a class="cta" href="/request-board">Browse the live request board <span class="arrow">→</span></a>
-      <p class="reassure">No account needed to look around.</p>
+      <p class="label">See what we built</p>
+      <h2>Judge it the way we would — <span class="accent">look first.</span></h2>
+      <a class="cta" href="/how-it-works">See how it works <span class="arrow">→</span></a>
+      <p class="reassure">Or browse the live board — no account needed.</p>
     </div>
   </section>
 
