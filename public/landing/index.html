@@ -799,6 +799,7 @@
 
       <div class="hero-cta-block">
         <a class="cta" href="/request-board">Ask for what you need <span class="arrow">→</span></a>
+        <p class="reassure">Start tiny, stress-free — your first loan is $15.</p>
       </div>
     </div>
   </section>
@@ -971,14 +972,17 @@
 
         <div class="tile">
           <div class="tile-panel night">
-            <div class="mini">
-              <div class="k">Your contacts</div>
-              <div class="big">Never called</div>
-              <div class="tiny">we don’t even ask for your contact list</div>
+            <!-- claim verified against /privacy-policy 2026-07-06: no contacts/photos/messages
+                 collected anywhere in the policy; web app has no phone-storage access -->
+            <img class="tile-obj" src="/landing/assets/about/harassment-phone.png" alt="" style="height:60px; top:0" loading="lazy" />
+            <div class="mini" style="padding-top:40px">
+              <div class="k">Contacts · Photos · Messages</div>
+              <div class="big">Never asked</div>
+              <div class="tiny">we can’t take what we never see</div>
             </div>
           </div>
-          <h3 class="tile-h">We <span class="accent">never</span> call your contacts.</h3>
-          <p class="tile-cap">We don’t have them. We couldn’t call them if we wanted to.</p>
+          <h3 class="tile-h">We <span class="accent">never</span> dig through your phone.</h3>
+          <p class="tile-cap">No contact list, no photos, no messages. We couldn’t call your family if we wanted to.</p>
         </div>
 
         <div class="tile">
@@ -1192,8 +1196,8 @@
         </div>
         <div>
           <h4>The details</h4>
-          <a href="#">Privacy policy</a>
-          <a href="#">Terms of service</a>
+          <a href="/privacy-policy">Privacy policy</a>
+          <a href="/terms">Terms of service</a>
           <a href="https://moodeng.gitbook.io/credit" target="_blank" rel="noreferrer">How credit levels work</a>
         </div>
       </div>
