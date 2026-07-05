@@ -157,6 +157,23 @@
   .f-cols a:hover { color: #C9A8F5; }
   .f-fine { margin-top: 34px; padding-top: 18px; border-top: 1px solid rgba(201,168,245,0.16); font-size: 12px; color: #8B7BA8; padding-bottom: 26px; }
 
+  /* Tilt-style full-screen menu drawer (dark, big uppercase links) */
+  .drawer {
+    position: fixed; inset: 0; z-index: 100; background: #100626;
+    display: none; overflow-y: auto;
+  }
+  .drawer.open { display: block; }
+  .drawer .drawer-head { display: flex; align-items: center; gap: 9px; padding-top: 8px; padding-bottom: 8px; }
+  .drawer-links { display: grid; padding-top: 30px; padding-bottom: 40px; }
+  .drawer-links a {
+    font-family: var(--display); color: #fff; text-decoration: none;
+    font-size: 23px; letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 17px 0; border-bottom: 1px solid rgba(201,168,245,0.12);
+  }
+  .drawer-links a:hover { color: #C9A8F5; }
+  .drawer-links .sub { font-family: var(--sans); font-size: 12.5px; font-weight: 600; color: #8B7BA8; display: block; margin-top: 4px; text-transform: none; letter-spacing: 0.01em; }
+  body.drawer-lock { overflow: hidden; }
+
   /* reveal on scroll */
   .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
   .reveal.in { opacity: 1; transform: none; }
@@ -173,13 +190,32 @@
     <div class="wrap">
       <img class="head-logo" src="/landing/assets/brand/moodeng-logo-small.png" alt="" />
       <a class="head-word" href="/">Moodeng Credit</a>
-      <button class="menu-pill" aria-label="Menu" type="button">
+      <button class="menu-pill" id="menuOpen" aria-label="Menu" aria-expanded="false" type="button">
         <svg width="20" height="14" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1 1h18M1 7h18M1 13h18" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </button>
     </div>
   </nav>
+
+  <!-- full-screen menu drawer (honest links only — same rule as the footer) -->
+  <div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Menu">
+    <div class="wrap drawer-head">
+      <img class="head-logo" src="/landing/assets/brand/moodeng-logo-small.png" alt="" />
+      <b class="head-word" style="margin-right:auto">Moodeng Credit</b>
+      <button class="menu-pill" id="menuClose" aria-label="Close menu" type="button">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 2l12 12M14 2L2 14" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <nav class="wrap drawer-links">
+      <a href="/">Home <span class="sub">Small loans that treat you right</span></a>
+      <a href="/request-board">Browse requests <span class="sub">No account needed to look</span></a>
+      <a href="/#faq">Common questions</a>
+      <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Talk to a human</a>
+    </nav>
+  </div>
 
   <header class="hiw-hero">
     <div class="wrap">
@@ -294,6 +330,23 @@
   </footer>
 
   <script>
+    // ---- Menu drawer ----
+    (function () {
+      var drawer = document.getElementById("drawer");
+      var openBtn = document.getElementById("menuOpen");
+      var closeBtn = document.getElementById("menuClose");
+      if (!drawer || !openBtn || !closeBtn) return;
+      function setOpen(open) {
+        drawer.classList.toggle("open", open);
+        document.body.classList.toggle("drawer-lock", open);
+        openBtn.setAttribute("aria-expanded", String(open));
+        if (open) closeBtn.focus();
+      }
+      openBtn.addEventListener("click", function () { setOpen(true); });
+      closeBtn.addEventListener("click", function () { setOpen(false); });
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
+    })();
+
     // reveal on scroll (same pattern as landing)
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
