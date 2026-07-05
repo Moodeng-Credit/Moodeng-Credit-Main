@@ -46,7 +46,37 @@
   }
   .wrap { width: 100%; max-width: 480px; margin: 0 auto; padding: 0 22px; }
 
-  /* ---------- HERO ---------- */
+  /* ---------- HERO (Klarna anatomy, Moodeng skin): brand → big statement →
+     one CTA + reassure → the product living in a real life (video, poster-first) ---------- */
+  .hero-top {
+    position: relative;
+    padding: 26px 0 40px;
+    background: radial-gradient(130% 90% at 50% -20%, #ffffff 0%, var(--lavender-bg) 55%, #EADCFC 100%);
+    overflow: hidden;
+  }
+  .hero-top h1 {
+    font-family: var(--display);
+    font-size: 42px; line-height: 1.02; letter-spacing: -0.02em;
+    color: var(--heading); margin: 26px 0 0;
+  }
+  .hero-top h1 .accent { font-weight: 500; color: var(--purple); }
+  .hero-top .hero-sub { font-size: 16px; }
+  .hero-top .cta { margin-top: 24px; }
+  .hero-top .reassure { margin-top: 12px; }
+  .hero-video {
+    position: relative; margin-top: 30px;
+    border-radius: 28px; overflow: hidden;
+    aspect-ratio: 4 / 5; background: #E9DBFB;
+    box-shadow: 0 24px 50px rgba(96,16,210,0.22);
+  }
+  .hero-video video, .hero-video img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  @media (min-width: 720px) {
+    .hero-top h1 { font-size: 56px; }
+  }
+
+  /* ---------- BELOW-HERO: card-led "sudden expense" block ---------- */
   .hero {
     position: relative;
     padding: 28px 0 44px;
@@ -71,14 +101,15 @@
 
   .brand { display: flex; align-items: center; gap: 8px; margin-bottom: 22px; }
   .brand img { height: 26px; width: auto; }
+  .brand b { font-family: var(--display); font-size: 19px; color: var(--heading); letter-spacing: -0.01em; }
 
-  h1.hero-h {
+  .hero-h {
     font-family: var(--display);
     font-size: 31px; line-height: 1.06; letter-spacing: -0.02em;
     color: var(--heading);
     margin: 8px 0 0;
   }
-  h1.hero-h .accent { font-weight: 500; color: var(--purple); }
+  .hero-h .accent { font-weight: 500; color: var(--purple); }
   .hero-sub {
     margin: 10px 0 0; font-size: 15px; line-height: 1.45;
     color: var(--text-soft); max-width: 34ch;
@@ -154,6 +185,17 @@
     border-radius: 16px;
     padding: 16px 15px 15px;
   }
+  /* 3D object overlapping the tinted card's top edge (Tilt treatment):
+     height ≈ 28% of card width, 55% floating above / 45% dipping on */
+  .card-obj {
+    position: absolute; left: 50%; top: 0;
+    height: 64px; transform: translate(-50%, -55%);
+    z-index: 2; pointer-events: none;
+    filter: drop-shadow(0 10px 14px rgba(28,5,61,0.2));
+  }
+  .inner.pad-obj { padding-top: 42px; }
+  /* keep the floating object clear of the app-header text */
+  .phone.has-obj .phone-head { padding-bottom: 42px; }
   .inner .reason { font-size: 13px; font-weight: 700; color: var(--text-soft); }
   .inner .reason .emoji { margin-right: 5px; }
   .statement {
@@ -217,7 +259,6 @@
   }
   /* 3D icon assets (George's, Tilt-style) overlapping the staged cards */
   .tile-obj { position: absolute; pointer-events: none; z-index: 1; }
-  .strip-coins { display: block; width: 74px; margin: 16px auto -12px; position: relative; z-index: 1; }
   .tile-panel.dark { background: radial-gradient(120% 100% at 30% 0%, #2B0F55 0%, var(--deep) 100%); }
   .mini {
     background: #fff; border-radius: 16px; padding: 16px 20px;
@@ -364,12 +405,21 @@
 
   /* ---------- PESO STRIP ---------- */
   .strip {
-    background: var(--lavender-bg); padding: 40px 0 44px;
+    background: var(--lavender-bg); padding: 48px 0 56px;
   }
-  .strip .mini { display: inline-block; margin-top: 18px; }
-  .strip .row { display: flex; align-items: center; justify-content: center; gap: 12px; font-weight: 700; color: var(--heading); font-size: 15px; }
-  .strip .row .amt { font-family: var(--display); font-size: 20px; }
-  .strip .row .arr { color: var(--purple); font-family: var(--display); }
+  /* cash-out moment card (product moment #4): upright tall phone, Tilt-light */
+  .strip .stage { text-align: center; }
+  .coin-badge { height: 58px; margin: 36px auto 16px; display: block; }
+  .swap-box {
+    background: #F6F3FA; border-radius: 14px;
+    padding: 13px 16px; margin: 0 2px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .swap-box .cell { text-align: left; }
+  .swap-box .cell.right { text-align: right; }
+  .swap-box .cell .k { display: block; font-size: 10.5px; font-weight: 600; color: #B9AECB; }
+  .swap-box .cell b { font-size: 16px; font-weight: 800; color: var(--heading); }
+  .swap-box .arr { color: var(--purple); font-family: var(--display); font-size: 18px; }
 
   /* ---------- FINAL CTA ---------- */
   .sec-final {
@@ -582,32 +632,50 @@
 
   @media (min-width: 700px) {
     .wrap { max-width: 620px; }
-    h1.hero-h { font-size: 52px; }
+    .hero-h { font-size: 52px; }
     h2.sec-h { font-size: 40px; }
   }
 </style>
 </head>
 <body>
 
-  <!-- ===================== HERO ===================== -->
-  <header class="hero">
+  <!-- ===================== HERO (Klarna anatomy, Moodeng world) =====================
+       Video = PLACEHOLDER composite (tracked overlay, stutters) — swap assets/hero/
+       hero-loop.mp4 + hero-poster.jpg when George's final Veo take lands. -->
+  <header class="hero-top">
     <img class="cloud c1" src="assets/clouds/cloud-1.svg" alt="" />
-    <img class="cloud c2" src="assets/clouds/cloud-2.svg" alt="" />
     <img class="cloud c3" src="assets/clouds/cloud-3.svg" alt="" />
     <div class="wrap">
       <div class="brand">
-        <img src="assets/brand/moodeng-logo.png" alt="Moodeng" />
+        <img src="assets/brand/moodeng-logo.png" alt="" />
+        <b>moodeng</b>
       </div>
+      <h1>Small loans that <span class="accent">treat you right.</span></h1>
+      <p class="hero-sub">Help for the moment you can’t wait for payday — from real people, on terms that never change overnight.</p>
+      <a class="cta" href="#">Start with your first small loan <span class="arrow">→</span></a>
+      <p class="reassure">Not instant. Not pushy. Not a trap.</p>
+      <div class="hero-video">
+        <video id="heroVid" autoplay muted loop playsinline preload="none" poster="assets/hero/hero-poster.jpg" aria-label="A phone with a small Moodeng loan on screen, hanging from a belt with a plush hippo charm"></video>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== BELOW-HERO: card-led moment ===================== -->
+  <section class="hero">
+    <img class="cloud c2" src="assets/clouds/cloud-2.svg" alt="" />
+    <div class="wrap">
       <p class="label">When payday feels far away</p>
-      <h1 class="hero-h">Sudden expense? There are people who <span class="accent">want to help.</span></h1>
+      <h2 class="hero-h">Sudden expense? There are people who <span class="accent">want to help.</span></h2>
       <p class="hero-sub">Borrow small — <b>from $15</b> — and know exactly what you’ll give back, <b>before you say yes.</b></p>
 
       <!-- Moment Card 1: the hero IS the card (Tilt/MAKE: show, don't tell) -->
       <div class="stage">
         <div class="stage-panel">
-          <div class="phone">
+          <div class="phone has-obj">
             <div class="phone-head"><span class="back">‹</span> Your loan</div>
-            <div class="inner">
+            <div class="inner pad-obj">
+              <!-- 3D gold coin stack — asset #1 (George) -->
+              <img class="card-obj" src="assets/icons/coins-stack.png" alt="" />
               <div class="reason"><span class="emoji">🏥</span>Medicine · can’t wait for payday</div>
               <div class="statement">Real people can fund you <span class="amt-pill">$15</span></div>
               <div class="terms-row">
@@ -631,10 +699,9 @@
 
       <div class="hero-cta-block">
         <a class="cta" href="#">Ask for what you need <span class="arrow">→</span></a>
-        <p class="reassure">Not instant. Not pushy. Not a trap.</p>
       </div>
     </div>
-  </header>
+  </section>
 
   <!-- ============= PRODUCT MOMENT #2: UNLOCK ============= -->
   <section class="sec-unlock">
@@ -699,15 +766,27 @@
     </div>
   </section>
 
-  <!-- ============= PESO STRIP (copy strawman — George to approve) ============= -->
+  <!-- ============= CASH-OUT MOMENT (product moment #4, upgraded peso strip — copy strawman, George to approve) ============= -->
   <section class="strip">
     <div class="wrap reveal" style="text-align:center">
       <p class="label">Pesos in, pesos out</p>
       <h3 class="tile-h">Easy to turn into <span class="accent">pesos.</span></h3>
       <p class="tile-cap" style="margin:8px auto 0">When it lands, moving it into pesos is simple — and moving it back when you repay is just as easy.</p>
-      <img class="strip-coins" src="assets/icons/usd-php-coins.png" alt="" />
-      <div class="mini">
-        <div class="row"><span class="amt">$15</span><span class="arr">→</span><span class="amt peso-amt" data-peso-big="15">≈ ₱855</span></div>
+      <div class="stage big">
+        <div class="stage-panel">
+          <div class="phone upright tall">
+            <div class="phone-head"><span class="back">‹</span> Cash out</div>
+            <!-- 3D $/₱ coin pair — asset #5 (George) -->
+            <img class="coin-badge" src="assets/icons/usd-php-coins.png" alt="" />
+            <div class="statement">Your $15 just landed.</div>
+            <div class="swap-box">
+              <span class="cell"><span class="k">To</span><b>GCash</b></span>
+              <span class="arr">→</span>
+              <span class="cell right"><span class="k">You’d get</span><b data-peso="15">≈ ₱855</b></span>
+            </div>
+            <span class="cta-caps">Move to GCash</span>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -1072,6 +1151,23 @@
   </footer>
 
 <script>
+  // ---- Hero video: poster-first, data-saver friendly ----
+  // The poster JPG is the hero on slow/saveData connections; the loop only
+  // loads (and plays) when the connection can afford it.
+  (function () {
+    var v = document.getElementById("heroVid");
+    if (!v) return;
+    var c = navigator.connection || {};
+    if (c.saveData || /(^|-)2g/.test(c.effectiveType || "")) return;
+    var s = document.createElement("source");
+    s.src = "assets/hero/hero-loop.mp4";
+    s.type = "video/mp4";
+    v.appendChild(s);
+    v.load();
+    var p = v.play();
+    if (p && p.catch) p.catch(function () {}); // autoplay blocked → poster stays
+  })();
+
   // ---- Peso context: geo-detect, honest "≈", graceful fallback ----
   // Never block render; static fallback rate baked in.
   var PHP_PER_USD = 57; // baked-in fallback

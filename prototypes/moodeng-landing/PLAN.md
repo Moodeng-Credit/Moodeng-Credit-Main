@@ -1,5 +1,13 @@
 # Moodeng Landing Page — Build Plan (handoff doc)
 
+## 2026-07-05 LATE EVENING — hero built (Klarna anatomy), assets landed
+
+- **HERO EXISTS NOW (`header.hero-top`), Klarna AU anatomy in Moodeng skin (George directed):** brand row → big display H1 ("Small loans that treat you right." — Klarna-parallel, ties to dark section) → one-fact sub → single CTA → Emma's reassure line (MOVED here from the card block — don't duplicate it back) → 4:5 rounded video panel. Video is **poster-first + data-saver aware** (`navigator.connection.saveData`/2g → poster JPG only; loop injected via JS otherwise). ⚠️ `assets/hero/hero-loop.mp4` (560KB) is a PLACEHOLDER — my post-tracked composite of George's Veo take; it stutters. George is generating the real take (white screen, low phone motion, Veo). When it lands in ~/Downloads: crop letterbox (ffmpeg cropdetect), compress (scale 640, crf 27, -an), extract poster frame, replace both files — slot needs no HTML changes.
+- **Hero video pipeline learned the hard way:** video generators CANNOT render our UI pixel-exact (Veo invented a "$5,000 / Freeze" app — garbled + off-brand). Division of labor: generator makes the world with a BLANK WHITE screen; we composite the real card in post. Tooling in place: `_shot.html?mode=phone` renders the flat request card via headless Chrome; scratchpad `composite.py`/`composite_video.py` track the white screen (largest near-white blob → quad → perspective warp, EMA-smoothed) and composite per-frame. Stutter on high-swing takes; fine on calm takes. `moodeng-screen-for-video.png` (1080×2280 screen image) was given to George for generator experiments — they failed; post-compositing is the way.
+- Old card-led block demoted to `section.hero` (h1→h2, brand row removed) — it reads as the first below-hero section now, per George's original spine.
+- Unlock card **visually verified** (screenshot debt paid). Coins asset (#1) delivered, processed (31KB), placed on Moment Card 1 at the exact 28% invariant + `.phone.has-obj` header air so "YOUR LOAN" stays legible. Peso strip upgraded to the **cash-out moment card** (upright tall phone, $/₱ coins, GCash swap-box, "MOVE TO GCASH" caps pill) — copy still strawman.
+- Footer + SEC comment placeholder + team strip: already built earlier (commit 5943c32b5) — the NEXT UP list below is stale except asset #2 (medicine kit, 🏥 emoji still on both reason rows).
+
 ## NEXT UP (George approved, 2026-07-05 afternoon — build in this order)
 
 1. **Footer (missing entirely — biggest credibility gap).** MAKE-style honest footer: company identity, contact channels a human answers (Facebook page, Telegram/email — George: "our team is talkable, very responsive"), privacy policy + terms links. No footer = scam signal to loan-app-burned Filipinos.
