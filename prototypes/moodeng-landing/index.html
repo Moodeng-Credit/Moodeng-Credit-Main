@@ -100,21 +100,17 @@
   }
   @media (prefers-reduced-motion: reduce) { .cloud, .hippo-float { animation: none !important; } }
 
-  /* minimal Klarna-style bar: menu pill · wordmark · account circle */
+  /* minimal Tilt-style bar: dark, wordmark left, purple hamburger right */
   .site-head {
     position: sticky; top: 0; z-index: 50;
-    background: #fff; border-bottom: 1px solid rgba(4,0,51,0.07);
+    background: #100626;
   }
-  .site-head .wrap { display: flex; align-items: center; gap: 14px; padding-top: 8px; padding-bottom: 8px; }
+  .site-head .wrap { display: flex; align-items: center; padding-top: 8px; padding-bottom: 8px; }
+  .head-word { font-family: var(--display); font-size: 17px; font-weight: 500; color: #fff; letter-spacing: 0; margin-right: auto; }
   .menu-pill {
-    width: 62px; height: 44px; border: 0; cursor: pointer;
-    border-radius: var(--pill); background: #EFDFFD;
+    width: 58px; height: 42px; border: 0; cursor: pointer;
+    border-radius: var(--pill); background: var(--purple);
     display: grid; place-items: center;
-  }
-  .head-word { font-family: var(--display); font-size: 17px; font-weight: 500; color: var(--heading); letter-spacing: 0; margin-right: auto; }
-  .acct {
-    width: 44px; height: 44px; border-radius: 50%;
-    background: var(--heading); display: grid; place-items: center;
   }
 
   .hero-h {
@@ -669,19 +665,12 @@
        hero-loop.mp4 + hero-poster.jpg when George's final Veo take lands. -->
   <nav class="site-head">
     <div class="wrap">
+      <b class="head-word">Moodeng Credit</b>
       <button class="menu-pill" aria-label="Menu" type="button">
         <svg width="20" height="14" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1 1h18M1 7h18M1 13h18" stroke="#040033" stroke-width="2" stroke-linecap="round"/>
+          <path d="M1 1h18M1 7h18M1 13h18" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </button>
-      <b class="head-word">Moodeng</b>
-      <!-- TODO(George): point at the real app URL before shipping -->
-      <a class="acct" href="#" aria-label="Open the app">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="9" cy="5.4" r="3.4" fill="#fff"/>
-          <path d="M2.2 16.2c1-3.1 3.7-4.7 6.8-4.7s5.8 1.6 6.8 4.7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
-        </svg>
-      </a>
     </div>
   </nav>
 
@@ -1116,7 +1105,7 @@
     <div class="wrap">
       <div class="f-brand">
         <img src="assets/brand/moodenglogo.png" alt="" />
-        <b>Moodeng</b>
+        <b>Moodeng Credit</b>
       </div>
       <p class="f-tag">Small loans, funded by real people.</p>
       <div class="f-cols">
@@ -1139,7 +1128,7 @@
            <p class="f-fine">Moodeng ... Inc. · SEC Registration No. XXXXXXX</p>
            PH users are trained to check this; a TRUE registration line is the
            strongest credibility item on the page. A false one is fatal. -->
-      <p class="f-fine">© 2026 Moodeng. All rights reserved.</p>
+      <p class="f-fine">© 2026 Moodeng Credit. All rights reserved.</p>
     </div>
     <div class="f-mega" aria-hidden="true">Moodeng</div>
   </footer>
