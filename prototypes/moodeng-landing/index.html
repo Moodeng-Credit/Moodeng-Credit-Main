@@ -632,16 +632,24 @@
   .faq-list .a { padding: 0 0 16px; font-size: 14.5px; line-height: 1.55; color: var(--text-muted); }
   .faq-list .a b { color: var(--heading); }
 
-  /* ---------- FOOTER ---------- */
-  .site-footer { background: #100626; padding: 46px 0 40px; color: #B6A8CC; font-size: 13.5px; }
+  /* ---------- FOOTER (dark, Klarna-style hierarchy + giant bottom wordmark) ---------- */
+  .site-footer { background: #100626; padding: 52px 0 0; color: #B6A8CC; font-size: 13.5px; overflow: hidden; }
   .site-footer .f-brand { display: flex; align-items: center; gap: 10px; }
   .site-footer .f-brand img { width: 40px; }
   .site-footer .f-brand b { font-family: var(--display); font-size: 20px; color: #fff; letter-spacing: -0.01em; }
   .site-footer .f-tag { margin: 12px 0 0; line-height: 1.5; }
-  .f-cols { display: flex; gap: 36px; margin-top: 28px; flex-wrap: wrap; }
-  .f-cols h4 { margin: 0 0 10px; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #C9A8F5; }
-  .f-cols a { display: block; color: #fff; text-decoration: none; font-weight: 600; margin-top: 7px; }
-  .f-fine { margin-top: 32px; padding-top: 18px; border-top: 1px solid rgba(201,168,245,0.16); font-size: 12px; color: #8B7BA8; }
+  .f-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 28px; margin-top: 30px; }
+  .f-cols h4 { margin: 0 0 12px; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #C9A8F5; }
+  .f-cols a { display: block; color: #fff; text-decoration: none; font-weight: 600; padding: 6px 0; }
+  .f-cols a:hover { color: #C9A8F5; }
+  .f-fine { margin-top: 34px; padding-top: 18px; border-top: 1px solid rgba(201,168,245,0.16); font-size: 12px; color: #8B7BA8; }
+  /* giant clipped wordmark, Klarna's sign-off */
+  .f-mega {
+    display: flex; justify-content: center; /* symmetric bleed when wider than viewport */
+    font-family: var(--display); color: #fff; white-space: nowrap;
+    font-size: clamp(88px, 24vw, 190px); line-height: 1; letter-spacing: -0.03em;
+    height: 0.62em; overflow: hidden; margin-top: 34px; user-select: none;
+  }
 
   /* reveal on scroll */
   .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
@@ -1133,6 +1141,7 @@
            strongest credibility item on the page. A false one is fatal. -->
       <p class="f-fine">© 2026 Moodeng. All rights reserved.</p>
     </div>
+    <div class="f-mega" aria-hidden="true">Moodeng</div>
   </footer>
 
 <script>
