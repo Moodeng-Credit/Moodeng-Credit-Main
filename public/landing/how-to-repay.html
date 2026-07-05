@@ -164,14 +164,31 @@
   }
   .drawer.open { display: block; }
   .drawer .drawer-head { display: flex; align-items: center; gap: 9px; padding-top: 8px; padding-bottom: 8px; }
-  .drawer-links { display: grid; padding-top: 30px; padding-bottom: 40px; }
-  .drawer-links a {
-    font-family: var(--display); color: #fff; text-decoration: none;
-    font-size: 23px; letter-spacing: 0.05em; text-transform: uppercase;
-    padding: 17px 0; border-bottom: 1px solid rgba(201,168,245,0.12);
+  .drawer a.head-word { text-decoration: none; }
+  .drawer-links { display: block; padding-top: 22px; padding-bottom: 46px; }
+  .drawer-links a { text-decoration: none; display: block; }
+  .d-top {
+    font-weight: 800; color: #fff; font-size: 18px;
+    letter-spacing: 0.18em; text-transform: uppercase; padding: 19px 0;
   }
-  .drawer-links a:hover { color: #C9A8F5; }
-  .drawer-links .sub { font-family: var(--sans); font-size: 12.5px; font-weight: 600; color: #8B7BA8; display: block; margin-top: 4px; text-transform: none; letter-spacing: 0.01em; }
+  .d-top:hover { color: #C9A8F5; }
+  .d-group summary {
+    list-style: none; cursor: pointer;
+    font-weight: 800; color: #fff; font-size: 18px;
+    letter-spacing: 0.18em; text-transform: uppercase; padding: 19px 0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .d-group summary::-webkit-details-marker { display: none; }
+  .d-group summary::after {
+    content: ""; width: 8px; height: 8px; margin-top: -4px;
+    border-right: 2px solid #fff; border-bottom: 2px solid #fff;
+    transform: rotate(-45deg); transition: transform .18s ease;
+  }
+  .d-group[open] summary::after { transform: rotate(45deg); }
+  .d-group summary:hover { color: #C9A8F5; }
+  .d-sub { padding: 0 0 12px 18px; }
+  .d-sub a { color: #EDE8F7; font-size: 17px; font-weight: 500; padding: 11px 0; }
+  .d-sub a:hover { color: #C9A8F5; }
   body.drawer-lock { overflow: hidden; }
 
   /* reveal on scroll */
@@ -202,7 +219,7 @@
   <div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Menu">
     <div class="wrap drawer-head">
       <img class="head-logo" src="/landing/assets/brand/moodeng-logo-small.png" alt="" />
-      <b class="head-word" style="margin-right:auto">Moodeng Credit</b>
+      <a class="head-word" style="margin-right:auto" href="/">Moodeng Credit</a>
       <button class="menu-pill" id="menuClose" aria-label="Close menu" type="button">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M2 2l12 12M14 2L2 14" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
@@ -210,13 +227,24 @@
       </button>
     </div>
     <nav class="wrap drawer-links">
-      <a href="/">Home <span class="sub">Small loans that treat you right</span></a>
-      <a href="/how-it-works">How it works <span class="sub">Step by step, on real screens</span></a>
-      <a href="/how-to-cash-out">How to cash out <span class="sub">From loan to pesos in GCash</span></a>
-      <a href="/how-to-repay">How to repay <span class="sub">Your terms, never a fee from us</span></a>
-      <a href="/request-board">Browse requests <span class="sub">No account needed to look</span></a>
-      <a href="/#faq">Common questions</a>
-      <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Talk to a human</a>
+      <a class="d-top" href="/request-board">Browse requests</a>
+      <details class="d-group" open>
+        <summary>Guides</summary>
+        <div class="d-sub">
+          <a href="/how-it-works">How it works</a>
+          <a href="/how-to-cash-out">How to cash out</a>
+          <a href="/how-to-repay">How to repay</a>
+        </div>
+      </details>
+      <details class="d-group" open>
+        <summary>Support</summary>
+        <div class="d-sub">
+          <a href="/#faq">Common questions</a>
+          <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Telegram</a>
+          <a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
+          <a href="mailto:support@moodengcredit.com">Email us</a>
+        </div>
+      </details>
     </nav>
   </div>
 
