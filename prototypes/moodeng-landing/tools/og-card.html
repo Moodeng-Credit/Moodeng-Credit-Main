@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..900&family=Archivo+Black&family=Fraunces:ital,opsz,wght@1,9..144,400..600&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: "Archivo", sans-serif;
+    background: radial-gradient(140% 120% at 20% -10%, #ffffff 0%, #F3E8FF 45%, #DCC4FA 100%);
+    position: relative;
+  }
+  .cloud { position: absolute; opacity: .9; }
+  .card {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; gap: 30px;
+    padding: 0 40px 0 76px;
+  }
+  .txt { flex: 1 1 auto; }
+  .brand { display: flex; align-items: center; gap: 16px; margin-bottom: 34px; }
+  .brand img { height: 56px; }
+  .brand b { font-family: "Archivo Black", sans-serif; font-size: 34px; color: #040033; letter-spacing: -0.01em; font-weight: 500; }
+  h1 {
+    font-family: "Archivo Black", sans-serif; font-weight: 500;
+    font-size: 76px; line-height: 1.04; letter-spacing: -0.02em; color: #040033;
+  }
+  h1 .accent { font-family: "Fraunces", serif; font-style: italic; color: #6010D2; }
+  .sub { margin-top: 26px; font-size: 30px; font-weight: 600; color: #4D4359; }
+  .sub b { color: #040033; }
+  .hippo { flex: 0 0 auto; width: 380px; margin-bottom: -40px; filter: drop-shadow(0 24px 40px rgba(96,16,210,0.25)); }
+</style>
+</head>
+<body>
+  <img class="cloud" src="/landing/assets/clouds/cloud-1.svg" style="width:170px; top:48px; right:400px" alt="" />
+  <img class="cloud" src="/landing/assets/clouds/cloud-2.svg" style="width:130px; bottom:60px; left:30px" alt="" />
+  <div class="card">
+    <div class="txt">
+      <div class="brand"><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" /><b>Moodeng Credit</b></div>
+      <h1>Small loans that <span class="accent">treat you right.</span></h1>
+      <p class="sub">From $15 — funded by <b>real people.</b></p>
+    </div>
+    <img class="hippo" src="/landing/assets/hippos/welcome.png" alt="" />
+  </div>
+</body>
+</html>

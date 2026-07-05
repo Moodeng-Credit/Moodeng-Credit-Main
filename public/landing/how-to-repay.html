@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>How to repay a Moodeng loan — on your terms, never a fee</title>
 <meta name="description" content="Repaying a Moodeng loan: the amount and date never change, you can pay in parts, every payment earns Trust Points, and Moodeng never charges a repayment fee." />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Moodeng Credit" />
+<meta property="og:title" content="How to repay a Moodeng loan — on your terms, never a fee" />
+<meta property="og:description" content="The amount and date never change, you can pay in parts — and if it's a hard week, you message a human and figure it out together." />
+<meta property="og:url" content="https://moodeng.app/how-to-repay" />
+<meta property="og:image" content="https://moodeng.app/landing/assets/og/og-share.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..700&family=Archivo+Black&family=Fraunces:ital,opsz,wght@1,9..144,400..600&display=swap" rel="stylesheet" />
@@ -191,6 +198,47 @@
   .d-sub a:hover { color: #C9A8F5; }
   body.drawer-lock { overflow: hidden; }
 
+  .step-more { display: block; margin-top: 20px; font-size: 14px; font-weight: 700; color: var(--purple); text-decoration: none; text-align: center; }
+  .step-more:hover { text-decoration: underline; }
+
+  /* "running late" section — same dark world as the landing page's trust section */
+  .sec-late { background: #100626; padding: 60px 0 66px; }
+  .sec-late .label { color: #C9A8F5; }
+  .sec-late .tile-h { color: #fff; }
+  .sec-late .tile-h .accent { color: #C9A8F5; }
+  .sec-late .tile-cap { color: #B6A8CC; }
+  .sec-late .tile-cap b { color: #fff; }
+  .sec-late .step-more { color: #C9A8F5; }
+  .panel-night {
+    margin-top: 26px; border-radius: 24px; padding: 34px 22px;
+    display: grid; place-items: center;
+    background: radial-gradient(120% 100% at 30% 0%, #2B1650 0%, #1C0B3E 100%);
+    border: 1px solid rgba(201,168,245,0.14);
+  }
+  .bubble {
+    background: #fff; border-radius: 16px 16px 16px 4px;
+    padding: 13px 16px; max-width: 230px; text-align: left;
+    font-size: 13.5px; font-weight: 600; color: var(--heading); line-height: 1.45;
+    box-shadow: 0 10px 26px rgba(0,0,0,0.35);
+  }
+  .bubble .from { display: block; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--purple); margin-bottom: 4px; }
+
+  /* mini-FAQ (native details/summary, same anatomy as the landing FAQ) */
+  .sec-faq { background: var(--surface-muted); padding: 56px 0 62px; }
+  .faq-list { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .faq-list details {
+    background: #fff; border: 1px solid #EFE6FB; border-radius: 16px; padding: 0 18px;
+  }
+  .faq-list summary {
+    cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 16px 0; font-size: 15px; font-weight: 800; color: var(--heading);
+  }
+  .faq-list summary::-webkit-details-marker { display: none; }
+  .faq-list summary::after { content: "+"; font-family: var(--display); font-size: 18px; color: var(--purple); flex: 0 0 auto; }
+  .faq-list details[open] summary::after { content: "–"; }
+  .faq-list .a { padding: 0 0 16px; font-size: 14.5px; line-height: 1.55; color: var(--text-muted); }
+  .faq-list .a b { color: var(--heading); }
+
   /* reveal on scroll */
   .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
   .reveal.in { opacity: 1; transform: none; }
@@ -253,7 +301,7 @@
     <div class="wrap">
       <p class="label">Repay guide</p>
       <h1>Repaying is <span class="accent">your</span> move.</h1>
-      <p class="sub">The number never changes, the date never moves — and you can pay in parts. Here’s the whole thing, on real screens.</p>
+      <p class="sub">The number never changes, the date never moves — and you can pay in parts. Here’s the whole thing, with the real screens you’ll use.</p>
     </div>
   </header>
 
@@ -328,6 +376,44 @@
         </div>
       </div>
       <p class="shot-note">A borrower profile as lenders see it — sample account.</p>
+    </div>
+  </section>
+
+  <!-- RUNNING LATE: the question everyone actually has -->
+  <section class="sec-late">
+    <div class="wrap reveal">
+      <p class="label">If it’s a hard week</p>
+      <h2 class="tile-h">Running late doesn’t make you a <span class="accent">bad person.</span></h2>
+      <p class="tile-cap">Message us before the date and we’ll figure it out together. What we <b>never</b> do: call your contacts, add surprise charges, or shame you.</p>
+      <div class="panel-night">
+        <div class="bubble">
+          <span class="from">Moodeng</span>
+          Hi! Your $18 is due Jul 30. If it’s a hard week, message us — we’ll figure it out together.
+        </div>
+      </div>
+      <a class="step-more" href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20have%20a%20Moodeng%20loan%20and%20this%20week%20is%20hard%20—%20can%20we%20talk%3F" target="_blank" rel="noreferrer">Message a human on Telegram →</a>
+    </div>
+  </section>
+
+  <!-- mini-FAQ: the repay questions people actually ask -->
+  <section class="sec-faq">
+    <div class="wrap reveal">
+      <p class="label">Common questions</p>
+      <h2 class="tile-h">Repay questions, <span class="accent">answered.</span></h2>
+      <div class="faq-list">
+        <details>
+          <summary>Does paying late hurt my record?</summary>
+          <p class="a">Your repayment record is what lenders see — the good and the setbacks. Late is always better than never: <b>finish the loan and keep building.</b> The amount itself never grows.</p>
+        </details>
+        <details>
+          <summary>Can I pay before the due date?</summary>
+          <p class="a">Yes — any time, in parts or all at once. Early never costs extra.</p>
+        </details>
+        <details>
+          <summary>Do I repay in pesos or dollars?</summary>
+          <p class="a">You repay in digital dollars inside the app — step 2 above shows how to turn pesos back into them through the same routes you cashed out with. The amount you owe never changes either way.</p>
+        </details>
+      </div>
     </div>
   </section>
 

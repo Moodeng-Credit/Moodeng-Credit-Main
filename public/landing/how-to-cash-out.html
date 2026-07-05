@@ -4,7 +4,14 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>How to turn USDC into pesos — Moodeng Credit cash-out guide</title>
-<meta name="description" content="How a Moodeng loan becomes pesos in your pocket: the money lands as digital dollars (USDC), you pick a trusted route like GCash, and pesos arrive in minutes." />
+<meta name="description" content="How a Moodeng loan becomes pesos in your pocket: the money lands as digital dollars, you pick a trusted route like GCash, and pesos arrive where you already bank." />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Moodeng Credit" />
+<meta property="og:title" content="From loan to pesos — the Moodeng Credit cash-out guide" />
+<meta property="og:description" content="Your loan lands as digital dollars; three steps later it's pesos in GCash. The honest guide, with the real app screen." />
+<meta property="og:url" content="https://moodeng.app/how-to-cash-out" />
+<meta property="og:image" content="https://moodeng.app/landing/assets/og/og-share.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..700&family=Archivo+Black&family=Fraunces:ital,opsz,wght@1,9..144,400..600&display=swap" rel="stylesheet" />
@@ -191,6 +198,22 @@
   .d-sub a:hover { color: #C9A8F5; }
   body.drawer-lock { overflow: hidden; }
 
+  /* mini-FAQ (native details/summary, same anatomy as the landing FAQ) */
+  .sec-faq { background: var(--surface-muted); padding: 56px 0 62px; }
+  .faq-list { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .faq-list details {
+    background: #fff; border: 1px solid #EFE6FB; border-radius: 16px; padding: 0 18px;
+  }
+  .faq-list summary {
+    cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 16px 0; font-size: 15px; font-weight: 800; color: var(--heading);
+  }
+  .faq-list summary::-webkit-details-marker { display: none; }
+  .faq-list summary::after { content: "+"; font-family: var(--display); font-size: 18px; color: var(--purple); flex: 0 0 auto; }
+  .faq-list details[open] summary::after { content: "–"; }
+  .faq-list .a { padding: 0 0 16px; font-size: 14.5px; line-height: 1.55; color: var(--text-muted); }
+  .faq-list .a b { color: var(--heading); }
+
   /* reveal on scroll */
   .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
   .reveal.in { opacity: 1; transform: none; }
@@ -253,7 +276,7 @@
     <div class="wrap">
       <p class="label">Cash-out guide</p>
       <h1>From loan to <span class="accent">pesos.</span></h1>
-      <p class="sub">Your loan arrives as digital dollars. Three steps later it’s pesos in GCash — here’s exactly how, on real screens.</p>
+      <p class="sub">Your loan arrives as digital dollars. Three steps later it’s pesos in GCash — here’s exactly how.</p>
     </div>
   </header>
 
@@ -261,7 +284,7 @@
     <div class="wrap reveal">
       <span class="step-num">1</span>
       <h2 class="tile-h">The money lands in <span class="accent">your</span> wallet.</h2>
-      <p class="tile-cap">The moment a lender funds you, it’s yours — digital dollars (USDC) sitting in your wallet, ready to move. <b>1 USDC is always worth 1 US dollar.</b></p>
+      <p class="tile-cap">The moment a lender funds you, it’s yours — digital dollars sitting in your wallet, ready to move. <b>One digital dollar is always worth one US dollar.</b></p>
       <div class="stage">
         <div class="stage-panel">
           <div class="phone upright tall">
@@ -313,6 +336,28 @@
             <span class="cta-caps">Move to GCash</span>
           </div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- mini-FAQ: the cash-out questions people actually ask -->
+  <section class="sec-faq">
+    <div class="wrap reveal">
+      <p class="label">Common questions</p>
+      <h2 class="tile-h">Cash-out questions, <span class="accent">answered.</span></h2>
+      <div class="faq-list">
+        <details>
+          <summary>What if I don’t have GCash?</summary>
+          <p class="a">GCash is the most popular route, but not the only one — Coins.ph, PDAX, and Binance work too. Pick whichever you already use; the app shows what each route takes before you choose.</p>
+        </details>
+        <details>
+          <summary>Who charges the conversion fee?</summary>
+          <p class="a">The converter — the app doing the pesos exchange. It’s their fee, not ours, and <b>Moodeng adds nothing on top.</b> You see the honest total before you confirm.</p>
+        </details>
+        <details>
+          <summary>Why does the app say “USDC”?</summary>
+          <p class="a">USDC is the official name of the digital dollars your loan travels as — 1 USDC is always worth 1 US dollar. It’s also why our fees are <b>$0</b>: digital dollars move without banks taking a cut along the way.</p>
+        </details>
       </div>
     </div>
   </section>
