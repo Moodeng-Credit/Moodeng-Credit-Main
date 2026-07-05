@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>How to turn USDC into pesos — Moodeng Credit cash-out guide</title>
+<meta name="description" content="How a Moodeng loan becomes pesos in your pocket: the money lands as digital dollars (USDC), you pick a trusted route like GCash, and pesos arrive in minutes." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..700&family=Archivo+Black&family=Fraunces:ital,opsz,wght@1,9..144,400..600&display=swap" rel="stylesheet" />
+<style>
+  /* Tokens + base copied from the main landing page (index.html) — keep in sync */
+  :root {
+    --lavender: #8336F0;
+    --purple: #6010D2;
+    --deep: #1C053D;
+    --heading: #040033;
+    --surface: #FDFCFD;
+    --surface-muted: #F8F4FC;
+    --lavender-bg: #F3E8FF;
+    --lavender-border: #E7D8FF;
+    --text-muted: #70617F;
+    --text-soft: #4D4359;
+    --panel: #C9A8F5;
+    --card-tint: #F7F0FE;
+    --pill: 500px;
+    --display: "Archivo Black", "Archivo", -apple-system, BlinkMacSystemFont, sans-serif;
+    --sans: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --serif: "Fraunces", Georgia, "Times New Roman", serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { font-family: var(--sans); color: var(--heading); background: var(--surface); line-height: 1.5; overflow-x: hidden; }
+  img { display: block; max-width: 100%; }
+  .accent { font-family: var(--serif); font-style: italic; font-weight: 500; letter-spacing: -0.01em; }
+  .label { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--purple); }
+  .wrap { width: 100%; max-width: 480px; margin: 0 auto; padding: 0 22px; }
+
+  /* header bar (same as landing) */
+  .site-head { position: sticky; top: 0; z-index: 50; background: #100626; }
+  .site-head .wrap { display: flex; align-items: center; gap: 9px; padding-top: 8px; padding-bottom: 8px; }
+  .head-logo { height: 28px; width: auto; }
+  .head-word { font-family: var(--display); font-size: 17px; font-weight: 500; color: #fff; letter-spacing: 0; margin-right: auto; text-decoration: none; }
+  .menu-pill { width: 58px; height: 42px; border: 0; cursor: pointer; border-radius: var(--pill); background: var(--purple); display: grid; place-items: center; }
+
+  /* page hero */
+  .hiw-hero {
+    padding: 40px 0 46px; text-align: center;
+    background: radial-gradient(130% 90% at 50% -20%, #ffffff 0%, var(--lavender-bg) 55%, #EADCFC 100%);
+  }
+  .hiw-hero h1 {
+    font-family: var(--display); font-size: 34px; line-height: 1.05; letter-spacing: -0.02em;
+    margin: 10px 0 0;
+  }
+  .hiw-hero h1 .accent { color: var(--purple); font-weight: 500; }
+  .hiw-hero .sub { margin: 14px auto 0; font-size: 15.5px; color: var(--text-soft); max-width: 32ch; }
+  .hiw-hero .sub b { color: var(--heading); }
+
+  /* steps */
+  .sec-step { padding: 56px 0 60px; }
+  .sec-step:nth-of-type(even) { background: var(--surface-muted); }
+  .step-num {
+    display: inline-grid; place-items: center;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--heading); color: #fff;
+    font-family: var(--display); font-size: 19px;
+  }
+  .tile-h { font-family: var(--display); font-size: 25px; letter-spacing: -0.01em; color: var(--heading); margin: 14px 0 0; line-height: 1.15; }
+  .tile-h .accent { color: var(--purple); font-weight: 500; }
+  .tile-cap { margin-top: 8px; font-size: 15px; color: var(--text-muted); line-height: 1.5; max-width: 34ch; }
+  .tile-cap b { color: var(--heading); }
+
+  /* phone frame w/ REAL app screen inside (moment-card anatomy, screenshot as the screen) */
+  .stage { position: relative; margin: 28px auto 0; width: 300px; max-width: 86%; }
+  .stage.big { width: 320px; }
+  .stage-panel {
+    position: relative;
+    background: radial-gradient(120% 90% at 20% 10%, #E4D2FB 0%, var(--panel) 60%, #B892F0 100%);
+    border-radius: 30px; padding: 26px 20px 24px;
+    box-shadow: 0 24px 50px rgba(96,16,210,0.28);
+  }
+  .stage-panel::before {
+    content: ""; position: absolute; inset: 0; border-radius: 30px;
+    background-image:
+      radial-gradient(circle at 30% 20%, rgba(255,255,255,0.28) 0 2px, transparent 3px),
+      radial-gradient(circle at 70% 60%, rgba(255,255,255,0.18) 0 2px, transparent 3px),
+      radial-gradient(circle at 50% 85%, rgba(28,5,61,0.06) 0 3px, transparent 4px);
+    background-size: 90px 90px, 120px 120px, 140px 140px;
+    opacity: 0.5; pointer-events: none;
+  }
+  .stage.right .phone { transform: rotate(2.5deg); }
+  .phone {
+    position: relative; background: #fff; border-radius: 22px;
+    padding: 10px; transform: rotate(-3deg);
+    box-shadow: 0 16px 34px rgba(28,5,61,0.22), 0 2px 0 rgba(255,255,255,0.6) inset;
+  }
+  .phone.upright { transform: none; }
+  .phone .screen { border-radius: 14px; width: 100%; }
+  .shot-note { margin-top: 16px; font-size: 12px; font-weight: 600; color: var(--text-muted); text-align: center; }
+
+  /* cash-out card (copied from landing peso strip) */
+  .phone.tall { padding: 18px 18px 22px; border-radius: 26px; text-align: center; }
+  .phone.tall .phone-head { justify-content: center; position: relative; padding-bottom: 0; }
+  .phone.tall .phone-head .back { position: absolute; left: 2px; top: 0; }
+  .phone-head {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em;
+    color: var(--text-muted); text-transform: uppercase; padding: 2px 2px 12px;
+  }
+  .phone-head .back { font-size: 15px; color: var(--heading); }
+  .coin-badge { height: 58px; margin: 36px auto 16px; display: block; }
+  .statement { font-family: var(--display); font-size: 20px; line-height: 1.12; letter-spacing: -0.01em; color: var(--heading); margin: 10px 0 12px; }
+  .phone.tall .statement { font-size: 22px; margin: 0 0 30px; }
+  .swap-box {
+    background: #F6F3FA; border-radius: 14px; padding: 13px 16px; margin: 0 2px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .swap-box .cell { text-align: left; }
+  .swap-box .cell.right { text-align: right; }
+  .swap-box .cell .k { display: block; font-size: 10.5px; font-weight: 600; color: #B9AECB; }
+  .swap-box .cell b { font-size: 16px; font-weight: 800; color: var(--heading); }
+  .swap-box .arr { color: var(--purple); font-family: var(--display); font-size: 18px; }
+  .cta-caps {
+    display: block; margin-top: 46px; background: var(--purple); color: #fff;
+    font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 16px; border-radius: var(--pill);
+  }
+
+  /* final CTA */
+  .sec-final {
+    text-align: center; padding: 64px 0 72px;
+    background: radial-gradient(130% 100% at 50% 100%, #DCC4FA 0%, var(--lavender-bg) 55%, #ffffff 100%);
+  }
+  .sec-final h2 { font-family: var(--display); font-size: 29px; line-height: 1.08; letter-spacing: -0.02em; margin: 12px 0 0; }
+  .sec-final h2 .accent { color: var(--purple); font-weight: 500; }
+  .cta {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--heading); color: #fff; font-weight: 700; font-size: 16px;
+    padding: 15px 26px; border-radius: var(--pill); text-decoration: none; margin-top: 26px;
+    box-shadow: 0 10px 24px rgba(4,0,51,0.22);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .cta:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(4,0,51,0.28); }
+  .cta .arrow { transition: transform .15s ease; }
+  .cta:hover .arrow { transform: translateX(3px); }
+  .reassure { margin-top: 14px; font-size: 13.5px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.01em; }
+
+  /* footer (same as landing, short form) */
+  .site-footer { background: #100626; padding: 52px 0 0; color: #B6A8CC; font-size: 13.5px; overflow: hidden; }
+  .site-footer .f-brand { display: flex; align-items: center; gap: 10px; }
+  .site-footer .f-brand img { width: 40px; }
+  .site-footer .f-brand b { font-family: var(--display); font-size: 20px; color: #fff; letter-spacing: -0.01em; }
+  .site-footer .f-tag { margin: 12px 0 0; line-height: 1.5; }
+  .f-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 28px; margin-top: 30px; }
+  .f-cols h4 { margin: 0 0 12px; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #C9A8F5; }
+  .f-cols a { display: block; color: #fff; text-decoration: none; font-weight: 600; padding: 6px 0; }
+  .f-cols a:hover { color: #C9A8F5; }
+  .f-fine { margin-top: 34px; padding-top: 18px; border-top: 1px solid rgba(201,168,245,0.16); font-size: 12px; color: #8B7BA8; padding-bottom: 26px; }
+
+  /* Tilt-style full-screen menu drawer (dark, big uppercase links) */
+  .drawer {
+    position: fixed; inset: 0; z-index: 100; background: #100626;
+    display: none; overflow-y: auto;
+  }
+  .drawer.open { display: block; }
+  .drawer .drawer-head { display: flex; align-items: center; gap: 9px; padding-top: 8px; padding-bottom: 8px; }
+  .drawer a.head-word { text-decoration: none; }
+  .drawer-links { display: block; padding-top: 22px; padding-bottom: 46px; }
+  .drawer-links a { text-decoration: none; display: block; }
+  .d-top {
+    font-weight: 800; color: #fff; font-size: 18px;
+    letter-spacing: 0.18em; text-transform: uppercase; padding: 19px 0;
+  }
+  .d-top:hover { color: #C9A8F5; }
+  .d-group summary {
+    list-style: none; cursor: pointer;
+    font-weight: 800; color: #fff; font-size: 18px;
+    letter-spacing: 0.18em; text-transform: uppercase; padding: 19px 0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .d-group summary::-webkit-details-marker { display: none; }
+  .d-group summary::after {
+    content: ""; width: 8px; height: 8px; margin-top: -4px;
+    border-right: 2px solid #fff; border-bottom: 2px solid #fff;
+    transform: rotate(-45deg); transition: transform .18s ease;
+  }
+  .d-group[open] summary::after { transform: rotate(45deg); }
+  .d-group summary:hover { color: #C9A8F5; }
+  .d-sub { padding: 0 0 12px 18px; }
+  .d-sub a { color: #EDE8F7; font-size: 17px; font-weight: 500; padding: 11px 0; }
+  .d-sub a:hover { color: #C9A8F5; }
+  body.drawer-lock { overflow: hidden; }
+
+  /* reveal on scroll */
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+
+  @media (min-width: 700px) {
+    .wrap { max-width: 620px; }
+    .hiw-hero h1 { font-size: 46px; }
+  }
+</style>
+</head>
+<body>
+
+  <nav class="site-head">
+    <div class="wrap">
+      <img class="head-logo" src="/landing/assets/brand/moodeng-logo-small.png" alt="" />
+      <a class="head-word" href="/">Moodeng Credit</a>
+      <button class="menu-pill" id="menuOpen" aria-label="Menu" aria-expanded="false" type="button">
+        <svg width="20" height="14" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1 1h18M1 7h18M1 13h18" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- full-screen menu drawer (honest links only — same rule as the footer) -->
+  <div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Menu">
+    <div class="wrap drawer-head">
+      <img class="head-logo" src="/landing/assets/brand/moodeng-logo-small.png" alt="" />
+      <a class="head-word" style="margin-right:auto" href="/">Moodeng Credit</a>
+      <button class="menu-pill" id="menuClose" aria-label="Close menu" type="button">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 2l12 12M14 2L2 14" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <nav class="wrap drawer-links">
+      <a class="d-top" href="/request-board">Browse requests</a>
+      <details class="d-group" open>
+        <summary>Guides</summary>
+        <div class="d-sub">
+          <a href="/how-it-works">How it works</a>
+          <a href="/how-to-cash-out">How to cash out</a>
+          <a href="/how-to-repay">How to repay</a>
+        </div>
+      </details>
+      <details class="d-group" open>
+        <summary>Support</summary>
+        <div class="d-sub">
+          <a href="/about">Our story</a>
+          <a href="/#faq">Common questions</a>
+          <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Telegram</a>
+          <a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
+          <a href="mailto:support@moodengcredit.com">Email us</a>
+        </div>
+      </details>
+    </nav>
+  </div>
+
+  <header class="hiw-hero">
+    <div class="wrap">
+      <p class="label">Cash-out guide</p>
+      <h1>From loan to <span class="accent">pesos.</span></h1>
+      <p class="sub">Your loan arrives as digital dollars. Three steps later it’s pesos in GCash — here’s exactly how, on real screens.</p>
+    </div>
+  </header>
+
+  <section class="sec-step">
+    <div class="wrap reveal">
+      <span class="step-num">1</span>
+      <h2 class="tile-h">The money lands in <span class="accent">your</span> wallet.</h2>
+      <p class="tile-cap">The moment a lender funds you, it’s yours — digital dollars (USDC) sitting in your wallet, ready to move. <b>1 USDC is always worth 1 US dollar.</b></p>
+      <div class="stage">
+        <div class="stage-panel">
+          <div class="phone upright tall">
+            <div class="phone-head"><span class="back">‹</span> Your wallet</div>
+            <img class="coin-badge" src="/landing/assets/icons/coins-stack.png" alt="" loading="lazy" />
+            <div class="statement">$15 just landed.</div>
+            <div class="swap-box">
+              <span class="cell"><span class="k">From</span><b>A real person</b></span>
+              <span class="arr">→</span>
+              <span class="cell right"><span class="k">To</span><b>You</b></span>
+            </div>
+            <span class="cta-caps">Cash out</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec-step">
+    <div class="wrap reveal">
+      <span class="step-num">2</span>
+      <h2 class="tile-h">Pick your way to <span class="accent">pesos.</span></h2>
+      <p class="tile-cap">The app lists trusted routes and tells you the honest part up front — how long each takes, and who charges what. <b>Moodeng adds nothing.</b></p>
+      <div class="stage right">
+        <div class="stage-panel">
+          <div class="phone"><img class="screen" src="/landing/assets/app/cashout-providers.jpg" alt="The real Moodeng cash-out screen: choose Binance, GCrypto straight to GCash, PDAX, or Coins.ph — with timing shown for each." loading="lazy" /></div>
+        </div>
+      </div>
+      <p class="shot-note">The actual cash-out screen in the app.</p>
+    </div>
+  </section>
+
+  <section class="sec-step">
+    <div class="wrap reveal">
+      <span class="step-num">3</span>
+      <h2 class="tile-h">Pesos arrive where you <span class="accent">already bank.</span></h2>
+      <p class="tile-cap">Most routes land straight in GCash — some in about five minutes. The converter may charge its own small fee; that one’s theirs, not ours.</p>
+      <div class="stage">
+        <div class="stage-panel">
+          <div class="phone upright tall">
+            <div class="phone-head"><span class="back">‹</span> Cash out</div>
+            <img class="coin-badge" src="/landing/assets/icons/usd-php-coins.png" alt="" loading="lazy" />
+            <div class="statement">Pesos, where you already bank.</div>
+            <div class="swap-box">
+              <span class="cell"><span class="k">To</span><b>GCash</b></span>
+              <span class="arr">→</span>
+              <span class="cell right"><span class="k">You’d get</span><b>≈ ₱855</b></span>
+            </div>
+            <span class="cta-caps">Move to GCash</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL: chain to the repay guide -->
+  <section class="sec-final">
+    <div class="wrap reveal">
+      <p class="label">Next up</p>
+      <h2>And when it’s time to pay it <span class="accent">back?</span></h2>
+      <a class="cta" href="/how-to-repay">How repaying works <span class="arrow">→</span></a>
+      <p class="reassure">Same doors, opposite direction — and never a fee from us.</p>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="f-brand">
+        <img src="/landing/assets/brand/moodeng-logo-small.png" alt="" />
+        <b>Moodeng Credit</b>
+      </div>
+      <p class="f-tag">Small loans, funded by real people.</p>
+      <div class="f-cols">
+        <div>
+          <h4>Talk to a human</h4>
+          <a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
+          <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Telegram</a>
+          <a href="mailto:support@moodengcredit.com">Email us</a>
+        </div>
+        <div>
+          <h4>The details</h4>
+          <a href="/">Home</a>
+          <a href="/request-board">Request board</a>
+          <a href="https://moodeng.gitbook.io/credit" target="_blank" rel="noreferrer">How credit levels work</a>
+        </div>
+      </div>
+      <p class="f-fine">© 2026 Moodeng Credit</p>
+    </div>
+  </footer>
+
+  <script>
+    // ---- Menu drawer ----
+    (function () {
+      var drawer = document.getElementById("drawer");
+      var openBtn = document.getElementById("menuOpen");
+      var closeBtn = document.getElementById("menuClose");
+      if (!drawer || !openBtn || !closeBtn) return;
+      function setOpen(open) {
+        drawer.classList.toggle("open", open);
+        document.body.classList.toggle("drawer-lock", open);
+        openBtn.setAttribute("aria-expanded", String(open));
+        if (open) closeBtn.focus();
+      }
+      openBtn.addEventListener("click", function () { setOpen(true); });
+      closeBtn.addEventListener("click", function () { setOpen(false); });
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
+    })();
+
+    // reveal on scroll (same pattern as landing)
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+  </script>
+</body>
+</html>

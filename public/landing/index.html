@@ -648,6 +648,40 @@
     height: 0.62em; overflow: hidden; margin-top: 34px; user-select: none;
   }
 
+  /* Tilt-style full-screen menu drawer (dark, big uppercase links) */
+  .drawer {
+    position: fixed; inset: 0; z-index: 100; background: #100626;
+    display: none; overflow-y: auto;
+  }
+  .drawer.open { display: block; }
+  .drawer .drawer-head { display: flex; align-items: center; gap: 9px; padding-top: 8px; padding-bottom: 8px; }
+  .drawer a.head-word { text-decoration: none; }
+  .drawer-links { display: block; padding-top: 22px; padding-bottom: 46px; }
+  .drawer-links a { text-decoration: none; display: block; }
+  .d-top {
+    font-weight: 800; color: #fff; font-size: 18px;
+    letter-spacing: 0.18em; text-transform: uppercase; padding: 19px 0;
+  }
+  .d-top:hover { color: #C9A8F5; }
+  .d-group summary {
+    list-style: none; cursor: pointer;
+    font-weight: 800; color: #fff; font-size: 18px;
+    letter-spacing: 0.18em; text-transform: uppercase; padding: 19px 0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .d-group summary::-webkit-details-marker { display: none; }
+  .d-group summary::after {
+    content: ""; width: 8px; height: 8px; margin-top: -4px;
+    border-right: 2px solid #fff; border-bottom: 2px solid #fff;
+    transform: rotate(-45deg); transition: transform .18s ease;
+  }
+  .d-group[open] summary::after { transform: rotate(45deg); }
+  .d-group summary:hover { color: #C9A8F5; }
+  .d-sub { padding: 0 0 12px 18px; }
+  .d-sub a { color: #EDE8F7; font-size: 17px; font-weight: 500; padding: 11px 0; }
+  .d-sub a:hover { color: #C9A8F5; }
+  body.drawer-lock { overflow: hidden; }
+
   /* reveal on scroll */
   .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
   .reveal.in { opacity: 1; transform: none; }
@@ -668,13 +702,47 @@
     <div class="wrap">
       <img class="head-logo" src="/landing/assets/brand/moodeng-logo-small.png" alt="" />
       <b class="head-word">Moodeng Credit</b>
-      <button class="menu-pill" aria-label="Menu" type="button">
+      <button class="menu-pill" id="menuOpen" aria-label="Menu" aria-expanded="false" type="button">
         <svg width="20" height="14" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1 1h18M1 7h18M1 13h18" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </button>
     </div>
   </nav>
+
+  <!-- full-screen menu drawer (honest links only — same rule as the footer) -->
+  <div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Menu">
+    <div class="wrap drawer-head">
+      <img class="head-logo" src="/landing/assets/brand/moodeng-logo-small.png" alt="" />
+      <a class="head-word" style="margin-right:auto" href="/">Moodeng Credit</a>
+      <button class="menu-pill" id="menuClose" aria-label="Close menu" type="button">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 2l12 12M14 2L2 14" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <nav class="wrap drawer-links">
+      <a class="d-top" href="/request-board">Browse requests</a>
+      <details class="d-group" open>
+        <summary>Guides</summary>
+        <div class="d-sub">
+          <a href="/how-it-works">How it works</a>
+          <a href="/how-to-cash-out">How to cash out</a>
+          <a href="/how-to-repay">How to repay</a>
+        </div>
+      </details>
+      <details class="d-group" open>
+        <summary>Support</summary>
+        <div class="d-sub">
+          <a href="/about">Our story</a>
+          <a href="#faq" data-drawer-close>Common questions</a>
+          <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Telegram</a>
+          <a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
+          <a href="mailto:support@moodengcredit.com">Email us</a>
+        </div>
+      </details>
+    </nav>
+  </div>
 
   <header class="hero-top">
     <img class="cloud c1" src="/landing/assets/clouds/cloud-1.svg" alt="" />
@@ -1064,7 +1132,7 @@
   </section>
 
   <!-- ============= FAQ (copy needs George's sign-off before shipping) ============= -->
-  <section class="sec-faq">
+  <section class="sec-faq" id="faq">
     <div class="wrap reveal">
       <p class="label">Common questions</p>
       <h3 class="tile-h">Questions people ask <span class="accent">us.</span></h3>
@@ -1138,6 +1206,27 @@
   </footer>
 
 <script>
+  // ---- Menu drawer ----
+  (function () {
+    var drawer = document.getElementById("drawer");
+    var openBtn = document.getElementById("menuOpen");
+    var closeBtn = document.getElementById("menuClose");
+    if (!drawer || !openBtn || !closeBtn) return;
+    function setOpen(open) {
+      drawer.classList.toggle("open", open);
+      document.body.classList.toggle("drawer-lock", open);
+      openBtn.setAttribute("aria-expanded", String(open));
+      if (open) closeBtn.focus();
+    }
+    openBtn.addEventListener("click", function () { setOpen(true); });
+    closeBtn.addEventListener("click", function () { setOpen(false); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
+    // same-page anchor links need the drawer out of the way before scrolling
+    drawer.querySelectorAll("[data-drawer-close]").forEach(function (a) {
+      a.addEventListener("click", function () { setOpen(false); });
+    });
+  })();
+
   // ---- Hero video: poster-first, data-saver friendly ----
   // The poster JPG is the hero on slow/saveData connections; the loop only
   // loads (and plays) when the connection can afford it.
