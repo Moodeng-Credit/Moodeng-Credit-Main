@@ -1,6 +1,7 @@
 {
   "routes": [
     { "src": "^/$", "dest": "/landing/index.html" },
+    { "src": "^/how-it-works/?$", "dest": "/landing/how-it-works.html" },
     {
       "src": "^/assets/(.*)\\.wasm$",
       "headers": { "Content-Type": "application/wasm" },
