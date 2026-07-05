@@ -54,17 +54,18 @@
     background: radial-gradient(130% 90% at 50% -20%, #ffffff 0%, var(--lavender-bg) 55%, #EADCFC 100%);
     overflow: hidden;
   }
+  .hero-copy { text-align: center; }
   .hero-top h1 {
     font-family: var(--display);
-    font-size: 42px; line-height: 1.02; letter-spacing: -0.02em;
-    color: var(--heading); margin: 26px 0 0;
+    font-size: 40px; line-height: 1.02; letter-spacing: -0.02em;
+    color: var(--heading); margin: 30px 0 0;
   }
   .hero-top h1 .accent { font-weight: 500; color: var(--purple); }
-  .hero-top .hero-sub { font-size: 16px; }
+  .hero-top .hero-sub { font-size: 16px; margin-left: auto; margin-right: auto; }
   .hero-top .cta { margin-top: 24px; }
   .hero-top .reassure { margin-top: 12px; }
   .hero-video {
-    position: relative; margin-top: 30px;
+    position: relative; margin-top: 8px;
     border-radius: 28px; overflow: hidden;
     aspect-ratio: 4 / 5; background: #E9DBFB;
     box-shadow: 0 24px 50px rgba(96,16,210,0.22);
@@ -650,12 +651,14 @@
         <img src="assets/brand/moodeng-logo.png" alt="" />
         <b>moodeng</b>
       </div>
-      <h1>Small loans that <span class="accent">treat you right.</span></h1>
-      <p class="hero-sub">Help for the moment you can’t wait for payday — from real people, on terms that never change overnight.</p>
-      <a class="cta" href="#">Start with your first small loan <span class="arrow">→</span></a>
-      <p class="reassure">Not instant. Not pushy. Not a trap.</p>
       <div class="hero-video">
         <video id="heroVid" autoplay muted loop playsinline preload="none" poster="assets/hero/hero-poster.jpg" aria-label="A phone with a small Moodeng loan on screen, hanging from a belt with a plush hippo charm"></video>
+      </div>
+      <div class="hero-copy">
+        <h1>Small loans that <span class="accent">treat you right.</span></h1>
+        <p class="hero-sub">Help for the moment you can’t wait for payday — from real people, on terms that never change overnight.</p>
+        <a class="cta" href="#">Start with your first small loan <span class="arrow">→</span></a>
+        <p class="reassure">Not instant. Not pushy. Not a trap.</p>
       </div>
     </div>
   </header>
