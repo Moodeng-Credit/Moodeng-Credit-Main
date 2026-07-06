@@ -3,15 +3,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, ChevronLeft, Clock3, Gift, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useAccount, useConnect } from 'wagmi';
+import { useAccount } from 'wagmi';
 
-import UserAvatar from '@/components/UserAvatar';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
+import UserAvatar from '@/components/UserAvatar';
 
-import useWallet from '@/hooks/useWallet';
+import useWallet, { type PaymentMethod } from '@/hooks/useWallet';
 
-import { getBaseAccountConnector } from '@/lib/walletProvider';
+import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import { getUserLoans, recordInterestReturn } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -41,7 +41,6 @@ function buildPreviewLoan(): Loan {
       fundedAt: '2026-05-05T00:00:00.000Z'
    };
 }
-
 
 function formatCurrency(amount: number): string {
    return new Intl.NumberFormat('en-US', {
@@ -293,7 +292,9 @@ function ReturnInterestCard({ name, avatarUrl, amount, coin, onOpen }: ReturnInt
             </div>
             <div className="rounded-[12px] bg-md-green-100 px-md-4 py-md-3 flex items-center justify-between">
                <span className="text-md-b3 text-md-green-900/80">Interest to return</span>
-               <span className="text-md-b1 font-semibold text-md-green-900">{amount.toFixed(2)} {coin}</span>
+               <span className="text-md-b1 font-semibold text-md-green-900">
+                  {amount.toFixed(2)} {coin}
+               </span>
             </div>
             <button
                type="button"
@@ -313,12 +314,17 @@ interface ReturnInterestSheetProps {
    name: string;
    amount: number;
    coin: string;
+   /** Set once the payment is submitted (userOp/tx hash) — flips "Sending" copy to "Confirming". */
+   pendingHash?: string | null;
+   /** Chain explorer base URL, for a "View transaction" link once the hash is known. */
+   explorerBaseUrl?: string;
    onConfirm: () => Promise<boolean>;
    onClose: () => void;
 }
 
-function ReturnInterestSheet({ open, name, amount, coin, onConfirm, onClose }: ReturnInterestSheetProps) {
+function ReturnInterestSheet({ open, name, amount, coin, pendingHash, explorerBaseUrl, onConfirm, onClose }: ReturnInterestSheetProps) {
    const [step, setStep] = useState<'confirm' | 'sending' | 'success'>('confirm');
+   const explorerTxUrl = pendingHash && explorerBaseUrl ? `${explorerBaseUrl}/tx/${pendingHash}` : null;
 
    useEffect(() => {
       if (open) setStep('confirm');
@@ -339,11 +345,7 @@ function ReturnInterestSheet({ open, name, amount, coin, onConfirm, onClose }: R
    return (
       <>
          <style>{`@keyframes returnSheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
-         <div
-            className="fixed inset-0 z-[60] bg-black/40"
-            onClick={step !== 'sending' ? onClose : undefined}
-            aria-hidden="true"
-         />
+         <div className="fixed inset-0 z-[60] bg-black/40" onClick={onClose} aria-hidden="true" />
          <div
             className="fixed bottom-0 left-0 right-0 z-[70] flex justify-center"
             style={{ animation: 'returnSheetUp 0.28s cubic-bezier(0.32,0.72,0,1) both' }}
@@ -378,17 +380,15 @@ function ReturnInterestSheet({ open, name, amount, coin, onConfirm, onClose }: R
                      <div className="px-md-4 flex flex-col gap-md-2">
                         <button
                            type="button"
-                           onClick={() => { void handleSend(); }}
+                           onClick={() => {
+                              void handleSend();
+                           }}
                            className="w-full inline-flex min-h-[56px] items-center justify-center gap-2 rounded-[16px] bg-md-green-900 px-md-4 py-md-3 text-md-b1 font-semibold text-white active:scale-[0.99]"
                         >
                            <Gift className="h-4 w-4" aria-hidden="true" />
                            Send {amount.toFixed(2)} {coin}
                         </button>
-                        <button
-                           type="button"
-                           onClick={onClose}
-                           className="w-full py-md-3 text-md-b1 font-semibold text-md-neutral-1200"
-                        >
+                        <button type="button" onClick={onClose} className="w-full py-md-3 text-md-b1 font-semibold text-md-neutral-1200">
                            Cancel
                         </button>
                      </div>
@@ -396,14 +396,29 @@ function ReturnInterestSheet({ open, name, amount, coin, onConfirm, onClose }: R
                )}
 
                {step === 'sending' && (
-                  <div className="flex flex-col items-center gap-md-4 px-md-4 py-12">
+                  <div className="flex flex-col items-center gap-md-4 px-md-4 py-10">
                      <div className="h-16 w-16 animate-spin rounded-full border-[3px] border-md-green-100 border-t-md-green-900" />
                      <div className="flex flex-col gap-1 items-center">
-                        <p className="text-md-b1 font-semibold text-md-primary-2000">Sending…</p>
+                        <p className="text-md-b1 font-semibold text-md-primary-2000">{pendingHash ? 'Confirming on Base…' : 'Sending…'}</p>
                         <p className="text-md-b3 text-md-neutral-1000 text-center">
-                           Your wallet is processing the transaction.
+                           {pendingHash ? 'Recording your gift — hang tight.' : 'Approve the transaction in your wallet.'}
                         </p>
                      </div>
+                     {explorerTxUrl ? (
+                        <a
+                           href={explorerTxUrl}
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           className="text-md-b3 font-semibold text-md-green-900 underline"
+                        >
+                           View transaction
+                        </a>
+                     ) : null}
+                     {/* Never trap the user on this screen: closing is safe — the payment keeps
+                         settling and reconciliation finishes the record if this tab goes away. */}
+                     <button type="button" onClick={onClose} className="w-full py-md-2 text-md-b3 font-semibold text-md-neutral-1200">
+                        Hide — this keeps going on its own
+                     </button>
                   </div>
                )}
 
@@ -483,11 +498,9 @@ export default function TransactionDetail() {
    const [modalOpen, setModalOpen] = useState(false);
    const [returnedTxHash, setReturnedTxHash] = useState<string | null>(null);
    const returnInFlightRef = useRef(false);
-   const { Transfer } = useWallet();
+   const { payUsdc } = useWallet();
    const { showToast } = useToast();
    const account = useAccount();
-   const { connectAsync, connectors } = useConnect();
-   const baseAccountConnector = useMemo(() => getBaseAccountConnector(connectors), [connectors]);
 
    const loan = useMemo(() => {
       const foundLoan = gloans.find((l) => l.id === loanId);
@@ -522,39 +535,50 @@ export default function TransactionDetail() {
          return false;
       }
 
-      if (!account.isConnected) {
-         if (!baseAccountConnector) {
-            showToast(TOAST_TYPES.ERROR, 'Wallet unavailable', 'Refresh and try again.', undefined, undefined);
-            return false;
-         }
-         try {
-            await connectAsync({ connector: baseAccountConnector });
-         } catch {
-            return false;
-         }
+      // Preview/demo: never open a real Base Pay popup — just show the returned state.
+      if (isPreview) {
+         setReturnedTxHash('0xpreview');
+         return true;
       }
+
+      // Connected → pay from that wallet in one signature; otherwise Base Pay's single popup
+      // (sign-in + send). Lenders aren't wallet-locked, so either source is fine.
+      const method: PaymentMethod = account.isConnected ? 'wallet' : 'base';
 
       returnInFlightRef.current = true;
 
       try {
          const interest = Math.round((loan.totalRepaymentAmount - loan.loanAmount) * 100) / 100;
          const transferCoin = loan.coin?.trim() || 'USDC';
-         const hash = await Transfer(loan.borrowerWallet, interest.toString(), loan.id, transferCoin);
+         const outcome = await payUsdc({
+            method,
+            to: loan.borrowerWallet,
+            usdAmount: interest.toString(),
+            loanId: loan.id,
+            coin: transferCoin,
+            // On Base Pay approval: hide the card early and arm reconciliation so an
+            // approved-but-unconfirmed interest return still records later.
+            onSubmitted: (id) => {
+               setReturnedTxHash(id);
+               registerPendingBasePayment({ kind: 'interest', id, loanId: loan.id });
+            }
+         });
 
-         if (!hash) return false;
+         if (!outcome) return false;
 
          // Hide the card the moment money is on its way — before the DB write —
          // so a failed DB write can't leave the button visible and trigger a double-send.
-         setReturnedTxHash(hash);
+         setReturnedTxHash(outcome.hash);
 
-         await dispatch(recordInterestReturn({ loanId: loan.id, hash })).unwrap();
+         await dispatch(recordInterestReturn({ loanId: loan.id, hash: outcome.hash })).unwrap();
+         clearPendingBasePayment(outcome.hash);
          return true;
       } catch {
          return false;
       } finally {
          returnInFlightRef.current = false;
       }
-   }, [loan, account.isConnected, baseAccountConnector, connectAsync, Transfer, dispatch, showToast]);
+   }, [loan, account.isConnected, isPreview, payUsdc, dispatch, showToast]);
 
    if (isLoansLoading && !loan) {
       return (
@@ -576,17 +600,8 @@ export default function TransactionDetail() {
    const counterpartyName = counterpartyProfile?.username ?? 'Unknown';
    const outstanding = Math.max(0, loan.totalRepaymentAmount - loan.repaidAmount);
    const interestAmount = Math.round((loan.totalRepaymentAmount - loan.loanAmount) * 100) / 100;
-   const canReturnInterest =
-      isLender &&
-      status === 'REPAID' &&
-      interestAmount > 0.005 &&
-      !loan.interestReturnedAt &&
-      !returnedTxHash;
-   const didReturnInterest =
-      isLender &&
-      status === 'REPAID' &&
-      interestAmount > 0.005 &&
-      (!!loan.interestReturnedAt || !!returnedTxHash);
+   const canReturnInterest = isLender && status === 'REPAID' && interestAmount > 0.005 && !loan.interestReturnedAt && !returnedTxHash;
+   const didReturnInterest = isLender && status === 'REPAID' && interestAmount > 0.005 && (!!loan.interestReturnedAt || !!returnedTxHash);
 
    return (
       <div className="min-h-screen bg-md-neutral-200">
@@ -720,6 +735,8 @@ export default function TransactionDetail() {
             name={counterpartyName}
             amount={interestAmount}
             coin={loan.coin || 'USDC'}
+            pendingHash={returnedTxHash}
+            explorerBaseUrl={account.chain?.blockExplorers?.default?.url}
             onConfirm={handleReturnInterest}
             onClose={() => setModalOpen(false)}
          />

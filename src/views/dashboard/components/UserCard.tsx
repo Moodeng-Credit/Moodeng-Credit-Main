@@ -1,4 +1,4 @@
-import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type MouseEvent, useCallback, useMemo, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
@@ -6,14 +6,17 @@ import { ChevronRight, ExternalLink, Loader2, Send, Trash2 } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount, useSwitchChain } from 'wagmi';
+import { getAccount } from 'wagmi/actions';
 
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
-import useWallet from '@/hooks/useWallet';
+import useWallet, { type PaymentMethod } from '@/hooks/useWallet';
 
 import { formatCurrency, formatNumber } from '@/utils/decimalHelpers';
 
+import { config } from '@/config/wagmiConfig';
+import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import {
    type BorrowerContextProfileData,
    type BorrowerContextResult,
@@ -22,13 +25,13 @@ import {
 } from '@/lib/borrowerContextFit';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { isUserVerified } from '@/lib/isUserVerified';
-import { fetchLoans, type LoanSideEffectError, updateLoanStatus } from '@/store/slices/loanSlice';
 import { computePointsDelta, computeYearOneIouPointsDelta, formatPointsMajor, getYearOneIouBorrowerBonusPoints } from '@/shared/points';
-
+import { fetchLoans, type LoanSideEffectError, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
+import LendChecklistModal from '@/views/dashboard/components/LendChecklistModal';
 
 type UserCardProps = Loan & {
    currentUserId?: string;
@@ -54,10 +57,14 @@ function BorrowerContextPanel({ context, lenderIouInfo }: { context: BorrowerCon
            const bonus = getYearOneIouBorrowerBonusPoints(prior);
            const total = formatPointsMajor(computeYearOneIouPointsDelta(lenderIouInfo.loanAmount, prior));
            const base = formatPointsMajor(computePointsDelta(lenderIouInfo.loanAmount));
-           const bonusLabel = prior === 0 ? '1st-time borrower bonus'
-              : prior === 1 ? '2nd-loan borrower bonus'
-              : prior === 2 ? '3rd-loan borrower bonus'
-              : '4th+ loan borrower bonus';
+           const bonusLabel =
+              prior === 0
+                 ? '1st-time borrower bonus'
+                 : prior === 1
+                   ? '2nd-loan borrower bonus'
+                   : prior === 2
+                     ? '3rd-loan borrower bonus'
+                     : '4th+ loan borrower bonus';
            return { total, base, bonus, bonusLabel };
         })()
       : null;
@@ -70,7 +77,9 @@ function BorrowerContextPanel({ context, lenderIouInfo }: { context: BorrowerCon
          </p>
          {iouData && (
             <div className="mt-4 rounded-[18px] bg-gradient-to-br from-[#fef3c7] to-[#fde68a] dark:from-[#3d2a00] dark:to-[#2a1d00] p-4 flex items-start gap-3">
-               <span className="text-2xl leading-none mt-0.5" aria-hidden="true">🪙</span>
+               <span className="text-2xl leading-none mt-0.5" aria-hidden="true">
+                  🪙
+               </span>
                <div>
                   <p className="text-md-b3 font-semibold uppercase tracking-wide text-[#92400e] dark:text-[#fbbf24]">Reward</p>
                   <p className="text-md-b1 font-bold text-[#92400e] dark:text-[#f59e0b]">
@@ -85,7 +94,6 @@ function BorrowerContextPanel({ context, lenderIouInfo }: { context: BorrowerCon
       </section>
    );
 }
-
 
 export default function UserCard(loan: UserCardProps) {
    const {
@@ -104,12 +112,13 @@ export default function UserCard(loan: UserCardProps) {
    const borrowerUserId = loanData.borrowerUser || '';
 
    const dispatch = useDispatch<AppDispatch>();
-   const { Transfer } = useWallet();
+   const { payUsdc } = useWallet();
    const account = useAccount();
    const { isConnected } = account;
    const { switchChainAsync } = useSwitchChain();
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
+   const [showWalletChecklist, setShowWalletChecklist] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
    // The on-chain transfer hash, set the moment Transfer resolves. Drives the "Sending" →
    // "Confirming" copy on the in-card processing overlay and the explorer link, mirroring
@@ -147,140 +156,153 @@ export default function UserCard(loan: UserCardProps) {
          .catch((error: Error) => console.error('Error fetching loan:', error.message || error));
    };
 
-   const executeLend = useCallback(async () => {
-      if (isProcessing || loanData.loanStatus === 'Lent') return;
+   const executeLend = useCallback(
+      async (method: PaymentMethod) => {
+         if (isProcessing || loanData.loanStatus === 'Lent') return;
 
-      if (loanData.borrowerUser === userId) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED));
-         return;
-      }
+         if (loanData.borrowerUser === userId) {
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED));
+            return;
+         }
 
-      const lenderWallet = account.address?.trim() || wallet?.trim();
-      if (!lenderWallet) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
-         return;
-      }
+         const borrowerWallet = loanData.borrowerWallet?.trim();
+         if (!borrowerWallet) {
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
+            return;
+         }
 
-      const borrowerWallet = loanData.borrowerWallet?.trim();
-      if (!borrowerWallet) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
-         return;
-      }
-
-      if (!(await ensureAllowedChain(account.chainId, switchChainAsync))) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
-         return;
-      }
-
-      const transferCoin = loanData.coin?.trim() || 'USDC';
-      setIsProcessing(true);
-      setPendingTxHash(null);
-
-      try {
-         const transactionHash = await Transfer(borrowerWallet, formatNumber(loanData.loanAmount), loanData.id, transferCoin);
-
-         if (transactionHash) {
-            // Transfer has cleared on-chain: surface the hash so the overlay flips from
-            // "Sending" to "Confirming" while the DB catches up.
-            setPendingTxHash(transactionHash);
-
-            const loanPayload = {
-               id: loanData.id,
-               wallet: lenderWallet,
-               userId,
-               loanStatus: 'Lent',
-               hash: transactionHash
-            };
-
-            const updateResult = await dispatch(updateLoanStatus(loanPayload));
-
-            if (updateLoanStatus.fulfilled.match(updateResult)) {
-               const sideEffectErrors = updateResult.meta.sideEffectErrors ?? [];
-               setShowModal(true);
-
-               if (sideEffectErrors.length === 0) {
-                  showToast(
-                     TOAST_TYPES.SUCCESS,
-                     'Thank You!',
-                     `You successfully funded $${formatCurrency(loanData.loanAmount)} to ${borrowerDisplayName}.`
-                  );
-               } else {
-                  const errorDetails = sideEffectErrors
-                     .map((error: LoanSideEffectError) =>
-                        error.type === 'award_points'
-                           ? `awarding points failed (${error.message})`
-                           : `sending funded notification failed (${error.message})`
-                     )
-                     .join('; ');
-
-                  showToast(
-                     TOAST_TYPES.WARNING,
-                     'Funded with Warnings',
-                     `Loan funded successfully, but some follow-ups failed: ${errorDetails}.`
-                  );
-               }
-            } else {
-               const errorMessage = updateResult.error?.message ?? 'Unknown error';
-               console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
-               showToast(TOAST_TYPES.ERROR, 'Funding Failed', `We could not update the loan in the database. Error: ${errorMessage}.`);
+         // The wagmi path sends from the already-connected wallet, so it needs a wallet and must
+         // be on Base first. Base Pay needs neither: it brings its own Base Account and switches
+         // the chain inside its single popup, so the pre-checks below don't apply to it.
+         const liveAccount = getAccount(config);
+         if (method === 'wallet') {
+            const connectedWallet = liveAccount.address?.trim() || account.address?.trim() || wallet?.trim();
+            if (!connectedWallet) {
+               showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
+               return;
+            }
+            if (!(await ensureAllowedChain(liveAccount.chainId ?? account.chainId, switchChainAsync))) {
+               showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
+               return;
             }
          }
-      } catch (transferError: unknown) {
-         const errorMessage = transferError instanceof Error ? transferError.message : 'Unknown error';
-         console.error('Transfer failed:', errorMessage);
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
-      } finally {
-         setIsProcessing(false);
+
+         const transferCoin = loanData.coin?.trim() || 'USDC';
+         setIsProcessing(true);
          setPendingTxHash(null);
-      }
-   }, [
-      isProcessing,
-      loanData.loanStatus,
-      loanData.borrowerUser,
-      loanData.borrowerWallet,
-      loanData.coin,
-      loanData.loanAmount,
-      loanData.id,
-      borrowerDisplayName,
-      userId,
-      account.address,
-      account.chainId,
-      switchChainAsync,
-      wallet,
-      Transfer,
-      dispatch,
-      showToast,
-      showToastByConfig
-   ]);
 
-   // Set when the lender taps "Send your help" while disconnected. Once the wallet reports
-   // connected, an effect resumes the lend automatically so connecting and sending are a
-   // single intent rather than two taps. A ref keeps the latest executeLend closure so the
-   // resume runs against fresh state (e.g. the just-connected account).
-   const pendingLendRef = useRef(false);
-   const executeLendRef = useRef(executeLend);
+         try {
+            const outcome = await payUsdc({
+               method,
+               to: borrowerWallet,
+               usdAmount: formatNumber(loanData.loanAmount),
+               loanId: loanData.id,
+               coin: transferCoin,
+               // Fired the instant Base Pay is approved (before confirmation): flip the overlay to
+               // "Confirming" and arm reconciliation so an approved-but-unconfirmed fund still gets
+               // marked Lent later instead of stranding the money.
+               onSubmitted: (id) => {
+                  setPendingTxHash(id);
+                  registerPendingBasePayment({ kind: 'fund', id, loanId: loanData.id, userId });
+               }
+            });
 
-   useEffect(() => {
-      executeLendRef.current = executeLend;
-   }, [executeLend]);
+            if (outcome) {
+               // Surface the hash so the overlay flips from "Sending" to "Confirming".
+               setPendingTxHash(outcome.hash);
 
-   useEffect(() => {
-      if (isConnected && pendingLendRef.current) {
-         pendingLendRef.current = false;
-         void executeLendRef.current();
-      }
-   }, [isConnected]);
+               // Base Pay reports the real paying wallet (sender); the wagmi path pays from the
+               // connected wallet, so fall back to that.
+               const lenderWallet = outcome.payer?.trim() || liveAccount.address?.trim() || account.address?.trim() || wallet?.trim();
+
+               const loanPayload = {
+                  id: loanData.id,
+                  wallet: lenderWallet,
+                  userId,
+                  loanStatus: 'Lent',
+                  hash: outcome.hash
+               };
+
+               const updateResult = await dispatch(updateLoanStatus(loanPayload));
+
+               if (updateLoanStatus.fulfilled.match(updateResult)) {
+                  // DB write landed — the reconciler has nothing left to finish for this payment.
+                  clearPendingBasePayment(outcome.hash);
+                  const sideEffectErrors = updateResult.meta.sideEffectErrors ?? [];
+                  setShowModal(true);
+
+                  if (sideEffectErrors.length === 0) {
+                     showToast(
+                        TOAST_TYPES.SUCCESS,
+                        'Thank You!',
+                        `You successfully funded $${formatCurrency(loanData.loanAmount)} to ${borrowerDisplayName}.`
+                     );
+                  } else {
+                     const errorDetails = sideEffectErrors
+                        .map((error: LoanSideEffectError) =>
+                           error.type === 'award_points'
+                              ? `awarding points failed (${error.message})`
+                              : `sending funded notification failed (${error.message})`
+                        )
+                        .join('; ');
+
+                     showToast(
+                        TOAST_TYPES.WARNING,
+                        'Funded with Warnings',
+                        `Loan funded successfully, but some follow-ups failed: ${errorDetails}.`
+                     );
+                  }
+               } else {
+                  const errorMessage = updateResult.error?.message ?? 'Unknown error';
+                  console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
+                  showToast(TOAST_TYPES.ERROR, 'Funding Failed', `We could not update the loan in the database. Error: ${errorMessage}.`);
+               }
+            }
+         } catch (transferError: unknown) {
+            const errorMessage = transferError instanceof Error ? transferError.message : 'Unknown error';
+            console.error('Transfer failed:', errorMessage);
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
+         } finally {
+            setIsProcessing(false);
+            setPendingTxHash(null);
+         }
+      },
+      [
+         isProcessing,
+         loanData.loanStatus,
+         loanData.borrowerUser,
+         loanData.borrowerWallet,
+         loanData.coin,
+         loanData.loanAmount,
+         loanData.id,
+         borrowerDisplayName,
+         userId,
+         account.address,
+         account.chainId,
+         switchChainAsync,
+         wallet,
+         payUsdc,
+         dispatch,
+         showToast,
+         showToastByConfig
+      ]
+   );
 
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
-      if (!isConnected) {
-         // Connecting is a prerequisite, not a separate task: arm the lend so it resumes by
-         // itself once the wallet connects, instead of dropping the lender back to a second tap.
-         pendingLendRef.current = true;
-         openConnectModal?.();
-         return;
-      }
-      await executeLend();
+      // Already connected a wallet → pay straight from it (one signature popup, no connect step).
+      // Not connected → Base Pay: a single popup that fuses Base Account sign-in and the USDC
+      // send, so even a cold lender funds in one tap. Lenders who specifically want a non-Base
+      // wallet use "Use a different wallet" below.
+      await executeLend(isConnected ? 'wallet' : 'base');
+   };
+
+   // "Use a different wallet" opens a guided two-step checklist (connect → send) instead of the
+   // bare connect modal. Step 2 is a real tap inside the checklist — never auto-fired on connect —
+   // which is what keeps the signing popup on a live gesture (no "Try again").
+   const handleConfirmFromChecklist = async () => {
+      await executeLend('wallet');
+      setShowWalletChecklist(false);
    };
 
    const loanReason = loanData.reason?.trim() ? loanData.reason.trim() : 'Unknown Reason';
@@ -307,7 +329,18 @@ export default function UserCard(loan: UserCardProps) {
          isVerified: borrowerIsVerified,
          ...borrowerContextProfileData
       });
-   }, [borrowerContextProfileData, borrowerDisplayName, borrowerFundedLoanCount, borrowerRepaidLoanCount, borrowerGoodStanding, borrowerIsVerified, due, loanData.createdAt, loanData.loanAmount, loanReason]);
+   }, [
+      borrowerContextProfileData,
+      borrowerDisplayName,
+      borrowerFundedLoanCount,
+      borrowerRepaidLoanCount,
+      borrowerGoodStanding,
+      borrowerIsVerified,
+      due,
+      loanData.createdAt,
+      loanData.loanAmount,
+      loanReason
+   ]);
    const explorerBaseUrl = account.chain?.blockExplorers?.default?.url;
    const explorerTxUrl = pendingTxHash && explorerBaseUrl ? `${explorerBaseUrl}/tx/${pendingTxHash}` : null;
    const isLenderCard = Boolean(isAuthenticated && !isBorrower && !isOwnLoan && !isLent && !isPreviewRequest);
@@ -336,7 +369,9 @@ export default function UserCard(loan: UserCardProps) {
                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-[24px] bg-white/85 px-6 text-center backdrop-blur-sm">
                   <Loader2 className="h-8 w-8 animate-spin text-md-primary-1200" aria-hidden="true" />
                   <div>
-                     <p className="text-md-b1 font-semibold text-md-heading">{pendingTxHash ? 'Confirming on Base…' : 'Sending your help…'}</p>
+                     <p className="text-md-b1 font-semibold text-md-heading">
+                        {pendingTxHash ? 'Confirming on Base…' : 'Sending your help…'}
+                     </p>
                      <p className="mt-1 text-md-b3 text-md-neutral-1200">
                         {pendingTxHash ? 'Recording your funding — hang tight.' : 'Approve the transaction in your wallet.'}
                      </p>
@@ -431,7 +466,11 @@ export default function UserCard(loan: UserCardProps) {
             {showBorrowerContext && borrowerContext ? (
                <BorrowerContextPanel
                   context={borrowerContext}
-                  lenderIouInfo={!isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest) ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 } : undefined}
+                  lenderIouInfo={
+                     !isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest)
+                        ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 }
+                        : undefined
+                  }
                />
             ) : null}
 
@@ -491,6 +530,17 @@ export default function UserCard(loan: UserCardProps) {
                   </button>
                )}
 
+               {/* Base Pay is the one-tap default; give non-Base lenders an explicit way in. */}
+               {isLenderCard && showDetails && !isLent && !isOwnLoan && !isProcessing && !isConnected ? (
+                  <button
+                     type="button"
+                     onClick={() => setShowWalletChecklist(true)}
+                     className="flex items-center justify-center gap-2 text-md-b2 font-semibold text-md-neutral-800 transition-colors hover:text-md-primary-1200"
+                  >
+                     Use a different wallet
+                  </button>
+               ) : null}
+
                {/* View Borrower Details — hidden for logged-out users and borrowers viewing others */}
                {isAuthenticated && (!isBorrower || isOwnLoan) ? (
                   borrowerUsername ? (
@@ -511,6 +561,19 @@ export default function UserCard(loan: UserCardProps) {
                ) : null}
             </div>
          </div>
+
+         {showWalletChecklist ? (
+            <LendChecklistModal
+               amountLabel={`$${formatCurrency(loanData.loanAmount)}`}
+               borrowerName={borrowerDisplayName}
+               connected={isConnected}
+               connectedAddress={account.address}
+               isProcessing={isProcessing}
+               onConnect={() => openConnectModal?.()}
+               onConfirm={handleConfirmFromChecklist}
+               onClose={() => setShowWalletChecklist(false)}
+            />
+         ) : null}
 
          {/* Fund Success Modal */}
          {showModal && (

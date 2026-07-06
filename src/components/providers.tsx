@@ -7,6 +7,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { WagmiProvider } from 'wagmi';
 
 import { AuthInitializer } from '@/components/AuthInitializer';
+import BasePaymentReconciler from '@/components/BasePaymentReconciler';
 import Loading from '@/components/Loading';
 import { SupportContactsModalHost } from '@/components/support/SupportContactsModal';
 import { ThemeModeProvider } from '@/components/ThemeModeProvider';
@@ -65,6 +66,7 @@ export function Providers({ children }: { children: ReactNode }) {
                            <AuthInitializer />
                            <ToastInitializer />
                            <WalletSyncInitializer />
+                           <BasePaymentReconciler />
                            {children}
                            <SupportContactsModalHost />
                            <ToastContainer />
