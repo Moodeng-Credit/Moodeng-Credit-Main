@@ -5,7 +5,8 @@ import { format, parseISO } from 'date-fns';
 import { ChevronRight, ExternalLink, Loader2, Send, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { useAccount, useSwitchChain } from 'wagmi';
+import { useAccount, useConnect, useReconnect, useSwitchChain } from 'wagmi';
+import { getAccount } from 'wagmi/actions';
 
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -22,6 +23,8 @@ import {
 } from '@/lib/borrowerContextFit';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { isUserVerified } from '@/lib/isUserVerified';
+import { getBaseAccountConnector } from '@/lib/walletProvider';
+import { config } from '@/config/wagmiConfig';
 import { fetchLoans, type LoanSideEffectError, updateLoanStatus } from '@/store/slices/loanSlice';
 import { computePointsDelta, computeYearOneIouPointsDelta, formatPointsMajor, getYearOneIouBorrowerBonusPoints } from '@/shared/points';
 
@@ -108,6 +111,9 @@ export default function UserCard(loan: UserCardProps) {
    const account = useAccount();
    const { isConnected } = account;
    const { switchChainAsync } = useSwitchChain();
+   const { connectors } = useConnect();
+   const { reconnectAsync } = useReconnect();
+   const baseAccountConnector = useMemo(() => getBaseAccountConnector(connectors), [connectors]);
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
@@ -155,7 +161,11 @@ export default function UserCard(loan: UserCardProps) {
          return;
       }
 
-      const lenderWallet = account.address?.trim() || wallet?.trim();
+      // Read the live wallet from the store rather than the hook: when executeLend runs on
+      // the same tap that just reconnected, the useAccount() render hasn't flushed yet, so
+      // account.address/chainId are still stale. getAccount(config) reflects the reconnect.
+      const liveAccount = getAccount(config);
+      const lenderWallet = liveAccount.address?.trim() || account.address?.trim() || wallet?.trim();
       if (!lenderWallet) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
          return;
@@ -167,7 +177,7 @@ export default function UserCard(loan: UserCardProps) {
          return;
       }
 
-      if (!(await ensureAllowedChain(account.chainId, switchChainAsync))) {
+      if (!(await ensureAllowedChain(liveAccount.chainId ?? account.chainId, switchChainAsync))) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
          return;
       }
@@ -274,8 +284,26 @@ export default function UserCard(loan: UserCardProps) {
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       if (!isConnected) {
-         // Connecting is a prerequisite, not a separate task: arm the lend so it resumes by
-         // itself once the wallet connects, instead of dropping the lender back to a second tap.
+         // Returning lender: silently restore her cached Base Account session on THIS tap.
+         // reconnect opens no window, so the tap's user-activation is still alive when the
+         // USDC-send popup opens just below — one tap, one popup. This deliberately avoids the
+         // old "arm a ref, resume in a useEffect" path, whose send popup fired outside any
+         // gesture and got blocked into Base's "Try again" dialog. If there is no cached
+         // session (or a non-Base wallet), fall through to the connect modal.
+         if (baseAccountConnector) {
+            try {
+               const restored = await reconnectAsync({ connectors: [baseAccountConnector] });
+               if (getAccount(config).isConnected || Boolean(restored?.[0]?.accounts?.length)) {
+                  await executeLend();
+                  return;
+               }
+            } catch {
+               // No cached session to restore — fall through to the modal below.
+            }
+         }
+         // Cold device with no restorable session: open the modal and resume once connected.
+         // This path is still a second tap (the resumed send can't ride the original gesture);
+         // Base Pay would collapse it to one popup and is tracked as the follow-up.
          pendingLendRef.current = true;
          openConnectModal?.();
          return;
