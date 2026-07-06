@@ -6,8 +6,23 @@ import { useWriteContract } from 'wagmi';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME, getAllowedChainTokenConfig } from '@/config/wagmiConfig';
+import { BasePaymentError, sendUsdcViaBasePay } from '@/lib/basePay';
 import { ERROR_CODES, type ErrorCode } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
+
+/** How the USDC leaves the payer's hands: Base Account's one-popup pay, or a wagmi wallet transfer. */
+export type PaymentMethod = 'base' | 'wallet';
+
+export interface PaymentOutcome {
+   /** On-chain identifier stored as the loan/withdrawal `hash` (a userOp hash on the Base Pay path). */
+   hash: string;
+   /**
+    * The wallet that actually paid. Only the Base Pay path can report this (it comes back from
+    * confirmation); on the wagmi path it's the already-known connected wallet, so callers keep
+    * using their own `account.address` there and this stays undefined.
+    */
+   payer?: string;
+}
 
 // Inspects the (often deeply-wrapped) wagmi/viem error to route to a toast the
 // user can act on, instead of a generic "transaction failed" they can't self-correct.
@@ -88,7 +103,45 @@ const useWallet = () => {
       }
    };
 
-   return { Transfer };
+   /**
+    * Unified USDC send. Picks Base Pay (one popup, Base-Account-only, cold-start capable) or
+    * the wagmi transfer above, and normalizes both to a {@link PaymentOutcome} | null. Like
+    * `Transfer`, it self-toasts on failure and returns null so callers keep their `if (result)`
+    * shape. A Base Pay `timeout` (approved but unconfirmed in time) also returns null today —
+    * the money may still settle, so that case wants reconciliation, tracked for the surface
+    * migration rather than marking the loan paid on an unconfirmed userOp.
+    */
+   const payUsdc = async ({
+      method,
+      to,
+      usdAmount,
+      loanId,
+      coin = 'USDC',
+      dataSuffix
+   }: {
+      method: PaymentMethod;
+      to: string;
+      usdAmount: string;
+      loanId: string;
+      coin?: string;
+      dataSuffix?: `0x${string}`;
+   }): Promise<PaymentOutcome | null> => {
+      if (method === 'base') {
+         try {
+            const confirmed = await sendUsdcViaBasePay({ to, usdAmount, dataSuffix });
+            return { hash: confirmed.id, payer: confirmed.sender };
+         } catch (err) {
+            const paymentError = err instanceof BasePaymentError ? err : null;
+            showToastByConfig(getToastKeyFromErrorCode(paymentError?.errorCode ?? ERROR_CODES.TRANSACTION_FAILED));
+            return null;
+         }
+      }
+
+      const hash = await Transfer(to, usdAmount, loanId, coin);
+      return hash ? { hash } : null;
+   };
+
+   return { Transfer, payUsdc };
 };
 
 export default useWallet;
