@@ -20,6 +20,7 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
 
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
+import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { areWalletAddressesEqual, formatWalletAddressShort, getBaseWalletLockStatus } from '@/lib/walletProvider';
@@ -749,7 +750,19 @@ export default function Repay() {
             to: selectedLoan.lenderWallet || '',
             usdAmount: effectiveRepayment.toString(),
             loanId: selectedLoan.id,
-            coin: transferCoin
+            coin: transferCoin,
+            // On Base Pay approval (before confirmation): flip the overlay to "Confirming" and arm
+            // reconciliation so an approved-but-unconfirmed repayment still records later.
+            onSubmitted: (id) => {
+               setPendingTxHash(id);
+               registerPendingBasePayment({
+                  kind: 'repay',
+                  id,
+                  loanId: selectedLoan.id,
+                  repaidAmount: newRepaidAmount,
+                  repaymentStatus: newRepaymentStatus
+               });
+            }
          });
 
          if (!outcome) {
@@ -781,6 +794,8 @@ export default function Repay() {
                hash: outcome.hash
             })
          ).unwrap();
+         // DB write landed — the reconciler has nothing left to finish for this payment.
+         clearPendingBasePayment(outcome.hash);
          await dispatch(getUserLoans({ userId: user.id })).unwrap();
          setRepaymentAmount('');
          if (isFullyRepaid) {

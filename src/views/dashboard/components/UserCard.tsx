@@ -16,6 +16,7 @@ import useWallet, { type PaymentMethod } from '@/hooks/useWallet';
 import { formatCurrency, formatNumber } from '@/utils/decimalHelpers';
 
 import { config } from '@/config/wagmiConfig';
+import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import {
    type BorrowerContextProfileData,
    type BorrowerContextResult,
@@ -194,12 +195,18 @@ export default function UserCard(loan: UserCardProps) {
                to: borrowerWallet,
                usdAmount: formatNumber(loanData.loanAmount),
                loanId: loanData.id,
-               coin: transferCoin
+               coin: transferCoin,
+               // Fired the instant Base Pay is approved (before confirmation): flip the overlay to
+               // "Confirming" and arm reconciliation so an approved-but-unconfirmed fund still gets
+               // marked Lent later instead of stranding the money.
+               onSubmitted: (id) => {
+                  setPendingTxHash(id);
+                  registerPendingBasePayment({ kind: 'fund', id, loanId: loanData.id, userId });
+               }
             });
 
             if (outcome) {
-               // Payment cleared: surface the hash so the overlay flips from "Sending" to
-               // "Confirming" while the DB catches up.
+               // Surface the hash so the overlay flips from "Sending" to "Confirming".
                setPendingTxHash(outcome.hash);
 
                // Base Pay reports the real paying wallet (sender); the wagmi path pays from the
@@ -217,6 +224,8 @@ export default function UserCard(loan: UserCardProps) {
                const updateResult = await dispatch(updateLoanStatus(loanPayload));
 
                if (updateLoanStatus.fulfilled.match(updateResult)) {
+                  // DB write landed — the reconciler has nothing left to finish for this payment.
+                  clearPendingBasePayment(outcome.hash);
                   const sideEffectErrors = updateResult.meta.sideEffectErrors ?? [];
                   setShowModal(true);
 
