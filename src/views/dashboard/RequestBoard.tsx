@@ -15,6 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, FileText, HelpCircle, LoaderCircle, Menu, Search, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAccount } from 'wagmi';
 
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import GuidedTourPreview, { type TourRoleOption } from '@/components/GuidedTourPreview';
@@ -581,6 +582,11 @@ function RequestBoard$() {
          effectiveCreditLimit <= STARTING_CREDIT_LIMIT &&
          borrowerCreditLoans.length === 0);
    const hasBorrowerBaseWallet = !IS_BORROWER_BASE_WALLET_GATE_ENABLED || hasWalletAddressOnAccount(effectiveUser);
+   // A wallet the borrower JUST connected is live in wagmi before its address finishes
+   // saving to their profile (useWalletSync → updateUser is async). During that window
+   // `hasBorrowerBaseWallet` is still false; we use this to hold the "apply loan" intent
+   // instead of bouncing them back to wallet setup — see the openLoanRequest effect below.
+   const { isConnected: isWalletLiveConnected } = useAccount();
    const shouldOpenLoanRequest =
       (location.state as { openLoanRequest?: boolean } | null)?.openLoanRequest === true ||
       new URLSearchParams(location.search).get('applyLoan') === '1';
@@ -1159,6 +1165,14 @@ function RequestBoard$() {
       if (!shouldOpenLoanRequest || !isAuthenticated || !isBorrower || !effectiveUser?.id) return;
       let isActive = true;
 
+      // Edge case: the borrower had no wallet, was asked to connect while applying, and just
+      // came back via "Continue Application". The wallet is live-connected but its address is
+      // still saving to their profile, so the gate below reads "no wallet". Don't bounce them
+      // back to wallet setup — keep the intent and let this effect re-run once the save lands
+      // (hasBorrowerBaseWallet flips true), which opens the modal. If the save fails,
+      // useWalletSync disconnects, isWalletLiveConnected flips false, and the redirects apply.
+      if (!hasBorrowerBaseWallet && isWalletLiveConnected) return;
+
       if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
          navigate('/onboarding/welcome', { replace: true, state: { returnTo: 'loan-request' } });
          return;
@@ -1204,6 +1218,7 @@ function RequestBoard$() {
       shouldOpenLoanRequest,
       showToastByConfig,
       hasBorrowerBaseWallet,
+      isWalletLiveConnected,
       isWorldIdVerified,
       goToBorrowerWalletSetup,
       effectiveUser?.id
