@@ -356,6 +356,28 @@ serve(async (req) => {
             return jsonResponse({ success: true });
          }
 
+         // Already-verified guard: once a user is is_didit=ACTIVE, a later non-approval
+         // (Abandoned/Expired/Declined/Duplicate from a fresh session they never needed)
+         // must not overwrite their clean status or nag them. Verification only ever
+         // moves forward via 'Approved' below; everything else is a no-op for them.
+         if (status !== 'Approved') {
+            const { data: existing, error: lookupError } = await adminSupabase
+               .from('users')
+               .select('is_didit')
+               .eq('id', vendorData)
+               .maybeSingle();
+            if (lookupError) {
+               console.error('[didit-webhook] Failed to look up verification state:', lookupError.message);
+               return jsonResponse({ success: false, error: 'Database error' }, 500);
+            }
+            if ((existing as { is_didit?: string } | null)?.is_didit === 'ACTIVE') {
+               console.log(
+                  `[didit-webhook] Ignoring status="${status}" for already-verified user ${vendorData} (${kind}, session ${sessionId ?? 'unknown'})`
+               );
+               return jsonResponse({ success: true });
+            }
+         }
+
          // Duplicate-face (1:N) gate — combined workflow only. Its Face Match "Duplicated
          // face" rule fires here; check on both terminal outcomes (if the rule Declines,
          // status is "Declined" with a duplicate signal; if it only flags, we must still
