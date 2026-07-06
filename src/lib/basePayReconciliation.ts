@@ -27,7 +27,9 @@ const MAX_ENTRY_AGE_MS = 24 * 60 * 60 * 1000;
  */
 export type PendingBasePaymentInput =
    | { kind: 'fund'; id: string; loanId: string; userId: string }
-   | { kind: 'repay'; id: string; loanId: string; repaidAmount: number; repaymentStatus: string };
+   | { kind: 'repay'; id: string; loanId: string; repaidAmount: number; repaymentStatus: string }
+   | { kind: 'interest'; id: string; loanId: string }
+   | { kind: 'withdraw'; id: string; userId: string; amount: number; exchange: string; address: string };
 
 export type PendingBasePayment = PendingBasePaymentInput & { createdAt: number };
 
@@ -65,10 +67,12 @@ export function clearPendingBasePayment(id: string) {
    writeAll(listPendingBasePayments().filter((e) => e.id !== id));
 }
 
-/** Dispatches for the two loan-mutating completions the reconciler can replay. */
+/** Dispatches for the completions the reconciler can replay, one per payment kind. */
 export interface ReconcileHandlers {
    completeFund: (args: { loanId: string; userId: string; wallet?: string; hash: string }) => Promise<void>;
    completeRepay: (args: { loanId: string; repaidAmount: number; repaymentStatus: string; hash: string }) => Promise<void>;
+   completeInterest: (args: { loanId: string; hash: string }) => Promise<void>;
+   completeWithdraw: (args: { userId: string; amount: number; exchange: string; address: string; hash: string }) => Promise<void>;
 }
 
 /**
@@ -106,11 +110,21 @@ export async function reconcilePendingBasePayments(handlers: ReconcileHandlers, 
       try {
          if (entry.kind === 'fund') {
             await handlers.completeFund({ loanId: entry.loanId, userId: entry.userId, wallet: status.sender, hash: entry.id });
-         } else {
+         } else if (entry.kind === 'repay') {
             await handlers.completeRepay({
                loanId: entry.loanId,
                repaidAmount: entry.repaidAmount,
                repaymentStatus: entry.repaymentStatus,
+               hash: entry.id
+            });
+         } else if (entry.kind === 'interest') {
+            await handlers.completeInterest({ loanId: entry.loanId, hash: entry.id });
+         } else {
+            await handlers.completeWithdraw({
+               userId: entry.userId,
+               amount: entry.amount,
+               exchange: entry.exchange,
+               address: entry.address,
                hash: entry.id
             });
          }

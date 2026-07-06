@@ -16,7 +16,9 @@ const mockStatus = vi.mocked(getPaymentStatus);
 const MIN_AGE = 2 * 60 * 1000;
 const handlers = (): ReconcileHandlers => ({
    completeFund: vi.fn().mockResolvedValue(undefined),
-   completeRepay: vi.fn().mockResolvedValue(undefined)
+   completeRepay: vi.fn().mockResolvedValue(undefined),
+   completeInterest: vi.fn().mockResolvedValue(undefined),
+   completeWithdraw: vi.fn().mockResolvedValue(undefined)
 });
 
 beforeEach(() => {
@@ -72,6 +74,28 @@ describe('reconcilePendingBasePayments', () => {
       expect(listPendingBasePayments()).toHaveLength(0);
    });
 
+   it('completes a confirmed interest return', async () => {
+      registerPendingBasePayment({ kind: 'interest', id: '0xc', loanId: 'L3' });
+      mockStatus.mockResolvedValue({ status: 'completed', id: '0xc', message: 'ok', sender: '0xlender' } as never);
+      const h = handlers();
+
+      await reconcilePendingBasePayments(h, Date.now() + MIN_AGE + 1000);
+
+      expect(h.completeInterest).toHaveBeenCalledWith({ loanId: 'L3', hash: '0xc' });
+      expect(listPendingBasePayments()).toHaveLength(0);
+   });
+
+   it('completes a confirmed withdrawal with its stored details', async () => {
+      registerPendingBasePayment({ kind: 'withdraw', id: '0xd', userId: 'U1', amount: 20, exchange: 'Binance', address: '0xexch' });
+      mockStatus.mockResolvedValue({ status: 'completed', id: '0xd', message: 'ok', sender: '0xuser' } as never);
+      const h = handlers();
+
+      await reconcilePendingBasePayments(h, Date.now() + MIN_AGE + 1000);
+
+      expect(h.completeWithdraw).toHaveBeenCalledWith({ userId: 'U1', amount: 20, exchange: 'Binance', address: '0xexch', hash: '0xd' });
+      expect(listPendingBasePayments()).toHaveLength(0);
+   });
+
    it('drops a failed payment without writing (the money never moved)', async () => {
       registerPendingBasePayment({ kind: 'fund', id: '0xa', loanId: 'L1', userId: 'U1' });
       mockStatus.mockResolvedValue({ status: 'failed', id: '0xa', message: 'reverted' } as never);
@@ -97,7 +121,7 @@ describe('reconcilePendingBasePayments', () => {
    it('keeps the entry if the DB write throws, so a later pass retries', async () => {
       registerPendingBasePayment({ kind: 'fund', id: '0xa', loanId: 'L1', userId: 'U1' });
       mockStatus.mockResolvedValue({ status: 'completed', id: '0xa', message: 'ok', sender: '0xlender' } as never);
-      const h: ReconcileHandlers = { completeFund: vi.fn().mockRejectedValue(new Error('db down')), completeRepay: vi.fn() };
+      const h: ReconcileHandlers = { ...handlers(), completeFund: vi.fn().mockRejectedValue(new Error('db down')) };
 
       await reconcilePendingBasePayments(h, Date.now() + MIN_AGE + 1000);
 

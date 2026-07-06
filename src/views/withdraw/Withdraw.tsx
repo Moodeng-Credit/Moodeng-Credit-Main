@@ -39,7 +39,8 @@ import useWallet, { type PaymentMethod } from '@/hooks/useWallet';
 import { parseDateSafely } from '@/utils/dateFormatters';
 
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
+import { recordWithdrawal } from '@/lib/recordWithdrawal';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import type { RootState } from '@/store/store';
 
@@ -2032,33 +2033,6 @@ const PREVIEW_ADDRESS = '0x1234aBCd5678Ef901234abcd5678ef901234ABcd';
 // borrower's transaction history + support) and fire the "on its way" notification.
 // Fire-and-forget: the money is already sent, so a logging failure must never block
 // or fail the user's flow — we only log it. The unique tx_hash index dedupes retries.
-async function recordWithdrawal(args: { userId: string; amount: number; exchange: string; address: string; txHash: string }) {
-   try {
-      const supabase = getSupabaseBrowserClient();
-      const { data, error } = await supabase
-         .from('withdrawals')
-         .insert({
-            borrower_user_id: args.userId,
-            amount: args.amount,
-            exchange: args.exchange,
-            destination_address: args.address,
-            tx_hash: args.txHash
-         })
-         .select('id')
-         .single();
-      if (error) {
-         console.error('[withdraw] record failed:', error.message);
-         return;
-      }
-      const { error: notifyError } = await supabase.functions.invoke('withdrawal-notification', {
-         body: { withdrawalId: data.id }
-      });
-      if (notifyError) console.error('[withdraw] notification failed:', notifyError.message);
-   } catch (err) {
-      console.error('[withdraw] record/notify error:', err instanceof Error ? err.message : err);
-   }
-}
-
 export default function Withdraw() {
    const location = useLocation();
    const account = useAccount();
@@ -2136,9 +2110,25 @@ export default function Withdraw() {
                to: toAddress.trim(),
                usdAmount: amount,
                loanId: primaryLoan?.id ?? 'withdraw',
-               coin: 'USDC'
+               coin: 'USDC',
+               // On Base Pay approval: arm reconciliation so an approved-but-unconfirmed cash-out
+               // still gets recorded/notified later even if the tab closes mid-confirm.
+               onSubmitted: (id) => {
+                  if (user.id) {
+                     registerPendingBasePayment({
+                        kind: 'withdraw',
+                        id,
+                        userId: user.id,
+                        amount: Number(amount),
+                        exchange,
+                        address: toAddress.trim()
+                     });
+                  }
+               }
             });
             if (!outcome) return null;
+            // Confirmed: the reconciler no longer needs to record this cash-out.
+            clearPendingBasePayment(outcome.hash);
             if (user.id) {
                // Don't await — recording/notifying must not delay the confirmation UI.
                void recordWithdrawal({

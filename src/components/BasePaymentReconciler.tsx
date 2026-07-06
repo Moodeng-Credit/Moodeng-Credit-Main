@@ -3,7 +3,8 @@ import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 
 import { reconcilePendingBasePayments } from '@/lib/basePayReconciliation';
-import { updateLoanStatus } from '@/store/slices/loanSlice';
+import { recordWithdrawal } from '@/lib/recordWithdrawal';
+import { recordInterestReturn, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch } from '@/store/store';
 
 // Base Pay confirms in seconds, so a stranded payment is rare; a light cadence is plenty.
@@ -26,6 +27,12 @@ export default function BasePaymentReconciler() {
             },
             completeRepay: async ({ loanId, repaidAmount, repaymentStatus, hash }) => {
                await dispatch(updateLoanStatus({ id: loanId, repaidAmount, repaymentStatus, hash })).unwrap();
+            },
+            completeInterest: async ({ loanId, hash }) => {
+               await dispatch(recordInterestReturn({ loanId, hash })).unwrap();
+            },
+            completeWithdraw: async ({ userId, amount, exchange, address, hash }) => {
+               await recordWithdrawal({ userId, amount, exchange, address, txHash: hash });
             }
          });
 

@@ -11,6 +11,7 @@ import UserAvatar from '@/components/UserAvatar';
 
 import useWallet, { type PaymentMethod } from '@/hooks/useWallet';
 
+import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import { getUserLoans, recordInterestReturn } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -526,7 +527,13 @@ export default function TransactionDetail() {
             to: loan.borrowerWallet,
             usdAmount: interest.toString(),
             loanId: loan.id,
-            coin: transferCoin
+            coin: transferCoin,
+            // On Base Pay approval: hide the card early and arm reconciliation so an
+            // approved-but-unconfirmed interest return still records later.
+            onSubmitted: (id) => {
+               setReturnedTxHash(id);
+               registerPendingBasePayment({ kind: 'interest', id, loanId: loan.id });
+            }
          });
 
          if (!outcome) return false;
@@ -536,6 +543,7 @@ export default function TransactionDetail() {
          setReturnedTxHash(outcome.hash);
 
          await dispatch(recordInterestReturn({ loanId: loan.id, hash: outcome.hash })).unwrap();
+         clearPendingBasePayment(outcome.hash);
          return true;
       } catch {
          return false;
