@@ -4,7 +4,7 @@ import { AlertTriangle, ArrowLeft, Check, ChevronDown, Clock, Copy, ExternalLink
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
-import { useAccount, useConnect, useReadContract, useWatchContractEvent } from 'wagmi';
+import { useAccount, useConnect, useReadContract, useSwitchChain, useWatchContractEvent } from 'wagmi';
 
 import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -27,6 +27,7 @@ import {
    isBaseWalletReadyForRepayment,
    isConnectedToLockedBaseWallet
 } from '@/lib/walletProvider';
+import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -301,6 +302,7 @@ export default function Repay() {
    const { Transfer } = useWallet();
    const account = useAccount();
    const { connectAsync, connectors, status: connectStatus } = useConnect();
+   const { switchChainAsync } = useSwitchChain();
 
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
@@ -754,7 +756,7 @@ export default function Repay() {
          return;
       }
 
-      if (account.chain?.id !== ALLOWED_CHAIN_ID) {
+      if (!(await ensureAllowedChain(account.chainId, switchChainAsync))) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
          return;
       }
@@ -831,7 +833,8 @@ export default function Repay() {
       amountError,
       parsedRepaymentAmount,
       account.isConnected,
-      account.chain?.id,
+      account.chainId,
+      switchChainAsync,
       baseAccountConnector,
       navigate,
       baseWalletLock.address,

@@ -2,7 +2,7 @@ import { type ChangeEvent, type MouseEvent, useCallback, useEffect, useState } f
 
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { useAccount, useConnect } from 'wagmi';
+import { useAccount, useConnect, useSwitchChain } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
@@ -12,7 +12,7 @@ import useWallet from '@/hooks/useWallet';
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
-import { ALLOWED_CHAIN_DISPLAY_NAME, ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
+import { ALLOWED_CHAIN_DISPLAY_NAME } from '@/config/wagmiConfig';
 import {
    formatWalletAddressShort,
    getBaseAccountConnector,
@@ -20,6 +20,7 @@ import {
    isBaseWalletReadyForRepayment,
    isConnectedToLockedBaseWallet
 } from '@/lib/walletProvider';
+import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -38,6 +39,7 @@ function UserPay({ loan }: { loan: Loan }) {
    const { showToast, showToastByConfig } = useToast();
    const account = useAccount();
    const { connect, connectors } = useConnect();
+   const { switchChainAsync } = useSwitchChain();
    const { isConnected } = account;
    const baseWalletLock = getBaseWalletLockStatus(user);
    const baseAccountConnector = getBaseAccountConnector(connectors);
@@ -60,7 +62,7 @@ function UserPay({ loan }: { loan: Loan }) {
             return;
          }
 
-         if (account.chain?.id !== ALLOWED_CHAIN_ID) {
+         if (!(await ensureAllowedChain(account.chainId, switchChainAsync))) {
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
             return;
          }
@@ -121,7 +123,8 @@ function UserPay({ loan }: { loan: Loan }) {
       },
       [
          isProcessing,
-         account.chain?.id,
+         account.chainId,
+         switchChainAsync,
          loan.repaidAmount,
          loan.totalRepaymentAmount,
          loan.loanStatus,
