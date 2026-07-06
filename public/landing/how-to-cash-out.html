@@ -49,9 +49,10 @@
   .site-head .wrap { display: flex; align-items: center; padding-top: 12px; padding-bottom: 12px; }
   .site-head .head-word { color: var(--heading); }
   .head-logo { height: 28px; width: auto; }
-  .head-word { font-family: var(--display); font-size: 18px; font-weight: 500; letter-spacing: -0.01em; margin-right: auto; color: #fff; text-decoration: none; }
+  .head-word { font-family: var(--sans); font-size: 17px; font-weight: 600; letter-spacing: 0.02em; margin-right: auto; color: #fff; text-decoration: none; }
   .menu-pill { width: 58px; height: 42px; border: 0; cursor: pointer; border-radius: var(--pill); background: var(--purple); display: grid; place-items: center; }
   .site-head .menu-pill { background: transparent; width: 46px; color: var(--heading); }
+  .head-signin { background: var(--heading); color: #fff; font-size: 13.5px; font-weight: 700; padding: 9px 16px; border-radius: var(--pill); text-decoration: none; margin-right: 2px; white-space: nowrap; }
 
   /* page hero */
   .hiw-hero {
@@ -232,6 +233,7 @@
   <nav class="site-head" id="siteHead">
     <div class="wrap">
       <a class="head-word" href="/">Moodeng Credit</a>
+      <a class="head-signin" href="/sign-in">Sign in</a>
       <button class="menu-pill" id="menuOpen" aria-label="Menu" aria-expanded="false" type="button">
         <svg width="22" height="10" viewBox="0 0 22 10" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1 1h20M1 9h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -253,6 +255,7 @@
     </div>
     <nav class="wrap drawer-links">
       <a class="d-top" href="/request-board">Browse requests</a>
+      <a class="d-top" href="/sign-in">Sign in</a>
       <details class="d-group" open>
         <summary>Guides</summary>
         <div class="d-sub">
@@ -285,12 +288,12 @@
   <section class="sec-step">
     <div class="wrap reveal">
       <span class="step-num">1</span>
-      <h2 class="tile-h">The money lands in <span class="accent">your</span> wallet.</h2>
-      <p class="tile-cap">The moment a lender funds you, it’s yours — digital dollars, called <b>USDC</b>, sitting in your wallet ready to move. <b>One USDC is always worth one US dollar</b> — that’s the name you’ll see on the screens below.</p>
+      <h2 class="tile-h">The money lands in <span class="accent">your</span> Base Account.</h2>
+      <p class="tile-cap">The moment a lender funds you, it’s yours — digital dollars, called <b>USDC</b>, sitting in your own <b>Base Account</b>, protected by our partner Coinbase. <b>One USDC is always worth one US dollar</b> — that’s the name you’ll see on the screens below.</p>
       <div class="stage">
         <div class="stage-panel">
           <div class="phone upright tall">
-            <div class="phone-head"><span class="back">‹</span> Your wallet</div>
+            <div class="phone-head"><span class="back">‹</span> Your Base Account</div>
             <img class="coin-badge" src="/landing/assets/icons/coins-stack.png" alt="" loading="lazy" />
             <div class="statement">$15 just landed.</div>
             <div class="swap-box">
@@ -348,6 +351,10 @@
       <p class="label">Common questions</p>
       <h2 class="tile-h">Cash-out questions, <span class="accent">answered.</span></h2>
       <div class="faq-list">
+        <details>
+          <summary>What’s a Base Account?</summary>
+          <p class="a">The account your loan lives in — built and protected by our partner <b>Coinbase</b>, one of the most trusted names in digital money. It’s super fast, and moving money out of it is <b>always free</b> — a big part of how we keep fees at zero.</p>
+        </details>
         <details>
           <summary>What if I don’t have GCash?</summary>
           <p class="a">GCash is the most popular route, but not the only one — Coins.ph, PDAX, and Binance work too. Pick whichever you already use; the app shows what each route takes before you choose.</p>

@@ -49,9 +49,10 @@
   .site-head .wrap { display: flex; align-items: center; padding-top: 12px; padding-bottom: 12px; }
   .site-head .head-word { color: var(--heading); }
   .head-logo { height: 28px; width: auto; }
-  .head-word { font-family: var(--display); font-size: 18px; font-weight: 500; letter-spacing: -0.01em; margin-right: auto; color: #fff; text-decoration: none; }
+  .head-word { font-family: var(--sans); font-size: 17px; font-weight: 600; letter-spacing: 0.02em; margin-right: auto; color: #fff; text-decoration: none; }
   .menu-pill { width: 58px; height: 42px; border: 0; cursor: pointer; border-radius: var(--pill); background: var(--purple); display: grid; place-items: center; }
   .site-head .menu-pill { background: transparent; width: 46px; color: var(--heading); }
+  .head-signin { background: var(--heading); color: #fff; font-size: 13.5px; font-weight: 700; padding: 9px 16px; border-radius: var(--pill); text-decoration: none; margin-right: 2px; white-space: nowrap; }
 
   /* page hero */
   .hiw-hero {
@@ -245,6 +246,7 @@
   <nav class="site-head" id="siteHead">
     <div class="wrap">
       <a class="head-word" href="/">Moodeng Credit</a>
+      <a class="head-signin" href="/sign-in">Sign in</a>
       <button class="menu-pill" id="menuOpen" aria-label="Menu" aria-expanded="false" type="button">
         <svg width="22" height="10" viewBox="0 0 22 10" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1 1h20M1 9h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -266,6 +268,7 @@
     </div>
     <nav class="wrap drawer-links">
       <a class="d-top" href="/request-board">Browse requests</a>
+      <a class="d-top" href="/sign-in">Sign in</a>
       <details class="d-group" open>
         <summary>Guides</summary>
         <div class="d-sub">

@@ -125,13 +125,14 @@
   .site-head .wrap { display: flex; align-items: center; padding-top: 12px; padding-bottom: 12px; }
   .site-head .head-word { color: var(--heading); text-decoration: none; }
   .head-logo { height: 28px; width: auto; }
-  .head-word { font-family: var(--display); font-size: 18px; font-weight: 500; letter-spacing: -0.01em; margin-right: auto; color: #fff; }
+  .head-word { font-family: var(--sans); font-size: 17px; font-weight: 600; letter-spacing: 0.02em; margin-right: auto; color: #fff; }
   .menu-pill {
     width: 58px; height: 42px; border: 0; cursor: pointer;
     border-radius: var(--pill); background: var(--purple);
     display: grid; place-items: center;
   }
   .site-head .menu-pill { background: transparent; width: 46px; color: var(--heading); }
+  .head-signin { background: var(--heading); color: #fff; font-size: 13.5px; font-weight: 700; padding: 9px 16px; border-radius: var(--pill); text-decoration: none; margin-right: 2px; white-space: nowrap; }
 
   .hero-h {
     font-family: var(--display);
@@ -720,6 +721,7 @@
   <nav class="site-head" id="siteHead">
     <div class="wrap">
       <a class="head-word" href="/">Moodeng Credit</a>
+      <a class="head-signin" href="/sign-in">Sign in</a>
       <button class="menu-pill" id="menuOpen" aria-label="Menu" aria-expanded="false" type="button">
         <svg width="22" height="10" viewBox="0 0 22 10" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1 1h20M1 9h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -741,6 +743,7 @@
     </div>
     <nav class="wrap drawer-links">
       <a class="d-top" href="/request-board">Browse requests</a>
+      <a class="d-top" href="/sign-in">Sign in</a>
       <details class="d-group" open>
         <summary>Guides</summary>
         <div class="d-sub">
@@ -1175,7 +1178,7 @@
         </details>
         <details>
           <summary>Why does the app say “USDC”?</summary>
-          <p class="a">USDC is a digital dollar — 1 USDC is always worth 1 US dollar. It’s the form your loan arrives in, and it’s why our fees are <b>$0</b>: digital dollars move without banks taking a cut along the way. You turn it into pesos through apps like GCash. (Those apps charge a tiny conversion fee — a cent or two — and that one’s theirs, not ours.)</p>
+          <p class="a">USDC is a digital dollar — 1 USDC is always worth 1 US dollar. It’s the form your loan arrives in, and it’s why our fees are <b>$0</b>: digital dollars move without banks taking a cut along the way. You turn it into pesos through apps like GCash — and the whole amount arrives. (The one tiny fee in the loop — a cent or two — happens when you repay, and it’s the converter’s, not ours.)</p>
         </details>
         <details>
           <summary>Why does it start at only $15?</summary>
