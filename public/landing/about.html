@@ -43,12 +43,15 @@
   .label { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--purple); }
   .wrap { width: 100%; max-width: 480px; margin: 0 auto; padding: 0 22px; }
 
-  /* header bar (same as landing) */
-  .site-head { position: sticky; top: 0; z-index: 50; background: #100626; }
-  .site-head .wrap { display: flex; align-items: center; gap: 9px; padding-top: 8px; padding-bottom: 8px; }
+  /* Klarna-minimal header (same as landing): wordmark only, transparent, frosted on scroll */
+  .site-head { position: sticky; top: 0; z-index: 50; background: transparent; transition: background .25s ease, box-shadow .25s ease; }
+  .site-head.scrolled { background: rgba(253,252,253,0.86); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 1px 0 rgba(4,0,51,0.08); }
+  .site-head .wrap { display: flex; align-items: center; padding-top: 12px; padding-bottom: 12px; }
+  .site-head .head-word { color: var(--heading); }
   .head-logo { height: 28px; width: auto; }
-  .head-word { font-family: var(--display); font-size: 17px; font-weight: 500; color: #fff; letter-spacing: 0; margin-right: auto; text-decoration: none; }
+  .head-word { font-family: var(--display); font-size: 18px; font-weight: 500; letter-spacing: -0.01em; margin-right: auto; color: #fff; text-decoration: none; }
   .menu-pill { width: 58px; height: 42px; border: 0; cursor: pointer; border-radius: var(--pill); background: var(--purple); display: grid; place-items: center; }
+  .site-head .menu-pill { background: transparent; width: 46px; color: var(--heading); }
 
   /* page hero */
   .hiw-hero {
@@ -239,13 +242,12 @@
 </head>
 <body>
 
-  <nav class="site-head">
+  <nav class="site-head" id="siteHead">
     <div class="wrap">
-      <img class="head-logo" src="/landing/assets/brand/moodeng-logo-small.png" alt="" />
       <a class="head-word" href="/">Moodeng Credit</a>
       <button class="menu-pill" id="menuOpen" aria-label="Menu" aria-expanded="false" type="button">
-        <svg width="20" height="14" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1 1h18M1 7h18M1 13h18" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        <svg width="22" height="10" viewBox="0 0 22 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1 1h20M1 9h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </button>
     </div>
@@ -430,6 +432,15 @@
   </footer>
 
   <script>
+    // ---- Header: gain a surface once the hero starts scrolling away ----
+    (function () {
+      var head = document.getElementById("siteHead");
+      if (!head) return;
+      var onScroll = function () { head.classList.toggle("scrolled", window.scrollY > 24); };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+    })();
+
     // ---- Menu drawer ----
     (function () {
       var drawer = document.getElementById("drawer");
