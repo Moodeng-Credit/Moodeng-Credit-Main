@@ -743,6 +743,26 @@ export default function Repay() {
          const transferCoin = selectedLoan.coin?.trim() || 'USDC';
          const earnedTrustPoints = getEstimatedTrustPoints(selectedLoan, effectiveRepayment);
 
+         // Preview/demo (localhost or a vercel preview URL): never open a real Base Pay popup or
+         // write to the DB against mock loans — simulate the same success UI.
+         if (usePreviewLoans) {
+            setPendingTxHash('0xpreview');
+            await new Promise((resolve) => setTimeout(resolve, 800));
+            setRepaymentAmount('');
+            if (isFullyRepaid) {
+               setCompletion({
+                  reason: selectedLoan.reason || 'your loan',
+                  paidAmount: toNumber(selectedLoan.totalRepaymentAmount),
+                  coin: transferCoin,
+                  trustPoints: earnedTrustPoints
+               });
+            } else {
+               const remainingAfter = Math.max(0, toNumber(selectedLoan.totalRepaymentAmount) - newRepaidAmount);
+               setPartialPaid({ paidAmount: effectiveRepayment, remaining: remainingAfter, coin: transferCoin });
+            }
+            return;
+         }
+
          // Recipient is always the lender's on-file funding wallet — chosen by us, never by the
          // payer's wallet choice — so the lender receives at the address they funded from.
          const outcome = await payUsdc({
@@ -839,7 +859,8 @@ export default function Repay() {
       showToastByConfig,
       payUsdc,
       dispatch,
-      user.id
+      user.id,
+      usePreviewLoans
    ]);
 
    const handleRepayRef = useRef(handleRepay);

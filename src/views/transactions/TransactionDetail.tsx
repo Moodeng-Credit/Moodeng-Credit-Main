@@ -513,6 +513,12 @@ export default function TransactionDetail() {
          return false;
       }
 
+      // Preview/demo: never open a real Base Pay popup — just show the returned state.
+      if (isPreview) {
+         setReturnedTxHash('0xpreview');
+         return true;
+      }
+
       // Connected → pay from that wallet in one signature; otherwise Base Pay's single popup
       // (sign-in + send). Lenders aren't wallet-locked, so either source is fine.
       const method: PaymentMethod = account.isConnected ? 'wallet' : 'base';
@@ -550,7 +556,7 @@ export default function TransactionDetail() {
       } finally {
          returnInFlightRef.current = false;
       }
-   }, [loan, account.isConnected, payUsdc, dispatch, showToast]);
+   }, [loan, account.isConnected, isPreview, payUsdc, dispatch, showToast]);
 
    if (isLoansLoading && !loan) {
       return (
