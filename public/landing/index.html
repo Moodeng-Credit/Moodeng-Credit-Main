@@ -580,52 +580,52 @@
   }
   .tips-list::-webkit-scrollbar { display: none; }
   .tips-card {
-    flex: 0 0 82%; scroll-snap-align: center;
+    flex: 0 0 248px; scroll-snap-align: start;
     display: block; text-decoration: none; background: #fff; border-radius: 24px; overflow: hidden;
     box-shadow: 0 8px 26px rgba(96,16,210,0.10);
   }
   .tips-card .cover {
-    position: relative; height: 230px; overflow: hidden; display: block;
+    position: relative; height: 138px; overflow: hidden; display: block;
     background: linear-gradient(180deg, #C9A8F5 0%, #E9DCFA 62%, #FDFBFF 100%);
   }
   .tips-card .cover .ct {
-    position: absolute; top: 22px; left: 52px; right: 52px; margin: 0; text-align: center;
+    position: absolute; top: 12px; left: 26px; right: 26px; margin: 0; text-align: center;
     color: var(--heading);
   }
-  .tips-card .cover .ct b { display: block; font-size: 16px; font-weight: 800; line-height: 1.3; }
-  .tips-card .cover .ct small { display: block; margin-top: 3px; font-size: 12px; font-weight: 600; color: #4C3A78; }
+  .tips-card .cover .ct b { display: block; font-size: 12px; font-weight: 800; line-height: 1.3; }
+  .tips-card .cover .ct small { display: block; margin-top: 2px; font-size: 10px; font-weight: 600; color: #4C3A78; }
   .tips-card .cover .badge {
-    position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border-radius: 11px;
+    position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 8px;
     background: #fff; box-shadow: 0 2px 8px rgba(96,16,210,0.14);
     display: flex; align-items: center; justify-content: center;
   }
-  .tips-card .cover .badge img { width: 26px; height: 26px; object-fit: contain; }
+  .tips-card .cover .badge img { width: 19px; height: 19px; object-fit: contain; }
   .tips-card .cover .cl { position: absolute; pointer-events: none; }
-  .tips-card .cover .cl.c1 { width: 84px; left: -16px; top: 76px; opacity: 0.85; }
-  .tips-card .cover .cl.c2 { width: 64px; right: -8px; top: 58px; opacity: 0.65; }
-  .tips-card .cover .cl.c3 { width: 190px; left: 50%; transform: translateX(-50%); bottom: -22px; opacity: 0.95; }
+  .tips-card .cover .cl.c1 { width: 50px; left: -10px; top: 46px; opacity: 0.85; }
+  .tips-card .cover .cl.c2 { width: 38px; right: -5px; top: 35px; opacity: 0.65; }
+  .tips-card .cover .cl.c3 { width: 114px; left: 50%; transform: translateX(-50%); bottom: -13px; opacity: 0.95; }
   /* George's cover graphics drop in here (one per card, MAKE-style scene) */
   .tips-card .cover .art {
-    position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
-    height: 110px; width: auto; max-width: none;
+    position: absolute; bottom: 9px; left: 50%; transform: translateX(-50%);
+    height: 66px; width: auto; max-width: none;
   }
   /* George's cards ARE the design (2026-07-05: "you put text on top of it, weird") —
      the full generated card ships as one image, no HTML text re-rendered over/under it */
   .tips-card .card-img { display: block; width: 100%; height: auto; }
-  .tips-card .body { padding: 16px 18px 18px; }
-  .tips-card .t { margin: 0 0 6px; font-size: 17px; font-weight: 800; color: var(--heading); line-height: 1.32; }
+  .tips-card .body { padding: 12px 14px 14px; }
+  .tips-card .t { margin: 0 0 5px; font-size: 14px; font-weight: 800; color: var(--heading); line-height: 1.3; }
   .tips-card .dek {
-    margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-muted);
+    margin: 0; font-size: 12px; line-height: 1.45; color: var(--text-muted);
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
-  .tips-card .byline { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
-  .tips-card .byline img { width: 26px; height: 26px; border-radius: 50%; background: #F3E8FF; object-fit: contain; }
-  .tips-card .byline .who { font-size: 12.5px; color: var(--text-muted); font-weight: 600; line-height: 1.35; }
+  .tips-card .byline { display: flex; align-items: center; gap: 7px; margin-top: 10px; }
+  .tips-card .byline img { width: 21px; height: 21px; border-radius: 50%; background: #F3E8FF; object-fit: contain; }
+  .tips-card .byline .who { font-size: 10.5px; color: var(--text-muted); font-weight: 600; line-height: 1.3; }
   .tips-card .byline .who b { display: block; color: var(--heading); font-weight: 800; }
-  .tips-card .tags { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .tips-card .tags { display: flex; gap: 5px; margin-top: 9px; flex-wrap: wrap; }
   .tips-card .tags span {
-    background: #F3E8FF; color: #6010D2; font-size: 11.5px; font-weight: 700;
-    padding: 5px 11px; border-radius: var(--pill);
+    background: #F3E8FF; color: #6010D2; font-size: 10px; font-weight: 700;
+    padding: 4px 9px; border-radius: var(--pill);
   }
   .tips-dots { display: flex; justify-content: center; gap: 6px; margin-top: 6px; }
   .tips-dots span { width: 7px; height: 7px; border-radius: 99px; background: #DCC8F5; transition: all 0.25s; }
