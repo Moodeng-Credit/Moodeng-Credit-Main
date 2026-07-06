@@ -5,7 +5,7 @@ import { format, parseISO } from 'date-fns';
 import { ChevronRight, ExternalLink, Loader2, Send, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { useAccount } from 'wagmi';
+import { useAccount, useSwitchChain } from 'wagmi';
 
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -14,13 +14,13 @@ import useWallet from '@/hooks/useWallet';
 
 import { formatCurrency, formatNumber } from '@/utils/decimalHelpers';
 
-import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import {
    type BorrowerContextProfileData,
    type BorrowerContextResult,
    buildBorrowerContextFit,
    normalizeBorrowerContextProfile
 } from '@/lib/borrowerContextFit';
+import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { fetchLoans, type LoanSideEffectError, updateLoanStatus } from '@/store/slices/loanSlice';
 import { computePointsDelta, computeYearOneIouPointsDelta, formatPointsMajor, getYearOneIouBorrowerBonusPoints } from '@/shared/points';
@@ -107,6 +107,7 @@ export default function UserCard(loan: UserCardProps) {
    const { Transfer } = useWallet();
    const account = useAccount();
    const { isConnected } = account;
+   const { switchChainAsync } = useSwitchChain();
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
@@ -166,7 +167,7 @@ export default function UserCard(loan: UserCardProps) {
          return;
       }
 
-      if (account.chain?.id !== ALLOWED_CHAIN_ID) {
+      if (!(await ensureAllowedChain(account.chainId, switchChainAsync))) {
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
          return;
       }
@@ -243,7 +244,8 @@ export default function UserCard(loan: UserCardProps) {
       borrowerDisplayName,
       userId,
       account.address,
-      account.chain?.id,
+      account.chainId,
+      switchChainAsync,
       wallet,
       Transfer,
       dispatch,
