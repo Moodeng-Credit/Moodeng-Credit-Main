@@ -1,26 +1,19 @@
-import { type ChangeEvent, type MouseEvent, useCallback, useEffect, useState } from 'react';
+import { type ChangeEvent, type MouseEvent, useCallback, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { useAccount, useConnect, useSwitchChain } from 'wagmi';
+import { useAccount, useSwitchChain } from 'wagmi';
 
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
-import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
-import useWallet from '@/hooks/useWallet';
+import useWallet, { type PaymentMethod } from '@/hooks/useWallet';
 
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME } from '@/config/wagmiConfig';
-import {
-   formatWalletAddressShort,
-   getBaseAccountConnector,
-   getBaseWalletLockStatus,
-   isBaseWalletReadyForRepayment,
-   isConnectedToLockedBaseWallet
-} from '@/lib/walletProvider';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
+import { areWalletAddressesEqual, getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -34,35 +27,22 @@ function UserPay({ loan }: { loan: Loan }) {
    const [repaidAmountToAdd, setRepaidAmountToAdd] = useState('');
    const [isProcessing, setIsProcessing] = useState(false);
    const time = parseDateSafely(loan.createdAt).toISOString();
-   const { Transfer } = useWallet();
+   const { payUsdc } = useWallet();
    const dispatch = useDispatch<AppDispatch>();
-   const { showToast, showToastByConfig } = useToast();
+   const { showToastByConfig } = useToast();
    const account = useAccount();
-   const { connect, connectors } = useConnect();
    const { switchChainAsync } = useSwitchChain();
    const { isConnected } = account;
    const baseWalletLock = getBaseWalletLockStatus(user);
-   const baseAccountConnector = getBaseAccountConnector(connectors);
-   const isUsingLockedBaseWallet = isConnectedToLockedBaseWallet({
-      connectedAddress: account.address,
-      connectorId: account.connector?.id,
-      connectorName: account.connector?.name,
-      lockedAddress: baseWalletLock.address
-   });
-   const canRepayWithConnectedBaseWallet = isBaseWalletReadyForRepayment({
-      connectedAddress: account.address,
-      connectorId: account.connector?.id,
-      connectorName: account.connector?.name,
-      wallet: user
-   });
 
    const executeRepayment = useCallback(
-      async (amount: string) => {
+      async (amount: string, method: PaymentMethod) => {
          if (isProcessing) {
             return;
          }
 
-         if (!(await ensureAllowedChain(account.chainId, switchChainAsync))) {
+         // Only the wagmi path needs the chain guard up front; Base Pay switches to Base itself.
+         if (method === 'wallet' && !(await ensureAllowedChain(account.chainId, switchChainAsync))) {
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
             return;
          }
@@ -80,15 +60,34 @@ function UserPay({ loan }: { loan: Loan }) {
          ) {
             setIsProcessing(true);
             const transferCoin = loan.coin?.trim() || 'USDC';
-            const transactionHash = await Transfer(loan.lenderWallet || '', amount.toString(), loan.id, transferCoin);
+            // Recipient is always the lender's on-file funding wallet, chosen by us — the payer's
+            // wallet choice never changes where the money lands.
+            const outcome = await payUsdc({
+               method,
+               to: loan.lenderWallet || '',
+               usdAmount: amount.toString(),
+               loanId: loan.id,
+               coin: transferCoin
+            });
 
-            if (transactionHash) {
+            if (outcome) {
+               // Relaxed lock: record whoever actually paid and log a mismatch with the locked
+               // Base wallet rather than blocking (Base Pay can't pre-guarantee the payer).
+               const payer = outcome.payer?.trim() || account.address?.trim();
+               if (payer && baseWalletLock.address && !areWalletAddressesEqual(payer, baseWalletLock.address)) {
+                  console.warn('[repay] paid from a wallet other than the locked Base Account', {
+                     loanId: loan.id,
+                     payer,
+                     lockedWallet: baseWalletLock.address
+                  });
+               }
+
                try {
                   const loanData = {
                      id: loan.id,
                      repaidAmount: newRepaidAmount,
                      repaymentStatus: newRepaymentStatus,
-                     hash: transactionHash
+                     hash: outcome.hash
                   };
 
                   await dispatch(updateLoanStatus(loanData)).unwrap();
@@ -108,7 +107,7 @@ function UserPay({ loan }: { loan: Loan }) {
                      '| Status:',
                      newRepaymentStatus,
                      '| Hash:',
-                     transactionHash
+                     outcome.hash
                   );
                   showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
                } finally {
@@ -124,6 +123,7 @@ function UserPay({ loan }: { loan: Loan }) {
       [
          isProcessing,
          account.chainId,
+         account.address,
          switchChainAsync,
          loan.repaidAmount,
          loan.totalRepaymentAmount,
@@ -132,7 +132,8 @@ function UserPay({ loan }: { loan: Loan }) {
          loan.coin,
          loan.lenderWallet,
          loan.id,
-         Transfer,
+         baseWalletLock.address,
+         payUsdc,
          dispatch,
          userId,
          showToastByConfig
@@ -142,52 +143,18 @@ function UserPay({ loan }: { loan: Loan }) {
    const handleBorrow = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
 
-      if (!isConnected) {
-         if (!baseWalletLock.hasStoredWallet) {
-            navigate('/onboarding/wallet', { state: { returnTo: 'repay' } });
-            return;
-         }
-
-         if (!baseAccountConnector) {
-            showToast(
-               TOAST_TYPES.ERROR,
-               'Base Account unavailable',
-               'Moodeng could not open Base Account. Refresh and try again.',
-               undefined,
-               undefined
-            );
-            return;
-         }
-
-         connect({ connector: baseAccountConnector });
+      // The borrower's locked Base wallet is their identity + receiving address; they must have
+      // set one up. It's NOT enforced as the paying wallet — Base Pay reveals the payer only
+      // after payment, so we relax the pre-check and record who actually paid. See
+      // [[base-pay-migration]].
+      if (!baseWalletLock.hasStoredWallet) {
+         navigate('/onboarding/wallet', { state: { returnTo: 'repay' } });
          return;
       }
 
-      if (!canRepayWithConnectedBaseWallet) {
-         showToast(
-            TOAST_TYPES.ERROR,
-            baseWalletLock.hasStoredWallet ? 'Connect your locked Base wallet' : 'Add a Base Account',
-            baseWalletLock.hasStoredWallet
-               ? `Repayments must come from ${formatWalletAddressShort(baseWalletLock.address)} so your repayment history stays tied to the right wallet.`
-               : 'Add a Base Account before repaying so your repayment history stays tied to the right wallet.',
-            undefined,
-            undefined
-         );
-         return;
-      }
-
-      if (!isUsingLockedBaseWallet) {
-         showToast(
-            TOAST_TYPES.ERROR,
-            'Connect your locked Base wallet',
-            `Repayments must come from ${formatWalletAddressShort(baseWalletLock.address)} so your repayment history stays tied to the right wallet.`,
-            undefined,
-            undefined
-         );
-         return;
-      }
-
-      await executeRepayment(repaidAmountToAdd);
+      // Already connected → pay from that wallet in one signature. Otherwise Base Pay: one popup
+      // fusing Base Account sign-in and the USDC send, so repayment is one tap even cold.
+      await executeRepayment(repaidAmountToAdd, isConnected ? 'wallet' : 'base');
    };
 
    return (
@@ -197,7 +164,9 @@ function UserPay({ loan }: { loan: Loan }) {
             <div className="flex gap-10 items-center mt-8">
                <div className="flex flex-col self-stretch my-auto">
                   <div className="text-sm leading-loose text-black text-opacity-60 dark:text-[#9d88b8]">Total Due</div>
-                  <div className="mt-1.5 text-base font-medium leading-loose text-black dark:text-[#f0e9f8]">${formatNumber(loan.totalRepaymentAmount)}</div>
+                  <div className="mt-1.5 text-base font-medium leading-loose text-black dark:text-[#f0e9f8]">
+                     ${formatNumber(loan.totalRepaymentAmount)}
+                  </div>
                </div>
                <div className="flex flex-col self-stretch my-auto">
                   <div className="text-sm leading-loose text-black text-opacity-60 dark:text-[#9d88b8]">Amount Paid</div>
@@ -219,7 +188,9 @@ function UserPay({ loan }: { loan: Loan }) {
             <h2 className="self-start text-lg font-medium leading-loose text-black dark:text-[#f0e9f8]">Repayment Information</h2>
             <div className="flex overflow-hidden gap-10 p-4 mt-2.5 w-full whitespace-nowrap rounded-lg bg-neutral-100 dark:bg-[#281b35]">
                <div className="flex flex-1 gap-4 items-center">
-                  <div className="self-stretch my-auto text-sm leading-loose text-black text-opacity-60 dark:text-[#9d88b8]">Stablecoin</div>
+                  <div className="self-stretch my-auto text-sm leading-loose text-black text-opacity-60 dark:text-[#9d88b8]">
+                     Stablecoin
+                  </div>
                   <div className="flex gap-1.5 items-center self-stretch my-auto text-base font-medium leading-loose text-black dark:text-[#f0e9f8]">
                      <img
                         loading="lazy"
@@ -242,7 +213,9 @@ function UserPay({ loan }: { loan: Loan }) {
                      width={100}
                      height={100}
                   />
-                  <div className="self-stretch my-auto text-base font-medium leading-loose text-black dark:text-[#f0e9f8]">{ALLOWED_CHAIN_DISPLAY_NAME}</div>
+                  <div className="self-stretch my-auto text-base font-medium leading-loose text-black dark:text-[#f0e9f8]">
+                     {ALLOWED_CHAIN_DISPLAY_NAME}
+                  </div>
                </div>
             </div>
             <label htmlFor="repayment" className="block text-sm font-medium text-gray-700 dark:text-[#9d88b8]">
