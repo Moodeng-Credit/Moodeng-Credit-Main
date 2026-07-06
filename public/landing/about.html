@@ -175,10 +175,10 @@
     position: fixed; inset: 0; z-index: 100; background: #100626;
     display: none; overflow-y: auto;
   }
-  .drawer.open { display: block; }
+  .drawer.open { display: flex; flex-direction: column; }
   .drawer .drawer-head { display: flex; align-items: center; gap: 9px; padding-top: 8px; padding-bottom: 8px; }
   .drawer a.head-word { text-decoration: none; }
-  .drawer-links { display: block; padding-top: 22px; padding-bottom: 46px; }
+  .drawer-links { display: block; padding-top: 22px; padding-bottom: 46px; margin: auto 0; }
   .drawer-links a { text-decoration: none; display: block; }
   .d-top {
     font-weight: 800; color: #fff; font-size: 18px;
