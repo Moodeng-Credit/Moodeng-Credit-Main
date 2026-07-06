@@ -1,4 +1,4 @@
-import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type MouseEvent, useCallback, useMemo, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
@@ -31,6 +31,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
+import LendChecklistModal from '@/views/dashboard/components/LendChecklistModal';
 
 type UserCardProps = Loan & {
    currentUserId?: string;
@@ -117,6 +118,7 @@ export default function UserCard(loan: UserCardProps) {
    const { switchChainAsync } = useSwitchChain();
    const { openConnectModal } = useConnectModal();
    const [showModal, setShowModal] = useState(false);
+   const [showWalletChecklist, setShowWalletChecklist] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
    // The on-chain transfer hash, set the moment Transfer resolves. Drives the "Sending" →
    // "Confirming" copy on the in-card processing overlay and the explorer link, mirroring
@@ -286,27 +288,6 @@ export default function UserCard(loan: UserCardProps) {
       ]
    );
 
-   // Set when the lender taps "Send your help" while disconnected. Once the wallet reports
-   // connected, an effect resumes the lend automatically so connecting and sending are a
-   // single intent rather than two taps. A ref keeps the latest executeLend closure so the
-   // resume runs against fresh state (e.g. the just-connected account).
-   const pendingLendRef = useRef(false);
-   const executeLendRef = useRef(executeLend);
-
-   useEffect(() => {
-      executeLendRef.current = executeLend;
-   }, [executeLend]);
-
-   // "Use a different wallet" path only: the lender opened the connect modal to pick an
-   // external wallet (MetaMask/Trust/…). Once it reports connected, resume the lend from that
-   // wallet. Base Account lenders never reach this — their default tap goes straight to Base Pay.
-   useEffect(() => {
-      if (isConnected && pendingLendRef.current) {
-         pendingLendRef.current = false;
-         void executeLendRef.current('wallet');
-      }
-   }, [isConnected]);
-
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       // Already connected a wallet → pay straight from it (one signature popup, no connect step).
@@ -316,9 +297,12 @@ export default function UserCard(loan: UserCardProps) {
       await executeLend(isConnected ? 'wallet' : 'base');
    };
 
-   const handleUseAnotherWallet = () => {
-      pendingLendRef.current = true;
-      openConnectModal?.();
+   // "Use a different wallet" opens a guided two-step checklist (connect → send) instead of the
+   // bare connect modal. Step 2 is a real tap inside the checklist — never auto-fired on connect —
+   // which is what keeps the signing popup on a live gesture (no "Try again").
+   const handleConfirmFromChecklist = async () => {
+      await executeLend('wallet');
+      setShowWalletChecklist(false);
    };
 
    const loanReason = loanData.reason?.trim() ? loanData.reason.trim() : 'Unknown Reason';
@@ -550,7 +534,7 @@ export default function UserCard(loan: UserCardProps) {
                {isLenderCard && showDetails && !isLent && !isOwnLoan && !isProcessing && !isConnected ? (
                   <button
                      type="button"
-                     onClick={handleUseAnotherWallet}
+                     onClick={() => setShowWalletChecklist(true)}
                      className="flex items-center justify-center gap-2 text-md-b2 font-semibold text-md-neutral-800 transition-colors hover:text-md-primary-1200"
                   >
                      Use a different wallet
@@ -577,6 +561,19 @@ export default function UserCard(loan: UserCardProps) {
                ) : null}
             </div>
          </div>
+
+         {showWalletChecklist ? (
+            <LendChecklistModal
+               amountLabel={`$${formatCurrency(loanData.loanAmount)}`}
+               borrowerName={borrowerDisplayName}
+               connected={isConnected}
+               connectedAddress={account.address}
+               isProcessing={isProcessing}
+               onConnect={() => openConnectModal?.()}
+               onConfirm={handleConfirmFromChecklist}
+               onClose={() => setShowWalletChecklist(false)}
+            />
+         ) : null}
 
          {/* Fund Success Modal */}
          {showModal && (
