@@ -77,7 +77,14 @@ type WithdrawData = {
    // `exchange` labels the destination for the withdrawal record + notification.
    // `confirmed` is true when the payment already settled on-chain before returning (Base Pay),
    // so the caller can resolve the UI immediately instead of watching for a tx receipt.
-   send: (toAddress: string, amount: string, exchange: string) => Promise<{ hash: string; confirmed: boolean } | null>;
+   // `onSubmitted` fires the instant the payment is approved/broadcast (before on-chain
+   // confirmation), so the button can flip "Confirm in your wallet…" → "Confirming on Base…".
+   send: (
+      toAddress: string,
+      amount: string,
+      exchange: string,
+      onSubmitted?: () => void
+   ) => Promise<{ hash: string; confirmed: boolean } | null>;
 };
 const WithdrawDataContext = createContext<WithdrawData | null>(null);
 function useWithdrawData(): WithdrawData {
@@ -1002,6 +1009,9 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
    const [address, setAddress] = useState('');
    const [amount, setAmount] = useState('');
    const [sending, setSending] = useState(false);
+   // True once the payment is approved and we're waiting on-chain confirmation — flips the
+   // button copy so the user isn't told to "Confirm in your wallet…" after they already did.
+   const [confirming, setConfirming] = useState(false);
    const [showCashOut, setShowCashOut] = useState(true);
    const { status: sentStatus, txHash, onSent, reset } = useSendStatus(isPreview);
    const arrived = sentStatus === 'arrived';
@@ -1025,8 +1035,9 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
       if (!canSend) return;
       track('withdraw_send_initiated', { exchange: cfg.name, amount: amtNum });
       setSending(true);
-      const result = await send(address.trim(), String(amtNum), cfg.name);
+      const result = await send(address.trim(), String(amtNum), cfg.name, () => setConfirming(true));
       setSending(false);
+      setConfirming(false);
       if (result) {
          sentAmountRef.current = amtNum;
          track('withdraw_sent', { exchange: cfg.name, amount: amtNum });
@@ -1142,7 +1153,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
                <PrimaryBtn disabled={!canSend} onClick={handleSend}>
                   {sending ? (
                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" /> Confirm in your wallet…
+                        <Loader2 className="w-4 h-4 animate-spin" /> {confirming ? 'Confirming on Base…' : 'Confirm in your wallet…'}
                      </>
                   ) : (
                      <>
@@ -1440,6 +1451,9 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
    const [address, setAddress] = useState('');
    const [amount, setAmount] = useState('');
    const [sending, setSending] = useState(false);
+   // True once approved and waiting on-chain confirmation — flips the button copy off
+   // "Confirm in your wallet…" so we don't ask again after they already confirmed.
+   const [confirming, setConfirming] = useState(false);
    const [showP2P, setShowP2P] = useState(false);
    const { status: sentStatus, txHash, onSent, reset } = useSendStatus(isPreview);
    const arrived = sentStatus === 'arrived';
@@ -1466,8 +1480,9 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
       if (!canSend) return;
       track('withdraw_send_initiated', { exchange: 'Binance', amount: amtNum });
       setSending(true);
-      const result = await send(address.trim(), String(amtNum), 'Binance');
+      const result = await send(address.trim(), String(amtNum), 'Binance', () => setConfirming(true));
       setSending(false);
+      setConfirming(false);
       if (result) {
          sentAmountRef.current = amtNum;
          track('withdraw_sent', { exchange: 'Binance', amount: amtNum });
@@ -1616,7 +1631,7 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
                <PrimaryBtn disabled={!canSend} onClick={handleSend}>
                   {sending ? (
                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" /> Confirm in your wallet…
+                        <Loader2 className="w-4 h-4 animate-spin" /> {confirming ? 'Confirming on Base…' : 'Confirm in your wallet…'}
                      </>
                   ) : (
                      <>
@@ -2096,7 +2111,7 @@ export default function Withdraw() {
               : null,
          walletAddress,
          isPreview,
-         send: async (toAddress: string, amount: string, exchange: string) => {
+         send: async (toAddress: string, amount: string, exchange: string, onSubmitted?: () => void) => {
             if (isPreview) {
                await new Promise((r) => setTimeout(r, 1500));
                // Not confirmed: let the ?sim logic drive the arrival timing in preview.
@@ -2111,9 +2126,11 @@ export default function Withdraw() {
                usdAmount: amount,
                loanId: primaryLoan?.id ?? 'withdraw',
                coin: 'USDC',
-               // On Base Pay approval: arm reconciliation so an approved-but-unconfirmed cash-out
-               // still gets recorded/notified later even if the tab closes mid-confirm.
+               // On Base Pay approval: flip the button to "Confirming…" and arm reconciliation so an
+               // approved-but-unconfirmed cash-out still gets recorded/notified later even if the
+               // tab closes mid-confirm.
                onSubmitted: (id) => {
+                  onSubmitted?.();
                   if (user.id) {
                      registerPendingBasePayment({
                         kind: 'withdraw',

@@ -314,12 +314,17 @@ interface ReturnInterestSheetProps {
    name: string;
    amount: number;
    coin: string;
+   /** Set once the payment is submitted (userOp/tx hash) — flips "Sending" copy to "Confirming". */
+   pendingHash?: string | null;
+   /** Chain explorer base URL, for a "View transaction" link once the hash is known. */
+   explorerBaseUrl?: string;
    onConfirm: () => Promise<boolean>;
    onClose: () => void;
 }
 
-function ReturnInterestSheet({ open, name, amount, coin, onConfirm, onClose }: ReturnInterestSheetProps) {
+function ReturnInterestSheet({ open, name, amount, coin, pendingHash, explorerBaseUrl, onConfirm, onClose }: ReturnInterestSheetProps) {
    const [step, setStep] = useState<'confirm' | 'sending' | 'success'>('confirm');
+   const explorerTxUrl = pendingHash && explorerBaseUrl ? `${explorerBaseUrl}/tx/${pendingHash}` : null;
 
    useEffect(() => {
       if (open) setStep('confirm');
@@ -340,7 +345,7 @@ function ReturnInterestSheet({ open, name, amount, coin, onConfirm, onClose }: R
    return (
       <>
          <style>{`@keyframes returnSheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
-         <div className="fixed inset-0 z-[60] bg-black/40" onClick={step !== 'sending' ? onClose : undefined} aria-hidden="true" />
+         <div className="fixed inset-0 z-[60] bg-black/40" onClick={onClose} aria-hidden="true" />
          <div
             className="fixed bottom-0 left-0 right-0 z-[70] flex justify-center"
             style={{ animation: 'returnSheetUp 0.28s cubic-bezier(0.32,0.72,0,1) both' }}
@@ -391,12 +396,29 @@ function ReturnInterestSheet({ open, name, amount, coin, onConfirm, onClose }: R
                )}
 
                {step === 'sending' && (
-                  <div className="flex flex-col items-center gap-md-4 px-md-4 py-12">
+                  <div className="flex flex-col items-center gap-md-4 px-md-4 py-10">
                      <div className="h-16 w-16 animate-spin rounded-full border-[3px] border-md-green-100 border-t-md-green-900" />
                      <div className="flex flex-col gap-1 items-center">
-                        <p className="text-md-b1 font-semibold text-md-primary-2000">Sending…</p>
-                        <p className="text-md-b3 text-md-neutral-1000 text-center">Your wallet is processing the transaction.</p>
+                        <p className="text-md-b1 font-semibold text-md-primary-2000">{pendingHash ? 'Confirming on Base…' : 'Sending…'}</p>
+                        <p className="text-md-b3 text-md-neutral-1000 text-center">
+                           {pendingHash ? 'Recording your gift — hang tight.' : 'Approve the transaction in your wallet.'}
+                        </p>
                      </div>
+                     {explorerTxUrl ? (
+                        <a
+                           href={explorerTxUrl}
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           className="text-md-b3 font-semibold text-md-green-900 underline"
+                        >
+                           View transaction
+                        </a>
+                     ) : null}
+                     {/* Never trap the user on this screen: closing is safe — the payment keeps
+                         settling and reconciliation finishes the record if this tab goes away. */}
+                     <button type="button" onClick={onClose} className="w-full py-md-2 text-md-b3 font-semibold text-md-neutral-1200">
+                        Hide — this keeps going on its own
+                     </button>
                   </div>
                )}
 
@@ -713,6 +735,8 @@ export default function TransactionDetail() {
             name={counterpartyName}
             amount={interestAmount}
             coin={loan.coin || 'USDC'}
+            pendingHash={returnedTxHash}
+            explorerBaseUrl={account.chain?.blockExplorers?.default?.url}
             onConfirm={handleReturnInterest}
             onClose={() => setModalOpen(false)}
          />
