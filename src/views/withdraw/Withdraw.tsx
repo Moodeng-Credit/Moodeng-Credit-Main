@@ -74,7 +74,9 @@ type WithdrawData = {
    isPreview: boolean;
    // Returns the on-chain tx hash (or null if the send failed / was rejected).
    // `exchange` labels the destination for the withdrawal record + notification.
-   send: (toAddress: string, amount: string, exchange: string) => Promise<string | null>;
+   // `confirmed` is true when the payment already settled on-chain before returning (Base Pay),
+   // so the caller can resolve the UI immediately instead of watching for a tx receipt.
+   send: (toAddress: string, amount: string, exchange: string) => Promise<{ hash: string; confirmed: boolean } | null>;
 };
 const WithdrawDataContext = createContext<WithdrawData | null>(null);
 function useWithdrawData(): WithdrawData {
@@ -783,14 +785,19 @@ const CONFIRM_SLOW_MS = 40000;
 function useSendStatus(isPreview: boolean) {
    const [status, setStatus] = useState<SentStatus>('idle');
    const [txHash, setTxHash] = useState<string | null>(null);
+   // Base Pay confirms the payment on-chain before it returns, and its id is a userOp hash —
+   // which eth_getTransactionReceipt (useWaitForTransactionReceipt) never resolves. So when the
+   // send came from Base Pay we skip the receipt watch entirely and resolve to "arrived"
+   // immediately; only the wagmi path (a real, just-broadcast tx hash) needs the receipt watch.
+   const [preConfirmed, setPreConfirmed] = useState(false);
 
    // Preview-only: ?sim=delayed|failed exercises the non-happy states locally.
    const sim = isPreview && typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('sim') : null;
 
    const { data: receipt } = useWaitForTransactionReceipt({
-      hash: !isPreview && txHash ? (txHash as `0x${string}`) : undefined,
+      hash: !isPreview && !preConfirmed && txHash ? (txHash as `0x${string}`) : undefined,
       chainId: ALLOWED_CHAIN_ID,
-      query: { enabled: !isPreview && Boolean(txHash) }
+      query: { enabled: !isPreview && !preConfirmed && Boolean(txHash) }
    });
 
    // Resolve once we have a mined receipt (works from in-progress or delayed).
@@ -815,12 +822,16 @@ function useSendStatus(isPreview: boolean) {
    return {
       status,
       txHash,
-      onSent: (hash: string) => {
+      onSent: (hash: string, confirmed = false) => {
          setTxHash(hash);
-         setStatus('in-progress');
+         setPreConfirmed(confirmed);
+         // Base Pay already settled on-chain, so jump straight to "arrived"; wagmi still needs
+         // its receipt, so it starts "in-progress" and the watcher above resolves it.
+         setStatus(confirmed ? 'arrived' : 'in-progress');
       },
       reset: () => {
          setTxHash(null);
+         setPreConfirmed(false);
          setStatus('idle');
       }
    };
@@ -1013,12 +1024,12 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
       if (!canSend) return;
       track('withdraw_send_initiated', { exchange: cfg.name, amount: amtNum });
       setSending(true);
-      const hash = await send(address.trim(), String(amtNum), cfg.name);
+      const result = await send(address.trim(), String(amtNum), cfg.name);
       setSending(false);
-      if (hash) {
+      if (result) {
          sentAmountRef.current = amtNum;
          track('withdraw_sent', { exchange: cfg.name, amount: amtNum });
-         onSent(hash);
+         onSent(result.hash, result.confirmed);
       } else track('withdraw_send_rejected', { exchange: cfg.name, amount: amtNum });
    }
 
@@ -1454,12 +1465,12 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
       if (!canSend) return;
       track('withdraw_send_initiated', { exchange: 'Binance', amount: amtNum });
       setSending(true);
-      const hash = await send(address.trim(), String(amtNum), 'Binance');
+      const result = await send(address.trim(), String(amtNum), 'Binance');
       setSending(false);
-      if (hash) {
+      if (result) {
          sentAmountRef.current = amtNum;
          track('withdraw_sent', { exchange: 'Binance', amount: amtNum });
-         onSent(hash);
+         onSent(result.hash, result.confirmed);
       } else track('withdraw_send_rejected', { exchange: 'Binance', amount: amtNum });
    }
 
@@ -2114,7 +2125,8 @@ export default function Withdraw() {
          send: async (toAddress: string, amount: string, exchange: string) => {
             if (isPreview) {
                await new Promise((r) => setTimeout(r, 1500));
-               return '0xpreview';
+               // Not confirmed: let the ?sim logic drive the arrival timing in preview.
+               return { hash: '0xpreview', confirmed: false };
             }
             // Connected → cash out from that wallet; otherwise Base Pay's one popup. The recipient is
             // the exchange address the user typed — Base Pay never changes where the money goes.
@@ -2126,12 +2138,20 @@ export default function Withdraw() {
                loanId: primaryLoan?.id ?? 'withdraw',
                coin: 'USDC'
             });
-            const hash = outcome?.hash ?? null;
-            if (hash && user.id) {
+            if (!outcome) return null;
+            if (user.id) {
                // Don't await — recording/notifying must not delay the confirmation UI.
-               void recordWithdrawal({ userId: user.id, amount: Number(amount), exchange, address: toAddress.trim(), txHash: hash });
+               void recordWithdrawal({
+                  userId: user.id,
+                  amount: Number(amount),
+                  exchange,
+                  address: toAddress.trim(),
+                  txHash: outcome.hash
+               });
             }
-            return hash;
+            // Base Pay ('base') already waited for on-chain confirmation; wagmi ('wallet') only
+            // broadcast, so its receipt still has to be watched.
+            return { hash: outcome.hash, confirmed: method === 'base' };
          }
       }),
       [available, spendable, isPreview, primaryLoan, walletAddress, payUsdc, account.isConnected, user.id]
