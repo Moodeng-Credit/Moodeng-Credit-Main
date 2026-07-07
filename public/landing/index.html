@@ -134,8 +134,8 @@
     border-radius: var(--pill); background: var(--purple);
     display: grid; place-items: center;
   }
-  .site-head .menu-pill { background: transparent; width: 46px; color: var(--heading); }
-  .head-signin { background: var(--heading); color: #fff; font-size: 13.5px; font-weight: 700; padding: 9px 16px; border-radius: var(--pill); text-decoration: none; margin-right: 2px; white-space: nowrap; }
+  .site-head .menu-pill { background: var(--lavender-bg); width: 48px; height: 40px; color: var(--heading); margin-right: 13px; }
+  .head-signin { display: inline-flex; align-items: center; gap: 7px; background: var(--heading); color: #fff; font-size: 13.5px; font-weight: 700; padding: 9px 16px 9px 14px; border-radius: var(--pill); text-decoration: none; margin-right: 2px; white-space: nowrap; }
 
   .hero-h {
     font-family: var(--display);
@@ -359,23 +359,6 @@
     padding: 16px; border-radius: var(--pill);
   }
 
-  /* The unlock moment comes alive as the section scrolls in — reuses the .reveal.in
-     trigger, so no extra JS. Kept as credit-building progress, not a game. */
-  .sec-unlock .meter-box .bar i { width: 0; transition: width 1.15s cubic-bezier(.22,.61,.36,1) .15s; }
-  .sec-unlock .reveal.in .meter-box .bar i { width: 33%; }
-  .sec-unlock .meter-box .chip-up { opacity: 0; transform: translateX(-50%) translateY(7px) scale(.92); transition: opacity .45s ease, transform .5s cubic-bezier(.34,1.56,.64,1); }
-  .sec-unlock .reveal.in .meter-box .chip-up { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); transition-delay: .95s; }
-  .sec-unlock .reveal.in .meter-box .marks .mid { animation: unlockMid .6s ease 1.05s both; }
-  @keyframes unlockMid { 0%,100% { transform: scale(1); } 45% { transform: scale(1.12); } }
-  .sec-unlock .lock-badge { transform-origin: 50% 68%; }
-  .sec-unlock .reveal.in .lock-badge { animation: unlockPop .72s cubic-bezier(.34,1.56,.64,1) .3s both; }
-  @keyframes unlockPop { 0% { transform: scale(.84) rotate(-7deg); } 55% { transform: scale(1.06) rotate(3deg); } 100% { transform: scale(1) rotate(0); } }
-  @media (prefers-reduced-motion: reduce) {
-    .sec-unlock .meter-box .bar i { width: 33%; transition: none; }
-    .sec-unlock .meter-box .chip-up { opacity: 1; transform: translateX(-50%); }
-    .sec-unlock .reveal.in .lock-badge, .sec-unlock .reveal.in .meter-box .marks .mid { animation: none; }
-  }
-
   /* ---------- SECTION: TRUST Q1 (real people) ---------- */
   .sec-people { background: var(--surface); padding: 62px 0 64px; }
   .stage.right .phone { transform: rotate(2.5deg); }
@@ -406,6 +389,24 @@
   .progress.full i { width: 100%; }
   .progress.third i { width: 34%; }
 
+  /* ---------- SECTION: LEVEL UP ---------- */
+  .sec-level {
+    background: radial-gradient(130% 90% at 50% 0%, #ffffff 0%, var(--lavender-bg) 55%, #E4D2FB 100%);
+    padding: 62px 0 70px; overflow: hidden; position: relative;
+  }
+  .ladder { display: flex; align-items: flex-end; gap: 9px; margin-top: 74px; position: relative; }
+  .rung {
+    flex: 1; background: #fff; border: 1px solid var(--lavender-border);
+    border-radius: 14px 14px 10px 10px; text-align: center;
+    padding: 10px 4px 12px; box-shadow: 0 8px 20px rgba(96,16,210,0.08);
+    display: flex; flex-direction: column; justify-content: flex-end; gap: 2px;
+  }
+  .rung .amt { font-family: var(--display); font-size: 18px; color: var(--heading); }
+  .rung .lv { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
+  .rung.h1x { height: 66px; } .rung.h2x { height: 84px; } .rung.h3x { height: 102px; } .rung.h4x { height: 120px; }
+  .rung.now { border: 2px solid var(--lavender); box-shadow: 0 10px 24px rgba(131,54,240,0.22); }
+  .rung.now .lv { color: var(--purple); }
+  .level-arrow { font-family: var(--display); color: var(--purple); }
 
   /* ---------- SECTION: TRUST Q3 (DARK — how we treat you) ---------- */
   .sec-dark { background: #100626; padding: 66px 0 70px; position: relative; overflow: hidden; }
@@ -670,38 +671,55 @@
     height: 0.62em; overflow: hidden; margin-top: 34px; user-select: none;
   }
 
-  /* Tilt-style full-screen menu drawer (dark, big uppercase links) */
+  /* Left slide-in menu drawer (Klarna-style: light panel, big sentence-case rows,
+     hairline dividers, chevrons only on expandables, one separated action) */
   .drawer {
-    position: fixed; inset: 0; z-index: 100; background: #100626;
-    display: none; overflow-y: auto;
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(16, 6, 38, 0.42);
+    opacity: 0; visibility: hidden;
+    transition: opacity .28s ease, visibility .28s ease;
   }
-  .drawer.open { display: flex; flex-direction: column; }
-  .drawer .drawer-head { display: flex; align-items: center; gap: 9px; padding-top: 8px; padding-bottom: 8px; }
-  .drawer a.head-word { text-decoration: none; }
-  .drawer-links { display: block; padding-top: 22px; padding-bottom: 46px; margin: auto 0; }
-  .drawer-links a { text-decoration: none; display: block; }
-  .d-top {
-    font-weight: 800; color: #fff; font-size: 18px;
-    letter-spacing: 0.18em; text-transform: uppercase; padding: 19px 0;
+  .drawer.open { opacity: 1; visibility: visible; }
+  .drawer-panel {
+    position: absolute; top: 0; left: 0; bottom: 0;
+    width: 88%; max-width: 420px;
+    background: var(--surface); overflow-y: auto;
+    display: flex; flex-direction: column;
+    padding: 16px 24px 34px;
+    box-shadow: 0 0 60px rgba(28, 5, 61, 0.25);
+    transform: translateX(-100%);
+    transition: transform .34s cubic-bezier(.32, .72, 0, 1);
   }
-  .d-top:hover { color: #C9A8F5; }
-  .d-group summary {
-    list-style: none; cursor: pointer;
-    font-weight: 800; color: #fff; font-size: 18px;
-    letter-spacing: 0.18em; text-transform: uppercase; padding: 19px 0;
-    display: flex; align-items: center; gap: 12px;
+  .drawer.open .drawer-panel { transform: none; }
+  .drawer-head { display: flex; align-items: center; padding: 6px 0 22px; }
+  .drawer-x {
+    width: 52px; height: 44px; border-radius: var(--pill); border: none; cursor: pointer;
+    background: var(--lavender-bg); color: var(--heading);
+    display: flex; align-items: center; justify-content: center;
   }
-  .d-group summary::-webkit-details-marker { display: none; }
-  .d-group summary::after {
-    content: ""; width: 8px; height: 8px; margin-top: -4px;
-    border-right: 2px solid #fff; border-bottom: 2px solid #fff;
-    transform: rotate(-45deg); transition: transform .18s ease;
+  .drawer-links { display: flex; flex-direction: column; }
+  .drawer-links a, .d-group > summary { text-decoration: none; color: var(--heading); }
+  .d-top, .d-group { border-bottom: 1px solid var(--lavender-border); }
+  .d-top, .d-group > summary {
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--sans); font-weight: 500; font-size: 23px; letter-spacing: -0.01em;
+    color: var(--heading); padding: 18px 0;
   }
-  .d-group[open] summary::after { transform: rotate(45deg); }
-  .d-group summary:hover { color: #C9A8F5; }
-  .d-sub { padding: 0 0 12px 18px; }
-  .d-sub a { color: #EDE8F7; font-size: 17px; font-weight: 500; padding: 11px 0; }
-  .d-sub a:hover { color: #C9A8F5; }
+  .d-group > summary { list-style: none; cursor: pointer; }
+  .d-group > summary::-webkit-details-marker { display: none; }
+  .d-group > summary::after {
+    content: ""; width: 9px; height: 9px; margin-right: 3px;
+    border-right: 2px solid var(--heading); border-top: 2px solid var(--heading);
+    transform: rotate(45deg); transition: transform .2s ease;
+  }
+  .d-group[open] > summary::after { transform: rotate(135deg); }
+  .d-top:hover, .d-group > summary:hover { color: var(--purple); }
+  .d-sub { display: flex; flex-direction: column; padding: 2px 0 14px; }
+  .d-sub a { font-size: 17px; font-weight: 400; color: var(--text-soft); padding: 10px 2px; }
+  .d-sub a:hover { color: var(--purple); }
+  .d-foot { margin-top: 28px; }
+  .d-foot a { display: inline-flex; align-items: center; gap: 8px; font-family: var(--sans); font-weight: 600; font-size: 16px; color: var(--purple); }
+  @media (prefers-reduced-motion: reduce) { .drawer, .drawer-panel { transition: none; } }
   body.drawer-lock { overflow: hidden; }
 
   /* reveal on scroll */
@@ -722,49 +740,56 @@
        hero-loop.mp4 + hero-poster.jpg when George's final Veo take lands. -->
   <nav class="site-head" id="siteHead">
     <div class="wrap">
-      <a class="head-word" href="/">Moodeng Credit</a>
-      <a class="head-signin" href="/sign-in">Sign in</a>
       <button class="menu-pill" id="menuOpen" aria-label="Menu" aria-expanded="false" type="button">
         <svg width="22" height="10" viewBox="0 0 22 10" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1 1h20M1 9h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </button>
+      <a class="head-word" href="/">Moodeng Credit</a>
+      <a class="head-signin" href="/sign-in">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+        Sign in
+      </a>
     </div>
   </nav>
 
-  <!-- full-screen menu drawer (honest links only — same rule as the footer) -->
+  <!-- left slide-in menu drawer (Klarna-style light panel; honest links only) -->
   <div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Menu">
-    <div class="wrap drawer-head">
-      <img class="head-logo" src="/landing/assets/brand/moodeng-logo-small.png" alt="" />
-      <a class="head-word" style="margin-right:auto" href="/">Moodeng Credit</a>
-      <button class="menu-pill" id="menuClose" aria-label="Close menu" type="button">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M2 2l12 12M14 2L2 14" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
+    <div class="drawer-panel">
+      <div class="drawer-head">
+        <button class="drawer-x" id="menuClose" aria-label="Close menu" type="button">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <nav class="drawer-links">
+        <a class="d-top" href="/request-board">Browse requests</a>
+        <details class="d-group">
+          <summary>Guides</summary>
+          <div class="d-sub">
+            <a href="/how-it-works">How it works</a>
+            <a href="/how-to-cash-out">How to cash out</a>
+            <a href="/how-to-repay">How to repay</a>
+          </div>
+        </details>
+        <details class="d-group">
+          <summary>Support</summary>
+          <div class="d-sub">
+            <a href="/about">Our story</a>
+            <a href="#faq" data-drawer-close>Common questions</a>
+            <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Telegram</a>
+            <a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
+            <a href="mailto:support@moodengcredit.com">Email us</a>
+          </div>
+        </details>
+        <div class="d-foot">
+          <a href="/sign-in">Sign in <span aria-hidden="true">&rarr;</span></a>
+        </div>
+      </nav>
     </div>
-    <nav class="wrap drawer-links">
-      <a class="d-top" href="/request-board">Browse requests</a>
-      <a class="d-top" href="/sign-in">Sign in</a>
-      <details class="d-group" open>
-        <summary>Guides</summary>
-        <div class="d-sub">
-          <a href="/how-it-works">How it works</a>
-          <a href="/how-to-cash-out">How to cash out</a>
-          <a href="/how-to-repay">How to repay</a>
-        </div>
-      </details>
-      <details class="d-group" open>
-        <summary>Support</summary>
-        <div class="d-sub">
-          <a href="/about">Our story</a>
-          <a href="#faq" data-drawer-close>Common questions</a>
-          <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Telegram</a>
-          <a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
-          <a href="mailto:support@moodengcredit.com">Email us</a>
-        </div>
-      </details>
-    </nav>
   </div>
 
   <header class="hero-top">
@@ -1036,6 +1061,26 @@
       </div>
 
       <p class="verify-note">You prove you’re <b>one real person, once</b> — and nothing about you is stored. That’s why funders trust you fast, without us digging through your life.</p>
+    </div>
+  </section>
+
+  <!-- ============= TRUST Q4: LEVEL UP ============= -->
+  <section class="sec-level">
+    <div class="wrap reveal">
+      <p class="label">It grows with you</p>
+      <h2 class="sec-h">Today it’s $15. Next time you’re covered for <span class="accent">more.</span></h2>
+      <p class="sec-lead">Every on-time repayment raises your limit. No paperwork — just keep your word.</p>
+
+      <!-- MAKE-style ascending ladder -->
+      <div class="ladder">
+        <!-- hippo OFF for now (George 2026-07-05: top 3/4 hippo-free)
+        <img class="sec-hippo" src="/landing/assets/hippos/borrower-insights-trophy.png" alt="" style="width:92px; top:-72px; right:-4px" /> -->
+        <div class="rung h1x now"><span class="amt">$15</span><span class="lv">Today</span></div>
+        <div class="rung h2x"><span class="amt">$20</span><span class="lv">Next</span></div>
+        <div class="rung h3x"><span class="amt">$40</span><span class="lv">Then</span></div>
+        <div class="rung h4x"><span class="amt">$60+</span><span class="lv">Soon</span></div>
+      </div>
+
     </div>
   </section>
 
