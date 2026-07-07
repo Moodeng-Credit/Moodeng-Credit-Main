@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 
 import { Link } from 'react-router-dom';
 
-import { getCreditLevelNumber } from '@/config/creditTiers';
+import { getCreditLevelNumber, getNextCreditTier, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 
 interface CreditLevelSectionProps {
@@ -64,6 +64,8 @@ export default function CreditLevelSection({ currentCs, usedCreditAmount, isVeri
    const availableCredit = Math.max(effectiveLimit - usedCredit, 0);
    const progress = effectiveLimit > 0 ? availableCredit / effectiveLimit : 0;
    const isLocked = !isVerified || levelNumber === 0;
+   const nextLimit = useMemo(() => getNextCreditTier(effectiveLimit), [effectiveLimit]);
+   const isAtMaxLevel = effectiveLimit >= MAX_CREDIT_LIMIT;
    const [isHelpOpen, setIsHelpOpen] = useState(false);
 
    return (
@@ -128,6 +130,14 @@ export default function CreditLevelSection({ currentCs, usedCreditAmount, isVeri
                />
             )}
          </div>
+
+         {!isLocked ? (
+            <p className="text-md-b3 text-md-neutral-1000">
+               {isAtMaxLevel
+                  ? "You're at the top credit level — nicely done."
+                  : `Repay on time to reach Level ${levelNumber + 1} — up to $${nextLimit}.`}
+            </p>
+         ) : null}
       </>
    );
 }

@@ -1,7 +1,7 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { AlertTriangle, ArrowLeft, Check, ChevronDown, Clock, Copy, ExternalLink, Loader2, ShieldCheck, Wallet } from 'lucide-react';
-import { useDispatch, useSelector } from 'react-redux';
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, Clock, Copy, ExternalLink, Loader2, ShieldCheck, TrendingUp, Wallet } from 'lucide-react';
+import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
 import { useAccount, useConnect, useReadContract, useSwitchChain, useWatchContractEvent } from 'wagmi';
@@ -22,6 +22,7 @@ import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
+import { getCreditLevelNumber, getNextCreditTier } from '@/config/creditTiers';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { areWalletAddressesEqual, formatWalletAddressShort, getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
@@ -315,6 +316,9 @@ export default function Repay() {
    const { switchChainAsync } = useSwitchChain();
 
    const user = useSelector((state: RootState) => state.auth.user);
+   // Read the store directly after the repay awaits: updateLoanStatus refetches the user (with any
+   // new credit limit) inside the thunk, and the selector closure above is stale by then.
+   const reduxStore = useStore<RootState>();
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
    const usePreviewLoans = shouldUsePreviewLoans(location.search, location.pathname);
    const { allowed: geoAllowed, loading: geoLoading } = useGeoCheck(usePreviewLoans);
@@ -335,7 +339,13 @@ export default function Repay() {
    const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
    const [repaymentAmount, setRepaymentAmount] = useState('');
    const [isProcessing, setIsProcessing] = useState(false);
-   const [completion, setCompletion] = useState<{ reason: string; paidAmount: number; coin: string; trustPoints: number } | null>(null);
+   const [completion, setCompletion] = useState<{
+      reason: string;
+      paidAmount: number;
+      coin: string;
+      trustPoints: number;
+      creditLevelUp?: { toLevel: number; newLimit: number } | null;
+   } | null>(null);
    // Acknowledge a partial payment inline (the loan stays active). Shown until the borrower's
    // next interaction so there's no timer to leak; full payoffs use `completion` instead.
    const [partialPaid, setPartialPaid] = useState<{ paidAmount: number; remaining: number; coin: string } | null>(null);
@@ -750,11 +760,14 @@ export default function Repay() {
             await new Promise((resolve) => setTimeout(resolve, 800));
             setRepaymentAmount('');
             if (isFullyRepaid) {
+               // Demo the level-up so the celebration is visible in preview/video runs.
+               const demoNext = getNextCreditTier(reduxStore.getState().auth.user?.cs || 15);
                setCompletion({
                   reason: selectedLoan.reason || 'your loan',
                   paidAmount: toNumber(selectedLoan.totalRepaymentAmount),
                   coin: transferCoin,
-                  trustPoints: earnedTrustPoints
+                  trustPoints: earnedTrustPoints,
+                  creditLevelUp: { toLevel: getCreditLevelNumber(demoNext), newLimit: demoNext }
                });
             } else {
                const remainingAfter = Math.max(0, toNumber(selectedLoan.totalRepaymentAmount) - newRepaidAmount);
@@ -762,6 +775,10 @@ export default function Repay() {
             }
             return;
          }
+
+         // Snapshot the credit limit before the repayment so we can tell if this payoff triggered
+         // a level-up (updateLoanStatus raises it server-side + refetches the user).
+         const prevCreditLimit = reduxStore.getState().auth.user?.cs ?? 0;
 
          // Recipient is always the lender's on-file funding wallet — chosen by us, never by the
          // payer's wallet choice — so the lender receives at the address they funded from.
@@ -819,11 +836,15 @@ export default function Repay() {
          await dispatch(getUserLoans({ userId: user.id })).unwrap();
          setRepaymentAmount('');
          if (isFullyRepaid) {
+            // updateLoanStatus refetched the user, so the store now holds any raised limit.
+            const newCreditLimit = reduxStore.getState().auth.user?.cs ?? 0;
+            const leveledUp = newCreditLimit > prevCreditLimit;
             setCompletion({
                reason: selectedLoan.reason || 'your loan',
                paidAmount: toNumber(selectedLoan.totalRepaymentAmount),
                coin: transferCoin,
-               trustPoints: earnedTrustPoints
+               trustPoints: earnedTrustPoints,
+               creditLevelUp: leveledUp ? { toLevel: getCreditLevelNumber(newCreditLimit), newLimit: newCreditLimit } : null
             });
          } else {
             // Partial payment: the loan stays active, so acknowledge it inline instead of
@@ -942,6 +963,21 @@ export default function Repay() {
                      <span className="mt-4 inline-flex items-center gap-1.5 rounded-md-pill bg-md-green-100 px-3 py-1.5 text-md-b3 font-semibold text-md-green-900">
                         <ShieldCheck className="h-4 w-4" aria-hidden="true" />+{completion.trustPoints} Trust Points earned
                      </span>
+                  ) : null}
+                  {completion.creditLevelUp ? (
+                     <div className="mt-5 flex w-full items-center gap-3 rounded-md-lg border border-md-primary-300 bg-[#f6f0fd] px-4 py-3.5 text-left">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md-pill bg-md-primary-1200 text-md-neutral-100">
+                           <TrendingUp className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div className="min-w-0">
+                           <p className="text-md-b2 font-semibold text-md-primary-1500">
+                              Credit Level {completion.creditLevelUp.toLevel} unlocked
+                           </p>
+                           <p className="text-md-b3 text-md-neutral-1200">
+                              Your on-time repayment raised your limit to ${completion.creditLevelUp.newLimit}.
+                           </p>
+                        </div>
+                     </div>
                   ) : null}
                   <div className="mt-7 flex w-full flex-col gap-2.5">
                      {hasMoreLoans ? (
