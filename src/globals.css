@@ -503,6 +503,22 @@ html.dark .team-page .team-blue-panel {
    }
 }
 
+/* Credit level-up moment: the limit bar fills once, earned. Kept deliberately quiet
+   (badge pop + bar fill, no confetti) so it reads as credit progress, not a game. */
+@keyframes levelBarFill {
+   from {
+      width: 0;
+   }
+}
+
+/* Motion-safe: reduced-motion users get the final state instantly, no animation. */
+@media (prefers-reduced-motion: reduce) {
+   .repay-success-section,
+   .repay-success-section * {
+      animation: none !important;
+   }
+}
+
 @keyframes request-board-focus-highlight {
    0% {
       box-shadow: 0 11px 24px rgba(0, 0, 0, 0.02);

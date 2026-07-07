@@ -965,18 +965,26 @@ export default function Repay() {
                      </span>
                   ) : null}
                   {completion.creditLevelUp ? (
-                     <div className="mt-5 flex w-full items-center gap-3 rounded-md-lg border border-md-primary-300 bg-[#f6f0fd] px-4 py-3.5 text-left">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md-pill bg-md-primary-1200 text-md-neutral-100">
-                           <TrendingUp className="h-4 w-4" aria-hidden="true" />
-                        </span>
-                        <div className="min-w-0">
-                           <p className="text-md-b2 font-semibold text-md-primary-1500">
-                              Credit Level {completion.creditLevelUp.toLevel} unlocked
-                           </p>
-                           <p className="text-md-b3 text-md-neutral-1200">
-                              Your on-time repayment raised your limit to ${completion.creditLevelUp.newLimit}.
-                           </p>
+                     <div className="mt-6 w-full rounded-md-lg border border-md-primary-300 bg-[#f6f0fd] px-5 py-5 text-left animate-[repaySuccessIn_0.4s_cubic-bezier(0.16,1,0.3,1)_0.25s_both]">
+                        <div className="flex items-center justify-between gap-3">
+                           <span className="inline-flex items-center gap-1.5 rounded-md-pill bg-md-primary-1200 px-3 py-1.5 text-md-neutral-100 animate-[repaySuccessPop_0.5s_cubic-bezier(0.16,1,0.3,1)_0.4s_both]">
+                              <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" />
+                              <span className="text-md-b3 font-bold uppercase tracking-[0.08em]">Lvl {completion.creditLevelUp.toLevel}</span>
+                           </span>
+                           <span className="text-md-h5 font-bold text-md-primary-1500">${completion.creditLevelUp.newLimit}</span>
                         </div>
+                        <div className="mt-3.5 h-2 w-full overflow-hidden rounded-md-pill bg-md-primary-100">
+                           <div
+                              className="h-full rounded-md-pill bg-md-primary-1200 animate-[levelBarFill_0.9s_cubic-bezier(0.16,1,0.3,1)_0.55s_both]"
+                              style={{ width: '100%' }}
+                           />
+                        </div>
+                        <p className="mt-3.5 text-md-b2 font-semibold text-md-primary-1500">
+                           Credit Level {completion.creditLevelUp.toLevel} unlocked
+                        </p>
+                        <p className="mt-0.5 text-md-b3 text-md-neutral-1200">
+                           Your on-time repayment raised your limit to ${completion.creditLevelUp.newLimit}.
+                        </p>
                      </div>
                   ) : null}
                   <div className="mt-7 flex w-full flex-col gap-2.5">
