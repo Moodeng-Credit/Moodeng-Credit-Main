@@ -1405,7 +1405,7 @@ const COINSPH_FLOW: AppFlowConfig = {
    ],
    cashOutTitle: 'Cash out to pesos with Coins.ph',
    cashOutIntro: 'Once your USDC arrives (usually a few minutes), sell it for pesos and send directly to your bank or GCash.',
-   cashOutVideo: 'T-lsJRfBYIk?start=18',
+   cashOutVideo: 'SMasdjEpDkg',
    cashOutSteps: [
       {
          title: (
