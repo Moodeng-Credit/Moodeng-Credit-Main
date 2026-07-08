@@ -216,7 +216,11 @@
     width: 52px; height: 44px; border-radius: var(--pill); border: none; cursor: pointer;
     background: var(--lavender-bg); color: var(--heading);
     display: flex; align-items: center; justify-content: center;
+    transition: transform .12s ease, background-color .15s ease;
   }
+  .drawer-x:hover { background: var(--lavender-border); }
+  .drawer-x:active { transform: scale(0.88); background: var(--lavender-border); }
+  @media (prefers-reduced-motion: reduce) { .drawer-x { transition: background-color .15s ease; } .drawer-x:active { transform: none; } }
   .drawer-links { display: flex; flex-direction: column; }
   .drawer-links a, .d-group > summary { text-decoration: none; color: var(--heading); }
   .d-top, .d-group { border-bottom: 1px solid var(--lavender-border); }
