@@ -156,6 +156,25 @@
   .cta:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(4,0,51,0.28); }
   .cta .arrow { transition: transform .15s ease; }
   .cta:hover .arrow { transform: translateX(3px); }
+
+  /* Sign in / start-a-loan links leave this static site for the real app, which takes a
+     moment to boot — show a spinner immediately on tap so the click feels acknowledged
+     instead of dead air. .btn-label keeps its layout box (opacity, not display) so the
+     button doesn't resize; the spinner is a centered ::after circle. */
+  .head-signin, .cta, .d-foot a { position: relative; }
+  .btn-label { display: inline-flex; align-items: center; gap: inherit; transition: opacity .15s ease; }
+  .is-loading { pointer-events: none; }
+  .is-loading .btn-label { opacity: 0; }
+  .is-loading::after {
+    content: ""; position: absolute; top: 50%; left: 50%;
+    width: 16px; height: 16px; margin: -8px 0 0 -8px;
+    /* currentColor so the ring reads on both dark pills (white text) and the
+       plain-purple drawer link, without a per-context color override. */
+    border: 2px solid currentColor; border-top-color: transparent;
+    border-radius: 50%; animation: btnSpin .7s linear infinite;
+  }
+  @keyframes btnSpin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .is-loading::after { animation-duration: 1.3s; } }
   .reassure { margin-top: 14px; font-size: 13.5px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.01em; }
 
   /* footer (same as landing, short form) */
@@ -283,10 +302,12 @@
       </button>
       <a class="head-word" href="/">Moodeng Credit</a>
       <a class="head-signin" href="/sign-in">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-        </svg>
-        Sign in
+        <span class="btn-label">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          Sign in
+        </span>
       </a>
     </div>
   </nav>
@@ -322,7 +343,7 @@
           </div>
         </details>
         <div class="d-foot">
-          <a href="/sign-in">Sign in <span aria-hidden="true">&rarr;</span></a>
+          <a href="/sign-in"><span class="btn-label">Sign in <span aria-hidden="true">&rarr;</span></span></a>
         </div>
       </nav>
     </div>
@@ -453,7 +474,7 @@
     <div class="wrap reveal">
       <p class="label">That’s the whole loop</p>
       <h2>Ask. Get funded. Repay. <span class="accent">Grow.</span></h2>
-      <a class="cta" href="/request-board">Browse the live request board <span class="arrow">→</span></a>
+      <a class="cta" href="/request-board"><span class="btn-label">Browse the live request board <span class="arrow">→</span></span></a>
       <p class="reassure">No account needed to look around.</p>
     </div>
   </section>
@@ -508,6 +529,25 @@
       openBtn.addEventListener("click", function () { setOpen(true); });
       closeBtn.addEventListener("click", function () { setOpen(false); });
       document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
+    })();
+
+    // ---- Sign in / start-a-loan buttons: spin on tap ----
+    // These links leave the static site for the real app, which takes a moment to load.
+    // Add a spinner immediately on click so the tap feels acknowledged; the browser's own
+    // navigation does the rest, so we never preventDefault or manage a timeout here. On a
+    // back/forward-cache restore the click never actually left this page, so clear any
+    // stuck spinner then.
+    (function () {
+      var loadingLinks = document.querySelectorAll(
+        '.head-signin, .drawer .d-foot a[href="/sign-in"], .cta[href="/request-board"]'
+      );
+      loadingLinks.forEach(function (a) {
+        a.addEventListener("click", function () { a.classList.add("is-loading"); });
+      });
+      window.addEventListener("pageshow", function (e) {
+        if (!e.persisted) return;
+        loadingLinks.forEach(function (a) { a.classList.remove("is-loading"); });
+      });
     })();
 
     // reveal on scroll (same pattern as landing)
