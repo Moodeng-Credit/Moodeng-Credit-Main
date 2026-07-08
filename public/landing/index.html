@@ -359,6 +359,23 @@
     padding: 16px; border-radius: var(--pill);
   }
 
+  /* The unlock moment comes alive as the section scrolls in — reuses the .reveal.in
+     trigger, so no extra JS. Credit-building progress, not a game. */
+  .sec-unlock .meter-box .bar i { width: 0; transition: width 1.15s cubic-bezier(.22,.61,.36,1) .15s; }
+  .sec-unlock .reveal.in .meter-box .bar i { width: 33%; }
+  .sec-unlock .meter-box .chip-up { opacity: 0; transform: translateX(-50%) translateY(7px) scale(.92); transition: opacity .45s ease, transform .5s cubic-bezier(.34,1.56,.64,1); }
+  .sec-unlock .reveal.in .meter-box .chip-up { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); transition-delay: .95s; }
+  .sec-unlock .reveal.in .meter-box .marks .mid { animation: unlockMid .6s ease 1.05s both; }
+  @keyframes unlockMid { 0%,100% { transform: scale(1); } 45% { transform: scale(1.12); } }
+  .sec-unlock .lock-badge { transform-origin: 50% 68%; }
+  .sec-unlock .reveal.in .lock-badge { animation: unlockPop .72s cubic-bezier(.34,1.56,.64,1) .3s both; }
+  @keyframes unlockPop { 0% { transform: scale(.84) rotate(-7deg); } 55% { transform: scale(1.06) rotate(3deg); } 100% { transform: scale(1) rotate(0); } }
+  @media (prefers-reduced-motion: reduce) {
+    .sec-unlock .meter-box .bar i { width: 33%; transition: none; }
+    .sec-unlock .meter-box .chip-up { opacity: 1; transform: translateX(-50%); }
+    .sec-unlock .reveal.in .lock-badge, .sec-unlock .reveal.in .meter-box .marks .mid { animation: none; }
+  }
+
   /* ---------- SECTION: TRUST Q1 (real people) ---------- */
   .sec-people { background: var(--surface); padding: 62px 0 64px; }
   .stage.right .phone { transform: rotate(2.5deg); }
