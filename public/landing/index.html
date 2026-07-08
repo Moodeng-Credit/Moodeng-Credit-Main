@@ -406,24 +406,6 @@
   .progress.full i { width: 100%; }
   .progress.third i { width: 34%; }
 
-  /* ---------- SECTION: LEVEL UP ---------- */
-  .sec-level {
-    background: radial-gradient(130% 90% at 50% 0%, #ffffff 0%, var(--lavender-bg) 55%, #E4D2FB 100%);
-    padding: 62px 0 70px; overflow: hidden; position: relative;
-  }
-  .ladder { display: flex; align-items: flex-end; gap: 9px; margin-top: 74px; position: relative; }
-  .rung {
-    flex: 1; background: #fff; border: 1px solid var(--lavender-border);
-    border-radius: 14px 14px 10px 10px; text-align: center;
-    padding: 10px 4px 12px; box-shadow: 0 8px 20px rgba(96,16,210,0.08);
-    display: flex; flex-direction: column; justify-content: flex-end; gap: 2px;
-  }
-  .rung .amt { font-family: var(--display); font-size: 18px; color: var(--heading); }
-  .rung .lv { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
-  .rung.h1x { height: 66px; } .rung.h2x { height: 84px; } .rung.h3x { height: 102px; } .rung.h4x { height: 120px; }
-  .rung.now { border: 2px solid var(--lavender); box-shadow: 0 10px 24px rgba(131,54,240,0.22); }
-  .rung.now .lv { color: var(--purple); }
-  .level-arrow { font-family: var(--display); color: var(--purple); }
 
   /* ---------- SECTION: TRUST Q3 (DARK — how we treat you) ---------- */
   .sec-dark { background: #100626; padding: 66px 0 70px; position: relative; overflow: hidden; }
@@ -1082,25 +1064,6 @@
   </section>
 
   <!-- ============= TRUST Q4: LEVEL UP ============= -->
-  <section class="sec-level">
-    <div class="wrap reveal">
-      <p class="label">It grows with you</p>
-      <h2 class="sec-h">Today it’s $15. Next time you’re covered for <span class="accent">more.</span></h2>
-      <p class="sec-lead">Every on-time repayment raises your limit. No paperwork — just keep your word.</p>
-
-      <!-- MAKE-style ascending ladder -->
-      <div class="ladder">
-        <!-- hippo OFF for now (George 2026-07-05: top 3/4 hippo-free)
-        <img class="sec-hippo" src="/landing/assets/hippos/borrower-insights-trophy.png" alt="" style="width:92px; top:-72px; right:-4px" /> -->
-        <div class="rung h1x now"><span class="amt">$15</span><span class="lv">Today</span></div>
-        <div class="rung h2x"><span class="amt">$20</span><span class="lv">Next</span></div>
-        <div class="rung h3x"><span class="amt">$40</span><span class="lv">Then</span></div>
-        <div class="rung h4x"><span class="amt">$60+</span><span class="lv">Soon</span></div>
-      </div>
-
-    </div>
-  </section>
-
   <!-- ============= TRUST Q5: SAYS WHO (PROOF) =============
        ⚠️ MOCK / DESIGN TARGET — George asked for the "optimum" success-state view.
        The 4.8 rating, 1,200+ / 96% / ₱2.1M+ stats and all four text quotes are
