@@ -425,6 +425,34 @@
   .progress.full i { width: 100%; }
   .progress.third i { width: 34%; }
 
+  /* "3 people said yes" funded moment: avatars pop in one by one, then the bar
+     fills, then the Funded pill lands with a glow — plays once as the section
+     scrolls into view (reuses the existing .reveal.in trigger, no new JS). */
+  .sec-people .avatars .av { opacity: 0; transform: scale(.92); }
+  .sec-people .avatars .who { opacity: 0; transition: opacity .3s ease .58s; }
+  .sec-people .reveal.in .avatars .av.a1 { animation: avPop .3s cubic-bezier(.34,1.56,.64,1) .25s both; }
+  .sec-people .reveal.in .avatars .av.a2 { animation: avPop .3s cubic-bezier(.34,1.56,.64,1) .37s both; }
+  .sec-people .reveal.in .avatars .av.a3 { animation: avPop .3s cubic-bezier(.34,1.56,.64,1) .49s both; }
+  .sec-people .reveal.in .avatars .who { opacity: 1; }
+  @keyframes avPop { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
+  .sec-people .progress.full i { width: 0; transition: width .8s cubic-bezier(.22,.61,.36,1) .85s; }
+  .sec-people .reveal.in .progress.full i { width: 100%; }
+  .sec-people .funded-badge { opacity: 0; }
+  .sec-people .reveal.in .funded-badge { animation: fundedIn .55s cubic-bezier(.34,1.56,.64,1) 1.75s both; }
+  @keyframes fundedIn {
+    0% { opacity: 0; transform: scale(.85); box-shadow: 0 0 0 rgba(52,217,129,0); }
+    60% { opacity: 1; transform: scale(1.06); box-shadow: 0 0 14px rgba(52,217,129,.45); }
+    100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 rgba(52,217,129,0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sec-people .avatars .av { opacity: 1; transform: none; }
+    .sec-people .avatars .who { opacity: 1; transition: none; }
+    .sec-people .reveal.in .avatars .av.a1, .sec-people .reveal.in .avatars .av.a2, .sec-people .reveal.in .avatars .av.a3 { animation: none; }
+    .sec-people .progress.full i { width: 100%; transition: none; }
+    .sec-people .funded-badge { opacity: 1; }
+    .sec-people .reveal.in .funded-badge { animation: none; }
+  }
+
   /* ---------- SECTION: LEVEL UP ---------- */
   .sec-level {
     background: radial-gradient(130% 90% at 50% 0%, #ffffff 0%, var(--lavender-bg) 55%, #E4D2FB 100%);
