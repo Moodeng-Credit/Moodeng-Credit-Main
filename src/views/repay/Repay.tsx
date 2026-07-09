@@ -25,7 +25,7 @@ import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { getCreditLevelNumber, getNextCreditTier } from '@/config/creditTiers';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { areWalletAddressesEqual, formatWalletAddressShort, getBaseWalletLockStatus } from '@/lib/walletProvider';
-import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
+import { confirmLoanPayment, getUserLoans, PaymentNotConfirmedError } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
@@ -823,20 +823,23 @@ export default function Repay() {
          // while the DB catches up.
          setPendingTxHash(outcome.hash);
 
-         await dispatch(
-            updateLoanStatus({
-               id: selectedLoan.id,
-               repaidAmount: newRepaidAmount,
-               repaymentStatus: newRepaymentStatus,
-               hash: outcome.hash
+         // Server verifies the on-chain transfer before writing status — it returns the
+         // authoritative loan row (repaid amount / status derived from the real transfer).
+         const confirmedLoan = await dispatch(
+            confirmLoanPayment({
+               loanId: selectedLoan.id,
+               hash: outcome.hash,
+               method,
+               action: 'repay'
             })
          ).unwrap();
          // DB write landed — the reconciler has nothing left to finish for this payment.
          clearPendingBasePayment(outcome.hash);
          await dispatch(getUserLoans({ userId: user.id })).unwrap();
          setRepaymentAmount('');
-         if (isFullyRepaid) {
-            // updateLoanStatus refetched the user, so the store now holds any raised limit.
+         const serverFullyRepaid = confirmedLoan.repaymentStatus === 'Paid';
+         if (serverFullyRepaid) {
+            // confirmLoanPayment refetched the user, so the store now holds any raised limit.
             const newCreditLimit = reduxStore.getState().auth.user?.cs ?? 0;
             const leveledUp = newCreditLimit > prevCreditLimit;
             setCompletion({
@@ -849,17 +852,27 @@ export default function Repay() {
          } else {
             // Partial payment: the loan stays active, so acknowledge it inline instead of
             // the full-payoff screen.
-            const remainingAfter = Math.max(0, toNumber(selectedLoan.totalRepaymentAmount) - newRepaidAmount);
+            const remainingAfter = Math.max(0, toNumber(selectedLoan.totalRepaymentAmount) - toNumber(confirmedLoan.repaidAmount));
             setPartialPaid({ paidAmount: effectiveRepayment, remaining: remainingAfter, coin: transferCoin });
          }
          // A short success buzz on devices that support it makes the payoff feel tactile.
          if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-            navigator.vibrate(isFullyRepaid ? [12, 40, 12] : 12);
+            navigator.vibrate(serverFullyRepaid ? [12, 40, 12] : 12);
          }
          showToastByConfig('repayment_success');
       } catch (error) {
-         console.error('Repayment failed:', error);
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
+         // A 202 = payment sent but not yet confirmed on-chain. Don't cry failure: the Base Pay
+         // reconciler (armed in onSubmitted) will finish the DB write once it settles.
+         if (error instanceof PaymentNotConfirmedError) {
+            showToast(
+               TOAST_TYPES.INFO,
+               'Still confirming',
+               'Your payment was sent and is taking a moment to confirm. This will update automatically.'
+            );
+         } else {
+            console.error('Repayment failed:', error);
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
+         }
       } finally {
          setIsProcessing(false);
          setPendingTxHash(null);
@@ -877,6 +890,7 @@ export default function Repay() {
       navigate,
       baseWalletLock.address,
       baseWalletLock.hasStoredWallet,
+      showToast,
       showToastByConfig,
       payUsdc,
       dispatch,

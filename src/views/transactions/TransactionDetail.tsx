@@ -13,7 +13,7 @@ import useWallet, { type PaymentMethod } from '@/hooks/useWallet';
 
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
-import { getUserLoans, recordInterestReturn } from '@/store/slices/loanSlice';
+import { confirmLoanPayment, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
 import { LoanStatus as LoanStatusValue, RepaymentStatus } from '@/types/loanTypes';
@@ -570,7 +570,7 @@ export default function TransactionDetail() {
          // so a failed DB write can't leave the button visible and trigger a double-send.
          setReturnedTxHash(outcome.hash);
 
-         await dispatch(recordInterestReturn({ loanId: loan.id, hash: outcome.hash })).unwrap();
+         await dispatch(confirmLoanPayment({ loanId: loan.id, hash: outcome.hash, method, action: 'return-interest' })).unwrap();
          clearPendingBasePayment(outcome.hash);
          return true;
       } catch {

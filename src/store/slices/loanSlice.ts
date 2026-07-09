@@ -21,9 +21,17 @@ type LoanInsert = Database['public']['Tables']['loans']['Insert'];
 type LoanUpdate = Database['public']['Tables']['loans']['Update'];
 type LoanRequestRepostStatusRow = Database['public']['Functions']['get_loan_request_repost_status']['Returns'][number];
 export type LoanSideEffectError = {
-   type: 'award_points' | 'loan_notification';
+   type: 'award_points' | 'loan_notification' | 'credit_progression';
    message: string;
 };
+
+/** Thrown when the payment is confirmed-pending on-chain (HTTP 202) — caller should retry later, NOT treat as failure. */
+export class PaymentNotConfirmedError extends Error {
+   constructor(message = 'Payment is not confirmed on-chain yet') {
+      super(message);
+      this.name = 'PaymentNotConfirmedError';
+   }
+}
 
 // Helper function to map Supabase loan row to frontend Loan type
 const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
@@ -267,6 +275,21 @@ const loanSlice = createSlice({
          .addCase(updateLoanStatus.rejected, (state, action) => {
             state.error = (action.error.message as string) || 'Failed to update loan';
          })
+         .addCase(confirmLoanPayment.fulfilled, (state, action) => {
+            const updatedLoan = action.payload;
+            const floanIndex = state.loans.floans.findIndex((loan) => loan.id === updatedLoan.id);
+            if (floanIndex !== -1) {
+               state.loans.floans[floanIndex] = updatedLoan;
+            }
+            const gloanIndex = state.loans.gloans.findIndex((loan) => loan.id === updatedLoan.id);
+            if (gloanIndex !== -1) {
+               state.loans.gloans[gloanIndex] = updatedLoan;
+            }
+            state.userLoansFetchedAt = null;
+         })
+         .addCase(confirmLoanPayment.rejected, (state, action) => {
+            state.error = (action.error.message as string) || 'Failed to confirm loan payment';
+         })
          .addCase(deleteLoan.fulfilled, (state, action) => {
             const deletedLoanId = action.payload;
             state.loans.floans = state.loans.floans.filter((loan) => loan.id !== deletedLoanId);
@@ -274,23 +297,19 @@ const loanSlice = createSlice({
          })
          .addCase(deleteLoan.rejected, (state, action) => {
             state.error = (action.error.message as string) || 'Failed to delete loan';
-         })
-         .addCase(recordInterestReturn.fulfilled, (state, action) => {
-            const updatedLoan = action.payload;
-            const gloanIndex = state.loans.gloans.findIndex((loan) => loan.id === updatedLoan.id);
-            if (gloanIndex !== -1) {
-               state.loans.gloans[gloanIndex] = updatedLoan;
-            }
-            const floanIndex = state.loans.floans.findIndex((loan) => loan.id === updatedLoan.id);
-            if (floanIndex !== -1) {
-               state.loans.floans[floanIndex] = updatedLoan;
-            }
          });
    }
 });
 
 export const { clearError, addLoan, updateLoan } = loanSlice.actions;
 
+/**
+ * @deprecated DO NOT use for funding/repayment. Writing loan_status/repayment_status/
+ * repaid_amount/hash/lender fields from the client is now rejected by a DB trigger (see
+ * migration 20260710000000). All money writes must go through {@link confirmLoanPayment}, which
+ * verifies the on-chain transfer server-side. This thunk is orphaned pending removal — kept only
+ * so nothing silently breaks; see SECURITY-REMEDIATION.md. [[security-lockdown-john-disclosure]]
+ */
 export const updateLoanStatus = createAsyncThunk<
    Loan,
    {
@@ -523,6 +542,52 @@ export const updateLoanStatus = createAsyncThunk<
    return fulfillWithValue(mapSupabaseLoanToLoan(data), { sideEffectErrors });
 });
 
+/**
+ * Server-verified funding/repayment. Replaces the money-writing path of {@link updateLoanStatus}:
+ * the client can no longer set loan_status/repayment_status/repaid_amount/hash directly (a DB
+ * trigger rejects it) — this invokes the `confirm-loan-payment` Edge Function, which verifies the
+ * real on-chain USDC transfer before writing status and running the points/credit/notification
+ * side effects server-side. See [[security-lockdown-john-disclosure]].
+ *
+ * Throws {@link PaymentNotConfirmedError} on a 202 (payment not yet confirmed on-chain) so callers
+ * can reconcile-later instead of surfacing a failure — mirrors the Base Pay timeout contract.
+ */
+export const confirmLoanPayment = createAsyncThunk<
+   Loan,
+   { loanId: string; hash: string; method: 'wallet' | 'base'; action: 'fund' | 'repay' | 'return-interest' },
+   { fulfilledMeta: { sideEffectErrors: LoanSideEffectError[] } }
+>('loans/confirmPayment', async ({ loanId, hash, method, action }, { dispatch, fulfillWithValue }) => {
+   const supabase = supabaseClient();
+
+   const { data, error } = await supabase.functions.invoke('confirm-loan-payment', {
+      body: { loanId, hash, method, action }
+   });
+
+   // A 202 (payment not confirmed yet) comes back as a body with `retry: true` rather than an
+   // invoke error; treat it as reconcile-later, not a hard failure.
+   if (data?.retry) {
+      throw new PaymentNotConfirmedError(data?.error);
+   }
+   if (error) {
+      // supabase-js wraps non-2xx as FunctionsHttpError; surface the server's message when present.
+      const context = (error as { context?: { error?: string } })?.context;
+      throw new Error(context?.error || error.message);
+   }
+   if (data?.error || !data?.loan) {
+      throw new Error(data?.error || 'Failed to confirm loan payment');
+   }
+
+   const loan = mapSupabaseLoanToLoan(data.loan as LoanRow);
+
+   // A fully-repaid loan may have raised the borrower's credit limit server-side; refresh the
+   // signed-in user so the UI reflects it (the old updateLoanStatus did this inline).
+   if (action === 'repay' && loan.repaymentStatus === 'Paid') {
+      await dispatch(fetchUser());
+   }
+
+   return fulfillWithValue(loan, { sideEffectErrors: (data.sideEffectErrors as LoanSideEffectError[]) ?? [] });
+});
+
 export const deleteLoan = createAsyncThunk('loans/delete', async (loanId: string) => {
    const supabase = supabaseClient();
 
@@ -538,30 +603,6 @@ export const deleteLoan = createAsyncThunk('loans/delete', async (loanId: string
 
    return data.id;
 });
-
-export const recordInterestReturn = createAsyncThunk(
-   'loans/recordInterestReturn',
-   async ({ loanId, hash }: { loanId: string; hash: string }) => {
-      const supabase = supabaseClient();
-
-      const { data, error } = await supabase
-         .from('loans')
-         .update({ interest_returned_at: new Date().toISOString(), interest_return_hash: hash })
-         .eq('id', loanId)
-         .select()
-         .single();
-
-      if (error) {
-         throw new Error(error.message);
-      }
-
-      if (!data) {
-         throw new Error('Failed to record interest return');
-      }
-
-      return mapSupabaseLoanToLoan(data);
-   }
-);
 
 export const getLoans = getUserLoans;
 

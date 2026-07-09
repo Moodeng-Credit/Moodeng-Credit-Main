@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAccount, useSwitchChain } from 'wagmi';
 
+import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import useWallet, { type PaymentMethod } from '@/hooks/useWallet';
@@ -14,7 +15,7 @@ import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { ALLOWED_CHAIN_DISPLAY_NAME } from '@/config/wagmiConfig';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { areWalletAddressesEqual, getBaseWalletLockStatus } from '@/lib/walletProvider';
-import { getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
+import { confirmLoanPayment, getUserLoans, PaymentNotConfirmedError } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
@@ -29,7 +30,7 @@ function UserPay({ loan }: { loan: Loan }) {
    const time = parseDateSafely(loan.createdAt).toISOString();
    const { payUsdc } = useWallet();
    const dispatch = useDispatch<AppDispatch>();
-   const { showToastByConfig } = useToast();
+   const { showToast, showToastByConfig } = useToast();
    const account = useAccount();
    const { switchChainAsync } = useSwitchChain();
    const { isConnected } = account;
@@ -49,8 +50,8 @@ function UserPay({ loan }: { loan: Loan }) {
 
          const newRepaidAmount = toNumber(loan.repaidAmount) + Number(amount);
          const totalOwed = toNumber(loan.totalRepaymentAmount);
-
-         const newRepaymentStatus = newRepaidAmount >= totalOwed ? 'Paid' : 'Partial';
+         // Note: the final repaid amount / status is computed server-side in confirm-loan-payment
+         // from the actual on-chain transfer; here we only gate against overpayment.
 
          if (
             loan.loanStatus === 'Lent' &&
@@ -83,33 +84,39 @@ function UserPay({ loan }: { loan: Loan }) {
                }
 
                try {
-                  const loanData = {
-                     id: loan.id,
-                     repaidAmount: newRepaidAmount,
-                     repaymentStatus: newRepaymentStatus,
-                     hash: outcome.hash
-                  };
-
-                  await dispatch(updateLoanStatus(loanData)).unwrap();
+                  // Server verifies the on-chain transfer before writing status.
+                  await dispatch(
+                     confirmLoanPayment({
+                        loanId: loan.id,
+                        hash: outcome.hash,
+                        method,
+                        action: 'repay'
+                     })
+                  ).unwrap();
                   await dispatch(getUserLoans({ userId }));
                   showToastByConfig('repayment_success');
                   setRepaidAmountToAdd('');
                } catch (updateError: unknown) {
-                  const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
-                  console.error('[CRITICAL] Transaction succeeded but database update failed:', errorMessage);
-                  console.error(
-                     '[RECONCILIATION REQUIRED] Loan ID:',
-                     loan.id,
-                     '| Payment Amount:',
-                     amount,
-                     '| New Repaid Total:',
-                     newRepaidAmount.toString(),
-                     '| Status:',
-                     newRepaymentStatus,
-                     '| Hash:',
-                     outcome.hash
-                  );
-                  showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
+                  if (updateError instanceof PaymentNotConfirmedError) {
+                     // Sent but not yet confirmed on-chain — reconciler finishes it. Not a failure.
+                     showToast(
+                        TOAST_TYPES.INFO,
+                        'Still confirming',
+                        'Your payment was sent and is taking a moment to confirm. This will update automatically.'
+                     );
+                  } else {
+                     const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
+                     console.error('[CRITICAL] Transaction succeeded but database update failed:', errorMessage);
+                     console.error(
+                        '[RECONCILIATION REQUIRED] Loan ID:',
+                        loan.id,
+                        '| Payment Amount:',
+                        amount,
+                        '| Hash:',
+                        outcome.hash
+                     );
+                     showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
+                  }
                } finally {
                   setIsProcessing(false);
                }
@@ -136,6 +143,7 @@ function UserPay({ loan }: { loan: Loan }) {
          payUsdc,
          dispatch,
          userId,
+         showToast,
          showToastByConfig
       ]
    );

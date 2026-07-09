@@ -26,7 +26,7 @@ import {
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { computePointsDelta, computeYearOneIouPointsDelta, formatPointsMajor, getYearOneIouBorrowerBonusPoints } from '@/shared/points';
-import { fetchLoans, type LoanSideEffectError, updateLoanStatus } from '@/store/slices/loanSlice';
+import { confirmLoanPayment, fetchLoans, type LoanSideEffectError } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
@@ -211,21 +211,19 @@ export default function UserCard(loan: UserCardProps) {
                // Surface the hash so the overlay flips from "Sending" to "Confirming".
                setPendingTxHash(outcome.hash);
 
-               // Base Pay reports the real paying wallet (sender); the wagmi path pays from the
-               // connected wallet, so fall back to that.
-               const lenderWallet = outcome.payer?.trim() || liveAccount.address?.trim() || account.address?.trim() || wallet?.trim();
+               // Server verifies the on-chain transfer before marking the loan Lent; it derives the
+               // lender wallet from the actual payer and the lender id from the authenticated caller,
+               // so we no longer send those from the client.
+               const updateResult = await dispatch(
+                  confirmLoanPayment({
+                     loanId: loanData.id,
+                     hash: outcome.hash,
+                     method,
+                     action: 'fund'
+                  })
+               );
 
-               const loanPayload = {
-                  id: loanData.id,
-                  wallet: lenderWallet,
-                  userId,
-                  loanStatus: 'Lent',
-                  hash: outcome.hash
-               };
-
-               const updateResult = await dispatch(updateLoanStatus(loanPayload));
-
-               if (updateLoanStatus.fulfilled.match(updateResult)) {
+               if (confirmLoanPayment.fulfilled.match(updateResult)) {
                   // DB write landed — the reconciler has nothing left to finish for this payment.
                   clearPendingBasePayment(outcome.hash);
                   const sideEffectErrors = updateResult.meta.sideEffectErrors ?? [];
@@ -252,6 +250,14 @@ export default function UserCard(loan: UserCardProps) {
                         `Loan funded successfully, but some follow-ups failed: ${errorDetails}.`
                      );
                   }
+               } else if (updateResult.error?.name === 'PaymentNotConfirmedError') {
+                  // Payment sent but not yet confirmed on-chain — the reconciler (armed in
+                  // onSubmitted) finishes the DB write once it settles. Not a failure.
+                  showToast(
+                     TOAST_TYPES.INFO,
+                     'Still confirming',
+                     'Your payment was sent and is taking a moment to confirm. This will update automatically.'
+                  );
                } else {
                   const errorMessage = updateResult.error?.message ?? 'Unknown error';
                   console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
