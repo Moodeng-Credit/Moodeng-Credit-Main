@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import authReducer from '@/store/slices/authSlice';
-import loanReducer, { deleteLoan, getUserLoans, updateLoanStatus } from '@/store/slices/loanSlice';
+import loanReducer, { confirmLoanPayment, deleteLoan, getUserLoans, PaymentNotConfirmedError, updateLoanStatus } from '@/store/slices/loanSlice';
 
 // Mock the Supabase client
 vi.mock('@/lib/supabase/client', () => ({
@@ -189,6 +189,85 @@ describe('Loan Flow Trigger Integration', () => {
       // Assert that the edge function was NOT invoked
       expect(mockSupabase.functions.invoke).not.toHaveBeenCalled();
       expect(mockSupabase.rpc).not.toHaveBeenCalled();
+   });
+
+   it('confirmLoanPayment routes funding through the confirm-loan-payment edge function (no direct loans.update)', async () => {
+      mockSupabase.functions.invoke.mockResolvedValueOnce({
+         data: {
+            loan: {
+               id: 'loan-123',
+               tracking_id: 'TRK-123',
+               loan_status: 'Lent',
+               loan_amount: 10,
+               borrower_user_id: 'borrower-123',
+               lender_user_id: 'user-123',
+               funded_at: '2024-01-01T00:00:00Z'
+            },
+            sideEffectErrors: []
+         },
+         error: null
+      });
+
+      const result = await store.dispatch(
+         confirmLoanPayment({ loanId: 'loan-123', hash: '0xabc', method: 'base', action: 'fund' })
+      );
+
+      expect(confirmLoanPayment.fulfilled.match(result)).toBe(true);
+      // The verified server path is used — NOT a client-side loans.update.
+      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
+         'confirm-loan-payment',
+         expect.objectContaining({ body: { loanId: 'loan-123', hash: '0xabc', method: 'base', action: 'fund' } })
+      );
+      expect(mockSupabase.update).not.toHaveBeenCalled();
+   });
+
+   it('interest return routes through the confirm-loan-payment edge function (no direct loans.update)', async () => {
+      mockSupabase.functions.invoke.mockResolvedValueOnce({
+         data: {
+            loan: {
+               id: 'loan-123',
+               tracking_id: 'TRK-123',
+               loan_status: 'Lent',
+               repayment_status: 'Paid',
+               loan_amount: 10,
+               total_repayment_amount: 11,
+               borrower_user_id: 'borrower-123',
+               lender_user_id: 'user-123',
+               interest_returned_at: '2024-02-01T00:00:00Z',
+               interest_return_hash: '0xint'
+            },
+            sideEffectErrors: []
+         },
+         error: null
+      });
+
+      const result = await store.dispatch(
+         confirmLoanPayment({ loanId: 'loan-123', hash: '0xint', method: 'base', action: 'return-interest' })
+      );
+
+      expect(confirmLoanPayment.fulfilled.match(result)).toBe(true);
+      // Interest return is now server-verified — the lender can no longer mark it returned via a
+      // direct client write; it must clear the on-chain gate in the edge function.
+      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
+         'confirm-loan-payment',
+         expect.objectContaining({ body: { loanId: 'loan-123', hash: '0xint', method: 'base', action: 'return-interest' } })
+      );
+      expect(mockSupabase.update).not.toHaveBeenCalled();
+   });
+
+   it('confirmLoanPayment surfaces a 202 (unconfirmed) as PaymentNotConfirmedError, not a hard failure', async () => {
+      mockSupabase.functions.invoke.mockResolvedValueOnce({
+         data: { retry: true, error: 'Payment is not confirmed on-chain yet' },
+         error: null
+      });
+
+      const result = await store.dispatch(
+         confirmLoanPayment({ loanId: 'loan-123', hash: '0xpending', method: 'base', action: 'repay' })
+      );
+
+      expect(confirmLoanPayment.rejected.match(result)).toBe(true);
+      expect(result.error.name).toBe(new PaymentNotConfirmedError().name);
+      expect(mockSupabase.update).not.toHaveBeenCalled();
    });
 
    it('only fulfills loan deletion after Supabase returns the deleted row', async () => {
