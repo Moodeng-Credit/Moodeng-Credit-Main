@@ -25,6 +25,12 @@
 --   current_user reflects the execution role, so blocking only ('authenticated','anon') allows every
 --   trusted path (service role, definer functions, migrations, dashboard) and blocks exactly the
 --   client-facing direct writes.
+--
+-- IMPORTANT — this function MUST be SECURITY INVOKER (not DEFINER): inside a SECURITY DEFINER
+--   function current_user resolves to the OWNER (postgres), so the guard would always be true and the
+--   trigger would NEVER block anything. INVOKER makes current_user reflect the real caller. And note
+--   redeem_referral_code/compute_risk_score (themselves SECURITY DEFINER, owner postgres) still pass:
+--   inside them current_user is already postgres when this INVOKER trigger fires. Do NOT change to DEFINER.
 
 CREATE OR REPLACE FUNCTION enforce_user_privileged_columns_server_only()
 RETURNS TRIGGER AS $$
@@ -56,7 +62,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY INVOKER SET search_path = public;
 
 DROP TRIGGER IF EXISTS trg_enforce_user_privileged_columns ON users;
 CREATE TRIGGER trg_enforce_user_privileged_columns

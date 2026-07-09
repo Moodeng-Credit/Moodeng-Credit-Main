@@ -20,6 +20,11 @@
 --   allows every trusted path (service role edge fn, manual recovery, migrations) and blocks exactly
 --   the client-facing direct writes. auth.role() is JWT-derived: if request.jwt.claims is absent in
 --   the trigger context it returns NULL, which would WRONGLY block the service-role edge function.
+--
+-- IMPORTANT — this function MUST be SECURITY INVOKER (not DEFINER): inside a SECURITY DEFINER
+--   function current_user resolves to the OWNER (postgres), so the guard above would always be true
+--   and the trigger would NEVER block anything. INVOKER makes current_user reflect the real caller.
+--   Do NOT change this to SECURITY DEFINER.
 
 CREATE TABLE used_payment_hashes (
   hash TEXT PRIMARY KEY,
@@ -71,7 +76,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY INVOKER SET search_path = public;
 
 DROP TRIGGER IF EXISTS trg_enforce_loan_money_columns ON loans;
 CREATE TRIGGER trg_enforce_loan_money_columns
