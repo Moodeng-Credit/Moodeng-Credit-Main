@@ -8,9 +8,11 @@ import { Link } from 'react-router-dom';
 import { useAccount, useSwitchChain } from 'wagmi';
 import { getAccount } from 'wagmi/actions';
 
+import FundingMethodModal, { type FundLoanTarget } from '@/components/funding/FundingMethodModal';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
+import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
 import useWallet, { type PaymentMethod } from '@/hooks/useWallet';
 
 import { formatCurrency, formatNumber } from '@/utils/decimalHelpers';
@@ -117,6 +119,10 @@ export default function UserCard(loan: UserCardProps) {
    const { isConnected } = account;
    const { switchChainAsync } = useSwitchChain();
    const { openConnectModal } = useConnectModal();
+   // Moodeng funding admins (George/Emma) get the internal two-option modal on "Send Your
+   // Help"; everyone else falls through to the normal lend flow, byte-for-byte unchanged.
+   const isFundingAdmin = useIsFundingAdmin();
+   const [showFundingModal, setShowFundingModal] = useState(false);
    const [showModal, setShowModal] = useState(false);
    const [showWalletChecklist, setShowWalletChecklist] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
@@ -307,13 +313,23 @@ export default function UserCard(loan: UserCardProps) {
       ]
    );
 
+   // Runs the normal lend flow (used by non-admins, and by admins who pick "Direct Lend" in
+   // the funding modal). Already connected a wallet → pay straight from it (one signature
+   // popup, no connect step). Not connected → Base Pay: a single popup that fuses Base Account
+   // sign-in and the USDC send, so even a cold lender funds in one tap. Lenders who
+   // specifically want a non-Base wallet use "Use a different wallet" below.
+   const runDirectLend = useCallback(async () => {
+      await executeLend(isConnected ? 'wallet' : 'base');
+   }, [executeLend, isConnected]);
+
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
-      // Already connected a wallet → pay straight from it (one signature popup, no connect step).
-      // Not connected → Base Pay: a single popup that fuses Base Account sign-in and the USDC
-      // send, so even a cold lender funds in one tap. Lenders who specifically want a non-Base
-      // wallet use "Use a different wallet" below.
-      await executeLend(isConnected ? 'wallet' : 'base');
+      // Internal accounts get to choose Direct Lend vs Smart Contract Lend (Liquidity Relay).
+      if (isFundingAdmin) {
+         setShowFundingModal(true);
+         return;
+      }
+      await runDirectLend();
    };
 
    // "Use a different wallet" opens a guided two-step checklist (connect → send) instead of the
@@ -591,6 +607,25 @@ export default function UserCard(loan: UserCardProps) {
                onConnect={() => openConnectModal?.()}
                onConfirm={handleConfirmFromChecklist}
                onClose={() => setShowWalletChecklist(false)}
+            />
+         ) : null}
+
+         {/* Internal funding fork (George/Emma only): Direct Lend vs Smart Contract Lend */}
+         {showFundingModal ? (
+            <FundingMethodModal
+               target={
+                  {
+                     loanId: loanData.id,
+                     borrowerWallet: loanData.borrowerWallet ?? null,
+                     borrowerName: borrowerDisplayName,
+                     principal: Number(loanData.loanAmount ?? 0),
+                     totalOwed: Number(loanData.totalRepaymentAmount ?? 0),
+                     dueDate: loanData.dueDate ?? ''
+                  } satisfies FundLoanTarget
+               }
+               onClose={() => setShowFundingModal(false)}
+               onDirectLend={runDirectLend}
+               onFunded={handleFetch}
             />
          ) : null}
 
