@@ -9,6 +9,10 @@ import { getPaymentStatus } from '@base-org/account';
  * This is the client-side safety net: the moment a Base Pay payment is approved we persist just
  * enough to finish the DB write later, and a reconciler replays it on the next load. A backend
  * cron is the follow-up for the "tab closed and never reopened" case.
+ *
+ * Wagmi (`method: 'wallet'`) payments park here too: once the tx hash exists the money is in
+ * flight, so a DB confirm that then fails (network drop, expired session, server hiccup) must be
+ * retried rather than stranding a funded/repaid loan that still reads Requested/Unpaid.
  */
 
 const STORAGE_KEY = 'moodeng.pendingBasePayments.v1';
@@ -21,15 +25,23 @@ const MIN_RECONCILE_AGE_MS = 2 * 60 * 1000;
 const MAX_ENTRY_AGE_MS = 24 * 60 * 60 * 1000;
 
 /**
- * The DB completion a confirmed payment still owes. `id` is the payment id (userOp hash), stored
- * as the loan `hash`. Kept as a distinct input type (without `createdAt`) so the discriminated
- * union survives — `Omit` over a union collapses the per-variant fields.
+ * The DB completion a confirmed payment still owes. `id` is the payment id (userOp hash, or the
+ * tx hash on the wagmi path), stored as the loan `hash`. Kept as a distinct input type (without
+ * `createdAt`) so the discriminated union survives — `Omit` over a union collapses the
+ * per-variant fields.
+ *
+ * `method` says how the money was sent. `'base'` (the default, so pre-existing stored entries
+ * keep working) entries are polled via Base Pay's payment status before completion; `'wallet'`
+ * (wagmi) entries have no Base Pay status to poll, so completion is attempted directly — the
+ * confirm-loan-payment Edge Function verifies the on-chain transfer itself and rejects until it
+ * has settled.
  */
-export type PendingBasePaymentInput =
+export type PendingBasePaymentInput = (
    | { kind: 'fund'; id: string; loanId: string; userId: string }
    | { kind: 'repay'; id: string; loanId: string; repaidAmount: number; repaymentStatus: string }
    | { kind: 'interest'; id: string; loanId: string }
-   | { kind: 'withdraw'; id: string; userId: string; amount: number; exchange: string; address: string };
+   | { kind: 'withdraw'; id: string; userId: string; amount: number; exchange: string; address: string }
+) & { method?: 'base' | 'wallet' };
 
 export type PendingBasePayment = PendingBasePaymentInput & { createdAt: number };
 
@@ -69,9 +81,15 @@ export function clearPendingBasePayment(id: string) {
 
 /** Dispatches for the completions the reconciler can replay, one per payment kind. */
 export interface ReconcileHandlers {
-   completeFund: (args: { loanId: string; userId: string; wallet?: string; hash: string }) => Promise<void>;
-   completeRepay: (args: { loanId: string; repaidAmount: number; repaymentStatus: string; hash: string }) => Promise<void>;
-   completeInterest: (args: { loanId: string; hash: string }) => Promise<void>;
+   completeFund: (args: { loanId: string; userId: string; wallet?: string; hash: string; method: 'base' | 'wallet' }) => Promise<void>;
+   completeRepay: (args: {
+      loanId: string;
+      repaidAmount: number;
+      repaymentStatus: string;
+      hash: string;
+      method: 'base' | 'wallet';
+   }) => Promise<void>;
+   completeInterest: (args: { loanId: string; hash: string; method: 'base' | 'wallet' }) => Promise<void>;
    completeWithdraw: (args: { userId: string; amount: number; exchange: string; address: string; hash: string }) => Promise<void>;
 }
 
@@ -90,35 +108,46 @@ export async function reconcilePendingBasePayments(handlers: ReconcileHandlers, 
          continue;
       }
 
-      let status;
-      try {
-         status = await getPaymentStatus({ id: entry.id, testnet: USE_TESTNET });
-      } catch {
-         // Transient — leave it for the next pass.
-         continue;
-      }
+      const method = entry.method ?? 'base';
+      let payerWallet: string | undefined;
 
-      if (status.status === 'failed') {
-         // The money never moved, so there is nothing to write.
-         clearPendingBasePayment(entry.id);
-         continue;
-      }
-      if (status.status !== 'completed') {
-         continue; // pending / not_found — try again later.
+      // Only Base Pay payments have a status to poll. A wagmi tx hash isn't a Base Pay id, so
+      // wallet entries go straight to completion — confirm-loan-payment verifies the transfer
+      // on-chain itself, keeps returning retry-later until it settles, and the entry expires at
+      // MAX_ENTRY_AGE_MS if the tx never lands.
+      if (method === 'base') {
+         let status;
+         try {
+            status = await getPaymentStatus({ id: entry.id, testnet: USE_TESTNET });
+         } catch {
+            // Transient — leave it for the next pass.
+            continue;
+         }
+
+         if (status.status === 'failed') {
+            // The money never moved, so there is nothing to write.
+            clearPendingBasePayment(entry.id);
+            continue;
+         }
+         if (status.status !== 'completed') {
+            continue; // pending / not_found — try again later.
+         }
+         payerWallet = status.sender;
       }
 
       try {
          if (entry.kind === 'fund') {
-            await handlers.completeFund({ loanId: entry.loanId, userId: entry.userId, wallet: status.sender, hash: entry.id });
+            await handlers.completeFund({ loanId: entry.loanId, userId: entry.userId, wallet: payerWallet, hash: entry.id, method });
          } else if (entry.kind === 'repay') {
             await handlers.completeRepay({
                loanId: entry.loanId,
                repaidAmount: entry.repaidAmount,
                repaymentStatus: entry.repaymentStatus,
-               hash: entry.id
+               hash: entry.id,
+               method
             });
          } else if (entry.kind === 'interest') {
-            await handlers.completeInterest({ loanId: entry.loanId, hash: entry.id });
+            await handlers.completeInterest({ loanId: entry.loanId, hash: entry.id, method });
          } else {
             await handlers.completeWithdraw({
                userId: entry.userId,

@@ -59,7 +59,7 @@ describe('reconcilePendingBasePayments', () => {
 
       await reconcilePendingBasePayments(h, Date.now() + MIN_AGE + 1000);
 
-      expect(h.completeFund).toHaveBeenCalledWith({ loanId: 'L1', userId: 'U1', wallet: '0xlender', hash: '0xa' });
+      expect(h.completeFund).toHaveBeenCalledWith({ loanId: 'L1', userId: 'U1', wallet: '0xlender', hash: '0xa', method: 'base' });
       expect(listPendingBasePayments()).toHaveLength(0);
    });
 
@@ -70,7 +70,7 @@ describe('reconcilePendingBasePayments', () => {
 
       await reconcilePendingBasePayments(h, Date.now() + MIN_AGE + 1000);
 
-      expect(h.completeRepay).toHaveBeenCalledWith({ loanId: 'L2', repaidAmount: 7.5, repaymentStatus: 'Paid', hash: '0xb' });
+      expect(h.completeRepay).toHaveBeenCalledWith({ loanId: 'L2', repaidAmount: 7.5, repaymentStatus: 'Paid', hash: '0xb', method: 'base' });
       expect(listPendingBasePayments()).toHaveLength(0);
    });
 
@@ -81,7 +81,7 @@ describe('reconcilePendingBasePayments', () => {
 
       await reconcilePendingBasePayments(h, Date.now() + MIN_AGE + 1000);
 
-      expect(h.completeInterest).toHaveBeenCalledWith({ loanId: 'L3', hash: '0xc' });
+      expect(h.completeInterest).toHaveBeenCalledWith({ loanId: 'L3', hash: '0xc', method: 'base' });
       expect(listPendingBasePayments()).toHaveLength(0);
    });
 
@@ -126,6 +126,27 @@ describe('reconcilePendingBasePayments', () => {
       await reconcilePendingBasePayments(h, Date.now() + MIN_AGE + 1000);
 
       expect(h.completeFund).toHaveBeenCalled();
+      expect(listPendingBasePayments()).toHaveLength(1);
+   });
+
+   it('completes a wallet (wagmi) entry without polling Base Pay — the server verifies on-chain', async () => {
+      registerPendingBasePayment({ kind: 'fund', id: '0xtx', loanId: 'L1', userId: 'U1', method: 'wallet' });
+      const h = handlers();
+
+      await reconcilePendingBasePayments(h, Date.now() + MIN_AGE + 1000);
+
+      expect(mockStatus).not.toHaveBeenCalled();
+      expect(h.completeFund).toHaveBeenCalledWith({ loanId: 'L1', userId: 'U1', wallet: undefined, hash: '0xtx', method: 'wallet' });
+      expect(listPendingBasePayments()).toHaveLength(0);
+   });
+
+   it('keeps a wallet entry whose DB write throws (server says retry-later), for a later pass', async () => {
+      registerPendingBasePayment({ kind: 'repay', id: '0xtx', loanId: 'L2', repaidAmount: 5, repaymentStatus: 'Paid', method: 'wallet' });
+      const h: ReconcileHandlers = { ...handlers(), completeRepay: vi.fn().mockRejectedValue(new Error('not confirmed yet')) };
+
+      await reconcilePendingBasePayments(h, Date.now() + MIN_AGE + 1000);
+
+      expect(h.completeRepay).toHaveBeenCalled();
       expect(listPendingBasePayments()).toHaveLength(1);
    });
 

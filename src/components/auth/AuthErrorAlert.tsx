@@ -1,17 +1,52 @@
 import { Link } from 'react-router-dom';
 
-type AuthErrorAlertType = 'incorrect_credentials' | 'email_not_found' | 'new_user' | 'too_many_attempts';
+type AuthErrorAlertType = 'incorrect_credentials' | 'email_not_found' | 'new_user' | 'too_many_attempts' | 'provider_failed';
 
 interface AuthErrorAlertProps {
    type: AuthErrorAlertType;
    onRetry?: () => void;
    signupHref?: string;
    resetPasswordHref?: string;
+   /** Which sign-in provider failed (e.g. "Google") — only used by `provider_failed`. */
+   provider?: string;
 }
 
 const DOCS_URL = 'https://moodeng-credit.gitbook.io/moodeng-credit';
 
-export function AuthErrorAlert({ type, onRetry, signupHref = '/sign-up', resetPasswordHref = '/forgot-password' }: AuthErrorAlertProps) {
+export function AuthErrorAlert({
+   type,
+   onRetry,
+   signupHref = '/sign-up',
+   resetPasswordHref = '/forgot-password',
+   provider
+}: AuthErrorAlertProps) {
+   if (type === 'provider_failed') {
+      // A provider sign-in has no password, so never blame "credentials" here — the failure is
+      // on the provider handshake (popup closed, network, provider outage) and usually passes.
+      return (
+         <div className="w-full rounded-[10px] border border-red-200 bg-red-50/80 px-4 py-4">
+            <p className="text-sm font-medium text-[#4D4359] tracking-[-0.02em]">
+               We couldn&apos;t sign you in with {provider ?? 'that provider'}. This is usually temporary — please try again.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+               {onRetry && (
+                  <button type="button" onClick={onRetry} className="text-sm font-semibold text-[#8336F0] hover:underline">
+                     Try again
+                  </button>
+               )}
+               <a
+                  href={`${DOCS_URL}/contact`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-semibold text-[#8336F0] hover:underline"
+               >
+                  Contact Support
+               </a>
+            </div>
+         </div>
+      );
+   }
+
    if (type === 'too_many_attempts') {
       return (
          <div className="w-full rounded-[10px] border border-red-200 bg-red-50/80 px-4 py-4">

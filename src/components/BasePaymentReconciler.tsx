@@ -22,17 +22,19 @@ export default function BasePaymentReconciler() {
    useEffect(() => {
       const run = () =>
          void reconcilePendingBasePayments({
-            // Reconciler only fires these once Base Pay reports `completed`, so the on-chain
-            // transfer is settled — the server-side verification in confirm-loan-payment passes.
-            // The lender/borrower is the currently-signed-in caller (whose device is reconciling).
-            completeFund: async ({ loanId, hash }) => {
-               await dispatch(confirmLoanPayment({ loanId, hash, method: 'base', action: 'fund' })).unwrap();
+            // Base entries fire once Base Pay reports `completed`, so the on-chain transfer is
+            // settled and confirm-loan-payment's verification passes. Wallet entries fire
+            // immediately and rely on that same server verification (it returns retry-later until
+            // the tx settles). The lender/borrower is the currently-signed-in caller (whose
+            // device is reconciling).
+            completeFund: async ({ loanId, hash, method }) => {
+               await dispatch(confirmLoanPayment({ loanId, hash, method, action: 'fund' })).unwrap();
             },
-            completeRepay: async ({ loanId, hash }) => {
-               await dispatch(confirmLoanPayment({ loanId, hash, method: 'base', action: 'repay' })).unwrap();
+            completeRepay: async ({ loanId, hash, method }) => {
+               await dispatch(confirmLoanPayment({ loanId, hash, method, action: 'repay' })).unwrap();
             },
-            completeInterest: async ({ loanId, hash }) => {
-               await dispatch(confirmLoanPayment({ loanId, hash, method: 'base', action: 'return-interest' })).unwrap();
+            completeInterest: async ({ loanId, hash, method }) => {
+               await dispatch(confirmLoanPayment({ loanId, hash, method, action: 'return-interest' })).unwrap();
             },
             completeWithdraw: async ({ userId, amount, exchange, address, hash }) => {
                await recordWithdrawal({ userId, amount, exchange, address, txHash: hash });
