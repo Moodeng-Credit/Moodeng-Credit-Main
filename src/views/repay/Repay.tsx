@@ -455,9 +455,6 @@ export default function Repay() {
    // Base Account signing popup that errors ("Something went wrong") since the request is
    // already in flight. A ref flips immediately, so the second tap is dropped.
    const repayInFlightRef = useRef(false);
-   // Set when the in-card "Pay partial now" button is tapped: it fills the amount, then an
-   // effect fires the payment once that amount commits — so paying is a single tap, not a
-   // "fill here, then find Pay in the nav bar" two-step.
 
    useEffect(() => {
       if (activeLoans.length === 0) {
@@ -740,6 +737,10 @@ export default function Repay() {
       repayInFlightRef.current = true;
       setIsProcessing(true);
 
+      // Set once the transfer has a hash: from that point on, an error means "money moved but the
+      // DB write is behind", which must not be reported as a failed transaction.
+      let paidTxHash: string | null = null;
+
       try {
          // Never transfer more than is actually owed — the input is validated against the
          // rounded balance, so a "Full" payment can be a hair above the true remaining.
@@ -806,6 +807,20 @@ export default function Repay() {
             return;
          }
 
+         // The wagmi path has no onSubmitted: the money is in flight from here, so arm
+         // reconciliation now — a DB confirm that fails below gets retried instead of the
+         // repayment silently never recording.
+         if (method === 'wallet') {
+            registerPendingBasePayment({
+               kind: 'repay',
+               id: outcome.hash,
+               loanId: selectedLoan.id,
+               repaidAmount: newRepaidAmount,
+               repaymentStatus: newRepaymentStatus,
+               method
+            });
+         }
+
          // Relaxed lock: we no longer block a repayment that isn't from the borrower's locked
          // Base wallet (Base Pay can't pre-guarantee the payer). Record whoever actually paid
          // and just log a mismatch so we can watch how often it happens before deciding whether
@@ -821,6 +836,7 @@ export default function Repay() {
 
          // Payment cleared: surface the hash so the overlay flips from "Sending" to "Confirming"
          // while the DB catches up.
+         paidTxHash = outcome.hash;
          setPendingTxHash(outcome.hash);
 
          // Server verifies the on-chain transfer before writing status — it returns the
@@ -861,13 +877,23 @@ export default function Repay() {
          }
          showToastByConfig('repayment_success');
       } catch (error) {
-         // A 202 = payment sent but not yet confirmed on-chain. Don't cry failure: the Base Pay
-         // reconciler (armed in onSubmitted) will finish the DB write once it settles.
+         // A 202 = payment sent but not yet confirmed on-chain. Don't cry failure: the reconciler
+         // (armed in onSubmitted / after the wagmi hash) will finish the DB write once it settles.
          if (error instanceof PaymentNotConfirmedError) {
             showToast(
                TOAST_TYPES.INFO,
                'Still confirming',
                'Your payment was sent and is taking a moment to confirm. This will update automatically.'
+            );
+         } else if (paidTxHash) {
+            // The transfer itself succeeded — only the DB write behind it failed, and the pending
+            // entry registered above keeps retrying it. Don't tell the borrower their payment
+            // "failed"; that invites a double-send.
+            console.error('[CRITICAL] Repayment transaction succeeded but database update failed:', error);
+            showToast(
+               TOAST_TYPES.WARNING,
+               'Payment Sent, Still Recording',
+               'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.'
             );
          } else {
             console.error('Repayment failed:', error);

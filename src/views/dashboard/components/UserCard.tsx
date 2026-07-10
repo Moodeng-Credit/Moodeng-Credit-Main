@@ -211,6 +211,13 @@ export default function UserCard(loan: UserCardProps) {
                // Surface the hash so the overlay flips from "Sending" to "Confirming".
                setPendingTxHash(outcome.hash);
 
+               // The wagmi path has no onSubmitted: the money is in flight from here, so arm
+               // reconciliation now — a DB confirm that fails below gets retried instead of
+               // stranding a funded loan that still reads Requested.
+               if (method === 'wallet') {
+                  registerPendingBasePayment({ kind: 'fund', id: outcome.hash, loanId: loanData.id, userId, method });
+               }
+
                // Server verifies the on-chain transfer before marking the loan Lent; it derives the
                // lender wallet from the actual payer and the lender id from the authenticated caller,
                // so we no longer send those from the client.
@@ -261,7 +268,13 @@ export default function UserCard(loan: UserCardProps) {
                } else {
                   const errorMessage = updateResult.error?.message ?? 'Unknown error';
                   console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
-                  showToast(TOAST_TYPES.ERROR, 'Funding Failed', `We could not update the loan in the database. Error: ${errorMessage}.`);
+                  // The payment itself went through; the pending entry registered above keeps
+                  // retrying the DB write, so don't tell the lender their funding "failed".
+                  showToast(
+                     TOAST_TYPES.WARNING,
+                     'Payment Sent, Still Recording',
+                     `Your payment went through but we could not record the loan yet (${errorMessage}). We will keep retrying automatically — contact support if it doesn't update.`
+                  );
                }
             }
          } catch (transferError: unknown) {

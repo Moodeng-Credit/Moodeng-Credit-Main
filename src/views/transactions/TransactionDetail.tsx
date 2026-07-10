@@ -566,6 +566,12 @@ export default function TransactionDetail() {
 
          if (!outcome) return false;
 
+         // The wagmi path has no onSubmitted: the money is in flight from here, so arm
+         // reconciliation now — a DB confirm that fails below gets retried later.
+         if (method === 'wallet') {
+            registerPendingBasePayment({ kind: 'interest', id: outcome.hash, loanId: loan.id, method });
+         }
+
          // Hide the card the moment money is on its way — before the DB write —
          // so a failed DB write can't leave the button visible and trigger a double-send.
          setReturnedTxHash(outcome.hash);

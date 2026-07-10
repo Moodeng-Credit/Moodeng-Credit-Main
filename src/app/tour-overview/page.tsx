@@ -1,7 +1,8 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function TourOverviewPage() {
    const navigate = useNavigate();
+   const location = useLocation();
 
    return (
       <div className="min-h-screen bg-white flex flex-col max-w-[440px] mx-auto px-5">
@@ -47,7 +48,7 @@ export default function TourOverviewPage() {
 
             <button
                type="button"
-               onClick={() => navigate('/tour-chooser')}
+               onClick={() => (location.key === 'default' ? navigate('/request-board') : navigate(-1))}
                className="text-center text-base font-semibold tracking-[-0.02em] text-[#8336F0] hover:underline py-4"
             >
                ← Back

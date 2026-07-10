@@ -13,6 +13,7 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME } from '@/config/wagmiConfig';
+import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { areWalletAddressesEqual, getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { confirmLoanPayment, getUserLoans, PaymentNotConfirmedError } from '@/store/slices/loanSlice';
@@ -61,6 +62,7 @@ function UserPay({ loan }: { loan: Loan }) {
          ) {
             setIsProcessing(true);
             const transferCoin = loan.coin?.trim() || 'USDC';
+            const repaymentStatus = newRepaidAmount >= totalOwed - 0.005 ? 'Paid' : 'Partial';
             // Recipient is always the lender's on-file funding wallet, chosen by us — the payer's
             // wallet choice never changes where the money lands.
             const outcome = await payUsdc({
@@ -68,10 +70,27 @@ function UserPay({ loan }: { loan: Loan }) {
                to: loan.lenderWallet || '',
                usdAmount: amount.toString(),
                loanId: loan.id,
-               coin: transferCoin
+               coin: transferCoin,
+               // On Base Pay approval (before confirmation): arm reconciliation so an
+               // approved-but-unconfirmed repayment still records later.
+               onSubmitted: (id) => {
+                  registerPendingBasePayment({ kind: 'repay', id, loanId: loan.id, repaidAmount: newRepaidAmount, repaymentStatus });
+               }
             });
 
             if (outcome) {
+               // The wagmi path has no onSubmitted: the money is in flight from here, so arm
+               // reconciliation now — a DB confirm that fails below gets retried later.
+               if (method === 'wallet') {
+                  registerPendingBasePayment({
+                     kind: 'repay',
+                     id: outcome.hash,
+                     loanId: loan.id,
+                     repaidAmount: newRepaidAmount,
+                     repaymentStatus,
+                     method
+                  });
+               }
                // Relaxed lock: record whoever actually paid and log a mismatch with the locked
                // Base wallet rather than blocking (Base Pay can't pre-guarantee the payer).
                const payer = outcome.payer?.trim() || account.address?.trim();
@@ -93,6 +112,8 @@ function UserPay({ loan }: { loan: Loan }) {
                         action: 'repay'
                      })
                   ).unwrap();
+                  // DB write landed — the reconciler has nothing left to finish for this payment.
+                  clearPendingBasePayment(outcome.hash);
                   await dispatch(getUserLoans({ userId }));
                   showToastByConfig('repayment_success');
                   setRepaidAmountToAdd('');
@@ -107,15 +128,14 @@ function UserPay({ loan }: { loan: Loan }) {
                   } else {
                      const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
                      console.error('[CRITICAL] Transaction succeeded but database update failed:', errorMessage);
-                     console.error(
-                        '[RECONCILIATION REQUIRED] Loan ID:',
-                        loan.id,
-                        '| Payment Amount:',
-                        amount,
-                        '| Hash:',
-                        outcome.hash
+                     // The payment went through; the pending entry registered above keeps
+                     // retrying the DB write — don't report a failed transaction (that invites
+                     // a double-send).
+                     showToast(
+                        TOAST_TYPES.WARNING,
+                        'Payment Sent, Still Recording',
+                        'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.'
                      );
-                     showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
                   }
                } finally {
                   setIsProcessing(false);

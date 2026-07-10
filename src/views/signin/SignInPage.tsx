@@ -36,23 +36,26 @@ export default function SignInPage() {
    const [isLoading, setIsLoading] = useState(false);
    const [showAccount, setShowAccount] = useState(false);
    const [errorType, setErrorType] = useState<
-      'incorrect_credentials' | 'email_not_found' | 'new_user' | 'too_many_attempts' | null
+      'incorrect_credentials' | 'email_not_found' | 'new_user' | 'too_many_attempts' | 'provider_failed' | null
    >(null);
+   // Which social provider failed, for the provider_failed alert copy.
+   const [errorProvider, setErrorProvider] = useState<string | null>(null);
    const [attemptsRemaining, setAttemptsRemaining] = useState(5);
    const [rememberMe, setRememberMe] = useState(true);
 
    const getEmailHasProfile = async (value: string) => {
       const supabase = getSupabaseBrowserClient();
-      const { data, error } = await supabase.from('users').select('id').eq('email', value).maybeSingle();
+      const { data, error } = await supabase.rpc('email_exists', { p_email: value });
 
       if (error) return true;
-      return !!data?.id;
+      return !!data;
    };
 
    const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       setShowAccount(false);
       setErrorType(null);
+      setErrorProvider(null);
       if (!email || !password) return;
 
       setIsLoading(true);
@@ -104,6 +107,7 @@ export default function SignInPage() {
    const handleRetry = () => {
       setShowAccount(false);
       setErrorType(null);
+      setErrorProvider(null);
       setPassword('');
    };
 
@@ -114,7 +118,9 @@ export default function SignInPage() {
          const nextPath = await getPostSignInPath(result.user);
          navigate(nextPath, { replace: true });
       } catch {
-         setErrorType('incorrect_credentials');
+         // No password involved — don't blame "credentials" for a failed provider handshake.
+         setErrorProvider('Google');
+         setErrorType('provider_failed');
          setShowAccount(true);
       } finally {
          setIsLoading(false);
@@ -130,7 +136,9 @@ export default function SignInPage() {
          const nextPath = await getPostSignInPath(result.user);
          navigate(nextPath, { replace: true });
       } catch {
-         setErrorType('incorrect_credentials');
+         // No password involved — don't blame "credentials" for a failed provider handshake.
+         setErrorProvider('Telegram');
+         setErrorType('provider_failed');
          setShowAccount(true);
       } finally {
          setIsLoading(false);
@@ -182,7 +190,7 @@ export default function SignInPage() {
                            placeholder="Enter your email address"
                            value={email}
                            onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                           error={showAccount}
+                           error={showAccount && errorType !== 'provider_failed'}
                            errorMessage={
                               showAccount && errorType === 'too_many_attempts'
                                  ? 'Too many attempts detected'
@@ -203,7 +211,7 @@ export default function SignInPage() {
                               placeholder="Enter your password"
                               value={password}
                               onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                              error={showAccount}
+                              error={showAccount && errorType !== 'provider_failed'}
                               icon={<Icons.lock />}
                               showEyeToggle
                            />
@@ -219,8 +227,12 @@ export default function SignInPage() {
                      {showAccount && errorType && (
                         <AuthErrorAlert
                            type={errorType}
+                           provider={errorProvider ?? undefined}
                            onRetry={
-                              errorType === 'incorrect_credentials' || errorType === 'email_not_found' || errorType === 'new_user'
+                              errorType === 'incorrect_credentials' ||
+                              errorType === 'email_not_found' ||
+                              errorType === 'new_user' ||
+                              errorType === 'provider_failed'
                                  ? handleRetry
                                  : undefined
                            }
