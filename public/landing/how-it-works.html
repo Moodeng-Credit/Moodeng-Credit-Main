@@ -389,7 +389,7 @@
     <div class="wrap reveal">
       <p class="label">See for yourself</p>
       <h2>Don’t take our word for it — <span class="accent">look.</span></h2>
-      <a class="cta" href="/request-board"><span class="btn-label">Browse the live request board <span class="arrow">→</span></span></a>
+      <a class="cta" href="/request-board?tour=1"><span class="btn-label">Take the 60-second tour <span class="arrow">→</span></span></a>
       <p class="reassure">No account needed to look around.</p>
     </div>
   </section>
@@ -454,7 +454,7 @@
     // stuck spinner then.
     (function () {
       var loadingLinks = document.querySelectorAll(
-        '.head-signin, .drawer .d-foot a[href="/sign-in"], .cta[href="/request-board"]'
+        '.head-signin, .drawer .d-foot a[href="/sign-in"], .cta[href^="/request-board"]'
       );
       loadingLinks.forEach(function (a) {
         a.addEventListener("click", function () { a.classList.add("is-loading"); });
