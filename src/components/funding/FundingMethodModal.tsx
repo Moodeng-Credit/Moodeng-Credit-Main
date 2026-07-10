@@ -7,6 +7,7 @@ import { useAccount } from 'wagmi';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
+import { txExplorerUrl } from '@/config/loanFundingConfig';
 import { ensureUsdcAllowance, getLoanManagerService } from '@/lib/web3/loanManager';
 import { recordAdminFunding, usdcToBaseUnits } from '@/lib/loanNotes/api';
 
@@ -115,9 +116,11 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
             }
          }
 
-         await recordAdminFunding({
+         // The loan now exists on-chain. Recording to the DB is recoverable — if it fails,
+         // the funds are NOT lost; we surface the tx hash + on-chain id so it can be re-recorded.
+         const recordPayload = {
             loanId: target.loanId,
-            fundingMethod: 'smart_contract',
+            fundingMethod: 'smart_contract' as const,
             txHash,
             borrowerWallet: target.borrowerWallet,
             principal: principalNum,
@@ -127,13 +130,34 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
             onchainRequestId: requestId,
             listingPrice: salePriceNum,
             listingTxHash
-         });
+         };
+         try {
+            await recordAdminFunding(recordPayload);
+         } catch {
+            try {
+               await recordAdminFunding(recordPayload); // one retry
+            } catch (recErr) {
+               showToast(
+                  TOAST_TYPES.WARNING,
+                  'Funded on-chain — sync pending',
+                  `Loan funded on-chain (id ${onchainLoanId ?? '?'}, ${txExplorerUrl(txHash)}). Saving to the database failed: ${(recErr as Error).message}. Funds were sent; retry from the Liquidity Relay tab.`
+               );
+               onFunded?.();
+               onClose();
+               return;
+            }
+         }
 
-         showToast(TOAST_TYPES.SUCCESS, 'Loan funded', `Loan Note minted and listed for ${salePriceNum} USDC (Liquidity Relay enabled).`);
+         showToast(
+            TOAST_TYPES.SUCCESS,
+            'Loan funded',
+            `Loan Note minted and listed for ${salePriceNum} USDC (Liquidity Relay enabled). Tx: ${txExplorerUrl(txHash)}`
+         );
          onFunded?.();
          onClose();
       } catch (err) {
-         showToast(TOAST_TYPES.ERROR, 'Funding failed', (err as Error).message || 'Failed to create smart contract loan.');
+         // Reaches here only if the on-chain create/approve failed — nothing was charged.
+         showToast(TOAST_TYPES.ERROR, 'Funding failed', (err as Error).message || 'Failed to create the smart contract loan. Nothing was charged.');
       } finally {
          setBusy(false);
       }

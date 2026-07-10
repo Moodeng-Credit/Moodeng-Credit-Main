@@ -8,6 +8,7 @@ import { useAccount } from 'wagmi';
 import Loading from '@/components/Loading';
 import UserAvatar from '@/components/UserAvatar';
 
+import { txExplorerUrl } from '@/config/loanFundingConfig';
 import { getLoanNotePageData } from '@/lib/loanNotes/api';
 import type { LoanNotePageData } from '@/lib/loanNotes/types';
 import type { RootState } from '@/store/store';
@@ -28,7 +29,7 @@ interface Props {
 export default function LenderFundLoanModal({ loanId, onClose }: Props) {
    const navigate = useNavigate();
    const { address } = useAccount();
-   const { buy, busy } = useBuyLoanNote();
+   const { buy, busy, step } = useBuyLoanNote();
    const userId = useSelector((state: RootState) => state.auth.user?.id);
    const [success, setSuccess] = useState<BuyResult | null>(null);
 
@@ -70,6 +71,21 @@ export default function LenderFundLoanModal({ loanId, onClose }: Props) {
                      <Row label="Expected repayment" value={usd(success.expectedRepayment)} />
                      <Row label="IOU points earned" value={`${success.iouPoints.toLocaleString()} pts`} />
                   </dl>
+                  {success.txHash ? (
+                     <a
+                        href={txExplorerUrl(success.txHash)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-block text-xs font-medium text-[#0052FF] underline"
+                     >
+                        View transaction on Basescan ↗
+                     </a>
+                  ) : null}
+                  {!success.synced ? (
+                     <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+                        Confirmed on-chain — you own the Loan Note. We’re syncing it to your dashboard; your funds and points are safe.
+                     </p>
+                  ) : null}
                   <button
                      type="button"
                      onClick={() => navigate('/lender/supported')}
@@ -119,7 +135,19 @@ export default function LenderFundLoanModal({ loanId, onClose }: Props) {
                      disabled={busy || (!data.isSellable && !data.ownsLoanNote)}
                      className="mt-4 w-full rounded-xl bg-[#0052FF] px-5 py-3 font-semibold text-white hover:bg-[#0041cc] disabled:opacity-50"
                   >
-                     {busy ? 'Processing…' : !address ? `Connect wallet to fund ${borrowerName}’s loan` : `Fund ${borrowerName}’s loan`}
+                     {step === 'checking'
+                        ? 'Checking balance…'
+                        : step === 'approving'
+                          ? 'Approving USDC…'
+                          : step === 'buying'
+                            ? 'Confirming purchase…'
+                            : step === 'recording'
+                              ? 'Finalizing…'
+                              : busy
+                                ? 'Processing…'
+                                : !address
+                                  ? `Connect wallet to fund ${borrowerName}’s loan`
+                                  : `Fund ${borrowerName}’s loan`}
                   </button>
                   <p className="mt-2 text-center text-xs text-gray-400">
                      If {borrowerName} repays, the repayment comes straight to your wallet.

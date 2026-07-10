@@ -45,3 +45,9 @@ verify_jwt = false
 
 [functions.create-didit-session]
 verify_jwt = true
+
+[functions.admin-fund-loan]
+verify_jwt = true
+
+[functions.buy-loan-note]
+verify_jwt = true

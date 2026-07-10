@@ -1,7 +1,9 @@
 import { readContract, waitForTransactionReceipt, writeContract } from '@wagmi/core';
+import { sendCalls, waitForCallsStatus } from '@wagmi/core/experimental';
+import { type Abi, encodeFunctionData } from 'viem';
 
 import { ALLOWED_CHAIN_ID, config } from '@/config/wagmiConfig';
-import { LOAN_MANAGER_ADDRESS } from '@/config/loanFundingConfig';
+import { LOAN_MANAGER_ADDRESS, PAYMASTER_URL, isPaymasterEnabled } from '@/config/loanFundingConfig';
 
 import { ERC20_ABI, LOAN_MANAGER_ABI } from '@/lib/web3/loanManager/abi';
 import {
@@ -35,7 +37,32 @@ const read = <T>(functionName: string, args: readonly unknown[]): Promise<T> =>
       chainId: ALLOWED_CHAIN_ID
    }) as Promise<T>;
 
+/**
+ * Sends a contract call gaslessly via an ERC-7677 paymaster + EIP-5792 wallet_sendCalls
+ * (Base smart wallets). Returns the on-chain tx hash. Throws if the wallet/paymaster can't
+ * sponsor it, so callers can fall back to a normal (user-paid) transaction.
+ */
+const sendSponsored = async (to: `0x${string}`, abi: Abi, functionName: string, args: readonly unknown[]): Promise<`0x${string}`> => {
+   const data = encodeFunctionData({ abi, functionName, args: args as never });
+   const result = await sendCalls(config, {
+      chainId: ALLOWED_CHAIN_ID,
+      calls: [{ to, data }],
+      capabilities: { paymasterService: { url: PAYMASTER_URL } }
+   });
+   const id = typeof result === 'string' ? result : result.id;
+   const status = await waitForCallsStatus(config, { id });
+   return (status.receipts?.[0]?.transactionHash ?? (id as `0x${string}`));
+};
+
+/** Writes a LoanManager call: paymaster-sponsored when available, else a normal user-paid tx. */
 const write = async (functionName: string, args: readonly unknown[]): Promise<`0x${string}`> => {
+   if (isPaymasterEnabled()) {
+      try {
+         return await sendSponsored(address(), LOAN_MANAGER_ABI as unknown as Abi, functionName, args);
+      } catch {
+         // Wallet/paymaster can't sponsor (e.g. plain EOA) — fall back to a user-paid tx.
+      }
+   }
    const hash = await writeContract(config, {
       address: address(),
       abi: LOAN_MANAGER_ABI,
@@ -170,6 +197,13 @@ export const readUsdcBalance = (account: string, usdcAddress: string): Promise<b
    }) as Promise<bigint>;
 
 export const approveUsdc = async (spender: string, amount: bigint, usdcAddress: string): Promise<`0x${string}`> => {
+   if (isPaymasterEnabled()) {
+      try {
+         return await sendSponsored(usdcAddress as `0x${string}`, ERC20_ABI as unknown as Abi, 'approve', [spender as `0x${string}`, amount]);
+      } catch {
+         // Fall back to a normal user-paid approval.
+      }
+   }
    const hash = await writeContract(config, {
       address: usdcAddress as `0x${string}`,
       abi: ERC20_ABI,

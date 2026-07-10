@@ -8,11 +8,12 @@ import { useAccount } from 'wagmi';
 import Loading from '@/components/Loading';
 import UserAvatar from '@/components/UserAvatar';
 
+import { txExplorerUrl } from '@/config/loanFundingConfig';
 import { getLoanNotePageData } from '@/lib/loanNotes/api';
 import type { LoanNotePageData } from '@/lib/loanNotes/types';
 import type { RootState } from '@/store/store';
-import { PENDING_FUND_LOAN_KEY } from '@/views/lender/loanNote/fundingPopup';
-import { useBuyLoanNote } from '@/views/lender/loanNote/useBuyLoanNote';
+import { setPendingFundLoanId } from '@/views/lender/loanNote/fundingPopup';
+import { type BuyResult, useBuyLoanNote } from '@/views/lender/loanNote/useBuyLoanNote';
 
 const usd = (n: number) => `${n.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`;
 const fmtDate = (iso: string) => {
@@ -23,25 +24,18 @@ const fmtDate = (iso: string) => {
    }
 };
 
-interface PurchaseSuccess {
-   loanNoteId: string;
-   purchaseAmount: number;
-   expectedRepayment: number;
-   dueDate: string;
-   iouPoints: number;
-}
 
 export default function LoanNotePurchase() {
    const { loanId = '' } = useParams();
    const navigate = useNavigate();
    const { address } = useAccount();
-   const { buy, busy } = useBuyLoanNote();
+   const { buy, busy, step } = useBuyLoanNote();
 
    const userId = useSelector((state: RootState) => state.auth.user?.id);
    const username = useSelector((state: RootState) => state.auth.username);
    const isLoggedIn = Boolean(userId && username);
 
-   const [success, setSuccess] = useState<PurchaseSuccess | null>(null);
+   const [success, setSuccess] = useState<BuyResult | null>(null);
 
    const { data, isLoading, isError, refetch } = useQuery<LoanNotePageData | null>({
       queryKey: ['loan-note-page', loanId, userId ?? null, address ?? null],
@@ -52,13 +46,9 @@ export default function LoanNotePurchase() {
    const borrowerName = data?.borrowerDisplayName ?? 'this borrower';
 
    const requireLoginThenPopup = () => {
-      // Stash the loan so the post-login funding popup opens for this borrower
-      // (instead of routing the lender through the request board).
-      try {
-         window.sessionStorage.setItem(PENDING_FUND_LOAN_KEY, loanId);
-      } catch {
-         /* ignore storage errors */
-      }
+      // Stash the loan so onboarding auto-tags them as a lender and the funding popup
+      // opens for this borrower once they're onboarded (instead of the request board).
+      setPendingFundLoanId(loanId);
       navigate('/sign-in');
    };
 
@@ -73,11 +63,15 @@ export default function LoanNotePurchase() {
    };
 
    const primaryLabel = useMemo(() => {
+      if (step === 'checking') return 'Checking balance…';
+      if (step === 'approving') return 'Approving USDC…';
+      if (step === 'buying') return 'Confirming purchase…';
+      if (step === 'recording') return 'Finalizing…';
       if (busy) return 'Processing…';
       if (!isLoggedIn) return `Support ${borrowerName}`;
       if (!address) return 'Connect wallet to continue';
       return `Fund ${borrowerName}’s loan`;
-   }, [busy, isLoggedIn, address, borrowerName]);
+   }, [step, busy, isLoggedIn, address, borrowerName]);
 
    if (isLoading) return <Loading />;
    if (isError || !data) {
@@ -217,7 +211,7 @@ function Stat({ label, value }: { label: string; value: string }) {
    );
 }
 
-function SuccessScreen({ borrowerName, success, onViewSupported }: { borrowerName: string; success: PurchaseSuccess; onViewSupported: () => void }) {
+function SuccessScreen({ borrowerName, success, onViewSupported }: { borrowerName: string; success: BuyResult; onViewSupported: () => void }) {
    return (
       <div className="mx-auto max-w-xl px-4 py-12 text-center">
          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl">🎉</div>
@@ -233,6 +227,24 @@ function SuccessScreen({ borrowerName, success, onViewSupported }: { borrowerNam
             <Row label="Due date" value={fmtDate(success.dueDate)} />
             <Row label="IOU points earned" value={`${success.iouPoints.toLocaleString()} pts`} />
          </dl>
+
+         {success.txHash ? (
+            <a
+               href={txExplorerUrl(success.txHash)}
+               target="_blank"
+               rel="noopener noreferrer"
+               className="mt-3 inline-block text-xs font-medium text-[#0052FF] underline"
+            >
+               View transaction on Basescan ↗
+            </a>
+         ) : null}
+
+         {!success.synced ? (
+            <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+               Your purchase is confirmed on-chain (you own the Loan Note). We’re still syncing it to your dashboard — it’ll appear
+               shortly. Your funds and IOU points are safe.
+            </p>
+         ) : null}
 
          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <button type="button" onClick={onViewSupported} className="flex-1 rounded-xl bg-[#0052FF] px-6 py-3 font-semibold text-white hover:bg-[#0041cc]">

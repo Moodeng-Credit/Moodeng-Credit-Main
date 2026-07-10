@@ -11,7 +11,7 @@ import { BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
  */
 
 /** The two Moodeng admin accounts allowed to see/use the funding modal. */
-export const ADMIN_ACCOUNT_EMAILS: readonly string[] = ['georgemlerner@gmail.com', 'chonlagarn.i@gmail.com'];
+export const ADMIN_ACCOUNT_EMAILS: readonly string[] = ['georgemlerner@gmail.com', 'georgedevdao@gmail.com', 'chonlagarn.i@gmail.com'];
 
 const normalizeAddress = (value?: string | null): string => (value ?? '').trim().toLowerCase();
 const normalizeEmail = (value?: string | null): string => (value ?? '').trim().toLowerCase();
@@ -75,6 +75,21 @@ export const ENABLE_REAL_LOAN_MANAGER = (import.meta.env.VITE_ENABLE_REAL_LOAN_M
 
 /** Whether real on-chain calls are usable (flag on + address present). */
 export const isRealLoanManagerEnabled = (): boolean => ENABLE_REAL_LOAN_MANAGER && /^0x[a-fA-F0-9]{40}$/.test(LOAN_MANAGER_ADDRESS);
+
+/**
+ * Optional Base paymaster (ERC-7677) endpoint that sponsors gas for LoanManager contract
+ * calls so Base smart-wallet users transact gaslessly. Get it from Coinbase Developer
+ * Platform (Paymaster), and allowlist the LoanManager address + functions in its policy.
+ * e.g. VITE_PAYMASTER_URL="https://api.developer.coinbase.com/rpc/v1/base/<API_KEY>"
+ */
+export const PAYMASTER_URL = (import.meta.env.VITE_PAYMASTER_URL ?? '').trim();
+
+/** True when a paymaster URL is configured (and real mode is on). Sponsorship is best-effort. */
+export const isPaymasterEnabled = (): boolean => isRealLoanManagerEnabled() && /^https?:\/\//i.test(PAYMASTER_URL);
+
+/** Basescan explorer links (Base mainnet) — shown to users for a trustable tx record. */
+export const txExplorerUrl = (txHash: string): string => `https://basescan.org/tx/${txHash}`;
+export const addressExplorerUrl = (address: string): string => `https://basescan.org/address/${address}`;
 
 /**
  * IOU points awarded per 1 USDC of Loan Note purchase (lender side).

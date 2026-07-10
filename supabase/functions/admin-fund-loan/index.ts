@@ -12,7 +12,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-const DEFAULT_ADMIN_EMAILS = ['georgemlerner@gmail.com', 'chonlagarn.i@gmail.com']
+const DEFAULT_ADMIN_EMAILS = ['georgemlerner@gmail.com', 'georgedevdao@gmail.com', 'chonlagarn.i@gmail.com']
 
 const adminEmails = (): string[] => {
   const fromEnv = (Deno.env.get('ADMIN_ACCOUNT_EMAILS') ?? '')

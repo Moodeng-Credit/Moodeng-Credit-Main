@@ -39,22 +39,25 @@ export async function getLoanNotePageData(loanId: string, viewer: { userId?: str
 
    if (error || !loan) return null;
 
-   // Borrower profile (public select policy allows reading users).
+   // Borrower profile via the safe cross-user view (the users table itself is locked down;
+   // cs comes back NULL for other users, so the credit level is only shown when available).
    let borrowerDisplayName = 'A Moodeng borrower';
    let borrowerUsername = '';
    let borrowerCreditLevel: number | null = null;
    if (loan.borrower_user_id) {
       const { data: borrower } = await supabase
-         .from('users')
+         .from('public_user_profiles')
          .select('username, display_name, cs, is_world_id')
          .eq('id', loan.borrower_user_id)
          .maybeSingle();
       if (borrower) {
          borrowerUsername = borrower.username ?? '';
          borrowerDisplayName = borrower.display_name || borrower.username || borrowerDisplayName;
-         const verified = borrower.is_world_id === 'ACTIVE';
-         const creditLimit = getEffectiveCreditLimit(borrower.cs, verified);
-         borrowerCreditLevel = getCreditLevelNumber(creditLimit);
+         if (borrower.cs != null) {
+            const verified = borrower.is_world_id === 'ACTIVE';
+            const creditLimit = getEffectiveCreditLimit(borrower.cs, verified);
+            borrowerCreditLevel = getCreditLevelNumber(creditLimit);
+         }
       }
    }
 
@@ -184,7 +187,7 @@ export async function getMyFundedLoans(): Promise<FundedLoan[]> {
    );
    const nameById = new Map<string, { display: string; username: string }>();
    if (borrowerIds.length > 0) {
-      const { data: borrowers } = await supabase.from('users').select('id, username, display_name').in('id', borrowerIds);
+      const { data: borrowers } = await supabase.from('public_user_profiles').select('id, username, display_name').in('id', borrowerIds);
       for (const b of borrowers ?? []) {
          nameById.set(b.id, { display: b.display_name || b.username || 'A Moodeng borrower', username: b.username ?? '' });
       }
@@ -267,7 +270,7 @@ export async function getRelayLoans(): Promise<RelayLoan[]> {
    const borrowerIds = Array.from(new Set(data.map((row) => row.borrower_user_id).filter(Boolean) as string[]));
    const nameById = new Map<string, { display: string; username: string }>();
    if (borrowerIds.length > 0) {
-      const { data: borrowers } = await supabase.from('users').select('id, username, display_name').in('id', borrowerIds);
+      const { data: borrowers } = await supabase.from('public_user_profiles').select('id, username, display_name').in('id', borrowerIds);
       for (const b of borrowers ?? []) {
          nameById.set(b.id, { display: b.display_name || b.username || 'A Moodeng borrower', username: b.username ?? '' });
       }
