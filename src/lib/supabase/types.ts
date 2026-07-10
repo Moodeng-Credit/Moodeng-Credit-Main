@@ -758,9 +758,20 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_user_profiles: {
+        Row: Database["public"]["Tables"]["users"]["Row"]
+        Relationships: []
+      }
     }
     Functions: {
+      email_exists: {
+        Args: { p_email: string }
+        Returns: boolean
+      }
+      get_user_id_by_username: {
+        Args: { p_username: string }
+        Returns: string
+      }
       award_points: {
         Args: {
           delta_input: number

@@ -169,13 +169,15 @@ export const getUserLoans = createAsyncThunk(
       let resolvedUserId = userId?.trim();
       //TODO: Check if we can remove the deprecated username lookup later
       if (!resolvedUserId && username) {
-         const { data: profile, error: profileError } = await supabase.from('users').select('id').eq('username', username).maybeSingle();
+         const { data: resolvedId, error: profileError } = await supabase.rpc('get_user_id_by_username', {
+            p_username: username
+         });
 
          if (profileError) {
             throw new Error(profileError.message);
          }
 
-         resolvedUserId = profile?.id ?? undefined;
+         resolvedUserId = resolvedId ?? undefined;
       }
 
       if (!resolvedUserId) {

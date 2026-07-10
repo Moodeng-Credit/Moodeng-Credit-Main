@@ -1,0 +1,11 @@
+-- Cutover for the users-table PII exposure: remove the USING(true) SELECT
+-- policy that made every column of every user readable by anon.
+--
+-- Remaining SELECT access after this (policies that already exist):
+--   - "Users can read own data"                (auth.uid() = id)
+--   - "admins can read users for admin panel"  (app_private.is_moodeng_admin())
+-- Cross-user display reads go through the public_user_profiles view
+-- (SECURITY DEFINER, safe columns only) and the email_exists /
+-- get_user_id_by_username RPCs — all shipped in 20260710040000 and
+-- verified in the running app (sign-in, dashboard, counterparty fetch).
+DROP POLICY IF EXISTS "Public profiles are viewable" ON public.users;

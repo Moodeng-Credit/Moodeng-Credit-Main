@@ -269,7 +269,12 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
 
 const fetchUserProfileByUsername = async (username: string): Promise<User> => {
    const supabase = supabaseClient();
-   const { data: profile, error } = await supabase.from('users').select('*').eq('username', username).maybeSingle();
+   // Cross-user read → safe-columns view (username/display_name/role/verification only; PII is NULL).
+   const { data: profile, error } = await supabase
+      .from('public_user_profiles')
+      .select('*')
+      .eq('username', username)
+      .maybeSingle();
 
    if (error || !profile) {
       throw error ?? new Error('User profile not found');
@@ -445,11 +450,11 @@ export const registerUser = createAsyncThunk(
          clearClientAuthState();
       }
 
-      // Check if email already exists in our users table.
+      // Check if email already exists (via a scoped RPC, not a broad users read).
       // If it does, attempt an implicit login with the password they just typed.
-      const { data: existingProfile } = await supabase.from('users').select('id').eq('email', userData.email).maybeSingle();
+      const { data: emailAlreadyExists } = await supabase.rpc('email_exists', { p_email: userData.email });
 
-      if (existingProfile) {
+      if (emailAlreadyExists) {
          return resolveExistingAccount(supabase, userData.email, userData.password);
       }
 
@@ -537,7 +542,8 @@ export const fetchUserProfiles = createAsyncThunk('auth/fetchUserProfiles', asyn
    const supabase = supabaseClient();
    const uniqueUserIds = [...new Set(userIds)]; // Remove duplicates
 
-   const { data: profiles, error } = await supabase.from('users').select('*').in('id', uniqueUserIds);
+   // Cross-user read → safe-columns view (username/display_name/role/verification only; PII is NULL).
+   const { data: profiles, error } = await supabase.from('public_user_profiles').select('*').in('id', uniqueUserIds);
 
    if (error) {
       throw error;
