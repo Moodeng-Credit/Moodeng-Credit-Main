@@ -581,6 +581,13 @@
     box-shadow: 0 14px 30px rgba(64,10,140,0.18);
   }
   .qcard.navy { background: #17082F; }
+  /* "your story goes here" card: dashed = visibly unclaimed, on purpose */
+  .qcard.reserved {
+    flex: none; margin: 26px auto 0; max-width: 300px;
+    background: rgba(255,255,255,0.5);
+    border: 2px dashed rgba(96,16,210,0.4);
+    box-shadow: none;
+  }
   .qcard .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; color: var(--heading); margin: 0 0 14px; }
   .qcard.navy .qt { color: #fff; }
   .qwho { display: flex; align-items: center; gap: 10px; }
@@ -837,6 +844,7 @@
       </div>
       <nav class="drawer-links">
         <a class="d-top" href="/request-board">Browse requests</a>
+        <a class="d-top" href="/for-lenders">Fund someone</a>
         <details class="d-group">
           <summary>Guides</summary>
           <div class="d-sub">
@@ -871,7 +879,7 @@
       </div>
       <div class="hero-copy">
         <h1>Small loans that <span class="accent">treat you right.</span></h1>
-        <p class="hero-sub">Help for the moment you can’t wait for payday — from real people, on terms that never change overnight.</p>
+        <p class="hero-sub">When you can’t wait for payday, real people fund you — and the exact amount you’ll give back is on screen before you say yes.</p>
         <a class="cta" href="/request-board"><span class="btn-label">Start with your first small loan <span class="arrow">→</span></span></a>
         <p class="reassure">Not instant. Not pushy. Not a trap.</p>
       </div>
@@ -1155,50 +1163,19 @@
   </section>
 
   <!-- ============= TRUST Q5: SAYS WHO (PROOF) =============
-       ⚠️ MOCK / DESIGN TARGET — George asked for the "optimum" success-state view.
-       The 4.8 rating, 1,200+ / 96% / ₱2.1M+ stats and all four text quotes are
-       ASPIRATIONAL PLACEHOLDERS — DO NOT SHIP until each is real (or swapped for
-       a real number, however small). The two videos ARE real borrower
-       testimonials (YouTube Shorts, from src WhatPeopleSaySection). -->
+       Rebuilt 2026-07-10: the 4.8 rating / 1,200+ / 96% / ₱2.1M+ stats and the four
+       text quotes were aspirational placeholders that accidentally went live — a
+       fabricated Facebook rating is fatal for a trust product, so this version only
+       says things that are true today. The two videos ARE real borrower testimonials
+       (YouTube Shorts, from src WhatPeopleSaySection); the pills are structural
+       facts, not volume; the dashed card turns the missing testimonial into an
+       invitation. As REAL numbers/quotes accumulate, swap them in here — the old
+       stat-pill and .qcard markup still work. -->
   <section class="sec-proof">
     <div class="wrap reveal">
       <p class="label">Says who?</p>
       <h2 class="sec-h">People like you, who’ve <span class="accent">done it.</span></h2>
-      <div class="stars" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17l-6.1 3.6 1.4-6.8L2.2 9.1l6.9-.8z" fill="#F7B928"/></svg>
-        <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17l-6.1 3.6 1.4-6.8L2.2 9.1l6.9-.8z" fill="#F7B928"/></svg>
-        <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17l-6.1 3.6 1.4-6.8L2.2 9.1l6.9-.8z" fill="#F7B928"/></svg>
-        <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17l-6.1 3.6 1.4-6.8L2.2 9.1l6.9-.8z" fill="#F7B928"/></svg>
-        <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17l-6.1 3.6 1.4-6.8L2.2 9.1l6.9-.8z" fill="#F7B928"/></svg>
-      </div>
-      <div class="rating-line">4.8 from borrowers</div>
-      <p class="rating-sub">rated after they repaid — on our Facebook page</p>
-      <div class="proof-stats">
-        <span class="stat"><b>1,200+</b> loans funded</span>
-        <span class="stat"><b>96%</b> paid back on time</span>
-        <span class="stat"><b>₱2.1M+</b> reached borrowers</span>
-      </div>
-    </div>
-    <div class="wrap reveal">
-      <div class="quotes">
-        <div class="qcard navy">
-          <p class="qt">“Borrowed $15 for medicine before payday. Paid back $18 two weeks later — exactly what it said on day one.”</p>
-          <div class="qwho"><span class="av" style="background:#8336F0">A</span><span class="nm">Ana<span class="ctx">Medicine · repaid on time</span></span></div>
-        </div>
-        <div class="qcard">
-          <p class="qt">“No one called my family. No surprise fees. I paid what I agreed, and that was it.”</p>
-          <div class="qwho"><span class="av" style="background:#34AFD9">M</span><span class="nm">Marco<span class="ctx">School fees · 2 loans repaid</span></span></div>
-        </div>
-        <div class="qcard navy">
-          <p class="qt">“Started at $15. My limit is $40 now — it went up every time I kept my word.”</p>
-          <div class="qwho"><span class="av" style="background:#E88A3A">J</span><span class="nm">Jasmine<span class="ctx">Level 3 borrower</span></span></div>
-        </div>
-        <div class="qcard">
-          <p class="qt">“The due date never moved. I knew the number the whole time.”</p>
-          <div class="qwho"><span class="av" style="background:#2FA36B">L</span><span class="nm">Liza<span class="ctx">Groceries · repaid on time</span></span></div>
-        </div>
-      </div>
-      <p class="vidlabel">Or hear it in their own words</p>
+      <p class="rating-sub" style="margin-top:14px">No paid actors. No stock photos. Real borrowers, on camera.</p>
       <div class="vidrow">
         <a class="vid" href="https://youtube.com/shorts/2ZmuK7Vq40k" target="_blank" rel="noreferrer">
           <img src="https://i.ytimg.com/vi/2ZmuK7Vq40k/hqdefault.jpg" alt="Borrower video testimonial" loading="lazy" />
@@ -1210,6 +1187,17 @@
           <span class="play"><span>▶</span></span>
           <span class="tag">Real borrower</span>
         </a>
+      </div>
+      <div class="proof-stats">
+        <span class="stat"><b>Every</b> borrower — one verified real person</span>
+        <span class="stat"><b>Every</b> loan — funded by a person, not a bank</span>
+        <span class="stat"><b>Every</b> repayment — on the record</span>
+      </div>
+    </div>
+    <div class="wrap reveal">
+      <div class="qcard reserved">
+        <p class="qt">This card is saved for <b>your</b> story. Repay your first loan, tell us how it went — and your words go right here.</p>
+        <div class="qwho"><span class="av" style="background:#8336F0">?</span><span class="nm">You<span class="ctx">Your first $15 · soon</span></span></div>
       </div>
     </div>
   </section>
@@ -1275,7 +1263,7 @@
         </details>
         <details>
           <summary>Why does the app say “USDC”?</summary>
-          <p class="a">USDC is a digital dollar — 1 USDC is always worth 1 US dollar. It’s the form your loan arrives in, and it’s why our fees are <b>$0</b>: digital dollars move without banks taking a cut along the way. You turn it into pesos through apps like GCash — and the whole amount arrives. (The one tiny fee in the loop — a cent or two — happens when you repay, and it’s the converter’s, not ours.)</p>
+          <p class="a">USDC is a digital dollar — built to stay worth 1 US dollar, and you can check the peso value on screen before every move. It’s the form your loan arrives in, and it’s why our fees are <b>$0</b>: digital dollars move without banks taking a cut along the way. You turn it into pesos through apps like GCash — and the whole amount arrives. (The one tiny fee in the loop — a cent or two — happens when you repay, and it’s the converter’s, not ours.)</p>
         </details>
         <details>
           <summary>Why does it start at only $15?</summary>
@@ -1293,7 +1281,9 @@
       <img class="hippo" src="/landing/assets/hippos/party.png" alt="" /> -->
       <h2 class="sec-h">Next time you’re short, you have somewhere to <span class="accent">turn.</span></h2>
       <a class="cta" href="/request-board"><span class="btn-label">Start with your first small loan <span class="arrow">→</span></span></a>
-      <p class="reassure">Not instant. Not pushy. Not a trap.</p>
+      <!-- Hero keeps "Not instant. Not pushy. Not a trap." — down here the same line
+           repeated was wasted; answer the question it raises instead (how long?). -->
+      <p class="reassure">Not instant — a real person has to say yes. You’ll know the moment someone does.</p>
     </div>
   </section>
 
@@ -1314,6 +1304,7 @@
         </div>
         <div>
           <h4>The details</h4>
+          <a href="/for-lenders">For lenders</a>
           <a href="/privacy-policy">Privacy policy</a>
           <a href="/terms">Terms of service</a>
           <a href="https://moodeng.gitbook.io/credit" target="_blank" rel="noreferrer">How credit levels work</a>

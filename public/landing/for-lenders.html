@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
 <link rel="apple-touch-icon" href="/landing/assets/brand/moodeng-logo.png" />
-<title>How to turn USDC into pesos — Moodeng Credit cash-out guide</title>
-<meta name="description" content="How a Moodeng loan becomes pesos in your pocket: the money lands as digital dollars, you pick a trusted route like GCash, and pesos arrive where you already bank." />
+<title>Moodeng Credit for lenders — be the person who said yes</title>
+<meta name="description" content="Real people ask for small loans — $15, $20, $40 — with the payback amount and date set upfront. You read their reason, choose who to fund, and get the full payback when they repay." />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Moodeng Credit" />
-<meta property="og:title" content="From loan to pesos — the Moodeng Credit cash-out guide" />
-<meta property="og:description" content="Your loan lands as digital dollars; three steps later it's pesos in GCash. The honest guide, with the real app screen." />
-<meta property="og:url" content="https://moodeng.app/how-to-cash-out" />
+<meta property="og:title" content="Moodeng Credit for lenders — be the person who said yes" />
+<meta property="og:description" content="Read real requests, choose who to fund, and get the full payback when they repay. Verified borrowers, terms set upfront, starting at $15." />
+<meta property="og:url" content="https://moodeng.app/for-lenders" />
 <meta property="og:image" content="https://moodeng.app/landing/assets/og/og-share.jpg" />
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -30,6 +30,8 @@
     --lavender-border: #E7D8FF;
     --text-muted: #70617F;
     --text-soft: #4D4359;
+    --success-bg: #EDFFF4;
+    --success: #0D7A3C;
     --panel: #C9A8F5;
     --card-tint: #F7F0FE;
     --pill: 500px;
@@ -50,7 +52,6 @@
   .site-head.scrolled { background: rgba(253,252,253,0.86); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 1px 0 rgba(4,0,51,0.08); }
   .site-head .wrap { display: flex; align-items: center; padding-top: 12px; padding-bottom: 12px; }
   .site-head .head-word { color: var(--heading); }
-  .head-logo { height: 28px; width: auto; }
   .head-word { font-family: var(--sans); font-size: 17px; font-weight: 600; letter-spacing: 0.02em; margin-right: auto; color: #fff; text-decoration: none; }
   .menu-pill { width: 58px; height: 42px; border: 0; cursor: pointer; border-radius: var(--pill); background: var(--purple); display: grid; place-items: center; }
   .site-head .menu-pill { background: var(--lavender-bg); width: 48px; height: 40px; color: var(--heading); margin-right: 13px; }
@@ -69,7 +70,7 @@
   .hiw-hero .sub { margin: 14px auto 0; font-size: 15.5px; color: var(--text-soft); max-width: 32ch; }
   .hiw-hero .sub b { color: var(--heading); }
 
-  /* steps */
+  /* sections */
   .sec-step { padding: 56px 0 60px; }
   .sec-step:nth-of-type(even) { background: var(--surface-muted); }
   .step-num {
@@ -78,18 +79,21 @@
     background: var(--heading); color: #fff;
     font-family: var(--display); font-size: 19px;
   }
+  h2.sec-h { font-family: var(--display); font-size: 32px; line-height: 1.06; letter-spacing: -0.02em; margin: 12px 0 0; }
+  h2.sec-h .accent { color: var(--purple); font-weight: 500; }
+  .sec-lead { margin-top: 16px; font-size: 16.5px; color: var(--text-soft); max-width: 32ch; }
+  .sec-lead b { color: var(--heading); }
   .tile-h { font-family: var(--display); font-size: 25px; letter-spacing: -0.01em; color: var(--heading); margin: 14px 0 0; line-height: 1.15; }
   .tile-h .accent { color: var(--purple); font-weight: 500; }
   .tile-cap { margin-top: 8px; font-size: 15px; color: var(--text-muted); line-height: 1.5; max-width: 34ch; }
   .tile-cap b { color: var(--heading); }
 
-  /* phone frame w/ REAL app screen inside (moment-card anatomy, screenshot as the screen) */
+  /* moment card (phone frame) — same anatomy as landing */
   .stage { position: relative; margin: 28px auto 0; width: 300px; max-width: 86%; }
-  .stage.big { width: 320px; }
   .stage-panel {
     position: relative;
     background: radial-gradient(120% 90% at 20% 10%, #E4D2FB 0%, var(--panel) 60%, #B892F0 100%);
-    border-radius: 30px; padding: 26px 20px 24px;
+    border-radius: 30px; padding: 30px 20px 26px;
     box-shadow: 0 24px 50px rgba(96,16,210,0.28);
   }
   .stage-panel::before {
@@ -104,40 +108,116 @@
   .stage.right .phone { transform: rotate(2.5deg); }
   .phone {
     position: relative; background: #fff; border-radius: 22px;
-    padding: 10px; transform: rotate(-3deg);
+    padding: 14px 14px 16px; transform: rotate(-3deg);
     box-shadow: 0 16px 34px rgba(28,5,61,0.22), 0 2px 0 rgba(255,255,255,0.6) inset;
   }
-  .phone.upright { transform: none; }
+  .phone.shot { padding: 10px; }
   .phone .screen { border-radius: 14px; width: 100%; }
-  .shot-note { margin-top: 16px; font-size: 12px; font-weight: 600; color: var(--text-muted); text-align: center; }
-
-  /* cash-out card (copied from landing peso strip) */
-  .phone.tall { padding: 18px 18px 22px; border-radius: 26px; text-align: center; }
-  .phone.tall .phone-head { justify-content: center; position: relative; padding-bottom: 0; }
-  .phone.tall .phone-head .back { position: absolute; left: 2px; top: 0; }
   .phone-head {
     display: flex; align-items: center; gap: 8px;
     font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em;
     color: var(--text-muted); text-transform: uppercase; padding: 2px 2px 12px;
   }
   .phone-head .back { font-size: 15px; color: var(--heading); }
-  .coin-badge { height: 58px; margin: 36px auto 16px; display: block; }
-  .statement { font-family: var(--display); font-size: 20px; line-height: 1.12; letter-spacing: -0.01em; color: var(--heading); margin: 10px 0 12px; }
-  .phone.tall .statement { font-size: 22px; margin: 0 0 30px; }
-  .swap-box {
-    background: #F6F3FA; border-radius: 14px; padding: 13px 16px; margin: 0 2px;
-    display: flex; justify-content: space-between; align-items: center;
+  .inner {
+    position: relative; background: var(--card-tint);
+    border: 1px solid var(--lavender-border); border-radius: 16px;
+    padding: 16px 15px 15px;
   }
-  .swap-box .cell { text-align: left; }
-  .swap-box .cell.right { text-align: right; }
-  .swap-box .cell .k { display: block; font-size: 10.5px; font-weight: 600; color: #B9AECB; }
-  .swap-box .cell b { font-size: 16px; font-weight: 800; color: var(--heading); }
-  .swap-box .arr { color: var(--purple); font-family: var(--display); font-size: 18px; }
-  .cta-caps {
-    display: block; margin-top: 46px; background: var(--purple); color: #fff;
-    font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
-    padding: 16px; border-radius: var(--pill);
+  /* 3D object overlapping the tinted card's top edge (Tilt treatment):
+     height ≈ 28% of card width, 55% floating above / 45% dipping on */
+  .card-obj {
+    position: absolute; left: 50%; top: 0;
+    height: 64px; transform: translate(-50%, -55%);
+    z-index: 2; pointer-events: none;
+    filter: drop-shadow(0 10px 14px rgba(28,5,61,0.2));
   }
+  .inner.pad-obj { padding-top: 42px; }
+  .phone.has-obj .phone-head { padding-bottom: 42px; }
+  .inner .reason { font-size: 13px; font-weight: 700; color: var(--text-soft); }
+  .inner .reason .emoji { margin-right: 5px; }
+  .statement {
+    font-family: var(--display); font-size: 20px; line-height: 1.12; letter-spacing: -0.01em;
+    color: var(--heading); margin: 10px 0 12px;
+  }
+  .amt-pill {
+    display: inline-block; background: var(--lavender);
+    color: #fff; font-family: var(--display); font-size: 20px;
+    padding: 2px 12px; border-radius: var(--pill);
+    transform: translateY(1px);
+  }
+  .verified-line {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--success-bg); color: var(--success);
+    font-size: 11px; font-weight: 800; letter-spacing: .04em;
+    padding: 4px 10px; border-radius: var(--pill); margin-bottom: 10px;
+  }
+  .terms-row { display: flex; gap: 8px; margin-top: 4px; }
+  .chip {
+    flex: 1; text-align: center; background: #fff;
+    border: 1px solid var(--lavender-border); border-radius: 12px;
+    padding: 9px 6px;
+  }
+  .chip .k { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; }
+  .chip .v { font-size: 15px; font-weight: 800; color: var(--heading); margin-top: 3px; }
+  .card-cta {
+    display: block; text-align: center; margin-top: 14px;
+    background: var(--heading); color: #fff;
+    font-weight: 800; font-size: 13.5px; letter-spacing: 0.02em;
+    padding: 13px; border-radius: var(--pill);
+  }
+  .card-foot {
+    margin-top: 11px; text-align: center;
+    font-size: 11.5px; font-weight: 600; color: var(--text-soft); line-height: 1.35;
+  }
+  .card-foot b { color: var(--heading); }
+  .shot-note { margin-top: 16px; font-size: 12px; font-weight: 600; color: var(--text-muted); text-align: center; }
+
+  /* Tilt-style claim tiles (same as landing sec-terms) */
+  .tiles { margin-top: 30px; display: grid; gap: 38px; }
+  .tile-panel {
+    position: relative; border-radius: 24px; padding: 34px 22px;
+    display: grid; place-items: center;
+    background: radial-gradient(120% 100% at 30% 0%, #F2E6FE 0%, #E4CFFB 100%);
+  }
+  .tile-obj { position: absolute; pointer-events: none; z-index: 1; }
+  .mini {
+    background: #fff; border-radius: 16px; padding: 16px 20px;
+    box-shadow: 0 10px 26px rgba(28,5,61,0.16);
+    text-align: center; min-width: 190px;
+  }
+  .mini .k { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); }
+  .mini .big { font-family: var(--display); font-size: 30px; color: var(--heading); line-height: 1.1; margin-top: 4px; }
+  .mini .tiny { font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-top: 8px; }
+
+  /* the honest part (dark, mirrors landing's "we treat you like a person") */
+  .sec-honest { background: #100626; padding: 66px 0 70px; position: relative; overflow: hidden; }
+  .sec-honest .label { color: #C9A8F5; }
+  .sec-honest .sec-h { color: #fff; }
+  .sec-honest .sec-h .accent { color: #C9A8F5; }
+  .sec-honest .sec-lead { color: #B6A8CC; }
+  .sec-honest .dcloud { position: absolute; opacity: 0.5; filter: brightness(0.24) saturate(0.6); pointer-events: none; }
+  .honest-note {
+    margin-top: 30px; padding: 18px 20px; border-radius: 16px;
+    background: rgba(201,168,245,0.08); border: 1px solid rgba(201,168,245,0.16);
+    font-size: 14px; line-height: 1.5; color: #C4B5DD;
+  }
+  .honest-note b { color: #fff; }
+  .honest-note + .honest-note { margin-top: 12px; }
+
+  /* FAQ (same as landing) */
+  .sec-faq { background: var(--surface); padding: 56px 0 62px; }
+  .faq-list { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .faq-list details { background: #fff; border: 1px solid #EFE6FB; border-radius: 16px; padding: 0 18px; }
+  .faq-list summary {
+    cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 16px 0; font-size: 15px; font-weight: 800; color: var(--heading);
+  }
+  .faq-list summary::-webkit-details-marker { display: none; }
+  .faq-list summary::after { content: "+"; font-family: var(--display); font-size: 18px; color: var(--purple); flex: 0 0 auto; }
+  .faq-list details[open] summary::after { content: "–"; }
+  .faq-list .a { padding: 0 0 16px; font-size: 14.5px; line-height: 1.55; color: var(--text-muted); }
+  .faq-list .a b { color: var(--heading); }
 
   /* final CTA */
   .sec-final {
@@ -157,10 +237,8 @@
   .cta .arrow { transition: transform .15s ease; }
   .cta:hover .arrow { transform: translateX(3px); }
 
-  /* Sign in / start-a-loan links leave this static site for the real app, which takes a
-     moment to boot — show a spinner immediately on tap so the click feels acknowledged
-     instead of dead air. .btn-label keeps its layout box (opacity, not display) so the
-     button doesn't resize; the spinner is a centered ::after circle. */
+  /* Sign in / browse links leave this static site for the real app — spinner on tap
+     (same pattern as landing; see index.html for rationale) */
   .head-signin, .cta, .d-foot a { position: relative; }
   .btn-label { display: inline-flex; align-items: center; gap: inherit; transition: opacity .15s ease; }
   .is-loading { pointer-events: none; }
@@ -168,8 +246,6 @@
   .is-loading::after {
     content: ""; position: absolute; top: 50%; left: 50%;
     width: 16px; height: 16px; margin: -8px 0 0 -8px;
-    /* currentColor so the ring reads on both dark pills (white text) and the
-       plain-purple drawer link, without a per-context color override. */
     border: 2px solid currentColor; border-top-color: transparent;
     border-radius: 50%; animation: btnSpin .7s linear infinite;
   }
@@ -189,8 +265,7 @@
   .f-cols a:hover { color: #C9A8F5; }
   .f-fine { margin-top: 34px; padding-top: 18px; border-top: 1px solid rgba(201,168,245,0.16); font-size: 12px; color: #8B7BA8; padding-bottom: 26px; }
 
-  /* Left slide-in menu drawer (Klarna-style: light panel, big sentence-case rows,
-     hairline dividers, chevrons only on expandables, one separated action) */
+  /* Left slide-in menu drawer (same as landing) */
   .drawer {
     position: fixed; inset: 0; z-index: 100;
     background: rgba(16, 6, 38, 0.42);
@@ -244,22 +319,6 @@
   @media (prefers-reduced-motion: reduce) { .drawer, .drawer-panel { transition: none; } }
   body.drawer-lock { overflow: hidden; }
 
-  /* mini-FAQ (native details/summary, same anatomy as the landing FAQ) */
-  .sec-faq { background: var(--surface-muted); padding: 56px 0 62px; }
-  .faq-list { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
-  .faq-list details {
-    background: #fff; border: 1px solid #EFE6FB; border-radius: 16px; padding: 0 18px;
-  }
-  .faq-list summary {
-    cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px;
-    padding: 16px 0; font-size: 15px; font-weight: 800; color: var(--heading);
-  }
-  .faq-list summary::-webkit-details-marker { display: none; }
-  .faq-list summary::after { content: "+"; font-family: var(--display); font-size: 18px; color: var(--purple); flex: 0 0 auto; }
-  .faq-list details[open] summary::after { content: "–"; }
-  .faq-list .a { padding: 0 0 16px; font-size: 14.5px; line-height: 1.55; color: var(--text-muted); }
-  .faq-list .a b { color: var(--heading); }
-
   /* reveal on scroll */
   .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
   .reveal.in { opacity: 1; transform: none; }
@@ -267,6 +326,7 @@
   @media (min-width: 700px) {
     .wrap { max-width: 620px; }
     .hiw-hero h1 { font-size: 46px; }
+    h2.sec-h { font-size: 40px; }
   }
 </style>
 </head>
@@ -331,105 +391,149 @@
 
   <header class="hiw-hero">
     <div class="wrap">
-      <p class="label">Cash-out guide</p>
-      <h1>From loan to <span class="accent">pesos.</span></h1>
-      <p class="sub">Your loan arrives as digital dollars. Three steps later it’s pesos in GCash — here’s exactly how.</p>
+      <p class="label">For lenders</p>
+      <h1>Be the person who <span class="accent">said yes.</span></h1>
+      <p class="sub">Real people ask for small loans — and say upfront <b>exactly</b> what they’ll pay back, and when. You read their reason. You choose. You fund it.</p>
+      <a class="cta" href="/request-board"><span class="btn-label">See who’s asking right now <span class="arrow">→</span></span></a>
+      <p class="reassure">No account needed to look around.</p>
     </div>
   </header>
 
+  <!-- THE MOMENT: what funding looks like (mock UI card, landing anatomy) -->
   <section class="sec-step">
     <div class="wrap reveal">
-      <span class="step-num">1</span>
-      <h2 class="tile-h">The money lands in <span class="accent">your</span> Base Account.</h2>
-      <p class="tile-cap">The moment a lender funds you, it’s yours — digital dollars, called <b>USDC</b>, sitting in your own <b>Base Account</b>, protected by our partner Coinbase. <b>One USDC is always worth one US dollar</b> — that’s the name you’ll see on the screens below.</p>
+      <p class="label">One request, one decision</p>
+      <h2 class="sec-h">Someone’s tight week, on <span class="accent">your screen.</span></h2>
+      <p class="sec-lead">Every request shows the reason, the payback the borrower set themselves, and the date. No haggling — just yes or no.</p>
       <div class="stage">
         <div class="stage-panel">
-          <div class="phone upright tall">
-            <div class="phone-head"><span class="back">‹</span> Your Base Account</div>
-            <img class="coin-badge" src="/landing/assets/icons/coins-stack.png" alt="" loading="lazy" />
-            <div class="statement">$15 just landed.</div>
-            <div class="swap-box">
-              <span class="cell"><span class="k">From</span><b>A real person</b></span>
-              <span class="arr">→</span>
-              <span class="cell right"><span class="k">To</span><b>You</b></span>
+          <div class="phone has-obj">
+            <div class="phone-head"><span class="back">‹</span> Open request</div>
+            <div class="inner pad-obj">
+              <!-- 3D gold coin stack — same asset as the borrower card -->
+              <img class="card-obj" src="/landing/assets/icons/coins-stack.png" alt="" />
+              <span class="verified-line">✓ Verified real person</span>
+              <div class="reason"><span class="emoji">🏥</span>Medicine · can’t wait for payday</div>
+              <div class="statement">Asking for <span class="amt-pill">$15</span></div>
+              <div class="terms-row">
+                <div class="chip">
+                  <div class="k">You’d get back</div>
+                  <div class="v">$18</div>
+                </div>
+                <div class="chip">
+                  <div class="k">Due</div>
+                  <div class="v">Jul 30</div>
+                </div>
+              </div>
+              <span class="card-cta">Fund this request</span>
+              <p class="card-foot">They pay back <b>$18 on Jul 30</b> — terms they set themselves, shown to you before you fund.</p>
             </div>
-            <span class="cta-caps">Cash out</span>
           </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS FOR LENDERS: 3 steps, real board screenshot -->
+  <section class="sec-step">
+    <div class="wrap reveal">
+      <span class="step-num">1</span>
+      <h2 class="tile-h">Browse <span class="accent">real</span> requests.</h2>
+      <p class="tile-cap">The board shows who’s asking, why, what they’ll pay back, and when. Every borrower proved they’re <b>one real person</b> before they could ask.</p>
+      <div class="stage right">
+        <div class="stage-panel">
+          <div class="phone shot"><img class="screen" src="/landing/assets/app/step2-board-cards.jpg" alt="The real Moodeng request board: each card shows the amount, what the borrower pays back, and the due date." loading="lazy" /></div>
+        </div>
+      </div>
+      <p class="shot-note">The actual request board — sample requests shown.</p>
     </div>
   </section>
 
   <section class="sec-step">
     <div class="wrap reveal">
       <span class="step-num">2</span>
-      <h2 class="tile-h">Pick your way to <span class="accent">pesos.</span></h2>
-      <p class="tile-cap">The app lists trusted routes and tells you the honest part up front — how long each takes, and who charges what. <b>Moodeng adds nothing.</b></p>
-      <div class="stage right">
+      <h2 class="tile-h">Check their <span class="accent">record</span> first.</h2>
+      <p class="tile-cap">Every borrower has a profile: loans repaid, on-time record, credit level — the good and the setbacks. It’s all there <b>before</b> you decide, and it’s why borrowers here work hard to keep their word: their next loan depends on it.</p>
+      <div class="stage">
         <div class="stage-panel">
-          <div class="phone"><img class="screen" src="/landing/assets/app/cashout-providers.jpg" alt="The real Moodeng cash-out screen: choose Binance, GCrypto straight to GCash, PDAX, or Coins.ph — with timing shown for each." loading="lazy" /></div>
+          <div class="phone shot"><img class="screen" src="/landing/assets/app/step4-insights-top.jpg" alt="A real Moodeng borrower profile: verified badge, credit level, loans repaid — the record lenders see before funding." loading="lazy" /></div>
         </div>
       </div>
-      <p class="shot-note">The actual cash-out screen in the app.</p>
+      <p class="shot-note">A borrower profile as you’d see it — sample account.</p>
     </div>
   </section>
 
   <section class="sec-step">
     <div class="wrap reveal">
       <span class="step-num">3</span>
-      <h2 class="tile-h">Pesos arrive where you <span class="accent">already bank.</span></h2>
-      <p class="tile-cap">Most routes land straight in GCash — some in about five minutes. And <b>the whole amount arrives: cashing out has no fee.</b> Not from Moodeng, not from anyone.</p>
-      <div class="stage">
-        <div class="stage-panel">
-          <div class="phone upright tall">
-            <div class="phone-head"><span class="back">‹</span> Cash out</div>
-            <img class="coin-badge" src="/landing/assets/icons/usd-php-coins.png" alt="" loading="lazy" />
-            <div class="statement">Pesos, where you already bank.</div>
-            <div class="swap-box">
-              <span class="cell"><span class="k">To</span><b>GCash</b></span>
-              <span class="arr">→</span>
-              <span class="cell right"><span class="k">You’d get</span><b>≈ ₱855</b></span>
+      <h2 class="tile-h">Fund it — and get the <span class="accent">whole payback.</span></h2>
+      <p class="tile-cap">Your money moves as digital dollars (USDC) — it takes about a minute, and you can start with a debit card. When the borrower repays, the <b>full payback amount</b> is yours: fund $15, get back $18. Moodeng doesn’t take a cut.</p>
+      <div class="tiles">
+        <div class="tile">
+          <div class="tile-panel">
+            <img class="tile-obj" src="/landing/assets/icons/usd-php-coins.png" alt="" style="height:52px; top:2px; left:50%; transform:translateX(-50%)" />
+            <div class="mini" style="padding-top:38px">
+              <div class="k">You fund → you get back</div>
+              <div class="big">$15 → $18</div>
+              <div class="tiny">the borrower’s own terms, in writing from day one</div>
             </div>
-            <span class="cta-caps">Move to GCash</span>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- mini-FAQ: the cash-out questions people actually ask -->
+  <!-- THE HONEST PART (dark) — the same honesty we give borrowers, pointed at lenders -->
+  <section class="sec-honest">
+    <img class="dcloud" src="/landing/assets/clouds/cloud-2.svg" style="width:130px; top:30px; right:-30px" alt="" />
+    <img class="dcloud" src="/landing/assets/clouds/cloud-1.svg" style="width:100px; bottom:40px; left:-30px" alt="" />
+    <div class="wrap reveal">
+      <p class="label">The honest part</p>
+      <h2 class="sec-h">We’re as straight with you as we are <span class="accent">with them.</span></h2>
+      <p class="sec-lead">Borrowers get no hidden charges. You get no hidden risk.</p>
+      <div class="honest-note"><b>Repayment isn’t guaranteed.</b> Most people pay back — but if a borrower doesn’t, you can lose what you lent. There’s no insurance fund behind this. It’s a real loan to a real person.</div>
+      <div class="honest-note"><b>That’s why everyone starts at $15.</b> New borrowers can’t ask for more, so no single yes costs much — and limits only grow through repayments that actually happened. Never fund more than you’d be okay losing.</div>
+      <div class="honest-note"><b>This is helping, with your money back at the end.</b> Not a savings account, not a get-rich app. The extra few dollars are a thank-you for trusting someone when the bank wouldn’t.</div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
   <section class="sec-faq">
     <div class="wrap reveal">
       <p class="label">Common questions</p>
-      <h2 class="tile-h">Cash-out questions, <span class="accent">answered.</span></h2>
+      <h3 class="tile-h">Questions lenders ask <span class="accent">us.</span></h3>
       <div class="faq-list">
         <details>
-          <summary>What’s a Base Account?</summary>
-          <p class="a">The account your loan lives in — built and protected by our partner <b>Coinbase</b>, one of the most trusted names in digital money. It’s super fast, and moving money out of it is <b>always free</b> — a big part of how we keep fees at zero.</p>
+          <summary>Is this charity or investing?</summary>
+          <p class="a">Neither, really. It’s <b>person-to-person lending</b>: you help someone through a tight week, and they pay back what they promised — a little more than they borrowed. If you’re looking for a place to grow savings, this isn’t it. If you want your money to mean something to a real person and come back to you, it is.</p>
         </details>
         <details>
-          <summary>What if I don’t have GCash?</summary>
-          <p class="a">GCash is the most popular route, but not the only one — Coins.ph, PDAX, and Binance work too. Pick whichever you already use; the app shows what each route takes before you choose.</p>
+          <summary>What happens if someone doesn’t repay?</summary>
+          <p class="a">You can lose what you lent — we won’t pretend otherwise. What we do: every borrower is verified as <b>one real person</b> (no fresh accounts after a default), everyone starts at $15, and a missed repayment freezes their borrowing and goes on the record every future lender sees. What we don’t do: harass anyone. That’s a line we don’t cross even for you.</p>
         </details>
         <details>
-          <summary>Are there fees to cash out?</summary>
-          <p class="a">No — <b>the whole amount arrives.</b> The only fee in the entire loop comes later, when you turn pesos back into digital dollars to repay: <b>a cent or two — around one peso.</b> That one belongs to the converter, not us — <b>Moodeng adds nothing, ever.</b></p>
+          <summary>How do I put money in?</summary>
+          <p class="a">With a <b>debit card</b>, right in the app — or by moving digital dollars you already have. Funding a $15 request takes about a minute.</p>
         </details>
         <details>
-          <summary>Why does the app say “USDC”?</summary>
-          <p class="a">USDC is the official name of the digital dollars your loan travels as — 1 USDC is always worth 1 US dollar. It’s also why our fees are <b>$0</b>: digital dollars move without banks taking a cut along the way.</p>
+          <summary>How do I choose well?</summary>
+          <p class="a">Read the reason, then the record. A borrower with repaid loans and an on-time history is showing you how they behave. First-timers have no record yet — that’s what the $15 cap is for: it’s the size of a first hello, not a leap of faith.</p>
+        </details>
+        <details>
+          <summary>When do I get paid back?</summary>
+          <p class="a">On or before the due date the borrower set — you’ll see the exact date before you fund, and the app shows you every loan’s status along the way.</p>
         </details>
       </div>
     </div>
   </section>
 
-  <!-- FINAL: chain to the repay guide -->
+  <!-- FINAL CTA -->
   <section class="sec-final">
     <div class="wrap reveal">
-      <p class="label">Next up</p>
-      <h2>And when it’s time to pay it <span class="accent">back?</span></h2>
-      <a class="cta" href="/how-to-repay">How repaying works <span class="arrow">→</span></a>
-      <p class="reassure">Same doors, opposite direction — and never a fee from us.</p>
+      <p class="label">Right now</p>
+      <h2>Someone’s tight week is on the board <span class="accent">today.</span></h2>
+      <a class="cta" href="/request-board"><span class="btn-label">Browse open requests <span class="arrow">→</span></span></a>
+      <p class="reassure">Look first. Fund only when someone’s story convinces you.</p>
     </div>
   </section>
 
@@ -485,15 +589,10 @@
       document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
     })();
 
-    // ---- Sign in / start-a-loan buttons: spin on tap ----
-    // These links leave the static site for the real app, which takes a moment to load.
-    // Add a spinner immediately on click so the tap feels acknowledged; the browser's own
-    // navigation does the rest, so we never preventDefault or manage a timeout here. On a
-    // back/forward-cache restore the click never actually left this page, so clear any
-    // stuck spinner then.
+    // ---- Sign in / browse buttons: spin on tap (same rationale as landing) ----
     (function () {
       var loadingLinks = document.querySelectorAll(
-        '.head-signin, .drawer .d-foot a[href="/sign-in"], .cta[href="/request-board"]'
+        '.head-signin, .drawer .d-foot a[href="/sign-in"], .cta[href^="/request-board"]'
       );
       loadingLinks.forEach(function (a) {
         a.addEventListener("click", function () { a.classList.add("is-loading"); });
