@@ -64,8 +64,14 @@ export default function SignInPage() {
          const nextPath = await getPostSignInPath(result.user);
          navigate(nextPath, { replace: true });
       } catch (err) {
-         const msg = err instanceof Error ? err.message : 'Authentication failed';
-         const errObj = err as { status?: number };
+         // .unwrap() throws a serialized plain object (SerializedError), not an
+         // Error instance — read .message off it directly or every failure falls
+         // into the generic branch below.
+         const errObj = err as { status?: number; message?: string };
+         const msg =
+            typeof errObj?.message === 'string' && errObj.message.length > 0
+               ? errObj.message
+               : 'Authentication failed';
          const status = errObj?.status ?? 0;
          const lower = msg.toLowerCase();
 
