@@ -69,6 +69,14 @@
   .hiw-hero h1 .accent { color: var(--purple); font-weight: 500; }
   .hiw-hero .sub { margin: 14px auto 0; font-size: 15.5px; color: var(--text-soft); max-width: 32ch; }
   .hiw-hero .sub b { color: var(--heading); }
+  /* section hippos (product mascots, served from the app's /hippos/ — no copying needed) */
+  .hero-hippo, .cta-hippo {
+    width: 112px; margin: 0 auto 8px; display: block;
+    filter: drop-shadow(0 10px 20px rgba(96,16,210,0.2));
+    animation: bob 5s ease-in-out infinite;
+  }
+  @keyframes bob { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-6px) } }
+  @media (prefers-reduced-motion: reduce) { .hero-hippo, .cta-hippo { animation: none; } }
 
   /* sections */
   .sec-step { padding: 56px 0 60px; }
@@ -391,6 +399,8 @@
 
   <header class="hiw-hero">
     <div class="wrap">
+      <!-- presenting-pose hippo (app asset, served at /hippos/ — no copying needed) -->
+      <img class="hero-hippo" src="/hippos/lender-diversity-piechart.png" alt="" />
       <p class="label">For lenders</p>
       <h1>Be the person who <span class="accent">said yes.</span></h1>
       <p class="sub">Real people ask for small loans — and say upfront <b>exactly</b> what they’ll pay back, and when. You read their reason. You choose. You fund it.</p>
@@ -410,8 +420,8 @@
           <div class="phone has-obj">
             <div class="phone-head"><span class="back">‹</span> Open request</div>
             <div class="inner pad-obj">
-              <!-- 3D gold coin stack — same asset as the borrower card -->
-              <img class="card-obj" src="/landing/assets/icons/coins-stack.png" alt="" />
+              <!-- 3D green check (app asset /icons/check-3d.png) — the "said yes" moment -->
+              <img class="card-obj" src="/icons/check-3d.png" alt="" />
               <span class="verified-line">✓ Verified real person</span>
               <div class="reason"><span class="emoji">🏥</span>Medicine · can’t wait for payday</div>
               <div class="statement">Asking for <span class="amt-pill">$15</span></div>
@@ -434,7 +444,7 @@
     </div>
   </section>
 
-  <!-- HOW IT WORKS FOR LENDERS: 3 steps, real board screenshot -->
+  <!-- HOW IT WORKS FOR LENDERS: 3 steps, real lender-POV screens -->
   <section class="sec-step">
     <div class="wrap reveal">
       <span class="step-num">1</span>
@@ -442,10 +452,10 @@
       <p class="tile-cap">The board shows who’s asking, why, what they’ll pay back, and when. Every borrower proved they’re <b>one real person</b> before they could ask.</p>
       <div class="stage right">
         <div class="stage-panel">
-          <div class="phone shot"><img class="screen" src="/landing/assets/app/step2-board-cards.jpg" alt="The real Moodeng request board: each card shows the amount, what the borrower pays back, and the due date." loading="lazy" /></div>
+          <div class="phone shot"><img class="screen" src="/landing/assets/app/lender-board.jpg" alt="The Moodeng request board as a lender sees it: each request card shows the amount, payback, due date, and a Send Your Help button." loading="lazy" /></div>
         </div>
       </div>
-      <p class="shot-note">The actual request board — sample requests shown.</p>
+      <p class="shot-note">The board as a lender sees it — sample requests shown.</p>
     </div>
   </section>
 
@@ -456,7 +466,7 @@
       <p class="tile-cap">Every borrower has a profile: loans repaid, on-time record, credit level — the good and the setbacks. It’s all there <b>before</b> you decide, and it’s why borrowers here work hard to keep their word: their next loan depends on it.</p>
       <div class="stage">
         <div class="stage-panel">
-          <div class="phone shot"><img class="screen" src="/landing/assets/app/step4-insights-top.jpg" alt="A real Moodeng borrower profile: verified badge, credit level, loans repaid — the record lenders see before funding." loading="lazy" /></div>
+          <div class="phone shot"><img class="screen" src="/landing/assets/app/lender-insights.jpg" alt="A Moodeng borrower profile as lenders see it: verified badge, credit level, loans repaid, repayment record." loading="lazy" /></div>
         </div>
       </div>
       <p class="shot-note">A borrower profile as you’d see it — sample account.</p>
@@ -530,6 +540,7 @@
   <!-- FINAL CTA -->
   <section class="sec-final">
     <div class="wrap reveal">
+      <img class="cta-hippo" src="/landing/assets/hippos/thumb-up-right.png" alt="" />
       <p class="label">Right now</p>
       <h2>Someone’s tight week is on the board <span class="accent">today.</span></h2>
       <a class="cta" href="/request-board"><span class="btn-label">Browse open requests <span class="arrow">→</span></span></a>
