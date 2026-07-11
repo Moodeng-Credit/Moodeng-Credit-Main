@@ -627,8 +627,9 @@
   /* ---------- SECTION: REAL DEMO (Klarna video-in-phone) ----------
      George's real screen recording (540×960, baked phone chrome). Same panel
      language as the retired hero video: 28px radius, purple-tinted shadow.
-     .demo-play is hidden by default; JS reveals it for reduced-motion /
-     data-saver users (tap-to-play) or if autoplay is blocked. */
+     NO play-button overlay (George 07-12: it sat on the video forever for
+     anyone with system Reduce Motion on) — the demo autoplays via IO for
+     everyone; only data-saver/2g falls back to tapping the video itself. */
   .sec-demo { background: var(--surface); padding: 58px 0 62px; text-align: center; }
   .demo-phone {
     position: relative; margin: 0 auto; width: 100%; max-width: 270px;
@@ -637,13 +638,6 @@
     box-shadow: 0 24px 50px rgba(96,16,210,0.22);
   }
   .demo-video { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .demo-play {
-    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
-    width: 64px; height: 64px; border: 0; border-radius: var(--pill);
-    background: #fff; color: var(--purple); font-size: 22px; cursor: pointer;
-    display: grid; place-items: center; padding-left: 5px;
-    box-shadow: 0 10px 26px rgba(4,0,51,0.28);
-  }
   .sec-demo .sec-lead { max-width: 30ch; margin-left: auto; margin-right: auto; }
 
   /* ---------- SECTION: TRUST Q3 (DARK — how we treat you) ---------- */
@@ -1321,7 +1315,6 @@
                poster="/landing/assets/demo/loan-demo-poster.jpg"
                muted loop playsinline preload="none"
                aria-label="Screen recording of a real Moodeng loan: terms set, funded, cashed out and repaid"></video>
-        <button class="demo-play" type="button" hidden aria-label="Play demo">&#9654;</button>
       </div>
       <p class="label" style="margin-top:28px">Real demo</p>
       <h2 class="sec-h">Watch a real loan <span class="accent">happen.</span></h2>
@@ -1627,37 +1620,31 @@
   })();
 
   // ---- Real-demo video: plays only while on screen ----
-  // Autoplay path uses an IntersectionObserver (play at 35% visible, pause
-  // off-screen) so the 590KB loop never runs unwatched. Reduced-motion and
-  // data-saver users get tap-to-play instead; the play button also appears
-  // if the browser blocks autoplay.
+  // IntersectionObserver plays at 35% visible, pauses off-screen, so the
+  // 590KB loop never runs unwatched. No play-button overlay (George 07-12:
+  // it sat on the video permanently for anyone with system Reduce Motion) —
+  // reduced-motion no longer gates a muted product demo. Data-saver/2g users
+  // and blocked-autoplay browsers tap the video itself to play or pause.
   (function () {
     var v = document.querySelector(".demo-video");
     if (!v) return;
-    var btn = document.querySelector(".demo-play");
-    function showBtn() { btn.hidden = false; }
-    btn.addEventListener("click", function () {
-      var p = v.play();
-      if (p && p.catch) p.catch(function () {});
-      btn.hidden = true;
-    });
-    var c = navigator.connection || {};
-    var manual =
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      c.saveData || /(^|-)2g/.test(c.effectiveType || "");
-    if (manual) {
-      showBtn();
-      v.addEventListener("click", function () {
-        if (!v.paused) { v.pause(); showBtn(); }
-      });
-      return;
+    function toggle() {
+      if (v.paused) {
+        var p = v.play();
+        if (p && p.catch) p.catch(function () {});
+      } else {
+        v.pause();
+      }
     }
-    if (!("IntersectionObserver" in window)) { showBtn(); return; }
+    v.addEventListener("click", toggle);
+    var c = navigator.connection || {};
+    if (c.saveData || /(^|-)2g/.test(c.effectiveType || "")) return; // tap-to-play only
+    if (!("IntersectionObserver" in window)) return;
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
         if (e.isIntersecting) {
           var p = v.play();
-          if (p && p.catch) p.catch(showBtn); // autoplay blocked → tap-to-play
+          if (p && p.catch) p.catch(function () {}); // blocked → tap plays
         } else if (!v.paused) {
           v.pause();
         }
