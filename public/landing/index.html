@@ -370,11 +370,6 @@
   .steps b { font-size: 15px; color: var(--heading); }
   .steps p { margin: 3px 0 0; font-size: 13.5px; color: var(--text-soft); line-height: 1.45; }
 
-  /* ---------- SECTION: TRUST Q2 (clear terms) ---------- */
-  .sec-terms {
-    background: var(--surface);
-    padding: 62px 0 66px;
-  }
   h2.sec-h {
     font-family: var(--display);
     font-size: 32px; line-height: 1.06; letter-spacing: -0.02em;
@@ -415,6 +410,87 @@
   }
   .tile-h .accent { color: var(--purple); font-weight: 500; }
   .tile-cap { margin-top: 7px; font-size: 14.5px; color: var(--text-muted); line-height: 1.45; max-width: 34ch; }
+
+  /* ---------- SCROLL STORY (Klarna scrollytelling, our translation) ----------
+     Anatomy verified from klarna.com (2026-07-12): tall run + sticky pin; scroll
+     progress picks the active beat. Screen sits ABOVE the title list (Klarna
+     mobile order). Active title = ink + caption expands (grid-rows trick);
+     inactive = grey. JS adds .armed; without it everything below renders as a
+     plain stacked section — never gate the MECHANISM on prefers-reduced-motion
+     (George's Mac has Reduce Motion ON system-wide), only soften transitions. */
+  .sec-story { --beats: 5; --head-h: 66px; }
+  .sec-story .story-pin { padding: 26px 0 40px; }
+  .sec-story.armed .story-run { height: calc(100svh + var(--beats) * 68vh); }
+  .sec-story.armed .story-pin {
+    position: sticky; top: var(--head-h);
+    height: calc(100svh - var(--head-h));
+    padding: 12px 0 0;
+    display: flex; flex-direction: column; justify-content: center;
+    overflow: hidden;
+  }
+  .story-screens { margin: 0 auto; width: min(250px, 68vw); }
+  .story-screen + .story-screen { margin-top: 34px; }
+  .sec-story.armed .story-screens { display: grid; align-items: center; }
+  .sec-story.armed .story-screen {
+    grid-area: 1 / 1; margin: 0;
+    opacity: 0; transform: translateY(16px) scale(.97);
+    transition: opacity .4s ease, transform .4s ease;
+    pointer-events: none;
+  }
+  .sec-story.armed .story-screen.is-active { opacity: 1; transform: none; pointer-events: auto; }
+  .story-screen .stage { width: 100%; max-width: none; margin: 0 auto; }
+  /* tile minis promoted to full screens: same overlap geometry as .tile-panel
+     (obj absolute at panel top, mini centered under 34px padding → icon dips
+     onto the white card's top edge — the Tilt invariant) */
+  .story-mini-panel { padding: 44px 24px; display: grid; place-items: center; }
+  .stage-panel.dark { background: radial-gradient(120% 100% at 30% 0%, #2B0F55 0%, var(--deep) 100%); }
+  /* funded-card micro-moments replay on every beat-1 activation
+     (were scoped to .sec-people .reveal.in before the section merged in here) */
+  .sec-story .avatars .av { opacity: 0; transform: scale(.92); }
+  .sec-story .avatars .who { opacity: 0; transition: opacity .3s ease .58s; }
+  .sec-story .story-screen.is-active .avatars .av.a1 { animation: avPop .3s cubic-bezier(.34,1.56,.64,1) .25s both; }
+  .sec-story .story-screen.is-active .avatars .av.a2 { animation: avPop .3s cubic-bezier(.34,1.56,.64,1) .37s both; }
+  .sec-story .story-screen.is-active .avatars .av.a3 { animation: avPop .3s cubic-bezier(.34,1.56,.64,1) .49s both; }
+  .sec-story .story-screen.is-active .avatars .who { opacity: 1; }
+  .sec-story .progress.full i { width: 0; transition: width .8s cubic-bezier(.22,.61,.36,1) .85s; }
+  .sec-story .story-screen.is-active .progress.full i { width: 100%; }
+  .sec-story .funded-badge { opacity: 0; }
+  .sec-story .story-screen.is-active .funded-badge { animation: fundedIn .55s cubic-bezier(.34,1.56,.64,1) 1.75s both; }
+
+  .story-titles { list-style: none; margin: 8px auto 0; padding: 0 22px; max-width: 460px; text-align: center; }
+  .story-titles li + li { margin-top: 2px; }
+  .story-titles button {
+    display: block; width: 100%; background: none; border: 0; cursor: pointer;
+    padding: 5px 0; -webkit-tap-highlight-color: transparent;
+  }
+  .story-t {
+    display: block;
+    font-family: var(--display);
+    font-size: clamp(18px, 5.2vw, 22px); line-height: 1.12; letter-spacing: -0.01em;
+    color: var(--text-muted);
+    transition: color .35s ease;
+  }
+  .story-t .accent { color: inherit; font-weight: 500; }
+  .story-titles li.is-active .story-t { color: var(--heading); }
+  .story-titles li.is-active .story-t .accent { color: var(--purple); }
+  .story-cap {
+    display: grid; grid-template-rows: 0fr;
+    transition: grid-template-rows .35s ease, opacity .35s ease;
+    opacity: 0;
+  }
+  .story-titles li.is-active .story-cap { grid-template-rows: 1fr; opacity: 1; }
+  .story-cap > span {
+    overflow: hidden; display: block;
+    font-size: 14.5px; font-weight: 600; color: var(--text-muted); line-height: 1.45;
+    max-width: 36ch; margin: 0 auto;
+  }
+  .story-titles li.is-active .story-cap > span { padding: 6px 0 8px; }
+  /* no-JS: captions always readable */
+  .sec-story:not(.armed) .story-cap { grid-template-rows: 1fr; opacity: 1; }
+  .sec-story:not(.armed) .story-t { color: var(--heading); }
+  @media (prefers-reduced-motion: reduce) {
+    .sec-story.armed .story-screen { transition: opacity .2s linear; transform: none; }
+  }
 
   /* ---------- SECTION: UNLOCK (product moment #2) ---------- */
   .sec-unlock { background: var(--surface); padding: 58px 0 62px; }
@@ -478,8 +554,6 @@
     .sec-unlock .reveal.in .lock-badge, .sec-unlock .reveal.in .meter-box .marks .mid { animation: none; }
   }
 
-  /* ---------- SECTION: TRUST Q1 (real people) ---------- */
-  .sec-people { background: var(--surface); padding: 62px 0 64px; }
   .stage.right .phone { transform: rotate(2.5deg); }
   .stage .stage-panel.tint2 {
     background: radial-gradient(120% 90% at 75% 8%, #EFDFFD 0%, #D5B8F8 62%, #C09AF3 100%);
@@ -508,51 +582,21 @@
   .progress.full i { width: 100%; }
   .progress.third i { width: 34%; }
 
-  /* "3 people said yes" funded moment: avatars pop in one by one, then the bar
-     fills, then the Funded pill lands with a glow — plays once as the section
-     scrolls into view (reuses the existing .reveal.in trigger, no new JS). */
-  .sec-people .avatars .av { opacity: 0; transform: scale(.92); }
-  .sec-people .avatars .who { opacity: 0; transition: opacity .3s ease .58s; }
-  .sec-people .reveal.in .avatars .av.a1 { animation: avPop .3s cubic-bezier(.34,1.56,.64,1) .25s both; }
-  .sec-people .reveal.in .avatars .av.a2 { animation: avPop .3s cubic-bezier(.34,1.56,.64,1) .37s both; }
-  .sec-people .reveal.in .avatars .av.a3 { animation: avPop .3s cubic-bezier(.34,1.56,.64,1) .49s both; }
-  .sec-people .reveal.in .avatars .who { opacity: 1; }
   @keyframes avPop { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
-  .sec-people .progress.full i { width: 0; transition: width .8s cubic-bezier(.22,.61,.36,1) .85s; }
-  .sec-people .reveal.in .progress.full i { width: 100%; }
-  .sec-people .funded-badge { opacity: 0; }
-  .sec-people .reveal.in .funded-badge { animation: fundedIn .55s cubic-bezier(.34,1.56,.64,1) 1.75s both; }
   @keyframes fundedIn {
     0% { opacity: 0; transform: scale(.85); box-shadow: 0 0 0 rgba(52,217,129,0); }
     60% { opacity: 1; transform: scale(1.06); box-shadow: 0 0 14px rgba(52,217,129,.45); }
     100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 rgba(52,217,129,0); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .sec-people .avatars .av { opacity: 1; transform: none; }
-    .sec-people .avatars .who { opacity: 1; transition: none; }
-    .sec-people .reveal.in .avatars .av.a1, .sec-people .reveal.in .avatars .av.a2, .sec-people .reveal.in .avatars .av.a3 { animation: none; }
-    .sec-people .progress.full i { width: 100%; transition: none; }
-    .sec-people .funded-badge { opacity: 1; }
-    .sec-people .reveal.in .funded-badge { animation: none; }
+    .sec-story .avatars .av { opacity: 1; transform: none; }
+    .sec-story .avatars .who { opacity: 1; transition: none; }
+    .sec-story .story-screen.is-active .avatars .av.a1, .sec-story .story-screen.is-active .avatars .av.a2, .sec-story .story-screen.is-active .avatars .av.a3 { animation: none; }
+    .sec-story .progress.full i { width: 100%; transition: none; }
+    .sec-story .funded-badge { opacity: 1; }
+    .sec-story .story-screen.is-active .funded-badge { animation: none; }
   }
 
-  /* ---------- SECTION: LEVEL UP ---------- */
-  .sec-level {
-    background: radial-gradient(130% 90% at 50% 0%, #ffffff 0%, var(--lavender-bg) 55%, #E4D2FB 100%);
-    padding: 62px 0 70px; overflow: hidden; position: relative;
-  }
-  .ladder { display: flex; align-items: flex-end; gap: 9px; margin-top: 74px; position: relative; }
-  .rung {
-    flex: 1; background: #fff; border: 1px solid var(--lavender-border);
-    border-radius: 14px 14px 10px 10px; text-align: center;
-    padding: 10px 4px 12px; box-shadow: 0 8px 20px rgba(96,16,210,0.08);
-    display: flex; flex-direction: column; justify-content: flex-end; gap: 2px;
-  }
-  .rung .amt { font-family: var(--display); font-size: 18px; color: var(--heading); }
-  .rung .lv { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
-  .rung.h1x { height: 66px; } .rung.h2x { height: 84px; } .rung.h3x { height: 102px; } .rung.h4x { height: 120px; }
-  .rung.now { border: 2px solid var(--lavender); box-shadow: 0 10px 24px rgba(131,54,240,0.22); }
-  .rung.now .lv { color: var(--purple); }
   .level-arrow { font-family: var(--display); color: var(--purple); }
 
   /* ---------- SECTION: TRUST Q3 (DARK — how we treat you) ---------- */
@@ -584,12 +628,7 @@
   }
   .verify-note b { color: #fff; }
 
-  /* ---------- PESO STRIP ---------- */
-  .strip {
-    background: var(--lavender-bg); padding: 48px 0 56px;
-  }
   /* cash-out moment card (product moment #4): upright tall phone, Tilt-light */
-  .strip .stage { text-align: center; }
   .coin-badge { height: 58px; margin: 36px auto 16px; display: block; }
   .swap-box {
     background: #F6F3FA; border-radius: 14px;
@@ -727,67 +766,6 @@
      MAKE mobile anatomy: header (title left, "See all +" right) → swipe carousel, one card
      + next peeking → card = sky cover (title & sub baked in, logo badge top-right,
      illustration center) → white body (title, 2-line excerpt, byline, hashtag chips) → dots. */
-  .sec-tips { background: #FBF8FF; padding: 56px 0 60px; }
-  .tips-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-  .tips-head .tile-h { max-width: 24ch; }
-  .tips-more { flex: 0 0 auto; font-size: 14px; font-weight: 800; color: #6010D2; text-decoration: none; padding-top: 8px; }
-  .tips-list {
-    display: flex; align-items: flex-start; gap: 14px; margin-top: 24px;
-    overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; padding: 6px 2px 12px;
-  }
-  .tips-list::-webkit-scrollbar { display: none; }
-  .tips-card {
-    flex: 0 0 248px; scroll-snap-align: start;
-    display: block; text-decoration: none; background: #fff; border-radius: 24px; overflow: hidden;
-    box-shadow: 0 8px 26px rgba(96,16,210,0.10);
-  }
-  .tips-card .cover {
-    position: relative; height: 138px; overflow: hidden; display: block;
-    background: linear-gradient(180deg, #C9A8F5 0%, #E9DCFA 62%, #FDFBFF 100%);
-  }
-  .tips-card .cover .ct {
-    position: absolute; top: 12px; left: 26px; right: 26px; margin: 0; text-align: center;
-    color: var(--heading);
-  }
-  .tips-card .cover .ct b { display: block; font-size: 12px; font-weight: 800; line-height: 1.3; }
-  .tips-card .cover .ct small { display: block; margin-top: 2px; font-size: 10px; font-weight: 600; color: #4C3A78; }
-  .tips-card .cover .badge {
-    position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 8px;
-    background: #fff; box-shadow: 0 2px 8px rgba(96,16,210,0.14);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .tips-card .cover .badge img { width: 19px; height: 19px; object-fit: contain; }
-  .tips-card .cover .cl { position: absolute; pointer-events: none; }
-  .tips-card .cover .cl.c1 { width: 50px; left: -10px; top: 46px; opacity: 0.85; }
-  .tips-card .cover .cl.c2 { width: 38px; right: -5px; top: 35px; opacity: 0.65; }
-  .tips-card .cover .cl.c3 { width: 114px; left: 50%; transform: translateX(-50%); bottom: -13px; opacity: 0.95; }
-  /* George's cover graphics drop in here (one per card, MAKE-style scene) */
-  .tips-card .cover .art {
-    position: absolute; bottom: 9px; left: 50%; transform: translateX(-50%);
-    height: 66px; width: auto; max-width: none;
-  }
-  /* George's cards ARE the design (2026-07-05: "you put text on top of it, weird") —
-     the full generated card ships as one image, no HTML text re-rendered over/under it */
-  .tips-card .card-img { display: block; width: 100%; height: auto; }
-  .tips-card .body { padding: 12px 14px 14px; }
-  .tips-card .t { margin: 0 0 5px; font-size: 14px; font-weight: 800; color: var(--heading); line-height: 1.3; }
-  .tips-card .dek {
-    margin: 0; font-size: 12px; line-height: 1.45; color: var(--text-muted);
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  }
-  .tips-card .byline { display: flex; align-items: center; gap: 7px; margin-top: 10px; }
-  .tips-card .byline img { width: 21px; height: 21px; border-radius: 50%; background: #F3E8FF; object-fit: contain; }
-  .tips-card .byline .who { font-size: 10.5px; color: var(--text-muted); font-weight: 600; line-height: 1.3; }
-  .tips-card .byline .who b { display: block; color: var(--heading); font-weight: 800; }
-  .tips-card .tags { display: flex; gap: 5px; margin-top: 9px; flex-wrap: wrap; }
-  .tips-card .tags span {
-    background: #F3E8FF; color: #6010D2; font-size: 10px; font-weight: 700;
-    padding: 4px 9px; border-radius: var(--pill);
-  }
-  .tips-dots { display: flex; justify-content: center; gap: 6px; margin-top: 6px; }
-  .tips-dots span { width: 7px; height: 7px; border-radius: 99px; background: #DCC8F5; transition: all 0.25s; }
-  .tips-dots span.on { width: 22px; background: var(--purple); }
 
   /* ---------- FAQ (native details/summary, zero JS) ---------- */
   .sec-faq { background: var(--surface); padding: 56px 0 62px; }
@@ -1121,7 +1099,9 @@
   <section class="sec-unlock">
     <div class="wrap reveal">
       <p class="label">It grows with you</p>
-      <h2 class="sec-h">Pay back on time, unlock <span class="accent">more.</span></h2>
+      <!-- headline taken from the old sec-level when the duplicate section folded
+           into this one (2026-07-12) — both said the same thing twice -->
+      <h2 class="sec-h">Today it’s $15. Next time you’re covered for <span class="accent">more.</span></h2>
       <p class="sec-lead">Every on-time repayment raises your limit. No paperwork — just keep your word.</p>
 
       <div class="stage big">
@@ -1150,126 +1130,130 @@
   </section>
 
   <!-- ============= TRUST Q1: REAL PEOPLE ============= -->
-  <section class="sec-people">
-    <div class="wrap reveal">
-      <p class="label">Real people</p>
-      <h2 class="sec-h">Your loan comes from a <span class="accent">real person.</span></h2>
-      <p class="sec-lead">Not a company. Not an algorithm. A real person read your request and chose to help.</p>
+  <!-- ============= SCROLL STORY: real people → no fees (Klarna scrollytelling) =============
+       Replaces the old sec-people + peso strip + sec-terms (2026-07-12, George's ask after
+       the Klarna autopsy): one sticky pin — screen on top, title list under it. Scroll
+       drives the handoff: active title ink, others grey; screens crossfade. The old
+       "No penalty overnight" tile folded into the No-rollover caption; "No hidden charges"
+       folded into You-know-everything (same claim: the whole deal is one number).
+       Klarna does this with React+Framer and per-beat MP4s; ours is ~50 lines of vanilla
+       JS and the moment cards we already had. Without JS it degrades to a stacked page. -->
+  <section class="sec-story">
+    <div class="story-run">
+      <div class="story-pin">
+        <div class="story-screens">
 
-      <!-- Moment Card 2: the funded state -->
-      <div class="stage right">
-        <!-- hippo OFF for now (George 2026-07-05: top 3/4 of page stays hippo-free until hero is designed)
-        <img class="sec-hippo" src="/landing/assets/hippos/community.png" alt="" style="width:104px; top:-46px; right:-14px" /> -->
-        <div class="stage-panel tint2">
-          <div class="phone">
-            <div class="phone-head"><span class="back">‹</span> Your request</div>
-            <div class="inner">
-              <div class="reason"><span class="emoji">🏥</span>Medicine · can’t wait for payday</div>
-              <div class="statement">3 people said <span style="color:var(--purple)">yes.</span></div>
-              <div class="avatars">
-                <span class="av a1">P</span><span class="av a2">M</span><span class="av a3">J</span>
-                <span class="who">funded your $15</span>
+          <!-- Beat 1: a real person says yes (was Moment Card 2, the funded state) -->
+          <div class="story-screen is-active">
+            <div class="stage right">
+              <div class="stage-panel tint2">
+                <div class="phone">
+                  <div class="phone-head"><span class="back">‹</span> Your request</div>
+                  <div class="inner">
+                    <div class="reason"><span class="emoji">🏥</span>Medicine · can’t wait for payday</div>
+                    <div class="statement">3 people said <span style="color:var(--purple)">yes.</span></div>
+                    <div class="avatars">
+                      <span class="av a1">P</span><span class="av a2">M</span><span class="av a3">J</span>
+                      <span class="who">funded your $15</span>
+                    </div>
+                    <div class="progress full"><i></i></div>
+                    <div style="margin-top:12px"><span class="funded-badge">Funded ✓</span></div>
+                    <p class="card-foot">$15 is on its way to you.</p>
+                  </div>
+                </div>
               </div>
-              <div class="progress full"><i></i></div>
-              <div style="margin-top:12px"><span class="funded-badge">Funded ✓</span></div>
-              <p class="card-foot">$15 is on its way to you.</p>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- ============= CASH-OUT MOMENT (product moment #4, upgraded peso strip — copy strawman, George to approve) ============= -->
-  <section class="strip">
-    <div class="wrap reveal" style="text-align:center">
-      <p class="label">Pesos in, pesos out</p>
-      <h3 class="tile-h">Easy to turn into <span class="accent">pesos.</span></h3>
-      <p class="tile-cap" style="margin:8px auto 0">When it lands, moving it into pesos is simple — and moving it back when you repay is just as easy.</p>
-      <div class="stage big">
-        <div class="stage-panel">
-          <div class="phone upright tall">
-            <div class="phone-head"><span class="back">‹</span> Cash out</div>
-            <!-- 3D $/₱ coin pair — asset #5 (George) -->
-            <img class="coin-badge" src="/landing/assets/icons/usd-php-coins.png" alt="" />
-            <div class="statement">Your $15 just landed.</div>
-            <div class="swap-box">
-              <span class="cell"><span class="k">To</span><b>GCash</b></span>
-              <span class="arr">→</span>
-              <span class="cell right"><span class="k">You’d get</span><b data-peso="15">≈ ₱855</b></span>
-            </div>
-            <span class="cta-caps">Move to GCash</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============= TRUST Q2: CLEAR TERMS ============= -->
-  <section class="sec-terms">
-    <div class="wrap reveal">
-      <p class="label">Clear terms</p>
-      <h2 class="sec-h">You know <span class="accent">everything</span> before you borrow.</h2>
-      <p class="sec-lead">The amount you pay back is set the moment you ask. <span data-peso-inline>$15 becomes $18</span> — and it stays $18.</p>
-      <div class="tiles">
-
-        <!-- Tile 1: No rollover — the due date, locked -->
-        <div class="tile">
-          <div class="tile-panel">
-            <img class="tile-obj" src="/landing/assets/icons/lock-closed.png" alt="" style="width:34px; top:0; left:50%; transform:translateX(-50%)" />
-            <div class="mini" style="padding-top:40px">
-              <div class="k">Due date</div>
-              <div class="big">Jul 30</div>
-              <div class="tiny">set when you ask — it doesn’t move</div>
+          <!-- Beat 2: easy to turn into pesos (was the cash-out moment) -->
+          <div class="story-screen">
+            <div class="stage">
+              <div class="stage-panel">
+                <div class="phone upright tall">
+                  <div class="phone-head"><span class="back">‹</span> Cash out</div>
+                  <!-- 3D $/₱ coin pair — asset #5 (George) -->
+                  <img class="coin-badge" src="/landing/assets/icons/usd-php-coins.png" alt="" />
+                  <div class="statement">Your $15 just landed.</div>
+                  <div class="swap-box">
+                    <span class="cell"><span class="k">To</span><b>GCash</b></span>
+                    <span class="arr">→</span>
+                    <span class="cell right"><span class="k">You’d get</span><b data-peso="15">≈ ₱855</b></span>
+                  </div>
+                  <span class="cta-caps">Move to GCash</span>
+                </div>
+              </div>
             </div>
           </div>
-          <h3 class="tile-h"><span class="accent">No</span> rollover</h3>
-          <p class="tile-cap">The due date doesn’t move, and neither does the price.</p>
-        </div>
 
-        <!-- Tile 2: No overnight penalty — tonight = tomorrow -->
-        <div class="tile">
-          <div class="tile-panel">
-            <img class="tile-obj" src="/landing/assets/icons/moon-sun.png" alt="" style="width:56px; top:5px; left:50%; transform:translateX(-50%)" />
-            <div class="mini" style="padding-top:34px">
-              <div class="row"><span class="when">tonight</span><span class="amt">$18</span></div>
-              <div class="row"><span class="when">tomorrow</span><span class="amt">$18</span></div>
+          <!-- Beat 3: you know everything (was the dark "No hidden charges" tile) -->
+          <div class="story-screen">
+            <div class="stage">
+              <div class="stage-panel dark story-mini-panel">
+                <!-- 3D magnifier over a gold coin — "we looked, nothing hidden" (George, 07-11) -->
+                <img class="tile-obj" src="/landing/assets/icons/magnifier-coin.png" alt="" style="width:48px; top:2px; left:50%; transform:translateX(-50%)" />
+                <div class="mini" style="padding-top:38px">
+                  <div class="k">You’ll pay back</div>
+                  <div class="big">$18</div>
+                  <div class="tiny">that’s the whole deal — one number, no hidden charges</div>
+                </div>
+              </div>
             </div>
           </div>
-          <h3 class="tile-h"><span class="accent">No</span> penalty that appears overnight</h3>
-          <p class="tile-cap">Nothing is added while you sleep. What you saw is what you pay.</p>
-        </div>
 
-        <!-- Tile 3: No hidden charges — the whole contract is one number (dark tile)
-             (was "No fine print" — rejected 2026-07-05: English idiom, PH borrowers don't know it;
-             "hidden charges" is the phrase every PH bank/GCash ad uses) -->
-        <div class="tile">
-          <div class="tile-panel dark">
-            <!-- 3D magnifier over a gold coin — "we looked, nothing hidden" (George, 07-11) -->
-            <img class="tile-obj" src="/landing/assets/icons/magnifier-coin.png" alt="" style="width:48px; top:2px; left:50%; transform:translateX(-50%)" />
-            <div class="mini" style="padding-top:38px">
-              <div class="big">$18</div>
-              <div class="tiny">that’s the whole deal</div>
+          <!-- Beat 4: no rollover (was the due-date lock tile; overnight-penalty tile folded in) -->
+          <div class="story-screen">
+            <div class="stage">
+              <div class="stage-panel story-mini-panel">
+                <img class="tile-obj" src="/landing/assets/icons/lock-closed.png" alt="" style="width:34px; top:0; left:50%; transform:translateX(-50%)" />
+                <div class="mini" style="padding-top:40px">
+                  <div class="k">Due date</div>
+                  <div class="big">Jul 30</div>
+                  <div class="tiny">set when you ask — it doesn’t move</div>
+                  <div class="row" style="margin-top:12px"><span class="when">tonight</span><span class="amt">$18</span></div>
+                  <div class="row"><span class="when">tomorrow</span><span class="amt">$18</span></div>
+                </div>
+              </div>
             </div>
           </div>
-          <h3 class="tile-h"><span class="accent">No</span> hidden charges</h3>
-          <p class="tile-cap">The one number you owe is on the screen before you say yes.</p>
-        </div>
 
-        <!-- Tile 4: zero fees from our side (copy strawman — George to approve) -->
-        <div class="tile">
-          <div class="tile-panel">
-            <img class="tile-obj" src="/landing/assets/icons/price-tag.png" alt="" style="width:46px; top:4px; left:50%; transform:translateX(-50%)" />
-            <div class="mini" style="padding-top:36px">
-              <div class="k">Our fees</div>
-              <div class="big">$0</div>
-              <div class="tiny">that’s not a promo — it’s how we’re built</div>
+          <!-- Beat 5: no fees from our side (copy strawman — George to approve) -->
+          <div class="story-screen">
+            <div class="stage">
+              <div class="stage-panel story-mini-panel">
+                <img class="tile-obj" src="/landing/assets/icons/price-tag.png" alt="" style="width:46px; top:4px; left:50%; transform:translateX(-50%)" />
+                <div class="mini" style="padding-top:36px">
+                  <div class="k">Our fees</div>
+                  <div class="big">$0</div>
+                  <div class="tiny">that’s not a promo — it’s how we’re built</div>
+                </div>
+              </div>
             </div>
           </div>
-          <h3 class="tile-h"><span class="accent">No</span> fees from our side</h3>
-          <p class="tile-cap">Your money moves as digital dollars — no banks in the middle taking a cut, so we don’t need fees to survive.</p>
+
         </div>
 
+        <ol class="story-titles">
+          <li class="is-active"><button type="button">
+            <span class="story-t">A <span class="accent">real person</span> says yes.</span>
+            <span class="story-cap"><span>Not a company. Not an algorithm. A real person read your request and chose to help.</span></span>
+          </button></li>
+          <li><button type="button">
+            <span class="story-t">Easy to turn into <span class="accent">pesos.</span></span>
+            <span class="story-cap"><span>When it lands, moving it into pesos is simple — and moving it back when you repay is just as easy.</span></span>
+          </button></li>
+          <li><button type="button">
+            <span class="story-t">You know <span class="accent">everything</span> before you borrow.</span>
+            <span class="story-cap"><span>The amount you pay back is set the moment you ask. <span data-peso-inline>$15 becomes $18</span> — and it stays $18.</span></span>
+          </button></li>
+          <li><button type="button">
+            <span class="story-t"><span class="accent">No</span> rollover.</span>
+            <span class="story-cap"><span>The due date doesn’t move, the price doesn’t move — and nothing is added while you sleep.</span></span>
+          </button></li>
+          <li><button type="button">
+            <span class="story-t"><span class="accent">No</span> fees from our side.</span>
+            <span class="story-cap"><span>Your money moves as digital dollars — no banks in the middle taking a cut, so we don’t need fees to survive.</span></span>
+          </button></li>
+        </ol>
       </div>
     </div>
   </section>
@@ -1333,25 +1317,10 @@
     </div>
   </section>
 
-  <!-- ============= TRUST Q4: LEVEL UP ============= -->
-  <section class="sec-level">
-    <div class="wrap reveal">
-      <p class="label">It grows with you</p>
-      <h2 class="sec-h">Today it’s $15. Next time you’re covered for <span class="accent">more.</span></h2>
-      <p class="sec-lead">Every on-time repayment raises your limit. No paperwork — just keep your word.</p>
-
-      <!-- MAKE-style ascending ladder -->
-      <div class="ladder">
-        <!-- hippo OFF for now (George 2026-07-05: top 3/4 hippo-free)
-        <img class="sec-hippo" src="/landing/assets/hippos/borrower-insights-trophy.png" alt="" style="width:92px; top:-72px; right:-4px" /> -->
-        <div class="rung h1x now"><span class="amt">$15</span><span class="lv">Today</span></div>
-        <div class="rung h2x"><span class="amt">$20</span><span class="lv">Next</span></div>
-        <div class="rung h3x"><span class="amt">$40</span><span class="lv">Then</span></div>
-        <div class="rung h4x"><span class="amt">$60+</span><span class="lv">Soon</span></div>
-      </div>
-
-    </div>
-  </section>
+  <!-- sec-level ("Today it's $15…" + MAKE ladder) FOLDED into sec-unlock 2026-07-12:
+       both sections made the identical repay-on-time→higher-limit claim (same lead
+       sentence word-for-word, iteration drift). The unlock phone kept its visual and
+       took this section's headline. Ladder markup retrievable from git history. -->
 
   <!-- ============= TRUST Q5: SAYS WHO (PROOF) =============
        Rebuilt 2026-07-10: the 4.8 rating / 1,200+ / 96% / ₱2.1M+ stats and the four
@@ -1413,26 +1382,12 @@
        ⚠️ ALL THREE ARTICLES ARE PLACEHOLDERS — titles, excerpts, dates, read times and links
        are invented to fill the MAKE layout. Do not ship until each is a real article.
        George supplies the cover graphics (one scene per card, replaces the .art slot). -->
-  <section class="sec-tips">
-    <div class="wrap reveal">
-      <div class="tips-head">
-        <h3 class="tile-h">Money tips by <span class="accent">Moodeng.</span></h3>
-        <a class="tips-more" href="#">See all +</a>
-      </div>
-      <div class="tips-list">
-        <a class="tips-card" href="#">
-          <img class="card-img" src="/landing/assets/tips/tip-1-card.jpg" alt="Emergency expense checklist: what to ask before you borrow — Moodeng, Jul 2026, 4 min read" />
-        </a>
-        <a class="tips-card" href="#">
-          <img class="card-img" src="/landing/assets/tips/tip-2-card.jpg" alt="Stretching to payday: a calm plan for the tight week — Moodeng, Jul 2026, 5 min read" />
-        </a>
-        <a class="tips-card" href="#">
-          <img class="card-img" src="/landing/assets/tips/tip-3-card.jpg" alt="From $15 to $60: how your limit grows — Moodeng, Jul 2026, 3 min read" />
-        </a>
-      </div>
-      <div class="tips-dots" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
-    </div>
-  </section>
+  <!-- sec-tips ("Money tips by Moodeng") REMOVED 2026-07-12: the three article cards
+       were invented placeholders with dead # links — the last fake content on the page
+       besides the AI faces. Card JPGs stay in assets/tips/; markup is in git history —
+       restore when real articles exist (George's card designs ship VERBATIM, never
+       re-render their text as HTML). -->
+
 
   <!-- ============= FAQ (copy needs George's sign-off before shipping) ============= -->
   <section class="sec-faq" id="faq">
@@ -1600,6 +1555,45 @@
     window.addEventListener("resize", measure);
   })();
 
+  // ---- Scroll story: Klarna-style sticky run, vanilla translation ----
+  // Discrete class flips on scroll events (NOT continuous rAF drift), so the
+  // touch-throttling that froze the old marquee can't hurt it. Tapping a grey
+  // title scroll-jumps to its segment, exactly like Klarna's buttons do.
+  (function () {
+    var sec = document.querySelector(".sec-story");
+    if (!sec) return;
+    var run = sec.querySelector(".story-run");
+    var screens = [].slice.call(sec.querySelectorAll(".story-screen"));
+    var titles = [].slice.call(sec.querySelectorAll(".story-titles > li"));
+    var N = screens.length;
+    if (!N || N !== titles.length) return; // markup drifted — stay stacked
+    sec.style.setProperty("--beats", N);
+    sec.classList.add("armed");
+    var active = -1;
+    function update() {
+      var r = run.getBoundingClientRect();
+      var budget = r.height - window.innerHeight;
+      if (budget <= 0) return;
+      var p = Math.max(0, Math.min(0.999, -r.top / budget));
+      var idx = Math.floor(p * N);
+      if (idx === active) return;
+      active = idx;
+      screens.forEach(function (s, i) { s.classList.toggle("is-active", i === idx); });
+      titles.forEach(function (t, i) { t.classList.toggle("is-active", i === idx); });
+    }
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+    titles.forEach(function (t, i) {
+      t.querySelector("button").addEventListener("click", function () {
+        var r = run.getBoundingClientRect();
+        var budget = r.height - window.innerHeight;
+        var top = window.scrollY + r.top + budget * ((i + 0.5) / N);
+        window.scrollTo({ top: top, behavior: "smooth" });
+      });
+    });
+  })();
+
   // ---- Peso context: geo-detect, honest "≈", graceful fallback ----
   // Never block render; static fallback rate baked in.
   var PHP_PER_USD = 57; // baked-in fallback
@@ -1627,24 +1621,6 @@
       .catch(function () {});
   } catch (e) {}
 
-  // ---- Blog carousel dots (IntersectionObserver — scroll events are unreliable in some data-saver browsers) ----
-  (function () {
-    var list = document.querySelector(".tips-list");
-    var cards = list ? list.querySelectorAll(".tips-card") : [];
-    var dots = document.querySelectorAll(".tips-dots span");
-    if (!list || !cards.length || !dots.length) return;
-    function setDot(i) { dots.forEach(function (d, j) { d.classList.toggle("on", j === i); }); }
-    var cio = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (e.isIntersecting) setDot(Array.prototype.indexOf.call(cards, e.target));
-      });
-    }, { root: list, threshold: 0.6 });
-    cards.forEach(function (c) { cio.observe(c); });
-    // redundant trigger: some browsers throttle IO in nested scrollers
-    list.addEventListener("scroll", function () {
-      setDot(Math.round(list.scrollLeft / (list.scrollWidth - list.clientWidth) * (dots.length - 1)));
-    }, { passive: true });
-  })();
 
   // ---- Reveal on scroll (tiny IntersectionObserver) ----
   var io = new IntersectionObserver(function (entries) {
