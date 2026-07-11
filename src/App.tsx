@@ -448,9 +448,9 @@ export default function App() {
                }
             />
 
-            {/* Admin */}
+            {/* Admin — :tab? makes every panel tab linkable (/admin/relay, /admin/points, …) */}
             <Route
-               path="/admin"
+               path="/admin/:tab?"
                element={
                   <AdminGuard>
                      <AdminPanel />
