@@ -537,21 +537,46 @@
     padding: 16px; border-radius: var(--pill);
   }
 
-  /* The unlock moment comes alive as the section scrolls in — reuses the .reveal.in
-     trigger, so no extra JS. Credit-building progress, not a game. */
-  .sec-unlock .meter-box .bar i { width: 0; transition: width 1.15s cubic-bezier(.22,.61,.36,1) .15s; }
-  .sec-unlock .reveal.in .meter-box .bar i { width: 33%; }
-  .sec-unlock .meter-box .chip-up { opacity: 0; transform: translateX(-50%) translateY(7px) scale(.92); transition: opacity .45s ease, transform .5s cubic-bezier(.34,1.56,.64,1); }
-  .sec-unlock .reveal.in .meter-box .chip-up { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); transition-delay: .95s; }
-  .sec-unlock .reveal.in .meter-box .marks .mid { animation: unlockMid .6s ease 1.05s both; }
+  /* ---------- STORY BEAT MICRO-ANIMATIONS (George 07-12: every beat gets one
+     tiny motion cue, same spirit as beat 1's avatar pop). Initial-hidden states
+     are gated on .armed so the no-JS stacked fallback stays fully visible;
+     reduced-motion resets live in the media block at the end. ---------- */
+  /* Beat 2 — cash out: coin pair pops in, arrow nudges toward the pesos */
+  .sec-story.armed .coin-badge { opacity: 0; }
+  .sec-story.armed .story-screen.is-active .coin-badge { animation: unlockPop .6s cubic-bezier(.34,1.56,.64,1) .25s both; }
+  .sec-story .swap-box .arr { display: inline-block; }
+  .sec-story.armed .story-screen.is-active .swap-box .arr { animation: arrNudge .9s ease .85s 2; }
+  @keyframes arrNudge { 0%,100% { transform: translateX(0); } 50% { transform: translateX(5px); } }
+  /* Beats 3–5 — mini panels: the 3D object pops, the big number lands after */
+  .sec-story.armed .story-mini-panel .tile-obj { opacity: 0; }
+  .sec-story.armed .story-screen.is-active .story-mini-panel .tile-obj { animation: unlockPop .6s cubic-bezier(.34,1.56,.64,1) .2s both; }
+  .sec-story.armed .story-mini-panel .big { opacity: 0; }
+  .sec-story.armed .story-screen.is-active .story-mini-panel .big { animation: avPop .38s cubic-bezier(.34,1.56,.64,1) .5s both; }
+  /* Beat 4 — the tonight/tomorrow ledger rows tick in one after the other */
+  .sec-story.armed .story-mini-panel .row { opacity: 0; }
+  .sec-story.armed .story-screen.is-active .story-mini-panel .row { animation: avPop .3s ease .8s both; }
+  .sec-story.armed .story-screen.is-active .story-mini-panel .row + .row { animation-delay: .95s; }
+  /* Beat 6 — level up: ported intact from the retired standalone sec-unlock
+     (bar fills, +$5 chip pops, new-limit mark bumps, padlock springs open) */
+  .sec-story .lock-badge { transform-origin: 50% 68%; }
+  .sec-story.armed .story-screen.is-active .lock-badge { animation: unlockPop .72s cubic-bezier(.34,1.56,.64,1) .3s both; }
+  .sec-story.armed .meter-box .bar i { width: 0; transition: width 1.15s cubic-bezier(.22,.61,.36,1) .35s; }
+  .sec-story.armed .story-screen.is-active .meter-box .bar i { width: 33%; }
+  .sec-story.armed .meter-box .chip-up { opacity: 0; transform: translateX(-50%) translateY(7px) scale(.92); transition: opacity .45s ease, transform .5s cubic-bezier(.34,1.56,.64,1); }
+  .sec-story.armed .story-screen.is-active .meter-box .chip-up { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); transition-delay: .95s; }
+  .sec-story.armed .story-screen.is-active .meter-box .marks .mid { animation: unlockMid .6s ease 1.05s both; }
   @keyframes unlockMid { 0%,100% { transform: scale(1); } 45% { transform: scale(1.12); } }
-  .sec-unlock .lock-badge { transform-origin: 50% 68%; }
-  .sec-unlock .reveal.in .lock-badge { animation: unlockPop .72s cubic-bezier(.34,1.56,.64,1) .3s both; }
   @keyframes unlockPop { 0% { transform: scale(.84) rotate(-7deg); } 55% { transform: scale(1.06) rotate(3deg); } 100% { transform: scale(1) rotate(0); } }
   @media (prefers-reduced-motion: reduce) {
-    .sec-unlock .meter-box .bar i { width: 33%; transition: none; }
-    .sec-unlock .meter-box .chip-up { opacity: 1; transform: translateX(-50%); }
-    .sec-unlock .reveal.in .lock-badge, .sec-unlock .reveal.in .meter-box .marks .mid { animation: none; }
+    .sec-story.armed .coin-badge,
+    .sec-story.armed .story-mini-panel .tile-obj,
+    .sec-story.armed .story-mini-panel .big,
+    .sec-story.armed .story-mini-panel .row { opacity: 1; animation: none !important; }
+    .sec-story.armed .story-screen.is-active .swap-box .arr,
+    .sec-story.armed .story-screen.is-active .lock-badge,
+    .sec-story.armed .story-screen.is-active .meter-box .marks .mid { animation: none !important; }
+    .sec-story.armed .meter-box .bar i { width: 33%; transition: none; }
+    .sec-story.armed .meter-box .chip-up { opacity: 1; transform: translateX(-50%); transition: none; }
   }
 
   .stage.right .phone { transform: rotate(2.5deg); }
@@ -1096,17 +1121,19 @@
       <!-- UX critique 2026-07-11: "a real person chose to help" was asserted but never
            demonstrated — show what happens between "ask" and "3 people said yes". -->
       <ol class="steps">
+        <!-- Word-weight pass 07-12 (George: "the text here better") — fragments,
+             front-loaded verbs; George has a bigger card idea for this strip TBD -->
         <li>
           <span class="n">1</span>
-          <div><b>Ask</b><p>Tell us what you need and why — takes about 30 seconds, no documents to upload.</p></div>
+          <div><b>Ask</b><p>What you need and why — 30 seconds, no documents.</p></div>
         </li>
         <li>
           <span class="n">2</span>
-          <div><b>Real people say yes</b><p>Funders read your request and choose to help — usually within a few hours.</p></div>
+          <div><b>Real people say yes</b><p>Funders read it and choose to help — usually within a few hours.</p></div>
         </li>
         <li>
           <span class="n">3</span>
-          <div><b>Money arrives</b><p>The $15 lands in your app, ready to move to GCash. Give back $18 on Jul 30 — that’s the whole deal.</p></div>
+          <div><b>Money arrives</b><p>$15 lands ready for GCash. Give back $18 on Jul 30 — that’s the whole deal.</p></div>
         </li>
       </ol>
 
@@ -1118,38 +1145,9 @@
   </section>
 
   <!-- ============= PRODUCT MOMENT #2: UNLOCK ============= -->
-  <section class="sec-unlock">
-    <div class="wrap reveal">
-      <p class="label">It grows with you</p>
-      <!-- headline taken from the old sec-level when the duplicate section folded
-           into this one (2026-07-12) — both said the same thing twice -->
-      <h2 class="sec-h">Today it’s $15. Next time you’re covered for <span class="accent">more.</span></h2>
-      <p class="sec-lead">Every on-time repayment raises your limit. No paperwork — just keep your word.</p>
-
-      <div class="stage big">
-        <div class="stage-panel sky pad-lg">
-          <img class="sky-cloud" src="/landing/assets/clouds/cloud-3.svg" style="width:64px; top:14px; left:-8px" alt="" />
-          <img class="sky-cloud" src="/landing/assets/clouds/cloud-1.svg" style="width:80px; bottom:20px; right:-14px" alt="" />
-          <div class="phone upright tall">
-            <div class="phone-head"><span class="back">‹</span> Your credit</div>
-            <!-- 3D open padlock — asset #12 (George) -->
-            <img class="lock-badge" src="/landing/assets/icons/lock-open.png" alt="" />
-            <div class="statement">You’ve unlocked<br />your next level!</div>
-            <div class="meter-box">
-              <span class="chip-up">+$5</span>
-              <div class="bar"><i></i></div>
-              <div class="marks">
-                <span class="pre">Before<b>$15</b></span>
-                <span class="mid">New limit<b>$20</b></span>
-                <span class="goal">Goal<b>$60+</b></span>
-              </div>
-            </div>
-            <span class="cta-caps">Accept new limit</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <!-- The standalone unlock/level section was retired 2026-07-12: its card now
+       lives as Beat 6 of the scroll story above (George: "include this one too in
+       the beat scroll"). Card markup + meter/lock animations preserved there. -->
 
   <!-- ============= TRUST Q1: REAL PEOPLE ============= -->
   <!-- ============= SCROLL STORY: real people → no fees (Klarna scrollytelling) =============
@@ -1252,6 +1250,32 @@
             </div>
           </div>
 
+          <!-- Beat 6: it grows with you (George 07-12: the level-up card joins the
+               scroll run; the standalone sec-unlock section it came from is retired —
+               same card, now animated by is-active instead of reveal.in) -->
+          <div class="story-screen">
+            <div class="stage">
+              <div class="stage-panel sky">
+                <div class="phone upright tall">
+                  <div class="phone-head"><span class="back">‹</span> Your credit</div>
+                  <!-- 3D open padlock — asset #12 (George) -->
+                  <img class="lock-badge" src="/landing/assets/icons/lock-open.png" alt="" />
+                  <div class="statement">You’ve unlocked<br />your next level!</div>
+                  <div class="meter-box">
+                    <span class="chip-up">+$5</span>
+                    <div class="bar"><i></i></div>
+                    <div class="marks">
+                      <span class="pre">Before<b>$15</b></span>
+                      <span class="mid">New limit<b>$20</b></span>
+                      <span class="goal">Goal<b>$60+</b></span>
+                    </div>
+                  </div>
+                  <span class="cta-caps">Accept new limit</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <ol class="story-titles">
@@ -1274,6 +1298,10 @@
           <li><button type="button">
             <span class="story-t"><span class="accent">No</span> fees from our side.</span>
             <span class="story-cap"><span>Your money moves as digital dollars — no banks in the middle taking a cut, so we don’t need fees to survive.</span></span>
+          </button></li>
+          <li><button type="button">
+            <span class="story-t">It grows with <span class="accent">you.</span></span>
+            <span class="story-cap"><span>Today it’s $15. Repay on time and next time you’re covered for more — no paperwork, just keep your word.</span></span>
           </button></li>
         </ol>
       </div>
