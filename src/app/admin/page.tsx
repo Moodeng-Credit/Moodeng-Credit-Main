@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 
 import { useSelector } from 'react-redux';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { formatPointsMajor, iouPointsAwardRules, loanFundingPointsPerUsdc, pointsAwardRules, trustPointsAwardRules } from '@/shared/points';
 import type { RootState } from '@/store/store';
@@ -210,7 +211,14 @@ function hasPositivePoints(points: number | string) {
    return Number(formatPointsMajor(points)) > 0;
 }
 
-function initialAdminTab(): AdminTab {
+const ALL_ADMIN_TABS: readonly AdminTab[] = ['users', 'points', 'trust-points', 'defaults', 'requests', 'risk', 'self-lending', 'notifications', 'relay'];
+
+function isAdminTab(value: string): value is AdminTab {
+   return (ALL_ADMIN_TABS as readonly string[]).includes(value);
+}
+
+// Legacy ?tab= links (predate the /admin/:tab routes) keep working.
+function legacyQueryTab(): AdminTab {
    if (typeof window === 'undefined') return 'users';
    const tab = new URLSearchParams(window.location.search).get('tab');
    if (tab === 'iou' || tab === 'points') return 'points';
@@ -223,7 +231,12 @@ export default function AdminPanel() {
    // The Liquidity Relay share panel is gated to the two Moodeng funding admins (George/Emma).
    const isFundingAdmin = useIsFundingAdmin();
    const visibleNavItems = isFundingAdmin ? [...navItems, { id: 'relay' as const, label: 'Liquidity Relay' }] : navItems;
-   const [activeTab, setActiveTab] = useState<AdminTab>(() => initialAdminTab());
+   const navigate = useNavigate();
+   const { tab: tabParam } = useParams<{ tab?: string }>();
+   // The URL is the source of truth for the active tab: /admin/relay, /admin/points, …
+   // Bare /admin falls back to legacy ?tab= links, then the user directory.
+   const activeTab: AdminTab = tabParam && isAdminTab(tabParam) ? tabParam : legacyQueryTab();
+   const setActiveTab = (tab: AdminTab) => navigate(tab === 'users' ? '/admin' : `/admin/${tab}`);
    const [admin, setAdmin] = useState<AdminUser | null>(null);
    const [overview, setOverview] = useState<AdminOverview | null>(null);
    const [integrityRun, setIntegrityRun] = useState<AdminIntegrityRun | null>(null);
