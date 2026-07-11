@@ -25,6 +25,16 @@ Language rules baked in: every figure is **"expected", never promised**; never "
 
 Rules that bind this page: truth-only figures (no invented stats), no insider language (no "KYC"/"Didit"/"liveness" in user copy), stars/Facebook rating don't exist yet — don't add them. The 12–18% APY story stays in the deck, never on the page.
 
+## UX-critique pass on `index.html` (2026-07-11)
+
+Applied all 5 findings from George's external UX review (`~/Downloads/moodeng-ux-critique.pdf`, "Trust & Clarity — first-time borrower") to the live borrower page:
+
+1. **Hero speed signal (Critical):** hero reassure line "Not instant. Not pushy. Not a trap." → *"Funded by real people, usually within a few hours — no bank review, no waiting on hold."* The final-CTA line was re-phrased to match ("A real person has to say yes — usually within a few hours"). ⚠️ **"usually within a few hours" is a factual claim George must verify against real funding times before this ships.**
+2. **USDC disclosed on the loan card (Critical):** `.usdc-note` under Moment Card 1's foot — "Funds arrive as USDC, a digital dollar worth exactly $1." + "What's USDC?" linking to `#faq-usdc` (JS opens the `<details>` on arrival). Was FAQ-only before.
+3. **Mechanism steps (High):** `.steps` 3-card strip (Ask → Real people say yes → Money arrives) between Moment Card 1 and its CTA — the "real person" claim is now demonstrated, not asserted.
+4. **Verification named (Medium):** verify-note now says *"one quick ID check… Funders see the ✓, never your documents"* — replaces the vaguer "nothing about you is stored" (which was also an overclaim). NOT "World ID" — Emma's zero-jargon rule bans it in landing copy.
+5. **CTA commitment preview (Medium):** `.cta-note` "Takes about 2 minutes · no paperwork" under the hero CTA and the final CTA.
+
 ## How to run
 
 Static, no build step:
