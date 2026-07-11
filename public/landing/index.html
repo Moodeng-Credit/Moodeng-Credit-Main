@@ -188,11 +188,6 @@
     margin-top: 14px; font-size: 13.5px; font-weight: 600;
     color: var(--text-muted); letter-spacing: 0.01em;
   }
-  /* UX critique 2026-07-11: CTA must preview the commitment (time / steps) */
-  .cta-note {
-    margin-top: 10px; font-size: 12.5px; font-weight: 600;
-    color: var(--text-muted); letter-spacing: 0.01em;
-  }
 
   /* ---------- MOMENT CARD (phone frame) ---------- */
   .stage { position: relative; margin: 30px auto 0; width: 300px; max-width: 86%; }
@@ -914,11 +909,12 @@
         <h1>Small loans that <span class="accent">treat you right.</span></h1>
         <p class="hero-sub">When you can’t wait for payday, real people fund you — and the exact amount you’ll give back is on screen before you say yes.</p>
         <a class="cta" href="/request-board"><span class="btn-label">Start with your first small loan <span class="arrow">→</span></span></a>
-        <p class="cta-note">Takes about 2 minutes · no paperwork</p>
         <!-- UX critique 2026-07-11: "Not instant. Not pushy. Not a trap." said what we're
-             NOT without saying what we ARE — a stressed first-timer couldn't tell if this
-             helps them today. Give a real time-to-funds signal instead. -->
-        <p class="reassure">Funded by real people, usually within a few hours — no bank review, no waiting on hold.</p>
+             NOT without saying what we ARE — give real time-to-funds + commitment signals.
+             Klarna/Tilt rule (density pass, same day): ONE fragment line under a CTA, never
+             prose sentences — "no bank review, no waiting on hold" argumentation moved out;
+             the steps strip's card 2 carries that mechanism. -->
+        <p class="reassure">About 2 minutes to ask · funded in a few hours · no paperwork</p>
       </div>
     </div>
   </header>
@@ -1341,10 +1337,8 @@
       <img class="hippo" src="/landing/assets/hippos/party.png" alt="" /> -->
       <h2 class="sec-h">Next time you’re short, you have somewhere to <span class="accent">turn.</span></h2>
       <a class="cta" href="/request-board"><span class="btn-label">Start with your first small loan <span class="arrow">→</span></span></a>
-      <p class="cta-note">Takes about 2 minutes · no paperwork</p>
-      <!-- UX critique 2026-07-11: hero now carries the time-to-funds signal ("usually
-           within a few hours"); this line keeps the honest mechanism framing without
-           re-opening the "how long?" question with a bare "not instant". -->
+      <!-- UX critique 2026-07-11 + density pass: one line only under a CTA. The hero
+           carries the fragment facts; down here the single human closer stays. -->
       <p class="reassure">A real person has to say yes — usually within a few hours. You’ll know the moment someone does.</p>
     </div>
   </section>
