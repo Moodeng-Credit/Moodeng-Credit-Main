@@ -5,6 +5,7 @@
     { "src": "^/how-to-cash-out/?$", "dest": "/landing/how-to-cash-out.html" },
     { "src": "^/how-to-repay/?$", "dest": "/landing/how-to-repay.html" },
     { "src": "^/about/?$", "dest": "/landing/about.html" },
+    { "src": "^/for-lenders/?$", "dest": "/landing/for-lenders.html" },
     {
       "src": "^/assets/(.*)\\.wasm$",
       "headers": { "Content-Type": "application/wasm" },
