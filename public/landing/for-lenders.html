@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
 <link rel="apple-touch-icon" href="/landing/assets/brand/moodeng-logo.png" />
-<title>Moodeng Credit for lenders — be the person who said yes</title>
-<meta name="description" content="Real people ask for small loans — $15, $20, $40 — with the payback amount and date set upfront. You read their reason, choose who to fund, and get the full payback when they repay." />
+<title>Moodeng for lenders — person-to-person lending, simplified</title>
+<meta name="description" content="Fund real, verified borrowers from $15. See the reason, the record, and the exact payback before a peso moves. Most loans repay in 2–4 weeks." />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Moodeng Credit" />
-<meta property="og:title" content="Moodeng Credit for lenders — be the person who said yes" />
-<meta property="og:description" content="Read real requests, choose who to fund, and get the full payback when they repay. Verified borrowers, terms set upfront, starting at $15." />
+<meta property="og:title" content="Moodeng for lenders — person-to-person lending, simplified" />
+<meta property="og:description" content="Fund real, verified borrowers from $15. See the reason, the record, and the exact payback before a peso moves." />
 <meta property="og:url" content="https://moodeng.app/for-lenders" />
 <meta property="og:image" content="https://moodeng.app/landing/assets/og/og-share.jpg" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -18,7 +18,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..700&family=Archivo+Black&family=Fraunces:ital,opsz,wght@1,9..144,400..600&display=swap" rel="stylesheet" />
 <style>
-  /* Tokens + base copied from the main landing page (index.html) — keep in sync */
+  /* ============================================================
+     FOR LENDERS — Percent.com information architecture, Moodeng skin.
+     Anatomy copied from the saved percent.com capture (hero panel →
+     benchmark chart → 01-04 education → "Enter" → thesis cards → CTA
+     band → feature rows → deal cards → testimonials → eligibility
+     quiz), rebuilt with our tokens, Tilt moment-card motif, and
+     truth-only figures. Tokens from index.html — keep in sync.
+     ============================================================ */
   :root {
     --lavender: #8336F0;
     --purple: #6010D2;
@@ -34,20 +41,27 @@
     --success: #0D7A3C;
     --panel: #C9A8F5;
     --card-tint: #F7F0FE;
+    --night: #100626;
     --pill: 500px;
     --display: "Archivo Black", "Archivo", -apple-system, BlinkMacSystemFont, sans-serif;
     --sans: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --serif: "Fraunces", Georgia, "Times New Roman", serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { -webkit-text-size-adjust: 100%; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
   body { font-family: var(--sans); color: var(--heading); background: var(--surface); line-height: 1.5; overflow-x: hidden; }
   img { display: block; max-width: 100%; }
   .accent { font-family: var(--serif); font-style: italic; font-weight: 500; letter-spacing: -0.01em; }
   .label { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--purple); }
   .wrap { width: 100%; max-width: 480px; margin: 0 auto; padding: 0 22px; }
+  h2.sec-h { font-family: var(--display); font-size: 30px; line-height: 1.08; letter-spacing: -0.02em; margin: 12px 0 0; }
+  h2.sec-h .accent { color: var(--purple); font-weight: 500; }
+  .sec-lead { margin-top: 14px; font-size: 16px; color: var(--text-soft); max-width: 36ch; }
+  .sec-lead b { color: var(--heading); }
+  /* fine print under every number — the Percent move */
+  .fine { margin-top: 14px; font-size: 11.5px; line-height: 1.5; color: var(--text-muted); }
 
-  /* Klarna-minimal header (same as landing): wordmark only, transparent, frosted on scroll */
+  /* ---------- header + drawer (same as landing) ---------- */
   .site-head { position: sticky; top: 0; z-index: 50; background: transparent; transition: background .25s ease, box-shadow .25s ease; }
   .site-head.scrolled { background: rgba(253,252,253,0.86); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 1px 0 rgba(4,0,51,0.08); }
   .site-head .wrap { display: flex; align-items: center; padding-top: 12px; padding-bottom: 12px; }
@@ -57,51 +71,108 @@
   .site-head .menu-pill { background: var(--lavender-bg); width: 48px; height: 40px; color: var(--heading); margin-right: 13px; }
   .head-signin { display: inline-flex; align-items: center; gap: 7px; background: var(--heading); color: #fff; font-size: 13.5px; font-weight: 700; padding: 9px 16px 9px 14px; border-radius: var(--pill); text-decoration: none; margin-right: 2px; white-space: nowrap; }
 
-  /* page hero */
-  .hiw-hero {
-    padding: 40px 0 46px; text-align: center;
-    background: radial-gradient(130% 90% at 50% -20%, #ffffff 0%, var(--lavender-bg) 55%, #EADCFC 100%);
+  /* ---------- HERO: Percent's inset gradient panel, our palette ---------- */
+  .hero-lend { padding: 10px 10px 0; }
+  .hero-panel {
+    position: relative; border-radius: 28px; overflow: hidden;
+    background:
+      radial-gradient(140% 110% at 80% -10%, #7A2BE8 0%, #4A0BB4 45%, var(--night) 100%);
+    padding: 46px 0 50px; text-align: center; color: #fff;
   }
-  .hiw-hero h1 {
-    font-family: var(--display); font-size: 34px; line-height: 1.05; letter-spacing: -0.02em;
-    margin: 10px 0 0;
+  .hero-panel .label { color: #D9C2FB; }
+  .hero-panel h1 {
+    font-family: var(--display); font-size: 38px; line-height: 1.02; letter-spacing: -0.03em;
+    margin: 12px auto 0; max-width: 12ch; color: #fff;
   }
-  .hiw-hero h1 .accent { color: var(--purple); font-weight: 500; }
-  .hiw-hero .sub { margin: 14px auto 0; font-size: 15.5px; color: var(--text-soft); max-width: 32ch; }
-  .hiw-hero .sub b { color: var(--heading); }
-  /* section hippos (product mascots, served from the app's /hippos/ — no copying needed) */
-  .hero-hippo, .cta-hippo {
-    width: 112px; margin: 0 auto 8px; display: block;
-    filter: drop-shadow(0 10px 20px rgba(96,16,210,0.2));
-    animation: bob 5s ease-in-out infinite;
-  }
+  .hero-panel h1 .accent { color: #C9A8F5; font-weight: 500; }
+  .hero-sub { margin: 16px auto 0; font-size: 15.5px; line-height: 1.55; color: #D9CCEF; max-width: 34ch; }
+  .hero-sub b { color: #fff; }
+  .hero-points { margin: 22px auto 0; max-width: 340px; text-align: left; display: flex; flex-direction: column; gap: 11px; }
+  .hero-points li { list-style: none; display: flex; gap: 10px; font-size: 14px; line-height: 1.45; color: #E7DDF8; }
+  .hero-points li b { color: #fff; }
+  .hero-points .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: #C9A8F5; margin-top: 7px; }
+  .hero-hippo { width: 96px; margin: 0 auto 4px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.35)); animation: bob 5s ease-in-out infinite; }
   @keyframes bob { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-6px) } }
-  @media (prefers-reduced-motion: reduce) { .hero-hippo, .cta-hippo { animation: none; } }
-
-  /* sections */
-  .sec-step { padding: 56px 0 60px; }
-  .sec-step:nth-of-type(even) { background: var(--surface-muted); }
-  .step-num {
-    display: inline-grid; place-items: center;
-    width: 44px; height: 44px; border-radius: 50%;
-    background: var(--heading); color: #fff;
-    font-family: var(--display); font-size: 19px;
+  @media (prefers-reduced-motion: reduce) { .hero-hippo { animation: none; } }
+  .cta {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: #fff; color: var(--heading); font-weight: 800; font-size: 15.5px;
+    padding: 15px 26px; border-radius: var(--pill); text-decoration: none; margin-top: 26px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+    transition: transform .15s ease, box-shadow .15s ease;
   }
-  h2.sec-h { font-family: var(--display); font-size: 32px; line-height: 1.06; letter-spacing: -0.02em; margin: 12px 0 0; }
-  h2.sec-h .accent { color: var(--purple); font-weight: 500; }
-  .sec-lead { margin-top: 16px; font-size: 16.5px; color: var(--text-soft); max-width: 32ch; }
-  .sec-lead b { color: var(--heading); }
-  .tile-h { font-family: var(--display); font-size: 25px; letter-spacing: -0.01em; color: var(--heading); margin: 14px 0 0; line-height: 1.15; }
-  .tile-h .accent { color: var(--purple); font-weight: 500; }
-  .tile-cap { margin-top: 8px; font-size: 15px; color: var(--text-muted); line-height: 1.5; max-width: 34ch; }
-  .tile-cap b { color: var(--heading); }
+  .cta.dark { background: var(--heading); color: #fff; box-shadow: 0 10px 24px rgba(4,0,51,0.22); }
+  .cta:hover { transform: translateY(-2px); }
+  .cta .arrow { transition: transform .15s ease; }
+  .cta:hover .arrow { transform: translateX(3px); }
+  .hero-risklink { display: block; margin-top: 14px; font-size: 13px; font-weight: 700; color: #C9A8F5; text-decoration: none; }
+  .hero-risklink:hover { text-decoration: underline; }
 
-  /* moment card (phone frame) — same anatomy as landing */
-  .stage { position: relative; margin: 28px auto 0; width: 300px; max-width: 86%; }
+  /* ---------- S2: AGAINST THE STREET (their benchmark chart, our fight) ---------- */
+  .sec-vs { padding: 62px 0 60px; background: var(--surface); }
+  .chart-card {
+    margin-top: 28px; background: #fff; border: 1px solid #EFE6FB; border-radius: 20px;
+    padding: 22px 18px 18px; box-shadow: 0 14px 34px rgba(96,16,210,0.08);
+  }
+  .chart-card .ct { font-size: 13px; font-weight: 800; }
+  .chart-card .cs { font-size: 11.5px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+  .vs-chart { position: relative; margin-top: 40px; display: grid; grid-template-columns: 34px repeat(3, 1fr); height: 240px; }
+  .vs-y { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; padding-right: 8px; }
+  .vs-y span { font-size: 10px; color: var(--text-muted); font-weight: 600; transform: translateY(-4px); }
+  .vs-grid { position: absolute; left: 34px; right: 0; top: 0; bottom: 0; pointer-events: none; }
+  .vs-grid i { position: absolute; left: 0; right: 0; height: 1px; background: #EFE6FB; }
+  .vs-col { position: relative; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 8px; }
+  .vs-bar { width: 100%; max-width: 74px; background: #DCD4E8; border-radius: 8px 8px 0 0; position: relative; }
+  .vs-col.pop .vs-bar { background: linear-gradient(180deg, var(--lavender), var(--purple)); }
+  .vs-val { position: absolute; left: 50%; transform: translateX(-50%); top: -26px; font-family: var(--display); font-size: 17px; white-space: nowrap; }
+  .vs-col.pop .vs-val { color: #fff; top: auto; bottom: 10px; font-size: 16px; }
+  .vs-cap {
+    position: absolute; left: 50%; transform: translate(-50%, -50%);
+    background: #fff; border: 1.5px dashed var(--lavender); color: var(--purple);
+    font-size: 9.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+    padding: 5px 10px; border-radius: var(--pill); white-space: nowrap; z-index: 2;
+  }
+  .vs-lb { display: grid; grid-template-columns: 34px repeat(3, 1fr); margin-top: 12px; }
+  .vs-lb > div { padding: 0 6px; text-align: center; font-size: 12px; line-height: 1.3; color: var(--text-soft); font-weight: 600; }
+  .vs-lb > div.pop { color: var(--purple); font-weight: 800; }
+  .vs-lb small { display: block; font-size: 10px; color: var(--text-muted); margin-top: 2px; font-weight: 600; }
+
+  /* stat chips w/ count-up (their data-count pattern) */
+  .stat-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+  .stat-chip {
+    flex: 1 1 45%; background: #fff; border: 1px solid #EFE6FB; border-radius: 16px;
+    padding: 14px 14px 12px;
+  }
+  .stat-chip .n { font-family: var(--display); font-size: 24px; color: var(--heading); line-height: 1.05; }
+  .stat-chip .n sup { font-size: .55em; }
+  .stat-chip .k { font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-top: 3px; line-height: 1.35; }
+
+  /* ---------- S3: EDUCATION 01-04 (their "What is private credit?") ---------- */
+  .sec-learn { padding: 62px 0 64px; background: var(--surface-muted); }
+  .learn-steps { margin-top: 8px; }
+  .learn-step { padding: 26px 0 8px; }
+  .learn-step .num { font-family: var(--display); font-size: 15px; color: var(--lavender); letter-spacing: .08em; }
+  .learn-step h3 { font-family: var(--display); font-size: 21px; letter-spacing: -0.01em; margin-top: 6px; line-height: 1.2; }
+  .learn-step p { margin-top: 8px; font-size: 14.5px; line-height: 1.55; color: var(--text-soft); max-width: 38ch; }
+  .learn-step p b { color: var(--heading); }
+  .market-panel {
+    margin-top: 30px; border-radius: 20px; text-align: center;
+    background: radial-gradient(120% 100% at 30% 0%, #F2E6FE 0%, #E4CFFB 100%);
+    padding: 28px 20px 22px;
+  }
+  .market-panel .big { font-family: var(--display); font-size: 34px; color: var(--heading); }
+  .market-panel .k { font-size: 12.5px; font-weight: 700; color: var(--text-soft); margin-top: 4px; }
+  .market-panel .grow { display: inline-block; margin-top: 10px; background: #fff; color: var(--purple); font-size: 11px; font-weight: 800; letter-spacing: .08em; padding: 6px 12px; border-radius: var(--pill); }
+
+  /* ---------- S4: ENTER MOODENG ---------- */
+  .sec-enter { padding: 60px 0 64px; background: var(--surface); text-align: left; }
+
+  /* phone frame w/ real app screen (Tilt moment-card anatomy, from the guides) */
+  .stage { position: relative; margin: 30px auto 0; width: 300px; max-width: 86%; }
   .stage-panel {
     position: relative;
     background: radial-gradient(120% 90% at 20% 10%, #E4D2FB 0%, var(--panel) 60%, #B892F0 100%);
-    border-radius: 30px; padding: 30px 20px 26px;
+    border-radius: 30px; padding: 26px 20px 24px;
     box-shadow: 0 24px 50px rgba(96,16,210,0.28);
   }
   .stage-panel::before {
@@ -113,156 +184,129 @@
     background-size: 90px 90px, 120px 120px, 140px 140px;
     opacity: 0.5; pointer-events: none;
   }
-  .stage.right .phone { transform: rotate(2.5deg); }
-  .phone {
-    position: relative; background: #fff; border-radius: 22px;
-    padding: 14px 14px 16px; transform: rotate(-3deg);
-    box-shadow: 0 16px 34px rgba(28,5,61,0.22), 0 2px 0 rgba(255,255,255,0.6) inset;
-  }
-  .phone.shot { padding: 10px; }
+  .phone { position: relative; background: #fff; border-radius: 22px; padding: 10px; transform: rotate(-3deg); box-shadow: 0 16px 34px rgba(28,5,61,0.22), 0 2px 0 rgba(255,255,255,0.6) inset; }
   .phone .screen { border-radius: 14px; width: 100%; }
-  .phone-head {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em;
-    color: var(--text-muted); text-transform: uppercase; padding: 2px 2px 12px;
-  }
-  .phone-head .back { font-size: 15px; color: var(--heading); }
-  .inner {
-    position: relative; background: var(--card-tint);
-    border: 1px solid var(--lavender-border); border-radius: 16px;
-    padding: 16px 15px 15px;
-  }
-  /* 3D object overlapping the tinted card's top edge (Tilt treatment):
-     height ≈ 28% of card width, 55% floating above / 45% dipping on */
-  .card-obj {
-    position: absolute; left: 50%; top: 0;
-    height: 64px; transform: translate(-50%, -55%);
-    z-index: 2; pointer-events: none;
-    filter: drop-shadow(0 10px 14px rgba(28,5,61,0.2));
-  }
-  .inner.pad-obj { padding-top: 42px; }
-  .phone.has-obj .phone-head { padding-bottom: 42px; }
-  .inner .reason { font-size: 13px; font-weight: 700; color: var(--text-soft); }
-  .inner .reason .emoji { margin-right: 5px; }
-  .statement {
-    font-family: var(--display); font-size: 20px; line-height: 1.12; letter-spacing: -0.01em;
-    color: var(--heading); margin: 10px 0 12px;
-  }
-  .amt-pill {
-    display: inline-block; background: var(--lavender);
-    color: #fff; font-family: var(--display); font-size: 20px;
-    padding: 2px 12px; border-radius: var(--pill);
-    transform: translateY(1px);
-  }
-  .verified-line {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: var(--success-bg); color: var(--success);
-    font-size: 11px; font-weight: 800; letter-spacing: .04em;
-    padding: 4px 10px; border-radius: var(--pill); margin-bottom: 10px;
-  }
-  .terms-row { display: flex; gap: 8px; margin-top: 4px; }
-  .chip {
-    flex: 1; text-align: center; background: #fff;
-    border: 1px solid var(--lavender-border); border-radius: 12px;
-    padding: 9px 6px;
-  }
-  .chip .k { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; }
-  .chip .v { font-size: 15px; font-weight: 800; color: var(--heading); margin-top: 3px; }
-  .card-cta {
-    display: block; text-align: center; margin-top: 14px;
-    background: var(--heading); color: #fff;
-    font-weight: 800; font-size: 13.5px; letter-spacing: 0.02em;
-    padding: 13px; border-radius: var(--pill);
-  }
-  .card-foot {
-    margin-top: 11px; text-align: center;
-    font-size: 11.5px; font-weight: 600; color: var(--text-soft); line-height: 1.35;
-  }
-  .card-foot b { color: var(--heading); }
   .shot-note { margin-top: 16px; font-size: 12px; font-weight: 600; color: var(--text-muted); text-align: center; }
 
-  /* Tilt-style claim tiles (same as landing sec-terms) */
-  .tiles { margin-top: 30px; display: grid; gap: 38px; }
-  .tile-panel {
-    position: relative; border-radius: 24px; padding: 34px 22px;
-    display: grid; place-items: center;
-    background: radial-gradient(120% 100% at 30% 0%, #F2E6FE 0%, #E4CFFB 100%);
+  /* ---------- S5: WHAT YOU'D BE FUNDING (their thesis cards) ---------- */
+  .sec-thesis { padding: 62px 0 60px; background: var(--night); }
+  .sec-thesis .label { color: #C9A8F5; }
+  .sec-thesis .sec-h { color: #fff; }
+  .sec-thesis .sec-h .accent { color: #C9A8F5; }
+  .sec-thesis .sec-lead { color: #B6A8CC; }
+  .thesis-cards { margin-top: 26px; display: grid; gap: 10px; }
+  .th-card {
+    background: rgba(201,168,245,0.07); border: 1px solid rgba(201,168,245,0.16);
+    border-radius: 16px; padding: 16px 18px 15px;
   }
-  .tile-obj { position: absolute; pointer-events: none; z-index: 1; }
-  .mini {
-    background: #fff; border-radius: 16px; padding: 16px 20px;
-    box-shadow: 0 10px 26px rgba(28,5,61,0.16);
-    text-align: center; min-width: 190px;
-  }
-  .mini .k { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); }
-  .mini .big { font-family: var(--display); font-size: 30px; color: var(--heading); line-height: 1.1; margin-top: 4px; }
-  .mini .tiny { font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-top: 8px; }
+  .th-card h4 { font-family: var(--display); font-size: 15.5px; color: #fff; letter-spacing: 0; }
+  .th-card p { margin-top: 5px; font-size: 13px; line-height: 1.5; color: #B6A8CC; }
+  .th-card p b { color: #E7DDF8; }
 
-  /* the honest part (dark, mirrors landing's "we treat you like a person") */
-  .sec-honest { background: #100626; padding: 66px 0 70px; position: relative; overflow: hidden; }
+  /* ---------- S6: FEATURE ROWS (their "Built for modern investors") ---------- */
+  .sec-built { padding: 62px 0 58px; background: var(--surface); }
+  .feat-list { margin-top: 10px; }
+  .feat { display: flex; gap: 14px; padding: 20px 0; border-bottom: 1px solid #EFE6FB; }
+  .feat:last-child { border-bottom: 0; }
+  .feat .ic {
+    flex: none; width: 44px; height: 44px; border-radius: 14px; background: var(--lavender-bg);
+    display: grid; place-items: center; color: var(--purple);
+  }
+  .feat .ic svg { width: 22px; height: 22px; }
+  .feat h4 { font-family: var(--display); font-size: 16px; letter-spacing: 0; }
+  .feat p { margin-top: 4px; font-size: 13.5px; line-height: 1.5; color: var(--text-muted); max-width: 40ch; }
+  .feat p b { color: var(--heading); }
+
+  /* ---------- S7: RECENT LOANS (their deal cards — ours are REAL) ---------- */
+  .sec-deals { padding: 62px 0 58px; background: var(--surface-muted); }
+  .deal-list { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 24px -22px 0; padding: 6px 22px 16px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .deal-list::-webkit-scrollbar { display: none; }
+  .deal {
+    flex: 0 0 236px; scroll-snap-align: start; background: #fff; border: 1px solid #EFE6FB;
+    border-radius: 18px; padding: 16px 16px 14px; box-shadow: 0 10px 26px rgba(96,16,210,0.07);
+  }
+  .deal .dt { font-size: 13.5px; font-weight: 800; line-height: 1.3; min-height: 36px; }
+  .deal .rows { margin-top: 12px; display: flex; flex-direction: column; gap: 7px; }
+  .deal .r { display: flex; justify-content: space-between; font-size: 12px; }
+  .deal .r .k { color: var(--text-muted); font-weight: 600; }
+  .deal .r .v { font-weight: 800; }
+  .deal .st {
+    display: inline-flex; align-items: center; gap: 5px; margin-top: 12px;
+    background: var(--success-bg); color: var(--success);
+    font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: var(--pill);
+  }
+
+  /* ---------- S8: BORROWER VIDEOS ---------- */
+  .sec-say { padding: 60px 0 56px; background: var(--surface); text-align: center; }
+  .vidrow { display: flex; gap: 12px; margin-top: 22px; justify-content: center; }
+  .vid { position: relative; flex: 1; max-width: 158px; aspect-ratio: 9 / 14; border-radius: 18px; overflow: hidden; display: block; background: #17082F; box-shadow: 0 14px 30px rgba(64,10,140,0.22); }
+  .vid img { width: 100%; height: 100%; object-fit: cover; opacity: 0.85; }
+  .vid .play { position: absolute; inset: 0; display: grid; place-items: center; }
+  .vid .play span { width: 46px; height: 46px; border-radius: var(--pill); background: #fff; display: grid; place-items: center; color: var(--purple); font-size: 17px; padding-left: 4px; box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
+  .vid .tag { position: absolute; left: 10px; right: 10px; bottom: 10px; text-align: left; color: #fff; font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; text-shadow: 0 2px 6px rgba(0,0,0,0.55); }
+
+  /* ---------- S9: QUIZ (their eligibility stepper, honesty-gated) ---------- */
+  .sec-quiz { padding: 62px 0 64px; background: var(--surface-muted); }
+  .quiz-box { margin-top: 24px; background: #fff; border: 1px solid #EFE6FB; border-radius: 20px; padding: 24px 20px 22px; box-shadow: 0 14px 34px rgba(96,16,210,0.08); position: relative; min-height: 240px; }
+  .q-pips { display: flex; gap: 6px; margin-bottom: 18px; }
+  .q-pips span { width: 26px; height: 26px; border-radius: 50%; background: var(--lavender-bg); color: var(--purple); display: grid; place-items: center; font-size: 12px; font-weight: 800; transition: all .25s; }
+  .q-pips span.on { background: var(--purple); color: #fff; }
+  .q-pips span.done { background: var(--lavender); color: #fff; }
+  .q-step, .q-res { display: none; }
+  .q-step.on, .q-res.on { display: block; animation: qfade .3s ease; }
+  @keyframes qfade { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none; } }
+  .q-step h3, .q-res h3 { font-family: var(--display); font-size: 19px; line-height: 1.25; letter-spacing: -0.01em; }
+  .q-step p, .q-res p { margin-top: 8px; font-size: 13.5px; line-height: 1.5; color: var(--text-muted); }
+  .q-btns { display: flex; gap: 8px; margin-top: 18px; }
+  .q-btn { flex: 1; border: 1.5px solid var(--lavender-border); background: #fff; color: var(--heading); font-family: var(--sans); font-size: 14px; font-weight: 800; padding: 13px; border-radius: var(--pill); cursor: pointer; transition: all .15s; }
+  .q-btn:hover { border-color: var(--lavender); color: var(--purple); }
+  .q-btn.yes { background: var(--heading); border-color: var(--heading); color: #fff; }
+  .q-res .cta { margin-top: 18px; }
+  .q-restart { display: inline-block; margin-top: 14px; font-size: 12.5px; font-weight: 700; color: var(--text-muted); background: none; border: 0; cursor: pointer; text-decoration: underline; }
+
+  /* ---------- S10: THE HONEST PART (dark disclosures) ---------- */
+  .sec-honest { background: var(--night); padding: 64px 0 66px; position: relative; overflow: hidden; }
   .sec-honest .label { color: #C9A8F5; }
   .sec-honest .sec-h { color: #fff; }
   .sec-honest .sec-h .accent { color: #C9A8F5; }
   .sec-honest .sec-lead { color: #B6A8CC; }
   .sec-honest .dcloud { position: absolute; opacity: 0.5; filter: brightness(0.24) saturate(0.6); pointer-events: none; }
-  .honest-note {
-    margin-top: 30px; padding: 18px 20px; border-radius: 16px;
-    background: rgba(201,168,245,0.08); border: 1px solid rgba(201,168,245,0.16);
-    font-size: 14px; line-height: 1.5; color: #C4B5DD;
-  }
+  .honest-note { margin-top: 26px; padding: 18px 20px; border-radius: 16px; background: rgba(201,168,245,0.08); border: 1px solid rgba(201,168,245,0.16); font-size: 14px; line-height: 1.5; color: #C4B5DD; }
   .honest-note b { color: #fff; }
   .honest-note + .honest-note { margin-top: 12px; }
 
-  /* FAQ (same as landing) */
-  .sec-faq { background: var(--surface); padding: 56px 0 62px; }
+  /* ---------- FAQ ---------- */
+  .sec-faq { background: var(--surface); padding: 58px 0 60px; }
+  .tile-h { font-family: var(--display); font-size: 25px; letter-spacing: -0.01em; color: var(--heading); margin: 14px 0 0; line-height: 1.15; }
+  .tile-h .accent { color: var(--purple); font-weight: 500; }
   .faq-list { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
   .faq-list details { background: #fff; border: 1px solid #EFE6FB; border-radius: 16px; padding: 0 18px; }
-  .faq-list summary {
-    cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px;
-    padding: 16px 0; font-size: 15px; font-weight: 800; color: var(--heading);
-  }
+  .faq-list summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 0; font-size: 15px; font-weight: 800; color: var(--heading); }
   .faq-list summary::-webkit-details-marker { display: none; }
   .faq-list summary::after { content: "+"; font-family: var(--display); font-size: 18px; color: var(--purple); flex: 0 0 auto; }
   .faq-list details[open] summary::after { content: "–"; }
   .faq-list .a { padding: 0 0 16px; font-size: 14.5px; line-height: 1.55; color: var(--text-muted); }
   .faq-list .a b { color: var(--heading); }
 
-  /* final CTA */
-  .sec-final {
-    text-align: center; padding: 64px 0 72px;
-    background: radial-gradient(130% 100% at 50% 100%, #DCC4FA 0%, var(--lavender-bg) 55%, #ffffff 100%);
-  }
+  /* ---------- FINAL CTA ---------- */
+  .sec-final { text-align: center; padding: 64px 0 72px; background: radial-gradient(130% 100% at 50% 100%, #DCC4FA 0%, var(--lavender-bg) 55%, #ffffff 100%); }
   .sec-final h2 { font-family: var(--display); font-size: 29px; line-height: 1.08; letter-spacing: -0.02em; margin: 12px 0 0; }
   .sec-final h2 .accent { color: var(--purple); font-weight: 500; }
-  .cta {
-    display: inline-flex; align-items: center; gap: 10px;
-    background: var(--heading); color: #fff; font-weight: 700; font-size: 16px;
-    padding: 15px 26px; border-radius: var(--pill); text-decoration: none; margin-top: 26px;
-    box-shadow: 0 10px 24px rgba(4,0,51,0.22);
-    transition: transform .15s ease, box-shadow .15s ease;
-  }
-  .cta:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(4,0,51,0.28); }
-  .cta .arrow { transition: transform .15s ease; }
-  .cta:hover .arrow { transform: translateX(3px); }
+  .cta-hippo { width: 112px; margin: 0 auto 8px; display: block; filter: drop-shadow(0 10px 20px rgba(96,16,210,0.2)); animation: bob 5s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .cta-hippo { animation: none; } }
+  .reassure { margin-top: 14px; font-size: 13.5px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.01em; }
 
-  /* Sign in / browse links leave this static site for the real app — spinner on tap
-     (same pattern as landing; see index.html for rationale) */
+  /* spinner-on-tap for app links (same rationale as landing) */
   .head-signin, .cta, .d-foot a { position: relative; }
   .btn-label { display: inline-flex; align-items: center; gap: inherit; transition: opacity .15s ease; }
   .is-loading { pointer-events: none; }
   .is-loading .btn-label { opacity: 0; }
-  .is-loading::after {
-    content: ""; position: absolute; top: 50%; left: 50%;
-    width: 16px; height: 16px; margin: -8px 0 0 -8px;
-    border: 2px solid currentColor; border-top-color: transparent;
-    border-radius: 50%; animation: btnSpin .7s linear infinite;
-  }
+  .is-loading::after { content: ""; position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: btnSpin .7s linear infinite; }
   @keyframes btnSpin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { .is-loading::after { animation-duration: 1.3s; } }
-  .reassure { margin-top: 14px; font-size: 13.5px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.01em; }
 
   /* footer (same as landing, short form) */
-  .site-footer { background: #100626; padding: 52px 0 0; color: #B6A8CC; font-size: 13.5px; overflow: hidden; }
+  .site-footer { background: var(--night); padding: 52px 0 0; color: #B6A8CC; font-size: 13.5px; overflow: hidden; }
   .site-footer .f-brand { display: flex; align-items: center; gap: 10px; }
   .site-footer .f-brand img { width: 40px; }
   .site-footer .f-brand b { font-family: var(--display); font-size: 20px; color: #fff; letter-spacing: -0.01em; }
@@ -273,50 +317,23 @@
   .f-cols a:hover { color: #C9A8F5; }
   .f-fine { margin-top: 34px; padding-top: 18px; border-top: 1px solid rgba(201,168,245,0.16); font-size: 12px; color: #8B7BA8; padding-bottom: 26px; }
 
-  /* Left slide-in menu drawer (same as landing) */
-  .drawer {
-    position: fixed; inset: 0; z-index: 100;
-    background: rgba(16, 6, 38, 0.42);
-    opacity: 0; visibility: hidden;
-    transition: opacity .28s ease, visibility .28s ease;
-  }
+  /* drawer (same as landing) */
+  .drawer { position: fixed; inset: 0; z-index: 100; background: rgba(16, 6, 38, 0.42); opacity: 0; visibility: hidden; transition: opacity .28s ease, visibility .28s ease; }
   .drawer.open { opacity: 1; visibility: visible; }
-  .drawer-panel {
-    position: absolute; top: 0; left: 0; bottom: 0;
-    width: 88%; max-width: 420px;
-    background: var(--surface); overflow-y: auto;
-    display: flex; flex-direction: column;
-    padding: 16px 24px 34px;
-    box-shadow: 0 0 60px rgba(28, 5, 61, 0.25);
-    transform: translateX(-100%);
-    transition: transform .34s cubic-bezier(.32, .72, 0, 1);
-  }
+  .drawer-panel { position: absolute; top: 0; left: 0; bottom: 0; width: 88%; max-width: 420px; background: var(--surface); overflow-y: auto; display: flex; flex-direction: column; padding: 16px 24px 34px; box-shadow: 0 0 60px rgba(28, 5, 61, 0.25); transform: translateX(-100%); transition: transform .34s cubic-bezier(.32, .72, 0, 1); }
   .drawer.open .drawer-panel { transform: none; }
   .drawer-head { display: flex; align-items: center; padding: 6px 0 22px; }
-  .drawer-x {
-    width: 52px; height: 44px; border-radius: var(--pill); border: none; cursor: pointer;
-    background: var(--lavender-bg); color: var(--heading);
-    display: flex; align-items: center; justify-content: center;
-    transition: transform .12s ease, background-color .15s ease;
-  }
+  .drawer-x { width: 52px; height: 44px; border-radius: var(--pill); border: none; cursor: pointer; background: var(--lavender-bg); color: var(--heading); display: flex; align-items: center; justify-content: center; transition: transform .12s ease, background-color .15s ease; }
   .drawer-x:hover { background: var(--lavender-border); }
   .drawer-x:active { transform: scale(0.88); background: var(--lavender-border); }
   @media (prefers-reduced-motion: reduce) { .drawer-x { transition: background-color .15s ease; } .drawer-x:active { transform: none; } }
   .drawer-links { display: flex; flex-direction: column; }
   .drawer-links a, .d-group > summary { text-decoration: none; color: var(--heading); }
   .d-top, .d-group { border-bottom: 1px solid var(--lavender-border); }
-  .d-top, .d-group > summary {
-    display: flex; align-items: center; justify-content: space-between;
-    font-family: var(--sans); font-weight: 500; font-size: 23px; letter-spacing: -0.01em;
-    color: var(--heading); padding: 18px 0;
-  }
+  .d-top, .d-group > summary { display: flex; align-items: center; justify-content: space-between; font-family: var(--sans); font-weight: 500; font-size: 23px; letter-spacing: -0.01em; color: var(--heading); padding: 18px 0; }
   .d-group > summary { list-style: none; cursor: pointer; }
   .d-group > summary::-webkit-details-marker { display: none; }
-  .d-group > summary::after {
-    content: ""; width: 9px; height: 9px; margin-right: 3px;
-    border-right: 2px solid var(--heading); border-top: 2px solid var(--heading);
-    transform: rotate(45deg); transition: transform .2s ease;
-  }
+  .d-group > summary::after { content: ""; width: 9px; height: 9px; margin-right: 3px; border-right: 2px solid var(--heading); border-top: 2px solid var(--heading); transform: rotate(45deg); transition: transform .2s ease; }
   .d-group[open] > summary::after { transform: rotate(135deg); }
   .d-top:hover, .d-group > summary:hover { color: var(--purple); }
   .d-sub { display: flex; flex-direction: column; padding: 2px 0 14px; }
@@ -332,9 +349,12 @@
   .reveal.in { opacity: 1; transform: none; }
 
   @media (min-width: 700px) {
-    .wrap { max-width: 620px; }
-    .hiw-hero h1 { font-size: 46px; }
-    h2.sec-h { font-size: 40px; }
+    .wrap { max-width: 640px; }
+    .hero-panel h1 { font-size: 58px; }
+    h2.sec-h { font-size: 38px; }
+    .stat-chip { flex: 1 1 22%; }
+    .deal-list { flex-wrap: wrap; overflow: visible; margin: 24px 0 0; padding: 0; }
+    .deal { flex: 1 1 30%; }
   }
 </style>
 </head>
@@ -359,7 +379,7 @@
     </div>
   </nav>
 
-  <!-- full-screen menu drawer (honest links only — same rule as the footer) -->
+  <!-- drawer (same links as landing) -->
   <div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Menu">
     <div class="drawer-panel">
       <div class="drawer-head">
@@ -397,117 +417,305 @@
     </div>
   </div>
 
-  <header class="hiw-hero">
-    <div class="wrap">
-      <!-- presenting-pose hippo (app asset, served at /hippos/ — no copying needed) -->
-      <img class="hero-hippo" src="/hippos/lender-diversity-piechart.png" alt="" />
-      <p class="label">For lenders</p>
-      <h1>Be the person who <span class="accent">said yes.</span></h1>
-      <p class="sub">Real people ask for small loans — and say upfront <b>exactly</b> what they’ll pay back, and when. You read their reason. You choose. You fund it.</p>
-      <a class="cta" href="/request-board"><span class="btn-label">See who’s asking right now <span class="arrow">→</span></span></a>
-      <p class="reassure">No account needed to look around.</p>
+  <!-- ============ HERO (Percent's inset panel, our world) ============ -->
+  <header class="hero-lend">
+    <div class="hero-panel">
+      <div class="wrap">
+        <img class="hero-hippo" src="/hippos/lender-diversity-piechart.png" alt="" />
+        <p class="label">For lenders</p>
+        <h1>Lending to people. <span class="accent">Simplified.</span></h1>
+        <p class="hero-sub">Join the first lenders funding <b>verified borrowers</b> through Moodeng — small loans that come back, to people the banks won’t touch.</p>
+        <ul class="hero-points">
+          <li><span class="dot"></span><span>Person-to-person loans from <b>$15</b> — no big minimums, no pools, no black boxes.</span></li>
+          <li><span class="dot"></span><span>Timelines that fit real life: most loans repay in <b>2–4 weeks</b>, on the borrower’s payday.</span></li>
+          <li><span class="dot"></span><span>You choose every loan — the reason, the record, and the <b>exact payback</b> are on screen before you fund.</span></li>
+        </ul>
+        <a class="cta" href="/request-board"><span class="btn-label">See who’s asking right now <span class="arrow">→</span></span></a>
+        <a class="hero-risklink" href="#risk">How risk works ↓</a>
+      </div>
     </div>
   </header>
 
-  <!-- THE MOMENT: what funding looks like (mock UI card, landing anatomy) -->
-  <section class="sec-step">
+  <!-- ============ AGAINST THE STREET (their benchmark chart) ============ -->
+  <section class="sec-vs">
     <div class="wrap reveal">
-      <p class="label">One request, one decision</p>
-      <h2 class="sec-h">Someone’s tight week, on <span class="accent">your screen.</span></h2>
-      <p class="sec-lead">Every request shows the reason, the payback the borrower set themselves, and the date. No haggling — just yes or no.</p>
-      <div class="stage">
-        <div class="stage-panel">
-          <div class="phone has-obj">
-            <div class="phone-head"><span class="back">‹</span> Open request</div>
-            <div class="inner pad-obj">
-              <!-- 3D green check (app asset /icons/check-3d.png) — the "said yes" moment -->
-              <img class="card-obj" src="/icons/check-3d.png" alt="" />
-              <span class="verified-line">✓ Verified real person</span>
-              <div class="reason"><span class="emoji">🏥</span>Medicine · can’t wait for payday</div>
-              <div class="statement">Asking for <span class="amt-pill">$15</span></div>
-              <div class="terms-row">
-                <div class="chip">
-                  <div class="k">You’d get back</div>
-                  <div class="v">$18</div>
-                </div>
-                <div class="chip">
-                  <div class="k">Due</div>
-                  <div class="v">Jul 30</div>
-                </div>
-              </div>
-              <span class="card-cta">Fund this request</span>
-              <p class="card-foot">They pay back <b>$18 on Jul 30</b> — terms they set themselves, shown to you before you fund.</p>
-            </div>
+      <p class="label">Against the alternatives</p>
+      <h2 class="sec-h">For the borrower, the numbers aren’t <span class="accent">close.</span></h2>
+      <p class="sec-lead">Every loan you fund replaces a worse one. Here’s what paying back a <b>$15, two-week loan</b> looks like across this market.</p>
+
+      <div class="chart-card">
+        <div class="ct">Total payback on $15 borrowed for 2 weeks</div>
+        <div class="cs">Typical figures, July 2026</div>
+        <div class="vs-chart">
+          <div class="vs-y"><span>$36</span><span>$27</span><span>$18</span><span>$9</span><span>$0</span></div>
+          <div class="vs-grid"><i style="top:0"></i><i style="top:25%"></i><i style="top:50%"></i><i style="top:75%"></i><i style="top:100%;background:#DCD4E8"></i></div>
+          <div class="vs-col pop">
+            <div class="vs-cap" style="bottom:58%">Never changes</div>
+            <div class="vs-bar" style="height:50%"><div class="vs-val">$18</div></div>
+          </div>
+          <div class="vs-col">
+            <div class="vs-bar" style="height:60%"><div class="vs-val">≈$21+</div></div>
+          </div>
+          <div class="vs-col">
+            <div class="vs-bar" style="height:92%"><div class="vs-val">≈$33</div></div>
           </div>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- HOW IT WORKS FOR LENDERS: 3 steps, real lender-POV screens -->
-  <section class="sec-step">
-    <div class="wrap reveal">
-      <span class="step-num">1</span>
-      <h2 class="tile-h">Browse <span class="accent">real</span> requests.</h2>
-      <p class="tile-cap">The board shows who’s asking, why, what they’ll pay back, and when. Every borrower proved they’re <b>one real person</b> before they could ask.</p>
-      <div class="stage right">
-        <div class="stage-panel">
-          <div class="phone shot"><img class="screen" src="/landing/assets/app/lender-board.jpg" alt="The Moodeng request board as a lender sees it: each request card shows the amount, payback, due date, and a Send Your Help button." loading="lazy" /></div>
+        <div class="vs-lb">
+          <div></div>
+          <div class="pop">Moodeng<small>flat, borrower-set</small></div>
+          <div>“0% interest” loan app<small>service fees added</small></div>
+          <div>street lender “5-6”<small>~54% per week</small></div>
         </div>
       </div>
-      <p class="shot-note">The board as a lender sees it — sample requests shown.</p>
+      <p class="fine">Street “5-6” and unlicensed-app costs are typical rates cited in SEC Philippines advisories and our own borrower interviews; “0%-interest” apps commonly recover 20–40% per month as service charges. Moodeng figure: an actual loan from our book. Every Moodeng payback is a single flat amount the borrower sets — no interest rate, no rollover, no late-fee spiral.</p>
+
+      <div class="stat-row">
+        <div class="stat-chip"><div class="n" data-count="102">0</div><div class="k">verified borrowers to date</div></div>
+        <div class="stat-chip"><div class="n"><span data-count="94">0</span>%</div><div class="k">repaid on time</div></div>
+        <div class="stat-chip"><div class="n"><span data-count="2.2" data-dec="1">0</span>x</div><div class="k">referral growth — borrowers bring borrowers</div></div>
+        <div class="stat-chip"><div class="n">$<span data-count="2030" data-comma="1">0</span></div><div class="k">lent through the app so far</div></div>
+      </div>
+      <p class="fine">As of July 2026, from our own lending operations. We’re early and the numbers are small — but every one is real, and every repayment is on a public record. Past repayment doesn’t guarantee future repayment.</p>
     </div>
   </section>
 
-  <section class="sec-step">
+  <!-- ============ EDUCATION 01–04 (their "What is private credit?") ============ -->
+  <section class="sec-learn">
     <div class="wrap reveal">
-      <span class="step-num">2</span>
-      <h2 class="tile-h">Check their <span class="accent">record</span> first.</h2>
-      <p class="tile-cap">Every borrower has a profile: loans repaid, on-time record, credit level — the good and the setbacks. It’s all there <b>before</b> you decide, and it’s why borrowers here work hard to keep their word: their next loan depends on it.</p>
+      <p class="label">What is payday-gap lending?</p>
+      <h2 class="sec-h">The loans banks <span class="accent">won’t make.</span></h2>
+
+      <div class="learn-steps">
+        <div class="learn-step">
+          <div class="num">01</div>
+          <h3>A worker needs ₱900 before payday.</h3>
+          <p>Medicine, a jeepney breakdown, restocking the sari-sari store. The need is real and short — <b>too small for a bank, too urgent to wait.</b></p>
+        </div>
+        <div class="learn-step">
+          <div class="num">02</div>
+          <h3>4,000+ lending apps filled the gap.</h3>
+          <p>Most never licensed. The street version — <b>“5-6” lending</b> — runs near 54% a week; the app version hides the same cost as “service fees” and collects with contact-list shaming.</p>
+        </div>
+        <div class="learn-step">
+          <div class="num">03</div>
+          <h3>The borrowers were never the problem.</h3>
+          <p>Given fair terms they set themselves, <b>94% repay on time</b> — because access to fair credit is worth protecting, and a default means back to the street.</p>
+        </div>
+        <div class="learn-step">
+          <div class="num">04</div>
+          <h3>Until now, the lender couldn’t be you.</h3>
+          <p>This market ran on apps and syndicates. Moodeng opens it to a person: <b>one verified borrower, one request, one yes at a time.</b></p>
+        </div>
+      </div>
+
+      <div class="market-panel">
+        <div class="big">67.8M</div>
+        <div class="k">Filipinos used a lending app in 2024</div>
+        <span class="grow">+43% UNIQUE USERS / YEAR</span>
+      </div>
+      <p class="fine">Digido analysis of 47 SEC-registered lending apps, 2024. The demand is structural — people borrow to get to payday, not to splurge.</p>
+    </div>
+  </section>
+
+  <!-- ============ ENTER MOODENG ============ -->
+  <section class="sec-enter">
+    <div class="wrap reveal">
+      <p class="label">Enter Moodeng</p>
+      <h2 class="sec-h">Person-to-person loans, starting at <span class="accent">$15.</span></h2>
+      <p class="sec-lead">No pools. No guesswork. You read a real person’s request, check their repayment record, and fund it — with the payback amount <b>in writing before a peso moves.</b> Money arrives as digital dollars (USDC); funding takes about a minute with a debit card.</p>
       <div class="stage">
         <div class="stage-panel">
-          <div class="phone shot"><img class="screen" src="/landing/assets/app/lender-insights.jpg" alt="A Moodeng borrower profile as lenders see it: verified badge, credit level, loans repaid, repayment record." loading="lazy" /></div>
+          <div class="phone"><img class="screen" src="/landing/assets/app/lender-insights.jpg" alt="A real Moodeng borrower profile as lenders see it: verified badge, bio, credit level, loans repaid and defaults, lender diversity score." loading="lazy" /></div>
         </div>
       </div>
-      <p class="shot-note">A borrower profile as you’d see it — sample account.</p>
+      <p class="shot-note">The record you check before you fund — verified identity, bio, credit level, repayments <b>and</b> defaults. Sample account.</p>
+      <a class="cta dark" href="/how-it-works" style="margin-top:22px"><span class="btn-label">See how it works <span class="arrow">→</span></span></a>
     </div>
   </section>
 
-  <section class="sec-step">
+  <!-- ============ WHAT YOU'D BE FUNDING (their thesis cards) ============ -->
+  <section class="sec-thesis">
     <div class="wrap reveal">
-      <span class="step-num">3</span>
-      <h2 class="tile-h">Fund it — and get the <span class="accent">whole payback.</span></h2>
-      <p class="tile-cap">Your money moves as digital dollars (USDC) — it takes about a minute, and you can start with a debit card. When the borrower repays, the <b>full payback amount</b> is yours: fund $15, get back $18. Moodeng doesn’t take a cut.</p>
-      <div class="tiles">
-        <div class="tile">
-          <div class="tile-panel">
-            <img class="tile-obj" src="/landing/assets/icons/usd-php-coins.png" alt="" style="height:52px; top:2px; left:50%; transform:translateX(-50%)" />
-            <div class="mini" style="padding-top:38px">
-              <div class="k">You fund → you get back</div>
-              <div class="big">$15 → $18</div>
-              <div class="tiny">the borrower’s own terms, in writing from day one</div>
-            </div>
-          </div>
+      <p class="label">Our thesis</p>
+      <h2 class="sec-h">We fund the weeks banks <span class="accent">ignore.</span></h2>
+      <p class="sec-lead">Small, short, survival-shaped loans — the safest credit there is when the borrower is verified and the terms are fair.</p>
+      <div class="thesis-cards">
+        <div class="th-card"><h4>Medicine before payday</h4><p>The most common request on the board. Small amounts, urgent timing, repaid on the next paycheck.</p></div>
+        <div class="th-card"><h4>Sari-sari restock</h4><p>Working capital for the smallest businesses in the world — inventory that turns into repayment within weeks.</p></div>
+        <div class="th-card"><h4>School fees &amp; supplies</h4><p>Deadline-driven and predictable — the borrower knows exactly when and how they’ll repay.</p></div>
+        <div class="th-card"><h4>Transport &amp; repairs</h4><p>A motorbike that doesn’t run is an income that stops. These loans restart someone’s earning power.</p></div>
+        <div class="th-card"><h4>Groceries to payday</h4><p>Bridging days, not months. The shortest loans on the board — and the fastest to come back.</p></div>
+      </div>
+      <a class="cta" href="/request-board" style="margin-top:28px"><span class="btn-label">Browse open requests <span class="arrow">→</span></span></a>
+    </div>
+  </section>
+
+  <!-- ============ BUILT FOR LENDERS (their feature rows) ============ -->
+  <section class="sec-built">
+    <div class="wrap reveal">
+      <p class="label">Built for people, not portfolios</p>
+      <h2 class="sec-h">Finding someone worth trusting is hard. We make it <span class="accent">easier.</span></h2>
+      <div class="feat-list">
+        <div class="feat">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6S13.9 16 14.5 19"/><path d="m15.5 9.5 1.8 1.8 3.2-3.6"/></svg></div>
+          <div><h4>Every borrower is a verified human</h4><p>Government ID checked (full KYC) <b>and</b> proven to be one real person — so nobody defaults and returns with a fresh account.</p></div>
+        </div>
+        <div class="feat">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div>
+          <div><h4>Short cycles, no lockups</h4><p>Loans run <b>2–4 weeks</b>, timed to paydays. Your money isn’t parked for years — it comes back and you choose again.</p></div>
+        </div>
+        <div class="feat">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/><path d="m16.5 15.5 2 2 3.5-4"/></svg></div>
+          <div><h4>Terms fixed upfront</h4><p>The borrower sets one flat payback — <b>$15 back $18</b> — before you fund. No APR, no rollover, nothing added overnight.</p></div>
+        </div>
+        <div class="feat">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 13.5 11 16l5-6"/></svg></div>
+          <div><h4>Transparency at every turn</h4><p>Repayments — and defaults — live on each borrower’s profile and on a public record <b>no one can edit, including us.</b></p></div>
+        </div>
+        <div class="feat">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.3-7-9.5A4 4 0 0 1 12 7a4 4 0 0 1 7 3.5C19 15.7 12 20 12 20Z"/></svg></div>
+          <div><h4>Your money means something</h4><p>You’re not buying a product — you’re the reason someone’s week didn’t collapse. The extra few dollars are their thank-you.</p></div>
+        </div>
+        <div class="feat">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 0-3.1 6.3L20 19l-.6-3.2A7.9 7.9 0 0 0 20 12Z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg></div>
+          <div><h4>Real humans on our side too</h4><p>Message us on Telegram or Facebook — <b>a person answers, usually the same day.</b> Investors tell us that’s rare. We think it’s the minimum.</p></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- THE HONEST PART (dark) — the same honesty we give borrowers, pointed at lenders -->
-  <section class="sec-honest">
+  <!-- ============ RECENT LOANS (their deal cards — ours are REAL rows from the app) ============ -->
+  <section class="sec-deals">
+    <div class="wrap reveal">
+      <p class="label">Recent loans</p>
+      <h2 class="sec-h">Real loans, from the <span class="accent">actual book.</span></h2>
+      <p class="sec-lead">Not marketing examples — these are loans from the app, reasons as the borrowers wrote them.</p>
+      <div class="deal-list">
+        <div class="deal">
+          <div class="dt">“Emergency medicine for my lil sister”</div>
+          <div class="rows">
+            <div class="r"><span class="k">Funded</span><span class="v">$5</span></div>
+            <div class="r"><span class="k">Payback</span><span class="v">$10</span></div>
+            <div class="r"><span class="k">When</span><span class="v">Jun 2026</span></div>
+          </div>
+          <span class="st">✓ Repaid</span>
+        </div>
+        <div class="deal">
+          <div class="dt">“Family expenses in the Philippines”</div>
+          <div class="rows">
+            <div class="r"><span class="k">Funded</span><span class="v">$20</span></div>
+            <div class="r"><span class="k">Payback</span><span class="v">$22</span></div>
+            <div class="r"><span class="k">Term</span><span class="v">2 weeks</span></div>
+          </div>
+          <span class="st">✓ Repaid</span>
+        </div>
+        <div class="deal">
+          <div class="dt">“My car broke down”</div>
+          <div class="rows">
+            <div class="r"><span class="k">Funded</span><span class="v">$10</span></div>
+            <div class="r"><span class="k">Payback</span><span class="v">$12</span></div>
+            <div class="r"><span class="k">Term</span><span class="v">2.5 weeks</span></div>
+          </div>
+          <span class="st">✓ Repaid</span>
+        </div>
+        <div class="deal">
+          <div class="dt">“Allowance” — stretching to payday</div>
+          <div class="rows">
+            <div class="r"><span class="k">Funded</span><span class="v">$20</span></div>
+            <div class="r"><span class="k">Payback</span><span class="v">$25</span></div>
+            <div class="r"><span class="k">Term</span><span class="v">~3 weeks</span></div>
+          </div>
+          <span class="st">✓ Repaid</span>
+        </div>
+        <div class="deal">
+          <div class="dt">“Dental extraction emergency help”</div>
+          <div class="rows">
+            <div class="r"><span class="k">Funded</span><span class="v">$15</span></div>
+            <div class="r"><span class="k">Payback</span><span class="v">$30</span></div>
+            <div class="r"><span class="k">When</span><span class="v">Feb 2026</span></div>
+          </div>
+          <span class="st">✓ Repaid</span>
+        </div>
+      </div>
+      <p class="fine">Pulled from our loan records, July 2026. Amounts are USDC (digital dollars). Paybacks are set by the borrower when they ask — which is why they vary. Reasons shown exactly as written.</p>
+    </div>
+  </section>
+
+  <!-- ============ WHAT BORROWERS SAY ============ -->
+  <section class="sec-say">
+    <div class="wrap reveal">
+      <p class="label">What borrowers say</p>
+      <h2 class="sec-h">The other side of your <span class="accent">yes.</span></h2>
+      <div class="vidrow">
+        <a class="vid" href="https://youtube.com/shorts/2ZmuK7Vq40k" target="_blank" rel="noreferrer">
+          <img src="https://i.ytimg.com/vi/2ZmuK7Vq40k/hqdefault.jpg" alt="Borrower video testimonial" loading="lazy" />
+          <span class="play"><span>▶</span></span>
+          <span class="tag">Real borrower</span>
+        </a>
+        <a class="vid" href="https://youtube.com/shorts/t8dnE2h4mNk" target="_blank" rel="noreferrer">
+          <img src="https://i.ytimg.com/vi/t8dnE2h4mNk/hqdefault.jpg" alt="Borrower video testimonial" loading="lazy" />
+          <span class="play"><span>▶</span></span>
+          <span class="tag">Real borrower</span>
+        </a>
+      </div>
+      <p class="fine" style="text-align:center">No paid actors. No stock photos. Real borrowers, on camera.</p>
+    </div>
+  </section>
+
+  <!-- ============ ELIGIBILITY QUIZ (their stepper — ours gates on honesty, not net worth) ============ -->
+  <section class="sec-quiz">
+    <div class="wrap reveal">
+      <p class="label">Is this right for you?</p>
+      <h2 class="sec-h">Three questions before your <span class="accent">first yes.</span></h2>
+      <p class="sec-lead">Percent-style platforms screen for net worth. We screen for something else.</p>
+      <div class="quiz-box" id="quiz">
+        <div class="q-pips"><span data-pip="1" class="on">1</span><span data-pip="2">2</span><span data-pip="3">3</span></div>
+        <div class="q-step on" data-step="1">
+          <h3>Could you lose $15 without it changing your week?</h3>
+          <p>Repayment isn’t guaranteed. If losing what you lend would hurt, don’t lend it.</p>
+          <div class="q-btns"><button class="q-btn yes" data-ans="yes" type="button">Yes</button><button class="q-btn" data-ans="no" type="button">No</button></div>
+        </div>
+        <div class="q-step" data-step="2">
+          <h3>Are you okay waiting 2–4 weeks?</h3>
+          <p>Loans repay on the borrower’s payday. There’s no instant exit, and the due date belongs to them.</p>
+          <div class="q-btns"><button class="q-btn yes" data-ans="yes" type="button">Yes</button><button class="q-btn" data-ans="no" type="button">No</button></div>
+        </div>
+        <div class="q-step" data-step="3">
+          <h3>Do you want to know exactly who your money helps?</h3>
+          <p>This isn’t an anonymous yield product. You’ll read someone’s reason and decide.</p>
+          <div class="q-btns"><button class="q-btn yes" data-ans="yes" type="button">Yes</button><button class="q-btn" data-ans="no" type="button">No</button></div>
+        </div>
+        <div class="q-res" data-result="pass">
+          <h3>You’re exactly who this was built for.</h3>
+          <p>Someone’s tight week is on the board right now — go read their story.</p>
+          <a class="cta dark" href="/request-board"><span class="btn-label">Browse open requests <span class="arrow">→</span></span></a>
+          <br /><button class="q-restart" data-restart type="button">Retake</button>
+        </div>
+        <div class="q-res" data-result="fail">
+          <h3>Then Moodeng isn’t right for you yet — and we’d rather say so.</h3>
+          <p>Never lend money you can’t afford to lose, and never lend it faster than you can wait for it. We’ll be here when that changes.</p>
+          <button class="q-restart" data-restart type="button">Retake</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ THE HONEST PART (disclosures, anchor for "How risk works") ============ -->
+  <section class="sec-honest" id="risk">
     <img class="dcloud" src="/landing/assets/clouds/cloud-2.svg" style="width:130px; top:30px; right:-30px" alt="" />
     <img class="dcloud" src="/landing/assets/clouds/cloud-1.svg" style="width:100px; bottom:40px; left:-30px" alt="" />
     <div class="wrap reveal">
-      <p class="label">The honest part</p>
+      <p class="label">How risk works</p>
       <h2 class="sec-h">We’re as straight with you as we are <span class="accent">with them.</span></h2>
       <p class="sec-lead">Borrowers get no hidden charges. You get no hidden risk.</p>
       <div class="honest-note"><b>Repayment isn’t guaranteed.</b> Most people pay back — but if a borrower doesn’t, you can lose what you lent. There’s no insurance fund behind this. It’s a real loan to a real person.</div>
       <div class="honest-note"><b>That’s why everyone starts at $15.</b> New borrowers can’t ask for more, so no single yes costs much — and limits only grow through repayments that actually happened. Never fund more than you’d be okay losing.</div>
+      <div class="honest-note"><b>What happens on a default:</b> the borrower’s account is frozen, the miss goes on the record every future lender sees, and because every borrower is verified as one real person, they can’t start over with a fresh account. What never happens: harassment. That’s a line we don’t cross, even for you.</div>
       <div class="honest-note"><b>This is helping, with your money back at the end.</b> Not a savings account, not a get-rich app. The extra few dollars are a thank-you for trusting someone when the bank wouldn’t.</div>
     </div>
   </section>
 
-  <!-- FAQ -->
+  <!-- ============ FAQ (the Louis questions) ============ -->
   <section class="sec-faq">
     <div class="wrap reveal">
       <p class="label">Common questions</p>
@@ -518,6 +726,14 @@
           <p class="a">Neither, really. It’s <b>person-to-person lending</b>: you help someone through a tight week, and they pay back what they promised — a little more than they borrowed. If you’re looking for a place to grow savings, this isn’t it. If you want your money to mean something to a real person and come back to you, it is.</p>
         </details>
         <details>
+          <summary>What’s the track record?</summary>
+          <p class="a">As of July 2026: <b>102 verified borrowers, 94% repaid on time</b>, and every repayment on a public record. Last month’s loans were all repaid — most a day or two <b>before</b> the deadline, because repayment is timed to payday. We’re early and the numbers are small; we’d rather show you small real numbers than big invented ones.</p>
+        </details>
+        <details>
+          <summary>What do I actually earn?</summary>
+          <p class="a">Each loan has one flat payback the borrower sets upfront — fund <b>$15, get back $18</b> is typical. No APR, no compounding, no rollover: what you see when you fund is exactly what comes back. Whether you re-lend it is up to you.</p>
+        </details>
+        <details>
           <summary>What happens if someone doesn’t repay?</summary>
           <p class="a">You can lose what you lent — we won’t pretend otherwise. What we do: every borrower is verified as <b>one real person</b> (no fresh accounts after a default), everyone starts at $15, and a missed repayment freezes their borrowing and goes on the record every future lender sees. What we don’t do: harass anyone. That’s a line we don’t cross even for you.</p>
         </details>
@@ -526,24 +742,24 @@
           <p class="a">With a <b>debit card</b>, right in the app — or by moving digital dollars you already have. Funding a $15 request takes about a minute.</p>
         </details>
         <details>
-          <summary>How do I choose well?</summary>
-          <p class="a">Read the reason, then the record. A borrower with repaid loans and an on-time history is showing you how they behave. First-timers have no record yet — that’s what the $15 cap is for: it’s the size of a first hello, not a leap of faith.</p>
+          <summary>When do I get paid back?</summary>
+          <p class="a">On or before the due date the borrower set — you’ll see the exact date before you fund, and the app shows you every loan’s status along the way. In practice most repayments land <b>on payday</b>, often a day or two early.</p>
         </details>
         <details>
-          <summary>When do I get paid back?</summary>
-          <p class="a">On or before the due date the borrower set — you’ll see the exact date before you fund, and the app shows you every loan’s status along the way.</p>
+          <summary>How do I choose well?</summary>
+          <p class="a">Read the reason, then the record. A borrower with repaid loans and an on-time history is showing you how they behave. First-timers have no record yet — that’s what the $15 cap is for: it’s the size of a first hello, not a leap of faith.</p>
         </details>
       </div>
     </div>
   </section>
 
-  <!-- FINAL CTA -->
+  <!-- ============ FINAL CTA ============ -->
   <section class="sec-final">
     <div class="wrap reveal">
       <img class="cta-hippo" src="/landing/assets/hippos/thumb-up-right.png" alt="" />
       <p class="label">Right now</p>
       <h2>Someone’s tight week is on the board <span class="accent">today.</span></h2>
-      <a class="cta" href="/request-board"><span class="btn-label">Browse open requests <span class="arrow">→</span></span></a>
+      <a class="cta dark" href="/request-board"><span class="btn-label">Browse open requests <span class="arrow">→</span></span></a>
       <p class="reassure">Look first. Fund only when someone’s story convinces you.</p>
     </div>
   </section>
@@ -569,12 +785,12 @@
           <a href="https://moodeng.gitbook.io/credit" target="_blank" rel="noreferrer">How credit levels work</a>
         </div>
       </div>
-      <p class="f-fine">© 2026 Moodeng Credit</p>
+      <p class="f-fine">© 2026 Moodeng Credit. Figures on this page are from Moodeng’s own lending operations as of July 2026 unless sourced otherwise. Lending involves risk, including loss of the amount lent.</p>
     </div>
   </footer>
 
   <script>
-    // ---- Header: gain a surface once the hero starts scrolling away ----
+    // ---- Header surface on scroll ----
     (function () {
       var head = document.getElementById("siteHead");
       if (!head) return;
@@ -600,25 +816,82 @@
       document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
     })();
 
-    // ---- Sign in / browse buttons: spin on tap (same rationale as landing) ----
+    // ---- Spinner on app-bound links ----
     (function () {
-      var loadingLinks = document.querySelectorAll(
-        '.head-signin, .drawer .d-foot a[href="/sign-in"], .cta[href^="/request-board"]'
-      );
-      loadingLinks.forEach(function (a) {
-        a.addEventListener("click", function () { a.classList.add("is-loading"); });
-      });
+      var loadingLinks = document.querySelectorAll('.head-signin, .drawer .d-foot a[href="/sign-in"], .cta[href^="/request-board"]');
+      loadingLinks.forEach(function (a) { a.addEventListener("click", function () { a.classList.add("is-loading"); }); });
       window.addEventListener("pageshow", function (e) {
         if (!e.persisted) return;
         loadingLinks.forEach(function (a) { a.classList.remove("is-loading"); });
       });
     })();
 
-    // reveal on scroll (same pattern as landing)
+    // ---- Count-up stats (Percent's data-count pattern, rebuilt) ----
+    (function () {
+      var els = document.querySelectorAll("[data-count]");
+      if (!els.length) return;
+      var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      function fmt(el, v) {
+        var dec = parseInt(el.getAttribute("data-dec") || "0", 10);
+        var s = v.toFixed(dec);
+        if (el.hasAttribute("data-comma")) s = Number(s).toLocaleString("en-US");
+        el.textContent = s;
+      }
+      function run(el) {
+        var target = parseFloat(el.getAttribute("data-count"));
+        if (reduced) { fmt(el, target); return; }
+        var t0 = performance.now(), dur = 1400;
+        (function tick(t) {
+          var r = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - r, 3);
+          fmt(el, target * e);
+          if (r < 1) requestAnimationFrame(tick); else fmt(el, target);
+        })(t0);
+      }
+      var fired = false;
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting && !fired) { fired = true; els.forEach(run); } });
+      }, { threshold: 0.3 });
+      io.observe(els[0].closest("section") || els[0].parentElement);
+    })();
+
+    // ---- Honesty quiz (their eligibility stepper, all-yes to pass) ----
+    (function () {
+      var box = document.getElementById("quiz");
+      if (!box) return;
+      var steps = box.querySelectorAll(".q-step");
+      var results = box.querySelectorAll(".q-res");
+      var pips = box.querySelectorAll("[data-pip]");
+      function show(n) {
+        steps.forEach(function (s) { s.classList.toggle("on", +s.dataset.step === n); });
+        results.forEach(function (r) { r.classList.remove("on"); });
+        pips.forEach(function (p) {
+          var i = +p.dataset.pip;
+          p.classList.toggle("on", i === n);
+          p.classList.toggle("done", i < n);
+        });
+      }
+      function res(k) {
+        steps.forEach(function (s) { s.classList.remove("on"); });
+        results.forEach(function (r) { r.classList.toggle("on", r.dataset.result === k); });
+        pips.forEach(function (p) { p.classList.remove("on"); p.classList.toggle("done", k === "pass"); });
+      }
+      box.addEventListener("click", function (e) {
+        var b = e.target.closest(".q-btn");
+        if (b) {
+          var step = +b.closest(".q-step").dataset.step;
+          if (b.dataset.ans === "no") { res("fail"); return; }
+          if (step < 3) show(step + 1); else res("pass");
+          return;
+        }
+        if (e.target.closest("[data-restart]")) show(1);
+      });
+    })();
+
+    // ---- Reveal on scroll ----
     var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
     }, { threshold: 0.12 });
-    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+    document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
   </script>
 </body>
 </html>
