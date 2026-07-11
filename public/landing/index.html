@@ -93,13 +93,29 @@
     padding: 34px 0 44px;
     overflow: hidden;
   }
+  /* Marquee = CSS transform on the compositor thread (Tilt's approach), NOT
+     JS-driven scrollLeft: browsers throttle rAF during touches/page scrolls,
+     which froze the drift on every tap. A CSS animation can't be interrupted
+     by touch. JS clones the card set + measures --faces-loop/--faces-dur. */
   .faces-list {
-    display: flex; gap: 16px; align-items: flex-start;
-    overflow-x: auto; -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding: 10px 22px 4px;
+    overflow: hidden;
+    padding: 10px 0 4px;
   }
-  .faces-list::-webkit-scrollbar { display: none; }
+  .faces-track {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding-left: 22px;
+    will-change: transform;
+    animation: faces-drift var(--faces-dur, 50s) linear infinite;
+  }
+  @keyframes faces-drift {
+    from { transform: translateX(0); }
+    to   { transform: translateX(var(--faces-loop, -1400px)); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .faces-track { animation: none; }
+    .faces-list { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .faces-list::-webkit-scrollbar { display: none; }
+  }
   .face-card { flex: 0 0 264px; }
   .face-photo {
     position: relative; border-radius: 22px; overflow: hidden;
@@ -960,6 +976,7 @@
        this strip can carry any proof claim. Amounts are honest product-range ($15–$60). -->
   <section class="sec-faces" aria-label="What people borrow for">
     <div class="faces-list">
+      <div class="faces-track">
       <div class="face-card">
         <div class="face-photo">
           <img src="/landing/assets/faces/seamstress.jpg" alt="Illustrative portrait: a seamstress working at her machine by a window" />
@@ -1029,6 +1046,7 @@
           <span class="face-pill"><span class="ic"><img src="/landing/assets/icons/coins-stack.png" alt="" /></span>+ $60</span>
         </div>
         <p class="face-cap"><b>A higher limit</b> <i>to restock the store</i></p>
+      </div>
       </div>
     </div>
   </section>
@@ -1555,52 +1573,31 @@
     openIfTargeted();
   })();
 
-  // ---- Faces marquee: slow auto-drift, swipe still wins ----
-  // Clones the card set once so the loop wraps seamlessly, then drifts
-  // scrollLeft ~28px/s. Any touch/wheel pauses the drift; it resumes after
-  // 2.6s idle. prefers-reduced-motion users get a plain swipe row (no clones).
+  // ---- Faces marquee: CSS compositor animation (Tilt's approach) ----
+  // JS only clones the card set (seamless wrap) and measures the loop
+  // distance/duration into CSS vars; the drift itself is a CSS keyframe on
+  // .faces-track, so touches and page scrolls can NEVER freeze it (the old
+  // rAF+scrollLeft version stopped on every tap — browsers throttle rAF
+  // during touch). prefers-reduced-motion: no clones, no animation, and the
+  // CSS gives a plain swipe row instead.
   (function () {
-    var list = document.querySelector(".faces-list");
-    if (!list) return;
+    var track = document.querySelector(".faces-track");
+    if (!track) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    var setSize = list.children.length;
-    Array.prototype.slice.call(list.children).forEach(function (card) {
+    var setSize = track.children.length;
+    Array.prototype.slice.call(track.children).forEach(function (card) {
       var clone = card.cloneNode(true);
       clone.setAttribute("aria-hidden", "true");
-      list.appendChild(clone);
+      track.appendChild(clone);
     });
-    var loopWidth = 0;
     function measure() {
       // exact distance from the first card to its clone = one full set
-      loopWidth = list.children[setSize].offsetLeft - list.children[0].offsetLeft;
+      var loop = track.children[setSize].offsetLeft - track.children[0].offsetLeft;
+      track.style.setProperty("--faces-loop", -loop + "px");
+      track.style.setProperty("--faces-dur", (loop / 28) + "s"); // ~28px/s
     }
     measure();
     window.addEventListener("resize", measure);
-    var paused = false, resumeTimer;
-    function pauseDrift() {
-      paused = true;
-      clearTimeout(resumeTimer);
-      resumeTimer = setTimeout(function () { paused = false; }, 2600);
-    }
-    ["pointerdown", "wheel", "touchstart"].forEach(function (ev) {
-      list.addEventListener(ev, pauseDrift, { passive: true });
-    });
-    // Drift via an accumulator, never read-modify-write scrollLeft: browsers
-    // quantize scrollLeft writes (whole px on 1x displays), so += 0.47px/frame
-    // would floor to zero and the marquee would sit still.
-    var pos = list.scrollLeft, last = performance.now();
-    function tick(now) {
-      var dt = now - last; last = now;
-      if (!paused && loopWidth > 0 && dt < 200) {
-        pos += dt * 0.028;
-        if (pos >= loopWidth) pos -= loopWidth;
-        list.scrollLeft = pos;
-      } else {
-        pos = list.scrollLeft; // resync after a user swipe or a throttled gap
-      }
-      requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
   })();
 
   // ---- Peso context: geo-detect, honest "≈", graceful fallback ----
