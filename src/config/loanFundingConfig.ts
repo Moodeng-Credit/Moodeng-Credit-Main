@@ -10,8 +10,22 @@ import { BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
  * security boundary.
  */
 
-/** The two Moodeng admin accounts allowed to see/use the funding modal. */
-export const ADMIN_ACCOUNT_EMAILS: readonly string[] = ['georgemlerner@gmail.com', 'georgedevdao@gmail.com', 'chonlagarn.i@gmail.com'];
+/**
+ * Moodeng admin accounts allowed to see/use the funding modal.
+ *
+ * George: georgemlerner@gmail.com, georgedevdao@gmail.com
+ * Emma (Chonlagarn): chonlagarn.i@gmail.com (Google), plus her Telegram/atomicmail/LINE
+ * logins whose emails are auto-generated placeholders — listed so she keeps access
+ * whichever account she signs in with.
+ */
+export const ADMIN_ACCOUNT_EMAILS: readonly string[] = [
+   'georgemlerner@gmail.com',
+   'georgedevdao@gmail.com',
+   'chonlagarn.i@gmail.com',
+   'telegram_1384264294@moodeng.credit',
+   'emmacute1@atomicmail.io',
+   'line_u655bfb6e597a640f8447e74cbede5bce@moodeng.app'
+];
 
 const normalizeAddress = (value?: string | null): string => (value ?? '').trim().toLowerCase();
 const normalizeEmail = (value?: string | null): string => (value ?? '').trim().toLowerCase();
