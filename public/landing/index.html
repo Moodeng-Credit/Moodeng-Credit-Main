@@ -362,7 +362,8 @@
      modifier for the Fruitful text anatomy (grey number above the headline,
      left-aligned). One shared driver runs both pins. */
   .sec-steps .story-titles { text-align: left; max-width: 440px; padding: 0 26px; }
-  .sec-steps .story-cap > span { margin: 0; max-width: 40ch; }
+  .sec-steps .story-caps { text-align: left; max-width: 440px; padding: 0 26px; }
+  .sec-steps .story-caps > span { margin: 0; max-width: 40ch; }
   .step-n {
     display: block; font-family: var(--display); font-size: 13px;
     letter-spacing: .16em; color: var(--text-muted); opacity: .65;
@@ -384,6 +385,20 @@
   }
   /* the deal-panel closer sits between the two pins in its own strip */
   .sec-deal { padding: 4px 0 40px; }
+
+  /* ---------- PROMISES PIN EXTRAS (07-12 rebuild: "why we're different") ----------
+     Lead-in anchors the section's purpose (it used to start cold), and the
+     fixed-frame panel is George's "square behind it" = Klarna's constant
+     frame (their beat visuals are same-sized baked videos): every beat gets
+     the SAME outer panel size, the white mini floats centered inside at
+     whatever size its content needs. The gap can't happen by construction —
+     the visual slot height literally never varies. min-height (not height)
+     so an overflowing translation/copy edit degrades to a taller panel
+     instead of clipped text. */
+  .story-lead { text-align: center; padding: 46px 0 0; }
+  /* 416 clears the tallest card (the no-APR ledger measures 404 at the 250px
+     stage width) — all three panels clamp to the same height */
+  .sec-promises .story-mini-panel { min-height: 416px; }
   .inner .reason { font-size: 13px; font-weight: 700; color: var(--text-soft); }
   .inner .reason .emoji { margin-right: 5px; }
   .statement {
@@ -607,20 +622,23 @@
      strong fade, but layout height stays put so nothing jumps */
   .story-titles li { transition: opacity .35s ease; }
   .sec-story.armed .story-titles li.is-past { opacity: .22; }
-  .story-cap {
-    display: grid; grid-template-rows: 0fr;
-    transition: grid-template-rows .35s ease, opacity .35s ease;
-    opacity: 0;
-  }
-  .story-titles li.is-active .story-cap { grid-template-rows: 1fr; opacity: 1; }
-  .story-cap > span {
-    overflow: hidden; display: block;
+  /* No-reflow captions (07-12, the gap fix's text half): ONE caption slot
+     below the title list — every beat's caption stacked on the same grid
+     cell, crossfaded by .is-active. Grid auto-sizes the cell to the TALLEST
+     caption, so the slot height is constant and the pinned frame never
+     breathes. Replaces the old per-title grid-rows accordion, which grew
+     and shrank the text block on every handoff (George's gap screenshot). */
+  .story-caps { display: grid; margin: 2px auto 0; padding: 0 22px; max-width: 460px; text-align: center; }
+  .story-caps > span {
+    grid-area: 1 / 1;
+    opacity: 0; transition: opacity .35s ease;
     font-size: 14.5px; font-weight: 600; color: var(--text-muted); line-height: 1.45;
-    max-width: 36ch; margin: 0 auto;
+    max-width: 36ch; margin: 0 auto; padding: 6px 0 8px;
   }
-  .story-titles li.is-active .story-cap > span { padding: 6px 0 8px; }
-  /* no-JS: captions always readable */
-  .sec-story:not(.armed) .story-cap { grid-template-rows: 1fr; opacity: 1; }
+  .story-caps > span.is-active { opacity: 1; }
+  /* no-JS: captions always readable, listed under the titles */
+  .sec-story:not(.armed) .story-caps { display: block; }
+  .sec-story:not(.armed) .story-caps > span { opacity: 1; display: block; }
   .sec-story:not(.armed) .story-t { color: var(--heading); }
   @media (prefers-reduced-motion: reduce) {
     .sec-story.armed .story-screen { transition: opacity .2s linear; transform: none; }
@@ -1355,28 +1373,31 @@
           <li class="is-active"><button type="button">
             <span class="step-n">01</span>
             <span class="story-t">Ask.</span>
-            <span class="story-cap"><span>What you need and why — 30 seconds, no documents. That’s the whole application.</span></span>
           </button></li>
           <li><button type="button">
             <span class="step-n">02</span>
             <span class="story-t">Real people say <span class="accent">yes.</span></span>
-            <span class="story-cap"><span>Not a company. Not an algorithm. Funders read your request and choose to help — usually within a few hours.</span></span>
           </button></li>
           <li><button type="button">
             <span class="step-n">03</span>
             <span class="story-t">Money <span class="accent">arrives.</span></span>
-            <!-- Provider names in TEXT only, never logos; both verified against
-                 the app's real withdraw picker (src/views/withdraw/Withdraw.tsx) -->
-            <span class="story-cap"><span>$15 lands ready for GCash — or choose another way, like Coins.ph.</span></span>
           </button></li>
           <li><button type="button">
             <span class="step-n">04</span>
             <span class="story-t">Repay &amp; <span class="accent">level up.</span></span>
-            <!-- No numeric "+$5 every time" promise in the caption; "unlocks more"
-                 is the safe claim (the card shows one real example step) -->
-            <span class="story-cap"><span>Pay back $18 on Jul 30, on time — your next loan unlocks more, toward $60+.</span></span>
           </button></li>
         </ol>
+        <!-- One constant-height caption slot (all captions stacked, crossfaded)
+             — the no-reflow half of the gap fix -->
+        <div class="story-caps">
+          <span class="is-active">What you need and why — 30 seconds, no documents. That’s the whole application.</span>
+          <span>Not a company. Not an algorithm. Funders read your request and choose to help — usually within a few hours.</span>
+          <!-- Provider names in TEXT only, never logos; both verified against
+               the app's real withdraw picker (src/views/withdraw/Withdraw.tsx) -->
+          <span>$15 lands ready for GCash — or choose another way, like Coins.ph.</span>
+          <!-- No numeric "+$5 every time" promise; "unlocks more" is the safe claim -->
+          <span>Pay back $18 on Jul 30, on time — your next loan unlocks more, toward $60+.</span>
+        </div>
       </div>
     </div>
   </section>
@@ -1407,31 +1428,41 @@
        how-it-works explainer above. -->
 
   <!-- ============= TRUST Q1: REAL PEOPLE ============= -->
-  <!-- ============= SCROLL STORY: the 3 promises (Klarna scrollytelling) =============
-       One sticky pin — screen on top, title list under it. Scroll drives the
-       handoff: active title ink, others grey; screens crossfade.
-       Shrunk 6 → 3 beats (2026-07-12, George: "too long — making the area
-       underneath more about the no rollovers etc."): the mechanism beats
-       (funded / cash-out / level-up) moved up into the 01–04 step explainer;
-       what stays here are the CLAIMS — you know everything, no rollover,
-       no fees. Steps own the mechanism, story owns the promises.
-       Without JS it degrades to a stacked page. -->
-  <section class="sec-story">
+  <!-- ============= SCROLL STORY: why we're different (Klarna scrollytelling) =============
+       One sticky pin — screen on top, title list under it, one constant-height
+       caption slot. REFOCUSED 07-12 (George: "the 3 screens need to be
+       refocused on why we're different — zero fees, no APRs so no crazy rate
+       changes, no rollover; the section above explains how it works now"):
+       beat titles NAME the differentiator. Division of labor FINAL: steps pin
+       = HOW it works, this pin = WHY we're not the apps that burned you.
+       ("You know everything" retired as a beat — the steps pin demonstrates
+       terms-before-confirm.) Every beat's panel is the SAME fixed size
+       (George's "square behind it" = Klarna's constant frame); minis float
+       centered inside. Without JS it degrades to a stacked page. -->
+  <section class="sec-story sec-promises">
+    <div class="wrap story-lead reveal">
+      <p class="label">Why this is different</p>
+      <!-- copy strawman — George/Emma to approve -->
+      <h2 class="sec-h">Not like the loan apps you’ve <span class="accent">met.</span></h2>
+    </div>
     <div class="story-run">
       <div class="story-pin">
         <span class="story-rail" aria-hidden="true"><i></i></span>
         <div class="story-screens">
 
-          <!-- Beat 1: you know everything (the dark "No hidden charges" tile) -->
+          <!-- Beat 1: no APR / no rate surprises (replaces "you know everything") -->
           <div class="story-screen is-active">
             <div class="stage">
               <div class="stage-panel dark story-mini-panel">
                 <!-- 3D magnifier over a gold coin — "we looked, nothing hidden" (George, 07-11) -->
                 <img class="tile-obj" src="/landing/assets/icons/magnifier-coin.png" alt="" style="width:48px; top:2px; left:50%; transform:translateX(-50%)" />
                 <div class="mini" style="padding-top:38px">
-                  <div class="k">You’ll pay back</div>
-                  <div class="big">$18</div>
-                  <div class="tiny">that’s the whole deal — one number, no hidden charges</div>
+                  <div class="k">The whole deal</div>
+                  <div class="big">$15 → $18</div>
+                  <div class="tiny">set the moment you ask — it never grows</div>
+                  <div class="row" style="margin-top:10px"><span class="when">You ask</span><span class="amt">$15</span></div>
+                  <div class="row"><span class="when">You pay back</span><span class="amt">$18</span></div>
+                  <div class="row"><span class="when">High APRs</span><span class="amt">none</span></div>
                 </div>
               </div>
             </div>
@@ -1467,6 +1498,11 @@
                   <div class="k">Our fees</div>
                   <div class="big">$0</div>
                   <div class="tiny">that’s not a promo — it’s how we’re built</div>
+                  <!-- the "0%-interest" apps hide cost as service fees (the /about
+                       story) — this ledger names the places they hide it -->
+                  <div class="row" style="margin-top:10px"><span class="when">Service fee</span><span class="amt">$0</span></div>
+                  <div class="row"><span class="when">Processing fee</span><span class="amt">$0</span></div>
+                  <div class="row"><span class="when">Hidden charges</span><span class="amt">$0</span></div>
                 </div>
               </div>
             </div>
@@ -1476,18 +1512,21 @@
 
         <ol class="story-titles">
           <li class="is-active"><button type="button">
-            <span class="story-t">You know <span class="accent">everything</span> before you borrow.</span>
-            <span class="story-cap"><span>The amount you pay back is set the moment you ask. <span data-peso-inline>$15 becomes $18</span> — and it stays $18.</span></span>
+            <span class="story-t"><span class="accent">No</span> APR. No rate surprises.</span>
           </button></li>
           <li><button type="button">
             <span class="story-t"><span class="accent">No</span> rollover.</span>
-            <span class="story-cap"><span>The due date doesn’t move, and neither does the price — nothing is added while you sleep.</span></span>
           </button></li>
           <li><button type="button">
             <span class="story-t"><span class="accent">No</span> fees from our side.</span>
-            <span class="story-cap"><span>Your money moves as digital dollars — no banks in the middle taking a cut, so we don’t need fees to survive.</span></span>
           </button></li>
         </ol>
+        <!-- One constant-height caption slot — the no-reflow half of the gap fix -->
+        <div class="story-caps">
+          <span class="is-active">Other apps’ numbers grow every week. Yours is set the moment you ask — $18, and it stays $18.</span>
+          <span>The due date doesn’t move, and neither does the price — nothing is added while you sleep.</span>
+          <span>Your money moves as digital dollars — no banks in the middle taking a cut, so we don’t need fees to survive.</span>
+        </div>
       </div>
     </div>
   </section>
@@ -1871,6 +1910,7 @@
     var run = sec.querySelector(".story-run");
     var screens = [].slice.call(sec.querySelectorAll(".story-screen"));
     var titles = [].slice.call(sec.querySelectorAll(".story-titles > li"));
+    var caps = [].slice.call(sec.querySelectorAll(".story-caps > span"));
     var N = screens.length;
     if (!N || N !== titles.length) return; // markup drifted — stay stacked
     sec.style.setProperty("--beats", N);
@@ -1933,6 +1973,8 @@
         // finished titles recede too (George: "hide the old header titles")
         t.classList.toggle("is-past", i < idx);
       });
+      // captions crossfade in their constant-height slot (no reflow)
+      caps.forEach(function (c, i) { c.classList.toggle("is-active", i === idx); });
     }
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
