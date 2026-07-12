@@ -4,6 +4,23 @@
 
 See [PLAN.md](PLAN.md) for the full design/copy direction (trust spine, rejected copy, moment-card spec, peso decisions).
 
+## ⏭️ NEXT UP — Promise-story repair: entry bug + equal big cards + "vs other loan apps" purpose (planned 2026-07-12 ~14:15 after George's real-phone review, NOT built)
+
+**George's report (Android phone, moodeng.app live):** (1) when the story pin engages, the "You'll pay back $18" card is NOT there — blank void above the titles until he scrolls; (2) the section is confusing/weird now — 1 small card, 1 big card, 1 small card, and a huge gap appears during the handoff between sizes; (3) card 1 should be bigger and say more: *"if you request 15 you pay back 18, it doesn't change, no high APRs"*; (4) **the section's purpose is to show the key differentiating factors vs other small-loan apps** — plan toward that.
+
+**Diagnosed causes (both confirmed in code, don't re-derive):**
+- **Blank-at-entry bug:** the scrub driver (index.html ~line 1905) gives every screen an "arriving" opacity ramp over the first 30% of its own segment — including screen 0. At pin-engage p=0 → d=0 → opacity 0, and the driver writes that inline even while the section is still approaching. So on any non-Reduce-Motion device the first card is invisible until ~0.3×68vh of scrolling. We never saw it because George's Mac + the preview browser have RM ON (RM uses the class path, which shows beat 1 fine). **Fix: screen 0 skips the arrival ramp — `if (j === 0) d = Math.max(d, H);` before the branches** (it still recedes normally at d>1). Keep the class path untouched.
+- **The gap:** the three minis have very different heights; `.story-screens` grid is sized by the tallest and `align-items:end` bottom-aligns, so a short active card leaves a big void above — the void pops in/out during small↔big handoffs. **Fix: all three cards get the SAME anatomy and height** (below), not a CSS patch around unequal cards.
+
+**The content plan — three equal LEDGER-anatomy cards (the no-rollover card is the template: tile-obj icon + k/big/tiny + 3 rows). Each card = one differentiator vs other loan apps; captions carry the contrast:**
+1. **You know everything** (dark panel, magnifier icon stays): k "The whole deal" → big "$15 → $18" → tiny "set before you say yes — it never changes" → rows: `You ask | $15` · `You pay back | $18` · `High APRs | none`. (George's exact asks. "APR" is fine here — it's the term burned borrowers know from other apps; if Emma objects swap to "interest surprises".)
+2. **No rollover** (lock icon, current ledger card unchanged — it's already right): Due date Jul 30 "set when you ask — it never moves" + What-you-owe rows today/next week/on Jul 30, all $18.
+3. **No fees from our side** (price-tag icon): k "Our fees" → big "$0" → tiny "not a promo — it's how we're built" → rows: `Service fee | $0` · `Processing fee | $0` · `Hidden charges | $0`. (Mirrors the "0%-interest apps hide cost as service fees" story from /about — truth-checked framing, no app names ever.)
+- Title captions get the explicit vs-other-apps contrast where it's missing, e.g. know-everything cap gains "no surprise 'service fees' on day 30". Keep generic ("other apps"), truth-only, zero brand names.
+- Equal height belt-and-suspenders: shared `.story-mini-panel .mini { min-height: <measured>px }` after the anatomy is identical (3 rows each), so the pin NEVER resizes between beats and `align-items:end` has nothing to expose.
+
+**Verify (the miss last time was RM-blindness — don't repeat it):** test the scrub path with RM OFF (emulate via devtools "prefers-reduced-motion: no-preference" or a real phone): card 1 must be fully visible the moment the pin engages, and no gap/jump across all 3 handoffs in both directions. Then re-check RM + no-JS stacked fallbacks. Screenshot each beat at 375w.
+
 ## ✅ BUILT — Fruitful "01–04" step explainer + story shrinks to 3 beats (planned + confirmed + BUILT 2026-07-12, PR #619 merged)
 
 **Status:** shipped exactly per the spec below (kept for reference). Verified at 375w: steps 01–04 with moved cards, Coins.ph caption truth-checked against the app's withdraw picker, compact checkmarks+CTA closer, 3-beat story pin with rail. ⚠️ One open check: the verification browser had Reduce Motion ON (George's Mac), so the staggered reveals + scrubbed rails render as the finished state there — eyeball the motion once on a non-RM device/phone after deploy.
