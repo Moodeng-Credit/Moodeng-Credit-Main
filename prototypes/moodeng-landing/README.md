@@ -4,6 +4,31 @@
 
 See [PLAN.md](PLAN.md) for the full design/copy direction (trust spine, rejected copy, moment-card spec, peso decisions).
 
+## ⏭️ NEXT UP — Fruitful "01–04" step explainer + story shrinks to 3 beats (planned 2026-07-12, NOT built — George's go)
+
+**George's call:** the deal-panel ("How it works" white box under the sudden-expense phone) is "long and boring", and the 6-beat scroll story below is too long. Split the mechanism out of both: a **Fruitful-style numbered step explainer (01–04)** goes between the sudden-expense stage and the beat scroll, the **beat scroll shrinks to 3 claim beats**. Order on the page: hero → sudden-expense H2 + money-moment phone (coins slide-in stays) → **01–04 steps** → checkmarks + CTA → **3-beat scroll story** → demo video → …
+
+**What Fruitful actually does there (autopsied from George's saved capture `~/Downloads/Fruitful - Your money, finally figured out.html`):** their 01–04 explainer is **normal document flow, NOT a pinned beat scroll** — each step is a full block (staged visual on top → grey `01` number → display headline → caption, with a green rail on the left that fills as the block crosses the viewport), revealed as you scroll. So it's our `.reveal` IntersectionObserver pattern — but a bare single-fade `.reveal` is exactly what "we tried before and it didn't work / felt cheap." What makes Fruitful's version feel alive (all three required):
+1. **Staggered child reveals** — visual first, then number, then headline, then caption (per-child `transition-delay` ~0/.06/.14/.22s off one `.in` class), not one flat fade of the whole block.
+2. **Scrubbed rail** — the left rail fill is tied to scroll progress (scaleY of a per-block `--sp` var, same cheap pattern as the coins' `--p` and the story rail's `--story-p`; one shared passive scroll listener, no rAF), NOT a one-shot animation.
+3. **Big air** — generous vertical rhythm between blocks (~90–120px), display-size headlines. Fruitful's blocks breathe; cramped blocks kill the effect.
+
+**The 4 steps and where their visuals come from (MOVE, don't copy — no card appears twice on the page):**
+- **01 Ask** — visual = the existing money-moment phone + sliding coin stack (`#expenseStage`), which already sits right above; the "01" text block starts under it. No new visual.
+- **02 Real people say yes** — visual = the funded card ("3 people said yes", avatars, Funded ✓) **moved out of story beat 1**.
+- **03 Money arrives** — visual = the GCash cash-out card **moved from story beat 2** (keep `.phone.tall.compact`). Caption gains George's ask: lands ready for GCash — **or choose another way, like Coins.ph** (brand names in TEXT are fine; never third-party logos). ⚠️ Truth-check the provider list against the app's withdraw picker (`/withdraw-preview`) before naming names.
+- **04 Repay & level up** — visual = the level-up/unlock card **moved from story beat 6** ($15 → new limit $20 → goal $60+). No new card needed.
+
+**What's left of the scroll story (3 beats):** *You know everything before you borrow* ($18 magnifier, dark) → *No rollover* (due-date ledger) → *No fees from our side* ($0 tag). The pin gets ~3×68vh shorter, which roughly pays for the taller steps section. This also resolves the panel-vs-story redundancy question for good: **steps own the mechanism, story owns the promises.**
+
+**Implementation notes for whoever builds it:**
+- The deal-panel's `<ol class="steps">` is replaced by the step blocks; the `.deal-list` checkmarks ($18-before-confirm + USDC) and the CTA/reassure stay as the section closer (compact, after step 04).
+- Moved cards keep their markup verbatim (`.stage`/`.stage-panel` anatomy); re-key their micro-animations from `.story-screen.is-active .…` to the step block's `.in` class (they originally ran on `reveal.in` before the story merge, so this is a return, not a rewrite). Beat 1's avatar pops/progress/funded-badge selectors and beat 6's lock/meter/chip selectors all need re-scoping; beat 2's coin-badge/arrow too. `unlockPop` now has opacity keyframes — keep it that way (elements gated at `opacity:0` need the animation to animate opacity).
+- Story driver: `--beats` is set from the live screen count by JS, so shrinking = deleting the 3 beat `<div class="story-screen">`s + their 3 `<li>` titles. Delete the now-dead micro-anim CSS for moved beats or re-scope it with the cards. Beat-count invariant (5–6 max) is trivially satisfied at 3.
+- Reveal/no-JS/reduced-motion conventions (house rules): default every `--sp` to 1 and gate initial-hidden states on a JS-added class, so no-JS and Reduce Motion render the finished state (George's Mac has Reduce Motion ON system-wide — never gate the mechanism on it, only soften motion).
+- Peso hints on moved cards (`data-peso`) keep working — `paintPesos()` is global, runs once at load, position-independent.
+- Verify: screenshot each step block at 375w; scroll the staggering; confirm the 3-beat story still pins/taps/rails correctly; hard-refresh moodeng.app after merge (deploys lag a couple minutes).
+
 ## ⏭️ NEXT STEPS — /for-lenders Percent-style rebuild (handoff, 2026-07-11)
 
 **State right now:** [`public/landing/for-lenders.html`](../../public/landing/for-lenders.html) was fully rebuilt (2026-07-11, commit `1f71c7cef`) to **George's own outline — the page demonstrates the product instead of pitching it**. Lives on PR **#603** (`feat/landing-honest-proof-lender-page`), **unmerged**. Preview: `https://moodeng-credit-main-git-feat-landin-d5f15e-snak2etechs-projects.vercel.app/for-lenders` — verified at mobile + 1280px (all sections, rotator, count-ups, step screenshots).
