@@ -301,7 +301,7 @@
      to 1 so no-JS AND reduced-motion both render the finished pose — never
      gate content on motion (George's Mac has Reduce Motion ON). */
   .stage-obj {
-    position: absolute; right: -26px; bottom: -24px; width: 126px; z-index: 3;
+    position: absolute; right: -26px; bottom: -24px; width: 126px; z-index: 1;
     pointer-events: none;
     filter: drop-shadow(0 16px 24px rgba(28,5,61,0.3));
     transform:
@@ -310,6 +310,12 @@
       rotate(calc(14deg - 10deg * var(--p, 1)));
     will-change: transform;
   }
+  /* Coins tuck BEHIND the phone (George 07-12: they covered the Continue
+     button). Fruitful layers the same way — the card emerges from behind the
+     phone edge, never over its UI. Works because .stage-panel has no z-index
+     (no stacking context), so the phone's z-index competes directly with the
+     coins': panel bg (auto) < coins (1) < phone (2). */
+  #expenseStage .phone { z-index: 2; }
   /* Fruitful's second layer: screen content drifts a touch inside the frame */
   .stage .inner { transform: translateY(calc((1 - var(--p, 1)) * 8px)); }
 
@@ -489,6 +495,22 @@
     z-index: 1;
   }
   .sec-story.armed .story-screen.is-active { opacity: 1; transform: none; filter: none; pointer-events: auto; z-index: 2; }
+  /* Fruitful progress rail (George 07-12): thin bar on the left fills with
+     scroll progress so you can see how much of the pinned section is left.
+     Scrubbed continuously via --story-p from the scroll driver; armed-only
+     (the stacked no-JS fallback has nothing to measure). */
+  .story-rail { display: none; }
+  .sec-story.armed .story-rail {
+    display: block; position: absolute;
+    left: max(12px, calc(50% - 240px)); top: 28px; bottom: 28px;
+    width: 4px; border-radius: 4px;
+    background: var(--lavender-border);
+  }
+  .sec-story.armed .story-rail i {
+    position: absolute; inset: 0; border-radius: 4px;
+    background: var(--purple);
+    transform: scaleY(var(--story-p, 0)); transform-origin: 50% 0;
+  }
   .story-screen .stage { width: 100%; max-width: none; margin: 0 auto; }
   /* tile minis promoted to full screens: same overlap geometry as .tile-panel
      (obj absolute at panel top, mini centered under 34px padding → icon dips
@@ -1149,7 +1171,9 @@
               <div class="statement">Real people can fund you <span class="amt-pill">$15</span></div>
               <div class="terms-row">
                 <div class="chip">
-                  <div class="k">Get back</div>
+                  <!-- "Pay back" not "Get back" (George 07-12): get-back read like
+                       money coming TO you — this chip is what you owe. -->
+                  <div class="k">Pay back</div>
                   <div class="v">$18</div>
                   <span class="peso" data-peso="18">≈ ₱1,020</span>
                 </div>
@@ -1220,6 +1244,7 @@
   <section class="sec-story">
     <div class="story-run">
       <div class="story-pin">
+        <span class="story-rail" aria-hidden="true"><i></i></span>
         <div class="story-screens">
 
           <!-- Beat 1: a real person says yes (was Moment Card 2, the funded state) -->
@@ -1743,6 +1768,8 @@
       var budget = r.height - window.innerHeight;
       if (budget <= 0) return;
       var p = Math.max(0, Math.min(0.999, -r.top / budget));
+      // progress rail fills continuously (before the discrete-beat early return)
+      sec.style.setProperty("--story-p", p.toFixed(4));
       var idx = Math.floor(p * N);
       if (idx === active) return;
       // Klarna handoff: the beat we're leaving becomes .is-prev — it stays
