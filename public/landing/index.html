@@ -826,6 +826,14 @@
   .dark-carousel .tile { flex: 0 0 min(300px, 80vw); scroll-snap-align: center; }
   /* text under each card scrolls with its card, same as the stacked layout */
   .dark-carousel .tile-cap { max-width: none; }
+  /* one fixed frame for all four cards (same constant-frame move as the
+     promise pin) — panel heights can't vary, so every headline below starts
+     on the same line. .tile-inner anchors each 3D object to ITS mini (obj
+     tops are negative), so the dips-onto-the-card invariant survives the
+     vertical centering. */
+  .dark-carousel .tile-panel { height: 240px; }
+  .tile-inner { position: relative; }
+  .dark-carousel .tile-obj { left: 50%; transform: translateX(-50%); }
   .dark-dots { display: flex; justify-content: center; gap: 7px; margin-top: 18px; }
   .dark-dots i {
     width: 7px; height: 7px; border-radius: 50%;
@@ -1562,30 +1570,43 @@
 
       <!-- Side carousel (George 07-12): swipe through the four never-promises.
            Keyboard/trackpad users get native horizontal scroll; dots are
-           position feedback only (not buttons). -->
+           position feedback only (not buttons).
+           Cleanup pass (George, same day: "text heavy, no icons, spacing odd"):
+           every card gets a 3D object (Tilt rule — no naked text tiles), the
+           duplicate text layer per card was cut (mini tiny-line vs caption said
+           the same thing), and all four panels share one fixed height so the
+           headlines start on the same line (same constant-frame move as the
+           promise pin). Objects anchor to .tile-inner, not the panel, so the
+           icon-dips-onto-the-mini invariant survives vertical centering. -->
       <div class="dark-carousel" id="darkCarousel">
 
         <div class="tile">
           <div class="tile-panel night">
             <!-- claim verified against /privacy-policy 2026-07-06: no contacts/photos/messages
                  collected anywhere in the policy; web app has no phone-storage access -->
-            <img class="tile-obj" src="/landing/assets/about/harassment-phone.png" alt="" style="height:60px; top:0" loading="lazy" />
-            <div class="mini" style="padding-top:40px">
-              <div class="k">Contacts · Photos · Messages</div>
-              <div class="big">Never asked</div>
-              <div class="tiny">we can’t take what we never see</div>
+            <div class="tile-inner">
+              <img class="tile-obj" src="/landing/assets/about/harassment-phone.png" alt="" style="height:60px; top:-38px" loading="lazy" />
+              <div class="mini" style="padding-top:34px">
+                <div class="k">Contacts · Photos · Messages</div>
+                <div class="big">Never asked</div>
+              </div>
             </div>
           </div>
           <h3 class="tile-h">We <span class="accent">never</span> dig through your phone.</h3>
-          <p class="tile-cap">No contact list, no photos, no messages. We couldn’t call your family if we wanted to.</p>
+          <p class="tile-cap">We couldn’t call your family if we wanted to.</p>
         </div>
 
         <div class="tile">
           <div class="tile-panel night">
-            <div class="mini">
-              <div class="k">Your information</div>
-              <div class="big">Not for sale</div>
-              <div class="tiny">not to anyone, not ever</div>
+            <!-- lock = stand-in until George's custom "not for sale" asset
+                 (price tag with a slash / locked folder) — swap in place -->
+            <div class="tile-inner">
+              <img class="tile-obj" src="/landing/assets/icons/lock-closed.png" alt="" style="height:46px; top:-28px" loading="lazy" />
+              <div class="mini" style="padding-top:30px">
+                <div class="k">Your information</div>
+                <div class="big">Not for sale</div>
+                <div class="tiny">not to anyone, not ever</div>
+              </div>
             </div>
           </div>
           <h3 class="tile-h">We <span class="accent">never</span> sell your information.</h3>
@@ -1596,13 +1617,17 @@
           <div class="tile-panel night">
             <!-- hippo OFF for now (George 2026-07-05: top 3/4 hippo-free)
             <img class="sec-hippo" src="/landing/assets/hippos/hippo-friendly-lock.png" alt="" style="width:76px; bottom:2px; right:6px" /> -->
-            <div class="bubble">
-              <span class="from">Moodeng</span>
-              Hi! Your $18 is due Jul 30. If it’s a hard week, message us — we’ll figure it out together.
+            <div class="tile-inner">
+              <div class="bubble">
+                <span class="from">Moodeng</span>
+                Hi! Your $18 is due Jul 30. If it’s a hard week, message us — we’ll figure it out together.
+              </div>
             </div>
           </div>
           <h3 class="tile-h">We <span class="accent">never</span> shame you.</h3>
-          <p class="tile-cap">This is the only kind of reminder we send. No public posts. No calls to your family.</p>
+          <!-- "No calls to your family" moved off this card — card 1's caption
+               owns the family line now (it was said twice) -->
+          <p class="tile-cap">This is the only kind of reminder we send. No public posts.</p>
         </div>
 
         <!-- 4th card = the old verify-note text box, promoted to full tile
@@ -1613,15 +1638,17 @@
              matching 3D asset if George generates one. -->
         <div class="tile">
           <div class="tile-panel night">
-            <img class="tile-obj" src="/icons/check-3d.png" alt="" style="height:54px; top:4px; left:50%; transform:translateX(-50%)" loading="lazy" />
-            <div class="mini" style="padding-top:38px">
-              <div class="k">One quick ID check</div>
-              <div class="big">One real person</div>
-              <div class="tiny">funders see the ✓, never your documents</div>
+            <div class="tile-inner">
+              <img class="tile-obj" src="/icons/check-3d.png" alt="" style="height:54px; top:-32px" loading="lazy" />
+              <div class="mini" style="padding-top:32px">
+                <div class="k">One quick ID check</div>
+                <div class="big">One real person</div>
+                <div class="tiny">funders see the ✓, never your documents</div>
+              </div>
             </div>
           </div>
           <h3 class="tile-h">You prove you’re real <span class="accent">once.</span></h3>
-          <p class="tile-cap">One quick ID check and you’re done. That’s why funders trust you fast — without us digging through your life.</p>
+          <p class="tile-cap">Do it once and you’re done — funders trust you fast.</p>
         </div>
 
       </div>
