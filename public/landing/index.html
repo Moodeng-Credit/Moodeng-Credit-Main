@@ -293,17 +293,54 @@
     border-radius: 16px;
     padding: 16px 15px 15px;
   }
-  /* 3D object overlapping the tinted card's top edge (Tilt treatment):
-     height ≈ 28% of card width, 55% floating above / 45% dipping on */
-  .card-obj {
-    position: absolute; left: 50%; top: 0;
-    height: 64px; transform: translate(-50%, -55%);
-    z-index: 2; pointer-events: none;
-    filter: drop-shadow(0 10px 14px rgba(28,5,61,0.2));
+  /* ---------- Fruitful slide-in (2026-07-12) ----------
+     Verified from fruitful.com's usp section: their debit card sits in a wrap
+     that scrubs translate3d(~70%,~60%) scale(.84) rotateZ(~8deg) → rest, tied
+     to scroll progress. Ours: the coin stack is the object, --p is the scrub
+     (0 = off-stage down-right, 1 = resting on the phone edge). --p defaults
+     to 1 so no-JS AND reduced-motion both render the finished pose — never
+     gate content on motion (George's Mac has Reduce Motion ON). */
+  .stage-obj {
+    position: absolute; right: -26px; bottom: -24px; width: 126px; z-index: 3;
+    pointer-events: none;
+    filter: drop-shadow(0 16px 24px rgba(28,5,61,0.3));
+    transform:
+      translate3d(calc((1 - var(--p, 1)) * 70%), calc((1 - var(--p, 1)) * 60%), 0)
+      scale(calc(0.84 + 0.16 * var(--p, 1)))
+      rotate(calc(14deg - 10deg * var(--p, 1)));
+    will-change: transform;
   }
-  .inner.pad-obj { padding-top: 42px; }
-  /* keep the floating object clear of the app-header text */
-  .phone.has-obj .phone-head { padding-bottom: 42px; }
+  /* Fruitful's second layer: screen content drifts a touch inside the frame */
+  .stage .inner { transform: translateY(calc((1 - var(--p, 1)) * 8px)); }
+
+  /* Fruitful-style info box: all explainer text lives here, and it never moves */
+  .deal-panel {
+    margin: 26px auto 0; max-width: 560px; text-align: left;
+    background: #fff; border: 1px solid var(--lavender-border);
+    border-radius: 28px; padding: 24px 20px 26px;
+    box-shadow: 0 18px 40px rgba(96,16,210,0.14);
+  }
+  .deal-panel > .label { margin: 0 2px; }
+  .deal-panel .steps { margin: 14px 0 0; max-width: none; }
+  .deal-panel .steps li { background: var(--card-tint); }
+  .deal-list {
+    list-style: none; margin: 18px 2px 0; padding: 16px 0 0;
+    border-top: 1px dashed var(--lavender-border);
+    display: grid; gap: 11px;
+  }
+  .deal-list li {
+    display: flex; gap: 10px; align-items: flex-start;
+    font-size: 13.5px; font-weight: 600; color: var(--text-soft); line-height: 1.45;
+  }
+  .deal-list b { color: var(--heading); }
+  .deal-list a { color: var(--purple); font-weight: 700; }
+  .deal-list .ok {
+    flex: 0 0 auto; width: 20px; height: 20px; margin-top: 1px;
+    border-radius: 50%; background: var(--purple); color: #fff;
+    font-size: 11px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .deal-panel .hero-cta-block .cta { margin-top: 20px; }
   .inner .reason { font-size: 13px; font-weight: 700; color: var(--text-soft); }
   .inner .reason .emoji { margin-right: 5px; }
   .statement {
@@ -1079,14 +1116,15 @@
       <h2 class="hero-h">Sudden expense? There are people who <span class="accent">want to help.</span></h2>
       <p class="hero-sub">Borrow small — <b>from $15</b> — and know exactly what you’ll give back, <b>before you say yes.</b></p>
 
-      <!-- Moment Card 1: the hero IS the card (Tilt/MAKE: show, don't tell) -->
-      <div class="stage">
+      <!-- Moment Card 1: the hero IS the card (Tilt/MAKE: show, don't tell).
+           Fruitful pass 2026-07-12: screen stripped to the money moment only —
+           the $18-certainty line and USDC note moved into .deal-panel below
+           (Fruitful's usp pattern: the object animates, the text box never moves). -->
+      <div class="stage" id="expenseStage">
         <div class="stage-panel">
-          <div class="phone has-obj">
+          <div class="phone">
             <div class="phone-head"><span class="back">‹</span> Your loan</div>
-            <div class="inner pad-obj">
-              <!-- 3D gold coin stack — asset #1 (George) -->
-              <img class="card-obj" src="/landing/assets/icons/coins-stack.png" alt="" />
+            <div class="inner">
               <div class="reason"><span class="emoji">🏥</span>Medicine · can’t wait for payday</div>
               <div class="statement">Real people can fund you <span class="amt-pill">$15</span></div>
               <div class="terms-row">
@@ -1102,38 +1140,45 @@
                 </div>
               </div>
               <span class="card-cta">Continue with $15</span>
-              <p class="card-foot">You’d give back <b>$18 on Jul 30</b><br />— shown before you confirm.</p>
-              <!-- UX critique 2026-07-11: funds arriving as a stablecoin was a FAQ-only
-                   reveal — discovering "wait, this is crypto?" mid-flow breaks trust.
-                   Disclose it right on the loan-terms card. -->
-              <p class="usdc-note">Funds arrive as USDC — a digital dollar built to stay worth $1. <a href="#faq-usdc">What’s USDC?</a></p>
             </div>
           </div>
         </div>
+        <!-- 3D gold coin stack — our "debit card": slides in from down-right and
+             rests overlapping the phone edge, scrubbed by scroll (--p 0→1) -->
+        <img class="stage-obj" src="/landing/assets/icons/coins-stack.png" alt="" />
       </div>
 
-      <!-- UX critique 2026-07-11: "a real person chose to help" was asserted but never
-           demonstrated — show what happens between "ask" and "3 people said yes". -->
-      <ol class="steps">
-        <!-- Word-weight pass 07-12 (George: "the text here better") — fragments,
-             front-loaded verbs; George has a bigger card idea for this strip TBD -->
-        <li>
-          <span class="n">1</span>
-          <div><b>Ask</b><p>What you need and why — 30 seconds, no documents.</p></div>
-        </li>
-        <li>
-          <span class="n">2</span>
-          <div><b>Real people say yes</b><p>Funders read it and choose to help — usually within a few hours.</p></div>
-        </li>
-        <li>
-          <span class="n">3</span>
-          <div><b>Money arrives</b><p>$15 lands ready for GCash. Give back $18 on Jul 30 — that’s the whole deal.</p></div>
-        </li>
-      </ol>
-
-      <div class="hero-cta-block">
-        <a class="cta" href="/request-board"><span class="btn-label">Ask for what you need <span class="arrow">→</span></span></a>
-        <p class="reassure">Start tiny, stress-free — your first loan is $15.</p>
+      <!-- Fruitful-style info panel (2026-07-12, George's ask after the Fruitful
+           autopsy): one rounded box holds ALL the explainer text — the 1-2-3
+           mechanism (UX critique 07-11: show what happens between "ask" and
+           "3 people said yes") plus the certainty lines that used to crowd the
+           phone screen. -->
+      <div class="deal-panel">
+        <p class="label">How it works</p>
+        <ol class="steps">
+          <li>
+            <span class="n">1</span>
+            <div><b>Ask</b><p>What you need and why — 30 seconds, no documents.</p></div>
+          </li>
+          <li>
+            <span class="n">2</span>
+            <div><b>Real people say yes</b><p>Funders read it and choose to help — usually within a few hours.</p></div>
+          </li>
+          <li>
+            <span class="n">3</span>
+            <div><b>Money arrives</b><p>$15 lands ready for GCash.</p></div>
+          </li>
+        </ol>
+        <ul class="deal-list">
+          <li><span class="ok">✓</span><span>You’d give back <b>$18 on Jul 30</b> — shown before you confirm.</span></li>
+          <li><span class="ok">✓</span><span><b>No APR, no growing fees</b> — the whole deal is one number.</span></li>
+          <!-- UX critique 2026-07-11: USDC disclosed up front, not FAQ-only -->
+          <li><span class="ok">✓</span><span>Funds arrive as <b>USDC</b> — a digital dollar built to stay worth $1. <a href="#faq-usdc">What’s USDC?</a></span></li>
+        </ul>
+        <div class="hero-cta-block">
+          <a class="cta" href="/request-board"><span class="btn-label">Ask for what you need <span class="arrow">→</span></span></a>
+          <p class="reassure">Start tiny, stress-free — your first loan is $15.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -1690,6 +1735,28 @@
         window.scrollTo({ top: top, behavior: "smooth" });
       });
     });
+  })();
+
+  // ---- Fruitful slide-in: coin stack scrubbed by scroll progress ----
+  // Same discrete-scroll-event pattern as the story pin (no rAF drift, so
+  // touch throttling can't freeze it). CSS defaults --p to 1 (resting pose);
+  // with Reduce Motion on we simply never scrub — content identical.
+  (function () {
+    var stage = document.getElementById("expenseStage");
+    if (!stage) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    function update() {
+      var r = stage.getBoundingClientRect();
+      // 0 as the stage's top enters the viewport bottom → 1 while it's still
+      // comfortably on screen (finishes when its top is ~28vh from the top)
+      var raw = (window.innerHeight - r.top) / (r.height + window.innerHeight * 0.28);
+      var p = Math.max(0, Math.min(1, raw));
+      p = 1 - Math.pow(1 - p, 3); // ease-out: quick arrival, gentle settle
+      stage.style.setProperty("--p", p.toFixed(4));
+    }
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    update();
   })();
 
   // ---- Peso context: geo-detect, honest "≈", graceful fallback ----
