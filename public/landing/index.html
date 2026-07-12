@@ -940,6 +940,15 @@
   .qcard.navy .qwho .nm { color: #fff; }
   .qwho .ctx { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); }
   .qcard.navy .qwho .ctx { color: #B6A8CC; }
+  /* mission card (2026-07-13): Emma's photo + why-we-exist, sits under the
+     reserved story card. Real team photo = the same proof language as the
+     "real borrower" videos above it. */
+  .qcard.mission { flex: none; margin: 14px auto 0; max-width: 300px; }
+  .qwho .av-photo {
+    width: 36px; height: 36px; border-radius: var(--pill); flex: none;
+    object-fit: cover; border: 2px solid #E4CFFB;
+  }
+  .qcard.mission .ctx a { color: var(--purple); font-weight: 700; text-decoration: none; }
   .vidlabel {
     margin: 26px 0 0; font-size: 11px; font-weight: 800;
     letter-spacing: 0.14em; text-transform: uppercase; color: #6010D2;
@@ -1255,7 +1264,7 @@
     <div class="wrap">
       <p class="label">When payday feels far away</p>
       <h2 class="hero-h">Sudden expense? There are people who <span class="accent">want to help.</span></h2>
-      <p class="hero-sub">Borrow small — <b>from $15</b> — and know exactly what you’ll give back, <b>before you say yes.</b></p>
+      <p class="hero-sub">Borrow small — <b>from $15</b> — and know the exact payback, <b>before you say yes.</b></p>
 
       <!-- The money-moment phone moved into the steps pin below as beat 01
            (Fruitful correction 07-12: their explainer is a pinned scroll and
@@ -1534,7 +1543,7 @@
         <div class="story-caps">
           <span class="is-active">Other apps’ numbers grow every week. Yours is set the moment you ask — $18, and it stays $18.</span>
           <span>The due date doesn’t move, and neither does the price — nothing is added while you sleep.</span>
-          <span>Your money moves as digital dollars — no banks in the middle taking a cut, so we don’t need fees to survive.</span>
+          <span>The extra $3 goes to the person who funded you — not to us. Our side adds nothing: no service fee, no processing fee, no hidden charges.</span>
         </div>
       </div>
     </div>
@@ -1567,7 +1576,9 @@
     <div class="wrap reveal">
       <p class="label">If things go wrong</p>
       <h2 class="sec-h">We treat you like a <span class="accent">person.</span></h2>
-      <p class="sec-lead">You’ve seen what other apps do when someone struggles. Here’s what we do instead — and what we will never do.</p>
+      <!-- Lead = the strongest line on the page (was card 1's caption, promoted
+           2026-07-13); card 1 got a new caption so the line isn't said twice -->
+      <p class="sec-lead">We couldn’t call your family if we wanted to — we never ask for your contacts. Here’s what else we will never do.</p>
 
       <!-- Side carousel (George 07-12): swipe through the four never-promises.
            Keyboard/trackpad users get native horizontal scroll; dots are
@@ -1594,7 +1605,7 @@
             </div>
           </div>
           <h3 class="tile-h">We <span class="accent">never</span> dig through your phone.</h3>
-          <p class="tile-cap">We couldn’t call your family if we wanted to.</p>
+          <p class="tile-cap">Your contacts, photos, and messages stay yours — so they can never be used against you.</p>
         </div>
 
         <div class="tile">
@@ -1699,6 +1710,16 @@
         <p class="qt">This card is saved for <b>your</b> story. Repay your first loan, tell us how it went — and your words go right here.</p>
         <div class="qwho"><span class="av" style="background:#8336F0">?</span><span class="nm">You<span class="ctx">Your first $15 · soon</span></span></div>
       </div>
+      <!-- Mission card (George 07-13): Emma's real photo + the why. The landing
+           version stays short and non-graphic — the full personal story (what
+           loan sharks did to people she loves) lives on /about, behind the link. -->
+      <div class="qcard mission">
+        <p class="qt">“Our mission is simple: make loan sharks obsolete. I’ve watched what they do to people I love. Moodeng is the answer we wished existed — honest, fair loans from real people, and credit that builds you up instead of burying you.”</p>
+        <div class="qwho">
+          <img class="av-photo" src="/team/emma-moodeng.jpeg" alt="Emma from the Moodeng team" loading="lazy" />
+          <span class="nm">Emma<span class="ctx">Moodeng team · <a href="/about">why it’s personal&nbsp;→</a></span></span>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -1744,6 +1765,14 @@
           <p class="a">Real people. Someone read your request and chose to help — not a company, not an algorithm.</p>
         </details>
         <details>
+          <summary>If you don’t charge fees, how do you make money?</summary>
+          <p class="a">The extra you pay back — like $3 on a $15 loan — goes to the <b>person who funded you</b>, as their thank-you for helping. Moodeng adds nothing on top of it: no service fee, no processing fee, no cut of your loan. That’s the whole model, and it’s on the screen before you say yes.</p>
+        </details>
+        <details>
+          <summary>Is this legit? Who’s behind Moodeng?</summary>
+          <p class="a">Real people with names and faces — we watched loan sharks and predatory loan apps hurt people we love, and built the opposite. Every borrower is one verified real person, every loan is on the record, and you can message us any time and a human answers. <a href="/about">Read our story</a>.</p>
+        </details>
+        <details>
           <summary>How do I turn it into pesos?</summary>
           <p class="a">When the money lands, you can move it into pesos through apps you already use, like GCash — and move it back the same way when you repay.</p>
         </details>
@@ -1769,7 +1798,7 @@
       <a class="cta" href="/request-board"><span class="btn-label">Start with your first small loan <span class="arrow">→</span></span></a>
       <!-- UX critique 2026-07-11 + density pass: one line only under a CTA. The hero
            carries the fragment facts; down here the single human closer stays. -->
-      <p class="reassure">A real person has to say yes — usually within a few hours. You’ll know the moment someone does.</p>
+      <p class="reassure">Real people read your request and choose to help — usually within a few hours. You’ll know the moment someone says yes.</p>
     </div>
   </section>
 
