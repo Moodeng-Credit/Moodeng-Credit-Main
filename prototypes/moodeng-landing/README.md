@@ -4,7 +4,9 @@
 
 See [PLAN.md](PLAN.md) for the full design/copy direction (trust spine, rejected copy, moment-card spec, peso decisions).
 
-## ⏭️ NEXT UP — Promise-story repair: fixed-frame panel + no-reflow text + "vs other loan apps" purpose (planned 2026-07-12, refined ~15:10, NOT built; entry-bug part ALREADY FIXED in #623)
+## ✅ BUILT — Promise-story repair: fixed-frame panel + no-reflow text + "why we're different" beats (**PR #627 merged 2026-07-12 ~15:40**; entry-bug part was #623)
+
+**Shipped per the spec below.** Open copy sign-offs for George/Emma: the lead-in line ("Why this is different / Not like the loan apps you've met.") and whether "APR" is allowed in user copy (fallback: "interest surprises"). Verified with `?motion=1` at 375w: all 3 panels exactly 416px, caption slot constant 77px on both pins, caption/beat sync, pin fits 746/746.
 
 **George's report (Android phone, moodeng.app live):** (1) when the story pin engages, the "You'll pay back $18" card is NOT there — blank void above the titles until he scrolls; (2) the section is confusing/weird now — 1 small card, 1 big card, 1 small card, and a huge gap appears during the handoff between sizes; (3) card 1 should be bigger and say more: *"if you request 15 you pay back 18, it doesn't change, no high APRs"*; (4) **the section's purpose is to show the key differentiating factors vs other small-loan apps** — plan toward that.
 
