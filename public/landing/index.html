@@ -495,6 +495,15 @@
     z-index: 1;
   }
   .sec-story.armed .story-screen.is-active { opacity: 1; transform: none; filter: none; pointer-events: auto; z-index: 2; }
+  /* Card-recede scrub mode (07-12): the driver writes opacity/transform/z
+     inline every scroll event, bound to scroll position — class transitions
+     would smear each write over .25s, so they're off. The class rules above
+     remain the reduced-motion path (no .scrubbed there). */
+  .sec-story.armed.scrubbed .story-screen {
+    transition: none;
+    filter: none;
+    will-change: opacity, transform;
+  }
   /* Fruitful progress rail (George 07-12): thin bar on the left fills with
      scroll progress so you can see how much of the pinned section is left.
      Scrubbed continuously via --story-p from the scroll driver; armed-only
@@ -549,6 +558,10 @@
   .story-t .accent { color: inherit; font-weight: 500; }
   .story-titles li.is-active .story-t { color: var(--heading); }
   .story-titles li.is-active .story-t .accent { color: var(--purple); }
+  /* finished titles recede (George 07-12: "hide the old header titles") —
+     strong fade, but layout height stays put so nothing jumps */
+  .story-titles li { transition: opacity .35s ease; }
+  .sec-story.armed .story-titles li.is-past { opacity: .22; }
   .story-cap {
     display: grid; grid-template-rows: 0fr;
     transition: grid-template-rows .35s ease, opacity .35s ease;
@@ -645,7 +658,10 @@
   .sec-story.armed .story-screen.is-active .meter-box .chip-up { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); transition-delay: .6s; }
   .sec-story.armed .story-screen.is-active .meter-box .marks .mid { animation: unlockMid .55s ease .7s both; }
   @keyframes unlockMid { 0%,100% { transform: scale(1); } 45% { transform: scale(1.12); } }
-  @keyframes unlockPop { 0% { transform: scale(.84) rotate(-7deg); } 55% { transform: scale(1.06) rotate(3deg); } 100% { transform: scale(1) rotate(0); } }
+  /* opacity keyframes added 07-12: coin-badge + tile-objs sit at opacity:0
+     until this animation runs — transform-only keyframes never made them
+     visible (George: "the icon is gone"). */
+  @keyframes unlockPop { 0% { opacity: 0; transform: scale(.84) rotate(-7deg); } 55% { opacity: 1; transform: scale(1.06) rotate(3deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
   @media (prefers-reduced-motion: reduce) {
     .sec-story.armed .coin-badge,
     .sec-story.armed .story-mini-panel .tile-obj,
@@ -750,6 +766,11 @@
 
   /* cash-out moment card (product moment #4): upright tall phone, Tilt-light */
   .coin-badge { height: 58px; margin: 36px auto 16px; display: block; }
+  /* compact variant (George 07-12: cash-out card read as one big void while
+     the icon bug hid the coins) — trims the vertical air on this card only */
+  .phone.tall.compact .coin-badge { margin: 22px auto 12px; }
+  .phone.tall.compact .statement { margin-bottom: 20px; }
+  .phone.tall.compact .cta-caps { margin-top: 28px; }
   .swap-box {
     background: #F6F3FA; border-radius: 14px;
     padding: 13px 16px; margin: 0 2px;
@@ -1281,7 +1302,7 @@
           <div class="story-screen">
             <div class="stage">
               <div class="stage-panel">
-                <div class="phone upright tall">
+                <div class="phone upright tall compact">
                   <div class="phone-head"><span class="back">‹</span> Cash out</div>
                   <!-- 3D $/₱ coin pair — asset #5 (George) -->
                   <img class="coin-badge" src="/landing/assets/icons/usd-php-coins.png" alt="" />
@@ -1770,6 +1791,16 @@
     if (!N || N !== titles.length) return; // markup drifted — stay stacked
     sec.style.setProperty("--beats", N);
     sec.classList.add("armed");
+    // Card-recede stack (George 07-12, Klarna/Apple mechanic): opacity and
+    // transform are bound DIRECTLY to scroll position, not to class flips —
+    // the outgoing card sinks backwards (shrinks + fades + drifts up) while
+    // the next one slides up from below on top of it. scale() here IS the
+    // Z-recede (same optics as translateZ, no perspective container needed).
+    // Scrubbing both directions falls out for free. Reduced motion keeps the
+    // old discrete-fade path (classes only, no inline scrub).
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce) sec.classList.add("scrubbed");
+    var H = 0.3; // handoff window, as a fraction of one beat's scroll segment
     var active = -1;
     function update() {
       var r = run.getBoundingClientRect();
@@ -1778,17 +1809,38 @@
       var p = Math.max(0, Math.min(0.999, -r.top / budget));
       // progress rail fills continuously (before the discrete-beat early return)
       sec.style.setProperty("--story-p", p.toFixed(4));
-      var idx = Math.floor(p * N);
+      var x = p * N;
+      if (!reduce) {
+        // d = how far this screen is past the start of its own segment:
+        //   d<0 waiting below · 0..H arriving · H..1 resting ·
+        //   1..1+H receding into the background · beyond: gone
+        screens.forEach(function (s, j) {
+          var d = x - j, o, ty, sc, z, t;
+          if (d < 0)          { o = 0; ty = 56; sc = 0.97; z = 0; }
+          else if (d < H)     { t = d / H; o = t; ty = 56 * (1 - t); sc = 0.97 + 0.03 * t; z = 2; }
+          else if (d < 1)     { o = 1; ty = 0; sc = 1; z = 2; }
+          else if (d < 1 + H) { t = (d - 1) / H; o = 1 - t; ty = -26 * t; sc = 1 - 0.08 * t; z = 1; }
+          else                { o = 0; ty = -26; sc = 0.92; z = 0; }
+          s.style.opacity = o.toFixed(3);
+          s.style.transform = "translateY(" + ty.toFixed(1) + "px) scale(" + sc.toFixed(3) + ")";
+          s.style.zIndex = z;
+        });
+      }
+      var idx = Math.floor(x);
       if (idx === active) return;
-      // Klarna handoff: the beat we're leaving becomes .is-prev — it stays
-      // stacked behind the incoming one, greyed and transparent (CSS above).
       var prev = active;
       active = idx;
+      // classes still flip per beat: they drive the micro-animations, title
+      // ink, pointer-events, and the reduced-motion fade path
       screens.forEach(function (s, i) {
         s.classList.toggle("is-active", i === idx);
         s.classList.toggle("is-prev", i === prev && prev !== -1);
       });
-      titles.forEach(function (t, i) { t.classList.toggle("is-active", i === idx); });
+      titles.forEach(function (t, i) {
+        t.classList.toggle("is-active", i === idx);
+        // finished titles recede too (George: "hide the old header titles")
+        t.classList.toggle("is-past", i < idx);
+      });
     }
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
