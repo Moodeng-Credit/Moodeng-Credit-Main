@@ -405,7 +405,9 @@
      the visual slot height literally never varies. min-height (not height)
      so an overflowing translation/copy edit degrades to a taller panel
      instead of clipped text. */
-  .story-lead { text-align: center; padding: 46px 0 0; }
+  /* George 07-13: gap above the lead was too big and the gap below was
+     MISSING (the pinned panel touched the headline) — rebalanced 46/0 → 22/24 */
+  .story-lead { text-align: center; padding: 22px 0 24px; }
   /* 416 clears the tallest card (the no-APR ledger measures 404 at the 250px
      stage width) — all three panels clamp to the same height */
   .sec-promises .story-mini-panel { min-height: 416px; }
@@ -644,6 +646,18 @@
   }
   .sec-story.armed .story-titles li.is-past { transform: translateY(-110%); opacity: 0; pointer-events: none; }
   .sec-story.armed .story-titles li.is-upcoming { transform: translateY(110%); opacity: 0; pointer-events: none; }
+  /* REGRESSION GUARD (George's phone, 07-13): overflow:hidden releases the
+     flex automatic-minimum-size, so on viewports shorter than the pin content
+     (real phones with browser bars — ~660-700px usable) the flex-column pin
+     CRUSHED the title window to 0px: headers invisible on the steps pin (its
+     phone is the tallest). The text block must never shrink… */
+  .sec-story.armed .story-titles, .sec-story.armed .story-caps { flex-shrink: 0; }
+  /* …and on short viewports the pin bottom-aligns so titles + caption stay
+     fully on screen — any squeeze clips the stage's top air instead (screens
+     are bottom-aligned, the slack already lives above them) */
+  @media (max-height: 739px) {
+    .sec-story.armed .story-pin { justify-content: flex-end; padding-bottom: 12px; }
+  }
   /* No-reflow captions (07-12, the gap fix's text half): ONE caption slot
      below the title list — every beat's caption stacked on the same grid
      cell, crossfaded by .is-active. Grid auto-sizes the cell to the TALLEST
