@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
 <link rel="apple-touch-icon" href="/landing/assets/brand/moodeng-logo.png" />
-<title>Moodeng — People who want to help</title>
+<title>Moodeng Credit — Small loans that treat you right</title>
 <meta name="description" content="Small loans that treat you right — from $15, funded by real people. Know exactly what you'll give back before you say yes. No hidden charges, no calls to your contacts." />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Moodeng Credit" />
@@ -183,7 +183,7 @@
   .site-head .wrap { display: flex; align-items: center; padding-top: 12px; padding-bottom: 12px; }
   .site-head .head-word { color: var(--heading); text-decoration: none; }
   .head-logo { height: 28px; width: auto; }
-  .head-word { font-family: var(--sans); font-size: 17px; font-weight: 600; letter-spacing: 0.02em; margin-right: auto; color: #fff; }
+  .head-word { font-family: var(--sans); font-size: 17px; font-weight: 600; letter-spacing: 0.02em; margin-right: auto; color: #fff; white-space: nowrap; }
   .menu-pill {
     width: 58px; height: 42px; border: 0; cursor: pointer;
     border-radius: var(--pill); background: var(--purple);
@@ -191,6 +191,16 @@
   }
   .site-head .menu-pill { background: var(--lavender-bg); width: 48px; height: 40px; color: var(--heading); margin-right: 13px; }
   .head-signin { display: inline-flex; align-items: center; gap: 7px; background: var(--heading); color: #fff; font-size: 13.5px; font-weight: 700; padding: 9px 16px 9px 14px; border-radius: var(--pill); text-decoration: none; margin-right: 2px; white-space: nowrap; }
+  /* header CTA (UX pass 07-13): appears once the hero CTA scrolls away so the
+     ask is always one tap away on an ~11k px page. Swaps with Sign in — both
+     don't fit at 375px, and Sign in stays reachable in the drawer. */
+  .head-cta {
+    display: none; align-items: center; background: var(--purple); color: #fff;
+    font-size: 13.5px; font-weight: 700; padding: 9px 16px; border-radius: var(--pill);
+    text-decoration: none; margin-right: 2px; white-space: nowrap;
+  }
+  .site-head.cta-on .head-cta { display: inline-flex; }
+  .site-head.cta-on .head-signin { display: none; }
 
   .hero-h {
     font-family: var(--display);
@@ -835,12 +845,18 @@
   .dark-carousel .tile-panel { height: 240px; }
   .tile-inner { position: relative; }
   .dark-carousel .tile-obj { left: 50%; transform: translateX(-50%); }
-  .dark-dots { display: flex; justify-content: center; gap: 7px; margin-top: 18px; }
-  .dark-dots i {
-    width: 7px; height: 7px; border-radius: 50%;
+  /* dots are BUTTONS (UX pass 07-13): 28px hit area for thumbs, the visible
+     7px dot is a ::after so the target grows without the visual changing */
+  .dark-dots { display: flex; justify-content: center; gap: 0; margin-top: 12px; }
+  .dark-dots button {
+    width: 28px; height: 28px; border: 0; padding: 0; background: none;
+    cursor: pointer; display: grid; place-items: center; -webkit-tap-highlight-color: transparent;
+  }
+  .dark-dots button::after {
+    content: ""; width: 7px; height: 7px; border-radius: 50%;
     background: rgba(201,168,245,0.25); transition: background .25s ease, transform .25s ease;
   }
-  .dark-dots i.on { background: #C9A8F5; transform: scale(1.25); }
+  .dark-dots button.on::after { background: #C9A8F5; transform: scale(1.25); }
 
   /* cash-out moment card (product moment #4): upright tall phone, Tilt-light */
   .coin-badge { height: 58px; margin: 36px auto 16px; display: block; }
@@ -943,7 +959,7 @@
   /* mission card (2026-07-13): Emma's photo + why-we-exist, sits under the
      reserved story card. Real team photo = the same proof language as the
      "real borrower" videos above it. */
-  .qcard.mission { flex: none; margin: 14px auto 0; max-width: 300px; }
+  .qcard.mission { flex: none; margin: 26px auto 0; max-width: 300px; }
   .qwho .av-photo {
     width: 36px; height: 36px; border-radius: var(--pill); flex: none;
     object-fit: cover; border: 2px solid #E4CFFB;
@@ -1112,6 +1128,7 @@
         </svg>
       </button>
       <a class="head-word" href="/">Moodeng Credit</a>
+      <a class="head-cta" href="/request-board">Get a loan</a>
       <a class="head-signin" href="/sign-in">
         <span class="btn-label">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1557,15 +1574,17 @@
        Plays only while on screen (IO); data-saver & reduced-motion users get tap-to-play. -->
   <section class="sec-demo">
     <div class="wrap reveal">
-      <div class="demo-phone">
+      <!-- heading BEFORE the video (UX pass 07-13): tell people what they're
+           looking at before it plays -->
+      <p class="label">Real demo</p>
+      <h2 class="sec-h">Watch a real loan <span class="accent">happen.</span></h2>
+      <p class="sec-lead">Set your terms, get funded, repay — recorded on the real app, start to finish.</p>
+      <div class="demo-phone" style="margin-top:28px">
         <video class="demo-video" src="/landing/assets/demo/loan-demo.mp4"
                poster="/landing/assets/demo/loan-demo-poster.jpg"
                muted loop playsinline preload="none"
                aria-label="Screen recording of a real Moodeng loan: terms set, funded, cashed out and repaid"></video>
       </div>
-      <p class="label" style="margin-top:28px">Real demo</p>
-      <h2 class="sec-h">Watch a real loan <span class="accent">happen.</span></h2>
-      <p class="sec-lead">Set your terms, get funded, repay — recorded on the real app, start to finish.</p>
     </div>
   </section>
 
@@ -1659,12 +1678,19 @@
               </div>
             </div>
           </div>
-          <h3 class="tile-h">You prove you’re real <span class="accent">once.</span></h3>
+          <!-- reframed as a promise (UX pass 07-13) so all 4 cards share the
+               "We never…" rhythm — was "You prove you're real once." -->
+          <h3 class="tile-h">We <span class="accent">never</span> make you prove yourself twice.</h3>
           <p class="tile-cap">Do it once and you’re done — funders trust you fast.</p>
         </div>
 
       </div>
-      <div class="dark-dots" id="darkDots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div>
+      <div class="dark-dots" id="darkDots">
+        <button type="button" class="on" aria-label="Card 1 of 4"></button>
+        <button type="button" aria-label="Card 2 of 4"></button>
+        <button type="button" aria-label="Card 3 of 4"></button>
+        <button type="button" aria-label="Card 4 of 4"></button>
+      </div>
     </div>
   </section>
 
@@ -1706,10 +1732,9 @@
       </div>
     </div>
     <div class="wrap reveal">
-      <div class="qcard reserved">
-        <p class="qt">This card is saved for <b>your</b> story. Repay your first loan, tell us how it went — and your words go right here.</p>
-        <div class="qwho"><span class="av" style="background:#8336F0">?</span><span class="nm">You<span class="ctx">Your first $15 · soon</span></span></div>
-      </div>
+      <!-- "This card is saved for YOUR story" reserved card REMOVED (George
+           07-13: "we only need emma's thing there") — markup in git history,
+           .qcard.reserved CSS kept for when a real borrower quote lands. -->
       <!-- Mission card (George 07-13): Emma's real photo + the why. The landing
            version stays short and non-graphic — the full personal story (what
            loan sharks did to people she loves) lives on /about, behind the link. -->
@@ -1819,6 +1844,7 @@
         </div>
         <div>
           <h4>The details</h4>
+          <a href="/about">Our story</a>
           <a href="/for-lenders">For lenders</a>
           <a href="/privacy-policy">Privacy policy</a>
           <a href="/terms">Terms of service</a>
@@ -1839,8 +1865,14 @@
   // ---- Header: gain a surface once the hero starts scrolling away ----
   (function () {
     var head = document.getElementById("siteHead");
+    // header CTA swap: once the hero (headline + its own CTA) is fully above
+    // the viewport, the compact header CTA takes Sign in's slot
+    var heroTop = document.querySelector(".hero-top");
     if (!head) return;
-    var onScroll = function () { head.classList.toggle("scrolled", window.scrollY > 24); };
+    var onScroll = function () {
+      head.classList.toggle("scrolled", window.scrollY > 24);
+      if (heroTop) head.classList.toggle("cta-on", heroTop.getBoundingClientRect().bottom < 0);
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
   })();
@@ -2051,8 +2083,9 @@
   //  inside the steps pin now, and the coins slide in on beat activation.)
 
   // ---- Dark-section carousel: sync the position dots to the swipe ----
-  // Native scroll-snap does the sliding; JS only reads scrollLeft to light
-  // the matching dot. No-JS: the row still swipes, dots just stay on card 1.
+  // Native scroll-snap does the sliding; JS reads scrollLeft to light the
+  // matching dot, and a dot tap scrolls its card into view (dots are real
+  // buttons since the 07-13 UX pass). No-JS: the row still swipes.
   (function () {
     var row = document.getElementById("darkCarousel");
     var dotsBox = document.getElementById("darkDots");
@@ -2060,6 +2093,14 @@
     var tiles = [].slice.call(row.children);
     var dots = [].slice.call(dotsBox.children);
     if (tiles.length !== dots.length) return; // markup drifted — leave dot 1 lit
+    dots.forEach(function (d, i) {
+      d.addEventListener("click", function () {
+        row.scrollTo({
+          left: tiles[i].offsetLeft - (row.clientWidth - tiles[i].offsetWidth) / 2,
+          behavior: "smooth"
+        });
+      });
+    });
     function update() {
       var mid = row.scrollLeft + row.clientWidth / 2;
       var idx = 0;
