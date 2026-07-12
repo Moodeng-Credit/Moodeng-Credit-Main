@@ -4,7 +4,9 @@
 
 See [PLAN.md](PLAN.md) for the full design/copy direction (trust spine, rejected copy, moment-card spec, peso decisions).
 
-## ⏭️ NEXT UP — Fruitful "01–04" step explainer + story shrinks to 3 beats (planned 2026-07-12, NOT built — ✅ CONFIRMED by George 07-12 13:45: "split the top part into 2 sections… making the area underneath more about the no rollovers etc. — again check fruitful")
+## ✅ BUILT — Fruitful "01–04" step explainer + story shrinks to 3 beats (planned + confirmed + BUILT 2026-07-12, PR #619 merged)
+
+**Status:** shipped exactly per the spec below (kept for reference). Verified at 375w: steps 01–04 with moved cards, Coins.ph caption truth-checked against the app's withdraw picker, compact checkmarks+CTA closer, 3-beat story pin with rail. ⚠️ One open check: the verification browser had Reduce Motion ON (George's Mac), so the staggered reveals + scrubbed rails render as the finished state there — eyeball the motion once on a non-RM device/phone after deploy.
 
 **George's call:** the deal-panel ("How it works" white box under the sudden-expense phone) is "long and boring", and the 6-beat scroll story below is too long. Split the mechanism out of both: a **Fruitful-style numbered step explainer (01–04)** goes between the sudden-expense stage and the beat scroll, the **beat scroll shrinks to 3 claim beats**. Order on the page: hero → sudden-expense H2 + money-moment phone (coins slide-in stays) → **01–04 steps** → checkmarks + CTA → **3-beat scroll story** → demo video → …
 
