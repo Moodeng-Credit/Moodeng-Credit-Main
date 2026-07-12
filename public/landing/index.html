@@ -808,12 +808,27 @@
     box-shadow: 0 10px 26px rgba(0,0,0,0.35);
   }
   .bubble .from { display: block; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--purple); margin-bottom: 4px; }
-  .verify-note {
-    margin-top: 40px; padding: 18px 20px; border-radius: 16px;
-    background: rgba(201,168,245,0.08); border: 1px solid rgba(201,168,245,0.16);
-    font-size: 14px; line-height: 1.5; color: #C4B5DD;
+  /* Dark tiles ride a side carousel (George 07-12: "scroll right to left and
+     see not for sale, we never shame you, etc."). Scroll-snap swipe row, one
+     card mostly centered with the neighbors peeking; bleeds past .wrap's
+     padding so cards can slide edge-to-edge. The old verify-note text box is
+     now the 4th CARD (same night-panel anatomy as the other three). */
+  .dark-carousel {
+    display: flex; gap: 18px; margin: 30px -22px 0; padding: 4px 22px 10px;
+    overflow-x: auto; scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
-  .verify-note b { color: #fff; }
+  .dark-carousel::-webkit-scrollbar { display: none; }
+  .dark-carousel .tile { flex: 0 0 min(300px, 80vw); scroll-snap-align: center; }
+  /* text under each card scrolls with its card, same as the stacked layout */
+  .dark-carousel .tile-cap { max-width: none; }
+  .dark-dots { display: flex; justify-content: center; gap: 7px; margin-top: 18px; }
+  .dark-dots i {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: rgba(201,168,245,0.25); transition: background .25s ease, transform .25s ease;
+  }
+  .dark-dots i.on { background: #C9A8F5; transform: scale(1.25); }
 
   /* cash-out moment card (product moment #4): upright tall phone, Tilt-light */
   .coin-badge { height: 58px; margin: 36px auto 16px; display: block; }
@@ -1507,7 +1522,10 @@
       <h2 class="sec-h">We treat you like a <span class="accent">person.</span></h2>
       <p class="sec-lead">You’ve seen what other apps do when someone struggles. Here’s what we do instead — and what we will never do.</p>
 
-      <div class="tiles">
+      <!-- Side carousel (George 07-12): swipe through the four never-promises.
+           Keyboard/trackpad users get native horizontal scroll; dots are
+           position feedback only (not buttons). -->
+      <div class="dark-carousel" id="darkCarousel">
 
         <div class="tile">
           <div class="tile-panel night">
@@ -1549,11 +1567,27 @@
           <p class="tile-cap">This is the only kind of reminder we send. No public posts. No calls to your family.</p>
         </div>
 
-      </div>
+        <!-- 4th card = the old verify-note text box, promoted to full tile
+             anatomy (George 07-12: "should look like the above three ones").
+             Copy keeps the UX-critique claims: the check is NAMED (one quick
+             ID check) and what funders actually see (the ✓, never documents).
+             Icon = the app's existing /icons/check-3d.png — swap for a custom
+             matching 3D asset if George generates one. -->
+        <div class="tile">
+          <div class="tile-panel night">
+            <img class="tile-obj" src="/icons/check-3d.png" alt="" style="height:54px; top:4px; left:50%; transform:translateX(-50%)" loading="lazy" />
+            <div class="mini" style="padding-top:38px">
+              <div class="k">One quick ID check</div>
+              <div class="big">One real person</div>
+              <div class="tiny">funders see the ✓, never your documents</div>
+            </div>
+          </div>
+          <h3 class="tile-h">You prove you’re real <span class="accent">once.</span></h3>
+          <p class="tile-cap">One quick ID check and you’re done. That’s why funders trust you fast — without us digging through your life.</p>
+        </div>
 
-      <!-- UX critique 2026-07-11: an unnamed verification method reads as vaguer than no
-           claim at all — say what the check is and what funders actually see. -->
-      <p class="verify-note">You prove you’re <b>one real person, once</b> — one quick ID check, and you’re done. Funders see the ✓, never your documents. That’s why they trust you fast, without us digging through your life.</p>
+      </div>
+      <div class="dark-dots" id="darkDots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div>
     </div>
   </section>
 
@@ -1959,6 +1993,30 @@
       });
     }
     window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+  })();
+
+  // ---- Dark-section carousel: sync the position dots to the swipe ----
+  // Native scroll-snap does the sliding; JS only reads scrollLeft to light
+  // the matching dot. No-JS: the row still swipes, dots just stay on card 1.
+  (function () {
+    var row = document.getElementById("darkCarousel");
+    var dotsBox = document.getElementById("darkDots");
+    if (!row || !dotsBox) return;
+    var tiles = [].slice.call(row.children);
+    var dots = [].slice.call(dotsBox.children);
+    if (tiles.length !== dots.length) return; // markup drifted — leave dot 1 lit
+    function update() {
+      var mid = row.scrollLeft + row.clientWidth / 2;
+      var idx = 0;
+      tiles.forEach(function (t, i) {
+        if (Math.abs(t.offsetLeft + t.offsetWidth / 2 - mid) <
+            Math.abs(tiles[idx].offsetLeft + tiles[idx].offsetWidth / 2 - mid)) idx = i;
+      });
+      dots.forEach(function (d, i) { d.classList.toggle("on", i === idx); });
+    }
+    row.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
     update();
   })();
