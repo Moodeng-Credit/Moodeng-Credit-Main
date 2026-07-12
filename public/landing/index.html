@@ -406,8 +406,9 @@
      so an overflowing translation/copy edit degrades to a taller panel
      instead of clipped text. */
   /* George 07-13: gap above the lead was too big and the gap below was
-     MISSING (the pinned panel touched the headline) — rebalanced 46/0 → 22/24 */
-  .story-lead { text-align: center; padding: 22px 0 24px; }
+     MISSING (the pinned panel touched the headline) — 46/0 → 22/24, then the
+     below-gap read "a bit too much" stacked on the pin's own padding → 22/10 */
+  .story-lead { text-align: center; padding: 22px 0 10px; }
   /* 416 clears the tallest card (the no-APR ledger measures 404 at the 250px
      stage width) — all three panels clamp to the same height */
   .sec-promises .story-mini-panel { min-height: 416px; }
