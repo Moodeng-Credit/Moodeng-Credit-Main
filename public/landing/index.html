@@ -618,10 +618,11 @@
   .story-t .accent { color: inherit; font-weight: 500; }
   .story-titles li.is-active .story-t { color: var(--heading); }
   .story-titles li.is-active .story-t .accent { color: var(--purple); }
-  /* finished titles recede (George 07-12: "hide the old header titles") —
-     strong fade, but layout height stays put so nothing jumps */
+  /* only the ACTIVE title holds full presence (George 07-13: upcoming titles
+     were still fully opaque on beat 1, so three headers competed for focus) —
+     past AND upcoming both recede; layout height stays put so nothing jumps */
   .story-titles li { transition: opacity .35s ease; }
-  .sec-story.armed .story-titles li.is-past { opacity: .22; }
+  .sec-story.armed .story-titles li:not(.is-active) { opacity: .22; }
   /* No-reflow captions (07-12, the gap fix's text half): ONE caption slot
      below the title list — every beat's caption stacked on the same grid
      cell, crossfaded by .is-active. Grid auto-sizes the cell to the TALLEST
