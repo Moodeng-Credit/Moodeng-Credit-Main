@@ -1026,11 +1026,25 @@
   /* ---------- SECTION: TEAM (talkable humans) ---------- */
   .sec-team { background: var(--surface); padding: 56px 0 60px; text-align: center; }
   .sec-team .hippo { width: 104px; margin: 0 auto 10px; display: block; animation: bob 5s ease-in-out infinite; filter: drop-shadow(0 10px 20px rgba(96,16,210,0.2)); }
-  .team-links { display: flex; justify-content: center; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
-  .team-links a {
-    background: #F3E8FF; color: #6010D2; text-decoration: none;
-    font-size: 13px; font-weight: 800; padding: 11px 20px; border-radius: var(--pill);
+  /* contact cards (George 07-13: the three naked pills "looked weird, not
+     what a great fintech would have") — tappable rows: channel glyph in a
+     lavender circle, channel name, the REAL handle/address, arrow. Same
+     card language as the rest of the page. */
+  .talk-cards { display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin: 22px auto 0; text-align: left; }
+  .talk-card {
+    display: flex; align-items: center; gap: 13px;
+    background: #fff; border: 1px solid var(--lavender-border); border-radius: 18px;
+    padding: 13px 16px; text-decoration: none;
+    box-shadow: 0 10px 24px rgba(96,16,210,0.08);
   }
+  .talk-card .t-ic {
+    width: 42px; height: 42px; border-radius: var(--pill); flex: none;
+    background: var(--lavender-bg); color: var(--purple);
+    display: grid; place-items: center;
+  }
+  .talk-card b { display: block; font-size: 14.5px; font-weight: 800; color: var(--heading); }
+  .talk-card .det { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-top: 1px; }
+  .talk-card .t-arr { margin-left: auto; color: var(--purple); font-family: var(--display); font-size: 16px; }
 
   /* ---------- TIPS CAROUSEL — direct copy of MAKE's bottom section, Moodeng skin ----------
      MAKE mobile anatomy: header (title left, "See all +" right) → swipe carousel, one card
@@ -1782,10 +1796,22 @@
       <p class="label">Talk to us</p>
       <h3 class="tile-h">Real people work here, too.</h3>
       <p class="tile-cap" style="margin:8px auto 0">Message us any time — a human answers, usually the same day.</p>
-      <div class="team-links">
-        <a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
-        <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Telegram</a>
-        <a href="mailto:support@moodengcredit.com">Email us</a>
+      <div class="talk-cards">
+        <a class="talk-card" href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">
+          <span class="t-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13.4 21v-8.2h2.76l.42-3.2h-3.18V7.55c0-.93.26-1.56 1.59-1.56h1.68V3.13A22 22 0 0 0 14.2 3c-2.44 0-4.12 1.5-4.12 4.23v2.36H7.33v3.2h2.75V21h3.32z"/></svg></span>
+          <span><b>Facebook</b><span class="det">Moodeng Credit — message the page</span></span>
+          <span class="t-arr" aria-hidden="true">→</span>
+        </a>
+        <a class="talk-card" href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">
+          <span class="t-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.05-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg></span>
+          <span><b>Telegram</b><span class="det">@jimmymoodengcredit</span></span>
+          <span class="t-arr" aria-hidden="true">→</span>
+        </a>
+        <a class="talk-card" href="mailto:support@moodengcredit.com">
+          <span class="t-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm8 7L4 8v8h16V8l-8 5z"/></svg></span>
+          <span><b>Email</b><span class="det">support@moodengcredit.com</span></span>
+          <span class="t-arr" aria-hidden="true">→</span>
+        </a>
       </div>
     </div>
   </section>
