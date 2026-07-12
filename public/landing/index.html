@@ -628,11 +628,22 @@
   .story-t .accent { color: inherit; font-weight: 500; }
   .story-titles li.is-active .story-t { color: var(--heading); }
   .story-titles li.is-active .story-t .accent { color: var(--purple); }
-  /* only the ACTIVE title holds full presence (George 07-13: upcoming titles
-     were still fully opaque on beat 1, so three headers competed for focus) —
-     past AND upcoming both recede; layout height stays put so nothing jumps */
-  .story-titles li { transition: opacity .35s ease; }
-  .sec-story.armed .story-titles li:not(.is-active) { opacity: .22; }
+  /* slot-machine title reel (George 07-13, replaces the stacked list + .22
+     fade): when armed, the title list becomes ONE fixed window — all titles
+     stacked on the same grid cell, window height = tallest title — and
+     scrolling ROLLS them through it: the active title sits in the window,
+     past titles have rolled up and out, upcoming ones wait below. overflow
+     hidden clips the roll so nothing bleeds over the phone or caption.
+     Affects BOTH pins (steps 01–04 + promises); visuals/captions untouched.
+     No-JS (not armed) keeps the plain stacked list. */
+  .story-titles li { transition: transform .38s cubic-bezier(.22,.61,.36,1), opacity .3s ease; }
+  .sec-story.armed .story-titles { display: grid; overflow: hidden; }
+  .sec-story.armed .story-titles li {
+    grid-area: 1 / 1; margin: 0;
+    display: grid; align-content: center;
+  }
+  .sec-story.armed .story-titles li.is-past { transform: translateY(-110%); opacity: 0; pointer-events: none; }
+  .sec-story.armed .story-titles li.is-upcoming { transform: translateY(110%); opacity: 0; pointer-events: none; }
   /* No-reflow captions (07-12, the gap fix's text half): ONE caption slot
      below the title list — every beat's caption stacked on the same grid
      cell, crossfaded by .is-active. Grid auto-sizes the cell to the TALLEST
@@ -2059,8 +2070,10 @@
       });
       titles.forEach(function (t, i) {
         t.classList.toggle("is-active", i === idx);
-        // finished titles recede too (George: "hide the old header titles")
+        // slot-machine reel: past titles have rolled up out of the window,
+        // upcoming ones wait below it (George 07-13)
         t.classList.toggle("is-past", i < idx);
+        t.classList.toggle("is-upcoming", i > idx);
       });
       // captions crossfade in their constant-height slot (no reflow)
       caps.forEach(function (c, i) { c.classList.toggle("is-active", i === idx); });
