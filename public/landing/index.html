@@ -347,6 +347,91 @@
     display: flex; align-items: center; justify-content: center;
   }
   .deal-panel .hero-cta-block .cta { margin-top: 20px; }
+  /* section closer variant: the checkmarks stand alone now (no steps text above) */
+  .deal-panel.compact .deal-list { margin-top: 0; padding-top: 0; border-top: 0; }
+
+  /* ---------- SECTION: HOW IT WORKS (Fruitful 01–04 explainer, 2026-07-12) ----------
+     Fruitful's usp anatomy, autopsied from George's saved capture: full blocks in
+     normal flow — staged visual → grey number → display headline → caption — with
+     a left rail that fills as the block crosses the viewport. The three things
+     that keep it from reading as a cheap fade (the earlier failed attempt):
+     staggered child reveals (per-child transition-delay off one .in class),
+     a SCRUBBED rail (scaleY of per-block --sp, not a one-shot animation), and
+     big air between blocks. Hidden states gate on .armed (JS-added) and --sp
+     defaults to 1, so no-JS and Reduce Motion render the finished state —
+     never gate the mechanism on prefers-reduced-motion (George's Mac has it ON). */
+  .sec-how { padding: 6px 0 30px; }
+  .how-step {
+    position: relative; margin: 0 auto; max-width: 560px;
+    padding: 104px 22px 0 34px; text-align: left;
+  }
+  .how-step.first { padding-top: 30px; }
+  .how-rail {
+    position: absolute; left: 12px; top: calc(104px + 8px); bottom: 4px;
+    width: 4px; border-radius: 4px; background: var(--lavender-border);
+  }
+  .how-step.first .how-rail { top: calc(30px + 8px); }
+  .how-rail i {
+    position: absolute; inset: 0; border-radius: 4px; background: var(--purple);
+    transform: scaleY(var(--sp, 1)); transform-origin: 50% 0;
+  }
+  .how-step .stage { margin-top: 0; }
+  .how-num {
+    font-family: var(--display); font-size: 16px; letter-spacing: .14em;
+    color: var(--text-muted); margin: 30px 0 0;
+  }
+  .how-step .stage + .how-num { margin-top: 34px; }
+  .how-h {
+    font-family: var(--display); font-weight: 400;
+    font-size: clamp(30px, 8.4vw, 40px); line-height: 1.04; letter-spacing: -0.02em;
+    color: var(--heading); margin: 10px 0 0;
+  }
+  .how-h .accent { color: var(--purple); font-weight: 500; }
+  .how-cap {
+    margin: 13px 0 0; font-size: 15.5px; font-weight: 600;
+    color: var(--text-soft); line-height: 1.5; max-width: 38ch;
+  }
+  /* staggered child reveal: visual → number → headline → caption */
+  .sec-how.armed .how-step > .stage,
+  .sec-how.armed .how-step .how-num,
+  .sec-how.armed .how-step .how-h,
+  .sec-how.armed .how-step .how-cap {
+    opacity: 0; transform: translateY(18px);
+    transition: opacity .55s ease, transform .55s ease;
+  }
+  .sec-how.armed .how-step .how-num { transition-delay: .06s; }
+  .sec-how.armed .how-step .how-h { transition-delay: .14s; }
+  .sec-how.armed .how-step .how-cap { transition-delay: .22s; }
+  .sec-how.armed .how-step.in > .stage,
+  .sec-how.armed .how-step.in .how-num,
+  .sec-how.armed .how-step.in .how-h,
+  .sec-how.armed .how-step.in .how-cap { opacity: 1; transform: none; }
+
+  /* Moved-card micro-moments, re-keyed from .story-screen.is-active to the
+     step block's .in (they ran on reveal.in before the story merge — a return,
+     not a rewrite). Delays start ~.3s so the card lands before its payoff. */
+  /* step 02 — funded card */
+  .sec-how.armed .avatars .av { opacity: 0; transform: scale(.92); }
+  .sec-how.armed .avatars .who { opacity: 0; transition: opacity .3s ease .58s; }
+  .sec-how.armed .how-step.in .avatars .av.a1 { animation: avPop .28s cubic-bezier(.34,1.56,.64,1) .3s both; }
+  .sec-how.armed .how-step.in .avatars .av.a2 { animation: avPop .28s cubic-bezier(.34,1.56,.64,1) .4s both; }
+  .sec-how.armed .how-step.in .avatars .av.a3 { animation: avPop .28s cubic-bezier(.34,1.56,.64,1) .5s both; }
+  .sec-how.armed .how-step.in .avatars .who { opacity: 1; }
+  .sec-how.armed .progress.full i { width: 0; transition: width .6s cubic-bezier(.22,.61,.36,1) .65s; }
+  .sec-how.armed .how-step.in .progress.full i { width: 100%; }
+  .sec-how.armed .funded-badge { opacity: 0; }
+  .sec-how.armed .how-step.in .funded-badge { animation: fundedIn .5s cubic-bezier(.34,1.56,.64,1) 1.15s both; }
+  /* step 03 — cash out: coin pair pops, arrow nudges toward the pesos */
+  .sec-how.armed .coin-badge { opacity: 0; }
+  .sec-how.armed .how-step.in .coin-badge { animation: unlockPop .5s cubic-bezier(.34,1.56,.64,1) .3s both; }
+  .sec-how.armed .how-step.in .swap-box .arr { animation: arrNudge .8s ease .7s 2; }
+  /* step 04 — level up: bar fills, +$5 chip pops, new-limit mark bumps, padlock springs */
+  .sec-how.armed .how-step.in .lock-badge { animation: unlockPop .6s cubic-bezier(.34,1.56,.64,1) .3s both; }
+  .sec-how.armed .meter-box .bar i { width: 0; transition: width .9s cubic-bezier(.22,.61,.36,1) .4s; }
+  .sec-how.armed .how-step.in .meter-box .bar i { width: 33%; }
+  .sec-how.armed .meter-box .chip-up { opacity: 0; transform: translateX(-50%) translateY(7px) scale(.92); transition: opacity .45s ease, transform .5s cubic-bezier(.34,1.56,.64,1); }
+  .sec-how.armed .how-step.in .meter-box .chip-up { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); transition-delay: .8s; }
+  .sec-how.armed .how-step.in .meter-box .marks .mid { animation: unlockMid .55s ease .9s both; }
   .inner .reason { font-size: 13px; font-weight: 700; color: var(--text-soft); }
   .inner .reason .emoji { margin-right: 5px; }
   .statement {
@@ -526,21 +611,8 @@
      onto the white card's top edge — the Tilt invariant) */
   .story-mini-panel { padding: 44px 24px; display: grid; place-items: center; }
   .stage-panel.dark { background: radial-gradient(120% 100% at 30% 0%, #2B0F55 0%, var(--deep) 100%); }
-  /* funded-card micro-moments replay on every beat-1 activation
-     (were scoped to .sec-people .reveal.in before the section merged in here) */
-  /* Delay pass 07-12 (George: content "appears too slowly — I've scrolled to
-     the next one before it appeared") — every micro-anim delay roughly halved
-     so the payoff lands within the first half-second of a beat. */
-  .sec-story .avatars .av { opacity: 0; transform: scale(.92); }
-  .sec-story .avatars .who { opacity: 0; transition: opacity .3s ease .34s; }
-  .sec-story .story-screen.is-active .avatars .av.a1 { animation: avPop .28s cubic-bezier(.34,1.56,.64,1) .1s both; }
-  .sec-story .story-screen.is-active .avatars .av.a2 { animation: avPop .28s cubic-bezier(.34,1.56,.64,1) .2s both; }
-  .sec-story .story-screen.is-active .avatars .av.a3 { animation: avPop .28s cubic-bezier(.34,1.56,.64,1) .3s both; }
-  .sec-story .story-screen.is-active .avatars .who { opacity: 1; }
-  .sec-story .progress.full i { width: 0; transition: width .6s cubic-bezier(.22,.61,.36,1) .45s; }
-  .sec-story .story-screen.is-active .progress.full i { width: 100%; }
-  .sec-story .funded-badge { opacity: 0; }
-  .sec-story .story-screen.is-active .funded-badge { animation: fundedIn .5s cubic-bezier(.34,1.56,.64,1) .95s both; }
+  /* funded-card micro-moments moved with the card to the how-it-works steps
+     (2026-07-12) — see the .sec-how block above */
 
   .story-titles { list-style: none; margin: 8px auto 0; padding: 0 22px; max-width: 460px; text-align: center; }
   .story-titles li + li { margin-top: 2px; }
@@ -629,49 +701,33 @@
   }
 
   /* ---------- STORY BEAT MICRO-ANIMATIONS (George 07-12: every beat gets one
-     tiny motion cue, same spirit as beat 1's avatar pop). Initial-hidden states
-     are gated on .armed so the no-JS stacked fallback stays fully visible;
-     reduced-motion resets live in the media block at the end. ---------- */
-  /* Beat 2 — cash out: coin pair pops in, arrow nudges toward the pesos */
-  .sec-story.armed .coin-badge { opacity: 0; }
-  .sec-story.armed .story-screen.is-active .coin-badge { animation: unlockPop .5s cubic-bezier(.34,1.56,.64,1) .12s both; }
-  .sec-story .swap-box .arr { display: inline-block; }
-  .sec-story.armed .story-screen.is-active .swap-box .arr { animation: arrNudge .8s ease .5s 2; }
+     tiny motion cue). The funded / cash-out / level-up cues moved with their
+     cards to .sec-how above; what stays is the 3 promise minis. Initial-hidden
+     states are gated on .armed so the no-JS stacked fallback stays fully
+     visible; reduced-motion resets live in the media block at the end. ---------- */
+  /* shared bits used by the moved cards too (sec-how) */
+  .swap-box .arr { display: inline-block; }
   @keyframes arrNudge { 0%,100% { transform: translateX(0); } 50% { transform: translateX(5px); } }
-  /* Beats 3–5 — mini panels: the 3D object pops, the big number lands after */
+  .lock-badge { transform-origin: 50% 68%; }
+  /* Beats 1–3 — mini panels: the 3D object pops, the big number lands after */
   .sec-story.armed .story-mini-panel .tile-obj { opacity: 0; }
   .sec-story.armed .story-screen.is-active .story-mini-panel .tile-obj { animation: unlockPop .5s cubic-bezier(.34,1.56,.64,1) .1s both; }
   .sec-story.armed .story-mini-panel .big { opacity: 0; }
   .sec-story.armed .story-screen.is-active .story-mini-panel .big { animation: avPop .34s cubic-bezier(.34,1.56,.64,1) .28s both; }
-  /* Beat 4 — the what-you-owe ledger rows tick in one after the other */
+  /* Beat 2 — the what-you-owe ledger rows tick in one after the other */
   .sec-story.armed .story-mini-panel .row { opacity: 0; }
   .sec-story.armed .story-screen.is-active .story-mini-panel .row { animation: avPop .28s ease .45s both; }
   .sec-story.armed .story-screen.is-active .story-mini-panel .row + .row { animation-delay: .58s; }
   .sec-story.armed .story-screen.is-active .story-mini-panel .row + .row + .row { animation-delay: .71s; }
-  /* Beat 6 — level up: ported intact from the retired standalone sec-unlock
-     (bar fills, +$5 chip pops, new-limit mark bumps, padlock springs open) */
-  .sec-story .lock-badge { transform-origin: 50% 68%; }
-  .sec-story.armed .story-screen.is-active .lock-badge { animation: unlockPop .6s cubic-bezier(.34,1.56,.64,1) .15s both; }
-  .sec-story.armed .meter-box .bar i { width: 0; transition: width .9s cubic-bezier(.22,.61,.36,1) .2s; }
-  .sec-story.armed .story-screen.is-active .meter-box .bar i { width: 33%; }
-  .sec-story.armed .meter-box .chip-up { opacity: 0; transform: translateX(-50%) translateY(7px) scale(.92); transition: opacity .45s ease, transform .5s cubic-bezier(.34,1.56,.64,1); }
-  .sec-story.armed .story-screen.is-active .meter-box .chip-up { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); transition-delay: .6s; }
-  .sec-story.armed .story-screen.is-active .meter-box .marks .mid { animation: unlockMid .55s ease .7s both; }
   @keyframes unlockMid { 0%,100% { transform: scale(1); } 45% { transform: scale(1.12); } }
   /* opacity keyframes added 07-12: coin-badge + tile-objs sit at opacity:0
      until this animation runs — transform-only keyframes never made them
-     visible (George: "the icon is gone"). */
+     visible (George: "the icon is gone"). KEEP the opacity frames. */
   @keyframes unlockPop { 0% { opacity: 0; transform: scale(.84) rotate(-7deg); } 55% { opacity: 1; transform: scale(1.06) rotate(3deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
   @media (prefers-reduced-motion: reduce) {
-    .sec-story.armed .coin-badge,
     .sec-story.armed .story-mini-panel .tile-obj,
     .sec-story.armed .story-mini-panel .big,
     .sec-story.armed .story-mini-panel .row { opacity: 1; animation: none !important; }
-    .sec-story.armed .story-screen.is-active .swap-box .arr,
-    .sec-story.armed .story-screen.is-active .lock-badge,
-    .sec-story.armed .story-screen.is-active .meter-box .marks .mid { animation: none !important; }
-    .sec-story.armed .meter-box .bar i { width: 33%; transition: none; }
-    .sec-story.armed .meter-box .chip-up { opacity: 1; transform: translateX(-50%); transition: none; }
   }
 
   .stage.right .phone { transform: rotate(2.5deg); }
@@ -708,14 +764,9 @@
     60% { opacity: 1; transform: scale(1.06); box-shadow: 0 0 14px rgba(52,217,129,.45); }
     100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 rgba(52,217,129,0); }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .sec-story .avatars .av { opacity: 1; transform: none; }
-    .sec-story .avatars .who { opacity: 1; transition: none; }
-    .sec-story .story-screen.is-active .avatars .av.a1, .sec-story .story-screen.is-active .avatars .av.a2, .sec-story .story-screen.is-active .avatars .av.a3 { animation: none; }
-    .sec-story .progress.full i { width: 100%; transition: none; }
-    .sec-story .funded-badge { opacity: 1; }
-    .sec-story .story-screen.is-active .funded-badge { animation: none; }
-  }
+  /* (funded-card reduced-motion resets left with the card: .sec-how never
+     arms under Reduce Motion, so its hidden states simply don't apply) */
+
 
   .level-arrow { font-family: var(--display); color: var(--purple); }
 
@@ -1213,34 +1264,114 @@
         <img class="stage-obj" src="/landing/assets/icons/coins-stack.png" alt="" />
       </div>
 
-      <!-- Fruitful-style info panel (2026-07-12, George's ask after the Fruitful
-           autopsy): one rounded box holds ALL the explainer text — the 1-2-3
-           mechanism (UX critique 07-11: show what happens between "ask" and
-           "3 people said yes") plus the certainty lines that used to crowd the
-           phone screen. -->
-      <div class="deal-panel">
-        <p class="label">How it works</p>
-        <ol class="steps">
-          <li>
-            <span class="n">1</span>
-            <div><b>Ask</b><p>What you need and why — 30 seconds, no documents.</p></div>
-          </li>
-          <li>
-            <span class="n">2</span>
-            <div><b>Real people say yes</b><p>Funders read it and choose to help — usually within a few hours.</p></div>
-          </li>
-          <li>
-            <span class="n">3</span>
-            <div><b>Money arrives</b><p>$15 lands ready for GCash.</p></div>
-          </li>
-          <!-- Step 4 closes the loop (George 07-12): repaying is what grows the
-               limit — the panel states it, story beat 6 proves it. No numeric
-               "+$5 every time" promise; "unlocks more" is the safe claim. -->
-          <li>
-            <span class="n">4</span>
-            <div><b>Repay &amp; level up</b><p>Pay back $18 on Jul 30, on time — your next loan unlocks more, toward $60+.</p></div>
-          </li>
-        </ol>
+    </div>
+  </section>
+
+  <!-- ============= HOW IT WORKS: Fruitful 01–04 step explainer (2026-07-12) =============
+       George's split: the deal-panel's 1-2-3-4 text was "long and boring", so the
+       mechanism moved out into these Fruitful-style numbered blocks — normal document
+       flow, NOT a pin. Three ingredients or it reads as a cheap fade (the earlier
+       failure): staggered child reveals off one .in class, a scrubbed left rail
+       (per-block --sp, same trick as the coins' --p), and big air between blocks.
+       Visuals are MOVED, never duplicated: 01 leans on the money-moment phone above;
+       02/03/04 are the cards that used to be story beats 1/2/6. Division of labor:
+       steps own the mechanism, the 3-beat story below owns the promises.
+       JS adds .armed; no-JS and Reduce Motion render the finished state (--sp
+       defaults to 1, hidden states are gated on .armed). -->
+  <section class="sec-how">
+    <div class="how-step first">
+      <span class="how-rail" aria-hidden="true"><i></i></span>
+      <p class="how-num">01</p>
+      <h3 class="how-h">Ask.</h3>
+      <p class="how-cap">What you need and why — 30 seconds, no documents. That’s the whole application: the screen above.</p>
+    </div>
+
+    <div class="how-step">
+      <span class="how-rail" aria-hidden="true"><i></i></span>
+      <!-- funded card — moved from story beat 1 (markup verbatim) -->
+      <div class="stage right">
+        <div class="stage-panel tint2">
+          <div class="phone">
+            <div class="phone-head"><span class="back">‹</span> Your request</div>
+            <div class="inner">
+              <div class="reason"><span class="emoji">🏥</span>Medicine · can’t wait for payday</div>
+              <div class="statement">3 people said <span style="color:var(--purple)">yes.</span></div>
+              <div class="avatars">
+                <span class="av a1">P</span><span class="av a2">M</span><span class="av a3">J</span>
+                <span class="who">funded your $15</span>
+              </div>
+              <div class="progress full"><i></i></div>
+              <div style="margin-top:12px"><span class="funded-badge">Funded ✓</span></div>
+              <p class="card-foot">$15 is on its way to you.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="how-num">02</p>
+      <h3 class="how-h">Real people say <span class="accent">yes.</span></h3>
+      <p class="how-cap">Not a company. Not an algorithm. Funders read your request and choose to help — usually within a few hours.</p>
+    </div>
+
+    <div class="how-step">
+      <span class="how-rail" aria-hidden="true"><i></i></span>
+      <!-- cash-out card — moved from story beat 2 (markup verbatim) -->
+      <div class="stage">
+        <div class="stage-panel">
+          <div class="phone upright tall compact">
+            <div class="phone-head"><span class="back">‹</span> Cash out</div>
+            <!-- 3D $/₱ coin pair — asset #5 (George) -->
+            <img class="coin-badge" src="/landing/assets/icons/usd-php-coins.png" alt="" />
+            <div class="statement">Your $15 just landed.</div>
+            <div class="swap-box">
+              <span class="cell"><span class="k">To</span><b>GCash</b></span>
+              <span class="arr">→</span>
+              <span class="cell right"><span class="k">You’d get</span><b data-peso="15">≈ ₱855</b></span>
+            </div>
+            <span class="cta-caps">Move to GCash</span>
+          </div>
+        </div>
+      </div>
+      <p class="how-num">03</p>
+      <h3 class="how-h">Money <span class="accent">arrives.</span></h3>
+      <!-- Provider names in TEXT only, never logos; both verified against the
+           app's real withdraw picker (src/views/withdraw/Withdraw.tsx) -->
+      <p class="how-cap">$15 lands ready for GCash — or choose another way, like Coins.ph.</p>
+    </div>
+
+    <div class="how-step">
+      <span class="how-rail" aria-hidden="true"><i></i></span>
+      <!-- level-up card — moved from story beat 6 (markup verbatim) -->
+      <div class="stage">
+        <div class="stage-panel sky">
+          <div class="phone upright tall">
+            <div class="phone-head"><span class="back">‹</span> Your credit</div>
+            <!-- 3D open padlock — asset #12 (George) -->
+            <img class="lock-badge" src="/landing/assets/icons/lock-open.png" alt="" />
+            <div class="statement">You’ve unlocked<br />your next level!</div>
+            <div class="meter-box">
+              <span class="chip-up">+$5</span>
+              <div class="bar"><i></i></div>
+              <div class="marks">
+                <span class="pre">Before<b>$15</b></span>
+                <span class="mid">New limit<b>$20</b></span>
+                <span class="goal">Goal<b>$60+</b></span>
+              </div>
+            </div>
+            <span class="cta-caps">Accept new limit</span>
+          </div>
+        </div>
+      </div>
+      <p class="how-num">04</p>
+      <h3 class="how-h">Repay &amp; <span class="accent">level up.</span></h3>
+      <!-- No numeric "+$5 every time" promise in the caption; "unlocks more" is
+           the safe claim (the card shows one real example step) -->
+      <p class="how-cap">Pay back $18 on Jul 30, on time — your next loan unlocks more, toward $60+.</p>
+    </div>
+
+    <div class="wrap">
+      <!-- Section closer: the certainty checkmarks + CTA kept from the old
+           deal-panel (compact — the steps text it used to hold lives above) -->
+      <div class="deal-panel compact">
         <ul class="deal-list">
           <li><span class="ok">✓</span><span>You’d give back <b>$18 on Jul 30</b> — shown before you confirm.</span></li>
           <!-- "No APR, no growing fees" checkmark removed 07-12 (panel got step 4;
@@ -1257,69 +1388,28 @@
   </section>
 
   <!-- ============= PRODUCT MOMENT #2: UNLOCK ============= -->
-  <!-- The standalone unlock/level section was retired 2026-07-12: its card now
-       lives as Beat 6 of the scroll story above (George: "include this one too in
-       the beat scroll"). Card markup + meter/lock animations preserved there. -->
+  <!-- The standalone unlock/level section was retired 2026-07-12; its card rode
+       the scroll story as beat 6 for a day and now lives as step 04 of the
+       how-it-works explainer above. -->
 
   <!-- ============= TRUST Q1: REAL PEOPLE ============= -->
-  <!-- ============= SCROLL STORY: real people → no fees (Klarna scrollytelling) =============
-       Replaces the old sec-people + peso strip + sec-terms (2026-07-12, George's ask after
-       the Klarna autopsy): one sticky pin — screen on top, title list under it. Scroll
-       drives the handoff: active title ink, others grey; screens crossfade. The old
-       "No penalty overnight" tile folded into the No-rollover caption; "No hidden charges"
-       folded into You-know-everything (same claim: the whole deal is one number).
-       Klarna does this with React+Framer and per-beat MP4s; ours is ~50 lines of vanilla
-       JS and the moment cards we already had. Without JS it degrades to a stacked page. -->
+  <!-- ============= SCROLL STORY: the 3 promises (Klarna scrollytelling) =============
+       One sticky pin — screen on top, title list under it. Scroll drives the
+       handoff: active title ink, others grey; screens crossfade.
+       Shrunk 6 → 3 beats (2026-07-12, George: "too long — making the area
+       underneath more about the no rollovers etc."): the mechanism beats
+       (funded / cash-out / level-up) moved up into the 01–04 step explainer;
+       what stays here are the CLAIMS — you know everything, no rollover,
+       no fees. Steps own the mechanism, story owns the promises.
+       Without JS it degrades to a stacked page. -->
   <section class="sec-story">
     <div class="story-run">
       <div class="story-pin">
         <span class="story-rail" aria-hidden="true"><i></i></span>
         <div class="story-screens">
 
-          <!-- Beat 1: a real person says yes (was Moment Card 2, the funded state) -->
+          <!-- Beat 1: you know everything (the dark "No hidden charges" tile) -->
           <div class="story-screen is-active">
-            <div class="stage right">
-              <div class="stage-panel tint2">
-                <div class="phone">
-                  <div class="phone-head"><span class="back">‹</span> Your request</div>
-                  <div class="inner">
-                    <div class="reason"><span class="emoji">🏥</span>Medicine · can’t wait for payday</div>
-                    <div class="statement">3 people said <span style="color:var(--purple)">yes.</span></div>
-                    <div class="avatars">
-                      <span class="av a1">P</span><span class="av a2">M</span><span class="av a3">J</span>
-                      <span class="who">funded your $15</span>
-                    </div>
-                    <div class="progress full"><i></i></div>
-                    <div style="margin-top:12px"><span class="funded-badge">Funded ✓</span></div>
-                    <p class="card-foot">$15 is on its way to you.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Beat 2: easy to turn into pesos (was the cash-out moment) -->
-          <div class="story-screen">
-            <div class="stage">
-              <div class="stage-panel">
-                <div class="phone upright tall compact">
-                  <div class="phone-head"><span class="back">‹</span> Cash out</div>
-                  <!-- 3D $/₱ coin pair — asset #5 (George) -->
-                  <img class="coin-badge" src="/landing/assets/icons/usd-php-coins.png" alt="" />
-                  <div class="statement">Your $15 just landed.</div>
-                  <div class="swap-box">
-                    <span class="cell"><span class="k">To</span><b>GCash</b></span>
-                    <span class="arr">→</span>
-                    <span class="cell right"><span class="k">You’d get</span><b data-peso="15">≈ ₱855</b></span>
-                  </div>
-                  <span class="cta-caps">Move to GCash</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Beat 3: you know everything (was the dark "No hidden charges" tile) -->
-          <div class="story-screen">
             <div class="stage">
               <div class="stage-panel dark story-mini-panel">
                 <!-- 3D magnifier over a gold coin — "we looked, nothing hidden" (George, 07-11) -->
@@ -1333,7 +1423,7 @@
             </div>
           </div>
 
-          <!-- Beat 4: no rollover (was the due-date lock tile; overnight-penalty tile folded in) -->
+          <!-- Beat 2: no rollover (was the due-date lock tile; overnight-penalty tile folded in) -->
           <div class="story-screen">
             <div class="stage">
               <div class="stage-panel story-mini-panel">
@@ -1354,7 +1444,7 @@
             </div>
           </div>
 
-          <!-- Beat 5: no fees from our side (copy strawman — George to approve) -->
+          <!-- Beat 3: no fees from our side (copy strawman — George to approve) -->
           <div class="story-screen">
             <div class="stage">
               <div class="stage-panel story-mini-panel">
@@ -1368,44 +1458,10 @@
             </div>
           </div>
 
-          <!-- Beat 6: it grows with you (George 07-12: the level-up card joins the
-               scroll run; the standalone sec-unlock section it came from is retired —
-               same card, now animated by is-active instead of reveal.in) -->
-          <div class="story-screen">
-            <div class="stage">
-              <div class="stage-panel sky">
-                <div class="phone upright tall">
-                  <div class="phone-head"><span class="back">‹</span> Your credit</div>
-                  <!-- 3D open padlock — asset #12 (George) -->
-                  <img class="lock-badge" src="/landing/assets/icons/lock-open.png" alt="" />
-                  <div class="statement">You’ve unlocked<br />your next level!</div>
-                  <div class="meter-box">
-                    <span class="chip-up">+$5</span>
-                    <div class="bar"><i></i></div>
-                    <div class="marks">
-                      <span class="pre">Before<b>$15</b></span>
-                      <span class="mid">New limit<b>$20</b></span>
-                      <span class="goal">Goal<b>$60+</b></span>
-                    </div>
-                  </div>
-                  <span class="cta-caps">Accept new limit</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
 
         <ol class="story-titles">
           <li class="is-active"><button type="button">
-            <span class="story-t">A <span class="accent">real person</span> says yes.</span>
-            <span class="story-cap"><span>Not a company. Not an algorithm. A real person read your request and chose to help.</span></span>
-          </button></li>
-          <li><button type="button">
-            <span class="story-t">Easy to turn into <span class="accent">pesos.</span></span>
-            <span class="story-cap"><span>When it lands, moving it into pesos is simple — and moving it back when you repay is just as easy.</span></span>
-          </button></li>
-          <li><button type="button">
             <span class="story-t">You know <span class="accent">everything</span> before you borrow.</span>
             <span class="story-cap"><span>The amount you pay back is set the moment you ask. <span data-peso-inline>$15 becomes $18</span> — and it stays $18.</span></span>
           </button></li>
@@ -1416,10 +1472,6 @@
           <li><button type="button">
             <span class="story-t"><span class="accent">No</span> fees from our side.</span>
             <span class="story-cap"><span>Your money moves as digital dollars — no banks in the middle taking a cut, so we don’t need fees to survive.</span></span>
-          </button></li>
-          <li><button type="button">
-            <span class="story-t">It grows with <span class="accent">you.</span></span>
-            <span class="story-cap"><span>Today it’s $15. Repay on time and next time you’re covered for more — no paperwork, just keep your word.</span></span>
           </button></li>
         </ol>
       </div>
@@ -1871,6 +1923,40 @@
       var p = Math.max(0, Math.min(1, raw));
       p = 1 - Math.pow(1 - p, 3); // ease-out: quick arrival, gentle settle
       stage.style.setProperty("--p", p.toFixed(4));
+    }
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+  })();
+
+  // ---- How-it-works steps: Fruitful staggered reveal + scrubbed rails ----
+  // Two of the three Fruitful ingredients live here (the third is CSS air):
+  // an IO flips .in once per block (children stagger off it via per-child
+  // transition-delay), and one shared passive scroll listener scrubs each
+  // block's rail fill (--sp), same pattern as the coins' --p. With Reduce
+  // Motion we never arm: hidden states don't apply and --sp rests at 1, so
+  // the section renders finished — content is never gated on motion.
+  (function () {
+    var sec = document.querySelector(".sec-how");
+    if (!sec) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    var steps = [].slice.call(sec.querySelectorAll(".how-step"));
+    if (!steps.length || !("IntersectionObserver" in window)) return;
+    sec.classList.add("armed");
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.22 });
+    steps.forEach(function (s) { io.observe(s); });
+    function update() {
+      steps.forEach(function (s) {
+        var r = s.getBoundingClientRect();
+        // rail fills as the block crosses the viewport: empty when its top
+        // enters at the bottom, full by the time ~85% of it has scrolled past
+        var p = (window.innerHeight * 0.85 - r.top) / r.height;
+        s.style.setProperty("--sp", Math.max(0, Math.min(1, p)).toFixed(4));
+      });
     }
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
