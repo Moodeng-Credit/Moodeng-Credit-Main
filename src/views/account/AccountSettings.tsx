@@ -1146,6 +1146,10 @@ export default function AccountSettings() {
             document.getElementById('avatar-section')?.scrollIntoView({ block: 'center' });
          });
       }
+
+      if (editTarget === 'bio') {
+         setShowBioInfoModal(true);
+      }
    }, [currentDisplayName, editTarget]);
 
    useEffect(() => {
