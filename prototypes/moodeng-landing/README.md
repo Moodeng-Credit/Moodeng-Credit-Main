@@ -4,6 +4,21 @@
 
 See [PLAN.md](PLAN.md) for the full design/copy direction (trust spine, rejected copy, moment-card spec, peso decisions).
 
+## ⏭️ NEXT UP — Desktop pass (plan approved by George 2026-07-13, NOT yet built)
+
+George: the desktop version is "super bad vs the mobile" — every section below the hero is a phone column centered on a big canvas (verified at 1280 and ~2000w: pins are a ~480px strip in white space with an orphaned rail, dark carousel asks desktop users to swipe, marquee captions are ant-sized, type whispers). References measured live at mobile 375w for the parked font-size question: Klarna hero 84px / sections 40–52px, Tilt hero 48px w900 — ours (40px hero / 30–32px sections) is a notch SMALLER than references, so desktop is where type must grow, mobile stays.
+
+**Strategy: one additive breakpoint.** All changes inside `@media (min-width: 1024px)` (+ optional ≥1440 refinements). Below 1024px zero rules change — mobile provably untouched. NO JS changes: drivers/reel/micro-anims are class- and measurement-based already.
+
+- **Step 0 — foundation.** Desktop type scale (hero 56→72, sec-h 30–32→44, tile-h 23→28, leads →18, captions +1) + column system (text sections ~720px measure, visual sections ~1080px).
+- **Step 1 — pins go two-column (the big one).** ≥1024: pinned frame = grid, TEXT LEFT (title reel + caption, left-aligned, vertically centered, progress rail hugging its left edge) / PHONE RIGHT (stage up from 250→~320px). Fruitful's real desktop anatomy; both pins identical treatment. Reel classes untouched. ⚠️ Carry the #636 collapse-guard into the grid (grid items have the same automatic-minimum-size trap as flex — the title window must never be crushable; that bug shipped once already). deal-panel widens to match.
+- **Step 2 — dark never-section.** ≥1024: carousel → 4-up grid (2×2 at 1024–1279 if cramped), dots hidden, swipe JS idles naturally.
+- **Step 3 — faces marquee.** Captions 15→18, pills up a notch, cards 264→~300px, drift speed up proportionally (loop JS measures DOM — adapts automatically).
+- **Step 4 — the rest.** Steps strip → 3-col; demo heading beside phone; proof videos 158→~220px with Emma's mission card beside; FAQ 720px column; final CTA + footer pick up the scale.
+- **Step 5 — verification before ANY PR.** Screenshot every section at 1280 AND 1920, full mobile regression at 390×664 (the viewport that caught the #636 collapse), `?motion=1` scrub check on both pins at desktop. George sees the full screenshot set first — this is a novel-layout change, the show-before-merge rule applies.
+
+Order 0→1→2→3→4, one branch, one commit per step so any step can be dropped individually. Step 1 is the only risky one; 2–4 are plain CSS.
+
 ## ✅ BUILT — Promise-story repair: fixed-frame panel + no-reflow text + "why we're different" beats (**PR #627 merged 2026-07-12 ~15:40**; entry-bug part was #623)
 
 **Shipped per the spec below.** Open copy sign-offs for George/Emma: the lead-in line ("Why this is different / Not like the loan apps you've met.") and whether "APR" is allowed in user copy (fallback: "interest surprises"). Verified with `?motion=1` at 375w: all 3 panels exactly 416px, caption slot constant 77px on both pins, caption/beat sync, pin fits 746/746.
