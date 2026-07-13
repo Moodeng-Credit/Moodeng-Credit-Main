@@ -1394,6 +1394,35 @@
     .sec-promises .story-screen:nth-child(1) .tile-obj { width: 84px !important; } /* magnifier */
     .sec-promises .story-screen:nth-child(2) .tile-obj { width: 60px !important; } /* padlock */
     .sec-promises .story-screen:nth-child(3) .tile-obj { width: 80px !important; } /* price-tag */
+
+    /* ---- Fruitful-proper desktop card (George 2026-07-13, approved) — the
+       shared 420×620 frame was a tall phone with the card marooned (filled
+       ~37% of its height → ~47% dead space). Fruitful's visual panel is
+       near-SQUARE and the visual fills it. For the promises pin only (steps
+       keeps the tall phone for its mockup), reshape the frame toward square,
+       widen + grow the card and its type so the content fills the frame, and
+       let the 3D icon dip into the card's top edge (the same overlap the dark
+       never-cards use) instead of floating with a gap. min-height is sized to
+       the tallest beat (beat 2, the no-rollover ledger) so the constant-frame
+       invariant holds; shorter beats keep a little tint margin. ---- */
+    .sec-promises.armed .story-screens { width: min(460px, 100%); }
+    .sec-promises.armed .stage-panel { min-height: 500px; padding: 30px; }
+    .sec-promises.armed .story-mini-panel .mini {
+      width: 100%; max-width: 400px; padding: 30px 30px 26px;
+    }
+    .sec-promises.armed .story-mini-panel .mini .k { font-size: 11px; }
+    .sec-promises.armed .story-mini-panel .mini .big { font-size: 40px; margin-top: 6px; }
+    .sec-promises.armed .story-mini-panel .mini .tiny { font-size: 13px; margin-top: 10px; }
+    .sec-promises.armed .story-mini-panel .mini .row { font-size: 16px; }
+    .sec-promises.armed .story-mini-panel .mini .row + .row { margin-top: 12px; padding-top: 12px; }
+    .sec-promises.armed .story-mini-panel .mini .row .when { font-size: 13px; }
+    .sec-promises.armed .story-mini-panel .mini .row .amt { font-size: 24px; }
+    /* icon dips into the card top edge (overlap), z-index above the card */
+    .sec-promises.armed .story-mini-panel .tile-obj {
+      z-index: 2; margin: 0 auto -22px;
+    }
+    .sec-promises.armed .story-mini-panel .mini { padding-top: 34px !important; }
+
     .story-lead { padding: 40px 0 32px; }
     /* deal-panel: was a lonely 680px box in a 1440px canvas. Split into
        checkmarks-left / CTA-right so it fills its own width instead of
