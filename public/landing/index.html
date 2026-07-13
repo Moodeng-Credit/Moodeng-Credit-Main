@@ -1379,7 +1379,18 @@
     .sec-promises.armed .story-mini-panel .tile-obj {
       position: relative; top: auto !important; margin: 0 auto 8px;
     }
-    .sec-promises.armed .story-mini-panel .mini { padding-top: 0 !important; }
+    /* Card was sized to its min-content (~253px) and floated as a narrow column
+       in the 420px panel; its ledger rows used justify-content:center, so each
+       label+value pair clustered mid-card with big empty margins (George: "card
+       looks strangely sized, content looks strange"). Give the card a defined
+       desktop width so it fills the panel like the mobile card fills its stage,
+       and let the rows span it as a proper ledger (label left / value right). */
+    .sec-promises.armed .story-mini-panel .mini { padding-top: 0 !important; width: 330px; max-width: 100%; }
+    .sec-promises.armed .story-mini-panel .mini .row { justify-content: space-between; }
+    /* the label's fixed 76px width (a mobile constraint) forced "Processing fee"
+       / "Hidden charges" to wrap; with space-between the value pins right
+       regardless, so let the label size to its text */
+    .sec-promises.armed .story-mini-panel .mini .row .when { width: auto; }
     .sec-promises .story-screen:nth-child(1) .tile-obj { width: 84px !important; } /* magnifier */
     .sec-promises .story-screen:nth-child(2) .tile-obj { width: 60px !important; } /* padlock */
     .sec-promises .story-screen:nth-child(3) .tile-obj { width: 80px !important; } /* price-tag */
