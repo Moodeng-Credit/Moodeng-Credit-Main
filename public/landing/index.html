@@ -1394,6 +1394,15 @@
     .sec-promises .story-screen:nth-child(1) .tile-obj { width: 84px !important; } /* magnifier */
     .sec-promises .story-screen:nth-child(2) .tile-obj { width: 60px !important; } /* padlock */
     .sec-promises .story-screen:nth-child(3) .tile-obj { width: 80px !important; } /* price-tag */
+    /* Per-beat panel tint (George 2026-07-13) so the 3 promise cards read as a
+       designed set instead of 3 identical panels — beat 1 stays dark (deliberate
+       contrast for "$15 -> $18, nothing hidden"), beat 2 stays the shared default
+       lavender, beat 3 goes mint. Position-scoped to this one card (specificity
+       beats both .stage-panel and .stage-panel.dark with no !important) so it
+       can't leak to the steps-pin phone or any other .stage-panel on the page. */
+    .sec-promises .story-screen:nth-child(3) .stage-panel {
+      background: radial-gradient(120% 90% at 20% 10%, #D6F5E6 0%, #A8E6C9 60%, #7FD9B0 100%);
+    }
 
     /* ---- Fruitful-proper desktop card (George 2026-07-13, approved) — the
        shared 420×620 frame was a tall phone with the card marooned (filled
