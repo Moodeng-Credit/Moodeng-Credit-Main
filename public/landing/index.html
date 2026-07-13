@@ -416,6 +416,12 @@
   /* 416 clears the tallest card (the no-APR ledger measures 404 at the 250px
      stage width) — all three panels clamp to the same height */
   .sec-promises .story-mini-panel { min-height: 416px; }
+  /* Centre the promise-beat icon horizontally with auto-margins (left:0/right:0
+     + margin auto on a definite-width absolute box) instead of the old inline
+     transform:translateX(-50%). The pop animation (unlockPop) animates
+     transform, so a transform used for centring got overridden mid/post-pop and
+     left the icon off-centre — auto-margins keep it centred through the pop. */
+  .sec-promises .story-mini-panel .tile-obj { left: 0; right: 0; margin-left: auto; margin-right: auto; }
   .inner .reason { font-size: 13px; font-weight: 700; color: var(--text-soft); }
   .inner .reason .emoji { margin-right: 5px; }
   .statement {
@@ -1363,6 +1369,20 @@
     .sec-story.armed .stage-panel {
       min-height: 620px; display: flex; flex-direction: column; justify-content: center;
     }
+    /* Promise-beat icons were absolutely pinned to the panel TOP and sized for
+       the 250px mobile stage, so in the ~420px-wide, 620px-tall desktop panel
+       (card vertically centred) they stranded tiny far above the card (George
+       screenshot). Pull the icon into the flex flow directly above the card and
+       scale it up per-beat (keeping the mobile visual-weight differences). top/
+       width need !important to beat the inline styles; position/margin don't
+       touch transform, so unlockPop still pops cleanly. */
+    .sec-promises.armed .story-mini-panel .tile-obj {
+      position: relative; top: auto !important; margin: 0 auto 8px;
+    }
+    .sec-promises.armed .story-mini-panel .mini { padding-top: 0 !important; }
+    .sec-promises .story-screen:nth-child(1) .tile-obj { width: 84px !important; } /* magnifier */
+    .sec-promises .story-screen:nth-child(2) .tile-obj { width: 60px !important; } /* padlock */
+    .sec-promises .story-screen:nth-child(3) .tile-obj { width: 80px !important; } /* price-tag */
     .story-lead { padding: 40px 0 32px; }
     /* deal-panel: was a lonely 680px box in a 1440px canvas. Split into
        checkmarks-left / CTA-right so it fills its own width instead of
@@ -1956,7 +1976,7 @@
             <div class="stage">
               <div class="stage-panel dark story-mini-panel">
                 <!-- 3D magnifier over a gold coin — "we looked, nothing hidden" (George, 07-11) -->
-                <img class="tile-obj" src="/landing/assets/icons/magnifier-coin.png" alt="" style="width:48px; top:2px; left:50%; transform:translateX(-50%)" />
+                <img class="tile-obj" src="/landing/assets/icons/magnifier-coin.png" alt="" style="width:48px; top:2px" />
                 <div class="mini" style="padding-top:38px">
                   <div class="k">The whole deal</div>
                   <div class="big">$15 → $18</div>
@@ -1973,7 +1993,7 @@
           <div class="story-screen">
             <div class="stage">
               <div class="stage-panel story-mini-panel">
-                <img class="tile-obj" src="/landing/assets/icons/lock-closed.png" alt="" style="width:34px; top:0; left:50%; transform:translateX(-50%)" />
+                <img class="tile-obj" src="/landing/assets/icons/lock-closed.png" alt="" style="width:34px; top:0" />
                 <!-- Clarity pass 07-12 (George: "I think it says fees don't change…
                      but it's not clear") — bare tonight/tomorrow rows had no frame;
                      now a labeled ledger shows time passing while the amount stays frozen. -->
@@ -1994,7 +2014,7 @@
           <div class="story-screen">
             <div class="stage">
               <div class="stage-panel story-mini-panel">
-                <img class="tile-obj" src="/landing/assets/icons/price-tag.png" alt="" style="width:46px; top:4px; left:50%; transform:translateX(-50%)" />
+                <img class="tile-obj" src="/landing/assets/icons/price-tag.png" alt="" style="width:46px; top:4px" />
                 <div class="mini" style="padding-top:36px">
                   <div class="k">Our fees</div>
                   <div class="big">$0</div>
