@@ -955,6 +955,35 @@
   .stars svg { width: 30px; height: 30px; filter: drop-shadow(0 4px 8px rgba(96,16,210,0.28)); }
   .rating-line { font-family: var(--display); font-size: 20px; color: var(--heading); }
   .rating-sub { margin-top: 5px; font-size: 13px; font-weight: 600; color: #6010D2; }
+
+  /* ---- Honest stars strip (empty on purpose) — we have no rating yet, so we
+     don't fake one; Moodeng reaches for five empty stars instead. Shows on
+     mobile + desktop. Stars are inline SVG (not a baked image) so they render
+     crisp AND can be filled in place once a real rating exists. ---- */
+  .sec-stars { text-align: center; padding: 46px 0 40px; background: var(--surface); }
+  .sec-stars .stars-h { font-size: 25px; line-height: 1.18; }
+  /* hippo (on its ladder, reaching up-right) sits at the left; the star row
+     rides at cloth height to its right, so the polishing cloth reaches toward
+     the first star. */
+  .stars-scene { display: inline-flex; align-items: flex-start; justify-content: center; gap: 4px; margin: 18px 0 14px; }
+  .stars-hippo { width: 108px; height: auto; flex: none; margin-top: 6px; pointer-events: none; }
+  .stars-row { display: flex; gap: 9px; margin-top: 4px; }
+  /* soft gold drop-shadow so the empty rings feel crafted next to the glossy
+     3D hippo, not like flat clip-art outlines */
+  .stars-row .star { width: 36px; height: 36px; display: block; filter: drop-shadow(0 3px 4px rgba(224,161,0,0.30)); }
+  /* empty = gold OUTLINE, faint wash so they read on the light bg but are
+     clearly unfilled. NEVER fill one individually (reads as a real 1/5). */
+  .stars-row .star path { fill: rgba(240,178,20,0.12); stroke: #E3A400; stroke-width: 1.55; stroke-linejoin: round; }
+  .stars-sub { font-size: 14px; font-weight: 600; color: var(--text-soft); max-width: 32ch; margin: 0 auto; line-height: 1.5; }
+  .stars-sub b { color: var(--heading); }
+  @media (min-width: 700px) {
+    .sec-stars .stars-h { font-size: 32px; }
+    .stars-scene { gap: 8px; }
+    .stars-hippo { width: 150px; }
+    .stars-row { gap: 13px; margin-top: 10px; }
+    .stars-row .star { width: 48px; height: 48px; }
+  }
+
   .proof-stats { display: flex; justify-content: center; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
   .proof-stats .stat {
     background: #fff; border-radius: var(--pill); padding: 9px 14px;
@@ -2333,6 +2362,34 @@
        facts, not volume; the dashed card turns the missing testimonial into an
        invitation. As REAL numbers/quotes accumulate, swap them in here — the old
        stat-pill and .qcard markup still work. -->
+  <!-- ============= HONEST STARS STRIP (George 2026-07-14) =============
+       We have no rating yet, so we don't fake one. Five EMPTY gold-outline
+       stars, on purpose, with Moodeng reaching for them — turns "we're new"
+       into a wink instead of an awkward omission, right before the real
+       borrower testimonials below. HONESTY GUARDRAILS (do not break):
+       (1) all five stars stay EMPTY — never fill one (reads as a real 1/5);
+       (2) no number anywhere near them (no "4.8", no "/5");
+       (3) don't tie the stars to loan repayment — reputation != repayment.
+       When real reviews land, the same .stars-row is what fills in.
+       ⚠️ .stars-hippo is a STAND-IN (welcome.png) — swap for the generated
+       "reaching for the stars" hippo (transparent PNG, same path). -->
+  <section class="sec-stars">
+    <div class="wrap reveal">
+      <h2 class="sec-h stars-h">You’re building your credit.<br>We’re building <span class="accent">our reputation.</span></h2>
+      <div class="stars-scene">
+        <img class="stars-hippo" src="/landing/assets/hippos/hippo-stars.png" alt="" />
+        <div class="stars-row" role="img" aria-label="Five empty stars — Moodeng has no rating yet">
+          <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
+          <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
+          <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
+          <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
+          <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
+        </div>
+      </div>
+      <p class="stars-sub">We’re new, so these are still empty. <b>Only real borrowers get to fill them.</b></p>
+    </div>
+  </section>
+
   <section class="sec-proof">
     <div class="wrap reveal">
       <p class="label">Says who?</p>
