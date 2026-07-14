@@ -964,9 +964,11 @@
   .sec-stars .stars-h { font-size: 25px; line-height: 1.18; }
   /* hippo (on its ladder, reaching up-right) sits at the left; the star row
      rides at cloth height to its right, so the polishing cloth reaches toward
-     the first star. */
-  .stars-scene { display: inline-flex; align-items: flex-start; justify-content: center; gap: 4px; margin: 18px 0 14px; }
+     the first star, and the caption sits right under the row (not centred far
+     below) so stars + text read as one block beside the hippo. */
+  .stars-scene { display: inline-flex; align-items: flex-start; justify-content: center; gap: 4px; margin: 18px 0 6px; text-align: left; }
   .stars-hippo { width: 108px; height: auto; flex: none; margin-top: 6px; pointer-events: none; }
+  .stars-right { display: flex; flex-direction: column; align-items: flex-start; }
   .stars-row { display: flex; gap: 9px; margin-top: 4px; }
   /* soft gold drop-shadow so the empty rings feel crafted next to the glossy
      3D hippo, not like flat clip-art outlines */
@@ -974,7 +976,7 @@
   /* empty = gold OUTLINE, faint wash so they read on the light bg but are
      clearly unfilled. NEVER fill one individually (reads as a real 1/5). */
   .stars-row .star path { fill: rgba(240,178,20,0.12); stroke: #E3A400; stroke-width: 1.55; stroke-linejoin: round; }
-  .stars-sub { font-size: 14px; font-weight: 600; color: var(--text-soft); max-width: 32ch; margin: 0 auto; line-height: 1.5; }
+  .stars-sub { font-size: 13.5px; font-weight: 600; color: var(--text-soft); max-width: 30ch; margin: 13px 0 0; line-height: 1.5; text-align: left; }
   .stars-sub b { color: var(--heading); }
   @media (min-width: 700px) {
     .sec-stars .stars-h { font-size: 32px; }
@@ -2378,15 +2380,20 @@
       <h2 class="sec-h stars-h">You’re building your credit.<br>We’re building <span class="accent">our reputation.</span></h2>
       <div class="stars-scene">
         <img class="stars-hippo" src="/landing/assets/hippos/hippo-stars.png" alt="" />
-        <div class="stars-row" role="img" aria-label="Five empty stars — Moodeng has no rating yet">
-          <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
-          <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
-          <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
-          <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
-          <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
+        <div class="stars-right">
+          <div class="stars-row" role="img" aria-label="Five empty stars — Moodeng has no rating yet">
+            <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
+            <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
+            <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
+            <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
+            <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
+          </div>
+          <!-- sub sits right under the stars, beside the hippo, so the row and
+               the caption read as one block (was centred far below, leaving a
+               big gap next to the tall hippo — George 2026-07-14). -->
+          <p class="stars-sub">We’re new, so these are still empty. <b>Only real borrowers get to fill them.</b></p>
         </div>
       </div>
-      <p class="stars-sub">We’re new, so these are still empty. <b>Only real borrowers get to fill them.</b></p>
     </div>
   </section>
 
