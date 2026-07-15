@@ -97,7 +97,8 @@ export type BorrowerContextMultiOption = BorrowerContextOption & {
 };
 
 const REFERRAL_TEST_CODES: Record<string, AppliedReferralCode> = {
-   BELLE: { id: 'referral-test-belle', code: 'BELLE', boostAmount: 5 }
+   BELLE: { id: 'referral-test-belle', code: 'BELLE', boostAmount: 5 },
+   JAMIE: { id: 'referral-test-jamie', code: 'JAMIE', boostAmount: 5 }
 };
 
 export const inputShellClass =
