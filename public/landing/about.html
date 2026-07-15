@@ -1,560 +1,303 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
-<link rel="apple-touch-icon" href="/landing/assets/brand/moodeng-logo.png" />
-<title>Our story — why Moodeng Credit exists</title>
-<meta name="description" content="We watched loan sharks and predatory loan apps hurt people we know. Then money itself got better. Moodeng Credit is the loan we wished existed — small, honest, funded by real people, zero fees from our side." />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="Moodeng Credit" />
-<meta property="og:title" content="Our story — why Moodeng Credit exists" />
-<meta property="og:description" content="We watched the sharks work, then the loan apps that were worse. Moodeng Credit is the loan we wished existed — small, honest, funded by real people." />
-<meta property="og:url" content="https://moodeng.app/about" />
-<meta property="og:image" content="https://moodeng.app/landing/assets/og/og-share.jpg" />
-<meta name="twitter:card" content="summary_large_image" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..700&family=Archivo+Black&family=Fraunces:ital,opsz,wght@1,9..144,400..600&display=swap" rel="stylesheet" />
-<style>
-  /* Tokens + base copied from the main landing page (index.html) — keep in sync */
-  :root {
-    --lavender: #8336F0;
-    --purple: #6010D2;
-    --deep: #1C053D;
-    --heading: #040033;
-    --surface: #FDFCFD;
-    --surface-muted: #F8F4FC;
-    --lavender-bg: #F3E8FF;
-    --lavender-border: #E7D8FF;
-    --text-muted: #70617F;
-    --text-soft: #4D4359;
-    --panel: #C9A8F5;
-    --card-tint: #F7F0FE;
-    --pill: 500px;
-    --display: "Archivo Black", "Archivo", -apple-system, BlinkMacSystemFont, sans-serif;
-    --sans: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --serif: "Fraunces", Georgia, "Times New Roman", serif;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { -webkit-text-size-adjust: 100%; }
-  body { font-family: var(--sans); color: var(--heading); background: var(--surface); line-height: 1.5; overflow-x: hidden; }
-  img { display: block; max-width: 100%; }
-  .accent { font-family: var(--serif); font-style: italic; font-weight: 500; letter-spacing: -0.01em; }
-  .label { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--purple); }
-  .wrap { width: 100%; max-width: 480px; margin: 0 auto; padding: 0 22px; }
+   <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      <title>Why Moodeng Credit exists</title>
+      <meta
+         name="description"
+         content="Moodeng was built to give people a small, clear alternative to loan sharks and invasive loan apps."
+      />
+      <meta property="og:title" content="Why Moodeng Credit exists" />
+      <meta
+         property="og:description"
+         content="We built the small loan we wished existed: clear terms, private phones, and a record people can build."
+      />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://moodeng.app/about" />
+      <meta property="og:image" content="https://moodeng.app/landing/assets/og/og-share.jpg" />
+      <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
+      <link rel="stylesheet" href="/landing/site.css?v=20260715-header" />
+   </head>
+   <body>
+      <a class="skip-link" href="#main-content">Skip to main content</a>
+      <header class="site-header">
+         <div class="container">
+            <a class="brand" href="/" aria-label="Moodeng Credit home"
+               ><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="34" height="34" /><span>Moodeng Credit</span></a
+            >
+            <nav class="desktop-nav" aria-label="Primary navigation">
+               <a href="/how-it-works">How it works</a><a href="/about" aria-current="page">Our story</a><a href="#team">The team</a
+               ><a href="/for-lenders">For lenders</a>
+            </nav>
+            <div class="header-actions">
+               <a class="button secondary" href="/sign-in">Sign in</a><a class="button" href="/request-board">Get a loan</a
+               ><button
+                  class="menu-button"
+                  type="button"
+                  data-menu-open
+                  aria-label="Open menu"
+                  aria-haspopup="dialog"
+                  aria-expanded="false"
+               >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                     <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+               </button>
+            </div>
+         </div>
+      </header>
+      <dialog class="menu-dialog" data-menu-dialog aria-label="Site menu">
+         <div class="menu-head">
+            <span class="brand"><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="34" height="34" />Moodeng Credit</span
+            ><button class="menu-close" type="button" data-menu-close aria-label="Close menu">✕</button>
+         </div>
+         <nav class="menu-links" aria-label="Mobile navigation">
+            <a href="/">Home <span aria-hidden="true">→</span></a
+            ><a href="/how-it-works">How it works <span aria-hidden="true">→</span></a
+            ><a href="/how-to-cash-out">How to cash out <span aria-hidden="true">→</span></a
+            ><a href="/how-to-repay">How to repay <span aria-hidden="true">→</span></a
+            ><a href="/for-lenders">For lenders <span aria-hidden="true">→</span></a>
+         </nav>
+         <div class="menu-actions">
+            <a class="button" href="/request-board">Get a loan</a><a class="button secondary" href="/sign-in">Sign in</a>
+         </div>
+      </dialog>
 
-  /* Klarna-minimal header (same as landing): wordmark only, transparent, frosted on scroll */
-  .site-head { position: sticky; top: 0; z-index: 50; background: transparent; transition: background .25s ease, box-shadow .25s ease; }
-  .site-head.scrolled { background: rgba(253,252,253,0.86); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 1px 0 rgba(4,0,51,0.08); }
-  .site-head .wrap { display: flex; align-items: center; padding-top: 12px; padding-bottom: 12px; }
-  .site-head .head-word { color: var(--heading); }
-  .head-logo { height: 28px; width: auto; }
-  .head-word { font-family: var(--sans); font-size: 17px; font-weight: 600; letter-spacing: 0.02em; margin-right: auto; color: #fff; text-decoration: none; }
-  .menu-pill { width: 58px; height: 42px; border: 0; cursor: pointer; border-radius: var(--pill); background: var(--purple); display: grid; place-items: center; }
-  .site-head .menu-pill { background: var(--lavender-bg); width: 48px; height: 40px; color: var(--heading); margin-right: 13px; }
-  .head-signin { display: inline-flex; align-items: center; gap: 7px; background: var(--heading); color: #fff; font-size: 13.5px; font-weight: 700; padding: 9px 16px 9px 14px; border-radius: var(--pill); text-decoration: none; margin-right: 2px; white-space: nowrap; }
+      <main id="main-content">
+         <section class="page-hero">
+            <div class="container">
+               <div class="page-hero-copy stack-lg">
+                  <p class="eyebrow">Our story</p>
+                  <h1 class="page-title">We built the loan we wished <em>existed.</em></h1>
+                  <p class="lead">
+                     Moodeng began with a simple refusal: a small loan should never grow without warning, expose someone’s private life, or
+                     turn a hard week into public shame.
+                  </p>
+                  <div class="button-row">
+                     <a class="button" href="#story">Read why we started <span class="arrow" aria-hidden="true">↓</span></a
+                     ><a class="button subtle" href="/how-it-works">See what we built</a>
+                  </div>
+               </div>
+               <figure class="hero-visual">
+                  <img src="/team/emma-moodeng.jpeg" alt="Emma from Moodeng" width="800" height="800" fetchpriority="high" />
+                  <figcaption class="deal-ticket">
+                     <div>
+                        <span class="kicker">The mission</span>
+                        <div class="amount">Fair, small credit</div>
+                     </div>
+                     <div class="date">No sharks.<br />No shame.</div>
+                  </figcaption>
+               </figure>
+            </div>
+         </section>
 
-  /* page hero */
-  .hiw-hero {
-    padding: 40px 0 46px; text-align: center;
-    background: radial-gradient(130% 90% at 50% -20%, #ffffff 0%, var(--lavender-bg) 55%, #EADCFC 100%);
-  }
-  .hiw-hero h1 {
-    font-family: var(--display); font-size: 34px; line-height: 1.05; letter-spacing: -0.02em;
-    margin: 10px 0 0;
-  }
-  .hiw-hero h1 .accent { color: var(--purple); font-weight: 500; }
-  .hiw-hero .sub { margin: 14px auto 0; font-size: 15.5px; color: var(--text-soft); max-width: 32ch; }
-  .hiw-hero .sub b { color: var(--heading); }
+         <section class="section" id="story" aria-labelledby="story-heading">
+            <div class="container">
+               <div class="split-heading reveal">
+                  <div class="stack-md">
+                     <p class="eyebrow">Where it started</p>
+                     <h2 class="section-title wide" id="story-heading">We watched small debt do <em>large damage.</em></h2>
+                  </div>
+                  <p class="lead">
+                     The worst credit products do not look complicated. They start with a small amount, then use a growing price, pressure,
+                     and shame to make it impossible to leave.
+                  </p>
+               </div>
+               <div class="timeline">
+                  <article class="chapter reveal">
+                     <div class="chapter-copy">
+                        <p class="eyebrow">01 · The street lender</p>
+                        <h2>A small loan kept growing.</h2>
+                        <p>
+                           In Thailand and the Philippines, people we know faced the same pattern: borrow a little, owe much more the next
+                           week, then owe more again when the first due date becomes impossible.
+                        </p>
+                     </div>
+                     <figure class="chapter-media contain">
+                        <img
+                           src="/landing/assets/about/shark-chains.png"
+                           alt="Illustration of a loan shark and growing debt chains"
+                           loading="lazy"
+                           width="512"
+                           height="512"
+                        />
+                     </figure>
+                  </article>
+                  <article class="chapter reveal">
+                     <div class="chapter-copy">
+                        <p class="eyebrow">02 · The app version</p>
+                        <h2>Technology made the pressure faster.</h2>
+                        <p>
+                           Some loan apps replaced the collector at the door with access to contacts, family, coworkers, and public
+                           messages. The interface looked cleaner, but the fear was the same.
+                        </p>
+                     </div>
+                     <figure class="chapter-media contain">
+                        <img
+                           src="/landing/assets/about/harassment-phone.png"
+                           alt="Illustration of a phone receiving invasive collection messages"
+                           loading="lazy"
+                           width="512"
+                           height="512"
+                        />
+                     </figure>
+                  </article>
+                  <article class="chapter reveal">
+                     <div class="chapter-copy">
+                        <p class="eyebrow">03 · A different rail</p>
+                        <h2>Digital dollars changed what a tiny loan could cost to move.</h2>
+                        <p>
+                           USDC and Base made it possible to move small amounts through a global digital-dollar network without building the
+                           experience around bank transfer overhead. That created room for a person-to-person model with no Moodeng service
+                           fee.
+                        </p>
+                     </div>
+                     <figure class="chapter-media contain">
+                        <img
+                           src="/landing/assets/about/clean-transfer.png"
+                           alt="Illustration of a clear person-to-person money transfer"
+                           loading="lazy"
+                           width="512"
+                           height="512"
+                        />
+                     </figure>
+                  </article>
+                  <article class="chapter reveal">
+                     <div class="chapter-copy">
+                        <p class="eyebrow">04 · Moodeng</p>
+                        <h2>One request. One clear deal. One record.</h2>
+                        <p>
+                           A borrower chooses the reason, expected payback, and date. A person chooses whether to fund it. The outcome stays
+                           on a record the borrower can build, without giving Moodeng access to a private phone.
+                        </p>
+                     </div>
+                     <figure class="chapter-media">
+                        <img
+                           src="/landing/assets/app/step2-board-cards.jpg"
+                           alt="Moodeng request board showing clear amounts, expected paybacks, dates, and reasons"
+                           loading="lazy"
+                           width="640"
+                           height="1385"
+                        />
+                     </figure>
+                  </article>
+               </div>
+            </div>
+         </section>
 
-  /* steps */
-  .sec-step { padding: 56px 0 60px; }
-  .sec-step:nth-of-type(even) { background: var(--surface-muted); }
-  .step-num {
-    display: inline-grid; place-items: center;
-    width: 44px; height: 44px; border-radius: 50%;
-    background: var(--heading); color: #fff;
-    font-family: var(--display); font-size: 19px;
-  }
-  .tile-h { font-family: var(--display); font-size: 25px; letter-spacing: -0.01em; color: var(--heading); margin: 14px 0 0; line-height: 1.15; }
-  .tile-h .accent { color: var(--purple); font-weight: 500; }
-  .tile-cap { margin-top: 8px; font-size: 15px; color: var(--text-muted); line-height: 1.5; max-width: 34ch; }
-  .tile-cap b { color: var(--heading); }
+         <section class="section surface-night" aria-labelledby="rules-heading">
+            <div class="container never-grid">
+               <div class="stack-md reveal">
+                  <p class="eyebrow">The rules we keep</p>
+                  <h2 class="section-title" id="rules-heading">Warm words only matter when the product has <em>hard boundaries.</em></h2>
+                  <p class="lead">
+                     These are not campaign promises. They shape what Moodeng asks for, what funders see, and how the team responds when
+                     repayment is difficult.
+                  </p>
+               </div>
+               <ul class="never-list reveal">
+                  <li>
+                     <span class="icon">✓</span
+                     ><span><b>The full expected payback is visible first</b>No hidden Moodeng service or processing fee.</span>
+                  </li>
+                  <li>
+                     <span class="icon">✓</span><span><b>Private phones stay private</b>No contacts, photos, or messages.</span>
+                  </li>
+                  <li>
+                     <span class="icon">✓</span
+                     ><span><b>Every outcome stays on the record</b>Completed loans, late payments, and defaults remain visible.</span>
+                  </li>
+                  <li>
+                     <span class="icon">✓</span
+                     ><span><b>Collection never becomes humiliation</b>No public shame or contact-list pressure.</span>
+                  </li>
+               </ul>
+            </div>
+         </section>
 
-  /* phone frame w/ REAL app screen inside (moment-card anatomy, screenshot as the screen) */
-  .stage { position: relative; margin: 28px auto 0; width: 300px; max-width: 86%; }
-  .stage.big { width: 320px; }
-  .stage-panel {
-    position: relative;
-    background: radial-gradient(120% 90% at 20% 10%, #E4D2FB 0%, var(--panel) 60%, #B892F0 100%);
-    border-radius: 30px; padding: 26px 20px 24px;
-    box-shadow: 0 24px 50px rgba(96,16,210,0.28);
-  }
-  .stage-panel::before {
-    content: ""; position: absolute; inset: 0; border-radius: 30px;
-    background-image:
-      radial-gradient(circle at 30% 20%, rgba(255,255,255,0.28) 0 2px, transparent 3px),
-      radial-gradient(circle at 70% 60%, rgba(255,255,255,0.18) 0 2px, transparent 3px),
-      radial-gradient(circle at 50% 85%, rgba(28,5,61,0.06) 0 3px, transparent 4px);
-    background-size: 90px 90px, 120px 120px, 140px 140px;
-    opacity: 0.5; pointer-events: none;
-  }
-  .stage.right .phone { transform: rotate(2.5deg); }
-  .phone {
-    position: relative; background: #fff; border-radius: 22px;
-    padding: 10px; transform: rotate(-3deg);
-    box-shadow: 0 16px 34px rgba(28,5,61,0.22), 0 2px 0 rgba(255,255,255,0.6) inset;
-  }
-  .phone.upright { transform: none; }
-  .phone .screen { border-radius: 14px; width: 100%; }
-  .shot-note { margin-top: 16px; font-size: 12px; font-weight: 600; color: var(--text-muted); text-align: center; }
+         <section class="section" id="team" aria-labelledby="team-heading">
+            <div class="container">
+               <div class="split-heading reveal">
+                  <div class="stack-md">
+                     <p class="eyebrow">The humans</p>
+                     <h2 class="section-title wide" id="team-heading">Small enough to still read the <em>messages.</em></h2>
+                  </div>
+                  <p class="lead">
+                     Moodeng is early. The people shaping the product are still close to the borrowers, lenders, and support questions that
+                     show where it needs to improve.
+                  </p>
+               </div>
+               <div class="team-grid">
+                  <article class="team-member reveal">
+                     <img src="/team/emma-moodeng.jpeg" alt="Emma from Moodeng" loading="lazy" width="800" height="800" />
+                     <div>
+                        <h3>Emma</h3>
+                        <p>Borrower voice, community, and the personal reason Moodeng exists.</p>
+                        <a class="text-link" href="mailto:support@moodengcredit.com">Send a message <span aria-hidden="true">→</span></a>
+                     </div>
+                  </article>
+                  <article class="team-member reveal">
+                     <img src="/team/george.jpeg" alt="George from Moodeng" loading="lazy" width="450" height="450" />
+                     <div>
+                        <h3>George</h3>
+                        <p>Product, operations, and support. Reads the confusing parts people report.</p>
+                        <a class="text-link" href="mailto:support@moodengcredit.com">Send a message <span aria-hidden="true">→</span></a>
+                     </div>
+                  </article>
+               </div>
+            </div>
+         </section>
 
-  /* cash-out card (copied from landing peso strip) */
-  .phone.tall { padding: 18px 18px 22px; border-radius: 26px; text-align: center; }
-  .phone.tall .phone-head { justify-content: center; position: relative; padding-bottom: 0; }
-  .phone.tall .phone-head .back { position: absolute; left: 2px; top: 0; }
-  .phone-head {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em;
-    color: var(--text-muted); text-transform: uppercase; padding: 2px 2px 12px;
-  }
-  .phone-head .back { font-size: 15px; color: var(--heading); }
-  .coin-badge { height: 58px; margin: 36px auto 16px; display: block; }
-  .statement { font-family: var(--display); font-size: 20px; line-height: 1.12; letter-spacing: -0.01em; color: var(--heading); margin: 10px 0 12px; }
-  .phone.tall .statement { font-size: 22px; margin: 0 0 30px; }
-  .swap-box {
-    background: #F6F3FA; border-radius: 14px; padding: 13px 16px; margin: 0 2px;
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .swap-box .cell { text-align: left; }
-  .swap-box .cell.right { text-align: right; }
-  .swap-box .cell .k { display: block; font-size: 10.5px; font-weight: 600; color: #B9AECB; }
-  .swap-box .cell b { font-size: 16px; font-weight: 800; color: var(--heading); }
-  .swap-box .arr { color: var(--purple); font-family: var(--display); font-size: 18px; }
-  .cta-caps {
-    display: block; margin-top: 46px; background: var(--purple); color: #fff;
-    font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
-    padding: 16px; border-radius: var(--pill);
-  }
+         <section class="final-cta" aria-labelledby="about-final-heading">
+            <div class="narrow stack-lg reveal">
+               <p class="eyebrow">Judge the product, not the story</p>
+               <h2 class="section-title wide" id="about-final-heading">
+                  Look at the screens. Read the terms. Decide for <em>yourself.</em>
+               </h2>
+               <p class="lead">The product tour and request board are open before you create an account.</p>
+               <div class="button-row">
+                  <a class="button light" href="/how-it-works">See how Moodeng works <span class="arrow" aria-hidden="true">→</span></a
+                  ><a class="button subtle" href="/request-board">Browse the request board</a>
+               </div>
+            </div>
+         </section>
+      </main>
 
-  /* final CTA */
-  .sec-final {
-    text-align: center; padding: 64px 0 72px;
-    background: radial-gradient(130% 100% at 50% 100%, #DCC4FA 0%, var(--lavender-bg) 55%, #ffffff 100%);
-  }
-  .sec-final h2 { font-family: var(--display); font-size: 29px; line-height: 1.08; letter-spacing: -0.02em; margin: 12px 0 0; }
-  .sec-final h2 .accent { color: var(--purple); font-weight: 500; }
-  .cta {
-    display: inline-flex; align-items: center; gap: 10px;
-    background: var(--heading); color: #fff; font-weight: 700; font-size: 16px;
-    padding: 15px 26px; border-radius: var(--pill); text-decoration: none; margin-top: 26px;
-    box-shadow: 0 10px 24px rgba(4,0,51,0.22);
-    transition: transform .15s ease, box-shadow .15s ease;
-  }
-  .cta:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(4,0,51,0.28); }
-  .cta .arrow { transition: transform .15s ease; }
-  .cta:hover .arrow { transform: translateX(3px); }
-
-  /* Sign in / start-a-loan links leave this static site for the real app, which takes a
-     moment to boot — show a spinner immediately on tap so the click feels acknowledged
-     instead of dead air. .btn-label keeps its layout box (opacity, not display) so the
-     button doesn't resize; the spinner is a centered ::after circle. */
-  .head-signin, .cta, .d-foot a { position: relative; }
-  .btn-label { display: inline-flex; align-items: center; gap: inherit; transition: opacity .15s ease; }
-  .is-loading { pointer-events: none; }
-  .is-loading .btn-label { opacity: 0; }
-  .is-loading::after {
-    content: ""; position: absolute; top: 50%; left: 50%;
-    width: 16px; height: 16px; margin: -8px 0 0 -8px;
-    /* currentColor so the ring reads on both dark pills (white text) and the
-       plain-purple drawer link, without a per-context color override. */
-    border: 2px solid currentColor; border-top-color: transparent;
-    border-radius: 50%; animation: btnSpin .7s linear infinite;
-  }
-  @keyframes btnSpin { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .is-loading::after { animation-duration: 1.3s; } }
-  .reassure { margin-top: 14px; font-size: 13.5px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.01em; }
-
-  /* footer (same as landing, short form) */
-  .site-footer { background: #100626; padding: 52px 0 0; color: #B6A8CC; font-size: 13.5px; overflow: hidden; }
-  .site-footer .f-brand { display: flex; align-items: center; gap: 10px; }
-  .site-footer .f-brand img { width: 40px; }
-  .site-footer .f-brand b { font-family: var(--display); font-size: 20px; color: #fff; letter-spacing: -0.01em; }
-  .site-footer .f-tag { margin: 12px 0 0; line-height: 1.5; }
-  .f-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 28px; margin-top: 30px; }
-  .f-cols h4 { margin: 0 0 12px; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #C9A8F5; }
-  .f-cols a { display: block; color: #fff; text-decoration: none; font-weight: 600; padding: 6px 0; }
-  .f-cols a:hover { color: #C9A8F5; }
-  .f-fine { margin-top: 34px; padding-top: 18px; border-top: 1px solid rgba(201,168,245,0.16); font-size: 12px; color: #8B7BA8; padding-bottom: 26px; }
-
-  /* Left slide-in menu drawer (Klarna-style: light panel, big sentence-case rows,
-     hairline dividers, chevrons only on expandables, one separated action) */
-  .drawer {
-    position: fixed; inset: 0; z-index: 100;
-    background: rgba(16, 6, 38, 0.42);
-    opacity: 0; visibility: hidden;
-    transition: opacity .28s ease, visibility .28s ease;
-  }
-  .drawer.open { opacity: 1; visibility: visible; }
-  .drawer-panel {
-    position: absolute; top: 0; left: 0; bottom: 0;
-    width: 88%; max-width: 420px;
-    background: var(--surface); overflow-y: auto;
-    display: flex; flex-direction: column;
-    padding: 16px 24px 34px;
-    box-shadow: 0 0 60px rgba(28, 5, 61, 0.25);
-    transform: translateX(-100%);
-    transition: transform .34s cubic-bezier(.32, .72, 0, 1);
-  }
-  .drawer.open .drawer-panel { transform: none; }
-  .drawer-head { display: flex; align-items: center; padding: 6px 0 22px; }
-  .drawer-x {
-    width: 52px; height: 44px; border-radius: var(--pill); border: none; cursor: pointer;
-    background: var(--lavender-bg); color: var(--heading);
-    display: flex; align-items: center; justify-content: center;
-    transition: transform .12s ease, background-color .15s ease;
-  }
-  .drawer-x:hover { background: var(--lavender-border); }
-  .drawer-x:active { transform: scale(0.88); background: var(--lavender-border); }
-  @media (prefers-reduced-motion: reduce) { .drawer-x { transition: background-color .15s ease; } .drawer-x:active { transform: none; } }
-  .drawer-links { display: flex; flex-direction: column; }
-  .drawer-links a, .d-group > summary { text-decoration: none; color: var(--heading); }
-  .d-top, .d-group { border-bottom: 1px solid var(--lavender-border); }
-  .d-top, .d-group > summary {
-    display: flex; align-items: center; justify-content: space-between;
-    font-family: var(--sans); font-weight: 500; font-size: 23px; letter-spacing: -0.01em;
-    color: var(--heading); padding: 18px 0;
-  }
-  .d-group > summary { list-style: none; cursor: pointer; }
-  .d-group > summary::-webkit-details-marker { display: none; }
-  .d-group > summary::after {
-    content: ""; width: 9px; height: 9px; margin-right: 3px;
-    border-right: 2px solid var(--heading); border-top: 2px solid var(--heading);
-    transform: rotate(45deg); transition: transform .2s ease;
-  }
-  .d-group[open] > summary::after { transform: rotate(135deg); }
-  .d-top:hover, .d-group > summary:hover { color: var(--purple); }
-  .d-sub { display: flex; flex-direction: column; padding: 2px 0 14px; }
-  .d-sub a { font-size: 17px; font-weight: 400; color: var(--text-soft); padding: 10px 2px; }
-  .d-sub a:hover { color: var(--purple); }
-  .d-foot { margin-top: 28px; }
-  .d-foot a { display: inline-flex; align-items: center; gap: 8px; font-family: var(--sans); font-weight: 600; font-size: 16px; color: var(--purple); }
-  @media (prefers-reduced-motion: reduce) { .drawer, .drawer-panel { transition: none; } }
-  body.drawer-lock { overflow: hidden; }
-
-  /* about: chapter kicker + team cards */
-  .chap-k { font-size: 12px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); }
-  .mini {
-    background: #fff; border-radius: 16px; padding: 18px 20px;
-    box-shadow: 0 10px 26px rgba(28,5,61,0.16); text-align: center; min-width: 200px;
-  }
-  .mini .k { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); }
-  .mini .big { font-family: var(--display); font-size: 26px; color: var(--heading); line-height: 1.1; margin-top: 4px; }
-  .mini .tiny { font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-top: 8px; }
-  .mini .strike { text-decoration: line-through; color: #B9AECB; }
-  .tile-obj { position: absolute; pointer-events: none; z-index: 1; left: 50%; transform: translateX(-50%); filter: drop-shadow(0 10px 14px rgba(28,5,61,0.2)); }
-  .tile-panel.dark2, .tile-panel.lav { position: relative; }
-  .tile-panel.dark2 { background: radial-gradient(120% 100% at 30% 0%, #2B0F55 0%, var(--deep) 100%); border-radius: 24px; padding: 34px 22px; display: grid; place-items: center; }
-  .tile-panel.lav { background: radial-gradient(120% 100% at 30% 0%, #F2E6FE 0%, #E4CFFB 100%); border-radius: 24px; padding: 34px 22px; display: grid; place-items: center; }
-  .team { margin-top: 28px; display: grid; gap: 16px; }
-  .team-card {
-    display: flex; align-items: center; gap: 16px; text-align: left;
-    background: #fff; border: 1px solid var(--lavender-border); border-radius: 20px;
-    padding: 18px 18px; box-shadow: 0 12px 28px rgba(96,16,210,0.10);
-  }
-  /* real photo = primary avatar; hippo persona = little buddy peeking over the corner */
-  .tc-ava { position: relative; flex: 0 0 auto; margin-right: 8px; }
-  .tc-photo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2.5px solid #E4CFFB; display: block; }
-  .tc-buddy { position: absolute; height: 38px; right: -13px; bottom: -7px; filter: drop-shadow(0 3px 6px rgba(28,5,61,0.22)); }
-  .tc-li { display: inline-block; margin-top: 6px; font-size: 12.5px; font-weight: 700; color: var(--purple); text-decoration: none; }
-  .tc-li:hover { text-decoration: underline; }
-  .team-card b { font-family: var(--display); font-size: 18px; color: var(--heading); display: block; }
-  .team-card span { font-size: 13.5px; color: var(--text-muted); line-height: 1.45; display: block; margin-top: 3px; }
-
-  /* reveal on scroll */
-  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
-  .reveal.in { opacity: 1; transform: none; }
-
-  @media (min-width: 700px) {
-    .wrap { max-width: 620px; }
-    .hiw-hero h1 { font-size: 46px; }
-  }
-</style>
-</head>
-<body>
-
-  <nav class="site-head" id="siteHead">
-    <div class="wrap">
-      <button class="menu-pill" id="menuOpen" aria-label="Menu" aria-expanded="false" type="button">
-        <svg width="22" height="10" viewBox="0 0 22 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1 1h20M1 9h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <a class="head-word" href="/">Moodeng Credit</a>
-      <a class="head-signin" href="/sign-in">
-        <span class="btn-label">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-          </svg>
-          Sign in
-        </span>
-      </a>
-    </div>
-  </nav>
-
-  <!-- full-screen menu drawer (honest links only — same rule as the footer) -->
-  <div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Menu">
-    <div class="drawer-panel">
-      <div class="drawer-head">
-        <button class="drawer-x" id="menuClose" aria-label="Close menu" type="button">
-          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-      <nav class="drawer-links">
-        <a class="d-top" href="/request-board">Browse requests</a>
-        <a class="d-top" href="/for-lenders">Fund someone</a>
-        <details class="d-group">
-          <summary>Guides</summary>
-          <div class="d-sub">
-            <a href="/how-it-works">How it works</a>
-            <a href="/how-to-cash-out">How to cash out</a>
-            <a href="/how-to-repay">How to repay</a>
-          </div>
-        </details>
-        <details class="d-group">
-          <summary>Support</summary>
-          <div class="d-sub">
-            <a href="/about">Our story</a>
-            <a href="/#faq">Common questions</a>
-            <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Telegram</a>
-            <a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
-            <a href="mailto:support@moodengcredit.com">Email us</a>
-          </div>
-        </details>
-        <div class="d-foot">
-          <a href="/sign-in"><span class="btn-label">Sign in <span aria-hidden="true">&rarr;</span></span></a>
-        </div>
-      </nav>
-    </div>
-  </div>
-
-  <header class="hiw-hero">
-    <div class="wrap">
-      <p class="label">Our story</p>
-      <h1>We hated what borrowing looked like. <span class="accent">So we changed it.</span></h1>
-      <p class="sub">Moodeng exists because of what we watched happen to people we know — and because the technology finally arrived to do it right.</p>
-    </div>
-  </header>
-
-  <!-- CH 1: the sharks -->
-  <section class="sec-step">
-    <div class="wrap reveal">
-      <p class="chap-k">Where it started</p>
-      <h2 class="tile-h">We watched the <span class="accent">sharks</span> work.</h2>
-      <p class="tile-cap">Around here everyone knows the deal: borrow small, owe big by next week — and the number keeps growing until the collector stops coming. We watched it eat people we know. Not statistics. <b>Neighbors.</b></p>
-      <!-- George's asset: loan-shark wrapped around chained coins (2026-07-06) -->
-      <div class="stage">
-        <div class="tile-panel dark2">
-          <img class="tile-obj" src="/landing/assets/about/shark-chains.png" alt="" style="height:56px; top:2px" loading="lazy" />
-          <div class="mini" style="padding-top:36px">
-            <div class="k">The corner deal</div>
-            <div class="big">Borrow ₱1,000</div>
-            <div class="tiny">owe ₱1,200 next week — <b>and it grows every week you can’t pay</b></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CH 1.5: why it's personal (George 07-13) — Emma's history with the
-       sharks. Written with restraint on purpose: real grief, no graphic
-       detail. Emma reviews every word of this section before it changes. -->
-  <section class="sec-step">
-    <div class="wrap reveal">
-      <p class="chap-k">Why it’s personal</p>
-      <h2 class="tile-h">Emma watched it happen <span class="accent">at home.</span></h2>
-      <p class="tile-cap">Emma grew up in Thailand, where the sharks run the same playbook they run everywhere — a small loan, a number that grows every week, then the collectors and the shame. She watched it push people she loves into depression, and she lost friends to it. Not to the debt itself — <b>to what the debt did to them.</b> That grief is what Moodeng is built from: the belief that a loan should never be able to do that to a person.</p>
-      <div class="team-card" style="max-width:340px; margin:22px auto 0">
-        <div class="tc-ava">
-          <img class="tc-photo" src="/team/emma-moodeng.jpeg" alt="Emma" loading="lazy" />
-          <img class="tc-buddy" src="/landing/assets/about/team-emma.png" alt="" loading="lazy" />
-        </div>
-        <div><b>Emma</b><span>“Honest, fair loans that build you up — so nobody ever needs the corner deal again. That’s the whole mission.”</span></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CH 2: the apps were worse -->
-  <section class="sec-step">
-    <div class="wrap reveal">
-      <p class="chap-k">Then came the apps</p>
-      <h2 class="tile-h">The “better way” was <span class="accent">worse.</span></h2>
-      <p class="tile-cap">Loan apps promised to replace the sharks. Instead they scraped your contacts and shamed your family when you were late. Whole communities online exist just for the victims. And the pricing trick: <b>“0% interest”</b> in the ad — with the real cost hidden as a <b>“service fee”</b>, so the law’s interest caps don’t apply.</p>
-      <!-- George's asset: price tag in a burglar mask — 'same shark, new clothes' (2026-07-06) -->
-      <div class="stage right">
-        <div class="tile-panel lav">
-          <img class="tile-obj" src="/landing/assets/about/masked-tag.png" alt="" style="height:54px; top:4px" loading="lazy" />
-          <div class="mini" style="padding-top:36px">
-            <div class="k">The ad said</div>
-            <div class="big">0% interest!</div>
-            <div class="tiny">the receipt said: <b>+ ₱500 “service fee”</b> — same shark, new clothes</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CH 3: money got better -->
-  <section class="sec-step">
-    <div class="wrap reveal">
-      <p class="chap-k">The turn</p>
-      <h2 class="tile-h">Then money itself got <span class="accent">better.</span></h2>
-      <p class="tile-cap">Digital dollars (USDC) changed the math: money that moves anywhere, in minutes, for basically nothing. No banks in the middle taking a cut — which means a loan service doesn’t <b>need</b> fees to survive. The excuse every “service fee” hid behind was gone.</p>
-      <!-- George's asset: coin flying whole through the arch — nothing skimmed (2026-07-06) -->
-      <div class="stage">
-        <div class="tile-panel lav">
-          <img class="tile-obj" src="/landing/assets/about/clean-transfer.png" alt="" style="height:56px; top:2px" loading="lazy" />
-          <div class="mini" style="padding-top:36px">
-            <div class="k">Sending money, now</div>
-            <div class="big">$15 → $15</div>
-            <div class="tiny">what leaves is what arrives. fee: <b>$0</b></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CH 4: so we built it -->
-  <section class="sec-step">
-    <div class="wrap reveal">
-      <p class="chap-k">So we built it</p>
-      <h2 class="tile-h">The loan we wished <span class="accent">existed.</span></h2>
-      <p class="tile-cap">Small amounts. One number you owe, on the screen before you say yes — and it never moves. Funded by real people who chose your request. No fees from our side, ever. And we never touch your contacts, so nobody can call your family. <b>The opposite of everything we watched.</b></p>
-      <div class="stage right">
-        <div class="stage-panel">
-          <div class="phone"><img class="screen" src="/landing/assets/app/step2-board-cards.jpg" alt="The Moodeng request board — small loan requests funded by real people." loading="lazy" /></div>
-        </div>
-      </div>
-      <p class="shot-note">The request board today — sample requests shown.</p>
-    </div>
-  </section>
-
-  <!-- TEAM -->
-  <section class="sec-step">
-    <div class="wrap reveal">
-      <p class="chap-k">The humans</p>
-      <h2 class="tile-h">Real people work <span class="accent">here, too.</span></h2>
-      <p class="tile-cap">Message us and one of us answers — usually the same day.</p>
-      <!-- TODO(George): final bio lines when ready. Photos = the app's own /team assets (public/team/) -->
-      <div class="team">
-        <div class="team-card">
-          <div class="tc-ava">
-            <img class="tc-photo" src="/team/george.jpeg" alt="George" loading="lazy" />
-            <img class="tc-buddy" src="/landing/assets/about/team-george.png" alt="" loading="lazy" />
-          </div>
-          <div><b>George</b><span>Builds Moodeng. Reads every support message himself.</span><a class="tc-li" href="https://www.linkedin.com/in/george-l-25a4b844/" target="_blank" rel="noreferrer">LinkedIn ↗</a></div>
-        </div>
-        <div class="team-card">
-          <div class="tc-ava">
-            <img class="tc-photo" src="/team/emma-moodeng.jpeg" alt="Emma" loading="lazy" />
-            <img class="tc-buddy" src="/landing/assets/about/team-emma.png" alt="" loading="lazy" />
-          </div>
-          <div><b>Emma</b><span>Makes Moodeng speak like a person, not a bank.</span><a class="tc-li" href="https://www.linkedin.com/in/cincharoensak/" target="_blank" rel="noreferrer">LinkedIn ↗</a></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FINAL -->
-  <section class="sec-final">
-    <div class="wrap reveal">
-      <p class="label">See what we built</p>
-      <h2>Judge it the way we would — <span class="accent">look first.</span></h2>
-      <a class="cta" href="/how-it-works">See how it works <span class="arrow">→</span></a>
-      <p class="reassure">Or <a href="/request-board" style="color: var(--purple); text-decoration: underline; text-underline-offset: 3px;">browse the live board</a> — no account needed.</p>
-    </div>
-  </section>
-
-  <footer class="site-footer">
-    <div class="wrap">
-      <div class="f-brand">
-        <img src="/landing/assets/brand/moodeng-logo-small.png" alt="" />
-        <b>Moodeng Credit</b>
-      </div>
-      <p class="f-tag">Small loans, funded by real people.</p>
-      <div class="f-cols">
-        <div>
-          <h4>Talk to a human</h4>
-          <a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
-          <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Telegram</a>
-          <a href="mailto:support@moodengcredit.com">Email us</a>
-        </div>
-        <div>
-          <h4>The details</h4>
-          <a href="/">Home</a>
-          <a href="/request-board">Request board</a>
-          <a href="https://moodeng.gitbook.io/credit" target="_blank" rel="noreferrer">How credit levels work</a>
-        </div>
-      </div>
-      <p class="f-fine">© 2026 Moodeng Credit</p>
-    </div>
-  </footer>
-
-  <script>
-    // ---- Header: gain a surface once the hero starts scrolling away ----
-    (function () {
-      var head = document.getElementById("siteHead");
-      if (!head) return;
-      var onScroll = function () { head.classList.toggle("scrolled", window.scrollY > 24); };
-      window.addEventListener("scroll", onScroll, { passive: true });
-      onScroll();
-    })();
-
-    // ---- Menu drawer ----
-    (function () {
-      var drawer = document.getElementById("drawer");
-      var openBtn = document.getElementById("menuOpen");
-      var closeBtn = document.getElementById("menuClose");
-      if (!drawer || !openBtn || !closeBtn) return;
-      function setOpen(open) {
-        drawer.classList.toggle("open", open);
-        document.body.classList.toggle("drawer-lock", open);
-        openBtn.setAttribute("aria-expanded", String(open));
-        if (open) closeBtn.focus();
-      }
-      openBtn.addEventListener("click", function () { setOpen(true); });
-      closeBtn.addEventListener("click", function () { setOpen(false); });
-      document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
-    })();
-
-    // ---- Sign in / start-a-loan buttons: spin on tap ----
-    // These links leave the static site for the real app, which takes a moment to load.
-    // Add a spinner immediately on click so the tap feels acknowledged; the browser's own
-    // navigation does the rest, so we never preventDefault or manage a timeout here. On a
-    // back/forward-cache restore the click never actually left this page, so clear any
-    // stuck spinner then.
-    (function () {
-      var loadingLinks = document.querySelectorAll(
-        '.head-signin, .drawer .d-foot a[href="/sign-in"], .cta[href="/request-board"]'
-      );
-      loadingLinks.forEach(function (a) {
-        a.addEventListener("click", function () { a.classList.add("is-loading"); });
-      });
-      window.addEventListener("pageshow", function (e) {
-        if (!e.persisted) return;
-        loadingLinks.forEach(function (a) { a.classList.remove("is-loading"); });
-      });
-    })();
-
-    // reveal on scroll (same pattern as landing)
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-    }, { threshold: 0.12 });
-    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
-  </script>
-</body>
+      <footer class="site-footer">
+         <div class="container">
+            <div class="footer-grid">
+               <div class="footer-brand">
+                  <a class="brand" href="/"
+                     ><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="34" height="34" />Moodeng Credit</a
+                  >
+                  <p>Small person-to-person loans with terms you can understand before you ask.</p>
+               </div>
+               <div class="footer-links">
+                  <div>
+                     <h2>Borrow</h2>
+                     <a href="/how-it-works">How it works</a><a href="/how-to-cash-out">Cash-out guide</a
+                     ><a href="/how-to-repay">Repay guide</a>
+                  </div>
+                  <div>
+                     <h2>About</h2>
+                     <a href="/about">Our story</a><a href="/for-lenders">For lenders</a
+                     ><a href="https://moodeng.gitbook.io/credit" target="_blank" rel="noreferrer">Credit levels</a>
+                  </div>
+                  <div>
+                     <h2>Talk to us</h2>
+                     <a href="mailto:support@moodengcredit.com">Email</a
+                     ><a href="https://t.me/jimmymoodengcredit" target="_blank" rel="noreferrer">Telegram</a
+                     ><a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
+                  </div>
+               </div>
+            </div>
+            <p class="footer-fine">
+               © 2026 Moodeng Credit. Request funding is not guaranteed. Terms vary by request.
+               <a href="/privacy-policy">Privacy policy</a> · <a href="/terms">Terms of service</a>
+            </p>
+         </div>
+      </footer>
+      <script type="module" src="/landing/site.js?v=20260715-story2"></script>
+   </body>
 </html>

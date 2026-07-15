@@ -1,514 +1,349 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
-<link rel="apple-touch-icon" href="/landing/assets/brand/moodeng-logo.png" />
-<title>How to turn USDC into pesos — Moodeng Credit cash-out guide</title>
-<meta name="description" content="How a Moodeng loan becomes pesos in your pocket: the money lands as digital dollars, you pick a trusted route like GCash, and pesos arrive where you already bank." />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="Moodeng Credit" />
-<meta property="og:title" content="From loan to pesos — the Moodeng Credit cash-out guide" />
-<meta property="og:description" content="Your loan lands as digital dollars; three steps later it's pesos in GCash. The honest guide, with the real app screen." />
-<meta property="og:url" content="https://moodeng.app/how-to-cash-out" />
-<meta property="og:image" content="https://moodeng.app/landing/assets/og/og-share.jpg" />
-<meta name="twitter:card" content="summary_large_image" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..700&family=Archivo+Black&family=Fraunces:ital,opsz,wght@1,9..144,400..600&display=swap" rel="stylesheet" />
-<style>
-  /* Tokens + base copied from the main landing page (index.html) — keep in sync */
-  :root {
-    --lavender: #8336F0;
-    --purple: #6010D2;
-    --deep: #1C053D;
-    --heading: #040033;
-    --surface: #FDFCFD;
-    --surface-muted: #F8F4FC;
-    --lavender-bg: #F3E8FF;
-    --lavender-border: #E7D8FF;
-    --text-muted: #70617F;
-    --text-soft: #4D4359;
-    --panel: #C9A8F5;
-    --card-tint: #F7F0FE;
-    --pill: 500px;
-    --display: "Archivo Black", "Archivo", -apple-system, BlinkMacSystemFont, sans-serif;
-    --sans: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --serif: "Fraunces", Georgia, "Times New Roman", serif;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { -webkit-text-size-adjust: 100%; }
-  body { font-family: var(--sans); color: var(--heading); background: var(--surface); line-height: 1.5; overflow-x: hidden; }
-  img { display: block; max-width: 100%; }
-  .accent { font-family: var(--serif); font-style: italic; font-weight: 500; letter-spacing: -0.01em; }
-  .label { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--purple); }
-  .wrap { width: 100%; max-width: 480px; margin: 0 auto; padding: 0 22px; }
-
-  /* Klarna-minimal header (same as landing): wordmark only, transparent, frosted on scroll */
-  .site-head { position: sticky; top: 0; z-index: 50; background: transparent; transition: background .25s ease, box-shadow .25s ease; }
-  .site-head.scrolled { background: rgba(253,252,253,0.86); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 1px 0 rgba(4,0,51,0.08); }
-  .site-head .wrap { display: flex; align-items: center; padding-top: 12px; padding-bottom: 12px; }
-  .site-head .head-word { color: var(--heading); }
-  .head-logo { height: 28px; width: auto; }
-  .head-word { font-family: var(--sans); font-size: 17px; font-weight: 600; letter-spacing: 0.02em; margin-right: auto; color: #fff; text-decoration: none; }
-  .menu-pill { width: 58px; height: 42px; border: 0; cursor: pointer; border-radius: var(--pill); background: var(--purple); display: grid; place-items: center; }
-  .site-head .menu-pill { background: var(--lavender-bg); width: 48px; height: 40px; color: var(--heading); margin-right: 13px; }
-  .head-signin { display: inline-flex; align-items: center; gap: 7px; background: var(--heading); color: #fff; font-size: 13.5px; font-weight: 700; padding: 9px 16px 9px 14px; border-radius: var(--pill); text-decoration: none; margin-right: 2px; white-space: nowrap; }
-
-  /* page hero */
-  .hiw-hero {
-    padding: 40px 0 46px; text-align: center;
-    background: radial-gradient(130% 90% at 50% -20%, #ffffff 0%, var(--lavender-bg) 55%, #EADCFC 100%);
-  }
-  .hiw-hero h1 {
-    font-family: var(--display); font-size: 34px; line-height: 1.05; letter-spacing: -0.02em;
-    margin: 10px 0 0;
-  }
-  .hiw-hero h1 .accent { color: var(--purple); font-weight: 500; }
-  .hiw-hero .sub { margin: 14px auto 0; font-size: 15.5px; color: var(--text-soft); max-width: 32ch; }
-  .hiw-hero .sub b { color: var(--heading); }
-
-  /* steps */
-  .sec-step { padding: 56px 0 60px; }
-  .sec-step:nth-of-type(even) { background: var(--surface-muted); }
-  .step-num {
-    display: inline-grid; place-items: center;
-    width: 44px; height: 44px; border-radius: 50%;
-    background: var(--heading); color: #fff;
-    font-family: var(--display); font-size: 19px;
-  }
-  .tile-h { font-family: var(--display); font-size: 25px; letter-spacing: -0.01em; color: var(--heading); margin: 14px 0 0; line-height: 1.15; }
-  .tile-h .accent { color: var(--purple); font-weight: 500; }
-  .tile-cap { margin-top: 8px; font-size: 15px; color: var(--text-muted); line-height: 1.5; max-width: 34ch; }
-  .tile-cap b { color: var(--heading); }
-
-  /* phone frame w/ REAL app screen inside (moment-card anatomy, screenshot as the screen) */
-  .stage { position: relative; margin: 28px auto 0; width: 300px; max-width: 86%; }
-  .stage.big { width: 320px; }
-  .stage-panel {
-    position: relative;
-    background: radial-gradient(120% 90% at 20% 10%, #E4D2FB 0%, var(--panel) 60%, #B892F0 100%);
-    border-radius: 30px; padding: 26px 20px 24px;
-    box-shadow: 0 24px 50px rgba(96,16,210,0.28);
-  }
-  .stage-panel::before {
-    content: ""; position: absolute; inset: 0; border-radius: 30px;
-    background-image:
-      radial-gradient(circle at 30% 20%, rgba(255,255,255,0.28) 0 2px, transparent 3px),
-      radial-gradient(circle at 70% 60%, rgba(255,255,255,0.18) 0 2px, transparent 3px),
-      radial-gradient(circle at 50% 85%, rgba(28,5,61,0.06) 0 3px, transparent 4px);
-    background-size: 90px 90px, 120px 120px, 140px 140px;
-    opacity: 0.5; pointer-events: none;
-  }
-  .stage.right .phone { transform: rotate(2.5deg); }
-  .phone {
-    position: relative; background: #fff; border-radius: 22px;
-    padding: 10px; transform: rotate(-3deg);
-    box-shadow: 0 16px 34px rgba(28,5,61,0.22), 0 2px 0 rgba(255,255,255,0.6) inset;
-  }
-  .phone.upright { transform: none; }
-  .phone .screen { border-radius: 14px; width: 100%; }
-  .shot-note { margin-top: 16px; font-size: 12px; font-weight: 600; color: var(--text-muted); text-align: center; }
-
-  /* cash-out card (copied from landing peso strip) */
-  .phone.tall { padding: 18px 18px 22px; border-radius: 26px; text-align: center; }
-  .phone.tall .phone-head { justify-content: center; position: relative; padding-bottom: 0; }
-  .phone.tall .phone-head .back { position: absolute; left: 2px; top: 0; }
-  .phone-head {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em;
-    color: var(--text-muted); text-transform: uppercase; padding: 2px 2px 12px;
-  }
-  .phone-head .back { font-size: 15px; color: var(--heading); }
-  .coin-badge { height: 58px; margin: 36px auto 16px; display: block; }
-  .statement { font-family: var(--display); font-size: 20px; line-height: 1.12; letter-spacing: -0.01em; color: var(--heading); margin: 10px 0 12px; }
-  .phone.tall .statement { font-size: 22px; margin: 0 0 30px; }
-  .swap-box {
-    background: #F6F3FA; border-radius: 14px; padding: 13px 16px; margin: 0 2px;
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .swap-box .cell { text-align: left; }
-  .swap-box .cell.right { text-align: right; }
-  .swap-box .cell .k { display: block; font-size: 10.5px; font-weight: 600; color: #B9AECB; }
-  .swap-box .cell b { font-size: 16px; font-weight: 800; color: var(--heading); }
-  .swap-box .arr { color: var(--purple); font-family: var(--display); font-size: 18px; }
-  .cta-caps {
-    display: block; margin-top: 46px; background: var(--purple); color: #fff;
-    font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
-    padding: 16px; border-radius: var(--pill);
-  }
-
-  /* final CTA */
-  .sec-final {
-    text-align: center; padding: 64px 0 72px;
-    background: radial-gradient(130% 100% at 50% 100%, #DCC4FA 0%, var(--lavender-bg) 55%, #ffffff 100%);
-  }
-  .sec-final h2 { font-family: var(--display); font-size: 29px; line-height: 1.08; letter-spacing: -0.02em; margin: 12px 0 0; }
-  .sec-final h2 .accent { color: var(--purple); font-weight: 500; }
-  .cta {
-    display: inline-flex; align-items: center; gap: 10px;
-    background: var(--heading); color: #fff; font-weight: 700; font-size: 16px;
-    padding: 15px 26px; border-radius: var(--pill); text-decoration: none; margin-top: 26px;
-    box-shadow: 0 10px 24px rgba(4,0,51,0.22);
-    transition: transform .15s ease, box-shadow .15s ease;
-  }
-  .cta:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(4,0,51,0.28); }
-  .cta .arrow { transition: transform .15s ease; }
-  .cta:hover .arrow { transform: translateX(3px); }
-
-  /* Sign in / start-a-loan links leave this static site for the real app, which takes a
-     moment to boot — show a spinner immediately on tap so the click feels acknowledged
-     instead of dead air. .btn-label keeps its layout box (opacity, not display) so the
-     button doesn't resize; the spinner is a centered ::after circle. */
-  .head-signin, .cta, .d-foot a { position: relative; }
-  .btn-label { display: inline-flex; align-items: center; gap: inherit; transition: opacity .15s ease; }
-  .is-loading { pointer-events: none; }
-  .is-loading .btn-label { opacity: 0; }
-  .is-loading::after {
-    content: ""; position: absolute; top: 50%; left: 50%;
-    width: 16px; height: 16px; margin: -8px 0 0 -8px;
-    /* currentColor so the ring reads on both dark pills (white text) and the
-       plain-purple drawer link, without a per-context color override. */
-    border: 2px solid currentColor; border-top-color: transparent;
-    border-radius: 50%; animation: btnSpin .7s linear infinite;
-  }
-  @keyframes btnSpin { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .is-loading::after { animation-duration: 1.3s; } }
-  .reassure { margin-top: 14px; font-size: 13.5px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.01em; }
-
-  /* footer (same as landing, short form) */
-  .site-footer { background: #100626; padding: 52px 0 0; color: #B6A8CC; font-size: 13.5px; overflow: hidden; }
-  .site-footer .f-brand { display: flex; align-items: center; gap: 10px; }
-  .site-footer .f-brand img { width: 40px; }
-  .site-footer .f-brand b { font-family: var(--display); font-size: 20px; color: #fff; letter-spacing: -0.01em; }
-  .site-footer .f-tag { margin: 12px 0 0; line-height: 1.5; }
-  .f-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 28px; margin-top: 30px; }
-  .f-cols h4 { margin: 0 0 12px; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #C9A8F5; }
-  .f-cols a { display: block; color: #fff; text-decoration: none; font-weight: 600; padding: 6px 0; }
-  .f-cols a:hover { color: #C9A8F5; }
-  .f-fine { margin-top: 34px; padding-top: 18px; border-top: 1px solid rgba(201,168,245,0.16); font-size: 12px; color: #8B7BA8; padding-bottom: 26px; }
-
-  /* Left slide-in menu drawer (Klarna-style: light panel, big sentence-case rows,
-     hairline dividers, chevrons only on expandables, one separated action) */
-  .drawer {
-    position: fixed; inset: 0; z-index: 100;
-    background: rgba(16, 6, 38, 0.42);
-    opacity: 0; visibility: hidden;
-    transition: opacity .28s ease, visibility .28s ease;
-  }
-  .drawer.open { opacity: 1; visibility: visible; }
-  .drawer-panel {
-    position: absolute; top: 0; left: 0; bottom: 0;
-    width: 88%; max-width: 420px;
-    background: var(--surface); overflow-y: auto;
-    display: flex; flex-direction: column;
-    padding: 16px 24px 34px;
-    box-shadow: 0 0 60px rgba(28, 5, 61, 0.25);
-    transform: translateX(-100%);
-    transition: transform .34s cubic-bezier(.32, .72, 0, 1);
-  }
-  .drawer.open .drawer-panel { transform: none; }
-  .drawer-head { display: flex; align-items: center; padding: 6px 0 22px; }
-  .drawer-x {
-    width: 52px; height: 44px; border-radius: var(--pill); border: none; cursor: pointer;
-    background: var(--lavender-bg); color: var(--heading);
-    display: flex; align-items: center; justify-content: center;
-    transition: transform .12s ease, background-color .15s ease;
-  }
-  .drawer-x:hover { background: var(--lavender-border); }
-  .drawer-x:active { transform: scale(0.88); background: var(--lavender-border); }
-  @media (prefers-reduced-motion: reduce) { .drawer-x { transition: background-color .15s ease; } .drawer-x:active { transform: none; } }
-  .drawer-links { display: flex; flex-direction: column; }
-  .drawer-links a, .d-group > summary { text-decoration: none; color: var(--heading); }
-  .d-top, .d-group { border-bottom: 1px solid var(--lavender-border); }
-  .d-top, .d-group > summary {
-    display: flex; align-items: center; justify-content: space-between;
-    font-family: var(--sans); font-weight: 500; font-size: 23px; letter-spacing: -0.01em;
-    color: var(--heading); padding: 18px 0;
-  }
-  .d-group > summary { list-style: none; cursor: pointer; }
-  .d-group > summary::-webkit-details-marker { display: none; }
-  .d-group > summary::after {
-    content: ""; width: 9px; height: 9px; margin-right: 3px;
-    border-right: 2px solid var(--heading); border-top: 2px solid var(--heading);
-    transform: rotate(45deg); transition: transform .2s ease;
-  }
-  .d-group[open] > summary::after { transform: rotate(135deg); }
-  .d-top:hover, .d-group > summary:hover { color: var(--purple); }
-  .d-sub { display: flex; flex-direction: column; padding: 2px 0 14px; }
-  .d-sub a { font-size: 17px; font-weight: 400; color: var(--text-soft); padding: 10px 2px; }
-  .d-sub a:hover { color: var(--purple); }
-  .d-foot { margin-top: 28px; }
-  .d-foot a { display: inline-flex; align-items: center; gap: 8px; font-family: var(--sans); font-weight: 600; font-size: 16px; color: var(--purple); }
-  @media (prefers-reduced-motion: reduce) { .drawer, .drawer-panel { transition: none; } }
-  body.drawer-lock { overflow: hidden; }
-
-  /* mini-FAQ (native details/summary, same anatomy as the landing FAQ) */
-  .sec-faq { background: var(--surface-muted); padding: 56px 0 62px; }
-  .faq-list { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
-  .faq-list details {
-    background: #fff; border: 1px solid #EFE6FB; border-radius: 16px; padding: 0 18px;
-  }
-  .faq-list summary {
-    cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px;
-    padding: 16px 0; font-size: 15px; font-weight: 800; color: var(--heading);
-  }
-  .faq-list summary::-webkit-details-marker { display: none; }
-  .faq-list summary::after { content: "+"; font-family: var(--display); font-size: 18px; color: var(--purple); flex: 0 0 auto; }
-  .faq-list details[open] summary::after { content: "–"; }
-  .faq-list .a { padding: 0 0 16px; font-size: 14.5px; line-height: 1.55; color: var(--text-muted); }
-  .faq-list .a b { color: var(--heading); }
-
-  /* reveal on scroll */
-  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
-  .reveal.in { opacity: 1; transform: none; }
-
-  @media (min-width: 700px) {
-    .wrap { max-width: 620px; }
-    .hiw-hero h1 { font-size: 46px; }
-  }
-</style>
-</head>
-<body>
-
-  <nav class="site-head" id="siteHead">
-    <div class="wrap">
-      <button class="menu-pill" id="menuOpen" aria-label="Menu" aria-expanded="false" type="button">
-        <svg width="22" height="10" viewBox="0 0 22 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1 1h20M1 9h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <a class="head-word" href="/">Moodeng Credit</a>
-      <a class="head-signin" href="/sign-in">
-        <span class="btn-label">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-          </svg>
-          Sign in
-        </span>
-      </a>
-    </div>
-  </nav>
-
-  <!-- full-screen menu drawer (honest links only — same rule as the footer) -->
-  <div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Menu">
-    <div class="drawer-panel">
-      <div class="drawer-head">
-        <button class="drawer-x" id="menuClose" aria-label="Close menu" type="button">
-          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-      <nav class="drawer-links">
-        <a class="d-top" href="/request-board">Browse requests</a>
-        <a class="d-top" href="/for-lenders">Fund someone</a>
-        <details class="d-group">
-          <summary>Guides</summary>
-          <div class="d-sub">
-            <a href="/how-it-works">How it works</a>
-            <a href="/how-to-cash-out">How to cash out</a>
-            <a href="/how-to-repay">How to repay</a>
-          </div>
-        </details>
-        <details class="d-group">
-          <summary>Support</summary>
-          <div class="d-sub">
-            <a href="/about">Our story</a>
-            <a href="/#faq">Common questions</a>
-            <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Telegram</a>
-            <a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
-            <a href="mailto:support@moodengcredit.com">Email us</a>
-          </div>
-        </details>
-        <div class="d-foot">
-          <a href="/sign-in"><span class="btn-label">Sign in <span aria-hidden="true">&rarr;</span></span></a>
-        </div>
-      </nav>
-    </div>
-  </div>
-
-  <header class="hiw-hero">
-    <div class="wrap">
-      <p class="label">Cash-out guide</p>
-      <h1>From loan to <span class="accent">pesos.</span></h1>
-      <p class="sub">Your loan arrives as digital dollars. Three steps later it’s pesos in GCash — here’s exactly how.</p>
-    </div>
-  </header>
-
-  <section class="sec-step">
-    <div class="wrap reveal">
-      <span class="step-num">1</span>
-      <h2 class="tile-h">The money lands in <span class="accent">your</span> Base Account.</h2>
-      <p class="tile-cap">The moment a lender funds you, it’s yours — digital dollars, called <b>USDC</b>, sitting in your own <b>Base Account</b>, protected by our partner Coinbase. <b>One USDC is always worth one US dollar</b> — that’s the name you’ll see on the screens below.</p>
-      <div class="stage">
-        <div class="stage-panel">
-          <div class="phone upright tall">
-            <div class="phone-head"><span class="back">‹</span> Your Base Account</div>
-            <img class="coin-badge" src="/landing/assets/icons/coins-stack.png" alt="" loading="lazy" />
-            <div class="statement">$15 just landed.</div>
-            <div class="swap-box">
-              <span class="cell"><span class="k">From</span><b>A real person</b></span>
-              <span class="arr">→</span>
-              <span class="cell right"><span class="k">To</span><b>You</b></span>
+   <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      <title>How to cash out a Moodeng loan to pesos</title>
+      <meta
+         name="description"
+         content="See the real Moodeng cash-out flow: choose a provider, follow the Base-network instructions, and move a funded loan toward pesos."
+      />
+      <meta property="og:title" content="From a Moodeng loan to pesos" />
+      <meta property="og:description" content="A plain-language guide to cashing out a funded Moodeng loan." />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://moodeng.app/how-to-cash-out" />
+      <meta property="og:image" content="https://moodeng.app/landing/assets/og/og-share.jpg" />
+      <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
+      <link rel="stylesheet" href="/landing/site.css?v=20260715-header" />
+   </head>
+   <body>
+      <a class="skip-link" href="#main-content">Skip to main content</a>
+      <header class="site-header">
+         <div class="container">
+            <a class="brand" href="/" aria-label="Moodeng Credit home"
+               ><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="34" height="34" /><span>Moodeng Credit</span></a
+            >
+            <nav class="desktop-nav" aria-label="Primary navigation">
+               <a href="/how-it-works">How it works</a><a href="/how-to-cash-out" aria-current="page">Cash out</a
+               ><a href="/how-to-repay">Repay</a><a href="/for-lenders">For lenders</a>
+            </nav>
+            <div class="header-actions">
+               <a class="button secondary" href="/sign-in">Sign in</a><a class="button" href="/request-board">Get a loan</a
+               ><button
+                  class="menu-button"
+                  type="button"
+                  data-menu-open
+                  aria-label="Open menu"
+                  aria-haspopup="dialog"
+                  aria-expanded="false"
+               >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                     <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+               </button>
             </div>
-            <span class="cta-caps">Cash out</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+         </div>
+      </header>
+      <dialog class="menu-dialog" data-menu-dialog aria-label="Site menu">
+         <div class="menu-head">
+            <span class="brand"><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="34" height="34" />Moodeng Credit</span
+            ><button class="menu-close" type="button" data-menu-close aria-label="Close menu">✕</button>
+         </div>
+         <nav class="menu-links" aria-label="Mobile navigation">
+            <a href="/">Home <span aria-hidden="true">→</span></a
+            ><a href="/how-it-works">How it works <span aria-hidden="true">→</span></a
+            ><a href="/how-to-cash-out">How to cash out <span aria-hidden="true">→</span></a
+            ><a href="/how-to-repay">How to repay <span aria-hidden="true">→</span></a
+            ><a href="/for-lenders">For lenders <span aria-hidden="true">→</span></a>
+         </nav>
+         <div class="menu-actions">
+            <a class="button" href="/request-board">Get a loan</a><a class="button secondary" href="/sign-in">Sign in</a>
+         </div>
+      </dialog>
 
-  <section class="sec-step">
-    <div class="wrap reveal">
-      <span class="step-num">2</span>
-      <h2 class="tile-h">Pick your way to <span class="accent">pesos.</span></h2>
-      <p class="tile-cap">The app lists trusted routes and tells you the honest part up front — how long each takes, and who charges what. <b>Moodeng adds nothing.</b></p>
-      <div class="stage right">
-        <div class="stage-panel">
-          <div class="phone"><img class="screen" src="/landing/assets/app/cashout-providers.jpg" alt="The real Moodeng cash-out screen: choose Binance, GCrypto straight to GCash, PDAX, or Coins.ph — with timing shown for each." loading="lazy" /></div>
-        </div>
-      </div>
-      <p class="shot-note">The actual cash-out screen in the app.</p>
-    </div>
-  </section>
-
-  <section class="sec-step">
-    <div class="wrap reveal">
-      <span class="step-num">3</span>
-      <h2 class="tile-h">Pesos arrive where you <span class="accent">already bank.</span></h2>
-      <p class="tile-cap">Most routes land straight in GCash — some in about five minutes. And <b>the whole amount arrives: cashing out has no fee.</b> Not from Moodeng, not from anyone.</p>
-      <div class="stage">
-        <div class="stage-panel">
-          <div class="phone upright tall">
-            <div class="phone-head"><span class="back">‹</span> Cash out</div>
-            <img class="coin-badge" src="/landing/assets/icons/usd-php-coins.png" alt="" loading="lazy" />
-            <div class="statement">Pesos, where you already bank.</div>
-            <div class="swap-box">
-              <span class="cell"><span class="k">To</span><b>GCash</b></span>
-              <span class="arr">→</span>
-              <span class="cell right"><span class="k">You’d get</span><b>≈ ₱855</b></span>
+      <main id="main-content">
+         <section class="page-hero">
+            <div class="container">
+               <div class="page-hero-copy stack-lg">
+                  <p class="eyebrow">Cash-out, in the real app</p>
+                  <h1 class="page-title">Choose how your loan reaches <em>everyday life.</em></h1>
+                  <p class="lead">
+                     A funded loan appears in your Base Account as USDC. Moodeng then shows the available provider routes, what each one
+                     does, and the network details you need before moving anything.
+                  </p>
+                  <ul class="hero-assurances" aria-label="Cash-out assurances">
+                     <li><span aria-hidden="true">✓</span>Moodeng cash-out fee: $0</li>
+                     <li><span aria-hidden="true">✓</span>You choose the external provider</li>
+                     <li><span aria-hidden="true">✓</span>Base-network warnings stay visible</li>
+                  </ul>
+                  <div class="button-row">
+                     <a class="button" href="#cash-out-steps">See the real screens <span class="arrow" aria-hidden="true">↓</span></a
+                     ><a class="button subtle" href="/how-to-repay">How repayment works</a>
+                  </div>
+               </div>
+               <div class="page-visual product-proof">
+                  <div class="device">
+                     <img
+                        src="/landing/assets/app/cashout-product-routes.jpg"
+                        alt="Current Moodeng cash-out selector showing Coins.ph, GCrypto, PDAX, Binance, and Moneybees"
+                        width="390"
+                        height="844"
+                        fetchpriority="high"
+                     />
+                  </div>
+                  <p class="visual-caption"><span class="live-dot" aria-hidden="true"></span>Captured from the current product preview.</p>
+               </div>
             </div>
-            <span class="cta-caps">Move to GCash</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+         </section>
 
-  <!-- mini-FAQ: the cash-out questions people actually ask -->
-  <section class="sec-faq">
-    <div class="wrap reveal">
-      <p class="label">Common questions</p>
-      <h2 class="tile-h">Cash-out questions, <span class="accent">answered.</span></h2>
-      <div class="faq-list">
-        <details>
-          <summary>What’s a Base Account?</summary>
-          <p class="a">The account your loan lives in — built and protected by our partner <b>Coinbase</b>, one of the most trusted names in digital money. It’s super fast, and moving money out of it is <b>always free</b> — a big part of how we keep fees at zero.</p>
-        </details>
-        <details>
-          <summary>What if I don’t have GCash?</summary>
-          <p class="a">GCash is the most popular route, but not the only one — Coins.ph, PDAX, and Binance work too. Pick whichever you already use; the app shows what each route takes before you choose.</p>
-        </details>
-        <details>
-          <summary>Are there fees to cash out?</summary>
-          <p class="a">No — <b>the whole amount arrives.</b> The only fee in the entire loop comes later, when you turn pesos back into digital dollars to repay: <b>a cent or two — around one peso.</b> That one belongs to the converter, not us — <b>Moodeng adds nothing, ever.</b></p>
-        </details>
-        <details>
-          <summary>Why does the app say “USDC”?</summary>
-          <p class="a">USDC is the official name of the digital dollars your loan travels as — 1 USDC is always worth 1 US dollar. It’s also why our fees are <b>$0</b>: digital dollars move without banks taking a cut along the way.</p>
-        </details>
-      </div>
-    </div>
-  </section>
+         <section class="money-flow-section" aria-labelledby="cash-flow-heading">
+            <div class="container">
+               <div class="money-flow-heading">
+                  <p class="eyebrow">What is actually happening</p>
+                  <h2 id="cash-flow-heading">One balance, one provider you choose, one destination you recognize.</h2>
+               </div>
+               <div class="money-flow" aria-label="Cash-out flow from Moodeng to pesos">
+                  <div class="flow-node">
+                     <span class="flow-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M4 7.5h16v11H4zM7 7.5V5h10v2.5M8 12h5" /></svg>
+                     </span>
+                     <span><b>Base Account</b><small>Your funded USDC</small></span>
+                  </div>
+                  <span class="flow-arrow" aria-hidden="true">→</span>
+                  <div class="flow-node">
+                     <span class="flow-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M5 6h14v12H5zM8 10h8M8 14h5" /></svg>
+                     </span>
+                     <span><b>External provider</b><small>You review and choose</small></span>
+                  </div>
+                  <span class="flow-arrow" aria-hidden="true">→</span>
+                  <div class="flow-node">
+                     <span class="flow-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M3 10.5 12 5l9 5.5M5 10v8h14v-8M8 14h8" /></svg>
+                     </span>
+                     <span><b>Pesos</b><small>Bank, GCash, or Maya</small></span>
+                  </div>
+               </div>
+               <p class="flow-disclaimer">
+                  Moodeng explains the route. The external provider handles its own verification, rate, transfer instructions, and payout.
+               </p>
+            </div>
+         </section>
 
-  <!-- FINAL: chain to the repay guide -->
-  <section class="sec-final">
-    <div class="wrap reveal">
-      <p class="label">Next up</p>
-      <h2>And when it’s time to pay it <span class="accent">back?</span></h2>
-      <a class="cta" href="/how-to-repay">How repaying works <span class="arrow">→</span></a>
-      <p class="reassure">Same doors, opposite direction — and never a fee from us.</p>
-    </div>
-  </section>
+         <section class="section" id="cash-out-steps" aria-labelledby="cash-heading">
+            <div class="container">
+               <div class="split-heading reveal">
+                  <div class="stack-md">
+                     <p class="eyebrow">The current product flow</p>
+                     <h2 class="section-title wide" id="cash-heading">The screen changes with the route <em>you choose.</em></h2>
+                  </div>
+                  <p class="lead">
+                     These are the actual preview states from the product codebase. The app starts with a choice, then gives
+                     provider-specific instructions instead of treating every route as the same.
+                  </p>
+               </div>
+               <div class="guide-list">
+                  <article class="guide-step reveal">
+                     <div class="guide-copy">
+                        <span class="step-number">01</span>
+                        <h2>Choose the route you understand.</h2>
+                        <p>
+                           The real selector shows several ways to continue. In the Philippine preview, Coins.ph is the recommended route,
+                           while GCrypto, PDAX, Binance, and Moneybees remain visible alternatives.
+                        </p>
+                        <ul class="chapter-points">
+                           <li><span aria-hidden="true">01</span>Compare destination and expected timing.</li>
+                           <li><span aria-hidden="true">02</span>Open the route before sending any USDC.</li>
+                           <li><span aria-hidden="true">03</span>Provider availability can change by country.</li>
+                        </ul>
+                     </div>
+                     <figure class="guide-media product-screen">
+                        <img
+                           src="/landing/assets/app/cashout-product-routes.jpg"
+                           alt="Current Moodeng cash-out selector with provider choices and expected destinations"
+                           loading="lazy"
+                           width="390"
+                           height="844"
+                        />
+                        <figcaption>Actual provider selector</figcaption>
+                     </figure>
+                  </article>
+                  <article class="guide-step reveal">
+                     <div class="guide-copy">
+                        <span class="step-number">02</span>
+                        <h2>Follow instructions written for that provider.</h2>
+                        <p>
+                           The Coins.ph flow shows the estimated pesos, the destination, where to find a receiving address, and exactly
+                           which network to select. This is where a real product screen is much more useful than a generic crypto diagram.
+                        </p>
+                        <div class="network-warning">
+                           <span aria-hidden="true">!</span>
+                           <p><b>USDC on Base only.</b> A different coin or network may not be recoverable.</p>
+                        </div>
+                     </div>
+                     <figure class="guide-media product-screen stage-soft">
+                        <img
+                           src="/landing/assets/app/cashout-product-coinsph.jpg"
+                           alt="Current Moodeng Coins.ph transfer guide with a peso estimate and Base-network instructions"
+                           loading="lazy"
+                           width="390"
+                           height="844"
+                        />
+                        <figcaption>Actual Coins.ph instructions</figcaption>
+                     </figure>
+                  </article>
+                  <article class="guide-step reveal">
+                     <div class="guide-copy">
+                        <span class="step-number">03</span>
+                        <h2>Know when Moodeng steps out of the transaction.</h2>
+                        <p>
+                           Moneybees appears as an external option, not an integrated Moodeng checkout. The product sends you to its
+                           official site and tells you to wait for Moneybees’ instructions before sending.
+                        </p>
+                        <ul class="chapter-points">
+                           <li><span aria-hidden="true">01</span>Moneybees handles its own ID checks and rate.</li>
+                           <li><span aria-hidden="true">02</span>You transact with Moneybees directly.</li>
+                           <li><span aria-hidden="true">03</span>Send only after the provider confirms the details.</li>
+                        </ul>
+                     </div>
+                     <figure class="guide-media product-screen stage-night">
+                        <img
+                           src="/landing/assets/app/cashout-product-moneybees.jpg"
+                           alt="Current Moodeng Moneybees screen explaining that it is an external cash-out option"
+                           loading="lazy"
+                           width="390"
+                           height="844"
+                        />
+                        <figcaption>Actual Moneybees handoff</figcaption>
+                     </figure>
+                  </article>
+               </div>
+            </div>
+         </section>
 
-  <footer class="site-footer">
-    <div class="wrap">
-      <div class="f-brand">
-        <img src="/landing/assets/brand/moodeng-logo-small.png" alt="" />
-        <b>Moodeng Credit</b>
-      </div>
-      <p class="f-tag">Small loans, funded by real people.</p>
-      <div class="f-cols">
-        <div>
-          <h4>Talk to a human</h4>
-          <a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
-          <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Telegram</a>
-          <a href="mailto:support@moodengcredit.com">Email us</a>
-        </div>
-        <div>
-          <h4>The details</h4>
-          <a href="/">Home</a>
-          <a href="/request-board">Request board</a>
-          <a href="https://moodeng.gitbook.io/credit" target="_blank" rel="noreferrer">How credit levels work</a>
-        </div>
-      </div>
-      <p class="f-fine">© 2026 Moodeng Credit</p>
-    </div>
-  </footer>
+         <section class="human-context" aria-labelledby="cash-human-heading">
+            <div class="container human-context-grid">
+               <figure class="human-context-photo reveal">
+                  <img
+                     src="/landing/assets/life/store-restock.jpg"
+                     alt="Illustrative scene of a neighborhood shop owner restocking shelves at dawn"
+                     loading="lazy"
+                     width="1152"
+                     height="768"
+                  />
+                  <figcaption>Illustrative moment: restock today, sell tomorrow.</figcaption>
+               </figure>
+               <div class="human-context-copy stack-md reveal">
+                  <p class="eyebrow">Why the last step matters</p>
+                  <h2 class="section-title" id="cash-human-heading">The point is not USDC. It is money where <em>life happens.</em></h2>
+                  <p class="lead">
+                     Medicine, a repair, school, or stock for tomorrow usually needs pesos. The cash-out guide should help a first-time user
+                     cross that last technical gap without pretending every provider works the same way.
+                  </p>
+               </div>
+            </div>
+         </section>
 
-  <script>
-    // ---- Header: gain a surface once the hero starts scrolling away ----
-    (function () {
-      var head = document.getElementById("siteHead");
-      if (!head) return;
-      var onScroll = function () { head.classList.toggle("scrolled", window.scrollY > 24); };
-      window.addEventListener("scroll", onScroll, { passive: true });
-      onScroll();
-    })();
+         <section class="section surface-lavender">
+            <div class="container">
+               <div class="callout money-trust-callout reveal">
+                  <p class="eyebrow">Before you send</p>
+                  <h2>Read the provider’s live details, then check the receiving account.</h2>
+                  <p>
+                     Moodeng adds no cash-out fee. An external route can have its own rate, fee, minimum, verification, or processing time.
+                     Keep the provider confirmation until the pesos are visible where you expected them.
+                  </p>
+               </div>
+            </div>
+         </section>
 
-    // ---- Menu drawer ----
-    (function () {
-      var drawer = document.getElementById("drawer");
-      var openBtn = document.getElementById("menuOpen");
-      var closeBtn = document.getElementById("menuClose");
-      if (!drawer || !openBtn || !closeBtn) return;
-      function setOpen(open) {
-        drawer.classList.toggle("open", open);
-        document.body.classList.toggle("drawer-lock", open);
-        openBtn.setAttribute("aria-expanded", String(open));
-        if (open) closeBtn.focus();
-      }
-      openBtn.addEventListener("click", function () { setOpen(true); });
-      closeBtn.addEventListener("click", function () { setOpen(false); });
-      document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
-    })();
+         <section class="section" aria-labelledby="cash-faq-heading">
+            <div class="container faq-layout">
+               <div class="stack-md reveal">
+                  <p class="eyebrow">Cash-out questions</p>
+                  <h2 class="section-title" id="cash-faq-heading">Pause before you <em>move it.</em></h2>
+                  <p class="lead">The app should make each route understandable. These are the questions worth checking every time.</p>
+               </div>
+               <div class="faq-list reveal">
+                  <details>
+                     <summary>What is a Base Account?</summary>
+                     <p class="faq-answer">
+                        It is the account where the funded USDC appears inside the Moodeng flow. The app uses Base and Coinbase-related
+                        infrastructure to support the digital-dollar transfer.
+                     </p>
+                  </details>
+                  <details>
+                     <summary>What if I do not use Coins.ph?</summary>
+                     <p class="faq-answer">
+                        The current selector can also show GCrypto, PDAX, Binance, and Moneybees. Moneybees is presented as an external
+                        option that you continue on its official site. Use a route you understand and can access; availability can change.
+                     </p>
+                  </details>
+                  <details>
+                     <summary>Does Moodeng charge to cash out?</summary>
+                     <p class="faq-answer">
+                        Moodeng adds no cash-out fee. External providers can have their own current terms, conversion rates, or charges, so
+                        review the live route before confirming.
+                     </p>
+                  </details>
+                  <details>
+                     <summary>Why does the loan use USDC?</summary>
+                     <p class="faq-answer">
+                        USDC is a digital-dollar format that can move through the app’s payment infrastructure. You cash it out to pesos for
+                        everyday use and move pesos back to USDC when repaying.
+                     </p>
+                  </details>
+               </div>
+            </div>
+         </section>
 
-    // ---- Sign in / start-a-loan buttons: spin on tap ----
-    // These links leave the static site for the real app, which takes a moment to load.
-    // Add a spinner immediately on click so the tap feels acknowledged; the browser's own
-    // navigation does the rest, so we never preventDefault or manage a timeout here. On a
-    // back/forward-cache restore the click never actually left this page, so clear any
-    // stuck spinner then.
-    (function () {
-      var loadingLinks = document.querySelectorAll(
-        '.head-signin, .drawer .d-foot a[href="/sign-in"], .cta[href="/request-board"]'
-      );
-      loadingLinks.forEach(function (a) {
-        a.addEventListener("click", function () { a.classList.add("is-loading"); });
-      });
-      window.addEventListener("pageshow", function (e) {
-        if (!e.persisted) return;
-        loadingLinks.forEach(function (a) { a.classList.remove("is-loading"); });
-      });
-    })();
+         <section class="final-cta" aria-labelledby="cash-final-heading">
+            <div class="narrow stack-lg reveal">
+               <p class="eyebrow">Next step</p>
+               <h2 class="section-title wide" id="cash-final-heading">See how pesos move back when it is time to <em>repay.</em></h2>
+               <p class="lead">The repayment guide covers provider conversion, partial payments, and what happens if the week gets hard.</p>
+               <div class="button-row">
+                  <a class="button light" href="/how-to-repay">Open the repay guide <span class="arrow" aria-hidden="true">→</span></a
+                  ><a class="button subtle" href="/how-it-works">Back to all four steps</a>
+               </div>
+            </div>
+         </section>
+      </main>
 
-    // reveal on scroll (same pattern as landing)
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-    }, { threshold: 0.12 });
-    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
-  </script>
-</body>
+      <footer class="site-footer">
+         <div class="container">
+            <div class="footer-grid">
+               <div class="footer-brand">
+                  <a class="brand" href="/"
+                     ><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="34" height="34" />Moodeng Credit</a
+                  >
+                  <p>Small person-to-person loans with terms you can understand before you ask.</p>
+               </div>
+               <div class="footer-links">
+                  <div>
+                     <h2>Borrow</h2>
+                     <a href="/how-it-works">How it works</a><a href="/how-to-cash-out">Cash-out guide</a
+                     ><a href="/how-to-repay">Repay guide</a>
+                  </div>
+                  <div>
+                     <h2>About</h2>
+                     <a href="/about">Our story</a><a href="/for-lenders">For lenders</a
+                     ><a href="https://moodeng.gitbook.io/credit" target="_blank" rel="noreferrer">Credit levels</a>
+                  </div>
+                  <div>
+                     <h2>Talk to us</h2>
+                     <a href="mailto:support@moodengcredit.com">Email</a
+                     ><a href="https://t.me/jimmymoodengcredit" target="_blank" rel="noreferrer">Telegram</a
+                     ><a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
+                  </div>
+               </div>
+            </div>
+            <p class="footer-fine">
+               © 2026 Moodeng Credit. Provider availability and terms can change. Review the live route before moving money.
+               <a href="/privacy-policy">Privacy policy</a> · <a href="/terms">Terms of service</a>
+            </p>
+         </div>
+      </footer>
+      <script type="module" src="/landing/site.js?v=20260715-story2"></script>
+   </body>
 </html>

@@ -1,1013 +1,661 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
-<link rel="apple-touch-icon" href="/landing/assets/brand/moodeng-logo.png" />
-<title>Moodeng for lenders — fund real requests from verified borrowers</title>
-<meta name="description" content="Review real requests from verified borrowers: the amount, the expected payback, the expected date, and the record — before you decide. Repayment is not guaranteed." />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="Moodeng Credit" />
-<meta property="og:title" content="Moodeng for lenders — fund real requests from verified borrowers" />
-<meta property="og:description" content="Review the amount, expected payback, expected date, and the borrower's record — before you decide." />
-<meta property="og:url" content="https://moodeng.app/for-lenders" />
-<meta property="og:image" content="https://moodeng.app/landing/assets/og/og-share.jpg" />
-<meta name="twitter:card" content="summary_large_image" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..700&family=Archivo+Black&family=Fraunces:ital,opsz,wght@1,9..144,400..600&display=swap" rel="stylesheet" />
-<style>
-  /* ============================================================
-     FOR LENDERS — the page demonstrates the product, not the pitch.
-     Hero shows a complete request card (Klarna device treatment,
-     nothing cropped). Every figure is "expected", never promised.
-     Section order: hero → mission → open requests → how it works →
-     your choice → the record → outcomes → videos → risk → FAQ → CTA.
-     Real data only: card terms come from real funded requests
-     (names changed, dates illustrative — labeled on page).
-     ============================================================ */
-  :root {
-    --lavender: #8336F0;
-    --purple: #6010D2;
-    --deep: #1C053D;
-    --heading: #040033;
-    --surface: #FDFCFD;
-    --surface-muted: #F8F4FC;
-    --lavender-bg: #F3E8FF;
-    --lavender-border: #E7D8FF;
-    --text-muted: #70617F;
-    --text-soft: #4D4359;
-    --success-bg: #EDFFF4;
-    --success: #0D7A3C;
-    --warn-bg: #FFF4E5;
-    --warn: #8A5A00;
-    --bad-bg: #FDE8E8;
-    --bad: #B42318;
-    --panel: #C9A8F5;
-    --card-tint: #F7F0FE;
-    --night: #100626;
-    --pill: 500px;
-    --display: "Archivo Black", "Archivo", -apple-system, BlinkMacSystemFont, sans-serif;
-    --sans: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --serif: "Fraunces", Georgia, "Times New Roman", serif;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
-  body { font-family: var(--sans); color: var(--heading); background: var(--surface); line-height: 1.5; overflow-x: hidden; }
-  img { display: block; max-width: 100%; }
-  .accent { font-family: var(--serif); font-style: italic; font-weight: 500; letter-spacing: -0.01em; }
-  .label { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--purple); }
-  .wrap { width: 100%; max-width: 480px; margin: 0 auto; padding: 0 22px; }
-  h2.sec-h { font-family: var(--display); font-size: 30px; line-height: 1.08; letter-spacing: -0.02em; margin: 12px 0 0; }
-  h2.sec-h .accent { color: var(--purple); font-weight: 500; }
-  .sec-lead { margin-top: 14px; font-size: 16px; color: var(--text-soft); max-width: 34ch; }
-  .sec-lead b { color: var(--heading); }
-  .fine { margin-top: 14px; font-size: 11.5px; line-height: 1.5; color: var(--text-muted); }
+   <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      <title>Moodeng for lenders | Review every request before you fund</title>
+      <meta
+         name="description"
+         content="Review verified borrower requests, exact expected paybacks, dates, repayment history, and default risk before choosing what to fund."
+      />
+      <meta property="og:title" content="Moodeng for lenders" />
+      <meta property="og:description" content="Fund small requests from verified borrowers. See the terms, record, and risk first." />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://moodeng.app/for-lenders" />
+      <meta property="og:image" content="https://moodeng.app/landing/assets/og/og-share.jpg" />
+      <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
+      <link rel="stylesheet" href="/landing/site.css?v=20260715-header" />
+   </head>
+   <body>
+      <a class="skip-link" href="#main-content">Skip to main content</a>
 
-  /* ---------- header + drawer (same as landing) ---------- */
-  .site-head { position: sticky; top: 0; z-index: 50; background: transparent; transition: background .25s ease, box-shadow .25s ease; }
-  .site-head.scrolled { background: rgba(253,252,253,0.86); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 1px 0 rgba(4,0,51,0.08); }
-  .site-head .wrap { display: flex; align-items: center; padding-top: 12px; padding-bottom: 12px; }
-  .site-head .head-word { color: var(--heading); }
-  .head-word { font-family: var(--sans); font-size: 17px; font-weight: 600; letter-spacing: 0.02em; margin-right: auto; color: #fff; text-decoration: none; }
-  .menu-pill { width: 58px; height: 42px; border: 0; cursor: pointer; border-radius: var(--pill); background: var(--purple); display: grid; place-items: center; }
-  .site-head .menu-pill { background: var(--lavender-bg); width: 48px; height: 40px; color: var(--heading); margin-right: 13px; }
-  .head-signin { display: inline-flex; align-items: center; gap: 7px; background: var(--heading); color: #fff; font-size: 13.5px; font-weight: 700; padding: 9px 16px 9px 14px; border-radius: var(--pill); text-decoration: none; margin-right: 2px; white-space: nowrap; }
-
-  /* ---------- HERO: Klarna anatomy — panel clip-reveal, word-stagger h1,
-     and a COMPLETE request card as the device (nothing cropped) ---------- */
-  .hero-lend { padding: 10px 10px 0; }
-  .hero-panel {
-    position: relative; border-radius: 28px; overflow: hidden;
-    background:
-      radial-gradient(140% 110% at 80% -10%, #7A2BE8 0%, #4A0BB4 45%, var(--night) 100%);
-    padding: 44px 0 44px; color: #fff;
-    animation: panelIn .9s cubic-bezier(.22,1,.36,1) both;
-  }
-  @keyframes panelIn {
-    from { clip-path: inset(24% 10% 24% 10% round 48px); }
-    to   { clip-path: inset(0 0 0 0 round 28px); }
-  }
-  .hero-grid { display: flex; flex-direction: column; align-items: center; }
-  .hero-copy { text-align: center; }
-  .hero-panel .label { color: #D9C2FB; }
-  .hero-panel h1 {
-    font-family: var(--display); font-size: 39px; line-height: 1.04; letter-spacing: -0.03em;
-    margin: 12px auto 0; max-width: 12ch; color: #fff;
-  }
-  .hero-panel h1 .accent { color: #C9A8F5; font-weight: 500; }
-  /* Klarna word-stagger: phrases rise in on a 0.1s cascade */
-  .hero-panel h1 .w {
-    display: inline-block; opacity: 0; transform: translate(-13px, 40px);
-    animation: wordIn .7s cubic-bezier(.22,1,.36,1) forwards;
-  }
-  .hero-panel h1 .w:nth-child(1) { animation-delay: .18s; }
-  .hero-panel h1 .w:nth-child(2) { animation-delay: .3s; }
-  .hero-panel h1 .w:nth-child(3) { animation-delay: .42s; }
-  @keyframes wordIn { to { opacity: 1; transform: none; } }
-  .hero-sub, .hero-copy .cta, .hero-risklink {
-    opacity: 0; animation: riseIn .7s cubic-bezier(.22,1,.36,1) forwards;
-  }
-  .hero-sub { animation-delay: .5s; }
-  .hero-copy .cta { animation-delay: .6s; }
-  .hero-risklink { animation-delay: .7s; }
-  @keyframes riseIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
-  .hero-sub { margin: 16px auto 0; font-size: 15px; line-height: 1.55; color: #D9CCEF; max-width: 32ch; }
-  .hero-sub b { color: #fff; }
-  .hero-hippo { width: 84px; margin: 0 auto 4px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.35)); animation: bob 5s ease-in-out infinite; }
-  @keyframes bob { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-6px) } }
-  .cta {
-    display: inline-flex; align-items: center; gap: 10px;
-    background: #fff; color: var(--heading); font-weight: 800; font-size: 15.5px;
-    padding: 15px 26px; border-radius: var(--pill); text-decoration: none; margin-top: 24px;
-    box-shadow: 0 10px 24px rgba(0,0,0,0.25);
-    transition: transform .15s ease, box-shadow .15s ease;
-  }
-  .cta.dark { background: var(--heading); color: #fff; box-shadow: 0 10px 24px rgba(4,0,51,0.22); }
-  .cta:hover { transform: translateY(-2px); }
-  .cta .arrow { transition: transform .15s ease; }
-  .cta:hover .arrow { transform: translateX(3px); }
-  .hero-risklink { display: block; margin-top: 14px; font-size: 13px; font-weight: 700; color: #C9A8F5; text-decoration: none; }
-  .hero-risklink:hover { text-decoration: underline; }
-
-  /* the device: a full request card, rotating between three real requests */
-  .hero-device {
-    width: 300px; max-width: 86%; margin: 32px auto 0;
-    opacity: 0; animation: deviceIn .9s cubic-bezier(.22,1,.36,1) .5s forwards;
-  }
-  @keyframes deviceIn { from { opacity: 0; transform: translateY(80px); } to { opacity: 1; transform: none; } }
-  .rotator { display: grid; }
-  .rotator .req-card { grid-area: 1 / 1; opacity: 0; transform: translateY(12px) rotate(-2.5deg); transition: opacity .55s ease, transform .55s ease; pointer-events: none; }
-  .rotator .req-card.on { opacity: 1; transform: rotate(-2.5deg); pointer-events: auto; }
-  .rot-dots { display: flex; gap: 6px; justify-content: center; margin-top: 18px; }
-  .rot-dots span { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.35); transition: background .3s; }
-  .rot-dots span.on { background: #fff; }
-  .hero-devnote { margin: 12px auto 0; font-size: 10.5px; line-height: 1.45; color: #B9A5DE; text-align: center; max-width: 34ch; }
-  @media (prefers-reduced-motion: reduce) {
-    .hero-hippo, .hero-panel, .hero-panel h1 .w, .hero-sub, .hero-copy .cta, .hero-risklink, .hero-device { animation: none; opacity: 1; transform: none; }
-  }
-
-  /* ---------- REQUEST CARD (the product artifact, reused everywhere) ---------- */
-  .req-card {
-    background: #fff; border-radius: 22px; padding: 20px 18px 16px;
-    color: var(--heading); text-align: left;
-    box-shadow: 0 24px 50px rgba(0,0,0,0.35);
-  }
-  .rc-name { font-family: var(--display); font-size: 19px; line-height: 1.2; letter-spacing: -0.01em; }
-  .rc-name .rc-amt { color: var(--purple); }
-  .rc-reason { margin-top: 5px; font-size: 13px; font-weight: 700; color: var(--text-soft); }
-  .rc-grid { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .rc-cell { background: var(--card-tint); border: 1px solid var(--lavender-border); border-radius: 12px; padding: 9px 10px 8px; }
-  .rc-cell .k { display: block; font-size: 9px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--text-muted); }
-  .rc-cell .v { display: block; font-size: 15px; font-weight: 800; margin-top: 2px; }
-  .rc-cred { margin-top: 12px; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--success); }
-  .rc-cred .dot { width: 16px; height: 16px; border-radius: 50%; background: var(--success-bg); color: var(--success); display: grid; place-items: center; font-size: 10px; }
-  .rc-cta {
-    display: block; text-align: center; margin-top: 12px;
-    background: var(--heading); color: #fff; font-weight: 800; font-size: 13.5px;
-    padding: 13px; border-radius: var(--pill); text-decoration: none;
-  }
-  .rc-fine { margin-top: 10px; font-size: 10px; line-height: 1.45; color: var(--text-muted); text-align: center; }
-
-  /* ---------- MISSION: chart + proof ---------- */
-  .sec-vs { padding: 60px 0 58px; background: var(--surface); }
-  .chart-card {
-    margin-top: 26px; background: #fff; border: 1px solid #EFE6FB; border-radius: 20px;
-    padding: 22px 18px 18px; box-shadow: 0 14px 34px rgba(96,16,210,0.08);
-  }
-  .chart-card .ct { font-size: 13px; font-weight: 800; }
-  .chart-card .cs { font-size: 11.5px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
-  .vs-chart { position: relative; margin-top: 40px; display: grid; grid-template-columns: 34px repeat(3, 1fr); height: 240px; }
-  .vs-y { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; padding-right: 8px; }
-  .vs-y span { font-size: 10px; color: var(--text-muted); font-weight: 600; transform: translateY(-4px); }
-  .vs-grid { position: absolute; left: 34px; right: 0; top: 0; bottom: 0; pointer-events: none; }
-  .vs-grid i { position: absolute; left: 0; right: 0; height: 1px; background: #EFE6FB; }
-  .vs-col { position: relative; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 8px; }
-  .vs-bar { width: 100%; max-width: 74px; background: #DCD4E8; border-radius: 8px 8px 0 0; position: relative; }
-  .vs-col.pop .vs-bar { background: linear-gradient(180deg, var(--lavender), var(--purple)); }
-  .vs-val { position: absolute; left: 50%; transform: translateX(-50%); top: -26px; font-family: var(--display); font-size: 17px; white-space: nowrap; }
-  .vs-col.pop .vs-val { color: #fff; top: auto; bottom: 10px; font-size: 16px; }
-  .vs-cap {
-    position: absolute; left: 50%; transform: translate(-50%, -50%);
-    background: #fff; border: 1.5px dashed var(--lavender); color: var(--purple);
-    font-size: 9.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
-    padding: 5px 10px; border-radius: var(--pill); white-space: nowrap; z-index: 2;
-  }
-  .vs-lb { display: grid; grid-template-columns: 34px repeat(3, 1fr); margin-top: 12px; }
-  .vs-lb > div { padding: 0 6px; text-align: center; font-size: 12px; line-height: 1.3; color: var(--text-soft); font-weight: 600; }
-  .vs-lb > div.pop { color: var(--purple); font-weight: 800; }
-  .vs-lb small { display: block; font-size: 10px; color: var(--text-muted); margin-top: 2px; font-weight: 600; }
-  .mission-line {
-    margin-top: 26px; font-family: var(--display); font-size: 20px; line-height: 1.25;
-    letter-spacing: -0.01em; max-width: 26ch;
-  }
-  .mission-line .accent { color: var(--purple); font-weight: 500; }
-  .stat-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
-  .stat-chip { flex: 1 1 45%; background: #fff; border: 1px solid #EFE6FB; border-radius: 16px; padding: 14px 14px 12px; }
-  .stat-chip .n { font-family: var(--display); font-size: 24px; color: var(--heading); line-height: 1.05; }
-  .stat-chip .k { font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-top: 3px; line-height: 1.35; }
-
-  /* ---------- OPEN REQUESTS (Percent deal cards, request-shaped) ---------- */
-  .sec-open { padding: 60px 0 56px; background: var(--surface-muted); }
-  .deal-list { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 24px -22px 0; padding: 6px 22px 16px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  .deal-list::-webkit-scrollbar { display: none; }
-  .deal {
-    flex: 0 0 240px; scroll-snap-align: start; background: #fff; border: 1px solid #EFE6FB;
-    border-radius: 18px; padding: 16px 16px 14px; box-shadow: 0 10px 26px rgba(96,16,210,0.07);
-    display: flex; flex-direction: column;
-  }
-  .deal .dn { font-family: var(--display); font-size: 15px; letter-spacing: 0; }
-  .deal .dt { font-size: 12.5px; font-weight: 700; line-height: 1.35; color: var(--text-soft); margin-top: 2px; min-height: 34px; }
-  .deal .rows { margin-top: 10px; display: flex; flex-direction: column; gap: 7px; }
-  .deal .r { display: flex; justify-content: space-between; font-size: 12px; }
-  .deal .r .k { color: var(--text-muted); font-weight: 600; }
-  .deal .r .v { font-weight: 800; }
-  .deal .st {
-    display: inline-flex; align-items: center; gap: 5px; margin-top: 12px; align-self: flex-start;
-    background: var(--success-bg); color: var(--success);
-    font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: var(--pill);
-  }
-  .deal .st.warn { background: var(--warn-bg); color: var(--warn); }
-  .deal .st.bad { background: var(--bad-bg); color: var(--bad); }
-  .deal .dlink { margin-top: 12px; font-size: 12.5px; font-weight: 800; color: var(--purple); text-decoration: none; }
-  .deal.dark { background: var(--night); border-color: var(--night); color: #fff; }
-  .deal.dark .dn { color: #fff; }
-  .deal.dark .dt { color: #B6A8CC; min-height: 0; }
-  .deal.dark .r .k { color: #8B7BA8; }
-  .deal.dark .r .v { color: #fff; }
-
-  /* ---------- HOW IT WORKS (4 steps, real product screens) ---------- */
-  .sec-how { padding: 60px 0 56px; background: var(--surface); }
-  .steps { margin-top: 24px; display: grid; gap: 14px; }
-  .step { background: #fff; border: 1px solid #EFE6FB; border-radius: 18px; overflow: hidden; box-shadow: 0 10px 26px rgba(96,16,210,0.06); }
-  .step .shot { height: 148px; overflow: hidden; background: var(--card-tint); }
-  .step .shot img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
-  .step .st-body { padding: 14px 16px 16px; }
-  .step .num { font-family: var(--display); font-size: 12px; color: var(--lavender); letter-spacing: .08em; }
-  .step h3 { font-family: var(--display); font-size: 17px; margin-top: 4px; letter-spacing: 0; }
-  .step p { margin-top: 5px; font-size: 13px; line-height: 1.5; color: var(--text-muted); }
-
-  /* ---------- YOUR CHOICE (no fixed plan) — dark ---------- */
-  .sec-choice { padding: 60px 0 62px; background: var(--night); }
-  .sec-choice .label { color: #C9A8F5; }
-  .sec-choice .sec-h { color: #fff; }
-  .sec-choice .sec-h .accent { color: #C9A8F5; }
-  .sec-choice .sec-lead { color: #B6A8CC; }
-  .sec-choice .sec-lead b { color: #fff; }
-  .choice-chips { margin-top: 24px; display: grid; gap: 10px; }
-  .cchip { background: rgba(201,168,245,0.08); border: 1px solid rgba(201,168,245,0.16); border-radius: 16px; padding: 15px 18px 14px; }
-  .cchip .k { font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #C9A8F5; }
-  .cchip .v { font-family: var(--display); font-size: 18px; color: #fff; margin-top: 4px; }
-  .cchip p { margin-top: 4px; font-size: 12.5px; line-height: 1.45; color: #B6A8CC; }
-  .sec-choice .fine { color: #8B7BA8; }
-
-  /* ---------- THE RECORD (borrower insights) ---------- */
-  .sec-record { padding: 60px 0 58px; background: var(--surface-muted); }
-  .stage { position: relative; margin: 28px auto 0; width: 300px; max-width: 86%; }
-  .stage-panel {
-    position: relative;
-    background: radial-gradient(120% 90% at 75% 8%, #EFDFFD 0%, #D5B8F8 62%, #C09AF3 100%);
-    border-radius: 30px; padding: 30px 20px 26px;
-    box-shadow: 0 24px 50px rgba(96,16,210,0.28);
-  }
-  .stage-panel::before {
-    content: ""; position: absolute; inset: 0; border-radius: 30px;
-    background-image:
-      radial-gradient(circle at 30% 20%, rgba(255,255,255,0.28) 0 2px, transparent 3px),
-      radial-gradient(circle at 70% 60%, rgba(255,255,255,0.18) 0 2px, transparent 3px),
-      radial-gradient(circle at 50% 85%, rgba(28,5,61,0.06) 0 3px, transparent 4px);
-    background-size: 90px 90px, 120px 120px, 140px 140px;
-    opacity: 0.5; pointer-events: none;
-  }
-  .phone {
-    position: relative; background: #fff; border-radius: 22px; padding: 10px;
-    transform: rotate(2.5deg);
-    box-shadow: 0 16px 34px rgba(28,5,61,0.22), 0 2px 0 rgba(255,255,255,0.6) inset;
-  }
-  .phone .screen { border-radius: 14px; width: 100%; }
-  .shot-note { margin-top: 16px; font-size: 12px; font-weight: 600; color: var(--text-muted); text-align: center; }
-  .rec-list { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
-  .rec-item { display: flex; align-items: flex-start; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--text-soft); line-height: 1.35; }
-  .rec-item .ck { flex: none; width: 16px; height: 16px; border-radius: 50%; background: var(--heading); color: #fff; display: grid; place-items: center; margin-top: 1px; }
-  .rec-item .ck svg { width: 8px; height: 8px; }
-
-  /* ---------- OUTCOMES ---------- */
-  .sec-outcomes { padding: 60px 0 56px; background: var(--surface); }
-
-  /* ---------- BORROWER VIDEOS ---------- */
-  .sec-say { padding: 58px 0 54px; background: var(--surface-muted); text-align: center; }
-  .sec-say .sec-lead { margin-left: auto; margin-right: auto; }
-  .vidrow { display: flex; gap: 12px; margin-top: 22px; justify-content: center; }
-  .vid { position: relative; flex: 1; max-width: 158px; aspect-ratio: 9 / 14; border-radius: 18px; overflow: hidden; display: block; background: #17082F; box-shadow: 0 14px 30px rgba(64,10,140,0.22); }
-  .vid img { width: 100%; height: 100%; object-fit: cover; opacity: 0.85; }
-  .vid .play { position: absolute; inset: 0; display: grid; place-items: center; }
-  .vid .play span { width: 46px; height: 46px; border-radius: var(--pill); background: #fff; display: grid; place-items: center; color: var(--purple); font-size: 17px; padding-left: 4px; box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
-  .vid .tag { position: absolute; left: 10px; right: 10px; bottom: 10px; text-align: left; color: #fff; font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; text-shadow: 0 2px 6px rgba(0,0,0,0.55); }
-
-  /* ---------- RISK (two columns, dark) ---------- */
-  .sec-honest { background: var(--night); padding: 62px 0 64px; position: relative; overflow: hidden; }
-  .sec-honest .label { color: #C9A8F5; }
-  .sec-honest .sec-h { color: #fff; }
-  .sec-honest .sec-h .accent { color: #C9A8F5; }
-  .sec-honest .sec-lead { color: #B6A8CC; }
-  .sec-honest .dcloud { position: absolute; opacity: 0.5; filter: brightness(0.24) saturate(0.6); pointer-events: none; }
-  .risk-cols { margin-top: 26px; display: grid; gap: 12px; }
-  .rcard { border-radius: 18px; padding: 18px 20px; background: rgba(201,168,245,0.08); border: 1px solid rgba(201,168,245,0.16); }
-  .rcard h4 { font-family: var(--display); font-size: 15px; color: #fff; letter-spacing: .02em; }
-  .rcard ul { margin-top: 12px; display: flex; flex-direction: column; gap: 9px; }
-  .rcard li { list-style: none; display: flex; gap: 9px; font-size: 13.5px; line-height: 1.45; color: #C4B5DD; }
-  .rcard li .m { flex: none; font-weight: 800; }
-  .rcard li .m.ok { color: #7EE2A8; }
-  .rcard li .m.warn { color: #F5C26B; }
-  .honest-note { margin-top: 14px; padding: 18px 20px; border-radius: 16px; background: rgba(201,168,245,0.08); border: 1px solid rgba(201,168,245,0.16); font-size: 14px; line-height: 1.5; color: #C4B5DD; }
-  .honest-note b { color: #fff; }
-
-  /* ---------- FAQ ---------- */
-  .sec-faq { background: var(--surface); padding: 58px 0 58px; }
-  .tile-h { font-family: var(--display); font-size: 25px; letter-spacing: -0.01em; color: var(--heading); margin: 14px 0 0; line-height: 1.15; }
-  .tile-h .accent { color: var(--purple); font-weight: 500; }
-  .faq-list { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
-  .faq-list details { background: #fff; border: 1px solid #EFE6FB; border-radius: 16px; padding: 0 18px; }
-  .faq-list summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 0; font-size: 15px; font-weight: 800; color: var(--heading); }
-  .faq-list summary::-webkit-details-marker { display: none; }
-  .faq-list summary::after { content: "+"; font-family: var(--display); font-size: 18px; color: var(--purple); flex: 0 0 auto; }
-  .faq-list details[open] summary::after { content: "–"; }
-  .faq-list .a { padding: 0 0 16px; font-size: 14.5px; line-height: 1.55; color: var(--text-muted); }
-  .faq-list .a b { color: var(--heading); }
-
-  /* ---------- FINAL CTA ---------- */
-  .sec-final { text-align: center; padding: 62px 0 70px; background: radial-gradient(130% 100% at 50% 100%, #DCC4FA 0%, var(--lavender-bg) 55%, #ffffff 100%); }
-  .sec-final h2 { font-family: var(--display); font-size: 29px; line-height: 1.1; letter-spacing: -0.02em; margin: 12px 0 0; }
-  .sec-final h2 .accent { color: var(--purple); font-weight: 500; }
-  .sec-final .sec-lead { margin-left: auto; margin-right: auto; }
-  .cta-hippo { width: 108px; margin: 0 auto 8px; display: block; filter: drop-shadow(0 10px 20px rgba(96,16,210,0.2)); animation: bob 5s ease-in-out infinite; }
-  @media (prefers-reduced-motion: reduce) { .cta-hippo { animation: none; } }
-  .reassure { margin-top: 14px; font-size: 11.5px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.01em; }
-
-  /* spinner-on-tap for app links (same rationale as landing) */
-  .head-signin, .cta, .d-foot a { position: relative; }
-  .btn-label { display: inline-flex; align-items: center; gap: inherit; transition: opacity .15s ease; }
-  .is-loading { pointer-events: none; }
-  .is-loading .btn-label { opacity: 0; }
-  .is-loading::after { content: ""; position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: btnSpin .7s linear infinite; }
-  @keyframes btnSpin { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .is-loading::after { animation-duration: 1.3s; } }
-
-  /* footer (same as landing, short form) */
-  .site-footer { background: var(--night); padding: 52px 0 0; color: #B6A8CC; font-size: 13.5px; overflow: hidden; }
-  .site-footer .f-brand { display: flex; align-items: center; gap: 10px; }
-  .site-footer .f-brand img { width: 40px; }
-  .site-footer .f-brand b { font-family: var(--display); font-size: 20px; color: #fff; letter-spacing: -0.01em; }
-  .site-footer .f-tag { margin: 12px 0 0; line-height: 1.5; }
-  .f-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 28px; margin-top: 30px; }
-  .f-cols h4 { margin: 0 0 12px; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #C9A8F5; }
-  .f-cols a { display: block; color: #fff; text-decoration: none; font-weight: 600; padding: 6px 0; }
-  .f-cols a:hover { color: #C9A8F5; }
-  .f-fine { margin-top: 34px; padding-top: 18px; border-top: 1px solid rgba(201,168,245,0.16); font-size: 12px; color: #8B7BA8; padding-bottom: 26px; }
-
-  /* drawer (same as landing) */
-  .drawer { position: fixed; inset: 0; z-index: 100; background: rgba(16, 6, 38, 0.42); opacity: 0; visibility: hidden; transition: opacity .28s ease, visibility .28s ease; }
-  .drawer.open { opacity: 1; visibility: visible; }
-  .drawer-panel { position: absolute; top: 0; left: 0; bottom: 0; width: 88%; max-width: 420px; background: var(--surface); overflow-y: auto; display: flex; flex-direction: column; padding: 16px 24px 34px; box-shadow: 0 0 60px rgba(28, 5, 61, 0.25); transform: translateX(-100%); transition: transform .34s cubic-bezier(.32, .72, 0, 1); }
-  .drawer.open .drawer-panel { transform: none; }
-  .drawer-head { display: flex; align-items: center; padding: 6px 0 22px; }
-  .drawer-x { width: 52px; height: 44px; border-radius: var(--pill); border: none; cursor: pointer; background: var(--lavender-bg); color: var(--heading); display: flex; align-items: center; justify-content: center; transition: transform .12s ease, background-color .15s ease; }
-  .drawer-x:hover { background: var(--lavender-border); }
-  .drawer-x:active { transform: scale(0.88); background: var(--lavender-border); }
-  @media (prefers-reduced-motion: reduce) { .drawer-x { transition: background-color .15s ease; } .drawer-x:active { transform: none; } }
-  .drawer-links { display: flex; flex-direction: column; }
-  .drawer-links a, .d-group > summary { text-decoration: none; color: var(--heading); }
-  .d-top, .d-group { border-bottom: 1px solid var(--lavender-border); }
-  .d-top, .d-group > summary { display: flex; align-items: center; justify-content: space-between; font-family: var(--sans); font-weight: 500; font-size: 23px; letter-spacing: -0.01em; color: var(--heading); padding: 18px 0; }
-  .d-group > summary { list-style: none; cursor: pointer; }
-  .d-group > summary::-webkit-details-marker { display: none; }
-  .d-group > summary::after { content: ""; width: 9px; height: 9px; margin-right: 3px; border-right: 2px solid var(--heading); border-top: 2px solid var(--heading); transform: rotate(45deg); transition: transform .2s ease; }
-  .d-group[open] > summary::after { transform: rotate(135deg); }
-  .d-top:hover, .d-group > summary:hover { color: var(--purple); }
-  .d-sub { display: flex; flex-direction: column; padding: 2px 0 14px; }
-  .d-sub a { font-size: 17px; font-weight: 400; color: var(--text-soft); padding: 10px 2px; }
-  .d-sub a:hover { color: var(--purple); }
-  .d-foot { margin-top: 28px; }
-  .d-foot a { display: inline-flex; align-items: center; gap: 8px; font-family: var(--sans); font-weight: 600; font-size: 16px; color: var(--purple); }
-  @media (prefers-reduced-motion: reduce) { .drawer, .drawer-panel { transition: none; } }
-  body.drawer-lock { overflow: hidden; }
-
-  /* reveal on scroll */
-  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
-  .reveal.in { opacity: 1; transform: none; }
-
-  @media (min-width: 700px) {
-    .wrap { max-width: 660px; }
-    .hero-panel { padding: 56px 0; }
-    .hero-grid { flex-direction: row; align-items: center; gap: 28px; }
-    .hero-copy { flex: 1; text-align: left; }
-    .hero-panel h1 { font-size: 46px; margin-left: 0; max-width: none; }
-    .hero-sub { margin-left: 0; }
-    .hero-hippo { margin: 0 0 4px; }
-    .hero-device { flex: none; width: 264px; margin: 0; }
-    h2.sec-h { font-size: 36px; }
-    .stat-chip { flex: 1 1 22%; }
-    .deal-list { flex-wrap: wrap; overflow: visible; margin: 24px 0 0; padding: 0; }
-    .deal { flex: 1 1 30%; }
-    .steps { grid-template-columns: 1fr 1fr; }
-    .choice-chips { grid-template-columns: repeat(3, 1fr); }
-    .risk-cols { grid-template-columns: 1fr 1fr; }
-  }
-</style>
-</head>
-<body>
-
-  <nav class="site-head" id="siteHead">
-    <div class="wrap">
-      <button class="menu-pill" id="menuOpen" aria-label="Menu" aria-expanded="false" type="button">
-        <svg width="22" height="10" viewBox="0 0 22 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1 1h20M1 9h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <a class="head-word" href="/">Moodeng Credit</a>
-      <a class="head-signin" href="/sign-in">
-        <span class="btn-label">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-          </svg>
-          Sign in
-        </span>
-      </a>
-    </div>
-  </nav>
-
-  <!-- drawer (same links as landing) -->
-  <div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Menu">
-    <div class="drawer-panel">
-      <div class="drawer-head">
-        <button class="drawer-x" id="menuClose" aria-label="Close menu" type="button">
-          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-      <nav class="drawer-links">
-        <a class="d-top" href="/request-board">Browse requests</a>
-        <a class="d-top" href="/for-lenders">Fund someone</a>
-        <details class="d-group">
-          <summary>Guides</summary>
-          <div class="d-sub">
-            <a href="/how-it-works">How it works</a>
-            <a href="/how-to-cash-out">How to cash out</a>
-            <a href="/how-to-repay">How to repay</a>
-          </div>
-        </details>
-        <details class="d-group">
-          <summary>Support</summary>
-          <div class="d-sub">
-            <a href="/about">Our story</a>
-            <a href="/#faq">Common questions</a>
-            <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Telegram</a>
-            <a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
-            <a href="mailto:support@moodengcredit.com">Email us</a>
-          </div>
-        </details>
-        <div class="d-foot">
-          <a href="/sign-in"><span class="btn-label">Sign in <span aria-hidden="true">&rarr;</span></span></a>
-        </div>
-      </nav>
-    </div>
-  </div>
-
-  <!-- ============ 1. HERO — a complete request card is the product demo ============ -->
-  <header class="hero-lend">
-    <div class="hero-panel">
-      <div class="wrap hero-grid">
-        <div class="hero-copy">
-          <img class="hero-hippo" src="/hippos/lender-diversity-piechart.png" alt="" />
-          <p class="label">For lenders</p>
-          <h1 aria-label="Small loans. Clear terms. Real people.">
-            <span class="w">Small loans.</span> <span class="w">Clear terms.</span> <span class="w accent">Real people.</span>
-          </h1>
-          <p class="hero-sub">Review requests from verified borrowers — <b>how much they need, the expected payback, and the expected date</b> — before you decide.</p>
-          <a class="cta" href="/request-board"><span class="btn-label">Browse requests <span class="arrow">→</span></span></a>
-          <a class="hero-risklink" href="#how">See how it works ↓</a>
-        </div>
-        <div class="hero-device">
-          <div class="rotator" id="heroRot">
-            <div class="req-card on">
-              <div class="rc-name">Ana needs <span class="rc-amt">$20</span></div>
-              <div class="rc-reason">👪 Family expenses before payday</div>
-              <div class="rc-grid">
-                <div class="rc-cell"><span class="k">You lend</span><span class="v">$20</span></div>
-                <div class="rc-cell"><span class="k">Expected back</span><span class="v">$22</span></div>
-                <div class="rc-cell"><span class="k">Expected by</span><span class="v">Jul 25</span></div>
-                <div class="rc-cell"><span class="k">Approx. duration</span><span class="v">2 weeks</span></div>
-              </div>
-              <div class="rc-cred"><span class="dot">✓</span> Verified borrower · record shown in app</div>
-              <a class="rc-cta" href="/request-board">Fund this request</a>
-              <p class="rc-fine">Terms vary by request. Repayment is not guaranteed.</p>
+      <header class="site-header">
+         <div class="container">
+            <a class="brand" href="/" aria-label="Moodeng Credit home"
+               ><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="34" height="34" /><span>Moodeng Credit</span></a
+            >
+            <nav class="desktop-nav" aria-label="Primary navigation">
+               <a href="/">For borrowers</a>
+               <a href="#requests">Sample requests</a>
+               <a href="#record">What you see</a>
+               <a href="#risk">Risk</a>
+            </nav>
+            <div class="header-actions">
+               <a class="button secondary" href="/sign-in">Sign in</a>
+               <a class="button" href="/request-board">Browse requests</a>
+               <button class="menu-button" type="button" data-menu-open aria-label="Open menu" aria-haspopup="dialog" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                     <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+               </button>
             </div>
-            <div class="req-card">
-              <div class="rc-name">Joel needs <span class="rc-amt">$10</span></div>
-              <div class="rc-reason">🚗 My car broke down</div>
-              <div class="rc-grid">
-                <div class="rc-cell"><span class="k">You lend</span><span class="v">$10</span></div>
-                <div class="rc-cell"><span class="k">Expected back</span><span class="v">$12</span></div>
-                <div class="rc-cell"><span class="k">Expected by</span><span class="v">Jul 29</span></div>
-                <div class="rc-cell"><span class="k">Approx. duration</span><span class="v">2.5 weeks</span></div>
-              </div>
-              <div class="rc-cred"><span class="dot">✓</span> Verified borrower · record shown in app</div>
-              <a class="rc-cta" href="/request-board">Fund this request</a>
-              <p class="rc-fine">Terms vary by request. Repayment is not guaranteed.</p>
+         </div>
+      </header>
+
+      <dialog class="menu-dialog" data-menu-dialog aria-label="Site menu">
+         <div class="menu-head">
+            <span class="brand"><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="34" height="34" />Moodeng Credit</span
+            ><button class="menu-close" type="button" data-menu-close aria-label="Close menu">✕</button>
+         </div>
+         <nav class="menu-links" aria-label="Mobile navigation">
+            <a href="/">For borrowers <span aria-hidden="true">→</span></a>
+            <a href="#requests">Sample requests <span aria-hidden="true">→</span></a>
+            <a href="#record">What lenders see <span aria-hidden="true">→</span></a>
+            <a href="#risk">The risks <span aria-hidden="true">→</span></a>
+            <a href="/about">Our story <span aria-hidden="true">→</span></a>
+         </nav>
+         <div class="menu-actions">
+            <a class="button" href="/request-board">Browse requests</a><a class="button secondary" href="/sign-in">Sign in</a>
+         </div>
+      </dialog>
+
+      <main id="main-content">
+         <section class="page-hero">
+            <div class="container">
+               <div class="page-hero-copy stack-lg">
+                  <p class="eyebrow">For lenders</p>
+                  <h1 class="page-title">Fund a request. See the <em>record first.</em></h1>
+                  <p class="lead">
+                     Review how much someone needs, the expected payback, the expected date, and their Moodeng history before you choose. No
+                     portfolio, no automatic allocation.
+                  </p>
+                  <div class="button-row">
+                     <a class="button" href="/request-board">Browse open requests <span class="arrow" aria-hidden="true">→</span></a>
+                     <a class="button subtle" href="#risk">Read the risks</a>
+                  </div>
+                  <p class="fine-print">Repayment is not guaranteed. Only fund an amount you can afford to lose.</p>
+               </div>
+               <div class="page-visual">
+                  <div class="device">
+                     <img
+                        src="/landing/assets/app/lender-board.jpg"
+                        alt="Moodeng lender request board showing requested amounts, expected paybacks, dates, and borrower details"
+                        width="640"
+                        height="1385"
+                        fetchpriority="high"
+                     />
+                  </div>
+                  <p class="visual-caption">The request board in the app. Sample accounts shown.</p>
+               </div>
             </div>
-            <div class="req-card">
-              <div class="rc-name">Maria needs <span class="rc-amt">$5</span></div>
-              <div class="rc-reason">🏥 Emergency medicine for my lil sister</div>
-              <div class="rc-grid">
-                <div class="rc-cell"><span class="k">You lend</span><span class="v">$5</span></div>
-                <div class="rc-cell"><span class="k">Expected back</span><span class="v">$10</span></div>
-                <div class="rc-cell"><span class="k">Expected by</span><span class="v">Jul 21</span></div>
-                <div class="rc-cell"><span class="k">Approx. duration</span><span class="v">1–2 weeks</span></div>
-              </div>
-              <div class="rc-cred"><span class="dot">✓</span> Verified borrower · record shown in app</div>
-              <a class="rc-cta" href="/request-board">Fund this request</a>
-              <p class="rc-fine">Terms vary by request. Repayment is not guaranteed.</p>
+         </section>
+
+         <section class="section-tight" aria-label="Moodeng lending record">
+            <div class="container">
+               <dl class="stat-line reveal">
+                  <div class="stat"><strong>102</strong><span>verified borrowers as of July 2026</span></div>
+                  <div class="stat"><strong>94%</strong><span>repaid on time in Moodeng’s book</span></div>
+                  <div class="stat"><strong>$2,030</strong><span>lent through Moodeng as of July 2026</span></div>
+                  <div class="stat"><strong>100%</strong><span>of outcomes kept on the borrower record</span></div>
+               </dl>
+               <p class="fine-print">
+                  Moodeng’s own lending records as of July 2026. These are early results, not forecasts. Past repayment does not guarantee
+                  future repayment.
+               </p>
             </div>
-          </div>
-          <div class="rot-dots" id="rotDots" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
-          <p class="hero-devnote">Amounts, reasons, and paybacks from real funded requests. Names changed; dates illustrative.</p>
-        </div>
-      </div>
-    </div>
-  </header>
+         </section>
 
-  <!-- ============ 2. MISSION ============ -->
-  <section class="sec-vs">
-    <div class="wrap reveal">
-      <p class="label">Why this matters</p>
-      <h2 class="sec-h">A small loan can replace a <span class="accent">much worse one.</span></h2>
-      <p class="sec-lead">A medicine bill, a broken phone, a jeepney that won’t start — often just a few dollars. When normal credit isn’t available, that small gap pushes people to expensive loan apps and street lenders.</p>
+         <section class="support-section" id="who-we-support" aria-labelledby="support-heading">
+            <div class="container">
+               <div class="support-heading reveal">
+                  <div class="stack-md">
+                     <p class="eyebrow">Who your funding supports</p>
+                     <h2 class="section-title wide" id="support-heading">
+                        Women who already carry the household. <em>Credit helps the week keep moving.</em>
+                     </h2>
+                  </div>
+                  <div class="support-heading-copy stack-md">
+                     <p class="lead">
+                        Most people borrowing through Moodeng today are women. Many are mothers, caregivers, and breadwinners balancing a
+                        household alongside work or a small business.
+                     </p>
+                     <p class="support-region">
+                        <strong>Centered in the Philippines.</strong> Moodeng also supports borrowers elsewhere in Southeast Asia.
+                     </p>
+                  </div>
+               </div>
 
-      <div class="chart-card">
-        <div class="ct">Expected payback on $15 borrowed for 2 weeks</div>
-        <div class="cs">Typical figures, July 2026</div>
-        <div class="vs-chart">
-          <div class="vs-y"><span>$36</span><span>$27</span><span>$18</span><span>$9</span><span>$0</span></div>
-          <div class="vs-grid"><i style="top:0"></i><i style="top:25%"></i><i style="top:50%"></i><i style="top:75%"></i><i style="top:100%;background:#DCD4E8"></i></div>
-          <div class="vs-col pop">
-            <div class="vs-cap" style="bottom:58%">Set upfront</div>
-            <div class="vs-bar" style="height:50%"><div class="vs-val">$18</div></div>
-          </div>
-          <div class="vs-col">
-            <div class="vs-bar" style="height:60%"><div class="vs-val">≈$21+</div></div>
-          </div>
-          <div class="vs-col">
-            <div class="vs-bar" style="height:92%"><div class="vs-val">≈$33</div></div>
-          </div>
-        </div>
-        <div class="vs-lb">
-          <div></div>
-          <div class="pop">Moodeng<small>expected payback</small></div>
-          <div>“0% interest” loan app<small>service fees added</small></div>
-          <div>street lender “5-6”<small>~54% per week</small></div>
-        </div>
-      </div>
-      <p class="fine">Street and app costs: SEC Philippines advisories + our borrower interviews. Moodeng figure: a typical loan from our book — each request sets its own terms.</p>
+               <div class="support-collage">
+                  <figure class="support-photo support-photo-main reveal">
+                     <img
+                        src="/landing/assets/life/school-fee.jpg"
+                        alt="Illustrative scene of a mother reviewing school papers at the kitchen table"
+                        width="1086"
+                        height="1448"
+                        loading="lazy"
+                     />
+                     <figcaption>
+                        <span>School and home</span>
+                        A mother planning around a school payment without dropping the rest of the week.
+                     </figcaption>
+                  </figure>
 
-      <p class="mission-line">Every request you fund gives someone another option <span class="accent">before the loan shark.</span></p>
+                  <figure class="support-photo support-photo-store reveal">
+                     <img
+                        src="/landing/assets/life/store-restock.jpg"
+                        alt="Illustrative scene of a woman managing stock in a neighborhood shop"
+                        width="1086"
+                        height="1448"
+                        loading="lazy"
+                     />
+                     <figcaption>
+                        <span>Store and family</span>
+                        A small-business owner restocking before the next cash cycle.
+                     </figcaption>
+                  </figure>
 
-      <div class="stat-row">
-        <div class="stat-chip"><div class="n" data-count="102">0</div><div class="k">verified borrowers</div></div>
-        <div class="stat-chip"><div class="n"><span data-count="94">0</span>%</div><div class="k">repaid on time</div></div>
-        <div class="stat-chip"><div class="n"><span data-count="2.2" data-dec="1">0</span>x</div><div class="k">referral growth</div></div>
-        <div class="stat-chip"><div class="n">$<span data-count="2030" data-comma="1">0</span></div><div class="k">lent so far</div></div>
-      </div>
-      <p class="fine">As of July 2026, from our own book. Small numbers, all real. Past repayment doesn’t guarantee future repayment.</p>
-    </div>
-  </section>
+                  <figure class="support-photo support-photo-work reveal">
+                     <img
+                        src="/landing/assets/faces/foodstall.jpg"
+                        alt="Illustrative portrait of a woman running a neighborhood food stall"
+                        width="720"
+                        height="960"
+                        loading="lazy"
+                     />
+                     <figcaption>
+                        <span>Work and caregiving</span>
+                        Income, household needs, and other people’s plans often meet in one person.
+                     </figcaption>
+                  </figure>
 
-  <!-- ============ 3. OPEN REQUESTS (Percent-style deal cards) ============ -->
-  <section class="sec-open">
-    <div class="wrap reveal">
-      <p class="label">Open requests</p>
-      <h2 class="sec-h">Choose the request that fits <span class="accent">you.</span></h2>
-      <p class="sec-lead">Each request has its own amount, expected payback, and expected repayment date. <b>Review the complete terms before funding.</b></p>
+                  <div class="support-ripple reveal" aria-label="Examples of household needs that small credit can help bridge">
+                     <div class="support-ripple-copy">
+                        <p class="eyebrow">The household ripple</p>
+                        <h3>A small timing gap rarely affects just one thing.</h3>
+                        <p>When income arrives later than life does, a short bridge can keep several responsibilities moving at once.</p>
+                     </div>
 
-      <div class="deal-list">
-        <div class="deal">
-          <div class="dn">Maria</div>
-          <div class="dt">Allowance — stretching to payday</div>
-          <div class="rows">
-            <div class="r"><span class="k">Needs</span><span class="v">$20</span></div>
-            <div class="r"><span class="k">Expected back</span><span class="v">$25</span></div>
-            <div class="r"><span class="k">Duration</span><span class="v">~3 weeks</span></div>
-            <div class="r"><span class="k">Record</span><span class="v">shown in app</span></div>
-          </div>
-          <a class="dlink" href="/request-board">View request →</a>
-        </div>
-        <div class="deal">
-          <div class="dn">Liza</div>
-          <div class="dt">Dental extraction emergency help</div>
-          <div class="rows">
-            <div class="r"><span class="k">Needs</span><span class="v">$15</span></div>
-            <div class="r"><span class="k">Expected back</span><span class="v">$30</span></div>
-            <div class="r"><span class="k">Duration</span><span class="v">set by request</span></div>
-            <div class="r"><span class="k">Record</span><span class="v">shown in app</span></div>
-          </div>
-          <a class="dlink" href="/request-board">View request →</a>
-        </div>
-        <div class="deal">
-          <div class="dn">Ana</div>
-          <div class="dt">Family expenses in the Philippines</div>
-          <div class="rows">
-            <div class="r"><span class="k">Needs</span><span class="v">$20</span></div>
-            <div class="r"><span class="k">Expected back</span><span class="v">$22</span></div>
-            <div class="r"><span class="k">Duration</span><span class="v">~2 weeks</span></div>
-            <div class="r"><span class="k">Record</span><span class="v">shown in app</span></div>
-          </div>
-          <a class="dlink" href="/request-board">View request →</a>
-        </div>
-      </div>
-      <p class="fine">Sample cards — amounts, reasons, and paybacks are from real funded requests on our book (names changed). The live board shows what’s open right now.</p>
-      <a class="cta dark" href="/request-board" style="margin-top:18px"><span class="btn-label">See what’s open now <span class="arrow">→</span></span></a>
-    </div>
-  </section>
+                     <div class="support-ripple-map" aria-hidden="true">
+                        <div class="support-ripple-center">
+                           <span>Payday comes later</span>
+                           <strong>Small credit bridge</strong>
+                        </div>
+                        <ul class="support-needs">
+                           <li>
+                              <span class="support-icon"><img src="/landing/assets/icons/grad-cap.png" alt="" /></span>
+                              <strong>School</strong>
+                           </li>
+                           <li>
+                              <span class="support-icon"><img src="/landing/assets/icons/receipt-calendar.png" alt="" /></span>
+                              <strong>Medicine</strong>
+                           </li>
+                           <li>
+                              <span class="support-icon"><img src="/landing/assets/icons/cooking-pot.png" alt="" /></span>
+                              <strong>Food</strong>
+                           </li>
+                           <li>
+                              <span class="support-icon"><img src="/landing/assets/icons/basket.png" alt="" /></span>
+                              <strong>Store stock</strong>
+                           </li>
+                        </ul>
+                     </div>
+                  </div>
+               </div>
 
-  <!-- ============ 4. HOW IT WORKS (real product screens) ============ -->
-  <section class="sec-how" id="how">
-    <div class="wrap reveal">
-      <p class="label">How it works</p>
-      <h2 class="sec-h">From request to <span class="accent">repayment.</span></h2>
+               <div class="support-note reveal">
+                  <p><strong>This is not a rescue story.</strong> It is access to small, clearly stated credit for women already doing the work.</p>
+                  <span>Images are illustrative and do not depict Moodeng borrowers.</span>
+               </div>
+            </div>
+         </section>
 
-      <div class="steps">
-        <div class="step">
-          <div class="shot"><img src="/landing/assets/app/step2-board-cards.jpg" alt="The Moodeng request board with open loan requests" loading="lazy" /></div>
-          <div class="st-body">
-            <div class="num">01</div>
-            <h3>Browse</h3>
-            <p>See real requests from verified borrowers.</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="shot"><img src="/landing/assets/app/lender-insights.jpg" alt="A borrower profile: verification, history, credit level" loading="lazy" /></div>
-          <div class="st-body">
-            <div class="num">02</div>
-            <h3>Review</h3>
-            <p>Check the reason, amount, expected payback, expected date, and the borrower’s history.</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="shot"><img src="/landing/assets/app/lender-board.jpg" alt="Funding a request on the board" loading="lazy" /></div>
-          <div class="st-body">
-            <div class="num">03</div>
-            <h3>Fund</h3>
-            <p>Choose a request that matches the amount and risk you’re comfortable with.</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="shot"><img src="/landing/assets/app/repay-slider.jpg" alt="A repayment in progress" loading="lazy" /></div>
-          <div class="st-body">
-            <div class="num">04</div>
-            <h3>Track</h3>
-            <p>Follow its status through repayment — on time, late, or defaulted.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+         <section class="request-showcase-section surface-night" id="requests" aria-labelledby="requests-heading">
+            <div class="container">
+               <div class="request-showcase-heading reveal">
+                  <p class="eyebrow">Request by request</p>
+                  <h2 id="requests-heading">The ask is human. <em>The terms stay clear.</em></h2>
+                  <p class="lead">
+                     Each borrower chooses the amount, expected payback, and date. You see their Moodeng record before you decide.
+                  </p>
+               </div>
 
-  <!-- ============ 5. YOUR CHOICE (no fixed plan) ============ -->
-  <section class="sec-choice">
-    <div class="wrap reveal">
-      <p class="label">Your choice</p>
-      <h2 class="sec-h">There is no fixed <span class="accent">investment plan.</span></h2>
-      <p class="sec-lead">Borrowers request different amounts for different reasons. You decide which requests to fund — and <b>how much of a request to fund</b> — after reviewing the complete terms.</p>
-      <div class="choice-chips">
-        <div class="cchip">
-          <div class="k">Amounts vary</div>
-          <div class="v">$5 – $20+</div>
-          <p>Current requests are generally small, but amounts vary by borrower and credit level.</p>
-        </div>
-        <div class="cchip">
-          <div class="k">Durations vary</div>
-          <div class="v">~2–4 weeks</div>
-          <p>Most requests are timed to a payday. The expected date is on every request.</p>
-        </div>
-        <div class="cchip">
-          <div class="k">Paybacks vary</div>
-          <div class="v">Shown before funding</div>
-          <p>Each borrower sets one flat expected payback. No APR, no rollover, nothing added later.</p>
-        </div>
-      </div>
-      <p class="fine">Figures reflect requests funded to date; they’re a snapshot, not a limit or a promise.</p>
-    </div>
-  </section>
+               <div class="request-poster-deck" aria-label="Examples of previously funded Moodeng requests">
+                  <article class="request-poster request-poster-butter reveal">
+                     <div class="request-poster-top">
+                        <span>01</span>
+                        <strong>Maria</strong>
+                     </div>
+                     <h3>Allowance, stretching to payday</h3>
+                     <div class="request-poster-amount">
+                        <span>Asking for</span>
+                        <strong>$20</strong>
+                     </div>
+                     <dl class="request-poster-terms">
+                        <div>
+                           <dt>Expected back</dt>
+                           <dd>$25</dd>
+                        </div>
+                        <div>
+                           <dt>Timing</dt>
+                           <dd>About 3 weeks</dd>
+                        </div>
+                     </dl>
+                     <p class="request-poster-record"><span aria-hidden="true">✓</span> Moodeng record visible</p>
+                  </article>
 
-  <!-- ============ 6. THE RECORD ============ -->
-  <section class="sec-record">
-    <div class="wrap reveal">
-      <p class="label">Before you fund</p>
-      <h2 class="sec-h">See more than a name and a <span class="accent">promise.</span></h2>
-      <p class="sec-lead">Compare the request with the borrower’s recorded history before making your decision.</p>
+                  <article class="request-poster request-poster-lavender reveal">
+                     <div class="request-poster-top">
+                        <span>02</span>
+                        <strong>Liza</strong>
+                     </div>
+                     <h3>Dental extraction emergency</h3>
+                     <div class="request-poster-amount">
+                        <span>Asking for</span>
+                        <strong>$15</strong>
+                     </div>
+                     <dl class="request-poster-terms">
+                        <div>
+                           <dt>Expected back</dt>
+                           <dd>$30</dd>
+                        </div>
+                        <div>
+                           <dt>Timing</dt>
+                           <dd>Set by request</dd>
+                        </div>
+                     </dl>
+                     <p class="request-poster-record"><span aria-hidden="true">✓</span> Moodeng record visible</p>
+                  </article>
 
-      <div class="stage">
-        <div class="stage-panel">
-          <div class="phone"><img class="screen" src="/landing/assets/app/lender-insights.jpg" alt="A real Moodeng borrower profile as lenders see it: verified badge, bio, credit level, loans repaid and defaults." loading="lazy" /></div>
-        </div>
-      </div>
-      <p class="shot-note">A real borrower profile as lenders see it. Sample account.</p>
+                  <article class="request-poster request-poster-mint reveal">
+                     <div class="request-poster-top">
+                        <span>03</span>
+                        <strong>Ana</strong>
+                     </div>
+                     <h3>Family expenses before payday</h3>
+                     <div class="request-poster-amount">
+                        <span>Asking for</span>
+                        <strong>$20</strong>
+                     </div>
+                     <dl class="request-poster-terms">
+                        <div>
+                           <dt>Expected back</dt>
+                           <dd>$22</dd>
+                        </div>
+                        <div>
+                           <dt>Timing</dt>
+                           <dd>About 2 weeks</dd>
+                        </div>
+                     </dl>
+                     <p class="request-poster-record"><span aria-hidden="true">✓</span> Moodeng record visible</p>
+                  </article>
+               </div>
 
-      <div class="rec-list">
-        <div class="rec-item"><span class="ck"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5 4.8 9 10 3.5"/></svg></span>Identity verified</div>
-        <div class="rec-item"><span class="ck"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5 4.8 9 10 3.5"/></svg></span>One account per person</div>
-        <div class="rec-item"><span class="ck"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5 4.8 9 10 3.5"/></svg></span>Previous loans</div>
-        <div class="rec-item"><span class="ck"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5 4.8 9 10 3.5"/></svg></span>Repayments &amp; late repayments</div>
-        <div class="rec-item"><span class="ck"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5 4.8 9 10 3.5"/></svg></span>Defaults</div>
-        <div class="rec-item"><span class="ck"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5 4.8 9 10 3.5"/></svg></span>Outstanding balance</div>
-        <div class="rec-item"><span class="ck"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5 4.8 9 10 3.5"/></svg></span>Credit level</div>
-        <div class="rec-item"><span class="ck"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5 4.8 9 10 3.5"/></svg></span>Reason for borrowing</div>
-      </div>
-    </div>
-  </section>
+               <div class="request-showcase-foot reveal">
+                  <p class="fine-print">“Expected back” is the borrower’s agreed repayment amount, not a promise from Moodeng.</p>
+                  <a class="button light" href="/request-board">Browse open requests <span class="arrow" aria-hidden="true">→</span></a>
+               </div>
+            </div>
+         </section>
 
-  <!-- ============ 7. RECENT OUTCOMES ============ -->
-  <section class="sec-outcomes">
-    <div class="wrap reveal">
-      <p class="label">Recent outcomes</p>
-      <h2 class="sec-h">Real loans. Recorded <span class="accent">outcomes.</span></h2>
-      <p class="sec-lead">From the app’s own records — reasons as the borrowers wrote them.</p>
+         <section
+            class="product-story product-story-lender"
+            aria-labelledby="lender-journey-heading"
+            data-product-story
+            data-story-active="0"
+         >
+            <div class="container">
+               <div class="split-heading reveal">
+                  <div class="stack-md">
+                     <p class="eyebrow">The actual lender journey</p>
+                     <h2 class="section-title wide" id="lender-journey-heading">Four decisions. <em>Real screens.</em></h2>
+                  </div>
+                  <p class="lead">
+                     Moodeng does not choose a request for you. You inspect the terms and record, then decide whether the amount and risk
+                     fit.
+                  </p>
+               </div>
+               <div class="product-story-layout">
+                  <aside class="product-story-stage" aria-hidden="true">
+                     <div class="story-stage-head">
+                        <span>The lender view</span>
+                        <span data-story-count>01 / 04</span>
+                     </div>
+                     <div class="story-phone">
+                        <figure class="product-story-screen is-active" data-story-screen="0">
+                           <img src="/landing/assets/app/step2-board-cards.jpg" alt="" width="640" height="1385" loading="lazy" />
+                        </figure>
+                        <figure class="product-story-screen" data-story-screen="1">
+                           <img src="/landing/assets/app/lender-insights.jpg" alt="" width="640" height="1385" loading="lazy" />
+                        </figure>
+                        <figure class="product-story-screen" data-story-screen="2">
+                           <img src="/landing/assets/app/lender-board.jpg" alt="" width="640" height="1385" loading="lazy" />
+                        </figure>
+                        <figure class="product-story-screen" data-story-screen="3">
+                           <img src="/landing/assets/app/step4-insights-top.jpg" alt="" width="640" height="1385" loading="lazy" />
+                        </figure>
+                     </div>
+                     <div class="story-stage-foot">
+                        <span class="story-screen-name" data-story-title>Compare the open requests.</span>
+                        <span class="story-progress" aria-hidden="true">
+                           <i class="is-active" data-story-dot></i><i data-story-dot></i><i data-story-dot></i><i data-story-dot></i>
+                        </span>
+                     </div>
+                  </aside>
 
-      <div class="deal-list">
-        <div class="deal">
-          <div class="dt" style="min-height:0">“Emergency medicine for my lil sister”</div>
-          <div class="rows">
-            <div class="r"><span class="k">Funded</span><span class="v">$5</span></div>
-            <div class="r"><span class="k">Expected back</span><span class="v">$10</span></div>
-            <div class="r"><span class="k">Repaid</span><span class="v">$10</span></div>
-            <div class="r"><span class="k">When</span><span class="v">Jun 2026</span></div>
-          </div>
-          <span class="st">✓ Repaid</span>
-        </div>
-        <div class="deal">
-          <div class="dt" style="min-height:0">“Family expenses in the Philippines”</div>
-          <div class="rows">
-            <div class="r"><span class="k">Funded</span><span class="v">$20</span></div>
-            <div class="r"><span class="k">Expected back</span><span class="v">$22</span></div>
-            <div class="r"><span class="k">Repaid</span><span class="v">$22</span></div>
-            <div class="r"><span class="k">Duration</span><span class="v">~2 weeks</span></div>
-          </div>
-          <span class="st">✓ Repaid</span>
-        </div>
-        <div class="deal">
-          <div class="dt" style="min-height:0">“My car broke down”</div>
-          <div class="rows">
-            <div class="r"><span class="k">Funded</span><span class="v">$10</span></div>
-            <div class="r"><span class="k">Expected back</span><span class="v">$12</span></div>
-            <div class="r"><span class="k">Repaid</span><span class="v">$12</span></div>
-            <div class="r"><span class="k">Duration</span><span class="v">~2.5 weeks</span></div>
-          </div>
-          <span class="st">✓ Repaid</span>
-        </div>
-        <div class="deal">
-          <div class="dt" style="min-height:0">“Allowance” — stretching to payday</div>
-          <div class="rows">
-            <div class="r"><span class="k">Funded</span><span class="v">$20</span></div>
-            <div class="r"><span class="k">Expected back</span><span class="v">$25</span></div>
-            <div class="r"><span class="k">Repaid</span><span class="v">$25</span></div>
-            <div class="r"><span class="k">Duration</span><span class="v">~3 weeks</span></div>
-          </div>
-          <span class="st">✓ Repaid</span>
-        </div>
-        <div class="deal dark">
-          <div class="dn">Not every loan comes back.</div>
-          <div class="dt">Some are repaid late; a few default. Every outcome — good or bad — goes on the borrower’s record, and a default freezes their account.</div>
-          <div class="rows">
-            <div class="r"><span class="k">On time so far</span><span class="v">94%</span></div>
-            <div class="r"><span class="k">Defaults</span><span class="v">recorded, visible</span></div>
-          </div>
-          <span class="st bad">✗ Defaults happen</span>
-        </div>
-      </div>
-      <p class="fine">Our loan records, July 2026. Amounts in USDC (digital dollars); each payback was set by the borrower when they asked.</p>
-    </div>
-  </section>
+                  <ol class="product-story-steps">
+                     <li class="product-story-step is-active" data-story-step="0" aria-current="step">
+                        <div class="story-step-copy">
+                           <span class="num">01 · BROWSE</span>
+                           <h3>Compare the open requests.</h3>
+                           <p>
+                              Start with the reason, requested amount, expected return, and due date. Nothing is automatically allocated;
+                              you choose which request deserves a closer look.
+                           </p>
+                        </div>
+                        <figure class="story-mobile-screen">
+                           <img
+                              src="/landing/assets/app/step2-board-cards.jpg"
+                              alt="Moodeng request board with open borrower requests"
+                              loading="lazy"
+                              width="640"
+                              height="1385"
+                           />
+                           <figcaption>Actual request board</figcaption>
+                        </figure>
+                     </li>
+                     <li class="product-story-step" data-story-step="1">
+                        <div class="story-step-copy">
+                           <span class="num">02 · REVIEW</span>
+                           <h3>Read the record, including the misses.</h3>
+                           <p>
+                              Open the borrower profile to see verification, credit level, completed loans, late outcomes, and defaults. The
+                              record is context, not a guarantee.
+                           </p>
+                        </div>
+                        <figure class="story-mobile-screen">
+                           <img
+                              src="/landing/assets/app/lender-insights.jpg"
+                              alt="Borrower profile with verification, credit level, repayment history, and defaults"
+                              loading="lazy"
+                              width="640"
+                              height="1385"
+                           />
+                           <figcaption>Actual borrower record</figcaption>
+                        </figure>
+                     </li>
+                     <li class="product-story-step" data-story-step="2">
+                        <div class="story-step-copy">
+                           <span class="num">03 · FUND</span>
+                           <h3>Choose one request yourself.</h3>
+                           <p>
+                              Return to the board, open the request, and fund only an amount you are comfortable putting at risk. Moodeng
+                              does not promise the expected return.
+                           </p>
+                        </div>
+                        <figure class="story-mobile-screen">
+                           <img
+                              src="/landing/assets/app/lender-board.jpg"
+                              alt="Lender request board with actions to open a request and view borrower details"
+                              loading="lazy"
+                              width="640"
+                              height="1385"
+                           />
+                           <figcaption>Actual lender request board</figcaption>
+                        </figure>
+                     </li>
+                     <li class="product-story-step" data-story-step="3">
+                        <div class="story-step-copy">
+                           <span class="num">04 · FOLLOW</span>
+                           <h3>The outcome returns to the record.</h3>
+                           <p>
+                              On time, late, partial, or defaulted, the result remains visible in Moodeng. That history gives the next
+                              lender more evidence than the last one had.
+                           </p>
+                        </div>
+                        <figure class="story-mobile-screen">
+                           <img
+                              src="/landing/assets/app/step4-insights-top.jpg"
+                              alt="Moodeng borrower record showing credit level, loans, repayments, and defaults"
+                              loading="lazy"
+                              width="640"
+                              height="1385"
+                           />
+                           <figcaption>Actual recorded outcomes</figcaption>
+                        </figure>
+                     </li>
+                  </ol>
+               </div>
+            </div>
+         </section>
 
-  <!-- ============ 8. BORROWER STORIES ============ -->
-  <section class="sec-say">
-    <div class="wrap reveal">
-      <p class="label">Borrower stories</p>
-      <h2 class="sec-h">The person behind your <span class="accent">decision.</span></h2>
-      <p class="sec-lead">Borrowers explain what happened, why other credit wasn’t available, and how repaying builds a record they can use.</p>
-      <div class="vidrow">
-        <a class="vid" href="https://youtube.com/shorts/2ZmuK7Vq40k" target="_blank" rel="noreferrer">
-          <img src="https://i.ytimg.com/vi/2ZmuK7Vq40k/hqdefault.jpg" alt="Borrower video" loading="lazy" />
-          <span class="play"><span>▶</span></span>
-          <span class="tag">Real borrower</span>
-        </a>
-        <a class="vid" href="https://youtube.com/shorts/t8dnE2h4mNk" target="_blank" rel="noreferrer">
-          <img src="https://i.ytimg.com/vi/t8dnE2h4mNk/hqdefault.jpg" alt="Borrower video" loading="lazy" />
-          <span class="play"><span>▶</span></span>
-          <span class="tag">Real borrower</span>
-        </a>
-      </div>
-      <p class="fine" style="text-align:center">No paid actors. No stock photos.</p>
-    </div>
-  </section>
+         <section class="section surface-lavender" id="record" aria-labelledby="record-heading">
+            <div class="container proof-grid">
+               <div class="stack-lg reveal">
+                  <p class="eyebrow">Before you fund</p>
+                  <h2 class="section-title" id="record-heading">More than a name and a <em>promise.</em></h2>
+                  <p class="lead">
+                     The profile gives practical context without exposing identity documents, phone contacts, or private messages.
+                  </p>
+                  <ul class="record-list">
+                     <li><span class="check" aria-hidden="true">✓</span>One verified person per account</li>
+                     <li><span class="check" aria-hidden="true">✓</span>Previous loans and repayments</li>
+                     <li><span class="check" aria-hidden="true">✓</span>Late payments and defaults</li>
+                     <li><span class="check" aria-hidden="true">✓</span>Outstanding balance and credit level</li>
+                     <li><span class="check" aria-hidden="true">✓</span>The reason the borrower chose to share</li>
+                  </ul>
+               </div>
+               <div class="page-visual cream reveal">
+                  <div class="device">
+                     <img
+                        src="/landing/assets/app/lender-insights.jpg"
+                        alt="Moodeng borrower profile showing verification, credit level, total loans, repayments, defaults, and lender diversity"
+                        loading="lazy"
+                        width="640"
+                        height="1385"
+                     />
+                  </div>
+                  <p class="visual-caption">A sample borrower profile as lenders see it.</p>
+               </div>
+            </div>
+         </section>
 
-  <!-- ============ 9. RISK ============ -->
-  <section class="sec-honest" id="risk">
-    <img class="dcloud" src="/landing/assets/clouds/cloud-2.svg" style="width:130px; top:30px; right:-30px" alt="" />
-    <img class="dcloud" src="/landing/assets/clouds/cloud-1.svg" style="width:100px; bottom:40px; left:-30px" alt="" />
-    <div class="wrap reveal">
-      <p class="label">The honest part</p>
-      <h2 class="sec-h">The expected date is not a <span class="accent">guarantee.</span></h2>
+         <section class="section" aria-labelledby="outcomes-heading">
+            <div class="container">
+               <div class="split-heading reveal">
+                  <div class="stack-md">
+                     <p class="eyebrow">Recorded outcomes</p>
+                     <h2 class="section-title wide" id="outcomes-heading">Real loans. Results that stay <em>visible.</em></h2>
+                  </div>
+                  <p class="lead">
+                     Good outcomes matter, but hiding the misses would make the record useless. Moodeng keeps late payments and defaults
+                     visible too.
+                  </p>
+               </div>
+               <div class="request-grid">
+                  <article class="request-card reveal">
+                     <h3>Emergency medicine</h3>
+                     <p class="reason">Borrowed $5, expected back $10</p>
+                     <dl class="request-terms">
+                        <div>
+                           <dt>Repaid</dt>
+                           <dd>$10</dd>
+                        </div>
+                        <div>
+                           <dt>Outcome</dt>
+                           <dd style="color: var(--green)">On time</dd>
+                        </div>
+                     </dl>
+                  </article>
+                  <article class="request-card reveal">
+                     <h3>Family expenses</h3>
+                     <p class="reason">Borrowed $20, expected back $22</p>
+                     <dl class="request-terms">
+                        <div>
+                           <dt>Repaid</dt>
+                           <dd>$22</dd>
+                        </div>
+                        <div>
+                           <dt>Outcome</dt>
+                           <dd style="color: var(--green)">On time</dd>
+                        </div>
+                     </dl>
+                  </article>
+                  <article class="request-card reveal">
+                     <h3>Not every loan returns</h3>
+                     <p class="reason">Some repayments are late, partial, or defaulted.</p>
+                     <dl class="request-terms">
+                        <div>
+                           <dt>Defaults</dt>
+                           <dd style="color: var(--rose)">Recorded</dd>
+                        </div>
+                        <div>
+                           <dt>Account</dt>
+                           <dd>Frozen after default</dd>
+                        </div>
+                     </dl>
+                  </article>
+               </div>
+               <p class="fine-print">Examples are from Moodeng’s own records as of July 2026. Reasons are shortened for layout.</p>
+            </div>
+         </section>
 
-      <div class="risk-cols">
-        <div class="rcard">
-          <h4>WHAT YOU KNOW</h4>
-          <ul>
-            <li><span class="m ok">✓</span>The amount requested</li>
-            <li><span class="m ok">✓</span>The expected payback</li>
-            <li><span class="m ok">✓</span>The expected repayment date</li>
-            <li><span class="m ok">✓</span>The borrower’s history</li>
-            <li><span class="m ok">✓</span>The reason for the loan</li>
-          </ul>
-        </div>
-        <div class="rcard">
-          <h4>WHAT CAN STILL HAPPEN</h4>
-          <ul>
-            <li><span class="m warn">!</span>The borrower may repay late</li>
-            <li><span class="m warn">!</span>The borrower may repay partially</li>
-            <li><span class="m warn">!</span>The borrower may default</li>
-            <li><span class="m warn">!</span>Your expected return is not guaranteed</li>
-            <li><span class="m warn">!</span>Your money may be outstanding longer than expected</li>
-          </ul>
-        </div>
-      </div>
+         <section class="section surface-night" id="risk" aria-labelledby="risk-heading">
+            <div class="container">
+               <div class="split-heading reveal">
+                  <div class="stack-md">
+                     <p class="eyebrow">The honest part</p>
+                     <h2 class="section-title wide" id="risk-heading">The expected date is not a <em>guarantee.</em></h2>
+                  </div>
+                  <p class="lead">
+                     Moodeng shows more context and keeps a record. Neither removes lending risk. You can lose the amount you fund.
+                  </p>
+               </div>
+               <div class="risk-grid">
+                  <div class="reveal">
+                     <p class="eyebrow">What you know</p>
+                     <ul class="risk-list">
+                        <li><span class="ok">✓</span>The requested amount</li>
+                        <li><span class="ok">✓</span>The expected payback</li>
+                        <li><span class="ok">✓</span>The expected repayment date</li>
+                        <li><span class="ok">✓</span>The borrower’s Moodeng history</li>
+                        <li><span class="ok">✓</span>The reason they chose to share</li>
+                     </ul>
+                  </div>
+                  <div class="reveal">
+                     <p class="eyebrow">What can still happen</p>
+                     <ul class="risk-list">
+                        <li><span class="warn">!</span>Repayment can arrive late</li>
+                        <li><span class="warn">!</span>A borrower can repay only part</li>
+                        <li><span class="warn">!</span>A borrower can default</li>
+                        <li><span class="warn">!</span>Your money can stay outstanding longer</li>
+                        <li><span class="warn">!</span>You can lose what you funded</li>
+                     </ul>
+                  </div>
+               </div>
+               <div class="callout reveal" style="margin-top: 48px; background: var(--night-2)">
+                  <h2>What Moodeng does after a default</h2>
+                  <p>
+                     The account is frozen and the default remains visible to future lenders. The borrower cannot create a fresh verified
+                     account. Moodeng does not insure the loan, promise repayment, or harass the borrower.
+                  </p>
+               </div>
+            </div>
+         </section>
 
-      <div class="honest-note"><b>“Expected back” is the borrower’s agreed repayment amount — not a promise from Moodeng.</b> There’s no insurance fund. Only fund an amount you can afford to lose.</div>
-      <div class="honest-note"><b>What happens on a default:</b> the account is frozen, the miss goes on the record every future lender sees, and — because every borrower is one verified person — there’s no starting over with a fresh account. What never happens: harassment.</div>
-    </div>
-  </section>
+         <section class="section" aria-labelledby="lender-faq-heading">
+            <div class="container faq-layout">
+               <div class="stack-md reveal">
+                  <p class="eyebrow">Questions lenders ask</p>
+                  <h2 class="section-title" id="lender-faq-heading">Clear enough to decide <em>for yourself.</em></h2>
+                  <p class="lead">Moodeng is early. The goal is to show the small real record, not inflate it into a promise.</p>
+               </div>
+               <div class="faq-list reveal">
+                  <details>
+                     <summary>Is repayment guaranteed?</summary>
+                     <p class="faq-answer">
+                        No. A borrower can pay late, repay partially, or default. Only fund an amount you can afford to lose.
+                     </p>
+                  </details>
+                  <details>
+                     <summary>What does “expected back” mean?</summary>
+                     <p class="faq-answer">
+                        It is the amount the borrower agreed to repay when they created the request. It is visible before you fund, but it
+                        is not guaranteed by Moodeng.
+                     </p>
+                  </details>
+                  <details>
+                     <summary>How do I choose a request?</summary>
+                     <p class="faq-answer">
+                        Read the reason, complete terms, and repayment record. First-time borrowers have little history, so their limits
+                        begin small.
+                     </p>
+                  </details>
+                  <details>
+                     <summary>When should I expect repayment?</summary>
+                     <p class="faq-answer">
+                        Every request shows an expected date. Many are timed to payday, but late and partial repayments happen.
+                     </p>
+                  </details>
+                  <details>
+                     <summary>What happens after funding?</summary>
+                     <p class="faq-answer">
+                        The app tracks the loan through repayment. The final outcome remains on the borrower’s Moodeng record.
+                     </p>
+                  </details>
+               </div>
+            </div>
+         </section>
 
-  <!-- ============ 10. FAQ ============ -->
-  <section class="sec-faq">
-    <div class="wrap reveal">
-      <p class="label">Common questions</p>
-      <h3 class="tile-h">Questions lenders ask <span class="accent">us.</span></h3>
-      <div class="faq-list">
-        <details>
-          <summary>Is this charity or investing?</summary>
-          <p class="a">Neither. It’s <b>person-to-person lending</b>: you help someone through a tight week, and they pay back what they agreed — a little more than they borrowed. If you want to grow savings, this isn’t it. If you want your money to mean something and come back, it is.</p>
-        </details>
-        <details>
-          <summary>What’s the track record?</summary>
-          <p class="a">As of July 2026: <b>102 verified borrowers, 94% repaid on time</b>, every outcome on a public record. We’re early; we’d rather show small real numbers than big invented ones.</p>
-        </details>
-        <details>
-          <summary>What do I actually earn?</summary>
-          <p class="a">Each request sets its own expected payback — fund <b>$15, expected back $18</b> is typical, but amounts and paybacks vary by request. No APR, no compounding: the payback you see when you fund is the payback the borrower agreed to. Repayment is not guaranteed.</p>
-        </details>
-        <details>
-          <summary>What happens if someone doesn’t repay?</summary>
-          <p class="a">You can lose what you lent — we won’t pretend otherwise. Every borrower is verified as <b>one real person</b> (no fresh accounts after a default), and a miss freezes their borrowing and goes on their record. What we don’t do: harass anyone.</p>
-        </details>
-        <details>
-          <summary>How do I put money in?</summary>
-          <p class="a">With a <b>debit card</b>, right in the app — or digital dollars you already have. Funding a small request takes about a minute.</p>
-        </details>
-        <details>
-          <summary>When do I get paid back?</summary>
-          <p class="a">Each request shows its expected repayment date before you fund, and the app shows the loan’s status along the way. In practice most repayments land <b>on payday</b> — but late and partial repayments happen, and the record shows them.</p>
-        </details>
-        <details>
-          <summary>How do I choose well?</summary>
-          <p class="a">Read the reason, then the record. Repaid loans and on-time history show you how someone behaves. First-timers have no record yet — their requests are capped small, so no single yes costs much.</p>
-        </details>
-      </div>
-    </div>
-  </section>
+         <section class="final-cta" aria-labelledby="lender-final-heading">
+            <div class="narrow stack-lg reveal">
+               <p class="eyebrow">Start with one request</p>
+               <h2 class="section-title wide" id="lender-final-heading">
+                  Read the terms. Read the record. Make your <em>own decision.</em>
+               </h2>
+               <p class="lead">The live board is open to browse before you fund.</p>
+               <div class="button-row">
+                  <a class="button light" href="/request-board">Browse open requests <span class="arrow" aria-hidden="true">→</span></a
+                  ><a class="button subtle" href="/">Return to borrower page</a>
+               </div>
+               <p class="fine-print" style="margin-inline: auto">Lending involves risk, including loss of principal.</p>
+            </div>
+         </section>
+      </main>
 
-  <!-- ============ 11. FINAL CTA ============ -->
-  <section class="sec-final">
-    <div class="wrap reveal">
-      <img class="cta-hippo" src="/landing/assets/hippos/thumb-up-right.png" alt="" />
-      <p class="label">Start small</p>
-      <h2>One request. One person. <span class="accent">Your decision.</span></h2>
-      <p class="sec-lead" style="text-align:center">Review the amount, expected payback, date, and history before you choose.</p>
-      <a class="cta dark" href="/request-board"><span class="btn-label">Browse open requests <span class="arrow">→</span></span></a>
-      <p class="reassure">Request amounts and repayment periods vary. Repayment is not guaranteed.</p>
-    </div>
-  </section>
-
-  <footer class="site-footer">
-    <div class="wrap">
-      <div class="f-brand">
-        <img src="/landing/assets/brand/moodeng-logo-small.png" alt="" />
-        <b>Moodeng Credit</b>
-      </div>
-      <p class="f-tag">Small loans, funded by real people.</p>
-      <div class="f-cols">
-        <div>
-          <h4>Talk to a human</h4>
-          <a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
-          <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Telegram</a>
-          <a href="mailto:support@moodengcredit.com">Email us</a>
-        </div>
-        <div>
-          <h4>The details</h4>
-          <a href="/">Home</a>
-          <a href="/request-board">Request board</a>
-          <a href="https://moodeng.gitbook.io/credit" target="_blank" rel="noreferrer">How credit levels work</a>
-        </div>
-      </div>
-      <p class="f-fine">© 2026 Moodeng Credit. Figures on this page are from Moodeng’s own lending operations as of July 2026 unless sourced otherwise. Sample request cards use terms from real funded requests; names changed and dates illustrative. Lending involves risk, including loss of the amount lent.</p>
-    </div>
-  </footer>
-
-  <script>
-    // ---- Header surface on scroll ----
-    (function () {
-      var head = document.getElementById("siteHead");
-      if (!head) return;
-      var onScroll = function () { head.classList.toggle("scrolled", window.scrollY > 24); };
-      window.addEventListener("scroll", onScroll, { passive: true });
-      onScroll();
-    })();
-
-    // ---- Menu drawer ----
-    (function () {
-      var drawer = document.getElementById("drawer");
-      var openBtn = document.getElementById("menuOpen");
-      var closeBtn = document.getElementById("menuClose");
-      if (!drawer || !openBtn || !closeBtn) return;
-      function setOpen(open) {
-        drawer.classList.toggle("open", open);
-        document.body.classList.toggle("drawer-lock", open);
-        openBtn.setAttribute("aria-expanded", String(open));
-        if (open) closeBtn.focus();
-      }
-      openBtn.addEventListener("click", function () { setOpen(true); });
-      closeBtn.addEventListener("click", function () { setOpen(false); });
-      document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
-    })();
-
-    // ---- Spinner on app-bound links ----
-    (function () {
-      var loadingLinks = document.querySelectorAll('.head-signin, .drawer .d-foot a[href="/sign-in"], .cta[href^="/request-board"]');
-      loadingLinks.forEach(function (a) { a.addEventListener("click", function () { a.classList.add("is-loading"); }); });
-      window.addEventListener("pageshow", function (e) {
-        if (!e.persisted) return;
-        loadingLinks.forEach(function (a) { a.classList.remove("is-loading"); });
-      });
-    })();
-
-    // ---- Hero request rotator: three real requests, 5s cadence ----
-    (function () {
-      var rot = document.getElementById("heroRot");
-      if (!rot) return;
-      var cards = rot.querySelectorAll(".req-card");
-      var dots = document.querySelectorAll("#rotDots span");
-      if (cards.length < 2) return;
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      var i = 0;
-      setInterval(function () {
-        i = (i + 1) % cards.length;
-        cards.forEach(function (c, j) { c.classList.toggle("on", j === i); });
-        dots.forEach(function (d, j) { d.classList.toggle("on", j === i); });
-      }, 5000);
-    })();
-
-    // ---- Count-up stats ----
-    (function () {
-      var els = document.querySelectorAll("[data-count]");
-      if (!els.length) return;
-      var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      function fmt(el, v) {
-        var dec = parseInt(el.getAttribute("data-dec") || "0", 10);
-        var s = v.toFixed(dec);
-        if (el.hasAttribute("data-comma")) s = Number(s).toLocaleString("en-US");
-        el.textContent = s;
-      }
-      function run(el) {
-        var target = parseFloat(el.getAttribute("data-count"));
-        if (reduced) { fmt(el, target); return; }
-        var t0 = performance.now(), dur = 1400;
-        (function tick(t) {
-          var r = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - r, 3);
-          fmt(el, target * e);
-          if (r < 1) requestAnimationFrame(tick); else fmt(el, target);
-        })(t0);
-      }
-      var fired = false;
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (e) { if (e.isIntersecting && !fired) { fired = true; els.forEach(run); } });
-      }, { threshold: 0.3 });
-      io.observe(els[0].closest("section") || els[0].parentElement);
-    })();
-
-    // ---- Reveal on scroll ----
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
-    }, { threshold: 0.12 });
-    document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
-  </script>
-</body>
+      <footer class="site-footer">
+         <div class="container">
+            <div class="footer-grid">
+               <div class="footer-brand">
+                  <a class="brand" href="/"
+                     ><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="34" height="34" />Moodeng Credit</a
+                  >
+                  <p>Small requests, visible terms, recorded outcomes.</p>
+               </div>
+               <div class="footer-links">
+                  <div>
+                     <h2>Explore</h2>
+                     <a href="/request-board">Request board</a><a href="/">For borrowers</a><a href="/about">Our story</a>
+                  </div>
+                  <div>
+                     <h2>Understand</h2>
+                     <a href="#record">What lenders see</a><a href="#risk">Lending risk</a
+                     ><a href="https://moodeng.gitbook.io/credit" target="_blank" rel="noreferrer">Credit levels</a>
+                  </div>
+                  <div>
+                     <h2>Talk to us</h2>
+                     <a href="mailto:support@moodengcredit.com">Email</a
+                     ><a href="https://t.me/jimmymoodengcredit" target="_blank" rel="noreferrer">Telegram</a
+                     ><a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
+                  </div>
+               </div>
+            </div>
+            <p class="footer-fine">
+               © 2026 Moodeng Credit. Figures on this page are from Moodeng’s own lending operations as of July 2026 unless stated
+               otherwise. Sample request names are changed and dates are illustrative. Lending involves risk, including loss of the amount
+               lent. <a href="/privacy-policy">Privacy policy</a> · <a href="/terms">Terms of service</a>
+            </p>
+         </div>
+      </footer>
+      <script type="module" src="/landing/site.js?v=20260715-story2"></script>
+   </body>
 </html>
