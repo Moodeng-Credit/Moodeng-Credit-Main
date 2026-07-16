@@ -3525,6 +3525,134 @@ li {
    font-size: 0.9rem;
 }
 
+.team-member .text-link + .text-link {
+   margin-left: 18px;
+}
+
+/* about: story stages — the icon assets are ~240px tall, so they render at
+   native-ish size on a gradient tile with a receipt card (old-page pattern)
+   instead of being stretched to fill the panel */
+.chapter-stage {
+   position: relative;
+   display: grid;
+   place-items: center;
+   align-content: center;
+   min-height: 360px;
+   padding: 48px 32px;
+   border-radius: var(--radius-lg);
+}
+
+.chapter-stage.night {
+   background: radial-gradient(120% 100% at 30% 0%, var(--night-2) 0%, var(--night) 100%);
+}
+
+.chapter-stage.lav {
+   background: radial-gradient(120% 100% at 30% 0%, var(--lavender-50) 0%, var(--lavender-200) 100%);
+}
+
+.chapter-stage .stage-obj {
+   position: relative;
+   z-index: 1;
+   width: auto;
+   height: 110px;
+   margin-bottom: -30px;
+   filter: drop-shadow(0 14px 18px oklch(28% 0.08 296 / 0.28));
+}
+
+.stage-receipt {
+   max-width: 280px;
+   padding: 42px 26px 22px;
+   border-radius: 16px;
+   background: #fff;
+   box-shadow: var(--shadow-md);
+   text-align: center;
+}
+
+.stage-receipt .k {
+   display: block;
+   font-size: 11px;
+   font-weight: 800;
+   letter-spacing: 0.14em;
+   text-transform: uppercase;
+   color: var(--muted);
+}
+
+.stage-receipt strong {
+   display: block;
+   margin-top: 6px;
+   font-family: var(--font-display);
+   font-size: 26px;
+   font-weight: 400;
+   letter-spacing: -0.02em;
+   color: var(--ink);
+}
+
+.stage-receipt small {
+   display: block;
+   margin-top: 8px;
+   font-size: 12.5px;
+   font-weight: 600;
+   line-height: 1.5;
+   color: var(--muted);
+}
+
+/* real photo = primary avatar; hippo persona = buddy peeking over the corner */
+.persona-ava {
+   position: relative;
+   flex: 0 0 auto;
+   display: block;
+}
+
+.persona-ava .p-photo {
+   display: block;
+   width: 88px;
+   height: 88px;
+   border-radius: 50%;
+   border: 3px solid var(--lavender-200);
+   object-fit: cover;
+}
+
+.persona-ava .p-buddy {
+   position: absolute;
+   right: -13px;
+   bottom: -7px;
+   height: 40px;
+   filter: drop-shadow(0 3px 6px oklch(28% 0.08 296 / 0.25));
+}
+
+.persona-card {
+   display: flex;
+   align-items: center;
+   gap: 20px;
+   max-width: 400px;
+   padding: 24px;
+   border: 1px solid var(--line);
+   border-radius: var(--radius-md);
+   background: var(--paper);
+   box-shadow: var(--shadow-md);
+}
+
+.persona-card .p-photo {
+   width: 72px;
+   height: 72px;
+}
+
+.persona-card b {
+   display: block;
+   font-family: var(--font-display);
+   font-size: 1.1rem;
+   font-weight: 400;
+   letter-spacing: -0.02em;
+}
+
+.persona-card b + span {
+   display: block;
+   margin-top: 4px;
+   font-size: 0.9rem;
+   line-height: 1.5;
+   color: var(--muted);
+}
+
 .support-section {
    position: relative;
    overflow: hidden;
@@ -3971,7 +4099,8 @@ li {
    }
 
    .guide-step:nth-child(even) .guide-media,
-   .chapter:nth-child(even) .chapter-media {
+   .chapter:nth-child(even) .chapter-media,
+   .chapter:nth-child(even) .chapter-stage {
       order: 1;
    }
 
@@ -4301,7 +4430,7 @@ li {
       color: var(--ink);
       padding: 22px 24px 24px;
       box-shadow: 0 30px 70px oklch(8% 0.04 296 / 0.3);
-      transition: background-color 420ms var(--ease-out);
+      transition: background-color 700ms var(--ease-out);
    }
 
    html[data-landing-version='2'] .deal-section[data-deal-active='1'] .deal-visual-stage {
@@ -4752,6 +4881,13 @@ li {
    }
 
    html[data-landing-version='2'] .deal-section.is-scrubbed .term-list li {
+      transition: none;
+   }
+
+   /* the stage panels scrub with the scroll the same way (site.js writes
+      opacity/transform per frame) — the class transition would lag a frame
+      behind every inline write and judder */
+   html[data-landing-version='2'] .deal-section.is-scrubbed .deal-panel {
       transition: none;
    }
 
