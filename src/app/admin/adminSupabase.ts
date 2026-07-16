@@ -1124,6 +1124,73 @@ export async function setFraudAlertStatus(alertId: string, status: FraudAlertSta
 }
 
 // ---------------------------------------------------------------------------
+// Referral codes (referral_codes) — RLS allows admin full CRUD.
+// ---------------------------------------------------------------------------
+export interface AdminReferralCode {
+   id: string;
+   code: string;
+   boost_amount: number;
+   is_active: boolean;
+   max_uses: number | null;
+   current_uses: number;
+   expires_at: string | null;
+   created_at: string;
+}
+
+export async function listReferralCodes(): Promise<AdminReferralCode[]> {
+   const supabase = getSupabaseBrowserClient();
+   const data = (await requireOk(
+      supabase
+         .from('referral_codes')
+         .select('id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at')
+         .order('created_at', { ascending: false })
+   )) as AnyRow[] | null;
+   return (data ?? []).map((row) => ({ ...row, boost_amount: toNumber(row.boost_amount) })) as AdminReferralCode[];
+}
+
+export async function createReferralCode(input: {
+   code: string;
+   boost_amount: number;
+   max_uses?: number | null;
+   expires_at?: string | null;
+}): Promise<AdminReferralCode> {
+   const supabase = getSupabaseBrowserClient();
+   const data = await requireOk(
+      supabase
+         .from('referral_codes')
+         .insert({
+            code: input.code.trim().toUpperCase(),
+            boost_amount: input.boost_amount,
+            max_uses: input.max_uses ?? null,
+            expires_at: input.expires_at ?? null
+         })
+         .select('id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at')
+         .single()
+   );
+   return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+}
+
+export async function setReferralCodeActive(id: string, isActive: boolean): Promise<AdminReferralCode> {
+   const supabase = getSupabaseBrowserClient();
+   const data = await requireOk(
+      supabase
+         .from('referral_codes')
+         .update({ is_active: isActive })
+         .eq('id', id)
+         .select('id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at')
+         .single()
+   );
+   return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+}
+
+// Only for codes with current_uses === 0 — FK refs from users/loans block redeemed codes.
+export async function deleteReferralCode(id: string): Promise<void> {
+   const supabase = getSupabaseBrowserClient();
+   const { error } = await supabase.from('referral_codes').delete().eq('id', id);
+   if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
 // Whitelist management (fraud_detection_whitelist) — RLS allows admin write.
 // ---------------------------------------------------------------------------
 export async function addToWhitelist(userId: string, reason?: string | null) {
