@@ -47,7 +47,10 @@ export const evaluateCreditProgression = ({
    const isFullyRepaid = totalRepayment > 0 && repaid >= totalRepayment;
    const paidAtDate = parseDateSafely(paidAt);
    const dueDateValue = parseDateSafely(dueDate);
-   const isLate = paidAtDate.getTime() > dueDateValue.getTime();
+   // Due dates are stored at midnight UTC. A loan is on time through the entire due date and only
+   // becomes overdue the day AFTER the due date (a loan due the 15th is overdue starting the 16th).
+   const OVERDUE_AFTER_DUE_DATE_MS = 24 * 60 * 60 * 1000;
+   const isLate = paidAtDate.getTime() >= dueDateValue.getTime() + OVERDUE_AFTER_DUE_DATE_MS;
    const meetsCumulativeVolume = cumulativeBorrowed >= normalizedLimit;
    const shouldPause = isLate;
    const canLevelUp =

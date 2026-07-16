@@ -115,6 +115,24 @@ describe('Credit leveling logic', () => {
       expect(evaluation.shouldLevelUp).toBe(false);
    });
 
+   it('treats a repayment made on the due date itself as on time', () => {
+      const evaluation = evaluateCreditProgression({
+         currentLimit: 20,
+         isVerified: true,
+         isPaused: false,
+         repaidAmount: 25,
+         totalRepaymentAmount: 25,
+         cumulativeBorrowedAmount: 20,
+         // due at midnight UTC, repaid later the same day — must not be flagged late
+         dueDate: '2025-02-01T00:00:00.000Z',
+         paidAt: '2025-02-01T12:24:00.000Z'
+      });
+
+      expect(evaluation.isLate).toBe(false);
+      expect(evaluation.shouldPause).toBe(false);
+      expect(evaluation.shouldLevelUp).toBe(true);
+   });
+
    it('levels up when cumulative repayments reach the current limit', () => {
       const evaluation = evaluateCreditProgression({
          currentLimit: 40,

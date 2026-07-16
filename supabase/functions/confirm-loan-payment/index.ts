@@ -226,6 +226,12 @@ const applyCreditProgression = async (admin: Admin, loan: Record<string, unknown
 
    const userUpdates: Record<string, unknown> = {};
    if (evaluation.shouldPause && !borrower.credit_progression_paused) userUpdates.credit_progression_paused = true;
+   // Recovery: a clean, on-time full repayment un-latches a previously paused borrower so future
+   // repayments can level them up again. Without this, a single (or falsely-flagged) late payment
+   // freezes credit progression permanently.
+   if (!evaluation.isLate && evaluation.isFullyRepaid && borrower.credit_progression_paused) {
+      userUpdates.credit_progression_paused = false;
+   }
    if (evaluation.shouldLevelUp) userUpdates.cs = evaluation.nextLimit;
 
    if (Object.keys(userUpdates).length > 0) {
