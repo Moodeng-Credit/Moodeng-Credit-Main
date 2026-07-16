@@ -5615,31 +5615,6 @@ a.button.is-loading::after {
    box-shadow: 0 14px 34px oklch(13% 0.04 296 / 0.3);
 }
 
-/* ---- Stage footer title/count roll up like the old slot-machine title
-   reel when the active step changes. JS re-triggers the class per swap. ---- */
-[data-deal-title],
-[data-story-title],
-[data-deal-count],
-[data-story-count] {
-   display: inline-block;
-}
-
-.title-roll {
-   animation: title-roll 360ms var(--ease-out);
-}
-
-@keyframes title-roll {
-   from {
-      opacity: 0;
-      transform: translateY(0.55em);
-   }
-
-   to {
-      opacity: 1;
-      transform: none;
-   }
-}
-
 /* ---- Cascade reveals: children of a revealed group arrive one after
    another (the old page's beat rhythm) instead of as a single block. ---- */
 .portrait-rail .portrait:nth-child(2) {

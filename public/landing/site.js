@@ -93,15 +93,6 @@
       });
    });
 
-   function rollText(el, text) {
-      if (!el) return;
-      if (el.textContent === text) return;
-      el.textContent = text;
-      el.classList.remove('title-roll');
-      void el.offsetWidth;
-      el.classList.add('title-roll');
-   }
-
    var dialog = document.querySelector('[data-menu-dialog]');
    var openButton = document.querySelector('[data-menu-open]');
    var closeButton = document.querySelector('[data-menu-close]');
@@ -259,11 +250,13 @@
             dot.classList.toggle('is-complete', dotIndex < index);
          });
 
-         rollText(dealCount, String(index + 1).padStart(2, '0') + ' / ' + String(dealSteps.length).padStart(2, '0'));
+         if (dealCount) {
+            dealCount.textContent = String(index + 1).padStart(2, '0') + ' / ' + String(dealSteps.length).padStart(2, '0');
+         }
 
          if (dealTitle) {
             var activeTitle = dealSteps[index] && dealSteps[index].querySelector('b');
-            rollText(dealTitle, activeTitle ? activeTitle.textContent : '');
+            dealTitle.textContent = activeTitle ? activeTitle.textContent : '';
          }
       }
 
@@ -381,11 +374,13 @@
             dot.classList.toggle('is-complete', dotIndex < index);
          });
 
-         rollText(storyCount, String(index + 1).padStart(2, '0') + ' / ' + String(storySteps.length).padStart(2, '0'));
+         if (storyCount) {
+            storyCount.textContent = String(index + 1).padStart(2, '0') + ' / ' + String(storySteps.length).padStart(2, '0');
+         }
 
          if (storyTitle) {
             var activeTitle = storySteps[index] && storySteps[index].querySelector('h3');
-            rollText(storyTitle, activeTitle ? activeTitle.textContent : '');
+            storyTitle.textContent = activeTitle ? activeTitle.textContent : '';
          }
       }
 
