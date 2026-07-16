@@ -2,6 +2,34 @@
    var versionSwitcher = document.querySelector('[data-version-switcher]');
    var localHosts = ['localhost', '127.0.0.1', '::1'];
    var isLocalPreview = localHosts.indexOf(window.location.hostname) !== -1;
+   var requestedVersion = new URLSearchParams(window.location.search).get('version');
+   var explicitVersion = requestedVersion === '1' || requestedVersion === '2' ? requestedVersion : null;
+   var desktopLanding = window.matchMedia('(min-width: 1024px)');
+
+   function applyLandingVersion() {
+      var landingVersion = explicitVersion || (desktopLanding.matches ? '2' : '1');
+      document.documentElement.dataset.landingVersion = landingVersion;
+
+      if (!versionSwitcher || !isLocalPreview) return;
+      versionSwitcher.querySelectorAll('[data-version-link]').forEach(function (link) {
+         if (link.dataset.versionLink === landingVersion) {
+            link.setAttribute('aria-current', 'page');
+         } else {
+            link.removeAttribute('aria-current');
+         }
+      });
+   }
+
+   applyLandingVersion();
+
+   if (!explicitVersion) {
+      if (typeof desktopLanding.addEventListener === 'function') {
+         desktopLanding.addEventListener('change', applyLandingVersion);
+      } else if (typeof desktopLanding.addListener === 'function') {
+         desktopLanding.addListener(applyLandingVersion);
+      }
+      window.addEventListener('resize', applyLandingVersion, { passive: true });
+   }
 
    if (isLocalPreview) {
       var localPreviewRoutes = {
@@ -24,18 +52,7 @@
    }
 
    if (versionSwitcher && isLocalPreview) {
-      var requestedVersion = new URLSearchParams(window.location.search).get('version');
-      var landingVersion = requestedVersion === '2' ? '2' : '1';
-      document.documentElement.dataset.landingVersion = landingVersion;
       versionSwitcher.hidden = false;
-
-      versionSwitcher.querySelectorAll('[data-version-link]').forEach(function (link) {
-         if (link.dataset.versionLink === landingVersion) {
-            link.setAttribute('aria-current', 'page');
-         } else {
-            link.removeAttribute('aria-current');
-         }
-      });
    }
 
    var dialog = document.querySelector('[data-menu-dialog]');
