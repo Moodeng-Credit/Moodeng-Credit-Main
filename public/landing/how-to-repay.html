@@ -1,565 +1,393 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
-<link rel="apple-touch-icon" href="/landing/assets/brand/moodeng-logo.png" />
-<title>How to repay a Moodeng loan — on your terms, never a fee</title>
-<meta name="description" content="Repaying a Moodeng loan: the amount and date never change, you can pay in parts, every payment earns Trust Points, and Moodeng never charges a repayment fee." />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="Moodeng Credit" />
-<meta property="og:title" content="How to repay a Moodeng loan — on your terms, never a fee" />
-<meta property="og:description" content="The amount and date never change, you can pay in parts — and if it's a hard week, you message a human and figure it out together." />
-<meta property="og:url" content="https://moodeng.app/how-to-repay" />
-<meta property="og:image" content="https://moodeng.app/landing/assets/og/og-share.jpg" />
-<meta name="twitter:card" content="summary_large_image" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..700&family=Archivo+Black&family=Fraunces:ital,opsz,wght@1,9..144,400..600&display=swap" rel="stylesheet" />
-<style>
-  /* Tokens + base copied from the main landing page (index.html) — keep in sync */
-  :root {
-    --lavender: #8336F0;
-    --purple: #6010D2;
-    --deep: #1C053D;
-    --heading: #040033;
-    --surface: #FDFCFD;
-    --surface-muted: #F8F4FC;
-    --lavender-bg: #F3E8FF;
-    --lavender-border: #E7D8FF;
-    --text-muted: #70617F;
-    --text-soft: #4D4359;
-    --panel: #C9A8F5;
-    --card-tint: #F7F0FE;
-    --pill: 500px;
-    --display: "Archivo Black", "Archivo", -apple-system, BlinkMacSystemFont, sans-serif;
-    --sans: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --serif: "Fraunces", Georgia, "Times New Roman", serif;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { -webkit-text-size-adjust: 100%; }
-  body { font-family: var(--sans); color: var(--heading); background: var(--surface); line-height: 1.5; overflow-x: hidden; }
-  img { display: block; max-width: 100%; }
-  .accent { font-family: var(--serif); font-style: italic; font-weight: 500; letter-spacing: -0.01em; }
-  .label { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--purple); }
-  .wrap { width: 100%; max-width: 480px; margin: 0 auto; padding: 0 22px; }
-
-  /* Klarna-minimal header (same as landing): wordmark only, transparent, frosted on scroll */
-  .site-head { position: sticky; top: 0; z-index: 50; background: transparent; transition: background .25s ease, box-shadow .25s ease; }
-  .site-head.scrolled { background: rgba(253,252,253,0.86); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 1px 0 rgba(4,0,51,0.08); }
-  .site-head .wrap { display: flex; align-items: center; padding-top: 12px; padding-bottom: 12px; }
-  .site-head .head-word { color: var(--heading); }
-  .head-logo { height: 28px; width: auto; }
-  .head-word { font-family: var(--sans); font-size: 17px; font-weight: 600; letter-spacing: 0.02em; margin-right: auto; color: #fff; text-decoration: none; }
-  .menu-pill { width: 58px; height: 42px; border: 0; cursor: pointer; border-radius: var(--pill); background: var(--purple); display: grid; place-items: center; }
-  .site-head .menu-pill { background: var(--lavender-bg); width: 48px; height: 40px; color: var(--heading); margin-right: 13px; }
-  .head-signin { display: inline-flex; align-items: center; gap: 7px; background: var(--heading); color: #fff; font-size: 13.5px; font-weight: 700; padding: 9px 16px 9px 14px; border-radius: var(--pill); text-decoration: none; margin-right: 2px; white-space: nowrap; }
-
-  /* page hero */
-  .hiw-hero {
-    padding: 40px 0 46px; text-align: center;
-    background: radial-gradient(130% 90% at 50% -20%, #ffffff 0%, var(--lavender-bg) 55%, #EADCFC 100%);
-  }
-  .hiw-hero h1 {
-    font-family: var(--display); font-size: 34px; line-height: 1.05; letter-spacing: -0.02em;
-    margin: 10px 0 0;
-  }
-  .hiw-hero h1 .accent { color: var(--purple); font-weight: 500; }
-  .hiw-hero .sub { margin: 14px auto 0; font-size: 15.5px; color: var(--text-soft); max-width: 32ch; }
-  .hiw-hero .sub b { color: var(--heading); }
-
-  /* steps */
-  .sec-step { padding: 56px 0 60px; }
-  .sec-step:nth-of-type(even) { background: var(--surface-muted); }
-  .step-num {
-    display: inline-grid; place-items: center;
-    width: 44px; height: 44px; border-radius: 50%;
-    background: var(--heading); color: #fff;
-    font-family: var(--display); font-size: 19px;
-  }
-  .tile-h { font-family: var(--display); font-size: 25px; letter-spacing: -0.01em; color: var(--heading); margin: 14px 0 0; line-height: 1.15; }
-  .tile-h .accent { color: var(--purple); font-weight: 500; }
-  .tile-cap { margin-top: 8px; font-size: 15px; color: var(--text-muted); line-height: 1.5; max-width: 34ch; }
-  .tile-cap b { color: var(--heading); }
-
-  /* phone frame w/ REAL app screen inside (moment-card anatomy, screenshot as the screen) */
-  .stage { position: relative; margin: 28px auto 0; width: 300px; max-width: 86%; }
-  .stage.big { width: 320px; }
-  .stage-panel {
-    position: relative;
-    background: radial-gradient(120% 90% at 20% 10%, #E4D2FB 0%, var(--panel) 60%, #B892F0 100%);
-    border-radius: 30px; padding: 26px 20px 24px;
-    box-shadow: 0 24px 50px rgba(96,16,210,0.28);
-  }
-  .stage-panel::before {
-    content: ""; position: absolute; inset: 0; border-radius: 30px;
-    background-image:
-      radial-gradient(circle at 30% 20%, rgba(255,255,255,0.28) 0 2px, transparent 3px),
-      radial-gradient(circle at 70% 60%, rgba(255,255,255,0.18) 0 2px, transparent 3px),
-      radial-gradient(circle at 50% 85%, rgba(28,5,61,0.06) 0 3px, transparent 4px);
-    background-size: 90px 90px, 120px 120px, 140px 140px;
-    opacity: 0.5; pointer-events: none;
-  }
-  .stage.right .phone { transform: rotate(2.5deg); }
-  .phone {
-    position: relative; background: #fff; border-radius: 22px;
-    padding: 10px; transform: rotate(-3deg);
-    box-shadow: 0 16px 34px rgba(28,5,61,0.22), 0 2px 0 rgba(255,255,255,0.6) inset;
-  }
-  .phone.upright { transform: none; }
-  .phone .screen { border-radius: 14px; width: 100%; }
-  .shot-note { margin-top: 16px; font-size: 12px; font-weight: 600; color: var(--text-muted); text-align: center; }
-
-  /* cash-out card (copied from landing peso strip) */
-  .phone.tall { padding: 18px 18px 22px; border-radius: 26px; text-align: center; }
-  .phone.tall .phone-head { justify-content: center; position: relative; padding-bottom: 0; }
-  .phone.tall .phone-head .back { position: absolute; left: 2px; top: 0; }
-  .phone-head {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em;
-    color: var(--text-muted); text-transform: uppercase; padding: 2px 2px 12px;
-  }
-  .phone-head .back { font-size: 15px; color: var(--heading); }
-  .coin-badge { height: 58px; margin: 36px auto 16px; display: block; }
-  .statement { font-family: var(--display); font-size: 20px; line-height: 1.12; letter-spacing: -0.01em; color: var(--heading); margin: 10px 0 12px; }
-  .phone.tall .statement { font-size: 22px; margin: 0 0 30px; }
-  .swap-box {
-    background: #F6F3FA; border-radius: 14px; padding: 13px 16px; margin: 0 2px;
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .swap-box .cell { text-align: left; }
-  .swap-box .cell.right { text-align: right; }
-  .swap-box .cell .k { display: block; font-size: 10.5px; font-weight: 600; color: #B9AECB; }
-  .swap-box .cell b { font-size: 16px; font-weight: 800; color: var(--heading); }
-  .swap-box .arr { color: var(--purple); font-family: var(--display); font-size: 18px; }
-  .cta-caps {
-    display: block; margin-top: 46px; background: var(--purple); color: #fff;
-    font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
-    padding: 16px; border-radius: var(--pill);
-  }
-
-  /* final CTA */
-  .sec-final {
-    text-align: center; padding: 64px 0 72px;
-    background: radial-gradient(130% 100% at 50% 100%, #DCC4FA 0%, var(--lavender-bg) 55%, #ffffff 100%);
-  }
-  .sec-final h2 { font-family: var(--display); font-size: 29px; line-height: 1.08; letter-spacing: -0.02em; margin: 12px 0 0; }
-  .sec-final h2 .accent { color: var(--purple); font-weight: 500; }
-  .cta {
-    display: inline-flex; align-items: center; gap: 10px;
-    background: var(--heading); color: #fff; font-weight: 700; font-size: 16px;
-    padding: 15px 26px; border-radius: var(--pill); text-decoration: none; margin-top: 26px;
-    box-shadow: 0 10px 24px rgba(4,0,51,0.22);
-    transition: transform .15s ease, box-shadow .15s ease;
-  }
-  .cta:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(4,0,51,0.28); }
-  .cta .arrow { transition: transform .15s ease; }
-  .cta:hover .arrow { transform: translateX(3px); }
-
-  /* Sign in / start-a-loan links leave this static site for the real app, which takes a
-     moment to boot — show a spinner immediately on tap so the click feels acknowledged
-     instead of dead air. .btn-label keeps its layout box (opacity, not display) so the
-     button doesn't resize; the spinner is a centered ::after circle. */
-  .head-signin, .cta, .d-foot a { position: relative; }
-  .btn-label { display: inline-flex; align-items: center; gap: inherit; transition: opacity .15s ease; }
-  .is-loading { pointer-events: none; }
-  .is-loading .btn-label { opacity: 0; }
-  .is-loading::after {
-    content: ""; position: absolute; top: 50%; left: 50%;
-    width: 16px; height: 16px; margin: -8px 0 0 -8px;
-    /* currentColor so the ring reads on both dark pills (white text) and the
-       plain-purple drawer link, without a per-context color override. */
-    border: 2px solid currentColor; border-top-color: transparent;
-    border-radius: 50%; animation: btnSpin .7s linear infinite;
-  }
-  @keyframes btnSpin { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .is-loading::after { animation-duration: 1.3s; } }
-  .reassure { margin-top: 14px; font-size: 13.5px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.01em; }
-
-  /* footer (same as landing, short form) */
-  .site-footer { background: #100626; padding: 52px 0 0; color: #B6A8CC; font-size: 13.5px; overflow: hidden; }
-  .site-footer .f-brand { display: flex; align-items: center; gap: 10px; }
-  .site-footer .f-brand img { width: 40px; }
-  .site-footer .f-brand b { font-family: var(--display); font-size: 20px; color: #fff; letter-spacing: -0.01em; }
-  .site-footer .f-tag { margin: 12px 0 0; line-height: 1.5; }
-  .f-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 28px; margin-top: 30px; }
-  .f-cols h4 { margin: 0 0 12px; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #C9A8F5; }
-  .f-cols a { display: block; color: #fff; text-decoration: none; font-weight: 600; padding: 6px 0; }
-  .f-cols a:hover { color: #C9A8F5; }
-  .f-fine { margin-top: 34px; padding-top: 18px; border-top: 1px solid rgba(201,168,245,0.16); font-size: 12px; color: #8B7BA8; padding-bottom: 26px; }
-
-  /* Left slide-in menu drawer (Klarna-style: light panel, big sentence-case rows,
-     hairline dividers, chevrons only on expandables, one separated action) */
-  .drawer {
-    position: fixed; inset: 0; z-index: 100;
-    background: rgba(16, 6, 38, 0.42);
-    opacity: 0; visibility: hidden;
-    transition: opacity .28s ease, visibility .28s ease;
-  }
-  .drawer.open { opacity: 1; visibility: visible; }
-  .drawer-panel {
-    position: absolute; top: 0; left: 0; bottom: 0;
-    width: 88%; max-width: 420px;
-    background: var(--surface); overflow-y: auto;
-    display: flex; flex-direction: column;
-    padding: 16px 24px 34px;
-    box-shadow: 0 0 60px rgba(28, 5, 61, 0.25);
-    transform: translateX(-100%);
-    transition: transform .34s cubic-bezier(.32, .72, 0, 1);
-  }
-  .drawer.open .drawer-panel { transform: none; }
-  .drawer-head { display: flex; align-items: center; padding: 6px 0 22px; }
-  .drawer-x {
-    width: 52px; height: 44px; border-radius: var(--pill); border: none; cursor: pointer;
-    background: var(--lavender-bg); color: var(--heading);
-    display: flex; align-items: center; justify-content: center;
-    transition: transform .12s ease, background-color .15s ease;
-  }
-  .drawer-x:hover { background: var(--lavender-border); }
-  .drawer-x:active { transform: scale(0.88); background: var(--lavender-border); }
-  @media (prefers-reduced-motion: reduce) { .drawer-x { transition: background-color .15s ease; } .drawer-x:active { transform: none; } }
-  .drawer-links { display: flex; flex-direction: column; }
-  .drawer-links a, .d-group > summary { text-decoration: none; color: var(--heading); }
-  .d-top, .d-group { border-bottom: 1px solid var(--lavender-border); }
-  .d-top, .d-group > summary {
-    display: flex; align-items: center; justify-content: space-between;
-    font-family: var(--sans); font-weight: 500; font-size: 23px; letter-spacing: -0.01em;
-    color: var(--heading); padding: 18px 0;
-  }
-  .d-group > summary { list-style: none; cursor: pointer; }
-  .d-group > summary::-webkit-details-marker { display: none; }
-  .d-group > summary::after {
-    content: ""; width: 9px; height: 9px; margin-right: 3px;
-    border-right: 2px solid var(--heading); border-top: 2px solid var(--heading);
-    transform: rotate(45deg); transition: transform .2s ease;
-  }
-  .d-group[open] > summary::after { transform: rotate(135deg); }
-  .d-top:hover, .d-group > summary:hover { color: var(--purple); }
-  .d-sub { display: flex; flex-direction: column; padding: 2px 0 14px; }
-  .d-sub a { font-size: 17px; font-weight: 400; color: var(--text-soft); padding: 10px 2px; }
-  .d-sub a:hover { color: var(--purple); }
-  .d-foot { margin-top: 28px; }
-  .d-foot a { display: inline-flex; align-items: center; gap: 8px; font-family: var(--sans); font-weight: 600; font-size: 16px; color: var(--purple); }
-  @media (prefers-reduced-motion: reduce) { .drawer, .drawer-panel { transition: none; } }
-  body.drawer-lock { overflow: hidden; }
-
-  .step-more { display: block; margin-top: 20px; font-size: 14px; font-weight: 700; color: var(--purple); text-decoration: none; text-align: center; }
-  .step-more:hover { text-decoration: underline; }
-
-  /* "running late" section — same dark world as the landing page's trust section */
-  .sec-late { background: #100626; padding: 60px 0 66px; }
-  .sec-late .label { color: #C9A8F5; }
-  .sec-late .tile-h { color: #fff; }
-  .sec-late .tile-h .accent { color: #C9A8F5; }
-  .sec-late .tile-cap { color: #B6A8CC; }
-  .sec-late .tile-cap b { color: #fff; }
-  .sec-late .step-more { color: #C9A8F5; }
-  .panel-night {
-    margin-top: 26px; border-radius: 24px; padding: 34px 22px;
-    display: grid; place-items: center;
-    background: radial-gradient(120% 100% at 30% 0%, #2B1650 0%, #1C0B3E 100%);
-    border: 1px solid rgba(201,168,245,0.14);
-  }
-  .bubble {
-    background: #fff; border-radius: 16px 16px 16px 4px;
-    padding: 13px 16px; max-width: 230px; text-align: left;
-    font-size: 13.5px; font-weight: 600; color: var(--heading); line-height: 1.45;
-    box-shadow: 0 10px 26px rgba(0,0,0,0.35);
-  }
-  .bubble .from { display: block; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--purple); margin-bottom: 4px; }
-
-  /* mini-FAQ (native details/summary, same anatomy as the landing FAQ) */
-  .sec-faq { background: var(--surface-muted); padding: 56px 0 62px; }
-  .faq-list { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
-  .faq-list details {
-    background: #fff; border: 1px solid #EFE6FB; border-radius: 16px; padding: 0 18px;
-  }
-  .faq-list summary {
-    cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px;
-    padding: 16px 0; font-size: 15px; font-weight: 800; color: var(--heading);
-  }
-  .faq-list summary::-webkit-details-marker { display: none; }
-  .faq-list summary::after { content: "+"; font-family: var(--display); font-size: 18px; color: var(--purple); flex: 0 0 auto; }
-  .faq-list details[open] summary::after { content: "–"; }
-  .faq-list .a { padding: 0 0 16px; font-size: 14.5px; line-height: 1.55; color: var(--text-muted); }
-  .faq-list .a b { color: var(--heading); }
-
-  /* reveal on scroll */
-  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
-  .reveal.in { opacity: 1; transform: none; }
-
-  @media (min-width: 700px) {
-    .wrap { max-width: 620px; }
-    .hiw-hero h1 { font-size: 46px; }
-  }
-</style>
-</head>
-<body>
-
-  <nav class="site-head" id="siteHead">
-    <div class="wrap">
-      <button class="menu-pill" id="menuOpen" aria-label="Menu" aria-expanded="false" type="button">
-        <svg width="22" height="10" viewBox="0 0 22 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1 1h20M1 9h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <a class="head-word" href="/">Moodeng Credit</a>
-      <a class="head-signin" href="/sign-in">
-        <span class="btn-label">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-          </svg>
-          Sign in
-        </span>
-      </a>
-    </div>
-  </nav>
-
-  <!-- full-screen menu drawer (honest links only — same rule as the footer) -->
-  <div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Menu">
-    <div class="drawer-panel">
-      <div class="drawer-head">
-        <button class="drawer-x" id="menuClose" aria-label="Close menu" type="button">
-          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-      <nav class="drawer-links">
-        <a class="d-top" href="/request-board">Browse requests</a>
-        <a class="d-top" href="/for-lenders">Fund someone</a>
-        <details class="d-group">
-          <summary>Guides</summary>
-          <div class="d-sub">
-            <a href="/how-it-works">How it works</a>
-            <a href="/how-to-cash-out">How to cash out</a>
-            <a href="/how-to-repay">How to repay</a>
-          </div>
-        </details>
-        <details class="d-group">
-          <summary>Support</summary>
-          <div class="d-sub">
-            <a href="/about">Our story</a>
-            <a href="/#faq">Common questions</a>
-            <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Telegram</a>
-            <a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
-            <a href="mailto:support@moodengcredit.com">Email us</a>
-          </div>
-        </details>
-        <div class="d-foot">
-          <a href="/sign-in"><span class="btn-label">Sign in <span aria-hidden="true">&rarr;</span></span></a>
-        </div>
-      </nav>
-    </div>
-  </div>
-
-  <header class="hiw-hero">
-    <div class="wrap">
-      <p class="label">Repay guide</p>
-      <h1>Repaying is <span class="accent">your</span> move.</h1>
-      <p class="sub">The number never changes, the date never moves — and you can pay in parts. Here’s the whole thing, with the real screens you’ll use.</p>
-    </div>
-  </header>
-
-  <section class="sec-step">
-    <div class="wrap reveal">
-      <span class="step-num">1</span>
-      <h2 class="tile-h">The number never <span class="accent">moved.</span></h2>
-      <p class="tile-cap">What you saw when you asked is what you pay at the end — same amount, same date. No rollover, no overnight penalty, no surprise charges.</p>
-      <div class="stage">
-        <div class="stage-panel">
-          <div class="phone upright tall">
-            <div class="phone-head"><span class="back">‹</span> Your loan</div>
-            <img class="coin-badge" src="/landing/assets/icons/lock-closed.png" alt="" loading="lazy" style="height:52px" />
-            <div class="statement">$18 on Jul 30. Still.</div>
-            <div class="swap-box">
-              <span class="cell"><span class="k">You pay</span><b>$18</b></span>
-              <span class="arr">·</span>
-              <span class="cell right"><span class="k">Due</span><b>Jul 30</b></span>
+   <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      <title>How to repay a Moodeng loan</title>
+      <meta
+         name="description"
+         content="See the real Moodeng repayment flow: choose a loan, add USDC safely, select a partial or full amount, and review what remains."
+      />
+      <meta property="og:title" content="How to repay a Moodeng loan" />
+      <meta property="og:description" content="The same amount, the same date, and a clear path to partial or full repayment." />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://moodeng.app/how-to-repay" />
+      <meta property="og:image" content="https://moodeng.app/landing/assets/og/og-share.jpg" />
+      <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
+      <link rel="stylesheet" href="/landing/site.css?v=20260715-header" />
+   </head>
+   <body>
+      <a class="skip-link" href="#main-content">Skip to main content</a>
+      <header class="site-header">
+         <div class="container">
+            <a class="brand" href="/" aria-label="Moodeng Credit home"
+               ><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="34" height="34" /><span>Moodeng Credit</span></a
+            >
+            <nav class="desktop-nav" aria-label="Primary navigation">
+               <a href="/how-it-works">How it works</a><a href="/how-to-cash-out">Cash out</a
+               ><a href="/how-to-repay" aria-current="page">Repay</a><a href="/for-lenders">For lenders</a>
+            </nav>
+            <div class="header-actions">
+               <a class="button secondary" href="/sign-in">Sign in</a><a class="button" href="/request-board">Get a loan</a
+               ><button
+                  class="menu-button"
+                  type="button"
+                  data-menu-open
+                  aria-label="Open menu"
+                  aria-haspopup="dialog"
+                  aria-expanded="false"
+               >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                     <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+               </button>
             </div>
-            <span class="cta-caps">The same as day one</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+         </div>
+      </header>
+      <dialog class="menu-dialog" data-menu-dialog aria-label="Site menu">
+         <div class="menu-head">
+            <span class="brand"><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="34" height="34" />Moodeng Credit</span
+            ><button class="menu-close" type="button" data-menu-close aria-label="Close menu">✕</button>
+         </div>
+         <nav class="menu-links" aria-label="Mobile navigation">
+            <a href="/">Home <span aria-hidden="true">→</span></a
+            ><a href="/how-it-works">How it works <span aria-hidden="true">→</span></a
+            ><a href="/how-to-cash-out">How to cash out <span aria-hidden="true">→</span></a
+            ><a href="/how-to-repay">How to repay <span aria-hidden="true">→</span></a
+            ><a href="/for-lenders">For lenders <span aria-hidden="true">→</span></a>
+         </nav>
+         <div class="menu-actions">
+            <a class="button" href="/request-board">Get a loan</a><a class="button secondary" href="/sign-in">Sign in</a>
+         </div>
+      </dialog>
 
-  <section class="sec-step">
-    <div class="wrap reveal">
-      <span class="step-num">2</span>
-      <h2 class="tile-h">Bring pesos <span class="accent">back.</span></h2>
-      <p class="tile-cap">The same routes that turned your loan into pesos work in reverse — GCash back to digital dollars, in minutes. This is the only step in the whole loop with a fee, and it’s <b>a cent or two — around one peso.</b></p>
-      <div class="stage right">
-        <div class="stage-panel">
-          <div class="phone upright tall">
-            <div class="phone-head"><span class="back">‹</span> Top up</div>
-            <img class="coin-badge" src="/landing/assets/icons/usd-php-coins.png" alt="" loading="lazy" />
-            <div class="statement">Pesos back to dollars.</div>
-            <div class="swap-box">
-              <span class="cell"><span class="k">From</span><b>GCash</b></span>
-              <span class="arr">→</span>
-              <span class="cell right"><span class="k">To</span><b>Base Account</b></span>
+      <main id="main-content">
+         <section class="page-hero">
+            <div class="container">
+               <div class="page-hero-copy stack-lg">
+                  <p class="eyebrow">Repayment, in the real app</p>
+                  <h1 class="page-title">Choose what you can pay. See exactly <em>what is left.</em></h1>
+                  <p class="lead">
+                     Pick the loan, add USDC to your Base Account if needed, then use the slider or quick amounts. The screen shows the due
+                     date, the remaining balance, and the Trust Points before you confirm.
+                  </p>
+                  <ul class="hero-assurances" aria-label="Repayment assurances">
+                     <li><span aria-hidden="true">✓</span>Pay early, in parts, or in full</li>
+                     <li><span aria-hidden="true">✓</span>Moodeng repayment fee: $0</li>
+                     <li><span aria-hidden="true">✓</span>See what remains before confirming</li>
+                  </ul>
+                  <div class="button-row">
+                     <a class="button" href="#repay-steps">See the real screens <span class="arrow" aria-hidden="true">↓</span></a
+                     ><a class="button subtle" href="/how-to-cash-out">Review cashing out</a>
+                  </div>
+               </div>
+               <div class="page-visual product-proof">
+                  <div class="device">
+                     <img
+                        src="/landing/assets/app/repay-product-amount.jpg"
+                        alt="Current Moodeng repayment screen showing loan selection, a repayment slider, quick amounts, due date, and Trust Points"
+                        width="390"
+                        height="844"
+                        fetchpriority="high"
+                     />
+                  </div>
+                  <p class="visual-caption"><span class="live-dot" aria-hidden="true"></span>Captured from the current product preview.</p>
+               </div>
             </div>
-            <span class="cta-caps">Same doors, reversed</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+         </section>
 
-  <section class="sec-step">
-    <div class="wrap reveal">
-      <span class="step-num">3</span>
-      <h2 class="tile-h">Pay all of it — or <span class="accent">part now.</span></h2>
-      <p class="tile-cap">The slider is yours: a quarter, half, or the whole thing. Every payment earns Trust Points — and <b>Moodeng never charges a fee to repay.</b></p>
-      <div class="stage">
-        <div class="stage-panel">
-          <div class="phone"><img class="screen" src="/landing/assets/app/repay-slider.jpg" alt="The real Moodeng repay screen: a payment slider with 25%, 50%, 75% and full options, Trust Points earned per payment, and Moodeng’s fee shown as Free." loading="lazy" /></div>
-        </div>
-      </div>
-      <p class="shot-note">The actual repay screen in the app.</p>
-    </div>
-  </section>
+         <section class="money-flow-section" aria-labelledby="repay-flow-heading">
+            <div class="container">
+               <div class="money-flow-heading">
+                  <p class="eyebrow">The return route</p>
+                  <h2 id="repay-flow-heading">Bring USDC back to the same Base Account, then choose the payment.</h2>
+               </div>
+               <div class="money-flow" aria-label="Repayment flow from pesos to Moodeng">
+                  <div class="flow-node">
+                     <span class="flow-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M3 10.5 12 5l9 5.5M5 10v8h14v-8M8 14h8" /></svg>
+                     </span>
+                     <span><b>Your pesos</b><small>Start where you bank</small></span>
+                  </div>
+                  <span class="flow-arrow" aria-hidden="true">→</span>
+                  <div class="flow-node">
+                     <span class="flow-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M5 6h14v12H5zM8 10h8M8 14h5" /></svg>
+                     </span>
+                     <span><b>External provider</b><small>Buy or withdraw USDC</small></span>
+                  </div>
+                  <span class="flow-arrow" aria-hidden="true">→</span>
+                  <div class="flow-node">
+                     <span class="flow-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M4 7.5h16v11H4zM7 7.5V5h10v2.5M8 12h5" /></svg>
+                     </span>
+                     <span><b>Moodeng repay</b><small>Part or full</small></span>
+                  </div>
+               </div>
+               <p class="flow-disclaimer">
+                  External providers can charge their own fee. Moodeng shows its repayment fee as free and applies the amount you confirm to
+                  the selected loan.
+               </p>
+            </div>
+         </section>
 
-  <section class="sec-step">
-    <div class="wrap reveal">
-      <span class="step-num">4</span>
-      <h2 class="tile-h">Your limit <span class="accent">grows.</span></h2>
-      <p class="tile-cap">On-time repayment is how your record gets built — <b>$15 → $20 → $40 → $60+</b>. Lenders see it, and your next ask gets easier.</p>
-      <div class="stage right">
-        <div class="stage-panel">
-          <div class="phone"><img class="screen" src="/landing/assets/app/step4-insights-top.jpg" alt="A real Moodeng borrower profile showing credit level and repayment record — what lenders see." loading="lazy" /></div>
-        </div>
-      </div>
-      <p class="shot-note">A borrower profile as lenders see it — sample account.</p>
-    </div>
-  </section>
+         <section class="section" id="repay-steps" aria-labelledby="repay-heading">
+            <div class="container">
+               <div class="split-heading reveal">
+                  <div class="stack-md">
+                     <p class="eyebrow">The current product flow</p>
+                     <h2 class="section-title wide" id="repay-heading">
+                        The app separates funding the wallet from <em>paying the loan.</em>
+                     </h2>
+                  </div>
+                  <p class="lead">
+                     That distinction matters. First you move USDC to the Base Account. Then you decide how much of that balance to apply to
+                     a specific loan.
+                  </p>
+               </div>
+               <div class="guide-list">
+                  <article class="guide-step reveal">
+                     <div class="guide-copy">
+                        <span class="step-number">01</span>
+                        <h2>Pick the loan before moving money.</h2>
+                        <p>
+                           The repayment screen can show more than one active loan. Select the one you mean to repay, then check its
+                           remaining amount, previous payments, and due date.
+                        </p>
+                        <ul class="chapter-points">
+                           <li><span aria-hidden="true">01</span>Each loan keeps its own remaining balance.</li>
+                           <li><span aria-hidden="true">02</span>Partial progress stays visible.</li>
+                           <li><span aria-hidden="true">03</span>The selected loan controls the next steps.</li>
+                        </ul>
+                     </div>
+                     <figure class="guide-media product-screen">
+                        <img
+                           src="/landing/assets/app/repay-product-funding-source.jpg"
+                           alt="Current Moodeng repay screen showing two loans and the expanded add-funds source selector"
+                           loading="lazy"
+                           width="375"
+                           height="812"
+                        />
+                        <figcaption>Actual loan and funding-source selector</figcaption>
+                     </figure>
+                  </article>
+                  <article class="guide-step reveal">
+                     <div class="guide-copy">
+                        <span class="step-number">02</span>
+                        <h2>Add USDC to the same Base Account.</h2>
+                        <p>
+                           The app shows the wallet address, recommends a source for the region, and repeats the Base-network warning. It
+                           also separates the provider’s fee from Moodeng’s repayment fee.
+                        </p>
+                        <div class="network-warning">
+                           <span aria-hidden="true">!</span>
+                           <p><b>Copy the address from the app.</b> Select Base in the provider and check the address before confirming.</p>
+                        </div>
+                     </div>
+                     <figure class="guide-media product-screen stage-soft">
+                        <img
+                           src="/landing/assets/app/repay-product-add-funds.jpg"
+                           alt="Current Moodeng repay screen showing provider and Moodeng fees, received USDC, remaining need, and a partial payment"
+                           loading="lazy"
+                           width="375"
+                           height="812"
+                        />
+                        <figcaption>Actual add-funds and partial-balance state</figcaption>
+                     </figure>
+                  </article>
+                  <article class="guide-step reveal">
+                     <div class="guide-copy">
+                        <span class="step-number">03</span>
+                        <h2>Choose an amount and see the result first.</h2>
+                        <p>
+                           Type an amount, drag the slider, or use 25%, 50%, 75%, and Full. Before payment, the screen says whether the loan
+                           will clear, what remains, and how many Trust Points the payment can add.
+                        </p>
+                        <ul class="chapter-points">
+                           <li><span aria-hidden="true">01</span>Partial payments reduce what remains.</li>
+                           <li><span aria-hidden="true">02</span>Full payment is clearly marked.</li>
+                           <li><span aria-hidden="true">03</span>The due countdown stays beside the control.</li>
+                        </ul>
+                     </div>
+                     <figure class="guide-media product-screen stage-night">
+                        <img
+                           src="/landing/assets/app/repay-product-amount.jpg"
+                           alt="Current Moodeng repay slider with 25 percent, 50 percent, 75 percent, and full options"
+                           loading="lazy"
+                           width="390"
+                           height="844"
+                        />
+                        <figcaption>Actual amount and due-date control</figcaption>
+                     </figure>
+                  </article>
+                  <article class="guide-step reveal">
+                     <div class="guide-copy">
+                        <span class="step-number">04</span>
+                        <h2>The outcome becomes part of the record.</h2>
+                        <p>
+                           Completed, partial, late, and defaulted outcomes stay visible to future funders. The record is about what
+                           happened, not a private profile of the borrower’s life.
+                        </p>
+                     </div>
+                     <figure class="guide-media product-screen stage-soft">
+                        <img
+                           src="/landing/assets/app/lender-insights.jpg"
+                           alt="Moodeng borrower profile showing credit level and repayment record"
+                           loading="lazy"
+                           width="640"
+                           height="1385"
+                        />
+                        <figcaption>Borrower record visible to funders</figcaption>
+                     </figure>
+                  </article>
+               </div>
+            </div>
+         </section>
 
-  <!-- RUNNING LATE: the question everyone actually has -->
-  <section class="sec-late">
-    <div class="wrap reveal">
-      <p class="label">If it’s a hard week</p>
-      <h2 class="tile-h">Running late doesn’t make you a <span class="accent">bad person.</span></h2>
-      <p class="tile-cap">Message us before the date and we’ll figure it out together. What we <b>never</b> do: call your contacts, add surprise charges, or shame you.</p>
-      <div class="panel-night">
-        <div class="bubble">
-          <span class="from">Moodeng</span>
-          Hi! Your $18 is due Jul 30. If it’s a hard week, message us — we’ll figure it out together.
-        </div>
-      </div>
-      <a class="step-more" href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20have%20a%20Moodeng%20loan%20and%20this%20week%20is%20hard%20—%20can%20we%20talk%3F" target="_blank" rel="noreferrer">Message a human on Telegram →</a>
-    </div>
-  </section>
+         <section class="human-context human-context-reverse" aria-labelledby="repay-human-heading">
+            <div class="container human-context-grid">
+               <figure class="human-context-photo reveal">
+                  <img
+                     src="/landing/assets/life/school-fee.jpg"
+                     alt="Illustrative scene of a mother reviewing school enrollment papers at home"
+                     loading="lazy"
+                     width="1152"
+                     height="768"
+                  />
+                  <figcaption>Illustrative moment: a school fee due before payday.</figcaption>
+               </figure>
+               <div class="human-context-copy stack-md reveal">
+                  <p class="eyebrow">When the week changes</p>
+                  <h2 class="section-title" id="repay-human-heading">
+                     A partial payment can be honest without pretending it <em>finished the loan.</em>
+                  </h2>
+                  <p class="lead">
+                     The product shows both truths at once: the amount you paid and the amount still due. That is more useful than hiding
+                     the control or making a stressed borrower guess what happens next.
+                  </p>
+               </div>
+            </div>
+         </section>
 
-  <!-- mini-FAQ: the repay questions people actually ask -->
-  <section class="sec-faq">
-    <div class="wrap reveal">
-      <p class="label">Common questions</p>
-      <h2 class="tile-h">Repay questions, <span class="accent">answered.</span></h2>
-      <div class="faq-list">
-        <details>
-          <summary>Does paying late hurt my record?</summary>
-          <p class="a">Your repayment record is what lenders see — the good and the setbacks. Late is always better than never: <b>finish the loan and keep building.</b> The amount itself never grows.</p>
-        </details>
-        <details>
-          <summary>Can I pay before the due date?</summary>
-          <p class="a">Yes — any time, in parts or all at once. Early never costs extra.</p>
-        </details>
-        <details>
-          <summary>Do I repay in pesos or dollars?</summary>
-          <p class="a">You repay in digital dollars (<b>USDC</b>) inside the app — step 2 above shows how to turn pesos back into them through the same routes you cashed out with. The amount you owe never changes either way.</p>
-        </details>
-      </div>
-    </div>
-  </section>
+         <section class="section surface-night">
+            <div class="container never-grid">
+               <div class="stack-md reveal">
+                  <p class="eyebrow">If the week changed</p>
+                  <h2 class="section-title">Running late does not make you a <em>bad person.</em></h2>
+                  <p class="lead">Message Moodeng before the date if you can. The goal is a clear next step, not shame.</p>
+               </div>
+               <ul class="never-list reveal">
+                  <li>
+                     <span class="icon">✓</span
+                     ><span><b>The amount does not grow</b>Moodeng does not add a late fee or rollover price.</span>
+                  </li>
+                  <li>
+                     <span class="icon">✓</span
+                     ><span><b>The record stays honest</b>Late and partial payments remain visible to future funders.</span>
+                  </li>
+                  <li>
+                     <span class="icon">✓</span
+                     ><span><b>Your contacts stay private</b>We do not contact family, friends, or coworkers.</span>
+                  </li>
+                  <li>
+                     <span class="icon">✓</span><span><b>A person can answer</b>Email or message support to explain what changed.</span>
+                  </li>
+               </ul>
+            </div>
+         </section>
 
-  <!-- FINAL: back to the board -->
-  <section class="sec-final">
-    <div class="wrap reveal">
-      <p class="label">That’s the whole loop</p>
-      <h2>Ask. Get funded. Repay. <span class="accent">Grow.</span></h2>
-      <a class="cta" href="/request-board"><span class="btn-label">Browse the live request board <span class="arrow">→</span></span></a>
-      <p class="reassure">No account needed to look around.</p>
-    </div>
-  </section>
+         <section class="section" aria-labelledby="repay-faq-heading">
+            <div class="container faq-layout">
+               <div class="stack-md reveal">
+                  <p class="eyebrow">Repay questions</p>
+                  <h2 class="section-title" id="repay-faq-heading">Know the consequence before the <em>date arrives.</em></h2>
+                  <p class="lead">The amount can stay fixed while the repayment record still matters.</p>
+               </div>
+               <div class="faq-list reveal">
+                  <details>
+                     <summary>Does paying late affect my record?</summary>
+                     <p class="faq-answer">
+                        Yes. Future funders can see late payments and defaults. The amount does not grow, and finishing late is still better
+                        for the record than leaving the loan unpaid.
+                     </p>
+                  </details>
+                  <details>
+                     <summary>Can I pay before the due date?</summary>
+                     <p class="faq-answer">
+                        Yes. You can pay early, in parts, or all at once. Moodeng does not add a fee for early repayment.
+                     </p>
+                  </details>
+                  <details>
+                     <summary>Do I repay in pesos or USDC?</summary>
+                     <p class="faq-answer">
+                        The repayment happens in USDC inside the app. Use a supported provider route to move pesos back to USDC first.
+                     </p>
+                  </details>
+                  <details>
+                     <summary>Can a provider charge for conversion?</summary>
+                     <p class="faq-answer">
+                        An external provider can have its own live conversion rate, network cost, or other terms. Moodeng adds no repayment
+                        fee, but you should review the provider screen before converting.
+                     </p>
+                  </details>
+                  <details>
+                     <summary>What happens after a default?</summary>
+                     <p class="faq-answer">
+                        The default stays on the Moodeng record and the account is frozen from new borrowing. Moodeng does not contact your
+                        personal network or publicly shame you.
+                     </p>
+                  </details>
+               </div>
+            </div>
+         </section>
 
-  <footer class="site-footer">
-    <div class="wrap">
-      <div class="f-brand">
-        <img src="/landing/assets/brand/moodeng-logo-small.png" alt="" />
-        <b>Moodeng Credit</b>
-      </div>
-      <p class="f-tag">Small loans, funded by real people.</p>
-      <div class="f-cols">
-        <div>
-          <h4>Talk to a human</h4>
-          <a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
-          <a href="https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more." target="_blank" rel="noreferrer">Telegram</a>
-          <a href="mailto:support@moodengcredit.com">Email us</a>
-        </div>
-        <div>
-          <h4>The details</h4>
-          <a href="/">Home</a>
-          <a href="/request-board">Request board</a>
-          <a href="https://moodeng.gitbook.io/credit" target="_blank" rel="noreferrer">How credit levels work</a>
-        </div>
-      </div>
-      <p class="f-fine">© 2026 Moodeng Credit</p>
-    </div>
-  </footer>
+         <section class="final-cta" aria-labelledby="repay-final-heading">
+            <div class="narrow stack-lg reveal">
+               <p class="eyebrow">That is the loop</p>
+               <h2 class="section-title wide" id="repay-final-heading">Ask. Get funded. Repay. Build the <em>record.</em></h2>
+               <p class="lead">Browse the product before creating an account.</p>
+               <div class="button-row">
+                  <a class="button light" href="/request-board?tour=1">Take the app tour <span class="arrow" aria-hidden="true">→</span></a
+                  ><a class="button subtle" href="/how-it-works">Review all four steps</a>
+               </div>
+            </div>
+         </section>
+      </main>
 
-  <script>
-    // ---- Header: gain a surface once the hero starts scrolling away ----
-    (function () {
-      var head = document.getElementById("siteHead");
-      if (!head) return;
-      var onScroll = function () { head.classList.toggle("scrolled", window.scrollY > 24); };
-      window.addEventListener("scroll", onScroll, { passive: true });
-      onScroll();
-    })();
-
-    // ---- Menu drawer ----
-    (function () {
-      var drawer = document.getElementById("drawer");
-      var openBtn = document.getElementById("menuOpen");
-      var closeBtn = document.getElementById("menuClose");
-      if (!drawer || !openBtn || !closeBtn) return;
-      function setOpen(open) {
-        drawer.classList.toggle("open", open);
-        document.body.classList.toggle("drawer-lock", open);
-        openBtn.setAttribute("aria-expanded", String(open));
-        if (open) closeBtn.focus();
-      }
-      openBtn.addEventListener("click", function () { setOpen(true); });
-      closeBtn.addEventListener("click", function () { setOpen(false); });
-      document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
-    })();
-
-    // ---- Sign in / start-a-loan buttons: spin on tap ----
-    // These links leave the static site for the real app, which takes a moment to load.
-    // Add a spinner immediately on click so the tap feels acknowledged; the browser's own
-    // navigation does the rest, so we never preventDefault or manage a timeout here. On a
-    // back/forward-cache restore the click never actually left this page, so clear any
-    // stuck spinner then.
-    (function () {
-      var loadingLinks = document.querySelectorAll(
-        '.head-signin, .drawer .d-foot a[href="/sign-in"], .cta[href="/request-board"]'
-      );
-      loadingLinks.forEach(function (a) {
-        a.addEventListener("click", function () { a.classList.add("is-loading"); });
-      });
-      window.addEventListener("pageshow", function (e) {
-        if (!e.persisted) return;
-        loadingLinks.forEach(function (a) { a.classList.remove("is-loading"); });
-      });
-    })();
-
-    // reveal on scroll (same pattern as landing)
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-    }, { threshold: 0.12 });
-    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
-  </script>
-</body>
+      <footer class="site-footer">
+         <div class="container">
+            <div class="footer-grid">
+               <div class="footer-brand">
+                  <a class="brand" href="/"
+                     ><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="34" height="34" />Moodeng Credit</a
+                  >
+                  <p>Small person-to-person loans with terms you can understand before you ask.</p>
+               </div>
+               <div class="footer-links">
+                  <div>
+                     <h2>Borrow</h2>
+                     <a href="/how-it-works">How it works</a><a href="/how-to-cash-out">Cash-out guide</a
+                     ><a href="/how-to-repay">Repay guide</a>
+                  </div>
+                  <div>
+                     <h2>About</h2>
+                     <a href="/about">Our story</a><a href="/for-lenders">For lenders</a
+                     ><a href="https://moodeng.gitbook.io/credit" target="_blank" rel="noreferrer">Credit levels</a>
+                  </div>
+                  <div>
+                     <h2>Talk to us</h2>
+                     <a href="mailto:support@moodengcredit.com">Email</a
+                     ><a href="https://t.me/jimmymoodengcredit" target="_blank" rel="noreferrer">Telegram</a
+                     ><a href="https://www.facebook.com/profile.php?id=61589106561061" target="_blank" rel="noreferrer">Facebook</a>
+                  </div>
+               </div>
+            </div>
+            <p class="footer-fine">
+               © 2026 Moodeng Credit. Provider availability and terms can change. Review the live route before moving money.
+               <a href="/privacy-policy">Privacy policy</a> · <a href="/terms">Terms of service</a>
+            </p>
+         </div>
+      </footer>
+      <script type="module" src="/landing/site.js?v=20260715-story2"></script>
+   </body>
 </html>
