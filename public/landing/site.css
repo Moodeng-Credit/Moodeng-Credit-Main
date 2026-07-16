@@ -5743,22 +5743,76 @@ a.button.is-loading::after {
    }
 }
 
-/* ---- Limit-progression rails draw their connectors left-to-right when
-   the repay panel activates, so $15 → $20 → $60+ reads as movement, not
-   just three numbers. Timed to land after the panel's detail-enter. ---- */
+/* ---- Limit-progression rail builds as a left-to-right sequence when the
+   repay panel activates — milestone pops, connector draws to the next,
+   next milestone pops — so the record visibly ACCUMULATES instead of the
+   three numbers just being there. The final $60+ is the payoff: it rolls
+   up into its clipped slot with a bigger landing. Timed to start after
+   the rail block's detail-enter (135ms + 420ms). ---- */
+.deal-panel.is-active .deal-growth-rail span {
+   animation: growth-milestone-pop 360ms var(--ease-out) 320ms both;
+}
+
+.deal-panel.is-active .deal-growth-rail span:nth-of-type(2) {
+   animation-delay: 880ms;
+}
+
+.deal-panel.is-active .deal-growth-rail span:nth-of-type(3) {
+   overflow: hidden;
+   animation-delay: 1440ms;
+}
+
+.deal-panel.is-active .deal-growth-rail span:nth-of-type(3) b {
+   animation: growth-final-roll 480ms var(--ease-out) 1460ms both;
+}
+
 .deal-panel.is-active .deal-growth-rail i {
    transform: scaleX(0);
    transform-origin: left center;
-   animation: growth-draw 420ms var(--ease-out) 400ms both;
+   animation: growth-draw 420ms var(--ease-out) 560ms both;
 }
 
 .deal-panel.is-active .deal-growth-rail i:nth-of-type(2) {
-   animation-delay: 680ms;
+   animation-delay: 1120ms;
 }
 
 @keyframes growth-draw {
    to {
       transform: scaleX(1);
+   }
+}
+
+@keyframes growth-milestone-pop {
+   from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.92);
+   }
+
+   65% {
+      opacity: 1;
+      transform: translateY(-1px) scale(1.05);
+   }
+
+   to {
+      opacity: 1;
+      transform: none;
+   }
+}
+
+@keyframes growth-final-roll {
+   from {
+      opacity: 0;
+      transform: translateY(115%);
+   }
+
+   70% {
+      opacity: 1;
+      transform: translateY(-8%) scale(1.1);
+   }
+
+   to {
+      opacity: 1;
+      transform: none;
    }
 }
 
@@ -5793,5 +5847,14 @@ a.button.is-loading::after {
       opacity: 1;
       transform: none;
       transition-delay: 0s !important;
+   }
+
+   /* growth-rail build hides milestones until their keyframes run — the
+      0.01ms duration above finishes them instantly, but the stagger
+      delays would still leave the numbers invisible for ~1.5s */
+   .deal-panel.is-active .deal-growth-rail span,
+   .deal-panel.is-active .deal-growth-rail span:nth-of-type(3) b,
+   .deal-panel.is-active .deal-growth-rail i {
+      animation-delay: 0s !important;
    }
 }
