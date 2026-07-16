@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+   formatBoardExpiryLabel,
    getBorrowerActiveLoanCount,
    getBorrowerUsedCreditAmount,
+   getRequestBoardExpiry,
    isExpiredUnfundedRequest,
    isRequestBoardLoanVisible
 } from '@/lib/borrowerCreditUsage';
@@ -60,5 +62,47 @@ describe('borrower credit usage', () => {
 
       expect(isExpiredUnfundedRequest(notQuiteExpired, now)).toBe(false);
       expect(isRequestBoardLoanVisible(notQuiteExpired, now)).toBe(true);
+   });
+
+   describe('request board expiry', () => {
+      it('counts down whole days left without rounding up a partial day', () => {
+         // Posted 3d 22h before `now`, so 3d 2h remain — lenders must not read this as 4 days.
+         const expiry = getRequestBoardExpiry({ ...baseLoan, createdAt: '2026-05-16T14:00:00.000Z' }, now);
+
+         expect(expiry?.daysRemaining).toBe(3);
+         expect(expiry?.expiresAt.toISOString()).toBe('2026-05-23T14:00:00.000Z');
+      });
+
+      it('reports hours on the final day', () => {
+         const expiry = getRequestBoardExpiry({ ...baseLoan, createdAt: '2026-05-13T18:00:00.000Z' }, now);
+
+         expect(expiry?.daysRemaining).toBe(0);
+         expect(expiry?.hoursRemaining).toBe(6);
+      });
+
+      it('returns nothing for expired, funded, or undated loans', () => {
+         expect(getRequestBoardExpiry(baseLoan, now)).toBeNull();
+         expect(getRequestBoardExpiry({ ...baseLoan, createdAt: '2026-05-18T00:00:00.000Z', loanStatus: LoanStatus.LENT }, now)).toBeNull();
+         expect(getRequestBoardExpiry({ ...baseLoan, createdAt: '' }, now)).toBeNull();
+      });
+
+      it('leads with the posted date and says "less than a day", never "today"', () => {
+         // 22h left can span midnight, so "leaves today" would lie — the label sticks
+         // to a duration and lets the posted date anchor the timeline.
+         const expiry = getRequestBoardExpiry({ ...baseLoan, createdAt: '2026-05-13T18:00:00.000Z' }, now);
+         const label = formatBoardExpiryLabel(expiry!);
+
+         expect(label).toMatch(/^Posted \w{3}, \w{3} \d{1,2} · /);
+         expect(label).toContain('Less than a day left on the board');
+         expect(label).not.toContain('today');
+      });
+
+      it('pluralizes the day count', () => {
+         const oneDay = getRequestBoardExpiry({ ...baseLoan, createdAt: '2026-05-14T18:00:00.000Z' }, now);
+         const threeDays = getRequestBoardExpiry({ ...baseLoan, createdAt: '2026-05-16T14:00:00.000Z' }, now);
+
+         expect(formatBoardExpiryLabel(oneDay!)).toContain('· 1 day left on the board');
+         expect(formatBoardExpiryLabel(threeDays!)).toContain('· 3 days left on the board');
+      });
    });
 });
