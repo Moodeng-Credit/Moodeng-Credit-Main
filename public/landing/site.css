@@ -4626,26 +4626,37 @@ li {
 
    html[data-landing-version='2'] .deal-section .term-list {
       border-top: 0;
-      padding-bottom: clamp(260px, 32vh, 360px);
+      padding-bottom: clamp(150px, 20vh, 220px);
    }
 
    html[data-landing-version='2'] .deal-mobile-scene {
       display: none;
    }
 
+   /* Roulette rhythm (George 2026-07-17: the old 50vh steps left a screen of
+      dead space between titles and the opacity flip felt abrupt): steps are
+      compact enough that the next title is always visible coming up, and the
+      JS driver scrubs each step's opacity/offset continuously from its
+      distance to the focus line — so text fades away WITH the scroll instead
+      of popping. The class transition below only serves the non-scrubbed
+      fallback; .is-scrubbed turns it off so inline writes don't smear. */
    html[data-landing-version='2'] .deal-section .term-list li {
-      min-height: clamp(330px, 50vh, 440px);
+      min-height: clamp(190px, 26vh, 250px);
       display: grid;
       grid-template-columns: 38px minmax(0, 1fr);
       align-content: center;
       gap: 16px;
       border-color: oklch(72% 0.05 305 / 0.22);
-      padding-block: 56px;
+      padding-block: 30px;
       opacity: 0.3;
       transform: translateX(16px);
       transition:
          opacity 260ms var(--ease-out),
          transform 400ms var(--ease-out);
+   }
+
+   html[data-landing-version='2'] .deal-section.is-scrubbed .term-list li {
+      transition: none;
    }
 
    html[data-landing-version='2'] .deal-section .term-list li:first-child {
