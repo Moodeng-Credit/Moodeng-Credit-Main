@@ -55,6 +55,53 @@
       versionSwitcher.hidden = false;
    }
 
+   var siteHeader = document.querySelector('.site-header');
+
+   if (siteHeader) {
+      var headerFrame;
+
+      var syncHeader = function () {
+         headerFrame = undefined;
+         siteHeader.classList.toggle('is-scrolled', window.scrollY > 24);
+      };
+
+      window.addEventListener(
+         'scroll',
+         function () {
+            if (headerFrame) return;
+            headerFrame = window.requestAnimationFrame(syncHeader);
+         },
+         { passive: true }
+      );
+      syncHeader();
+   }
+
+   var loadingButtons = Array.from(document.querySelectorAll('a.button[href]')).filter(function (link) {
+      var href = link.getAttribute('href') || '';
+      return link.target !== '_blank' && href.indexOf('mailto:') !== 0 && href.indexOf('tel:') !== 0 && href.charAt(0) !== '#';
+   });
+
+   loadingButtons.forEach(function (link) {
+      link.addEventListener('click', function () {
+         link.classList.add('is-loading');
+      });
+   });
+
+   window.addEventListener('pageshow', function () {
+      loadingButtons.forEach(function (link) {
+         link.classList.remove('is-loading');
+      });
+   });
+
+   function rollText(el, text) {
+      if (!el) return;
+      if (el.textContent === text) return;
+      el.textContent = text;
+      el.classList.remove('title-roll');
+      void el.offsetWidth;
+      el.classList.add('title-roll');
+   }
+
    var dialog = document.querySelector('[data-menu-dialog]');
    var openButton = document.querySelector('[data-menu-open]');
    var closeButton = document.querySelector('[data-menu-close]');
@@ -212,13 +259,11 @@
             dot.classList.toggle('is-complete', dotIndex < index);
          });
 
-         if (dealCount) {
-            dealCount.textContent = String(index + 1).padStart(2, '0') + ' / ' + String(dealSteps.length).padStart(2, '0');
-         }
+         rollText(dealCount, String(index + 1).padStart(2, '0') + ' / ' + String(dealSteps.length).padStart(2, '0'));
 
          if (dealTitle) {
             var activeTitle = dealSteps[index] && dealSteps[index].querySelector('b');
-            dealTitle.textContent = activeTitle ? activeTitle.textContent : '';
+            rollText(dealTitle, activeTitle ? activeTitle.textContent : '');
          }
       }
 
@@ -314,13 +359,11 @@
             dot.classList.toggle('is-complete', dotIndex < index);
          });
 
-         if (storyCount) {
-            storyCount.textContent = String(index + 1).padStart(2, '0') + ' / ' + String(storySteps.length).padStart(2, '0');
-         }
+         rollText(storyCount, String(index + 1).padStart(2, '0') + ' / ' + String(storySteps.length).padStart(2, '0'));
 
          if (storyTitle) {
             var activeTitle = storySteps[index] && storySteps[index].querySelector('h3');
-            storyTitle.textContent = activeTitle ? activeTitle.textContent : '';
+            rollText(storyTitle, activeTitle ? activeTitle.textContent : '');
          }
       }
 

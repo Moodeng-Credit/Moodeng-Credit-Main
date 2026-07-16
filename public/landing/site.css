@@ -5528,6 +5528,212 @@ li {
    }
 }
 
+/* =====================================================================
+   Motion pass — animations restored from the previous landing page and
+   adapted to the new content. The prefers-reduced-motion block at the end
+   of this file force-disables all of it.
+   ===================================================================== */
+
+/* ---- Tap feedback: a navigating button acknowledges the tap with a
+   spinner ring while the next page loads. The label is hidden via
+   !important because variant selectors (e.g. the header CTA) out-specify
+   the loading state; --loading-ring carries the per-variant ring color. ---- */
+a.button {
+   --loading-ring: var(--paper);
+   position: relative;
+}
+
+a.button.secondary,
+a.button.light {
+   --loading-ring: var(--ink);
+}
+
+a.button.subtle {
+   --loading-ring: var(--purple-ink);
+}
+
+.header-actions > a.button:not(.secondary) {
+   --loading-ring: var(--ink);
+}
+
+.header-actions a.button.secondary {
+   --loading-ring: var(--paper);
+}
+
+a.button.is-loading {
+   color: transparent !important;
+   pointer-events: none;
+}
+
+a.button.is-loading::after {
+   content: '';
+   position: absolute;
+   top: 50%;
+   left: 50%;
+   width: 16px;
+   height: 16px;
+   margin: -8px 0 0 -8px;
+   border: 2px solid var(--loading-ring);
+   border-top-color: transparent;
+   border-radius: 50%;
+   animation: button-spin 700ms linear infinite;
+}
+
+@keyframes button-spin {
+   to {
+      transform: rotate(360deg);
+   }
+}
+
+/* ---- Header reacts to scroll: compacts a little and deepens its shadow
+   once the page is moving, so the sticky bar feels attached to the scroll
+   instead of painted on. ---- */
+.site-header {
+   transition: box-shadow 240ms var(--ease-out);
+}
+
+.site-header .container {
+   transition: min-height 240ms var(--ease-out);
+}
+
+.site-header.is-scrolled .container {
+   min-height: 62px;
+}
+
+.site-header.is-scrolled {
+   box-shadow: 0 14px 34px oklch(13% 0.04 296 / 0.3);
+}
+
+/* ---- Stage footer title/count roll up like the old slot-machine title
+   reel when the active step changes. JS re-triggers the class per swap. ---- */
+[data-deal-title],
+[data-story-title],
+[data-deal-count],
+[data-story-count] {
+   display: inline-block;
+}
+
+.title-roll {
+   animation: title-roll 360ms var(--ease-out);
+}
+
+@keyframes title-roll {
+   from {
+      opacity: 0;
+      transform: translateY(0.55em);
+   }
+
+   to {
+      opacity: 1;
+      transform: none;
+   }
+}
+
+/* ---- Cascade reveals: children of a revealed group arrive one after
+   another (the old page's beat rhythm) instead of as a single block. ---- */
+.portrait-rail .portrait:nth-child(2) {
+   transition-delay: 70ms;
+}
+
+.portrait-rail .portrait:nth-child(3) {
+   transition-delay: 140ms;
+}
+
+.portrait-rail .portrait:nth-child(4) {
+   transition-delay: 210ms;
+}
+
+.portrait-rail .portrait:nth-child(5) {
+   transition-delay: 280ms;
+}
+
+.dignity-grid.reveal .dignity-card,
+.faq-list.reveal details {
+   opacity: 0;
+   transform: translateY(16px);
+   transition:
+      opacity 560ms var(--ease-out),
+      transform 560ms var(--ease-out);
+}
+
+.dignity-grid.reveal.is-visible .dignity-card,
+.faq-list.reveal.is-visible details {
+   opacity: 1;
+   transform: none;
+}
+
+.dignity-grid.reveal.is-visible .dignity-card:nth-child(2),
+.faq-list.reveal.is-visible details:nth-child(2) {
+   transition-delay: 90ms;
+}
+
+.dignity-grid.reveal.is-visible .dignity-card:nth-child(3),
+.faq-list.reveal.is-visible details:nth-child(3) {
+   transition-delay: 180ms;
+}
+
+.dignity-grid.reveal.is-visible .dignity-card:nth-child(4),
+.faq-list.reveal.is-visible details:nth-child(4) {
+   transition-delay: 270ms;
+}
+
+.faq-list.reveal.is-visible details:nth-child(5) {
+   transition-delay: 360ms;
+}
+
+.faq-list.reveal.is-visible details:nth-child(6) {
+   transition-delay: 450ms;
+}
+
+/* ---- Hero idle float: after the entrance animation lands, the tilted
+   photos keep a slow breathing drift so the hero stays alive (the old
+   hero had the faces marquee for this). The float's 0% frame equals the
+   entrance's final frame, so the handoff is seamless; opacity is owned by
+   the entrance animation alone. ---- */
+@media (min-width: 1024px) {
+   html[data-landing-version='2'] .tilt-hero-photo {
+      animation:
+         tilt-hero-photo-in 720ms var(--ease-out) forwards,
+         tilt-hero-float 8s ease-in-out infinite;
+      animation-delay: var(--hero-photo-delay, 100ms), calc(var(--hero-photo-delay, 100ms) + 720ms);
+   }
+
+   html[data-landing-version='2'] .tilt-hero-photo-rider,
+   html[data-landing-version='2'] .tilt-hero-photo-stock {
+      animation-duration: 720ms, 9.5s;
+   }
+}
+
+@keyframes tilt-hero-float {
+   0%,
+   100% {
+      transform: translateY(0) rotate(var(--hero-photo-rotate));
+   }
+
+   50% {
+      transform: translateY(-7px) rotate(var(--hero-photo-rotate));
+   }
+}
+
+/* ---- Limit-progression rails draw their connectors left-to-right when
+   the repay panel activates, so $15 → $20 → $60+ reads as movement, not
+   just three numbers. Timed to land after the panel's detail-enter. ---- */
+.deal-panel.is-active .deal-growth-rail i {
+   transform: scaleX(0);
+   transform-origin: left center;
+   animation: growth-draw 420ms var(--ease-out) 400ms both;
+}
+
+.deal-panel.is-active .deal-growth-rail i:nth-of-type(2) {
+   animation-delay: 680ms;
+}
+
+@keyframes growth-draw {
+   to {
+      transform: scaleX(1);
+   }
+}
+
 @media (prefers-reduced-motion: reduce) {
    html {
       scroll-behavior: auto;
@@ -5545,5 +5751,20 @@ li {
    .reveal {
       opacity: 1;
       transform: none;
+   }
+
+   /* infinite animations still loop at 0.01ms above — stop the hero float
+      outright so it can't shimmer */
+   .tilt-hero-photo {
+      animation-name: tilt-hero-photo-in !important;
+   }
+
+   /* grouped-cascade children must not stay hidden when transitions are
+      disabled */
+   .dignity-grid.reveal .dignity-card,
+   .faq-list.reveal details {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0s !important;
    }
 }
