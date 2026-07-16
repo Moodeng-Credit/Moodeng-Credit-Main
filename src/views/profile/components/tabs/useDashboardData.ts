@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 
-import { CREDIT_TIERS, MAX_CREDIT_LIMIT, getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { CREDIT_TIERS, MAX_CREDIT_LIMIT, getEffectiveCreditLimit, isRepaidOnTime } from '@/lib/creditLeveling';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getNextCreditTier } from '@/config/creditTiers';
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
@@ -38,9 +38,7 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
       const repaidAmount = toNumber(loan.repaidAmount);
       const totalRepayment = toNumber(loan.totalRepaymentAmount);
       const isFullyRepaid = totalRepayment > 0 ? repaidAmount >= totalRepayment : repaidAmount > 0;
-      const paidAt = parseDateSafely(loan.updatedAt);
-      const dueDate = parseDateSafely(loan.dueDate);
-      return isFullyRepaid && paidAt.getTime() <= dueDate.getTime();
+      return isFullyRepaid && isRepaidOnTime(loan.updatedAt, loan.dueDate);
    });
 
    const paidOnTimeByTier = new Map<number, Loan>();

@@ -2,6 +2,7 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 
 import { isExactCreditTier } from '@/config/creditTiers';
+import { isRepaidOnTime } from '@/lib/creditLeveling';
 import { trustPointMilestoneRuleById } from '@/shared/points';
 import type { Loan } from '@/types/loanTypes';
 import type { CreditLevel } from '@/views/profile/components/tabs/types';
@@ -74,7 +75,7 @@ const isLoanPaidOnTime = (loan: Loan): boolean => {
    const totalRepayment = toNumber(loan.totalRepaymentAmount);
    const isFullyRepaid = totalRepayment > 0 ? repaidAmount >= totalRepayment : repaidAmount > 0;
    if (!isFullyRepaid) return false;
-   return parseDateSafely(loan.updatedAt).getTime() <= parseDateSafely(loan.dueDate).getTime();
+   return isRepaidOnTime(loan.updatedAt, loan.dueDate);
 };
 
 export const getBorrowerLoans = (loans: Loan[], userId: string) => loans.filter((loan) => loan.borrowerUser === userId);

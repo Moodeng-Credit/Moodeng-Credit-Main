@@ -1,11 +1,10 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
-import { parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 
 import { isExpiredUnfundedRequest } from '@/lib/borrowerCreditUsage';
-import { evaluateCreditProgression } from '@/lib/creditLeveling';
+import { evaluateCreditProgression, isRepaidOnTime } from '@/lib/creditLeveling';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
@@ -476,11 +475,7 @@ export const updateLoanStatus = createAsyncThunk<
                return sum;
             }
 
-            const paidAt = parseDateSafely(paidAtSource);
-            const dueDate = parseDateSafely(loan.due_date);
-            const isOnTime = paidAt.getTime() <= dueDate.getTime();
-
-            return isOnTime ? sum + toNumber(loan.loan_amount ?? 0) : sum;
+            return isRepaidOnTime(paidAtSource, loan.due_date) ? sum + toNumber(loan.loan_amount ?? 0) : sum;
          }, 0);
 
          const creditEvaluation = evaluateCreditProgression({

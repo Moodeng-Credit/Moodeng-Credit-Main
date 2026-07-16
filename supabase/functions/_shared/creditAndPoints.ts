@@ -23,6 +23,14 @@ export const parseDateSafely = (dateValue: string | Date): Date => {
    return Number.isNaN(date.getTime()) ? new Date() : date;
 };
 
+// Kept in sync with src/lib/creditLeveling.ts isRepaidOnTime / OVERDUE_AFTER_DUE_DATE_MS.
+// Due dates are stored at midnight UTC; a loan stays on time through the whole due date and only
+// becomes overdue the day AFTER it. Single source of truth for on-time across progression + volume.
+export const OVERDUE_AFTER_DUE_DATE_MS = 24 * 60 * 60 * 1000;
+
+export const isRepaidOnTime = (paidAt: string | Date, dueDate: string | Date): boolean =>
+   parseDateSafely(paidAt).getTime() < parseDateSafely(dueDate).getTime() + OVERDUE_AFTER_DUE_DATE_MS;
+
 // --- credit tiers (ported from src/config/creditTiers.ts) --------------------------------------
 
 export const CREDIT_TIERS = [15, 20, 40, 60, 80, 100, 120, 140] as const;
@@ -76,12 +84,7 @@ export const evaluateCreditProgression = ({
    const totalRepayment = toNumber(totalRepaymentAmount ?? 0);
    const cumulativeBorrowed = toNumber(cumulativeBorrowedAmount ?? 0);
    const isFullyRepaid = totalRepayment > 0 && repaid >= totalRepayment;
-   const paidAtDate = parseDateSafely(paidAt);
-   const dueDateValue = parseDateSafely(dueDate);
-   // Due dates are stored at midnight UTC. A loan is on time through the entire due date and only
-   // becomes overdue the day AFTER the due date (a loan due the 15th is overdue starting the 16th).
-   const OVERDUE_AFTER_DUE_DATE_MS = 24 * 60 * 60 * 1000;
-   const isLate = paidAtDate.getTime() >= dueDateValue.getTime() + OVERDUE_AFTER_DUE_DATE_MS;
+   const isLate = !isRepaidOnTime(paidAt, dueDate);
    const meetsCumulativeVolume = cumulativeBorrowed >= normalizedLimit;
    const shouldPause = isLate;
    const canLevelUp =
@@ -155,8 +158,5 @@ export const computeCumulativeBorrowedAmount = (
       const totalRepayment = toNumber(loan.total_repayment_amount ?? 0);
       const isFullyRepaid = totalRepayment > 0 ? repaid >= totalRepayment : repaid > 0;
       if (!isFullyRepaid) return sum;
-      const paidAt = parseDateSafely(paidAtSource);
-      const dueDate = parseDateSafely(loan.due_date);
-      const isOnTime = paidAt.getTime() <= dueDate.getTime();
-      return isOnTime ? sum + toNumber(loan.loan_amount ?? 0) : sum;
+      return isRepaidOnTime(paidAtSource, loan.due_date) ? sum + toNumber(loan.loan_amount ?? 0) : sum;
    }, 0);

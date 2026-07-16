@@ -195,7 +195,7 @@ const applyCreditProgression = async (admin: Admin, loan: Record<string, unknown
 
    const { data: borrower, error: borrowerError } = await admin
       .from('users')
-      .select('id, cs, is_world_id, credit_progression_paused')
+      .select('id, cs, is_world_id, is_didit, credit_progression_paused')
       .eq('id', borrowerId)
       .single();
    if (borrowerError || !borrower) {
@@ -215,7 +215,10 @@ const applyCreditProgression = async (admin: Admin, loan: Record<string, unknown
 
    const evaluation = evaluateCreditProgression({
       currentLimit: borrower.cs ?? 0,
-      isVerified: borrower.is_world_id === 'ACTIVE',
+      // Any supported identity method grants verified status for credit progression, mirroring the
+      // frontend isUserVerified(). Didit is the majority path; gating on World ID alone stalled
+      // Didit-verified borrowers' credit-limit growth (this is the authoritative writer).
+      isVerified: borrower.is_world_id === 'ACTIVE' || borrower.is_didit === 'ACTIVE',
       isPaused: borrower.credit_progression_paused ?? false,
       repaidAmount: toNumber(loan.repaid_amount as number | string | null),
       totalRepaymentAmount: toNumber(loan.total_repayment_amount as number | string | null),

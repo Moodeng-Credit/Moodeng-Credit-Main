@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { evaluateCreditProgression } from '@/lib/creditLeveling';
+import { evaluateCreditProgression, isRepaidOnTime } from '@/lib/creditLeveling';
 import type { User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
@@ -147,6 +147,15 @@ describe('Credit leveling logic', () => {
 
       expect(evaluation.shouldLevelUp).toBe(true);
       expect(evaluation.nextLimit).toBe(60);
+   });
+});
+
+describe('isRepaidOnTime', () => {
+   it('is on time for the whole due date and overdue the day after', () => {
+      expect(isRepaidOnTime('2025-02-01T00:00:00.000Z', '2025-02-01T00:00:00.000Z')).toBe(true);
+      expect(isRepaidOnTime('2025-02-01T23:59:59.000Z', '2025-02-01T00:00:00.000Z')).toBe(true);
+      expect(isRepaidOnTime('2025-02-02T00:00:00.000Z', '2025-02-01T00:00:00.000Z')).toBe(false);
+      expect(isRepaidOnTime('2025-01-31T12:00:00.000Z', '2025-02-01T00:00:00.000Z')).toBe(true);
    });
 });
 
