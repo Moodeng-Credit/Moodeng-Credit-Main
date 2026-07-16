@@ -55,6 +55,44 @@
       versionSwitcher.hidden = false;
    }
 
+   var siteHeader = document.querySelector('.site-header');
+
+   if (siteHeader) {
+      var headerFrame;
+
+      var syncHeader = function () {
+         headerFrame = undefined;
+         siteHeader.classList.toggle('is-scrolled', window.scrollY > 24);
+      };
+
+      window.addEventListener(
+         'scroll',
+         function () {
+            if (headerFrame) return;
+            headerFrame = window.requestAnimationFrame(syncHeader);
+         },
+         { passive: true }
+      );
+      syncHeader();
+   }
+
+   var loadingButtons = Array.from(document.querySelectorAll('a.button[href]')).filter(function (link) {
+      var href = link.getAttribute('href') || '';
+      return link.target !== '_blank' && href.indexOf('mailto:') !== 0 && href.indexOf('tel:') !== 0 && href.charAt(0) !== '#';
+   });
+
+   loadingButtons.forEach(function (link) {
+      link.addEventListener('click', function () {
+         link.classList.add('is-loading');
+      });
+   });
+
+   window.addEventListener('pageshow', function () {
+      loadingButtons.forEach(function (link) {
+         link.classList.remove('is-loading');
+      });
+   });
+
    var dialog = document.querySelector('[data-menu-dialog]');
    var openButton = document.querySelector('[data-menu-open]');
    var closeButton = document.querySelector('[data-menu-close]');
@@ -222,6 +260,14 @@
          }
       }
 
+      function clearDealScrub() {
+         story.classList.remove('is-scrubbed');
+         dealSteps.forEach(function (step) {
+            step.style.opacity = '';
+            step.style.transform = '';
+         });
+      }
+
       function syncDealToViewport() {
          dealFrame = undefined;
          if (!isAnimatedDeal()) return;
@@ -229,6 +275,10 @@
          var viewportTarget = window.innerHeight * (isMobileDeal() ? 0.58 : 0.52);
          var closestIndex = 0;
          var closestDistance = Infinity;
+         var scrubbing = isDesktopDeal();
+         var scrubRange = window.innerHeight * 0.4;
+
+         story.classList.toggle('is-scrubbed', scrubbing);
 
          dealSteps.forEach(function (step, index) {
             var rect = step.getBoundingClientRect();
@@ -237,6 +287,15 @@
             if (distance < closestDistance) {
                closestDistance = distance;
                closestIndex = index;
+            }
+
+            if (scrubbing) {
+               // roulette scrub: fade/offset track the scroll continuously —
+               // full ink on the focus line, easing to the resting 0.3 / 16px
+               // one scrub-range away (matches the non-scrubbed CSS values)
+               var t = Math.min(1, distance / scrubRange);
+               step.style.opacity = (1 - t * 0.7).toFixed(3);
+               step.style.transform = 'translateX(' + (t * 16).toFixed(1) + 'px)';
             }
          });
 
@@ -255,6 +314,7 @@
          dealFrame = undefined;
          activeDealIndex = -1;
          story.classList.toggle('is-mobile-animated', isMobileDeal());
+         if (!isDesktopDeal()) clearDealScrub();
 
          if (!isAnimatedDeal()) {
             dealSteps.forEach(function (step) {
