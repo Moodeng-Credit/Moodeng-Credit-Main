@@ -266,6 +266,12 @@
             step.style.opacity = '';
             step.style.transform = '';
          });
+         dealPanels.forEach(function (panel) {
+            panel.style.opacity = '';
+            panel.style.transform = '';
+            panel.style.visibility = '';
+            panel.style.zIndex = '';
+         });
       }
 
       function syncDealToViewport() {
@@ -277,6 +283,7 @@
          var closestDistance = Infinity;
          var scrubbing = isDesktopDeal();
          var scrubRange = window.innerHeight * 0.4;
+         var stepCenters = [];
 
          story.classList.toggle('is-scrubbed', scrubbing);
 
@@ -284,6 +291,7 @@
             var rect = step.getBoundingClientRect();
             var stepCenter = rect.top + rect.height / 2;
             var distance = Math.abs(stepCenter - viewportTarget);
+            stepCenters.push(stepCenter);
             if (distance < closestDistance) {
                closestDistance = distance;
                closestIndex = index;
@@ -298,6 +306,45 @@
                step.style.transform = 'translateX(' + (t * 16).toFixed(1) + 'px)';
             }
          });
+
+         if (scrubbing) {
+            // stage panels scrub too: instead of the class flip (which pops the
+            // new panel in the moment a step crosses the focus line), express
+            // the scroll as a fractional step position and crossfade the two
+            // bracketing panels continuously. Each panel holds fully opaque
+            // near its own step (d < 0.28) and hands off across the middle
+            // stretch, so the swap happens WITH the scroll, never against it.
+            var position = 0;
+            var lastCenter = stepCenters.length - 1;
+            if (lastCenter > 0) {
+               if (viewportTarget <= stepCenters[0]) {
+                  position = 0;
+               } else if (viewportTarget >= stepCenters[lastCenter]) {
+                  position = lastCenter;
+               } else {
+                  for (var pair = 0; pair < lastCenter; pair += 1) {
+                     if (viewportTarget < stepCenters[pair + 1]) {
+                        position = pair + (viewportTarget - stepCenters[pair]) / (stepCenters[pair + 1] - stepCenters[pair]);
+                        break;
+                     }
+                  }
+               }
+            }
+
+            dealPanels.forEach(function (panel, panelIndex) {
+               // fade-through, not crossfade: each panel is fully gone just past
+               // the halfway line (d = 0.52), so two panels' text never sit
+               // double-exposed on top of each other mid-swap
+               var d = Math.abs(position - panelIndex);
+               var t = Math.min(1, Math.max(0, (d - 0.26) / 0.26));
+               var eased = t * t * (3 - 2 * t);
+               var dir = panelIndex > position ? 1 : -1;
+               panel.style.opacity = (1 - eased).toFixed(3);
+               panel.style.transform = 'translateY(' + (dir * eased * 22).toFixed(1) + 'px)';
+               panel.style.visibility = eased >= 1 ? 'hidden' : 'visible';
+               panel.style.zIndex = eased >= 1 ? '' : String(10 - Math.round(eased * 5));
+            });
+         }
 
          activateDealStep(closestIndex);
       }
