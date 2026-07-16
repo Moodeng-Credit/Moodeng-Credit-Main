@@ -2,7 +2,7 @@ import { type MouseEvent, useCallback, useMemo, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
-import { ChevronRight, ExternalLink, Loader2, Send, Trash2 } from 'lucide-react';
+import { ChevronRight, Clock, ExternalLink, Loader2, Send, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount, useSwitchChain } from 'wagmi';
@@ -19,6 +19,7 @@ import { formatCurrency, formatNumber } from '@/utils/decimalHelpers';
 
 import { config } from '@/config/wagmiConfig';
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
+import { formatBoardExpiryLabel, getRequestBoardExpiry, type RequestBoardExpiry } from '@/lib/borrowerCreditUsage';
 import {
    type BorrowerContextProfileData,
    type BorrowerContextResult,
@@ -52,7 +53,15 @@ const getSafeProfileText = (value: unknown) => (typeof value === 'string' && val
 
 type LenderIouInfo = { loanAmount: number; borrowerFundedLoanCount: number };
 
-function BorrowerContextPanel({ context, lenderIouInfo }: { context: BorrowerContextResult; lenderIouInfo?: LenderIouInfo }) {
+function BorrowerContextPanel({
+   context,
+   lenderIouInfo,
+   boardExpiry
+}: {
+   context: BorrowerContextResult;
+   lenderIouInfo?: LenderIouInfo;
+   boardExpiry?: RequestBoardExpiry | null;
+}) {
    const iouData = lenderIouInfo
       ? (() => {
            const prior = lenderIouInfo.borrowerFundedLoanCount;
@@ -77,6 +86,15 @@ function BorrowerContextPanel({ context, lenderIouInfo }: { context: BorrowerCon
          <p className="text-md-b2 font-medium leading-[1.65] text-md-neutral-900 dark:text-md-neutral-200 whitespace-pre-line">
             {context.paragraphText}
          </p>
+         {/* Dark text color comes from the html.dark remap in globals.css (text-md-primary-* → #d8c2ff);
+             only the opacity-suffixed border needs an explicit dark override since the remap
+             matches exact class names. */}
+         {boardExpiry ? (
+            <p className="mt-3 flex items-center gap-1.5 border-t border-md-primary-900/15 pt-3 text-md-b3 font-semibold text-md-primary-1200 dark:border-[#d8c2ff]/20">
+               <Clock className="size-4 shrink-0" strokeWidth={2.25} aria-hidden="true" />
+               {formatBoardExpiryLabel(boardExpiry)}
+            </p>
+         ) : null}
          {iouData && (
             <div className="mt-4 rounded-[18px] bg-gradient-to-br from-[#fef3c7] to-[#fde68a] dark:from-[#3d2a00] dark:to-[#2a1d00] p-4 flex items-start gap-3">
                <span className="text-2xl leading-none mt-0.5" aria-hidden="true">
@@ -376,6 +394,10 @@ export default function UserCard(loan: UserCardProps) {
       loanData.loanAmount,
       loanReason
    ]);
+   const boardExpiry = useMemo(
+      () => getRequestBoardExpiry({ createdAt: loanData.createdAt, loanStatus: loanData.loanStatus }),
+      [loanData.createdAt, loanData.loanStatus]
+   );
    const explorerBaseUrl = account.chain?.blockExplorers?.default?.url;
    const explorerTxUrl = pendingTxHash && explorerBaseUrl ? `${explorerBaseUrl}/tx/${pendingTxHash}` : null;
    const isLenderCard = Boolean(isAuthenticated && !isBorrower && !isOwnLoan && !isLent && !isPreviewRequest);
@@ -505,6 +527,9 @@ export default function UserCard(loan: UserCardProps) {
                      !isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest)
                         ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 }
                         : undefined
+                  }
+                  boardExpiry={
+                     !isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest) ? boardExpiry : undefined
                   }
                />
             ) : null}
