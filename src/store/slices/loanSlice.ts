@@ -443,7 +443,7 @@ export const updateLoanStatus = createAsyncThunk<
    if (isPaid && data.borrower_user_id && data.due_date) {
       const { data: borrower, error: borrowerError } = await supabase
          .from('users')
-         .select('id, cs, is_world_id, credit_progression_paused')
+         .select('id, cs, is_world_id, is_didit, credit_progression_paused')
          .eq('id', data.borrower_user_id)
          .single();
 
@@ -485,7 +485,10 @@ export const updateLoanStatus = createAsyncThunk<
 
          const creditEvaluation = evaluateCreditProgression({
             currentLimit: borrower.cs ?? 0,
-            isVerified: borrower.is_world_id === 'ACTIVE',
+            // Any supported identity method grants verified status for credit progression,
+            // mirroring isUserVerified(). Didit is the majority path; gating on World ID
+            // alone stalled Didit-verified borrowers' credit-limit growth.
+            isVerified: borrower.is_world_id === 'ACTIVE' || borrower.is_didit === 'ACTIVE',
             isPaused: borrower.credit_progression_paused ?? false,
             repaidAmount: data.repaid_amount,
             totalRepaymentAmount: data.total_repayment_amount,
