@@ -30,13 +30,14 @@ import {
    upsertAccountRestrictionByUserId,
    upsertLoanRequestReview
 } from './adminSupabase';
+import ReferralCodesSection from './ReferralCodesSection';
 import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
 import SelfLendingSection from './SelfLendingSection';
 
 import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
 
-type AdminTab = 'users' | 'points' | 'trust-points' | 'defaults' | 'requests' | 'risk' | 'self-lending' | 'notifications' | 'relay';
+type AdminTab = 'users' | 'points' | 'trust-points' | 'defaults' | 'requests' | 'risk' | 'self-lending' | 'referrals' | 'notifications' | 'relay';
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
 
 type NoticeTemplate = {
@@ -54,6 +55,7 @@ const navItems: Array<{ id: AdminTab; label: string }> = [
    { id: 'requests', label: 'Loan request review' },
    { id: 'risk', label: 'Risk assessment' },
    { id: 'self-lending', label: 'Self-lending?' },
+   { id: 'referrals', label: 'Referral codes' },
    { id: 'notifications', label: 'Notifications' }
 ];
 
@@ -211,7 +213,7 @@ function hasPositivePoints(points: number | string) {
    return Number(formatPointsMajor(points)) > 0;
 }
 
-const ALL_ADMIN_TABS: readonly AdminTab[] = ['users', 'points', 'trust-points', 'defaults', 'requests', 'risk', 'self-lending', 'notifications', 'relay'];
+const ALL_ADMIN_TABS: readonly AdminTab[] = ['users', 'points', 'trust-points', 'defaults', 'requests', 'risk', 'self-lending', 'referrals', 'notifications', 'relay'];
 
 function isAdminTab(value: string): value is AdminTab {
    return (ALL_ADMIN_TABS as readonly string[]).includes(value);
@@ -1344,6 +1346,18 @@ export default function AdminPanel() {
                ) : null}
 
                {activeTab === 'self-lending' ? <SelfLendingSection /> : null}
+
+               {activeTab === 'referrals' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Referral codes</h2>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">
+                           Create codes, deactivate old ones, and track redemptions.
+                        </p>
+                     </div>
+                     <ReferralCodesSection />
+                  </section>
+               ) : null}
 
                {activeTab === 'relay' && isFundingAdmin ? <RelayLinksSection /> : null}
 
