@@ -13,6 +13,14 @@
       <meta property="og:type" content="website" />
       <meta property="og:url" content="https://moodeng.app/" />
       <meta property="og:image" content="https://moodeng.app/landing/assets/og/og-share.jpg" />
+      <script>
+         (function () {
+            var query = new URLSearchParams(window.location.search);
+            if (window.matchMedia('(max-width: 699px)').matches && query.get('desktop') !== '1') {
+               window.location.replace('/landing/old-mobile.html?theme=professional');
+            }
+         })();
+      </script>
       <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
       <link rel="stylesheet" href="/landing/site.css?v=20260717-dignity-carousel" />
    </head>
