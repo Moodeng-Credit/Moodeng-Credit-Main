@@ -6,6 +6,18 @@ export const CREDIT_STEP = 20;
 export const MIN_CREDIT_LIMIT = STARTING_CREDIT_LIMIT;
 export { CREDIT_TIERS, MAX_CREDIT_LIMIT };
 
+// Due dates are stored at midnight UTC, so a loan "due the 15th" is due at 2026-07-15T00:00:00Z.
+// It stays on time through the entire due date and only becomes overdue the day AFTER it (the 16th).
+export const OVERDUE_AFTER_DUE_DATE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Whether a repayment made at `paidAt` counts as on time for a loan due at `dueDate`.
+ * Single source of truth — use everywhere on-time is judged (credit progression, the cumulative
+ * volume gate, and dashboard displays) so they never drift apart.
+ */
+export const isRepaidOnTime = (paidAt: string | Date, dueDate: string | Date): boolean =>
+   parseDateSafely(paidAt).getTime() < parseDateSafely(dueDate).getTime() + OVERDUE_AFTER_DUE_DATE_MS;
+
 type CreditProgressionInput = {
    currentLimit: number | null | undefined;
    isVerified: boolean;
@@ -45,12 +57,7 @@ export const evaluateCreditProgression = ({
    const totalRepayment = toNumber(totalRepaymentAmount ?? 0);
    const cumulativeBorrowed = toNumber(cumulativeBorrowedAmount ?? 0);
    const isFullyRepaid = totalRepayment > 0 && repaid >= totalRepayment;
-   const paidAtDate = parseDateSafely(paidAt);
-   const dueDateValue = parseDateSafely(dueDate);
-   // Due dates are stored at midnight UTC. A loan is on time through the entire due date and only
-   // becomes overdue the day AFTER the due date (a loan due the 15th is overdue starting the 16th).
-   const OVERDUE_AFTER_DUE_DATE_MS = 24 * 60 * 60 * 1000;
-   const isLate = paidAtDate.getTime() >= dueDateValue.getTime() + OVERDUE_AFTER_DUE_DATE_MS;
+   const isLate = !isRepaidOnTime(paidAt, dueDate);
    const meetsCumulativeVolume = cumulativeBorrowed >= normalizedLimit;
    const shouldPause = isLate;
    const canLevelUp =
