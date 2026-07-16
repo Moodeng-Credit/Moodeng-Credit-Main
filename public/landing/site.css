@@ -3554,8 +3554,8 @@ li {
    position: relative;
    z-index: 1;
    width: auto;
-   height: 110px;
-   margin-bottom: -30px;
+   height: 150px;
+   margin-bottom: -40px;
    filter: drop-shadow(0 14px 18px oklch(28% 0.08 296 / 0.28));
 }
 
