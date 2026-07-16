@@ -438,3 +438,77 @@
       }
    });
 })();
+
+(function () {
+   var carousel = document.querySelector('.dignity-grid');
+   var slides = carousel ? Array.prototype.slice.call(carousel.querySelectorAll('.dignity-promise')) : [];
+   var previousButton = document.querySelector('[data-dignity-previous]');
+   var nextButton = document.querySelector('[data-dignity-next]');
+   var currentLabel = document.querySelector('[data-dignity-current]');
+   var mobileCarousel = window.matchMedia('(max-width: 699px)');
+   var activeIndex = 0;
+   var scrollFrame;
+
+   if (!carousel || !slides.length || !previousButton || !nextButton || !currentLabel) return;
+
+   function updateStatus(index) {
+      activeIndex = Math.max(0, Math.min(slides.length - 1, index));
+      currentLabel.textContent = String(activeIndex + 1);
+   }
+
+   function closestSlideIndex() {
+      var carouselLeft = carousel.getBoundingClientRect().left;
+      var closestIndex = 0;
+      var closestDistance = Infinity;
+
+      slides.forEach(function (slide, index) {
+         var distance = Math.abs(slide.getBoundingClientRect().left - carouselLeft);
+         if (distance < closestDistance) {
+            closestDistance = distance;
+            closestIndex = index;
+         }
+      });
+
+      return closestIndex;
+   }
+
+   function syncStatus() {
+      scrollFrame = undefined;
+      if (!mobileCarousel.matches) return;
+      updateStatus(closestSlideIndex());
+   }
+
+   function requestStatusSync() {
+      if (scrollFrame) return;
+      scrollFrame = window.requestAnimationFrame(syncStatus);
+   }
+
+   function showSlide(index) {
+      var nextIndex = (index + slides.length) % slides.length;
+      updateStatus(nextIndex);
+      carousel.scrollTo({ left: slides[nextIndex].offsetLeft - slides[0].offsetLeft, behavior: 'smooth' });
+   }
+
+   previousButton.addEventListener('click', function () {
+      showSlide(activeIndex - 1);
+   });
+
+   nextButton.addEventListener('click', function () {
+      showSlide(activeIndex + 1);
+   });
+
+   carousel.addEventListener('scroll', requestStatusSync, { passive: true });
+
+   function resetCarousel(event) {
+      if (!event.matches) {
+         carousel.scrollLeft = 0;
+         updateStatus(0);
+      }
+   }
+
+   if (typeof mobileCarousel.addEventListener === 'function') {
+      mobileCarousel.addEventListener('change', resetCarousel);
+   } else if (typeof mobileCarousel.addListener === 'function') {
+      mobileCarousel.addListener(resetCarousel);
+   }
+})();
