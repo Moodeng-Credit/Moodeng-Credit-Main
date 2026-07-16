@@ -967,20 +967,9 @@ li {
 }
 
 .hero-note {
-   display: inline-flex;
-   align-items: center;
-   gap: 9px;
    color: var(--ink-soft);
    font-size: 0.86rem;
    font-weight: 700;
-}
-
-.hero-note::before {
-   width: 9px;
-   height: 9px;
-   border-radius: 50%;
-   background: var(--green);
-   content: '';
 }
 
 .hero-visual {
@@ -5142,9 +5131,10 @@ li {
    }
 
    html[data-landing-version='2'] .version-two-actions .hero-note {
-      max-width: 36ch;
+      margin: 0;
       color: var(--muted);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
+      white-space: nowrap;
    }
 
    html[data-landing-version='2'] .tilt-hero-photo {
