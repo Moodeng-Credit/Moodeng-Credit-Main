@@ -4301,7 +4301,7 @@ li {
       color: var(--ink);
       padding: 22px 24px 24px;
       box-shadow: 0 30px 70px oklch(8% 0.04 296 / 0.3);
-      transition: background-color 420ms var(--ease-out);
+      transition: background-color 700ms var(--ease-out);
    }
 
    html[data-landing-version='2'] .deal-section[data-deal-active='1'] .deal-visual-stage {
@@ -4752,6 +4752,13 @@ li {
    }
 
    html[data-landing-version='2'] .deal-section.is-scrubbed .term-list li {
+      transition: none;
+   }
+
+   /* the stage panels scrub with the scroll the same way (site.js writes
+      opacity/transform per frame) — the class transition would lag a frame
+      behind every inline write and judder */
+   html[data-landing-version='2'] .deal-section.is-scrubbed .deal-panel {
       transition: none;
    }
 
