@@ -97,6 +97,20 @@
    var askPreviewEmoji = document.querySelector('[data-ask-preview-emoji]');
    var askPreviewPayback = document.querySelector('[data-ask-preview-payback]');
    var askPreviewDue = document.querySelector('[data-ask-preview-due]');
+   var askPreview = document.querySelector('.ask-preview');
+   var askPreviewTimer;
+
+   function animateAskPreview() {
+      if (!askPreview) return;
+      askPreview.classList.remove('is-updating');
+      window.requestAnimationFrame(function () {
+         askPreview.classList.add('is-updating');
+         window.clearTimeout(askPreviewTimer);
+         askPreviewTimer = window.setTimeout(function () {
+            askPreview.classList.remove('is-updating');
+         }, 360);
+      });
+   }
 
    askGroups.forEach(function (group) {
       group.addEventListener('click', function (event) {
@@ -119,6 +133,8 @@
          if (button.dataset.askDue && askPreviewDue) {
             askPreviewDue.textContent = button.dataset.askDue;
          }
+
+         animateAskPreview();
       });
    });
 
