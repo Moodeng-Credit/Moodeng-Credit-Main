@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { STARTING_CREDIT_LIMIT } from '../../config/creditTiers';
 import {
    type AdminReferralCode,
    createReferralCode,
@@ -160,6 +161,12 @@ export default function ReferralCodesSection() {
 
    const activeCount = useMemo(() => codes.filter((c) => c.is_active).length, [codes]);
 
+   // New borrowers start at STARTING_CREDIT_LIMIT; a boost lands them at start + boost.
+   const newTotalLimit = useMemo(() => {
+      const boost = Number(newBoost);
+      return Number.isFinite(boost) && boost > 0 ? STARTING_CREDIT_LIMIT + boost : null;
+   }, [newBoost]);
+
    return (
       <div className="space-y-4">
          <div className="flex flex-wrap items-center justify-between gap-3">
@@ -243,8 +250,14 @@ export default function ReferralCodesSection() {
                   {creating ? 'Adding…' : 'Add code'}
                </button>
             </div>
+            {newTotalLimit != null ? (
+               <p className="mt-3 rounded-xl bg-[#241044] px-3 py-2 text-base font-black text-[#cfc6dd]">
+                  New borrower total credit limit: <span className="text-white">${STARTING_CREDIT_LIMIT} start + ${Number(newBoost)} boost = ${newTotalLimit}</span>
+               </p>
+            ) : null}
             <p className="mt-2 text-sm font-medium text-[#6f6385]">
-               Leave max uses and expiry empty for a code that works forever. Boost is the starting-limit bump in USDC.
+               Leave max uses and expiry empty for a code that works forever. Boost is the starting-limit bump in USDC — a new
+               borrower starts at ${STARTING_CREDIT_LIMIT} and lands at ${STARTING_CREDIT_LIMIT} + boost.
             </p>
          </article>
 
@@ -260,6 +273,9 @@ export default function ReferralCodesSection() {
                                  <span className="font-mono text-2xl font-black tracking-wide">{c.code}</span>
                                  <span className="rounded-full bg-[#241044] px-2 py-0.5 text-sm font-black text-[#cfc6dd]">
                                     +${c.boost_amount} boost
+                                 </span>
+                                 <span className="rounded-full bg-emerald-900/50 px-2 py-0.5 text-sm font-black text-emerald-300">
+                                    ${STARTING_CREDIT_LIMIT + Number(c.boost_amount)} total limit
                                  </span>
                               </div>
                               <p className="mt-1 text-lg font-bold text-[#cfc6dd]">
