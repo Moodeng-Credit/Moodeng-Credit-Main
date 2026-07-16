@@ -94,7 +94,7 @@
 
    var askGroups = document.querySelectorAll('[data-ask-group]');
    var askPreviewReason = document.querySelector('[data-ask-preview-reason]');
-   var askPreviewEmoji = document.querySelector('[data-ask-preview-emoji]');
+   var askPreviewIcon = document.querySelector('[data-ask-preview-icon]');
    var askPreviewPayback = document.querySelector('[data-ask-preview-payback]');
    var askPreviewDue = document.querySelector('[data-ask-preview-due]');
    var askPreview = document.querySelector('.ask-preview');
@@ -123,7 +123,7 @@
 
          if (button.dataset.askReason) {
             if (askPreviewReason) askPreviewReason.textContent = button.dataset.askReason;
-            if (askPreviewEmoji) askPreviewEmoji.textContent = button.dataset.askEmoji || '';
+            if (askPreviewIcon && button.dataset.askIcon) askPreviewIcon.setAttribute('href', button.dataset.askIcon);
          }
 
          if (button.dataset.askPayback && askPreviewPayback) {
@@ -161,6 +161,122 @@
          observer.observe(item);
       });
    }
+
+   var dealStories = document.querySelectorAll('[data-deal-story]');
+
+   dealStories.forEach(function (story) {
+      var dealSteps = Array.from(story.querySelectorAll('[data-deal-step]'));
+      var dealPanels = Array.from(story.querySelectorAll('[data-deal-panel]'));
+      var dealDots = Array.from(story.querySelectorAll('[data-deal-dot]'));
+      var dealCount = story.querySelector('[data-deal-count]');
+      var dealTitle = story.querySelector('[data-deal-title]');
+      var desktopDeal = window.matchMedia('(min-width: 1024px)');
+      var activeDealIndex = -1;
+      var dealFrame;
+
+      function isDesktopDeal() {
+         return desktopDeal.matches && document.documentElement.dataset.landingVersion === '2';
+      }
+
+      function isMobileDeal() {
+         return !desktopDeal.matches;
+      }
+
+      function isAnimatedDeal() {
+         return isDesktopDeal() || isMobileDeal();
+      }
+
+      function activateDealStep(index) {
+         if (index === activeDealIndex) return;
+         activeDealIndex = index;
+         story.dataset.dealActive = String(index);
+
+         dealSteps.forEach(function (step, stepIndex) {
+            var active = stepIndex === index;
+            step.classList.toggle('is-active', active);
+            if (active && isAnimatedDeal()) {
+               step.setAttribute('aria-current', 'step');
+            } else {
+               step.removeAttribute('aria-current');
+            }
+         });
+
+         dealPanels.forEach(function (panel, panelIndex) {
+            panel.classList.toggle('is-active', panelIndex === index);
+            panel.classList.remove('is-prev');
+            panel.setAttribute('aria-hidden', panelIndex === index ? 'false' : 'true');
+         });
+
+         dealDots.forEach(function (dot, dotIndex) {
+            dot.classList.toggle('is-active', dotIndex === index);
+            dot.classList.toggle('is-complete', dotIndex < index);
+         });
+
+         if (dealCount) {
+            dealCount.textContent = String(index + 1).padStart(2, '0') + ' / ' + String(dealSteps.length).padStart(2, '0');
+         }
+
+         if (dealTitle) {
+            var activeTitle = dealSteps[index] && dealSteps[index].querySelector('b');
+            dealTitle.textContent = activeTitle ? activeTitle.textContent : '';
+         }
+      }
+
+      function syncDealToViewport() {
+         dealFrame = undefined;
+         if (!isAnimatedDeal()) return;
+
+         var viewportTarget = window.innerHeight * (isMobileDeal() ? 0.58 : 0.52);
+         var closestIndex = 0;
+         var closestDistance = Infinity;
+
+         dealSteps.forEach(function (step, index) {
+            var rect = step.getBoundingClientRect();
+            var stepCenter = rect.top + rect.height / 2;
+            var distance = Math.abs(stepCenter - viewportTarget);
+            if (distance < closestDistance) {
+               closestDistance = distance;
+               closestIndex = index;
+            }
+         });
+
+         activateDealStep(closestIndex);
+      }
+
+      function requestDealSync() {
+         if (dealFrame) return;
+         dealFrame = window.requestAnimationFrame(syncDealToViewport);
+      }
+
+      function configureDealStory() {
+         window.removeEventListener('scroll', requestDealSync);
+         window.removeEventListener('resize', requestDealSync);
+         if (dealFrame) window.cancelAnimationFrame(dealFrame);
+         dealFrame = undefined;
+         activeDealIndex = -1;
+         story.classList.toggle('is-mobile-animated', isMobileDeal());
+
+         if (!isAnimatedDeal()) {
+            dealSteps.forEach(function (step) {
+               step.removeAttribute('aria-current');
+            });
+            activateDealStep(0);
+            return;
+         }
+
+         window.addEventListener('scroll', requestDealSync, { passive: true });
+         window.addEventListener('resize', requestDealSync);
+         requestDealSync();
+      }
+
+      configureDealStory();
+
+      if (typeof desktopDeal.addEventListener === 'function') {
+         desktopDeal.addEventListener('change', configureDealStory);
+      } else if (typeof desktopDeal.addListener === 'function') {
+         desktopDeal.addListener(configureDealStory);
+      }
+   });
 
    var productStories = document.querySelectorAll('[data-product-story]');
 
