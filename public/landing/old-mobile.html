@@ -785,6 +785,8 @@
     .sec-story.armed .story-screen.is-active .meter-box .marks .mid { animation: none !important; }
     .sec-story.armed .meter-box .bar i { width: 33%; transition: none; }
     .sec-story.armed .meter-box .chip-up { opacity: 1; transform: translateX(-50%); transition: none; }
+    /* provider reel holds on GCash — the caption still names all three routes */
+    .prov-reel-track { transform: none; transition: none; }
   }
 
   .stage.right .phone { transform: rotate(2.5deg); }
@@ -912,8 +914,26 @@
   .swap-box .cell { text-align: left; }
   .swap-box .cell.right { text-align: right; }
   .swap-box .cell .k { display: block; font-size: 10.5px; font-weight: 600; color: #B9AECB; }
-  .swap-box .cell b { font-size: 16px; font-weight: 800; color: var(--heading); }
+  .swap-box .cell b { font-size: 16px; font-weight: 800; color: var(--heading); white-space: nowrap; }
   .swap-box .arr { color: var(--purple); font-family: var(--display); font-size: 18px; }
+
+  /* Cash-out provider reel (George 07-17): the destination rolls through the
+     real PH withdraw routes — GCash, PDAX, Coins.ph — so all three read as
+     possible, not just GCash. Vertical roll mirrors the story-title slot reel.
+     Names verified against src/views/withdraw/Withdraw.tsx (the gcash row =
+     "cash out straight to your GCash", plus pdax + coinsph). The peso value
+     stays constant — same USDC, approximate rate — so it stays honest. The
+     roll is driven by --prov (0|1|2) set on the cash-out .story-screen by JS
+     while it's the active beat; reduced motion holds it on GCash (below). */
+  .prov-reel { display: inline-block; height: 1em; overflow: hidden; vertical-align: bottom; }
+  .prov-reel-track {
+    display: flex; flex-direction: column;
+    transform: translateY(calc(var(--prov, 0) * -1em));
+    transition: transform .5s cubic-bezier(.5, 0, .12, 1);
+  }
+  .prov-reel-track > span { display: block; height: 1em; line-height: 1em; white-space: nowrap; }
+  .prov-reel-cta { text-align: center; }
+  .prov-reel-cta .prov-reel-track > span { min-width: 4.4em; }
 
   /* ---------- FINAL CTA ---------- */
   .sec-final {
@@ -1935,11 +1955,16 @@
             <img class="coin-badge" src="/landing/assets/icons/usd-php-coins.png" alt="" />
             <div class="statement">Your $15 just landed.</div>
             <div class="swap-box">
-              <span class="cell"><span class="k">To</span><b>GCash</b></span>
+              <span class="cell"><span class="k">To</span
+                ><b class="prov-reel" data-prov-reel aria-label="GCash, PDAX, or Coins.ph"
+                  ><span class="prov-reel-track" aria-hidden="true"><span>GCash</span><span>PDAX</span><span>Coins.ph</span></span
+                ></b></span>
               <span class="arr">→</span>
               <span class="cell right"><span class="k">You’d get</span><b data-peso="15">≈ ₱855</b></span>
             </div>
-            <span class="cta-caps">Move to GCash</span>
+            <span class="cta-caps">Move to <span class="prov-reel prov-reel-cta" data-prov-reel aria-hidden="true"
+              ><span class="prov-reel-track"><span>GCash</span><span>PDAX</span><span>Coins.ph</span></span
+            ></span></span>
           </div>
         </div>
       </div>
@@ -1996,7 +2021,7 @@
           <span>Not a company. Not an algorithm. Funders read your request and choose to help — usually within a few hours.</span>
           <!-- Provider names in TEXT only, never logos; both verified against
                the app's real withdraw picker (src/views/withdraw/Withdraw.tsx) -->
-          <span>$15 lands ready for GCash — or choose another way, like Coins.ph.</span>
+          <span>$15 lands ready to spend — move it to pesos through GCash, PDAX, or Coins.ph.</span>
           <!-- No numeric "+$5 every time" promise; "unlocks more" is the safe claim -->
           <span>Pay back $18 on Jul 30, on time — your next loan unlocks more, toward $60+.</span>
         </div>
@@ -2995,6 +3020,30 @@
   // (The old #expenseStage coin scrub and the .sec-how staggered-reveal driver
   //  were removed 07-12 with the pinned-steps correction: the ask-phone lives
   //  inside the steps pin now, and the coins slide in on beat activation.)
+
+  // ---- Cash-out provider reel (George 07-17): while the "Money arrives" beat
+  //  is the active screen, roll the To value + CTA through GCash → PDAX →
+  //  Coins.ph so all three real withdraw routes read as possible. Resets to
+  //  GCash whenever the beat isn't on screen, so the user always meets it
+  //  first. Held on GCash under reduced motion (matches the scroll driver's
+  //  ?motion=1 test hook, since George's Mac forces Reduce Motion). ----
+  (function () {
+    var reel = document.querySelector("[data-prov-reel]");
+    var screen = reel && reel.closest(".story-screen");
+    if (!screen) return;
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+              && !/[?&]motion=1/.test(location.search);
+    if (reduce) return;
+    var COUNT = 3, i = 0;
+    setInterval(function () {
+      if (!screen.classList.contains("is-active")) {
+        if (i !== 0) { i = 0; screen.style.setProperty("--prov", 0); }
+        return;
+      }
+      i = (i + 1) % COUNT;
+      screen.style.setProperty("--prov", i);
+    }, 1900);
+  })();
 
   // ---- Dark-section carousel: sync the position dots to the swipe ----
   // Native scroll-snap does the sliding; JS reads scrollLeft to light the
