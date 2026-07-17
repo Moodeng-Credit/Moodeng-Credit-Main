@@ -668,8 +668,16 @@
   .sec-story.armed .story-titles, .sec-story.armed .story-caps { flex-shrink: 0; }
   /* …and on short viewports the pin bottom-aligns so titles + caption stay
      fully on screen — any squeeze clips the stage's top air instead (screens
-     are bottom-aligned, the slack already lives above them) */
+     are bottom-aligned, the slack already lives above them).
+     George 07-18 round 2: after the card trims the professional pin content
+     is ~120px shorter, so on normal phones (~660-740px usable) bottom-align
+     just piled that saving on TOP of the graphic as dead air. Professional
+     keeps centering until the content genuinely wouldn't fit; the base theme
+     (taller cards, effectively unused route) keeps the old threshold. */
   @media (max-height: 739px) {
+    html:not(.mobile-professional) .sec-story.armed .story-pin { justify-content: flex-end; padding-bottom: 12px; }
+  }
+  @media (max-height: 625px) {
     .sec-story.armed .story-pin { justify-content: flex-end; padding-bottom: 12px; }
   }
   /* No-reflow captions (07-12, the gap fix's text half): ONE caption slot
@@ -1700,7 +1708,7 @@
     }
   })();
 </script>
-<link rel="stylesheet" href="/landing/mobile-professional.css?v=20260718-levelup-compact" />
+<link rel="stylesheet" href="/landing/mobile-professional.css?v=20260718-pin-gap-2" />
 </head>
 <body>
 
