@@ -334,9 +334,12 @@
             dealPanels.forEach(function (panel, panelIndex) {
                // fade-through, not crossfade: each panel is fully gone just past
                // the halfway line (d = 0.52), so two panels' text never sit
-               // double-exposed on top of each other mid-swap
+               // double-exposed on top of each other mid-swap. Hold at full ink
+               // until d = 0.34 (was 0.26 — George 07-18: the panel was a ghost
+               // for most of its step's scroll window, "so quick, hard to read");
+               // the whole fade now lives in the last stretch before the handoff
                var d = Math.abs(position - panelIndex);
-               var t = Math.min(1, Math.max(0, (d - 0.26) / 0.26));
+               var t = Math.min(1, Math.max(0, (d - 0.34) / 0.18));
                var eased = t * t * (3 - 2 * t);
                var dir = panelIndex > position ? 1 : -1;
                panel.style.opacity = (1 - eased).toFixed(3);
