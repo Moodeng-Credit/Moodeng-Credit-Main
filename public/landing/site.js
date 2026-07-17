@@ -260,8 +260,52 @@
          }
       }
 
+      // scrubbed route spotlight (George 07-18): the cash-out panel's phone
+      // shot is the real selector screenshot — as the scroll moves through
+      // the beat, a butter-yellow ring walks down its provider rows so every
+      // route gets a moment even with zero autonomous motion (scroll-driven,
+      // so it works under prefers-reduced-motion too). Ring is yellow on
+      // purpose: the screenshot already paints Coins.ph's SELECTED state
+      // purple, and the spotlight must read as "look here", not "selected".
+      // Row boxes are [top, height] in the source screenshot's 390px-wide
+      // pixel space (Coins.ph / GCrypto / PDAX; Binance sits under the
+      // caption pill's crop, so the walk stops at PDAX); the shot renders
+      // object-fit:cover top-aligned, so display position = src * width scale.
+      var routesShot = story.querySelector('.deal-product-shot-routes');
+      var routeFocus = null;
+      var routeRows = [
+         [296, 112],
+         [416, 82],
+         [508, 86],
+      ];
+      if (routesShot) {
+         routeFocus = document.createElement('span');
+         routeFocus.setAttribute('aria-hidden', 'true');
+         routeFocus.style.cssText =
+            'position:absolute;left:3.5%;width:93%;border-radius:16px;' +
+            'border:2.5px solid var(--butter-strong);' +
+            'box-shadow:0 0 0 5px oklch(86% 0.145 83 / 0.22);' +
+            'opacity:0;pointer-events:none;' +
+            (reduceMotion ? '' : 'transition:top 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);');
+         routesShot.appendChild(routeFocus);
+      }
+
+      function positionRouteFocus(position) {
+         if (!routeFocus) return;
+         var panelIndex = dealPanels.indexOf(routesShot.closest('[data-deal-panel]'));
+         if (panelIndex < 0) return;
+         // walk the three rows across the beat's full-ink plateau
+         var local = Math.min(1, Math.max(0, (position - (panelIndex - 0.4)) / 0.8));
+         var row = routeRows[Math.min(routeRows.length - 1, Math.floor(local * routeRows.length))];
+         var scale = routesShot.clientWidth / 390;
+         routeFocus.style.top = (row[0] * scale).toFixed(1) + 'px';
+         routeFocus.style.height = (row[1] * scale).toFixed(1) + 'px';
+         routeFocus.style.opacity = '1';
+      }
+
       function clearDealScrub() {
          story.classList.remove('is-scrubbed');
+         if (routeFocus) routeFocus.style.opacity = '0';
          dealSteps.forEach(function (step) {
             step.style.opacity = '';
             step.style.transform = '';
@@ -347,6 +391,8 @@
                panel.style.visibility = eased >= 1 ? 'hidden' : 'visible';
                panel.style.zIndex = eased >= 1 ? '' : String(10 - Math.round(eased * 5));
             });
+
+            positionRouteFocus(position);
          }
 
          activateDealStep(closestIndex);
