@@ -925,15 +925,21 @@
      stays constant — same USDC, approximate rate — so it stays honest. The
      roll is driven by --prov (0|1|2) set on the cash-out .story-screen by JS
      while it's the active beat; reduced motion holds it on GCash (below). */
-  .prov-reel { display: inline-block; height: 1em; overflow: hidden; vertical-align: bottom; }
+  .prov-reel { --reel-h: 1em; display: inline-block; height: var(--reel-h); overflow: hidden; vertical-align: bottom; }
   .prov-reel-track {
     display: flex; flex-direction: column;
-    transform: translateY(calc(var(--prov, 0) * -1em));
+    transform: translateY(calc(var(--prov, 0) * var(--reel-h) * -1));
     transition: transform .5s cubic-bezier(.5, 0, .12, 1);
   }
-  .prov-reel-track > span { display: block; height: 1em; line-height: 1em; white-space: nowrap; }
-  .prov-reel-cta { text-align: center; }
-  .prov-reel-cta .prov-reel-track > span { min-width: 4.4em; }
+  .prov-reel-track > span { height: var(--reel-h); line-height: var(--reel-h); white-space: nowrap; }
+  /* logo variant (swap-box "To"): taller rows seat the app's own brand mark
+     (SVGs ported from src/views/withdraw/Withdraw.tsx — same marks the real
+     withdraw picker draws, so no new raster assets and it matches the app) */
+  .prov-reel-logo { --reel-h: 22px; }
+  .prov-reel-logo .prov-item { display: flex; align-items: center; gap: 6px; line-height: 1; }
+  .prov-logo { width: 18px; height: 18px; flex: none; border-radius: 50%; overflow: hidden; }
+  .prov-logo svg { display: block; width: 100%; height: 100%; }
+  .prov-logo-gcash { background: #fff; }
 
   /* ---------- FINAL CTA ---------- */
   .sec-final {
@@ -1956,15 +1962,17 @@
             <div class="statement">Your $15 just landed.</div>
             <div class="swap-box">
               <span class="cell"><span class="k">To</span
-                ><b class="prov-reel" data-prov-reel aria-label="GCash, PDAX, or Coins.ph"
-                  ><span class="prov-reel-track" aria-hidden="true"><span>GCash</span><span>PDAX</span><span>Coins.ph</span></span
+                ><b class="prov-reel prov-reel-logo" data-prov-reel aria-label="GCash, PDAX, or Coins.ph"
+                  ><span class="prov-reel-track" aria-hidden="true"
+                    ><span class="prov-item"><span class="prov-logo prov-logo-gcash"><svg viewBox="18 12 74 74"><path d="M64 22 A30 30 0 1 0 64 78" fill="none" stroke="#1C84FF" stroke-width="11" stroke-linecap="round"/><path d="M56 35 A18 18 0 1 0 56 65 L56 50 L43 50" fill="none" stroke="#0A2FA8" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><path d="M76 39 A16 16 0 0 1 76 61" fill="none" stroke="#45C7FF" stroke-width="6.5" stroke-linecap="round"/><path d="M85 31 A25 25 0 0 1 85 69" fill="none" stroke="#45C7FF" stroke-width="6.5" stroke-linecap="round"/></svg></span>GCash</span
+                    ><span class="prov-item"><span class="prov-logo"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#0E1A2B"/><g fill="#19D86F"><path d="M34 30 H49 L37 70 H22 Z"/><path d="M59 30 H74 L62 70 H47 Z"/></g></svg></span>PDAX</span
+                    ><span class="prov-item"><span class="prov-logo"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#F0A500"/><circle cx="50" cy="50" r="41" fill="#3B6CC8"/><path d="M62 36 A18 18 0 1 0 62 64" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round"/></svg></span>Coins.ph</span
+                  ></span
                 ></b></span>
               <span class="arr">→</span>
               <span class="cell right"><span class="k">You’d get</span><b data-peso="15">≈ ₱855</b></span>
             </div>
-            <span class="cta-caps">Move to <span class="prov-reel prov-reel-cta" data-prov-reel aria-hidden="true"
-              ><span class="prov-reel-track"><span>GCash</span><span>PDAX</span><span>Coins.ph</span></span
-            ></span></span>
+            <span class="cta-caps">Move to pesos</span>
           </div>
         </div>
       </div>
