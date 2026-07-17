@@ -716,7 +716,7 @@
   .phone.tall .statement { font-size: 22px; margin: 0 0 30px; }
   .meter-box {
     position: relative; background: #F6F3FA; border-radius: 14px;
-    padding: 22px 14px 13px; margin: 0 2px;
+    padding: 19px 14px 11px; margin: 0 2px;
   }
   .meter-box .chip-up {
     position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
@@ -906,6 +906,14 @@
   .phone.tall.compact .coin-badge { margin: 22px auto 12px; }
   .phone.tall.compact .statement { margin-bottom: 20px; }
   .phone.tall.compact .cta-caps { margin-top: 28px; }
+  /* level-up card joined the compact club (George 07-18: it was ~100px taller
+     than the other three screens, and with the bottom-aligned screen stack
+     that height set the container — so every OTHER card sat under a big void
+     when active). Badge margins mirror the coin-badge trim; the CTA gets
+     nowrap + a hair less tracking so "Accept new limit" holds one line even
+     on 320px viewports (68vw card). */
+  .phone.tall.compact .lock-badge { margin: 22px auto 12px; }
+  .phone.tall .cta-caps { white-space: nowrap; letter-spacing: 0.1em; padding-left: 10px; padding-right: 10px; }
   .swap-box {
     background: #F6F3FA; border-radius: 14px;
     padding: 13px 16px; margin: 0 2px;
@@ -1692,7 +1700,7 @@
     }
   })();
 </script>
-<link rel="stylesheet" href="/landing/mobile-professional.css?v=20260717-mobile-restoration" />
+<link rel="stylesheet" href="/landing/mobile-professional.css?v=20260718-levelup-compact" />
 </head>
 <body>
 
@@ -1982,7 +1990,7 @@
           <div class="story-screen">
       <div class="stage">
         <div class="stage-panel sky">
-          <div class="phone upright tall">
+          <div class="phone upright tall compact phone-levelup">
             <div class="phone-head"><span class="back">‹</span> Your credit</div>
             <!-- 3D open padlock — asset #12 (George) -->
             <img class="lock-badge" src="/landing/assets/icons/lock-open.png" alt="" />

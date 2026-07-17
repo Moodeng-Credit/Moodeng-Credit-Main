@@ -292,6 +292,21 @@
       margin-top: 30px;
    }
 
+   /* level-up card only: it is the tallest screen in the steps pin, and the
+      bottom-aligned screen stack turns its extra height into a void above
+      every other card — keep its statement tight (the cash-out card stays at
+      30px; shrinking it too just deepens ITS void) */
+   html.mobile-professional .phone.tall.compact.phone-levelup .statement {
+      margin-top: 18px;
+   }
+
+   /* cap the step-01 product screenshot for the same reason — 0.56 made it
+      the tallest screen of all (485px); the extra slice was already cropped
+      by overflow, this just crops a little more */
+   html.mobile-professional .story-screen-product-ask .product-shot-viewport {
+      aspect-ratio: 0.63;
+   }
+
    html.mobile-professional .lock-badge {
       width: 54px;
       height: 54px;
