@@ -12,6 +12,7 @@ import { VerifiedCelebrationNotifier } from '@/components/verification/VerifiedC
 import Footer from '@/components/Footer';
 import { LenderFundingPrompt } from '@/components/funding/LenderFundingPrompt';
 import Header from '@/components/Header/Header';
+import InAppBrowserNotice from '@/components/InAppBrowserNotice';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
 import MarketingPageShell from '@/components/marketing/MarketingPageShell';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -185,6 +186,7 @@ export default function App() {
 
    return (
       <BottomNavActionProvider key={location.pathname}>
+         <InAppBrowserNotice />
          <WalletLoadingOverlay />
          <ExpiredLoanRequestNotifier />
          <VerifiedCelebrationNotifier />
