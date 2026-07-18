@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { type AdminLoanRecord, listAdminLoans, type LoanExplorerStatus } from './adminSupabase';
+import { type AdminLoanRecord, listAdminLoans, type LoanExplorerStatus, setEntityTest } from './adminSupabase';
 
 const FILTERS: Array<{ id: LoanExplorerStatus; label: string }> = [
    { id: 'all', label: 'All' },
@@ -48,12 +48,14 @@ export default function LoanExplorerSection() {
    const [error, setError] = useState<string | null>(null);
    const [filter, setFilter] = useState<LoanExplorerStatus>('all');
    const [search, setSearch] = useState('');
+   const [hideTest, setHideTest] = useState(true);
+   const [busy, setBusy] = useState<string | null>(null);
 
-   const load = useCallback(async (status: LoanExplorerStatus) => {
+   const load = useCallback(async (status: LoanExplorerStatus, includeTest: boolean) => {
       setLoading(true);
       setError(null);
       try {
-         setLoans(await listAdminLoans(status));
+         setLoans(await listAdminLoans(status, { includeTest }));
       } catch (err) {
          setError(err instanceof Error ? err.message : 'Could not load loans.');
       } finally {
@@ -62,8 +64,21 @@ export default function LoanExplorerSection() {
    }, []);
 
    useEffect(() => {
-      void load(filter);
-   }, [filter, load]);
+      void load(filter, !hideTest);
+   }, [filter, hideTest, load]);
+
+   const toggleTest = useCallback(async (loan: AdminLoanRecord) => {
+      setBusy(loan.id);
+      setError(null);
+      try {
+         await setEntityTest('loan', loan.id, !loan.is_test);
+         setLoans((prev) => prev.map((row) => (row.id === loan.id ? { ...row, is_test: !loan.is_test } : row)));
+      } catch (err) {
+         setError(err instanceof Error ? err.message : 'Could not update loan.');
+      } finally {
+         setBusy(null);
+      }
+   }, []);
 
    const shown = useMemo(() => {
       const q = search.trim().toLowerCase();
@@ -100,7 +115,14 @@ export default function LoanExplorerSection() {
                ))}
                <button
                   type="button"
-                  onClick={() => load(filter)}
+                  onClick={() => setHideTest((v) => !v)}
+                  className={`rounded-full px-4 py-1.5 text-sm font-black ${hideTest ? 'bg-emerald-900/50 text-emerald-300' : 'bg-amber-900/50 text-amber-300'}`}
+               >
+                  {hideTest ? 'Test data hidden' : 'Showing test data'}
+               </button>
+               <button
+                  type="button"
+                  onClick={() => load(filter, !hideTest)}
                   disabled={loading}
                   className="rounded-full bg-[#1c053d] px-4 py-1.5 text-sm font-black text-white disabled:opacity-50"
                >
@@ -133,6 +155,7 @@ export default function LoanExplorerSection() {
                         <th className="px-4 py-3 text-right">Repaid</th>
                         <th className="px-4 py-3">Due</th>
                         <th className="px-4 py-3">Requested</th>
+                        <th className="px-4 py-3 text-right">Data</th>
                      </tr>
                   </thead>
                   <tbody>
@@ -154,6 +177,17 @@ export default function LoanExplorerSection() {
                               </td>
                               <td className="px-4 py-3 text-sm font-medium text-[#a89bb8]">{shortDate(l.due_date)}</td>
                               <td className="px-4 py-3 text-sm font-medium text-[#a89bb8]">{shortDate(l.created_at)}</td>
+                              <td className="px-4 py-3 text-right">
+                                 <button
+                                    type="button"
+                                    onClick={() => toggleTest(l)}
+                                    disabled={busy === l.id}
+                                    title={l.is_test ? 'Marked as test — click to mark real' : 'Real loan — click to mark as test'}
+                                    className={`rounded-full px-3 py-1 text-xs font-black uppercase disabled:opacity-50 ${l.is_test ? 'bg-amber-900/50 text-amber-300' : 'bg-[#241044] text-[#a89bb8]'}`}
+                                 >
+                                    {l.is_test ? 'Test' : 'Real'}
+                                 </button>
+                              </td>
                            </tr>
                         );
                      })}

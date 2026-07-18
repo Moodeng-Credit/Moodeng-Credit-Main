@@ -110,6 +110,7 @@ export interface AdminLoanRecord {
    coin: string;
    loan_status: 'Requested' | 'Lent' | null;
    repayment_status: 'Unpaid' | 'Partial' | 'Paid' | null;
+   is_test: boolean;
    created_at: string | null;
    funded_at: string | null;
    borrower: Pick<AdminDirectoryUser, 'id' | 'username' | 'wallet_address' | 'user_role' | 'account_status' | 'is_world_id'> | null;
@@ -296,6 +297,7 @@ function mapLoan(row: AnyRow, usersById: Map<string, AdminDirectoryUser>): Admin
       coin: row.coin,
       loan_status: row.loan_status ?? null,
       repayment_status: row.repayment_status ?? null,
+      is_test: Boolean(row.is_test),
       created_at: row.created_at ?? null,
       funded_at: row.funded_at ?? null,
       borrower: shortUser(row.borrower_user_id ? usersById.get(row.borrower_user_id) : null),
@@ -635,14 +637,19 @@ export async function listAdminLoanRequests(): Promise<AdminLoanRequest[]> {
 // Loan explorer — every loan, filterable by lifecycle state.
 export type LoanExplorerStatus = 'all' | 'requested' | 'active' | 'overdue' | 'repaid';
 
-export async function listAdminLoans(status: LoanExplorerStatus = 'all', limit = 500): Promise<AdminLoanRecord[]> {
+export async function listAdminLoans(
+   status: LoanExplorerStatus = 'all',
+   { includeTest = false, limit = 500 }: { includeTest?: boolean; limit?: number } = {}
+): Promise<AdminLoanRecord[]> {
    const supabase = getSupabaseBrowserClient();
    const now = new Date().toISOString();
    let query = supabase
       .from('loans')
       .select(
-         'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,created_at,funded_at'
+         'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,is_test,created_at,funded_at'
       );
+
+   if (!includeTest) query = query.eq('is_test', false);
 
    if (status === 'requested') {
       query = query.eq('loan_status', 'Requested');
@@ -658,6 +665,14 @@ export async function listAdminLoans(status: LoanExplorerStatus = 'all', limit =
    const userIds = rows.flatMap((loan) => [loan.borrower_user_id, loan.lender_user_id].filter(Boolean));
    const usersById = await fetchUsersByIds(userIds);
    return rows.map((row) => mapLoan(row, usersById));
+}
+
+// Mark a user or loan as test / real (admin-only, via the gated RPC). Lets admins fix
+// misclassifications or flag new test data straight from the panel.
+export async function setEntityTest(entity: 'user' | 'loan', id: string, isTest: boolean): Promise<void> {
+   const supabase = getSupabaseBrowserClient();
+   const { error } = await supabase.rpc('admin_set_entity_test', { p_entity: entity, p_id: id, p_is_test: isTest });
+   if (error) throw error;
 }
 
 // Growth analytics — current-state breakdowns plus a weekly registration trend. Computed
@@ -692,18 +707,21 @@ function isoWeekStart(dateStr: string): string {
    return d.toISOString().slice(0, 10);
 }
 
-export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
+export async function getGrowthAnalytics({ includeTest = false }: { includeTest?: boolean } = {}): Promise<GrowthAnalytics> {
    const supabase = getSupabaseBrowserClient();
    const now = Date.now();
 
-   const [users, loans] = await Promise.all([
-      requireOk<AnyRow[]>(
-         supabase.from('users').select('id,created_at,user_role,is_world_id,is_didit,account_status').limit(5000)
-      ),
-      requireOk<AnyRow[]>(
-         supabase.from('loans').select('loan_amount,repaid_amount,loan_status,repayment_status,due_date,created_at').limit(5000)
-      )
-   ]);
+   let usersQuery = supabase.from('users').select('id,created_at,user_role,is_world_id,is_didit,account_status').limit(5000);
+   let loansQuery = supabase
+      .from('loans')
+      .select('loan_amount,repaid_amount,loan_status,repayment_status,due_date,created_at')
+      .limit(5000);
+   if (!includeTest) {
+      usersQuery = usersQuery.eq('is_test', false);
+      loansQuery = loansQuery.eq('is_test', false);
+   }
+
+   const [users, loans] = await Promise.all([requireOk<AnyRow[]>(usersQuery), requireOk<AnyRow[]>(loansQuery)]);
 
    const isActive = (v: unknown) => String(v ?? '').toUpperCase() === 'ACTIVE';
    let borrowers = 0;
