@@ -14,6 +14,7 @@ import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkRelo
 import { getBaseAccountConnector } from '@/lib/walletProvider';
 import type { RootState } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
+import WalletConnectHelp from '@/views/onboarding/WalletConnectHelp';
 import { LENDER_WALLET_OPTIONS } from '@/views/onboarding/walletPickerOptions';
 
 export default function ConnectWallet() {
@@ -154,6 +155,7 @@ function BorrowerConnectView({
             ) : (
                <ConnectBaseAccountButton onClick={onConnectBaseAccount} isDisabled={isConnecting} />
             )}
+            <WalletConnectHelp />
          </div>
       </div>
    );
@@ -306,6 +308,10 @@ function LenderConnectView({
                   ) : null}
                </button>
                <p className="text-md-b3 text-md-slate-500 text-center">All wallets support gasless transactions on Base network</p>
+            </div>
+
+            <div className="flex justify-center">
+               <WalletConnectHelp />
             </div>
          </div>
       </div>
