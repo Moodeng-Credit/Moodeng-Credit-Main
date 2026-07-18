@@ -632,6 +632,168 @@ export async function listAdminLoanRequests(): Promise<AdminLoanRequest[]> {
    }));
 }
 
+// Loan explorer — every loan, filterable by lifecycle state.
+export type LoanExplorerStatus = 'all' | 'requested' | 'active' | 'overdue' | 'repaid';
+
+export async function listAdminLoans(status: LoanExplorerStatus = 'all', limit = 500): Promise<AdminLoanRecord[]> {
+   const supabase = getSupabaseBrowserClient();
+   const now = new Date().toISOString();
+   let query = supabase
+      .from('loans')
+      .select(
+         'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,created_at,funded_at'
+      );
+
+   if (status === 'requested') {
+      query = query.eq('loan_status', 'Requested');
+   } else if (status === 'active') {
+      query = query.eq('loan_status', 'Lent').in('repayment_status', ['Unpaid', 'Partial']).gte('due_date', now);
+   } else if (status === 'overdue') {
+      query = query.eq('loan_status', 'Lent').in('repayment_status', ['Unpaid', 'Partial']).lt('due_date', now);
+   } else if (status === 'repaid') {
+      query = query.eq('loan_status', 'Lent').eq('repayment_status', 'Paid');
+   }
+
+   const rows = await requireOk<AnyRow[]>(query.order('created_at', { ascending: false }).limit(limit));
+   const userIds = rows.flatMap((loan) => [loan.borrower_user_id, loan.lender_user_id].filter(Boolean));
+   const usersById = await fetchUsersByIds(userIds);
+   return rows.map((row) => mapLoan(row, usersById));
+}
+
+// Growth analytics — current-state breakdowns plus a weekly registration trend. Computed
+// client-side from lightweight row sets (small user/loan tables); no aggregation RPC needed.
+export interface GrowthAnalytics {
+   totalUsers: number;
+   borrowers: number;
+   lenders: number;
+   unsetRole: number;
+   blockedUsers: number;
+   worldIdVerified: number;
+   diditVerified: number;
+   anyVerified: number;
+   verifiedRate: number; // 0..1 of all users with at least one verification
+   registrationsByWeek: Array<{ weekStart: string; count: number; cumulative: number }>;
+   totalLoans: number;
+   requestedLoans: number;
+   activeLoans: number;
+   overdueLoans: number;
+   repaidLoans: number;
+   volumeLent: number;
+   volumeRepaid: number;
+   volumeOutstanding: number;
+   repaymentRate: number; // repaid loans / (funded loans)
+}
+
+function isoWeekStart(dateStr: string): string {
+   const d = new Date(dateStr);
+   const day = (d.getUTCDay() + 6) % 7; // Monday = 0
+   d.setUTCDate(d.getUTCDate() - day);
+   d.setUTCHours(0, 0, 0, 0);
+   return d.toISOString().slice(0, 10);
+}
+
+export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
+   const supabase = getSupabaseBrowserClient();
+   const now = Date.now();
+
+   const [users, loans] = await Promise.all([
+      requireOk<AnyRow[]>(
+         supabase.from('users').select('id,created_at,user_role,is_world_id,is_didit,account_status').limit(5000)
+      ),
+      requireOk<AnyRow[]>(
+         supabase.from('loans').select('loan_amount,repaid_amount,loan_status,repayment_status,due_date,created_at').limit(5000)
+      )
+   ]);
+
+   const isActive = (v: unknown) => String(v ?? '').toUpperCase() === 'ACTIVE';
+   let borrowers = 0;
+   let lenders = 0;
+   let unsetRole = 0;
+   let blockedUsers = 0;
+   let worldIdVerified = 0;
+   let diditVerified = 0;
+   let anyVerified = 0;
+
+   for (const u of users) {
+      if (u.user_role === 'borrower') borrowers += 1;
+      else if (u.user_role === 'lender') lenders += 1;
+      else unsetRole += 1;
+      if (String(u.account_status ?? '').toLowerCase() === 'blocked' || String(u.account_status ?? '').toLowerCase() === 'banned')
+         blockedUsers += 1;
+      const world = isActive(u.is_world_id);
+      const didit = isActive(u.is_didit);
+      if (world) worldIdVerified += 1;
+      if (didit) diditVerified += 1;
+      if (world || didit) anyVerified += 1;
+   }
+
+   // Weekly registration buckets, chronological, with a running cumulative total.
+   const weekCounts = new Map<string, number>();
+   for (const u of users) {
+      if (!u.created_at) continue;
+      const wk = isoWeekStart(u.created_at);
+      weekCounts.set(wk, (weekCounts.get(wk) ?? 0) + 1);
+   }
+   const sortedWeeks = [...weekCounts.keys()].sort();
+   let running = 0;
+   const registrationsByWeek = sortedWeeks.map((weekStart) => {
+      const count = weekCounts.get(weekStart) ?? 0;
+      running += count;
+      return { weekStart, count, cumulative: running };
+   });
+
+   let requestedLoans = 0;
+   let activeLoans = 0;
+   let overdueLoans = 0;
+   let repaidLoans = 0;
+   let volumeLent = 0;
+   let volumeRepaid = 0;
+   let volumeOutstanding = 0;
+
+   for (const l of loans) {
+      const amount = toNumber(l.loan_amount);
+      const repaid = l.repaid_amount == null ? 0 : toNumber(l.repaid_amount);
+      const dueMs = l.due_date ? new Date(l.due_date).getTime() : null;
+      if (l.loan_status === 'Requested') {
+         requestedLoans += 1;
+      } else if (l.loan_status === 'Lent') {
+         volumeLent += amount;
+         volumeRepaid += repaid;
+         if (l.repayment_status === 'Paid') {
+            repaidLoans += 1;
+         } else {
+            volumeOutstanding += Math.max(amount - repaid, 0);
+            if (dueMs != null && dueMs < now) overdueLoans += 1;
+            else activeLoans += 1;
+         }
+      }
+   }
+
+   const fundedLoans = activeLoans + overdueLoans + repaidLoans;
+
+   return {
+      totalUsers: users.length,
+      borrowers,
+      lenders,
+      unsetRole,
+      blockedUsers,
+      worldIdVerified,
+      diditVerified,
+      anyVerified,
+      verifiedRate: users.length ? anyVerified / users.length : 0,
+      registrationsByWeek,
+      totalLoans: loans.length,
+      requestedLoans,
+      activeLoans,
+      overdueLoans,
+      repaidLoans,
+      volumeLent,
+      volumeRepaid,
+      volumeOutstanding,
+      repaymentRate: fundedLoans ? repaidLoans / fundedLoans : 0
+   };
+}
+
 export async function listAdminDefaultCases(): Promise<AdminDefaultCase[]> {
    const supabase = getSupabaseBrowserClient();
    const now = new Date().toISOString();

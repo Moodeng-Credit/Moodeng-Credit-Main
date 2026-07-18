@@ -30,6 +30,8 @@ import {
    upsertAccountRestrictionByUserId,
    upsertLoanRequestReview
 } from './adminSupabase';
+import GrowthAnalyticsSection from './GrowthAnalyticsSection';
+import LoanExplorerSection from './LoanExplorerSection';
 import ReferralCodesSection from './ReferralCodesSection';
 import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
@@ -37,7 +39,7 @@ import SelfLendingSection from './SelfLendingSection';
 
 import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
 
-type AdminTab = 'users' | 'points' | 'trust-points' | 'defaults' | 'requests' | 'risk' | 'self-lending' | 'referrals' | 'notifications' | 'relay';
+type AdminTab = 'users' | 'analytics' | 'loans' | 'points' | 'trust-points' | 'defaults' | 'requests' | 'risk' | 'self-lending' | 'referrals' | 'notifications' | 'relay';
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
 
 type NoticeTemplate = {
@@ -49,6 +51,8 @@ type NoticeTemplate = {
 
 const navItems: Array<{ id: AdminTab; label: string }> = [
    { id: 'users', label: 'User directory' },
+   { id: 'analytics', label: 'Growth & analytics' },
+   { id: 'loans', label: 'Loans' },
    { id: 'points', label: 'IOU points' },
    { id: 'trust-points', label: 'Trust points' },
    { id: 'defaults', label: 'Default recovery' },
@@ -213,7 +217,7 @@ function hasPositivePoints(points: number | string) {
    return Number(formatPointsMajor(points)) > 0;
 }
 
-const ALL_ADMIN_TABS: readonly AdminTab[] = ['users', 'points', 'trust-points', 'defaults', 'requests', 'risk', 'self-lending', 'referrals', 'notifications', 'relay'];
+const ALL_ADMIN_TABS: readonly AdminTab[] = ['users', 'analytics', 'loans', 'points', 'trust-points', 'defaults', 'requests', 'risk', 'self-lending', 'referrals', 'notifications', 'relay'];
 
 function isAdminTab(value: string): value is AdminTab {
    return (ALL_ADMIN_TABS as readonly string[]).includes(value);
@@ -1346,6 +1350,30 @@ export default function AdminPanel() {
                ) : null}
 
                {activeTab === 'self-lending' ? <SelfLendingSection /> : null}
+
+               {activeTab === 'analytics' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Growth &amp; analytics</h2>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">
+                           Users, roles, verifications, and loan performance at a glance.
+                        </p>
+                     </div>
+                     <GrowthAnalyticsSection />
+                  </section>
+               ) : null}
+
+               {activeTab === 'loans' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Loans</h2>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">
+                           Every loan — requested, active, paid back, or not paid back. Filter and search to dig in.
+                        </p>
+                     </div>
+                     <LoanExplorerSection />
+                  </section>
+               ) : null}
 
                {activeTab === 'referrals' ? (
                   <section className="space-y-6">
