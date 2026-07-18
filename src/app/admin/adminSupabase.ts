@@ -1183,6 +1183,32 @@ export async function setReferralCodeActive(id: string, isActive: boolean): Prom
    return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
 }
 
+// Edit a live code's terms (boost, usage cap, expiry) without recreating it. The code string
+// itself is immutable — loans/users reference it — so it is not editable here.
+export async function updateReferralCode(
+   id: string,
+   changes: {
+      boost_amount?: number;
+      max_uses?: number | null;
+      expires_at?: string | null;
+   }
+): Promise<AdminReferralCode> {
+   const supabase = getSupabaseBrowserClient();
+   const patch: Record<string, unknown> = {};
+   if (changes.boost_amount !== undefined) patch.boost_amount = changes.boost_amount;
+   if (changes.max_uses !== undefined) patch.max_uses = changes.max_uses;
+   if (changes.expires_at !== undefined) patch.expires_at = changes.expires_at;
+   const data = await requireOk(
+      supabase
+         .from('referral_codes')
+         .update(patch)
+         .eq('id', id)
+         .select('id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at')
+         .single()
+   );
+   return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+}
+
 // Only for codes with current_uses === 0 — FK refs from users/loans block redeemed codes.
 export async function deleteReferralCode(id: string): Promise<void> {
    const supabase = getSupabaseBrowserClient();
