@@ -64,12 +64,13 @@ export default function GrowthAnalyticsSection({ initialData }: { initialData?: 
    const [data, setData] = useState<GrowthAnalytics | null>(initialData ?? null);
    const [loading, setLoading] = useState(false);
    const [error, setError] = useState<string | null>(null);
+   const [hideTest, setHideTest] = useState(true);
 
-   const load = useCallback(async () => {
+   const load = useCallback(async (includeTest: boolean) => {
       setLoading(true);
       setError(null);
       try {
-         setData(await getGrowthAnalytics());
+         setData(await getGrowthAnalytics({ includeTest }));
       } catch (err) {
          setError(err instanceof Error ? err.message : 'Could not load analytics.');
       } finally {
@@ -79,8 +80,8 @@ export default function GrowthAnalyticsSection({ initialData }: { initialData?: 
 
    useEffect(() => {
       if (initialData) return;
-      void load();
-   }, [initialData, load]);
+      void load(!hideTest);
+   }, [initialData, hideTest, load]);
 
    const maxWeek = useMemo(() => (data ? Math.max(...data.registrationsByWeek.map((w) => w.count), 1) : 1), [data]);
 
@@ -88,14 +89,23 @@ export default function GrowthAnalyticsSection({ initialData }: { initialData?: 
       <div className="space-y-5">
          <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-3xl font-black">Growth &amp; analytics</h3>
-            <button
-               type="button"
-               onClick={load}
-               disabled={loading}
-               className="rounded-full bg-[#1c053d] px-4 py-1.5 text-sm font-black text-white disabled:opacity-50"
-            >
-               {loading ? '…' : 'Refresh'}
-            </button>
+            <div className="flex items-center gap-2">
+               <button
+                  type="button"
+                  onClick={() => setHideTest((v) => !v)}
+                  className={`rounded-full px-4 py-1.5 text-sm font-black ${hideTest ? 'bg-emerald-900/50 text-emerald-300' : 'bg-amber-900/50 text-amber-300'}`}
+               >
+                  {hideTest ? 'Real customers only' : 'Including test data'}
+               </button>
+               <button
+                  type="button"
+                  onClick={() => load(!hideTest)}
+                  disabled={loading}
+                  className="rounded-full bg-[#1c053d] px-4 py-1.5 text-sm font-black text-white disabled:opacity-50"
+               >
+                  {loading ? '…' : 'Refresh'}
+               </button>
+            </div>
          </div>
 
          {error ? (
