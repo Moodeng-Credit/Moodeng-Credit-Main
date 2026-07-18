@@ -8,11 +8,14 @@ import {
    chainConfig,
    chainIdFromNetwork,
    chainsWithIcons,
+   config,
    getAllowedChainConfig,
    getAllowedChainIdFromName,
    getAllowedChainTokenConfig,
-   normalizeChainName
+   normalizeChainName,
+   WALLET_CONNECTOR_NAMES
 } from '@/config/wagmiConfig';
+import { getBaseAccountConnector, getWalletProviderFromConnector } from '@/lib/walletProvider';
 
 describe('wagmiConfig allowed chain', () => {
    it('defaults loan wallets to Base mainnet USDC', () => {
@@ -39,5 +42,32 @@ describe('wagmiConfig allowed chain', () => {
       expect(normalizeChainName('Base_Sepolia')).toBe('basesepolia');
       expect(getAllowedChainIdFromName(' Base ')).toBe(base.id);
       expect(chainIdFromNetwork('base')).toBe(String(base.id));
+   });
+});
+
+describe('Base Account connector wiring', () => {
+   // The borrower "Connect Base Wallet" button resolves its connector by name via
+   // connectorsByName.get(WALLET_CONNECTOR_NAMES.coinbase). If a RainbowKit upgrade
+   // renames the baseAccount wallet, that primary lookup silently breaks. These tests
+   // pin both the name-based path and the getBaseAccountConnector() fallback.
+   it('labels the Base Account connector "Base Account"', () => {
+      expect(WALLET_CONNECTOR_NAMES.coinbase).toBe('Base Account');
+   });
+
+   it('exposes a connector whose name matches the borrower button lookup', () => {
+      const byName = config.connectors.find((c) => c.name === WALLET_CONNECTOR_NAMES.coinbase);
+      expect(byName, 'no connector named "Base Account" — RainbowKit may have renamed baseAccount').toBeDefined();
+      expect(byName?.id).toBe('baseAccount');
+   });
+
+   it('resolves the Base Account connector via the id/name fallback too', () => {
+      const fallbackConnector = getBaseAccountConnector([...config.connectors]);
+      expect(fallbackConnector, 'getBaseAccountConnector could not find the Base Account connector').toBeDefined();
+      expect(fallbackConnector?.name).toBe('Base Account');
+   });
+
+   it('maps the resolved connector to the base_wallet provider', () => {
+      const connector = getBaseAccountConnector([...config.connectors]);
+      expect(getWalletProviderFromConnector({ connectorId: connector?.id, connectorName: connector?.name })).toBe('base_wallet');
    });
 });
