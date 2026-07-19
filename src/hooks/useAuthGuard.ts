@@ -25,7 +25,8 @@ export const useAuthGuard = () => {
          console.log('🔒 Client-side auth guard: No authentication found');
          clearAuthCookieClient();
          dispatch(clearAuth());
-         navigate('/request-board');
+         // Replace so Back doesn't return to the protected route and re-trigger the guard.
+         navigate('/request-board', { replace: true });
       }
    }, [username, user?.id, navigate, dispatch]);
 

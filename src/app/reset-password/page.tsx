@@ -246,7 +246,8 @@ export default function ResetPasswordPage(): JSX.Element {
          setPassword('');
          setConfirmPassword('');
          window.setTimeout(() => {
-            navigate(destination);
+            // Replace: the recovery session is spent, so Back must not return to the reset form.
+            navigate(destination, { replace: true });
          }, 1800);
       } catch (resetError) {
          setError(resetError instanceof Error ? resetError.message : 'Could not update your password. Try again in a moment.');

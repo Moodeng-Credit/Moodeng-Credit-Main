@@ -96,7 +96,7 @@ export function AuthInitializer() {
                dispatch(clearAuth());
 
                if (wasAuthenticatedRef.current && !AUTH_FLOW_PATHS.has(pathnameRef.current)) {
-                  navigate('/request-board');
+                  navigate('/request-board', { replace: true });
                }
             }
          }

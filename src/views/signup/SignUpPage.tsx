@@ -61,7 +61,9 @@ export default function SignUpPage() {
    const isWorldId = WorldId.INACTIVE;
 
    const navigateToEmailConfirmation = (nextEmail: string) => {
-      navigate(buildEmailConfirmationPath(nextEmail));
+      // Replace so Back never returns to the sign-up form after a successful submit
+      // (resubmitting the same email would just error as "already taken").
+      navigate(buildEmailConfirmationPath(nextEmail), { replace: true });
    };
 
    const processAuthResult = (result: unknown) => {
@@ -76,7 +78,7 @@ export default function SignUpPage() {
       // Implicit login: existing account, correct password → sign them straight in.
       if (data?.loggedIn && data.user) {
          toast.showToast(TOAST_TYPES.INFO, 'Account already exists', 'Logging you in…');
-         navigate(data.user.userRole ? '/dashboard' : '/onboarding/role');
+         navigate(data.user.userRole ? '/dashboard' : '/onboarding/role', { replace: true });
          return;
       }
       if (data?.isExistingUser) {
@@ -89,20 +91,20 @@ export default function SignUpPage() {
             return;
          }
          if (data.user?.id) {
-            navigate(data.user.userRole ? '/dashboard' : '/auth-success?type=created');
+            navigate(data.user.userRole ? '/dashboard' : '/auth-success?type=created', { replace: true });
             return;
          }
          navigateToEmailConfirmation(email);
          return;
       }
       if (data?.user) {
-         navigate(data.user.userRole ? '/dashboard' : '/auth-success?type=created');
+         navigate(data.user.userRole ? '/dashboard' : '/auth-success?type=created', { replace: true });
          return;
       }
       setUsername('');
       setEmail('');
       setPassword('');
-      navigate('/auth-success?type=created');
+      navigate('/auth-success?type=created', { replace: true });
    };
 
    const handleFormRegister = async () => {
