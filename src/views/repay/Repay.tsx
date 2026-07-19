@@ -455,6 +455,11 @@ export default function Repay() {
    // Base Account signing popup that errors ("Something went wrong") since the request is
    // already in flight. A ref flips immediately, so the second tap is dropped.
    const repayInFlightRef = useRef(false);
+   // Set when the borrower taps "Cancel" on the pre-broadcast overlay so they aren't stranded
+   // on the spinner (e.g. they closed the wallet popup). The in-flight promise can't be aborted,
+   // so this guards the full-screen success takeover if it resolves late; a payment that did
+   // broadcast is still recorded (and left to the reconciler if the DB write is behind).
+   const cancelledRef = useRef(false);
 
    useEffect(() => {
       if (activeLoans.length === 0) {
@@ -735,6 +740,7 @@ export default function Repay() {
       }
 
       repayInFlightRef.current = true;
+      cancelledRef.current = false;
       setIsProcessing(true);
 
       // Set once the transfer has a hash: from that point on, an error means "money moved but the
@@ -854,7 +860,10 @@ export default function Repay() {
          await dispatch(getUserLoans({ userId: user.id })).unwrap();
          setRepaymentAmount('');
          const serverFullyRepaid = confirmedLoan.repaymentStatus === 'Paid';
-         if (serverFullyRepaid) {
+         if (cancelledRef.current) {
+            // Borrower backed out of the overlay — the payment still recorded above, but don't
+            // slam the full-screen payoff / partial UI over them. The success toast still confirms it.
+         } else if (serverFullyRepaid) {
             // confirmLoanPayment refetched the user, so the store now holds any raised limit.
             const newCreditLimit = reduxStore.getState().auth.user?.cs ?? 0;
             const leveledUp = newCreditLimit > prevCreditLimit;
@@ -1640,6 +1649,22 @@ export default function Repay() {
                               >
                                  View transaction
                               </a>
+                           ) : null}
+                           {/* Cancel only before broadcast (no hash yet): once it's confirming
+                               on-chain the money has left and can't be recalled from here. */}
+                           {!pendingTxHash ? (
+                              <button
+                                 type="button"
+                                 onClick={() => {
+                                    cancelledRef.current = true;
+                                    repayInFlightRef.current = false;
+                                    setIsProcessing(false);
+                                    setPendingTxHash(null);
+                                 }}
+                                 className="mt-1 text-md-b3 font-semibold text-md-neutral-1200 underline underline-offset-2"
+                              >
+                                 Cancel
+                              </button>
                            ) : null}
                         </div>
                      ) : null}

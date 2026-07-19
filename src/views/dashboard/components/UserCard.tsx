@@ -1,4 +1,4 @@
-import { type MouseEvent, useCallback, useMemo, useState } from 'react';
+import { type MouseEvent, useCallback, useMemo, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
@@ -148,6 +148,11 @@ export default function UserCard(loan: UserCardProps) {
    // "Confirming" copy on the in-card processing overlay and the explorer link, mirroring
    // the repay flow's pattern so lenders get the same on-chain-progress feedback.
    const [pendingTxHash, setPendingTxHash] = useState<string | null>(null);
+   // Set when the lender taps "Cancel" on the pre-broadcast overlay. The in-flight payUsdc
+   // promise can't be aborted, so this lets executeLend bail out of the success UI if it
+   // resolves after the user has already backed out. (A broadcast that still lands is left
+   // to the reconciler — the money moved, so we never silently drop it.)
+   const cancelledRef = useRef(false);
    const [showDetails, setShowDetails] = useState(false);
    const { showToast, showToastByConfig } = useToast();
    const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
@@ -178,6 +183,16 @@ export default function UserCard(loan: UserCardProps) {
          .unwrap()
          .then(() => console.log('Loan fetched successfully'))
          .catch((error: Error) => console.error('Error fetching loan:', error.message || error));
+   };
+
+   // Lets a lender back out of the "Approve in your wallet" overlay (e.g. they closed the
+   // Base popup) instead of being stranded on the spinner. Only wired to the pre-broadcast
+   // phase; the underlying wallet promise can't be aborted, so cancelledRef guards the
+   // success UI if it resolves late, and any payment that did broadcast is left to the reconciler.
+   const handleCancelProcessing = () => {
+      cancelledRef.current = true;
+      setIsProcessing(false);
+      setPendingTxHash(null);
    };
 
    const executeLend = useCallback(
@@ -212,6 +227,7 @@ export default function UserCard(loan: UserCardProps) {
          }
 
          const transferCoin = loanData.coin?.trim() || 'USDC';
+         cancelledRef.current = false;
          setIsProcessing(true);
          setPendingTxHash(null);
 
@@ -258,7 +274,9 @@ export default function UserCard(loan: UserCardProps) {
                   // DB write landed — the reconciler has nothing left to finish for this payment.
                   clearPendingBasePayment(outcome.hash);
                   const sideEffectErrors = updateResult.meta.sideEffectErrors ?? [];
-                  setShowModal(true);
+                  // If they cancelled the overlay and moved on, don't slam a full-screen success
+                  // modal over the request board — the toast below still confirms it went through.
+                  if (!cancelledRef.current) setShowModal(true);
 
                   if (sideEffectErrors.length === 0) {
                      showToast(
@@ -442,6 +460,17 @@ export default function UserCard(loan: UserCardProps) {
                      >
                         View transaction
                      </a>
+                  ) : null}
+                  {/* Cancel is only offered before broadcast (no hash yet). Once it's confirming
+                      on-chain the money has left the wallet and can't be recalled from here. */}
+                  {!pendingTxHash ? (
+                     <button
+                        type="button"
+                        onClick={handleCancelProcessing}
+                        className="mt-1 text-md-b3 font-semibold text-md-neutral-1200 underline underline-offset-2"
+                     >
+                        Cancel
+                     </button>
                   ) : null}
                </div>
             ) : null}
