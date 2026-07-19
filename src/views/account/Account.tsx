@@ -287,7 +287,7 @@ export default function Account() {
    const handleSignOut = async () => {
       setIsSigningOut(true);
       await dispatch(logoutUser());
-      navigate('/sign-in');
+      navigate('/sign-in', { replace: true });
    };
 
    const openExternal = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');

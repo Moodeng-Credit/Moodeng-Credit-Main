@@ -66,7 +66,7 @@ export default function UserNetwork() {
       // Don't disconnect wallet - let wagmi persist the connection
       // The wallet will auto-reconnect on next login via WalletSyncInitializer
       dispatch(logoutUser());
-      navigate('/sign-in');
+      navigate('/sign-in', { replace: true });
    };
 
    return (
