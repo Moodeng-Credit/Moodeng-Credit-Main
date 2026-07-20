@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { useConnectModal, WalletButton } from '@rainbow-me/rainbowkit';
 import { useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
@@ -14,7 +14,20 @@ import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkRelo
 import { getBaseAccountConnector } from '@/lib/walletProvider';
 import type { RootState } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
+import WalletConnectHelp from '@/views/onboarding/WalletConnectHelp';
 import { LENDER_WALLET_OPTIONS } from '@/views/onboarding/walletPickerOptions';
+
+// RainbowKit wallet ids (`connector.id`) used by WalletButton.Custom. Routing the
+// named lender tiles through WalletButton lets RainbowKit drive the connect — it
+// pops the extension when injected and falls back to its own QR/instructions modal
+// when the wallet isn't the top-level `window.ethereum` provider (or isn't installed),
+// instead of the bare wagmi connect() that silently dead-ends on the WalletConnect path.
+const RAINBOWKIT_WALLET_ID: Record<WalletConnectorKey, string> = {
+   coinbase: 'baseAccount',
+   metaMask: 'metaMask',
+   phantom: 'phantom',
+   walletConnect: 'walletConnect'
+};
 
 export default function ConnectWallet() {
    const user = useSelector((state: RootState) => state.auth.user);
@@ -104,6 +117,8 @@ export default function ConnectWallet() {
          selectedKey={selectedKey}
          onSelect={setSelectedKey}
          onConnect={(key) => handleConnect(key)}
+         onMarkUserInitiated={() => setUserInitiatedConnection(true)}
+         isPreview={isPreview}
          onOpenOther={() => {
             setSelectedKey(null);
             setUserInitiatedConnection(true);
@@ -154,6 +169,7 @@ function BorrowerConnectView({
             ) : (
                <ConnectBaseAccountButton onClick={onConnectBaseAccount} isDisabled={isConnecting} />
             )}
+            <WalletConnectHelp />
          </div>
       </div>
    );
@@ -191,16 +207,49 @@ function LenderConnectView({
    selectedKey,
    onSelect,
    onConnect,
+   onMarkUserInitiated,
    onOpenOther,
+   isPreview,
    isConnecting
 }: {
    selectedKey: WalletConnectorKey | null;
    onSelect: (key: WalletConnectorKey) => void;
    onConnect: (key: WalletConnectorKey) => void;
+   onMarkUserInitiated: () => void;
    onOpenOther: () => void;
+   isPreview: boolean;
    isConnecting: boolean;
 }) {
    const canConnect = Boolean(selectedKey) && !isConnecting;
+   // Base Account keeps its existing direct-connect path; the injected/WalletConnect
+   // wallets go through RainbowKit's WalletButton so the connect never dead-ends.
+   const rainbowKitWalletId = !isPreview && selectedKey && selectedKey !== 'coinbase' ? RAINBOWKIT_WALLET_ID[selectedKey] : null;
+
+   const renderConnectButton = (onClick: () => void, disabled: boolean) => (
+      <button
+         type="button"
+         disabled={disabled}
+         onClick={onClick}
+         className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
+      >
+         {isConnecting ? 'Connecting…' : selectedKey ? 'Connect Wallet' : 'Select a wallet above'}
+         {!isConnecting && selectedKey ? (
+            <span
+               className="block size-6 bg-md-neutral-100"
+               style={{
+                  WebkitMaskImage: "url('/icons/chevron-right.svg')",
+                  maskImage: "url('/icons/chevron-right.svg')",
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskRepeat: 'no-repeat',
+                  WebkitMaskPosition: 'center',
+                  maskPosition: 'center',
+                  WebkitMaskSize: 'contain',
+                  maskSize: 'contain'
+               }}
+            />
+         ) : null}
+      </button>
+   );
 
    return (
       <div className={CONNECT_WALLET_SCREEN_CLASS}>
@@ -282,30 +331,23 @@ function LenderConnectView({
             </button>
 
             <div className="flex flex-col gap-md-1">
-               <button
-                  type="button"
-                  disabled={!canConnect}
-                  onClick={() => selectedKey && onConnect(selectedKey)}
-                  className="flex items-center justify-center gap-md-1 w-full px-md-4 py-md-3 rounded-md-lg bg-md-primary-1200 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
-               >
-                  {isConnecting ? 'Connecting…' : selectedKey ? 'Connect Wallet' : 'Select a wallet above'}
-                  {!isConnecting && selectedKey ? (
-                     <span
-                        className="block size-6 bg-md-neutral-100"
-                        style={{
-                           WebkitMaskImage: "url('/icons/chevron-right.svg')",
-                           maskImage: "url('/icons/chevron-right.svg')",
-                           WebkitMaskRepeat: 'no-repeat',
-                           maskRepeat: 'no-repeat',
-                           WebkitMaskPosition: 'center',
-                           maskPosition: 'center',
-                           WebkitMaskSize: 'contain',
-                           maskSize: 'contain'
-                        }}
-                     />
-                  ) : null}
-               </button>
+               {rainbowKitWalletId ? (
+                  <WalletButton.Custom wallet={rainbowKitWalletId}>
+                     {({ connect, ready }) =>
+                        renderConnectButton(() => {
+                           onMarkUserInitiated();
+                           void connect();
+                        }, !canConnect || !ready)
+                     }
+                  </WalletButton.Custom>
+               ) : (
+                  renderConnectButton(() => selectedKey && onConnect(selectedKey), !canConnect)
+               )}
                <p className="text-md-b3 text-md-slate-500 text-center">All wallets support gasless transactions on Base network</p>
+            </div>
+
+            <div className="flex justify-center">
+               <WalletConnectHelp />
             </div>
          </div>
       </div>

@@ -55,6 +55,44 @@
       versionSwitcher.hidden = false;
    }
 
+   var siteHeader = document.querySelector('.site-header');
+
+   if (siteHeader) {
+      var headerFrame;
+
+      var syncHeader = function () {
+         headerFrame = undefined;
+         siteHeader.classList.toggle('is-scrolled', window.scrollY > 24);
+      };
+
+      window.addEventListener(
+         'scroll',
+         function () {
+            if (headerFrame) return;
+            headerFrame = window.requestAnimationFrame(syncHeader);
+         },
+         { passive: true }
+      );
+      syncHeader();
+   }
+
+   var loadingButtons = Array.from(document.querySelectorAll('a.button[href]')).filter(function (link) {
+      var href = link.getAttribute('href') || '';
+      return link.target !== '_blank' && href.indexOf('mailto:') !== 0 && href.indexOf('tel:') !== 0 && href.charAt(0) !== '#';
+   });
+
+   loadingButtons.forEach(function (link) {
+      link.addEventListener('click', function () {
+         link.classList.add('is-loading');
+      });
+   });
+
+   window.addEventListener('pageshow', function () {
+      loadingButtons.forEach(function (link) {
+         link.classList.remove('is-loading');
+      });
+   });
+
    var dialog = document.querySelector('[data-menu-dialog]');
    var openButton = document.querySelector('[data-menu-open]');
    var closeButton = document.querySelector('[data-menu-close]');
@@ -222,6 +260,64 @@
          }
       }
 
+      // scrubbed route spotlight (George 07-18): the cash-out panel's phone
+      // shot is the real selector screenshot — as the scroll moves through
+      // the beat, a butter-yellow ring walks down its provider rows so every
+      // route gets a moment even with zero autonomous motion (scroll-driven,
+      // so it works under prefers-reduced-motion too). Ring is yellow on
+      // purpose: the screenshot already paints Coins.ph's SELECTED state
+      // purple, and the spotlight must read as "look here", not "selected".
+      // Row boxes are [top, height] in the source screenshot's 390px-wide
+      // pixel space (Coins.ph / GCrypto / PDAX; Binance sits under the
+      // caption pill's crop, so the walk stops at PDAX); the shot renders
+      // object-fit:cover top-aligned, so display position = src * width scale.
+      var routesShot = story.querySelector('.deal-product-shot-routes');
+      var routeFocus = null;
+      var routeRows = [
+         [296, 112],
+         [416, 82],
+         [508, 86],
+      ];
+      if (routesShot) {
+         routeFocus = document.createElement('span');
+         routeFocus.setAttribute('aria-hidden', 'true');
+         routeFocus.style.cssText =
+            'position:absolute;left:3.5%;width:93%;border-radius:16px;' +
+            'border:2.5px solid var(--butter-strong);' +
+            'box-shadow:0 0 0 5px oklch(86% 0.145 83 / 0.22);' +
+            'opacity:0;pointer-events:none;' +
+            (reduceMotion ? '' : 'transition:top 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);');
+         routesShot.appendChild(routeFocus);
+      }
+
+      function positionRouteFocus(position) {
+         if (!routeFocus) return;
+         var panelIndex = dealPanels.indexOf(routesShot.closest('[data-deal-panel]'));
+         if (panelIndex < 0) return;
+         // walk the three rows across the beat's full-ink plateau
+         var local = Math.min(1, Math.max(0, (position - (panelIndex - 0.4)) / 0.8));
+         var row = routeRows[Math.min(routeRows.length - 1, Math.floor(local * routeRows.length))];
+         var scale = routesShot.clientWidth / 390;
+         routeFocus.style.top = (row[0] * scale).toFixed(1) + 'px';
+         routeFocus.style.height = (row[1] * scale).toFixed(1) + 'px';
+         routeFocus.style.opacity = '1';
+      }
+
+      function clearDealScrub() {
+         story.classList.remove('is-scrubbed');
+         if (routeFocus) routeFocus.style.opacity = '0';
+         dealSteps.forEach(function (step) {
+            step.style.opacity = '';
+            step.style.transform = '';
+         });
+         dealPanels.forEach(function (panel) {
+            panel.style.opacity = '';
+            panel.style.transform = '';
+            panel.style.visibility = '';
+            panel.style.zIndex = '';
+         });
+      }
+
       function syncDealToViewport() {
          dealFrame = undefined;
          if (!isAnimatedDeal()) return;
@@ -229,16 +325,75 @@
          var viewportTarget = window.innerHeight * (isMobileDeal() ? 0.58 : 0.52);
          var closestIndex = 0;
          var closestDistance = Infinity;
+         var scrubbing = isDesktopDeal();
+         var scrubRange = window.innerHeight * 0.4;
+         var stepCenters = [];
+
+         story.classList.toggle('is-scrubbed', scrubbing);
 
          dealSteps.forEach(function (step, index) {
             var rect = step.getBoundingClientRect();
             var stepCenter = rect.top + rect.height / 2;
             var distance = Math.abs(stepCenter - viewportTarget);
+            stepCenters.push(stepCenter);
             if (distance < closestDistance) {
                closestDistance = distance;
                closestIndex = index;
             }
+
+            if (scrubbing) {
+               // roulette scrub: fade/offset track the scroll continuously —
+               // full ink on the focus line, easing to the resting 0.3 / 16px
+               // one scrub-range away (matches the non-scrubbed CSS values)
+               var t = Math.min(1, distance / scrubRange);
+               step.style.opacity = (1 - t * 0.7).toFixed(3);
+               step.style.transform = 'translateX(' + (t * 16).toFixed(1) + 'px)';
+            }
          });
+
+         if (scrubbing) {
+            // stage panels scrub too: instead of the class flip (which pops the
+            // new panel in the moment a step crosses the focus line), express
+            // the scroll as a fractional step position and crossfade the two
+            // bracketing panels continuously. Each panel holds fully opaque
+            // near its own step (d < 0.28) and hands off across the middle
+            // stretch, so the swap happens WITH the scroll, never against it.
+            var position = 0;
+            var lastCenter = stepCenters.length - 1;
+            if (lastCenter > 0) {
+               if (viewportTarget <= stepCenters[0]) {
+                  position = 0;
+               } else if (viewportTarget >= stepCenters[lastCenter]) {
+                  position = lastCenter;
+               } else {
+                  for (var pair = 0; pair < lastCenter; pair += 1) {
+                     if (viewportTarget < stepCenters[pair + 1]) {
+                        position = pair + (viewportTarget - stepCenters[pair]) / (stepCenters[pair + 1] - stepCenters[pair]);
+                        break;
+                     }
+                  }
+               }
+            }
+
+            dealPanels.forEach(function (panel, panelIndex) {
+               // fade-through, not crossfade: each panel is fully gone just past
+               // the halfway line (d = 0.52), so two panels' text never sit
+               // double-exposed on top of each other mid-swap. Hold at full ink
+               // until d = 0.34 (was 0.26 — George 07-18: the panel was a ghost
+               // for most of its step's scroll window, "so quick, hard to read");
+               // the whole fade now lives in the last stretch before the handoff
+               var d = Math.abs(position - panelIndex);
+               var t = Math.min(1, Math.max(0, (d - 0.34) / 0.18));
+               var eased = t * t * (3 - 2 * t);
+               var dir = panelIndex > position ? 1 : -1;
+               panel.style.opacity = (1 - eased).toFixed(3);
+               panel.style.transform = 'translateY(' + (dir * eased * 22).toFixed(1) + 'px)';
+               panel.style.visibility = eased >= 1 ? 'hidden' : 'visible';
+               panel.style.zIndex = eased >= 1 ? '' : String(10 - Math.round(eased * 5));
+            });
+
+            positionRouteFocus(position);
+         }
 
          activateDealStep(closestIndex);
       }
@@ -255,6 +410,7 @@
          dealFrame = undefined;
          activeDealIndex = -1;
          story.classList.toggle('is-mobile-animated', isMobileDeal());
+         if (!isDesktopDeal()) clearDealScrub();
 
          if (!isAnimatedDeal()) {
             dealSteps.forEach(function (step) {

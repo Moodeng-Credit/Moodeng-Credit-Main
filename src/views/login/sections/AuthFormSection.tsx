@@ -96,7 +96,9 @@ export default function AuthFormSection(): JSX.Element {
                return;
             }
             clear();
-            navigate('/dashboard');
+            // Replace so the back button returns to wherever the user came from
+            // (e.g. the request board) instead of this sign-in page.
+            navigate('/dashboard', { replace: true });
          } else {
             const errorMsg =
                (resultAction.payload as Record<string, string>)?.message ||

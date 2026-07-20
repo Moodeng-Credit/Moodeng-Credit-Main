@@ -9,7 +9,8 @@ import {
    deleteReferralCode,
    listReferralCodes,
    logAdminAction,
-   setReferralCodeActive
+   setReferralCodeActive,
+   updateReferralCode
 } from './adminSupabase';
 
 type CodeFilter = 'active' | 'inactive' | 'all';
@@ -22,6 +23,21 @@ function codeStatus(c: AdminReferralCode): CodeStatus {
    if (c.expires_at && new Date(c.expires_at) <= new Date()) return 'expired';
    if (c.max_uses != null && c.current_uses >= c.max_uses) return 'maxed out';
    return 'active';
+}
+
+// Stored expiry is an ISO timestamp (end-of-day in the admin's local time). Turn it back into
+// the YYYY-MM-DD a <input type="date"> expects, in local time so the day round-trips.
+function isoToDateInput(iso: string | null): string {
+   if (!iso) return '';
+   const d = new Date(iso);
+   if (Number.isNaN(d.getTime())) return '';
+   const pad = (n: number) => String(n).padStart(2, '0');
+   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// A date-only expiry keeps the code valid through the end of that day, admin's local time.
+function dateInputToIso(dateValue: string): string | null {
+   return dateValue ? new Date(`${dateValue}T23:59:59`).toISOString() : null;
 }
 
 function statusClass(s: CodeStatus): string {
@@ -83,7 +99,7 @@ export default function ReferralCodesSection() {
          return;
       }
       // Date input gives a day; the code stays valid through the end of that day.
-      const expiresAt = newExpiresAt ? new Date(`${newExpiresAt}T23:59:59`).toISOString() : null;
+      const expiresAt = dateInputToIso(newExpiresAt);
 
       setCreating(true);
       setError(null);
@@ -152,6 +168,60 @@ export default function ReferralCodesSection() {
          setBusy(null);
       }
    }, []);
+
+   const [editingId, setEditingId] = useState<string | null>(null);
+   const [editBoost, setEditBoost] = useState('');
+   const [editMaxUses, setEditMaxUses] = useState('');
+   const [editExpiresAt, setEditExpiresAt] = useState('');
+
+   const startEdit = useCallback((c: AdminReferralCode) => {
+      setError(null);
+      setEditingId(c.id);
+      setEditBoost(String(c.boost_amount));
+      setEditMaxUses(c.max_uses != null ? String(c.max_uses) : '');
+      setEditExpiresAt(isoToDateInput(c.expires_at));
+   }, []);
+
+   const cancelEdit = useCallback(() => setEditingId(null), []);
+
+   const saveEdit = useCallback(
+      async (c: AdminReferralCode) => {
+         const boost = Number(editBoost);
+         if (!Number.isFinite(boost) || boost <= 0) {
+            setError('Boost must be a positive number.');
+            return;
+         }
+         const maxUses = editMaxUses.trim() === '' ? null : Number(editMaxUses);
+         if (maxUses != null && (!Number.isInteger(maxUses) || maxUses <= 0)) {
+            setError('Max uses must be a whole number above zero, or empty for unlimited.');
+            return;
+         }
+         if (maxUses != null && maxUses < c.current_uses) {
+            setError(`Max uses can't be below the ${c.current_uses} already redeemed.`);
+            return;
+         }
+         const expiresAt = dateInputToIso(editExpiresAt);
+
+         setBusy(c.id);
+         setError(null);
+         try {
+            const updated = await updateReferralCode(c.id, { boost_amount: boost, max_uses: maxUses, expires_at: expiresAt });
+            await logAdminAction({
+               action: 'referral_code_updated',
+               target_table: 'referral_codes',
+               target_id: c.id,
+               metadata: { code: c.code, boost_amount: boost, max_uses: maxUses, expires_at: expiresAt }
+            });
+            setCodes((prev) => prev.map((row) => (row.id === c.id ? updated : row)));
+            setEditingId(null);
+         } catch (err) {
+            setError(errorMessage(err));
+         } finally {
+            setBusy(null);
+         }
+      },
+      [editBoost, editExpiresAt, editMaxUses]
+   );
 
    const shown = useMemo(() => {
       if (filter === 'all') return codes;
@@ -256,8 +326,9 @@ export default function ReferralCodesSection() {
                </p>
             ) : null}
             <p className="mt-2 text-sm font-medium text-[#6f6385]">
-               Leave max uses and expiry empty for a code that works forever. Boost is the starting-limit bump in USDC — a new
-               borrower starts at ${STARTING_CREDIT_LIMIT} and lands at ${STARTING_CREDIT_LIMIT} + boost.
+               Leave max uses and expiry empty for a code that works forever. Expiry is end of that day, your local time. Boost is
+               the starting-limit bump in USDC — a new borrower starts at ${STARTING_CREDIT_LIMIT} and lands at $
+               {STARTING_CREDIT_LIMIT} + boost.
             </p>
          </article>
 
@@ -296,6 +367,14 @@ export default function ReferralCodesSection() {
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                            <button
                               type="button"
+                              onClick={() => (editingId === c.id ? cancelEdit() : startEdit(c))}
+                              disabled={busy === c.id}
+                              className="rounded-xl bg-[#34234f] px-4 py-2 text-base font-black text-white disabled:opacity-50"
+                           >
+                              {editingId === c.id ? 'Cancel' : 'Edit'}
+                           </button>
+                           <button
+                              type="button"
                               onClick={() => toggleActive(c)}
                               disabled={busy === c.id}
                               className={`rounded-xl px-4 py-2 text-base font-black text-white disabled:opacity-50 ${c.is_active ? 'bg-[#34234f]' : 'bg-[#8336f0]'}`}
@@ -313,6 +392,62 @@ export default function ReferralCodesSection() {
                               </button>
                            ) : null}
                         </div>
+
+                        {editingId === c.id ? (
+                           <div className="mt-3 rounded-xl border border-[#3d1f6e] bg-[#150730] p-4">
+                              <div className="flex flex-wrap items-end gap-3">
+                                 <label className="flex w-28 flex-col gap-1 text-sm font-bold text-[#a89bb8]">
+                                    Boost ($)
+                                    <input
+                                       value={editBoost}
+                                       onChange={(e) => setEditBoost(e.target.value)}
+                                       inputMode="decimal"
+                                       className="rounded-xl border border-[#3d1f6e] bg-[#241044] px-3 py-2 text-base font-bold text-white"
+                                    />
+                                 </label>
+                                 <label className="flex w-32 flex-col gap-1 text-sm font-bold text-[#a89bb8]">
+                                    Max uses
+                                    <input
+                                       value={editMaxUses}
+                                       onChange={(e) => setEditMaxUses(e.target.value)}
+                                       inputMode="numeric"
+                                       placeholder="unlimited"
+                                       className="rounded-xl border border-[#3d1f6e] bg-[#241044] px-3 py-2 text-base font-bold text-white placeholder:text-[#6f6385]"
+                                    />
+                                 </label>
+                                 <label className="flex w-44 flex-col gap-1 text-sm font-bold text-[#a89bb8]">
+                                    Expires
+                                    <input
+                                       type="date"
+                                       value={editExpiresAt}
+                                       onChange={(e) => setEditExpiresAt(e.target.value)}
+                                       className="rounded-xl border border-[#3d1f6e] bg-[#241044] px-3 py-2 text-base font-bold text-white [color-scheme:dark]"
+                                    />
+                                 </label>
+                                 <button
+                                    type="button"
+                                    onClick={() => saveEdit(c)}
+                                    disabled={busy === c.id}
+                                    className="rounded-xl bg-[#8336f0] px-5 py-2 text-base font-black text-white disabled:opacity-50"
+                                 >
+                                    {busy === c.id ? 'Saving…' : 'Save'}
+                                 </button>
+                                 {editExpiresAt ? (
+                                    <button
+                                       type="button"
+                                       onClick={() => setEditExpiresAt('')}
+                                       className="rounded-xl bg-[#241044] px-4 py-2 text-base font-black text-[#cfc6dd]"
+                                    >
+                                       Clear expiry
+                                    </button>
+                                 ) : null}
+                              </div>
+                              <p className="mt-2 text-sm font-medium text-[#6f6385]">
+                                 The code itself can&apos;t change. Empty max uses or expiry means unlimited / never expires. Expiry
+                                 is end of that day, your local time.
+                              </p>
+                           </div>
+                        ) : null}
                      </article>
                   );
                })}

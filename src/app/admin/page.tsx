@@ -6,6 +6,8 @@ import type { FormEvent, ReactNode } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
+
 import { formatPointsMajor, iouPointsAwardRules, loanFundingPointsPerUsdc, pointsAwardRules, trustPointsAwardRules } from '@/shared/points';
 import type { RootState } from '@/store/store';
 
@@ -30,14 +32,30 @@ import {
    upsertAccountRestrictionByUserId,
    upsertLoanRequestReview
 } from './adminSupabase';
+import ComingDueSection from './ComingDueSection';
+import GrowthAnalyticsSection from './GrowthAnalyticsSection';
+import LoanExplorerSection from './LoanExplorerSection';
+import LoanExtensionSection from './LoanExtensionSection';
 import ReferralCodesSection from './ReferralCodesSection';
 import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
 import SelfLendingSection from './SelfLendingSection';
 
-import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
-
-type AdminTab = 'users' | 'points' | 'trust-points' | 'defaults' | 'requests' | 'risk' | 'self-lending' | 'referrals' | 'notifications' | 'relay';
+type AdminTab =
+   | 'users'
+   | 'analytics'
+   | 'loans'
+   | 'coming-due'
+   | 'extensions'
+   | 'points'
+   | 'trust-points'
+   | 'defaults'
+   | 'requests'
+   | 'risk'
+   | 'self-lending'
+   | 'referrals'
+   | 'notifications'
+   | 'relay';
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
 
 type NoticeTemplate = {
@@ -47,16 +65,57 @@ type NoticeTemplate = {
    body: string;
 };
 
-const navItems: Array<{ id: AdminTab; label: string }> = [
-   { id: 'users', label: 'User directory' },
-   { id: 'points', label: 'IOU points' },
-   { id: 'trust-points', label: 'Trust points' },
-   { id: 'defaults', label: 'Default recovery' },
-   { id: 'requests', label: 'Loan request review' },
-   { id: 'risk', label: 'Risk assessment' },
-   { id: 'self-lending', label: 'Self-lending?' },
-   { id: 'referrals', label: 'Referral codes' },
-   { id: 'notifications', label: 'Notifications' }
+type NavGroup = { id: string; label: string; items: Array<{ id: AdminTab; label: string }> };
+
+const navGroups: NavGroup[] = [
+   {
+      id: 'overview',
+      label: 'Overview',
+      items: [
+         { id: 'users', label: 'User directory' },
+         { id: 'analytics', label: 'Growth & analytics' }
+      ]
+   },
+   {
+      id: 'loans',
+      label: 'Loans',
+      items: [
+         { id: 'loans', label: 'Loans' },
+         { id: 'coming-due', label: 'Coming due' },
+         { id: 'extensions', label: 'Loan extensions' },
+         { id: 'requests', label: 'Loan request review' },
+         { id: 'defaults', label: 'Default recovery' }
+      ]
+   },
+   {
+      id: 'points',
+      label: 'Points',
+      items: [
+         { id: 'points', label: 'IOU points' },
+         { id: 'trust-points', label: 'Trust points' }
+      ]
+   },
+   {
+      id: 'risk',
+      label: 'Risk & fraud',
+      items: [
+         { id: 'risk', label: 'Risk assessment' },
+         { id: 'self-lending', label: 'Self-lending?' }
+      ]
+   },
+   {
+      id: 'growth',
+      label: 'Growth & comms',
+      items: [
+         { id: 'referrals', label: 'Referral codes' },
+         { id: 'notifications', label: 'Notifications' }
+      ]
+   },
+   {
+      id: 'funding',
+      label: 'Funding',
+      items: [{ id: 'relay', label: 'Liquidity Relay' }]
+   }
 ];
 
 const recoveryPaths: Array<{ name: RecoveryPath; label: string; detail: string }> = [
@@ -213,7 +272,22 @@ function hasPositivePoints(points: number | string) {
    return Number(formatPointsMajor(points)) > 0;
 }
 
-const ALL_ADMIN_TABS: readonly AdminTab[] = ['users', 'points', 'trust-points', 'defaults', 'requests', 'risk', 'self-lending', 'referrals', 'notifications', 'relay'];
+const ALL_ADMIN_TABS: readonly AdminTab[] = [
+   'users',
+   'analytics',
+   'loans',
+   'coming-due',
+   'extensions',
+   'points',
+   'trust-points',
+   'defaults',
+   'requests',
+   'risk',
+   'self-lending',
+   'referrals',
+   'notifications',
+   'relay'
+];
 
 function isAdminTab(value: string): value is AdminTab {
    return (ALL_ADMIN_TABS as readonly string[]).includes(value);
@@ -232,13 +306,24 @@ export default function AdminPanel() {
    const reduxUser = useSelector((state: RootState) => state.auth.user);
    // The Liquidity Relay share panel is gated to the two Moodeng funding admins (George/Emma).
    const isFundingAdmin = useIsFundingAdmin();
-   const visibleNavItems = isFundingAdmin ? [...navItems, { id: 'relay' as const, label: 'Liquidity Relay' }] : navItems;
+   const visibleNavGroups = isFundingAdmin ? navGroups : navGroups.filter((group) => group.id !== 'funding');
    const navigate = useNavigate();
    const { tab: tabParam } = useParams<{ tab?: string }>();
    // The URL is the source of truth for the active tab: /admin/relay, /admin/points, …
    // Bare /admin falls back to legacy ?tab= links, then the user directory.
    const activeTab: AdminTab = tabParam && isAdminTab(tabParam) ? tabParam : legacyQueryTab();
+   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(
+      () => navGroups.find((group) => group.items.some((item) => item.id === activeTab))?.id ?? navGroups[0].id
+   );
+
+   useEffect(() => {
+      const group = navGroups.find((g) => g.items.some((item) => item.id === activeTab));
+      if (group) setExpandedGroupId(group.id);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [activeTab]);
    const setActiveTab = (tab: AdminTab) => navigate(tab === 'users' ? '/admin' : `/admin/${tab}`);
+   // When the team clicks "Extend" on a coming-due loan, jump to the extensions tab with it preselected.
+   const [extensionLoanId, setExtensionLoanId] = useState<string | null>(null);
    const [admin, setAdmin] = useState<AdminUser | null>(null);
    const [overview, setOverview] = useState<AdminOverview | null>(null);
    const [integrityRun, setIntegrityRun] = useState<AdminIntegrityRun | null>(null);
@@ -499,8 +584,8 @@ export default function AdminPanel() {
    return (
       <main className="min-h-screen bg-[#120429] text-white">
          <div className="grid min-h-screen lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
-            <aside className="overflow-hidden bg-[#120429] p-6 text-white sm:p-8 lg:sticky lg:top-0 lg:h-screen">
-               <div className="flex min-w-0 items-center gap-4">
+            <aside className="overflow-y-auto bg-[#120429] p-6 text-white sm:p-8 lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
+               <div className="flex min-w-0 shrink-0 items-center gap-4">
                   <a
                      href="/account/settings"
                      className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#8336f0] text-3xl font-black text-white no-underline focus:outline focus:outline-4 focus:outline-offset-4 focus:outline-purple-200 sm:h-20 sm:w-20 sm:text-4xl"
@@ -515,20 +600,43 @@ export default function AdminPanel() {
                   </div>
                </div>
 
-               <nav className="mt-12 grid gap-4">
-                  {visibleNavItems.map((item) => (
-                     <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setActiveTab(item.id)}
-                        className={`rounded-2xl border px-6 py-5 text-left text-xl font-black ${activeTab === item.id ? 'border-[#8336f0] bg-[#2a1453] text-white' : 'border-transparent text-purple-200 hover:border-[#8336f0] hover:bg-[#20103e]'}`}
-                     >
-                        {item.label}
-                     </button>
-                  ))}
+               <nav className="mt-12 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
+                  {visibleNavGroups.map((group) => {
+                     const isExpanded = expandedGroupId === group.id;
+                     const hasActiveItem = group.items.some((item) => item.id === activeTab);
+                     return (
+                        <div key={group.id} className="shrink-0 overflow-hidden rounded-2xl border border-[#2a1453] bg-[#1c0a3a]">
+                           <button
+                              type="button"
+                              onClick={() => setExpandedGroupId(isExpanded ? null : group.id)}
+                              aria-expanded={isExpanded}
+                              className={`flex w-full items-center justify-between gap-3 px-6 py-4 text-left text-lg font-black uppercase tracking-wide ${hasActiveItem ? 'text-white' : 'text-purple-200'} hover:bg-[#20103e]`}
+                           >
+                              <span>{group.label}</span>
+                              <span className={`text-sm transition-transform ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true">
+                                 ▾
+                              </span>
+                           </button>
+                           {isExpanded ? (
+                              <div className="grid gap-2 px-3 pb-3">
+                                 {group.items.map((item) => (
+                                    <button
+                                       key={item.id}
+                                       type="button"
+                                       onClick={() => setActiveTab(item.id)}
+                                       className={`rounded-xl border px-5 py-4 text-left text-lg font-black ${activeTab === item.id ? 'border-[#8336f0] bg-[#2a1453] text-white' : 'border-transparent text-purple-200 hover:border-[#8336f0] hover:bg-[#20103e]'}`}
+                                    >
+                                       {item.label}
+                                    </button>
+                                 ))}
+                              </div>
+                           ) : null}
+                        </div>
+                     );
+                  })}
                </nav>
 
-               <div className="mt-12 rounded-3xl border border-[#8336f0] bg-[#241044] p-6">
+               <div className="mt-6 shrink-0 rounded-3xl border border-[#8336f0] bg-[#241044] p-6">
                   <p className="text-lg text-purple-200">Data source</p>
                   <strong className="mt-2 block break-words text-2xl font-black">Supabase live data</strong>
                   <p className="mt-2 text-lg text-purple-200">No scaffold users or mock loans.</p>
@@ -819,8 +927,8 @@ export default function AdminPanel() {
                         <h2 className="break-words text-4xl font-black sm:text-5xl">IOU points</h2>
                         <p className="mt-3 max-w-4xl text-2xl text-[#a89bb8]">
                            Lender-only points from <span className="font-black text-white">user_points</span> and{' '}
-                           <span className="font-black text-white">point_events</span>. The guide below reads from the shared points
-                           rules used by the funding code.
+                           <span className="font-black text-white">point_events</span>. The guide below reads from the shared points rules
+                           used by the funding code.
                         </p>
                      </div>
 
@@ -986,8 +1094,8 @@ export default function AdminPanel() {
                            <p className="text-sm font-black uppercase tracking-wide text-emerald-300">Current storage</p>
                            <h3 className="mt-2 text-3xl font-black text-white">Live Trust Point ledger</h3>
                            <p className="mt-3 text-lg font-bold leading-8 text-emerald-300">
-                              Milestone completions write borrower Trust Point events into Supabase. Credit limit fields such as users.cs stay
-                              separate.
+                              Milestone completions write borrower Trust Point events into Supabase. Credit limit fields such as users.cs
+                              stay separate.
                            </p>
                         </div>
                         <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
@@ -1347,13 +1455,62 @@ export default function AdminPanel() {
 
                {activeTab === 'self-lending' ? <SelfLendingSection /> : null}
 
+               {activeTab === 'analytics' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Growth &amp; analytics</h2>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">Users, roles, verifications, and loan performance at a glance.</p>
+                     </div>
+                     <GrowthAnalyticsSection />
+                  </section>
+               ) : null}
+
+               {activeTab === 'loans' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Loans</h2>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">
+                           Every loan — requested, active, paid back, or not paid back. Filter and search to dig in.
+                        </p>
+                     </div>
+                     <LoanExplorerSection />
+                  </section>
+               ) : null}
+
+               {activeTab === 'coming-due' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Coming due</h2>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">
+                           Active loans by due date, with a countdown and borrower contact info — so we can nudge before anything defaults.
+                        </p>
+                     </div>
+                     <ComingDueSection
+                        onExtend={(loanId) => {
+                           setExtensionLoanId(loanId);
+                           setActiveTab('extensions');
+                        }}
+                     />
+                  </section>
+               ) : null}
+
+               {activeTab === 'extensions' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Loan extensions</h2>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">
+                           Push a funded loan&apos;s due date out. Both the borrower and the lender are notified automatically.
+                        </p>
+                     </div>
+                     <LoanExtensionSection initialLoanId={extensionLoanId} actorUserId={admin?.user_id ?? reduxUser?.id ?? null} />
+                  </section>
+               ) : null}
+
                {activeTab === 'referrals' ? (
                   <section className="space-y-6">
                      <div>
                         <h2 className="break-words text-4xl font-black sm:text-5xl">Referral codes</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">
-                           Create codes, deactivate old ones, and track redemptions.
-                        </p>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">Create codes, deactivate old ones, and track redemptions.</p>
                      </div>
                      <ReferralCodesSection />
                   </section>

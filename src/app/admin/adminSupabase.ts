@@ -110,6 +110,7 @@ export interface AdminLoanRecord {
    coin: string;
    loan_status: 'Requested' | 'Lent' | null;
    repayment_status: 'Unpaid' | 'Partial' | 'Paid' | null;
+   is_test: boolean;
    created_at: string | null;
    funded_at: string | null;
    borrower: Pick<AdminDirectoryUser, 'id' | 'username' | 'wallet_address' | 'user_role' | 'account_status' | 'is_world_id'> | null;
@@ -296,6 +297,7 @@ function mapLoan(row: AnyRow, usersById: Map<string, AdminDirectoryUser>): Admin
       coin: row.coin,
       loan_status: row.loan_status ?? null,
       repayment_status: row.repayment_status ?? null,
+      is_test: Boolean(row.is_test),
       created_at: row.created_at ?? null,
       funded_at: row.funded_at ?? null,
       borrower: shortUser(row.borrower_user_id ? usersById.get(row.borrower_user_id) : null),
@@ -630,6 +632,364 @@ export async function listAdminLoanRequests(): Promise<AdminLoanRequest[]> {
       ...mapLoan(row, usersById),
       review: reviewsByLoanId.get(row.id) ?? null
    }));
+}
+
+// Loan explorer — every loan, filterable by lifecycle state.
+export type LoanExplorerStatus = 'all' | 'requested' | 'active' | 'overdue' | 'repaid';
+
+export async function listAdminLoans(
+   status: LoanExplorerStatus = 'all',
+   { includeTest = false, limit = 500 }: { includeTest?: boolean; limit?: number } = {}
+): Promise<AdminLoanRecord[]> {
+   const supabase = getSupabaseBrowserClient();
+   const now = new Date().toISOString();
+   let query = supabase
+      .from('loans')
+      .select(
+         'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,is_test,created_at,funded_at'
+      );
+
+   if (!includeTest) query = query.eq('is_test', false);
+
+   if (status === 'requested') {
+      query = query.eq('loan_status', 'Requested');
+   } else if (status === 'active') {
+      query = query.eq('loan_status', 'Lent').in('repayment_status', ['Unpaid', 'Partial']).gte('due_date', now);
+   } else if (status === 'overdue') {
+      query = query.eq('loan_status', 'Lent').in('repayment_status', ['Unpaid', 'Partial']).lt('due_date', now);
+   } else if (status === 'repaid') {
+      query = query.eq('loan_status', 'Lent').eq('repayment_status', 'Paid');
+   }
+
+   const rows = await requireOk<AnyRow[]>(query.order('created_at', { ascending: false }).limit(limit));
+   const userIds = rows.flatMap((loan) => [loan.borrower_user_id, loan.lender_user_id].filter(Boolean));
+   const usersById = await fetchUsersByIds(userIds);
+   return rows.map((row) => mapLoan(row, usersById));
+}
+
+// Mark a user or loan as test / real (admin-only, via the gated RPC). Lets admins fix
+// misclassifications or flag new test data straight from the panel.
+export async function setEntityTest(entity: 'user' | 'loan', id: string, isTest: boolean): Promise<void> {
+   const supabase = getSupabaseBrowserClient();
+   const { error } = await supabase.rpc('admin_set_entity_test', { p_entity: entity, p_id: id, p_is_test: isTest });
+   if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// Coming due — active loans ordered by due date, with a per-loan countdown and
+// the borrower's / lender's contact info so the team can nudge before default.
+// ---------------------------------------------------------------------------
+export interface ComingDueParty {
+   id: string;
+   username: string | null;
+   email: string | null;
+   telegram_username: string | null;
+   wallet_address: string | null;
+}
+
+export interface ComingDueLoan {
+   id: string;
+   tracking_id: string;
+   loan_amount: number;
+   total_repayment_amount: number;
+   repaid_amount: number | null;
+   outstanding: number;
+   due_date: string;
+   days_until_due: number; // 0 = due today, negative = overdue, positive = upcoming
+   reason: string | null;
+   coin: string | null;
+   repayment_status: 'Unpaid' | 'Partial' | 'Paid' | null;
+   is_test: boolean;
+   borrower: ComingDueParty | null;
+   lender: ComingDueParty | null;
+}
+
+// Whole-calendar-day difference between today and the due date, so a loan due later
+// today reads as "due today" (0), tomorrow as 1, and yesterday as -1.
+function calendarDaysUntil(dueDate: string): number {
+   const due = new Date(dueDate);
+   if (Number.isNaN(due.getTime())) return 0;
+   const startOfToday = new Date();
+   startOfToday.setHours(0, 0, 0, 0);
+   const startOfDue = new Date(due);
+   startOfDue.setHours(0, 0, 0, 0);
+   return Math.round((startOfDue.getTime() - startOfToday.getTime()) / 86_400_000);
+}
+
+export async function listComingDueLoans({ includeTest = false, limit = 500 }: { includeTest?: boolean; limit?: number } = {}): Promise<
+   ComingDueLoan[]
+> {
+   const supabase = getSupabaseBrowserClient();
+   let query = supabase
+      .from('loans')
+      .select(
+         'id,tracking_id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,repayment_status,is_test'
+      )
+      .eq('loan_status', 'Lent')
+      .in('repayment_status', ['Unpaid', 'Partial'])
+      .not('due_date', 'is', null);
+
+   if (!includeTest) query = query.eq('is_test', false);
+
+   const rows = await requireOk<AnyRow[]>(query.order('due_date', { ascending: true }).limit(limit));
+
+   const userIds = [...new Set(rows.flatMap((row) => [row.borrower_user_id, row.lender_user_id]).filter(Boolean))] as string[];
+   const contactsById = new Map<string, ComingDueParty>();
+   if (userIds.length) {
+      const contacts = await requireOk<AnyRow[]>(
+         supabase.from('users').select('id,username,email,telegram_username,wallet_address').in('id', userIds)
+      );
+      for (const contact of contacts) {
+         contactsById.set(contact.id, {
+            id: contact.id,
+            username: contact.username ?? null,
+            email: contact.email ?? null,
+            telegram_username: contact.telegram_username ?? null,
+            wallet_address: contact.wallet_address ?? null
+         });
+      }
+   }
+
+   return rows.map((row) => ({
+      id: row.id,
+      tracking_id: row.tracking_id,
+      loan_amount: toNumber(row.loan_amount),
+      total_repayment_amount: toNumber(row.total_repayment_amount),
+      repaid_amount: row.repaid_amount == null ? null : toNumber(row.repaid_amount),
+      outstanding: outstandingDue({ total_repayment_amount: row.total_repayment_amount, repaid_amount: row.repaid_amount }),
+      due_date: row.due_date,
+      days_until_due: calendarDaysUntil(row.due_date),
+      reason: row.reason ?? null,
+      coin: row.coin ?? null,
+      repayment_status: row.repayment_status ?? null,
+      is_test: Boolean(row.is_test),
+      borrower: row.borrower_user_id ? (contactsById.get(row.borrower_user_id) ?? null) : null,
+      lender: row.lender_user_id ? (contactsById.get(row.lender_user_id) ?? null) : null
+   }));
+}
+
+// Delivery result shared by the nudge + extension notifications (email + Telegram to the
+// borrower, plus the team Telegram channel). Lenders are intentionally never notified.
+export interface LoanNotifyResult {
+   borrowerEmailSent: boolean;
+   borrowerTelegramSent: boolean;
+   teamNotified: boolean;
+   teamConfigured: boolean;
+   errors: string[];
+}
+
+async function invokeLoanNotify(body: Record<string, unknown>): Promise<LoanNotifyResult> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-loan-notify', { body });
+   if (error) throw new Error(error.message || 'Notification failed.');
+   return data as LoanNotifyResult;
+}
+
+// Nudge a borrower about a loan coming due (or already overdue) — email + Telegram, and a
+// heads-up to the team channel.
+export async function nudgeBorrower(loan: ComingDueLoan): Promise<LoanNotifyResult> {
+   if (!loan.borrower?.id) throw new Error('This loan has no borrower profile to notify.');
+   return invokeLoanNotify({ kind: 'nudge', loanId: loan.id });
+}
+
+// ---------------------------------------------------------------------------
+// Loan extension — move a funded loan's due date out and notify both parties.
+// ---------------------------------------------------------------------------
+export interface ExtendLoanResult {
+   extension_id: string;
+   loan_id: string;
+   tracking_id: string;
+   borrower_user_id: string | null;
+   lender_user_id: string | null;
+   previous_due_date: string;
+   new_due_date: string;
+   days_extended: number;
+}
+
+export async function extendLoan(input: {
+   loanId: string;
+   newDueDate: string; // ISO
+   reason?: string | null;
+   actorUserId?: string | null;
+}): Promise<{ result: ExtendLoanResult; notify: LoanNotifyResult | null; notifyError: string | null }> {
+   const supabase = getSupabaseBrowserClient();
+   // Step 1: move the due date (admin-gated RPC that bypasses the money-columns lock).
+   const result = await requireOk<ExtendLoanResult>(
+      supabase.rpc('admin_extend_loan', {
+         p_loan_id: input.loanId,
+         p_new_due_date: input.newDueDate,
+         p_reason: input.reason ?? null
+      })
+   );
+
+   // Step 2: notify the borrower (email + Telegram) and the team channel. Best-effort — the
+   // extension already succeeded, so a delivery failure is surfaced, not thrown.
+   let notify: LoanNotifyResult | null = null;
+   let notifyError: string | null = null;
+   try {
+      notify = await invokeLoanNotify({
+         kind: 'extension',
+         loanId: result.loan_id,
+         previousDueDate: result.previous_due_date,
+         newDueDate: result.new_due_date,
+         daysExtended: result.days_extended,
+         reason: input.reason ?? null
+      });
+   } catch (err) {
+      notifyError = err instanceof Error ? err.message : 'Notification failed.';
+   }
+
+   await logAdminAction({
+      action: 'extend_loan',
+      target_table: 'loans',
+      target_id: result.loan_id,
+      target_user_id: result.borrower_user_id,
+      metadata: {
+         source: 'admin_loan_extension',
+         tracking_id: result.tracking_id,
+         previous_due_date: result.previous_due_date,
+         new_due_date: result.new_due_date,
+         days_extended: result.days_extended,
+         borrower_email_sent: notify?.borrowerEmailSent ?? false,
+         borrower_telegram_sent: notify?.borrowerTelegramSent ?? false,
+         team_notified: notify?.teamNotified ?? false
+      }
+   }).catch(() => undefined);
+
+   return { result, notify, notifyError };
+}
+
+// Growth analytics — current-state breakdowns plus a weekly registration trend. Computed
+// client-side from lightweight row sets (small user/loan tables); no aggregation RPC needed.
+export interface GrowthAnalytics {
+   totalUsers: number;
+   borrowers: number;
+   lenders: number;
+   unsetRole: number;
+   blockedUsers: number;
+   worldIdVerified: number;
+   diditVerified: number;
+   anyVerified: number;
+   verifiedRate: number; // 0..1 of all users with at least one verification
+   registrationsByWeek: Array<{ weekStart: string; count: number; cumulative: number }>;
+   totalLoans: number;
+   requestedLoans: number;
+   activeLoans: number;
+   overdueLoans: number;
+   repaidLoans: number;
+   volumeLent: number;
+   volumeRepaid: number;
+   volumeOutstanding: number;
+   repaymentRate: number; // repaid loans / (funded loans)
+}
+
+function isoWeekStart(dateStr: string): string {
+   const d = new Date(dateStr);
+   const day = (d.getUTCDay() + 6) % 7; // Monday = 0
+   d.setUTCDate(d.getUTCDate() - day);
+   d.setUTCHours(0, 0, 0, 0);
+   return d.toISOString().slice(0, 10);
+}
+
+export async function getGrowthAnalytics({ includeTest = false }: { includeTest?: boolean } = {}): Promise<GrowthAnalytics> {
+   const supabase = getSupabaseBrowserClient();
+   const now = Date.now();
+
+   let usersQuery = supabase.from('users').select('id,created_at,user_role,is_world_id,is_didit,account_status').limit(5000);
+   let loansQuery = supabase.from('loans').select('loan_amount,repaid_amount,loan_status,repayment_status,due_date,created_at').limit(5000);
+   if (!includeTest) {
+      usersQuery = usersQuery.eq('is_test', false);
+      loansQuery = loansQuery.eq('is_test', false);
+   }
+
+   const [users, loans] = await Promise.all([requireOk<AnyRow[]>(usersQuery), requireOk<AnyRow[]>(loansQuery)]);
+
+   const isActive = (v: unknown) => String(v ?? '').toUpperCase() === 'ACTIVE';
+   let borrowers = 0;
+   let lenders = 0;
+   let unsetRole = 0;
+   let blockedUsers = 0;
+   let worldIdVerified = 0;
+   let diditVerified = 0;
+   let anyVerified = 0;
+
+   for (const u of users) {
+      if (u.user_role === 'borrower') borrowers += 1;
+      else if (u.user_role === 'lender') lenders += 1;
+      else unsetRole += 1;
+      if (String(u.account_status ?? '').toLowerCase() === 'blocked' || String(u.account_status ?? '').toLowerCase() === 'banned')
+         blockedUsers += 1;
+      const world = isActive(u.is_world_id);
+      const didit = isActive(u.is_didit);
+      if (world) worldIdVerified += 1;
+      if (didit) diditVerified += 1;
+      if (world || didit) anyVerified += 1;
+   }
+
+   // Weekly registration buckets, chronological, with a running cumulative total.
+   const weekCounts = new Map<string, number>();
+   for (const u of users) {
+      if (!u.created_at) continue;
+      const wk = isoWeekStart(u.created_at);
+      weekCounts.set(wk, (weekCounts.get(wk) ?? 0) + 1);
+   }
+   const sortedWeeks = [...weekCounts.keys()].sort();
+   let running = 0;
+   const registrationsByWeek = sortedWeeks.map((weekStart) => {
+      const count = weekCounts.get(weekStart) ?? 0;
+      running += count;
+      return { weekStart, count, cumulative: running };
+   });
+
+   let requestedLoans = 0;
+   let activeLoans = 0;
+   let overdueLoans = 0;
+   let repaidLoans = 0;
+   let volumeLent = 0;
+   let volumeRepaid = 0;
+   let volumeOutstanding = 0;
+
+   for (const l of loans) {
+      const amount = toNumber(l.loan_amount);
+      const repaid = l.repaid_amount == null ? 0 : toNumber(l.repaid_amount);
+      const dueMs = l.due_date ? new Date(l.due_date).getTime() : null;
+      if (l.loan_status === 'Requested') {
+         requestedLoans += 1;
+      } else if (l.loan_status === 'Lent') {
+         volumeLent += amount;
+         volumeRepaid += repaid;
+         if (l.repayment_status === 'Paid') {
+            repaidLoans += 1;
+         } else {
+            volumeOutstanding += Math.max(amount - repaid, 0);
+            if (dueMs != null && dueMs < now) overdueLoans += 1;
+            else activeLoans += 1;
+         }
+      }
+   }
+
+   const fundedLoans = activeLoans + overdueLoans + repaidLoans;
+
+   return {
+      totalUsers: users.length,
+      borrowers,
+      lenders,
+      unsetRole,
+      blockedUsers,
+      worldIdVerified,
+      diditVerified,
+      anyVerified,
+      verifiedRate: users.length ? anyVerified / users.length : 0,
+      registrationsByWeek,
+      totalLoans: loans.length,
+      requestedLoans,
+      activeLoans,
+      overdueLoans,
+      repaidLoans,
+      volumeLent,
+      volumeRepaid,
+      volumeOutstanding,
+      repaymentRate: fundedLoans ? repaidLoans / fundedLoans : 0
+   };
 }
 
 export async function listAdminDefaultCases(): Promise<AdminDefaultCase[]> {
@@ -988,12 +1348,7 @@ export async function saveDefaultRecoveryPlan(input: {
 // ---------------------------------------------------------------------------
 // Self-lending / detection overview (admin_get_detection_overview RPC)
 // ---------------------------------------------------------------------------
-export type DetectionLinkType =
-   | 'same_wallet_on_loan'
-   | 'shared_wallet'
-   | 'shared_email'
-   | 'shared_ip'
-   | 'shared_subnet';
+export type DetectionLinkType = 'same_wallet_on_loan' | 'shared_wallet' | 'shared_email' | 'shared_ip' | 'shared_subnet';
 
 export interface DetectionAccount {
    user_id: string;
@@ -1176,6 +1531,32 @@ export async function setReferralCodeActive(id: string, isActive: boolean): Prom
       supabase
          .from('referral_codes')
          .update({ is_active: isActive })
+         .eq('id', id)
+         .select('id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at')
+         .single()
+   );
+   return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+}
+
+// Edit a live code's terms (boost, usage cap, expiry) without recreating it. The code string
+// itself is immutable — loans/users reference it — so it is not editable here.
+export async function updateReferralCode(
+   id: string,
+   changes: {
+      boost_amount?: number;
+      max_uses?: number | null;
+      expires_at?: string | null;
+   }
+): Promise<AdminReferralCode> {
+   const supabase = getSupabaseBrowserClient();
+   const patch: Record<string, unknown> = {};
+   if (changes.boost_amount !== undefined) patch.boost_amount = changes.boost_amount;
+   if (changes.max_uses !== undefined) patch.max_uses = changes.max_uses;
+   if (changes.expires_at !== undefined) patch.expires_at = changes.expires_at;
+   const data = await requireOk(
+      supabase
+         .from('referral_codes')
+         .update(patch)
          .eq('id', id)
          .select('id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at')
          .single()

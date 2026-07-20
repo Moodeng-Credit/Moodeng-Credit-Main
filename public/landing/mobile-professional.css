@@ -292,6 +292,42 @@
       margin-top: 30px;
    }
 
+   /* level-up card only: it is the tallest screen in the steps pin, and the
+      bottom-aligned screen stack turns its extra height into a void above
+      every other card — keep its statement tight (the cash-out card stays at
+      30px; shrinking it too just deepens ITS void) */
+   html.mobile-professional .phone.tall.compact.phone-levelup .statement {
+      margin-top: 18px;
+      margin-bottom: 14px;
+   }
+
+   /* round 2 (George 07-18): after the panel trim the level-up card was the
+      tall outlier again (415 vs 390/365/338) — pull it level with the
+      product shot so no single screen inflates the pin */
+   html.mobile-professional .phone.tall.compact.phone-levelup .lock-badge {
+      margin: 14px auto 10px;
+   }
+
+   html.mobile-professional .phone.tall.compact.phone-levelup .cta-caps {
+      margin-top: 20px;
+   }
+
+   /* cap the step-01 product screenshot for the same reason — 0.56 made it
+      the tallest screen of all (485px); the extra slice was already cropped
+      by overflow, this just crops a little more (0.63 → 0.70, George 07-18:
+      still the tallest screen after the level-up trim, and the slice it
+      loses is the submit button that was already half-cut) */
+   html.mobile-professional .story-screen-product-ask .product-shot-viewport {
+      aspect-ratio: 0.70;
+   }
+
+   /* steps-pin panels only: less air inside every card's frame — the pin
+      reserves height for the tallest screen, so panel padding is paid four
+      times over in gap-above-the-graphic (George 07-18, round 2) */
+   html.mobile-professional .sec-story .story-screen .stage-panel {
+      padding: 24px 20px 20px;
+   }
+
    html.mobile-professional .lock-badge {
       width: 54px;
       height: 54px;

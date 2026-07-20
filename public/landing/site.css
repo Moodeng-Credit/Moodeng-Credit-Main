@@ -967,20 +967,9 @@ li {
 }
 
 .hero-note {
-   display: inline-flex;
-   align-items: center;
-   gap: 9px;
    color: var(--ink-soft);
    font-size: 0.86rem;
    font-weight: 700;
-}
-
-.hero-note::before {
-   width: 9px;
-   height: 9px;
-   border-radius: 50%;
-   background: var(--green);
-   content: '';
 }
 
 .hero-visual {
@@ -4312,7 +4301,7 @@ li {
       color: var(--ink);
       padding: 22px 24px 24px;
       box-shadow: 0 30px 70px oklch(8% 0.04 296 / 0.3);
-      transition: background-color 420ms var(--ease-out);
+      transition: background-color 700ms var(--ease-out);
    }
 
    html[data-landing-version='2'] .deal-section[data-deal-active='1'] .deal-visual-stage {
@@ -4733,26 +4722,44 @@ li {
 
    html[data-landing-version='2'] .deal-section .term-list {
       border-top: 0;
-      padding-bottom: clamp(260px, 32vh, 360px);
+      padding-bottom: clamp(150px, 20vh, 220px);
    }
 
    html[data-landing-version='2'] .deal-mobile-scene {
       display: none;
    }
 
+   /* Roulette rhythm (George 2026-07-17: the old 50vh steps left a screen of
+      dead space between titles and the opacity flip felt abrupt): steps are
+      compact enough that the next title is always visible coming up, and the
+      JS driver scrubs each step's opacity/offset continuously from its
+      distance to the focus line — so text fades away WITH the scroll instead
+      of popping. The class transition below only serves the non-scrubbed
+      fallback; .is-scrubbed turns it off so inline writes don't smear. */
    html[data-landing-version='2'] .deal-section .term-list li {
-      min-height: clamp(330px, 50vh, 440px);
+      min-height: clamp(190px, 26vh, 250px);
       display: grid;
       grid-template-columns: 38px minmax(0, 1fr);
       align-content: center;
       gap: 16px;
       border-color: oklch(72% 0.05 305 / 0.22);
-      padding-block: 56px;
+      padding-block: 30px;
       opacity: 0.3;
       transform: translateX(16px);
       transition:
          opacity 260ms var(--ease-out),
          transform 400ms var(--ease-out);
+   }
+
+   html[data-landing-version='2'] .deal-section.is-scrubbed .term-list li {
+      transition: none;
+   }
+
+   /* the stage panels scrub with the scroll the same way (site.js writes
+      opacity/transform per frame) — the class transition would lag a frame
+      behind every inline write and judder */
+   html[data-landing-version='2'] .deal-section.is-scrubbed .deal-panel {
+      transition: none;
    }
 
    html[data-landing-version='2'] .deal-section .term-list li:first-child {
@@ -5131,9 +5138,10 @@ li {
    }
 
    html[data-landing-version='2'] .version-two-actions .hero-note {
-      max-width: 36ch;
+      margin: 0;
       color: var(--muted);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
+      white-space: nowrap;
    }
 
    html[data-landing-version='2'] .tilt-hero-photo {
@@ -5578,6 +5586,236 @@ li {
    }
 }
 
+/* =====================================================================
+   Motion pass — animations restored from the previous landing page and
+   adapted to the new content. The prefers-reduced-motion block at the end
+   of this file force-disables all of it.
+   ===================================================================== */
+
+/* ---- Tap feedback: a navigating button acknowledges the tap with a
+   spinner ring while the next page loads. The label is hidden via
+   !important because variant selectors (e.g. the header CTA) out-specify
+   the loading state; --loading-ring carries the per-variant ring color. ---- */
+a.button {
+   --loading-ring: var(--paper);
+   position: relative;
+}
+
+a.button.secondary,
+a.button.light {
+   --loading-ring: var(--ink);
+}
+
+a.button.subtle {
+   --loading-ring: var(--purple-ink);
+}
+
+.header-actions > a.button:not(.secondary) {
+   --loading-ring: var(--ink);
+}
+
+.header-actions a.button.secondary {
+   --loading-ring: var(--paper);
+}
+
+a.button.is-loading {
+   color: transparent !important;
+   pointer-events: none;
+}
+
+a.button.is-loading::after {
+   content: '';
+   position: absolute;
+   top: 50%;
+   left: 50%;
+   width: 16px;
+   height: 16px;
+   margin: -8px 0 0 -8px;
+   border: 2px solid var(--loading-ring);
+   border-top-color: transparent;
+   border-radius: 50%;
+   animation: button-spin 700ms linear infinite;
+}
+
+@keyframes button-spin {
+   to {
+      transform: rotate(360deg);
+   }
+}
+
+/* ---- Header reacts to scroll: compacts a little and deepens its shadow
+   once the page is moving, so the sticky bar feels attached to the scroll
+   instead of painted on. ---- */
+.site-header {
+   transition: box-shadow 240ms var(--ease-out);
+}
+
+.site-header .container {
+   transition: min-height 240ms var(--ease-out);
+}
+
+.site-header.is-scrolled .container {
+   min-height: 62px;
+}
+
+.site-header.is-scrolled {
+   box-shadow: 0 14px 34px oklch(13% 0.04 296 / 0.3);
+}
+
+/* ---- Cascade reveals: children of a revealed group arrive one after
+   another (the old page's beat rhythm) instead of as a single block. ---- */
+.portrait-rail .portrait:nth-child(2) {
+   transition-delay: 70ms;
+}
+
+.portrait-rail .portrait:nth-child(3) {
+   transition-delay: 140ms;
+}
+
+.portrait-rail .portrait:nth-child(4) {
+   transition-delay: 210ms;
+}
+
+.portrait-rail .portrait:nth-child(5) {
+   transition-delay: 280ms;
+}
+
+.faq-list.reveal details {
+   opacity: 0;
+   transform: translateY(16px);
+   transition:
+      opacity 560ms var(--ease-out),
+      transform 560ms var(--ease-out);
+}
+
+.faq-list.reveal.is-visible details {
+   opacity: 1;
+   transform: none;
+}
+
+.faq-list.reveal.is-visible details:nth-child(2) {
+   transition-delay: 90ms;
+}
+
+.faq-list.reveal.is-visible details:nth-child(3) {
+   transition-delay: 180ms;
+}
+
+.faq-list.reveal.is-visible details:nth-child(4) {
+   transition-delay: 270ms;
+}
+
+.faq-list.reveal.is-visible details:nth-child(5) {
+   transition-delay: 360ms;
+}
+
+.faq-list.reveal.is-visible details:nth-child(6) {
+   transition-delay: 450ms;
+}
+
+/* ---- Hero idle float: after the entrance animation lands, the tilted
+   photos keep a slow breathing drift so the hero stays alive (the old
+   hero had the faces marquee for this). The float's 0% frame equals the
+   entrance's final frame, so the handoff is seamless; opacity is owned by
+   the entrance animation alone. ---- */
+@media (min-width: 1024px) {
+   html[data-landing-version='2'] .tilt-hero-photo {
+      animation:
+         tilt-hero-photo-in 720ms var(--ease-out) forwards,
+         tilt-hero-float 8s ease-in-out infinite;
+      animation-delay: var(--hero-photo-delay, 100ms), calc(var(--hero-photo-delay, 100ms) + 720ms);
+   }
+
+   html[data-landing-version='2'] .tilt-hero-photo-rider,
+   html[data-landing-version='2'] .tilt-hero-photo-stock {
+      animation-duration: 720ms, 9.5s;
+   }
+}
+
+@keyframes tilt-hero-float {
+   0%,
+   100% {
+      transform: translateY(0) rotate(var(--hero-photo-rotate));
+   }
+
+   50% {
+      transform: translateY(-7px) rotate(var(--hero-photo-rotate));
+   }
+}
+
+/* ---- Limit-progression rail builds as a left-to-right sequence when the
+   repay panel activates — milestone pops, connector draws to the next,
+   next milestone pops — so the record visibly ACCUMULATES instead of the
+   three numbers just being there. The final $60+ is the payoff: it rolls
+   up into its clipped slot with a bigger landing. Timed to start after
+   the rail block's detail-enter (135ms + 420ms). ---- */
+.deal-panel.is-active .deal-growth-rail span {
+   animation: growth-milestone-pop 360ms var(--ease-out) 320ms both;
+}
+
+.deal-panel.is-active .deal-growth-rail span:nth-of-type(2) {
+   animation-delay: 880ms;
+}
+
+.deal-panel.is-active .deal-growth-rail span:nth-of-type(3) {
+   overflow: hidden;
+   animation-delay: 1440ms;
+}
+
+.deal-panel.is-active .deal-growth-rail span:nth-of-type(3) b {
+   animation: growth-final-roll 480ms var(--ease-out) 1460ms both;
+}
+
+.deal-panel.is-active .deal-growth-rail i {
+   transform: scaleX(0);
+   transform-origin: left center;
+   animation: growth-draw 420ms var(--ease-out) 560ms both;
+}
+
+.deal-panel.is-active .deal-growth-rail i:nth-of-type(2) {
+   animation-delay: 1120ms;
+}
+
+@keyframes growth-draw {
+   to {
+      transform: scaleX(1);
+   }
+}
+
+@keyframes growth-milestone-pop {
+   from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.92);
+   }
+
+   65% {
+      opacity: 1;
+      transform: translateY(-1px) scale(1.05);
+   }
+
+   to {
+      opacity: 1;
+      transform: none;
+   }
+}
+
+@keyframes growth-final-roll {
+   from {
+      opacity: 0;
+      transform: translateY(115%);
+   }
+
+   70% {
+      opacity: 1;
+      transform: translateY(-8%) scale(1.1);
+   }
+
+   to {
+      opacity: 1;
+      transform: none;
+   }
+}
+
 @media (prefers-reduced-motion: reduce) {
    html {
       scroll-behavior: auto;
@@ -5595,5 +5833,28 @@ li {
    .reveal {
       opacity: 1;
       transform: none;
+   }
+
+   /* infinite animations still loop at 0.01ms above — stop the hero float
+      outright so it can't shimmer */
+   .tilt-hero-photo {
+      animation-name: tilt-hero-photo-in !important;
+   }
+
+   /* grouped-cascade children must not stay hidden when transitions are
+      disabled */
+   .faq-list.reveal details {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0s !important;
+   }
+
+   /* growth-rail build hides milestones until their keyframes run — the
+      0.01ms duration above finishes them instantly, but the stagger
+      delays would still leave the numbers invisible for ~1.5s */
+   .deal-panel.is-active .deal-growth-rail span,
+   .deal-panel.is-active .deal-growth-rail span:nth-of-type(3) b,
+   .deal-panel.is-active .deal-growth-rail i {
+      animation-delay: 0s !important;
    }
 }

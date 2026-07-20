@@ -141,7 +141,7 @@ describe('borrower context fit', () => {
 
    it('shows verified + good standing in verdict', () => {
       const result = buildBorrowerContextFit(makeInput({ goodStanding: true, isVerified: true }));
-      expect(result.verdictHTML).toContain('World ID verified · Good Standing.');
+      expect(result.verdictHTML).toContain('Identity verified · Good Standing.');
    });
 
    it('bridge loan leads with bridging context', () => {
@@ -190,7 +190,7 @@ describe('borrower context fit', () => {
          repaidLoanCount: 0,
          isVerified: true
       }));
-      expect(result.verdictHTML).toContain('World ID verified');
+      expect(result.verdictHTML).toContain('Identity verified');
    });
 
    it('pattern match names the specific matched reason', () => {
