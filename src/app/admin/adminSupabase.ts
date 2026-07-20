@@ -675,6 +675,189 @@ export async function setEntityTest(entity: 'user' | 'loan', id: string, isTest:
    if (error) throw error;
 }
 
+// ---------------------------------------------------------------------------
+// Coming due — active loans ordered by due date, with a per-loan countdown and
+// the borrower's / lender's contact info so the team can nudge before default.
+// ---------------------------------------------------------------------------
+export interface ComingDueParty {
+   id: string;
+   username: string | null;
+   email: string | null;
+   telegram_username: string | null;
+   wallet_address: string | null;
+}
+
+export interface ComingDueLoan {
+   id: string;
+   tracking_id: string;
+   loan_amount: number;
+   total_repayment_amount: number;
+   repaid_amount: number | null;
+   outstanding: number;
+   due_date: string;
+   days_until_due: number; // 0 = due today, negative = overdue, positive = upcoming
+   reason: string | null;
+   coin: string | null;
+   repayment_status: 'Unpaid' | 'Partial' | 'Paid' | null;
+   is_test: boolean;
+   borrower: ComingDueParty | null;
+   lender: ComingDueParty | null;
+}
+
+// Whole-calendar-day difference between today and the due date, so a loan due later
+// today reads as "due today" (0), tomorrow as 1, and yesterday as -1.
+function calendarDaysUntil(dueDate: string): number {
+   const due = new Date(dueDate);
+   if (Number.isNaN(due.getTime())) return 0;
+   const startOfToday = new Date();
+   startOfToday.setHours(0, 0, 0, 0);
+   const startOfDue = new Date(due);
+   startOfDue.setHours(0, 0, 0, 0);
+   return Math.round((startOfDue.getTime() - startOfToday.getTime()) / 86_400_000);
+}
+
+export async function listComingDueLoans({ includeTest = false, limit = 500 }: { includeTest?: boolean; limit?: number } = {}): Promise<
+   ComingDueLoan[]
+> {
+   const supabase = getSupabaseBrowserClient();
+   let query = supabase
+      .from('loans')
+      .select(
+         'id,tracking_id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,repayment_status,is_test'
+      )
+      .eq('loan_status', 'Lent')
+      .in('repayment_status', ['Unpaid', 'Partial'])
+      .not('due_date', 'is', null);
+
+   if (!includeTest) query = query.eq('is_test', false);
+
+   const rows = await requireOk<AnyRow[]>(query.order('due_date', { ascending: true }).limit(limit));
+
+   const userIds = [...new Set(rows.flatMap((row) => [row.borrower_user_id, row.lender_user_id]).filter(Boolean))] as string[];
+   const contactsById = new Map<string, ComingDueParty>();
+   if (userIds.length) {
+      const contacts = await requireOk<AnyRow[]>(
+         supabase.from('users').select('id,username,email,telegram_username,wallet_address').in('id', userIds)
+      );
+      for (const contact of contacts) {
+         contactsById.set(contact.id, {
+            id: contact.id,
+            username: contact.username ?? null,
+            email: contact.email ?? null,
+            telegram_username: contact.telegram_username ?? null,
+            wallet_address: contact.wallet_address ?? null
+         });
+      }
+   }
+
+   return rows.map((row) => ({
+      id: row.id,
+      tracking_id: row.tracking_id,
+      loan_amount: toNumber(row.loan_amount),
+      total_repayment_amount: toNumber(row.total_repayment_amount),
+      repaid_amount: row.repaid_amount == null ? null : toNumber(row.repaid_amount),
+      outstanding: outstandingDue({ total_repayment_amount: row.total_repayment_amount, repaid_amount: row.repaid_amount }),
+      due_date: row.due_date,
+      days_until_due: calendarDaysUntil(row.due_date),
+      reason: row.reason ?? null,
+      coin: row.coin ?? null,
+      repayment_status: row.repayment_status ?? null,
+      is_test: Boolean(row.is_test),
+      borrower: row.borrower_user_id ? (contactsById.get(row.borrower_user_id) ?? null) : null,
+      lender: row.lender_user_id ? (contactsById.get(row.lender_user_id) ?? null) : null
+   }));
+}
+
+// Delivery result shared by the nudge + extension notifications (email + Telegram to the
+// borrower, plus the team Telegram channel). Lenders are intentionally never notified.
+export interface LoanNotifyResult {
+   borrowerEmailSent: boolean;
+   borrowerTelegramSent: boolean;
+   teamNotified: boolean;
+   teamConfigured: boolean;
+   errors: string[];
+}
+
+async function invokeLoanNotify(body: Record<string, unknown>): Promise<LoanNotifyResult> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-loan-notify', { body });
+   if (error) throw new Error(error.message || 'Notification failed.');
+   return data as LoanNotifyResult;
+}
+
+// Nudge a borrower about a loan coming due (or already overdue) — email + Telegram, and a
+// heads-up to the team channel.
+export async function nudgeBorrower(loan: ComingDueLoan): Promise<LoanNotifyResult> {
+   if (!loan.borrower?.id) throw new Error('This loan has no borrower profile to notify.');
+   return invokeLoanNotify({ kind: 'nudge', loanId: loan.id });
+}
+
+// ---------------------------------------------------------------------------
+// Loan extension — move a funded loan's due date out and notify both parties.
+// ---------------------------------------------------------------------------
+export interface ExtendLoanResult {
+   extension_id: string;
+   loan_id: string;
+   tracking_id: string;
+   borrower_user_id: string | null;
+   lender_user_id: string | null;
+   previous_due_date: string;
+   new_due_date: string;
+   days_extended: number;
+}
+
+export async function extendLoan(input: {
+   loanId: string;
+   newDueDate: string; // ISO
+   reason?: string | null;
+   actorUserId?: string | null;
+}): Promise<{ result: ExtendLoanResult; notify: LoanNotifyResult | null; notifyError: string | null }> {
+   const supabase = getSupabaseBrowserClient();
+   // Step 1: move the due date (admin-gated RPC that bypasses the money-columns lock).
+   const result = await requireOk<ExtendLoanResult>(
+      supabase.rpc('admin_extend_loan', {
+         p_loan_id: input.loanId,
+         p_new_due_date: input.newDueDate,
+         p_reason: input.reason ?? null
+      })
+   );
+
+   // Step 2: notify the borrower (email + Telegram) and the team channel. Best-effort — the
+   // extension already succeeded, so a delivery failure is surfaced, not thrown.
+   let notify: LoanNotifyResult | null = null;
+   let notifyError: string | null = null;
+   try {
+      notify = await invokeLoanNotify({
+         kind: 'extension',
+         loanId: result.loan_id,
+         previousDueDate: result.previous_due_date,
+         newDueDate: result.new_due_date,
+         daysExtended: result.days_extended,
+         reason: input.reason ?? null
+      });
+   } catch (err) {
+      notifyError = err instanceof Error ? err.message : 'Notification failed.';
+   }
+
+   await logAdminAction({
+      action: 'extend_loan',
+      target_table: 'loans',
+      target_id: result.loan_id,
+      target_user_id: result.borrower_user_id,
+      metadata: {
+         source: 'admin_loan_extension',
+         tracking_id: result.tracking_id,
+         previous_due_date: result.previous_due_date,
+         new_due_date: result.new_due_date,
+         days_extended: result.days_extended,
+         borrower_email_sent: notify?.borrowerEmailSent ?? false,
+         borrower_telegram_sent: notify?.borrowerTelegramSent ?? false,
+         team_notified: notify?.teamNotified ?? false
+      }
+   }).catch(() => undefined);
+
+   return { result, notify, notifyError };
+}
+
 // Growth analytics — current-state breakdowns plus a weekly registration trend. Computed
 // client-side from lightweight row sets (small user/loan tables); no aggregation RPC needed.
 export interface GrowthAnalytics {
@@ -712,10 +895,7 @@ export async function getGrowthAnalytics({ includeTest = false }: { includeTest?
    const now = Date.now();
 
    let usersQuery = supabase.from('users').select('id,created_at,user_role,is_world_id,is_didit,account_status').limit(5000);
-   let loansQuery = supabase
-      .from('loans')
-      .select('loan_amount,repaid_amount,loan_status,repayment_status,due_date,created_at')
-      .limit(5000);
+   let loansQuery = supabase.from('loans').select('loan_amount,repaid_amount,loan_status,repayment_status,due_date,created_at').limit(5000);
    if (!includeTest) {
       usersQuery = usersQuery.eq('is_test', false);
       loansQuery = loansQuery.eq('is_test', false);
@@ -1168,12 +1348,7 @@ export async function saveDefaultRecoveryPlan(input: {
 // ---------------------------------------------------------------------------
 // Self-lending / detection overview (admin_get_detection_overview RPC)
 // ---------------------------------------------------------------------------
-export type DetectionLinkType =
-   | 'same_wallet_on_loan'
-   | 'shared_wallet'
-   | 'shared_email'
-   | 'shared_ip'
-   | 'shared_subnet';
+export type DetectionLinkType = 'same_wallet_on_loan' | 'shared_wallet' | 'shared_email' | 'shared_ip' | 'shared_subnet';
 
 export interface DetectionAccount {
    user_id: string;

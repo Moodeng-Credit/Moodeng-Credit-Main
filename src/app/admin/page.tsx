@@ -6,6 +6,8 @@ import type { FormEvent, ReactNode } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
+
 import { formatPointsMajor, iouPointsAwardRules, loanFundingPointsPerUsdc, pointsAwardRules, trustPointsAwardRules } from '@/shared/points';
 import type { RootState } from '@/store/store';
 
@@ -30,16 +32,30 @@ import {
    upsertAccountRestrictionByUserId,
    upsertLoanRequestReview
 } from './adminSupabase';
+import ComingDueSection from './ComingDueSection';
 import GrowthAnalyticsSection from './GrowthAnalyticsSection';
 import LoanExplorerSection from './LoanExplorerSection';
+import LoanExtensionSection from './LoanExtensionSection';
 import ReferralCodesSection from './ReferralCodesSection';
 import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
 import SelfLendingSection from './SelfLendingSection';
 
-import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
-
-type AdminTab = 'users' | 'analytics' | 'loans' | 'points' | 'trust-points' | 'defaults' | 'requests' | 'risk' | 'self-lending' | 'referrals' | 'notifications' | 'relay';
+type AdminTab =
+   | 'users'
+   | 'analytics'
+   | 'loans'
+   | 'coming-due'
+   | 'extensions'
+   | 'points'
+   | 'trust-points'
+   | 'defaults'
+   | 'requests'
+   | 'risk'
+   | 'self-lending'
+   | 'referrals'
+   | 'notifications'
+   | 'relay';
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
 
 type NoticeTemplate = {
@@ -53,6 +69,8 @@ const navItems: Array<{ id: AdminTab; label: string }> = [
    { id: 'users', label: 'User directory' },
    { id: 'analytics', label: 'Growth & analytics' },
    { id: 'loans', label: 'Loans' },
+   { id: 'coming-due', label: 'Coming due' },
+   { id: 'extensions', label: 'Loan extensions' },
    { id: 'points', label: 'IOU points' },
    { id: 'trust-points', label: 'Trust points' },
    { id: 'defaults', label: 'Default recovery' },
@@ -217,7 +235,22 @@ function hasPositivePoints(points: number | string) {
    return Number(formatPointsMajor(points)) > 0;
 }
 
-const ALL_ADMIN_TABS: readonly AdminTab[] = ['users', 'analytics', 'loans', 'points', 'trust-points', 'defaults', 'requests', 'risk', 'self-lending', 'referrals', 'notifications', 'relay'];
+const ALL_ADMIN_TABS: readonly AdminTab[] = [
+   'users',
+   'analytics',
+   'loans',
+   'coming-due',
+   'extensions',
+   'points',
+   'trust-points',
+   'defaults',
+   'requests',
+   'risk',
+   'self-lending',
+   'referrals',
+   'notifications',
+   'relay'
+];
 
 function isAdminTab(value: string): value is AdminTab {
    return (ALL_ADMIN_TABS as readonly string[]).includes(value);
@@ -243,6 +276,8 @@ export default function AdminPanel() {
    // Bare /admin falls back to legacy ?tab= links, then the user directory.
    const activeTab: AdminTab = tabParam && isAdminTab(tabParam) ? tabParam : legacyQueryTab();
    const setActiveTab = (tab: AdminTab) => navigate(tab === 'users' ? '/admin' : `/admin/${tab}`);
+   // When the team clicks "Extend" on a coming-due loan, jump to the extensions tab with it preselected.
+   const [extensionLoanId, setExtensionLoanId] = useState<string | null>(null);
    const [admin, setAdmin] = useState<AdminUser | null>(null);
    const [overview, setOverview] = useState<AdminOverview | null>(null);
    const [integrityRun, setIntegrityRun] = useState<AdminIntegrityRun | null>(null);
@@ -823,8 +858,8 @@ export default function AdminPanel() {
                         <h2 className="break-words text-4xl font-black sm:text-5xl">IOU points</h2>
                         <p className="mt-3 max-w-4xl text-2xl text-[#a89bb8]">
                            Lender-only points from <span className="font-black text-white">user_points</span> and{' '}
-                           <span className="font-black text-white">point_events</span>. The guide below reads from the shared points
-                           rules used by the funding code.
+                           <span className="font-black text-white">point_events</span>. The guide below reads from the shared points rules
+                           used by the funding code.
                         </p>
                      </div>
 
@@ -990,8 +1025,8 @@ export default function AdminPanel() {
                            <p className="text-sm font-black uppercase tracking-wide text-emerald-300">Current storage</p>
                            <h3 className="mt-2 text-3xl font-black text-white">Live Trust Point ledger</h3>
                            <p className="mt-3 text-lg font-bold leading-8 text-emerald-300">
-                              Milestone completions write borrower Trust Point events into Supabase. Credit limit fields such as users.cs stay
-                              separate.
+                              Milestone completions write borrower Trust Point events into Supabase. Credit limit fields such as users.cs
+                              stay separate.
                            </p>
                         </div>
                         <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
@@ -1355,9 +1390,7 @@ export default function AdminPanel() {
                   <section className="space-y-6">
                      <div>
                         <h2 className="break-words text-4xl font-black sm:text-5xl">Growth &amp; analytics</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">
-                           Users, roles, verifications, and loan performance at a glance.
-                        </p>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">Users, roles, verifications, and loan performance at a glance.</p>
                      </div>
                      <GrowthAnalyticsSection />
                   </section>
@@ -1375,13 +1408,40 @@ export default function AdminPanel() {
                   </section>
                ) : null}
 
+               {activeTab === 'coming-due' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Coming due</h2>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">
+                           Active loans by due date, with a countdown and borrower contact info — so we can nudge before anything defaults.
+                        </p>
+                     </div>
+                     <ComingDueSection
+                        onExtend={(loanId) => {
+                           setExtensionLoanId(loanId);
+                           setActiveTab('extensions');
+                        }}
+                     />
+                  </section>
+               ) : null}
+
+               {activeTab === 'extensions' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Loan extensions</h2>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">
+                           Push a funded loan&apos;s due date out. Both the borrower and the lender are notified automatically.
+                        </p>
+                     </div>
+                     <LoanExtensionSection initialLoanId={extensionLoanId} actorUserId={admin?.user_id ?? reduxUser?.id ?? null} />
+                  </section>
+               ) : null}
+
                {activeTab === 'referrals' ? (
                   <section className="space-y-6">
                      <div>
                         <h2 className="break-words text-4xl font-black sm:text-5xl">Referral codes</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">
-                           Create codes, deactivate old ones, and track redemptions.
-                        </p>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">Create codes, deactivate old ones, and track redemptions.</p>
                      </div>
                      <ReferralCodesSection />
                   </section>
