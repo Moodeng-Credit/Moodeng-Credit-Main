@@ -65,20 +65,57 @@ type NoticeTemplate = {
    body: string;
 };
 
-const navItems: Array<{ id: AdminTab; label: string }> = [
-   { id: 'users', label: 'User directory' },
-   { id: 'analytics', label: 'Growth & analytics' },
-   { id: 'loans', label: 'Loans' },
-   { id: 'coming-due', label: 'Coming due' },
-   { id: 'extensions', label: 'Loan extensions' },
-   { id: 'points', label: 'IOU points' },
-   { id: 'trust-points', label: 'Trust points' },
-   { id: 'defaults', label: 'Default recovery' },
-   { id: 'requests', label: 'Loan request review' },
-   { id: 'risk', label: 'Risk assessment' },
-   { id: 'self-lending', label: 'Self-lending?' },
-   { id: 'referrals', label: 'Referral codes' },
-   { id: 'notifications', label: 'Notifications' }
+type NavGroup = { id: string; label: string; items: Array<{ id: AdminTab; label: string }> };
+
+const navGroups: NavGroup[] = [
+   {
+      id: 'overview',
+      label: 'Overview',
+      items: [
+         { id: 'users', label: 'User directory' },
+         { id: 'analytics', label: 'Growth & analytics' }
+      ]
+   },
+   {
+      id: 'loans',
+      label: 'Loans',
+      items: [
+         { id: 'loans', label: 'Loans' },
+         { id: 'coming-due', label: 'Coming due' },
+         { id: 'extensions', label: 'Loan extensions' },
+         { id: 'requests', label: 'Loan request review' },
+         { id: 'defaults', label: 'Default recovery' }
+      ]
+   },
+   {
+      id: 'points',
+      label: 'Points',
+      items: [
+         { id: 'points', label: 'IOU points' },
+         { id: 'trust-points', label: 'Trust points' }
+      ]
+   },
+   {
+      id: 'risk',
+      label: 'Risk & fraud',
+      items: [
+         { id: 'risk', label: 'Risk assessment' },
+         { id: 'self-lending', label: 'Self-lending?' }
+      ]
+   },
+   {
+      id: 'growth',
+      label: 'Growth & comms',
+      items: [
+         { id: 'referrals', label: 'Referral codes' },
+         { id: 'notifications', label: 'Notifications' }
+      ]
+   },
+   {
+      id: 'funding',
+      label: 'Funding',
+      items: [{ id: 'relay', label: 'Liquidity Relay' }]
+   }
 ];
 
 const recoveryPaths: Array<{ name: RecoveryPath; label: string; detail: string }> = [
@@ -269,12 +306,21 @@ export default function AdminPanel() {
    const reduxUser = useSelector((state: RootState) => state.auth.user);
    // The Liquidity Relay share panel is gated to the two Moodeng funding admins (George/Emma).
    const isFundingAdmin = useIsFundingAdmin();
-   const visibleNavItems = isFundingAdmin ? [...navItems, { id: 'relay' as const, label: 'Liquidity Relay' }] : navItems;
+   const visibleNavGroups = isFundingAdmin ? navGroups : navGroups.filter((group) => group.id !== 'funding');
    const navigate = useNavigate();
    const { tab: tabParam } = useParams<{ tab?: string }>();
    // The URL is the source of truth for the active tab: /admin/relay, /admin/points, …
    // Bare /admin falls back to legacy ?tab= links, then the user directory.
    const activeTab: AdminTab = tabParam && isAdminTab(tabParam) ? tabParam : legacyQueryTab();
+   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(
+      () => navGroups.find((group) => group.items.some((item) => item.id === activeTab))?.id ?? navGroups[0].id
+   );
+
+   useEffect(() => {
+      const group = navGroups.find((g) => g.items.some((item) => item.id === activeTab));
+      if (group) setExpandedGroupId(group.id);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [activeTab]);
    const setActiveTab = (tab: AdminTab) => navigate(tab === 'users' ? '/admin' : `/admin/${tab}`);
    // When the team clicks "Extend" on a coming-due loan, jump to the extensions tab with it preselected.
    const [extensionLoanId, setExtensionLoanId] = useState<string | null>(null);
@@ -538,8 +584,8 @@ export default function AdminPanel() {
    return (
       <main className="min-h-screen bg-[#120429] text-white">
          <div className="grid min-h-screen lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
-            <aside className="overflow-hidden bg-[#120429] p-6 text-white sm:p-8 lg:sticky lg:top-0 lg:h-screen">
-               <div className="flex min-w-0 items-center gap-4">
+            <aside className="overflow-y-auto bg-[#120429] p-6 text-white sm:p-8 lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
+               <div className="flex min-w-0 shrink-0 items-center gap-4">
                   <a
                      href="/account/settings"
                      className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#8336f0] text-3xl font-black text-white no-underline focus:outline focus:outline-4 focus:outline-offset-4 focus:outline-purple-200 sm:h-20 sm:w-20 sm:text-4xl"
@@ -554,20 +600,43 @@ export default function AdminPanel() {
                   </div>
                </div>
 
-               <nav className="mt-12 grid gap-4">
-                  {visibleNavItems.map((item) => (
-                     <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setActiveTab(item.id)}
-                        className={`rounded-2xl border px-6 py-5 text-left text-xl font-black ${activeTab === item.id ? 'border-[#8336f0] bg-[#2a1453] text-white' : 'border-transparent text-purple-200 hover:border-[#8336f0] hover:bg-[#20103e]'}`}
-                     >
-                        {item.label}
-                     </button>
-                  ))}
+               <nav className="mt-12 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
+                  {visibleNavGroups.map((group) => {
+                     const isExpanded = expandedGroupId === group.id;
+                     const hasActiveItem = group.items.some((item) => item.id === activeTab);
+                     return (
+                        <div key={group.id} className="shrink-0 overflow-hidden rounded-2xl border border-[#2a1453] bg-[#1c0a3a]">
+                           <button
+                              type="button"
+                              onClick={() => setExpandedGroupId(isExpanded ? null : group.id)}
+                              aria-expanded={isExpanded}
+                              className={`flex w-full items-center justify-between gap-3 px-6 py-4 text-left text-lg font-black uppercase tracking-wide ${hasActiveItem ? 'text-white' : 'text-purple-200'} hover:bg-[#20103e]`}
+                           >
+                              <span>{group.label}</span>
+                              <span className={`text-sm transition-transform ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true">
+                                 ▾
+                              </span>
+                           </button>
+                           {isExpanded ? (
+                              <div className="grid gap-2 px-3 pb-3">
+                                 {group.items.map((item) => (
+                                    <button
+                                       key={item.id}
+                                       type="button"
+                                       onClick={() => setActiveTab(item.id)}
+                                       className={`rounded-xl border px-5 py-4 text-left text-lg font-black ${activeTab === item.id ? 'border-[#8336f0] bg-[#2a1453] text-white' : 'border-transparent text-purple-200 hover:border-[#8336f0] hover:bg-[#20103e]'}`}
+                                    >
+                                       {item.label}
+                                    </button>
+                                 ))}
+                              </div>
+                           ) : null}
+                        </div>
+                     );
+                  })}
                </nav>
 
-               <div className="mt-12 rounded-3xl border border-[#8336f0] bg-[#241044] p-6">
+               <div className="mt-6 shrink-0 rounded-3xl border border-[#8336f0] bg-[#241044] p-6">
                   <p className="text-lg text-purple-200">Data source</p>
                   <strong className="mt-2 block break-words text-2xl font-black">Supabase live data</strong>
                   <p className="mt-2 text-lg text-purple-200">No scaffold users or mock loans.</p>
