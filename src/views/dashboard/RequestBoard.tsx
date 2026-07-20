@@ -430,6 +430,7 @@ function RequestBoard$() {
    const [showBioStep, setShowBioStep] = useState(false);
    const [isSubmitting, setIsSubmitting] = useState(false);
    const [isCheckingReason, setIsCheckingReason] = useState(false);
+   const [reasonWarning, setReasonWarning] = useState('');
    // Synchronous guard — prevents a second click from slipping through before
    // setIsSubmitting(true) has a chance to re-render and disable the button.
    const isSubmittingRef = useRef(false);
@@ -1306,15 +1307,13 @@ function RequestBoard$() {
 
          if (!reasonOk) {
             reasonWarnedForRef.current = trimmedReason;
-            showToast(
-               TOAST_TYPES.WARNING,
-               'Add more to your reason',
-               reasonHint || 'This looks low-effort. Requests that appear to have no real effort may be deleted — tap again to post anyway.',
-               'OK',
-               'acknowledge'
+            // Inline warning under the reason field (not a toast) — clearer and it stays put.
+            setReasonWarning(
+               reasonHint || 'This looks low-effort. Requests that appear to have no real effort may be deleted — submit again to post anyway.'
             );
             return;
          }
+         setReasonWarning('');
       }
 
       const loanData = {
@@ -2080,7 +2079,11 @@ function RequestBoard$() {
                   totalRepaymentAmount={totalRepaymentAmount}
                   setTotalRepaymentAmount={setTotalRepaymentAmount}
                   reason={reason}
-                  setReason={setReason}
+                  setReason={(value) => {
+                     setReason(value);
+                     if (reasonWarning) setReasonWarning('');
+                  }}
+                  reasonWarning={reasonWarning}
                   days={days}
                   today={today}
                   handleDays={handleDays}
