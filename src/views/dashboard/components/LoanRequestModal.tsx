@@ -37,6 +37,8 @@ import { useNavigate } from 'react-router-dom';
 
 import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
+import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
+import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
@@ -786,6 +788,7 @@ export default function LoanRequestModal({
 }: LoanRequestModalProps) {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
+   const { showToast } = useToast();
    const { open: openVerify, modal: verifyModal } = useVerifyYourself();
    const formRef = useRef<HTMLFormElement | null>(null);
    const dateInputRef = useRef<HTMLInputElement | null>(null);
@@ -1183,6 +1186,24 @@ export default function LoanRequestModal({
    // Synchronous guard — prevents double-tap on "Save bio info" from firing twice
    // before isSavingProfile state has a chance to re-render and disable the button.
    const isBioSubmittingRef = useRef(false);
+   const [isCheckingBio, setIsCheckingBio] = useState(false);
+   // Tracks the exact profession+situation text we've already warned about, so a second
+   // tap of the same input goes through (a nudge to clarify, not a hard block).
+   const bioInputWarnedRef = useRef<string>('');
+
+   // Runs the shared low-effort check on a single bio free-text field. Fails open so a
+   // slow/unavailable check never traps a borrower mid-request.
+   const checkBioInput = async (text: string, kind: 'profession' | 'situation'): Promise<{ ok: boolean; hint: string }> => {
+      try {
+         const { data } = await getSupabaseBrowserClient().functions.invoke('check-loan-input', {
+            body: { text, kind }
+         });
+         return { ok: data?.ok !== false, hint: data?.hint ?? '' };
+      } catch (error) {
+         console.error('check-loan-input (bio) failed, allowing:', error);
+         return { ok: true, hint: '' };
+      }
+   };
 
    const handleBorrowerContextContinue = async () => {
       if (!canContinueBorrowerContext) return;
@@ -1190,6 +1211,40 @@ export default function LoanRequestModal({
       isBioSubmittingRef.current = true;
 
       try {
+         // Low-effort gate on the borrower's free-text bio input (profession + "describe
+         // your situation") — the "CSR" case. Same soft nudge as the loan reason: warn
+         // once, then let a second tap of the same text through.
+         const professionText = borrowerContext.profession?.trim() ?? '';
+         const situationText = borrowerContext.incomeDescription?.trim() ?? '';
+         const bioSignature = `${professionText}||${situationText}`;
+         if (bioInputWarnedRef.current !== bioSignature) {
+            setIsCheckingBio(true);
+            let hint = '';
+            try {
+               if (professionText) {
+                  const r = await checkBioInput(professionText, 'profession');
+                  if (!r.ok) hint = r.hint;
+               }
+               if (!hint && situationText) {
+                  const r = await checkBioInput(situationText, 'situation');
+                  if (!r.ok) hint = r.hint;
+               }
+            } finally {
+               setIsCheckingBio(false);
+            }
+            if (hint) {
+               bioInputWarnedRef.current = bioSignature;
+               showToast(
+                  TOAST_TYPES.WARNING,
+                  'Add more to your info',
+                  hint || 'Some of your info looks too short for lenders to understand — tap again to continue anyway.',
+                  'OK',
+                  'acknowledge'
+               );
+               return;
+            }
+         }
+
          const isProfileSaved = await saveBorrowerProfile();
          if (!isProfileSaved) return;
 
@@ -1428,7 +1483,7 @@ export default function LoanRequestModal({
                         currentAvatarBackground={user.avatarBackground}
                         currentAvatarUrl={user.avatarUrl}
                         isSubmitting={isSubmitting}
-                        isSavingProfile={isSavingBorrowerProfile}
+                        isSavingProfile={isSavingBorrowerProfile || isCheckingBio}
                         monthlyIncome={borrowerContext.monthlyIncome ?? ''}
                         monthlyExpenses={borrowerContext.monthlyExpenses ?? ''}
                         onBack={handleBorrowerContextBack}
@@ -1610,7 +1665,7 @@ export default function LoanRequestModal({
                            <div className={`${inputShellClass} flex flex-col px-md-3 py-md-2`}>
                               <textarea
                                  ref={reasonTextareaRef}
-                                 maxLength={40}
+                                 maxLength={200}
                                  onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
                                     setReason(e.target.value);
                                     resizeReasonTextarea(e.target);
@@ -1618,11 +1673,14 @@ export default function LoanRequestModal({
                                  onFocus={scrollFieldIntoView}
                                  className="min-h-[48px] resize-none overflow-hidden bg-transparent text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
                                  id="reason"
-                                 placeholder="Text"
+                                 placeholder="e.g. Medicine for my mother and transport to the clinic this week"
                                  rows={1}
                                  value={reason}
                               />
-                              <div className="text-right text-md-b3 font-normal text-md-neutral-1200 select-none">{reason.length}/40</div>
+                              <div className="flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200 select-none">
+                                 <span>At least 40 characters. Requests with no real effort may be deleted.</span>
+                                 <span className="shrink-0">{reason.length}/200</span>
+                              </div>
                            </div>
                         </div>
 
