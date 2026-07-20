@@ -24,7 +24,7 @@ export interface BorrowerContextInput {
    repaidLoanCount?: number;
    /** Whether this borrower has Good Standing (cs > 0) */
    goodStanding?: boolean;
-   /** Whether this borrower has verified their World ID */
+   /** Whether this borrower has completed identity verification by any method (World ID or ID/KYC) */
    isVerified?: boolean;
 }
 
@@ -305,9 +305,9 @@ const trackRecordPhrase = (repaidLoanCount: number | undefined, fundedLoanCount:
 // ─── Verification + standing suffix ───────────────────────────────────────
 
 const credentialsSuffix = (goodStanding: boolean | undefined, isVerified: boolean | undefined): string => {
-   if (goodStanding && isVerified) return ' World ID verified · Good Standing.';
+   if (goodStanding && isVerified) return ' Identity verified · Good Standing.';
    if (goodStanding)               return ' Good Standing.';
-   if (isVerified)                 return ' World ID verified.';
+   if (isVerified)                 return ' Identity verified.';
    return '';
 };
 
@@ -494,7 +494,7 @@ const buildParagraphText = (
    // ── Trust line: history + verification + relative due date ──
    const factLines: string[] = [];
    const repaid = input.repaidLoanCount ?? input.fundedLoanCount;
-   const verifiedNote = input.isVerified ? ' · World ID verified' : '';
+   const verifiedNote = input.isVerified ? ' · Identity verified' : '';
 
    const dueSuffix = (() => {
       if (!dueDate) return '';
@@ -553,7 +553,7 @@ export const buildBorrowerContextFit = (input: BorrowerContextInput): BorrowerCo
 
    // Missing dates
    if (!requestDate || !dueDate) {
-      const fallback = track || (input.isVerified ? 'World ID verified.' : 'New to Moodeng.');
+      const fallback = track || (input.isVerified ? 'Identity verified.' : 'New to Moodeng.');
       return buildNeutralResult(input, dueDate, null, `${fallback}${creds}`);
    }
 
@@ -583,7 +583,7 @@ export const buildBorrowerContextFit = (input: BorrowerContextInput): BorrowerCo
          );
       }
       const firstNotes = [
-         input.isVerified ? 'World ID verified' : '',
+         input.isVerified ? 'Identity verified' : '',
          isSmallAmount ? `${formatAmount(input.amount)} loan` : ''
       ].filter(Boolean).join(', ');
       return buildNeutralResult(input, dueDate, gapDays,
@@ -602,7 +602,7 @@ export const buildBorrowerContextFit = (input: BorrowerContextInput): BorrowerCo
                loanDurationDays
             );
          }
-         const verifiedNote = input.isVerified ? ' World ID verified.' : '';
+         const verifiedNote = input.isVerified ? ' Identity verified.' : '';
          return buildNeutralResult(input, dueDate, gapDays,
             `Full-time employee — pay varies by performance.${verifiedNote}${shortLoanContext}${patternNote}${creds} ${track}`,
             loanDurationDays
@@ -622,7 +622,7 @@ export const buildBorrowerContextFit = (input: BorrowerContextInput): BorrowerCo
                loanDurationDays
             );
          }
-         const verifiedNote = input.isVerified ? ' World ID verified.' : '';
+         const verifiedNote = input.isVerified ? ' Identity verified.' : '';
          return buildNeutralResult(input, dueDate, gapDays,
             `Freelance work — pay comes in by project.${verifiedNote}${shortLoanContext}${patternNote}${creds} ${track}`,
             loanDurationDays
@@ -636,7 +636,7 @@ export const buildBorrowerContextFit = (input: BorrowerContextInput): BorrowerCo
             loanDurationDays
          );
       }
-      const verifiedNote = input.isVerified ? ' World ID verified.' : '';
+      const verifiedNote = input.isVerified ? ' Identity verified.' : '';
       const smallNote = isSmallAmount ? ` ${formatAmount(input.amount)} loan.` : '';
       return buildNeutralResult(input, dueDate, gapDays,
          `Part-time work with flexible hours.${verifiedNote}${smallNote}${shortLoanContext}${patternNote}${creds} ${track}`,
