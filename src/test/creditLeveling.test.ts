@@ -34,6 +34,21 @@ vi.mock('react-redux', async () => {
    };
 });
 
+vi.mock('@/components/ToastSystem/hooks/useToast', () => ({
+   useToast: () => ({
+      showToast: vi.fn(),
+      showToastByConfig: vi.fn(),
+      removeToast: vi.fn(),
+      clearAllToasts: vi.fn()
+   }),
+   default: () => ({
+      showToast: vi.fn(),
+      showToastByConfig: vi.fn(),
+      removeToast: vi.fn(),
+      clearAllToasts: vi.fn()
+   })
+}));
+
 const baseUser: User = {
    id: 'user-1',
    username: 'moodeng',
