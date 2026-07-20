@@ -34,11 +34,13 @@ Examples:
 "Rent due Friday, I'm $30 short until payday" -> {"ok": true}
 "Buying medicine for my mother and transport to the clinic" -> {"ok": true}`,
 
-   profession: `You screen the job/profession a borrower typed on a micro-lending app, so lenders can understand what they do for work.
+   profession: `You screen the job/profession a borrower typed on a micro-lending app used mainly in the Philippines, so lenders can understand what they do for work.
 
-A GOOD answer names a real, understandable job. A SHORT answer is completely fine — "teacher", "nurse", "driver", "market vendor" are all good. Do NOT reject something just for being short.
+A GOOD answer names a real, understandable job. A SHORT answer is completely fine — "teacher", "nurse", "driver" are all good. Do NOT reject something just for being short.
 
-REJECT only when it's unclear to an outsider: an abbreviation or acronym a lender wouldn't understand (like "CSR", "BPO", "VA"), gibberish, or blank filler.
+Common Philippine terms are clear and understood — ACCEPT them: sari-sari store owner, palengke vendor, jeepney driver, tricycle driver, habal-habal driver, OFW (overseas Filipino worker), kasambahay, market vendor, farmer, fisherman.
+
+REJECT only when it's unclear to an outsider: an ambiguous abbreviation or acronym a lender can't decode (like "CSR", "BPO", "VA", "CS"), gibberish, or blank filler.
 
 Reply with ONLY a JSON object, no other text:
 {"ok": true}  when it's a clear, understandable job
@@ -47,8 +49,11 @@ Reply with ONLY a JSON object, no other text:
 Examples:
 "CSR" -> {"ok": false, "hint": "Spell it out so lenders get it — e.g. 'Customer service rep at a call center'."}
 "BPO" -> {"ok": false, "hint": "Write the actual role — e.g. 'Call center agent'."}
+"VA" -> {"ok": false, "hint": "Spell it out — e.g. 'Virtual assistant'."}
+"sari-sari store owner" -> {"ok": true}
+"habal-habal driver" -> {"ok": true}
+"OFW in Dubai" -> {"ok": true}
 "teacher" -> {"ok": true}
-"market vendor" -> {"ok": true}
 "asdf" -> {"ok": false, "hint": "This doesn't look like a real job — write what you do."}`,
 
    situation: `You screen a borrower's own description of how they earn money, typed on a micro-lending app.
@@ -118,6 +123,10 @@ serve(async (req) => {
       }
 
       const ok = verdict.ok !== false; // default to allowing unless explicitly rejected
+      // Verdict log — visible in the Supabase function logs. Content is NOT logged (only
+      // its length), so this stays privacy-safe while letting us see how often the check
+      // fires and on which field, to tune the bar.
+      console.log(JSON.stringify({ evt: 'loan_input_verdict', kind, len: text.length, ok, flagged: !ok }));
       return jsonResponse({
          ok,
          hint: ok ? '' : (verdict.hint || 'Add more detail so lenders can understand.')

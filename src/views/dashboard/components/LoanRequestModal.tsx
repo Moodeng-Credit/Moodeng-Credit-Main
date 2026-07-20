@@ -64,6 +64,7 @@ interface LoanRequestModalProps {
    setTotalRepaymentAmount: (value: string) => void;
    reason: string;
    setReason: (value: string) => void;
+   reasonWarning?: string;
    days: string;
    today: string;
    handleDays: (e: ChangeEvent<HTMLInputElement>) => void;
@@ -773,6 +774,7 @@ export default function LoanRequestModal({
    setTotalRepaymentAmount,
    reason,
    setReason,
+   reasonWarning,
    days,
    today,
    handleDays,
@@ -1681,6 +1683,12 @@ export default function LoanRequestModal({
                                  <span>At least 40 characters. Requests with no real effort may be deleted.</span>
                                  <span className="shrink-0">{reason.length}/200</span>
                               </div>
+                              {reasonWarning ? (
+                                 <div className="mt-md-1 flex items-start gap-1.5 border-t border-[#f0c98a] pt-md-1 text-md-b3 font-medium leading-[18px] text-[#92400e]">
+                                    <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                    <span>{reasonWarning}</span>
+                                 </div>
+                              ) : null}
                            </div>
                         </div>
 
