@@ -51,3 +51,6 @@ verify_jwt = true
 
 [functions.buy-loan-note]
 verify_jwt = true
+
+[functions.admin-loan-notify]
+verify_jwt = true
