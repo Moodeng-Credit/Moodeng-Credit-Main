@@ -37,6 +37,7 @@
          '/how-it-works': '/landing/how-it-works.html',
          '/how-to-cash-out': '/landing/how-to-cash-out.html',
          '/how-to-repay': '/landing/how-to-repay.html',
+         '/credit-levels': '/landing/credit-levels.html',
          '/for-lenders': '/landing/for-lenders.html',
          '/about': '/landing/about.html',
          '/sign-in': 'https://moodeng.app/sign-in',

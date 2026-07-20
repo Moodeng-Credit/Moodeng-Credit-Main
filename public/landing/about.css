@@ -297,9 +297,12 @@
 .founder-media.reveal.is-visible figcaption > .founder-linkedin,
 .founder-media.reveal.is-visible figcaption > .founder-proof,
 .founder-media.reveal.is-visible figcaption > .founder-credentials {
-   clip-path: inset(0 round 30px);
    opacity: 1;
    transform: none;
+}
+
+.founder-media.reveal.is-visible .founder-photo-wrap img {
+   clip-path: inset(0 round 30px);
 }
 
 .founder-media.reveal.is-visible figcaption > strong {
