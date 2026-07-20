@@ -2928,7 +2928,7 @@ li {
    max-height: 680px;
    border: 8px solid var(--paper);
    border-radius: 30px;
-   object-fit: cover;
+   object-fit: contain;
    object-position: top center;
    box-shadow: var(--shadow-md);
 }
@@ -3067,7 +3067,7 @@ li {
    width: min(100%, 340px);
    max-height: 560px;
    border-radius: 22px;
-   object-fit: cover;
+   object-fit: contain;
    object-position: top center;
    box-shadow: var(--shadow-sm);
 }
