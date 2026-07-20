@@ -1,6 +1,9 @@
 [functions.create-user]
 verify_jwt = false
 
+[functions.check-loan-input]
+verify_jwt = true
+
 [functions.webhook]
 verify_jwt = false
 

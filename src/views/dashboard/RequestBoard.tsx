@@ -429,6 +429,7 @@ function RequestBoard$() {
    const [showPurple, setShowPurple] = useState(false);
    const [showBioStep, setShowBioStep] = useState(false);
    const [isSubmitting, setIsSubmitting] = useState(false);
+   const [isCheckingReason, setIsCheckingReason] = useState(false);
    // Synchronous guard — prevents a second click from slipping through before
    // setIsSubmitting(true) has a chance to re-render and disable the button.
    const isSubmittingRef = useRef(false);
@@ -544,6 +545,9 @@ function RequestBoard$() {
    const isGuestLenderTour = shouldShowLenderTour && wantsGuestLenderTour;
    const recordedTourViewsRef = useRef<Set<string>>(new Set());
    const pendingLoanDataRef = useRef<CreateLoanData | null>(null);
+   // Tracks the exact reason text we've already shown a low-effort warning for, so a
+   // second submit of the same reason goes through (the AI gate is a nudge, not a wall).
+   const reasonWarnedForRef = useRef<string>('');
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
    const [hasLoadedRequestBoardLoans, setHasLoadedRequestBoardLoans] = useState(false);
@@ -1279,6 +1283,38 @@ function RequestBoard$() {
       if (!trimmedReason) {
          showToast(TOAST_TYPES.ERROR, 'Reason required', 'Add a short reason so lenders know what the loan is for.', 'OK', 'acknowledge');
          return;
+      }
+
+      // Low-effort reason gate. First time we see a weak reason we warn and stop; if the
+      // borrower submits the same text again we let it through (nudge, not a hard block).
+      // Only runs when the borrower hasn't already been warned for this exact reason.
+      if (reasonWarnedForRef.current !== trimmedReason) {
+         setIsCheckingReason(true);
+         let reasonOk = true;
+         let reasonHint = '';
+         try {
+            const { data } = await getSupabaseBrowserClient().functions.invoke('check-loan-input', {
+               body: { text: trimmedReason, kind: 'reason' }
+            });
+            reasonOk = data?.ok !== false; // fail open — never block on a bad response
+            reasonHint = data?.hint ?? '';
+         } catch (err) {
+            console.error('check-loan-reason failed, allowing request:', err);
+         } finally {
+            setIsCheckingReason(false);
+         }
+
+         if (!reasonOk) {
+            reasonWarnedForRef.current = trimmedReason;
+            showToast(
+               TOAST_TYPES.WARNING,
+               'Add more to your reason',
+               reasonHint || 'This looks low-effort. Requests that appear to have no real effort may be deleted — tap again to post anyway.',
+               'OK',
+               'acknowledge'
+            );
+            return;
+         }
       }
 
       const loanData = {
@@ -2051,7 +2087,7 @@ function RequestBoard$() {
                   handleSubmit={handleSubmit}
                   onReferralApplied={setAppliedReferral}
                   onReferralRedeemed={handleReferralRedeemed}
-                  isSubmitting={isSubmitting}
+                  isSubmitting={isSubmitting || isCheckingReason}
                   availableCreditLimit={availableCreditLimit}
                   canUseReferralBoost={canUseReferralBoost}
                   startOnReferralStep={!shouldShowBorrowerTour && canUseReferralBoost}
