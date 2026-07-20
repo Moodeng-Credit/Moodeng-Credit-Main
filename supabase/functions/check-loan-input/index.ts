@@ -12,6 +12,14 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
    });
 
+// DeepSeek model id. The legacy `deepseek-chat` alias is deprecated (retired
+// 2026-07-24) and now just points at v4-flash, so we name it explicitly. Flash
+// is the cheap non-thinking model — right choice for this short classify task.
+const DEEPSEEK_MODEL = 'deepseek-v4-flash';
+// Cap how long we'll wait on the AI before failing open, so a slow/hung DeepSeek
+// call never stalls the borrower's form submission.
+const AI_TIMEOUT_MS = 6000;
+
 type Kind = 'reason' | 'profession' | 'situation';
 
 // Each field the borrower types gets its own rubric. The shared goal: is the input
@@ -88,23 +96,35 @@ serve(async (req) => {
       const kind: Kind = body.kind && PROMPTS[body.kind] ? body.kind : 'reason';
       if (!text) return jsonResponse({ ok: false, hint: 'Add a bit more so lenders can understand.' });
 
-      const aiRes = await fetch('https://api.deepseek.com/chat/completions', {
-         method: 'POST',
-         headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-         },
-         body: JSON.stringify({
-            model: 'deepseek-chat',
-            temperature: 0,
-            max_tokens: 120,
-            response_format: { type: 'json_object' },
-            messages: [
-               { role: 'system', content: PROMPTS[kind] },
-               { role: 'user', content: `Input: "${text}"` }
-            ]
-         })
-      });
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), AI_TIMEOUT_MS);
+      let aiRes: Response;
+      try {
+         aiRes = await fetch('https://api.deepseek.com/chat/completions', {
+            method: 'POST',
+            signal: ctrl.signal,
+            headers: {
+               Authorization: `Bearer ${apiKey}`,
+               'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+               model: DEEPSEEK_MODEL,
+               temperature: 0,
+               max_tokens: 120,
+               response_format: { type: 'json_object' },
+               messages: [
+                  { role: 'system', content: PROMPTS[kind] },
+                  { role: 'user', content: `Input: "${text}"` }
+               ]
+            })
+         });
+      } catch (err) {
+         // Timeout or network error — never block the borrower.
+         console.error('check-loan-input: DeepSeek fetch failed', err);
+         return jsonResponse({ ok: true, skipped: 'ai_unreachable' }); // fail open
+      } finally {
+         clearTimeout(timeout);
+      }
 
       if (!aiRes.ok) {
          console.error('check-loan-input: DeepSeek error', aiRes.status, await aiRes.text());
