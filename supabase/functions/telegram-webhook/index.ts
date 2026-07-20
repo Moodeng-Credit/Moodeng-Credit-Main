@@ -77,6 +77,102 @@ const getSetting = async (supabase: SupabaseClient, key: string) => {
 const getSupportGroupChatId = async (supabase: SupabaseClient) =>
    Deno.env.get('TELEGRAM_SUPPORT_GROUP_CHAT_ID') ?? (await getSetting(supabase, 'support_group_chat_id'));
 
+const getTeamChatId = async (supabase: SupabaseClient) =>
+   Deno.env.get('TEAM_TELEGRAM_CHAT_ID') ?? (await getSetting(supabase, 'team_group_chat_id'));
+
+const normalizeHandle = (value?: string | null) => (value ?? '').trim().replace(/^@/, '').toLowerCase();
+
+// Manual lender-prospect roster, managed from the private team channel:
+//   /addlender Name, @handle, note   — handle & note optional
+//   /lenders                         — list the roster
+//   /removelender name or @handle    — soft-delete a prospect
+// Returns true if the message was a recognized roster command.
+const handleLenderRosterCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const text = (message.text ?? '').trim();
+   const chatId = message.chat.id;
+
+   const addMatch = text.match(/^\/addlender(?:@\w+)?(?:\s+([\s\S]*))?$/i);
+   if (addMatch) {
+      const arg = (addMatch[1] ?? '').trim();
+      const [namePart, handlePart, ...noteParts] = arg.split(',').map((part) => part.trim());
+      const name = namePart ?? '';
+      if (!name) {
+         await sendTelegramMessage(chatId, 'Usage: /addlender Name, @handle, note\n(handle and note are optional)');
+         return true;
+      }
+
+      const { error } = await supabase.from('lender_prospects').insert({
+         name,
+         handle: handlePart || null,
+         note: noteParts.join(', ').trim() || null,
+         added_by: getSenderUsername(message) ?? getDisplayName(message)
+      });
+      if (error) throw new Error(error.message);
+
+      await sendTelegramMessage(chatId, `Added ${name}${handlePart ? ` (${handlePart})` : ''} to the prospect roster.`);
+      return true;
+   }
+
+   if (/^\/lenders(?:@\w+)?\s*$/i.test(text)) {
+      const { data, error } = await supabase
+         .from('lender_prospects')
+         .select('name, handle, note')
+         .eq('is_active', true)
+         .order('created_at', { ascending: false });
+      if (error) throw new Error(error.message);
+
+      if (!data?.length) {
+         await sendTelegramMessage(chatId, 'The prospect roster is empty.\nAdd someone with: /addlender Name, @handle, note');
+         return true;
+      }
+
+      const list = data
+         .map((prospect: { name: string; handle?: string | null; note?: string | null }, index: number) => {
+            const bits = [prospect.handle, prospect.note].filter(Boolean).join(' · ');
+            return `${index + 1}. ${prospect.name}${bits ? ` — ${bits}` : ''}`;
+         })
+         .join('\n');
+      await sendTelegramMessage(chatId, `📇 Prospect roster (${data.length}):\n${list}`);
+      return true;
+   }
+
+   const removeMatch = text.match(/^\/removelender(?:@\w+)?(?:\s+([\s\S]*))?$/i);
+   if (removeMatch) {
+      const arg = (removeMatch[1] ?? '').trim();
+      if (!arg) {
+         await sendTelegramMessage(chatId, 'Usage: /removelender name or @handle');
+         return true;
+      }
+
+      const { data, error } = await supabase.from('lender_prospects').select('id, name, handle').eq('is_active', true);
+      if (error) throw new Error(error.message);
+
+      const argHandle = normalizeHandle(arg);
+      const argLower = arg.toLowerCase();
+      const matches = (data ?? []).filter(
+         (prospect: { name: string; handle?: string | null }) =>
+            (argHandle !== '' && normalizeHandle(prospect.handle) === argHandle) || prospect.name?.toLowerCase() === argLower
+      );
+
+      if (!matches.length) {
+         await sendTelegramMessage(chatId, `No active prospect matches "${arg}". Use /lenders to see the roster.`);
+         return true;
+      }
+      if (matches.length > 1) {
+         await sendTelegramMessage(chatId, `"${arg}" matches ${matches.length} prospects. Remove by exact @handle instead.`);
+         return true;
+      }
+
+      const { error: removeError } = await supabase.from('lender_prospects').update({ is_active: false }).eq('id', matches[0].id);
+      if (removeError) throw new Error(removeError.message);
+
+      await sendTelegramMessage(chatId, `Removed ${matches[0].name} from the roster.`);
+      return true;
+   }
+
+   return false;
+};
+
 const verifyTelegramSecret = (req: Request) => {
    const expectedSecret = Deno.env.get('TELEGRAM_WEBHOOK_SECRET');
    if (!expectedSecret) {
@@ -305,6 +401,17 @@ serve(async (req) => {
 
          await forwardCustomerMessageToSupport(supabase, message);
          return jsonResponse({ message: 'Private message handled' });
+      }
+
+      // Lender-roster commands are honored only in the private team channel.
+      const teamChatId = await getTeamChatId(supabase);
+      if (
+         teamChatId &&
+         String(message.chat.id) === String(teamChatId) &&
+         /^\/(addlender|lenders|removelender)\b/i.test(message.text ?? '')
+      ) {
+         await handleLenderRosterCommand(supabase, message);
+         return jsonResponse({ message: 'Lender roster command handled' });
       }
 
       await handleSupportAgentMessage(supabase, message);

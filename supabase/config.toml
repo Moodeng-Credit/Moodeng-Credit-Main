@@ -37,6 +37,9 @@ verify_jwt = false
 [functions.loan-request-telegram-notification]
 verify_jwt = false
 
+[functions.loan-request-lender-suggestions]
+verify_jwt = false
+
 [functions.telegram-webhook]
 verify_jwt = false
 
