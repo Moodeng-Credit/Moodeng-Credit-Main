@@ -5950,3 +5950,425 @@ a.button.is-loading::after {
       animation-delay: 0s !important;
    }
 }
+
+/* Lender page: put mechanics, verification, and due diligence before persuasion. */
+.lender-hero-facts {
+   display: grid;
+   gap: 10px;
+   margin-top: 6px;
+   list-style: none;
+}
+
+.lender-hero-facts li {
+   display: grid;
+   grid-template-columns: 30px minmax(0, 1fr);
+   align-items: center;
+   gap: 10px;
+   min-height: 48px;
+   border: 1px solid var(--line);
+   border-radius: 14px;
+   padding: 9px 12px;
+   background: oklch(99% 0.008 305 / 0.74);
+}
+
+.lender-hero-facts span {
+   color: var(--purple);
+   font-size: 0.68rem;
+   font-weight: 900;
+   letter-spacing: 0.12em;
+}
+
+.lender-hero-facts strong {
+   font-size: 0.82rem;
+   line-height: 1.25;
+}
+
+.lender-money-section,
+.lender-incentive-section {
+   padding-block: 78px;
+}
+
+.lender-money-section {
+   overflow: hidden;
+}
+
+.lender-money-section .split-heading {
+   margin-bottom: 42px;
+}
+
+.lender-money-steps {
+   display: grid;
+   gap: 1px;
+   overflow: hidden;
+   border: 1px solid oklch(74% 0.08 303 / 0.24);
+   border-radius: var(--radius-md);
+   background: oklch(74% 0.08 303 / 0.2);
+   list-style: none;
+}
+
+.lender-money-steps li {
+   min-height: 170px;
+   padding: 24px;
+   background: var(--night-2);
+}
+
+.lender-money-steps span {
+   display: block;
+   margin-bottom: 32px;
+   color: var(--lavender-200);
+   font-size: 0.72rem;
+   font-weight: 900;
+   letter-spacing: 0.14em;
+}
+
+.lender-money-steps strong {
+   display: block;
+   color: var(--paper);
+   font-size: 1.05rem;
+}
+
+.lender-money-steps p {
+   margin-top: 8px;
+   color: var(--night-text);
+   font-size: 0.88rem;
+   line-height: 1.48;
+}
+
+.lender-money-visuals {
+   display: grid;
+   gap: 14px;
+   margin-top: 42px;
+}
+
+.lender-money-phone {
+   overflow: hidden;
+   border: 1px solid oklch(74% 0.08 303 / 0.24);
+   border-radius: var(--radius-md);
+   background: var(--paper);
+   color: var(--ink);
+}
+
+.lender-money-phone img {
+   width: 100%;
+   height: clamp(520px, 51vw, 680px);
+   padding: 26px 20px 0;
+   object-fit: contain;
+   object-position: top center;
+   background: linear-gradient(180deg, var(--lavender-50), var(--canvas));
+}
+
+.lender-money-phone figcaption {
+   min-height: 112px;
+   padding: 18px 20px 22px;
+   color: var(--ink-soft);
+   font-size: 0.86rem;
+}
+
+.lender-money-phone figcaption span {
+   display: block;
+   margin-bottom: 5px;
+   color: var(--purple-dark);
+   font-size: 0.7rem;
+   font-weight: 900;
+   letter-spacing: 0.12em;
+   text-transform: uppercase;
+}
+
+.lender-money-phone-featured {
+   border-color: var(--butter-strong);
+   box-shadow: 0 28px 72px oklch(10% 0.05 296 / 0.28);
+}
+
+.lender-money-foot {
+   display: grid;
+   gap: 20px;
+   align-items: center;
+   margin-top: 30px;
+   border-top: 1px solid oklch(74% 0.08 303 / 0.24);
+   padding-top: 26px;
+}
+
+.lender-money-foot p {
+   max-width: 66ch;
+   color: var(--night-text);
+}
+
+.lender-money-foot strong {
+   color: var(--paper);
+}
+
+.lender-money-foot .button-row {
+   justify-content: flex-start;
+}
+
+.lender-money-foot .button,
+.lender-guide-link {
+   width: fit-content;
+}
+
+.lender-guide-link {
+   color: var(--lavender-200);
+   font-size: 0.84rem;
+   font-weight: 800;
+   text-underline-offset: 4px;
+}
+
+.lender-incentive-section {
+   position: relative;
+   overflow: hidden;
+   background: var(--butter);
+}
+
+.lender-incentive-section::after {
+   width: 340px;
+   height: 340px;
+   position: absolute;
+   top: -210px;
+   right: -120px;
+   border: 54px solid oklch(99% 0.01 88 / 0.34);
+   border-radius: 50%;
+   content: '';
+}
+
+.lender-incentive-section .container {
+   position: relative;
+   z-index: 1;
+   display: grid;
+   gap: 42px;
+}
+
+.lender-incentive-copy .lead {
+   max-width: 58ch;
+   margin-top: 24px;
+}
+
+.lender-incentive-copy .text-link {
+   display: inline-flex;
+   gap: 8px;
+   margin-top: 22px;
+   color: var(--purple-dark);
+   font-weight: 850;
+}
+
+.lender-credit-ladder {
+   display: grid;
+   gap: 0;
+   border: 1px solid oklch(55% 0.07 88 / 0.28);
+   border-radius: var(--radius-md);
+   background: oklch(99% 0.012 88 / 0.68);
+   list-style: none;
+}
+
+.lender-credit-ladder li {
+   display: grid;
+   grid-template-columns: 76px 72px minmax(0, 1fr);
+   align-items: center;
+   gap: 14px;
+   min-height: 82px;
+   border-bottom: 1px solid oklch(55% 0.07 88 / 0.2);
+   padding: 14px 18px;
+}
+
+.lender-credit-ladder li:last-child {
+   border-bottom: 0;
+}
+
+.lender-credit-ladder li.is-current {
+   background: var(--ink);
+   color: var(--paper);
+}
+
+.lender-credit-ladder li.is-current:first-child {
+   border-radius: calc(var(--radius-md) - 1px) calc(var(--radius-md) - 1px) 0 0;
+}
+
+.lender-credit-ladder span,
+.lender-credit-ladder small {
+   font-size: 0.72rem;
+   font-weight: 800;
+}
+
+.lender-credit-ladder strong {
+   color: var(--purple);
+   font-family: var(--font-display);
+   font-size: 1.8rem;
+}
+
+.lender-credit-ladder .is-current strong {
+   color: var(--butter);
+}
+
+.lender-credit-ladder small {
+   color: var(--ink-soft);
+   line-height: 1.3;
+}
+
+.lender-credit-ladder .is-current small {
+   color: var(--night-text);
+}
+
+.lender-incentive-points {
+   display: grid;
+   gap: 14px;
+}
+
+.lender-incentive-points article {
+   min-height: 190px;
+   border: 1px solid oklch(55% 0.07 88 / 0.28);
+   border-radius: var(--radius-md);
+   padding: 24px;
+   background: oklch(99% 0.012 88 / 0.68);
+}
+
+.lender-incentive-points article > span {
+   width: 40px;
+   height: 40px;
+   display: grid;
+   place-items: center;
+   border-radius: 50%;
+   background: var(--ink);
+   color: var(--butter);
+   font-size: 1.1rem;
+   font-weight: 900;
+}
+
+.lender-incentive-points h3 {
+   margin-top: 34px;
+   font-size: 1.05rem;
+}
+
+.lender-incentive-points p {
+   margin-top: 8px;
+   color: var(--ink-soft);
+   font-size: 0.88rem;
+}
+
+.lender-verification-grid {
+   display: grid;
+   gap: 10px;
+}
+
+.lender-verification-grid article {
+   display: grid;
+   grid-template-columns: 38px minmax(0, 1fr);
+   gap: 14px;
+   border: 1px solid var(--line);
+   border-radius: 16px;
+   padding: 16px;
+   background: oklch(99% 0.008 305 / 0.72);
+}
+
+.verification-mark {
+   width: 34px;
+   height: 34px;
+   display: grid;
+   place-items: center;
+   border-radius: 50%;
+   background: var(--green-soft);
+   color: var(--green);
+   font-weight: 900;
+}
+
+.verification-mark.is-caution {
+   background: var(--amber-soft);
+   color: var(--amber);
+}
+
+.lender-verification-grid h3 {
+   font-size: 0.96rem;
+}
+
+.lender-verification-grid p {
+   margin-top: 4px;
+   color: var(--ink-soft);
+   font-size: 0.82rem;
+}
+
+.lender-checklist-label {
+   margin-top: 4px;
+}
+
+.record-list .check {
+   min-width: 26px;
+   color: var(--purple);
+   font-size: 0.68rem;
+   letter-spacing: 0.08em;
+}
+
+@media (min-width: 700px) {
+   .lender-hero-facts {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+   }
+
+   .lender-hero-facts li {
+      grid-template-columns: 1fr;
+      align-content: center;
+      gap: 5px;
+      min-height: 74px;
+   }
+
+   .lender-money-steps {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+   }
+
+   .lender-money-visuals,
+   .lender-incentive-points {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+   }
+
+   .lender-money-phone-featured {
+      transform: translateY(-14px);
+   }
+
+   .lender-money-foot {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 36px;
+   }
+
+   .lender-incentive-section .container {
+      grid-template-columns: minmax(0, 0.9fr) minmax(380px, 1.1fr);
+      align-items: center;
+   }
+
+   .lender-incentive-points {
+      grid-column: 1 / -1;
+   }
+}
+
+@media (min-width: 1024px) {
+   .lender-money-section,
+   .lender-incentive-section {
+      padding-block: 104px;
+   }
+
+   .lender-money-steps {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+   }
+
+   .lender-money-visuals {
+      gap: 20px;
+      margin-top: 64px;
+   }
+
+   .lender-money-phone figcaption {
+      min-height: 126px;
+      padding: 20px 24px 24px;
+   }
+}
+
+@media (max-width: 699px) {
+   .lender-money-phone img {
+      height: min(150vw, 620px);
+      padding-inline: 14px;
+   }
+
+   .lender-credit-ladder li {
+      grid-template-columns: 62px 58px minmax(0, 1fr);
+      gap: 10px;
+      padding-inline: 14px;
+   }
+
+   .lender-credit-ladder strong {
+      font-size: 1.5rem;
+   }
+}

@@ -3,20 +3,20 @@
    <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-      <title>Moodeng for lenders | Review every request before you fund</title>
+      <title>Moodeng for lenders | See verification, repayment, and risk</title>
       <meta
          name="description"
-         content="Review verified borrower requests, exact expected paybacks, dates, repayment history, and default risk before choosing what to fund."
+         content="See how Moodeng borrowers repay, what identity verification proves, which records lenders review, and how USDC returns to a lender wallet."
       />
       <meta property="og:title" content="Moodeng for lenders" />
-      <meta property="og:description" content="Fund small requests from verified borrowers. See the terms, record, and risk first." />
+      <meta property="og:description" content="See the terms, verification status, repayment route, borrower incentives, and risk before you fund." />
       <meta property="og:type" content="website" />
       <meta property="og:url" content="https://moodeng.app/for-lenders" />
       <meta property="og:image" content="https://moodeng.app/landing/assets/og/og-share.jpg" />
       <meta name="twitter:card" content="summary_large_image" />
       <link rel="canonical" href="https://moodeng.app/for-lenders" />
       <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
-      <link rel="stylesheet" href="/landing/site.css?v=20260717-hero-note-1" />
+      <link rel="stylesheet" href="/landing/site.css?v=20260722-lender-1" />
    </head>
    <body>
       <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -28,8 +28,8 @@
             >
             <nav class="desktop-nav" aria-label="Primary navigation">
                <a href="/">For borrowers</a>
-               <a href="#requests">Sample requests</a>
-               <a href="#record">What you see</a>
+               <a href="#repayment">How repayment works</a>
+               <a href="#record">Due diligence</a>
                <a href="#risk">Risk</a>
             </nav>
             <div class="header-actions">
@@ -51,8 +51,8 @@
          </div>
          <nav class="menu-links" aria-label="Mobile navigation">
             <a href="/">For borrowers <span aria-hidden="true">→</span></a>
-            <a href="#requests">Sample requests <span aria-hidden="true">→</span></a>
-            <a href="#record">What lenders see <span aria-hidden="true">→</span></a>
+            <a href="#repayment">How repayment works <span aria-hidden="true">→</span></a>
+            <a href="#record">Due diligence <span aria-hidden="true">→</span></a>
             <a href="#risk">The risks <span aria-hidden="true">→</span></a>
             <a href="/about">Our story <span aria-hidden="true">→</span></a>
          </nav>
@@ -68,14 +68,19 @@
                   <p class="eyebrow">For lenders</p>
                   <h1 class="page-title">Fund a request. See the <em>record first.</em></h1>
                   <p class="lead">
-                     Review how much someone needs, the expected payback, the expected date, and their Moodeng history before you choose. No
-                     portfolio, no automatic allocation.
+                     Review the terms, identity-verification status, and repayment record before you choose. If the borrower repays, USDC
+                     returns automatically to the wallet you funded from—there is nothing to claim.
                   </p>
                   <div class="button-row">
                      <a class="button" href="/request-board">Browse open requests <span class="arrow" aria-hidden="true">→</span></a>
                      <a class="button subtle" href="#risk">Read the risks</a>
                   </div>
                   <p class="fine-print">Repayment is not guaranteed. Only fund an amount you can afford to lose.</p>
+                  <ul class="lender-hero-facts" aria-label="How Moodeng lending works">
+                     <li><span>01</span><strong>You choose each request</strong></li>
+                     <li><span>02</span><strong>Borrowers repay in USDC</strong></li>
+                     <li><span>03</span><strong>Repayment goes to your wallet</strong></li>
+                  </ul>
                </div>
                <div class="page-visual">
                   <div class="device">
@@ -107,194 +112,94 @@
             </div>
          </section>
 
-         <section class="support-section" id="who-we-support" aria-labelledby="support-heading">
+         <section class="lender-money-section surface-night" id="repayment" aria-labelledby="repayment-heading">
             <div class="container">
-               <div class="support-heading reveal">
+               <div class="split-heading reveal">
                   <div class="stack-md">
-                     <p class="eyebrow">Who your funding supports</p>
-                     <h2 class="section-title wide" id="support-heading">
-                        Women who already carry the household. <em>Credit helps the week keep moving.</em>
-                     </h2>
+                     <p class="eyebrow">The complete money loop</p>
+                     <h2 class="section-title wide" id="repayment-heading">USDC out. Local cash access. <em>USDC back.</em></h2>
                   </div>
-                  <div class="support-heading-copy stack-md">
-                     <p class="lead">
-                        Most people borrowing through Moodeng today are women. Many are mothers, caregivers, and breadwinners balancing a
-                        household alongside work or a small business.
-                     </p>
-                     <p class="support-region">
-                        <strong>Centered in the Philippines.</strong> Moodeng also supports borrowers elsewhere in Southeast Asia.
-                     </p>
-                  </div>
+                  <p class="lead">
+                     Borrowers can cash out through familiar Philippine routes, then use those same kinds of services to buy USDC for
+                     repayment. Moodeng keeps the loan and its outcome tied to the borrower’s record.
+                  </p>
                </div>
 
-               <div class="support-collage">
-                  <figure class="support-photo support-photo-main reveal">
+               <ol class="lender-money-steps reveal" aria-label="Funding and repayment flow">
+                  <li><span>01</span><strong>You fund USDC</strong><p>You choose a single request and fund from your wallet on Base.</p></li>
+                  <li><span>02</span><strong>They access pesos</strong><p>Supported routes include Coins.ph, GCrypto, PDAX, and external providers.</p></li>
+                  <li><span>03</span><strong>They add USDC to repay</strong><p>The app shows the Base address, provider route, amount due, and payment options.</p></li>
+                  <li><span>04</span><strong>Your wallet receives it</strong><p>Repayment is sent automatically to the wallet you funded from. No claim step.</p></li>
+               </ol>
+
+               <div class="lender-money-visuals">
+                  <figure class="lender-money-phone reveal">
                      <img
-                        src="/landing/assets/life/school-fee.jpg"
-                        alt="Illustrative scene of a mother reviewing school papers at the kitchen table"
-                        width="1086"
-                        height="1448"
+                        src="/landing/assets/app/cashout-product-routes-hd.png"
+                        alt="Moodeng cash-out screen showing local provider routes including Coins.ph, GCrypto, and PDAX"
+                        width="956"
+                        height="1645"
                         loading="lazy"
                      />
-                     <figcaption>
-                        <span>School and home</span>
-                        A mother planning around a school payment without dropping the rest of the week.
-                     </figcaption>
+                     <figcaption><span>Cash out</span> Borrowers choose a local route and see provider terms before leaving Moodeng.</figcaption>
                   </figure>
-
-                  <figure class="support-photo support-photo-store reveal">
+                  <figure class="lender-money-phone lender-money-phone-featured reveal">
                      <img
-                        src="/landing/assets/life/store-restock.jpg"
-                        alt="Illustrative scene of a woman managing stock in a neighborhood shop"
-                        width="1086"
-                        height="1448"
+                        src="/landing/assets/app/repay-product-add-funds-hd.png"
+                        alt="Moodeng repayment screen showing how a borrower adds USDC to their Base Account"
+                        width="852"
+                        height="1847"
                         loading="lazy"
                      />
-                     <figcaption>
-                        <span>Store and family</span>
-                        A small-business owner restocking before the next cash cycle.
-                     </figcaption>
+                     <figcaption><span>Add funds</span> The app repeats the Base-network warning and separates external-provider fees.</figcaption>
                   </figure>
-
-                  <figure class="support-photo support-photo-work reveal">
+                  <figure class="lender-money-phone reveal">
                      <img
-                        src="/landing/assets/faces/foodstall.jpg"
-                        alt="Illustrative portrait of a woman running a neighborhood food stall"
-                        width="720"
-                        height="960"
+                        src="/landing/assets/app/repay-product-amount-hd.png"
+                        alt="Moodeng repayment screen showing partial and full USDC repayment options"
+                        width="853"
+                        height="1844"
                         loading="lazy"
                      />
-                     <figcaption>
-                        <span>Work and caregiving</span>
-                        Income, household needs, and other people’s plans often meet in one person.
-                     </figcaption>
+                     <figcaption><span>Repay</span> Borrowers can pay early, partially, or in full; each outcome remains visible.</figcaption>
                   </figure>
-
-                  <div class="support-ripple reveal" aria-label="Examples of household needs that small credit can help bridge">
-                     <div class="support-ripple-copy">
-                        <p class="eyebrow">The household ripple</p>
-                        <h3>A small timing gap rarely affects just one thing.</h3>
-                        <p>When income arrives later than life does, a short bridge can keep several responsibilities moving at once.</p>
-                     </div>
-
-                     <div class="support-ripple-map" aria-hidden="true">
-                        <div class="support-ripple-center">
-                           <span>Payday comes later</span>
-                           <strong>Small credit bridge</strong>
-                        </div>
-                        <ul class="support-needs">
-                           <li>
-                              <span class="support-icon"><img src="/landing/assets/icons/grad-cap.png" alt="" /></span>
-                              <strong>School</strong>
-                           </li>
-                           <li>
-                              <span class="support-icon"><img src="/landing/assets/icons/receipt-calendar.png" alt="" /></span>
-                              <strong>Medicine</strong>
-                           </li>
-                           <li>
-                              <span class="support-icon"><img src="/landing/assets/icons/cooking-pot.png" alt="" /></span>
-                              <strong>Food</strong>
-                           </li>
-                           <li>
-                              <span class="support-icon"><img src="/landing/assets/icons/basket.png" alt="" /></span>
-                              <strong>Store stock</strong>
-                           </li>
-                        </ul>
-                     </div>
-                  </div>
                </div>
-
-               <div class="support-note reveal">
-                  <p><strong>This is not a rescue story.</strong> It is access to small, clearly stated credit for women already doing the work.</p>
-                  <span>Images are illustrative and do not depict Moodeng borrowers.</span>
+               <div class="lender-money-foot reveal">
+                  <p>
+                     Moodeng charges <strong>$0 to repay.</strong> External providers can charge their own conversion rate, network cost,
+                     or service fee, and route availability varies by location.
+                  </p>
+                  <div class="button-row">
+                     <a class="button light" href="/request-board">Browse open requests <span class="arrow" aria-hidden="true">→</span></a>
+                     <a class="lender-guide-link" href="/how-to-repay">See the borrower repay guide</a>
+                  </div>
                </div>
             </div>
          </section>
 
-         <section class="request-showcase-section surface-night" id="requests" aria-labelledby="requests-heading">
+         <section class="lender-incentive-section" id="incentives" aria-labelledby="incentives-heading">
             <div class="container">
-               <div class="request-showcase-heading reveal">
-                  <p class="eyebrow">Request by request</p>
-                  <h2 id="requests-heading">The ask is human. <em>The terms stay clear.</em></h2>
+               <div class="lender-incentive-copy reveal">
+                  <p class="eyebrow">Why repayment matters to the borrower</p>
+                  <h2 class="section-title wide" id="incentives-heading">Repayment is how access <em>gets better.</em></h2>
                   <p class="lead">
-                     Each borrower chooses the amount, expected payback, and date. You see their Moodeng record before you decide.
+                     Moodeng starts with small limits. A clean full-limit Credit-Building Loan can unlock the next level; smaller
+                     Trust-Building Loans add evidence without skipping the ladder.
                   </p>
+                  <a class="text-link" href="/credit-levels">Read how credit levels work <span aria-hidden="true">→</span></a>
                </div>
 
-               <div class="request-poster-deck" aria-label="Examples of previously funded Moodeng requests">
-                  <article class="request-poster request-poster-butter reveal">
-                     <div class="request-poster-top">
-                        <span>01</span>
-                        <strong>Maria</strong>
-                     </div>
-                     <h3>Allowance, stretching to payday</h3>
-                     <div class="request-poster-amount">
-                        <span>Asking for</span>
-                        <strong>$20</strong>
-                     </div>
-                     <dl class="request-poster-terms">
-                        <div>
-                           <dt>Expected back</dt>
-                           <dd>$25</dd>
-                        </div>
-                        <div>
-                           <dt>Timing</dt>
-                           <dd>About 3 weeks</dd>
-                        </div>
-                     </dl>
-                     <p class="request-poster-record"><span aria-hidden="true">✓</span> Moodeng record visible</p>
-                  </article>
+               <ol class="lender-credit-ladder reveal" aria-label="Moodeng credit limit progression">
+                  <li class="is-current"><span>Level 1</span><strong>$15</strong><small>Start small</small></li>
+                  <li><span>Level 2</span><strong>$20</strong><small>After a clean $15 credit-building loan</small></li>
+                  <li><span>Level 3</span><strong>$40</strong><small>After a clean $20 credit-building loan</small></li>
+                  <li><span>Level 4</span><strong>$60</strong><small>After a clean $40 credit-building loan</small></li>
+               </ol>
 
-                  <article class="request-poster request-poster-lavender reveal">
-                     <div class="request-poster-top">
-                        <span>02</span>
-                        <strong>Liza</strong>
-                     </div>
-                     <h3>Dental extraction emergency</h3>
-                     <div class="request-poster-amount">
-                        <span>Asking for</span>
-                        <strong>$15</strong>
-                     </div>
-                     <dl class="request-poster-terms">
-                        <div>
-                           <dt>Expected back</dt>
-                           <dd>$30</dd>
-                        </div>
-                        <div>
-                           <dt>Timing</dt>
-                           <dd>Set by request</dd>
-                        </div>
-                     </dl>
-                     <p class="request-poster-record"><span aria-hidden="true">✓</span> Moodeng record visible</p>
-                  </article>
-
-                  <article class="request-poster request-poster-mint reveal">
-                     <div class="request-poster-top">
-                        <span>03</span>
-                        <strong>Ana</strong>
-                     </div>
-                     <h3>Family expenses before payday</h3>
-                     <div class="request-poster-amount">
-                        <span>Asking for</span>
-                        <strong>$20</strong>
-                     </div>
-                     <dl class="request-poster-terms">
-                        <div>
-                           <dt>Expected back</dt>
-                           <dd>$22</dd>
-                        </div>
-                        <div>
-                           <dt>Timing</dt>
-                           <dd>About 2 weeks</dd>
-                        </div>
-                     </dl>
-                     <p class="request-poster-record"><span aria-hidden="true">✓</span> Moodeng record visible</p>
-                  </article>
-               </div>
-
-               <div class="request-showcase-foot reveal">
-                  <p class="fine-print">“Expected back” is the borrower’s agreed repayment amount, not a promise from Moodeng.</p>
-                  <a class="button light" href="/request-board">Browse open requests <span class="arrow" aria-hidden="true">→</span></a>
+               <div class="lender-incentive-points reveal">
+                  <article><span aria-hidden="true">↗</span><h3>Clean repayments compound</h3><p>Every completed outcome gives the next lender more evidence than the last had.</p></article>
+                  <article><span aria-hidden="true">◎</span><h3>Misses stay visible</h3><p>Late, partial, and defaulted outcomes remain on the borrower record.</p></article>
+                  <article><span aria-hidden="true">×</span><h3>Default closes access</h3><p>The account is frozen after default instead of immediately offering another request.</p></article>
                </div>
             </div>
          </section>
@@ -431,17 +336,29 @@
          <section class="section surface-lavender" id="record" aria-labelledby="record-heading">
             <div class="container proof-grid">
                <div class="stack-lg reveal">
-                  <p class="eyebrow">Before you fund</p>
-                  <h2 class="section-title" id="record-heading">More than a name and a <em>promise.</em></h2>
+                  <p class="eyebrow">Verification + due diligence</p>
+                  <h2 class="section-title" id="record-heading">Know what was checked. <em>Know what was not.</em></h2>
                   <p class="lead">
-                     The profile gives practical context without exposing identity documents, phone contacts, or private messages.
+                     A borrower can verify through World ID or Didit’s document-based KYC. Lenders see the resulting verification status,
+                     not the borrower’s identity documents, contacts, photos, or private messages.
                   </p>
+                  <div class="lender-verification-grid">
+                     <article>
+                        <span class="verification-mark" aria-hidden="true">✓</span>
+                        <div><h3>Verified means</h3><p>A supported identity method confirmed the account belongs to a real, unique person.</p></div>
+                     </article>
+                     <article>
+                        <span class="verification-mark is-caution" aria-hidden="true">!</span>
+                        <div><h3>Verified does not mean</h3><p>Creditworthy, risk-free, employed, or guaranteed to repay. You still make the lending decision.</p></div>
+                     </article>
+                  </div>
+                  <p class="eyebrow lender-checklist-label">Your pre-funding checklist</p>
                   <ul class="record-list">
-                     <li><span class="check" aria-hidden="true">✓</span>One verified person per account</li>
-                     <li><span class="check" aria-hidden="true">✓</span>Previous loans and repayments</li>
-                     <li><span class="check" aria-hidden="true">✓</span>Late payments and defaults</li>
-                     <li><span class="check" aria-hidden="true">✓</span>Outstanding balance and credit level</li>
-                     <li><span class="check" aria-hidden="true">✓</span>The reason the borrower chose to share</li>
+                     <li><span class="check" aria-hidden="true">01</span>Requested amount, expected payback, and date</li>
+                     <li><span class="check" aria-hidden="true">02</span>Identity-verification status</li>
+                     <li><span class="check" aria-hidden="true">03</span>Completed, late, partial, and defaulted loans</li>
+                     <li><span class="check" aria-hidden="true">04</span>Current outstanding balance and credit level</li>
+                     <li><span class="check" aria-hidden="true">05</span>The reason and context the borrower chose to share</li>
                   </ul>
                </div>
                <div class="page-visual cream reveal">
@@ -454,7 +371,7 @@
                         height="1844"
                      />
                   </div>
-                  <p class="visual-caption">A sample borrower profile as lenders see it.</p>
+                  <p class="visual-caption">The borrower profile lenders inspect before deciding. Sample account shown.</p>
                </div>
             </div>
          </section>
@@ -577,29 +494,38 @@
                      </p>
                   </details>
                   <details>
-                     <summary>What does “expected back” mean?</summary>
+                     <summary>How does a borrower repay?</summary>
                      <p class="faq-answer">
-                        It is the amount the borrower agreed to repay when they created the request. It is visible before you fund, but it
-                        is not guaranteed by Moodeng.
+                        They add USDC to their Base Account through a wallet, exchange, P2P platform, or local crypto service, then choose
+                        an early, partial, or full payment in Moodeng. External-provider fees can apply; Moodeng’s repayment fee is $0.
                      </p>
                   </details>
                   <details>
-                     <summary>How do I choose a request?</summary>
+                     <summary>How do I receive repayment?</summary>
                      <p class="faq-answer">
-                        Read the reason, complete terms, and repayment record. First-time borrowers have little history, so their limits
-                        begin small.
+                        If the borrower repays, USDC is sent automatically to the wallet you funded from. You do not need to return to
+                        Moodeng and claim it.
                      </p>
                   </details>
                   <details>
-                     <summary>When should I expect repayment?</summary>
+                     <summary>What does identity verification prove?</summary>
                      <p class="faq-answer">
-                        Every request shows an expected date. Many are timed to payday, but late and partial repayments happen.
+                        It confirms the account passed a supported person or identity check through World ID or Didit KYC. It does not prove
+                        income, affordability, or future repayment, and lenders do not receive the borrower’s identity documents.
                      </p>
                   </details>
                   <details>
-                     <summary>What happens after funding?</summary>
+                     <summary>Why does the borrower have an incentive to repay?</summary>
                      <p class="faq-answer">
-                        The app tracks the loan through repayment. The final outcome remains on the borrower’s Moodeng record.
+                        Clean repayment builds a portable Moodeng record and, for a full-limit Credit-Building Loan repaid on time, can
+                        unlock the next limit. Late, partial, and defaulted outcomes stay visible; default freezes the account.
+                     </p>
+                  </details>
+                  <details>
+                     <summary>What should I check before I fund?</summary>
+                     <p class="faq-answer">
+                        Read the requested amount, expected payback and date, identity-verification status, current balance, credit level,
+                        reason, and every visible repayment outcome. First-time borrowers have less evidence, so their limits start small.
                      </p>
                   </details>
                </div>
