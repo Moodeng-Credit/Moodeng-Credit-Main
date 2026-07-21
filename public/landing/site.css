@@ -2508,6 +2508,147 @@ li {
    }
 }
 
+/* Lender identity controls: human verification without surveillance language. */
+.lender-identity-section {
+   overflow: hidden;
+   padding-block: 88px;
+   background: var(--lavender-100);
+}
+
+.lender-identity-heading {
+   max-width: 920px;
+}
+
+.lender-identity-heading .lead {
+   max-width: 66ch;
+   margin-top: 22px;
+}
+
+.lender-identity-layout {
+   display: grid;
+   gap: clamp(30px, 5vw, 72px);
+   margin-top: clamp(40px, 6vw, 68px);
+   align-items: center;
+}
+
+.lender-identity-art {
+   min-width: 0;
+   overflow: hidden;
+   border: 1px solid oklch(82% 0.06 303 / 0.72);
+   border-radius: clamp(22px, 3vw, 38px);
+   background: oklch(94% 0.035 302);
+   box-shadow: 0 28px 70px oklch(24% 0.08 295 / 0.14);
+}
+
+.lender-identity-art img {
+   width: 100%;
+   height: auto;
+   display: block;
+}
+
+.lender-identity-art figcaption {
+   padding: 13px 18px 15px;
+   background: oklch(98.5% 0.012 303);
+   color: var(--ink-soft);
+   font-size: 0.72rem;
+}
+
+.lender-identity-copy {
+   min-width: 0;
+}
+
+.lender-identity-controls {
+   border-top: 1px solid var(--line);
+   list-style: none;
+}
+
+.lender-identity-controls li {
+   display: grid;
+   grid-template-columns: 46px minmax(0, 1fr);
+   gap: 16px;
+   border-bottom: 1px solid var(--line);
+   padding-block: 24px;
+}
+
+.lender-identity-controls li > span {
+   width: 38px;
+   height: 38px;
+   display: grid;
+   place-items: center;
+   border-radius: 50%;
+   background: var(--paper);
+   color: var(--purple-dark);
+   font-size: 0.68rem;
+   font-weight: 900;
+   box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.lender-identity-controls h3 {
+   font-size: clamp(1.2rem, 2.1vw, 1.65rem);
+   line-height: 1.08;
+}
+
+.lender-identity-controls p {
+   max-width: 54ch;
+   margin-top: 8px;
+   color: var(--ink-soft);
+   font-size: 0.9rem;
+}
+
+.lender-identity-boundary {
+   display: grid;
+   gap: 7px;
+   margin-top: 28px;
+   border-radius: 20px;
+   padding: 22px 24px;
+   background: var(--night);
+   color: var(--paper);
+}
+
+.lender-identity-boundary strong {
+   font-size: 0.94rem;
+}
+
+.lender-identity-boundary span {
+   color: var(--night-text);
+   font-size: 0.82rem;
+}
+
+@media (min-width: 900px) {
+   .lender-identity-section {
+      padding-block: 112px;
+   }
+
+   .lender-identity-layout {
+      grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+   }
+}
+
+@media (max-width: 599px) {
+   .lender-identity-section {
+      padding-block: 72px;
+   }
+
+   .lender-identity-art {
+      margin-inline: -8px;
+   }
+
+   .lender-identity-art figcaption {
+      display: none;
+   }
+
+   .lender-identity-controls li {
+      grid-template-columns: 40px minmax(0, 1fr);
+      gap: 12px;
+      padding-block: 21px;
+   }
+
+   .lender-identity-controls li > span {
+      width: 34px;
+      height: 34px;
+   }
+}
+
 /* Lender product proof: let the working screens explain the capabilities. */
 .lender-capabilities-lead {
    max-width: 62ch;

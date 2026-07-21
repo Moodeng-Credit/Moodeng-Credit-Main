@@ -16,7 +16,7 @@
       <meta name="twitter:card" content="summary_large_image" />
       <link rel="canonical" href="https://moodeng.app/for-lenders" />
       <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
-      <link rel="stylesheet" href="/landing/site.css?v=20260722-lender-native-ui-1" />
+      <link rel="stylesheet" href="/landing/site.css?v=20260722-lender-verification-1" />
    </head>
    <body>
       <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -28,7 +28,8 @@
             >
             <nav class="desktop-nav" aria-label="Primary navigation">
                <a href="/">For borrowers</a>
-               <a href="#system">How it works</a>
+               <a href="#system">Why lend</a>
+               <a href="#verification">Verification</a>
                <a href="#record">What you see</a>
                <a href="#risk">Risk</a>
             </nav>
@@ -51,7 +52,8 @@
          </div>
          <nav class="menu-links" aria-label="Mobile navigation">
             <a href="/">For borrowers <span aria-hidden="true">→</span></a>
-            <a href="#system">How it works <span aria-hidden="true">→</span></a>
+            <a href="#system">Why lend <span aria-hidden="true">→</span></a>
+            <a href="#verification">Verification <span aria-hidden="true">→</span></a>
             <a href="#record">What lenders see <span aria-hidden="true">→</span></a>
             <a href="#risk">The risks <span aria-hidden="true">→</span></a>
             <a href="/about">Our story <span aria-hidden="true">→</span></a>
@@ -254,6 +256,54 @@
             </div>
          </section>
 
+         <section class="lender-identity-section" id="verification" aria-labelledby="verification-heading">
+            <div class="container">
+               <div class="lender-identity-heading reveal">
+                  <p class="eyebrow">Identity and access controls</p>
+                  <h2 class="section-title wide" id="verification-heading">One verified person. <em>One borrowing record.</em></h2>
+                  <p class="lead">
+                     Before someone can borrow, Moodeng checks their identity and ties the account to a persistent record. That makes it
+                     harder to create duplicates or return under a new account after being blocked.
+                  </p>
+               </div>
+
+               <div class="lender-identity-layout">
+                  <figure class="lender-identity-art reveal">
+                     <img
+                        src="/landing/assets/verification/identity-controls.jpg"
+                        alt="Illustration of a face and ID check, a duplicate account being rejected, and a blocked identity unable to re-enter"
+                        width="1536"
+                        height="1024"
+                        loading="lazy"
+                        decoding="async"
+                     />
+                     <figcaption>Original Moodeng illustration of the verification and access-control flow.</figcaption>
+                  </figure>
+
+                  <div class="lender-identity-copy reveal">
+                     <ol class="lender-identity-controls" aria-label="Moodeng identity controls">
+                        <li>
+                           <span>01</span>
+                           <div><h3>ID and face checked</h3><p>A supported KYC check confirms the ID and matches the person to it before borrowing access is enabled.</p></div>
+                        </li>
+                        <li>
+                           <span>02</span>
+                           <div><h3>Duplicate accounts rejected</h3><p>The same verified identity cannot open a second borrowing profile to reset or hide its history.</p></div>
+                        </li>
+                        <li>
+                           <span>03</span>
+                           <div><h3>Blocked means blocked</h3><p>A default or enforcement block stays tied to the identity, so creating a fresh wallet does not create a fresh borrowing record.</p></div>
+                        </li>
+                     </ol>
+                     <div class="lender-identity-boundary">
+                        <strong>These controls reduce fake accounts and repeat misuse.</strong>
+                        <span>They do not make lending risk-free or guarantee repayment.</span>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </section>
+
          <section class="lender-incentive-section" id="incentives" aria-labelledby="incentives-heading" hidden>
             <div class="container">
                <div class="lender-incentive-copy reveal">
@@ -417,8 +467,8 @@
                   <p class="eyebrow">Before you fund</p>
                   <h2 class="section-title" id="record-heading">Four things <em>you can check.</em></h2>
                   <p class="lender-verified-caveat">
-                     <strong>KYC check: ID checked. Face checked where required.</strong>
-                     <span>Verification reduces fake and duplicate accounts. It does not guarantee repayment.</span>
+                     <strong>Verified status is one signal.</strong>
+                     <span>It does not prove income, affordability, or future repayment.</span>
                   </p>
                   <ul class="record-list">
                      <li><span class="check" aria-hidden="true">01</span>Amount, payback, and date</li>
