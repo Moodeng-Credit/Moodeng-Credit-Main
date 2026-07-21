@@ -2535,6 +2535,33 @@ li {
    border-top: 1px solid var(--line);
 }
 
+.faq-guide-links {
+   display: flex;
+   flex-direction: column;
+   align-items: flex-start;
+   gap: 10px;
+   margin-top: 26px;
+}
+
+.faq-guide-links a {
+   display: inline-flex;
+   gap: 8px;
+   align-items: center;
+   color: var(--purple-700);
+   font-size: 0.95rem;
+   font-weight: 800;
+   text-decoration: none;
+}
+
+.faq-guide-links a span {
+   transition: transform 180ms var(--ease-out);
+}
+
+.faq-guide-links a:hover span,
+.faq-guide-links a:focus-visible span {
+   transform: translateX(3px);
+}
+
 .faq-list details {
    border-bottom: 1px solid var(--line);
 }
@@ -5122,7 +5149,10 @@ li {
    }
 
    html[data-landing-version='2'] .hero-walkthrough {
-      display: none;
+      display: inline-flex;
+      justify-content: center;
+      margin-top: 18px;
+      font-size: 0.9rem;
    }
 
    html[data-landing-version='2'] .version-two-actions {
@@ -5131,6 +5161,7 @@ li {
       align-items: center;
       justify-content: center;
       gap: 12px;
+      margin-top: 18px;
    }
 
    html[data-landing-version='2'] .version-two-actions .hero-note {
