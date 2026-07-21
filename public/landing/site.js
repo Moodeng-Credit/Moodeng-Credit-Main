@@ -270,25 +270,25 @@
       // so it works under prefers-reduced-motion too). Ring is yellow on
       // purpose: the screenshot already paints Coins.ph's SELECTED state
       // purple, and the spotlight must read as "look here", not "selected".
-      // Row boxes are [top, height] in the source screenshot's 390px-wide
-      // pixel space (Coins.ph / GCrypto / PDAX; Binance sits under the
-      // caption pill's crop, so the walk stops at PDAX); the shot renders
-      // object-fit:cover top-aligned, so display position = src * width scale.
-      // Coords re-measured off the source pixels 07-21 so the ring hugs each
-      // card: the cards sit at x 22..376 (left/width below), and the three
-      // card boxes are Coins.ph 301..401, GCrypto 413..497, PDAX 509..~595.
+      // Provider bounds use the current source screenshot's 956px-wide pixel
+      // space. The selected Coins.ph row includes its protruding RECOMMENDED
+      // label; Binance sits under the caption pill's crop, so the walk stops
+      // at PDAX. Position against the image rather than the figure so borders
+      // and responsive sizing cannot pull the ring away from the card.
       var routesShot = story.querySelector('.deal-product-shot-routes');
+      var routesImage = routesShot ? routesShot.querySelector('img') : null;
       var routeFocus = null;
+      var routeBounds = [96, 764];
       var routeRows = [
-         [298, 106],
-         [412, 86],
-         [508, 87],
+         [592, 258],
+         [856, 212],
+         [1071, 211],
       ];
       if (routesShot) {
          routeFocus = document.createElement('span');
          routeFocus.setAttribute('aria-hidden', 'true');
          routeFocus.style.cssText =
-            'position:absolute;left:5.5%;width:91%;border-radius:16px;' +
+            'position:absolute;box-sizing:border-box;border-radius:16px;' +
             'border:2.5px solid var(--butter-strong);' +
             'box-shadow:0 0 0 5px oklch(86% 0.145 83 / 0.22);' +
             'opacity:0;pointer-events:none;' +
@@ -297,14 +297,16 @@
       }
 
       function positionRouteFocus(position) {
-         if (!routeFocus) return;
+         if (!routeFocus || !routesImage) return;
          var panelIndex = dealPanels.indexOf(routesShot.closest('[data-deal-panel]'));
          if (panelIndex < 0) return;
          // walk the three rows across the beat's full-ink plateau
          var local = Math.min(1, Math.max(0, (position - (panelIndex - 0.4)) / 0.8));
          var row = routeRows[Math.min(routeRows.length - 1, Math.floor(local * routeRows.length))];
-         var scale = routesShot.clientWidth / 390;
-         routeFocus.style.top = (row[0] * scale).toFixed(1) + 'px';
+         var scale = routesImage.clientWidth / 956;
+         routeFocus.style.left = (routesImage.offsetLeft + routeBounds[0] * scale).toFixed(1) + 'px';
+         routeFocus.style.width = (routeBounds[1] * scale).toFixed(1) + 'px';
+         routeFocus.style.top = (routesImage.offsetTop + row[0] * scale).toFixed(1) + 'px';
          routeFocus.style.height = (row[1] * scale).toFixed(1) + 'px';
          routeFocus.style.opacity = '1';
       }

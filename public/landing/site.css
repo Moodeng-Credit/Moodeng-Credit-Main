@@ -684,10 +684,6 @@ li {
    display: none;
 }
 
-.tilt-hero-disclosure {
-   display: none;
-}
-
 .ask-section {
    background: var(--lavender-50);
    padding-block: 4px 56px;
@@ -5094,7 +5090,7 @@ li {
 
    html[data-landing-version='2'] .hero-home .container {
       width: min(100% - 64px, 1480px);
-      min-height: max(640px, calc(100vh - 144px));
+      min-height: clamp(640px, calc(100vh - 144px), 760px);
       position: relative;
       display: grid;
       grid-template-columns: minmax(0, 1fr);
@@ -5281,9 +5277,9 @@ li {
    html[data-landing-version='2'] .tilt-hero-photo-repair {
       --hero-photo-rotate: 2.5deg;
       --hero-photo-delay: 240ms;
-      width: clamp(186px, 20vw, 294px);
-      height: clamp(142px, 16vw, 238px);
-      bottom: 5%;
+      width: clamp(186px, 20vw, 270px);
+      height: clamp(142px, 16vw, 220px);
+      bottom: 2%;
       left: 2%;
    }
 
@@ -5299,10 +5295,10 @@ li {
    html[data-landing-version='2'] .tilt-hero-photo-stock {
       --hero-photo-rotate: -2.5deg;
       --hero-photo-delay: 320ms;
-      width: clamp(182px, 19.5vw, 288px);
-      height: clamp(142px, 16vw, 234px);
+      width: clamp(182px, 19.5vw, 264px);
+      height: clamp(142px, 16vw, 216px);
       right: 2%;
-      bottom: 4%;
+      bottom: 1%;
    }
 
    html[data-landing-version='2'] .tilt-hero-photo-stock .tilt-hero-amount {
@@ -5312,22 +5308,6 @@ li {
 
    html[data-landing-version='2'] .tilt-hero-photo-stock img {
       object-position: center 38%;
-   }
-
-   html[data-landing-version='2'] .tilt-hero-disclosure {
-      width: min(calc(100% - 480px), 620px);
-      position: absolute;
-      bottom: 8px;
-      left: 50%;
-      z-index: 2;
-      display: block;
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.72rem;
-      font-weight: 600;
-      line-height: 1.45;
-      text-align: center;
-      transform: translateX(-50%);
    }
 
    html[data-landing-version='2'] #main-content > .ask-section {
