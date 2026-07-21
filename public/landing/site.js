@@ -351,11 +351,11 @@
 
             if (scrubbing) {
                // roulette scrub: fade/offset track the scroll continuously —
-               // full ink on the focus line, easing to the resting 0.3 / 16px
+               // full ink on the focus line, easing to the readable 0.44 / 12px
                // one scrub-range away (matches the non-scrubbed CSS values)
                var t = Math.min(1, distance / scrubRange);
-               step.style.opacity = (1 - t * 0.7).toFixed(3);
-               step.style.transform = 'translateX(' + (t * 16).toFixed(1) + 'px)';
+               step.style.opacity = (1 - t * 0.56).toFixed(3);
+               step.style.transform = 'translateX(' + (t * 12).toFixed(1) + 'px)';
             }
          });
 
@@ -420,6 +420,16 @@
          story.classList.toggle('is-mobile-animated', isMobileDeal());
          if (!isDesktopDeal()) clearDealScrub();
 
+         dealSteps.forEach(function (step) {
+            if (isDesktopDeal()) {
+               step.setAttribute('role', 'button');
+               step.setAttribute('tabindex', '0');
+            } else {
+               step.removeAttribute('role');
+               step.removeAttribute('tabindex');
+            }
+         });
+
          if (!isAnimatedDeal()) {
             dealSteps.forEach(function (step) {
                step.removeAttribute('aria-current');
@@ -434,6 +444,22 @@
       }
 
       configureDealStory();
+
+      function focusDealStep(step) {
+         if (!isDesktopDeal()) return;
+         step.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+      }
+
+      dealSteps.forEach(function (step) {
+         step.addEventListener('click', function () {
+            focusDealStep(step);
+         });
+         step.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            focusDealStep(step);
+         });
+      });
 
       if (typeof desktopDeal.addEventListener === 'function') {
          desktopDeal.addEventListener('change', configureDealStory);
