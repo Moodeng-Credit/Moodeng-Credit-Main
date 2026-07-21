@@ -16,7 +16,7 @@
       <meta name="twitter:card" content="summary_large_image" />
       <link rel="canonical" href="https://moodeng.app/for-lenders" />
       <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
-      <link rel="stylesheet" href="/landing/site.css?v=20260722-lender-simple-2" />
+      <link rel="stylesheet" href="/landing/site.css?v=20260722-lender-plain-3" />
    </head>
    <body>
       <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -66,10 +66,10 @@
             <div class="container">
                <div class="page-hero-copy stack-lg">
                   <p class="eyebrow">For lenders</p>
-                  <h1 class="page-title">We verify. They repay to build <em>credit.</em></h1>
+                  <h1 class="page-title">Verified people. A reason to <em>pay back.</em></h1>
                   <p class="lead">
-                     Moodeng verifies each borrower and starts them with a small limit. Repaying builds their credit and access to larger
-                     loans. Default is recorded and blocks future borrowing. If they repay, USDC goes automatically to your wallet.
+                     We check identity and face where required. Borrowers start at $15. Paying back unlocks higher limits. Default blocks
+                     the account. Repayment goes automatically to your wallet.
                   </p>
                   <div class="button-row">
                      <a class="button" href="/request-board">Browse open requests <span class="arrow" aria-hidden="true">→</span></a>
@@ -115,37 +115,33 @@
          <section class="lender-simple-section" id="system" aria-labelledby="system-heading">
             <div class="container">
                <div class="lender-simple-heading reveal">
-                  <p class="eyebrow">How it works</p>
-                  <h2 class="section-title wide" id="system-heading">Verify. Start small. Repay to grow. <em>Default and stop.</em></h2>
+                  <p class="eyebrow">Why borrowers pay back</p>
+                  <h2 class="section-title wide" id="system-heading">Pay back and unlock more. <em>Default and get blocked.</em></h2>
                </div>
 
-               <ol class="lender-simple-rules reveal">
-                  <li>
-                     <span>01</span>
-                     <div><h3>We verify the borrower.</h3><p>Each borrower must pass a supported identity check before requesting a loan.</p></div>
-                  </li>
-                  <li>
-                     <span>02</span>
-                     <div><h3>They start small.</h3><p>The first credit limit is $15. You choose whether to fund the request.</p></div>
-                  </li>
-                  <li>
-                     <span>03</span>
-                     <div><h3>Repayment builds credit.</h3><p>Clean, on-time repayment can move the borrower from $15 to $20, $40, and $60.</p></div>
-                  </li>
-                  <li>
-                     <span>04</span>
-                     <div><h3>Default means no new loan.</h3><p>The default stays on the record and the borrower’s account is blocked from borrowing again.</p></div>
-                  </li>
-               </ol>
+               <div class="lender-outcome-visual reveal">
+                  <div class="lender-outcome-path lender-outcome-grow">
+                     <p>Pay back on time</p>
+                     <div aria-label="Credit limits increase from 15 dollars to 60 dollars">
+                        <strong>$15</strong><i>→</i><strong>$20</strong><i>→</i><strong>$40</strong><i>→</i><strong>$60</strong>
+                     </div>
+                     <span>More borrowing becomes available</span>
+                  </div>
+                  <div class="lender-outcome-path lender-outcome-stop">
+                     <p>Do not pay back</p>
+                     <div><strong>Default recorded</strong><i>→</i><strong>Account blocked</strong></div>
+                     <span>No new loan through Moodeng</span>
+                  </div>
+               </div>
 
                <div class="lender-simple-return reveal" aria-label="How repayment reaches a lender">
                   <div>
                      <p class="eyebrow">How you get paid back</p>
-                     <h3>The borrower repays in USDC. It goes automatically to the wallet you funded from.</h3>
-                     <p>Borrowers can use supported services to move between pesos and USDC. You do not need to claim the repayment.</p>
+                     <h3>Repayment goes automatically to the wallet you funded from.</h3>
+                     <p>The borrower handles the conversion back into USDC. You do not need to claim anything.</p>
                   </div>
                   <div class="lender-simple-flow" aria-hidden="true">
-                     <span>Your wallet</span><b>USDC</b><i>→</i><span>Borrower repays</span><i>→</i><b>USDC</b><span>Your wallet</span>
+                     <span>Borrower pays</span><i>→</i><b>USDC</b><i>→</i><span>Your wallet</span>
                   </div>
                </div>
 
@@ -382,21 +378,16 @@
             <div class="container proof-grid">
                <div class="stack-lg reveal">
                   <p class="eyebrow">Before you fund</p>
-                  <h2 class="section-title" id="record-heading">See the facts. <em>Then decide.</em></h2>
-                  <p class="lead">
-                     Lenders see the verification status, loan terms, credit level, current balance, and repayment record. Identity
-                     documents and private information are not shown.
-                  </p>
+                  <h2 class="section-title" id="record-heading">Four things <em>you can check.</em></h2>
                   <p class="lender-verified-caveat">
-                     <strong>Verified means one checked person.</strong>
-                     <span>It does not mean guaranteed repayment.</span>
+                     <strong>KYC check: ID checked. Face checked where required.</strong>
+                     <span>Verification reduces fake and duplicate accounts. It does not guarantee repayment.</span>
                   </p>
-                  <p class="eyebrow lender-checklist-label">Check four things</p>
                   <ul class="record-list">
-                     <li><span class="check" aria-hidden="true">01</span>Requested amount, expected payback, and date</li>
-                     <li><span class="check" aria-hidden="true">02</span>Identity-verification status</li>
-                     <li><span class="check" aria-hidden="true">03</span>Completed, late, partial, and defaulted loans</li>
-                     <li><span class="check" aria-hidden="true">04</span>Current outstanding balance and credit level</li>
+                     <li><span class="check" aria-hidden="true">01</span>Amount, payback, and date</li>
+                     <li><span class="check" aria-hidden="true">02</span>Verified identity status</li>
+                     <li><span class="check" aria-hidden="true">03</span>Paid, late, and defaulted loans</li>
+                     <li><span class="check" aria-hidden="true">04</span>Current credit limit</li>
                   </ul>
                </div>
                <div class="page-visual cream reveal">
@@ -479,11 +470,11 @@
                <div class="split-heading reveal">
                   <div class="stack-md">
                      <p class="eyebrow">The honest part</p>
-                     <h2 class="section-title wide" id="risk-heading">You can still <em>lose money.</em></h2>
+                     <h2 class="section-title wide" id="risk-heading">Repayment is <em>not guaranteed.</em></h2>
                   </div>
-                  <p class="lead">Verification and incentives reduce uncertainty. They do not remove lending risk.</p>
+                  <p class="lead">You can lose what you fund. Only lend an amount you can afford to lose.</p>
                </div>
-               <div class="risk-grid">
+               <div class="risk-grid" hidden>
                   <div class="reveal">
                      <p class="eyebrow">What you know</p>
                      <ul class="risk-list">
@@ -511,7 +502,7 @@
             </div>
          </section>
 
-         <section class="section" aria-labelledby="lender-faq-heading">
+         <section class="section" aria-labelledby="lender-faq-heading" hidden>
             <div class="container faq-layout">
                <div class="stack-md reveal">
                   <p class="eyebrow">Questions lenders ask</p>
@@ -528,8 +519,8 @@
                   <details>
                      <summary>How does a borrower repay?</summary>
                      <p class="faq-answer">
-                        They add USDC to their Base Account through a wallet, exchange, P2P platform, or local crypto service, then choose
-                        an early, partial, or full payment in Moodeng. External-provider fees can apply; Moodeng’s repayment fee is $0.
+                        They add USDC through a wallet or supported local service, then choose an early, partial, or full payment. External
+                        service fees can apply; Moodeng’s repayment fee is $0.
                      </p>
                   </details>
                   <details>
@@ -542,15 +533,15 @@
                   <details>
                      <summary>What does identity verification prove?</summary>
                      <p class="faq-answer">
-                        It confirms the account passed a supported person or identity check through World ID or Didit KYC. It does not prove
-                        income, affordability, or future repayment, and lenders do not receive the borrower’s identity documents.
+                        It confirms the account passed a supported identity check. It does not prove income, affordability, or future
+                        repayment, and lenders do not receive the borrower’s identity documents.
                      </p>
                   </details>
                   <details hidden>
                      <summary>Why does the borrower have an incentive to repay?</summary>
                      <p class="faq-answer">
-                        Clean repayment builds a portable Moodeng record and, for a full-limit Credit-Building Loan repaid on time, can
-                        unlock the next limit. Late, partial, and defaulted outcomes stay visible; default freezes the account.
+                        Clean repayment builds the borrower’s Moodeng record and can unlock the next limit. Late, partial, and defaulted
+                        outcomes stay visible; default freezes the account.
                      </p>
                   </details>
                   <details hidden>
