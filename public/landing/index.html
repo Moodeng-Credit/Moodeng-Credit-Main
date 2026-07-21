@@ -13,6 +13,8 @@
       <meta property="og:type" content="website" />
       <meta property="og:url" content="https://moodeng.app/" />
       <meta property="og:image" content="https://moodeng.app/landing/assets/og/og-share.jpg" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <link rel="canonical" href="https://moodeng.app/" />
       <script>
          (function () {
             var query = new URLSearchParams(window.location.search);
@@ -134,9 +136,14 @@
                   <p class="eyebrow">Small help for the weeks that stretch</p>
                   <h1 class="display">Small loans that <em>treat you right.</em></h1>
                   <p class="lead">Your first loan is $15. You choose the expected payback and date before you ask. Moodeng adds $0.</p>
-                  <a class="text-link hero-walkthrough" href="/how-it-works">See how Moodeng works <span aria-hidden="true">→</span></a>
+                  <a class="text-link hero-walkthrough hero-walkthrough-v1" href="/how-it-works"
+                     >See how Moodeng works <span aria-hidden="true">→</span></a
+                  >
                   <div class="version-two-actions">
                      <a class="button" href="/request-board">Get your first loan <span class="arrow" aria-hidden="true">→</span></a>
+                     <a class="text-link hero-walkthrough hero-walkthrough-v2" href="/how-it-works"
+                        >See how Moodeng works <span aria-hidden="true">→</span></a
+                     >
                      <p class="hero-note">About 2 minutes to ask &middot; funding is not guaranteed</p>
                   </div>
                </div>
@@ -597,11 +604,11 @@
             </div>
          </section>
 
-         <section class="section surface-night dignity-section" aria-labelledby="phone-heading">
+         <section class="section dignity-section" aria-labelledby="phone-heading">
             <div class="container">
                <div class="dignity-heading reveal">
                   <p class="eyebrow">Your dignity is not collateral</p>
-                  <h2 class="section-title" id="phone-heading">The Moodeng promise</h2>
+                  <h2 class="section-title" id="phone-heading">The Moodeng <em>promise.</em></h2>
                   <p class="lead">We treat you like a person. These are four lines we do not cross.</p>
                </div>
 
@@ -755,9 +762,14 @@
                   <p class="eyebrow">Questions before you trust us</p>
                   <h2 class="section-title" id="faq-heading">The honest <em>answers.</em></h2>
                   <p class="lead">You should understand the whole loop before you borrow. If an answer still feels vague, message us.</p>
+                  <nav class="faq-guide-links" aria-label="Borrower guides">
+                     <a href="/credit-levels">How credit grows <span aria-hidden="true">→</span></a>
+                     <a href="/how-to-cash-out">Cash-out guide <span aria-hidden="true">→</span></a>
+                     <a href="/how-to-repay">Repayment guide <span aria-hidden="true">→</span></a>
+                  </nav>
                </div>
                <div class="faq-list reveal">
-                  <details>
+                  <details open>
                      <summary>Who funds the loan?</summary>
                      <p class="faq-answer">
                         A person chooses your request from the Moodeng request board. Moodeng does not automatically approve or fund every
