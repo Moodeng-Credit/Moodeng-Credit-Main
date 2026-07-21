@@ -2279,6 +2279,163 @@ li {
    }
 }
 
+[hidden] {
+   display: none !important;
+}
+
+/* Lender clarity pass: one system, four rules, no decorative detours. */
+.lender-simple-section {
+   padding-block: 82px;
+   background: var(--paper);
+}
+
+.lender-simple-heading {
+   max-width: 860px;
+}
+
+.lender-simple-rules {
+   margin-top: 48px;
+   border-top: 1px solid var(--line);
+   list-style: none;
+}
+
+.lender-simple-rules li {
+   display: grid;
+   grid-template-columns: 44px minmax(0, 1fr);
+   gap: 16px;
+   border-bottom: 1px solid var(--line);
+   padding-block: 28px;
+}
+
+.lender-simple-rules li > span {
+   color: var(--purple);
+   font-size: 0.72rem;
+   font-weight: 900;
+   letter-spacing: 0.12em;
+}
+
+.lender-simple-rules h3 {
+   font-size: clamp(1.35rem, 2.5vw, 2rem);
+   line-height: 1.05;
+}
+
+.lender-simple-rules p {
+   max-width: 58ch;
+   margin-top: 8px;
+   color: var(--ink-soft);
+}
+
+.lender-simple-return {
+   display: grid;
+   gap: 32px;
+   margin-top: 54px;
+   border-radius: var(--radius-lg);
+   padding: 32px;
+   background: var(--night);
+   color: var(--paper);
+}
+
+.lender-simple-return h3 {
+   max-width: 24ch;
+   margin-top: 12px;
+   font-size: clamp(1.65rem, 3vw, 2.7rem);
+   line-height: 1.04;
+}
+
+.lender-simple-return p:not(.eyebrow) {
+   max-width: 58ch;
+   margin-top: 18px;
+   color: var(--night-text);
+}
+
+.lender-simple-flow {
+   display: flex;
+   flex-wrap: wrap;
+   align-items: center;
+   gap: 9px;
+   align-self: center;
+}
+
+.lender-simple-flow span,
+.lender-simple-flow b {
+   display: inline-flex;
+   min-height: 42px;
+   align-items: center;
+   border: 1px solid oklch(73% 0.06 303 / 0.3);
+   border-radius: 999px;
+   padding-inline: 14px;
+   font-size: 0.78rem;
+}
+
+.lender-simple-flow b {
+   border-color: var(--butter-strong);
+   background: var(--butter);
+   color: var(--ink);
+}
+
+.lender-simple-flow i {
+   color: var(--lavender-200);
+   font-style: normal;
+}
+
+.lender-simple-actions {
+   display: flex;
+   flex-wrap: wrap;
+   align-items: center;
+   gap: 20px;
+   margin-top: 30px;
+}
+
+.lender-simple-actions .text-link {
+   color: var(--purple-dark);
+   font-weight: 800;
+}
+
+@media (min-width: 700px) {
+   .lender-simple-rules {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+   }
+
+   .lender-simple-rules li:nth-child(odd) {
+      padding-right: 38px;
+   }
+
+   .lender-simple-rules li:nth-child(even) {
+      border-left: 1px solid var(--line);
+      padding-left: 38px;
+   }
+
+   .lender-simple-return {
+      grid-template-columns: minmax(0, 1.15fr) minmax(310px, 0.85fr);
+      align-items: center;
+      padding: 46px;
+   }
+}
+
+@media (min-width: 1024px) {
+   .lender-simple-section {
+      padding-block: 104px;
+   }
+
+   .lender-simple-rules li {
+      grid-template-columns: 52px minmax(0, 1fr);
+      min-height: 174px;
+      padding-block: 34px;
+   }
+}
+
+@media (max-width: 699px) {
+   .lender-simple-return {
+      margin-inline: -6px;
+      padding: 28px 22px;
+   }
+
+   .lender-simple-flow i:nth-of-type(2) {
+      display: none;
+   }
+}
+
 @media (min-width: 700px) {
    .dignity-section {
       padding-block: 80px 88px;
@@ -6286,6 +6443,24 @@ a.button.is-loading::after {
 
 .lender-checklist-label {
    margin-top: 4px;
+}
+
+.lender-verified-caveat {
+   display: grid;
+   gap: 5px;
+   border: 1px solid var(--line);
+   border-radius: 16px;
+   padding: 18px 20px;
+   background: oklch(99% 0.008 305 / 0.72);
+}
+
+.lender-verified-caveat strong {
+   color: var(--green);
+}
+
+.lender-verified-caveat span {
+   color: var(--ink-soft);
+   font-size: 0.9rem;
 }
 
 .record-list .check {
