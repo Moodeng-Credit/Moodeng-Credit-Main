@@ -2508,6 +2508,210 @@ li {
    }
 }
 
+/* Lender product proof: let the working screens explain the capabilities. */
+.lender-capabilities-lead {
+   max-width: 62ch;
+   margin-top: 22px;
+}
+
+.lender-capabilities {
+   display: grid;
+   gap: 18px;
+   margin-top: 48px;
+}
+
+.lender-capability {
+   min-width: 0;
+   overflow: hidden;
+   border-radius: var(--radius-lg);
+}
+
+.lender-capability-copy {
+   position: relative;
+   z-index: 1;
+   padding: 28px 28px 22px;
+}
+
+.lender-capability-copy > span {
+   display: block;
+   margin-bottom: 18px;
+   color: var(--purple-dark);
+   font-size: 0.7rem;
+   font-weight: 900;
+   letter-spacing: 0.12em;
+   text-transform: uppercase;
+}
+
+.lender-capability-copy h3 {
+   max-width: 18ch;
+   font-size: clamp(1.55rem, 2.8vw, 2.55rem);
+   line-height: 1.02;
+}
+
+.lender-capability-copy p {
+   max-width: 52ch;
+   margin-top: 12px;
+   color: var(--ink-soft);
+   font-size: 0.9rem;
+}
+
+.lender-capability img {
+   width: calc(100% - 36px);
+   max-width: 520px;
+   height: auto;
+   display: block;
+   margin-inline: auto;
+   object-fit: contain;
+   object-position: top center;
+   filter: drop-shadow(0 22px 38px oklch(18% 0.05 298 / 0.15));
+}
+
+.lender-capability-request {
+   background: var(--lavender-100);
+}
+
+.lender-capability-send {
+   background: var(--night);
+   color: var(--paper);
+}
+
+.lender-capability-send .lender-capability-copy > span {
+   color: var(--lavender-200);
+}
+
+.lender-capability-send .lender-capability-copy p {
+   color: var(--night-text);
+}
+
+.lender-capability-fund {
+   background: var(--butter);
+}
+
+.lender-capability-send img,
+.lender-capability-fund img {
+   padding-bottom: 22px;
+}
+
+.lender-capability-outcomes {
+   display: grid;
+   gap: 18px;
+   margin-top: 18px;
+}
+
+.lender-capability-incentive {
+   display: grid;
+   align-content: space-between;
+   gap: 24px;
+   min-height: 330px;
+   border-radius: var(--radius-lg);
+   padding: 32px;
+   background: var(--butter);
+}
+
+.lender-capability-incentive h3 {
+   max-width: 18ch;
+   font-size: clamp(1.7rem, 3vw, 2.7rem);
+   line-height: 1.02;
+}
+
+.lender-capability-incentive > p:last-child {
+   max-width: 38ch;
+   color: var(--ink-soft);
+   font-weight: 750;
+}
+
+.lender-limit-row {
+   display: flex;
+   flex-wrap: wrap;
+   align-items: center;
+   gap: 9px;
+}
+
+.lender-limit-row strong {
+   font-family: var(--font-display);
+   font-size: clamp(1.5rem, 3.6vw, 2.65rem);
+   line-height: 1;
+}
+
+.lender-limit-row i {
+   color: var(--purple);
+   font-style: normal;
+   font-weight: 900;
+}
+
+.lender-capability-outcomes .lender-simple-return {
+   margin-top: 0;
+}
+
+.page-hero .device img[src*='lender-board-real'] {
+   width: 100%;
+   height: auto;
+   object-fit: contain;
+   object-position: top center;
+}
+
+@media (min-width: 760px) {
+   .lender-capabilities {
+      grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
+      grid-template-areas:
+         'request send'
+         'request fund';
+      align-items: stretch;
+   }
+
+   .lender-capability-request {
+      grid-area: request;
+      display: grid;
+      grid-template-rows: auto auto;
+      align-content: start;
+   }
+
+   .lender-capability-request img {
+      width: min(88%, 500px);
+      align-self: start;
+   }
+
+   .lender-capability-send {
+      grid-area: send;
+   }
+
+   .lender-capability-fund {
+      grid-area: fund;
+   }
+
+   .lender-capability-outcomes {
+      grid-template-columns: minmax(300px, 0.82fr) minmax(0, 1.18fr);
+   }
+
+   .lender-capability-outcomes .lender-simple-return {
+      grid-template-columns: 1fr;
+      align-content: space-between;
+   }
+}
+
+@media (max-width: 759px) {
+   .lender-capabilities {
+      margin-top: 34px;
+   }
+
+   .lender-capability-copy {
+      padding: 24px 22px 20px;
+   }
+
+   .lender-capability img {
+      width: calc(100% - 24px);
+   }
+
+   .lender-capability-incentive {
+      min-height: 300px;
+      padding: 26px 22px;
+   }
+
+   .lender-capability-outcomes .lender-simple-return {
+      margin-inline: 0;
+   }
+}
+
 @media (min-width: 700px) {
    .dignity-section {
       padding-block: 80px 88px;

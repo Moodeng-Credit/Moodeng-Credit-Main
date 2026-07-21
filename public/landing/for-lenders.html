@@ -16,7 +16,7 @@
       <meta name="twitter:card" content="summary_large_image" />
       <link rel="canonical" href="https://moodeng.app/for-lenders" />
       <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
-      <link rel="stylesheet" href="/landing/site.css?v=20260722-lender-plain-3" />
+      <link rel="stylesheet" href="/landing/site.css?v=20260722-lender-product-proof-1" />
    </head>
    <body>
       <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -66,10 +66,10 @@
             <div class="container">
                <div class="page-hero-copy stack-lg">
                   <p class="eyebrow">For lenders</p>
-                  <h1 class="page-title">Verified people. A reason to <em>pay back.</em></h1>
+                  <h1 class="page-title">See the person. See the terms. <em>Then decide.</em></h1>
                   <p class="lead">
-                     We check identity and face where required. Borrowers start at $15. Paying back unlocks higher limits. Default blocks
-                     the account. Repayment goes automatically to your wallet.
+                     Open a request, inspect the borrower and terms, then fund from the wallet you already use. If they repay, USDC goes
+                     automatically to that same wallet.
                   </p>
                   <div class="button-row">
                      <a class="button" href="/request-board">Browse open requests <span class="arrow" aria-hidden="true">→</span></a>
@@ -85,14 +85,14 @@
                <div class="page-visual">
                   <div class="device">
                      <img
-                        src="/landing/assets/app/lender-board-hd.png"
-                        alt="Moodeng lender request board showing requested amounts, expected paybacks, dates, and borrower details"
-                        width="853"
-                        height="1844"
+                        src="/landing/assets/app/lender-board-real-hd.png"
+                        alt="Moodeng request board showing open requests, amounts, expected paybacks, dates, and View Request buttons"
+                        width="500"
+                        height="650"
                         fetchpriority="high"
                      />
                   </div>
-                  <p class="visual-caption">The request board in the app. Sample accounts shown.</p>
+                  <p class="visual-caption">The working request board. Preview accounts shown.</p>
                </div>
             </div>
          </section>
@@ -115,33 +115,78 @@
          <section class="lender-simple-section" id="system" aria-labelledby="system-heading">
             <div class="container">
                <div class="lender-simple-heading reveal">
-                  <p class="eyebrow">Why borrowers pay back</p>
-                  <h2 class="section-title wide" id="system-heading">Pay back and unlock more. <em>Default and get blocked.</em></h2>
+                  <p class="eyebrow">The actual lender flow</p>
+                  <h2 class="section-title wide" id="system-heading">View the request. Send your help. <em>Use your wallet.</em></h2>
+                  <p class="lead lender-capabilities-lead">
+                     These are real Moodeng product screens using preview accounts—not diagrams of what the product might do.
+                  </p>
                </div>
 
-               <div class="lender-outcome-visual reveal">
-                  <div class="lender-outcome-path lender-outcome-grow">
-                     <p>Pay back on time</p>
-                     <div aria-label="Credit limits increase from 15 dollars to 60 dollars">
+               <div class="lender-capabilities reveal">
+                  <figure class="lender-capability lender-capability-request">
+                     <div class="lender-capability-copy">
+                        <span>01 · View Request</span>
+                        <h3>Know what you are funding.</h3>
+                        <p>See the amount, expected payback, due date, reason, timing fit, and lender reward before you commit.</p>
+                     </div>
+                     <img
+                        src="/landing/assets/app/lender-view-request-hd.png"
+                        alt="Expanded Moodeng request showing amount, expected payback, due date, timing fit, reward, and Send Your Help action"
+                        width="500"
+                        height="820"
+                        loading="lazy"
+                     />
+                  </figure>
+
+                  <figure class="lender-capability lender-capability-send">
+                     <div class="lender-capability-copy">
+                        <span>02 · Send your help</span>
+                        <h3>Approve the payment clearly.</h3>
+                        <p>Base Account can do it in one tap. MetaMask, Trust Wallet, or another supported wallet uses two explicit steps.</p>
+                     </div>
+                     <img
+                        src="/landing/assets/app/lender-send-help-hd.png"
+                        alt="Moodeng Send your help modal with connect wallet and confirm payment steps"
+                        width="520"
+                        height="430"
+                        loading="lazy"
+                     />
+                  </figure>
+
+                  <figure class="lender-capability lender-capability-fund">
+                     <div class="lender-capability-copy">
+                        <span>03 · Fund your wallet</span>
+                        <h3>Bring USDC your way.</h3>
+                        <p>Buy by card, bridge from supported chains, or send from another wallet. Funding always lands on Base.</p>
+                     </div>
+                     <img
+                        src="/landing/assets/app/lender-fund-wallet-hd.png"
+                        alt="Moodeng Fund your wallet sheet showing card purchase, cross-chain bridge, and Solana bridge options"
+                        width="500"
+                        height="535"
+                        loading="lazy"
+                     />
+                  </figure>
+               </div>
+
+               <div class="lender-capability-outcomes reveal">
+                  <div class="lender-capability-incentive">
+                     <p class="eyebrow">Why repay</p>
+                     <h3>Clean repayment can unlock the next limit.</h3>
+                     <div class="lender-limit-row" aria-label="Credit limits increase from 15 dollars to 60 dollars">
                         <strong>$15</strong><i>→</i><strong>$20</strong><i>→</i><strong>$40</strong><i>→</i><strong>$60</strong>
                      </div>
-                     <span>More borrowing becomes available</span>
+                     <p>Default stays on the record and blocks another Moodeng loan.</p>
                   </div>
-                  <div class="lender-outcome-path lender-outcome-stop">
-                     <p>Do not pay back</p>
-                     <div><strong>Default recorded</strong><i>→</i><strong>Account blocked</strong></div>
-                     <span>No new loan through Moodeng</span>
-                  </div>
-               </div>
-
-               <div class="lender-simple-return reveal" aria-label="How repayment reaches a lender">
-                  <div>
-                     <p class="eyebrow">How you get paid back</p>
-                     <h3>Repayment goes automatically to the wallet you funded from.</h3>
-                     <p>The borrower handles the conversion back into USDC. You do not need to claim anything.</p>
-                  </div>
-                  <div class="lender-simple-flow" aria-hidden="true">
-                     <span>Borrower pays</span><i>→</i><b>USDC</b><i>→</i><span>Your wallet</span>
+                  <div class="lender-simple-return" aria-label="How repayment reaches a lender">
+                     <div>
+                        <p class="eyebrow">How you get paid back</p>
+                        <h3>USDC returns automatically to the wallet you funded from.</h3>
+                        <p>The borrower handles the conversion. You do not need to come back and claim the repayment.</p>
+                     </div>
+                     <div class="lender-simple-flow" aria-hidden="true">
+                        <span>Borrower pays</span><i>→</i><b>USDC</b><i>→</i><span>Your wallet</span>
+                     </div>
                   </div>
                </div>
 
