@@ -2,7 +2,9 @@
    var versionSwitcher = document.querySelector('[data-version-switcher]');
    var localHosts = ['localhost', '127.0.0.1', '::1'];
    var isLocalPreview = localHosts.indexOf(window.location.hostname) !== -1;
-   var requestedVersion = new URLSearchParams(window.location.search).get('version');
+   var previewQuery = new URLSearchParams(window.location.search);
+   var requestedVersion = previewQuery.get('version');
+   var productionPreview = previewQuery.get('preview') === 'production';
    var explicitVersion = requestedVersion === '1' || requestedVersion === '2' ? requestedVersion : null;
    var desktopLanding = window.matchMedia('(min-width: 1024px)');
 
@@ -52,7 +54,7 @@
       });
    }
 
-   if (versionSwitcher && isLocalPreview) {
+   if (versionSwitcher && isLocalPreview && !productionPreview) {
       versionSwitcher.hidden = false;
    }
 
