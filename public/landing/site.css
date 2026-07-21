@@ -2712,6 +2712,691 @@ li {
    }
 }
 
+/* Native lender product UI. Browser-rendered text replaces raster screenshots. */
+.lender-ui,
+.lender-ui * {
+   box-sizing: border-box;
+}
+
+.lender-ui {
+   color: oklch(19% 0.055 296);
+   font-family: var(--font-body);
+   text-align: left;
+}
+
+.lender-ui-board {
+   width: min(100%, 520px);
+   max-height: 650px;
+   overflow: hidden;
+   margin-inline: auto;
+   border-radius: 28px;
+   padding: 20px;
+   background: oklch(98.6% 0.007 305);
+   box-shadow: 0 22px 50px oklch(18% 0.05 298 / 0.16);
+}
+
+.lender-ui-board-head > strong {
+   display: block;
+   margin-bottom: 12px;
+   font-size: 1rem;
+}
+
+.lender-ui-search {
+   display: grid;
+   grid-template-columns: auto 1fr auto;
+   align-items: center;
+   gap: 10px;
+   min-height: 48px;
+   border: 1px solid oklch(82% 0.015 305);
+   border-radius: 12px;
+   padding: 8px 10px;
+   color: oklch(58% 0.018 300);
+   background: oklch(99% 0.005 305);
+   font-size: 0.76rem;
+}
+
+.lender-ui-search > span {
+   font-size: 1.6rem;
+   line-height: 1;
+}
+
+.lender-ui-search > b {
+   width: 34px;
+   height: 34px;
+   display: grid;
+   place-items: center;
+   border: 1px solid oklch(55% 0.22 298);
+   border-radius: 10px;
+   color: var(--purple);
+   font-size: 1rem;
+}
+
+.lender-ui-request {
+   border: 1px solid oklch(91% 0.01 305);
+   border-radius: 22px;
+   padding: 18px;
+   background: oklch(99.4% 0.004 305);
+   box-shadow: 0 12px 26px oklch(24% 0.04 298 / 0.07);
+}
+
+.lender-ui-board .lender-ui-request {
+   margin-top: 14px;
+}
+
+.lender-ui-request-top {
+   display: grid;
+   grid-template-columns: minmax(0, 1fr) 132px;
+   gap: 14px;
+}
+
+.lender-ui-request h3 {
+   max-width: 21ch;
+   font-size: 1rem;
+   line-height: 1.08;
+}
+
+.lender-ui-request p {
+   margin-top: 9px;
+   color: oklch(55% 0.02 300);
+   font-size: 0.72rem;
+}
+
+.lender-ui-request u {
+   color: oklch(58% 0.13 350);
+   text-underline-offset: 2px;
+}
+
+.lender-ui-request mark {
+   display: inline-flex;
+   margin-left: 5px;
+   border: 1px solid oklch(50% 0.13 145);
+   border-radius: 999px;
+   padding: 3px 7px;
+   color: oklch(43% 0.12 145);
+   background: oklch(98% 0.025 145);
+   font-size: 0.58rem;
+   font-weight: 750;
+}
+
+.lender-ui-base {
+   width: 22px;
+   height: 22px;
+   position: relative;
+   display: block;
+   margin-top: 10px;
+   border-radius: 5px;
+   background: oklch(56% 0.24 260);
+}
+
+.lender-ui-base::after {
+   width: 9px;
+   height: 9px;
+   position: absolute;
+   inset: 0;
+   margin: auto;
+   border-radius: 50%;
+   background: oklch(98% 0.006 305);
+   content: '';
+}
+
+.lender-ui-request .lender-ui-due {
+   margin-top: 8px;
+   color: oklch(38% 0.022 300);
+   font-weight: 720;
+}
+
+.lender-ui-due b {
+   color: oklch(57% 0.18 25);
+}
+
+.lender-ui-request-top dl {
+   display: grid;
+   gap: 14px;
+   align-self: start;
+   border: 1px solid oklch(91% 0.01 305);
+   border-radius: 14px;
+   padding: 13px;
+   background: oklch(99.6% 0.003 305);
+}
+
+.lender-ui-request-top dt {
+   color: oklch(53% 0.018 300);
+   font-size: 0.62rem;
+}
+
+.lender-ui-request-top dd {
+   margin-top: 3px;
+   font-size: 1.14rem;
+   font-weight: 850;
+}
+
+.lender-ui-request-top dl div:last-child dd {
+   color: oklch(50% 0.14 145);
+}
+
+.lender-ui-primary {
+   min-height: 48px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 12px;
+   margin-top: 16px;
+   border-radius: 12px;
+   background: oklch(47% 0.27 297);
+   color: oklch(98.5% 0.006 305);
+   font-size: 0.8rem;
+   font-weight: 760;
+}
+
+.lender-ui-primary b {
+   font-size: 1.25rem;
+   line-height: 1;
+}
+
+.lender-ui-link,
+.lender-ui-muted-link {
+   display: block;
+   margin-top: 10px;
+   color: oklch(53% 0.21 258);
+   font-size: 0.66rem;
+   font-weight: 740;
+   text-align: center;
+}
+
+.lender-ui-request-peek {
+   min-height: 150px;
+   opacity: 0.82;
+}
+
+.lender-ui-detail {
+   width: calc(100% - 36px);
+   max-width: 520px;
+   margin: 0 auto 22px;
+}
+
+.lender-ui-detail .lender-ui-request {
+   padding: 20px;
+}
+
+.lender-ui-request small {
+   display: block;
+   margin-top: 10px;
+   color: oklch(61% 0.02 300);
+   font-size: 0.64rem;
+}
+
+.lender-ui-timing {
+   margin-top: 16px;
+   border-radius: 18px;
+   padding: 18px;
+   background: oklch(95% 0.04 306);
+}
+
+.lender-ui-timing > strong {
+   color: var(--purple);
+   font-size: 0.66rem;
+   font-weight: 900;
+   letter-spacing: 0.13em;
+   text-transform: uppercase;
+}
+
+.lender-ui-timing > p {
+   margin-top: 14px;
+   color: oklch(25% 0.035 296);
+   font-size: 0.72rem;
+   font-weight: 560;
+   line-height: 1.58;
+}
+
+.lender-ui-timing > span {
+   display: block;
+   margin-top: 14px;
+   border-top: 1px solid oklch(88% 0.04 306);
+   padding-top: 12px;
+   color: var(--purple-dark);
+   font-size: 0.65rem;
+   font-weight: 760;
+}
+
+.lender-ui-reward {
+   display: grid;
+   grid-template-columns: 30px minmax(0, 1fr);
+   gap: 10px;
+   margin-top: 12px;
+   border-radius: 15px;
+   padding: 14px;
+   background: var(--butter);
+   color: oklch(42% 0.08 52);
+}
+
+.lender-ui-reward i {
+   font-style: normal;
+   font-size: 1.3rem;
+}
+
+.lender-ui-reward span,
+.lender-ui-reward small,
+.lender-ui-reward b,
+.lender-ui-reward em {
+   display: block;
+}
+
+.lender-ui-reward small {
+   margin: 0 0 2px;
+   color: inherit;
+   font-size: 0.56rem;
+   font-weight: 850;
+   letter-spacing: 0.06em;
+   text-transform: uppercase;
+}
+
+.lender-ui-reward b {
+   font-size: 0.76rem;
+   text-transform: uppercase;
+}
+
+.lender-ui-reward em {
+   margin-top: 4px;
+   font-size: 0.56rem;
+   font-style: normal;
+}
+
+.lender-ui-muted-link {
+   color: oklch(58% 0.02 300);
+}
+
+.lender-ui-modal-stage,
+.lender-ui-fund-stage {
+   width: calc(100% - 36px);
+   max-width: 520px;
+   margin: 0 auto 22px;
+   border-radius: 18px;
+   padding: 28px 16px;
+   background: oklch(39% 0.014 300);
+}
+
+.lender-ui-modal {
+   position: relative;
+   overflow: hidden;
+   border-radius: 18px;
+   padding: 22px 22px 0;
+   background: oklch(99.2% 0.004 305);
+   box-shadow: 0 22px 44px oklch(15% 0.04 298 / 0.24);
+}
+
+.lender-ui-modal > button {
+   position: absolute;
+   top: 14px;
+   right: 16px;
+   border: 0;
+   background: transparent;
+   color: oklch(64% 0.02 300);
+   font: inherit;
+   font-size: 1.2rem;
+}
+
+.lender-ui-modal h4,
+.lender-ui-sheet h4 {
+   font-size: 1.12rem;
+   line-height: 1.1;
+}
+
+.lender-ui-modal > p {
+   margin-top: 5px;
+   color: oklch(64% 0.02 300);
+   font-size: 0.68rem;
+}
+
+.lender-ui-step {
+   display: grid;
+   grid-template-columns: 30px minmax(0, 1fr);
+   gap: 12px;
+   margin-top: 18px;
+}
+
+.lender-ui-step > span {
+   width: 28px;
+   height: 28px;
+   display: grid;
+   place-items: center;
+   border: 1px solid oklch(82% 0.05 306);
+   border-radius: 50%;
+   background: oklch(95% 0.04 306);
+   color: var(--purple-dark);
+   font-size: 0.68rem;
+}
+
+.lender-ui-step b,
+.lender-ui-step small {
+   display: block;
+}
+
+.lender-ui-step b {
+   font-size: 0.88rem;
+}
+
+.lender-ui-step small {
+   margin-top: 4px;
+   color: oklch(62% 0.02 300);
+   font-size: 0.66rem;
+}
+
+.lender-ui-step i {
+   width: fit-content;
+   display: block;
+   margin-top: 10px;
+   border-radius: 8px;
+   padding: 8px 14px;
+   background: oklch(47% 0.27 297);
+   color: oklch(98.5% 0.006 305);
+   font-size: 0.68rem;
+   font-style: normal;
+   font-weight: 750;
+}
+
+.lender-ui-step.is-locked {
+   margin-bottom: 18px;
+   opacity: 0.42;
+}
+
+.lender-ui-modal footer {
+   margin-inline: -22px;
+   border-top: 1px solid oklch(93% 0.008 305);
+   padding: 13px 22px;
+   color: oklch(62% 0.02 300);
+   background: oklch(98% 0.007 305);
+   font-size: 0.62rem;
+}
+
+.lender-ui-fund-stage {
+   padding: 18px 12px 0;
+   background: oklch(39% 0.014 300);
+}
+
+.lender-ui-sheet {
+   overflow: hidden;
+   border-radius: 28px 28px 0 0;
+   padding: 14px 18px 18px;
+   background: oklch(99.2% 0.004 305);
+   box-shadow: 0 -12px 32px oklch(15% 0.04 298 / 0.2);
+}
+
+.lender-ui-grabber {
+   width: 54px;
+   height: 4px;
+   display: block;
+   margin: -4px auto 14px;
+   border-radius: 999px;
+   background: oklch(78% 0.02 300);
+}
+
+.lender-ui-sheet h4 {
+   display: flex;
+   justify-content: space-between;
+   margin-bottom: 14px;
+}
+
+.lender-ui-sheet h4 b {
+   color: oklch(52% 0.02 300);
+   font-weight: 450;
+}
+
+.lender-ui-fund-option {
+   display: grid;
+   grid-template-columns: 38px minmax(0, 1fr) auto;
+   align-items: start;
+   gap: 10px;
+   margin-top: 9px;
+   border: 1px solid oklch(91% 0.01 305);
+   border-radius: 14px;
+   padding: 13px;
+}
+
+.lender-ui-fund-option > i {
+   width: 36px;
+   height: 36px;
+   display: grid;
+   place-items: center;
+   border-radius: 11px;
+   background: oklch(94% 0.05 306);
+   color: var(--purple-dark);
+   font-size: 0.6rem;
+   font-style: normal;
+   font-weight: 900;
+}
+
+.lender-ui-fund-option span,
+.lender-ui-fund-option b,
+.lender-ui-fund-option small,
+.lender-ui-fund-option em {
+   display: block;
+}
+
+.lender-ui-fund-option b {
+   font-size: 0.75rem;
+}
+
+.lender-ui-fund-option small {
+   margin-top: 3px;
+   color: oklch(63% 0.02 300);
+   font-size: 0.59rem;
+}
+
+.lender-ui-fund-option em {
+   margin-top: 8px;
+   color: oklch(48% 0.08 150);
+   font-size: 0.54rem;
+   font-style: normal;
+   font-weight: 700;
+}
+
+.lender-ui-fund-option > strong {
+   color: oklch(59% 0.02 300);
+   font-size: 1rem;
+}
+
+.lender-ui-profile {
+   width: min(100%, 500px);
+   margin-inline: auto;
+   border-radius: 24px;
+   padding: 22px;
+   background: oklch(99.4% 0.004 305);
+   box-shadow: 0 22px 50px oklch(18% 0.05 298 / 0.15);
+}
+
+.lender-ui-profile header {
+   display: grid;
+   grid-template-columns: 58px minmax(0, 1fr);
+   align-items: center;
+   gap: 12px;
+}
+
+.lender-ui-profile header img {
+   width: 58px;
+   height: 58px;
+   border-radius: 50%;
+   object-fit: cover;
+   object-position: center 26%;
+}
+
+.lender-ui-profile header strong,
+.lender-ui-profile header span,
+.lender-ui-profile header small {
+   display: block;
+}
+
+.lender-ui-profile header strong {
+   font-size: 1rem;
+}
+
+.lender-ui-profile header span {
+   width: fit-content;
+   margin-top: 3px;
+   border-radius: 999px;
+   padding: 3px 7px;
+   background: oklch(93% 0.05 145);
+   color: oklch(43% 0.12 145);
+   font-size: 0.58rem;
+   font-weight: 800;
+}
+
+.lender-ui-profile header small {
+   margin-top: 4px;
+   color: oklch(61% 0.02 300);
+   font-size: 0.58rem;
+}
+
+.lender-ui-profile > p {
+   margin-top: 16px;
+   color: oklch(49% 0.025 300);
+   font-size: 0.7rem;
+   line-height: 1.5;
+}
+
+.lender-ui-credit {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   margin-top: 16px;
+   border-radius: 16px;
+   padding: 16px;
+   background: oklch(95% 0.04 306);
+}
+
+.lender-ui-credit span small,
+.lender-ui-credit span b {
+   display: block;
+}
+
+.lender-ui-credit span small {
+   color: oklch(55% 0.025 300);
+   font-size: 0.58rem;
+   text-transform: uppercase;
+}
+
+.lender-ui-credit span b {
+   margin-top: 3px;
+   color: var(--purple-dark);
+   font-size: 0.82rem;
+}
+
+.lender-ui-credit > strong {
+   font-size: 1.45rem;
+}
+
+.lender-ui-credit > strong small {
+   color: oklch(58% 0.02 300);
+   font-size: 0.64rem;
+}
+
+.lender-ui-profile-stats {
+   display: grid;
+   grid-template-columns: repeat(2, minmax(0, 1fr));
+   gap: 8px;
+   margin-top: 10px;
+}
+
+.lender-ui-profile-stats div {
+   border: 1px solid oklch(91% 0.01 305);
+   border-radius: 13px;
+   padding: 11px;
+}
+
+.lender-ui-profile-stats dt {
+   color: oklch(58% 0.02 300);
+   font-size: 0.56rem;
+}
+
+.lender-ui-profile-stats dd {
+   margin-top: 3px;
+   font-size: 1rem;
+   font-weight: 850;
+}
+
+.lender-ui .is-danger {
+   color: oklch(55% 0.18 25) !important;
+}
+
+.lender-ui-history {
+   margin-top: 14px;
+   border-top: 1px solid oklch(91% 0.01 305);
+   padding-top: 13px;
+}
+
+.lender-ui-history > strong {
+   display: block;
+   margin-bottom: 8px;
+   font-size: 0.72rem;
+}
+
+.lender-ui-history > span {
+   display: flex;
+   justify-content: space-between;
+   border-top: 1px solid oklch(94% 0.008 305);
+   padding-block: 8px;
+   font-size: 0.62rem;
+}
+
+.lender-ui-history em {
+   color: oklch(45% 0.13 145);
+   font-style: normal;
+   font-weight: 750;
+}
+
+@media (max-width: 759px) {
+   .lender-ui-board {
+      max-height: 590px;
+      padding: 14px;
+   }
+
+   .lender-ui-request {
+      padding: 14px;
+   }
+
+   .lender-ui-request-top {
+      grid-template-columns: minmax(0, 1fr) 108px;
+      gap: 10px;
+   }
+
+   .lender-ui-request h3 {
+      font-size: 0.88rem;
+   }
+
+   .lender-ui-request-top dl {
+      padding: 10px;
+   }
+
+   .lender-ui-request-top dd {
+      font-size: 0.98rem;
+   }
+
+   .lender-ui-detail,
+   .lender-ui-modal-stage,
+   .lender-ui-fund-stage {
+      width: calc(100% - 24px);
+   }
+
+   .lender-ui-detail .lender-ui-request {
+      padding: 14px;
+   }
+
+   .lender-ui-timing {
+      padding: 14px;
+   }
+
+   .lender-ui-timing > p {
+      font-size: 0.66rem;
+   }
+
+   .lender-ui-modal-stage {
+      padding-inline: 10px;
+   }
+
+   .lender-ui-profile {
+      padding: 16px;
+   }
+}
+
 @media (min-width: 700px) {
    .dignity-section {
       padding-block: 80px 88px;

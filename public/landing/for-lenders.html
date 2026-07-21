@@ -16,7 +16,7 @@
       <meta name="twitter:card" content="summary_large_image" />
       <link rel="canonical" href="https://moodeng.app/for-lenders" />
       <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
-      <link rel="stylesheet" href="/landing/site.css?v=20260722-lender-product-proof-1" />
+      <link rel="stylesheet" href="/landing/site.css?v=20260722-lender-native-ui-1" />
    </head>
    <body>
       <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -83,14 +83,33 @@
                   </ul>
                </div>
                <div class="page-visual">
-                  <div class="device">
-                     <img
-                        src="/landing/assets/app/lender-board-real-hd.png?v=20260722-hd2"
-                        alt="Moodeng request board showing open requests, amounts, expected paybacks, dates, and View Request buttons"
-                        width="760"
-                        height="1020"
-                        fetchpriority="high"
-                     />
+                  <div class="lender-ui lender-ui-board" role="img" aria-label="Moodeng request board with two open loan requests">
+                     <div class="lender-ui-board-head">
+                        <strong>Browse Latest Requests</strong>
+                        <div class="lender-ui-search"><span aria-hidden="true">⌕</span> Search requests <b aria-hidden="true">▽</b></div>
+                     </div>
+                     <article class="lender-ui-request lender-ui-request-compact">
+                        <div class="lender-ui-request-top">
+                           <div>
+                              <h3>Groceries and transport for the week</h3>
+                              <p>by <u>mangorina23</u> <mark>Good Standing</mark></p>
+                              <span class="lender-ui-base" aria-label="Base network"></span>
+                              <p class="lender-ui-due">Due on <b>Aug 04 2026</b></p>
+                           </div>
+                           <dl>
+                              <div><dt>Borrowing USDC</dt><dd>$20.00</dd></div>
+                              <div><dt>Get back USDC</dt><dd>$23.00</dd></div>
+                           </dl>
+                        </div>
+                        <span class="lender-ui-primary">View Request <b aria-hidden="true">›</b></span>
+                        <span class="lender-ui-link">View Borrower Details ↗</span>
+                     </article>
+                     <article class="lender-ui-request lender-ui-request-compact lender-ui-request-peek" aria-hidden="true">
+                        <div class="lender-ui-request-top">
+                           <div><h3>Medicine and school fees this week</h3><p>by <u>jaycee88ph</u></p></div>
+                           <dl><div><dt>Borrowing USDC</dt><dd>$15.00</dd></div></dl>
+                        </div>
+                     </article>
                   </div>
                   <p class="visual-caption">The working request board. Preview accounts shown.</p>
                </div>
@@ -118,7 +137,7 @@
                   <p class="eyebrow">The actual lender flow</p>
                   <h2 class="section-title wide" id="system-heading">View the request. Send your help. <em>Use your wallet.</em></h2>
                   <p class="lead lender-capabilities-lead">
-                     These are real Moodeng product screens using preview accounts—not diagrams of what the product might do.
+                     These are actual Moodeng product states, rendered directly in the browser so every label stays sharp.
                   </p>
                </div>
 
@@ -129,13 +148,35 @@
                         <h3>Know what you are funding.</h3>
                         <p>See the amount, expected payback, due date, reason, timing fit, and lender reward before you commit.</p>
                      </div>
-                     <img
-                        src="/landing/assets/app/lender-view-request-hd.png?v=20260722-hd2"
-                        alt="Expanded Moodeng request showing amount, expected payback, due date, timing fit, reward, and Send Your Help action"
-                        width="720"
-                        height="1240"
-                        loading="lazy"
-                     />
+                     <div class="lender-ui lender-ui-detail" role="img" aria-label="Expanded Moodeng request with terms, timing fit, reward, and funding action">
+                        <article class="lender-ui-request">
+                           <div class="lender-ui-request-top">
+                              <div>
+                                 <h3>Groceries and transport for the week</h3>
+                                 <p>by <u>mangorina23</u> <mark>Good Standing</mark></p>
+                                 <span class="lender-ui-base" aria-label="Base network"></span>
+                                 <p class="lender-ui-due">Due on <b>Aug 04 2026</b></p>
+                                 <small>‹ &nbsp;Back</small>
+                              </div>
+                              <dl>
+                                 <div><dt>Borrowing USDC</dt><dd>$20.00</dd></div>
+                                 <div><dt>Get back USDC</dt><dd>$23.00</dd></div>
+                              </dl>
+                           </div>
+                           <div class="lender-ui-timing">
+                              <strong>Timing fit</strong>
+                              <p>
+                                 Stable income ($200–$400, paid end of the month) from teaching, with tutoring as another source.
+                                 Spends $50–$150 a month on bills and transport.
+                              </p>
+                              <p>First time trusting this community · 15-day loan.</p>
+                              <span>◷ &nbsp;Posted Mon, Jul 20 · 5 days left</span>
+                              <div class="lender-ui-reward"><i aria-hidden="true">◉</i><span><small>Reward</small><b>Total earned: 45 IOU pts</b><em>20 pts for funding + 25 first-time bonus</em></span></div>
+                           </div>
+                           <span class="lender-ui-primary">Send Your Help <b aria-hidden="true">↗</b></span>
+                           <span class="lender-ui-muted-link">Use a different wallet</span>
+                        </article>
+                     </div>
                   </figure>
 
                   <figure class="lender-capability lender-capability-send">
@@ -144,13 +185,20 @@
                         <h3>Approve the payment clearly.</h3>
                         <p>Base Account can do it in one tap. MetaMask, Trust Wallet, or another supported wallet uses two explicit steps.</p>
                      </div>
-                     <img
-                        src="/landing/assets/app/lender-send-help-hd.png?v=20260722-hd2"
-                        alt="Moodeng Send your help modal with connect wallet and confirm payment steps"
-                        width="720"
-                        height="580"
-                        loading="lazy"
-                     />
+                     <div class="lender-ui lender-ui-modal-stage" role="img" aria-label="Send your help dialog with connect wallet and confirm payment steps">
+                        <div class="lender-ui-modal">
+                           <button type="button" tabindex="-1" aria-hidden="true">×</button>
+                           <h4>Send your help</h4>
+                           <p>$20.00 to mangorina23 · two quick steps</p>
+                           <div class="lender-ui-step is-active">
+                              <span>1</span><div><b>Connect your wallet</b><small>MetaMask, Trust, or another</small><i>Connect</i></div>
+                           </div>
+                           <div class="lender-ui-step is-locked">
+                              <span>2</span><div><b>Confirm the payment</b><small>Unlocks once you connect</small></div>
+                           </div>
+                           <footer>Tip: Base Account does both steps in one tap.</footer>
+                        </div>
+                     </div>
                   </figure>
 
                   <figure class="lender-capability lender-capability-fund">
@@ -159,13 +207,21 @@
                         <h3>Bring USDC your way.</h3>
                         <p>Buy by card, bridge from supported chains, or send from another wallet. Funding always lands on Base.</p>
                      </div>
-                     <img
-                        src="/landing/assets/app/lender-fund-wallet-hd.png?v=20260722-hd2"
-                        alt="Moodeng Fund your wallet sheet showing card purchase, cross-chain bridge, and Solana bridge options"
-                        width="820"
-                        height="800"
-                        loading="lazy"
-                     />
+                     <div class="lender-ui lender-ui-fund-stage" role="img" aria-label="Fund your wallet sheet with card purchase and bridge options">
+                        <div class="lender-ui-sheet">
+                           <span class="lender-ui-grabber" aria-hidden="true"></span>
+                           <h4>Fund your wallet <b aria-hidden="true">×</b></h4>
+                           <div class="lender-ui-fund-option">
+                              <i>Card</i><span><b>Buy USDC with debit card</b><small>Visa / Mastercard · Apple Pay · Google Pay</small><em>~1.5% fee &nbsp; Coinbase account needed</em></span><strong>↗</strong>
+                           </div>
+                           <div class="lender-ui-fund-option">
+                              <i>⇄</i><span><b>Bridge from another chain</b><small>Already have stablecoins? Move them to Base</small><em>Ethereum · Arbitrum · Optimism · Polygon · BNB</em></span><strong>›</strong>
+                           </div>
+                           <div class="lender-ui-fund-option">
+                              <i>Sol</i><span><b>Bridge from Solana</b><small>SOL and USDC to Base · opens Superbridge</small></span><strong>↗</strong>
+                           </div>
+                        </div>
+                     </div>
                   </figure>
                </div>
 
@@ -436,14 +492,25 @@
                   </ul>
                </div>
                <div class="page-visual cream reveal">
-                  <div class="device">
-                     <img
-                        src="/landing/assets/app/lender-insights-hd.png"
-                        alt="Moodeng borrower profile showing verification, credit level, total loans, repayments, defaults, and lender diversity"
-                        loading="lazy"
-                        width="853"
-                        height="1844"
-                     />
+                  <div class="lender-ui lender-ui-profile" role="img" aria-label="Borrower profile with verification, credit level, repayments, and defaults">
+                     <header>
+                        <img src="/landing/assets/faces/sari-sari.jpg" alt="" width="720" height="960" loading="lazy" />
+                        <div><strong>graceling21</strong><span>✓ Verified Borrower</span><small>Member since April 2026</small></div>
+                     </header>
+                     <p>Runs a small sari-sari store in Cebu, with steady daily cash flow and weekend online reselling.</p>
+                     <div class="lender-ui-credit"><span><small>Credit level</small><b>LVL 2</b></span><strong>$20 <small>/ $20</small></strong></div>
+                     <dl class="lender-ui-profile-stats">
+                        <div><dt>Total borrowed</dt><dd>$117</dd></div>
+                        <div><dt>Repaid</dt><dd>$90</dd></div>
+                        <div><dt>Defaults</dt><dd class="is-danger">2</dd></div>
+                        <div><dt>Total loans</dt><dd>7</dd></div>
+                     </dl>
+                     <div class="lender-ui-history">
+                        <strong>Recent loans</strong>
+                        <span><b>$15 / $16</b><em>Repaid</em></span>
+                        <span><b>$20 / $22</b><em>Repaid</em></span>
+                        <span><b>$30 / $33</b><em class="is-danger">Default</em></span>
+                     </div>
                   </div>
                   <p class="visual-caption">The borrower profile lenders inspect before deciding. Sample account shown.</p>
                </div>
