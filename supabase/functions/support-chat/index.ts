@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { alertDeepSeekFailure } from '../_shared/deepseekAlert.ts';
 // Statically imported so Supabase's bundler always ships it (a runtime file read
 // of knowledge.md would find nothing on the deployed function). Regenerate both
 // with: node tools/build-support-knowledge.mjs
@@ -259,6 +260,8 @@ serve(async (req) => {
 
       if (!aiRes.ok) {
          console.error('support-chat: DeepSeek error', aiRes.status, await aiRes.text());
+         // Debounced ping to the admin KYC group — otherwise Mecha degrades silently.
+         await alertDeepSeekFailure('support-chat', aiRes.status);
          return jsonResponse({ reply: handoffLine(context), offer_human: true, degraded: 'ai_error' });
       }
 
