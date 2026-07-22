@@ -81,9 +81,15 @@ export const notifyAdmins = async (
       const p = profile as { email?: string; username?: string } | null;
       const who = [p?.username, p?.email].filter(Boolean).join(' · ') || userId;
 
+      // PostHog identifies users by their Supabase user id (posthog.identify in App.tsx),
+      // so this deep-links straight to the person's session replays — admins can watch
+      // what the user actually did before this outcome landed.
+      const replayUrl = `https://us.posthog.com/project/492261/person/${userId}#activeTab=sessionRecordings`;
+
       await sendTelegramMessage(
          chatId,
-         `🪪 Didit KYC — ${outcome}\nUser: ${who}\nUser ID: ${userId}${sessionId ? `\nSession: ${sessionId}` : ''}`
+         `🪪 Didit KYC — ${outcome}\nUser: ${who}\nUser ID: ${userId}${sessionId ? `\nSession: ${sessionId}` : ''}`,
+         { inlineKeyboard: [[{ text: '🎬 Watch session replays', url: replayUrl }]] }
       );
    } catch (err) {
       console.error('[diditNotifications] Admin alert failed:', err instanceof Error ? err.message : err);
