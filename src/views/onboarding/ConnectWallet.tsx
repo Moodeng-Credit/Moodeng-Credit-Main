@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
 
+import AskMechaButton from '@/components/mecha/AskMechaButton';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
@@ -169,6 +170,17 @@ function BorrowerConnectView({
             ) : (
                <ConnectBaseAccountButton onClick={onConnectBaseAccount} isDisabled={isConnecting} />
             )}
+            {/* Step-aware co-pilot (Direction 02): pre-empts the #1 drop-off — new
+                users downloading the Coinbase app instead of creating a Base Account. */}
+            <div className="mt-md-3">
+               <AskMechaButton
+                  variant="chip"
+                  label="Not sure? Ask Mecha"
+                  context={{ page: 'Connect your Base Account', step: 'base-account' }}
+                  greeting="Setting up your wallet? I can help — the #1 mix-up is downloading the Coinbase app by mistake. 🤖"
+                  seedUserMessage="I'm on the Connect Base Account step. Do I need the Coinbase app, and how do I set this up?"
+               />
+            </div>
             <WalletConnectHelp />
          </div>
       </div>

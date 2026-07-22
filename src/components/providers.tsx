@@ -9,6 +9,7 @@ import { WagmiProvider } from 'wagmi';
 import { AuthInitializer } from '@/components/AuthInitializer';
 import BasePaymentReconciler from '@/components/BasePaymentReconciler';
 import Loading from '@/components/Loading';
+import MechaLauncher from '@/components/mecha/MechaLauncher';
 import { SupportContactsModalHost } from '@/components/support/SupportContactsModal';
 import { ThemeModeProvider } from '@/components/ThemeModeProvider';
 import { ToastProvider } from '@/components/ToastSystem/contexts/ToastContext';
@@ -69,6 +70,7 @@ export function Providers({ children }: { children: ReactNode }) {
                            <BasePaymentReconciler />
                            {children}
                            <SupportContactsModalHost />
+                           <MechaLauncher />
                            <ToastContainer />
                         </ThemeModeProvider>
                      </ToastProvider>

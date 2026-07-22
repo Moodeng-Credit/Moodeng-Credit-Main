@@ -21,14 +21,16 @@ const BORROWER_TABS: NavTab[] = [
    { label: 'Repay', path: '/repay', icon: 'repay.png', requiresRole: true },
    { label: 'Dashboard', path: '/dashboard', icon: 'dashboard.png', requiresRole: true },
    { label: 'History', path: '/history', icon: 'history.png', requiresRole: true },
-   { label: 'Account', path: '/account', icon: 'account.png' }
+   { label: 'Account', path: '/account', icon: 'account.png' },
+   { label: 'Help', path: '/help', icon: 'question_light.svg' }
 ];
 
 const LENDER_TABS: NavTab[] = [
    { label: 'Request Board', path: '/request-board', icon: 'request-board.png' },
    { label: 'Dashboard', path: '/lender/dashboard', icon: 'dashboard.png' },
    { label: 'History', path: '/history', icon: 'history.png' },
-   { label: 'Account', path: '/account', icon: 'account.png' }
+   { label: 'Account', path: '/account', icon: 'account.png' },
+   { label: 'Help', path: '/help', icon: 'question_light.svg' }
 ];
 
 const REPAY_ACTION_TABS: NavItem[] = [BORROWER_TABS[0], BORROWER_TABS[2], { type: 'primary-action' }, BORROWER_TABS[3], BORROWER_TABS[4]];
