@@ -163,6 +163,31 @@ The phases in §4 fix these in that order. Do them **in order**, one phase per b
   `_020000`; `supabase functions deploy fraud-signal-scan risk-score-recompute security-heartbeat`;
   add the group-description rule "no ℹ️ heartbeat by 10:00 UTC = incident".
 
+### Phase 3 — delivery unification: 3a–3c DONE in code (not deployed); 3d deferred
+
+- Migration `20260722030000`: `public.security_alert_deliveries` delivery ledger (RLS admin-read,
+  service-role writes; mirrors the Phase 2a job ledger).
+- `_shared/securityAlerts.ts`: the ONE dispatcher. Pure, vitest-covered helpers (`severityEmoji`,
+  `formatTelegramMessage` → `«emoji» [source] title\n\nbody`, `formatEmailSubject`, `shouldEmail`,
+  `resolveSecurityChatId`) + `deliverSecurityAlert()` — never throws; Telegram always attempted;
+  email for severity ≥ warning OR whenever Telegram failed (fail-loud backstop, §2.1); records
+  every attempt in `security_alert_deliveries`.
+- `_shared/fraudNotifications.ts` and `_shared/securityHeartbeat.ts` now also expose split
+  `title`/`detail` so the dispatcher's prefix does not double their existing headers. Their
+  `text`/`subject`/`message` outputs are preserved byte-for-byte (existing tests untouched).
+- Callers migrated off inline delivery to `deliverSecurityAlert`: `fraud-signal-scan`
+  (source `fraud-scan`, critical if any critical signal else warning); `security-heartbeat`
+  (source `heartbeat`, info when green / critical when red); `risk-score-recompute`
+  (source `risk-score`; severity map critical→critical, high→high, medium→warning). The
+  `risk_alerts` insert is unchanged — still the dedup ledger and admin-feed source (§3c).
+- Tests: `src/test/securityAlerts.test.ts` (emoji taxonomy, both message formats, the full
+  severity × telegram-ok email matrix) plus new heartbeat split-field cases.
+- **3d NOT done — deferred to its own PR:** the unified `public.admin_security_feed` view
+  (union of `fraud_signal_alerts` + `risk_alerts`) and the admin "Security feed" UI. It is a
+  novel admin surface and per repo convention needs a screenshot + founder sign-off before merge.
+- **Deploy note:** Phase 3 adds migration `20260722030000` and redeploys the three edge functions
+  above (all now import `_shared/securityAlerts.ts`).
+
 ---
 
 ## 4. The phases

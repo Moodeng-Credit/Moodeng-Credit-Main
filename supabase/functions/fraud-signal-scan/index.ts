@@ -1,10 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { sendEmail } from '../_shared/email.ts';
-import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { buildFraudAlertMessage, FraudSignal } from '../_shared/fraudNotifications.ts';
 import { recordJobRun } from '../_shared/securityJobRuns.ts';
+import { deliverSecurityAlert } from '../_shared/securityAlerts.ts';
 
 const JOB_NAME = 'fraud-signal-scan';
 
@@ -12,26 +11,6 @@ const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
    'Access-Control-Allow-Methods': 'POST, OPTIONS'
-};
-
-const ALERT_EMAIL = Deno.env.get('FRAUD_ALERT_EMAIL') ?? 'georgemlerner@gmail.com';
-
-type AdminSupabase = ReturnType<typeof createClient>;
-
-// Destination group for Telegram fraud alerts. Env override first, then the
-// fraud_alert_chat_id setting (seeded from the KYC alerts group), then the KYC
-// alerts group itself so alerts flow even before the new setting is configured.
-const getFraudAlertChatId = async (supabase: AdminSupabase): Promise<string | undefined> => {
-   const fromEnv = Deno.env.get('FRAUD_ALERT_TELEGRAM_CHAT_ID')?.trim();
-   if (fromEnv) return fromEnv;
-
-   const { data } = await supabase
-      .from('telegram_bot_settings')
-      .select('key, value')
-      .in('key', ['fraud_alert_chat_id', 'kyc_alert_chat_id']);
-   const settings = (data ?? []) as Array<{ key: string; value?: string | null }>;
-   const byKey = (key: string) => settings.find((s) => s.key === key)?.value?.trim();
-   return byKey('fraud_alert_chat_id') || byKey('kyc_alert_chat_id') || undefined;
 };
 
 serve(async (req) => {
@@ -62,32 +41,19 @@ serve(async (req) => {
       return new Response(JSON.stringify({ message: 'No new fraud signals' }), { status: 200, headers: corsHeaders });
    }
 
-   const { subject, text } = buildFraudAlertMessage(signals);
+   const { title, detail, criticalCount } = buildFraudAlertMessage(signals);
 
-   // Deliver on both channels independently — a Telegram outage must not silence
-   // the email (or vice versa). Fail the run only when neither got through.
-   const delivery: { email: boolean; telegram: boolean; errors: string[] } = { email: false, telegram: false, errors: [] };
+   // Deliver through the unified dispatcher (Phase 3): one format, one destination
+   // set, both channels attempted, every attempt recorded in security_alert_deliveries.
+   // Severity is critical when any critical signal fired, else warning.
+   const delivery = await deliverSecurityAlert(supabase, {
+      source: 'fraud-scan',
+      severity: criticalCount > 0 ? 'critical' : 'warning',
+      title,
+      body: detail
+   });
 
-   try {
-      await sendEmail(ALERT_EMAIL, subject, text);
-      delivery.email = true;
-   } catch (err) {
-      delivery.errors.push(`email: ${err instanceof Error ? err.message : String(err)}`);
-   }
-
-   try {
-      const chatId = await getFraudAlertChatId(supabase);
-      if (chatId) {
-         await sendTelegramMessage(chatId, text);
-         delivery.telegram = true;
-      } else {
-         delivery.errors.push('telegram: fraud_alert_chat_id is not configured');
-      }
-   } catch (err) {
-      delivery.errors.push(`telegram: ${err instanceof Error ? err.message : String(err)}`);
-   }
-
-   const delivered = delivery.email || delivery.telegram;
+   const delivered = delivery.telegram_ok || delivery.email_ok;
    await recordJobRun(supabase, JOB_NAME, {
       startedAt,
       ok: delivered,

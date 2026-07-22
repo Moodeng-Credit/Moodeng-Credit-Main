@@ -39,7 +39,12 @@ export type HeartbeatInput = {
 export type HeartbeatResult = {
    ok: boolean; // all failure-checks passed
    checks: HeartbeatCheck[];
-   message: string;
+   message: string; // full text: header line, blank, then detail (legacy/standalone use)
+   // Split fields for the unified dispatcher (_shared/securityAlerts.ts): a one-line
+   // `title` (no emoji) and the `detail` body without the header, so the dispatcher's
+   // «emoji» [heartbeat] prefix doesn't double the header.
+   title: string;
+   detail: string;
 };
 
 const SCAN_MAX_AGE_MS = 26 * 60 * 60 * 1000; // scan runs 00:45; 26h covers clock drift + a missed edge
@@ -145,27 +150,31 @@ export const buildHeartbeat = (input: HeartbeatInput): HeartbeatResult => {
    const notes = checks.filter((c) => !c.isFailure && !c.ok);
    const ok = failures.length === 0;
 
-   const lines: string[] = [];
+   // The header line owns the top-level emoji; the detail block is everything below it.
+   const header = ok
+      ? 'ℹ️ Security heartbeat — all systems OK.'
+      : `🔴 SECURITY HEARTBEAT FAILURE — ${failures.length} check(s) down.`;
+
+   const detailLines: string[] = [];
    if (ok) {
-      lines.push('ℹ️ Security heartbeat — all systems OK.');
-      lines.push('');
-      for (const c of checks.filter((x) => x.isFailure)) lines.push(`✅ ${c.name}: ${c.detail}`);
+      for (const c of checks.filter((x) => x.isFailure)) detailLines.push(`✅ ${c.name}: ${c.detail}`);
    } else {
-      lines.push(`🔴 SECURITY HEARTBEAT FAILURE — ${failures.length} check(s) down.`);
-      lines.push('');
-      for (const c of failures) lines.push(`🔴 ${c.name}: ${c.detail}`);
+      for (const c of failures) detailLines.push(`🔴 ${c.name}: ${c.detail}`);
       const passed = checks.filter((c) => c.isFailure && c.ok);
       if (passed.length) {
-         lines.push('');
-         lines.push('Still OK:');
-         for (const c of passed) lines.push(`✅ ${c.name}: ${c.detail}`);
+         detailLines.push('');
+         detailLines.push('Still OK:');
+         for (const c of passed) detailLines.push(`✅ ${c.name}: ${c.detail}`);
       }
    }
    if (notes.length) {
-      lines.push('');
-      lines.push('Notes:');
-      for (const c of notes) lines.push(`🟡 ${c.name}: ${c.detail}`);
+      detailLines.push('');
+      detailLines.push('Notes:');
+      for (const c of notes) detailLines.push(`🟡 ${c.name}: ${c.detail}`);
    }
 
-   return { ok, checks, message: lines.join('\n') };
+   const detail = detailLines.join('\n');
+   const title = ok ? 'all systems OK' : `${failures.length} check(s) down`;
+
+   return { ok, checks, message: `${header}\n\n${detail}`, title, detail };
 };

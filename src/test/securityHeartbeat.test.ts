@@ -108,3 +108,23 @@ describe('buildHeartbeat — 26h boundary', () => {
       expect(over.ok).toBe(false);
    });
 });
+
+describe('buildHeartbeat — dispatcher split fields (Phase 3)', () => {
+   it('exposes a headerless detail and an emoji-free title on a green beat', () => {
+      const { title, detail, message } = buildHeartbeat(healthy());
+      expect(title).toBe('all systems OK');
+      // detail is the body only — no top-level header, no top-level emoji.
+      expect(detail).not.toContain('Security heartbeat — all systems OK.');
+      expect(detail).toContain('✅ Fraud scan:');
+      // Invariant: the full message is exactly header + blank line + detail, so the
+      // legacy/standalone message and the dispatcher-wrapped body never diverge.
+      expect(message).toBe(`ℹ️ Security heartbeat — all systems OK.\n\n${detail}`);
+   });
+
+   it('titles a red beat with the failure count and keeps detail headerless', () => {
+      const { title, detail, message } = buildHeartbeat({ ...healthy(), ipLogins24h: 0, riskScores26h: 0 });
+      expect(title).toBe('2 check(s) down');
+      expect(detail).not.toContain('SECURITY HEARTBEAT FAILURE');
+      expect(message).toBe(`🔴 SECURITY HEARTBEAT FAILURE — 2 check(s) down.\n\n${detail}`);
+   });
+});

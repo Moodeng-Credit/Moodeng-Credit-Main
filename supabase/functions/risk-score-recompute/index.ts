@@ -18,8 +18,8 @@
 // Dedup: an alert for the same user_id + signal_key won't re-fire within 24h.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { sendEmail } from '../_shared/email.ts';
 import { recordJobRun } from '../_shared/securityJobRuns.ts';
+import { deliverSecurityAlert, SecuritySeverity } from '../_shared/securityAlerts.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -115,7 +115,6 @@ async function maybeSendAlert(
   if ((count ?? 0) > 0) return;
 
   const userLabel = username ?? userId.slice(0, 8);
-  const subject = `[Moodeng risk ${alert.severity.toUpperCase()}] ${alert.signal_key.replace(/_/g, ' ')} — ${userLabel}`;
   const body = [
     `Severity:  ${alert.severity}`,
     `Signal:    ${alert.signal_key}`,
@@ -142,16 +141,24 @@ async function maybeSendAlert(
     `you should review and decide whether to add to watchlist or notify them.`
   ].join('\n');
 
-  let emailSent = false;
-  let emailError: string | null = null;
-  try {
-    await sendEmail(ALERT_TO, subject, body);
-    emailSent = true;
-  } catch (e) {
-    emailError = e instanceof Error ? e.message : String(e);
-    console.error(`risk alert email failed for ${userId} ${alert.signal_key}:`, emailError);
-  }
+  // Phase 3c: deliver through the unified dispatcher so self-lending hard matches and
+  // sybil clusters reach the same Telegram feed as the fraud scan. Risk-score severity
+  // maps to the shared taxonomy: critical→critical, high→high, medium→warning.
+  const severityMap: Record<Alert['severity'], SecuritySeverity> = {
+    critical: 'critical',
+    high: 'high',
+    medium: 'warning'
+  };
+  const delivery = await deliverSecurityAlert(supa, {
+    source: 'risk-score',
+    severity: severityMap[alert.severity],
+    title: `${alert.signal_key.replace(/_/g, ' ')} — ${userLabel} (${score}/100, ${band})`,
+    body
+  });
+  const emailSent = delivery.email_ok;
+  const emailError = delivery.error;
 
+  // Dedup ledger + admin-feed source — kept exactly as before (Phase 3c).
   await supa.from('risk_alerts').insert({
     user_id: userId,
     severity: alert.severity,

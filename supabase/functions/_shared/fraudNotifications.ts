@@ -57,6 +57,11 @@ export const describeFraudSignal = (s: FraudSignal): string => {
 export type FraudAlertMessage = {
    subject: string;
    text: string;
+   // Split fields for the unified dispatcher (_shared/securityAlerts.ts): a one-line
+   // `title` (no emoji — the dispatcher adds it) and the `detail` body without the
+   // legacy 🚨 header, so routing through the dispatcher doesn't double the header.
+   title: string;
+   detail: string;
    criticalCount: number;
    warningCount: number;
 };
@@ -67,24 +72,30 @@ export const buildFraudAlertMessage = (signals: FraudSignal[]): FraudAlertMessag
    const critical = signals.filter((s) => s.severity === 'critical');
    const warnings = signals.filter((s) => s.severity !== 'critical');
 
-   const lines: string[] = [];
-   lines.push(`🚨 Moodeng fraud scan — ${signals.length} new signal(s).`);
-   lines.push('');
+   // The detail body (everything below the header): the critical block, the
+   // "worth a look" block, then the standing disclaimer.
+   const detailLines: string[] = [];
    if (critical.length) {
-      lines.push(`CRITICAL (${critical.length}):`);
-      critical.forEach((s, i) => lines.push(`${i + 1}. ${describeFraudSignal(s)}`));
-      lines.push('');
+      detailLines.push(`CRITICAL (${critical.length}):`);
+      critical.forEach((s, i) => detailLines.push(`${i + 1}. ${describeFraudSignal(s)}`));
+      detailLines.push('');
    }
    if (warnings.length) {
-      lines.push(`Worth a look (${warnings.length}):`);
-      warnings.forEach((s, i) => lines.push(`${i + 1}. ${describeFraudSignal(s)}`));
+      detailLines.push(`Worth a look (${warnings.length}):`);
+      warnings.forEach((s, i) => detailLines.push(`${i + 1}. ${describeFraudSignal(s)}`));
    }
-   lines.push('');
-   lines.push('These are detection signals, not proof — review before acting. Already-seen findings are suppressed, so each only alerts once.');
+   detailLines.push('');
+   detailLines.push('These are detection signals, not proof — review before acting. Already-seen findings are suppressed, so each only alerts once.');
+
+   const header = `🚨 Moodeng fraud scan — ${signals.length} new signal(s).`;
+   const detail = detailLines.join('\n');
 
    return {
       subject: `🚨 Moodeng fraud scan: ${critical.length} critical, ${warnings.length} to review`,
-      text: lines.join('\n'),
+      // Preserved verbatim: header, one blank line, then the detail body.
+      text: `${header}\n\n${detail}`,
+      title: `${signals.length} new signal(s) — ${critical.length} critical, ${warnings.length} to review`,
+      detail,
       criticalCount: critical.length,
       warningCount: warnings.length
    };

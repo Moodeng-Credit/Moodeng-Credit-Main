@@ -1,10 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { sendEmail } from '../_shared/email.ts';
-import { callTelegramApi, sendTelegramMessage } from '../_shared/telegram.ts';
+import { callTelegramApi } from '../_shared/telegram.ts';
 import { buildHeartbeat, HeartbeatInput } from '../_shared/securityHeartbeat.ts';
 import { recordJobRun } from '../_shared/securityJobRuns.ts';
+import { deliverSecurityAlert, resolveSecurityChatId } from '../_shared/securityAlerts.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -13,23 +13,8 @@ const corsHeaders = {
 };
 
 const JOB_NAME = 'security-heartbeat';
-const ALERT_EMAIL = Deno.env.get('FRAUD_ALERT_EMAIL') ?? 'georgemlerner@gmail.com';
 
 type AdminSupabase = ReturnType<typeof createClient>;
-
-// Same resolution order as fraud-signal-scan: env override, then fraud_alert_chat_id,
-// then the kyc_alert_chat_id fallback.
-const resolveFraudChatId = async (supabase: AdminSupabase): Promise<string | undefined> => {
-   const fromEnv = Deno.env.get('FRAUD_ALERT_TELEGRAM_CHAT_ID')?.trim();
-   if (fromEnv) return fromEnv;
-   const { data } = await supabase
-      .from('telegram_bot_settings')
-      .select('key, value')
-      .in('key', ['fraud_alert_chat_id', 'kyc_alert_chat_id']);
-   const settings = (data ?? []) as Array<{ key: string; value?: string | null }>;
-   const byKey = (key: string) => settings.find((s) => s.key === key)?.value?.trim();
-   return byKey('fraud_alert_chat_id') || byKey('kyc_alert_chat_id') || undefined;
-};
 
 const countSince = async (supabase: AdminSupabase, table: string, column: string, cutoffIso: string): Promise<number> => {
    const { count } = await supabase.from(table).select('*', { count: 'exact', head: true }).gte(column, cutoffIso);
@@ -84,7 +69,7 @@ serve(async (req) => {
    if (!has('MAXMIND_ACCOUNT_ID')) missingDegradedEnv.push('MAXMIND_ACCOUNT_ID');
    if (!has('MAXMIND_LICENSE_KEY')) missingDegradedEnv.push('MAXMIND_LICENSE_KEY');
 
-   const chatId = await resolveFraudChatId(supabase);
+   const chatId = await resolveSecurityChatId(supabase);
    const fraudChatIdConfigured = !!chatId;
 
    let telegramTokenWorks = false;
@@ -107,36 +92,21 @@ serve(async (req) => {
       now
    };
 
-   const { ok, message } = buildHeartbeat(input);
+   const { ok, title, detail } = buildHeartbeat(input);
 
-   // --- Deliver: always one Telegram message; email on failure only -------
-   const delivery: { telegram: boolean; email: boolean; errors: string[] } = { telegram: false, email: false, errors: [] };
-
-   if (chatId && telegramTokenWorks) {
-      try {
-         await sendTelegramMessage(chatId, message);
-         delivery.telegram = true;
-      } catch (err) {
-         delivery.errors.push(`telegram: ${err instanceof Error ? err.message : String(err)}`);
-      }
-   } else {
-      delivery.errors.push('telegram: unavailable (no chat id or bad token) — see message body');
-   }
-
-   // Email is the backstop: send it whenever the heartbeat is red OR Telegram could
-   // not deliver, so a failure can never be fully silent.
-   if (!ok || !delivery.telegram) {
-      try {
-         await sendEmail(ALERT_EMAIL, ok ? 'Moodeng security heartbeat' : '🔴 Moodeng SECURITY HEARTBEAT FAILURE', message);
-         delivery.email = true;
-      } catch (err) {
-         delivery.errors.push(`email: ${err instanceof Error ? err.message : String(err)}`);
-      }
-   }
+   // Deliver through the unified dispatcher (Phase 3). It always attempts Telegram and,
+   // per its channel matrix, emails whenever the heartbeat is red (severity critical) OR
+   // Telegram could not deliver — so the dead-man's switch can never fail silently.
+   const delivery = await deliverSecurityAlert(supabase, {
+      source: 'heartbeat',
+      severity: ok ? 'info' : 'critical',
+      title,
+      body: detail
+   });
 
    await recordJobRun(supabase, JOB_NAME, {
       startedAt,
-      ok: ok && (delivery.telegram || delivery.email),
+      ok: ok && (delivery.telegram_ok || delivery.email_ok),
       signalCount: input.missingCriticalEnv.length,
       detail: { heartbeat_ok: ok, delivery, facts: { ...input, now: undefined } }
    });
