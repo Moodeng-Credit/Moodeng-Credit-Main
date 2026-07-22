@@ -6,7 +6,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 
 import IouPointHistoryModal from '@/components/IouPointHistoryModal';
+import PowerLenderBadge from '@/components/PowerLenderBadge';
 import UserAvatar from '@/components/UserAvatar';
+
+import { isPowerLender } from '@/config/powerLenders';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 
@@ -445,6 +448,7 @@ export default function LenderDashboard() {
                      </button>
                   </div>
                   <p className="text-md-b3 font-normal text-md-neutral-1400">Member since {memberSince}</p>
+                  {isPowerLender(user?.id) && <PowerLenderBadge className="mt-0.5 self-start" />}
                </div>
             </div>
 

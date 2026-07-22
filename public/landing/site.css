@@ -676,15 +676,15 @@ li {
    display: none;
 }
 
+.hero-walkthrough-v2 {
+   display: none;
+}
+
 .version-two-actions {
    display: none;
 }
 
 .tilt-hero-photo {
-   display: none;
-}
-
-.tilt-hero-disclosure {
    display: none;
 }
 
@@ -2078,6 +2078,8 @@ li {
 
 .dignity-section {
    overflow: hidden;
+   background: oklch(96.4% 0.035 305);
+   color: var(--ink);
    padding-block: 92px 104px;
 }
 
@@ -2091,17 +2093,22 @@ li {
 .dignity-heading .section-title {
    max-width: 14ch;
    margin-top: 18px;
-   font-family: var(--font);
+   font-family: var(--font-display);
    font-size: clamp(2.7rem, 10vw, 4.8rem);
-   font-weight: 520;
+   font-weight: 850;
    letter-spacing: -0.055em;
-   line-height: 1;
+   line-height: 0.95;
    scroll-margin-top: 112px;
+}
+
+.dignity-heading .section-title em {
+   color: var(--purple-dark);
 }
 
 .dignity-heading .lead {
    max-width: 44ch;
    margin-top: 20px;
+   color: var(--ink-soft);
    font-size: 1rem;
 }
 
@@ -2109,22 +2116,26 @@ li {
    width: min(100%, 1040px);
    display: grid;
    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-   column-gap: clamp(40px, 8vw, 112px);
-   row-gap: 76px;
+   overflow: hidden;
+   border: 1px solid var(--lavender-200);
+   border-radius: 30px;
+   background: var(--paper);
    margin: 72px auto 0;
 }
 
 .dignity-promise {
    min-width: 0;
    display: grid;
-   justify-items: center;
+   justify-items: start;
    align-content: start;
-   text-align: center;
+   border-bottom: 1px solid var(--lavender-200);
+   padding: clamp(28px, 4vw, 44px);
+   text-align: left;
 }
 
 .dignity-graphic {
    width: min(100%, 240px);
-   color: oklch(88% 0.055 305);
+   color: var(--purple);
 }
 
 .dignity-graphic svg {
@@ -2134,7 +2145,7 @@ li {
    overflow: visible;
    fill: none;
    stroke: currentColor;
-   stroke-width: 1.25;
+   stroke-width: 1.7;
    stroke-linecap: round;
    stroke-linejoin: round;
    vector-effect: non-scaling-stroke;
@@ -2148,9 +2159,9 @@ li {
 .dignity-promise h3 {
    max-width: 24ch;
    margin-top: 26px;
-   font-family: var(--font);
+   font-family: var(--font-display);
    font-size: clamp(1.25rem, 4vw, 1.55rem);
-   font-weight: 650;
+   font-weight: 820;
    letter-spacing: -0.035em;
    line-height: 1.2;
 }
@@ -2158,7 +2169,7 @@ li {
 .dignity-promise p {
    max-width: 34ch;
    margin-top: 12px;
-   color: var(--night-text);
+   color: var(--ink-soft);
    font-size: 0.94rem;
    line-height: 1.58;
 }
@@ -2203,7 +2214,11 @@ li {
 
    .dignity-promise {
       flex: 0 0 100%;
-      min-height: 400px;
+      min-height: 420px;
+      border: 1px solid var(--lavender-200);
+      border-radius: 26px;
+      background: var(--paper);
+      padding: 28px;
       scroll-snap-align: start;
       scroll-snap-stop: always;
    }
@@ -2232,7 +2247,7 @@ li {
    }
 
    .dignity-carousel-status {
-      color: var(--lavender-200);
+      color: var(--purple-ink);
       font-size: 0.82rem;
       font-weight: 800;
       letter-spacing: 0.08em;
@@ -2248,10 +2263,10 @@ li {
       height: 46px;
       display: grid;
       place-items: center;
-      border: 1px solid oklch(82% 0.06 305 / 0.32);
+      border: 1px solid var(--lavender-200);
       border-radius: 50%;
-      background: oklch(27% 0.08 296);
-      color: var(--paper);
+      background: var(--paper);
+      color: var(--purple-ink);
       font: inherit;
       font-size: 1.15rem;
       line-height: 1;
@@ -2259,7 +2274,7 @@ li {
    }
 
    .dignity-carousel-buttons button:focus-visible {
-      outline: 3px solid var(--lavender-200);
+      outline: 3px solid var(--purple);
       outline-offset: 3px;
    }
 }
@@ -2290,13 +2305,19 @@ li {
    .dignity-grid {
       width: min(100%, 860px);
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      column-gap: clamp(48px, 7vw, 88px);
-      row-gap: 52px;
       margin-top: 54px;
    }
 
    .dignity-graphic {
-      width: min(100%, 180px);
+      width: min(100%, 150px);
+   }
+
+   .dignity-promise:nth-child(odd) {
+      border-right: 1px solid var(--lavender-200);
+   }
+
+   .dignity-promise:nth-last-child(-n + 2) {
+      border-bottom: 0;
    }
 
    .dignity-promise h3 {
@@ -2307,6 +2328,37 @@ li {
    .dignity-promise p {
       margin-top: 8px;
       font-size: 0.9rem;
+   }
+}
+
+@media (min-width: 1024px) {
+   .dignity-section {
+      padding-block: 96px 104px;
+   }
+
+   .dignity-grid {
+      width: min(100%, 1120px);
+   }
+
+   .dignity-promise {
+      grid-template-columns: 132px minmax(0, 1fr);
+      grid-template-rows: auto 1fr;
+      column-gap: 26px;
+      align-items: start;
+   }
+
+   .dignity-graphic {
+      width: 132px;
+      grid-row: 1 / 3;
+   }
+
+   .dignity-promise h3,
+   .dignity-promise p {
+      grid-column: 2;
+   }
+
+   .dignity-promise h3 {
+      margin-top: 4px;
    }
 }
 
@@ -2537,6 +2589,47 @@ li {
 
 .faq-list {
    border-top: 1px solid var(--line);
+}
+
+.faq-guide-links {
+   display: flex;
+   flex-wrap: wrap;
+   align-items: center;
+   gap: 8px;
+   margin-top: 26px;
+}
+
+.faq-guide-links a {
+   display: inline-flex;
+   gap: 8px;
+   align-items: center;
+   border: 1px solid var(--lavender-200);
+   border-radius: 999px;
+   background: var(--lavender-50);
+   color: var(--purple-ink);
+   padding: 9px 12px;
+   font-size: 0.84rem;
+   font-weight: 800;
+   text-decoration: none;
+   transition:
+      background-color 180ms var(--ease-out),
+      border-color 180ms var(--ease-out),
+      transform 180ms var(--ease-out);
+}
+
+.faq-guide-links a span {
+   transition: transform 180ms var(--ease-out);
+}
+
+.faq-guide-links a:hover span,
+.faq-guide-links a:focus-visible span {
+   transform: translateX(3px);
+}
+
+.faq-guide-links a:hover {
+   border-color: oklch(70% 0.14 300);
+   background: var(--lavender-100);
+   transform: translateY(-1px);
 }
 
 .faq-list details {
@@ -2928,7 +3021,7 @@ li {
    max-height: 680px;
    border: 8px solid var(--paper);
    border-radius: 30px;
-   object-fit: cover;
+   object-fit: contain;
    object-position: top center;
    box-shadow: var(--shadow-md);
 }
@@ -3067,7 +3160,7 @@ li {
    width: min(100%, 340px);
    max-height: 560px;
    border-radius: 22px;
-   object-fit: cover;
+   object-fit: contain;
    object-position: top center;
    box-shadow: var(--shadow-sm);
 }
@@ -4744,8 +4837,9 @@ li {
       gap: 16px;
       border-color: oklch(72% 0.05 305 / 0.22);
       padding-block: 30px;
-      opacity: 0.3;
-      transform: translateX(16px);
+      opacity: 0.44;
+      transform: translateX(12px);
+      cursor: pointer;
       transition:
          opacity 260ms var(--ease-out),
          transform 400ms var(--ease-out);
@@ -4753,6 +4847,12 @@ li {
 
    html[data-landing-version='2'] .deal-section.is-scrubbed .term-list li {
       transition: none;
+   }
+
+   html[data-landing-version='2'] .deal-section .term-list li:focus-visible {
+      border-radius: 18px;
+      outline: 3px solid var(--lavender-200);
+      outline-offset: 4px;
    }
 
    /* the stage panels scrub with the scroll the same way (site.js writes
@@ -5127,6 +5227,13 @@ li {
 
    html[data-landing-version='2'] .hero-walkthrough {
       display: none;
+      justify-content: center;
+      font-size: 0.9rem;
+   }
+
+   html[data-landing-version='2'] .hero-walkthrough-v2 {
+      display: inline-flex;
+      margin-top: 0;
    }
 
    html[data-landing-version='2'] .version-two-actions {
@@ -5135,6 +5242,7 @@ li {
       align-items: center;
       justify-content: center;
       gap: 12px;
+      margin-top: 24px;
    }
 
    html[data-landing-version='2'] .version-two-actions .hero-note {
@@ -5312,22 +5420,6 @@ li {
 
    html[data-landing-version='2'] .tilt-hero-photo-stock img {
       object-position: center 38%;
-   }
-
-   html[data-landing-version='2'] .tilt-hero-disclosure {
-      width: min(100%, 520px);
-      position: absolute;
-      bottom: 4px;
-      left: 50%;
-      z-index: 2;
-      display: block;
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.68rem;
-      font-weight: 600;
-      line-height: 1.4;
-      text-align: center;
-      transform: translateX(-50%);
    }
 
    html[data-landing-version='2'] #main-content > .ask-section {
