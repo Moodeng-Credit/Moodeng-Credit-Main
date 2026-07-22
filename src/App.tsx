@@ -41,6 +41,7 @@ import LearnIndexPage from '@/app/learn/page';
 import PublicGuidePage from '@/app/learn/[slug]/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
+import HelpPage from '@/app/help/page';
 import MoneyGuide from '@/views/academy/MoneyGuide';
 import MoneyGuideTopic from '@/views/academy/MoneyGuideTopic';
 import LenderDiversityPage from '@/app/lender-diversity/page';
@@ -149,6 +150,7 @@ export default function App() {
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
          (location.pathname.startsWith('/user/') && !isUserDetailRoute) ||
          location.pathname.startsWith('/support') ||
+         location.pathname === '/help' ||
          location.pathname.startsWith('/history/'));
 
    useEffect(() => {
@@ -484,6 +486,9 @@ export default function App() {
             <Route path="/auth/line/callback" element={<LineCallback />} />
 
             {/* Help & Support */}
+            {/* Public, shareable chat-first hub (Mecha). Coexists with /help/:loanId
+                above — React Router ranks the more specific param route first. */}
+            <Route path="/help" element={<HelpPage />} />
             <Route
                path="/support"
                element={

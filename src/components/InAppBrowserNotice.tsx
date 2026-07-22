@@ -1,5 +1,7 @@
 import { type JSX, useEffect, useState } from 'react';
 
+import AskMechaButton from '@/components/mecha/AskMechaButton';
+
 import { detectInAppBrowser, openInSystemBrowser, type InAppBrowserInfo } from '@/lib/inAppBrowser';
 
 const DISMISS_KEY = 'moodeng_inapp_notice_dismissed';
@@ -111,6 +113,14 @@ export default function InAppBrowserNotice(): JSX.Element | null {
                   >
                      Not now
                   </button>
+               </div>
+               <div className="mt-2.5">
+                  <AskMechaButton
+                     variant="link"
+                     label="Why isn't this working?"
+                     context={{ page: 'In-app browser notice', step: 'in-app-browser' }}
+                     seedUserMessage={`I opened Moodeng inside ${appLabel} and sign-in / my wallet won't work. What should I do?`}
+                  />
                </div>
             </div>
             <button

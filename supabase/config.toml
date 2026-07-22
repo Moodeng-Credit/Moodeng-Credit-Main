@@ -60,3 +60,8 @@ verify_jwt = true
 
 [functions.admin-loan-notify]
 verify_jwt = true
+
+# Public so Mecha can answer on the landing page, pre-signup, and via the
+# shareable /help link — no auth required to ask a support question.
+[functions.support-chat]
+verify_jwt = false

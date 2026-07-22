@@ -35,6 +35,7 @@ import { DayPicker } from 'react-day-picker';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
+import AskMechaButton from '@/components/mecha/AskMechaButton';
 import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
@@ -1684,9 +1685,21 @@ export default function LoanRequestModal({
                                  <span className="shrink-0">{reason.length}/200</span>
                               </div>
                               {reasonWarning ? (
-                                 <div className="mt-md-1 flex items-start gap-1.5 border-t border-[#f0c98a] pt-md-1 text-md-b3 font-medium leading-[18px] text-[#92400e]">
-                                    <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
-                                    <span>{reasonWarning}</span>
+                                 <div className="mt-md-1 border-t border-[#f0c98a] pt-md-1">
+                                    <div className="flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-[#92400e]">
+                                       <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                       <span>{reasonWarning}</span>
+                                    </div>
+                                    {/* Hand the borrower straight to Mecha to fix it — the effort check
+                                        (check-loan-input) and Mecha share the same DeepSeek brain. */}
+                                    <div className="mt-1.5 pl-[22px]">
+                                       <AskMechaButton
+                                          variant="link"
+                                          label="Ask Mecha to help me word this"
+                                          context={{ page: 'Loan request', step: 'loan-request' }}
+                                          seedUserMessage={`I'm writing a loan request and my reason ("${reason}") was flagged as too vague. How do I write a clear reason that lenders will trust?`}
+                                       />
+                                    </div>
                                  </div>
                               ) : null}
                            </div>
