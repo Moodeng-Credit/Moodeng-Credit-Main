@@ -117,3 +117,4 @@ workflow
 .claude
 config.bat
 .pnpm-store
+node-compile-cache/

@@ -19,6 +19,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendEmail } from '../_shared/email.ts';
+import { recordJobRun } from '../_shared/securityJobRuns.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -209,6 +210,7 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => ({}));
   const trigger: string = body.trigger ?? (body.batch ? 'daily_batch' : 'manual');
+  const startedAt = new Date().toISOString();
 
   try {
     if (body.batch === true) {
@@ -240,6 +242,14 @@ Deno.serve(async (req) => {
         if (users.length < PAGE) break;
         offset += PAGE;
       }
+      // Record the batch run so the heartbeat can confirm the CRS engine is alive.
+      // Only batch (cron) runs are logged; per-user manual recomputes would flood the ledger.
+      await recordJobRun(supa, 'risk-score-recompute', {
+        startedAt,
+        ok: summary.errors.length === 0,
+        signalCount: summary.alerts_fired,
+        detail: { total: summary.total, by_band: summary.by_band, error_count: summary.errors.length }
+      });
       return Response.json({ ok: true, batch: true, summary });
     }
 
@@ -249,6 +259,9 @@ Deno.serve(async (req) => {
     const result = await computeOne(body.user_id, trigger);
     return Response.json({ ok: true, ...result });
   } catch (e) {
+    if (body.batch === true) {
+      await recordJobRun(supa, 'risk-score-recompute', { startedAt, ok: false, detail: { error: (e as Error).message } });
+    }
     return Response.json({ ok: false, error: (e as Error).message }, { status: 500 });
   }
 });

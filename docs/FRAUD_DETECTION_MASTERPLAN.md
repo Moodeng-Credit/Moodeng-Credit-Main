@@ -145,6 +145,24 @@ The phases in §4 fix these in that order. Do them **in order**, one phase per b
 
 **Not yet deployed.** Phase 1 below operationalizes it.
 
+### Phase 2 — DONE in code (not yet deployed)
+
+- Migration `20260722010000`: `public.security_job_runs` run ledger (RLS admin-read, service-role writes).
+- `_shared/securityJobRuns.ts`: `recordJobRun()` helper (never throws).
+- `fraud-signal-scan` and `risk-score-recompute` now write one ledger row per invocation
+  (scan: every run incl. error/no-signal paths; CRS: batch runs only).
+- `_shared/securityHeartbeat.ts`: pure `buildHeartbeat()` — 5 checks, message formatting, 26h logic.
+- `supabase/functions/security-heartbeat/index.ts`: gathers facts, always sends one Telegram
+  message, emails on failure/undeliverable, records its own ledger row.
+- Migration `20260722020000`: pg_cron `security-heartbeat-daily` at 09:00 UTC.
+- Tests: `src/test/securityHeartbeat.test.ts` (11 cases incl. the 11-day-outage scenario).
+- **config.toml finding:** `fraud-signal-scan` has NO `[functions.*]` entry, so it runs with the
+  default `verify_jwt` and authenticates via the cron's service-role bearer token.
+  `security-heartbeat` mirrors this exactly — intentionally no config.toml entry.
+- **Deploy checklist (Phase 1 + 2 together):** run migrations `20260722000000`, `_010000`,
+  `_020000`; `supabase functions deploy fraud-signal-scan risk-score-recompute security-heartbeat`;
+  add the group-description rule "no ℹ️ heartbeat by 10:00 UTC = incident".
+
 ---
 
 ## 4. The phases

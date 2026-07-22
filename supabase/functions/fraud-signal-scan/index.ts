@@ -4,6 +4,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendEmail } from '../_shared/email.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { buildFraudAlertMessage, FraudSignal } from '../_shared/fraudNotifications.ts';
+import { recordJobRun } from '../_shared/securityJobRuns.ts';
+
+const JOB_NAME = 'fraud-signal-scan';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -39,6 +42,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
    }
 
+   const startedAt = new Date().toISOString();
    const body = await req.json().catch(() => ({}));
    const ipWindowDays = typeof body.ipWindowDays === 'number' ? body.ipWindowDays : 14;
 
@@ -46,11 +50,15 @@ serve(async (req) => {
 
    const { data, error } = await supabase.rpc('scan_wallet_fraud_signals', { ip_window_days: ipWindowDays });
    if (error) {
+      // The scan itself failed (e.g. the abs(interval) crash of 2026-06-29). Record it
+      // so the heartbeat sees a broken pipeline instead of mistaking silence for health.
+      await recordJobRun(supabase, JOB_NAME, { startedAt, ok: false, detail: { error: error.message } });
       return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
    }
 
    const signals = ((data?.signals ?? []) as FraudSignal[]) ?? [];
    if (!signals.length) {
+      await recordJobRun(supabase, JOB_NAME, { startedAt, ok: true, signalCount: 0, detail: { message: 'no new signals' } });
       return new Response(JSON.stringify({ message: 'No new fraud signals' }), { status: 200, headers: corsHeaders });
    }
 
@@ -79,7 +87,15 @@ serve(async (req) => {
       delivery.errors.push(`telegram: ${err instanceof Error ? err.message : String(err)}`);
    }
 
-   if (!delivery.email && !delivery.telegram) {
+   const delivered = delivery.email || delivery.telegram;
+   await recordJobRun(supabase, JOB_NAME, {
+      startedAt,
+      ok: delivered,
+      signalCount: signals.length,
+      detail: { delivery }
+   });
+
+   if (!delivered) {
       return new Response(JSON.stringify({ error: 'All alert channels failed', count: signals.length, delivery }), {
          status: 500,
          headers: corsHeaders
