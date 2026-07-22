@@ -1,5 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
+import { alertDeepSeekFailure } from '../_shared/deepseekAlert.ts';
+
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -128,6 +130,9 @@ serve(async (req) => {
 
       if (!aiRes.ok) {
          console.error('check-loan-input: DeepSeek error', aiRes.status, await aiRes.text());
+         // Debounced ping to the admin KYC group — this check fails open, so
+         // without the alert nobody would ever notice it's off.
+         await alertDeepSeekFailure('check-loan-input', aiRes.status);
          return jsonResponse({ ok: true, skipped: 'ai_error' }); // fail open
       }
 
