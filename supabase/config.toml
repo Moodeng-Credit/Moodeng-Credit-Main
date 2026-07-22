@@ -65,3 +65,8 @@ verify_jwt = true
 # shareable /help link — no auth required to ask a support question.
 [functions.support-chat]
 verify_jwt = false
+
+# Public because it serves OIDC discovery + JWKS (Alchemy must fetch them
+# unauthenticated); the /token mint route verifies the Supabase session itself.
+[functions.alchemy-oidc]
+verify_jwt = false
