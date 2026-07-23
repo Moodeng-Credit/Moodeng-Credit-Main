@@ -50,6 +50,9 @@ export default function ConnectWallet() {
    const [keysBlocked, setKeysBlocked] = useState(false);
    const returnTo =
       (location.state as { returnTo?: string } | null)?.returnTo || new URLSearchParams(location.search).get('returnTo') || undefined;
+   // `?instant=1` jumps a borrower straight to the "Create my wallet" screen — a shortcut for
+   // testing and for support to hand blocked borrowers a direct link.
+   const forceInstant = new URLSearchParams(location.search).get('instant') === '1';
    const previewRole = new URLSearchParams(location.search).get('role') === 'lender' ? 'lender' : 'borrower';
    const role = user?.userRole || (isPreview ? previewRole : undefined);
 
@@ -148,7 +151,7 @@ export default function ConnectWallet() {
             isPreview={isPreview}
             isConnecting={pendingKey === 'coinbase' || status === 'pending'}
             instantWalletConfigured={openfort.isConfigured}
-            preferInstant={keysBlocked || baseConnectFailed}
+            preferInstant={keysBlocked || baseConnectFailed || forceInstant}
             onCreateInstantWallet={handleCreateInstantWallet}
             isCreatingInstantWallet={openfort.isConnecting}
             instantWalletError={openfort.error}
