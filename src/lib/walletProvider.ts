@@ -1,4 +1,13 @@
-export type WalletProvider = 'argent' | 'base_wallet' | 'metamask' | 'phantom' | 'rainbow' | 'trust' | 'walletconnect' | 'unknown';
+export type WalletProvider =
+   | 'argent'
+   | 'base_wallet'
+   | 'metamask'
+   | 'openfort'
+   | 'phantom'
+   | 'rainbow'
+   | 'trust'
+   | 'walletconnect'
+   | 'unknown';
 
 const normalizeConnectorValue = (value?: string | null) => (value ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -6,6 +15,7 @@ export const getWalletProviderFromConnectorName = (connectorName?: string | null
    const normalized = normalizeConnectorValue(connectorName);
 
    if (normalized === 'baseaccount' || normalized === 'basewallet') return 'base_wallet';
+   if (normalized === 'openfort' || normalized === 'instantwallet') return 'openfort';
    if (normalized.includes('metamask')) return 'metamask';
    if (normalized.includes('phantom')) return 'phantom';
    if (normalized.includes('walletconnect')) return 'walletconnect';
@@ -29,6 +39,18 @@ export const getWalletProviderFromConnector = ({
 
 export const isBaseWalletProvider = (provider?: string | null) => provider === 'base_wallet';
 
+/** The Openfort embedded smart account — the PH escape-hatch borrower wallet. */
+export const isOpenfortWalletProvider = (provider?: string | null) => provider === 'openfort';
+
+/**
+ * Any wallet that counts as a fully set-up borrower wallet: their locked Base Account OR an
+ * Openfort embedded wallet. Borrower-gating flows (can borrow, can repay, onboarding complete)
+ * should check this rather than `isBaseWalletProvider` so Openfort borrowers aren't treated as
+ * having no wallet.
+ */
+export const isConfirmedBorrowerWalletProvider = (provider?: string | null) =>
+   isBaseWalletProvider(provider) || isOpenfortWalletProvider(provider);
+
 export const getWalletProviderLabel = ({
    connectorName,
    provider,
@@ -46,6 +68,8 @@ export const getWalletProviderLabel = ({
    switch (resolvedProvider) {
       case 'argent':
          return 'Argent';
+      case 'openfort':
+         return 'Instant Wallet';
       case 'metamask':
          return 'MetaMask';
       case 'phantom':
@@ -98,13 +122,19 @@ export const getBaseWalletLockStatus = (wallet?: WalletRecord | null) => {
    const address = normalizeWalletAddress(wallet?.walletAddress);
    const provider = getStoredWalletProvider(wallet);
    const isConfirmedBase = Boolean(address && isBaseWalletProvider(provider));
+   const isConfirmedOpenfort = Boolean(address && isOpenfortWalletProvider(provider));
+   // A borrower is "set up" with either a confirmed Base Account or an Openfort embedded wallet.
+   const isConfirmedBorrowerWallet = isConfirmedBase || isConfirmedOpenfort;
 
    return {
       address,
       provider,
       hasStoredWallet: Boolean(address),
       isConfirmedBase,
-      needsConfirmation: Boolean(address && !isConfirmedBase)
+      isConfirmedOpenfort,
+      isConfirmedBorrowerWallet,
+      // Only nag for confirmation when a stored wallet is neither a confirmed Base nor Openfort lock.
+      needsConfirmation: Boolean(address && !isConfirmedBorrowerWallet)
    };
 };
 
