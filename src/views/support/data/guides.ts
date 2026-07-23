@@ -157,29 +157,52 @@ The key detail: always choose Base as the network. Sending on the wrong network 
       lastUpdated: 'Jul 3, 2026',
       body: `You can withdraw by sending your USDC to a supported exchange or service, selling it there, and transferring the local currency to your bank account.
 
-Video walkthrough — sending USDC from your Base account to Binance: https://www.youtube.com/watch?v=Bqc2u3utbwc
-
 Common options:
 
-Binance P2P
-Send USDC to your Binance account (always choose the Base network), then sell it through Binance P2P and receive local currency straight to your bank or e-wallet.
+Coins.ph (recommended in the Philippines)
+Our recommended option — it's the lowest-cost rail we've found, at roughly 0.70% all-in for a full round trip (see "What fees will I pay?"). Deposit USDC on the Base network, convert to PHP, and cash out to your bank or GCash.
 
 PDAX
 A BSP-regulated Philippine exchange. Deposit USDC, sell for PHP, and withdraw to your bank account.
 
-Coins.ph
-Deposit USDC, convert to PHP, and cash out to your bank or GCash.
-
 GCrypto (GCash)
 If crypto is enabled in your GCash app, you can receive supported crypto and convert inside GCash.
 
+Binance P2P
+Send USDC to your Binance account (always choose the Base network), then sell it through Binance P2P and receive local currency straight to your bank or e-wallet. Video walkthrough — sending USDC from your Base account to Binance: https://www.youtube.com/watch?v=Bqc2u3utbwc
+
 Moneybees (external option)
-Moneybees is an external over-the-counter service some users may use to buy or sell crypto through Moneybees' own process. You'll need to follow Moneybees' instructions directly at https://www.moneybees.ph/.
+Moneybees is an external over-the-counter service some users may use to buy or sell crypto through Moneybees' own process. It usually works out more expensive than Coins.ph, since its margin is built into the rate. You'll need to follow Moneybees' instructions directly at https://www.moneybees.ph/.
 
 Another wallet or exchange
 You can always send USDC to any wallet or exchange you already use — just make sure it supports USDC on the Base network before sending.
 
 The key detail: always select Base as the network when depositing to an exchange. Using the wrong network can result in lost funds.`
+   },
+   {
+      slug: 'fees-and-costs',
+      title: 'What fees will I pay?',
+      lastUpdated: 'Jul 23, 2026',
+      body: `Moodeng itself is free. There are no platform fees on borrowing or lending, and no network (gas) fees when you use a Base Account on Base. The only real cost is the small fee a local exchange charges when you turn your USDC into pesos — and back into USDC when you repay.
+
+The cheapest way: Coins.ph
+Coins.ph is the lowest-cost rail we've found, which is why it's our recommended option in the Philippines. Here's the complete, all-in cost of a $15 loan taken out and repaid — the full round trip — through Coins.ph:
+
+About ₱6.50 total (roughly $0.10) — around 0.70% of the loan amount.
+
+That covers everything:
+- The 0.30% spot trading fee each way — about ₱2.78 to sell USDC for pesos when you cash out, and ₱2.78 to buy it back when you repay.
+- A tiny orderbook spread that stands in for any currency-conversion cost — about ₱0.15 each way.
+- A free PESONet bank cash-out when you receive your pesos.
+- A one-cent (₱0.62) network withdrawal fee to send your repayment USDC back to your Base wallet.
+
+Want the pesos instantly?
+PESONet settles the same or next business day. If you'd rather have the cash in your bank or e-wallet within minutes, choose InstaPay instead — it adds a flat ₱5 fee, bringing the round trip to about ₱11.50 (roughly $0.19, or 1.24%). Either way it's a tiny fraction of what a bank wire, a remittance service, or a "zero-fee" convert app would charge to move the same $15.
+
+What about other services?
+Over-the-counter services like Moneybees usually build their margin into the exchange rate, so they tend to work out more expensive than Coins.ph — that's why we no longer recommend them as the default. You're free to use any exchange or service you like; just check the fees and the rate before you confirm.
+
+Rates and fees are set by each provider and can change. The figures here are approximate examples for a $15 loan — always check the amount shown before you confirm a trade or withdrawal.`
    },
    {
       slug: 'using-usdc-on-moodeng-credit',

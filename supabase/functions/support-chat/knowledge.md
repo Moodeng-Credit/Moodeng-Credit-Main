@@ -311,29 +311,50 @@ The key detail: always choose Base as the network. Sending on the wrong network 
 
 You can withdraw by sending your USDC to a supported exchange or service, selling it there, and transferring the local currency to your bank account.
 
-Video walkthrough — sending USDC from your Base account to Binance: https://www.youtube.com/watch?v=Bqc2u3utbwc
-
 Common options:
 
-Binance P2P
-Send USDC to your Binance account (always choose the Base network), then sell it through Binance P2P and receive local currency straight to your bank or e-wallet.
+Coins.ph (recommended in the Philippines)
+Our recommended option — it's the lowest-cost rail we've found, at roughly 0.70% all-in for a full round trip (see "What fees will I pay?"). Deposit USDC on the Base network, convert to PHP, and cash out to your bank or GCash.
 
 PDAX
 A BSP-regulated Philippine exchange. Deposit USDC, sell for PHP, and withdraw to your bank account.
 
-Coins.ph
-Deposit USDC, convert to PHP, and cash out to your bank or GCash.
-
 GCrypto (GCash)
 If crypto is enabled in your GCash app, you can receive supported crypto and convert inside GCash.
 
+Binance P2P
+Send USDC to your Binance account (always choose the Base network), then sell it through Binance P2P and receive local currency straight to your bank or e-wallet. Video walkthrough — sending USDC from your Base account to Binance: https://www.youtube.com/watch?v=Bqc2u3utbwc
+
 Moneybees (external option)
-Moneybees is an external over-the-counter service some users may use to buy or sell crypto through Moneybees' own process. You'll need to follow Moneybees' instructions directly at https://www.moneybees.ph/.
+Moneybees is an external over-the-counter service some users may use to buy or sell crypto through Moneybees' own process. It usually works out more expensive than Coins.ph, since its margin is built into the rate. You'll need to follow Moneybees' instructions directly at https://www.moneybees.ph/.
 
 Another wallet or exchange
 You can always send USDC to any wallet or exchange you already use — just make sure it supports USDC on the Base network before sending.
 
 The key detail: always select Base as the network when depositing to an exchange. Using the wrong network can result in lost funds.
+
+### What fees will I pay?
+
+Moodeng itself is free. There are no platform fees on borrowing or lending, and no network (gas) fees when you use a Base Account on Base. The only real cost is the small fee a local exchange charges when you turn your USDC into pesos — and back into USDC when you repay.
+
+The cheapest way: Coins.ph
+Coins.ph is the lowest-cost rail we've found, which is why it's our recommended option in the Philippines. Here's the complete, all-in cost of a $15 loan taken out and repaid — the full round trip — through Coins.ph:
+
+About ₱6.50 total (roughly $0.10) — around 0.70% of the loan amount.
+
+That covers everything:
+- The 0.30% spot trading fee each way — about ₱2.78 to sell USDC for pesos when you cash out, and ₱2.78 to buy it back when you repay.
+- A tiny orderbook spread that stands in for any currency-conversion cost — about ₱0.15 each way.
+- A free PESONet bank cash-out when you receive your pesos.
+- A one-cent (₱0.62) network withdrawal fee to send your repayment USDC back to your Base wallet.
+
+Want the pesos instantly?
+PESONet settles the same or next business day. If you'd rather have the cash in your bank or e-wallet within minutes, choose InstaPay instead — it adds a flat ₱5 fee, bringing the round trip to about ₱11.50 (roughly $0.19, or 1.24%). Either way it's a tiny fraction of what a bank wire, a remittance service, or a "zero-fee" convert app would charge to move the same $15.
+
+What about other services?
+Over-the-counter services like Moneybees usually build their margin into the exchange rate, so they tend to work out more expensive than Coins.ph — that's why we no longer recommend them as the default. You're free to use any exchange or service you like; just check the fees and the rate before you confirm.
+
+Rates and fees are set by each provider and can change. The figures here are approximate examples for a $15 loan — always check the amount shown before you confirm a trade or withdrawal.
 
 ### Using USDC on Moodeng Credit
 
@@ -396,12 +417,30 @@ Some Philippine networks (notably **PLDT** and **Smart**) block the sign-in serv
 
 Fixes, easiest first:
 
-1. **Switch Wi-Fi ↔ mobile data.** If one network blocks it, the other often works (e.g. PLDT Wi-Fi blocks it but mobile data doesn't, or the other way around).
-2. **Install the free "1.1.1.1" app by Cloudflare** — no sign-up needed. Open it, turn it **On**, then go back to **https://account.base.app** and try again. This safely reroutes around the block and is the quickest fix for most people.
-3. **Or use a free VPN.** **Proton VPN** is a good, reputable free option. Turn it on, connect to any nearby location (e.g. Singapore, Japan, or the US), then reopen Moodeng and connect your wallet. Turn the VPN on **before** opening the sign-in page.
-4. **Keep your Base Account** — don't switch to a different wallet. The block only affects reaching Base's sign-in service, not the wallet itself, so once you route around it everything works normally.
+1. **Create an instant wallet instead (easiest — nothing to install).** For borrowers, Moodeng can set up a wallet for you straight from your login. When we detect the block (or Base won't connect), the wallet screen shows **"Create your wallet instantly"** — just tap **Create my wallet**. No app, no seed phrase, and network fees are covered for you. See the "Instant wallet" section below. This is now the recommended fix for blocked borrowers.
+2. **Switch Wi-Fi ↔ mobile data.** If one network blocks it, the other often works (e.g. PLDT Wi-Fi blocks it but mobile data doesn't, or the other way around).
+3. **Install the free "1.1.1.1" app by Cloudflare** — no sign-up needed. Open it, turn it **On**, then go back to **https://account.base.app** and try again. This safely reroutes around the block. Choose this if you specifically want to keep using your Base Account.
+4. **Or use a free VPN.** **Proton VPN** is a good, reputable free option. Turn it on, connect to any nearby location (e.g. Singapore, Japan, or the US), then reopen Moodeng and connect your wallet. Turn the VPN on **before** opening the sign-in page.
 
-Safety: only use a well-known VPN (like Proton VPN) or the official **1.1.1.1** app. A VPN just changes how your connection is routed — it never touches your funds, and Moodeng or Base will **never** ask for your seed or recovery phrase.
+Safety: the instant wallet is a real self-custodial wallet you fully own (you can export its key anytime). Only use a well-known VPN (like Proton VPN) or the official **1.1.1.1** app. A VPN just changes how your connection is routed — it never touches your funds, and Moodeng will **never** ask for your seed or recovery phrase.
+
+## The instant wallet (create a wallet without Base)
+
+**What it is:** a wallet Moodeng sets up for the borrower from their existing Moodeng login — no app to download and no seed phrase to write down. It's the escape hatch for people who can't use a Base Account (most often the PLDT/Smart block above).
+
+**When it shows up:** only for **borrowers**, and only when Moodeng is set up for it. On the wallet screen it appears automatically as the main option (**"Create your wallet instantly" → Create my wallet**) when we detect the network block or after a Base connection fails. Otherwise it's offered as a smaller **"Can't connect? Create an instant wallet"** link under the Base button, so anyone who's stuck can still use it. Lenders don't get this — they use the normal wallet picker.
+
+**Should a user use it?** If they're a borrower and Base won't connect (blocked network, "page won't load", certificate warning), yes — it's the quickest path and avoids the block entirely (it doesn't use `keys.coinbase.com`). If their Base Account already works, they can keep using it; the instant wallet is there for when Base is the problem.
+
+**How it works / is it safe:**
+- It's a **real self-custodial wallet** on Base — it receives USDC loans and builds Trust Score exactly like any other wallet.
+- **Gasless:** Moodeng covers the network fees, so the borrower doesn't need ETH to repay or cash out.
+- **You fully own it.** You can reveal and export its private key anytime from **Account → your wallet → "Export wallet key"** and import it into MetaMask, Trust, or any wallet app — then you're free to leave Moodeng entirely.
+- Moodeng never asks for (and the user should never share) their private key. The export screen is the only place the key is shown, and only when the user taps to reveal it.
+
+**If creating it fails:** they'll see a message saying what went wrong (usually "check your internet and try again", or "sign in again"). Have them retry; if it keeps failing, offer to connect them with the team.
+
+**Cashing out:** same as any wallet — send the USDC to an exchange deposit address (GCrypto, Coins.ph, etc.), or use the withdraw flow. The send is gasless from the instant wallet too.
 
 ## "Open in browser" — the in-app browser problem
 
