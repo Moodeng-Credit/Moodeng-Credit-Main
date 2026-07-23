@@ -40,6 +40,14 @@ serve(async (req) => {
       const { data: userData, error: userError } = await supabase.auth.getUser(token);
       if (userError || !userData?.user?.id) return jsonResponse({ error: 'Authentication required' }, 401);
 
+      // Instant wallets are a borrower-only escape hatch (lenders use the multi-wallet picker).
+      // Gating here shrinks the sponsored-gas abuse surface: only borrower accounts can mint a
+      // Shield session, so a non-borrower can't spin up sponsored embedded wallets.
+      const { data: profile } = await supabase.from('users').select('user_role').eq('id', userData.user.id).maybeSingle();
+      if (profile?.user_role !== 'borrower') {
+         return jsonResponse({ error: 'Instant wallet is available to borrowers only.' }, 403);
+      }
+
       const shieldApiKey = Deno.env.get('OPENFORT_SHIELD_PUBLISHABLE_KEY') ?? '';
       const shieldSecret = Deno.env.get('OPENFORT_SHIELD_SECRET_KEY') ?? '';
       const encryptionShare = Deno.env.get('OPENFORT_SHIELD_ENCRYPTION_SHARE') ?? '';

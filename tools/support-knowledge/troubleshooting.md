@@ -38,12 +38,30 @@ Some Philippine networks (notably **PLDT** and **Smart**) block the sign-in serv
 
 Fixes, easiest first:
 
-1. **Switch Wi-Fi ↔ mobile data.** If one network blocks it, the other often works (e.g. PLDT Wi-Fi blocks it but mobile data doesn't, or the other way around).
-2. **Install the free "1.1.1.1" app by Cloudflare** — no sign-up needed. Open it, turn it **On**, then go back to **https://account.base.app** and try again. This safely reroutes around the block and is the quickest fix for most people.
-3. **Or use a free VPN.** **Proton VPN** is a good, reputable free option. Turn it on, connect to any nearby location (e.g. Singapore, Japan, or the US), then reopen Moodeng and connect your wallet. Turn the VPN on **before** opening the sign-in page.
-4. **Keep your Base Account** — don't switch to a different wallet. The block only affects reaching Base's sign-in service, not the wallet itself, so once you route around it everything works normally.
+1. **Create an instant wallet instead (easiest — nothing to install).** For borrowers, Moodeng can set up a wallet for you straight from your login. When we detect the block (or Base won't connect), the wallet screen shows **"Create your wallet instantly"** — just tap **Create my wallet**. No app, no seed phrase, and network fees are covered for you. See the "Instant wallet" section below. This is now the recommended fix for blocked borrowers.
+2. **Switch Wi-Fi ↔ mobile data.** If one network blocks it, the other often works (e.g. PLDT Wi-Fi blocks it but mobile data doesn't, or the other way around).
+3. **Install the free "1.1.1.1" app by Cloudflare** — no sign-up needed. Open it, turn it **On**, then go back to **https://account.base.app** and try again. This safely reroutes around the block. Choose this if you specifically want to keep using your Base Account.
+4. **Or use a free VPN.** **Proton VPN** is a good, reputable free option. Turn it on, connect to any nearby location (e.g. Singapore, Japan, or the US), then reopen Moodeng and connect your wallet. Turn the VPN on **before** opening the sign-in page.
 
-Safety: only use a well-known VPN (like Proton VPN) or the official **1.1.1.1** app. A VPN just changes how your connection is routed — it never touches your funds, and Moodeng or Base will **never** ask for your seed or recovery phrase.
+Safety: the instant wallet is a real self-custodial wallet you fully own (you can export its key anytime). Only use a well-known VPN (like Proton VPN) or the official **1.1.1.1** app. A VPN just changes how your connection is routed — it never touches your funds, and Moodeng will **never** ask for your seed or recovery phrase.
+
+## The instant wallet (create a wallet without Base)
+
+**What it is:** a wallet Moodeng sets up for the borrower from their existing Moodeng login — no app to download and no seed phrase to write down. It's the escape hatch for people who can't use a Base Account (most often the PLDT/Smart block above).
+
+**When it shows up:** only for **borrowers**, and only when Moodeng is set up for it. On the wallet screen it appears automatically as the main option (**"Create your wallet instantly" → Create my wallet**) when we detect the network block or after a Base connection fails. Otherwise it's offered as a smaller **"Can't connect? Create an instant wallet"** link under the Base button, so anyone who's stuck can still use it. Lenders don't get this — they use the normal wallet picker.
+
+**Should a user use it?** If they're a borrower and Base won't connect (blocked network, "page won't load", certificate warning), yes — it's the quickest path and avoids the block entirely (it doesn't use `keys.coinbase.com`). If their Base Account already works, they can keep using it; the instant wallet is there for when Base is the problem.
+
+**How it works / is it safe:**
+- It's a **real self-custodial wallet** on Base — it receives USDC loans and builds Trust Score exactly like any other wallet.
+- **Gasless:** Moodeng covers the network fees, so the borrower doesn't need ETH to repay or cash out.
+- **You fully own it.** You can reveal and export its private key anytime from **Account → your wallet → "Export wallet key"** and import it into MetaMask, Trust, or any wallet app — then you're free to leave Moodeng entirely.
+- Moodeng never asks for (and the user should never share) their private key. The export screen is the only place the key is shown, and only when the user taps to reveal it.
+
+**If creating it fails:** they'll see a message saying what went wrong (usually "check your internet and try again", or "sign in again"). Have them retry; if it keeps failing, offer to connect them with the team.
+
+**Cashing out:** same as any wallet — send the USDC to an exchange deposit address (GCrypto, Coins.ph, etc.), or use the withdraw flow. The send is gasless from the instant wallet too.
 
 ## "Open in browser" — the in-app browser problem
 

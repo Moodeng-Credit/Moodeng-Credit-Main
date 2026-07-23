@@ -10,7 +10,9 @@ import {
    hasWalletAddressOnAccount,
    isBaseWalletProvider,
    isBaseWalletReadyForRepayment,
-   isConnectedToLockedBaseWallet
+   isConfirmedBorrowerWalletProvider,
+   isConnectedToLockedBaseWallet,
+   isOpenfortWalletProvider
 } from '@/lib/walletProvider';
 
 describe('walletProvider', () => {
@@ -182,5 +184,44 @@ describe('walletProvider', () => {
    it('compares wallet addresses case-insensitively', () => {
       expect(areWalletAddressesEqual('0xABCDEF', '0xabcdef')).toBe(true);
       expect(areWalletAddressesEqual('0xABCDEF', '0x123456')).toBe(false);
+   });
+});
+
+describe('walletProvider — Openfort instant wallet', () => {
+   it('detects the Openfort connector name (and the user-facing "Instant Wallet" alias)', () => {
+      expect(getWalletProviderFromConnectorName('Openfort')).toBe('openfort');
+      expect(getWalletProviderFromConnectorName('Instant Wallet')).toBe('openfort');
+      expect(isOpenfortWalletProvider('openfort')).toBe(true);
+      expect(isOpenfortWalletProvider('base_wallet')).toBe(false);
+      expect(isOpenfortWalletProvider(null)).toBe(false);
+   });
+
+   it('labels the Openfort wallet as "Instant Wallet", never "Base Account"', () => {
+      expect(getWalletProviderLabel({ provider: 'openfort' })).toBe('Instant Wallet');
+   });
+
+   it('counts Base OR Openfort as a confirmed borrower wallet, but not other wallets', () => {
+      expect(isConfirmedBorrowerWalletProvider('base_wallet')).toBe(true);
+      expect(isConfirmedBorrowerWalletProvider('openfort')).toBe(true);
+      expect(isConfirmedBorrowerWalletProvider('metamask')).toBe(false);
+      expect(isConfirmedBorrowerWalletProvider('unknown')).toBe(false);
+      expect(isConfirmedBorrowerWalletProvider(null)).toBe(false);
+   });
+
+   it('treats a stored Openfort wallet as a confirmed borrower lock that needs no Base confirmation', () => {
+      expect(
+         getBaseWalletLockStatus({
+            walletAddress: '0xC1022456DFd3BF36af1dA553cd5631F9e76ca8D6',
+            walletProvider: 'openfort'
+         })
+      ).toMatchObject({
+         address: '0xc1022456dfd3bf36af1da553cd5631f9e76ca8d6',
+         hasStoredWallet: true,
+         // It is NOT a Base wallet, but IS a confirmed borrower wallet → no "confirm Base" nag.
+         isConfirmedBase: false,
+         isConfirmedOpenfort: true,
+         isConfirmedBorrowerWallet: true,
+         needsConfirmation: false
+      });
    });
 });

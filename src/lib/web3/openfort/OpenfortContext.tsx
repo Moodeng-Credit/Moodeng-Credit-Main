@@ -11,6 +11,9 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 import { EmbeddedState } from '@openfort/openfort-js';
 import { useDispatch, useSelector } from 'react-redux';
 
+import { useToast } from '@/components/ToastSystem/hooks/useToast';
+import { TOAST_TYPES } from '@/components/ToastSystem/types';
+
 import { getOpenfortClient } from '@/lib/web3/openfort/client';
 import {
    OPENFORT_CHAIN_ID,
@@ -18,6 +21,7 @@ import {
    OPENFORT_WALLET_PROVIDER,
    isOpenfortConfigured
 } from '@/lib/web3/openfort/config';
+import { friendlyConnectError } from '@/lib/web3/openfort/errors';
 import {
    exportEmbeddedPrivateKey,
    logoutEmbeddedWallet,
@@ -51,24 +55,9 @@ interface OpenfortContextValue {
 
 const OpenfortContext = createContext<OpenfortContextValue | null>(null);
 
-// Map raw SDK/network/Shield errors to plain, non-technical copy for borrowers (many on mobile in
-// the Philippines). The raw error is always logged for us; the user only ever sees a human message.
-const friendlyConnectError = (err: unknown): string => {
-   const raw = (err instanceof Error ? err.message : typeof err === 'string' ? err : '').toLowerCase();
-   if (/sign\s?in|signed in|auth|session|token|unauthor|401/.test(raw)) {
-      return 'Please sign in again, then try creating your wallet.';
-   }
-   if (/fetch|network|reach|timeout|timed out|offline|connection|502|503|504/.test(raw)) {
-      return "We couldn't reach the wallet service. Check your internet and try again.";
-   }
-   if (/not configured|endpoint/.test(raw)) {
-      return 'Instant wallet isn’t available right now. Please try again in a little while.';
-   }
-   return "We couldn't finish creating your wallet. Please try again.";
-};
-
 export function OpenfortProvider({ children }: { children: ReactNode }) {
    const dispatch = useDispatch<AppDispatch>();
+   const { showToast } = useToast();
    const storedWalletProvider = useSelector((state: RootState) => state.auth.user?.walletProvider);
    const configured = isOpenfortConfigured();
 
@@ -131,11 +120,15 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
          return account.address;
       } catch (err) {
          console.error('[Openfort] connect failed', err);
-         setError(friendlyConnectError(err));
+         const message = friendlyConnectError(err);
+         setError(message);
          setStatus('error');
+         // Inline message + an active toast, so a struggling borrower can't miss that it failed
+         // and what to do next.
+         showToast(TOAST_TYPES.ERROR, "Couldn't create your wallet", message);
          return null;
       }
-   }, [configured, dispatch]);
+   }, [configured, dispatch, showToast]);
 
    const disconnect = useCallback(async () => {
       try {
