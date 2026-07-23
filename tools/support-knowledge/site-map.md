@@ -31,6 +31,8 @@ There are dedicated marketing pages walking through **how it works** (four steps
 
 A separate in-app **Benefits** page (for borrowers) and **Why Lend** page (for lenders) make the same case in the signed-in app, and a **Team** page introduces the people behind Moodeng.
 
+**IOU rewards for lenders (the specifics shown on the Why Lend page):** lending earns IOU — up to **25 IOU** for funding a first-time borrower, plus **1 IOU for every $1 lent**. Lend to a 2nd-time borrower and you earn 20 IOU, and so on. Lend **5 times** and you're invited to the Moodeng Credit DAO. For now these show as IOU points; when the IOU token airdrop happens, your points help determine your token reward. IOU is for lenders only — borrowers build a Trust Score and Credit Level instead.
+
 ## Moodeng Academy (`/academy`)
 
 An interactive, illustrated walkthrough of how to use the app, with a short tutorial video and a quiz at the end. It walks through: creating an account, verifying (to prove you're a real, unique person), adding a Base Account, understanding that your requested amount decides whether a loan is "trust-building" (below your limit) or "credit-building" (at your full limit), submitting a request, getting matched on the Request Board, repaying clearly and on time, and growing your next credit limit.
@@ -61,7 +63,14 @@ A dedicated page spelling out the same ladder as "How Credit Levels work": **$15
 
 ## Reputation Milestones / Trust Points (`/milestones`)
 
-**Borrower-only** — lenders never see this page. It shows your progress toward reputation milestones like getting verified, your first request, your first funded loan, your first on-time repayment, building a repayment streak, and reaching higher credit levels — each worth a number of Trust Points. Trust Points unlock cosmetic profile rewards (like a colored ring around your avatar or a profile badge) as you cross point thresholds. Important: **Trust Points unlock profile rewards — they do not guarantee funding.**
+**Borrower-only** — lenders never see this page. It shows your progress toward reputation milestones like getting verified, your first request, your first funded loan, your first on-time repayment, building a repayment streak, and reaching higher credit levels — each worth a number of Trust Points. Trust Points unlock cosmetic profile rewards as you cross point thresholds:
+
+- **Silver avatar ring** at **50** Trust Points
+- **Gold avatar ring** at **120** Trust Points
+- **Trusted profile badge** at **250** Trust Points
+- **Top borrower award** at **500** Trust Points
+
+(There are also one-off collectibles, like a Founding Lucky Cat for early borrowers.) Important: **Trust Points unlock profile rewards — they do not guarantee funding**, and they are self-facing (only you see them, not lenders).
 
 ## Support Hub (`/support`)
 

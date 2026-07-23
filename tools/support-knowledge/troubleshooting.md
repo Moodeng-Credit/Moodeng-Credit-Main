@@ -100,7 +100,8 @@ Signing up and getting verified are two separate steps. To verify:
 ## Where do I put a referral code?
 
 - Referral codes are entered at the **start of the loan application**: from the Request Board, tap to apply for a loan, and the first step asks for a referral code — type it and tap **Apply code**. (The step only appears for verified borrowers.)
-- If a user doesn't have a code, they just tap **Continue to application** — the code is optional.
+- What a code does: a valid referral code adds **+$5 to your starting credit limit**. So a new borrower who normally starts at $15 would start at $20 with a valid code.
+- If a user doesn't have a code, they just tap **Continue to application** — the code is optional and there's no penalty for skipping it.
 
 ## Cashing out my loan to GCash / a bank (off-ramp)
 
@@ -115,6 +116,18 @@ If a user doesn't hold USDC yet and needs to repay:
 1. Buy USDC on **Binance P2P, Coins.ph, PDAX, or GCrypto**.
 2. Send it **on the Base network** to the repayment address shown on the **Repay** screen.
 3. Repay **before the due date** — on-time repayment builds Trust Score and unlocks higher credit levels.
+
+## Paying in parts (some now, some later)
+
+You can repay in parts — the Repay screen has **25% / 50% / 75% / Full** buttons or a custom amount, and the loan stays active until it's fully paid. Paying part of it on time still helps: partial on-time payments earn some Trust Points (about 7 for 75% paid, 5 for 50%, 3 for 25%), and a full on-time payment earns the most (10). If part of the payment lands **after** the due date, that late part earns 0 Trust Points and counts as late on your record — but the amount you owe still never grows (no late fees, no rollover). So paying as much as you can before the due date is always better than nothing.
+
+## How much does cashing out cost?
+
+Moodeng itself charges **$0** — the only cost is the exchange's own conversion fee. **Coins.ph is the cheapest route we've found in the Philippines: about 0.70% for a full round trip.** For a $15 loan taken out and repaid, the all-in cost through Coins.ph is roughly **₱6.50 (about $0.10)** — that covers the small trading fee each way, a free PESONet bank cash-out, and the tiny network fee. If you want the pesos instantly instead of same/next-day, InstaPay adds a flat ₱5 (round trip ≈ ₱11.50, about $0.19). Other services (like Moneybees) build their margin into the rate, so they usually cost more.
+
+## Defaulting / a loan that goes unpaid
+
+If a loan isn't repaid it can go into **default**. A default is a **permanent public mark** on the borrower's record, and the account is **frozen from new borrowing** until things are resolved — a defaulted or overdue borrower is sent to an account-support screen with a **Repay Now** option when they sign in. The amount owed still never grows (no late fees or rollover), and Moodeng never contacts family, friends, or coworkers. If someone's account is frozen and they think it's a mistake, offer to connect them with the team.
 
 ## Safety reminders (always true, repeat when relevant)
 

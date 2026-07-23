@@ -52,7 +52,7 @@ The **Account** tab (bottom navigation) shows the username and verification badg
 
 Everything here, section by section:
 
-- **Basic Information** — **Email Address** (change/verify), and for borrowers **Bio Info** ("Work, income, and what you need help with" — the same bio collected on your first loan application; edit it here any time).
+- **Basic Information** — your **Display Name** (edit it right at the top of Account Settings, next to your avatar), your **Email Address** (change/verify), and for borrowers **Bio Info** ("Work, income, and what you need help with" — the same bio collected on your first loan application; edit it here any time).
 - **Preferences** — **Dark Mode** toggle and app **language** switcher.
 - **Security & Verification** — two read-only rows, **World ID** and **ID Verification**, each showing **Verified** or **Not Verified**. Email/password users also see a **Password** row with **Change**.
 - **Wallet** — **Connected Wallet** (address shown shortened; tap or the copy icon to copy), buttons **Change wallet** and **Disconnect wallet** (asks "Disconnect wallet?" to confirm), and a **Network** row showing **Base**. Borrowers with an active loan see their wallet marked **locked** — that's intentional, so the loan and repayment history stay tied to one wallet. Borrowers who still need a Base wallet see a **Confirm your Base Account** prompt here instead.
@@ -77,7 +77,7 @@ Reached only from the Dashboard's **Withdraw your USDC** card (not a nav tab). F
 
 From the **Request Board** tab, tap **Apply For A Loan** to open the application.
 
-1. Eligible verified borrowers first see a **Referral Boost** step — **Have a referral code?** field with **Apply code**, or **Continue to application** if you don't have one.
+1. Eligible verified borrowers first see a **Referral Boost** step — **Have a referral code?** field with **Apply code**, or **Continue to application** if you don't have one. A valid referral code adds **+$5 to your starting credit limit**. It's optional — no code just means no boost.
 2. If you're not verified yet, you'll be prompted to **Verify Yourself** first.
 3. Then **Set Your Own Terms**: **Borrow Amount** (up to your **Current Limit**), **Set Repayment Amount**, **Set Repayment Date** (up to 120 days out), and **Reason For Borrowing** (at least 40 characters — Mecha can help you word it if it's too vague). Submit with **Make Your Request**.
 4. First-time borrowers also fill in a short bio (friendly name, optional photo, work type, payday window, income/expenses) — this is the same **Bio Info** editable later from Account Settings.
@@ -111,3 +111,5 @@ The **History** tab (shared borrower + lender) shows **Transaction History** (bo
 ## Profile
 
 `/profile` is your own signed-in profile, with Dashboard / Loan Summary / Transaction History / Settings / Support tabs. A public borrower profile is also visible at `/user/:username` — this is what a lender sees before funding a request (verification status, credit level, repayment history) — it never shows ID documents, contacts, or private messages.
+
+**Lenders are anonymous.** A lender is identified only by a username tied to their wallet — there is no public lender profile, and borrowers cannot see who a lender is. (Only borrowers have a public profile, so lenders can review a request before funding it.)
