@@ -51,8 +51,21 @@ interface OpenfortContextValue {
 
 const OpenfortContext = createContext<OpenfortContextValue | null>(null);
 
-const toMessage = (err: unknown): string =>
-   err instanceof Error ? err.message : typeof err === 'string' ? err : 'Something went wrong creating your wallet.';
+// Map raw SDK/network/Shield errors to plain, non-technical copy for borrowers (many on mobile in
+// the Philippines). The raw error is always logged for us; the user only ever sees a human message.
+const friendlyConnectError = (err: unknown): string => {
+   const raw = (err instanceof Error ? err.message : typeof err === 'string' ? err : '').toLowerCase();
+   if (/sign\s?in|signed in|auth|session|token|unauthor|401/.test(raw)) {
+      return 'Please sign in again, then try creating your wallet.';
+   }
+   if (/fetch|network|reach|timeout|timed out|offline|connection|502|503|504/.test(raw)) {
+      return "We couldn't reach the wallet service. Check your internet and try again.";
+   }
+   if (/not configured|endpoint/.test(raw)) {
+      return 'Instant wallet isn’t available right now. Please try again in a little while.';
+   }
+   return "We couldn't finish creating your wallet. Please try again.";
+};
 
 export function OpenfortProvider({ children }: { children: ReactNode }) {
    const dispatch = useDispatch<AppDispatch>();
@@ -117,7 +130,8 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
 
          return account.address;
       } catch (err) {
-         setError(toMessage(err));
+         console.error('[Openfort] connect failed', err);
+         setError(friendlyConnectError(err));
          setStatus('error');
          return null;
       }

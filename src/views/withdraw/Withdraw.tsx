@@ -73,6 +73,9 @@ type WithdrawData = {
    dueDate: string | null;
    walletAddress: string;
    isPreview: boolean;
+   // True when the borrower cashes out from an Openfort instant wallet: the send is gasless and
+   // backend-signed, so button copy must not tell them to "Confirm in your wallet" (no popup).
+   isInstantWallet: boolean;
    // Returns the on-chain tx hash (or null if the send failed / was rejected).
    // `exchange` labels the destination for the withdrawal record + notification.
    // `confirmed` is true when the payment already settled on-chain before returning (Base Pay),
@@ -667,7 +670,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                         icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />}
                         name="Coins.ph"
                         line1="Sell for pesos, withdraw to bank or GCash"
-                        line2="Bank or GCash · ~30 min"
+                        line2="Lowest fees · bank or GCash · ~30 min"
                      />
                      <PickerRow
                         selected={selected}
@@ -1005,7 +1008,7 @@ type AppFlowConfig = {
 };
 
 function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed: (amount: number) => void; onDone: () => void }) {
-   const { available: LOAN_USDC, spendable, isPreview, send } = useWithdrawData();
+   const { available: LOAN_USDC, spendable, isPreview, isInstantWallet, send } = useWithdrawData();
    const [address, setAddress] = useState('');
    const [amount, setAmount] = useState('');
    const [sending, setSending] = useState(false);
@@ -1153,7 +1156,8 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
                <PrimaryBtn disabled={!canSend} onClick={handleSend}>
                   {sending ? (
                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" /> {confirming ? 'Confirming on Base…' : 'Confirm in your wallet…'}
+                        <Loader2 className="w-4 h-4 animate-spin" />{' '}
+                        {confirming ? 'Confirming on Base…' : isInstantWallet ? 'Sending…' : 'Confirm in your wallet…'}
                      </>
                   ) : (
                      <>
@@ -1445,7 +1449,7 @@ const COINSPH_FLOW: AppFlowConfig = {
 
 /* ─── Binance flow (custom — has P2P cash-out guide with video) ──── */
 function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) => void; onDone: () => void }) {
-   const { available: LOAN_USDC, spendable, isPreview, send } = useWithdrawData();
+   const { available: LOAN_USDC, spendable, isPreview, isInstantWallet, send } = useWithdrawData();
    const region = useRegion();
    const isPH = region !== 'other';
    const [address, setAddress] = useState('');
@@ -1631,7 +1635,8 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
                <PrimaryBtn disabled={!canSend} onClick={handleSend}>
                   {sending ? (
                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" /> {confirming ? 'Confirming on Base…' : 'Confirm in your wallet…'}
+                        <Loader2 className="w-4 h-4 animate-spin" />{' '}
+                        {confirming ? 'Confirming on Base…' : isInstantWallet ? 'Sending…' : 'Confirm in your wallet…'}
                      </>
                   ) : (
                      <>
@@ -2112,6 +2117,7 @@ export default function Withdraw() {
               : null,
          walletAddress,
          isPreview,
+         isInstantWallet: activePaymentMethod === 'openfort',
          send: async (toAddress: string, amount: string, exchange: string, onSubmitted?: () => void) => {
             if (isPreview) {
                await new Promise((r) => setTimeout(r, 1500));

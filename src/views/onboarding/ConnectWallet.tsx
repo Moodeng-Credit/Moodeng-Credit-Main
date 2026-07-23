@@ -212,11 +212,24 @@ function BorrowerConnectView({
             />
 
             <div className="flex flex-1 flex-col items-center justify-center px-md-4 text-center">
-               <img
-                  src="/icons/base-wallet.svg"
-                  alt="Instant Wallet"
-                  className="mb-md-3 size-16 rounded-md-xl shadow-[0_18px_56px_rgba(96,16,210,0.22)]"
-               />
+               {/* Instant wallet — deliberately NOT the Base logo (this screen exists because Base
+                   won't work). Lightning tile = "instant"; swap for a bespoke icon when ready. */}
+               <div className="mb-md-3 flex size-16 items-center justify-center rounded-md-xl bg-md-primary-1200 shadow-[0_18px_56px_rgba(96,16,210,0.22)] dark:shadow-[0_18px_60px_rgba(112,16,210,0.38)]">
+                  <span
+                     aria-hidden="true"
+                     className="block size-9 bg-md-neutral-100"
+                     style={{
+                        WebkitMaskImage: "url('/icons/lightning.svg')",
+                        maskImage: "url('/icons/lightning.svg')",
+                        WebkitMaskRepeat: 'no-repeat',
+                        maskRepeat: 'no-repeat',
+                        WebkitMaskPosition: 'center',
+                        maskPosition: 'center',
+                        WebkitMaskSize: 'contain',
+                        maskSize: 'contain'
+                     }}
+                  />
+               </div>
                <div className="mb-md-4 flex max-w-[360px] flex-col items-center gap-md-2">
                   <h2 className="text-[32px] font-semibold leading-[1.12] text-md-heading dark:text-md-neutral-100">
                      Create your wallet instantly
@@ -227,6 +240,11 @@ function BorrowerConnectView({
                   </p>
                </div>
                <InstantWalletButton onClick={onCreateInstantWallet} isDisabled={isCreatingInstantWallet} />
+               {isCreatingInstantWallet && !instantWalletError ? (
+                  <p className="mt-md-2 max-w-[360px] text-md-b3 font-medium text-md-neutral-700">
+                     Setting up your wallet — this takes a few seconds. Keep this screen open.
+                  </p>
+               ) : null}
                {instantWalletError ? (
                   <p className="mt-md-2 max-w-[360px] text-md-b3 font-medium text-md-red-500">{instantWalletError}</p>
                ) : null}
