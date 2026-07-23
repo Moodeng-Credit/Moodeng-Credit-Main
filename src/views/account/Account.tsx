@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 import IouPointHistoryModal from '@/components/IouPointHistoryModal';
 import UserAvatar from '@/components/UserAvatar';
+import WalletActivity from '@/views/account/WalletActivity';
 import WalletBalanceCard from '@/views/account/WalletBalanceCard';
 
 import { type LocaleCode, useLocalization } from '@/i18n';
@@ -386,7 +387,12 @@ export default function Account() {
                {/* Wallet home — the borrower's "money" view (balance + cash out). Renders only
                    when the instant wallet is on (the card self-gates); Base Account borrowers
                    and lenders keep their own wallet flows. */}
-               {!isLender && hasWallet ? <WalletBalanceCard /> : null}
+               {!isLender && hasWallet ? (
+                  <>
+                     <WalletBalanceCard />
+                     <WalletActivity />
+                  </>
+               ) : null}
 
                {/* Account Information */}
                <div className="flex flex-col gap-3">
