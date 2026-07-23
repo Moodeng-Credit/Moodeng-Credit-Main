@@ -70,3 +70,8 @@ verify_jwt = true
 # shareable /help link — no auth required to ask a support question.
 [functions.support-chat]
 verify_jwt = false
+
+# Openfort low-gas-balance webhook receiver — Openfort POSTs here (no Supabase JWT) when
+# the project gas credit drops below the configured threshold. Gated by a shared URL token.
+[functions.openfort-gas-webhook]
+verify_jwt = false
