@@ -7,7 +7,14 @@ import { useLocalization } from '@/i18n';
 import { poseSrc } from '@/components/mecha/mechaAssets';
 import MechaChatPanel from '@/components/mecha/MechaChatPanel';
 import { getMechaCopy } from '@/components/mecha/mechaCopy';
-import { MECHA_CLOSE_EVENT, MECHA_OPEN_EVENT, type MechaContext, type MechaOpenDetail } from '@/components/mecha/mechaBus';
+import {
+   MECHA_CLOSE_EVENT,
+   MECHA_OPEN_EVENT,
+   MECHA_SIGNAL_EVENT,
+   type MechaContext,
+   type MechaOpenDetail,
+   hasMechaProblemSignal
+} from '@/components/mecha/mechaBus';
 import { DEFAULT_QUICK_REPLIES, type LocalizedText, pickList, pickText, stepForLocation } from '@/components/mecha/stepContext';
 import { loadMechaLocale, saveMechaLocale } from '@/components/mecha/mechaStorage';
 import { useMechaChat } from '@/components/mecha/useMechaChat';
@@ -40,6 +47,16 @@ export default function MechaLauncher(): JSX.Element | null {
    const [isOpen, setIsOpen] = useState(false);
    const [nudge, setNudge] = useState<LocalizedText | null>(null);
    const [override, setOverride] = useState<MechaContext | null>(null);
+   // Problem-gated bubble: hidden while everything works; appears once the user hits a
+   // problem (error toast / explicit openMecha) and stays for the session. Friction steps
+   // (wallet connect, verify) always show it — that's where people get stuck.
+   const [problemSignaled, setProblemSignaled] = useState<boolean>(() => hasMechaProblemSignal());
+
+   useEffect(() => {
+      const onSignal = () => setProblemSignaled(true);
+      window.addEventListener(MECHA_SIGNAL_EVENT, onSignal);
+      return () => window.removeEventListener(MECHA_SIGNAL_EVENT, onSignal);
+   }, []);
 
    // Fresh context at send-time: an explicit openMecha(context) wins, else the route step.
    const contextRef = useRef<MechaContext>({});
@@ -67,6 +84,8 @@ export default function MechaLauncher(): JSX.Element | null {
          const detail = (e as CustomEvent<MechaOpenDetail>).detail ?? {};
          if (detail.context) setOverride(detail.context);
          if (detail.greeting) seedGreeting(detail.greeting);
+         // An explicit open means the user needed help — keep the bubble around after close.
+         setProblemSignaled(true);
          open();
          if (detail.seedUserMessage) void send(detail.seedUserMessage);
       };
@@ -107,11 +126,15 @@ export default function MechaLauncher(): JSX.Element | null {
    const overNav = OVER_NAV_PREFIXES.some((p) => location.pathname.startsWith(p));
    const bubbleBottom = { bottom: `calc(env(safe-area-inset-bottom, 0px) + ${overNav ? 92 : 20}px)` };
    const quickReplies = pickList(step?.quickReplies ?? DEFAULT_QUICK_REPLIES, locale);
+   // Bubble only when there's a reason: the user hit a problem this session, or they're on
+   // a friction step where proactive help is the point. Everywhere else Mecha stays out of
+   // the way — the Help page still embeds the full panel for anyone who goes looking.
+   const showBubble = problemSignaled || Boolean(step?.nudge);
 
    return (
       <>
          {/* Launcher bubble + proactive nudge */}
-         {!isOpen ? (
+         {!isOpen && showBubble ? (
             <div className="fixed right-4 z-[90] flex flex-col items-end gap-2" style={bubbleBottom}>
                {nudge ? (
                   <div className="mecha-nudge relative mb-1 max-w-[240px] rounded-2xl rounded-br-md border border-[#e6ddf6] bg-white px-3.5 py-2.5 text-[13px] leading-snug text-[#1b0a36] shadow-[0_10px_30px_rgba(27,10,54,0.18)] dark:border-[#40354F] dark:bg-[#17121F] dark:text-[#F8F4FF]">

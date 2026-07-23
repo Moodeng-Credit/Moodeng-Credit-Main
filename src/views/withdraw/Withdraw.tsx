@@ -28,6 +28,8 @@ import posthog from 'posthog-js';
 import { useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
+
+import { useUsdcRate } from '@/lib/useUsdcRate';
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 
 import { openSupportContacts } from '@/components/support/supportContacts';
@@ -149,29 +151,7 @@ function SecondaryBtn({ children, onClick }: { children: React.ReactNode; onClic
    );
 }
 
-/* Live USDC → fiat rate from CoinGecko's free endpoint. Falls back to an approximate
-   fixed rate if the request is blocked/rate-limited, so a payout estimate always shows. */
-const FALLBACK_RATE: Record<'php' | 'usd', number> = { php: 58.5, usd: 1 };
-function useUsdcRate(currency: 'php' | 'usd') {
-   const [rate, setRate] = useState<{ value: number; live: boolean }>({ value: FALLBACK_RATE[currency], live: false });
-   useEffect(() => {
-      let cancelled = false;
-      setRate({ value: FALLBACK_RATE[currency], live: false });
-      fetch(`https://api.coingecko.com/api/v3/simple/price?ids=usd-coin&vs_currencies=${currency}`)
-         .then((r) => (r.ok ? r.json() : Promise.reject()))
-         .then((d) => {
-            const v = d?.['usd-coin']?.[currency];
-            if (!cancelled && typeof v === 'number') setRate({ value: v, live: true });
-         })
-         .catch(() => {
-            /* keep the fallback rate */
-         });
-      return () => {
-         cancelled = true;
-      };
-   }, [currency]);
-   return rate;
-}
+/* Live USDC → fiat rate — shared hook (also powers the balance card's peso line). */
 
 function ReceiveEstimate({ currency, usdcAmount }: { currency: string; usdcAmount: number }) {
    const cur = currency.toLowerCase() === 'php' ? 'php' : 'usd';

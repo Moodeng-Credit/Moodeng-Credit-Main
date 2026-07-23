@@ -3,8 +3,9 @@
 import type { ReactNode } from 'react';
 import { createContext, useCallback, useMemo, useReducer } from 'react';
 
+import { signalMechaProblem } from '@/components/mecha/mechaBus';
 import { TOAST_SETTINGS } from '@/components/ToastSystem/config/toastConfig';
-import { type ToastPropsType } from '@/components/ToastSystem/types';
+import { TOAST_TYPES, type ToastPropsType } from '@/components/ToastSystem/types';
 
 interface ToastState {
    toasts: ToastPropsType[];
@@ -71,6 +72,9 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
    const [state, dispatch] = useReducer(toastReducer, initialState);
 
    const addToast = useCallback((toastData: Omit<ToastPropsType, 'id'>) => {
+      // An error toast = the user just hit a problem → surface the Mecha help bubble
+      // for the rest of the session (it stays hidden while everything works).
+      if (toastData.toastType === TOAST_TYPES.ERROR) signalMechaProblem();
       dispatch({ type: 'ADD_TOAST', payload: toastData });
    }, []);
 

@@ -13,7 +13,7 @@ import type { WalletConnectorKey } from '@/config/wagmiConfig';
 import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
 import { checkCoinbaseKeysReachability } from '@/lib/coinbaseReachability';
 import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkReload';
-import { getBaseAccountConnector } from '@/lib/walletProvider';
+import { getBaseAccountConnector, getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { useOpenfort } from '@/lib/web3/openfort';
 import type { RootState } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
@@ -141,6 +141,12 @@ export default function ConnectWallet() {
 
    if (!role) {
       return <Navigate to="/onboarding/role" replace />;
+   }
+
+   // A borrower whose wallet is already locked (Base or instant) must never see this screen
+   // again — offering "create" against an existing wallet only produces errors and confusion.
+   if (!isPreview && role === 'borrower' && getBaseWalletLockStatus(user).isConfirmedBorrowerWallet) {
+      return <Navigate to="/onboarding/wallet/connected" replace state={{ returnTo }} />;
    }
 
    if (role === 'borrower') {

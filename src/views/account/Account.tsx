@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 import IouPointHistoryModal from '@/components/IouPointHistoryModal';
 import UserAvatar from '@/components/UserAvatar';
+import WalletBalanceCard from '@/views/account/WalletBalanceCard';
 
 import { type LocaleCode, useLocalization } from '@/i18n';
 import { isUserVerified } from '@/lib/isUserVerified';
@@ -67,6 +68,7 @@ const ACCOUNT_COPY: Record<
       signingOut: string;
       cancel: string;
       settingsAria: string;
+      helpLabel: string;
    }
 > = {
    en: {
@@ -87,13 +89,14 @@ const ACCOUNT_COPY: Record<
       verified: 'Verified',
       notVerified: 'Not Verified',
       connectWallet: 'Connect Wallet',
-      addBaseWallet: 'Add Base Wallet',
+      addBaseWallet: 'Set up wallet',
       signOut: 'Sign Out',
       signOutTitle: 'Sign out?',
       signOutBody: 'You can sign back in anytime. Your Trust Score stays with your wallet.',
       signingOut: 'Signing Out...',
       cancel: 'Cancel',
-      settingsAria: 'Go to Account Settings'
+      settingsAria: 'Go to Account Settings',
+      helpLabel: 'Help'
    },
    fil: {
       accountInformation: 'Impormasyon ng account',
@@ -113,13 +116,14 @@ const ACCOUNT_COPY: Record<
       verified: 'Beripikado',
       notVerified: 'Hindi beripikado',
       connectWallet: 'Ikonek ang wallet',
-      addBaseWallet: 'Idagdag ang Base Wallet',
+      addBaseWallet: 'I-set up ang wallet',
       signOut: 'Mag-sign out',
       signOutTitle: 'Mag-sign out?',
       signOutBody: 'Puwede kang mag-sign in ulit anumang oras. Mananatili sa wallet mo ang Trust Score mo.',
       signingOut: 'Nag-sign out...',
       cancel: 'Kanselahin',
-      settingsAria: 'Pumunta sa Account Settings'
+      settingsAria: 'Pumunta sa Account Settings',
+      helpLabel: 'Tulong'
    },
    id: {
       accountInformation: 'Informasi akun',
@@ -139,13 +143,14 @@ const ACCOUNT_COPY: Record<
       verified: 'Terverifikasi',
       notVerified: 'Belum terverifikasi',
       connectWallet: 'Hubungkan wallet',
-      addBaseWallet: 'Tambahkan Base Wallet',
+      addBaseWallet: 'Siapkan dompet',
       signOut: 'Keluar',
       signOutTitle: 'Keluar?',
       signOutBody: 'Kamu bisa masuk lagi kapan saja. Trust Score tetap bersama wallet kamu.',
       signingOut: 'Keluar...',
       cancel: 'Batal',
-      settingsAria: 'Buka Pengaturan Akun'
+      settingsAria: 'Buka Pengaturan Akun',
+      helpLabel: 'Bantuan'
    },
    th: {
       accountInformation: 'ข้อมูลบัญชี',
@@ -165,13 +170,14 @@ const ACCOUNT_COPY: Record<
       verified: 'ยืนยันแล้ว',
       notVerified: 'ยังไม่ได้ยืนยัน',
       connectWallet: 'เชื่อมต่อกระเป๋าเงิน',
-      addBaseWallet: 'เพิ่ม Base Wallet',
+      addBaseWallet: 'ตั้งค่ากระเป๋าเงิน',
       signOut: 'ออกจากระบบ',
       signOutTitle: 'ออกจากระบบ?',
       signOutBody: 'คุณสามารถเข้าสู่ระบบใหม่ได้ทุกเมื่อ Trust Score จะยังอยู่กับกระเป๋าเงินของคุณ',
       signingOut: 'กำลังออกจากระบบ...',
       cancel: 'ยกเลิก',
-      settingsAria: 'ไปที่การตั้งค่าบัญชี'
+      settingsAria: 'ไปที่การตั้งค่าบัญชี',
+      helpLabel: 'ช่วยเหลือ'
    },
    vi: {
       accountInformation: 'Thông tin tài khoản',
@@ -191,13 +197,14 @@ const ACCOUNT_COPY: Record<
       verified: 'Đã xác minh',
       notVerified: 'Chưa xác minh',
       connectWallet: 'Kết nối ví',
-      addBaseWallet: 'Thêm Base Wallet',
+      addBaseWallet: 'Thiết lập ví',
       signOut: 'Đăng xuất',
       signOutTitle: 'Đăng xuất?',
       signOutBody: 'Bạn có thể đăng nhập lại bất cứ lúc nào. Trust Score vẫn đi cùng ví của bạn.',
       signingOut: 'Đang đăng xuất...',
       cancel: 'Hủy',
-      settingsAria: 'Đi tới Cài đặt tài khoản'
+      settingsAria: 'Đi tới Cài đặt tài khoản',
+      helpLabel: 'Trợ giúp'
    }
 };
 
@@ -337,27 +344,50 @@ export default function Account() {
                   </div>
                </div>
 
-               {!hasWallet ? (
+               <div className="flex shrink-0 items-center gap-2">
+                  {!hasWallet ? (
+                     <button
+                        type="button"
+                        onClick={() => navigate('/onboarding/wallet')}
+                        className="flex items-center gap-2.5 border border-md-blue-400 rounded-md-pill px-4 py-3 bg-white shrink-0"
+                     >
+                        <div
+                           className="w-5 h-5 shrink-0 bg-md-blue-400"
+                           style={{
+                              ...ICON_MASK_BASE,
+                              WebkitMaskImage: "url('/icons/wallet.png')",
+                              maskImage: "url('/icons/wallet.png')"
+                           }}
+                        />
+                        <span className="text-md-b2 font-semibold text-md-blue-400">{walletSetupLabel}</span>
+                     </button>
+                  ) : null}
+                  {/* Help lives here now, not on the nav bar. */}
                   <button
                      type="button"
-                     onClick={() => navigate('/onboarding/wallet')}
-                     className="flex items-center gap-2.5 border border-md-blue-400 rounded-md-pill px-4 py-3 bg-white shrink-0"
+                     onClick={() => navigate('/help')}
+                     className="flex items-center gap-2 border border-md-neutral-500 rounded-md-pill px-3.5 py-3 bg-white shrink-0"
                   >
                      <div
-                        className="w-5 h-5 shrink-0 bg-md-blue-400"
+                        className="w-5 h-5 shrink-0 bg-md-neutral-1200"
                         style={{
                            ...ICON_MASK_BASE,
-                           WebkitMaskImage: "url('/icons/wallet.png')",
-                           maskImage: "url('/icons/wallet.png')"
+                           WebkitMaskImage: "url('/icons/question_light.svg')",
+                           maskImage: "url('/icons/question_light.svg')"
                         }}
                      />
-                     <span className="text-md-b2 font-semibold text-md-blue-400">{walletSetupLabel}</span>
+                     <span className="text-md-b2 font-semibold text-md-neutral-1200">{copy.helpLabel}</span>
                   </button>
-               ) : null}
+               </div>
             </div>
 
             {/* Content */}
             <div className="flex flex-col gap-5 px-md-4">
+               {/* Wallet home — the borrower's "money" view (balance + cash out). Renders only
+                   when the instant wallet is on (the card self-gates); Base Account borrowers
+                   and lenders keep their own wallet flows. */}
+               {!isLender && hasWallet ? <WalletBalanceCard /> : null}
+
                {/* Account Information */}
                <div className="flex flex-col gap-3">
                   <p className="text-md-b2 font-medium text-md-neutral-700">{copy.accountInformation}</p>
