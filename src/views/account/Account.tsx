@@ -315,7 +315,13 @@ export default function Account() {
                      <UserAvatar size={48} />
                   </button>
                   <div className="flex min-w-0 flex-col gap-1">
-                     <p className="max-w-full break-words text-md-h6 font-semibold leading-tight text-md-heading [overflow-wrap:anywhere]">
+                     {/* Long auto-generated names (from emails) drop to a smaller size so they
+                         wrap cleanly instead of orphaning a character on line two. */}
+                     <p
+                        className={`max-w-full break-words font-semibold leading-tight text-md-heading [overflow-wrap:anywhere] ${
+                           displayName.length > 18 ? 'text-md-b1' : 'text-md-h6'
+                        }`}
+                     >
                         {displayName}
                      </p>
                      {isLender ? (

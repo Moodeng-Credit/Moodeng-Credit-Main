@@ -33,6 +33,12 @@ type WalletCopy = {
    moneyArrivedTitle: string;
    moneyArrivedBody: string;
    cashOut: string;
+   addMoney: string;
+   addMoneyStep1: string;
+   addMoneyStep2: string;
+   addMoneyStep3: string;
+   addMoneySafety: string;
+   done: string;
    details: string;
    instantWallet: string;
    walletType: string;
@@ -50,6 +56,12 @@ const WALLET_COPY: Record<LocaleCode, WalletCopy> = {
       moneyArrivedTitle: 'Money arrived',
       moneyArrivedBody: 'landed in your wallet',
       cashOut: 'Cash out',
+      addMoney: 'Add money',
+      addMoneyStep1: 'Buy USDC in GCash (GCrypto), Coins.ph, or the exchange you use.',
+      addMoneyStep2: 'Send it to your wallet address below — choose the Base network.',
+      addMoneyStep3: 'It shows up in your balance in about a minute.',
+      addMoneySafety: 'Only you can move this money.',
+      done: 'Done',
       details: 'Wallet details',
       instantWallet: 'Instant Wallet',
       walletType: 'Wallet type',
@@ -65,6 +77,12 @@ const WALLET_COPY: Record<LocaleCode, WalletCopy> = {
       moneyArrivedTitle: 'May dumating na pera',
       moneyArrivedBody: 'ay pumasok sa wallet mo',
       cashOut: 'Mag-cash out',
+      addMoney: 'Magdagdag ng pera',
+      addMoneyStep1: 'Bumili ng USDC sa GCash (GCrypto), Coins.ph, o exchange na gamit mo.',
+      addMoneyStep2: 'Ipadala ito sa wallet address mo sa ibaba — piliin ang Base network.',
+      addMoneyStep3: 'Lalabas ito sa balance mo sa loob ng mga isang minuto.',
+      addMoneySafety: 'Ikaw lang ang makakagalaw ng perang ito.',
+      done: 'Tapos',
       details: 'Mga detalye ng wallet',
       instantWallet: 'Instant Wallet',
       walletType: 'Uri ng wallet',
@@ -80,6 +98,12 @@ const WALLET_COPY: Record<LocaleCode, WalletCopy> = {
       moneyArrivedTitle: 'Uang masuk',
       moneyArrivedBody: 'masuk ke dompetmu',
       cashOut: 'Tarik dana',
+      addMoney: 'Isi saldo',
+      addMoneyStep1: 'Beli USDC di exchange yang kamu pakai (mis. Indodax, Tokocrypto).',
+      addMoneyStep2: 'Kirim ke alamat dompetmu di bawah — pilih jaringan Base.',
+      addMoneyStep3: 'Saldo muncul dalam waktu sekitar satu menit.',
+      addMoneySafety: 'Hanya kamu yang bisa memindahkan uang ini.',
+      done: 'Selesai',
       details: 'Detail dompet',
       instantWallet: 'Instant Wallet',
       walletType: 'Jenis dompet',
@@ -95,6 +119,12 @@ const WALLET_COPY: Record<LocaleCode, WalletCopy> = {
       moneyArrivedTitle: 'เงินเข้าแล้ว',
       moneyArrivedBody: 'เข้ากระเป๋าเงินของคุณ',
       cashOut: 'ถอนเงิน',
+      addMoney: 'เติมเงิน',
+      addMoneyStep1: 'ซื้อ USDC ในแอปแลกเปลี่ยนที่คุณใช้ (เช่น Bitkub)',
+      addMoneyStep2: 'ส่งมาที่ที่อยู่กระเป๋าเงินของคุณด้านล่าง — เลือกเครือข่าย Base',
+      addMoneyStep3: 'ยอดเงินจะแสดงภายในประมาณหนึ่งนาที',
+      addMoneySafety: 'มีเพียงคุณเท่านั้นที่ย้ายเงินนี้ได้',
+      done: 'เสร็จสิ้น',
       details: 'รายละเอียดกระเป๋าเงิน',
       instantWallet: 'Instant Wallet',
       walletType: 'ประเภทกระเป๋าเงิน',
@@ -110,6 +140,12 @@ const WALLET_COPY: Record<LocaleCode, WalletCopy> = {
       moneyArrivedTitle: 'Tiền đã đến',
       moneyArrivedBody: 'đã vào ví của bạn',
       cashOut: 'Rút tiền',
+      addMoney: 'Nạp tiền',
+      addMoneyStep1: 'Mua USDC trên sàn bạn dùng (ví dụ Binance).',
+      addMoneyStep2: 'Gửi đến địa chỉ ví của bạn bên dưới — chọn mạng Base.',
+      addMoneyStep3: 'Số dư sẽ hiện trong khoảng một phút.',
+      addMoneySafety: 'Chỉ bạn mới có thể di chuyển số tiền này.',
+      done: 'Xong',
       details: 'Chi tiết ví',
       instantWallet: 'Instant Wallet',
       walletType: 'Loại ví',
@@ -139,6 +175,7 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
    const { showToast } = useToast();
    const user = useSelector((state: RootState) => state.auth.user);
    const [showDetails, setShowDetails] = useState(false);
+   const [showAddMoney, setShowAddMoney] = useState(false);
 
    const copy = WALLET_COPY[locale];
    const walletLock = getBaseWalletLockStatus(user);
@@ -203,9 +240,9 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
    };
 
    return (
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col">
          {/* Balance hero — reads as "here's your money", GCash/Atome style. */}
-         <div className="rounded-[20px] bg-gradient-to-br from-[#7B5FFF] to-[#6010D2] p-5 text-white shadow-[0_14px_40px_rgba(96,16,210,0.28)]">
+         <div className="relative z-10 rounded-[20px] bg-gradient-to-br from-[#7B5FFF] to-[#6010D2] p-5 text-white shadow-[0_14px_40px_rgba(96,16,210,0.28)]">
             <p className="text-md-b3 font-medium text-white/80">{copy.availableBalance}</p>
             <div className="mt-1 flex items-baseline gap-1">
                <span className="text-[40px] font-bold leading-none tracking-[-0.02em]">
@@ -222,19 +259,29 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
                {balance != null && balance > 0 ? copy.subtitle : copy.emptySubtitle}
             </p>
 
-            {/* One action only — Repay already lives on the nav bar. */}
-            <button
-               type="button"
-               onClick={() => navigate('/withdraw')}
-               className="mt-4 w-full rounded-[14px] bg-white px-4 py-3 text-md-b1 font-semibold text-md-primary-1200 transition-all duration-150 hover:brightness-95 active:scale-[0.98]"
-            >
-               {copy.cashOut}
-            </button>
+            {/* Money in / money out — the two GCash verbs. Repay lives on the nav bar. */}
+            <div className="mt-4 grid grid-cols-2 gap-3">
+               <button
+                  type="button"
+                  onClick={() => setShowAddMoney(true)}
+                  className="rounded-[14px] border border-white/40 bg-white/10 px-4 py-3 text-md-b1 font-semibold text-white transition-all duration-150 hover:bg-white/20 active:scale-[0.98]"
+               >
+                  {copy.addMoney}
+               </button>
+               <button
+                  type="button"
+                  onClick={() => navigate('/withdraw')}
+                  className="rounded-[14px] bg-white px-4 py-3 text-md-b1 font-semibold text-md-primary-1200 transition-all duration-150 hover:brightness-95 active:scale-[0.98]"
+               >
+                  {copy.cashOut}
+               </button>
+            </div>
          </div>
 
          {/* Wallet details — the crypto plumbing, deliberately folded away so it never fronts
-             a non-crypto borrower. Only opened by someone who goes looking for it. */}
-         <div className="rounded-[16px] border border-md-neutral-400 bg-white dark:bg-md-neutral-200 overflow-hidden">
+             a non-crypto borrower. Tucked under the card like an attached drawer (inset +
+             pulled up behind it) so card and details read as one object. */}
+         <div className="mx-3 -mt-3 overflow-hidden rounded-b-[16px] border border-t-0 border-md-neutral-400 bg-white pt-3 dark:bg-md-neutral-200">
             <button
                type="button"
                onClick={() => setShowDetails((v) => !v)}
@@ -296,6 +343,57 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
                </div>
             ) : null}
          </div>
+
+         {/* Add money — the cash-in path. Same copy-address pattern the repay top-up helper
+             uses, framed in plain money words. One quiet reassurance line, not a paragraph. */}
+         {showAddMoney ? (
+            <div
+               className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50"
+               onClick={() => setShowAddMoney(false)}
+            >
+               <div
+                  className="flex w-full max-w-[440px] flex-col overflow-hidden rounded-t-[24px] bg-white dark:bg-[#1a1425]"
+                  onClick={(e) => e.stopPropagation()}
+               >
+                  <div className="flex items-center justify-between border-b border-md-neutral-400 px-md-5 py-md-3">
+                     <h2 className="text-md-h5 font-semibold text-md-heading dark:text-white">{copy.addMoney}</h2>
+                     <button
+                        type="button"
+                        onClick={() => setShowAddMoney(false)}
+                        className="text-md-b1 font-semibold text-md-primary-900"
+                     >
+                        {copy.done}
+                     </button>
+                  </div>
+                  <div className="flex flex-col gap-md-3 px-md-5 py-md-4 pb-[calc(env(safe-area-inset-bottom,0px)+20px)]">
+                     <ol className="flex flex-col gap-md-2">
+                        {[copy.addMoneyStep1, copy.addMoneyStep2, copy.addMoneyStep3].map((text, i) => (
+                           <li key={text} className="flex items-start gap-3">
+                              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f3effe] text-md-b3 font-bold text-[#6c3fe0]">
+                                 {i + 1}
+                              </span>
+                              <span className="text-md-b2 font-medium leading-6 text-md-neutral-1200">{text}</span>
+                           </li>
+                        ))}
+                     </ol>
+                     <button
+                        type="button"
+                        onClick={copyAddress}
+                        className="flex items-center justify-between gap-3 rounded-[14px] border border-md-neutral-400 bg-md-neutral-200 px-md-4 py-md-3 text-left"
+                     >
+                        <span className="min-w-0 flex-1">
+                           <span className="block text-md-b3 font-medium text-md-neutral-700">{copy.address}</span>
+                           <span className="block break-all font-mono text-md-b2 font-semibold text-md-heading">{address}</span>
+                        </span>
+                        <span className="shrink-0 rounded-md-pill bg-md-primary-1200 px-3 py-1.5 text-md-b3 font-semibold text-white">
+                           {copy.copyAddress}
+                        </span>
+                     </button>
+                     <p className="text-center text-md-b3 font-medium text-md-neutral-700">🔒 {copy.addMoneySafety}</p>
+                  </div>
+               </div>
+            </div>
+         ) : null}
       </div>
    );
 }
