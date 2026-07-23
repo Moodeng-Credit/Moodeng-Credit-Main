@@ -54,9 +54,9 @@ export const VerificationUnsuccessfulModal: FC<VerificationUnsuccessfulModalProp
             {/* Body */}
             <div className="flex flex-col items-center gap-4 px-5 pb-6 pt-6 text-center sm:gap-5 sm:px-6 sm:pb-8 sm:pt-7">
                {/* Icon */}
-               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-md-red-100 sm:h-16 sm:w-16">
+               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-md-yellow-100 sm:h-16 sm:w-16">
                   <svg
-                     className="h-7 w-7 text-md-red-300 sm:h-8 sm:w-8"
+                     className="h-7 w-7 text-md-yellow-700 sm:h-8 sm:w-8"
                      fill="none"
                      viewBox="0 0 24 24"
                      stroke="currentColor"
@@ -71,7 +71,7 @@ export const VerificationUnsuccessfulModal: FC<VerificationUnsuccessfulModalProp
                   id="verify-unsuccessful-title"
                   className="text-md-h5 font-semibold text-md-heading tracking-tight sm:text-md-h4"
                >
-                  We couldn&rsquo;t verify you
+                  Verification didn&rsquo;t go through
                </h2>
 
                {/* Message */}
@@ -79,12 +79,12 @@ export const VerificationUnsuccessfulModal: FC<VerificationUnsuccessfulModalProp
                   id="verify-unsuccessful-desc"
                   className="text-md-b2 font-medium leading-relaxed text-md-neutral-1000 sm:text-md-b1"
                >
-                  We&rsquo;re sorry &mdash; we weren&rsquo;t able to verify you with {methodLabel}. You can try again anytime.
-                  If you need help, our team is here for you.
+                  We weren&rsquo;t able to verify you with {methodLabel} this time. No worries &mdash; you can try again
+                  whenever you&rsquo;re ready.
                </p>
 
-               {/* Restart + support CTAs */}
-               <div className="flex w-full flex-col gap-3 pt-1">
+               {/* Restart CTA */}
+               <div className="w-full pt-1">
                   <button
                      type="button"
                      onClick={() => {
@@ -93,48 +93,51 @@ export const VerificationUnsuccessfulModal: FC<VerificationUnsuccessfulModalProp
                      }}
                      className="flex w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-colors hover:opacity-90 active:scale-[0.99]"
                   >
-                     Try verification again
+                     Try again
                   </button>
-                  <a
-                     href={telegramUrl}
-                     target="_blank"
-                     rel="noopener noreferrer"
-                     className="flex w-full items-center justify-center gap-2 rounded-md-lg px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-colors hover:brightness-105 active:scale-[0.99]"
-                     style={{ backgroundColor: '#0088CC' }}
-                  >
-                     <img src="/icons/telegram-classic-filled.png" alt="" className="h-5 w-5 shrink-0" />
-                     Contact support on Telegram
-                  </a>
-                  <a
-                     href={SUPPORT_FACEBOOK_URL}
-                     target="_blank"
-                     rel="noopener noreferrer"
-                     className="flex w-full items-center justify-center gap-2 rounded-md-lg px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-colors hover:brightness-105 active:scale-[0.99]"
-                     style={{ backgroundColor: '#1877F2' }}
-                  >
-                     <span
-                        className="h-5 w-5 shrink-0 bg-md-neutral-100"
-                        aria-hidden="true"
-                        style={{
-                           WebkitMaskImage: "url('/icons/facebook.svg')",
-                           maskImage: "url('/icons/facebook.svg')",
-                           WebkitMaskSize: 'contain',
-                           maskSize: 'contain',
-                           WebkitMaskRepeat: 'no-repeat',
-                           maskRepeat: 'no-repeat',
-                           WebkitMaskPosition: 'center',
-                           maskPosition: 'center'
-                        }}
-                     />
-                     Contact support on Facebook
-                  </a>
-                  <button
-                     type="button"
-                     onClick={onClose}
-                     className="pt-1 text-md-b2 font-medium text-md-neutral-700 underline underline-offset-2"
-                  >
-                     Dismiss
-                  </button>
+               </div>
+
+               {/* Support: demoted below a labelled divider so it reads as a fallback, not a co-equal action */}
+               <div className="flex w-full flex-col gap-3">
+                  <div className="flex items-center gap-3" aria-hidden="true">
+                     <span className="h-px flex-1 bg-md-neutral-300" />
+                     <span className="text-md-b3 font-medium text-md-neutral-700">or get help from our team</span>
+                     <span className="h-px flex-1 bg-md-neutral-300" />
+                  </div>
+                  <div className="flex w-full gap-3">
+                     <a
+                        href={telegramUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-md-lg border border-md-neutral-300 px-md-3 py-md-3 text-md-b2 font-semibold text-md-heading transition-colors hover:bg-md-neutral-300 active:scale-[0.99]"
+                     >
+                        <img src="/icons/telegram-classic-filled.png" alt="" className="h-5 w-5 shrink-0" />
+                        Telegram
+                     </a>
+                     <a
+                        href={SUPPORT_FACEBOOK_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-md-lg border border-md-neutral-300 px-md-3 py-md-3 text-md-b2 font-semibold text-md-heading transition-colors hover:bg-md-neutral-300 active:scale-[0.99]"
+                     >
+                        <span
+                           className="h-5 w-5 shrink-0"
+                           aria-hidden="true"
+                           style={{
+                              backgroundColor: '#1877F2',
+                              WebkitMaskImage: "url('/icons/facebook.svg')",
+                              maskImage: "url('/icons/facebook.svg')",
+                              WebkitMaskSize: 'contain',
+                              maskSize: 'contain',
+                              WebkitMaskRepeat: 'no-repeat',
+                              maskRepeat: 'no-repeat',
+                              WebkitMaskPosition: 'center',
+                              maskPosition: 'center'
+                           }}
+                        />
+                        Facebook
+                     </a>
+                  </div>
                </div>
             </div>
          </div>
