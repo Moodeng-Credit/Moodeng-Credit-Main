@@ -75,7 +75,7 @@ const FUND_SOURCE_FEES: Record<FundSourceId, number | null> = {
 
 // Short pitch shown under the hero (primary) source so the recommendation explains itself.
 const SOURCE_SUBTITLE: Partial<Record<FundSourceId, string>> = {
-   coinsph: 'Recommended · buy USDC with PHP, cash out to bank or GCash',
+   coinsph: 'Recommended · lowest fees · buy USDC with PHP, cash out to bank or GCash',
    moneybees: "External option · you follow Moneybees' own process",
    binance: 'Best option outside the Philippines'
 };
@@ -1640,7 +1640,11 @@ export default function Repay() {
                                  {pendingTxHash ? 'Confirming on Base…' : 'Sending payment…'}
                               </p>
                               <p className="mt-1 text-md-b3 text-md-neutral-1200">
-                                 {pendingTxHash ? 'Recording your repayment — hang tight.' : 'Approve the transaction in your wallet.'}
+                                 {pendingTxHash
+                                    ? 'Recording your repayment — hang tight.'
+                                    : activePaymentMethod === 'openfort'
+                                      ? 'Sending from your instant wallet — no confirmation needed.'
+                                      : 'Approve the transaction in your wallet.'}
                               </p>
                            </div>
                            {explorerTxUrl ? (
