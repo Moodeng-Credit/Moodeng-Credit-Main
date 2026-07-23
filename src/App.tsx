@@ -86,6 +86,7 @@ import WhyLend from '@/app/whylend/page';
 import { VerificationUnsuccessfulModal } from '@/components/verification/VerificationUnsuccessfulModal';
 import { type RootState } from '@/store/store';
 import Account from '@/views/account/Account';
+import AccountWalletPreview from '@/views/account/AccountWalletPreview';
 import AccountSettings from '@/views/account/AccountSettings';
 import Dashboard from '@/views/dashboard/Dashboard';
 import RequestBoard from '@/views/dashboard/RequestBoard';
@@ -254,6 +255,7 @@ export default function App() {
             {import.meta.env.DEV ? <Route path="/onboarding/wallet-connected-preview" element={<WalletConnected />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/wallet-blocked-preview" element={<WalletBlocked />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/congratulations-preview" element={<CongratulationsPage />} /> : null}
+            {import.meta.env.DEV ? <Route path="/account-wallet-preview" element={<AccountWalletPreview />} /> : null}
 
             {/* Verification */}
             <Route

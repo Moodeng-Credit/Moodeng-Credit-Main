@@ -28,6 +28,7 @@ import LoanSummarySection from '@/views/dashboard/components/LoanSummarySection'
 import ReputationMilestones from '@/views/dashboard/components/ReputationMilestones';
 import TrustScoreSection from '@/views/dashboard/components/TrustScoreSection';
 import UpcomingLoanDues from '@/views/dashboard/components/UpcomingLoanDues';
+import WalletBalanceCard from '@/views/account/WalletBalanceCard';
 import UserGreeting from '@/views/dashboard/components/UserGreeting';
 import VerificationCTA from '@/views/dashboard/components/VerificationCTA';
 import { buildReputationMilestones, getBorrowerLoans } from '@/views/dashboard/dashboardHelpers';
@@ -178,7 +179,11 @@ export default function Dashboard() {
    const isVerified = isUserVerified(user);
    const { open: openVerify, modal: verifyModal } = useVerifyYourself();
    // Base Account OR an Openfort embedded wallet counts as a set-up borrower wallet.
-   const hasBorrowerBaseWallet = getBaseWalletLockStatus(user).isConfirmedBorrowerWallet;
+   const walletLock = getBaseWalletLockStatus(user);
+   const hasBorrowerBaseWallet = walletLock.isConfirmedBorrowerWallet;
+   // Instant-wallet borrowers get the GCash-style balance card up top (it owns Cash out),
+   // so the separate withdraw banner would be redundant for them.
+   const hasInstantWallet = walletLock.isConfirmedOpenfort;
    const { pointsTotal: trustPointsTotal, isLoading: isTrustScoreLoading } = useTrustPointTotal({
       userId: user.id,
       fallbackPoints: 0,
@@ -303,6 +308,10 @@ export default function Dashboard() {
             <DashboardHeader />
             <UserGreeting user={user} />
 
+            {/* GCash/Atome-style money home: instant-wallet borrowers see their balance first
+                thing on the screen they land on. Self-gates — Base borrowers see nothing. */}
+            <WalletBalanceCard />
+
             <div className="dashboard-score-card bg-md-neutral-100 rounded-md-lg p-4 shadow-md-card flex flex-col gap-4 bg-gradient-to-b from-white to-[#eee6fa]">
                <div data-tour-target="dashboard-trust-score">
                   <TrustScoreSection trustScore={displayTrustScore} isLoading={!isMockRich && isTrustScoreLoading} />
@@ -317,7 +326,7 @@ export default function Dashboard() {
                </div>
             </div>
 
-            {displayFundedLoans.length > 0 ? (
+            {displayFundedLoans.length > 0 && !hasInstantWallet ? (
                <button
                   type="button"
                   onClick={() => navigate('/withdraw')}
