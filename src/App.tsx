@@ -83,6 +83,7 @@ import WorldIdVerification from '@/app/verify-world-id/page';
 import DiditVerification from '@/app/verify-didit/page';
 import VerifyFlow from '@/app/verify/page';
 import WhyLend from '@/app/whylend/page';
+import { VerificationUnsuccessfulModal } from '@/components/verification/VerificationUnsuccessfulModal';
 import { type RootState } from '@/store/store';
 import Account from '@/views/account/Account';
 import AccountSettings from '@/views/account/AccountSettings';
@@ -276,6 +277,12 @@ export default function App() {
                }
             />
             {import.meta.env.DEV ? <Route path="/verify-world-id-preview" element={<WorldIdVerification />} /> : null}
+            {import.meta.env.DEV ? (
+               <Route
+                  path="/verify-unsuccessful-preview"
+                  element={<VerificationUnsuccessfulModal isOpen method="didit" onClose={() => {}} />}
+               />
+            ) : null}
             <Route
                path="/verify-didit"
                element={
