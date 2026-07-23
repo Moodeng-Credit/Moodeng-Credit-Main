@@ -1,16 +1,25 @@
+import { useSelector } from 'react-redux';
 import { BaseError, ChainMismatchError, InsufficientFundsError, parseUnits, UserRejectedRequestError } from 'viem';
-import { useWriteContract } from 'wagmi';
+import { useAccount, useWriteContract } from 'wagmi';
 
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME, getAllowedChainTokenConfig } from '@/config/wagmiConfig';
 import { BasePaymentError, startBasePayment, waitForBasePayment } from '@/lib/basePay';
+import { OPENFORT_WALLET_PROVIDER, sendUsdcFromEmbeddedWallet } from '@/lib/web3/openfort';
+import type { RootState } from '@/store/store';
 import { ERROR_CODES, type ErrorCode } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 
-/** How the USDC leaves the payer's hands: Base Account's one-popup pay, or a wagmi wallet transfer. */
-export type PaymentMethod = 'base' | 'wallet';
+/**
+ * How the USDC leaves the payer's hands:
+ * - `base`    Base Account's one-popup pay (cold-start capable).
+ * - `wallet`  a wagmi-connected wallet transfer.
+ * - `openfort` a sponsored, gasless send from the borrower's Openfort embedded smart account —
+ *             the PH escape hatch for users whose ISP blocks keys.coinbase.com.
+ */
+export type PaymentMethod = 'base' | 'wallet' | 'openfort';
 
 export interface PaymentOutcome {
    /** On-chain identifier stored as the loan/withdrawal `hash` (a userOp hash on the Base Pay path). */
@@ -60,6 +69,30 @@ const ERC20_ABI = [
       type: 'function'
    }
 ];
+
+/**
+ * Collapses the send rail down to how the payment settles for the server. An Openfort send is a
+ * normal on-chain USDC transfer with a real tx hash, so it's verified exactly like a `wallet`
+ * payment (by hash) — the `confirm-loan-payment` fn and the reconciler only distinguish `base`
+ * (poll Base Pay status) from everything else. Use this whenever a {@link PaymentMethod} flows
+ * into `confirmLoanPayment` / `registerPendingBasePayment`, which speak only `base | wallet`.
+ */
+export const toSettlementMethod = (method: PaymentMethod): 'base' | 'wallet' => (method === 'base' ? 'base' : 'wallet');
+
+/**
+ * Resolves which rail a payment should use for the current user. A borrower locked to an
+ * Openfort embedded wallet always sends via `openfort` (they have no wagmi connection and must
+ * never fall through to Base Pay, which their ISP may block). Everyone else keeps the existing
+ * rule: a connected wagmi wallet → `wallet`, otherwise Base Account's one-popup pay.
+ *
+ * Drop-in replacement for the inline `account.isConnected ? 'wallet' : 'base'` at the send sites.
+ */
+export const useActivePaymentMethod = (): PaymentMethod => {
+   const { isConnected } = useAccount();
+   const walletProvider = useSelector((state: RootState) => state.auth.user?.walletProvider);
+   if (walletProvider === OPENFORT_WALLET_PROVIDER) return 'openfort';
+   return isConnected ? 'wallet' : 'base';
+};
 
 const useWallet = () => {
    const { writeContractAsync } = useWriteContract();
@@ -155,6 +188,19 @@ const useWallet = () => {
                return null;
             }
             showToastByConfig(getToastKeyFromErrorCode(paymentError?.errorCode ?? ERROR_CODES.TRANSACTION_FAILED));
+            return null;
+         }
+      }
+
+      if (method === 'openfort') {
+         // Sponsored, gasless send from the embedded smart account. The wallet self-provisions
+         // (recovers) on demand, so this works even on a fresh page load with no prior tap.
+         try {
+            const hash = await sendUsdcFromEmbeddedWallet({ to, usdAmount });
+            return { hash };
+         } catch (err) {
+            console.error('[payUsdc:openfort] send failed', err);
+            showToastByConfig(getToastKeyFromErrorCode(classifyTransferError(err)));
             return null;
          }
       }

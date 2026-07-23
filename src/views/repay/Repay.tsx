@@ -14,7 +14,7 @@ import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal
 
 import { useGeoCheck } from '@/hooks/useGeoCheck';
 import { useLoanData } from '@/hooks/useLoanData';
-import useWallet, { type PaymentMethod } from '@/hooks/useWallet';
+import useWallet, { type PaymentMethod, toSettlementMethod, useActivePaymentMethod } from '@/hooks/useWallet';
 
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
@@ -75,7 +75,7 @@ const FUND_SOURCE_FEES: Record<FundSourceId, number | null> = {
 
 // Short pitch shown under the hero (primary) source so the recommendation explains itself.
 const SOURCE_SUBTITLE: Partial<Record<FundSourceId, string>> = {
-   coinsph: 'Recommended · buy USDC with PHP, cash out to bank or GCash',
+   coinsph: 'Recommended · lowest fees · buy USDC with PHP, cash out to bank or GCash',
    moneybees: "External option · you follow Moneybees' own process",
    binance: 'Best option outside the Philippines'
 };
@@ -312,6 +312,8 @@ export default function Repay() {
    const { showToast, showToastByConfig } = useToast();
    const { payUsdc } = useWallet();
    const account = useAccount();
+   // Openfort-locked borrowers send via their embedded wallet; everyone else keeps wallet/Base.
+   const activePaymentMethod = useActivePaymentMethod();
    const { status: connectStatus } = useConnect();
    const { switchChainAsync } = useSwitchChain();
 
@@ -521,7 +523,7 @@ export default function Repay() {
    const baseWalletLock = getBaseWalletLockStatus(user);
    const isWorldIdVerified = isUserVerified(user);
    const { open: openVerify, modal: verifyModal } = useVerifyYourself('repay');
-   const hasCompletedBaseWalletSetup = baseWalletLock.isConfirmedBase;
+   const hasCompletedBaseWalletSetup = baseWalletLock.isConfirmedBorrowerWallet;
    const emptyRepayState = !selectedLoan
       ? !isWorldIdVerified && !hasCompletedBaseWalletSetup
          ? {
@@ -730,8 +732,8 @@ export default function Repay() {
 
       // Already connected a wallet → pay from it in one signature. Otherwise Base Pay: a single
       // popup that fuses Base Account sign-in and the USDC send, so repayment is one tap even
-      // from a cold start.
-      const method: PaymentMethod = account.isConnected ? 'wallet' : 'base';
+      // from a cold start. An Openfort-locked borrower sends gaslessly from their embedded wallet.
+      const method: PaymentMethod = activePaymentMethod;
 
       // Only the wagmi path needs the chain guard up front; Base Pay switches to Base itself.
       if (method === 'wallet' && !(await ensureAllowedChain(account.chainId, switchChainAsync))) {
@@ -813,17 +815,17 @@ export default function Repay() {
             return;
          }
 
-         // The wagmi path has no onSubmitted: the money is in flight from here, so arm
-         // reconciliation now — a DB confirm that fails below gets retried instead of the
-         // repayment silently never recording.
-         if (method === 'wallet') {
+         // The wagmi and Openfort paths have no onSubmitted: the money is in flight from here, so
+         // arm reconciliation now — a DB confirm that fails below gets retried instead of the
+         // repayment silently never recording. Openfort settles on-chain like a wallet transfer.
+         if (method === 'wallet' || method === 'openfort') {
             registerPendingBasePayment({
                kind: 'repay',
                id: outcome.hash,
                loanId: selectedLoan.id,
                repaidAmount: newRepaidAmount,
                repaymentStatus: newRepaymentStatus,
-               method
+               method: toSettlementMethod(method)
             });
          }
 
@@ -851,7 +853,7 @@ export default function Repay() {
             confirmLoanPayment({
                loanId: selectedLoan.id,
                hash: outcome.hash,
-               method,
+               method: toSettlementMethod(method),
                action: 'repay'
             })
          ).unwrap();
@@ -918,6 +920,7 @@ export default function Repay() {
       isProcessing,
       amountError,
       parsedRepaymentAmount,
+      activePaymentMethod,
       account.isConnected,
       account.address,
       account.chainId,
@@ -1637,7 +1640,11 @@ export default function Repay() {
                                  {pendingTxHash ? 'Confirming on Base…' : 'Sending payment…'}
                               </p>
                               <p className="mt-1 text-md-b3 text-md-neutral-1200">
-                                 {pendingTxHash ? 'Recording your repayment — hang tight.' : 'Approve the transaction in your wallet.'}
+                                 {pendingTxHash
+                                    ? 'Recording your repayment — hang tight.'
+                                    : activePaymentMethod === 'openfort'
+                                      ? 'Sending from your instant wallet — no confirmation needed.'
+                                      : 'Approve the transaction in your wallet.'}
                               </p>
                            </div>
                            {explorerTxUrl ? (

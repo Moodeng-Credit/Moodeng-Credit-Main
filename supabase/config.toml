@@ -61,6 +61,11 @@ verify_jwt = true
 [functions.admin-loan-notify]
 verify_jwt = true
 
+# Mints an Openfort Shield encryption session for embedded-wallet recovery. Gated to
+# signed-in users (the function also re-verifies the JWT) so it can't be called anonymously.
+[functions.openfort-shield-session]
+verify_jwt = true
+
 # Public so Mecha can answer on the landing page, pre-signup, and via the
 # shareable /help link — no auth required to ask a support question.
 [functions.support-chat]

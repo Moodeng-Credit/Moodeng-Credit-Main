@@ -177,7 +177,8 @@ export default function Dashboard() {
    const previewLoans = useMemo(() => buildPreviewLoans(user.id), [user.id]);
    const isVerified = isUserVerified(user);
    const { open: openVerify, modal: verifyModal } = useVerifyYourself();
-   const hasBorrowerBaseWallet = getBaseWalletLockStatus(user).isConfirmedBase;
+   // Base Account OR an Openfort embedded wallet counts as a set-up borrower wallet.
+   const hasBorrowerBaseWallet = getBaseWalletLockStatus(user).isConfirmedBorrowerWallet;
    const { pointsTotal: trustPointsTotal, isLoading: isTrustScoreLoading } = useTrustPointTotal({
       userId: user.id,
       fallbackPoints: 0,
