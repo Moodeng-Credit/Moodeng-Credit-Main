@@ -27,6 +27,7 @@ import { confirmEmailChange, fetchUser, updateUser } from '@/store/slices/authSl
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import EditBioInfoModal from '@/views/account/EditBioInfoModal';
+import ExportInstantWalletKey from '@/views/account/ExportInstantWalletKey';
 
 const ICON_MASK: React.CSSProperties = {
    WebkitMaskSize: 'contain',
@@ -1099,14 +1100,15 @@ export default function AccountSettings() {
    const isBorrower = user?.userRole === 'borrower';
    const connectedWalletName = connector?.name;
    const baseWalletLock = getBaseWalletLockStatus(user);
-   const borrowerHasConfirmedBaseWallet = isBorrower && baseWalletLock.isConfirmedBase;
+   // Base Account OR an Openfort embedded wallet both count as a confirmed borrower wallet.
+   const borrowerHasConfirmedBaseWallet = isBorrower && baseWalletLock.isConfirmedBorrowerWallet;
    const borrowerHasNonBaseWallet =
       isBorrower &&
       hasWallet &&
       Boolean(baseWalletLock.provider) &&
       baseWalletLock.provider !== 'unknown' &&
-      !baseWalletLock.isConfirmedBase;
-   const borrowerNeedsBaseWallet = isBorrower && !baseWalletLock.isConfirmedBase;
+      !baseWalletLock.isConfirmedBorrowerWallet;
+   const borrowerNeedsBaseWallet = isBorrower && !baseWalletLock.isConfirmedBorrowerWallet;
    const hasTelegramPlaceholderEmail = isTelegramPlaceholderEmail(user?.email);
    const emailFieldValue = hasTelegramPlaceholderEmail ? 'No email added' : user?.email || 'No email added';
    const emailActionLabel = hasTelegramPlaceholderEmail ? 'Add' : isEmailPasswordUser ? 'Change' : undefined;
@@ -1323,7 +1325,9 @@ export default function AccountSettings() {
    const walletLabel = getWalletProviderLabel({
       connectorName: user?.walletConnectorName || connectedWalletName,
       provider: user?.walletProvider,
-      assumeBaseAccount: isBorrower && hasWallet && !borrowerHasNonBaseWallet
+      // Only assume Base for a borrower whose stored wallet has no resolvable provider (legacy
+      // rows). Openfort resolves to 'openfort' → labelled "Instant Wallet", never forced to Base.
+      assumeBaseAccount: isBorrower && hasWallet && !baseWalletLock.provider
    });
 
    const toggleNotif = (key: keyof NotificationPrefs) => {
@@ -1632,13 +1636,21 @@ export default function AccountSettings() {
 
                   {borrowerHasConfirmedBaseWallet ? (
                      <div className="flex items-start gap-md-2 rounded-md-lg border border-md-primary-100 bg-md-primary-900/5 p-md-3">
-                        <img src="/icons/base-account.svg" alt="" className="size-8 rounded-md-md shrink-0" />
+                        {baseWalletLock.isConfirmedOpenfort ? null : (
+                           <img src="/icons/base-account.svg" alt="" className="size-8 rounded-md-md shrink-0" />
+                        )}
                         <div className="min-w-0">
-                           <p className="text-md-b2 font-semibold text-md-heading">Base Account locked</p>
+                           <p className="text-md-b2 font-semibold text-md-heading">{walletLabel} locked</p>
                            <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                              This wallet receives funded loans and is used for repayment history. Change it only if this is no longer
-                              your Base Account.
+                              {baseWalletLock.isConfirmedOpenfort
+                                 ? 'This instant wallet receives funded loans and is used for repayment history. You fully own it — you can export its key anytime to move to another wallet app.'
+                                 : 'This wallet receives funded loans and is used for repayment history. Change it only if this is no longer your Base Account.'}
                            </p>
+                           {baseWalletLock.isConfirmedOpenfort ? (
+                              <div className="mt-md-2">
+                                 <ExportInstantWalletKey />
+                              </div>
+                           ) : null}
                         </div>
                      </div>
                   ) : null}

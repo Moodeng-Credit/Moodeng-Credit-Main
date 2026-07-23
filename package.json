@@ -40,6 +40,7 @@
       "@fortawesome/fontawesome-free": "^7.1.0",
       "@lukemorales/query-key-factory": "^1.3.4",
       "@metamask/sdk": "^0.33.1",
+      "@openfort/openfort-js": "^1.5.3",
       "@qpokychuk/sf-pro-display": "^1.0.2",
       "@rainbow-me/rainbowkit": "^2.2.10",
       "@react-oauth/google": "^0.12.2",

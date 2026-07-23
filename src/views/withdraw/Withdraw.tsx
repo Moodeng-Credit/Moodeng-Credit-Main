@@ -34,7 +34,7 @@ import { openSupportContacts } from '@/components/support/supportContacts';
 
 import { useGeoCheck } from '@/hooks/useGeoCheck';
 import { useLoanData } from '@/hooks/useLoanData';
-import useWallet, { type PaymentMethod } from '@/hooks/useWallet';
+import useWallet, { type PaymentMethod, useActivePaymentMethod } from '@/hooks/useWallet';
 
 import { parseDateSafely } from '@/utils/dateFormatters';
 
@@ -2052,6 +2052,7 @@ export default function Withdraw() {
    const location = useLocation();
    const account = useAccount();
    const { payUsdc } = useWallet();
+   const activePaymentMethod = useActivePaymentMethod();
    const user = useSelector((state: RootState) => state.auth.user);
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
 
@@ -2117,9 +2118,10 @@ export default function Withdraw() {
                // Not confirmed: let the ?sim logic drive the arrival timing in preview.
                return { hash: '0xpreview', confirmed: false };
             }
-            // Connected → cash out from that wallet; otherwise Base Pay's one popup. The recipient is
-            // the exchange address the user typed — Base Pay never changes where the money goes.
-            const method: PaymentMethod = account.isConnected ? 'wallet' : 'base';
+            // Connected → cash out from that wallet; otherwise Base Pay's one popup. Openfort-locked
+            // borrowers cash out gaslessly from their embedded wallet. The recipient is always the
+            // exchange address the user typed — the send rail never changes where the money goes.
+            const method: PaymentMethod = activePaymentMethod;
             const outcome = await payUsdc({
                method,
                to: toAddress.trim(),
@@ -2161,7 +2163,7 @@ export default function Withdraw() {
             return { hash: outcome.hash, confirmed: method === 'base' };
          }
       }),
-      [available, spendable, isPreview, primaryLoan, walletAddress, payUsdc, account.isConnected, user.id]
+      [available, spendable, isPreview, primaryLoan, walletAddress, payUsdc, activePaymentMethod, user.id]
    );
 
    return (

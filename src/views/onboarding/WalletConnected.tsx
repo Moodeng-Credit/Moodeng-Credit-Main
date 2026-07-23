@@ -81,7 +81,9 @@ export default function WalletConnected() {
          );
       }
 
-      if (!baseWalletLock.isConfirmedBase && !isConnectedBaseAccount) {
+      // An Openfort-locked borrower has a confirmed self-custodial wallet with no wagmi
+      // connection — accept it here instead of demanding a Base Account.
+      if (!baseWalletLock.isConfirmedBorrowerWallet && !isConnectedBaseAccount) {
          return (
             <FailureView
                title={baseWalletLock.hasStoredWallet ? 'Confirm Your Base Account' : 'Base Account Not Added'}

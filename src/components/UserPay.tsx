@@ -7,7 +7,7 @@ import { useAccount, useSwitchChain } from 'wagmi';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
-import useWallet, { type PaymentMethod } from '@/hooks/useWallet';
+import useWallet, { type PaymentMethod, toSettlementMethod, useActivePaymentMethod } from '@/hooks/useWallet';
 
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
@@ -34,7 +34,7 @@ function UserPay({ loan }: { loan: Loan }) {
    const { showToast, showToastByConfig } = useToast();
    const account = useAccount();
    const { switchChainAsync } = useSwitchChain();
-   const { isConnected } = account;
+   const activePaymentMethod = useActivePaymentMethod();
    const baseWalletLock = getBaseWalletLockStatus(user);
 
    const executeRepayment = useCallback(
@@ -79,16 +79,16 @@ function UserPay({ loan }: { loan: Loan }) {
             });
 
             if (outcome) {
-               // The wagmi path has no onSubmitted: the money is in flight from here, so arm
-               // reconciliation now — a DB confirm that fails below gets retried later.
-               if (method === 'wallet') {
+               // The wagmi and Openfort paths have no onSubmitted: the money is in flight from
+               // here, so arm reconciliation now — a DB confirm that fails below gets retried later.
+               if (method === 'wallet' || method === 'openfort') {
                   registerPendingBasePayment({
                      kind: 'repay',
                      id: outcome.hash,
                      loanId: loan.id,
                      repaidAmount: newRepaidAmount,
                      repaymentStatus,
-                     method
+                     method: toSettlementMethod(method)
                   });
                }
                // Relaxed lock: record whoever actually paid and log a mismatch with the locked
@@ -108,7 +108,7 @@ function UserPay({ loan }: { loan: Loan }) {
                      confirmLoanPayment({
                         loanId: loan.id,
                         hash: outcome.hash,
-                        method,
+                        method: toSettlementMethod(method),
                         action: 'repay'
                      })
                   ).unwrap();
@@ -181,8 +181,9 @@ function UserPay({ loan }: { loan: Loan }) {
       }
 
       // Already connected → pay from that wallet in one signature. Otherwise Base Pay: one popup
-      // fusing Base Account sign-in and the USDC send, so repayment is one tap even cold.
-      await executeRepayment(repaidAmountToAdd, isConnected ? 'wallet' : 'base');
+      // fusing Base Account sign-in and the USDC send. Openfort-locked borrowers send gaslessly
+      // from their embedded wallet.
+      await executeRepayment(repaidAmountToAdd, activePaymentMethod);
    };
 
    return (

@@ -20,6 +20,7 @@ import { WalletSyncInitializer } from '@/components/WalletSyncInitializer';
 import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
 import { setStoreRef } from '@/lib/axios';
 import { config } from '@/lib/config/wagmi';
+import { OpenfortProvider } from '@/lib/web3/openfort';
 import { persistor, store } from '@/store/store';
 
 const queryClient = new QueryClient();
@@ -64,14 +65,18 @@ export function Providers({ children }: { children: ReactNode }) {
                      <WalletConnectionLogger />
                      <ToastProvider>
                         <ThemeModeProvider>
-                           <AuthInitializer />
-                           <ToastInitializer />
-                           <WalletSyncInitializer />
-                           <BasePaymentReconciler />
-                           {children}
-                           <SupportContactsModalHost />
-                           <MechaLauncher />
-                           <ToastContainer />
+                           {/* Openfort embedded-wallet rail (PH escape hatch). Additive and inert
+                               unless configured; never touches the wagmi/Base stack above. */}
+                           <OpenfortProvider>
+                              <AuthInitializer />
+                              <ToastInitializer />
+                              <WalletSyncInitializer />
+                              <BasePaymentReconciler />
+                              {children}
+                              <SupportContactsModalHost />
+                              <MechaLauncher />
+                              <ToastContainer />
+                           </OpenfortProvider>
                         </ThemeModeProvider>
                      </ToastProvider>
                   </RainbowKitProvider>

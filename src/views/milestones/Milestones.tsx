@@ -400,7 +400,7 @@ export default function Milestones() {
    const hasUnlockedMilestones = milestones.some((milestone) => milestone.status === 'unlocked');
    const isVerified = isUserVerified(user) || isPreview;
    const baseWalletLock = getBaseWalletLockStatus(user);
-   const hasCompletedBaseWalletSetup = isPreview || baseWalletLock.isConfirmedBase;
+   const hasCompletedBaseWalletSetup = isPreview || baseWalletLock.isConfirmedBorrowerWallet;
    const hasFinishedBorrowerSetup = isVerified && hasCompletedBaseWalletSetup;
    const { open: openVerify, modal: verifyModal } = useVerifyYourself('milestones');
    const setupCtaLabel =
