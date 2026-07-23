@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -29,6 +29,9 @@ import type { RootState } from '@/store/store';
 type WalletCopy = {
    availableBalance: string;
    subtitle: string;
+   emptySubtitle: string;
+   moneyArrivedTitle: string;
+   moneyArrivedBody: string;
    cashOut: string;
    details: string;
    instantWallet: string;
@@ -43,6 +46,9 @@ const WALLET_COPY: Record<LocaleCode, WalletCopy> = {
    en: {
       availableBalance: 'Available balance',
       subtitle: 'Money you receive lands here.',
+      emptySubtitle: 'When a lender funds you, the money appears here.',
+      moneyArrivedTitle: 'Money arrived',
+      moneyArrivedBody: 'landed in your wallet',
       cashOut: 'Cash out',
       details: 'Wallet details',
       instantWallet: 'Instant Wallet',
@@ -55,6 +61,9 @@ const WALLET_COPY: Record<LocaleCode, WalletCopy> = {
    fil: {
       availableBalance: 'Available na balance',
       subtitle: 'Dito napupunta ang perang natatanggap mo.',
+      emptySubtitle: 'Kapag pinondohan ka ng lender, dito lalabas ang pera.',
+      moneyArrivedTitle: 'May dumating na pera',
+      moneyArrivedBody: 'ay pumasok sa wallet mo',
       cashOut: 'Mag-cash out',
       details: 'Mga detalye ng wallet',
       instantWallet: 'Instant Wallet',
@@ -67,6 +76,9 @@ const WALLET_COPY: Record<LocaleCode, WalletCopy> = {
    id: {
       availableBalance: 'Saldo tersedia',
       subtitle: 'Uang yang kamu terima masuk ke sini.',
+      emptySubtitle: 'Saat lender mendanaimu, uangnya muncul di sini.',
+      moneyArrivedTitle: 'Uang masuk',
+      moneyArrivedBody: 'masuk ke dompetmu',
       cashOut: 'Tarik dana',
       details: 'Detail dompet',
       instantWallet: 'Instant Wallet',
@@ -79,6 +91,9 @@ const WALLET_COPY: Record<LocaleCode, WalletCopy> = {
    th: {
       availableBalance: 'ยอดคงเหลือที่ใช้ได้',
       subtitle: 'เงินที่คุณได้รับจะเข้ามาที่นี่',
+      emptySubtitle: 'เมื่อผู้ให้กู้โอนเงินให้คุณ เงินจะแสดงที่นี่',
+      moneyArrivedTitle: 'เงินเข้าแล้ว',
+      moneyArrivedBody: 'เข้ากระเป๋าเงินของคุณ',
       cashOut: 'ถอนเงิน',
       details: 'รายละเอียดกระเป๋าเงิน',
       instantWallet: 'Instant Wallet',
@@ -91,6 +106,9 @@ const WALLET_COPY: Record<LocaleCode, WalletCopy> = {
    vi: {
       availableBalance: 'Số dư khả dụng',
       subtitle: 'Tiền bạn nhận được sẽ vào đây.',
+      emptySubtitle: 'Khi người cho vay chuyển tiền, tiền sẽ hiện ở đây.',
+      moneyArrivedTitle: 'Tiền đã đến',
+      moneyArrivedBody: 'đã vào ví của bạn',
       cashOut: 'Rút tiền',
       details: 'Chi tiết ví',
       instantWallet: 'Instant Wallet',
@@ -139,12 +157,41 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
       query: { enabled: Boolean(address) && previewAddress === undefined, refetchInterval: 30000 }
    });
 
+   const balance =
+      previewAddress !== undefined ? (previewBalance ?? 0) : typeof usdcBalanceRaw === 'bigint' ? Number(usdcBalanceRaw) / 1e6 : null;
+
+   // "Money arrived" moment: compare against the last balance this device saw for this
+   // address, and celebrate an increase — the GCash "may pera ka na" ping. Stored locally
+   // so it fires once per arrival, on whichever screen mounts the card first.
+   useEffect(() => {
+      if (previewAddress !== undefined || balance == null || !address || !isInstant) return;
+      const key = `wallet_last_balance_${address.toLowerCase()}`;
+      let last: number | null = null;
+      try {
+         const raw = localStorage.getItem(key);
+         last = raw == null ? null : Number(raw);
+      } catch {
+         return;
+      }
+      try {
+         localStorage.setItem(key, String(balance));
+      } catch {
+         /* ignore */
+      }
+      if (last != null && Number.isFinite(last) && balance > last + 0.009) {
+         const delta = balance - last;
+         const php = delta * phpRate.value;
+         showToast(
+            TOAST_TYPES.SUCCESS,
+            copy.moneyArrivedTitle,
+            `+${formatUsd(delta)} USDC (≈ ₱${php.toLocaleString(undefined, { maximumFractionDigits: 0 })}) ${copy.moneyArrivedBody}`
+         );
+      }
+   }, [balance, address, isInstant, previewAddress, phpRate.value, showToast, copy.moneyArrivedTitle, copy.moneyArrivedBody]);
+
    // Instant wallet only. No wallet → the Account header's "Set up wallet" button handles it;
    // Base Account borrowers manage money in their own wallet app, so no card for them either.
    if (!address || !isInstant) return null;
-
-   const balance =
-      previewAddress !== undefined ? (previewBalance ?? 0) : typeof usdcBalanceRaw === 'bigint' ? Number(usdcBalanceRaw) / 1e6 : null;
 
    const copyAddress = async () => {
       try {
@@ -171,7 +218,9 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
                   ≈ ₱{(balance * phpRate.value).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                </p>
             ) : null}
-            <p className="mt-2 text-md-b3 font-medium text-white/70">{copy.subtitle}</p>
+            <p className="mt-2 text-md-b3 font-medium text-white/70">
+               {balance != null && balance > 0 ? copy.subtitle : copy.emptySubtitle}
+            </p>
 
             {/* One action only — Repay already lives on the nav bar. */}
             <button
