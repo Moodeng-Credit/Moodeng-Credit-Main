@@ -8,6 +8,8 @@
  *   src/views/support/data/faqs.ts        (public FAQ)
  *   src/views/account/data/accountFaqs.ts (in-account FAQ: shared/borrower/lender)
  *   src/views/support/data/guides.ts      (help-center guides, English)
+ *   tools/support-knowledge/app-map.md          (hand-maintained in-app navigation map)
+ *   tools/support-knowledge/site-map.md         (hand-maintained public-website map)
  *   tools/support-knowledge/troubleshooting.md  (hand-maintained real-chat fixes)
  *
  * Output:  supabase/functions/support-chat/knowledge.md
@@ -32,6 +34,8 @@ const OUT = r('supabase/functions/support-chat/knowledge.md');
 const { FAQS } = await import(r('src/views/support/data/faqs.ts'));
 const { SHARED_FAQS, BORROWER_FAQS, LENDER_FAQS } = await import(r('src/views/account/data/accountFaqs.ts'));
 const { GUIDES } = await import(r('src/views/support/data/guides.ts'));
+const appMap = await readFile(r('tools/support-knowledge/app-map.md'), 'utf8');
+const siteMap = await readFile(r('tools/support-knowledge/site-map.md'), 'utf8');
 const troubleshooting = await readFile(r('tools/support-knowledge/troubleshooting.md'), 'utf8');
 
 const out = [];
@@ -73,11 +77,24 @@ for (const g of GUIDES) {
    push();
 }
 
-// The hand-maintained troubleshooting file already has its own top-level heading;
-// strip its HTML editing-note comment so it doesn't leak build instructions to the model.
+// Hand-maintained navigation/site maps and troubleshooting file each carry their
+// own top-level heading; strip their HTML editing-note comments so build/editing
+// instructions never leak to the model.
+const stripComments = (s) => s.replace(/<!--[\s\S]*?-->/g, '').replace(/\n{3,}/g, '\n\n').trim();
+
 push('---');
 push();
-push(troubleshooting.replace(/<!--[\s\S]*?-->/g, '').replace(/\n{3,}/g, '\n\n').trim());
+push(stripComments(appMap));
+push();
+
+push('---');
+push();
+push(stripComments(siteMap));
+push();
+
+push('---');
+push();
+push(stripComments(troubleshooting));
 push();
 
 const text = out.join('\n');

@@ -56,7 +56,7 @@ Safety: the instant wallet is a real self-custodial wallet you fully own (you ca
 **How it works / is it safe:**
 - It's a **real self-custodial wallet** on Base — it receives USDC loans and builds Trust Score exactly like any other wallet.
 - **Gasless:** Moodeng covers the network fees, so the borrower doesn't need ETH to repay or cash out.
-- **You fully own it.** You can reveal and export its private key anytime from **Account → your wallet → "Export wallet key"** and import it into MetaMask, Trust, or any wallet app — then you're free to leave Moodeng entirely.
+- **You fully own it.** You can reveal and export its private key anytime from **Account → Account Settings → Wallet → "Export wallet key"** and import it into MetaMask, Trust, or any wallet app — then you're free to leave Moodeng entirely.
 - Moodeng never asks for (and the user should never share) their private key. The export screen is the only place the key is shown, and only when the user taps to reveal it.
 
 **If creating it fails:** they'll see a message saying what went wrong (usually "check your internet and try again", or "sign in again"). Have them retry; if it keeps failing, offer to connect them with the team.
@@ -99,8 +99,8 @@ Signing up and getting verified are two separate steps. To verify:
 
 ## Where do I put a referral code?
 
-- New users can enter a **referral code** during sign-up / in their account to get the referral bonus.
-- If someone wants to **share their own** code, they can do that once their account is active and verified — point them to their referral link in the app.
+- Referral codes are entered at the **start of the loan application**: from the Request Board, tap to apply for a loan, and the first step asks for a referral code — type it and tap **Apply code**. (The step only appears for verified borrowers.)
+- If a user doesn't have a code, they just tap **Continue to application** — the code is optional.
 
 ## Cashing out my loan to GCash / a bank (off-ramp)
 

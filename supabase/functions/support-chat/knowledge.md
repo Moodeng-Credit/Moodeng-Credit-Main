@@ -370,6 +370,189 @@ From the Account screen, you can update your display name, manage your email, ch
 
 ---
 
+# Moodeng Credit — App Map (where everything is in the app)
+
+## The bottom navigation
+
+Moodeng is a mobile-first web app. The bar at the bottom of the screen is how you move around. It only appears once signed in.
+
+**Borrowers** see six tabs: **Request Board**, **Repay**, **Dashboard**, **History**, **Account**, **Help**.
+
+**Lenders** see five tabs: **Request Board**, **Dashboard**, **History**, **Account**, **Help**.
+
+If some tabs look greyed out, the user hasn't chosen a role yet — tapping them sends them to choose borrower or lender first (**How would you like to use Moodeng Credit?** — **I am a Borrower** / **I am a Lender**, then **Confirm**).
+
+There is **no Withdraw tab** — cashing out is only reached from a card on the Dashboard (see below). On the **Repay** screen, the center of the bottom nav turns into a raised **Pay Now** button (shows the amount once entered, e.g. **Pay $12.00**).
+
+## Where do I find my wallet address?
+
+Two places show your own wallet address:
+
+1. **Account → Account Settings**, in the **Wallet** section under **Connected Wallet**. The address is shown shortened (like 0x12…34ab) — tap the address or the copy icon next to it to copy the full address.
+2. On the **Repay** screen, when you're short on USDC an add-funds card appears with your address to **copy** (tap it → shows "Copied"). It's there so you can send USDC to yourself from an exchange before paying.
+
+Important: if the user hasn't added a wallet yet, there is no address to show. The **Account** page will show an **Add Base Wallet** button (borrowers) or **Connect Wallet** (lenders) instead — they need to set up their wallet first, and after that the address appears in Account Settings.
+
+## Borrower Dashboard (Dashboard tab)
+
+Top to bottom: a score card with **Trust Score** and **Credit Level** (shows current limit and how much is used; unverified users see a "verify to unlock" action); a **Withdraw your USDC** card — only appears once at least one loan is funded, subtitle "Cash out your funded loan to local currency," taps through to the Withdraw flow; a **Milestones** (Reputation Milestones) section; a verification prompt if not yet verified; a **Loan Summary** (repayments / active / defaulted / pending); a **Lender Diversity** section; and an **Upcoming Loan Dues** list.
+
+## The Account tab
+
+The **Account** tab (bottom navigation) shows the username and verification badge at the top (lenders see an IOU points chip instead), plus:
+
+- **Account Settings** — profile, security, wallet, and notification settings (see below).
+- **View Loan Transaction History** — the same loan history as the History tab.
+- **Get in Touch** — **Join Our Community** (Facebook group), **Get Help** (Facebook page), **Contact Us** (Telegram).
+- Common questions (FAQ accordion, **View More** → the Support hub), a credit guide video (borrowers), and **Sign Out** at the bottom (asks "Sign out?" to confirm).
+
+## Account Settings (Account → Account Settings)
+
+Everything here, section by section:
+
+- **Basic Information** — **Email Address** (change/verify), and for borrowers **Bio Info** ("Work, income, and what you need help with" — the same bio collected on your first loan application; edit it here any time).
+- **Preferences** — **Dark Mode** toggle and app **language** switcher.
+- **Security & Verification** — two read-only rows, **World ID** and **ID Verification**, each showing **Verified** or **Not Verified**. Email/password users also see a **Password** row with **Change**.
+- **Wallet** — **Connected Wallet** (address shown shortened; tap or the copy icon to copy), buttons **Change wallet** and **Disconnect wallet** (asks "Disconnect wallet?" to confirm), and a **Network** row showing **Base**. Borrowers with an active loan see their wallet marked **locked** — that's intentional, so the loan and repayment history stay tied to one wallet. Borrowers who still need a Base wallet see a **Confirm your Base Account** prompt here instead.
+- **Notifications** — **Telegram Alerts** (**Connect**), **WhatsApp** and **LINE** (both "Coming soon"), plus toggles for **Account Activity**, **Transaction Activity**, and **Moodeng Blogs**.
+
+Users with an **instant wallet** also see an **Export wallet key** link in the Wallet section. Tapping it opens a confirm sheet ("Export your wallet key," for importing into MetaMask/Trust) with **Cancel** / **Reveal key**; the key is then shown as copyable text with **Copy key** and **I've saved it**. The key is only fetched when you tap Reveal and is cleared again once you close the sheet.
+
+## Repaying (the Repay tab)
+
+The **Repay** tab lists your active (funded, unpaid) loans, soonest due first.
+
+- If you haven't finished setup yet, you'll see one of: **Finish setup to start borrowing** (**Start Setup**), **Verify yourself to borrow** (**Verify Yourself**), **Add Base Wallet to borrow** (**Add Base Wallet**), or, with nothing due, **No repayments yet** (**Request a loan**).
+- If your USDC balance is short of what you owe, an add-funds card appears automatically with your wallet address to copy and a list of places to buy/send USDC on Base — in the Philippines it leads with **Coins.ph** (with **Moneybees**, **GCrypto**, **PDAX** as other options, **Show more** to see the rest); outside the Philippines it leads with **Binance**. It updates live and shows **Received $X USDC** once funds land.
+- To pay: pick the loan (defaults to the one due soonest), enter an amount or tap **25%**, **50%**, **75%**, or **Full**, then tap the **Pay Now** button that appears in the bottom nav. With a Base Account or instant wallet the payment is gasless and goes straight to the lender.
+- Paying off a loan in full shows a **Loan fully repaid** screen with Trust Points earned and, if it unlocks the next level, a **Credit Level unlocked** panel. A partial payment just shows an inline confirmation and the loan stays active.
+
+## Cashing out (Withdraw)
+
+Reached only from the Dashboard's **Withdraw your USDC** card (not a nav tab). First screen asks **How would you like to cash out?** with provider choices tailored to your country — in the Philippines: **Coins.ph** (marked Recommended), **GCrypto**, **PDAX**, **Binance**, **Moneybees**; outside the Philippines, **Binance** is usually the recommended one. Always **USDC on Base**. Picking a provider opens a guided send form: how much you're sending vs. receiving, numbered steps for that specific provider (with a **Show me how** guide on most steps), a field to paste your receiving address at that provider, an amount field with **Max**, and a **Send {amount} USDC to {provider}** button.
+
+## Requesting a loan
+
+From the **Request Board** tab, tap **Apply For A Loan** to open the application.
+
+1. Eligible verified borrowers first see a **Referral Boost** step — **Have a referral code?** field with **Apply code**, or **Continue to application** if you don't have one.
+2. If you're not verified yet, you'll be prompted to **Verify Yourself** first.
+3. Then **Set Your Own Terms**: **Borrow Amount** (up to your **Current Limit**), **Set Repayment Amount**, **Set Repayment Date** (up to 120 days out), and **Reason For Borrowing** (at least 40 characters — Mecha can help you word it if it's too vague). Submit with **Make Your Request**.
+4. First-time borrowers also fill in a short bio (friendly name, optional photo, work type, payday window, income/expenses) — this is the same **Bio Info** editable later from Account Settings.
+
+## Getting verified
+
+Tap **"Verify Yourself"** wherever the app prompts it (Dashboard, Repay, the loan application, or Account). This opens a chooser:
+
+- **Verify Your ID** (marked Recommended) — a quick national-ID-and-selfie check, available in select countries; takes about 3 minutes.
+- **Verify with World ID** — for people who already use World App; choose **I've been verified at an Orb** or **I'll verify with my passport**, with links to download World App or find a nearby Orb.
+
+Check your verification status any time in **Account → Account Settings → Security & Verification** (the **World ID** and **ID Verification** rows).
+
+## The Help tab
+
+The **Help** tab opens the Help Hub: chat with **Mecha** (that's you!) in English or Tagalog, plus popular topic chips — **Verify your ID**, **Cash out to a bank**, **Wallet won't connect**, **How to repay**, **Grow my credit limit**, **Coinbase vs Base** — and a **Browse everything** button that goes to the full FAQ.
+
+## Lender screens
+
+- **Dashboard** (lender) — display name, IOU points chip, a **Power Lender** badge for top lenders, stat cards (**Total Earnings**, **Total Loans Lent out**, **Total Loss**, **Total Loans Funded**, **Active Loans**), and a **Funding Transactions** section with search/filter and **View All Transactions**.
+- **Request Board** — browse open borrower requests; tap **Send Your Help** on a card to fund it (a funded card then shows **Help Received**).
+- **My Funded Loans** (`/lender/supported`) — the loans a lender has funded; repayments route back to their wallet automatically, no claim step needed.
+- **Lender Performance** — a stats view of funding performance over time.
+- **History** — a lender's past funding transactions, same tab as borrower History.
+- Lenders add funds to their wallet via a **Fund your wallet** flow — buy USDC with a card (Coinbase Onramp) or bridge USDC in from another chain.
+
+## History / Transactions
+
+The **History** tab (shared borrower + lender) shows **Transaction History** (borrower) or **Funding Transactions** (lender), with tabs **All Transactions** / **Active Loans** / **Completed**, a search field, and filters (sort by amount or date; status: Pending, Active, Repaid, Default). Tapping a row opens its Transaction Detail.
+
+## Profile
+
+`/profile` is your own signed-in profile, with Dashboard / Loan Summary / Transaction History / Settings / Support tabs. A public borrower profile is also visible at `/user/:username` — this is what a lender sees before funding a request (verification status, credit level, repayment history) — it never shows ID documents, contacts, or private messages.
+
+---
+
+# Moodeng Credit — Site Map (the public website & content, beyond the core app flows)
+
+## Marketing / landing pages
+
+The marketing site (`public/landing/`) explains Moodeng before someone signs up. Desktop visitors land on the main page; mobile visitors land on a mobile-optimized version. Both cover the same offer:
+
+- **First loan is $15.** You choose the amount you'll pay back and the due date before you ask — nothing changes after the request goes live. Example: borrow $15, agree to pay back $18 (the extra $3 is the lender's "thank you," not a Moodeng fee).
+- **Moodeng charges $0** — no service fee, no processing fee, no hidden charges, no APR, no rollover. If a payment is late, the amount owed does not grow ("$18 stays $18") — it just becomes part of your record.
+- **Four honest promises:** Moodeng never digs through your phone (no contacts/photos/messages access), never sells your information, never shames you (reminders stay private, nothing posted publicly), and never makes you prove yourself twice (one ID check proves you're one person; lenders see your verification status, never your documents).
+- **Funding is not automatic** — a real person on the Request Board decides to fund each request; if nobody funds it before it expires, you owe nothing.
+- Loans settle in **USDC** and land in your **Base Account**; cashing out to pesos goes through an external provider you choose (Coins.ph, GCrypto, PDAX, Binance, or Moneybees) — Moodeng adds no fee for this, though the provider might have its own.
+- Credit limit grows over time with on-time repayment — the $15 first limit can grow to $20, then higher, the more full-limit loans you repay on time (see "How Credit Levels work" below for the exact ladder).
+
+There are dedicated marketing pages walking through **how it works** (four steps: ask → a real person decides → the loan lands as USDC in your Base Account → repay in parts or in full), **how to cash out** (choosing a provider, always Base network, Coins.ph is the recommended route in the Philippines), **how to repay** (pick the loan, add USDC, choose 25/50/75/Full or a custom amount), a **for lenders** page (browse requests, review a borrower's record before funding, only fund what you can afford to lose — repayment is never guaranteed), and an **about/our story** page (why Moodeng exists, told through the founders' own reasons for building it).
+
+A separate in-app **Benefits** page (for borrowers) and **Why Lend** page (for lenders) make the same case in the signed-in app, and a **Team** page introduces the people behind Moodeng.
+
+## Moodeng Academy (`/academy`)
+
+An interactive, illustrated walkthrough of how to use the app, with a short tutorial video and a quiz at the end. It walks through: creating an account, verifying (to prove you're a real, unique person), adding a Base Account, understanding that your requested amount decides whether a loan is "trust-building" (below your limit) or "credit-building" (at your full limit), submitting a request, getting matched on the Request Board, repaying clearly and on time, and growing your next credit limit.
+
+### Academy → Money & getting started (`/academy/money`)
+
+Four short guides, each about the practical mechanics of using USDC on Base:
+
+- **Verify your identity** — a one-time check, about 3 minutes: tap **Verify Yourself**, choose **Verify Your ID**, have your national ID ready in good lighting, complete the ID-photo-and-selfie check. Most people finish in minutes; human review is usually done within a few hours.
+- **Add funds to your wallet** — buying or sending USDC on Base via Binance P2P, Coins.ph, PDAX, GCrypto (GCash), Moneybees, or from another wallet/exchange you already use. Always choose the **Base** network — sending on the wrong network can lose funds.
+- **Withdraw to your bank** — selling USDC on an exchange and moving the cash to a bank or e-wallet, via the same list of providers.
+- **Repay your loan** — sending the exact USDC amount shown on the Repay screen to the address shown there, always on Base; buy USDC first if you don't already hold it.
+
+## Learning about credit levels and USDC (`/learn`)
+
+Two in-depth articles live here (plus the same guide library also reachable from Support → Guides):
+
+- **How Credit Levels work** — the ladder is **Level 1 = $15 → Level 2 = $20 → Level 3 = $40 → Level 4 = $60**. You start at Level 1. Only repaying a **full-limit loan** (a "Credit-Building" or "Credit Growth" loan) on time unlocks the next level — borrowing less than your limit ("Trust-Building") grows your Trust Score but not your limit. You can't skip levels, and paying extra or early doesn't skip you ahead either — one level at a time. Missing a repayment pauses progress and lowers your Trust Score, but your level itself never resets.
+- **Why we use USDC** — USDC transfers are free and gasless on Base (a $20 loan arrives as $20), settle in seconds, and are regulated/backed 1:1 by cash and short-term US Treasuries (Circle publishes monthly reserve reports). It holds a stable $1 value, unlike volatile crypto. Moodeng is community lending with USDC as the settlement rail — it is not a DeFi yield or staking product, and Moodeng does not offer staking or yield on your USDC.
+
+## Blogs (`/blogs`)
+
+Longer editorial pieces on predatory lending, borrower dignity, and fair credit — for example, on why a first credit record shouldn't come from a loan-shark app, the history of predatory lending and contact-list abuse, what lenders actually need to know about a borrower (work rhythm and repayment history, not personal document oversharing), and why small loans are meaningful infrastructure rather than a gimmick. These are opinion/context pieces, not product instructions — if a user's question is really "how do I use the app," point them to the Academy or Guides instead.
+
+## Credit Leveling Guide (`/credit-leveling-guide`)
+
+A dedicated page spelling out the same ladder as "How Credit Levels work": **$15 → $20 → $40 → $60**. The rule in one line: **full limit + on-time repayment = next level.** Borrowing below your limit builds trust but not your limit; borrowing your full limit and repaying it on time unlocks the next one; paying extra never skips a level.
+
+## Reputation Milestones / Trust Points (`/milestones`)
+
+**Borrower-only** — lenders never see this page. It shows your progress toward reputation milestones like getting verified, your first request, your first funded loan, your first on-time repayment, building a repayment streak, and reaching higher credit levels — each worth a number of Trust Points. Trust Points unlock cosmetic profile rewards (like a colored ring around your avatar or a profile badge) as you cross point thresholds. Important: **Trust Points unlock profile rewards — they do not guarantee funding.**
+
+## Support Hub (`/support`)
+
+The Help & Support Center, with four sections:
+
+- **Getting started** — a hub of links into the Academy, Benefits/Why-Lend pages, the USDC and Credit Levels articles, and the Blogs.
+- **Guides** — a searchable library of short how-to articles (categories: Getting Started, Trust Score, Credit Level, Repayment, Wallet, Security) covering things like requesting your first loan, how your Trust Score is calculated and how repayments affect it, the difference between trust-building and credit-building loans, ways to repay and ways to add funds, withdrawing to a bank (with Coins.ph typically the cheapest round-trip route in the Philippines), what fees you'll pay (Moodeng charges none — the only cost is the exchange's own conversion fee), and managing your account/security settings. (The Trust Score guides are borrower-specific and not shown to lenders.)
+- **FAQs** (`/support/faq`, also reachable at `/faq`) — the standard question list: what Moodeng is, how borrowing works, what a Trust Score and Credit Level are, what a Base wallet is and why borrowers need one, why USDC, whether Moodeng charges fees (no), what a credit-building loan is, and whether new borrowers can get a small loan (yes, starting at $15, no minimums or setup fees).
+- **Updates** — a changelog of recent product improvements (filters on the Request Board, wallet/verification onboarding polish, clearer loan states, etc.).
+
+## Help Hub (`/help`)
+
+The **Help** tab's destination — a chat-first page where you can talk to **Mecha** directly, plus quick topic chips for the most common questions (verifying your ID, cashing out, wallet connection trouble, how to repay, growing your credit limit, Coinbase vs. Base) and a **Browse everything** button into the full FAQ. This page also works for people who aren't signed in yet — it's the link shared in the community group.
+
+## Legal pages
+
+- **Terms of Service** (`/terms`) — using Moodeng honestly, reviewing loan terms before accepting funds, keeping your wallet secure. Notes that Moodeng cannot reverse blockchain transactions, recover a lost wallet, or guarantee a lender will fund a request.
+- **Privacy Policy** — there are two versions: a short summary at `/privacy` (what's collected: email, display name, role, wallet address, borrower context, loan/repayment records, support messages), and a fuller, more detailed policy at `/privacy-policy` (also mirrored as a static page) that additionally covers identity-verification data, financial/bank-linked data, and how data may be shared with verification, banking, and legal partners. If someone asks exactly what data Moodeng collects, the fuller `/privacy-policy` is the complete answer — the short `/privacy` page is a simplified summary of the same policy.
+- **Data Deletion** (`/data-deletion`) — to delete your data, email **privacy@moodeng.credit** with the subject "Data deletion request" from the email on your account, including your account email or wallet address and which sign-in method you use. Verified requests are completed within about 30 days. Some records (financial/legal recordkeeping requirements, and anything already recorded on the blockchain) can't be deleted.
+
+## Signing up and signing in
+
+- **Sign up** (`/sign-up`) and **Sign in** (`/sign-in`) both support: **Google**, **Telegram**, **LINE**, and email + password. **Facebook sign-in is not live yet** ("coming soon"). Email passwords need to be at least 8 characters.
+- **Forgot your password?** (`/forgot-password`) — Moodeng emails an **8-digit code** (not a magic link) to reset your password; enter it on the next screen, then choose a new password at `/reset-password`.
+- Email confirmation also uses an 8-digit code sent by email, entered at the confirm-email screen.
+- If an account is blocked, banned, or has an overdue loan, signing in leads to an account-support screen explaining why, with a way to message support (and, for an overdue loan, a direct **Repay Now** button).
+
+## What this file does NOT cover
+
+Admin-only screens and tools are intentionally left out of this knowledge base — they're not something a borrower or lender needs, and the bot should never describe them.
+
+---
+
 # Moodeng Credit — Common Confusions & Troubleshooting
 
 ## Coinbase app vs Base Account (the #1 mix-up)
@@ -414,7 +597,7 @@ Safety: the instant wallet is a real self-custodial wallet you fully own (you ca
 **How it works / is it safe:**
 - It's a **real self-custodial wallet** on Base — it receives USDC loans and builds Trust Score exactly like any other wallet.
 - **Gasless:** Moodeng covers the network fees, so the borrower doesn't need ETH to repay or cash out.
-- **You fully own it.** You can reveal and export its private key anytime from **Account → your wallet → "Export wallet key"** and import it into MetaMask, Trust, or any wallet app — then you're free to leave Moodeng entirely.
+- **You fully own it.** You can reveal and export its private key anytime from **Account → Account Settings → Wallet → "Export wallet key"** and import it into MetaMask, Trust, or any wallet app — then you're free to leave Moodeng entirely.
 - Moodeng never asks for (and the user should never share) their private key. The export screen is the only place the key is shown, and only when the user taps to reveal it.
 
 **If creating it fails:** they'll see a message saying what went wrong (usually "check your internet and try again", or "sign in again"). Have them retry; if it keeps failing, offer to connect them with the team.
@@ -457,8 +640,8 @@ Signing up and getting verified are two separate steps. To verify:
 
 ## Where do I put a referral code?
 
-- New users can enter a **referral code** during sign-up / in their account to get the referral bonus.
-- If someone wants to **share their own** code, they can do that once their account is active and verified — point them to their referral link in the app.
+- Referral codes are entered at the **start of the loan application**: from the Request Board, tap to apply for a loan, and the first step asks for a referral code — type it and tap **Apply code**. (The step only appears for verified borrowers.)
+- If a user doesn't have a code, they just tap **Continue to application** — the code is optional.
 
 ## Cashing out my loan to GCash / a bank (off-ramp)
 
