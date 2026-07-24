@@ -14,6 +14,33 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
    });
 
+// DeepSeek json_object mode *usually* returns clean JSON, but v4-flash sometimes wraps
+// it in ```json fences, prepends stray prose, or truncates. A naive JSON.parse throws on
+// all of those and we fail open — which silently lets low-effort input through and makes
+// the gate feel random (e.g. "for bills" flagged but "pay bills" waved through). Parse
+// defensively so a real verdict is only discarded when there is genuinely no JSON.
+const parseVerdict = (raw: string): { ok?: boolean; hint?: string } | null => {
+   if (!raw || !raw.trim()) return null;
+   let s = raw.trim();
+   const fenced = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+   if (fenced) s = fenced[1].trim();
+   try {
+      return JSON.parse(s);
+   } catch {
+      // Model added text around the object — grab the first {...} block and try that.
+      const start = s.indexOf('{');
+      const end = s.lastIndexOf('}');
+      if (start !== -1 && end > start) {
+         try {
+            return JSON.parse(s.slice(start, end + 1));
+         } catch {
+            return null;
+         }
+      }
+      return null;
+   }
+};
+
 // DeepSeek model id. The legacy `deepseek-chat` alias is deprecated (retired
 // 2026-07-24) and now just points at v4-flash, so we name it explicitly. Flash
 // is the cheap non-thinking model — right choice for this short classify task.
@@ -112,7 +139,8 @@ serve(async (req) => {
             body: JSON.stringify({
                model: DEEPSEEK_MODEL,
                temperature: 0,
-               max_tokens: 120,
+               // Headroom so a longer hint never truncates mid-JSON (which parses as garbage).
+               max_tokens: 200,
                response_format: { type: 'json_object' },
                messages: [
                   { role: 'system', content: PROMPTS[kind] },
@@ -138,12 +166,12 @@ serve(async (req) => {
 
       const data = await aiRes.json();
       const content: string = data?.choices?.[0]?.message?.content ?? '';
+      const finishReason: string = data?.choices?.[0]?.finish_reason ?? '';
 
-      let verdict: { ok?: boolean; hint?: string };
-      try {
-         verdict = JSON.parse(content);
-      } catch {
-         console.error('check-loan-input: unparseable AI content', content);
+      const verdict = parseVerdict(content);
+      if (!verdict) {
+         // Log finish_reason so we can tell truncation ('length') from an empty/garbled body.
+         console.error('check-loan-input: unparseable AI content', JSON.stringify({ finishReason, content }));
          return jsonResponse({ ok: true, skipped: 'parse_error' }); // fail open
       }
 
