@@ -45,6 +45,31 @@ const signinFunnel = {
    funnelsFilter: { funnelOrderType: 'ordered', funnelVizType: 'steps' }
 };
 
+// Same sign-in funnel, scoped to one device type on the first step. The 82% drop-off
+// is almost entirely mobile, so splitting it out makes the real problem visible.
+const signinFunnelForDevice = (device: 'Mobile' | 'Desktop') => ({
+   kind: 'FunnelsQuery',
+   series: [
+      {
+         kind: 'EventsNode',
+         event: '$pageview',
+         name: 'Landed on Sign-in',
+         properties: [
+            { key: '$pathname', type: 'event', value: ['/sign-in'], operator: 'exact' },
+            { key: '$device_type', type: 'event', value: [device], operator: 'exact' }
+         ]
+      },
+      {
+         kind: 'EventsNode',
+         event: '$pageview',
+         name: 'Reached dashboard',
+         properties: [{ key: '$pathname', type: 'event', value: 'dashboard', operator: 'icontains' }]
+      }
+   ],
+   dateRange: { date_from: '-30d' },
+   funnelsFilter: { funnelOrderType: 'ordered', funnelVizType: 'steps' }
+});
+
 const onboardingFunnel = {
    kind: 'FunnelsQuery',
    series: [
@@ -141,20 +166,31 @@ serve(async (req) => {
    }
 
    try {
-      const [signin, onboarding, rage, dead, errors] = await Promise.all([
+      const [signin, signinMobile, signinDesktop, onboarding, rage, dead, errors] = await Promise.all([
          runQuery(apiKey, signinFunnel),
+         runQuery(apiKey, signinFunnelForDevice('Mobile')),
+         runQuery(apiKey, signinFunnelForDevice('Desktop')),
          runQuery(apiKey, onboardingFunnel),
          runQuery(apiKey, rageTrend),
          runQuery(apiKey, deadClickTrend),
          runQuery(apiKey, errorTrend)
       ]);
 
+      // Collapse a 2-step sign-in funnel to {landed, reached} for the device split.
+      const deviceSplit = (result: any) => {
+         const steps = funnelSteps(result);
+         return { landed: steps[0]?.count ?? 0, reached: steps[steps.length - 1]?.count ?? 0 };
+      };
+
       return json({
          configured: true,
          windowDays: 30,
          generatedAt: new Date().toISOString(),
          dashboardUrl: `${POSTHOG_HOST}/project/${POSTHOG_PROJECT_ID}/dashboard/1900315`,
-         signin: { steps: funnelSteps(signin) },
+         signin: {
+            steps: funnelSteps(signin),
+            byDevice: { mobile: deviceSplit(signinMobile), desktop: deviceSplit(signinDesktop) }
+         },
          onboarding: { steps: funnelSteps(onboarding) },
          rageClicks: trendTotal(rage),
          deadClicks: trendTotal(dead),
