@@ -87,6 +87,7 @@ import { VerificationUnsuccessfulModal } from '@/components/verification/Verific
 import { type RootState } from '@/store/store';
 import Account from '@/views/account/Account';
 import AccountWalletPreview from '@/views/account/AccountWalletPreview';
+import LoanRequestPreview from '@/views/dashboard/LoanRequestPreview';
 import AccountSettings from '@/views/account/AccountSettings';
 import Dashboard from '@/views/dashboard/Dashboard';
 import RequestBoard from '@/views/dashboard/RequestBoard';
@@ -256,6 +257,7 @@ export default function App() {
             {import.meta.env.DEV ? <Route path="/onboarding/wallet-blocked-preview" element={<WalletBlocked />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/congratulations-preview" element={<CongratulationsPage />} /> : null}
             {import.meta.env.DEV ? <Route path="/account-wallet-preview" element={<AccountWalletPreview />} /> : null}
+            {import.meta.env.DEV ? <Route path="/loan-request-preview" element={<LoanRequestPreview />} /> : null}
 
             {/* Verification */}
             <Route

@@ -383,6 +383,7 @@ const UsdcIcon = () => (
 );
 
 function BorrowerContextLoanStep({
+   page,
    context,
    currentAvatarBackground,
    currentAvatarUrl,
@@ -391,6 +392,7 @@ function BorrowerContextLoanStep({
    monthlyIncome,
    monthlyExpenses,
    onBack,
+   onNextPage,
    onCashGapToggle,
    onContinue,
    onIncomeSelect,
@@ -405,12 +407,14 @@ function BorrowerContextLoanStep({
    profileName,
    profileSaveError
 }: {
+   page: 1 | 2;
    context: BorrowerContextState;
    currentAvatarBackground?: string | null;
    currentAvatarUrl?: string | null;
    isSubmitting: boolean;
    isSavingProfile: boolean;
    onBack: () => void;
+   onNextPage: () => void;
    monthlyIncome: string;
    monthlyExpenses: string;
    onCashGapToggle: (value: string) => void;
@@ -428,120 +432,130 @@ function BorrowerContextLoanStep({
    profileSaveError: string;
 }) {
    const [hasOtherIncome, setHasOtherIncome] = useState<boolean>(Boolean(context.otherIncome));
-   const canContinue = Boolean(context.incomeSetup && context.paydayWindow && context.cashGaps.length > 0);
+   // Page 1 needs the "how do you work?" choice; page 2 needs payday + at least one help reason.
+   const page1Complete = Boolean(context.incomeSetup);
+   const page2Complete = Boolean(context.paydayWindow && context.cashGaps.length > 0);
    const isBusy = isSubmitting || isSavingProfile;
 
-   // Name exactly which required sections are still empty. The form is long and the three
-   // required chips are scattered among optional ones, so a borrower who misses one just
-   // sees a dead "Save bio info" button with no clue why. Surface this both at the top and
-   // right above the button (where they hit the wall) so the block is never a mystery.
-   const missingLabels = [
-      !context.incomeSetup ? 'how you describe your work' : null,
-      !context.paydayWindow ? 'when you usually get paid' : null,
-      context.cashGaps.length === 0 ? 'what you need help with' : null
-   ].filter(Boolean) as string[];
-   const missingSummary =
-      missingLabels.length <= 1
-         ? missingLabels.join('')
-         : `${missingLabels.slice(0, -1).join(', ')} and ${missingLabels[missingLabels.length - 1]}`;
+   const backButton = (
+      <button
+         className="inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 text-md-b1 font-medium text-md-heading shadow-md-card transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+         onClick={onBack}
+         type="button"
+      >
+         <ChevronLeft className="size-5" strokeWidth={2} />
+         Back
+      </button>
+   );
+
+   if (page === 1) {
+      return (
+         <div className="flex min-h-0 flex-col gap-md-3">
+            <section className="rounded-md-input border border-md-primary-300 bg-md-primary-100 px-md-2 py-md-2">
+               <button
+                  className="flex w-full items-center gap-md-2 rounded-md-md bg-md-neutral-100 p-md-2 text-left transition hover:bg-md-neutral-200 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1"
+                  onClick={onProfileImageClick}
+                  type="button"
+               >
+                  <UserAvatar
+                     alt="Profile image"
+                     backgroundColor={currentAvatarBackground ?? undefined}
+                     clickable={false}
+                     size={48}
+                     src={currentAvatarUrl || PLACEHOLDER_AVATAR}
+                  />
+                  <div className="min-w-0 flex-1">
+                     <p className="text-md-b2 font-[590] text-md-heading">Profile image</p>
+                     <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                        A photo or avatar that shows your character.
+                     </p>
+                  </div>
+                  <TrustBadge label="+15" />
+               </button>
+
+               <label className="mt-md-2 flex flex-col gap-md-1">
+                  <span className="flex items-center justify-between gap-md-2">
+                     <span className="text-md-b2 font-[590] text-md-heading">Your name</span>
+                     <TrustBadge label="+10" />
+                  </span>
+                  <input
+                     className="min-h-[48px] rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b1 font-normal text-md-heading shadow-md-card placeholder:text-md-neutral-1200 focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
+                     maxLength={30}
+                     onChange={(event) => onProfileNameChange(event.target.value)}
+                     placeholder="e.g. Maya, Jay, or a friendly nickname"
+                     type="text"
+                     value={profileName}
+                  />
+                  <span className="flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                     <span>The name lenders see with your requests.</span>
+                     <span className="shrink-0">{profileName.length}/30</span>
+                  </span>
+                  {profileSaveError ? (
+                     <span className="text-md-b3 font-medium leading-[18px] text-md-red-500">{profileSaveError}</span>
+                  ) : null}
+               </label>
+            </section>
+
+            <BorrowerContextRadioSection
+               label="How would you describe your work?"
+               onSelect={onIncomeSelect}
+               options={incomeSetupOptions}
+               selectedValue={context.incomeSetup}
+            />
+
+            {context.incomeSetup === 'contract' ? (
+               <div className="flex flex-col gap-1.5">
+                  <p className="text-md-b2 font-semibold text-md-heading">Describe your situation</p>
+                  <p className="text-md-b3 text-md-neutral-700">Tell lenders how you earn, in your own words.</p>
+                  <textarea
+                     autoFocus
+                     className="w-full resize-none rounded-md-input border border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none"
+                     maxLength={200}
+                     rows={3}
+                     onChange={(e) => onIncomeDescriptionChange(e.target.value)}
+                     placeholder="e.g. I run a small online shop and income changes month to month"
+                     value={context.incomeDescription ?? ''}
+                  />
+               </div>
+            ) : null}
+
+            <div className="flex flex-col gap-1.5">
+               <p className="text-md-b2 font-semibold text-md-heading">What do you do for work?</p>
+               <p className="text-md-b3 text-md-neutral-700">e.g. teacher, nurse, market vendor, driver</p>
+               <input
+                  className="w-full rounded-md-input border border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none"
+                  maxLength={60}
+                  onChange={(e) => onProfessionChange(e.target.value)}
+                  placeholder="e.g. teacher"
+                  type="text"
+                  value={context.profession ?? ''}
+               />
+            </div>
+
+            {!page1Complete ? (
+               <p className="text-md-b3 font-medium leading-[18px] text-md-primary-1200">
+                  Still needed: how you describe your work.
+               </p>
+            ) : null}
+
+            <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-md-2">
+               {backButton}
+               <button
+                  className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                  disabled={!page1Complete}
+                  onClick={onNextPage}
+                  type="button"
+               >
+                  Continue
+                  <ChevronRight className="size-5" strokeWidth={2} />
+               </button>
+            </div>
+         </div>
+      );
+   }
 
    return (
       <div className="flex min-h-0 flex-col gap-md-3">
-         <section className="rounded-md-input border border-md-primary-300 bg-md-primary-100 px-md-2 py-md-2">
-            <div>
-	               <p className="text-md-b2 font-[590] text-md-heading">Borrower bio</p>
-	               <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-	                  Add a friendly name and optional image so lenders can understand the request without private details.
-               </p>
-            </div>
-
-            <button
-               className="mt-md-2 flex w-full items-center gap-md-2 rounded-md-md bg-md-neutral-100 p-md-2 text-left transition hover:bg-md-neutral-200 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1"
-               onClick={onProfileImageClick}
-               type="button"
-            >
-               <UserAvatar
-                  alt="Profile image"
-                  backgroundColor={currentAvatarBackground ?? undefined}
-                  clickable={false}
-                  size={48}
-                  src={currentAvatarUrl || PLACEHOLDER_AVATAR}
-               />
-               <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-md-1">
-                     <p className="text-md-b2 font-[590] text-md-heading">Profile image</p>
-                     <TrustBadge label="+15 Trust Points" />
-                  </div>
-                  <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                     Use a photo, avatar, or anything that shows your character.
-                  </p>
-               </div>
-            </button>
-
-            <label className="mt-md-2 flex flex-col gap-md-1">
-               <span className="flex items-center gap-md-1 text-md-b2 font-[590] text-md-heading">
-                  Your name
-                  <TrustBadge label="+10 Trust Points" />
-               </span>
-               <input
-                  className="min-h-[48px] rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b1 font-normal text-md-heading shadow-md-card placeholder:text-md-neutral-1200 focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
-                  maxLength={30}
-                  onChange={(event) => onProfileNameChange(event.target.value)}
-                  placeholder="e.g. Maya, Jay, or a friendly nickname"
-                  type="text"
-                  value={profileName}
-               />
-               <span className="flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                  <span>This is the name lenders see with your requests.</span>
-                  <span className="shrink-0">{profileName.length}/30</span>
-               </span>
-               {profileSaveError ? <span className="text-md-b3 font-medium leading-[18px] text-md-red-500">{profileSaveError}</span> : null}
-            </label>
-         </section>
-
-         {!canContinue ? (
-            <div className="flex flex-wrap items-center gap-md-1 text-md-b3 font-medium leading-[18px] text-md-primary-1200">
-               <span>Still needed: {missingSummary}.</span>
-               <TrustBadge label="+10 Trust Points" />
-            </div>
-         ) : null}
-
-         <BorrowerContextRadioSection
-            label="How would you describe your work?"
-            onSelect={onIncomeSelect}
-            options={incomeSetupOptions}
-            selectedValue={context.incomeSetup}
-         />
-
-         {context.incomeSetup === 'contract' ? (
-            <div className="flex flex-col gap-1.5">
-               <p className="text-md-b2 font-semibold text-md-heading">Describe your situation</p>
-               <p className="text-md-b3 text-md-neutral-700">Tell lenders how you earn, in your own words.</p>
-               <textarea
-                  autoFocus
-                  className="w-full resize-none rounded-md-input border border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none"
-                  maxLength={200}
-                  rows={3}
-                  onChange={(e) => onIncomeDescriptionChange(e.target.value)}
-                  placeholder="e.g. I run a small online shop and income changes month to month"
-                  value={context.incomeDescription ?? ''}
-               />
-            </div>
-         ) : null}
-
-         <div className="flex flex-col gap-1.5">
-            <p className="text-md-b2 font-semibold text-md-heading">What do you do for work?</p>
-            <p className="text-md-b3 text-md-neutral-700">e.g. teacher, nurse, market vendor, driver</p>
-            <input
-               className="w-full rounded-md-input border border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none"
-               maxLength={60}
-               onChange={(e) => onProfessionChange(e.target.value)}
-               placeholder="e.g. teacher"
-               type="text"
-               value={context.profession ?? ''}
-            />
-         </div>
-
          <BorrowerContextChipSection
             helper="Helps lenders see that repayment timing makes sense."
             label="When do you usually get paid?"
@@ -596,7 +610,7 @@ function BorrowerContextLoanStep({
             {hasOtherIncome && (
                <input
                   autoFocus
-                  className="w-full rounded-md-input border border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none"
+                  className="w-full resize-none rounded-md-input border border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none"
                   maxLength={60}
                   onChange={(e) => onOtherIncomeChange(e.target.value)}
                   placeholder="e.g. tutoring on weekends"
@@ -615,37 +629,90 @@ function BorrowerContextLoanStep({
             selectedValues={context.cashGaps}
          />
 
-         <div>
-            {!canContinue ? (
-               <p className="mb-md-2 text-md-b3 font-medium leading-[18px] text-md-primary-1200">
-                  Still needed to continue: {missingSummary}.
-               </p>
-            ) : null}
-            <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-md-2">
-               <button
-                  className="inline-flex min-h-[48px] items-center justify-center gap-md-1 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 text-md-b1 font-medium text-md-heading shadow-md-card transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                  onClick={onBack}
-                  type="button"
-               >
-                  <ChevronLeft className="size-5" strokeWidth={2} />
-                  Back
-               </button>
-               <button
-                  className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                  disabled={!canContinue || isBusy}
-                  onClick={onContinue}
-                  type="button"
-               >
-	                  {isSavingProfile ? 'Saving profile...' : isSubmitting ? 'Submitting...' : 'Save bio info'}
-               </button>
-            </div>
+         {!page2Complete ? (
+            <p className="text-md-b3 font-medium leading-[18px] text-md-primary-1200">
+               Still needed:{' '}
+               {[!context.paydayWindow ? 'when you usually get paid' : null, context.cashGaps.length === 0 ? 'what you need help with' : null]
+                  .filter(Boolean)
+                  .join(' and ')}
+               .
+            </p>
+         ) : null}
+
+         <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-md-2">
+            {backButton}
+            <button
+               className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+               disabled={!page2Complete || isBusy}
+               onClick={onContinue}
+               type="button"
+            >
+               {isSavingProfile ? 'Saving profile...' : isSubmitting ? 'Submitting...' : 'Submit request'}
+            </button>
          </div>
       </div>
    );
 }
 
+// Compact reward pill: a coin dot + the points, right-aligned in its own column so it can
+// never wrap into the label it sits beside (the old inline "+15 Trust Points" pill broke
+// awkwardly on narrow phones). `shrink-0` keeps it intact when space is tight.
 function TrustBadge({ label }: { label: string }) {
-   return <span className="rounded-md-pill bg-md-primary-1200 px-[6px] py-[2px] text-md-b4 font-[590] text-md-neutral-100">{label}</span>;
+   return (
+      <span className="inline-flex shrink-0 items-center gap-[4px] rounded-md-pill bg-md-green-100 px-[8px] py-[3px] text-md-b4 font-[700] text-md-green-900">
+         <span aria-hidden="true" className="size-[10px] rounded-full bg-md-green-700" />
+         {label}
+      </span>
+   );
+}
+
+// Inline, red field-level error shown directly under a terms input.
+function FieldError({ message }: { message: string }) {
+   return (
+      <div className="flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-md-red-500">
+         <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+         <span>{message}</span>
+      </div>
+   );
+}
+
+// Three-dot progress rail shown at the bottom of the multi-step request flow:
+// step 1 = terms, step 2 = bio page 1, step 3 = bio page 2. Completed steps turn green,
+// the current step is a purple ring, upcoming steps are grey — so borrowers can see the
+// request is progressing and that a tap did something.
+const STEP_LABELS = ['Your terms', 'About you', 'Repayment context'];
+function StepDots({ current }: { current: 1 | 2 | 3 }) {
+   return (
+      <div>
+         <div className="flex items-center justify-center">
+            {[1, 2, 3].map((step) => {
+               const isDone = step < current;
+               const isNow = step === current;
+               return (
+                  <div key={step} className="flex items-center">
+                     <span
+                        className={`grid size-[22px] place-items-center rounded-full text-md-b4 font-[700] ${
+                           isDone
+                              ? 'bg-md-green-700 text-md-neutral-100'
+                              : isNow
+                                ? 'border-[2.5px] border-md-primary-1200 bg-md-neutral-100 text-md-primary-1200'
+                                : 'border-2 border-md-neutral-500 bg-md-neutral-300 text-md-neutral-600'
+                        }`}
+                     >
+                        {isDone ? <Check className="size-3.5" strokeWidth={3} /> : step}
+                     </span>
+                     {step < 3 ? (
+                        <span className={`h-[3px] w-[44px] rounded-full ${step < current ? 'bg-md-green-700' : 'bg-md-neutral-400'}`} />
+                     ) : null}
+                  </div>
+               );
+            })}
+         </div>
+         <p className="mt-[3px] text-center text-md-b3 font-medium text-md-neutral-1200">
+            Step {current} of 3 · {STEP_LABELS[current - 1]}
+         </p>
+      </div>
+   );
 }
 
 export function BorrowerContextRadioSection({
@@ -826,6 +893,11 @@ export default function LoanRequestModal({
    const [referralCodeError, setReferralCodeError] = useState('');
    const [isApplyingReferralCode, setIsApplyingReferralCode] = useState(false);
    const [showBorrowerContextStep, setShowBorrowerContextStep] = useState(startOnBorrowerContextStep);
+   // The bio step is split into two short pages so borrowers never face one long scroll.
+   const [bioPage, setBioPage] = useState<1 | 2>(1);
+   // Inline, per-field validation for the terms step — shown under each field instead of a
+   // toast that could hide behind the card. Checked before the borrower can advance/submit.
+   const [termErrors, setTermErrors] = useState<{ amount?: string; repayment?: string; date?: string; reason?: string }>({});
    const [borrowerContext, setBorrowerContext] = useState<BorrowerContextState>(emptyBorrowerContext);
    const [borrowerContextPromptSeen, setBorrowerContextPromptSeen] = useState(false);
    const [borrowerProfileName, setBorrowerProfileName] = useState(user.displayName ?? user.username ?? '');
@@ -880,6 +952,13 @@ export default function LoanRequestModal({
    const currentBorrowerDisplayName = user.displayName ?? user.username ?? '';
    const isPreviewUser = user.email.endsWith('@moodeng.local') || user.id.includes('preview');
 
+   // The 3-dot progress rail is only meaningful when the borrower goes through the full
+   // terms → bio-1 → bio-2 journey. Returning borrowers (bio already saved) submit straight
+   // from the terms step, so no rail is shown for them, and never on the optional referral step.
+   const isMultiStepRequestFlow = requireBorrowerContextStep && !user.incomeType && isVerified;
+   const showStepProgress = isMultiStepRequestFlow && !shouldShowReferralStep;
+   const currentStep: 1 | 2 | 3 = showBorrowerContextStep ? (bioPage === 1 ? 2 : 3) : 1;
+
    useEffect(() => {
       setTypedDate(selectedDateLabel);
       setTypedDateDigits(selectedDateDigits);
@@ -894,6 +973,8 @@ export default function LoanRequestModal({
 
       setShowReferralStep(startOnReferralStep && isVerified && canUseReferralBoost);
       setShowBorrowerContextStep(startOnBorrowerContextStep);
+      setBioPage(1);
+      setTermErrors({});
       setBorrowerContext(emptyBorrowerContext);
       setBorrowerContextPromptSeen(false);
       setBorrowerProfileName(user.displayName ?? user.username ?? '');
@@ -924,6 +1005,19 @@ export default function LoanRequestModal({
          formRef.current.scrollTop = 0;
       });
    }, [isOpen, shouldShowReferralStep, showVerify]);
+
+   // Lock the page behind the modal while it's open. Without this, over-scrolling inside the
+   // modal chains through to the Request Board underneath (it scrolls instead of the card).
+   // Paired with `overscroll-contain` on the modal's own scroll areas below.
+   useEffect(() => {
+      if (!isOpen) return undefined;
+
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+         document.body.style.overflow = previousOverflow;
+      };
+   }, [isOpen]);
 
    useEffect(() => {
       if (!isOpen) return undefined;
@@ -1030,6 +1124,28 @@ export default function LoanRequestModal({
    useEffect(() => {
       resizeReasonTextarea(reasonTextareaRef.current);
    }, [reason, isOpen]);
+
+   // Clear the date error as soon as a valid repayment date is entered (typed or picked).
+   useEffect(() => {
+      if (isRepaymentDateFilled) setTermErrors((prev) => (prev.date ? { ...prev, date: undefined } : prev));
+   }, [isRepaymentDateFilled]);
+
+   // The low-effort reason check (DeepSeek) runs at final submit — which happens from the bio
+   // step — but its warning renders under the reason field on the terms step. If we're on the
+   // bio step when it fires, bounce back to terms once so the borrower actually sees it (and the
+   // "Ask Mecha to word this" link), instead of a silent no-op. Once-only, so tapping submit a
+   // second time to post anyway still works; resets when the reason is edited (warning clears).
+   const bouncedForReasonWarningRef = useRef(false);
+   useEffect(() => {
+      if (!reasonWarning) {
+         bouncedForReasonWarningRef.current = false;
+         return;
+      }
+      if (showBorrowerContextStep && !bouncedForReasonWarningRef.current) {
+         bouncedForReasonWarningRef.current = true;
+         setShowBorrowerContextStep(false);
+      }
+   }, [reasonWarning, showBorrowerContextStep]);
 
    const formatReferralBoost = (boostAmount: number) => {
       const amount = Number(boostAmount);
@@ -1185,8 +1301,65 @@ export default function LoanRequestModal({
       }
    };
 
+   // Inline validation of the terms fields (amount, repayment, date, reason). Runs on the
+   // terms step before the borrower can advance to the bio step or submit — so a missing
+   // reason (the #1 confusion) is caught right here, under the field, not via a toast that
+   // hides behind the next card.
+   const REASON_MIN_LENGTH = 40;
+   const validateTerms = (): boolean => {
+      const errors: typeof termErrors = {};
+
+      const amount = Number(loanAmount);
+      if (!loanAmount || Number.isNaN(amount) || amount <= 0) {
+         errors.amount = 'Enter how much you want to borrow.';
+      } else if (amount > limitAmount) {
+         errors.amount = `That's above your current limit of $${limitAmount}.`;
+      }
+
+      const repayment = Number(totalRepaymentAmount);
+      if (!totalRepaymentAmount || Number.isNaN(repayment)) {
+         errors.repayment = 'Enter the amount you will repay.';
+      } else if (!Number.isNaN(amount) && repayment < amount + 1) {
+         errors.repayment = 'Repayment must be at least $1 more than you borrow.';
+      }
+
+      if (!isRepaymentDateFilled) {
+         errors.date = 'Choose when you will repay.';
+      }
+
+      const trimmedReason = reason.trim();
+      if (!trimmedReason) {
+         errors.reason = 'Please add a reason so lenders know what the loan is for.';
+      } else if (trimmedReason.length < REASON_MIN_LENGTH) {
+         errors.reason = `Please add a little more — at least ${REASON_MIN_LENGTH} characters (${trimmedReason.length}/${REASON_MIN_LENGTH}).`;
+      }
+
+      setTermErrors(errors);
+
+      // Make sure the first problem is actually seen: if the borrower tapped submit from the
+      // bottom of the form, scroll the first invalid field into view (the error is inline, not
+      // a toast, so it must be on-screen to help).
+      const firstInvalidId = (['amount', 'repayment', 'date', 'reason'] as const)
+         .filter((key) => errors[key])
+         .map((key) => ({ amount: 'borrow-amount', repayment: 'repayment-amount', date: 'repaymentDate', reason: 'reason' })[key])[0];
+      if (firstInvalidId) {
+         window.requestAnimationFrame(() => {
+            document.getElementById(firstInvalidId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         });
+      }
+
+      return Object.keys(errors).length === 0;
+   };
+
    const handleLoanFormSubmit = (event: FormEvent<HTMLFormElement>) => {
       if (!isVerified || isSubmitting) {
+         event.preventDefault();
+         return;
+      }
+
+      // On the terms step, validate its own fields inline before going anywhere. Skipped once
+      // we're on the bio step (terms were already validated to get there).
+      if (!showBorrowerContextStep && !validateTerms()) {
          event.preventDefault();
          return;
       }
@@ -1199,6 +1372,7 @@ export default function LoanRequestModal({
       if (requireBorrowerContextStep && !hasSavedBorrowerContext && !borrowerContextPromptSeen && !showBorrowerContextStep) {
          event.preventDefault();
          setShowBorrowerContextStep(true);
+         setBioPage(1);
          return;
       }
 
@@ -1279,6 +1453,11 @@ export default function LoanRequestModal({
    };
 
    const handleBorrowerContextBack = () => {
+      // From bio page 2, Back returns to page 1; from page 1, Back returns to the terms step.
+      if (bioPage === 2) {
+         setBioPage(1);
+         return;
+      }
       setShowBorrowerContextStep(false);
    };
 
@@ -1345,7 +1524,7 @@ export default function LoanRequestModal({
    };
 
    return (
-      <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-[#1f1b29]/20 px-[21px] py-[64px] sm:items-center sm:py-6">
+      <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto overscroll-contain bg-[#1f1b29]/20 px-[21px] py-[64px] sm:items-center sm:py-6">
          <section
             ref={clickOutsideRef}
             className="relative mx-auto flex max-h-[calc(100dvh-42px)] w-full max-w-[398px] flex-col overflow-hidden rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 shadow-md-card transition-transform duration-150 ease-out"
@@ -1411,7 +1590,7 @@ export default function LoanRequestModal({
 
             {shouldShowReferralStep ? (
                <div
-                  className="flex min-h-0 touch-pan-y flex-col gap-md-2 overflow-y-auto p-md-2 text-md-b2 text-md-heading"
+                  className="flex min-h-0 touch-pan-y flex-col gap-md-2 overflow-y-auto overscroll-contain p-md-2 text-md-b2 text-md-heading"
                   onPointerDown={(event) => startDismissGesture(event, 'referral')}
                   onPointerMove={moveDismissGesture}
                   onPointerUp={endDismissGesture}
@@ -1497,10 +1676,11 @@ export default function LoanRequestModal({
                <form
                   ref={formRef}
                   onSubmit={handleLoanFormSubmit}
-                  className="flex min-h-0 flex-col gap-md-3 overflow-y-auto p-md-3 text-md-b2 text-md-heading"
+                  className="flex min-h-0 flex-col gap-md-3 overflow-y-auto overscroll-contain p-md-3 text-md-b2 text-md-heading"
                >
                   {showBorrowerContextStep ? (
                      <BorrowerContextLoanStep
+                        page={bioPage}
                         context={borrowerContext}
                         currentAvatarBackground={user.avatarBackground}
                         currentAvatarUrl={user.avatarUrl}
@@ -1509,6 +1689,7 @@ export default function LoanRequestModal({
                         monthlyIncome={borrowerContext.monthlyIncome ?? ''}
                         monthlyExpenses={borrowerContext.monthlyExpenses ?? ''}
                         onBack={handleBorrowerContextBack}
+                        onNextPage={() => setBioPage(2)}
                         onCashGapToggle={handleCashGapToggle}
                         onContinue={handleBorrowerContextContinue}
                         onIncomeSelect={(value) =>
@@ -1587,7 +1768,7 @@ export default function LoanRequestModal({
                                  />
                               </div>
                            </div>
-                           <div className={`flex items-center ${inputShellClass}`}>
+                           <div className={`flex items-center ${inputShellClass} ${termErrors.amount ? '!border-md-red-500' : ''}`}>
                               <span
                                  aria-hidden="true"
                                  className="flex min-w-[112px] items-center justify-center gap-md-1 self-stretch border-r border-md-neutral-600 bg-[#2775ca] px-md-3 py-md-2 text-md-b1 font-normal text-md-neutral-100"
@@ -1596,7 +1777,10 @@ export default function LoanRequestModal({
                                  USDC
                               </span>
                               <input
-                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setLoanAmount(e.target.value)}
+                                 onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                    setLoanAmount(e.target.value);
+                                    if (termErrors.amount) setTermErrors((prev) => ({ ...prev, amount: undefined }));
+                                 }}
                                  onFocus={scrollFieldIntoView}
                                  className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
                                  id="borrow-amount"
@@ -1606,6 +1790,7 @@ export default function LoanRequestModal({
                                  value={loanAmount}
                               />
                            </div>
+                           {termErrors.amount ? <FieldError message={termErrors.amount} /> : null}
                            <div className="flex justify-end gap-md-1 text-md-b3 font-normal text-md-neutral-1200">
                               <InfoTooltip
                                  activeTooltip={activeTooltip}
@@ -1625,15 +1810,21 @@ export default function LoanRequestModal({
                               Set Repayment Amount
                            </label>
                            <input
-                              onChange={(e: ChangeEvent<HTMLInputElement>) => setTotalRepaymentAmount(e.target.value)}
+                              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                 setTotalRepaymentAmount(e.target.value);
+                                 if (termErrors.repayment) setTermErrors((prev) => ({ ...prev, repayment: undefined }));
+                              }}
                               onFocus={scrollFieldIntoView}
-                              className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none`}
+                              className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none ${
+                                 termErrors.repayment ? '!border-md-red-500' : ''
+                              }`}
                               id="repayment-amount"
                               inputMode="decimal"
                               placeholder="Must be more than the borrowed amount"
                               type="text"
                               value={totalRepaymentAmount}
                            />
+                           {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
                         </div>
 
                         <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-date">
@@ -1641,7 +1832,7 @@ export default function LoanRequestModal({
                               Set Repayment Date
                            </label>
                            <div className="relative">
-                              <div className={`relative flex items-center ${inputShellClass}`}>
+                              <div className={`relative flex items-center ${inputShellClass} ${termErrors.date ? '!border-md-red-500' : ''}`}>
                                  <input
                                     ref={dateInputRef}
                                     aria-label="Selected repayment date"
@@ -1678,31 +1869,52 @@ export default function LoanRequestModal({
                                  </button>
                               </div>
                            </div>
+                           {termErrors.date ? <FieldError message={termErrors.date} /> : null}
                         </div>
 
                         <div className="flex flex-col gap-md-1" data-tour-target="loan-reason">
                            <label className="text-md-b2 font-normal text-md-heading" htmlFor="reason">
                               Reason For Borrowing
                            </label>
-                           <div className={`${inputShellClass} flex flex-col px-md-3 py-md-2`}>
+                           <div className={`${inputShellClass} flex flex-col px-md-3 py-md-2 ${termErrors.reason ? '!border-md-red-500' : ''}`}>
                               <textarea
                                  ref={reasonTextareaRef}
                                  maxLength={200}
                                  onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
                                     setReason(e.target.value);
                                     resizeReasonTextarea(e.target);
+                                    if (termErrors.reason) setTermErrors((prev) => ({ ...prev, reason: undefined }));
                                  }}
                                  onFocus={scrollFieldIntoView}
                                  className="min-h-[48px] resize-none overflow-hidden bg-transparent text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
                                  id="reason"
-                                 placeholder="e.g. Medicine for my mother and transport to the clinic this week"
+                                 placeholder="Why do you need this loan?"
                                  rows={1}
                                  value={reason}
                               />
                               <div className="flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200 select-none">
-                                 <span>At least 40 characters. Requests with no real effort may be deleted.</span>
+                                 {(() => {
+                                    const trimmedLength = reason.trim().length;
+                                    const remaining = REASON_MIN_LENGTH - trimmedLength;
+                                    // Guide live: once they've started typing but are short, show how many
+                                    // more characters they need — so they learn before submitting, not after.
+                                    if (trimmedLength > 0 && remaining > 0) {
+                                       return (
+                                          <span className="font-medium text-md-primary-1200">
+                                             {remaining} more character{remaining === 1 ? '' : 's'} to go
+                                          </span>
+                                       );
+                                    }
+                                    return <span>At least 40 characters — short and specific helps lenders trust it.</span>;
+                                 })()}
                                  <span className="shrink-0">{reason.length}/200</span>
                               </div>
+                              {termErrors.reason ? (
+                                 <div className="mt-md-1 flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-md-red-500">
+                                    <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                    <span>{termErrors.reason}</span>
+                                 </div>
+                              ) : null}
                               {reasonWarning ? (
                                  <div className="mt-md-1 border-t border-[#f0c98a] pt-md-1">
                                     <div className="flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-[#92400e]">
@@ -1739,6 +1951,11 @@ export default function LoanRequestModal({
                   )}
                </form>
             )}
+            {showStepProgress ? (
+               <div className="shrink-0 border-t border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2">
+                  <StepDots current={currentStep} />
+               </div>
+            ) : null}
          </section>
          {isCalendarOpen ? (
             <div

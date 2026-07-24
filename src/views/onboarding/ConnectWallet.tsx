@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useConnectModal, WalletButton } from '@rainbow-me/rainbowkit';
+import { Check } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
@@ -221,33 +222,27 @@ function BorrowerConnectView({
             />
 
             <div className="flex flex-1 flex-col items-center justify-center px-md-4 text-center">
-               {/* Instant wallet — deliberately NOT the Base logo (this screen exists because Base
-                   won't work). Lightning tile = "instant"; swap for a bespoke icon when ready. */}
+               {/* Neutral wallet glyph — deliberately NOT the Base logo. This screen creates an
+                   embedded wallet, so it must never imply "Base": the copy and icon say "create". */}
                <div className="mb-md-3 flex size-16 items-center justify-center rounded-md-xl bg-md-primary-1200 shadow-[0_18px_56px_rgba(96,16,210,0.22)] dark:shadow-[0_18px_60px_rgba(112,16,210,0.38)]">
-                  <span
-                     aria-hidden="true"
-                     className="block size-9 bg-md-neutral-100"
-                     style={{
-                        WebkitMaskImage: "url('/icons/lightning.svg')",
-                        maskImage: "url('/icons/lightning.svg')",
-                        WebkitMaskRepeat: 'no-repeat',
-                        maskRepeat: 'no-repeat',
-                        WebkitMaskPosition: 'center',
-                        maskPosition: 'center',
-                        WebkitMaskSize: 'contain',
-                        maskSize: 'contain'
-                     }}
-                  />
+                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                     <rect x="3" y="6" width="18" height="13" rx="3" stroke="#fff" strokeWidth="1.8" />
+                     <path d="M3 9h18" stroke="#fff" strokeWidth="1.8" />
+                     <circle cx="16.5" cy="13" r="1.4" fill="#fff" />
+                  </svg>
                </div>
-               <div className="mb-md-4 flex max-w-[360px] flex-col items-center gap-md-2">
+               <div className="mb-md-3 flex max-w-[360px] flex-col items-center gap-md-2">
                   <h2 className="text-[32px] font-semibold leading-[1.12] text-md-heading dark:text-md-neutral-100">
-                     Create your wallet instantly
+                     Create your wallet
                   </h2>
-                  <p className="max-w-[360px] text-md-b1 font-medium leading-7 text-md-neutral-700">
-                     No app to download — we set it up with your Moodeng login. It receives your USDC loans and builds your
-                     Trust Score, and you can export it anytime.
+                  <p className="max-w-[300px] text-md-b1 font-medium leading-7 text-md-neutral-700">
+                     Hold USDC. Build your Trust Score.
                   </p>
                </div>
+               <span className="mb-md-3 inline-flex items-center gap-md-1 rounded-md-pill bg-md-primary-100 px-md-2 py-md-0 text-md-b3 font-semibold text-md-primary-1200 dark:bg-[#2a1740] dark:text-md-primary-400">
+                  <Check aria-hidden="true" className="size-4" strokeWidth={2.4} />
+                  Yours to keep · export anytime
+               </span>
                <InstantWalletButton onClick={onCreateInstantWallet} isDisabled={isCreatingInstantWallet} />
                {isCreatingInstantWallet && !instantWalletError ? (
                   <p className="mt-md-2 max-w-[360px] text-md-b3 font-medium text-md-neutral-700">
@@ -257,14 +252,10 @@ function BorrowerConnectView({
                {instantWalletError ? (
                   <p className="mt-md-2 max-w-[360px] text-md-b3 font-medium text-md-red-500">{instantWalletError}</p>
                ) : null}
-               <button
-                  type="button"
-                  onClick={connectBase}
-                  disabled={isConnecting || isCreatingInstantWallet}
-                  className="mt-md-3 text-md-b2 font-semibold text-md-primary-1200 underline underline-offset-4 disabled:opacity-60 dark:text-md-primary-500"
-               >
-                  Already have a wallet? Connect it
-               </button>
+               {/* No "connect existing wallet" here on purpose: this screen leads with the embedded
+                   wallet precisely because Base is unavailable (e.g. an ISP block), so offering a
+                   Base connect would dead-end the few who tap it. Anyone who truly has a wallet can
+                   use "Trouble connecting?" below. */}
                <div className="mt-md-3">
                   <AskMechaButton
                      variant="chip"
@@ -344,7 +335,7 @@ function InstantWalletButton({ onClick, isDisabled }: { onClick: () => void; isD
          disabled={isDisabled}
          className="flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 shadow-[0_18px_50px_rgba(96,16,210,0.24)] disabled:opacity-60 dark:shadow-[0_18px_60px_rgba(112,16,210,0.38)]"
       >
-         {isDisabled ? 'Creating your wallet…' : 'Create my wallet'}
+         {isDisabled ? 'Creating your wallet…' : 'Create wallet'}
          {isDisabled ? null : (
             <span
                className="block size-6 bg-md-neutral-100"
