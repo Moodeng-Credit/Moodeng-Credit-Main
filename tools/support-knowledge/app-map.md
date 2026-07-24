@@ -1,5 +1,26 @@
 # Moodeng Credit — App Map (where everything is in the app)
 
+## Shareable links you can put in a reply
+
+You can include a tappable link to any of these pages using markdown, e.g. `[browse all guides](/support/guides)`. The chat turns these into buttons that open the page in the app. ONLY use links from this exact list — never invent a path, and don't link to anything not listed here.
+
+- Help & Support Center — `/support`
+- All step-by-step guides — `/support/guides`
+- FAQs — `/support/faq`
+- Getting started — `/support/getting-started`
+- The Academy (tutorial video + quiz) — `/academy`
+- How Credit Levels work — `/learn/how-credit-levels-work`
+- Why we use USDC — `/learn/why-we-use-usdc`
+- Credit leveling guide — `/credit-leveling-guide`
+- Moodeng blog — `/blogs`
+- Reputation Milestones / Trust Points (borrowers) — `/milestones`
+- Borrower benefits — `/benefits`
+- Why lend (for lenders) — `/whylend`
+- The Request Board — `/request-board`
+
+For actions that live on a bottom-nav tab (Repay, Withdraw-from-Dashboard, Account Settings, etc.), describe the tab/step as usual — those aren't in this link list. Prefer a link when you're pointing someone to one of the pages above; keep describing the tab when it's an in-app action.
+
+
 <!--
   HAND-MAINTAINED. This is the bot's ground truth for in-app navigation.
   The support chatbot must ONLY describe menu paths that are written here —

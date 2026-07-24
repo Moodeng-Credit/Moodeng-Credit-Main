@@ -1,4 +1,5 @@
 import { type JSX, type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { MECHA_AVATAR, type MechaMood, poseSrc, preloadMechaPoses } from '@/components/mecha/mechaAssets';
 import { getMechaCopy, MECHA_LANGS } from '@/components/mecha/mechaCopy';
@@ -59,12 +60,22 @@ function safeHttpUrl(raw: string): string | null {
    }
 }
 
+// Same-origin, in-app route the model may share (e.g. "/support/guides"). Must be a
+// single leading slash — reject "//host" (protocol-relative to another site) and any
+// scheme. These become client-side navigation links, not new tabs.
+function safeInAppPath(raw: string): string | null {
+   if (!/^\/(?!\/)[A-Za-z0-9\-._~/?#%&=+]*$/.test(raw)) return null;
+   return raw;
+}
+
 const LINK_CLASS = 'font-semibold text-[#6c3fe0] underline underline-offset-2 dark:text-[#d8c2ff]';
 
-// Turn markdown links [text](url) and bare https URLs into anchors — but only for
-// allowlisted hosts; anything else renders as its plain label.
-function linkify(text: string, keyBase: string): (string | JSX.Element)[] {
-   const pattern = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s)]+)/g;
+// Turn markdown links [text](url) — external https or an in-app "/path" — and bare
+// https URLs into anchors. External links go through the host allowlist and open in
+// a new tab; in-app paths navigate within the app via onInApp. Anything else renders
+// as its plain label, so a stray or malformed URL can never become a live link.
+function linkify(text: string, keyBase: string, onInApp?: (path: string) => void): (string | JSX.Element)[] {
+   const pattern = /\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)|(https?:\/\/[^\s)]+)/g;
    const out: (string | JSX.Element)[] = [];
    let last = 0;
    let m: RegExpExecArray | null;
@@ -73,8 +84,25 @@ function linkify(text: string, keyBase: string): (string | JSX.Element)[] {
       if (m.index > last) out.push(text.slice(last, m.index));
       const label = m[1] ?? m[3];
       const rawUrl = m[2] ?? m[3];
-      const safe = safeHttpUrl(rawUrl);
-      if (safe) {
+      const inApp = rawUrl.startsWith('/') ? safeInAppPath(rawUrl) : null;
+      const safe = inApp ? null : safeHttpUrl(rawUrl);
+      if (inApp) {
+         out.push(
+            <a
+               key={`${keyBase}-a${n}`}
+               href={inApp}
+               className={LINK_CLASS}
+               onClick={(e) => {
+                  // Let modified clicks (new tab, etc.) behave natively.
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                  e.preventDefault();
+                  onInApp?.(inApp);
+               }}
+            >
+               {label}
+            </a>
+         );
+      } else if (safe) {
          out.push(
             <a key={`${keyBase}-a${n}`} href={safe} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
                {label}
@@ -92,9 +120,9 @@ function linkify(text: string, keyBase: string): (string | JSX.Element)[] {
 
 // Render **bold** and safe links from the model's markdown; everything else stays
 // plain text (whitespace-pre-wrap keeps its line breaks).
-function renderRich(text: string): (string | JSX.Element)[] {
+function renderRich(text: string, onInApp?: (path: string) => void): (string | JSX.Element)[] {
    return text.split(/\*\*(.+?)\*\*/g).flatMap((part, i) =>
-      i % 2 === 1 ? [<strong key={`b${i}`}>{linkify(part, `b${i}`)}</strong>] : linkify(part, `t${i}`)
+      i % 2 === 1 ? [<strong key={`b${i}`}>{linkify(part, `b${i}`, onInApp)}</strong>] : linkify(part, `t${i}`, onInApp)
    );
 }
 
@@ -125,9 +153,17 @@ export default function MechaChatPanel({
    onLocaleChange
 }: MechaChatPanelProps): JSX.Element {
    const copy = getMechaCopy(locale);
+   const navigate = useNavigate();
    const [draft, setDraft] = useState('');
    const [contact, setContact] = useState('');
    const scrollRef = useRef<HTMLDivElement>(null);
+
+   // In-app link tapped inside a reply: navigate there, and close the floating
+   // panel so the destination page is visible (the Help hub passes no onClose).
+   const handleInApp = (path: string) => {
+      navigate(path);
+      onClose?.();
+   };
 
    useEffect(() => {
       scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -252,7 +288,7 @@ export default function MechaChatPanel({
                      <Avatar mood={m.isError ? 'shrug' : 'present'} />
                      <div className="max-w-[82%]">
                         <div className="whitespace-pre-wrap rounded-2xl rounded-bl-md bg-[#f3effe] px-3.5 py-2.5 text-[14px] leading-snug text-[#1b0a36] dark:bg-[#241a33] dark:text-[#F8F4FF]">
-                           {renderRich(m.content)}
+                           {renderRich(m.content, handleInApp)}
                         </div>
                         {onRate && m.id === ratableId ? (
                            <div className="mt-1 flex items-center gap-1 pl-1">
