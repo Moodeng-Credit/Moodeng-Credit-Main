@@ -1373,6 +1373,27 @@ function RequestBoard$() {
          }
 
          await doCreateLoan(loanData);
+      } else {
+         // Belt-and-suspenders: every failing precondition above already returns with its
+         // own toast, so reaching here means a guard and this final check have drifted out
+         // of sync — most likely the just-verified state, where isWorldIdVerified is true
+         // (the borrower verified this session) but effectiveUser hasn't refreshed yet, so
+         // isUserVerified() is still false. Never let "Make Your Request" silently no-op.
+         console.warn('Loan request fell through the create guard with no matching reason', {
+            verified: isUserVerified(effectiveUser),
+            hasBorrowerBaseWallet,
+            hasReachedActiveLoanLimit,
+            withinLimit: parsedLoanAmount <= availableCreditLimit,
+            positiveAmount: parsedLoanAmount > 0,
+            repaymentOk: parsedRepaymentAmount >= parsedLoanAmount + 1
+         });
+         showToast(
+            TOAST_TYPES.ERROR,
+            "We couldn't submit that",
+            "Something blocked this request. Please refresh and try again — if it keeps happening, tap Help and we'll sort it out.",
+            'OK',
+            'acknowledge'
+         );
       }
       } finally {
          // Always release the synchronous guard when handleSubmit finishes.
