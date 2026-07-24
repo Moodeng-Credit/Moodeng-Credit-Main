@@ -7,7 +7,14 @@ import { useLocalization } from '@/i18n';
 import { poseSrc } from '@/components/mecha/mechaAssets';
 import MechaChatPanel from '@/components/mecha/MechaChatPanel';
 import { getMechaCopy } from '@/components/mecha/mechaCopy';
-import { MECHA_CLOSE_EVENT, MECHA_OPEN_EVENT, type MechaContext, type MechaOpenDetail } from '@/components/mecha/mechaBus';
+import {
+   MECHA_CLOSE_EVENT,
+   MECHA_OPEN_EVENT,
+   MECHA_SIGNAL_EVENT,
+   type MechaContext,
+   type MechaOpenDetail,
+   hasMechaProblemSignal
+} from '@/components/mecha/mechaBus';
 import { DEFAULT_QUICK_REPLIES, type LocalizedText, pickList, pickText, stepForLocation } from '@/components/mecha/stepContext';
 import { loadMechaLocale, saveMechaLocale } from '@/components/mecha/mechaStorage';
 import { useMechaChat } from '@/components/mecha/useMechaChat';
@@ -17,6 +24,12 @@ import '@/components/mecha/mecha.css';
 // Bubble is suppressed on these route prefixes: /help embeds the panel already,
 // and /admin is an internal tool.
 const HIDE_ON_PREFIXES = ['/help', '/admin'];
+// The proactive floating bubble/nudge is deliberately scoped to onboarding only.
+// Everywhere else (request board, dashboard, repay, withdraw, account, …) Mecha stays
+// out of the way — it was popping up mid-task and blocking the loan-request form. The
+// panel is still reachable everywhere via explicit "Ask Mecha" buttons (openMecha) and
+// the Help page, which don't depend on this bubble.
+const ONBOARDING_BUBBLE_PREFIXES = ['/onboarding', '/verify', '/sign-up'];
 // Routes where the bottom nav is present — raise the bubble so it clears it.
 const OVER_NAV_PREFIXES = ['/request-board', '/repay', '/dashboard', '/lender/', '/history', '/account', '/support', '/user/'];
 // How long a user idles on a friction step before Mecha offers a nudge.
@@ -40,6 +53,23 @@ export default function MechaLauncher(): JSX.Element | null {
    const [isOpen, setIsOpen] = useState(false);
    const [nudge, setNudge] = useState<LocalizedText | null>(null);
    const [override, setOverride] = useState<MechaContext | null>(null);
+   // Problem-gated bubble: hidden while everything works; appears once the user hits a
+   // problem (error toast / explicit openMecha) and stays for the session. Friction steps
+   // (wallet connect, verify) always show it — that's where people get stuck.
+   const [problemSignaled, setProblemSignaled] = useState<boolean>(() => hasMechaProblemSignal());
+
+   useEffect(() => {
+      const onSignal = () => setProblemSignaled(true);
+      window.addEventListener(MECHA_SIGNAL_EVENT, onSignal);
+      return () => window.removeEventListener(MECHA_SIGNAL_EVENT, onSignal);
+   }, []);
+
+   // Clear any visible nudge when the route changes, so a nudge raised on an onboarding
+   // step can never linger onto the next screen (the bug where the "setting up your wallet"
+   // tip appeared over the loan-request form on the Request Board).
+   useEffect(() => {
+      setNudge(null);
+   }, [location.pathname]);
 
    // Fresh context at send-time: an explicit openMecha(context) wins, else the route step.
    const contextRef = useRef<MechaContext>({});
@@ -67,6 +97,8 @@ export default function MechaLauncher(): JSX.Element | null {
          const detail = (e as CustomEvent<MechaOpenDetail>).detail ?? {};
          if (detail.context) setOverride(detail.context);
          if (detail.greeting) seedGreeting(detail.greeting);
+         // An explicit open means the user needed help — keep the bubble around after close.
+         setProblemSignaled(true);
          open();
          if (detail.seedUserMessage) void send(detail.seedUserMessage);
       };
@@ -107,11 +139,18 @@ export default function MechaLauncher(): JSX.Element | null {
    const overNav = OVER_NAV_PREFIXES.some((p) => location.pathname.startsWith(p));
    const bubbleBottom = { bottom: `calc(env(safe-area-inset-bottom, 0px) + ${overNav ? 92 : 20}px)` };
    const quickReplies = pickList(step?.quickReplies ?? DEFAULT_QUICK_REPLIES, locale);
+   // Onboarding-only: the proactive bubble appears only while the user is in the onboarding
+   // funnel (wallet, verify, sign-up), and only when there's a reason to — a friction-step
+   // nudge or a problem hit on that screen. Outside onboarding it never shows, so it can't
+   // block the loan-request form or any other in-app task. Explicit "Ask Mecha" buttons and
+   // the Help page open the panel directly and are unaffected by this gate.
+   const onOnboarding = ONBOARDING_BUBBLE_PREFIXES.some((p) => location.pathname.startsWith(p));
+   const showBubble = onOnboarding && (problemSignaled || Boolean(step?.nudge));
 
    return (
       <>
          {/* Launcher bubble + proactive nudge */}
-         {!isOpen ? (
+         {!isOpen && showBubble ? (
             <div className="fixed right-4 z-[90] flex flex-col items-end gap-2" style={bubbleBottom}>
                {nudge ? (
                   <div className="mecha-nudge relative mb-1 max-w-[240px] rounded-2xl rounded-br-md border border-[#e6ddf6] bg-white px-3.5 py-2.5 text-[13px] leading-snug text-[#1b0a36] shadow-[0_10px_30px_rgba(27,10,54,0.18)] dark:border-[#40354F] dark:bg-[#17121F] dark:text-[#F8F4FF]">
