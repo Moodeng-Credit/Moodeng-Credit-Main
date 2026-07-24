@@ -1307,9 +1307,20 @@ function RequestBoard$() {
 
          if (!reasonOk) {
             reasonWarnedForRef.current = trimmedReason;
-            // Inline warning under the reason field (not a toast) — clearer and it stays put.
-            setReasonWarning(
-               reasonHint || 'This looks low-effort. Requests that appear to have no real effort may be deleted — submit again to post anyway.'
+            const warningText =
+               reasonHint || 'This looks low-effort. Requests that appear to have no real effort may be deleted — submit again to post anyway.';
+            // Inline warning under the reason field stays put so the borrower can act on it.
+            setReasonWarning(warningText);
+            // But the submit button sits at the bottom of a scrollable form, so the inline
+            // warning can land off-screen after a tap — leaving the request feeling like it
+            // silently did nothing. Pair it with a toast so there's always visible feedback,
+            // and spell out that submitting again will post it anyway (soft nudge, not a block).
+            showToast(
+               TOAST_TYPES.WARNING,
+               'Check your reason',
+               `${warningText} Tap “Make Your Request” again to post it anyway.`,
+               'OK',
+               'acknowledge'
             );
             return;
          }
