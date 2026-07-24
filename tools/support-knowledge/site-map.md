@@ -88,6 +88,7 @@ The **Help** tab's destination — a chat-first page where you can talk to **Mec
 ## Legal pages
 
 - **Terms of Service** (`/terms`) — using Moodeng honestly, reviewing loan terms before accepting funds, keeping your wallet secure. Notes that Moodeng cannot reverse blockchain transactions, recover a lost wallet, or guarantee a lender will fund a request.
+- **Age requirement:** Moodeng is not intended for anyone **under 18** (per the privacy policy). You must be at least 18 to use it.
 - **Privacy Policy** — there are two versions: a short summary at `/privacy` (what's collected: email, display name, role, wallet address, borrower context, loan/repayment records, support messages), and a fuller, more detailed policy at `/privacy-policy` (also mirrored as a static page) that additionally covers identity-verification data, financial/bank-linked data, and how data may be shared with verification, banking, and legal partners. If someone asks exactly what data Moodeng collects, the fuller `/privacy-policy` is the complete answer — the short `/privacy` page is a simplified summary of the same policy.
 - **Data Deletion** (`/data-deletion`) — to delete your data, email **privacy@moodeng.credit** with the subject "Data deletion request" from the email on your account, including your account email or wallet address and which sign-in method you use. Verified requests are completed within about 30 days. Some records (financial/legal recordkeeping requirements, and anything already recorded on the blockchain) can't be deleted.
 
