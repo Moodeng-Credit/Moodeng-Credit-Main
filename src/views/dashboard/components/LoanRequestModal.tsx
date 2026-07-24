@@ -1314,6 +1314,19 @@ export default function LoanRequestModal({
       }
 
       setTermErrors(errors);
+
+      // Make sure the first problem is actually seen: if the borrower tapped submit from the
+      // bottom of the form, scroll the first invalid field into view (the error is inline, not
+      // a toast, so it must be on-screen to help).
+      const firstInvalidId = (['amount', 'repayment', 'date', 'reason'] as const)
+         .filter((key) => errors[key])
+         .map((key) => ({ amount: 'borrow-amount', repayment: 'repayment-amount', date: 'repaymentDate', reason: 'reason' })[key])[0];
+      if (firstInvalidId) {
+         window.requestAnimationFrame(() => {
+            document.getElementById(firstInvalidId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         });
+      }
+
       return Object.keys(errors).length === 0;
    };
 
@@ -1859,7 +1872,20 @@ export default function LoanRequestModal({
                                  value={reason}
                               />
                               <div className="flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200 select-none">
-                                 <span>At least 40 characters — short and specific helps lenders trust it.</span>
+                                 {(() => {
+                                    const trimmedLength = reason.trim().length;
+                                    const remaining = REASON_MIN_LENGTH - trimmedLength;
+                                    // Guide live: once they've started typing but are short, show how many
+                                    // more characters they need — so they learn before submitting, not after.
+                                    if (trimmedLength > 0 && remaining > 0) {
+                                       return (
+                                          <span className="font-medium text-md-primary-1200">
+                                             {remaining} more character{remaining === 1 ? '' : 's'} to go
+                                          </span>
+                                       );
+                                    }
+                                    return <span>At least 40 characters — short and specific helps lenders trust it.</span>;
+                                 })()}
                                  <span className="shrink-0">{reason.length}/200</span>
                               </div>
                               {termErrors.reason ? (
