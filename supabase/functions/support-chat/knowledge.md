@@ -410,7 +410,7 @@ The **Account** tab (bottom navigation) shows the username and verification badg
 
 Everything here, section by section:
 
-- **Basic Information** — **Email Address** (change/verify), and for borrowers **Bio Info** ("Work, income, and what you need help with" — the same bio collected on your first loan application; edit it here any time).
+- **Basic Information** — your **Display Name** (edit it right at the top of Account Settings, next to your avatar), your **Email Address** (change/verify), and for borrowers **Bio Info** ("Work, income, and what you need help with" — the same bio collected on your first loan application; edit it here any time).
 - **Preferences** — **Dark Mode** toggle and app **language** switcher.
 - **Security & Verification** — two read-only rows, **World ID** and **ID Verification**, each showing **Verified** or **Not Verified**. Email/password users also see a **Password** row with **Change**.
 - **Wallet** — **Connected Wallet** (address shown shortened; tap or the copy icon to copy), buttons **Change wallet** and **Disconnect wallet** (asks "Disconnect wallet?" to confirm), and a **Network** row showing **Base**. Borrowers with an active loan see their wallet marked **locked** — that's intentional, so the loan and repayment history stay tied to one wallet. Borrowers who still need a Base wallet see a **Confirm your Base Account** prompt here instead.
@@ -435,7 +435,7 @@ Reached only from the Dashboard's **Withdraw your USDC** card (not a nav tab). F
 
 From the **Request Board** tab, tap **Apply For A Loan** to open the application.
 
-1. Eligible verified borrowers first see a **Referral Boost** step — **Have a referral code?** field with **Apply code**, or **Continue to application** if you don't have one.
+1. Eligible verified borrowers first see a **Referral Boost** step — **Have a referral code?** field with **Apply code**, or **Continue to application** if you don't have one. A valid referral code adds **+$5 to your starting credit limit**. It's optional — no code just means no boost.
 2. If you're not verified yet, you'll be prompted to **Verify Yourself** first.
 3. Then **Set Your Own Terms**: **Borrow Amount** (up to your **Current Limit**), **Set Repayment Amount**, **Set Repayment Date** (up to 120 days out), and **Reason For Borrowing** (at least 40 characters — Mecha can help you word it if it's too vague). Submit with **Make Your Request**.
 4. First-time borrowers also fill in a short bio (friendly name, optional photo, work type, payday window, income/expenses) — this is the same **Bio Info** editable later from Account Settings.
@@ -470,6 +470,8 @@ The **History** tab (shared borrower + lender) shows **Transaction History** (bo
 
 `/profile` is your own signed-in profile, with Dashboard / Loan Summary / Transaction History / Settings / Support tabs. A public borrower profile is also visible at `/user/:username` — this is what a lender sees before funding a request (verification status, credit level, repayment history) — it never shows ID documents, contacts, or private messages.
 
+**Lenders are anonymous.** A lender is identified only by a username tied to their wallet — there is no public lender profile, and borrowers cannot see who a lender is. (Only borrowers have a public profile, so lenders can review a request before funding it.)
+
 ---
 
 # Moodeng Credit — Site Map (the public website & content, beyond the core app flows)
@@ -488,6 +490,8 @@ The marketing site (`public/landing/`) explains Moodeng before someone signs up.
 There are dedicated marketing pages walking through **how it works** (four steps: ask → a real person decides → the loan lands as USDC in your Base Account → repay in parts or in full), **how to cash out** (choosing a provider, always Base network, Coins.ph is the recommended route in the Philippines), **how to repay** (pick the loan, add USDC, choose 25/50/75/Full or a custom amount), a **for lenders** page (browse requests, review a borrower's record before funding, only fund what you can afford to lose — repayment is never guaranteed), and an **about/our story** page (why Moodeng exists, told through the founders' own reasons for building it).
 
 A separate in-app **Benefits** page (for borrowers) and **Why Lend** page (for lenders) make the same case in the signed-in app, and a **Team** page introduces the people behind Moodeng.
+
+**IOU rewards for lenders (the specifics shown on the Why Lend page):** lending earns IOU — up to **25 IOU** for funding a first-time borrower, plus **1 IOU for every $1 lent**. Lend to a 2nd-time borrower and you earn 20 IOU, and so on. Lend **5 times** and you're invited to the Moodeng Credit DAO. For now these show as IOU points; when the IOU token airdrop happens, your points help determine your token reward. IOU is for lenders only — borrowers build a Trust Score and Credit Level instead.
 
 ## Moodeng Academy (`/academy`)
 
@@ -519,7 +523,14 @@ A dedicated page spelling out the same ladder as "How Credit Levels work": **$15
 
 ## Reputation Milestones / Trust Points (`/milestones`)
 
-**Borrower-only** — lenders never see this page. It shows your progress toward reputation milestones like getting verified, your first request, your first funded loan, your first on-time repayment, building a repayment streak, and reaching higher credit levels — each worth a number of Trust Points. Trust Points unlock cosmetic profile rewards (like a colored ring around your avatar or a profile badge) as you cross point thresholds. Important: **Trust Points unlock profile rewards — they do not guarantee funding.**
+**Borrower-only** — lenders never see this page. It shows your progress toward reputation milestones like getting verified, your first request, your first funded loan, your first on-time repayment, building a repayment streak, and reaching higher credit levels — each worth a number of Trust Points. Trust Points unlock cosmetic profile rewards as you cross point thresholds:
+
+- **Silver avatar ring** at **50** Trust Points
+- **Gold avatar ring** at **120** Trust Points
+- **Trusted profile badge** at **250** Trust Points
+- **Top borrower award** at **500** Trust Points
+
+(There are also one-off collectibles, like a Founding Lucky Cat for early borrowers.) Important: **Trust Points unlock profile rewards — they do not guarantee funding**, and they are self-facing (only you see them, not lenders).
 
 ## Support Hub (`/support`)
 
@@ -537,6 +548,7 @@ The **Help** tab's destination — a chat-first page where you can talk to **Mec
 ## Legal pages
 
 - **Terms of Service** (`/terms`) — using Moodeng honestly, reviewing loan terms before accepting funds, keeping your wallet secure. Notes that Moodeng cannot reverse blockchain transactions, recover a lost wallet, or guarantee a lender will fund a request.
+- **Age requirement:** Moodeng is not intended for anyone **under 18** (per the privacy policy). You must be at least 18 to use it.
 - **Privacy Policy** — there are two versions: a short summary at `/privacy` (what's collected: email, display name, role, wallet address, borrower context, loan/repayment records, support messages), and a fuller, more detailed policy at `/privacy-policy` (also mirrored as a static page) that additionally covers identity-verification data, financial/bank-linked data, and how data may be shared with verification, banking, and legal partners. If someone asks exactly what data Moodeng collects, the fuller `/privacy-policy` is the complete answer — the short `/privacy` page is a simplified summary of the same policy.
 - **Data Deletion** (`/data-deletion`) — to delete your data, email **privacy@moodeng.credit** with the subject "Data deletion request" from the email on your account, including your account email or wallet address and which sign-in method you use. Verified requests are completed within about 30 days. Some records (financial/legal recordkeeping requirements, and anything already recorded on the blockchain) can't be deleted.
 
@@ -641,7 +653,8 @@ Signing up and getting verified are two separate steps. To verify:
 ## Where do I put a referral code?
 
 - Referral codes are entered at the **start of the loan application**: from the Request Board, tap to apply for a loan, and the first step asks for a referral code — type it and tap **Apply code**. (The step only appears for verified borrowers.)
-- If a user doesn't have a code, they just tap **Continue to application** — the code is optional.
+- What a code does: a valid referral code adds **+$5 to your starting credit limit**. So a new borrower who normally starts at $15 would start at $20 with a valid code.
+- If a user doesn't have a code, they just tap **Continue to application** — the code is optional and there's no penalty for skipping it.
 
 ## Cashing out my loan to GCash / a bank (off-ramp)
 
@@ -656,6 +669,18 @@ If a user doesn't hold USDC yet and needs to repay:
 1. Buy USDC on **Binance P2P, Coins.ph, PDAX, or GCrypto**.
 2. Send it **on the Base network** to the repayment address shown on the **Repay** screen.
 3. Repay **before the due date** — on-time repayment builds Trust Score and unlocks higher credit levels.
+
+## Paying in parts (some now, some later)
+
+You can repay in parts — the Repay screen has **25% / 50% / 75% / Full** buttons or a custom amount, and the loan stays active until it's fully paid. Paying part of it on time still helps: partial on-time payments earn some Trust Points (about 7 for 75% paid, 5 for 50%, 3 for 25%), and a full on-time payment earns the most (10). If part of the payment lands **after** the due date, that late part earns 0 Trust Points and counts as late on your record — but the amount you owe still never grows (no late fees, no rollover). So paying as much as you can before the due date is always better than nothing.
+
+## How much does cashing out cost?
+
+Moodeng itself charges **$0** — the only cost is the exchange's own conversion fee. **Coins.ph is the cheapest route we've found in the Philippines: about 0.70% for a full round trip.** For a $15 loan taken out and repaid, the all-in cost through Coins.ph is roughly **₱6.50 (about $0.10)** — that covers the small trading fee each way, a free PESONet bank cash-out, and the tiny network fee. If you want the pesos instantly instead of same/next-day, InstaPay adds a flat ₱5 (round trip ≈ ₱11.50, about $0.19). Other services (like Moneybees) build their margin into the rate, so they usually cost more.
+
+## Defaulting / a loan that goes unpaid
+
+If a loan isn't repaid it can go into **default**. A default is a **permanent public mark** on the borrower's record, and the account is **frozen from new borrowing** until things are resolved — a defaulted or overdue borrower is sent to an account-support screen with a **Repay Now** option when they sign in. The amount owed still never grows (no late fees or rollover), and Moodeng never contacts family, friends, or coworkers. If someone's account is frozen and they think it's a mistake, offer to connect them with the team.
 
 ## Safety reminders (always true, repeat when relevant)
 
