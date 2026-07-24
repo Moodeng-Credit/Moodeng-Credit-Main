@@ -96,7 +96,14 @@ const posthogOptions = {
       }
    },
    capture_pageview: false,
-   capture_pageleave: true
+   capture_pageleave: true,
+   // Friction signals for the admin UX-health tiles: rage clicks (rapid repeated
+   // clicks on one spot) and dead clicks (clicks on things that don't respond).
+   // `autocapture` must stay on for both to fire — it's on by default, but we set
+   // it explicitly so nobody accidentally disables the frustration meter.
+   autocapture: true,
+   rageclick: true,
+   capture_dead_clicks: true
 } as const;
 
 const appTree = (

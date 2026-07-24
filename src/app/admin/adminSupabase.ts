@@ -1607,3 +1607,34 @@ export async function getLoginGeo(): Promise<LoginGeoPoint[]> {
    if (error) throw error;
    return (data ?? []) as LoginGeoPoint[];
 }
+
+// ---------------------------------------------------------------------------
+// UX Health — friction metrics pulled from PostHog via the admin-ux-metrics
+// edge function (last 30 days). Aggregate numbers only; the PostHog personal
+// API key stays server-side.
+// ---------------------------------------------------------------------------
+export interface UxFunnelStep {
+   name: string;
+   count: number;
+}
+
+export interface UxMetrics {
+   configured: boolean;
+   reason?: string;
+   windowDays: number;
+   generatedAt: string;
+   dashboardUrl: string;
+   signin: { steps: UxFunnelStep[] };
+   onboarding: { steps: UxFunnelStep[] };
+   rageClicks: number;
+   deadClicks: number;
+   errors: { total: number; sessions: number };
+}
+
+export async function getUxMetrics(): Promise<UxMetrics> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-ux-metrics', { body: {} });
+   if (error) throw new Error(error.message || 'Could not load UX metrics.');
+   const result = data as Partial<UxMetrics> & { error?: string };
+   if (result?.error) throw new Error(result.error);
+   return result as UxMetrics;
+}

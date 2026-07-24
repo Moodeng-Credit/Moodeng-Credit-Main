@@ -40,10 +40,12 @@ import ReferralCodesSection from './ReferralCodesSection';
 import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
 import SelfLendingSection from './SelfLendingSection';
+import UxHealthSection from './UxHealthSection';
 
 type AdminTab =
    | 'users'
    | 'analytics'
+   | 'ux-health'
    | 'loans'
    | 'coming-due'
    | 'extensions'
@@ -73,7 +75,8 @@ const navGroups: NavGroup[] = [
       label: 'Overview',
       items: [
          { id: 'users', label: 'User directory' },
-         { id: 'analytics', label: 'Growth & analytics' }
+         { id: 'analytics', label: 'Growth & analytics' },
+         { id: 'ux-health', label: 'UX health' }
       ]
    },
    {
@@ -275,6 +278,7 @@ function hasPositivePoints(points: number | string) {
 const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'users',
    'analytics',
+   'ux-health',
    'loans',
    'coming-due',
    'extensions',
@@ -1462,6 +1466,16 @@ export default function AdminPanel() {
                         <p className="mt-3 text-2xl text-[#a89bb8]">Users, roles, verifications, and loan performance at a glance.</p>
                      </div>
                      <GrowthAnalyticsSection />
+                  </section>
+               ) : null}
+
+               {activeTab === 'ux-health' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">UX health</h2>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">Where users get stuck or frustrated — sign-in, onboarding, rage clicks, and errors.</p>
+                     </div>
+                     <UxHealthSection />
                   </section>
                ) : null}
 
