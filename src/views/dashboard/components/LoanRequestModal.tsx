@@ -431,6 +431,20 @@ function BorrowerContextLoanStep({
    const canContinue = Boolean(context.incomeSetup && context.paydayWindow && context.cashGaps.length > 0);
    const isBusy = isSubmitting || isSavingProfile;
 
+   // Name exactly which required sections are still empty. The form is long and the three
+   // required chips are scattered among optional ones, so a borrower who misses one just
+   // sees a dead "Save bio info" button with no clue why. Surface this both at the top and
+   // right above the button (where they hit the wall) so the block is never a mystery.
+   const missingLabels = [
+      !context.incomeSetup ? 'how you describe your work' : null,
+      !context.paydayWindow ? 'when you usually get paid' : null,
+      context.cashGaps.length === 0 ? 'what you need help with' : null
+   ].filter(Boolean) as string[];
+   const missingSummary =
+      missingLabels.length <= 1
+         ? missingLabels.join('')
+         : `${missingLabels.slice(0, -1).join(', ')} and ${missingLabels[missingLabels.length - 1]}`;
+
    return (
       <div className="flex min-h-0 flex-col gap-md-3">
          <section className="rounded-md-input border border-md-primary-300 bg-md-primary-100 px-md-2 py-md-2">
@@ -487,7 +501,7 @@ function BorrowerContextLoanStep({
 
          {!canContinue ? (
             <div className="flex flex-wrap items-center gap-md-1 text-md-b3 font-medium leading-[18px] text-md-primary-1200">
-               <span>Fill in work, payday, and help sections to continue.</span>
+               <span>Still needed: {missingSummary}.</span>
                <TrustBadge label="+10 Trust Points" />
             </div>
          ) : null}
@@ -602,6 +616,11 @@ function BorrowerContextLoanStep({
          />
 
          <div>
+            {!canContinue ? (
+               <p className="mb-md-2 text-md-b3 font-medium leading-[18px] text-md-primary-1200">
+                  Still needed to continue: {missingSummary}.
+               </p>
+            ) : null}
             <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-md-2">
                <button
                   className="inline-flex min-h-[48px] items-center justify-center gap-md-1 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 text-md-b1 font-medium text-md-heading shadow-md-card transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
