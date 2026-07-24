@@ -1618,13 +1618,18 @@ export interface UxFunnelStep {
    count: number;
 }
 
+export interface UxDeviceSplit {
+   landed: number;
+   reached: number;
+}
+
 export interface UxMetrics {
    configured: boolean;
    reason?: string;
    windowDays: number;
    generatedAt: string;
    dashboardUrl: string;
-   signin: { steps: UxFunnelStep[] };
+   signin: { steps: UxFunnelStep[]; byDevice?: { mobile: UxDeviceSplit; desktop: UxDeviceSplit } };
    onboarding: { steps: UxFunnelStep[] };
    rageClicks: number;
    deadClicks: number;

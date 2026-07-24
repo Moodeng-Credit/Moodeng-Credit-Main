@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { type UxFunnelStep, type UxMetrics, getUxMetrics } from './adminSupabase';
+import { type UxDeviceSplit, type UxFunnelStep, type UxMetrics, getUxMetrics } from './adminSupabase';
 
 function pct(part: number, whole: number): string {
    if (!whole) return '—';
@@ -23,6 +23,36 @@ function Stat({ label, value, note, tone = 'default' }: { label: string; value: 
          <p className="text-xs font-black uppercase tracking-wide text-[#a89bb8]">{label}</p>
          <strong className="mt-2 block text-4xl font-black text-white">{value}</strong>
          {note ? <p className="mt-1 text-sm font-bold text-[#a89bb8]">{note}</p> : null}
+      </div>
+   );
+}
+
+// Sign-in conversion split by device. Highlights when one platform (usually mobile)
+// is dragging the whole number down.
+function DeviceSplit({ mobile, desktop }: { mobile: UxDeviceSplit; desktop: UxDeviceSplit }) {
+   const rows: Array<{ label: string; split: UxDeviceSplit }> = [
+      { label: '📱 Mobile', split: mobile },
+      { label: '🖥 Desktop', split: desktop }
+   ];
+   const shown = rows.filter((r) => r.split.landed > 0);
+   if (!shown.length) return null;
+   return (
+      <div className="mt-4 border-t border-[#2a1453] pt-4">
+         <p className="mb-2 text-xs font-black uppercase tracking-wide text-[#a89bb8]">By device</p>
+         <div className="space-y-1.5">
+            {shown.map(({ label, split }) => {
+               const conv = split.landed ? Math.round((split.reached / split.landed) * 100) : 0;
+               const weak = split.landed > 0 && conv < 50;
+               return (
+                  <div key={label} className="flex items-center justify-between text-sm font-black">
+                     <span className="text-[#cfc6dd]">{label}</span>
+                     <span className={weak ? 'text-red-300' : 'text-emerald-300'}>
+                        {conv}% <span className="font-bold text-[#a89bb8]">· {split.reached}/{split.landed} got in</span>
+                     </span>
+                  </div>
+               );
+            })}
+         </div>
       </div>
    );
 }
@@ -160,6 +190,7 @@ export default function UxHealthSection({ initialData }: { initialData?: UxMetri
                      <h4 className="mb-1 text-xl font-black text-[#cfc6dd]">Sign-in conversion</h4>
                      <p className="mb-4 text-sm font-bold text-[#a89bb8]">Do people who land on sign-in actually get in?</p>
                      <Funnel steps={signinSteps} />
+                     {data.signin.byDevice ? <DeviceSplit mobile={data.signin.byDevice.mobile} desktop={data.signin.byDevice.desktop} /> : null}
                   </div>
                   <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
                      <h4 className="mb-1 text-xl font-black text-[#cfc6dd]">Onboarding drop-off</h4>
