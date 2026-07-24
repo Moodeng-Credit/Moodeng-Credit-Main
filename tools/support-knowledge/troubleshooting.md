@@ -117,6 +117,10 @@ If a user doesn't hold USDC yet and needs to repay:
 2. Send it **on the Base network** to the repayment address shown on the **Repay** screen.
 3. Repay **before the due date** — on-time repayment builds Trust Score and unlocks higher credit levels.
 
+## Can I have more than one loan at a time?
+
+Yes — you can have more than one active loan at the same time, as long as the new amount fits within your **available credit limit**. Your available limit is your level's limit ($15 / $20 / $40 / $60) minus what you already owe on any active loans. So if your current loans already use up your whole limit, you'll need to repay (fully or partly) before you can request more. (Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum number of active loans, repay one first.)
+
 ## Paying in parts (some now, some later)
 
 You can repay in parts — the Repay screen has **25% / 50% / 75% / Full** buttons or a custom amount, and the loan stays active until it's fully paid. Paying part of it on time still helps: partial on-time payments earn some Trust Points (about 7 for 75% paid, 5 for 50%, 3 for 25%), and a full on-time payment earns the most (10). If part of the payment lands **after** the due date, that late part earns 0 Trust Points and counts as late on your record — but the amount you owe still never grows (no late fees, no rollover). So paying as much as you can before the due date is always better than nothing.
