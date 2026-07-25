@@ -15,11 +15,28 @@ const projectId = import.meta.env.VITE_PUBLIC_CLARITY_ID as string | undefined;
 // A Clarity project id is a short alphanumeric slug. Guard against the raw
 // dotenvx `encrypted:…` ciphertext leaking through as a truthy-but-invalid id
 // (same failure mode we guard PostHog against).
-export const isClarityEnabled =
-   import.meta.env.PROD &&
-   Boolean(projectId) &&
-   !projectId!.startsWith('encrypted:') &&
-   /^[a-z0-9]+$/i.test(projectId!);
+const hasValidProjectId =
+   Boolean(projectId) && !projectId!.startsWith('encrypted:') && /^[a-z0-9]+$/i.test(projectId!);
+
+export const isClarityEnabled = import.meta.env.PROD && hasValidProjectId;
+
+/** The validated Clarity project id, or null if unset/placeholder. */
+export const clarityProjectId: string | null = hasValidProjectId ? projectId! : null;
+
+/**
+ * Deep links into the Clarity dashboard for this project (recordings, heatmaps,
+ * the frustration overview), or null when no project id is configured. Used by
+ * the admin UX-health tab to route straight to the friction data.
+ */
+export function clarityDashboardUrls(): { dashboard: string; recordings: string; heatmaps: string } | null {
+   if (!clarityProjectId) return null;
+   const base = `https://clarity.microsoft.com/projects/view/${clarityProjectId}`;
+   return {
+      dashboard: `${base}/dashboard`,
+      recordings: `${base}/impressions`,
+      heatmaps: `${base}/heatmaps`
+   };
+}
 
 let started = false;
 

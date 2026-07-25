@@ -2,7 +2,74 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { clarityDashboardUrls } from '@/lib/analytics/clarity';
+
 import { type UxDeviceSplit, type UxFunnelStep, type UxMetrics, getUxMetrics } from './adminSupabase';
+
+// Microsoft Clarity doorway: Clarity's value lives in its own rich UI — session
+// recordings, heatmaps, and an automatic rage-click / dead-click / quick-back
+// explorer. Rather than re-plot numbers PostHog already gives us, route the
+// admin straight into that UI. Reads the client-side VITE_PUBLIC_CLARITY_ID, so
+// it needs no extra secret and lights up the moment the id is set in Vercel.
+function ClarityPanel() {
+   const links = clarityDashboardUrls();
+
+   if (!links) {
+      return (
+         <div className="rounded-2xl border border-amber-900 bg-amber-950/40 p-5 text-base font-bold text-amber-200">
+            <p className="mb-2 text-xl font-black text-amber-100">Microsoft Clarity — one-time setup</p>
+            <p>
+               Clarity is wired into the app (free, unlimited session replay + heatmaps with automatic rage-click,
+               dead-click and quick-back detection). To switch it on, create a free project at{' '}
+               <a href="https://clarity.microsoft.com" target="_blank" rel="noreferrer" className="underline">
+                  clarity.microsoft.com
+               </a>{' '}
+               and add its id as <code className="rounded bg-black/40 px-1">VITE_PUBLIC_CLARITY_ID</code> in the Vercel
+               dashboard (Production + staging). This card turns into buttons once it’s live.
+            </p>
+         </div>
+      );
+   }
+
+   return (
+      <div className="rounded-2xl border border-blue-900 bg-blue-950/40 p-5">
+         <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+               <h4 className="text-xl font-black text-white">Microsoft Clarity</h4>
+               <p className="text-sm font-bold text-[#a89bb8]">
+                  Watch real sessions, see where taps land, and jump to frustrated users (rage &amp; dead clicks).
+               </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+               <a
+                  href={links.dashboard}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full bg-blue-600 px-4 py-1.5 text-sm font-black text-white hover:bg-blue-500"
+               >
+                  Open Clarity ↗
+               </a>
+               <a
+                  href={links.recordings}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full bg-[#1c053d] px-4 py-1.5 text-sm font-black text-white hover:bg-[#2a1453]"
+               >
+                  Recordings
+               </a>
+               <a
+                  href={links.heatmaps}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full bg-[#1c053d] px-4 py-1.5 text-sm font-black text-white hover:bg-[#2a1453]"
+               >
+                  Heatmaps
+               </a>
+            </div>
+         </div>
+      </div>
+   );
+}
 
 function pct(part: number, whole: number): string {
    if (!whole) return '—';
@@ -123,7 +190,7 @@ export default function UxHealthSection({ initialData }: { initialData?: UxMetri
          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
                <h3 className="text-3xl font-black">UX Health</h3>
-               <p className="text-sm font-bold text-[#a89bb8]">Where users get stuck or frustrated · last 30 days · via PostHog</p>
+               <p className="text-sm font-bold text-[#a89bb8]">Where users get stuck or frustrated · last 30 days · PostHog + Microsoft Clarity</p>
             </div>
             <div className="flex items-center gap-2">
                {data?.dashboardUrl ? (
@@ -146,6 +213,8 @@ export default function UxHealthSection({ initialData }: { initialData?: UxMetri
                </button>
             </div>
          </div>
+
+         <ClarityPanel />
 
          {error ? (
             <div className="rounded-2xl border border-red-900 bg-red-950/40 p-4 text-lg font-bold text-red-300">{error}</div>
