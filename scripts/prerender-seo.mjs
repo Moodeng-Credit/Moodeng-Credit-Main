@@ -39,7 +39,7 @@ const IS_SERVERLESS = !!(process.env.VERCEL || process.env.CI || process.env.AWS
 const NAV_TIMEOUT = IS_SERVERLESS ? 45000 : 20000;
 const READY_TIMEOUT = IS_SERVERLESS ? 25000 : 15000;
 const BODY_TIMEOUT = IS_SERVERLESS ? 15000 : 10000;
-const CONCURRENCY = IS_SERVERLESS ? 1 : 3;
+const CONCURRENCY = IS_SERVERLESS ? 2 : 3;
 
 const MIME = {
    '.html': 'text/html; charset=utf-8',
@@ -157,7 +157,21 @@ const MIN_SNAPSHOT_BYTES = 4000;
 async function snapshotOnce(browser, route) {
    const page = await browser.newPage();
    try {
-      await page.goto(`http://127.0.0.1:${PORT}${route}`, { waitUntil: 'networkidle', timeout: NAV_TIMEOUT });
+      // Block ALL external requests (Supabase, RPC, PostHog, Google Fonts, Telegram, …).
+      // The public content routes render entirely from the local bundle, so blocking these
+      // has no effect on rendered DOM — but it prevents the page from hanging on external
+      // connections that never settle in Vercel's restricted build sandbox (the real cause
+      // of the earlier mass timeouts) and makes each render fast.
+      await page.route('**/*', (r) => {
+         const u = r.request().url();
+         if (u.startsWith(`http://127.0.0.1:${PORT}`) || u.startsWith(`http://localhost:${PORT}`) || u.startsWith('data:') || u.startsWith('blob:')) {
+            return r.continue();
+         }
+         return r.abort();
+      });
+      // Wait only for the document + scripts, NOT networkidle — external connections the app
+      // opens on load never idle in the sandbox. The ready-flag/body waits below are the real gate.
+      await page.goto(`http://127.0.0.1:${PORT}${route}`, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT });
       // Every prerendered route calls usePageSeo, which sets this flag once it has
       // applied its <head>. Require it — proceeding early is what produced thin shells.
       await page.waitForFunction((flag) => window[flag] === true, READY_FLAG, { timeout: READY_TIMEOUT }).catch(() => {});
