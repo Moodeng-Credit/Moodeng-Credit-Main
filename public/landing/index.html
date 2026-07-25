@@ -25,6 +25,36 @@
       </script>
       <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
       <link rel="stylesheet" href="/landing/site.css?v=20260717-hero-note-1" />
+      <!-- wireboard tag -->
+      <script type="text/javascript">
+         ;(function (w, i, r, e, b, oar, d) {
+            if (!w[b]) {
+               w.WireBoardNamespace = w.WireBoardNamespace || []
+               w.WireBoardNamespace.push(b)
+               w[b] = function () {
+                  ;(w[b].q = w[b].q || []).push(arguments)
+               }
+               w[b].q = w[b].q || []
+               oar = i.createElement(r)
+               d = i.getElementsByTagName(r)[0]
+               oar.async = 1
+               oar.src = e
+               d.parentNode.insertBefore(oar, d)
+            }
+         })(window, document, 'script', 'https://static.wireboard.io/wireboard.js', 'wireboard')
+         wireboard('newTracker', 'wb', 'pipeline-0.collector.wireboard.io', {
+            appId: 'tYIpbzED',
+            forceSecureTracker: true,
+            contexts: {
+               performanceTiming: true,
+            },
+         })
+         window.wireboard('enableActivityTracking', 5, 10)
+         var customContext = [
+            { schema: 'wb:io.wireboard/publisher', data: { publisher: '6ab6f994-7c01-4221-836e-b11ec943ef44' } },
+         ]
+         window.wireboard('trackPageView', null, customContext)
+      </script>
    </head>
    <body>
       <svg class="site-icon-sprite" aria-hidden="true">
