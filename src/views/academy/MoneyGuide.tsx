@@ -1,7 +1,7 @@
 import type { ComponentType, ReactNode } from 'react';
 
 import { ArrowLeft, ArrowRight, Building2, RefreshCw, UserRoundCheck, Wallet } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { SUPPORTED_DIDIT_COUNTRIES } from '@/components/verification/CountryFlags';
 import { BaseMark, BinanceTile, CoinsPhTile, GCashTile, PdaxTile, UsdcMark } from '@/components/brand/ProviderLogos';
@@ -150,11 +150,12 @@ export default function MoneyGuide() {
             {/* Cards */}
             <div className="flex flex-col gap-md-3 px-md-4 py-md-4">
                {cards.map(({ id, Icon, iconWrap, iconColor, title, subtitle, body, chips, topicPath }) => (
-                  <button
+                  // A real <Link>, not a button+navigate(): crawlers only follow anchors,
+                  // and these topic pages had no inbound link anywhere on the site.
+                  <Link
                      key={id}
-                     type="button"
-                     onClick={() => navigate(topicPath)}
-                     className="w-full rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 p-md-3 text-left shadow-md-card transition-transform duration-150 active:scale-[0.99]"
+                     to={topicPath}
+                     className="block w-full rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 p-md-3 text-left shadow-md-card transition-transform duration-150 active:scale-[0.99]"
                   >
                      <div className="mb-2 flex items-center gap-3">
                         <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-md-md ${iconWrap} ${iconColor}`}>
@@ -171,7 +172,7 @@ export default function MoneyGuide() {
                         <span className="text-md-b2 font-semibold text-md-primary-1200">Read more</span>
                         <ArrowRight className="h-4 w-4 text-md-primary-1200" strokeWidth={2.4} />
                      </div>
-                  </button>
+                  </Link>
                ))}
             </div>
          </div>
