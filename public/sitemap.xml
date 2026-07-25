@@ -2,6 +2,11 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://moodeng.app/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>https://moodeng.app/academy</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://moodeng.app/academy/money</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://moodeng.app/academy/money/add-funds</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://moodeng.app/academy/money/verify</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://moodeng.app/academy/money/repay</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://moodeng.app/academy/money/withdraw</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://moodeng.app/benefits</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://moodeng.app/whylend</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://moodeng.app/blogs</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
@@ -27,6 +32,10 @@
   <url><loc>https://moodeng.app/learn/using-usdc-on-moodeng-credit</loc><lastmod>2026-06-09</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://moodeng.app/learn/verification-and-why-its-required</loc><lastmod>2026-06-09</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://moodeng.app/learn/managing-your-account-and-security-settings</loc><lastmod>2026-06-09</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://moodeng.app/learn/how-credit-levels-work</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://moodeng.app/learn/adding-funds-to-your-wallet</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://moodeng.app/learn/repaying-your-loan</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://moodeng.app/learn/withdrawing-to-your-bank</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
 
   <url><loc>https://moodeng.app/support/faq</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://moodeng.app/support/getting-started</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>

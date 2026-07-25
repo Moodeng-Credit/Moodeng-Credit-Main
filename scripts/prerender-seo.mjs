@@ -220,6 +220,21 @@ async function prerenderRoute(browser, route) {
    return { route, ok: false, error: last?.error ?? `thin snapshot (<${MIN_SNAPSHOT_BYTES}b)`, bytes: last?.bytes };
 }
 
+// The sitemap is hand-maintained, so new content routes silently never get submitted
+// to Google — that is how the whole /academy/money/* section and 4 /learn guides went
+// undiscovered. Report drift against the generated route list on every build.
+async function sitemapDrift() {
+   try {
+      const xml = await readFile(join(DIST, 'sitemap.xml'), 'utf8');
+      const listed = new Set(
+         [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, loc]) => loc.replace(/^https?:\/\/[^/]+/, '') || '/')
+      );
+      return PRERENDER_ROUTES.filter((r) => r !== '/' && !listed.has(r));
+   } catch {
+      return [];
+   }
+}
+
 // Diagnostic marker served at /prerender-status.json — lets us confirm from the
 // deployed site whether this script ran and whether Chromium was available, without
 // access to the Vercel build log.
@@ -263,6 +278,8 @@ async function main() {
 
    const failed = results.filter((r) => !r.ok);
    console.log(`[prerender] done: ${results.length - failed.length} ok, ${failed.length} failed`);
+   const drift = await sitemapDrift();
+   if (drift.length) console.warn(`[prerender] ⚠ ${drift.length} route(s) missing from sitemap.xml:\n  ${drift.join('\n  ')}`);
    await writeStatus({
       ran: true,
       stage: 'done',
@@ -273,6 +290,7 @@ async function main() {
       // A couple of sample errors make a bad build diagnosable from the deployed
       // marker alone, without digging through Vercel build logs.
       errors: failed.slice(0, 3).map((r) => `${r.route}: ${r.error}`),
+      sitemapMissing: drift,
    });
    // Never fail the build over prerender misses — runtime SEO is the safety net.
    process.exit(0);
