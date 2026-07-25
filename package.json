@@ -91,6 +91,7 @@
    "devDependencies": {
       "@eslint/js": "^9.39.1",
       "@playwright/test": "^1.54.0",
+      "@sparticuz/chromium": "^141.0.0",
       "@tanstack/eslint-plugin-query": "^5.91.2",
       "@trivago/prettier-plugin-sort-imports": "^6.0.0",
       "@types/js-cookie": "^3.0.6",

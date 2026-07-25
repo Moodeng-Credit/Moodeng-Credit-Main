@@ -31,8 +31,15 @@ const DIST = join(ROOT, process.argv[2] ?? 'dist');
 const PORT = 4820;
 const PROD_ORIGIN = 'https://moodeng.app';
 const READY_FLAG = '__MOODENG_SEO_READY__';
-const NAV_TIMEOUT = 20000;
-const CONCURRENCY = 3;
+
+// Vercel/CI build boxes have ~2 vCPUs and run @sparticuz Chromium; rendering the
+// heavy app bundle across concurrent pages starves them and most pages time out.
+// Go serial with generous timeouts there; use full parallelism locally.
+const IS_SERVERLESS = !!(process.env.VERCEL || process.env.CI || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.AWS_EXECUTION_ENV);
+const NAV_TIMEOUT = IS_SERVERLESS ? 45000 : 20000;
+const READY_TIMEOUT = IS_SERVERLESS ? 25000 : 15000;
+const BODY_TIMEOUT = IS_SERVERLESS ? 15000 : 10000;
+const CONCURRENCY = IS_SERVERLESS ? 2 : 3;
 
 const MIME = {
    '.html': 'text/html; charset=utf-8',
@@ -81,21 +88,49 @@ function startServer() {
    return new Promise((resolve) => server.listen(PORT, '127.0.0.1', () => resolve(server)));
 }
 
-async function loadChromium() {
-   let chromium;
+async function loadPlaywrightChromium() {
    try {
-      ({ chromium } = await import('playwright'));
+      return (await import('playwright')).chromium;
    } catch {
       try {
-         ({ chromium } = await import('@playwright/test'));
+         return (await import('@playwright/test')).chromium;
       } catch (err) {
          console.warn('[prerender] Playwright not resolvable:', err?.message);
          return null;
       }
    }
-   // Try launch; if the browser binary is missing, install chromium once and retry.
+}
+
+async function loadChromium() {
+   const chromium = await loadPlaywrightChromium();
+   if (!chromium) return null;
+
+   const args = ['--no-sandbox', '--disable-setuid-sandbox'];
+   // Vercel/CI build images can't run Playwright's bundled Chromium (missing system
+   // libs). @sparticuz/chromium ships a self-contained Chromium built for exactly those
+   // serverless/AWS environments; use it there and let Playwright drive it via
+   // executablePath. Locally, use the normal bundled Chromium.
+   const serverless = !!(process.env.VERCEL || process.env.CI || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.AWS_EXECUTION_ENV);
+   if (serverless) {
+      try {
+         const sparticuz = (await import('@sparticuz/chromium')).default;
+         const executablePath = await sparticuz.executablePath();
+         // @sparticuz tunes its args for Lambda's single-invocation model, where
+         // --single-process/--no-zygote save memory. Playwright does not support them:
+         // the lone renderer process dies once a few pages have been driven, which is
+         // why only the first couple of routes ever rendered. Drop them.
+         const unsupported = new Set(['--single-process', '--no-zygote']);
+         const baseArgs = sparticuz.args.filter((a) => !unsupported.has(a));
+         console.log('[prerender] using @sparticuz/chromium at', executablePath);
+         return await chromium.launch({ headless: true, executablePath, args: [...baseArgs, ...args] });
+      } catch (err) {
+         console.warn('[prerender] @sparticuz/chromium unavailable, falling back to bundled:', err?.message);
+      }
+   }
+
+   // Local / fallback: bundled Chromium, installing it once if the binary is missing.
    try {
-      return await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+      return await chromium.launch({ headless: true, args });
    } catch (err) {
       console.warn('[prerender] Chromium launch failed, attempting install…', err?.message);
       const r = spawnSync('npx', ['playwright', 'install', 'chromium'], { stdio: 'inherit', shell: true });
@@ -104,7 +139,7 @@ async function loadChromium() {
          return null;
       }
       try {
-         return await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+         return await chromium.launch({ headless: true, args });
       } catch (err2) {
          console.warn('[prerender] Chromium still unavailable; skipping prerender.', err2?.message);
          return null;
@@ -128,13 +163,27 @@ const MIN_SNAPSHOT_BYTES = 4000;
 async function snapshotOnce(browser, route) {
    const page = await browser.newPage();
    try {
-      await page.goto(`http://127.0.0.1:${PORT}${route}`, { waitUntil: 'networkidle', timeout: NAV_TIMEOUT });
+      // Block ALL external requests (Supabase, RPC, PostHog, Google Fonts, Telegram, …).
+      // The public content routes render entirely from the local bundle, so blocking these
+      // has no effect on rendered DOM — but it prevents the page from hanging on external
+      // connections that never settle in Vercel's restricted build sandbox (the real cause
+      // of the earlier mass timeouts) and makes each render fast.
+      await page.route('**/*', (r) => {
+         const u = r.request().url();
+         if (u.startsWith(`http://127.0.0.1:${PORT}`) || u.startsWith(`http://localhost:${PORT}`) || u.startsWith('data:') || u.startsWith('blob:')) {
+            return r.continue();
+         }
+         return r.abort();
+      });
+      // Wait only for the document + scripts, NOT networkidle — external connections the app
+      // opens on load never idle in the sandbox. The ready-flag/body waits below are the real gate.
+      await page.goto(`http://127.0.0.1:${PORT}${route}`, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT });
       // Every prerendered route calls usePageSeo, which sets this flag once it has
       // applied its <head>. Require it — proceeding early is what produced thin shells.
-      await page.waitForFunction((flag) => window[flag] === true, READY_FLAG, { timeout: 15000 }).catch(() => {});
+      await page.waitForFunction((flag) => window[flag] === true, READY_FLAG, { timeout: READY_TIMEOUT }).catch(() => {});
       // Belt-and-braces: also wait until the body actually has rendered content, so large
       // pages that mount after the flag aren't snapshotted half-built.
-      await page.waitForFunction(() => (document.body?.innerText.trim().length ?? 0) > 600, null, { timeout: 10000 }).catch(() => {});
+      await page.waitForFunction(() => (document.body?.innerText.trim().length ?? 0) > 600, null, { timeout: BODY_TIMEOUT }).catch(() => {});
       await page.waitForTimeout(200);
       let html = await page.content();
       if (!/^<!doctype html>/i.test(html)) html = '<!doctype html>\n' + html;
@@ -152,8 +201,8 @@ async function snapshotOnce(browser, route) {
 
 async function prerenderRoute(browser, route) {
    let last;
-   // Two attempts: rendering can be starved under concurrency and snapshot a thin shell.
-   for (let attempt = 1; attempt <= 2; attempt++) {
+   // Up to 3 attempts: rendering can be starved and snapshot a thin shell.
+   for (let attempt = 1; attempt <= 3; attempt++) {
       try {
          const snap = await snapshotOnce(browser, route);
          last = snap;
@@ -165,10 +214,36 @@ async function prerenderRoute(browser, route) {
          last = { error: err?.message };
       }
    }
-   // Both attempts thin/failed. Still write the best snapshot we have (better than the
-   // build removing a route) but report it so the build log flags the miss.
-   if (last?.html) await writeSnapshot(route, last.html);
+   // All attempts thin/failed. Do NOT write a thin snapshot — leaving no file lets the
+   // vercel.json rewrite fall through to the SPA, which renders the route via JS with
+   // correct runtime SEO. A written thin shell would be strictly worse for crawlers.
    return { route, ok: false, error: last?.error ?? `thin snapshot (<${MIN_SNAPSHOT_BYTES}b)`, bytes: last?.bytes };
+}
+
+// The sitemap is hand-maintained, so new content routes silently never get submitted
+// to Google — that is how the whole /academy/money/* section and 4 /learn guides went
+// undiscovered. Report drift against the generated route list on every build.
+async function sitemapDrift() {
+   try {
+      const xml = await readFile(join(DIST, 'sitemap.xml'), 'utf8');
+      const listed = new Set(
+         [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, loc]) => loc.replace(/^https?:\/\/[^/]+/, '') || '/')
+      );
+      return PRERENDER_ROUTES.filter((r) => r !== '/' && !listed.has(r));
+   } catch {
+      return [];
+   }
+}
+
+// Diagnostic marker served at /prerender-status.json — lets us confirm from the
+// deployed site whether this script ran and whether Chromium was available, without
+// access to the Vercel build log.
+async function writeStatus(status) {
+   try {
+      await writeFile(join(DIST, 'prerender-status.json'), JSON.stringify({ script: 'prerender-seo', ...status }), 'utf8');
+   } catch {
+      /* ignore */
+   }
 }
 
 async function main() {
@@ -176,9 +251,11 @@ async function main() {
       console.warn(`[prerender] ${DIST}/index.html not found — did vite build run? Skipping.`);
       process.exit(0);
    }
+   await writeStatus({ ran: true, stage: 'started', routes: PRERENDER_ROUTES.length });
    const browser = await loadChromium();
    if (!browser) {
       console.warn('[prerender] No browser available — skipping snapshot (site still works via runtime SEO).');
+      await writeStatus({ ran: true, stage: 'no-browser', chromium: false, routes: PRERENDER_ROUTES.length, ok: 0 });
       process.exit(0);
    }
    const server = await startServer();
@@ -201,6 +278,20 @@ async function main() {
 
    const failed = results.filter((r) => !r.ok);
    console.log(`[prerender] done: ${results.length - failed.length} ok, ${failed.length} failed`);
+   const drift = await sitemapDrift();
+   if (drift.length) console.warn(`[prerender] ⚠ ${drift.length} route(s) missing from sitemap.xml:\n  ${drift.join('\n  ')}`);
+   await writeStatus({
+      ran: true,
+      stage: 'done',
+      chromium: true,
+      routes: PRERENDER_ROUTES.length,
+      ok: results.length - failed.length,
+      failed: failed.length,
+      // A couple of sample errors make a bad build diagnosable from the deployed
+      // marker alone, without digging through Vercel build logs.
+      errors: failed.slice(0, 3).map((r) => `${r.route}: ${r.error}`),
+      sitemapMissing: drift,
+   });
    // Never fail the build over prerender misses — runtime SEO is the safety net.
    process.exit(0);
 }
