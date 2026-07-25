@@ -43,6 +43,7 @@ import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
+import { suggestedReturnRange } from '@/lib/loanPricing';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -697,36 +698,6 @@ function FieldError({ message }: { message: string }) {
          <span>{message}</span>
       </div>
    );
-}
-
-// Suggested repayment "return" (repay minus borrow) as a function of loan size. The bigger the
-// loan, the higher the return lenders expect — these anchors come from real funded loans
-// (~$15-20 → $2-5, ~$40-60 → $5-10, ~$80-100 → $15-20), linearly interpolated in between and
-// clamped past the ends. Guidance only; nothing is enforced. A good candidate to drive from data
-// in the admin dashboard once there's enough funded-loan history.
-const RETURN_ANCHORS = [
-   { principal: 17.5, lo: 2, hi: 5 },
-   { principal: 50, lo: 5, hi: 10 },
-   { principal: 90, lo: 15, hi: 20 }
-];
-function suggestedReturnRange(principal: number): { lo: number; hi: number } | null {
-   if (!Number.isFinite(principal) || principal <= 0) return null;
-   const first = RETURN_ANCHORS[0];
-   const last = RETURN_ANCHORS[RETURN_ANCHORS.length - 1];
-   const at = (key: 'lo' | 'hi') => {
-      if (principal <= first.principal) return first[key];
-      if (principal >= last.principal) return last[key];
-      for (let i = 0; i < RETURN_ANCHORS.length - 1; i++) {
-         const a = RETURN_ANCHORS[i];
-         const b = RETURN_ANCHORS[i + 1];
-         if (principal >= a.principal && principal <= b.principal) {
-            const t = (principal - a.principal) / (b.principal - a.principal);
-            return a[key] + t * (b[key] - a[key]);
-         }
-      }
-      return last[key];
-   };
-   return { lo: Math.round(at('lo')), hi: Math.round(at('hi')) };
 }
 
 // Non-blocking hint shown only when a valid repayment offers less back than loans of this size
