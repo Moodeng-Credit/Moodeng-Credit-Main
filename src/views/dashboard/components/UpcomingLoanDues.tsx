@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { Link, useSearchParams } from 'react-router-dom';
 
+import UserAvatar from '@/components/UserAvatar';
 import { calculateDaysRemaining } from '@/utils/dateFormatters';
 import { formatCurrency } from '@/utils/decimalHelpers';
 
@@ -55,9 +56,8 @@ function LoanDueCard({ loan }: { loan: Loan & { isDefaulted: boolean } }) {
 
    return (
       <div className={`${cardBg} rounded-md-lg p-3.5 min-w-[150px] flex-shrink-0 flex flex-col gap-2`}>
-         <div className="w-8 h-8 rounded-full bg-md-neutral-400 overflow-hidden">
-            <img src="/icons/avatar-placeholder.png" alt={copy.lenderAlt} className="w-full h-full object-cover" />
-         </div>
+         <UserAvatar userId={loan.lenderUser ?? undefined} alt={copy.lenderAlt} size={32} clickable={false} />
+
          <p className="text-md-h5 font-semibold text-md-heading">${formatCurrency(loan.loanAmount)}</p>
          {loan.isDefaulted ? (
             <span className="inline-flex self-start items-center px-2 py-0.5 rounded-full bg-md-red-100 text-md-red-500 text-md-b4 font-medium">
