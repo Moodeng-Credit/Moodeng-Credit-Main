@@ -713,11 +713,11 @@ function StepDots({ current }: { current: 1 | 2 | 3 }) {
                return (
                   <div key={step} className="flex items-center">
                      <span
-                        className={`grid size-[22px] place-items-center rounded-full text-md-b4 font-[700] ${
+                        className={`grid size-[22px] place-items-center rounded-full text-md-b4 font-[700] transition ${
                            isDone
                               ? 'bg-md-green-700 text-md-neutral-100'
                               : isNow
-                                ? 'border-[2.5px] border-md-primary-1200 bg-md-neutral-100 text-md-primary-1200'
+                                ? 'bg-md-primary-1200 text-md-neutral-100 ring-4 ring-md-primary-100'
                                 : 'border-2 border-md-neutral-500 bg-md-neutral-300 text-md-neutral-600'
                         }`}
                      >

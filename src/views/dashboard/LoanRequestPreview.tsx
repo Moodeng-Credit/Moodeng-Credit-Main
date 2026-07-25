@@ -1,6 +1,7 @@
 import { type ChangeEvent, useRef, useState } from 'react';
 
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
+import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import type { User } from '@/types/authTypes';
 
 // DEV-only screenshot harness for the loan-request flow (terms → bio page 1 → bio page 2).
@@ -23,36 +24,42 @@ const PREVIEW_BORROWER: User = {
 
 export default function LoanRequestPreview() {
    const clickOutsideRef = useRef<HTMLDivElement>(null);
+   const successRef = useRef<HTMLDivElement>(null);
    const [loanAmount, setLoanAmount] = useState('');
    const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');
    const [reason, setReason] = useState('');
    const [days, setDays] = useState('');
+   const [submitted, setSubmitted] = useState(false);
    const today = new Date().toISOString().slice(0, 10);
 
    return (
       <div className="min-h-screen bg-md-neutral-300">
-         <LoanRequestModal
-            clickOutsideRef={clickOutsideRef}
-            isOpen
-            onClose={() => {}}
-            showVerify={false}
-            user={PREVIEW_BORROWER}
-            loanAmount={loanAmount}
-            setLoanAmount={setLoanAmount}
-            totalRepaymentAmount={totalRepaymentAmount}
-            setTotalRepaymentAmount={setTotalRepaymentAmount}
-            reason={reason}
-            setReason={setReason}
-            days={days}
-            today={today}
-            handleDays={(e: ChangeEvent<HTMLInputElement>) => setDays(e.target.value)}
-            handleSubmit={() => console.log('[preview] submit')}
-            isSubmitting={false}
-            availableCreditLimit={15}
-            canUseReferralBoost={false}
-            requireBorrowerContextStep
-            startOnReferralStep={false}
-         />
+         {!submitted ? (
+            <LoanRequestModal
+               clickOutsideRef={clickOutsideRef}
+               isOpen
+               onClose={() => {}}
+               showVerify={false}
+               user={PREVIEW_BORROWER}
+               loanAmount={loanAmount}
+               setLoanAmount={setLoanAmount}
+               totalRepaymentAmount={totalRepaymentAmount}
+               setTotalRepaymentAmount={setTotalRepaymentAmount}
+               reason={reason}
+               setReason={setReason}
+               days={days}
+               today={today}
+               handleDays={(e: ChangeEvent<HTMLInputElement>) => setDays(e.target.value)}
+               handleSubmit={() => setSubmitted(true)}
+               isSubmitting={false}
+               availableCreditLimit={15}
+               canUseReferralBoost={false}
+               requireBorrowerContextStep
+               startOnReferralStep={false}
+            />
+         ) : null}
+         {/* Shows the real post-submit success screen so the preview demonstrates the full flow. */}
+         <SuccessModal clickOutsideRef={successRef} isOpen={submitted} onClose={() => setSubmitted(false)} />
       </div>
    );
 }
