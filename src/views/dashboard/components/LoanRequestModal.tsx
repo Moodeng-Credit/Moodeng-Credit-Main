@@ -434,7 +434,7 @@ function BorrowerContextLoanStep({
    const [hasOtherIncome, setHasOtherIncome] = useState<boolean>(Boolean(context.otherIncome));
    // Page 1 needs the "how do you work?" choice; page 2 needs payday + at least one help reason.
    const page1Complete = Boolean(context.incomeSetup);
-   const page2Complete = Boolean(context.paydayWindow && context.cashGaps.length > 0);
+   const page2Complete = Boolean(context.paydayWindow && monthlyIncome && monthlyExpenses && context.cashGaps.length > 0);
    const isBusy = isSubmitting || isSavingProfile;
 
    const backButton = (
@@ -453,7 +453,7 @@ function BorrowerContextLoanStep({
          <div className="flex min-h-0 flex-col gap-md-3">
             <section className="rounded-md-input border border-md-primary-300 bg-md-primary-100 px-md-2 py-md-2">
                <button
-                  className="flex w-full items-center gap-md-2 rounded-md-md bg-md-neutral-100 p-md-2 text-left transition hover:bg-md-neutral-200 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1"
+                  className="flex w-full items-center gap-md-2 rounded-md-input border border-md-neutral-600 bg-md-neutral-100 p-md-2 text-left shadow-md-card transition hover:bg-md-neutral-200 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1"
                   onClick={onProfileImageClick}
                   type="button"
                >
@@ -470,13 +470,13 @@ function BorrowerContextLoanStep({
                         A photo or avatar that shows your character.
                      </p>
                   </div>
-                  <TrustBadge label="+15" />
+                  <TrustBadge label="+15" earned={Boolean(currentAvatarUrl)} />
                </button>
 
                <label className="mt-md-2 flex flex-col gap-md-1">
                   <span className="flex items-center justify-between gap-md-2">
                      <span className="text-md-b2 font-[590] text-md-heading">Your name</span>
-                     <TrustBadge label="+10" />
+                     <TrustBadge label="+10" earned={Boolean(profileName.trim())} />
                   </span>
                   <input
                      className="min-h-[48px] rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b1 font-normal text-md-heading shadow-md-card placeholder:text-md-neutral-1200 focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
@@ -542,12 +542,18 @@ function BorrowerContextLoanStep({
                {backButton}
                <button
                   className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                  disabled={!page1Complete}
+                  disabled={!page1Complete || isBusy}
                   onClick={onNextPage}
                   type="button"
                >
-                  Continue
-                  <ChevronRight className="size-5" strokeWidth={2} />
+                  {isBusy ? (
+                     'Checking…'
+                  ) : (
+                     <>
+                        Continue
+                        <ChevronRight className="size-5" strokeWidth={2} />
+                     </>
+                  )}
                </button>
             </div>
          </div>
@@ -596,10 +602,10 @@ function BorrowerContextLoanStep({
                            setHasOtherIncome(next);
                            if (!next) onOtherIncomeChange('');
                         }}
-                        className={`rounded-md-pill px-4 py-1.5 text-md-b2 font-semibold transition ${
+                        className={`rounded-md-pill border px-4 py-1.5 text-md-b2 font-semibold transition ${
                            (opt === 'Yes') === hasOtherIncome
-                              ? 'bg-md-primary-1200 text-white'
-                              : 'border border-md-neutral-400 text-md-neutral-800'
+                              ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200'
+                              : 'border-md-neutral-700 bg-md-neutral-100 text-md-neutral-1400'
                         }`}
                      >
                         {opt}
@@ -632,9 +638,14 @@ function BorrowerContextLoanStep({
          {!page2Complete ? (
             <p className="text-md-b3 font-medium leading-[18px] text-md-primary-1200">
                Still needed:{' '}
-               {[!context.paydayWindow ? 'when you usually get paid' : null, context.cashGaps.length === 0 ? 'what you need help with' : null]
+               {[
+                  !context.paydayWindow ? 'when you get paid' : null,
+                  !monthlyIncome ? 'your monthly income' : null,
+                  !monthlyExpenses ? 'your monthly expenses' : null,
+                  context.cashGaps.length === 0 ? 'what you need help with' : null
+               ]
                   .filter(Boolean)
-                  .join(' and ')}
+                  .join(', ')}
                .
             </p>
          ) : null}
@@ -657,7 +668,17 @@ function BorrowerContextLoanStep({
 // Compact reward pill: a coin dot + the points, right-aligned in its own column so it can
 // never wrap into the label it sits beside (the old inline "+15 Trust Points" pill broke
 // awkwardly on narrow phones). `shrink-0` keeps it intact when space is tight.
-function TrustBadge({ label }: { label: string }) {
+function TrustBadge({ label, earned = false }: { label: string; earned?: boolean }) {
+   // Two states so the pill is live feedback: "available" (soft) until the field is filled,
+   // then "earned" (solid green + check) so the reward visibly lights up when you complete it.
+   if (earned) {
+      return (
+         <span className="inline-flex shrink-0 items-center gap-[4px] rounded-md-pill bg-md-green-700 px-[8px] py-[3px] text-md-b4 font-[700] text-md-neutral-100 shadow-[0_2px_8px_rgba(26,164,91,0.35)]">
+            <Check className="size-[11px]" strokeWidth={3} aria-hidden="true" />
+            {label}
+         </span>
+      );
+   }
    return (
       <span className="inline-flex shrink-0 items-center gap-[4px] rounded-md-pill bg-md-green-100 px-[8px] py-[3px] text-md-b4 font-[700] text-md-green-900">
          <span aria-hidden="true" className="size-[10px] rounded-full bg-md-green-700" />
@@ -666,10 +687,11 @@ function TrustBadge({ label }: { label: string }) {
    );
 }
 
-// Inline, red field-level error shown directly under a terms input.
+// Inline, red field-level error shown directly under a terms input. role="alert" so screen
+// readers announce it the moment it appears (the whole point is feedback the user can't miss).
 function FieldError({ message }: { message: string }) {
    return (
-      <div className="flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-md-red-500">
+      <div role="alert" className="flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-md-red-500">
          <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
          <span>{message}</span>
       </div>
@@ -683,8 +705,8 @@ function FieldError({ message }: { message: string }) {
 const STEP_LABELS = ['Your terms', 'About you', 'Repayment context'];
 function StepDots({ current }: { current: 1 | 2 | 3 }) {
    return (
-      <div>
-         <div className="flex items-center justify-center">
+      <div role="group" aria-label={`Loan request progress: step ${current} of 3, ${STEP_LABELS[current - 1]}`}>
+         <div className="flex items-center justify-center" aria-hidden="true">
             {[1, 2, 3].map((step) => {
                const isDone = step < current;
                const isNow = step === current;
@@ -708,9 +730,6 @@ function StepDots({ current }: { current: 1 | 2 | 3 }) {
                );
             })}
          </div>
-         <p className="mt-[3px] text-center text-md-b3 font-medium text-md-neutral-1200">
-            Step {current} of 3 · {STEP_LABELS[current - 1]}
-         </p>
       </div>
    );
 }
@@ -947,7 +966,11 @@ export default function LoanRequestModal({
       hasAppliedReferralCode || !hasReferralCode ? 'Continue to application' : hasReferralCodeError ? 'Try again' : 'Apply code';
    const shouldShowReferralStep = showReferralStep && isVerified && canUseReferralBoost;
    const canContinueBorrowerContext = Boolean(
-      borrowerContext.incomeSetup && borrowerContext.paydayWindow && borrowerContext.cashGaps.length > 0
+      borrowerContext.incomeSetup &&
+         borrowerContext.paydayWindow &&
+         borrowerContext.monthlyIncome &&
+         borrowerContext.monthlyExpenses &&
+         borrowerContext.cashGaps.length > 0
    );
    const currentBorrowerDisplayName = user.displayName ?? user.username ?? '';
    const isPreviewUser = user.email.endsWith('@moodeng.local') || user.id.includes('preview');
@@ -1035,6 +1058,23 @@ export default function LoanRequestModal({
          document.removeEventListener('keydown', closeTooltipOnEscape);
       };
    }, [isOpen]);
+
+   // Escape closes the modal — standard keyboard affordance. An open calendar closes first;
+   // an open tooltip is handled by the effect above, so we defer to it that press.
+   useEffect(() => {
+      if (!isOpen) return undefined;
+      const onKeyDown = (event: globalThis.KeyboardEvent) => {
+         if (event.key !== 'Escape') return;
+         if (isCalendarOpen) {
+            setIsCalendarOpen(false);
+            return;
+         }
+         if (activeTooltip) return;
+         onClose();
+      };
+      document.addEventListener('keydown', onKeyDown);
+      return () => document.removeEventListener('keydown', onKeyDown);
+   }, [isOpen, isCalendarOpen, activeTooltip, onClose]);
 
    const keepDateCursorInEditablePart = (digits = typedDateDigits) => {
       window.requestAnimationFrame(() => {
@@ -1306,6 +1346,14 @@ export default function LoanRequestModal({
    // reason (the #1 confusion) is caught right here, under the field, not via a toast that
    // hides behind the next card.
    const REASON_MIN_LENGTH = 40;
+   // Per-field "valid" flags — drive the green success border so each box confirms when it's
+   // correctly filled (feedback the borrower can see), separate from the red error state.
+   const parsedAmountNum = Number(loanAmount);
+   const parsedRepayNum = Number(totalRepaymentAmount);
+   const amountValid = Boolean(loanAmount) && !Number.isNaN(parsedAmountNum) && parsedAmountNum > 0 && parsedAmountNum <= limitAmount;
+   const repaymentValid =
+      Boolean(totalRepaymentAmount) && !Number.isNaN(parsedRepayNum) && !Number.isNaN(parsedAmountNum) && parsedRepayNum >= parsedAmountNum + 1;
+   const reasonValid = reason.trim().length >= REASON_MIN_LENGTH;
    const validateTerms = (): boolean => {
       const errors: typeof termErrors = {};
 
@@ -1401,46 +1449,63 @@ export default function LoanRequestModal({
       }
    };
 
+   // Low-effort gate on the borrower's free-text bio input (profession + "describe your
+   // situation") — the "CSR"/"nothing" case. Both fields live on bio page 1, so this runs on
+   // page 1's Continue (not the final submit) — the borrower sees it where the field is.
+   // Same soft nudge as the loan reason: warn once, then let a second tap of the same text through.
+   // Returns true = ok to proceed, false = we warned (stop here).
+   const runBioInputLowEffortCheck = async (): Promise<boolean> => {
+      const professionText = borrowerContext.profession?.trim() ?? '';
+      const situationText = borrowerContext.incomeDescription?.trim() ?? '';
+      const bioSignature = `${professionText}||${situationText}`;
+      if (bioInputWarnedRef.current === bioSignature) return true;
+
+      setIsCheckingBio(true);
+      let hint = '';
+      try {
+         if (professionText) {
+            const r = await checkBioInput(professionText, 'profession');
+            if (!r.ok) hint = r.hint;
+         }
+         if (!hint && situationText) {
+            const r = await checkBioInput(situationText, 'situation');
+            if (!r.ok) hint = r.hint;
+         }
+      } finally {
+         setIsCheckingBio(false);
+      }
+
+      if (hint) {
+         bioInputWarnedRef.current = bioSignature;
+         showToast(
+            TOAST_TYPES.WARNING,
+            'Add more to your info',
+            hint || 'Some of your info looks too short for lenders to understand — tap again to continue anyway.',
+            'OK',
+            'acknowledge'
+         );
+         return false;
+      }
+      return true;
+   };
+
+   const handleBioPage1Continue = async () => {
+      if (!borrowerContext.incomeSetup) return;
+      if (isBioSubmittingRef.current) return;
+      isBioSubmittingRef.current = true;
+      try {
+         if (await runBioInputLowEffortCheck()) setBioPage(2);
+      } finally {
+         isBioSubmittingRef.current = false;
+      }
+   };
+
    const handleBorrowerContextContinue = async () => {
       if (!canContinueBorrowerContext) return;
       if (isBioSubmittingRef.current) return;
       isBioSubmittingRef.current = true;
 
       try {
-         // Low-effort gate on the borrower's free-text bio input (profession + "describe
-         // your situation") — the "CSR" case. Same soft nudge as the loan reason: warn
-         // once, then let a second tap of the same text through.
-         const professionText = borrowerContext.profession?.trim() ?? '';
-         const situationText = borrowerContext.incomeDescription?.trim() ?? '';
-         const bioSignature = `${professionText}||${situationText}`;
-         if (bioInputWarnedRef.current !== bioSignature) {
-            setIsCheckingBio(true);
-            let hint = '';
-            try {
-               if (professionText) {
-                  const r = await checkBioInput(professionText, 'profession');
-                  if (!r.ok) hint = r.hint;
-               }
-               if (!hint && situationText) {
-                  const r = await checkBioInput(situationText, 'situation');
-                  if (!r.ok) hint = r.hint;
-               }
-            } finally {
-               setIsCheckingBio(false);
-            }
-            if (hint) {
-               bioInputWarnedRef.current = bioSignature;
-               showToast(
-                  TOAST_TYPES.WARNING,
-                  'Add more to your info',
-                  hint || 'Some of your info looks too short for lenders to understand — tap again to continue anyway.',
-                  'OK',
-                  'acknowledge'
-               );
-               return;
-            }
-         }
-
          const isProfileSaved = await saveBorrowerProfile();
          if (!isProfileSaved) return;
 
@@ -1524,10 +1589,10 @@ export default function LoanRequestModal({
    };
 
    return (
-      <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto overscroll-contain bg-[#1f1b29]/20 px-[21px] py-[64px] sm:items-center sm:py-6">
+      <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto overscroll-contain bg-[#1f1b29]/20 px-[21px] py-6 sm:items-center">
          <section
             ref={clickOutsideRef}
-            className="relative mx-auto flex max-h-[calc(100dvh-42px)] w-full max-w-[398px] flex-col overflow-hidden rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 shadow-md-card transition-transform duration-150 ease-out"
+            className="relative mx-auto flex max-h-[calc(100dvh-48px)] w-full max-w-[398px] flex-col overflow-hidden rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 shadow-md-card transition-transform duration-150 ease-out"
             style={{ transform: `translate(${dismissOffset.x}px, ${dismissOffset.y}px)` }}
          >
             {!shouldShowReferralStep ? (
@@ -1554,8 +1619,8 @@ export default function LoanRequestModal({
                   ) : showBorrowerContextStep ? (
                      <div>
                         <h2 className="text-md-h6 font-[590] leading-[24px] text-md-heading">How lenders see you</h2>
-                        <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-	                           Share simple bio details so lenders can understand your request.
+                        <p className="mt-[3px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+	                           Help lenders understand your request.
                         </p>
                      </div>
                   ) : (
@@ -1689,7 +1754,7 @@ export default function LoanRequestModal({
                         monthlyIncome={borrowerContext.monthlyIncome ?? ''}
                         monthlyExpenses={borrowerContext.monthlyExpenses ?? ''}
                         onBack={handleBorrowerContextBack}
-                        onNextPage={() => setBioPage(2)}
+                        onNextPage={handleBioPage1Continue}
                         onCashGapToggle={handleCashGapToggle}
                         onContinue={handleBorrowerContextContinue}
                         onIncomeSelect={(value) =>
@@ -1768,7 +1833,7 @@ export default function LoanRequestModal({
                                  />
                               </div>
                            </div>
-                           <div className={`flex items-center ${inputShellClass} ${termErrors.amount ? '!border-md-red-500' : ''}`}>
+                           <div className={`flex items-center ${inputShellClass} ${termErrors.amount ? '!border-md-red-500' : amountValid ? '!border-md-green-600' : ''}`}>
                               <span
                                  aria-hidden="true"
                                  className="flex min-w-[112px] items-center justify-center gap-md-1 self-stretch border-r border-md-neutral-600 bg-[#2775ca] px-md-3 py-md-2 text-md-b1 font-normal text-md-neutral-100"
@@ -1798,7 +1863,7 @@ export default function LoanRequestModal({
                                  iconStrokeWidth={1.35}
                                  id="usdc"
                                  label="Explain USDC loans"
-                                 panelClassName="left-0 top-full mt-md-1 -translate-x-1/2"
+                                 panelClassName="left-1/2 top-full mt-md-1 -translate-x-1/2"
                                  setActiveTooltip={setActiveTooltip}
                               />
                               <span>All loans are issued and repaid in USDC.</span>
@@ -1816,7 +1881,7 @@ export default function LoanRequestModal({
                               }}
                               onFocus={scrollFieldIntoView}
                               className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none ${
-                                 termErrors.repayment ? '!border-md-red-500' : ''
+                                 termErrors.repayment ? '!border-md-red-500' : repaymentValid ? '!border-md-green-600' : ''
                               }`}
                               id="repayment-amount"
                               inputMode="decimal"
@@ -1825,6 +1890,23 @@ export default function LoanRequestModal({
                               value={totalRepaymentAmount}
                            />
                            {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
+                           {(() => {
+                              // Live clarity: once both amounts are valid, spell out what the borrower will
+                              // repay and how much of that is the lender's return — Moodeng adds $0, so this
+                              // makes the deal transparent while they set their own terms.
+                              const borrowNum = Number(loanAmount);
+                              const repayNum = Number(totalRepaymentAmount);
+                              const extra = repayNum - borrowNum;
+                              if (termErrors.repayment || !loanAmount || !totalRepaymentAmount) return null;
+                              if (Number.isNaN(borrowNum) || Number.isNaN(repayNum) || borrowNum <= 0 || extra <= 0) return null;
+                              const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+                              return (
+                                 <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                                    You’ll repay <span className="font-semibold text-md-heading">${fmt(repayNum)}</span> — that’s{' '}
+                                    <span className="font-semibold text-md-primary-1200">${fmt(extra)}</span> to your lender.
+                                 </p>
+                              );
+                           })()}
                         </div>
 
                         <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-date">
@@ -1832,7 +1914,7 @@ export default function LoanRequestModal({
                               Set Repayment Date
                            </label>
                            <div className="relative">
-                              <div className={`relative flex items-center ${inputShellClass} ${termErrors.date ? '!border-md-red-500' : ''}`}>
+                              <div className={`relative flex items-center ${inputShellClass} ${termErrors.date ? '!border-md-red-500' : isRepaymentDateFilled ? '!border-md-green-600' : ''}`}>
                                  <input
                                     ref={dateInputRef}
                                     aria-label="Selected repayment date"
@@ -1870,13 +1952,40 @@ export default function LoanRequestModal({
                               </div>
                            </div>
                            {termErrors.date ? <FieldError message={termErrors.date} /> : null}
+                           {/* Quick-pick common short terms — typing DD/MM on mobile is the fiddliest field.
+                               Each fills a valid future date via the same handler the calendar uses. */}
+                           <div className="mt-md-0 flex flex-wrap gap-md-1">
+                              {[
+                                 { label: '4 weeks', days: 28 },
+                                 { label: '1 month', days: 30 },
+                                 { label: '2 months', days: 60 }
+                              ].map(({ label, days: offset }) => {
+                                 const date = addDays(todayDate, offset);
+                                 const isActive = selectedDate === formatDateInputValue(date);
+                                 return (
+                                    <button
+                                       key={label}
+                                       type="button"
+                                       aria-pressed={isActive}
+                                       onClick={() => selectCalendarDate(date)}
+                                       className={`rounded-md-pill border px-md-2 py-[5px] text-md-b3 font-medium transition active:scale-95 ${
+                                          isActive
+                                             ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200'
+                                             : 'border-md-neutral-500 bg-md-neutral-100 text-md-neutral-1400'
+                                       }`}
+                                    >
+                                       {label}
+                                    </button>
+                                 );
+                              })}
+                           </div>
                         </div>
 
                         <div className="flex flex-col gap-md-1" data-tour-target="loan-reason">
                            <label className="text-md-b2 font-normal text-md-heading" htmlFor="reason">
                               Reason For Borrowing
                            </label>
-                           <div className={`${inputShellClass} flex flex-col px-md-3 py-md-2 ${termErrors.reason ? '!border-md-red-500' : ''}`}>
+                           <div className={`${inputShellClass} flex flex-col px-md-3 py-md-2 ${termErrors.reason ? '!border-md-red-500' : reasonValid ? '!border-md-green-600' : ''}`}>
                               <textarea
                                  ref={reasonTextareaRef}
                                  maxLength={200}
@@ -1892,16 +2001,24 @@ export default function LoanRequestModal({
                                  rows={1}
                                  value={reason}
                               />
-                              <div className="flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200 select-none">
+                              <div className="mt-md-2 flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200 select-none">
                                  {(() => {
                                     const trimmedLength = reason.trim().length;
                                     const remaining = REASON_MIN_LENGTH - trimmedLength;
-                                    // Guide live: once they've started typing but are short, show how many
-                                    // more characters they need — so they learn before submitting, not after.
+                                    // Guide live: while short, show how many more characters are needed; once the
+                                    // minimum is met, confirm it — so they learn before submitting, not after.
                                     if (trimmedLength > 0 && remaining > 0) {
                                        return (
                                           <span className="font-medium text-md-primary-1200">
                                              {remaining} more character{remaining === 1 ? '' : 's'} to go
+                                          </span>
+                                       );
+                                    }
+                                    if (trimmedLength >= REASON_MIN_LENGTH) {
+                                       return (
+                                          <span className="inline-flex items-center gap-1 font-medium text-md-green-800">
+                                             <Check className="size-4 shrink-0" strokeWidth={2.6} aria-hidden="true" />
+                                             Looks good
                                           </span>
                                        );
                                     }
@@ -1910,7 +2027,7 @@ export default function LoanRequestModal({
                                  <span className="shrink-0">{reason.length}/200</span>
                               </div>
                               {termErrors.reason ? (
-                                 <div className="mt-md-1 flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-md-red-500">
+                                 <div role="alert" className="mt-md-1 flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-md-red-500">
                                     <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
                                     <span>{termErrors.reason}</span>
                                  </div>

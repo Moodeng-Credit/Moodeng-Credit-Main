@@ -154,13 +154,15 @@ export default function MechaLauncher(): JSX.Element | null {
             <div className="fixed right-4 z-[90] flex flex-col items-end gap-2" style={bubbleBottom}>
                {nudge ? (
                   <div className="mecha-nudge relative mb-1 max-w-[240px] rounded-2xl rounded-br-md border border-[#e6ddf6] bg-white px-3.5 py-2.5 text-[13px] leading-snug text-[#1b0a36] shadow-[0_10px_30px_rgba(27,10,54,0.18)] dark:border-[#40354F] dark:bg-[#17121F] dark:text-[#F8F4FF]">
+                     {/* Bigger, higher-contrast close target — the old 20px dot was too easy to miss,
+                         so people felt they couldn't dismiss the nudge. */}
                      <button
                         type="button"
                         onClick={() => setNudge(null)}
                         aria-label={copy.closeLabel}
-                        className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#efe9fb] text-[#5b5470] dark:bg-[#2a2235] dark:text-[#B5ACBE]"
+                        className="absolute -right-2.5 -top-2.5 flex h-7 w-7 items-center justify-center rounded-full border border-[#e6ddf6] bg-white text-[#5b5470] shadow-[0_2px_8px_rgba(27,10,54,0.2)] transition active:scale-95 dark:border-[#40354F] dark:bg-[#2a2235] dark:text-[#B5ACBE]"
                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                         </svg>
                      </button>
