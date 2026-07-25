@@ -115,8 +115,14 @@ async function loadChromium() {
       try {
          const sparticuz = (await import('@sparticuz/chromium')).default;
          const executablePath = await sparticuz.executablePath();
+         // @sparticuz tunes its args for Lambda's single-invocation model, where
+         // --single-process/--no-zygote save memory. Playwright does not support them:
+         // the lone renderer process dies once a few pages have been driven, which is
+         // why only the first couple of routes ever rendered. Drop them.
+         const unsupported = new Set(['--single-process', '--no-zygote']);
+         const baseArgs = sparticuz.args.filter((a) => !unsupported.has(a));
          console.log('[prerender] using @sparticuz/chromium at', executablePath);
-         return await chromium.launch({ headless: true, executablePath, args: [...sparticuz.args, ...args] });
+         return await chromium.launch({ headless: true, executablePath, args: [...baseArgs, ...args] });
       } catch (err) {
          console.warn('[prerender] @sparticuz/chromium unavailable, falling back to bundled:', err?.message);
       }
@@ -264,6 +270,9 @@ async function main() {
       routes: PRERENDER_ROUTES.length,
       ok: results.length - failed.length,
       failed: failed.length,
+      // A couple of sample errors make a bad build diagnosable from the deployed
+      // marker alone, without digging through Vercel build logs.
+      errors: failed.slice(0, 3).map((r) => `${r.route}: ${r.error}`),
    });
    // Never fail the build over prerender misses — runtime SEO is the safety net.
    process.exit(0);
