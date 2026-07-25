@@ -385,19 +385,9 @@ const UserProfile = () => {
             }
 
             .borrower-insights-dark .borrower-identity-card {
-               background: #eef1f6 !important;
-               border: 1px solid #d7deea;
-               box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
-            }
-
-            .borrower-insights-dark .borrower-identity-card .text-md-primary-2000,
-            .borrower-insights-dark .borrower-identity-card .text-md-heading {
-               color: #141827 !important;
-            }
-
-            .borrower-insights-dark .borrower-identity-card .text-md-neutral-1400,
-            .borrower-insights-dark .borrower-identity-card .text-md-neutral-1200 {
-               color: #5f6878 !important;
+               background: #171a23 !important;
+               border-color: #2d3546 !important;
+               box-shadow: 0 14px 34px rgba(0, 0, 0, 0.2);
             }
 
             .borrower-verification-pill {
@@ -506,10 +496,10 @@ const UserProfile = () => {
                border-radius: 999px;
             }
          `}</style>
-         <div className="max-w-[440px] mx-auto pb-28">
+         <div className="mx-auto max-w-[820px] pb-28">
             {/* Header */}
-            <div className="flex items-center justify-between px-md-5 py-md-3">
-               <div className="flex-1 flex items-center gap-4">
+            <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-5 sm:px-6">
+               <div className="flex min-w-0 flex-1 items-center gap-3">
                   <button
                      onClick={() => {
                         // A guest reached this page inside the simulated "lender-tour" session.
@@ -522,11 +512,14 @@ const UserProfile = () => {
                         }
                         navigate(-1);
                      }}
-                     className="shrink-0 w-6 h-6 flex items-center justify-center"
+                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition hover:bg-white active:scale-95"
+                     aria-label="Back"
                   >
-                     <ChevronLeft className="w-6 h-6 text-md-primary-2000" />
+                     <ChevronLeft className="h-6 w-6 text-md-primary-2000" />
                   </button>
-                  <h1 className="text-md-h3 font-semibold text-md-primary-2000">Borrower Insights</h1>
+                  <h1 className="min-w-0 text-[26px] font-[590] leading-[1.1] tracking-[-0.52px] text-md-primary-2000">
+                     Borrower Insights
+                  </h1>
                </div>
                <div className="flex shrink-0 items-center gap-2">
                   <button
@@ -535,7 +528,7 @@ const UserProfile = () => {
                      aria-label={isDarkMode ? 'Switch borrower insights to light mode' : 'Switch borrower insights to dark mode'}
                      aria-pressed={isDarkMode}
                      data-tour-target="borrower-dark-mode"
-                     className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-md-card transition active:scale-95"
+                     className="flex h-10 w-10 items-center justify-center rounded-full border border-[#ece5f4] bg-white shadow-md-card transition active:scale-95"
                   >
                      {isDarkMode ? (
                         <Sun className="h-5 w-5 text-[#facc15]" strokeWidth={2.2} />
@@ -547,57 +540,69 @@ const UserProfile = () => {
                      type="button"
                      onClick={() => navigate('/support')}
                      aria-label="Open help and support center"
-                     className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-md-card"
+                     className="flex h-10 w-10 items-center justify-center rounded-full border border-[#ece5f4] bg-white shadow-md-card transition active:scale-95"
                   >
-                     <HelpCircle className="w-6 h-6 text-md-primary-900" strokeWidth={1.5} />
+                     <HelpCircle className="h-5 w-5 text-md-primary-900" strokeWidth={1.8} />
                   </button>
                </div>
             </div>
 
             {/* Body */}
-            <div className="flex flex-col gap-5 px-md-4 py-md-3">
+            <div className="flex flex-col gap-5 px-5 py-3 sm:gap-6 sm:px-6">
                {/* User Profile */}
                <div
-                  className="borrower-identity-card flex items-center gap-3 rounded-[20px] px-4 py-4 transition-colors duration-200"
+                  className="borrower-identity-card rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)] transition-colors duration-200"
                   data-tour-target="borrower-identity"
                >
-                  <img src={PLACEHOLDER_AVATAR} alt="Profile" className="h-16 w-16 shrink-0 rounded-full object-cover" />
-                  <div className="min-w-0 flex-1 py-1">
-                     <p className="truncate text-[20px] font-semibold leading-tight text-md-primary-2000">
-                        {resolvedUser.username || username}
-                     </p>
-                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <span
-                           className={`borrower-verification-pill inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 ${
-                              isVerifiedBorrower ? 'verified' : 'unverified'
-                           }`}
-                        >
-                           <span className="borrower-verification-icon flex h-4 w-4 items-center justify-center rounded-full">
-                              {isVerifiedBorrower ? (
-                                 <Check className="h-2.5 w-2.5 text-white" strokeWidth={4} />
-                              ) : (
-                                 <X className="h-2.5 w-2.5 text-white" strokeWidth={4} />
-                              )}
+                  <div className="flex items-center gap-3">
+                     <img
+                        src={PLACEHOLDER_AVATAR}
+                        alt="Profile"
+                        className="h-14 w-14 shrink-0 rounded-full border border-[#e7d8ff] bg-[#f8f4fc] object-cover"
+                     />
+                     <div className="min-w-0 flex-1">
+                        <p className="truncate text-[20px] font-[590] leading-6 tracking-[-0.4px] text-md-primary-2000">
+                           {resolvedUser.username || username}
+                        </p>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                           <span
+                              className={`borrower-verification-pill inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 ${
+                                 isVerifiedBorrower ? 'verified' : 'unverified'
+                              }`}
+                           >
+                              <span className="borrower-verification-icon flex h-4 w-4 items-center justify-center rounded-full">
+                                 {isVerifiedBorrower ? (
+                                    <Check className="h-2.5 w-2.5 text-white" strokeWidth={4} />
+                                 ) : (
+                                    <X className="h-2.5 w-2.5 text-white" strokeWidth={4} />
+                                 )}
+                              </span>
+                              <span className="borrower-verification-label text-[12px] font-[590] leading-none">
+                                 {isVerifiedBorrower ? 'Verified borrower' : 'Not verified'}
+                              </span>
                            </span>
-                           <span className="borrower-verification-label text-[13px] font-semibold leading-none">
-                              {isVerifiedBorrower ? 'Verified Borrower' : 'Not Verified'}
-                           </span>
-                        </span>
+                        </div>
+                        <p className="mt-2 text-[12px] font-normal leading-[18px] text-md-neutral-1200">Member since {memberSince}</p>
                      </div>
-                     <p className="mt-2 text-[13px] font-medium leading-none text-md-neutral-1400">Member since {memberSince}</p>
-                     {resolvedUser.incomeDescription ? (
-                        <p className="borrower-identity-context mt-2 text-[13px] font-medium leading-snug text-md-neutral-1400">
+                  </div>
+                  {resolvedUser.incomeDescription ? (
+                     <div className="mt-4 border-t border-[#eee7f5] pt-4">
+                        <p className="text-[11px] font-[590] leading-4 text-md-primary-1200">Borrower context</p>
+                        <p className="borrower-identity-context mt-1 text-[13px] font-normal leading-5 text-md-neutral-1400">
                            {resolvedUser.incomeDescription}
                         </p>
-                     ) : null}
-                  </div>
+                     </div>
+                  ) : null}
                </div>
 
                {/* Credit Level */}
-               <div className="flex flex-col gap-5" data-tour-target="borrower-credit-level">
+               <div
+                  className="flex flex-col gap-4 rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)]"
+                  data-tour-target="borrower-credit-level"
+               >
                   <div className="flex items-center justify-between">
                      <div className="flex items-center gap-2">
-                        <span className="text-md-h5 font-semibold text-md-heading">Credit Level</span>
+                        <span className="text-[18px] font-[590] leading-[22px] tracking-[-0.36px] text-md-heading">Credit Level</span>
                         <button
                            type="button"
                            onClick={() => setIsCreditLevelSheetOpen(true)}
@@ -616,7 +621,7 @@ const UserProfile = () => {
                               }`
                            )
                         }
-                        className="text-md-b2 font-semibold text-md-blue-600 underline"
+                        className="text-[12px] font-[590] leading-[18px] text-md-blue-600 underline underline-offset-2"
                      >
                         View Progress History
                      </button>
@@ -638,7 +643,7 @@ const UserProfile = () => {
                         </div>
                      </div>
                      {/* Progress Bar */}
-                     <div className="h-3 bg-md-neutral-100 rounded-md-pill overflow-hidden">
+                     <div className="h-2.5 overflow-hidden rounded-md-pill bg-[#eee8f4]">
                         <div
                            className="h-full bg-md-primary-900 rounded-md-pill transition-all duration-500"
                            style={{ width: creditProgress > 0 ? `${Math.max(creditProgress, 8)}%` : '0%' }}
@@ -649,17 +654,17 @@ const UserProfile = () => {
 
                {/* Loan Summary */}
                <div id="loan-summary" className="scroll-mt-4 flex flex-col gap-4" data-tour-target="borrower-loan-summary">
-                  <div className="flex items-center gap-4">
-                     <span className="text-md-h5 font-semibold text-md-heading">Loan Summary</span>
+                  <div className="flex items-center justify-between gap-3">
+                     <span className="text-[18px] font-[590] leading-[22px] tracking-[-0.36px] text-md-heading">Loan Summary</span>
                      {isGoodStanding ? (
-                        <span className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#d4f4e2] to-[#e8f9f0] px-3 py-1.5 shadow-sm">
-                           <span className="text-[11px] font-semibold leading-none text-[#059669]">Good Standing</span>
+                        <span className="inline-flex items-center justify-center rounded-full border border-[#bfe8cf] bg-[#eefbf3] px-2.5 py-1.5">
+                           <span className="text-[11px] font-[590] leading-none text-[#166534]">Good standing</span>
                         </span>
                      ) : (
                         <button
                            type="button"
                            onClick={() => setIsDefaultHistorySheetOpen(true)}
-                           className="inline-flex items-center justify-center rounded-full bg-red-50 px-3 py-1.5 shadow-sm transition-opacity active:opacity-70"
+                           className="inline-flex items-center justify-center rounded-full border border-[#fecaca] bg-red-50 px-2.5 py-1.5 transition-opacity active:opacity-70"
                         >
                            <span className="text-[11px] font-semibold leading-none text-[#ef4444]">
                               {defaultCount} {defaultCount === 1 ? 'Default' : 'Defaults'}
@@ -668,7 +673,7 @@ const UserProfile = () => {
                      )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-[14px]">
+                  <div className="grid grid-cols-2 gap-3">
                      <SummaryMetricCard
                         icon={<DollarSign className="h-5 w-5 text-white" strokeWidth={2.5} />}
                         iconClassName="from-[#8b5cf6] to-[#7c3aed] shadow-purple-200"
@@ -678,7 +683,7 @@ const UserProfile = () => {
                         title="Total Borrowed"
                         value={`$${formatNumber(totalBorrowed)}`}
                      >
-                        <div className="relative z-10 space-y-[3px]">
+                        <div className="relative z-10 flex flex-col items-start gap-1">
                            {totalRepaid > 0 ? (
                               <button
                                  type="button"
@@ -711,13 +716,13 @@ const UserProfile = () => {
                         title="Total Loans"
                         value={String(fundedLoans.length)}
                      >
-                        <div className="relative z-10 space-y-[6px]">
+                        <div className="relative z-10 flex flex-col items-start gap-2">
                            <button
                               type="button"
                               onClick={() => setIsLoanMixSheetOpen(true)}
                               className="group inline-flex max-w-full items-center gap-1 rounded-full bg-[#f5f3ff] px-2 py-1 transition-colors hover:bg-[#ede9fe] active:scale-[0.98]"
                            >
-                              <span className="truncate text-[11px] font-medium text-[#8b5cf6]">{loanMixLabel}</span>
+                              <span className="text-[11px] font-[590] text-md-primary-1200">View loan mix</span>
                               <ChevronRight className="h-2.5 w-2.5 shrink-0 text-[#8b5cf6]" strokeWidth={2.5} />
                            </button>
                            {hasLoanHistory ? (
@@ -736,14 +741,13 @@ const UserProfile = () => {
                      </SummaryMetricCard>
 
                      <div
-                        className="diversity-score-card relative col-span-2 overflow-hidden rounded-[24px] border border-[#e9d5ff] bg-gradient-to-br from-white to-[#faf5ff] p-5 shadow-[0_6px_24px_rgba(131,54,240,0.12)]"
+                        className="diversity-score-card relative col-span-2 overflow-hidden rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)]"
                         data-tour-target="borrower-diversity-score"
                      >
-                        <div className="absolute right-0 top-0 h-[120px] w-[120px] rounded-full bg-gradient-to-br from-[#f3e8ff] to-transparent opacity-60 blur-2xl" />
                         <div className="relative z-10 flex items-start justify-between gap-3">
                            <div className="min-w-0 flex-1">
                               <div className="mb-3 flex items-center gap-1.5">
-                                 <p className="text-[15px] font-semibold text-[#6b7280]">Lender Diversity Score</p>
+                                 <p className="text-[13px] font-[590] leading-5 text-md-neutral-1200">Lender diversity</p>
                                  <button
                                     type="button"
                                     onClick={() => setIsLenderDiversitySheetOpen(true)}
@@ -755,12 +759,12 @@ const UserProfile = () => {
                               </div>
                               {hasEnoughLenderDiversityHistory ? (
                                  <>
-                                    <div className="mb-3 flex flex-wrap items-center gap-2.5">
+                                    <div className="mb-3 flex flex-wrap items-center gap-2">
                                        <div className="flex items-baseline gap-1.5">
-                                          <p className="diversity-score-value text-[32px] font-bold leading-none tracking-tight text-[#7c3aed]">
+                                          <p className="diversity-score-value text-[30px] font-[590] leading-none tracking-[-0.6px] text-md-primary-1200">
                                              {diversityScore}
                                           </p>
-                                          <p className="text-[16px] font-medium text-[#4b5563]">points</p>
+                                          <p className="text-[13px] font-normal text-md-neutral-1200">points</p>
                                        </div>
                                        <span
                                           className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 ${badge.border} ${badge.bg}`}
@@ -771,7 +775,7 @@ const UserProfile = () => {
                                        </span>
                                     </div>
                                     {isEarlyLenderDiversityScore ? (
-                                       <p className="mb-3 text-[13px] leading-5 text-[#6b7280]">
+                                       <p className="mb-3 max-w-[210px] text-[12px] leading-[18px] text-md-neutral-1200">
                                           Early estimate: needs 8 funded loans before the score is fully weighted.
                                        </p>
                                     ) : null}
@@ -806,11 +810,11 @@ const UserProfile = () => {
                                  </div>
                               )}
                            </div>
-                           <span className="diversity-score-hero flex h-[104px] w-[104px] shrink-0 items-center justify-center">
+                           <span className="diversity-score-hero flex h-[76px] w-[76px] shrink-0 items-center justify-center rounded-full bg-[#f8f4fc]">
                               <img
                                  src="/hippos/borrower-insights-trophy.png"
                                  alt="Moodeng with trophy"
-                                 className="h-[96px] w-[96px] object-contain drop-shadow-lg"
+                                 className="h-[68px] w-[68px] object-contain"
                               />
                            </span>
                         </div>
@@ -820,14 +824,14 @@ const UserProfile = () => {
 
                {/* Borrower Insights */}
                <div className="flex flex-col gap-4" data-tour-target="borrower-insights">
-                  <div className="flex items-center gap-2.5">
-                     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] shadow-md shadow-purple-200">
-                        <BarChart3 className="h-[18px] w-[18px] text-white" strokeWidth={2.5} />
+                  <div className="flex items-center gap-2">
+                     <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#ede2ff]">
+                        <BarChart3 className="h-[18px] w-[18px] text-md-primary-1200" strokeWidth={2.2} />
                      </span>
-                     <p className="text-[20px] font-bold leading-none tracking-[-0.01em] text-[#2d1b69]">Borrower Insights</p>
+                     <p className="text-[18px] font-[590] leading-[22px] tracking-[-0.36px] text-md-heading">Borrower patterns</p>
                   </div>
                   {hasLoanHistory ? (
-                     <div className="overflow-hidden rounded-[20px] bg-white shadow-[0_4px_16px_rgba(131,54,240,0.08)] divide-y divide-[#f3f4f6]">
+                     <div className="divide-y divide-[#eee7f5] overflow-hidden rounded-[20px] border border-[#e7d8ff] bg-white shadow-[0_6px_20px_rgba(48,24,92,0.05)]">
                         <InsightRow
                            icon={<CalendarDays className="h-4 w-4 text-[#8b5cf6]" strokeWidth={2.5} />}
                            iconClassName="bg-[#ede9fe]"
@@ -978,10 +982,6 @@ const UserProfile = () => {
 
 const SummaryMetricCard = ({
    icon,
-   iconClassName,
-   waveId,
-   waveStart,
-   waveEnd,
    title,
    value,
    children
@@ -995,28 +995,10 @@ const SummaryMetricCard = ({
    value: string;
    children: ReactNode;
 }) => (
-   <div className="relative min-h-[200px] overflow-hidden rounded-[20px] bg-white px-[18px] pb-8 pt-5 shadow-[0_4px_16px_rgba(131,54,240,0.08)]">
-      <div className="absolute inset-x-0 bottom-0 h-[45px]">
-         <svg className="summary-wave absolute bottom-0 w-full" viewBox="0 0 200 45" preserveAspectRatio="none" aria-hidden="true">
-            <defs>
-               <linearGradient id={waveId} x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: waveStart, stopOpacity: 0.35 }} />
-                  <stop offset="100%" style={{ stopColor: waveEnd, stopOpacity: 0.5 }} />
-               </linearGradient>
-            </defs>
-            <path d="M0,22 Q50,10 100,22 T200,22 L200,45 L0,45 Z" fill={`url(#${waveId})`} opacity="0.85" />
-            <path d="M0,28 Q50,18 100,28 T200,28 L200,45 L0,45 Z" fill="#f3e8ff" opacity="0.6" />
-         </svg>
-      </div>
-      <div
-         className={`summary-metric-icon ${
-            waveId === 'loans-wave' ? 'summary-metric-icon-blue' : ''
-         } mb-[14px] flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br shadow-lg ${iconClassName}`}
-      >
-         {icon}
-      </div>
-      <p className="mb-2 text-[13px] font-medium text-[#6b7280]">{title}</p>
-      <p className="mb-3.5 text-[28px] font-bold leading-none tracking-tight text-[#1f2937]">{value}</p>
+   <div className="relative min-h-[166px] overflow-hidden rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)]">
+      <div className="summary-metric-icon mb-4 flex h-9 w-9 items-center justify-center rounded-[12px] bg-md-primary-1200">{icon}</div>
+      <p className="mb-1.5 text-[12px] font-[590] leading-[18px] text-md-neutral-1200">{title}</p>
+      <p className="mb-3 text-[28px] font-[590] leading-none tracking-[-0.56px] text-md-heading">{value}</p>
       {children}
    </div>
 );
@@ -1034,23 +1016,23 @@ const InsightRow = ({
    value: string;
    valueColor: string;
 }) => (
-   <div className="insight-row flex items-center justify-between gap-3 p-4 transition-colors hover:bg-[#fafafa]">
-      <div className="flex min-w-0 items-center gap-2.5">
-         <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${iconClassName}`}>{icon}</span>
-         <span className="min-w-0 text-[15px] font-medium leading-[1.2] text-[#4b5563]">{label}</span>
+   <div className="insight-row flex min-h-[58px] items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[#fbf9fd]">
+      <div className="flex min-w-0 items-center gap-3">
+         <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] ${iconClassName}`}>{icon}</span>
+         <span className="min-w-0 text-[13px] font-[510] leading-5 text-md-neutral-1400">{label}</span>
       </div>
-      <span className={`shrink-0 text-[16px] font-bold leading-none ${valueColor}`}>{value}</span>
+      <span className={`shrink-0 text-[14px] font-[590] leading-5 ${valueColor}`}>{value}</span>
    </div>
 );
 
 const NewBorrowerInsightsCard = () => (
-   <div className="flex items-center gap-4 rounded-[20px] bg-white p-5 shadow-[0_4px_16px_rgba(131,54,240,0.08)]">
-      <span className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-[#ede9fe]">
-         <FileText className="h-8 w-8 text-[#8b5cf6]" strokeWidth={2.5} />
+   <div className="flex items-start gap-3 rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)]">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#ede2ff]">
+         <FileText className="h-5 w-5 text-md-primary-1200" strokeWidth={2.2} />
       </span>
       <div className="min-w-0 flex-1">
-         <p className="mb-2 text-[16px] font-bold leading-tight text-[#2d1b69]">Not enough loan history yet</p>
-         <p className="text-[14px] leading-5 text-[#6b7280]">
+         <p className="text-[15px] font-[590] leading-5 text-md-heading">Not enough loan history yet</p>
+         <p className="mt-1 text-[13px] leading-5 text-md-neutral-1200">
             Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat lenders, and borrowing patterns
             here.
          </p>

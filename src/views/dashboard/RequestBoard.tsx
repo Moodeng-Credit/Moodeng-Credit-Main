@@ -25,11 +25,11 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar from '@/components/UserAvatar';
 import { VerificationUnsuccessfulModal } from '@/components/verification/VerificationUnsuccessfulModal';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
-import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { usePagination } from '@/hooks/usePagination';
+import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
 import { formatCurrency } from '@/utils/decimalHelpers';
 import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
@@ -40,9 +40,6 @@ import type { BorrowerContextProfileData } from '@/lib/borrowerContextFit';
 import { getBorrowerActiveLoanCount, getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
-import { isUserVerified, isVerificationPending } from '@/lib/isUserVerified';
-import { getVerificationUiState, VERIFICATION_STATE_CTA, VERIFICATION_STATE_LABEL } from '@/lib/verificationUiState';
-import { clearVerifyFlow, readVerifyFlow, type VerifyMethod } from '@/lib/verifyFlow';
 import {
    BORROWER_GUIDED_TOUR_ID,
    GENERAL_GUIDED_TOUR_ID,
@@ -51,8 +48,11 @@ import {
    recordGuidedTourShown,
    shouldShowGuidedTour
 } from '@/lib/guidedTourStorage';
+import { isUserVerified, isVerificationPending } from '@/lib/isUserVerified';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getVerificationUiState, VERIFICATION_STATE_CTA, VERIFICATION_STATE_LABEL } from '@/lib/verificationUiState';
+import { clearVerifyFlow, readVerifyFlow, type VerifyMethod } from '@/lib/verifyFlow';
 import { hasWalletAddressOnAccount } from '@/lib/walletProvider';
 import { formatPointsMajor } from '@/shared/points';
 import { fetchUser, fetchUserProfiles, updateBorrowerContext } from '@/store/slices/authSlice';
@@ -62,11 +62,11 @@ import type { User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import { type CreateLoanData, type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
-import FundWalletSheet from '@/views/fund/FundWalletSheet';
-import LoanRequestModal, { mapBorrowerContextForSave, type AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
+import LoanRequestModal, { type AppliedReferralCode, mapBorrowerContextForSave } from '@/views/dashboard/components/LoanRequestModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
+import FundWalletSheet from '@/views/fund/FundWalletSheet';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 import { FAQS } from '@/views/support/data/faqs';
 
@@ -151,70 +151,70 @@ const LENDER_TOUR_BORROWER_HANDLE = DEMO_BORROWER_HANDLES['lender-tour-borrower-
 
 const PREVIEW_REQUEST_BOARD_BORROWER_CONTEXTS: Record<string, BorrowerContextProfileData> = {
    'request-board-preview-borrower-maya': {
-      incomeType:      'full-time',
-      paydayType:      'end-of-month',
-      paydayStart:     25,
-      paydayEnd:       30,
-      gapReasons:      ['bills_before_payday', 'transport'],
-      monthlyIncome:   '200_400',
+      incomeType: 'full-time',
+      paydayType: 'end-of-month',
+      paydayStart: 25,
+      paydayEnd: 30,
+      gapReasons: ['bills_before_payday', 'transport'],
+      monthlyIncome: '200_400',
       monthlyExpenses: '50_150',
-      profession:      'teacher',
-      otherIncome:     'tutor'
+      profession: 'teacher',
+      otherIncome: 'tutor'
    },
    'request-board-preview-borrower-jordan': {
-      incomeType:      'part-time',
-      paydayType:      'mid-month',
-      paydayStart:     10,
-      paydayEnd:       15,
-      gapReasons:      ['medical', 'family_needs'],
-      monthlyIncome:   'under_200',
+      incomeType: 'part-time',
+      paydayType: 'mid-month',
+      paydayStart: 10,
+      paydayEnd: 15,
+      gapReasons: ['medical', 'family_needs'],
+      monthlyIncome: 'under_200',
       monthlyExpenses: 'under_50',
-      profession:      'market vendor',
-      otherIncome:     'domestic work'
+      profession: 'market vendor',
+      otherIncome: 'domestic work'
    },
    'request-board-preview-borrower-ana': {
-      incomeType:      'freelance',
-      paydayType:      'irregular',
-      paydayStart:     null,
-      paydayEnd:       null,
-      gapReasons:      ['bills_before_payday', 'transport'],
-      monthlyIncome:   '400_700',
+      incomeType: 'freelance',
+      paydayType: 'irregular',
+      paydayStart: null,
+      paydayEnd: null,
+      gapReasons: ['bills_before_payday', 'transport'],
+      monthlyIncome: '400_700',
       monthlyExpenses: '150_300',
-      profession:      'graphic designer',
-      otherIncome:     'online sales'
+      profession: 'graphic designer',
+      otherIncome: 'online sales'
    },
    'lender-tour-borrower-grace': {
-      incomeType:      'full-time',
-      paydayType:      'end-of-month',
-      paydayStart:     25,
-      paydayEnd:       30,
-      gapReasons:      ['bills_before_payday', 'transport'],
-      monthlyIncome:   '200_400',
+      incomeType: 'full-time',
+      paydayType: 'end-of-month',
+      paydayStart: 25,
+      paydayEnd: 30,
+      gapReasons: ['bills_before_payday', 'transport'],
+      monthlyIncome: '200_400',
       monthlyExpenses: '50_150',
-      profession:      'teacher',
-      otherIncome:     'tutor'
+      profession: 'teacher',
+      otherIncome: 'tutor'
    },
    'lender-tour-borrower-noah': {
-      incomeType:      'part-time',
-      paydayType:      'mid-month',
-      paydayStart:     15,
-      paydayEnd:       20,
-      gapReasons:      ['transport', 'family_needs'],
-      monthlyIncome:   '200_400',
+      incomeType: 'part-time',
+      paydayType: 'mid-month',
+      paydayStart: 15,
+      paydayEnd: 20,
+      gapReasons: ['transport', 'family_needs'],
+      monthlyIncome: '200_400',
       monthlyExpenses: '50_150',
-      profession:      'delivery rider',
-      otherIncome:     'weekend driving'
+      profession: 'delivery rider',
+      otherIncome: 'weekend driving'
    },
    'lender-tour-borrower-liway': {
-      incomeType:      'full-time',
-      paydayType:      'irregular',
-      paydayStart:     null,
-      paydayEnd:       null,
-      gapReasons:      ['bills_before_payday', 'family_needs'],
-      monthlyIncome:   '400_700',
+      incomeType: 'full-time',
+      paydayType: 'irregular',
+      paydayStart: null,
+      paydayEnd: null,
+      gapReasons: ['bills_before_payday', 'family_needs'],
+      monthlyIncome: '400_700',
       monthlyExpenses: '150_300',
-      profession:      'sari-sari store owner',
-      otherIncome:     'online sales'
+      profession: 'sari-sari store owner',
+      otherIncome: 'online sales'
    }
 };
 
@@ -524,8 +524,7 @@ function RequestBoard$() {
    const tourUserId = effectiveUser?.id;
    const isGeneralTour = showTourPreview && !isRealUserAuthenticated && tourRole === 'general';
    const shouldShowGeneralTour =
-      isGeneralTour &&
-      (shouldStartTourImmediately || shouldShowGuidedTour(GENERAL_GUIDED_TOUR_ID, tourUserId, forceTourPreview));
+      isGeneralTour && (shouldStartTourImmediately || shouldShowGuidedTour(GENERAL_GUIDED_TOUR_ID, tourUserId, forceTourPreview));
    const shouldShowBorrowerTour =
       showTourPreview &&
       !isGeneralTour &&
@@ -554,7 +553,8 @@ function RequestBoard$() {
    const [hasLoadedRequestBoardLoans, setHasLoadedRequestBoardLoans] = useState(false);
    const liveRequestBoardLoans = hasLoadedRequestBoardLoans ? floanRequests : EMPTY_LOANS;
    const previewRequestBoardLoans = useMemo(buildPreviewRequestBoardLoans, []);
-   const shouldUsePreviewRequestBoardLoans = hasLoadedRequestBoardLoans && shouldShowPreviewRequestBoardLoans(location.search, liveRequestBoardLoans);
+   const shouldUsePreviewRequestBoardLoans =
+      hasLoadedRequestBoardLoans && shouldShowPreviewRequestBoardLoans(location.search, liveRequestBoardLoans);
    const requestBoardLoans = shouldUsePreviewRequestBoardLoans ? previewRequestBoardLoans : liveRequestBoardLoans;
 
    const today = new Date().toISOString().split('T')[0];
@@ -977,33 +977,36 @@ function RequestBoard$() {
       },
       [forceTourPreview, location.pathname, tourUserId]
    );
-   const generalTourSteps = useMemo(() => [
-      {
-         target: '[data-tour-target="request-first-card"]',
-         title: 'The request board',
-         body: 'This is where borrowers post short-term USDC loan requests and lenders browse them. Both sides of Moodeng meet here.',
-         durationMs: 6000
-      },
-      {
-         target: '[data-tour-target="request-apply-card"]',
-         title: 'Borrowers apply here',
-         body: 'A borrower sets their loan amount, repayment date, and reason. Once verified, their request goes live on this board.',
-         durationMs: 6000
-      },
-      {
-         target: '[data-tour-target="request-latest-list"]',
-         title: 'Lenders browse & fund',
-         body: 'Lenders scroll through open requests, check each borrower\'s repayment history and trust signals, then fund the ones they believe in.',
-         cardPlacement: 'bottom',
-         durationMs: 6000
-      },
-      {
-         target: '[data-tour-target="request-auth-actions"]',
-         title: 'Ready to get started?',
-         body: 'Create a free account to borrow or lend. Pick your role after signing up and we\'ll walk you through the rest.',
-         durationMs: 6000
-      }
-   ], []);
+   const generalTourSteps = useMemo(
+      () => [
+         {
+            target: '[data-tour-target="request-first-card"]',
+            title: 'The request board',
+            body: 'This is where borrowers post short-term USDC loan requests and lenders browse them. Both sides of Moodeng meet here.',
+            durationMs: 6000
+         },
+         {
+            target: '[data-tour-target="request-apply-card"]',
+            title: 'Borrowers apply here',
+            body: 'A borrower sets their loan amount, repayment date, and reason. Once verified, their request goes live on this board.',
+            durationMs: 6000
+         },
+         {
+            target: '[data-tour-target="request-latest-list"]',
+            title: 'Lenders browse & fund',
+            body: "Lenders scroll through open requests, check each borrower's repayment history and trust signals, then fund the ones they believe in.",
+            cardPlacement: 'bottom',
+            durationMs: 6000
+         },
+         {
+            target: '[data-tour-target="request-auth-actions"]',
+            title: 'Ready to get started?',
+            body: "Create a free account to borrow or lend. Pick your role after signing up and we'll walk you through the rest.",
+            durationMs: 6000
+         }
+      ],
+      []
+   );
    const requestBoardTourSteps = useMemo(() => {
       if (!isAuthenticated) {
          return [
@@ -1229,7 +1232,10 @@ function RequestBoard$() {
       effectiveUser?.id
    ]);
 
-   const handleSubmit = async (e: FormEvent<HTMLFormElement>, borrowerContext?: import('@/lib/borrowerContextFit').BorrowerContextState) => {
+   const handleSubmit = async (
+      e: FormEvent<HTMLFormElement>,
+      borrowerContext?: import('@/lib/borrowerContextFit').BorrowerContextState
+   ) => {
       e.preventDefault();
       // Check the ref first — it updates synchronously, unlike state which waits for a re-render.
       // This closes the window where a second click can slip through while the first is in-flight.
@@ -1237,164 +1243,171 @@ function RequestBoard$() {
       isSubmittingRef.current = true;
 
       try {
-      const borrowerWallet = effectiveUser.walletAddress?.trim();
-      const trimmedReason = reason.trim();
-      const parsedLoanAmount = Number.parseFloat(loanAmount);
-      const parsedRepaymentAmount = Number.parseFloat(totalRepaymentAmount);
-      const parsedDueDate = days ? new Date(days) : null;
+         const borrowerWallet = effectiveUser.walletAddress?.trim();
+         const trimmedReason = reason.trim();
+         const parsedLoanAmount = Number.parseFloat(loanAmount);
+         const parsedRepaymentAmount = Number.parseFloat(totalRepaymentAmount);
+         const parsedDueDate = days ? new Date(days) : null;
 
-      if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
-         goToBorrowerOnboardingStart('loan-request');
-         return;
-      }
-      if (!isWorldIdVerified) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WORLDID_REQUIRED));
-         return;
-      }
-      if (!hasBorrowerBaseWallet) {
-         handleMissingBorrowerWallet();
-         return;
-      }
-      if (hasReachedActiveLoanLimit) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
-         return;
-      }
-      if (!loanAmount || Number.isNaN(parsedLoanAmount) || parsedLoanAmount <= 0) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_INVALID_AMOUNT));
-         return;
-      }
-      if (parsedLoanAmount > availableCreditLimit) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
-         return;
-      }
-      if (!totalRepaymentAmount || Number.isNaN(parsedRepaymentAmount) || parsedRepaymentAmount < parsedLoanAmount + 1) {
-         showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_REPAYMENT_TOO_LOW));
-         return;
-      }
-      if (!parsedDueDate || Number.isNaN(parsedDueDate.getTime())) {
-         showToast(
-            TOAST_TYPES.ERROR,
-            'Repayment date required',
-            'Choose a repayment date before making your request.',
-            'OK',
-            'acknowledge'
-         );
-         return;
-      }
-      if (!trimmedReason) {
-         showToast(TOAST_TYPES.ERROR, 'Reason required', 'Add a short reason so lenders know what the loan is for.', 'OK', 'acknowledge');
-         return;
-      }
-
-      // Low-effort reason gate. First time we see a weak reason we warn and stop; if the
-      // borrower submits the same text again we let it through (nudge, not a hard block).
-      // Only runs when the borrower hasn't already been warned for this exact reason.
-      if (reasonWarnedForRef.current !== trimmedReason) {
-         setIsCheckingReason(true);
-         let reasonOk = true;
-         let reasonHint = '';
-         try {
-            const { data } = await getSupabaseBrowserClient().functions.invoke('check-loan-input', {
-               body: { text: trimmedReason, kind: 'reason' }
-            });
-            reasonOk = data?.ok !== false; // fail open — never block on a bad response
-            reasonHint = data?.hint ?? '';
-         } catch (err) {
-            console.error('check-loan-reason failed, allowing request:', err);
-         } finally {
-            setIsCheckingReason(false);
+         if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
+            goToBorrowerOnboardingStart('loan-request');
+            return;
          }
-
-         if (!reasonOk) {
-            reasonWarnedForRef.current = trimmedReason;
-            const warningText =
-               reasonHint || 'This looks low-effort. Requests that appear to have no real effort may be deleted — submit again to post anyway.';
-            // Inline warning under the reason field stays put so the borrower can act on it.
-            setReasonWarning(warningText);
-            // But the submit button sits at the bottom of a scrollable form, so the inline
-            // warning can land off-screen after a tap — leaving the request feeling like it
-            // silently did nothing. Pair it with a toast so there's always visible feedback,
-            // and spell out that submitting again will post it anyway (soft nudge, not a block).
+         if (!isWorldIdVerified) {
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WORLDID_REQUIRED));
+            return;
+         }
+         if (!hasBorrowerBaseWallet) {
+            handleMissingBorrowerWallet();
+            return;
+         }
+         if (hasReachedActiveLoanLimit) {
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_LIMIT_REACHED));
+            return;
+         }
+         if (!loanAmount || Number.isNaN(parsedLoanAmount) || parsedLoanAmount <= 0) {
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_INVALID_AMOUNT));
+            return;
+         }
+         if (parsedLoanAmount > availableCreditLimit) {
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
+            return;
+         }
+         if (!totalRepaymentAmount || Number.isNaN(parsedRepaymentAmount) || parsedRepaymentAmount < parsedLoanAmount + 1) {
+            showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_REPAYMENT_TOO_LOW));
+            return;
+         }
+         if (!parsedDueDate || Number.isNaN(parsedDueDate.getTime())) {
             showToast(
-               TOAST_TYPES.WARNING,
-               'Check your reason',
-               `${warningText} Tap “Make Your Request” again to post it anyway.`,
+               TOAST_TYPES.ERROR,
+               'Repayment date required',
+               'Choose a repayment date before making your request.',
                'OK',
                'acknowledge'
             );
             return;
          }
-         setReasonWarning('');
-      }
-
-      const loanData = {
-         borrowerUserId: borrowerUserId || '',
-         borrowerWallet,
-         lenderUserId,
-         loanAmount: parsedLoanAmount,
-         totalRepaymentAmount: parsedRepaymentAmount,
-         reason: trimmedReason,
-         dueDate: days,
-         referralCodeId: appliedReferral?.id,
-         referralCode: appliedReferral?.code,
-         referralBoostAmount: appliedReferral?.boostAmount
-      };
-
-      if (
-         isUserVerified(effectiveUser) &&
-         hasBorrowerBaseWallet &&
-         !hasReachedActiveLoanLimit &&
-         parsedLoanAmount <= availableCreditLimit &&
-         parsedLoanAmount > 0 &&
-         parsedRepaymentAmount >= parsedLoanAmount + 1
-      ) {
-         // If borrower hasn't filled in bio yet, save from modal context or show bio step
-         if (!effectiveUser.incomeType) {
-            if (borrowerContext?.incomeSetup && borrowerContext?.paydayWindow && borrowerContext?.cashGaps.length > 0) {
-               const mapped = mapBorrowerContextForSave(borrowerContext);
-               pendingLoanDataRef.current = loanData;
-               await handleBioSave({
-                  incomeType:      mapped.incomeType,
-                  paydayType:      mapped.paydayType,
-                  paydayStart:     mapped.paydayStart,
-                  paydayEnd:       mapped.paydayEnd,
-                  gapReasons:      mapped.gapReasons,
-                  monthlyIncome:   mapped.monthlyIncome,
-                  monthlyExpenses: mapped.monthlyExpenses,
-                  otherIncome:     mapped.otherIncome,
-                  profession:      mapped.profession,
-                  incomeDescription: mapped.incomeDescription
-               });
-               return;
-            }
-            pendingLoanDataRef.current = loanData;
-            setShowBioStep(true);
+         if (!trimmedReason) {
+            showToast(
+               TOAST_TYPES.ERROR,
+               'Reason required',
+               'Add a short reason so lenders know what the loan is for.',
+               'OK',
+               'acknowledge'
+            );
             return;
          }
 
-         await doCreateLoan(loanData);
-      } else {
-         // Belt-and-suspenders: every failing precondition above already returns with its
-         // own toast, so reaching here means a guard and this final check have drifted out
-         // of sync — most likely the just-verified state, where isWorldIdVerified is true
-         // (the borrower verified this session) but effectiveUser hasn't refreshed yet, so
-         // isUserVerified() is still false. Never let "Make Your Request" silently no-op.
-         console.warn('Loan request fell through the create guard with no matching reason', {
-            verified: isUserVerified(effectiveUser),
-            hasBorrowerBaseWallet,
-            hasReachedActiveLoanLimit,
-            withinLimit: parsedLoanAmount <= availableCreditLimit,
-            positiveAmount: parsedLoanAmount > 0,
-            repaymentOk: parsedRepaymentAmount >= parsedLoanAmount + 1
-         });
-         showToast(
-            TOAST_TYPES.ERROR,
-            "We couldn't submit that",
-            "Something blocked this request. Please refresh and try again — if it keeps happening, tap Help and we'll sort it out.",
-            'OK',
-            'acknowledge'
-         );
-      }
+         // Low-effort reason gate. First time we see a weak reason we warn and stop; if the
+         // borrower submits the same text again we let it through (nudge, not a hard block).
+         // Only runs when the borrower hasn't already been warned for this exact reason.
+         if (reasonWarnedForRef.current !== trimmedReason) {
+            setIsCheckingReason(true);
+            let reasonOk = true;
+            let reasonHint = '';
+            try {
+               const { data } = await getSupabaseBrowserClient().functions.invoke('check-loan-input', {
+                  body: { text: trimmedReason, kind: 'reason' }
+               });
+               reasonOk = data?.ok !== false; // fail open — never block on a bad response
+               reasonHint = data?.hint ?? '';
+            } catch (err) {
+               console.error('check-loan-reason failed, allowing request:', err);
+            } finally {
+               setIsCheckingReason(false);
+            }
+
+            if (!reasonOk) {
+               reasonWarnedForRef.current = trimmedReason;
+               const warningText =
+                  reasonHint ||
+                  'This looks low-effort. Requests that appear to have no real effort may be deleted — submit again to post anyway.';
+               // Inline warning under the reason field stays put so the borrower can act on it.
+               setReasonWarning(warningText);
+               // But the submit button sits at the bottom of a scrollable form, so the inline
+               // warning can land off-screen after a tap — leaving the request feeling like it
+               // silently did nothing. Pair it with a toast so there's always visible feedback,
+               // and spell out that submitting again will post it anyway (soft nudge, not a block).
+               showToast(
+                  TOAST_TYPES.WARNING,
+                  'Check your reason',
+                  `${warningText} Tap “Make Your Request” again to post it anyway.`,
+                  'OK',
+                  'acknowledge'
+               );
+               return;
+            }
+            setReasonWarning('');
+         }
+
+         const loanData = {
+            borrowerUserId: borrowerUserId || '',
+            borrowerWallet,
+            lenderUserId,
+            loanAmount: parsedLoanAmount,
+            totalRepaymentAmount: parsedRepaymentAmount,
+            reason: trimmedReason,
+            dueDate: days,
+            referralCodeId: appliedReferral?.id,
+            referralCode: appliedReferral?.code,
+            referralBoostAmount: appliedReferral?.boostAmount
+         };
+
+         if (
+            isUserVerified(effectiveUser) &&
+            hasBorrowerBaseWallet &&
+            !hasReachedActiveLoanLimit &&
+            parsedLoanAmount <= availableCreditLimit &&
+            parsedLoanAmount > 0 &&
+            parsedRepaymentAmount >= parsedLoanAmount + 1
+         ) {
+            // If borrower hasn't filled in bio yet, save from modal context or show bio step
+            if (!effectiveUser.incomeType) {
+               if (borrowerContext?.incomeSetup && borrowerContext?.paydayWindow && borrowerContext?.cashGaps.length > 0) {
+                  const mapped = mapBorrowerContextForSave(borrowerContext);
+                  pendingLoanDataRef.current = loanData;
+                  await handleBioSave({
+                     incomeType: mapped.incomeType,
+                     paydayType: mapped.paydayType,
+                     paydayStart: mapped.paydayStart,
+                     paydayEnd: mapped.paydayEnd,
+                     gapReasons: mapped.gapReasons,
+                     monthlyIncome: mapped.monthlyIncome,
+                     monthlyExpenses: mapped.monthlyExpenses,
+                     otherIncome: mapped.otherIncome,
+                     profession: mapped.profession,
+                     incomeDescription: mapped.incomeDescription
+                  });
+                  return;
+               }
+               pendingLoanDataRef.current = loanData;
+               setShowBioStep(true);
+               return;
+            }
+
+            await doCreateLoan(loanData);
+         } else {
+            // Belt-and-suspenders: every failing precondition above already returns with its
+            // own toast, so reaching here means a guard and this final check have drifted out
+            // of sync — most likely the just-verified state, where isWorldIdVerified is true
+            // (the borrower verified this session) but effectiveUser hasn't refreshed yet, so
+            // isUserVerified() is still false. Never let "Make Your Request" silently no-op.
+            console.warn('Loan request fell through the create guard with no matching reason', {
+               verified: isUserVerified(effectiveUser),
+               hasBorrowerBaseWallet,
+               hasReachedActiveLoanLimit,
+               withinLimit: parsedLoanAmount <= availableCreditLimit,
+               positiveAmount: parsedLoanAmount > 0,
+               repaymentOk: parsedRepaymentAmount >= parsedLoanAmount + 1
+            });
+            showToast(
+               TOAST_TYPES.ERROR,
+               "We couldn't submit that",
+               "Something blocked this request. Please refresh and try again — if it keeps happening, tap Help and we'll sort it out.",
+               'OK',
+               'acknowledge'
+            );
+         }
       } finally {
          // Always release the synchronous guard when handleSubmit finishes.
          // doCreateLoan manages isSubmitting state separately for the loading UI.
@@ -1445,9 +1458,33 @@ function RequestBoard$() {
       }
    };
 
-   const handleBioSave = async (data: { incomeType: string; paydayType: string; paydayStart?: number | null; paydayEnd?: number | null; gapReasons: string[]; monthlyIncome?: string; monthlyExpenses?: string; otherIncome?: string; profession?: string; incomeDescription?: string }) => {
+   const handleBioSave = async (data: {
+      incomeType: string;
+      paydayType: string;
+      paydayStart?: number | null;
+      paydayEnd?: number | null;
+      gapReasons: string[];
+      monthlyIncome?: string;
+      monthlyExpenses?: string;
+      otherIncome?: string;
+      profession?: string;
+      incomeDescription?: string;
+   }) => {
       try {
-         await dispatch(updateBorrowerContext({ incomeType: data.incomeType, paydayType: data.paydayType, paydayStart: data.paydayStart, paydayEnd: data.paydayEnd, gapReasons: data.gapReasons, monthlyIncome: data.monthlyIncome, monthlyExpenses: data.monthlyExpenses, otherIncome: data.otherIncome, profession: data.profession, incomeDescription: data.incomeDescription })).unwrap();
+         await dispatch(
+            updateBorrowerContext({
+               incomeType: data.incomeType,
+               paydayType: data.paydayType,
+               paydayStart: data.paydayStart,
+               paydayEnd: data.paydayEnd,
+               gapReasons: data.gapReasons,
+               monthlyIncome: data.monthlyIncome,
+               monthlyExpenses: data.monthlyExpenses,
+               otherIncome: data.otherIncome,
+               profession: data.profession,
+               incomeDescription: data.incomeDescription
+            })
+         ).unwrap();
       } catch (error) {
          console.error('Failed to save borrower context:', error);
       }
@@ -1583,12 +1620,16 @@ function RequestBoard$() {
          );
 
          await Promise.all([
-            dispatch(fetchLoans()).unwrap().catch((error: Error) => {
-               console.error('Error refreshing loans after delete:', error.message || error);
-            }),
-            dispatch(fetchUser()).unwrap().catch((error: Error) => {
-               console.error('Error refreshing user after loan request delete:', error.message || error);
-            })
+            dispatch(fetchLoans())
+               .unwrap()
+               .catch((error: Error) => {
+                  console.error('Error refreshing loans after delete:', error.message || error);
+               }),
+            dispatch(fetchUser())
+               .unwrap()
+               .catch((error: Error) => {
+                  console.error('Error refreshing user after loan request delete:', error.message || error);
+               })
          ]);
       } catch (error) {
          console.error('Error deleting loan request:', (error as Error).message || error);
@@ -1693,30 +1734,32 @@ function RequestBoard$() {
                                              <span className="w-3 h-3 rounded-full bg-md-primary-1200 flex items-center justify-center">
                                                 <span className="text-white text-[8px] font-bold">&#8987;</span>
                                              </span>
-                                             <span className="text-md-b3 font-semibold text-md-primary-1200">{VERIFICATION_STATE_LABEL[verifyUiState]}</span>
+                                             <span className="text-md-b3 font-semibold text-md-primary-1200">
+                                                {VERIFICATION_STATE_LABEL[verifyUiState]}
+                                             </span>
                                           </span>
                                           <span className="text-md-b3 font-semibold text-md-primary-900 underline">
                                              {`${VERIFICATION_STATE_CTA[verifyUiState]} >`}
                                           </span>
                                        </button>
                                     ) : (
-                                    <button
-                                       type="button"
-                                       onClick={handleVerifyHeaderClick}
-                                       className="inline-flex items-center gap-2 rounded-md-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                                       data-tour-target="request-verify-world-id-link"
-                                       aria-label="Verify Yourself"
-                                    >
-                                       <span className="inline-flex items-center gap-1 px-md-1 py-md-0 bg-md-red-100 rounded-md-sm">
-                                          <span className="w-3 h-3 rounded-full bg-md-red-800 flex items-center justify-center">
-                                             <span className="text-white text-[8px] font-bold">!</span>
+                                       <button
+                                          type="button"
+                                          onClick={handleVerifyHeaderClick}
+                                          className="inline-flex items-center gap-2 rounded-md-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                                          data-tour-target="request-verify-world-id-link"
+                                          aria-label="Verify Yourself"
+                                       >
+                                          <span className="inline-flex items-center gap-1 px-md-1 py-md-0 bg-md-red-100 rounded-md-sm">
+                                             <span className="w-3 h-3 rounded-full bg-md-red-800 flex items-center justify-center">
+                                                <span className="text-white text-[8px] font-bold">!</span>
+                                             </span>
+                                             <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
                                           </span>
-                                          <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
-                                       </span>
-                                       <span className="text-md-b3 font-semibold text-md-primary-900 underline">
-                                          {'Verify Yourself >'}
-                                       </span>
-                                    </button>
+                                          <span className="text-md-b3 font-semibold text-md-primary-900 underline">
+                                             {'Verify Yourself >'}
+                                          </span>
+                                       </button>
                                     )
                                  ) : (
                                     <div className="relative">
@@ -1826,19 +1869,19 @@ function RequestBoard$() {
                   {/* Apply Loan Card — visible for authenticated borrowers, or as CTA for public */}
                   {isAuthenticated && isBorrower && hasSelectedRole ? (
                      <div
-                        className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3"
+                        className="relative overflow-hidden rounded-[20px] border border-[#e2d2f8] bg-[#f8f4fc] p-5 shadow-[0_8px_24px_rgba(55,24,96,0.06)] max-[374px]:p-4"
                         data-tour-target="request-apply-card"
                      >
-                        <div className="flex flex-col gap-4 relative z-10">
-                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
-                              <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Need short-term support?</p>
-                              <p className="text-md-b2 font-medium text-md-neutral-700">
-                                 <span className="max-[374px]:hidden">
-                                    Borrow USDC to build trust and
-                                    <br />
-                                    unlock higher loan levels.
-                                 </span>
-                                 <span className="hidden max-[374px]:inline">Borrow USDC to build trust. Unlock higher levels.</span>
+                        <div className="relative z-10 flex max-w-[200px] flex-col gap-4 max-[374px]:max-w-[184px]">
+                           <div>
+                              <span className="inline-flex rounded-full bg-[#e9dcfb] px-2.5 py-1 text-[11px] font-[590] leading-4 text-[#5d16c9]">
+                                 Borrow in USDC
+                              </span>
+                              <p className="mt-2 text-[22px] font-[590] leading-[1.15] tracking-[-0.44px] text-[#26143f]">
+                                 Need short-term support?
+                              </p>
+                              <p className="mt-1.5 text-[14px] font-normal leading-5 text-[#695b7b]">
+                                 Choose your amount, repayment date, and reason. Repaying on time builds your trust record.
                               </p>
                            </div>
                            <button
@@ -1846,7 +1889,7 @@ function RequestBoard$() {
                               disabled={isOpeningLoanRequest}
                               aria-busy={isOpeningLoanRequest}
                               data-tour-target="request-apply-button"
-                              className="inline-flex min-h-[56px] w-fit items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 shadow-md-card transition-all duration-150 hover:brightness-110 active:scale-[0.97] active:brightness-90 disabled:pointer-events-none disabled:opacity-75 max-[374px]:min-h-12 max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
+                              className="inline-flex min-h-[52px] w-fit items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-5 py-3 text-[15px] font-[590] text-md-neutral-100 transition-all duration-150 hover:bg-[#5200c8] active:scale-[0.97] disabled:pointer-events-none disabled:opacity-75"
                            >
                               {isOpeningLoanRequest ? (
                                  <>
@@ -1854,44 +1897,44 @@ function RequestBoard$() {
                                     Opening...
                                  </>
                               ) : (
-                                 'Apply For A Loan'
+                                 'Apply for a loan'
                               )}
                            </button>
                         </div>
                         <img
                            src="/hippos/thumb-up-right.png"
                            alt=""
-                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:bottom-0 max-[374px]:right-[-42px] max-[374px]:top-auto max-[374px]:h-[76%]"
+                           className="pointer-events-none absolute bottom-[-8px] right-[-16px] h-[128px] w-[128px] object-contain max-[374px]:right-[-18px] max-[374px]:h-[112px] max-[374px]:w-[112px]"
                         />
                      </div>
                   ) : !isAuthenticated ? (
                      <div
-                        className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3"
+                        className="relative overflow-hidden rounded-[20px] border border-[#e2d2f8] bg-[#f8f4fc] p-5 shadow-[0_8px_24px_rgba(55,24,96,0.06)] max-[374px]:p-4"
                         data-tour-target="request-apply-card"
                      >
-                        <div className="flex flex-col gap-4 relative z-10">
-                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
-                              <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Need short-term support?</p>
-                              <p className="text-md-b2 font-medium text-md-neutral-700">
-                                 <span className="max-[374px]:hidden">
-                                    Borrow USDC to build trust and
-                                    <br />
-                                    unlock higher loan levels.
-                                 </span>
-                                 <span className="hidden max-[374px]:inline">Borrow USDC to build trust. Unlock higher levels.</span>
+                        <div className="relative z-10 flex max-w-[200px] flex-col gap-4 max-[374px]:max-w-[184px]">
+                           <div>
+                              <span className="inline-flex rounded-full bg-[#e9dcfb] px-2.5 py-1 text-[11px] font-[590] leading-4 text-[#5d16c9]">
+                                 Borrow in USDC
+                              </span>
+                              <p className="mt-2 text-[22px] font-[590] leading-[1.15] tracking-[-0.44px] text-[#26143f]">
+                                 Need short-term support?
+                              </p>
+                              <p className="mt-1.5 text-[14px] font-normal leading-5 text-[#695b7b]">
+                                 Create an account, choose your terms, and start building a repayment record.
                               </p>
                            </div>
                            <Link
                               to="/sign-up"
-                              className="inline-flex min-h-[56px] w-fit items-center justify-center rounded-md-lg border border-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-primary-1200 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.97] active:brightness-95 max-[374px]:min-h-12 max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
+                              className="inline-flex min-h-[52px] w-fit items-center justify-center rounded-[16px] border border-md-primary-1200 bg-white px-5 py-3 text-[15px] font-[590] text-md-primary-1200 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.97]"
                            >
-                              Apply For A Loan
+                              Apply for a loan
                            </Link>
                         </div>
                         <img
                            src="/hippos/thumb-up-right.png"
                            alt=""
-                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:bottom-0 max-[374px]:right-[-42px] max-[374px]:top-auto max-[374px]:h-[76%]"
+                           className="pointer-events-none absolute bottom-[-8px] right-[-16px] h-[128px] w-[128px] object-contain max-[374px]:right-[-18px] max-[374px]:h-[112px] max-[374px]:w-[112px]"
                         />
                      </div>
                   ) : null}
@@ -2046,7 +2089,9 @@ function RequestBoard$() {
                               </div>
                            ))
                         ) : needsRoleSelection ? (
-                           <div className="text-center py-20 text-md-neutral-1200 text-md-b2">Public requests will appear here when available.</div>
+                           <div className="text-center py-20 text-md-neutral-1200 text-md-b2">
+                              Public requests will appear here when available.
+                           </div>
                         ) : hasActiveRequestFilters || searchLoan.trim() ? (
                            <div className="flex flex-col items-center gap-2 py-20 text-center">
                               <p className="text-md-neutral-1200 text-md-b2">No requests match your filters.</p>
@@ -2190,11 +2235,7 @@ function RequestBoard$() {
             method={failedVerifyMethod ?? (verifyFailedPreview === 'didit' ? 'didit' : 'worldid')}
             onClose={() => setFailedVerifyMethod(null)}
          />
-         <FundWalletSheet
-            isOpen={showFundSheet}
-            onClose={() => setShowFundSheet(false)}
-            walletAddress={effectiveUser?.walletAddress}
-         />
+         <FundWalletSheet isOpen={showFundSheet} onClose={() => setShowFundSheet(false)} walletAddress={effectiveUser?.walletAddress} />
       </>
    );
 }

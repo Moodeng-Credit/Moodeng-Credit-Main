@@ -37,16 +37,16 @@ import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import AskMechaButton from '@/components/mecha/AskMechaButton';
-import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
-import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
+import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
+import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import { suggestedReturnRange } from '@/lib/loanPricing';
-import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
@@ -178,30 +178,30 @@ export const monthlyExpensesOptions: BorrowerContextOption[] = [
 
 export type PaydayConfig = { type: string; start: number | null; end: number | null };
 export const PAYDAY_WINDOW_TO_CONFIG: Record<string, PaydayConfig> = {
-   '1_5':   { type: 'mid-month',    start: 1,    end: 5   },
-   '10_15': { type: 'mid-month',    start: 10,   end: 15  },
-   '15_20': { type: 'mid-month',    start: 15,   end: 20  },
-   '25_30': { type: 'end-of-month', start: 25,   end: 30  },
-   varies:  { type: 'irregular',    start: null, end: null }
+   '1_5': { type: 'mid-month', start: 1, end: 5 },
+   '10_15': { type: 'mid-month', start: 10, end: 15 },
+   '15_20': { type: 'mid-month', start: 15, end: 20 },
+   '25_30': { type: 'end-of-month', start: 25, end: 30 },
+   varies: { type: 'irregular', start: null, end: null }
 };
 export const INCOME_SETUP_TO_TYPE: Record<string, string> = {
-   full_time:     'full-time',
+   full_time: 'full-time',
    self_employed: 'freelance',
-   irregular:     'none',
-   contract:      'part-time'
+   irregular: 'none',
+   contract: 'part-time'
 };
 export const mapBorrowerContextForSave = (ctx: BorrowerContextState) => {
    const payday = PAYDAY_WINDOW_TO_CONFIG[ctx.paydayWindow];
    return {
-      incomeType:      INCOME_SETUP_TO_TYPE[ctx.incomeSetup]  ?? ctx.incomeSetup,
-      paydayType:      payday?.type  ?? ctx.paydayWindow,
-      paydayStart:     payday?.start ?? null,
-      paydayEnd:       payday?.end   ?? null,
-      gapReasons:      ctx.cashGaps,
-      monthlyIncome:   ctx.monthlyIncome,
+      incomeType: INCOME_SETUP_TO_TYPE[ctx.incomeSetup] ?? ctx.incomeSetup,
+      paydayType: payday?.type ?? ctx.paydayWindow,
+      paydayStart: payday?.start ?? null,
+      paydayEnd: payday?.end ?? null,
+      gapReasons: ctx.cashGaps,
+      monthlyIncome: ctx.monthlyIncome,
       monthlyExpenses: ctx.monthlyExpenses,
-      otherIncome:     ctx.otherIncome  || undefined,
-      profession:      ctx.profession   || undefined,
+      otherIncome: ctx.otherIncome || undefined,
+      profession: ctx.profession || undefined,
       incomeDescription: ctx.incomeDescription || undefined
    };
 };
@@ -441,7 +441,7 @@ function BorrowerContextLoanStep({
 
    const backButton = (
       <button
-         className="inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 text-md-b1 font-medium text-md-heading shadow-md-card transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+         className="inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] border border-[#ded6e8] bg-[#f8f4fc] text-md-b1 font-[590] text-md-heading transition hover:bg-[#f3ecfa] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
          onClick={onBack}
          type="button"
       >
@@ -452,10 +452,16 @@ function BorrowerContextLoanStep({
 
    if (page === 1) {
       return (
-         <div className="flex min-h-0 flex-col gap-md-3">
-            <section className="rounded-md-input border border-md-primary-300 bg-md-primary-100 px-md-2 py-md-2">
+         <div className="flex min-h-0 flex-col gap-5">
+            <section className="rounded-[20px] border border-[#e7d8ff] bg-[#f8f4fc] p-4">
+               <div className="mb-3">
+                  <p className="text-[12px] font-[590] leading-[18px] text-[#5d16c9]">Public borrower profile</p>
+                  <p className="mt-0.5 text-[13px] font-normal leading-5 text-[#695b7b]">
+                     This is the identity lenders see beside your request.
+                  </p>
+               </div>
                <button
-                  className="flex w-full items-center gap-md-2 rounded-md-input border border-md-neutral-600 bg-md-neutral-100 p-md-2 text-left shadow-md-card transition hover:bg-md-neutral-200 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1"
+                  className="flex w-full items-center gap-3 border-b border-[#e7d8ff] pb-4 text-left transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
                   onClick={onProfileImageClick}
                   type="button"
                >
@@ -467,29 +473,27 @@ function BorrowerContextLoanStep({
                      src={currentAvatarUrl || PLACEHOLDER_AVATAR}
                   />
                   <div className="min-w-0 flex-1">
-                     <p className="text-md-b2 font-[590] text-md-heading">Profile image</p>
-                     <p className="mt-[2px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                        A photo or avatar that shows your character.
-                     </p>
+                     <p className="text-[15px] font-[590] leading-5 text-[#26143f]">Profile image</p>
+                     <p className="mt-0.5 text-[12px] font-normal leading-[18px] text-[#695b7b]">Tap to choose a photo or avatar.</p>
                   </div>
                   <TrustBadge label="+15" earned={Boolean(currentAvatarUrl)} />
                </button>
 
-               <label className="mt-md-2 flex flex-col gap-md-1">
+               <label className="mt-4 flex flex-col gap-2">
                   <span className="flex items-center justify-between gap-md-2">
-                     <span className="text-md-b2 font-[590] text-md-heading">Your name</span>
+                     <span className="text-[15px] font-[590] leading-5 text-[#26143f]">Name shown to lenders</span>
                      <TrustBadge label="+10" earned={Boolean(profileName.trim())} />
                   </span>
                   <input
-                     className="min-h-[48px] rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b1 font-normal text-md-heading shadow-md-card placeholder:text-md-neutral-1200 focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
+                     className="min-h-[48px] rounded-[14px] border border-[#d8d0e2] bg-white px-3 py-2 text-md-b1 font-normal text-[#26143f] placeholder:text-[#8a7c9c] focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
                      maxLength={30}
                      onChange={(event) => onProfileNameChange(event.target.value)}
                      placeholder="e.g. Maya, Jay, or a friendly nickname"
                      type="text"
                      value={profileName}
                   />
-                  <span className="flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                     <span>The name lenders see with your requests.</span>
+                  <span className="flex items-start justify-between gap-md-2 text-[12px] font-normal leading-[18px] text-[#695b7b]">
+                     <span>Use a first name or friendly nickname.</span>
                      <span className="shrink-0">{profileName.length}/30</span>
                   </span>
                   {profileSaveError ? (
@@ -521,11 +525,15 @@ function BorrowerContextLoanStep({
                </div>
             ) : null}
 
-            <div className="flex flex-col gap-1.5">
-               <p className="text-md-b2 font-[590] text-md-heading">What do you do for work?</p>
-               <p className="text-md-b3 text-md-neutral-700">e.g. teacher, nurse, market vendor, driver</p>
+            <div className="flex flex-col gap-2">
+               <div>
+                  <p className="text-[15px] font-[590] leading-5 text-md-heading">What do you do for work?</p>
+                  <p className="mt-0.5 text-[12px] leading-[18px] text-md-neutral-1200">
+                     Be specific, for example teacher or market vendor.
+                  </p>
+               </div>
                <input
-                  className="w-full rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 shadow-md-card focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
+                  className="min-h-[48px] w-full rounded-[14px] border border-[#d8d0e2] bg-white px-3 py-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
                   maxLength={60}
                   onChange={(e) => onProfessionChange(e.target.value)}
                   placeholder="e.g. teacher"
@@ -535,15 +543,13 @@ function BorrowerContextLoanStep({
             </div>
 
             {!page1Complete ? (
-               <p className="text-md-b3 font-medium leading-[18px] text-md-primary-1200">
-                  Still needed: how you describe your work.
-               </p>
+               <p className="text-md-b3 font-medium leading-[18px] text-md-primary-1200">Still needed: how you describe your work.</p>
             ) : null}
 
-            <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-md-2">
+            <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-3">
                {backButton}
                <button
-                  className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                  className="inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition hover:bg-[#5200c8] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
                   disabled={!page1Complete || isBusy}
                   onClick={onNextPage}
                   type="button"
@@ -563,7 +569,7 @@ function BorrowerContextLoanStep({
    }
 
    return (
-      <div className="flex min-h-0 flex-col gap-md-3">
+      <div className="flex min-h-0 flex-col gap-5">
          <BorrowerContextChipSection
             helper="Helps lenders see that repayment timing makes sense."
             label="When do you usually get paid?"
@@ -588,11 +594,13 @@ function BorrowerContextLoanStep({
             selectedValues={[monthlyExpenses]}
          />
 
-         <div className="flex flex-col gap-md-2">
+         <div className="flex flex-col gap-3 border-t border-[#e7e0ec] pt-4">
             <div className="flex items-center justify-between">
                <div>
-                  <p className="text-md-b2 font-[590] text-md-heading">Any other income sources?</p>
-                  <p className="text-md-b3 text-md-neutral-700">e.g. tutoring, delivery, market trading</p>
+                  <p className="text-[15px] font-[590] leading-5 text-md-heading">Any other income sources?</p>
+                  <p className="mt-0.5 text-[12px] leading-[18px] text-md-neutral-1200">
+                     For example tutoring, delivery, or market trading.
+                  </p>
                </div>
                <div className="flex gap-md-2">
                   {(['No', 'Yes'] as const).map((opt) => (
@@ -604,10 +612,10 @@ function BorrowerContextLoanStep({
                            setHasOtherIncome(next);
                            if (!next) onOtherIncomeChange('');
                         }}
-                        className={`rounded-md-pill border px-4 py-1.5 text-md-b2 font-semibold transition ${
+                        className={`min-h-9 rounded-md-pill border px-4 py-1.5 text-[13px] font-[590] transition ${
                            (opt === 'Yes') === hasOtherIncome
                               ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200'
-                              : 'border-md-neutral-700 bg-md-neutral-100 text-md-neutral-1400'
+                              : 'border-[#d8d0e2] bg-white text-md-neutral-1400'
                         }`}
                      >
                         {opt}
@@ -618,7 +626,7 @@ function BorrowerContextLoanStep({
             {hasOtherIncome && (
                <input
                   autoFocus
-                  className="w-full resize-none rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 shadow-md-card focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
+                  className="min-h-[48px] w-full rounded-[14px] border border-[#d8d0e2] bg-white px-3 py-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
                   maxLength={60}
                   onChange={(e) => onOtherIncomeChange(e.target.value)}
                   placeholder="e.g. tutoring on weekends"
@@ -652,10 +660,10 @@ function BorrowerContextLoanStep({
             </p>
          ) : null}
 
-         <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-md-2">
+         <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-3">
             {backButton}
             <button
-               className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+               className="inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition hover:bg-[#5200c8] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
                disabled={!page2Complete || isBusy}
                onClick={onContinue}
                type="button"
@@ -708,7 +716,11 @@ function ReturnHint({ lo, hi }: { lo: number; hi: number }) {
       <div className="flex items-start gap-1.5 rounded-md-md bg-md-yellow-100 px-md-2 py-md-1 text-md-b3 font-normal leading-[18px] text-md-yellow-700">
          <Lightbulb className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
          <span>
-            Loans around this size usually offer <span className="font-semibold">${lo}–{hi}</span> back to get funded quickly. You can still submit.
+            Loans around this size usually offer{' '}
+            <span className="font-semibold">
+               ${lo}–{hi}
+            </span>{' '}
+            back to get funded quickly. You can still submit.
          </span>
       </div>
    );
@@ -762,9 +774,9 @@ export function BorrowerContextRadioSection({
    selectedValue: string;
 }) {
    return (
-      <fieldset className="flex flex-col gap-md-1">
-         <legend className="text-md-b2 font-[590] text-md-heading">{label}</legend>
-         <div className="flex flex-col gap-md-1">
+      <fieldset className="flex flex-col gap-3">
+         <legend className="text-[15px] font-[590] leading-5 text-md-heading">{label}</legend>
+         <div className="grid grid-cols-1 gap-2">
             {options.map((option) => (
                <BorrowerContextRadioCard
                   key={option.value}
@@ -790,18 +802,20 @@ function BorrowerContextRadioCard({
    return (
       <button
          aria-pressed={isSelected}
-         className={`grid min-h-[58px] w-full grid-cols-[minmax(0,1fr)_22px] items-center gap-md-2 rounded-md-input border px-md-2 py-md-1 text-left transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+         className={`grid min-h-[64px] w-full grid-cols-[minmax(0,1fr)_22px] items-center gap-3 rounded-[16px] border px-4 py-3 text-left transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
             isSelected
-               ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_8px_18px_rgba(105,48,232,0.08)]'
-               : 'border-md-neutral-500 bg-md-neutral-100 text-md-neutral-1200'
+               ? 'border-md-primary-900 bg-[#f3e8ff] text-md-primary-1200 shadow-[0_6px_16px_rgba(96,16,210,0.08)]'
+               : 'border-[#ded6e8] bg-white text-md-neutral-1200 hover:border-[#cbbce0]'
          }`}
          onClick={onClick}
          type="button"
       >
          <span className="min-w-0">
-            <span className={`block text-md-b2 font-[590] ${isSelected ? 'text-md-primary-1200' : 'text-md-heading'}`}>{option.label}</span>
+            <span className={`block text-[14px] font-[590] leading-5 ${isSelected ? 'text-md-primary-1200' : 'text-md-heading'}`}>
+               {option.label}
+            </span>
             {option.description ? (
-               <span className="mt-[2px] block text-md-b3 font-normal text-md-neutral-1200">{option.description}</span>
+               <span className="mt-0.5 block text-[12px] font-normal leading-[18px] text-md-neutral-1200">{option.description}</span>
             ) : null}
          </span>
          <span
@@ -833,14 +847,14 @@ export function BorrowerContextChipSection({
    selectedValues: string[];
 }) {
    return (
-      <fieldset className="flex flex-col gap-md-1 border-t border-md-neutral-400 pt-md-2">
+      <fieldset className="flex flex-col gap-3 border-t border-[#e7e0ec] pt-4">
          <legend className="sr-only">{label}</legend>
-         <div className="flex flex-col gap-[2px]">
-            <span className="text-md-b2 font-[590] text-md-heading">{label}</span>
-            {caption ? <span className="text-md-b3 font-normal text-md-neutral-1200">{caption}</span> : null}
-            {helper ? <span className="text-md-b3 font-normal text-md-neutral-1200">{helper}</span> : null}
+         <div className="flex flex-col gap-0.5">
+            <span className="text-[15px] font-[590] leading-5 text-md-heading">{label}</span>
+            {caption ? <span className="text-[12px] font-normal leading-[18px] text-md-neutral-1200">{caption}</span> : null}
+            {helper ? <span className="text-[12px] font-normal leading-[18px] text-md-neutral-1200">{helper}</span> : null}
          </div>
-         <div className="flex flex-wrap gap-md-1">
+         <div className="flex flex-wrap gap-2">
             {options.map((option) => (
                <BorrowerContextChoiceChip
                   key={option.value}
@@ -869,10 +883,10 @@ function BorrowerContextChoiceChip({
    return (
       <button
          aria-pressed={isSelected}
-         className={`inline-flex min-h-[32px] items-center justify-center gap-[6px] rounded-md-pill border px-md-2 py-[5px] text-md-b3 font-medium leading-[18px] transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+         className={`inline-flex min-h-[38px] items-center justify-center gap-[6px] rounded-md-pill border px-3 py-2 text-[13px] font-[590] leading-[18px] transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
             isSelected
-               ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_5px_12px_rgba(105,48,232,0.08)]'
-               : 'border-md-neutral-700 bg-md-neutral-100 text-md-neutral-1400'
+               ? 'border-md-primary-900 bg-[#f3e8ff] text-md-primary-1200 shadow-[0_4px_10px_rgba(96,16,210,0.08)]'
+               : 'border-[#d8d0e2] bg-white text-md-neutral-1400 hover:border-[#bfaed5]'
          }`}
          onClick={onClick}
          type="button"
@@ -930,6 +944,10 @@ export default function LoanRequestModal({
    const [showBorrowerContextStep, setShowBorrowerContextStep] = useState(startOnBorrowerContextStep);
    // The bio step is split into two short pages so borrowers never face one long scroll.
    const [bioPage, setBioPage] = useState<1 | 2>(1);
+   useEffect(() => {
+      if (!showBorrowerContextStep) return;
+      formRef.current?.scrollTo({ top: 0 });
+   }, [bioPage, showBorrowerContextStep]);
    // Inline, per-field validation for the terms step — shown under each field instead of a
    // toast that could hide behind the card. Checked before the borrower can advance/submit.
    const [termErrors, setTermErrors] = useState<{ amount?: string; repayment?: string; date?: string; reason?: string }>({});
@@ -983,10 +1001,10 @@ export default function LoanRequestModal({
    const shouldShowReferralStep = showReferralStep && isVerified && canUseReferralBoost;
    const canContinueBorrowerContext = Boolean(
       borrowerContext.incomeSetup &&
-         borrowerContext.paydayWindow &&
-         borrowerContext.monthlyIncome &&
-         borrowerContext.monthlyExpenses &&
-         borrowerContext.cashGaps.length > 0
+      borrowerContext.paydayWindow &&
+      borrowerContext.monthlyIncome &&
+      borrowerContext.monthlyExpenses &&
+      borrowerContext.cashGaps.length > 0
    );
    const currentBorrowerDisplayName = user.displayName ?? user.username ?? '';
    const isPreviewUser = user.email.endsWith('@moodeng.local') || user.id.includes('preview');
@@ -1368,7 +1386,10 @@ export default function LoanRequestModal({
    const parsedRepayNum = Number(totalRepaymentAmount);
    const amountValid = Boolean(loanAmount) && !Number.isNaN(parsedAmountNum) && parsedAmountNum > 0 && parsedAmountNum <= limitAmount;
    const repaymentValid =
-      Boolean(totalRepaymentAmount) && !Number.isNaN(parsedRepayNum) && !Number.isNaN(parsedAmountNum) && parsedRepayNum >= parsedAmountNum + 1;
+      Boolean(totalRepaymentAmount) &&
+      !Number.isNaN(parsedRepayNum) &&
+      !Number.isNaN(parsedAmountNum) &&
+      parsedRepayNum >= parsedAmountNum + 1;
    const reasonValid = reason.trim().length >= REASON_MIN_LENGTH;
    const validateTerms = (): boolean => {
       const errors: typeof termErrors = {};
@@ -1605,10 +1626,10 @@ export default function LoanRequestModal({
    };
 
    return (
-      <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto overscroll-contain bg-[#1f1b29]/20 px-[21px] py-6 sm:items-center">
+      <div className="fixed inset-0 z-[70] flex items-end justify-center overflow-hidden overscroll-contain bg-[#1f1b29]/32 sm:items-center sm:px-5 sm:py-6">
          <section
             ref={clickOutsideRef}
-            className="relative mx-auto flex max-h-[calc(100dvh-48px)] w-full max-w-[398px] flex-col overflow-hidden rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 shadow-md-card transition-transform duration-150 ease-out"
+            className="relative mx-auto flex max-h-[94dvh] w-full max-w-[440px] flex-col overflow-hidden rounded-t-[28px] border border-[#e7e0ec] bg-[#fdfcfd] shadow-[0_24px_80px_rgba(44,19,82,0.18)] transition-transform duration-150 ease-out sm:max-h-[calc(100dvh-48px)] sm:rounded-[24px]"
             style={{ transform: `translate(${dismissOffset.x}px, ${dismissOffset.y}px)` }}
          >
             {!shouldShowReferralStep ? (
@@ -1622,26 +1643,27 @@ export default function LoanRequestModal({
                   role="presentation"
                />
             ) : null}
+            <div className="pointer-events-none absolute left-1/2 top-2 z-20 h-1 w-11 -translate-x-1/2 rounded-full bg-[#cec6d7] sm:hidden" />
             <header
-               className="flex touch-none cursor-grab select-none items-center justify-between border-b border-md-neutral-400 p-md-3 active:cursor-grabbing"
+               className="flex touch-none cursor-grab select-none items-center justify-between border-b border-[#e7e0ec] px-5 pb-4 pt-6 active:cursor-grabbing sm:pt-4"
                onPointerDown={(event) => startDismissGesture(event, 'down')}
                onPointerMove={moveDismissGesture}
                onPointerUp={endDismissGesture}
                onPointerCancel={endDismissGesture}
             >
-               <div className="flex items-center gap-md-1">
+               <div className="flex min-w-0 items-center gap-md-1 pr-3">
                   {shouldShowReferralStep ? (
                      <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
                   ) : showBorrowerContextStep ? (
-                     <div>
-                        <h2 className="text-md-h6 font-[590] leading-[24px] text-md-heading">How lenders see you</h2>
-                        <p className="mt-[3px] text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-	                           Help lenders understand your request.
+                     <div className="min-w-0">
+                        <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How lenders see you</h2>
+                        <p className="mt-1 text-[13px] font-normal leading-[18px] text-md-neutral-1200">
+                           Add practical context without sharing private details.
                         </p>
                      </div>
                   ) : (
                      <>
-                        <h2 className="text-md-h6 text-md-heading">Set Your Own Terms</h2>
+                        <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">Set your loan terms</h2>
                         <InfoTooltip
                            activeTooltip={activeTooltip}
                            arrowClassName="right-[42px] top-[-5px] rotate-45"
@@ -1662,7 +1684,7 @@ export default function LoanRequestModal({
                      onClose();
                   }}
                   onPointerDown={(event) => event.stopPropagation()}
-                  className="rounded-full p-1 text-md-neutral-2000 transition duration-150 ease-out hover:bg-md-primary-100 hover:text-md-primary-1200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 dark:text-[#f8f4ff] dark:hover:bg-[#2a2235] dark:hover:text-white dark:focus-visible:ring-offset-[#1b1525]"
+                  className="flex size-10 shrink-0 items-center justify-center rounded-full text-md-neutral-1200 transition duration-150 ease-out hover:bg-md-primary-100 hover:text-md-primary-1200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 dark:text-[#f8f4ff] dark:hover:bg-[#2a2235] dark:hover:text-white dark:focus-visible:ring-offset-[#1b1525]"
                   type="button"
                >
                   <X aria-hidden="true" className="h-6 w-6" strokeWidth={2} />
@@ -1757,7 +1779,7 @@ export default function LoanRequestModal({
                <form
                   ref={formRef}
                   onSubmit={handleLoanFormSubmit}
-                  className="flex min-h-0 flex-col gap-md-3 overflow-y-auto overscroll-contain p-md-3 text-md-b2 text-md-heading"
+                  className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading"
                >
                   {showBorrowerContextStep ? (
                      <BorrowerContextLoanStep
@@ -1849,7 +1871,9 @@ export default function LoanRequestModal({
                                  />
                               </div>
                            </div>
-                           <div className={`flex items-center ${inputShellClass} ${termErrors.amount ? '!border-md-red-500' : amountValid ? '!border-md-primary-900' : ''}`}>
+                           <div
+                              className={`flex items-center ${inputShellClass} ${termErrors.amount ? '!border-md-red-500' : amountValid ? '!border-md-primary-900' : ''}`}
+                           >
                               <span
                                  aria-hidden="true"
                                  className="flex min-w-[112px] items-center justify-center gap-md-1 self-stretch border-r border-md-neutral-600 bg-[#2775ca] px-md-3 py-md-2 text-md-b1 font-normal text-md-neutral-100"
@@ -1948,7 +1972,9 @@ export default function LoanRequestModal({
                               Set Repayment Date
                            </label>
                            <div className="relative">
-                              <div className={`relative flex items-center ${inputShellClass} ${termErrors.date ? '!border-md-red-500' : isRepaymentDateFilled ? '!border-md-primary-900' : ''}`}>
+                              <div
+                                 className={`relative flex items-center ${inputShellClass} ${termErrors.date ? '!border-md-red-500' : isRepaymentDateFilled ? '!border-md-primary-900' : ''}`}
+                              >
                                  <input
                                     ref={dateInputRef}
                                     aria-label="Selected repayment date"
@@ -2019,7 +2045,9 @@ export default function LoanRequestModal({
                            <label className="text-md-b2 font-[590] text-md-heading" htmlFor="reason">
                               Reason for Borrowing
                            </label>
-                           <div className={`${inputShellClass} flex flex-col px-md-3 py-md-2 ${termErrors.reason ? '!border-md-red-500' : reasonValid ? '!border-md-primary-900' : ''}`}>
+                           <div
+                              className={`${inputShellClass} flex flex-col px-md-3 py-md-2 ${termErrors.reason ? '!border-md-red-500' : reasonValid ? '!border-md-primary-900' : ''}`}
+                           >
                               <textarea
                                  ref={reasonTextareaRef}
                                  maxLength={200}
@@ -2061,7 +2089,10 @@ export default function LoanRequestModal({
                                  <span className="shrink-0">{reason.length}/200</span>
                               </div>
                               {termErrors.reason ? (
-                                 <div role="alert" className="mt-md-1 flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-md-red-500">
+                                 <div
+                                    role="alert"
+                                    className="mt-md-1 flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-md-red-500"
+                                 >
                                     <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
                                     <span>{termErrors.reason}</span>
                                  </div>

@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
+
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import type { RootState } from '@/store/store';
@@ -427,26 +428,26 @@ export default function Milestones() {
 
    return (
       <div className="min-h-screen bg-md-neutral-200 [font-family:'SF_Pro_Display','SF_Pro',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]">
-         <div className="mx-auto flex w-full max-w-[440px] flex-col gap-7 px-5 pb-28 pt-8">
-            <div className="grid grid-cols-[24px_minmax(0,1fr)_48px] items-center gap-5">
+         <div className="mx-auto flex w-full max-w-[440px] flex-col gap-7 px-5 pb-28 pt-5">
+            <div className="grid grid-cols-[40px_minmax(0,1fr)_40px] items-center gap-2">
                <button
                   type="button"
                   onClick={() => navigate(-1)}
-                  className="flex h-6 w-6 shrink-0 items-center justify-center"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition hover:bg-white active:scale-95"
                   aria-label="Back"
                >
-                  <img src="/icons/arrow-left.svg" alt="" className="h-5 w-5" />
+                  <img src="/icons/arrow-left.svg" alt="" className="h-5 w-5 dark:invert" />
                </button>
-               <h1 className="min-w-0 whitespace-nowrap text-[28px] font-[590] leading-[1.1] tracking-[-0.56px] text-md-heading">
+               <h1 className="min-w-0 text-center text-[22px] font-[590] leading-[1.15] tracking-[-0.44px] text-md-heading">
                   Reputation Milestones
                </h1>
                <button
                   type="button"
                   onClick={() => setIsHelpOpen(true)}
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white shadow-md-card"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#ece5f4] bg-white shadow-md-card transition active:scale-95"
                   aria-label="How milestones work"
                >
-                  <img src="/icons/question_light.svg" alt="" className="h-6 w-6" />
+                  <img src="/icons/question_light.svg" alt="" className="h-5 w-5" />
                </button>
             </div>
 

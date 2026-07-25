@@ -2,7 +2,7 @@ import { type MouseEvent, useCallback, useMemo, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
-import { ChevronRight, Clock, ExternalLink, Loader2, Send, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronUp, Clock, ExternalLink, Loader2, Send, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount, useSwitchChain } from 'wagmi';
@@ -19,13 +19,13 @@ import { formatCurrency, formatNumber } from '@/utils/decimalHelpers';
 
 import { config } from '@/config/wagmiConfig';
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
-import { formatBoardExpiryLabel, getRequestBoardExpiry, type RequestBoardExpiry } from '@/lib/borrowerCreditUsage';
 import {
    type BorrowerContextProfileData,
    type BorrowerContextResult,
    buildBorrowerContextFit,
    normalizeBorrowerContextProfile
 } from '@/lib/borrowerContextFit';
+import { formatBoardExpiryLabel, getRequestBoardExpiry, type RequestBoardExpiry } from '@/lib/borrowerCreditUsage';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { computePointsDelta, computeYearOneIouPointsDelta, formatPointsMajor, getYearOneIouBorrowerBonusPoints } from '@/shared/points';
@@ -79,34 +79,60 @@ function BorrowerContextPanel({
            return { total, base, bonus, bonusLabel };
         })()
       : null;
+   const [profileSummary = context.paragraphText, trustSummary = ''] = context.paragraphText.split(/\n+/);
+   const timingChips = context.chips.filter((chip) => ['pay', 'date', 'delta'].includes(chip.type)).slice(0, 3);
 
    return (
-      <section className="rounded-[20px] bg-[#f3efff] dark:bg-[#1e1535] p-4">
-         <p className="mb-3 text-md-b3 font-bold uppercase tracking-[0.18em] text-md-primary-900 dark:text-[#c4a0ff]">Timing Fit</p>
-         <p className="text-md-b2 font-medium leading-[1.65] text-md-neutral-900 dark:text-md-neutral-200 whitespace-pre-line">
-            {context.paragraphText}
-         </p>
-         {/* Dark text color comes from the html.dark remap in globals.css (text-md-primary-* → #d8c2ff);
-             only the opacity-suffixed border needs an explicit dark override since the remap
-             matches exact class names. */}
+      <section className="rounded-[20px] border border-[#e7d8ff] bg-[#f8f4fc] p-4 dark:border-[#3a2f58] dark:bg-[#1e1830]">
+         <div className="flex items-start gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#ede2ff] text-md-primary-1200 dark:bg-[#34244d] dark:text-[#c4a0ff]">
+               <Clock className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+               <p className="text-[12px] font-[590] leading-[18px] tracking-[-0.24px] text-md-primary-1200 dark:text-[#c4a0ff]">
+                  Timing and borrower context
+               </p>
+               <p className="mt-1 text-[14px] font-normal leading-[22px] tracking-[-0.28px] text-md-heading dark:text-md-neutral-200">
+                  {profileSummary}
+               </p>
+               {trustSummary ? (
+                  <p className="mt-2 text-[13px] font-normal leading-5 text-md-neutral-1200 dark:text-md-neutral-400">{trustSummary}</p>
+               ) : null}
+            </div>
+         </div>
+         {timingChips.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+               {timingChips.map((chip) => (
+                  <span
+                     key={chip.id}
+                     className="inline-flex min-h-7 items-center rounded-full border border-[#ded2ef] bg-white px-2.5 py-1 text-[11px] font-[590] leading-4 text-md-neutral-1400 dark:border-[#4b3e62] dark:bg-[#251c39] dark:text-md-neutral-300"
+                  >
+                     {chip.label}
+                  </span>
+               ))}
+            </div>
+         ) : null}
          {boardExpiry ? (
-            <p className="mt-3 flex items-center gap-1.5 border-t border-md-primary-900/15 pt-3 text-md-b3 font-semibold text-md-primary-1200 dark:border-[#d8c2ff]/20">
+            <p className="mt-4 flex items-center gap-1.5 border-t border-[#e7d8ff] pt-3 text-[12px] font-[590] leading-[18px] text-md-primary-1200 dark:border-[#3a2f58] dark:text-[#c4a0ff]">
                <Clock className="size-4 shrink-0" strokeWidth={2.25} aria-hidden="true" />
                {formatBoardExpiryLabel(boardExpiry)}
             </p>
          ) : null}
          {iouData && (
-            <div className="mt-4 rounded-[18px] bg-gradient-to-br from-[#fef3c7] to-[#fde68a] dark:from-[#3d2a00] dark:to-[#2a1d00] p-4 flex items-start gap-3">
-               <span className="text-2xl leading-none mt-0.5" aria-hidden="true">
+            <div className="mt-4 flex items-start gap-3 border-t border-[#e7d8ff] pt-4 dark:border-[#3a2f58]">
+               <span
+                  className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#fff8e1] text-[18px] dark:bg-[#3a2d18]"
+                  aria-hidden="true"
+               >
                   🪙
                </span>
-               <div>
-                  <p className="text-md-b3 font-semibold uppercase tracking-wide text-[#92400e] dark:text-[#fbbf24]">Reward</p>
-                  <p className="text-md-b1 font-bold text-[#92400e] dark:text-[#f59e0b]">
-                     TOTAL EARNED: <span className="text-[#b45309] dark:text-[#fcd34d]">{iouData.total} IOU PTS</span>
+               <div className="min-w-0">
+                  <p className="text-[12px] font-[590] leading-[18px] text-[#8a5a00] dark:text-[#f5cb69]">Lender reward</p>
+                  <p className="text-[16px] font-[590] leading-6 tracking-[-0.32px] text-md-heading dark:text-md-neutral-100">
+                     {iouData.total} IOU Points
                   </p>
-                  <p className="mt-0.5 text-md-b3 text-[#78350f] dark:text-[#fbbf24]">
-                     Includes {iouData.base} pts for funding the loan + {iouData.bonus} for {iouData.bonusLabel}!
+                  <p className="mt-0.5 text-[12px] font-normal leading-[18px] text-md-neutral-1200 dark:text-md-neutral-400">
+                     {iouData.base} for funding, plus {iouData.bonus} for the {iouData.bonusLabel}.
                   </p>
                </div>
             </div>
@@ -418,8 +444,9 @@ export default function UserCard(loan: UserCardProps) {
    );
    const explorerBaseUrl = account.chain?.blockExplorers?.default?.url;
    const explorerTxUrl = pendingTxHash && explorerBaseUrl ? `${explorerBaseUrl}/tx/${pendingTxHash}` : null;
-   const isLenderCard = Boolean(isAuthenticated && !isBorrower && !isOwnLoan && !isLent && !isPreviewRequest);
+   const isLenderCard = Boolean(isAuthenticated && !isBorrower && !isOwnLoan && !isLent);
    const showBorrowerContext = Boolean(borrowerContext && !isBorrower && (!isLenderCard || showDetails));
+   const requestDetailsId = `loan-request-details-${loanData.id}`;
    const cardClassName = [
       'relative flex flex-col gap-4 rounded-[24px] border border-[#f0f0f0] bg-white p-md-4 shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)] transition-[border-color,box-shadow,transform] duration-300',
       isHighlighted ? 'request-board-focus-highlight' : ''
@@ -487,10 +514,7 @@ export default function UserCard(loan: UserCardProps) {
                </button>
             ) : null}
             {/* Top: Loan Info + Amount Card */}
-            <div
-               className={`flex gap-4 items-center ${canDeleteOwnRequest ? 'pr-10' : ''} ${isLenderCard && showDetails ? 'cursor-pointer' : ''}`}
-               onClick={isLenderCard && showDetails ? () => setShowDetails(false) : undefined}
-            >
+            <div className={`flex gap-4 items-center ${canDeleteOwnRequest ? 'pr-10' : ''}`}>
                {/* Left: Loan Details */}
                <div className="flex-1 flex flex-col gap-2 min-w-0">
                   <p className="text-md-h5 font-semibold text-md-heading">{loanReason}</p>
@@ -539,28 +563,30 @@ export default function UserCard(loan: UserCardProps) {
                </div>
             </div>
 
-            {isLenderCard && showDetails ? (
+            {isLenderCard && showDetails && !isPreviewRequest ? (
                <button
                   type="button"
                   onClick={() => setShowDetails(false)}
+                  aria-expanded="true"
+                  aria-controls={requestDetailsId}
                   className="flex items-center gap-1 text-md-b3 font-medium text-md-neutral-800 hover:text-md-neutral-1200 transition-colors self-start -mt-2"
                >
-                  <ChevronRight className="w-4 h-4 rotate-180" />
-                  Back
+                  <ChevronUp className="h-4 w-4" />
+                  Hide request details
                </button>
             ) : null}
             {showBorrowerContext && borrowerContext ? (
-               <BorrowerContextPanel
-                  context={borrowerContext}
-                  lenderIouInfo={
-                     !isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest)
-                        ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 }
-                        : undefined
-                  }
-                  boardExpiry={
-                     !isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest) ? boardExpiry : undefined
-                  }
-               />
+               <div id={requestDetailsId}>
+                  <BorrowerContextPanel
+                     context={borrowerContext}
+                     lenderIouInfo={
+                        !isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest)
+                           ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 }
+                           : undefined
+                     }
+                     boardExpiry={!isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest) ? boardExpiry : undefined}
+                  />
+               </div>
             ) : null}
 
             {/* CTA + Borrower Link */}
@@ -578,13 +604,16 @@ export default function UserCard(loan: UserCardProps) {
                      Your Loan Request
                   </div>
                ) : isPreviewRequest ? (
-                  <Link
-                     to={borrowerDetailsHref}
+                  <button
+                     type="button"
+                     onClick={() => setShowDetails((current) => !current)}
+                     aria-expanded={showDetails}
+                     aria-controls={requestDetailsId}
                      className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
                   >
-                     View Request
-                     <ChevronRight className="w-5 h-5" />
-                  </Link>
+                     {showDetails ? 'Hide Request' : 'View Request'}
+                     {showDetails ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                  </button>
                ) : isLent ? (
                   <div className="bg-md-neutral-500 text-md-neutral-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg text-center cursor-not-allowed">
                      Help Received
@@ -601,10 +630,12 @@ export default function UserCard(loan: UserCardProps) {
                   <button
                      type="button"
                      onClick={() => setShowDetails(true)}
+                     aria-expanded="false"
+                     aria-controls={requestDetailsId}
                      className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
                   >
                      View Request
-                     <ChevronRight className="w-5 h-5" />
+                     <ChevronDown className="h-5 w-5" />
                   </button>
                ) : (
                   <button
