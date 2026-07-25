@@ -193,14 +193,27 @@ async function prerenderRoute(browser, route) {
    return { route, ok: false, error: last?.error ?? `thin snapshot (<${MIN_SNAPSHOT_BYTES}b)`, bytes: last?.bytes };
 }
 
+// Diagnostic marker served at /prerender-status.json — lets us confirm from the
+// deployed site whether this script ran and whether Chromium was available, without
+// access to the Vercel build log.
+async function writeStatus(status) {
+   try {
+      await writeFile(join(DIST, 'prerender-status.json'), JSON.stringify({ script: 'prerender-seo', ...status }), 'utf8');
+   } catch {
+      /* ignore */
+   }
+}
+
 async function main() {
    if (!existsSync(join(DIST, 'index.html'))) {
       console.warn(`[prerender] ${DIST}/index.html not found — did vite build run? Skipping.`);
       process.exit(0);
    }
+   await writeStatus({ ran: true, stage: 'started', routes: PRERENDER_ROUTES.length });
    const browser = await loadChromium();
    if (!browser) {
       console.warn('[prerender] No browser available — skipping snapshot (site still works via runtime SEO).');
+      await writeStatus({ ran: true, stage: 'no-browser', chromium: false, routes: PRERENDER_ROUTES.length, ok: 0 });
       process.exit(0);
    }
    const server = await startServer();
@@ -223,6 +236,14 @@ async function main() {
 
    const failed = results.filter((r) => !r.ok);
    console.log(`[prerender] done: ${results.length - failed.length} ok, ${failed.length} failed`);
+   await writeStatus({
+      ran: true,
+      stage: 'done',
+      chromium: true,
+      routes: PRERENDER_ROUTES.length,
+      ok: results.length - failed.length,
+      failed: failed.length,
+   });
    // Never fail the build over prerender misses — runtime SEO is the safety net.
    process.exit(0);
 }
