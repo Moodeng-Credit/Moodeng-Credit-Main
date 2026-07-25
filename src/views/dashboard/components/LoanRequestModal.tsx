@@ -505,11 +505,11 @@ function BorrowerContextLoanStep({
 
             {context.incomeSetup === 'contract' ? (
                <div className="flex flex-col gap-1.5">
-                  <p className="text-md-b2 font-semibold text-md-heading">Describe your situation</p>
+                  <p className="text-md-b2 font-[590] text-md-heading">Describe your situation</p>
                   <p className="text-md-b3 text-md-neutral-700">Tell lenders how you earn, in your own words.</p>
                   <textarea
                      autoFocus
-                     className="w-full resize-none rounded-md-input border border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none"
+                     className="w-full resize-none rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 shadow-md-card focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
                      maxLength={200}
                      rows={3}
                      onChange={(e) => onIncomeDescriptionChange(e.target.value)}
@@ -520,10 +520,10 @@ function BorrowerContextLoanStep({
             ) : null}
 
             <div className="flex flex-col gap-1.5">
-               <p className="text-md-b2 font-semibold text-md-heading">What do you do for work?</p>
+               <p className="text-md-b2 font-[590] text-md-heading">What do you do for work?</p>
                <p className="text-md-b3 text-md-neutral-700">e.g. teacher, nurse, market vendor, driver</p>
                <input
-                  className="w-full rounded-md-input border border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none"
+                  className="w-full rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 shadow-md-card focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
                   maxLength={60}
                   onChange={(e) => onProfessionChange(e.target.value)}
                   placeholder="e.g. teacher"
@@ -589,7 +589,7 @@ function BorrowerContextLoanStep({
          <div className="flex flex-col gap-md-2">
             <div className="flex items-center justify-between">
                <div>
-                  <p className="text-md-b2 font-semibold text-md-heading">Any other income sources?</p>
+                  <p className="text-md-b2 font-[590] text-md-heading">Any other income sources?</p>
                   <p className="text-md-b3 text-md-neutral-700">e.g. tutoring, delivery, market trading</p>
                </div>
                <div className="flex gap-md-2">
@@ -616,7 +616,7 @@ function BorrowerContextLoanStep({
             {hasOtherIncome && (
                <input
                   autoFocus
-                  className="w-full resize-none rounded-md-input border border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none"
+                  className="w-full resize-none rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 shadow-md-card focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
                   maxLength={60}
                   onChange={(e) => onOtherIncomeChange(e.target.value)}
                   placeholder="e.g. tutoring on weekends"
@@ -1817,7 +1817,7 @@ export default function LoanRequestModal({
 
                         <div className="flex flex-col gap-md-1" data-tour-target="loan-borrow-amount">
                            <div className="flex items-center justify-between gap-md-2">
-                              <label className="text-md-b2 font-normal text-md-heading" htmlFor="borrow-amount">
+                              <label className="text-md-b2 font-[590] text-md-heading" htmlFor="borrow-amount">
                                  Borrow Amount
                               </label>
                               <div className="flex items-center gap-md-0 rounded-md-md bg-md-primary-100 px-md-1 py-md-0 text-md-b3 font-normal text-[#3e0a88] dark:border dark:border-[#7c4ed8]/40 dark:bg-[#2a1740] dark:text-[#f8f4ff]">
@@ -1833,7 +1833,7 @@ export default function LoanRequestModal({
                                  />
                               </div>
                            </div>
-                           <div className={`flex items-center ${inputShellClass} ${termErrors.amount ? '!border-md-red-500' : amountValid ? '!border-md-green-600' : ''}`}>
+                           <div className={`flex items-center ${inputShellClass} ${termErrors.amount ? '!border-md-red-500' : amountValid ? '!border-md-primary-900' : ''}`}>
                               <span
                                  aria-hidden="true"
                                  className="flex min-w-[112px] items-center justify-center gap-md-1 self-stretch border-r border-md-neutral-600 bg-[#2775ca] px-md-3 py-md-2 text-md-b1 font-normal text-md-neutral-100"
@@ -1871,7 +1871,7 @@ export default function LoanRequestModal({
                         </div>
 
                         <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-amount">
-                           <label className="text-md-b2 font-normal text-md-heading" htmlFor="repayment-amount">
+                           <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repayment-amount">
                               Set Repayment Amount
                            </label>
                            <input
@@ -1881,7 +1881,7 @@ export default function LoanRequestModal({
                               }}
                               onFocus={scrollFieldIntoView}
                               className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none ${
-                                 termErrors.repayment ? '!border-md-red-500' : repaymentValid ? '!border-md-green-600' : ''
+                                 termErrors.repayment ? '!border-md-red-500' : repaymentValid ? '!border-md-primary-900' : ''
                               }`}
                               id="repayment-amount"
                               inputMode="decimal"
@@ -1910,11 +1910,11 @@ export default function LoanRequestModal({
                         </div>
 
                         <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-date">
-                           <label className="text-md-b2 font-normal text-md-heading" htmlFor="repaymentDate">
+                           <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repaymentDate">
                               Set Repayment Date
                            </label>
                            <div className="relative">
-                              <div className={`relative flex items-center ${inputShellClass} ${termErrors.date ? '!border-md-red-500' : isRepaymentDateFilled ? '!border-md-green-600' : ''}`}>
+                              <div className={`relative flex items-center ${inputShellClass} ${termErrors.date ? '!border-md-red-500' : isRepaymentDateFilled ? '!border-md-primary-900' : ''}`}>
                                  <input
                                     ref={dateInputRef}
                                     aria-label="Selected repayment date"
@@ -1968,10 +1968,10 @@ export default function LoanRequestModal({
                                        type="button"
                                        aria-pressed={isActive}
                                        onClick={() => selectCalendarDate(date)}
-                                       className={`rounded-md-pill border px-md-2 py-[5px] text-md-b3 font-medium transition active:scale-95 ${
+                                       className={`inline-flex min-h-[32px] items-center justify-center rounded-md-pill border px-md-2 py-[5px] text-md-b3 font-medium leading-[18px] transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
                                           isActive
-                                             ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200'
-                                             : 'border-md-neutral-500 bg-md-neutral-100 text-md-neutral-1400'
+                                             ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_5px_12px_rgba(105,48,232,0.08)]'
+                                             : 'border-md-neutral-700 bg-md-neutral-100 text-md-neutral-1400'
                                        }`}
                                     >
                                        {label}
@@ -1982,10 +1982,10 @@ export default function LoanRequestModal({
                         </div>
 
                         <div className="flex flex-col gap-md-1" data-tour-target="loan-reason">
-                           <label className="text-md-b2 font-normal text-md-heading" htmlFor="reason">
-                              Reason For Borrowing
+                           <label className="text-md-b2 font-[590] text-md-heading" htmlFor="reason">
+                              Reason for Borrowing
                            </label>
-                           <div className={`${inputShellClass} flex flex-col px-md-3 py-md-2 ${termErrors.reason ? '!border-md-red-500' : reasonValid ? '!border-md-green-600' : ''}`}>
+                           <div className={`${inputShellClass} flex flex-col px-md-3 py-md-2 ${termErrors.reason ? '!border-md-red-500' : reasonValid ? '!border-md-primary-900' : ''}`}>
                               <textarea
                                  ref={reasonTextareaRef}
                                  maxLength={200}
@@ -2016,7 +2016,7 @@ export default function LoanRequestModal({
                                     }
                                     if (trimmedLength >= REASON_MIN_LENGTH) {
                                        return (
-                                          <span className="inline-flex items-center gap-1 font-medium text-md-green-800">
+                                          <span className="inline-flex items-center gap-1 font-medium text-md-primary-1200">
                                              <Check className="size-4 shrink-0" strokeWidth={2.6} aria-hidden="true" />
                                              Looks good
                                           </span>
