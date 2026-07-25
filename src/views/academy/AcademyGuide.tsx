@@ -2,6 +2,7 @@ import { type CSSProperties, type JSX, type MouseEvent, useEffect, useMemo, useS
 
 import { Link } from 'react-router-dom';
 
+import { usePageSeo } from '@/hooks/usePageSeo';
 import { ACADEMY_QUIZ_POINTS_PER_CORRECT_ANSWER, computeAcademyQuizPoints } from '@/shared/points';
 import '@/views/academy/AcademyGuide.css';
 
@@ -441,6 +442,13 @@ export default function AcademyGuide(): JSX.Element {
    const [lockedMessage, setLockedMessage] = useState('');
    const [mechaMessage, setMechaMessage] = useState<MechaMessage | null>(null);
    const [showTutorialVideo, setShowTutorialVideo] = useState(false);
+
+   usePageSeo({
+      title: 'Moodeng Academy | Moodeng Credit',
+      description:
+         'A step-by-step walkthrough of the Moodeng borrower flow — sign up, verify, connect a Base wallet, request a loan, repay, and grow your credit limit.',
+      canonicalPath: '/academy'
+   });
 
    const quizScore = useMemo(() => {
       return quizQuestions.reduce((score, question) => {

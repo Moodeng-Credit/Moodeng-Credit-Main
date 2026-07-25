@@ -27,7 +27,15 @@
          name="description"
          content="Moodeng Credit lets you borrow small USDC loans, verify with World ID, and build a portable Trust Score and Credit Level — no traditional credit history needed."
       />
-      <link rel="canonical" href="https://moodeng.app/" />
+      <!--
+         NOTE: no hard-coded <link rel="canonical"> here. This shell (index.html) is served
+         for every non-static SPA route (/blogs, /learn/*, /support/*, /team, /privacy, …), so a
+         fixed canonical would (and previously did) make every one of those pages canonicalize to
+         "https://moodeng.app/", collapsing them into the homepage in Google's index. Per-route
+         canonical + title + description + OG are set at runtime by <RouteSeo> (src/lib/seo) and
+         baked into the prerendered HTML at build time. With no canonical in the raw shell, any
+         non-prerendered route safely self-canonicalizes to its own URL.
+      -->
       <meta name="robots" content="index, follow" />
 
       <!-- Open Graph / social -->
@@ -38,7 +46,7 @@
          property="og:description"
          content="Borrow small USDC loans, verify with World ID, and build a portable Trust Score and Credit Level — no traditional credit history needed."
       />
-      <meta property="og:url" content="https://moodeng.app/" />
+      <!-- og:url is set per-route by <RouteSeo>; no homepage-locked value in the shell. -->
       <meta property="og:image" content="https://moodeng.app/brand/moodeng-logo.png" />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content="Moodeng Credit — Build credit with small USDC loans" />

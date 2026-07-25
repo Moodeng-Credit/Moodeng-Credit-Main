@@ -1,3 +1,5 @@
+import { usePageSeo } from '@/hooks/usePageSeo';
+
 const coFounders = [
    {
       name: 'George',
@@ -152,6 +154,13 @@ function LinkedInButton({ href, className = '' }: { href: string; className?: st
 }
 
 export default function TeamPage() {
+   usePageSeo({
+      title: 'Our Team | Moodeng Credit',
+      description:
+         'Meet the people building Moodeng Credit — co-founders George and Emma, the founding team, and advisors working on fair, portable credit.',
+      canonicalPath: '/team'
+   });
+
    return (
       <section className="team-page bg-[#f3d354] px-md-3 py-md-4 text-md-primary-2000 md:px-md-4 md:py-md-8">
          <div className="mx-auto flex max-w-[1120px] flex-col gap-md-4 md:gap-md-6">

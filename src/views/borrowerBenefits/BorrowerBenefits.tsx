@@ -12,8 +12,17 @@ import WhyUsSection from '@/views/borrowerBenefits/sections/WhyUsSection';
 import YourCapitalSection from '@/views/borrowerBenefits/sections/YourCapitalSection';
 import '@/views/borrowerBenefits/styles/BorrowerBenefits.css';
 
+import { usePageSeo } from '@/hooks/usePageSeo';
+
 export default function BorrowerBenefits(): JSX.Element {
    const [readingProgress, setReadingProgress] = useState(0);
+
+   usePageSeo({
+      title: 'Borrower Benefits | Moodeng Credit',
+      description:
+         'Why borrowers choose Moodeng Credit: fast global access to small USDC loans, our mission and roadmap, and building verifiable credit as you repay.',
+      canonicalPath: '/benefits'
+   });
 
    useEffect(() => {
       if (location.hash) {

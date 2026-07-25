@@ -12,8 +12,17 @@ import VerifyIdentitySection from '@/views/lenderBenefits/sections/VerifyIdentit
 import Web3WalletSection from '@/views/lenderBenefits/sections/Web3WalletSection';
 import '@/views/lenderBenefits/styles/LenderBenefits.css';
 
+import { usePageSeo } from '@/hooks/usePageSeo';
+
 export default function LenderBenefits() {
    const [readingProgress, setReadingProgress] = useState(0);
+
+   usePageSeo({
+      title: 'Why Lend on Moodeng | Moodeng Credit',
+      description:
+         'Why lend on Moodeng Credit: meet verified borrowers, see how we verify identity, and learn the incentives for funding small USDC loans.',
+      canonicalPath: '/whylend'
+   });
 
    useEffect(() => {
       if (location.hash) {

@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
+import { usePageSeo } from '@/hooks/usePageSeo';
 import { useLocalization } from '@/i18n';
 import type { RootState } from '@/store/store';
 import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
@@ -166,6 +167,13 @@ export default function GettingStarted() {
    const copy = GETTING_STARTED_COPY[locale] ?? GETTING_STARTED_COPY.en;
    const user = useSelector((state: RootState) => state.auth.user);
    const isLender = user?.userRole === 'lender';
+
+   usePageSeo({
+      title: 'Getting Started | Moodeng Credit',
+      description:
+         'Learn the Moodeng basics: browse guides and benefits, see how USDC works, understand credit leveling, and explore the Academy and blog.',
+      canonicalPath: '/support/getting-started'
+   });
    const basics = useMemo(
       () =>
          BASICS.map((item) =>

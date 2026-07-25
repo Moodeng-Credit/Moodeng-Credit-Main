@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 
+import { usePageSeo } from '@/hooks/usePageSeo';
+
 type LegalPageProps = {
    type: 'terms' | 'privacy';
 };
@@ -60,6 +62,14 @@ export default function LegalPage({ type }: LegalPageProps) {
    const sections = isTerms ? termsSections : privacySections;
    const alternateHref = isTerms ? '/privacy-policy' : '/terms';
    const alternateLabel = isTerms ? 'Privacy Policy' : 'Terms of Service';
+
+   usePageSeo({
+      title: isTerms ? 'Terms of Service | Moodeng Credit' : 'Privacy Policy | Moodeng Credit',
+      description: isTerms
+         ? 'The Moodeng Credit Terms of Service: using the product, loan requests and repayment, wallet transactions, account safety, and updates.'
+         : 'The Moodeng Credit Privacy Policy: what account, wallet, and repayment information we collect, how we use it, and the choices you have.',
+      canonicalPath: isTerms ? '/terms' : '/privacy'
+   });
 
    return (
       <main className="min-h-screen bg-[#F9F8FA] px-4 py-8 text-[#040033] sm:px-6 sm:py-12">

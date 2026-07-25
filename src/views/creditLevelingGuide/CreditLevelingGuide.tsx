@@ -1,6 +1,8 @@
 import { type CSSProperties, type JSX, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { usePageSeo } from '@/hooks/usePageSeo';
+
 import '@/views/academy/AcademyGuide.css';
 import '@/views/creditLevelingGuide/CreditLevelingGuide.css';
 
@@ -62,6 +64,13 @@ const howItWorks = [
 
 export default function CreditLevelingGuide(): JSX.Element {
    const [readingProgress, setReadingProgress] = useState(0);
+
+   usePageSeo({
+      title: 'Credit Leveling Guide | Moodeng Credit',
+      description:
+         'How Moodeng credit levels work: repay a full-limit loan on time to unlock the next level, from $15 up to $60, plus trust-building vs credit-building loans.',
+      canonicalPath: '/credit-leveling-guide'
+   });
 
    useEffect(() => {
       const updateReadingProgress = () => {
