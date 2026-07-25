@@ -3,12 +3,12 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
-import { formatMilestoneTrustPoints, type DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
+
+import { type DashboardMilestone, formatMilestoneTrustPoints } from '@/views/dashboard/dashboardHelpers';
 
 export const MILESTONE_STATUS_CLASSES = {
    next: 'bg-md-primary-900 text-white',
-   unlocked:
-      'bg-[#dcfce7] text-[#10783d] ring-1 ring-inset ring-[#b8f0cf] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]',
+   unlocked: 'bg-[#dcfce7] text-[#10783d] ring-1 ring-inset ring-[#b8f0cf] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]',
    locked: 'bg-[#9285a0] text-white'
 } as const;
 
@@ -47,16 +47,16 @@ const SheetShell = ({
    children: ReactNode;
    onClose: () => void;
 }) => (
-   <div className="fixed inset-0 z-[80] flex items-center justify-center px-5 py-6">
-      <button type="button" aria-label={`Close ${title}`} className="absolute inset-0 bg-[#12071f]/40 backdrop-blur-sm" onClick={onClose} />
+   <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center sm:px-5 sm:py-6">
+      <button type="button" aria-label={`Close ${title}`} className="absolute inset-0 bg-[#12071f]/36" onClick={onClose} />
       <section
          role="dialog"
          aria-modal="true"
          aria-labelledby={labelledBy}
-         className="relative mx-auto max-h-[88dvh] w-full max-w-[440px] overflow-y-auto rounded-[28px] bg-white shadow-[0_18px_60px_rgba(20,18,24,0.22)]"
+         className="relative mx-auto max-h-[90dvh] w-full max-w-[440px] overflow-y-auto rounded-t-[28px] border border-[#e7e0ec] bg-[#fdfcfd] shadow-[0_24px_80px_rgba(44,19,82,0.2)] [font-family:'SF_Pro_Display','SF_Pro',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif] sm:rounded-[28px]"
       >
-         <div className="pb-2 pt-3">
-            <div className="mx-auto h-1 w-12 rounded-full bg-[#c9c3d4]" />
+         <div className="pb-1 pt-3">
+            <div className="mx-auto h-1 w-11 rounded-full bg-[#cec6d7]" />
          </div>
          {children}
       </section>
@@ -82,63 +82,57 @@ export const MilestoneDetailSheet = ({
    const isLocked = milestone.status === 'locked';
    const isUnlocked = milestone.status === 'unlocked';
    const pointReward = formatMilestoneTrustPoints(milestone);
-   const pointTitle =
-      isUnlocked
-         ? 'Trust Points earned'
-         : milestone.status === 'next'
-           ? 'Reward for completing this'
-           : 'Locked reward';
-   const pointDescription =
-      isUnlocked
-         ? 'These points are added to your borrower reputation.'
-         : 'Complete this milestone to add these points to your borrower reputation.';
+   const pointTitle = isUnlocked ? 'Trust Points earned' : milestone.status === 'next' ? 'Reward for completing this' : 'Locked reward';
+   const pointDescription = isUnlocked
+      ? 'These points are added to your borrower reputation.'
+      : 'Complete this milestone to add these points to your borrower reputation.';
 
    return (
       <SheetShell title="milestone detail" labelledBy="milestone-detail-title" onClose={onClose}>
-         <div className="relative px-6 pb-5 pt-2">
+         <div className="relative px-5 pb-5 pt-3">
             <button
                type="button"
                onClick={onClose}
-               className="absolute right-5 top-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-md-neutral-900 active:scale-95"
+               className="absolute right-4 top-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-md-neutral-1200 transition hover:bg-[#f3edf8] active:scale-95"
                aria-label="Close"
             >
-               <img src="/icons/close.svg" alt="" className="h-5 w-5" />
+               <img src="/icons/close.svg" alt="" className="h-5 w-5 dark:invert" />
             </button>
-            <div className="flex items-start gap-4 pr-10">
-               <div className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[16px] ${config.bg ?? ''}`}>
-                  <img src={config.icon} alt="" className={config.iconClass ?? 'h-8 w-8'} />
+            <div className="flex items-start gap-3 pr-10">
+               <div
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[14px] ${
+                     config.bg ?? 'bg-[#f3e8ff]'
+                  }`}
+               >
+                  <img src={config.icon} alt="" className={milestone.status === 'locked' ? 'h-6 w-6' : 'h-9 w-9'} />
                </div>
                <div className="min-w-0 flex-1">
-                  <div className="inline-flex rounded-full bg-[#f1ebff] px-3 py-1 text-[12px] font-semibold leading-none text-md-primary-900">
+                  <div className="inline-flex rounded-full bg-[#f1ebff] px-2.5 py-1 text-[11px] font-[590] leading-4 text-md-primary-1200">
                      {isUnlocked ? 'Completed' : milestone.eyebrow}
                   </div>
-                  <h3 id="milestone-detail-title" className="mt-3 text-[28px] font-semibold leading-[1.05] tracking-[-0.56px] text-md-heading">
+                  <h3 id="milestone-detail-title" className="mt-2 text-[24px] font-[590] leading-[1.12] tracking-[-0.48px] text-md-heading">
                      {milestone.title}
                   </h3>
-                  <p className="mt-2 text-[15px] leading-6 text-md-neutral-900">
-                     {milestone.outcome} · {milestone.benefit}
-                  </p>
+                  <p className="mt-1.5 text-[13px] font-normal leading-5 text-md-neutral-1200">{milestone.outcome}</p>
                </div>
             </div>
          </div>
 
-         <div className="flex flex-col gap-4 border-t border-[#f1edf8] px-6 py-5">
-            <div className="rounded-[22px] bg-gradient-to-br from-[#efe4ff] to-[#f8f3ff] dark:from-[#2a1740] dark:to-[#1f1430] p-5">
-               <p className="text-[13px] font-semibold leading-5 text-md-heading">{pointTitle}</p>
-               <p className="mt-2 text-[34px] font-semibold leading-none tracking-[-0.68px] text-md-primary-900">{pointReward}</p>
-               <p className="mt-3 text-[14px] leading-5 text-md-neutral-900">{pointDescription}</p>
+         <div className="flex flex-col gap-5 border-t border-[#eee7f5] px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-5">
+            <div className="rounded-[20px] border border-[#e7d8ff] bg-[#f8f4fc] p-4">
+               <p className="text-[12px] font-[590] leading-[18px] text-[#695b7b]">{pointTitle}</p>
+               <p className="mt-1 text-[28px] font-[590] leading-8 tracking-[-0.56px] text-[#6c24e8]">{pointReward}</p>
+               <p className="mt-2 text-[13px] font-normal leading-5 text-[#695b7b]">{pointDescription}</p>
             </div>
 
-            <div className="divide-y divide-[#f1edf8] rounded-[20px] border border-md-primary-100 bg-white">
-               <div className="p-4">
-                  <p className="text-[13px] font-semibold leading-5 text-md-heading">Why it matters</p>
-                  <p className="mt-1 text-[14px] leading-6 text-md-neutral-900">{milestone.description}</p>
+            <div className="divide-y divide-[#eee7f5]">
+               <div className="pb-4">
+                  <p className="text-[12px] font-[590] leading-[18px] text-md-heading">Why it matters</p>
+                  <p className="mt-1 text-[14px] font-normal leading-6 text-md-neutral-1200">{milestone.description}</p>
                </div>
-               <div className="p-4">
-                  <p className="text-[13px] font-semibold leading-5 text-md-heading">What lenders see</p>
-                  <p className="mt-1 text-[14px] leading-6 text-md-neutral-900">
-                     {milestone.outcome} · {milestone.benefit}
-                  </p>
+               <div className="pt-4">
+                  <p className="text-[12px] font-[590] leading-[18px] text-md-heading">What changes on your profile</p>
+                  <p className="mt-1 text-[14px] font-normal leading-6 text-md-neutral-1200">{milestone.benefit}</p>
                </div>
             </div>
 
@@ -146,15 +140,15 @@ export const MilestoneDetailSheet = ({
                <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-md-lg bg-md-neutral-500 px-4 py-3 text-md-b2 font-semibold text-md-heading active:scale-[0.99]"
+                  className="min-h-[52px] rounded-[16px] bg-[#eee9f2] px-4 py-3 text-md-b2 font-[590] text-md-neutral-1200 active:scale-[0.99]"
                >
-                  Finish earlier milestones first
+                  Complete earlier milestones first
                </button>
             ) : isUnlocked ? (
                <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-md-lg bg-md-primary-900 px-4 py-3 text-md-b2 font-semibold text-white active:scale-[0.99]"
+                  className="min-h-[52px] rounded-[16px] bg-md-primary-900 px-4 py-3 text-md-b2 font-[590] text-white transition hover:bg-[#5200c8] active:scale-[0.99]"
                >
                   Done
                </button>
@@ -162,12 +156,15 @@ export const MilestoneDetailSheet = ({
                <button
                   type="button"
                   onClick={openVerify}
-                  className="rounded-md-lg bg-md-primary-900 px-4 py-3 text-center text-md-b2 font-semibold text-white"
+                  className="min-h-[52px] rounded-[16px] bg-md-primary-900 px-4 py-3 text-center text-md-b2 font-[590] text-white transition hover:bg-[#5200c8]"
                >
                   {milestone.actionLabel ?? 'Continue'}
                </button>
             ) : (
-               <Link to={actionHref} className="rounded-md-lg bg-md-primary-900 px-4 py-3 text-center text-md-b2 font-semibold text-white">
+               <Link
+                  to={actionHref}
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-[16px] bg-md-primary-900 px-4 py-3 text-center text-md-b2 font-[590] text-white transition hover:bg-[#5200c8]"
+               >
                   {milestone.actionLabel ?? 'Continue'}
                </Link>
             )}
@@ -178,16 +175,47 @@ export const MilestoneDetailSheet = ({
 };
 
 export const MilestoneHelpSheet = ({ onClose }: { onClose: () => void }) => (
-   <div className="fixed inset-0 z-[80] flex items-center justify-center px-5 [font-family:'SF_Pro_Display','SF_Pro',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]">
-      <button type="button" aria-label="Close milestone help" className="absolute inset-0 bg-[#12071f]/20" onClick={onClose} />
-      <section
-         role="tooltip"
-         aria-label="Milestone help"
-         className="relative w-[300px] rounded-[12px] bg-[#360975] p-3 shadow-[0_8px_24px_rgba(20,18,24,0.18)]"
-      >
-         <p className="text-center text-[14px] font-normal leading-[21px] tracking-[-0.28px] text-[#f1e9fd]">
-            Reputation milestones track how you build trust and credit over time through on-time repayments.
+   <SheetShell title="milestone help" labelledBy="milestone-help-title" onClose={onClose}>
+      <div className="px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3">
+         <div className="flex items-start justify-between gap-4">
+            <div>
+               <p className="text-[12px] font-[590] leading-[18px] text-md-primary-1200">Reputation milestones</p>
+               <h3 id="milestone-help-title" className="mt-1 text-[24px] font-[590] leading-[1.12] tracking-[-0.48px] text-md-heading">
+                  Build trust one step at a time
+               </h3>
+            </div>
+            <button
+               type="button"
+               onClick={onClose}
+               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-md-neutral-1200 transition hover:bg-[#f3edf8] active:scale-95"
+               aria-label="Close"
+            >
+               <img src="/icons/close.svg" alt="" className="h-5 w-5" />
+            </button>
+         </div>
+         <p className="mt-3 text-[14px] font-normal leading-6 text-md-neutral-1200">
+            Complete clear actions, such as verifying your identity and repaying on time. Each completed milestone adds Trust Points to your
+            borrower profile.
          </p>
-      </section>
-   </div>
+         <div className="mt-5 divide-y divide-[#eee7f5] rounded-[20px] border border-[#e7d8ff] bg-[#f8f4fc] px-4">
+            <div className="py-4">
+               <p className="text-[13px] font-[590] leading-5 text-md-heading">Next milestone</p>
+               <p className="mt-1 text-[13px] font-normal leading-5 text-md-neutral-1200">The clearest action you can complete now.</p>
+            </div>
+            <div className="py-4">
+               <p className="text-[13px] font-[590] leading-5 text-md-heading">Locked milestones</p>
+               <p className="mt-1 text-[13px] font-normal leading-5 text-md-neutral-1200">
+                  These become available after earlier steps are complete.
+               </p>
+            </div>
+         </div>
+         <button
+            type="button"
+            onClick={onClose}
+            className="mt-5 min-h-[52px] w-full rounded-[16px] bg-md-primary-900 px-4 py-3 text-md-b2 font-[590] text-white transition hover:bg-[#5200c8] active:scale-[0.99]"
+         >
+            Got it
+         </button>
+      </div>
+   </SheetShell>
 );
