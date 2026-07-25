@@ -24,6 +24,12 @@ import '@/components/mecha/mecha.css';
 // Bubble is suppressed on these route prefixes: /help embeds the panel already,
 // and /admin is an internal tool.
 const HIDE_ON_PREFIXES = ['/help', '/admin'];
+// The proactive floating bubble/nudge is deliberately scoped to onboarding only.
+// Everywhere else (request board, dashboard, repay, withdraw, account, …) Mecha stays
+// out of the way — it was popping up mid-task and blocking the loan-request form. The
+// panel is still reachable everywhere via explicit "Ask Mecha" buttons (openMecha) and
+// the Help page, which don't depend on this bubble.
+const ONBOARDING_BUBBLE_PREFIXES = ['/onboarding', '/verify', '/sign-up'];
 // Routes where the bottom nav is present — raise the bubble so it clears it.
 const OVER_NAV_PREFIXES = ['/request-board', '/repay', '/dashboard', '/lender/', '/history', '/account', '/support', '/user/'];
 // How long a user idles on a friction step before Mecha offers a nudge.
@@ -57,6 +63,13 @@ export default function MechaLauncher(): JSX.Element | null {
       window.addEventListener(MECHA_SIGNAL_EVENT, onSignal);
       return () => window.removeEventListener(MECHA_SIGNAL_EVENT, onSignal);
    }, []);
+
+   // Clear any visible nudge when the route changes, so a nudge raised on an onboarding
+   // step can never linger onto the next screen (the bug where the "setting up your wallet"
+   // tip appeared over the loan-request form on the Request Board).
+   useEffect(() => {
+      setNudge(null);
+   }, [location.pathname]);
 
    // Fresh context at send-time: an explicit openMecha(context) wins, else the route step.
    const contextRef = useRef<MechaContext>({});
@@ -126,10 +139,13 @@ export default function MechaLauncher(): JSX.Element | null {
    const overNav = OVER_NAV_PREFIXES.some((p) => location.pathname.startsWith(p));
    const bubbleBottom = { bottom: `calc(env(safe-area-inset-bottom, 0px) + ${overNav ? 92 : 20}px)` };
    const quickReplies = pickList(step?.quickReplies ?? DEFAULT_QUICK_REPLIES, locale);
-   // Bubble only when there's a reason: the user hit a problem this session, or they're on
-   // a friction step where proactive help is the point. Everywhere else Mecha stays out of
-   // the way — the Help page still embeds the full panel for anyone who goes looking.
-   const showBubble = problemSignaled || Boolean(step?.nudge);
+   // Onboarding-only: the proactive bubble appears only while the user is in the onboarding
+   // funnel (wallet, verify, sign-up), and only when there's a reason to — a friction-step
+   // nudge or a problem hit on that screen. Outside onboarding it never shows, so it can't
+   // block the loan-request form or any other in-app task. Explicit "Ask Mecha" buttons and
+   // the Help page open the panel directly and are unaffected by this gate.
+   const onOnboarding = ONBOARDING_BUBBLE_PREFIXES.some((p) => location.pathname.startsWith(p));
+   const showBubble = onOnboarding && (problemSignaled || Boolean(step?.nudge));
 
    return (
       <>
@@ -138,13 +154,15 @@ export default function MechaLauncher(): JSX.Element | null {
             <div className="fixed right-4 z-[90] flex flex-col items-end gap-2" style={bubbleBottom}>
                {nudge ? (
                   <div className="mecha-nudge relative mb-1 max-w-[240px] rounded-2xl rounded-br-md border border-[#e6ddf6] bg-white px-3.5 py-2.5 text-[13px] leading-snug text-[#1b0a36] shadow-[0_10px_30px_rgba(27,10,54,0.18)] dark:border-[#40354F] dark:bg-[#17121F] dark:text-[#F8F4FF]">
+                     {/* Bigger, higher-contrast close target — the old 20px dot was too easy to miss,
+                         so people felt they couldn't dismiss the nudge. */}
                      <button
                         type="button"
                         onClick={() => setNudge(null)}
                         aria-label={copy.closeLabel}
-                        className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#efe9fb] text-[#5b5470] dark:bg-[#2a2235] dark:text-[#B5ACBE]"
+                        className="absolute -right-2.5 -top-2.5 flex h-7 w-7 items-center justify-center rounded-full border border-[#e6ddf6] bg-white text-[#5b5470] shadow-[0_2px_8px_rgba(27,10,54,0.2)] transition active:scale-95 dark:border-[#40354F] dark:bg-[#2a2235] dark:text-[#B5ACBE]"
                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                         </svg>
                      </button>
