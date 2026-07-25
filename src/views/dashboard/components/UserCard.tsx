@@ -2,7 +2,7 @@ import { type MouseEvent, useCallback, useMemo, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
-import { ChevronDown, ChevronRight, ChevronUp, Clock, ExternalLink, Loader2, Send, Trash2 } from 'lucide-react';
+import { ChevronRight, Clock, ExternalLink, Loader2, Send, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount, useSwitchChain } from 'wagmi';
@@ -444,9 +444,8 @@ export default function UserCard(loan: UserCardProps) {
    );
    const explorerBaseUrl = account.chain?.blockExplorers?.default?.url;
    const explorerTxUrl = pendingTxHash && explorerBaseUrl ? `${explorerBaseUrl}/tx/${pendingTxHash}` : null;
-   const isLenderCard = Boolean(isAuthenticated && !isBorrower && !isOwnLoan && !isLent);
+   const isLenderCard = Boolean(isAuthenticated && !isBorrower && !isOwnLoan && !isLent && !isPreviewRequest);
    const showBorrowerContext = Boolean(borrowerContext && !isBorrower && (!isLenderCard || showDetails));
-   const requestDetailsId = `loan-request-details-${loanData.id}`;
    const cardClassName = [
       'relative flex flex-col gap-4 rounded-[24px] border border-[#f0f0f0] bg-white p-md-4 shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)] transition-[border-color,box-shadow,transform] duration-300',
       isHighlighted ? 'request-board-focus-highlight' : ''
@@ -514,7 +513,10 @@ export default function UserCard(loan: UserCardProps) {
                </button>
             ) : null}
             {/* Top: Loan Info + Amount Card */}
-            <div className={`flex gap-4 items-center ${canDeleteOwnRequest ? 'pr-10' : ''}`}>
+            <div
+               className={`flex gap-4 items-center ${canDeleteOwnRequest ? 'pr-10' : ''} ${isLenderCard && showDetails ? 'cursor-pointer' : ''}`}
+               onClick={isLenderCard && showDetails ? () => setShowDetails(false) : undefined}
+            >
                {/* Left: Loan Details */}
                <div className="flex-1 flex flex-col gap-2 min-w-0">
                   <p className="text-md-h5 font-semibold text-md-heading">{loanReason}</p>
@@ -563,30 +565,26 @@ export default function UserCard(loan: UserCardProps) {
                </div>
             </div>
 
-            {isLenderCard && showDetails && !isPreviewRequest ? (
+            {isLenderCard && showDetails ? (
                <button
                   type="button"
                   onClick={() => setShowDetails(false)}
-                  aria-expanded="true"
-                  aria-controls={requestDetailsId}
                   className="flex items-center gap-1 text-md-b3 font-medium text-md-neutral-800 hover:text-md-neutral-1200 transition-colors self-start -mt-2"
                >
-                  <ChevronUp className="h-4 w-4" />
-                  Hide request details
+                  <ChevronRight className="w-4 h-4 rotate-180" />
+                  Back
                </button>
             ) : null}
             {showBorrowerContext && borrowerContext ? (
-               <div id={requestDetailsId}>
-                  <BorrowerContextPanel
-                     context={borrowerContext}
-                     lenderIouInfo={
-                        !isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest)
-                           ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 }
-                           : undefined
-                     }
-                     boardExpiry={!isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest) ? boardExpiry : undefined}
-                  />
-               </div>
+               <BorrowerContextPanel
+                  context={borrowerContext}
+                  lenderIouInfo={
+                     !isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest)
+                        ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 }
+                        : undefined
+                  }
+                  boardExpiry={!isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest) ? boardExpiry : undefined}
+               />
             ) : null}
 
             {/* CTA + Borrower Link */}
@@ -604,16 +602,13 @@ export default function UserCard(loan: UserCardProps) {
                      Your Loan Request
                   </div>
                ) : isPreviewRequest ? (
-                  <button
-                     type="button"
-                     onClick={() => setShowDetails((current) => !current)}
-                     aria-expanded={showDetails}
-                     aria-controls={requestDetailsId}
+                  <Link
+                     to={borrowerDetailsHref}
                      className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
                   >
-                     {showDetails ? 'Hide Request' : 'View Request'}
-                     {showDetails ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                  </button>
+                     View Request
+                     <ChevronRight className="w-5 h-5" />
+                  </Link>
                ) : isLent ? (
                   <div className="bg-md-neutral-500 text-md-neutral-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg text-center cursor-not-allowed">
                      Help Received
@@ -630,12 +625,10 @@ export default function UserCard(loan: UserCardProps) {
                   <button
                      type="button"
                      onClick={() => setShowDetails(true)}
-                     aria-expanded="false"
-                     aria-controls={requestDetailsId}
                      className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
                   >
                      View Request
-                     <ChevronDown className="h-5 w-5" />
+                     <ChevronRight className="w-5 h-5" />
                   </button>
                ) : (
                   <button
