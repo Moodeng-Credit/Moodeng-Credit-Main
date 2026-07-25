@@ -1164,6 +1164,10 @@
   .f-cols h4 { margin: 0 0 12px; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #C9A8F5; }
   .f-cols a { display: block; color: #fff; text-decoration: none; font-weight: 600; padding: 6px 0; }
   .f-cols a:hover { color: #C9A8F5; }
+  /* Third group would sit alone on row 2 with the right half empty — span it and
+     flow its links in two columns instead. */
+  .f-learn { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; align-content: start; }
+  .f-learn h4 { grid-column: 1 / -1; }
   .f-fine { margin-top: 34px; padding-top: 18px; border-top: 1px solid rgba(201,168,245,0.16); font-size: 12px; color: #8B7BA8; }
   /* giant clipped wordmark, Klarna's sign-off */
   .f-mega {
@@ -2696,6 +2700,14 @@
           <a href="/privacy-policy">Privacy policy</a>
           <a href="/terms">Terms of service</a>
           <a href="https://moodeng.gitbook.io/credit" target="_blank" rel="noreferrer">How credit levels work</a>
+        </div>
+        <div class="f-learn">
+          <h4>Learn</h4>
+          <a href="/learn">Guides</a>
+          <a href="/academy">Academy</a>
+          <a href="/blogs">Blog</a>
+          <a href="/support/faq">Help centre</a>
+          <a href="/team">Our team</a>
         </div>
       </div>
       <!-- TODO(George): SEC registration — VERIFY FIRST, never ship unverified.
