@@ -742,6 +742,9 @@ export default function AcademyGuide(): JSX.Element {
                </div>
                <div className="academy-hero__actions">
                   <Link to="/request-board">See Request Board</Link>
+                  {/* The Money guide had no inbound link from anywhere on the site, so
+                      neither readers nor crawlers could reach it from the Academy. */}
+                  <Link to="/academy/money">Money &amp; getting started</Link>
                </div>
                <button
                   type="button"
