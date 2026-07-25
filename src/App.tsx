@@ -22,6 +22,8 @@ import { RoleGuard } from '@/components/RoleGuard';
 import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 import { usePostLoginReturn } from '@/hooks/usePostLoginReturn';
 
+import { identifyClarity } from '@/lib/analytics/clarity';
+
 import AccountRestrictedPage from '@/app/account-restricted/page';
 import LendLoanPage from '@/app/lend/loan/[loanId]/page';
 import LenderSupportedPage from '@/app/lender/supported/page';
@@ -175,6 +177,7 @@ export default function App() {
             email: user.email,
             username: user.username || username
          });
+         identifyClarity(user.id);
          return;
       }
 

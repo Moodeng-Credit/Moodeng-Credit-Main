@@ -10,6 +10,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { Providers } from '@/components/providers';
 
 import { LocalizationProvider } from '@/i18n';
+import { initClarity } from '@/lib/analytics/clarity';
 import { setupStaleChunkReload } from '@/lib/staleChunkReload';
 import { applyThemeMode, getStoredThemeMode } from '@/lib/themeMode';
 
@@ -18,6 +19,7 @@ import './globals.css';
 
 applyThemeMode(getStoredThemeMode());
 setupStaleChunkReload();
+initClarity();
 
 const posthogKey = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
 const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
