@@ -23,6 +23,7 @@ import {
    Clock3,
    FileText,
    HelpCircle,
+   Lightbulb,
    ShieldCheck,
    Stethoscope,
    Ticket,
@@ -694,6 +695,50 @@ function FieldError({ message }: { message: string }) {
       <div role="alert" className="flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-md-red-500">
          <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
          <span>{message}</span>
+      </div>
+   );
+}
+
+// Suggested repayment "return" (repay minus borrow) as a function of loan size. The bigger the
+// loan, the higher the return lenders expect — these anchors come from real funded loans
+// (~$15-20 → $2-5, ~$40-60 → $5-10, ~$80-100 → $15-20), linearly interpolated in between and
+// clamped past the ends. Guidance only; nothing is enforced. A good candidate to drive from data
+// in the admin dashboard once there's enough funded-loan history.
+const RETURN_ANCHORS = [
+   { principal: 17.5, lo: 2, hi: 5 },
+   { principal: 50, lo: 5, hi: 10 },
+   { principal: 90, lo: 15, hi: 20 }
+];
+function suggestedReturnRange(principal: number): { lo: number; hi: number } | null {
+   if (!Number.isFinite(principal) || principal <= 0) return null;
+   const first = RETURN_ANCHORS[0];
+   const last = RETURN_ANCHORS[RETURN_ANCHORS.length - 1];
+   const at = (key: 'lo' | 'hi') => {
+      if (principal <= first.principal) return first[key];
+      if (principal >= last.principal) return last[key];
+      for (let i = 0; i < RETURN_ANCHORS.length - 1; i++) {
+         const a = RETURN_ANCHORS[i];
+         const b = RETURN_ANCHORS[i + 1];
+         if (principal >= a.principal && principal <= b.principal) {
+            const t = (principal - a.principal) / (b.principal - a.principal);
+            return a[key] + t * (b[key] - a[key]);
+         }
+      }
+      return last[key];
+   };
+   return { lo: Math.round(at('lo')), hi: Math.round(at('hi')) };
+}
+
+// Non-blocking hint shown only when a valid repayment offers less back than loans of this size
+// usually need to get funded quickly. Silent when the offer is in (or above) range — priced right
+// means no noise. Never blocks submission.
+function ReturnHint({ lo, hi }: { lo: number; hi: number }) {
+   return (
+      <div className="flex items-start gap-1.5 rounded-md-md bg-md-yellow-100 px-md-2 py-md-1 text-md-b3 font-normal leading-[18px] text-md-yellow-700">
+         <Lightbulb className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+         <span>
+            Loans around this size usually offer <span className="font-semibold">${lo}–{hi}</span> back to get funded quickly. You can still submit.
+         </span>
       </div>
    );
 }
@@ -1906,6 +1951,24 @@ export default function LoanRequestModal({
                                     <span className="font-semibold text-md-primary-1200">${fmt(extra)}</span> to your lender.
                                  </p>
                               );
+                           })()}
+                           {(() => {
+                              const borrowNum = Number(loanAmount);
+                              const repayNum = Number(totalRepaymentAmount);
+                              const range = suggestedReturnRange(borrowNum);
+                              const offer = repayNum - borrowNum;
+                              // Only when the repayment is otherwise valid (passes the $1 minimum, so
+                              // no error is showing) but still below the typical return for this size.
+                              const show =
+                                 !termErrors.repayment &&
+                                 Boolean(totalRepaymentAmount) &&
+                                 Number.isFinite(borrowNum) &&
+                                 borrowNum > 0 &&
+                                 Number.isFinite(repayNum) &&
+                                 offer >= 1 &&
+                                 range !== null &&
+                                 offer < range.lo;
+                              return show && range ? <ReturnHint lo={range.lo} hi={range.hi} /> : null;
                            })()}
                         </div>
 
