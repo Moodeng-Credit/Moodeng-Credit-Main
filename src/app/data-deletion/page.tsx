@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 
+import { usePageSeo } from '@/hooks/usePageSeo';
+
 const sections = [
    {
       title: 'Overview',
@@ -96,6 +98,13 @@ const sections = [
 ];
 
 export default function DataDeletionPage() {
+   usePageSeo({
+      title: 'Data Deletion Instructions | Moodeng Credit',
+      description:
+         'How to request deletion of the personal data tied to your Moodeng Credit account, what gets deleted, and what we may retain for legal reasons.',
+      canonicalPath: '/data-deletion'
+   });
+
    return (
       <main className="min-h-screen bg-[#F9F8FA] px-4 py-8 text-[#040033] sm:px-6 sm:py-12">
          <section className="mx-auto flex w-full max-w-3xl flex-col gap-8">

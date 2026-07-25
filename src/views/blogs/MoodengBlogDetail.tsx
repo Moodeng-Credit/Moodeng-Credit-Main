@@ -1,37 +1,13 @@
-import { type JSX, useEffect, useLayoutEffect } from 'react';
+import { type JSX, useLayoutEffect } from 'react';
 
 import { ArrowRight, CalendarDays, Clock3 } from 'lucide-react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 
+import { usePageSeo } from '@/hooks/usePageSeo';
 import { blogPosts, findBlogPost } from '@/views/blogs/blogPosts';
 import '@/views/blogs/MoodengBlogs.css';
 
-function setNamedMeta(name: string, content: string): () => void {
-   let meta = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
-   const previousContent = meta?.getAttribute('content') ?? null;
-   const created = !meta;
-
-   if (!meta) {
-      meta = document.createElement('meta');
-      meta.setAttribute('name', name);
-      document.head.appendChild(meta);
-   }
-
-   meta.setAttribute('content', content);
-
-   return () => {
-      if (created) {
-         meta?.remove();
-         return;
-      }
-
-      if (previousContent === null) {
-         meta?.removeAttribute('content');
-      } else {
-         meta?.setAttribute('content', previousContent);
-      }
-   };
-}
+const SITE_ORIGIN = 'https://moodeng.app';
 
 export default function MoodengBlogDetail(): JSX.Element {
    const { slug } = useParams();
@@ -41,72 +17,48 @@ export default function MoodengBlogDetail(): JSX.Element {
       window.scrollTo({ left: 0, top: 0 });
    }, [slug]);
 
-   useEffect(() => {
-      if (!post) {
-         return undefined;
-      }
+   // Per-route SEO (title, description, canonical, Open Graph) + Article/FAQ JSON-LD.
+   // Absolute URLs use the fixed production origin so the prerendered <head> is correct
+   // regardless of the host the snapshot runs on. usePageSeo must run unconditionally
+   // (before any early return), so it falls back to the index when the slug is unknown.
+   const canonicalPath = post ? `/blogs/${post.slug}` : '/blogs';
+   const description = post ? (post.metaDescription ?? post.dek) : 'Notes on fair small-loan credit from Moodeng Credit.';
+   const canonicalUrl = `${SITE_ORIGIN}${canonicalPath}`;
+   const faqEntities = post?.faq?.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer }
+   }));
+   const blogJsonLd: object[] | undefined = post
+      ? [
+           {
+              '@context': 'https://schema.org',
+              '@graph': [
+                 {
+                    '@type': 'BlogPosting',
+                    headline: post.title,
+                    description,
+                    datePublished: '2026-05-18',
+                    dateModified: '2026-05-18',
+                    image: `${SITE_ORIGIN}${post.image}`,
+                    mainEntityOfPage: canonicalUrl,
+                    author: { '@type': 'Organization', name: 'Moodeng Credit' },
+                    publisher: { '@type': 'Organization', name: 'Moodeng Credit', url: SITE_ORIGIN },
+                    keywords: post.keywords?.join(', ')
+                 },
+                 ...(faqEntities?.length ? [{ '@type': 'FAQPage', mainEntityOfPage: canonicalUrl, mainEntity: faqEntities }] : [])
+              ]
+           }
+        ]
+      : undefined;
 
-      const previousTitle = document.title;
-      document.title = post.seoTitle ?? `${post.title} | Moodeng`;
-
-      const cleanupDescription = setNamedMeta('description', post.metaDescription ?? post.dek);
-      const cleanupKeywords = post.keywords?.length ? setNamedMeta('keywords', post.keywords.join(', ')) : undefined;
-      const structuredData = document.createElement('script');
-      const canonicalUrl = new URL(`/blogs/${post.slug}`, window.location.origin).href;
-      const faqEntities = post.faq?.map((item) => ({
-         '@type': 'Question',
-         name: item.question,
-         acceptedAnswer: {
-            '@type': 'Answer',
-            text: item.answer
-         }
-      }));
-
-      structuredData.type = 'application/ld+json';
-      structuredData.id = 'moodeng-blog-structured-data';
-      structuredData.text = JSON.stringify({
-         '@context': 'https://schema.org',
-         '@graph': [
-            {
-               '@type': 'BlogPosting',
-               headline: post.title,
-               description: post.metaDescription ?? post.dek,
-               datePublished: '2026-05-18',
-               dateModified: '2026-05-18',
-               image: new URL(post.image, window.location.origin).href,
-               mainEntityOfPage: canonicalUrl,
-               author: {
-                  '@type': 'Organization',
-                  name: 'Moodeng Credit'
-               },
-               publisher: {
-                  '@type': 'Organization',
-                  name: 'Moodeng Credit',
-                  url: window.location.origin
-               },
-               keywords: post.keywords?.join(', ')
-            },
-            ...(faqEntities?.length
-               ? [
-                    {
-                       '@type': 'FAQPage',
-                       mainEntityOfPage: canonicalUrl,
-                       mainEntity: faqEntities
-                    }
-                 ]
-               : [])
-         ]
-      });
-      document.getElementById(structuredData.id)?.remove();
-      document.head.appendChild(structuredData);
-
-      return () => {
-         document.title = previousTitle;
-         cleanupDescription();
-         cleanupKeywords?.();
-         structuredData.remove();
-      };
-   }, [post]);
+   usePageSeo({
+      title: post ? (post.seoTitle ?? `${post.title} | Moodeng`) : 'Moodeng blog | Moodeng Credit',
+      description,
+      canonicalPath,
+      image: post?.image,
+      jsonLd: blogJsonLd
+   });
 
    if (!post) {
       return <Navigate to="/blogs" replace />;

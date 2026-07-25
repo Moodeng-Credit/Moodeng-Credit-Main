@@ -1,0 +1,211 @@
+/**
+ * Build-time SEO prerenderer.
+ *
+ * After `vite build`, this serves dist/ locally, loads each public content route in
+ * headless Chromium, waits for the React app to render + apply per-route SEO
+ * (window.__MOODENG_SEO_READY__), then writes the fully-rendered HTML back into dist
+ * as a static file. Crawlers then receive real content + correct <head> with no JS.
+ *
+ * Runs in the SAME build as the deploy, so hashed asset URLs in the snapshot always
+ * match the emitted bundles (nothing is committed — no staleness).
+ *
+ * Graceful degradation: if Chromium cannot be launched or installed, the script logs
+ * loudly and exits 0 WITHOUT failing the build. The site still works — the canonical
+ * fix + runtime <RouteSeo> mean crawlers that render JS still get correct metadata;
+ * only the no-JS static snapshot is skipped.
+ *
+ * Usage: node scripts/prerender-seo.mjs [distDir]
+ */
+import { createServer } from 'node:http';
+import { readFile, writeFile, mkdir, stat } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { join, extname, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+
+import { PRERENDER_ROUTES } from './seo-routes.mjs';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const ROOT = join(__dirname, '..');
+const DIST = join(ROOT, process.argv[2] ?? 'dist');
+const PORT = 4820;
+const PROD_ORIGIN = 'https://moodeng.app';
+const READY_FLAG = '__MOODENG_SEO_READY__';
+const NAV_TIMEOUT = 20000;
+const CONCURRENCY = 3;
+
+const MIME = {
+   '.html': 'text/html; charset=utf-8',
+   '.js': 'text/javascript; charset=utf-8',
+   '.mjs': 'text/javascript; charset=utf-8',
+   '.css': 'text/css; charset=utf-8',
+   '.json': 'application/json; charset=utf-8',
+   '.svg': 'image/svg+xml',
+   '.png': 'image/png',
+   '.jpg': 'image/jpeg',
+   '.jpeg': 'image/jpeg',
+   '.webp': 'image/webp',
+   '.avif': 'image/avif',
+   '.ico': 'image/x-icon',
+   '.woff': 'font/woff',
+   '.woff2': 'font/woff2',
+   '.wasm': 'application/wasm',
+   '.map': 'application/json; charset=utf-8',
+};
+
+/** Minimal static server for dist/ with SPA fallback to index.html. */
+function startServer() {
+   const server = createServer(async (req, res) => {
+      try {
+         const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
+         let filePath = join(DIST, urlPath);
+         let ext = extname(filePath);
+         // Mirror Vercel's SPA behaviour: serve a real static asset only when the request
+         // has an extension AND the exact file exists (JS/CSS/images/fonts). Everything
+         // else — including extensionless content routes and legacy public/*.html twins
+         // like /privacy — falls through to the SPA so the React route renders fresh.
+         // (Do NOT append ".html" or serve a directory index.html: that would pick up a
+         // legacy static file, or a half-written snapshot from earlier in this same run.)
+         if (!ext || !existsSync(filePath)) {
+            filePath = join(DIST, 'index.html');
+            ext = '.html';
+         }
+         const body = await readFile(filePath);
+         res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+         res.end(body);
+      } catch {
+         res.writeHead(500);
+         res.end('prerender server error');
+      }
+   });
+   return new Promise((resolve) => server.listen(PORT, '127.0.0.1', () => resolve(server)));
+}
+
+async function loadChromium() {
+   let chromium;
+   try {
+      ({ chromium } = await import('playwright'));
+   } catch {
+      try {
+         ({ chromium } = await import('@playwright/test'));
+      } catch (err) {
+         console.warn('[prerender] Playwright not resolvable:', err?.message);
+         return null;
+      }
+   }
+   // Try launch; if the browser binary is missing, install chromium once and retry.
+   try {
+      return await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+   } catch (err) {
+      console.warn('[prerender] Chromium launch failed, attempting install…', err?.message);
+      const r = spawnSync('npx', ['playwright', 'install', 'chromium'], { stdio: 'inherit', shell: true });
+      if (r.status !== 0) {
+         console.warn('[prerender] chromium install failed; skipping prerender.');
+         return null;
+      }
+      try {
+         return await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+      } catch (err2) {
+         console.warn('[prerender] Chromium still unavailable; skipping prerender.', err2?.message);
+         return null;
+      }
+   }
+}
+
+/** Write snapshot for one route to dist/<route>/index.html. */
+async function writeSnapshot(route, html) {
+   const clean = route.replace(/\/+$/, '') || '/';
+   const outDir = clean === '/' ? DIST : join(DIST, clean);
+   await mkdir(outDir, { recursive: true });
+   await writeFile(join(outDir, 'index.html'), html, 'utf8');
+   return join(outDir, 'index.html');
+}
+
+// A valid snapshot must clear this size; anything smaller is the near-empty SPA shell
+// captured before the route finished rendering.
+const MIN_SNAPSHOT_BYTES = 4000;
+
+async function snapshotOnce(browser, route) {
+   const page = await browser.newPage();
+   try {
+      await page.goto(`http://127.0.0.1:${PORT}${route}`, { waitUntil: 'networkidle', timeout: NAV_TIMEOUT });
+      // Every prerendered route calls usePageSeo, which sets this flag once it has
+      // applied its <head>. Require it — proceeding early is what produced thin shells.
+      await page.waitForFunction((flag) => window[flag] === true, READY_FLAG, { timeout: 15000 }).catch(() => {});
+      // Belt-and-braces: also wait until the body actually has rendered content, so large
+      // pages that mount after the flag aren't snapshotted half-built.
+      await page.waitForFunction(() => (document.body?.innerText.trim().length ?? 0) > 600, null, { timeout: 10000 }).catch(() => {});
+      await page.waitForTimeout(200);
+      let html = await page.content();
+      if (!/^<!doctype html>/i.test(html)) html = '<!doctype html>\n' + html;
+      // The app derives canonical / og:url / og:image / JSON-LD URLs from
+      // window.location.origin, which is the local prerender server. Rewrite those to
+      // the production origin so the static <head> crawlers see is correct. (Static
+      // asset refs are root-relative "/assets/…" and are unaffected.)
+      html = html.split(`http://127.0.0.1:${PORT}`).join(PROD_ORIGIN).split(`http://localhost:${PORT}`).join(PROD_ORIGIN);
+      const title = await page.title();
+      return { html, title, bytes: html.length };
+   } finally {
+      await page.close();
+   }
+}
+
+async function prerenderRoute(browser, route) {
+   let last;
+   // Two attempts: rendering can be starved under concurrency and snapshot a thin shell.
+   for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+         const snap = await snapshotOnce(browser, route);
+         last = snap;
+         if (snap.bytes >= MIN_SNAPSHOT_BYTES) {
+            const out = await writeSnapshot(route, snap.html);
+            return { route, ok: true, out, title: snap.title, bytes: snap.bytes, attempt };
+         }
+      } catch (err) {
+         last = { error: err?.message };
+      }
+   }
+   // Both attempts thin/failed. Still write the best snapshot we have (better than the
+   // build removing a route) but report it so the build log flags the miss.
+   if (last?.html) await writeSnapshot(route, last.html);
+   return { route, ok: false, error: last?.error ?? `thin snapshot (<${MIN_SNAPSHOT_BYTES}b)`, bytes: last?.bytes };
+}
+
+async function main() {
+   if (!existsSync(join(DIST, 'index.html'))) {
+      console.warn(`[prerender] ${DIST}/index.html not found — did vite build run? Skipping.`);
+      process.exit(0);
+   }
+   const browser = await loadChromium();
+   if (!browser) {
+      console.warn('[prerender] No browser available — skipping snapshot (site still works via runtime SEO).');
+      process.exit(0);
+   }
+   const server = await startServer();
+   console.log(`[prerender] serving ${DIST} on :${PORT}; ${PRERENDER_ROUTES.length} routes`);
+
+   const results = [];
+   const queue = [...PRERENDER_ROUTES];
+   async function worker() {
+      while (queue.length) {
+         const route = queue.shift();
+         const r = await prerenderRoute(browser, route);
+         results.push(r);
+         console.log(r.ok ? `  ✓ ${r.route}  (${r.bytes}b) — ${r.title}` : `  ✗ ${r.route} — ${r.error}`);
+      }
+   }
+   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+
+   await browser.close();
+   server.close();
+
+   const failed = results.filter((r) => !r.ok);
+   console.log(`[prerender] done: ${results.length - failed.length} ok, ${failed.length} failed`);
+   // Never fail the build over prerender misses — runtime SEO is the safety net.
+   process.exit(0);
+}
+
+main().catch((err) => {
+   console.warn('[prerender] unexpected error (skipping, build continues):', err?.message);
+   process.exit(0);
+});

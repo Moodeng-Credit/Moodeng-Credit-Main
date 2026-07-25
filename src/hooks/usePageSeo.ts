@@ -71,6 +71,14 @@ export function usePageSeo({ title, description, canonicalPath, jsonLd, image }:
          document.head.appendChild(jsonLdScript);
       }
 
+      // Signal the build-time prerenderer (scripts/prerender-seo.mjs) that this route
+      // has applied its SEO so it can snapshot a correct <head>. No-op in normal browsing.
+      try {
+         (window as unknown as Record<string, unknown>).__MOODENG_SEO_READY__ = true;
+      } catch {
+         /* ignore */
+      }
+
       return () => {
          document.title = previousTitle;
          for (const { el, previous } of touched) {

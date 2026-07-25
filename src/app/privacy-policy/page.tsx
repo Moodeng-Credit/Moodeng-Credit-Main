@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 
+import { usePageSeo } from '@/hooks/usePageSeo';
+
 const sections = [
    {
       title: 'Introduction',
@@ -219,6 +221,13 @@ const sections = [
 ];
 
 export default function PrivacyPolicyPage() {
+   usePageSeo({
+      title: 'Privacy Policy | Moodeng Credit',
+      description:
+         'How Moodeng Credit collects, uses, shares, and protects your information — including identity verification, Plaid financial data, and blockchain records.',
+      canonicalPath: '/privacy-policy'
+   });
+
    return (
       <main className="min-h-screen bg-[#F9F8FA] px-4 py-8 text-[#040033] sm:px-6 sm:py-12">
          <section className="mx-auto flex w-full max-w-3xl flex-col gap-8">
