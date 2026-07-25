@@ -81,21 +81,43 @@ function startServer() {
    return new Promise((resolve) => server.listen(PORT, '127.0.0.1', () => resolve(server)));
 }
 
-async function loadChromium() {
-   let chromium;
+async function loadPlaywrightChromium() {
    try {
-      ({ chromium } = await import('playwright'));
+      return (await import('playwright')).chromium;
    } catch {
       try {
-         ({ chromium } = await import('@playwright/test'));
+         return (await import('@playwright/test')).chromium;
       } catch (err) {
          console.warn('[prerender] Playwright not resolvable:', err?.message);
          return null;
       }
    }
-   // Try launch; if the browser binary is missing, install chromium once and retry.
+}
+
+async function loadChromium() {
+   const chromium = await loadPlaywrightChromium();
+   if (!chromium) return null;
+
+   const args = ['--no-sandbox', '--disable-setuid-sandbox'];
+   // Vercel/CI build images can't run Playwright's bundled Chromium (missing system
+   // libs). @sparticuz/chromium ships a self-contained Chromium built for exactly those
+   // serverless/AWS environments; use it there and let Playwright drive it via
+   // executablePath. Locally, use the normal bundled Chromium.
+   const serverless = !!(process.env.VERCEL || process.env.CI || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.AWS_EXECUTION_ENV);
+   if (serverless) {
+      try {
+         const sparticuz = (await import('@sparticuz/chromium')).default;
+         const executablePath = await sparticuz.executablePath();
+         console.log('[prerender] using @sparticuz/chromium at', executablePath);
+         return await chromium.launch({ headless: true, executablePath, args: [...sparticuz.args, ...args] });
+      } catch (err) {
+         console.warn('[prerender] @sparticuz/chromium unavailable, falling back to bundled:', err?.message);
+      }
+   }
+
+   // Local / fallback: bundled Chromium, installing it once if the binary is missing.
    try {
-      return await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+      return await chromium.launch({ headless: true, args });
    } catch (err) {
       console.warn('[prerender] Chromium launch failed, attempting install…', err?.message);
       const r = spawnSync('npx', ['playwright', 'install', 'chromium'], { stdio: 'inherit', shell: true });
@@ -104,7 +126,7 @@ async function loadChromium() {
          return null;
       }
       try {
-         return await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+         return await chromium.launch({ headless: true, args });
       } catch (err2) {
          console.warn('[prerender] Chromium still unavailable; skipping prerender.', err2?.message);
          return null;
