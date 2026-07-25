@@ -31,8 +31,15 @@ const DIST = join(ROOT, process.argv[2] ?? 'dist');
 const PORT = 4820;
 const PROD_ORIGIN = 'https://moodeng.app';
 const READY_FLAG = '__MOODENG_SEO_READY__';
-const NAV_TIMEOUT = 20000;
-const CONCURRENCY = 3;
+
+// Vercel/CI build boxes have ~2 vCPUs and run @sparticuz Chromium; rendering the
+// heavy app bundle across concurrent pages starves them and most pages time out.
+// Go serial with generous timeouts there; use full parallelism locally.
+const IS_SERVERLESS = !!(process.env.VERCEL || process.env.CI || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.AWS_EXECUTION_ENV);
+const NAV_TIMEOUT = IS_SERVERLESS ? 45000 : 20000;
+const READY_TIMEOUT = IS_SERVERLESS ? 25000 : 15000;
+const BODY_TIMEOUT = IS_SERVERLESS ? 15000 : 10000;
+const CONCURRENCY = IS_SERVERLESS ? 1 : 3;
 
 const MIME = {
    '.html': 'text/html; charset=utf-8',
@@ -153,10 +160,10 @@ async function snapshotOnce(browser, route) {
       await page.goto(`http://127.0.0.1:${PORT}${route}`, { waitUntil: 'networkidle', timeout: NAV_TIMEOUT });
       // Every prerendered route calls usePageSeo, which sets this flag once it has
       // applied its <head>. Require it — proceeding early is what produced thin shells.
-      await page.waitForFunction((flag) => window[flag] === true, READY_FLAG, { timeout: 15000 }).catch(() => {});
+      await page.waitForFunction((flag) => window[flag] === true, READY_FLAG, { timeout: READY_TIMEOUT }).catch(() => {});
       // Belt-and-braces: also wait until the body actually has rendered content, so large
       // pages that mount after the flag aren't snapshotted half-built.
-      await page.waitForFunction(() => (document.body?.innerText.trim().length ?? 0) > 600, null, { timeout: 10000 }).catch(() => {});
+      await page.waitForFunction(() => (document.body?.innerText.trim().length ?? 0) > 600, null, { timeout: BODY_TIMEOUT }).catch(() => {});
       await page.waitForTimeout(200);
       let html = await page.content();
       if (!/^<!doctype html>/i.test(html)) html = '<!doctype html>\n' + html;
@@ -174,8 +181,8 @@ async function snapshotOnce(browser, route) {
 
 async function prerenderRoute(browser, route) {
    let last;
-   // Two attempts: rendering can be starved under concurrency and snapshot a thin shell.
-   for (let attempt = 1; attempt <= 2; attempt++) {
+   // Up to 3 attempts: rendering can be starved and snapshot a thin shell.
+   for (let attempt = 1; attempt <= 3; attempt++) {
       try {
          const snap = await snapshotOnce(browser, route);
          last = snap;
@@ -187,9 +194,9 @@ async function prerenderRoute(browser, route) {
          last = { error: err?.message };
       }
    }
-   // Both attempts thin/failed. Still write the best snapshot we have (better than the
-   // build removing a route) but report it so the build log flags the miss.
-   if (last?.html) await writeSnapshot(route, last.html);
+   // All attempts thin/failed. Do NOT write a thin snapshot — leaving no file lets the
+   // vercel.json rewrite fall through to the SPA, which renders the route via JS with
+   // correct runtime SEO. A written thin shell would be strictly worse for crawlers.
    return { route, ok: false, error: last?.error ?? `thin snapshot (<${MIN_SNAPSHOT_BYTES}b)`, bytes: last?.bytes };
 }
 
