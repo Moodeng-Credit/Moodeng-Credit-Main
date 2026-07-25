@@ -36,6 +36,7 @@ import ComingDueSection from './ComingDueSection';
 import GrowthAnalyticsSection from './GrowthAnalyticsSection';
 import LoanExplorerSection from './LoanExplorerSection';
 import LoanExtensionSection from './LoanExtensionSection';
+import PricingHealthSection from './PricingHealthSection';
 import ReferralCodesSection from './ReferralCodesSection';
 import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
@@ -47,6 +48,7 @@ type AdminTab =
    | 'analytics'
    | 'ux-health'
    | 'loans'
+   | 'pricing'
    | 'coming-due'
    | 'extensions'
    | 'points'
@@ -84,6 +86,7 @@ const navGroups: NavGroup[] = [
       label: 'Loans',
       items: [
          { id: 'loans', label: 'Loans' },
+         { id: 'pricing', label: 'Pricing health' },
          { id: 'coming-due', label: 'Coming due' },
          { id: 'extensions', label: 'Loan extensions' },
          { id: 'requests', label: 'Loan request review' },
@@ -1488,6 +1491,18 @@ export default function AdminPanel() {
                         </p>
                      </div>
                      <LoanExplorerSection />
+                  </section>
+               ) : null}
+
+               {activeTab === 'pricing' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Pricing health</h2>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">
+                           Are borrowers pricing their loans right? How the return they offer compares to the suggested range.
+                        </p>
+                     </div>
+                     <PricingHealthSection />
                   </section>
                ) : null}
 
