@@ -31,8 +31,11 @@ export default function LoanRequestPreview() {
    const [days, setDays] = useState('');
    const [submitted, setSubmitted] = useState(false);
    const today = new Date().toISOString().slice(0, 10);
-   // ?unverified renders the not-yet-verified state (verify blocker + inert submit button).
-   const showVerify = new URLSearchParams(window.location.search).has('unverified');
+   // ?unverified renders the not-yet-verified state (verify blocker + locked fields).
+   // ?pending renders the "still being checked" review state (also locks the fields).
+   const params = new URLSearchParams(window.location.search);
+   const isPending = params.has('pending');
+   const showVerify = params.has('unverified') || isPending;
 
    return (
       <div className="min-h-screen bg-md-neutral-300">
@@ -42,6 +45,7 @@ export default function LoanRequestPreview() {
                isOpen
                onClose={() => {}}
                showVerify={showVerify}
+               isPending={isPending}
                user={PREVIEW_BORROWER}
                loanAmount={loanAmount}
                setLoanAmount={setLoanAmount}

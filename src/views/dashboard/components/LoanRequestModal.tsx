@@ -965,9 +965,10 @@ export default function LoanRequestModal({
    // Live verdict from the DeepSeek effort check on the reason field. 'idle' = nothing worth
    // checking yet, 'checking' = call in flight, 'weak' = it came back with a hint,
    // 'unavailable' = the check couldn't run, so we stay silent rather than praise unchecked text.
-   const [liveReasonCheck, setLiveReasonCheck] = useState<{ status: 'idle' | 'checking' | 'ok' | 'weak' | 'unavailable'; hint: string }>(
-      { status: 'idle', hint: '' }
-   );
+   const [liveReasonCheck, setLiveReasonCheck] = useState<{ status: 'idle' | 'checking' | 'ok' | 'weak' | 'unavailable'; hint: string }>({
+      status: 'idle',
+      hint: ''
+   });
    const liveChecksUsedRef = useRef(0);
 
    const isVerified = !showVerify;
@@ -1917,7 +1918,10 @@ export default function LoanRequestModal({
                      <>
                         {showVerify ? (
                            <div
-                              className="flex items-center gap-md-2 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-[#fff6d0] px-md-3 py-md-2"
+                              className={`flex items-center gap-md-2 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-[#fff6d0] px-md-3 py-md-2 ${
+                                 verifyNudge ? 'blocked-tap-attention' : ''
+                              }`}
+                              id="loan-verify-lead"
                               data-tour-target="loan-verification-card"
                            >
                               <div className="flex min-w-0 max-w-[220px] flex-1 flex-col gap-md-1">
@@ -1949,326 +1953,363 @@ export default function LoanRequestModal({
                         ) : null}
                         {!isPending && verifyModal}
 
-                        <div className="flex flex-col gap-md-1" data-tour-target="loan-borrow-amount">
-                           <div className="flex items-center justify-between gap-md-2">
-                              <label className="text-md-b2 font-[590] text-md-heading" htmlFor="borrow-amount">
-                                 Borrow Amount
-                              </label>
-                              <div className="flex items-center gap-md-0 rounded-md-md bg-md-primary-100 px-md-1 py-md-0 text-md-b3 font-normal text-[#3e0a88] dark:border dark:border-[#7c4ed8]/40 dark:bg-[#2a1740] dark:text-[#f8f4ff]">
-                                 <span>Current Limit: ${limitAmount || '0'}</span>
-                                 <InfoTooltip
-                                    activeTooltip={activeTooltip}
-                                    arrowClassName="left-1/2 top-[-5px] -translate-x-1/2 rotate-45"
-                                    iconClassName="h-4 w-4"
-                                    id="limit"
-                                    label="Explain current borrow limit"
-                                    panelClassName="right-0 top-full mt-md-1"
-                                    setActiveTooltip={setActiveTooltip}
-                                 />
-                              </div>
-                           </div>
-                           <div
-                              className={`flex items-center ${inputShellClass} ${termErrors.amount ? '!border-md-red-500' : amountValid ? '!border-md-primary-900' : ''}`}
+                        {/* Lock, don't tease. While unverified (or pending review) the whole form is
+                            a false affordance — a borrower can pour effort into every field and only
+                            discover at the greyed submit that none of it can be sent. Dim the fields
+                            and make them non-editable so the single real next step (verify) is
+                            unmistakable. The transparent catcher below keeps the tap alive: it
+                            scrolls to and pulses the yellow card, so a locked field guides rather
+                            than dies (same "never a dead end" rule as the submit button). */}
+                        <div className="relative flex flex-col gap-5">
+                           <fieldset
+                              disabled={!isVerified}
+                              aria-hidden={!isVerified ? true : undefined}
+                              className={`m-0 flex min-w-0 flex-col gap-5 border-0 p-0 ${!isVerified ? 'select-none opacity-50' : ''}`}
                            >
-                              <span
-                                 aria-hidden="true"
-                                 className="flex min-w-[112px] items-center justify-center gap-md-1 self-stretch border-r border-md-neutral-600 bg-[#2775ca] px-md-3 py-md-2 text-md-b1 font-normal text-md-neutral-100"
-                              >
-                                 <UsdcIcon />
-                                 USDC
-                              </span>
-                              <input
-                                 onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                    setLoanAmount(e.target.value);
-                                    if (termErrors.amount) setTermErrors((prev) => ({ ...prev, amount: undefined }));
-                                 }}
-                                 onFocus={scrollFieldIntoView}
-                                 className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
-                                 id="borrow-amount"
-                                 inputMode="decimal"
-                                 placeholder="Set your desired amount"
-                                 type="text"
-                                 value={loanAmount}
-                              />
-                           </div>
-                           {termErrors.amount ? <FieldError message={termErrors.amount} /> : null}
-                           <div className="flex justify-end gap-md-1 text-md-b3 font-normal text-md-neutral-1200">
-                              <InfoTooltip
-                                 activeTooltip={activeTooltip}
-                                 iconClassName="h-4 w-4"
-                                 iconStrokeWidth={1.35}
-                                 id="usdc"
-                                 label="Explain USDC loans"
-                                 panelClassName="left-1/2 top-full mt-md-1 -translate-x-1/2"
-                                 setActiveTooltip={setActiveTooltip}
-                              />
-                              <span>All loans are issued and repaid in USDC.</span>
-                           </div>
-                        </div>
-
-                        <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-amount">
-                           <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repayment-amount">
-                              Set Repayment Amount
-                           </label>
-                           <input
-                              onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                 setTotalRepaymentAmount(e.target.value);
-                                 if (termErrors.repayment) setTermErrors((prev) => ({ ...prev, repayment: undefined }));
-                              }}
-                              onFocus={scrollFieldIntoView}
-                              className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none ${
-                                 termErrors.repayment ? '!border-md-red-500' : repaymentValid ? '!border-md-primary-900' : ''
-                              }`}
-                              id="repayment-amount"
-                              inputMode="decimal"
-                              placeholder="Must be more than the borrowed amount"
-                              type="text"
-                              value={totalRepaymentAmount}
-                           />
-                           {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
-                           {(() => {
-                              // Live clarity: once both amounts are valid, spell out what the borrower will
-                              // repay and how much of that is the lender's return — Moodeng adds $0, so this
-                              // makes the deal transparent while they set their own terms.
-                              const borrowNum = Number(loanAmount);
-                              const repayNum = Number(totalRepaymentAmount);
-                              const extra = repayNum - borrowNum;
-                              if (termErrors.repayment || !loanAmount || !totalRepaymentAmount) return null;
-                              if (Number.isNaN(borrowNum) || Number.isNaN(repayNum) || borrowNum <= 0 || extra <= 0) return null;
-                              const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
-                              return (
-                                 <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                                    You’ll repay <span className="font-semibold text-md-heading">${fmt(repayNum)}</span> — that’s{' '}
-                                    <span className="font-semibold text-md-primary-1200">${fmt(extra)}</span> to your lender.
-                                 </p>
-                              );
-                           })()}
-                           {(() => {
-                              const borrowNum = Number(loanAmount);
-                              const repayNum = Number(totalRepaymentAmount);
-                              const range = suggestedReturnRange(borrowNum);
-                              const offer = repayNum - borrowNum;
-                              // Only when the repayment is otherwise valid (passes the $1 minimum, so
-                              // no error is showing) but still below the typical return for this size.
-                              const show =
-                                 !termErrors.repayment &&
-                                 Boolean(totalRepaymentAmount) &&
-                                 Number.isFinite(borrowNum) &&
-                                 borrowNum > 0 &&
-                                 Number.isFinite(repayNum) &&
-                                 offer >= 1 &&
-                                 range !== null &&
-                                 offer < range.lo;
-                              return show && range ? <ReturnHint lo={range.lo} hi={range.hi} /> : null;
-                           })()}
-                        </div>
-
-                        <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-date">
-                           <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repaymentDate">
-                              Set Repayment Date
-                           </label>
-                           <div className="relative">
-                              <div
-                                 className={`relative flex items-center ${inputShellClass} ${termErrors.date ? '!border-md-red-500' : isRepaymentDateFilled ? '!border-md-primary-900' : ''}`}
-                              >
-                                 <input
-                                    ref={dateInputRef}
-                                    aria-label="Selected repayment date"
-                                    onChange={handleTypedDate}
-                                    onClick={() => keepDateCursorInEditablePart()}
-                                    onBlur={() => {
-                                       if (!typedDate.replace(/\D/g, '')) setTypedDate('');
-                                    }}
-                                    onFocus={(event) => {
-                                       scrollFieldIntoView(event);
-                                       keepDateCursorInEditablePart();
-                                    }}
-                                    onKeyDown={handleDateKeyDown}
-                                    onPaste={handleDatePaste}
-                                    onSelect={() => keepDateCursorInEditablePart()}
-                                    placeholder={datePlaceholder}
-                                    type="text"
-                                    value={typedDate}
-                                    id="repaymentDate"
-                                    className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 pr-[64px] text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
-                                 />
-                                 <button
-                                    aria-expanded={isCalendarOpen}
-                                    aria-label="Open repayment date calendar"
-                                    className={`absolute inset-y-0 right-0 flex w-[56px] items-center justify-center border-l border-md-primary-1200 transition duration-150 ease-out active:bg-[#4b00b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
-                                       isCalendarOpen || isRepaymentDateFilled
-                                          ? 'bg-md-primary-1200 text-md-neutral-100 hover:bg-[#5200c8]'
-                                          : 'bg-md-neutral-100 text-md-primary-900 hover:bg-md-primary-100'
-                                    }`}
-                                    onClick={() => setIsCalendarOpen((isOpen) => !isOpen)}
-                                    type="button"
-                                 >
-                                    <CalendarDays aria-hidden="true" className="h-6 w-6" strokeWidth={1.6} />
-                                 </button>
-                              </div>
-                           </div>
-                           {termErrors.date ? <FieldError message={termErrors.date} /> : null}
-                           {/* Quick-pick common short terms — typing DD/MM on mobile is the fiddliest field.
-                               Each fills a valid future date via the same handler the calendar uses. */}
-                           <div className="mt-md-0 flex flex-wrap gap-md-1">
-                              {[
-                                 { label: '4 weeks', days: 28 },
-                                 { label: '1 month', days: 30 },
-                                 { label: '2 months', days: 60 }
-                              ].map(({ label, days: offset }) => {
-                                 const date = addDays(todayDate, offset);
-                                 const isActive = selectedDate === formatDateInputValue(date);
-                                 return (
-                                    <button
-                                       key={label}
-                                       type="button"
-                                       aria-pressed={isActive}
-                                       onClick={() => selectCalendarDate(date)}
-                                       className={`inline-flex min-h-[32px] items-center justify-center rounded-md-pill border px-md-2 py-[5px] text-md-b3 font-medium leading-[18px] transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
-                                          isActive
-                                             ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_5px_12px_rgba(105,48,232,0.08)]'
-                                             : 'border-md-neutral-700 bg-md-neutral-100 text-md-neutral-1400'
-                                       }`}
-                                    >
-                                       {label}
-                                    </button>
-                                 );
-                              })}
-                           </div>
-                        </div>
-
-                        <div className="flex flex-col gap-md-1" data-tour-target="loan-reason">
-                           <label className="text-md-b2 font-[590] text-md-heading" htmlFor="reason">
-                              Reason for Borrowing
-                           </label>
-                           <div
-                              className={`${inputShellClass} flex flex-col px-md-3 py-md-2 ${termErrors.reason ? '!border-md-red-500' : reasonValid ? '!border-md-primary-900' : ''}`}
-                           >
-                              <textarea
-                                 ref={reasonTextareaRef}
-                                 maxLength={200}
-                                 onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
-                                    setReason(e.target.value);
-                                    resizeReasonTextarea(e.target);
-                                    if (termErrors.reason) setTermErrors((prev) => ({ ...prev, reason: undefined }));
-                                 }}
-                                 onFocus={scrollFieldIntoView}
-                                 className="min-h-[48px] resize-none overflow-hidden bg-transparent text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
-                                 id="reason"
-                                 placeholder="Why do you need this loan? Write in English."
-                                 rows={1}
-                                 value={reason}
-                              />
-                              {/* The verdict arrives asynchronously, so announce it — a screen-reader
-                                  user would otherwise never learn the reason was flagged. */}
-                              <div
-                                 aria-live="polite"
-                                 className="mt-md-2 flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200 select-none"
-                              >
-                                 {(() => {
-                                    const trimmedLength = reason.trim().length;
-                                    const remaining = REASON_MIN_LENGTH - trimmedLength;
-                                    // A red error below is already saying it — don't say it twice in
-                                    // two colours. The counter keeps its place on the right.
-                                    if (termErrors.reason) return <span />;
-                                    // Guide live: while short, show how many more characters are needed; once the
-                                    // minimum is met, confirm it — so they learn before submitting, not after.
-                                    if (trimmedLength > 0 && remaining > 0) {
-                                       return (
-                                          <span className="font-medium text-md-primary-1200">
-                                             {remaining} more character{remaining === 1 ? '' : 's'} to go
-                                          </span>
-                                       );
-                                    }
-                                    if (trimmedLength >= REASON_MIN_LENGTH) {
-                                       // Offline shape check first (instant), then whatever the
-                                       // effort check came back with. The tick only appears once
-                                       // both have actually passed it.
-                                       const weakHint = !reasonQuality.ok
-                                          ? reasonQuality.hint
-                                          : liveReasonCheck.status === 'weak'
-                                            ? liveReasonCheck.hint || 'Add a bit more detail so lenders understand the need.'
-                                            : '';
-                                       if (weakHint) {
-                                          return (
-                                             <span className="inline-flex items-start gap-1.5 font-medium text-[#92400e]">
-                                                <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
-                                                {weakHint}
-                                             </span>
-                                          );
-                                       }
-                                       // Couldn't reach the check — say nothing rather than tick
-                                       // text nobody judged. Submit still works; the gate there
-                                       // fails open too.
-                                       if (liveReasonCheck.status === 'unavailable') {
-                                          return <span>Short and specific helps lenders trust it.</span>;
-                                       }
-                                       if (liveReasonCheck.status !== 'ok') {
-                                          return <span className="font-medium text-md-neutral-1200">Checking your reason…</span>;
-                                       }
-                                       return (
-                                          <span className="inline-flex items-center gap-1 font-medium text-md-primary-1200">
-                                             <Check className="size-4 shrink-0" strokeWidth={2.6} aria-hidden="true" />
-                                             Looks good
-                                          </span>
-                                       );
-                                    }
-                                    // Lenders are in the US and EU, so the ask is stated up front
-                                    // rather than sprung on the borrower after 40 characters.
-                                    return <span>At least 40 characters, in English — short and specific helps lenders trust it.</span>;
-                                 })()}
-                                 <span className="shrink-0">{reason.length}/200</span>
-                              </div>
-                              {termErrors.reason ? (
-                                 <div
-                                    role="alert"
-                                    className="mt-md-1 flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-md-red-500"
-                                 >
-                                    <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
-                                    <span>{termErrors.reason}</span>
-                                 </div>
-                              ) : null}
-                              {reasonWarning ? (
-                                 <div className="mt-md-1 border-t border-[#f0c98a] pt-md-1">
-                                    <div className="flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-[#92400e]">
-                                       <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
-                                       <span>{reasonWarning}</span>
-                                    </div>
-                                    {/* Hand the borrower straight to Mecha to fix it — the effort check
-                                        (check-loan-input) and Mecha share the same DeepSeek brain. */}
-                                    <div className="mt-1.5 pl-[22px]">
-                                       <AskMechaButton
-                                          variant="link"
-                                          label="Ask Mecha to help me word this"
-                                          context={{ page: 'Loan request', step: 'loan-request' }}
-                                          seedUserMessage={`I'm writing a loan request and my reason ("${reason}") was flagged as too vague. How do I write a clear reason that lenders will trust?`}
+                              <div className="flex flex-col gap-md-1" data-tour-target="loan-borrow-amount">
+                                 <div className="flex items-center justify-between gap-md-2">
+                                    <label className="text-md-b2 font-[590] text-md-heading" htmlFor="borrow-amount">
+                                       Borrow Amount
+                                    </label>
+                                    <div className="flex items-center gap-md-0 rounded-md-md bg-md-primary-100 px-md-1 py-md-0 text-md-b3 font-normal text-[#3e0a88] dark:border dark:border-[#7c4ed8]/40 dark:bg-[#2a1740] dark:text-[#f8f4ff]">
+                                       <span>Current Limit: ${limitAmount || '0'}</span>
+                                       <InfoTooltip
+                                          activeTooltip={activeTooltip}
+                                          arrowClassName="left-1/2 top-[-5px] -translate-x-1/2 rotate-45"
+                                          iconClassName="h-4 w-4"
+                                          id="limit"
+                                          label="Explain current borrow limit"
+                                          panelClassName="right-0 top-full mt-md-1"
+                                          setActiveTooltip={setActiveTooltip}
                                        />
                                     </div>
                                  </div>
-                              ) : reasonQuality.code === 'not-english' ? (
-                                 // Mecha speaks both — hand them a translation rather than leaving
-                                 // "write it in English" as homework.
-                                 <div className="mt-md-1 pl-[22px]">
-                                    <AskMechaButton
-                                       variant="link"
-                                       label="Ask Mecha to write this in English"
-                                       context={{ page: 'Loan request', step: 'loan-request' }}
-                                       seedUserMessage={`Please help me write my loan reason in English. Here is what I wrote: "${reason}"`}
+                                 <div
+                                    className={`flex items-center ${inputShellClass} ${termErrors.amount ? '!border-md-red-500' : amountValid ? '!border-md-primary-900' : ''}`}
+                                 >
+                                    <span
+                                       aria-hidden="true"
+                                       className="flex min-w-[112px] items-center justify-center gap-md-1 self-stretch border-r border-md-neutral-600 bg-[#2775ca] px-md-3 py-md-2 text-md-b1 font-normal text-md-neutral-100"
+                                    >
+                                       <UsdcIcon />
+                                       USDC
+                                    </span>
+                                    <input
+                                       onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                          setLoanAmount(e.target.value);
+                                          if (termErrors.amount) setTermErrors((prev) => ({ ...prev, amount: undefined }));
+                                       }}
+                                       onFocus={scrollFieldIntoView}
+                                       className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
+                                       id="borrow-amount"
+                                       inputMode="decimal"
+                                       placeholder="Set your desired amount"
+                                       type="text"
+                                       value={loanAmount}
                                     />
                                  </div>
-                              ) : liveReasonCheck.status === 'weak' ? (
-                                 // Same offer as the submit-time warning, just earlier: the hint is
-                                 // already in the counter row above, so only the way out is needed.
-                                 <div className="mt-md-1 pl-[22px]">
-                                    <AskMechaButton
-                                       variant="link"
-                                       label="Ask Mecha to help me word this"
-                                       context={{ page: 'Loan request', step: 'loan-request' }}
-                                       seedUserMessage={`I'm writing a loan request and my reason ("${reason}") was flagged as too vague. How do I write a clear reason that lenders will trust?`}
+                                 {termErrors.amount ? <FieldError message={termErrors.amount} /> : null}
+                                 <div className="flex justify-end gap-md-1 text-md-b3 font-normal text-md-neutral-1200">
+                                    <InfoTooltip
+                                       activeTooltip={activeTooltip}
+                                       iconClassName="h-4 w-4"
+                                       iconStrokeWidth={1.35}
+                                       id="usdc"
+                                       label="Explain USDC loans"
+                                       panelClassName="left-1/2 top-full mt-md-1 -translate-x-1/2"
+                                       setActiveTooltip={setActiveTooltip}
                                     />
+                                    <span>All loans are issued and repaid in USDC.</span>
                                  </div>
-                              ) : null}
-                           </div>
+                              </div>
+
+                              <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-amount">
+                                 <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repayment-amount">
+                                    Set Repayment Amount
+                                 </label>
+                                 <input
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                       setTotalRepaymentAmount(e.target.value);
+                                       if (termErrors.repayment) setTermErrors((prev) => ({ ...prev, repayment: undefined }));
+                                    }}
+                                    onFocus={scrollFieldIntoView}
+                                    className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none ${
+                                       termErrors.repayment ? '!border-md-red-500' : repaymentValid ? '!border-md-primary-900' : ''
+                                    }`}
+                                    id="repayment-amount"
+                                    inputMode="decimal"
+                                    placeholder="Must be more than the borrowed amount"
+                                    type="text"
+                                    value={totalRepaymentAmount}
+                                 />
+                                 {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
+                                 {(() => {
+                                    // Live clarity: once both amounts are valid, spell out what the borrower will
+                                    // repay and how much of that is the lender's return — Moodeng adds $0, so this
+                                    // makes the deal transparent while they set their own terms.
+                                    const borrowNum = Number(loanAmount);
+                                    const repayNum = Number(totalRepaymentAmount);
+                                    const extra = repayNum - borrowNum;
+                                    if (termErrors.repayment || !loanAmount || !totalRepaymentAmount) return null;
+                                    if (Number.isNaN(borrowNum) || Number.isNaN(repayNum) || borrowNum <= 0 || extra <= 0) return null;
+                                    const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+                                    return (
+                                       <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                                          You’ll repay <span className="font-semibold text-md-heading">${fmt(repayNum)}</span> — that’s{' '}
+                                          <span className="font-semibold text-md-primary-1200">${fmt(extra)}</span> to your lender.
+                                       </p>
+                                    );
+                                 })()}
+                                 {(() => {
+                                    const borrowNum = Number(loanAmount);
+                                    const repayNum = Number(totalRepaymentAmount);
+                                    const range = suggestedReturnRange(borrowNum);
+                                    const offer = repayNum - borrowNum;
+                                    // Only when the repayment is otherwise valid (passes the $1 minimum, so
+                                    // no error is showing) but still below the typical return for this size.
+                                    const show =
+                                       !termErrors.repayment &&
+                                       Boolean(totalRepaymentAmount) &&
+                                       Number.isFinite(borrowNum) &&
+                                       borrowNum > 0 &&
+                                       Number.isFinite(repayNum) &&
+                                       offer >= 1 &&
+                                       range !== null &&
+                                       offer < range.lo;
+                                    return show && range ? <ReturnHint lo={range.lo} hi={range.hi} /> : null;
+                                 })()}
+                              </div>
+
+                              <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-date">
+                                 <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repaymentDate">
+                                    Set Repayment Date
+                                 </label>
+                                 <div className="relative">
+                                    <div
+                                       className={`relative flex items-center ${inputShellClass} ${termErrors.date ? '!border-md-red-500' : isRepaymentDateFilled ? '!border-md-primary-900' : ''}`}
+                                    >
+                                       <input
+                                          ref={dateInputRef}
+                                          aria-label="Selected repayment date"
+                                          onChange={handleTypedDate}
+                                          onClick={() => keepDateCursorInEditablePart()}
+                                          onBlur={() => {
+                                             if (!typedDate.replace(/\D/g, '')) setTypedDate('');
+                                          }}
+                                          onFocus={(event) => {
+                                             scrollFieldIntoView(event);
+                                             keepDateCursorInEditablePart();
+                                          }}
+                                          onKeyDown={handleDateKeyDown}
+                                          onPaste={handleDatePaste}
+                                          onSelect={() => keepDateCursorInEditablePart()}
+                                          placeholder={datePlaceholder}
+                                          type="text"
+                                          value={typedDate}
+                                          id="repaymentDate"
+                                          className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 pr-[64px] text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
+                                       />
+                                       <button
+                                          aria-expanded={isCalendarOpen}
+                                          aria-label="Open repayment date calendar"
+                                          className={`absolute inset-y-0 right-0 flex w-[56px] items-center justify-center border-l border-md-primary-1200 transition duration-150 ease-out active:bg-[#4b00b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
+                                             isCalendarOpen || isRepaymentDateFilled
+                                                ? 'bg-md-primary-1200 text-md-neutral-100 hover:bg-[#5200c8]'
+                                                : 'bg-md-neutral-100 text-md-primary-900 hover:bg-md-primary-100'
+                                          }`}
+                                          onClick={() => setIsCalendarOpen((isOpen) => !isOpen)}
+                                          type="button"
+                                       >
+                                          <CalendarDays aria-hidden="true" className="h-6 w-6" strokeWidth={1.6} />
+                                       </button>
+                                    </div>
+                                 </div>
+                                 {termErrors.date ? <FieldError message={termErrors.date} /> : null}
+                                 {/* Quick-pick common short terms — typing DD/MM on mobile is the fiddliest field.
+                               Each fills a valid future date via the same handler the calendar uses. */}
+                                 <div className="mt-md-0 flex flex-wrap gap-md-1">
+                                    {[
+                                       { label: '4 weeks', days: 28 },
+                                       { label: '1 month', days: 30 },
+                                       { label: '2 months', days: 60 }
+                                    ].map(({ label, days: offset }) => {
+                                       const date = addDays(todayDate, offset);
+                                       const isActive = selectedDate === formatDateInputValue(date);
+                                       return (
+                                          <button
+                                             key={label}
+                                             type="button"
+                                             aria-pressed={isActive}
+                                             onClick={() => selectCalendarDate(date)}
+                                             className={`inline-flex min-h-[32px] items-center justify-center rounded-md-pill border px-md-2 py-[5px] text-md-b3 font-medium leading-[18px] transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+                                                isActive
+                                                   ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_5px_12px_rgba(105,48,232,0.08)]'
+                                                   : 'border-md-neutral-700 bg-md-neutral-100 text-md-neutral-1400'
+                                             }`}
+                                          >
+                                             {label}
+                                          </button>
+                                       );
+                                    })}
+                                 </div>
+                              </div>
+
+                              <div className="flex flex-col gap-md-1" data-tour-target="loan-reason">
+                                 <label className="text-md-b2 font-[590] text-md-heading" htmlFor="reason">
+                                    Reason for Borrowing
+                                 </label>
+                                 <div
+                                    className={`${inputShellClass} flex flex-col px-md-3 py-md-2 ${termErrors.reason ? '!border-md-red-500' : reasonValid ? '!border-md-primary-900' : ''}`}
+                                 >
+                                    <textarea
+                                       ref={reasonTextareaRef}
+                                       maxLength={200}
+                                       onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
+                                          setReason(e.target.value);
+                                          resizeReasonTextarea(e.target);
+                                          if (termErrors.reason) setTermErrors((prev) => ({ ...prev, reason: undefined }));
+                                       }}
+                                       onFocus={scrollFieldIntoView}
+                                       className="min-h-[48px] resize-none overflow-hidden bg-transparent text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
+                                       id="reason"
+                                       placeholder="Why do you need this loan? Write in English."
+                                       rows={1}
+                                       value={reason}
+                                    />
+                                    {/* The verdict arrives asynchronously, so announce it — a screen-reader
+                                  user would otherwise never learn the reason was flagged. */}
+                                    <div
+                                       aria-live="polite"
+                                       className="mt-md-2 flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200 select-none"
+                                    >
+                                       {(() => {
+                                          const trimmedLength = reason.trim().length;
+                                          const remaining = REASON_MIN_LENGTH - trimmedLength;
+                                          // A red error below is already saying it — don't say it twice in
+                                          // two colours. The counter keeps its place on the right.
+                                          if (termErrors.reason) return <span />;
+                                          // Guide live: while short, show how many more characters are needed; once the
+                                          // minimum is met, confirm it — so they learn before submitting, not after.
+                                          if (trimmedLength > 0 && remaining > 0) {
+                                             return (
+                                                <span className="font-medium text-md-primary-1200">
+                                                   {remaining} more character{remaining === 1 ? '' : 's'} to go
+                                                </span>
+                                             );
+                                          }
+                                          if (trimmedLength >= REASON_MIN_LENGTH) {
+                                             // Offline shape check first (instant), then whatever the
+                                             // effort check came back with. The tick only appears once
+                                             // both have actually passed it.
+                                             const weakHint = !reasonQuality.ok
+                                                ? reasonQuality.hint
+                                                : liveReasonCheck.status === 'weak'
+                                                  ? liveReasonCheck.hint || 'Add a bit more detail so lenders understand the need.'
+                                                  : '';
+                                             if (weakHint) {
+                                                return (
+                                                   <span className="inline-flex items-start gap-1.5 font-medium text-[#92400e]">
+                                                      <TriangleAlert
+                                                         className="mt-[1px] size-4 shrink-0"
+                                                         strokeWidth={2}
+                                                         aria-hidden="true"
+                                                      />
+                                                      {weakHint}
+                                                   </span>
+                                                );
+                                             }
+                                             // Couldn't reach the check — say nothing rather than tick
+                                             // text nobody judged. Submit still works; the gate there
+                                             // fails open too.
+                                             if (liveReasonCheck.status === 'unavailable') {
+                                                return <span>Short and specific helps lenders trust it.</span>;
+                                             }
+                                             if (liveReasonCheck.status !== 'ok') {
+                                                return <span className="font-medium text-md-neutral-1200">Checking your reason…</span>;
+                                             }
+                                             return (
+                                                <span className="inline-flex items-center gap-1 font-medium text-md-primary-1200">
+                                                   <Check className="size-4 shrink-0" strokeWidth={2.6} aria-hidden="true" />
+                                                   Looks good
+                                                </span>
+                                             );
+                                          }
+                                          // Lenders are in the US and EU, so the ask is stated up front
+                                          // rather than sprung on the borrower after 40 characters.
+                                          return (
+                                             <span>At least 40 characters, in English — short and specific helps lenders trust it.</span>
+                                          );
+                                       })()}
+                                       <span className="shrink-0">{reason.length}/200</span>
+                                    </div>
+                                    {termErrors.reason ? (
+                                       <div
+                                          role="alert"
+                                          className="mt-md-1 flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-md-red-500"
+                                       >
+                                          <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                          <span>{termErrors.reason}</span>
+                                       </div>
+                                    ) : null}
+                                    {reasonWarning ? (
+                                       <div className="mt-md-1 border-t border-[#f0c98a] pt-md-1">
+                                          <div className="flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-[#92400e]">
+                                             <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                             <span>{reasonWarning}</span>
+                                          </div>
+                                          {/* Hand the borrower straight to Mecha to fix it — the effort check
+                                        (check-loan-input) and Mecha share the same DeepSeek brain. */}
+                                          <div className="mt-1.5 pl-[22px]">
+                                             <AskMechaButton
+                                                variant="link"
+                                                label="Ask Mecha to help me word this"
+                                                context={{ page: 'Loan request', step: 'loan-request' }}
+                                                seedUserMessage={`I'm writing a loan request and my reason ("${reason}") was flagged as too vague. How do I write a clear reason that lenders will trust?`}
+                                             />
+                                          </div>
+                                       </div>
+                                    ) : reasonQuality.code === 'not-english' ? (
+                                       // Mecha speaks both — hand them a translation rather than leaving
+                                       // "write it in English" as homework.
+                                       <div className="mt-md-1 pl-[22px]">
+                                          <AskMechaButton
+                                             variant="link"
+                                             label="Ask Mecha to write this in English"
+                                             context={{ page: 'Loan request', step: 'loan-request' }}
+                                             seedUserMessage={`Please help me write my loan reason in English. Here is what I wrote: "${reason}"`}
+                                          />
+                                       </div>
+                                    ) : liveReasonCheck.status === 'weak' ? (
+                                       // Same offer as the submit-time warning, just earlier: the hint is
+                                       // already in the counter row above, so only the way out is needed.
+                                       <div className="mt-md-1 pl-[22px]">
+                                          <AskMechaButton
+                                             variant="link"
+                                             label="Ask Mecha to help me word this"
+                                             context={{ page: 'Loan request', step: 'loan-request' }}
+                                             seedUserMessage={`I'm writing a loan request and my reason ("${reason}") was flagged as too vague. How do I write a clear reason that lenders will trust?`}
+                                          />
+                                       </div>
+                                    ) : null}
+                                 </div>
+                              </div>
+                           </fieldset>
+                           {!isVerified ? (
+                              <button
+                                 type="button"
+                                 aria-label={
+                                    isPending
+                                       ? 'Verification is still being checked. You can fill this in once it clears.'
+                                       : 'Verify your identity first to fill in your loan request.'
+                                 }
+                                 onClick={() => {
+                                    setVerifyNudge(true);
+                                    window.setTimeout(() => setVerifyNudge(false), 1200);
+                                    document.getElementById('loan-verify-lead')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                 }}
+                                 className="absolute inset-0 z-10 cursor-not-allowed rounded-md-lg"
+                              />
+                           ) : null}
                         </div>
 
                         {/* Unverified borrowers used to meet a grey button that did nothing when
