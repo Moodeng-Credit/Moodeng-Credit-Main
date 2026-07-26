@@ -1869,19 +1869,19 @@ function RequestBoard$() {
                   {/* Apply Loan Card — visible for authenticated borrowers, or as CTA for public */}
                   {isAuthenticated && isBorrower && hasSelectedRole ? (
                      <div
-                        className="relative overflow-hidden rounded-[20px] border border-[#e2d2f8] bg-[#f8f4fc] p-5 shadow-[0_8px_24px_rgba(55,24,96,0.06)] max-[374px]:p-4"
+                        className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3"
                         data-tour-target="request-apply-card"
                      >
-                        <div className="relative z-10 flex max-w-[200px] flex-col gap-4 max-[374px]:max-w-[184px]">
-                           <div>
-                              <span className="inline-flex rounded-full bg-[#e9dcfb] px-2.5 py-1 text-[11px] font-[590] leading-4 text-[#5d16c9]">
-                                 Borrow in USDC
-                              </span>
-                              <p className="mt-2 text-[22px] font-[590] leading-[1.15] tracking-[-0.44px] text-[#26143f]">
-                                 Need short-term support?
-                              </p>
-                              <p className="mt-1.5 text-[14px] font-normal leading-5 text-[#695b7b]">
-                                 Choose your amount, repayment date, and reason. Repaying on time builds your trust record.
+                        <div className="flex flex-col gap-4 relative z-10">
+                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
+                              <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Need short-term support?</p>
+                              <p className="text-md-b2 font-medium text-md-neutral-700">
+                                 <span className="max-[374px]:hidden">
+                                    Borrow USDC to build trust and
+                                    <br />
+                                    unlock higher loan levels.
+                                 </span>
+                                 <span className="hidden max-[374px]:inline">Borrow USDC to build trust. Unlock higher levels.</span>
                               </p>
                            </div>
                            <button
@@ -1889,7 +1889,7 @@ function RequestBoard$() {
                               disabled={isOpeningLoanRequest}
                               aria-busy={isOpeningLoanRequest}
                               data-tour-target="request-apply-button"
-                              className="inline-flex min-h-[52px] w-fit items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-5 py-3 text-[15px] font-[590] text-md-neutral-100 transition-all duration-150 hover:bg-[#5200c8] active:scale-[0.97] disabled:pointer-events-none disabled:opacity-75"
+                              className="inline-flex min-h-[56px] w-fit items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 shadow-md-card transition-all duration-150 hover:brightness-110 active:scale-[0.97] active:brightness-90 disabled:pointer-events-none disabled:opacity-75 max-[374px]:min-h-12 max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
                            >
                               {isOpeningLoanRequest ? (
                                  <>
@@ -1897,44 +1897,44 @@ function RequestBoard$() {
                                     Opening...
                                  </>
                               ) : (
-                                 'Apply for a loan'
+                                 'Apply For A Loan'
                               )}
                            </button>
                         </div>
                         <img
                            src="/hippos/thumb-up-right.png"
                            alt=""
-                           className="pointer-events-none absolute bottom-[-8px] right-[-16px] h-[128px] w-[128px] object-contain max-[374px]:right-[-18px] max-[374px]:h-[112px] max-[374px]:w-[112px]"
+                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:bottom-0 max-[374px]:right-[-42px] max-[374px]:top-auto max-[374px]:h-[76%]"
                         />
                      </div>
                   ) : !isAuthenticated ? (
                      <div
-                        className="relative overflow-hidden rounded-[20px] border border-[#e2d2f8] bg-[#f8f4fc] p-5 shadow-[0_8px_24px_rgba(55,24,96,0.06)] max-[374px]:p-4"
+                        className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3"
                         data-tour-target="request-apply-card"
                      >
-                        <div className="relative z-10 flex max-w-[200px] flex-col gap-4 max-[374px]:max-w-[184px]">
-                           <div>
-                              <span className="inline-flex rounded-full bg-[#e9dcfb] px-2.5 py-1 text-[11px] font-[590] leading-4 text-[#5d16c9]">
-                                 Borrow in USDC
-                              </span>
-                              <p className="mt-2 text-[22px] font-[590] leading-[1.15] tracking-[-0.44px] text-[#26143f]">
-                                 Need short-term support?
-                              </p>
-                              <p className="mt-1.5 text-[14px] font-normal leading-5 text-[#695b7b]">
-                                 Create an account, choose your terms, and start building a repayment record.
+                        <div className="flex flex-col gap-4 relative z-10">
+                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
+                              <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Need short-term support?</p>
+                              <p className="text-md-b2 font-medium text-md-neutral-700">
+                                 <span className="max-[374px]:hidden">
+                                    Borrow USDC to build trust and
+                                    <br />
+                                    unlock higher loan levels.
+                                 </span>
+                                 <span className="hidden max-[374px]:inline">Borrow USDC to build trust. Unlock higher levels.</span>
                               </p>
                            </div>
                            <Link
                               to="/sign-up"
-                              className="inline-flex min-h-[52px] w-fit items-center justify-center rounded-[16px] border border-md-primary-1200 bg-white px-5 py-3 text-[15px] font-[590] text-md-primary-1200 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.97]"
+                              className="inline-flex min-h-[56px] w-fit items-center justify-center rounded-md-lg border border-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-primary-1200 transition-all duration-150 hover:bg-md-primary-100 active:scale-[0.97] active:brightness-95 max-[374px]:min-h-12 max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
                            >
-                              Apply for a loan
+                              Apply For A Loan
                            </Link>
                         </div>
                         <img
                            src="/hippos/thumb-up-right.png"
                            alt=""
-                           className="pointer-events-none absolute bottom-[-8px] right-[-16px] h-[128px] w-[128px] object-contain max-[374px]:right-[-18px] max-[374px]:h-[112px] max-[374px]:w-[112px]"
+                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:bottom-0 max-[374px]:right-[-42px] max-[374px]:top-auto max-[374px]:h-[76%]"
                         />
                      </div>
                   ) : null}
