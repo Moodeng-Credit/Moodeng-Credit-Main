@@ -31,6 +31,8 @@ export default function LoanRequestPreview() {
    const [days, setDays] = useState('');
    const [submitted, setSubmitted] = useState(false);
    const today = new Date().toISOString().slice(0, 10);
+   // ?unverified renders the not-yet-verified state (verify blocker + inert submit button).
+   const showVerify = new URLSearchParams(window.location.search).has('unverified');
 
    return (
       <div className="min-h-screen bg-md-neutral-300">
@@ -39,7 +41,7 @@ export default function LoanRequestPreview() {
                clickOutsideRef={clickOutsideRef}
                isOpen
                onClose={() => {}}
-               showVerify={false}
+               showVerify={showVerify}
                user={PREVIEW_BORROWER}
                loanAmount={loanAmount}
                setLoanAmount={setLoanAmount}

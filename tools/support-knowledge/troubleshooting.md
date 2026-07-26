@@ -97,6 +97,22 @@ Signing up and getting verified are two separate steps. To verify:
 3. Already a World App user? They can choose **"Verify with World ID"** instead.
 - Most checks finish within minutes. If it's stuck, have them retry in a real browser (not an in-app browser) and make sure the photo is clear and well-lit.
 
+## My reason says "write it in English" / it won't let me continue
+
+Lenders on Moodeng are in the US and Europe, so a loan reason has to be written in English — a request they can't read doesn't get funded. Tagalog, Taglish and Bisaya are the usual cause; the form stops there until it's rewritten.
+
+- Offer to translate it. Mecha can do this directly — there's an **"Ask Mecha to write this in English"** link right under the field, or paste what they wrote and translate it for them.
+- A borrowed word inside an English sentence is fine ("buying gamot for my mother"). It's whole sentences in another language that stop the form.
+- The same applies to **Describe your situation** in the bio step. The job title itself can stay local ("sari-sari store owner", "jeepney driver").
+
+## My reason is in English but it still says it's too vague
+
+That's a different check — the reason names nothing specific ("for personal use", "for my needs"). It's a nudge, not a block: the field says what to add, and tapping **Make Your Request** a second time posts it anyway. Better to help them say what the money is actually for and when they get paid — specific reasons get funded more.
+
+## "Make Your Request" does nothing when I tap it
+
+They aren't verified yet. Tapping the greyed button now shakes it and highlights a note above it explaining why, with a **Verify Yourself** button attached. Verification is the last step before a request can be sent — see "I signed up but I'm still not verified" above.
+
 ## Where do I put a referral code?
 
 - Referral codes are entered at the **start of the loan application**: from the Request Board, tap to apply for a loan, and the first step asks for a referral code — type it and tap **Apply code**. (The step only appears for verified borrowers.)

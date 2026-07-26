@@ -49,6 +49,7 @@ import {
    shouldShowGuidedTour
 } from '@/lib/guidedTourStorage';
 import { isUserVerified, isVerificationPending } from '@/lib/isUserVerified';
+import { checkLoanReason } from '@/lib/loanReasonCheck';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA, VERIFICATION_STATE_LABEL } from '@/lib/verificationUiState';
@@ -1303,19 +1304,11 @@ function RequestBoard$() {
          // Only runs when the borrower hasn't already been warned for this exact reason.
          if (reasonWarnedForRef.current !== trimmedReason) {
             setIsCheckingReason(true);
-            let reasonOk = true;
-            let reasonHint = '';
-            try {
-               const { data } = await getSupabaseBrowserClient().functions.invoke('check-loan-input', {
-                  body: { text: trimmedReason, kind: 'reason' }
-               });
-               reasonOk = data?.ok !== false; // fail open — never block on a bad response
-               reasonHint = data?.hint ?? '';
-            } catch (err) {
-               console.error('check-loan-reason failed, allowing request:', err);
-            } finally {
-               setIsCheckingReason(false);
-            }
+            // Same door the reason field knocked on while they were typing, so the verdict is
+            // already cached in the normal case: no second DeepSeek call, and no chance of the
+            // field ticking a reason that submit then rejects. Fails open on its own.
+            const { ok: reasonOk, hint: reasonHint } = await checkLoanReason(trimmedReason);
+            setIsCheckingReason(false);
 
             if (!reasonOk) {
                reasonWarnedForRef.current = trimmedReason;

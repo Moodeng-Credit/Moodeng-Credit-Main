@@ -100,8 +100,10 @@ From the **Request Board** tab, tap **Apply For A Loan** to open the application
 
 1. Eligible verified borrowers first see a **Referral Boost** step — **Have a referral code?** field with **Apply code**, or **Continue to application** if you don't have one. A valid referral code adds **+$5 to your starting credit limit**. It's optional — no code just means no boost.
 2. If you're not verified yet, you'll be prompted to **Verify Yourself** first.
-3. Then **Set Your Own Terms**: **Borrow Amount** (up to your **Current Limit**), **Set Repayment Amount**, **Set Repayment Date** (up to 120 days out), and **Reason For Borrowing** (at least 40 characters — Mecha can help you word it if it's too vague). Submit with **Make Your Request**.
-4. First-time borrowers also fill in a short bio (friendly name, optional photo, work type, payday window, income/expenses) — this is the same **Bio Info** editable later from Account Settings.
+3. Then **Set Your Own Terms**: **Borrow Amount** (up to your **Current Limit**), **Set Repayment Amount**, **Set Repayment Date** (up to 120 days out), and **Reason For Borrowing**. The reason must be **at least 40 characters and written in English** — lenders are in the US and Europe, so Tagalog or Taglish is not accepted and the form won't move on until it's rewritten. The field checks as you type and says what's missing; Mecha can translate it or help word it. Submit with **Make Your Request**.
+4. First-time borrowers also fill in a short bio (friendly name, optional photo, work type, payday window, income/expenses) — this is the same **Bio Info** editable later from Account Settings. The free-text **Describe your situation** answer also needs to be in English; the job title itself can use the local term (sari-sari store owner, jeepney driver).
+
+If **Make Your Request** looks greyed out, you aren't verified yet — tapping it shows a note above the button with a **Verify Yourself** button. Verification is the last step before a request can be sent.
 
 ## Getting verified
 

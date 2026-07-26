@@ -56,18 +56,22 @@ type Kind = 'reason' | 'profession' | 'situation';
 // Note profession: a SHORT answer ("teacher") is fine — we only flag unclear
 // abbreviations, gibberish, or blanks. We never penalize brevity here.
 const PROMPTS: Record<Kind, string> = {
-   reason: `You screen loan-request reasons on a micro-lending app. Borrowers write a short reason so lenders understand what the money is for.
+   reason: `You screen loan-request reasons on a micro-lending app. Borrowers write a short reason so lenders understand what the money is for. The lenders reading these are in the US and Europe.
 
-Decide if the reason shows genuine effort: it names something specific the money will be used for (a real need, purchase, bill, or situation). Reject reasons that are vague, generic, placeholder, gibberish, or copy-paste filler that could apply to anyone.
+Reject the reason if EITHER is true:
+1. It is not written in English. Borrowers are mostly Filipino, so Tagalog and Taglish are the common case — reject them even when the meaning is perfectly clear and specific. One borrowed word inside an otherwise-English sentence ("buying gamot for my mother") is fine; a sentence built on Tagalog grammar is not.
+2. It shows no real effort: vague, generic, placeholder, gibberish, or copy-paste filler that could apply to anyone, instead of naming something specific the money will be used for.
 
 Reply with ONLY a JSON object, no other text:
-{"ok": true}  when the reason is specific and genuine
-{"ok": false, "hint": "<one short, friendly sentence telling them what to add>"}
+{"ok": true}  when the reason is in English and is specific and genuine
+{"ok": false, "hint": "<one short, friendly sentence telling them what to fix>"}
 
 Examples:
 "for personal use" -> {"ok": false, "hint": "Too vague — say what you'll actually use the money for."}
 "CSR" -> {"ok": false, "hint": "That doesn't tell lenders anything — describe your real need."}
 "asdfghjkl" -> {"ok": false, "hint": "This looks like random text — write a real reason."}
+"Pambayad sa tuition ng anak ko, sahod ako sa Friday" -> {"ok": false, "hint": "Please write this in English — the lenders reading it don't speak Tagalog."}
+"Kailangan ko ng pambili ng gamot para sa nanay ko" -> {"ok": false, "hint": "Please write this in English so lenders can understand your need."}
 "Rent due Friday, I'm $30 short until payday" -> {"ok": true}
 "Buying medicine for my mother and transport to the clinic" -> {"ok": true}`,
 
@@ -93,18 +97,19 @@ Examples:
 "teacher" -> {"ok": true}
 "asdf" -> {"ok": false, "hint": "This doesn't look like a real job — write what you do."}`,
 
-   situation: `You screen a borrower's own description of how they earn money, typed on a micro-lending app.
+   situation: `You screen a borrower's own description of how they earn money, typed on a micro-lending app. Lenders read it, and they are in the US and Europe.
 
-A GOOD answer specifically describes their income situation — what they do and how money comes in. Reject vague, generic, placeholder, or gibberish text that tells a lender nothing.
+A GOOD answer is written in English and specifically describes their income situation — what they do and how money comes in. Reject vague, generic, placeholder, or gibberish text that tells a lender nothing, and reject text that isn't in English (Tagalog and Taglish are the common case) even when it is specific.
 
 Reply with ONLY a JSON object, no other text:
-{"ok": true}  when it's a specific, genuine description
-{"ok": false, "hint": "<one short, friendly sentence telling them what to add>"}
+{"ok": true}  when it's in English and is a specific, genuine description
+{"ok": false, "hint": "<one short, friendly sentence telling them what to fix>"}
 
 Examples:
 "i work" -> {"ok": false, "hint": "Add detail — what do you do, and how do you get paid?"}
 "personal" -> {"ok": false, "hint": "Describe how you actually earn — a lender can't tell from this."}
 "asdf" -> {"ok": false, "hint": "This looks like random text — describe how you earn."}
+"Tindera ako sa palengke, kita ko araw araw" -> {"ok": false, "hint": "Please write this in English — the lenders reading it don't speak Tagalog."}
 "I run a small online shop and income changes month to month" -> {"ok": true}`
 };
 

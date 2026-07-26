@@ -44,6 +44,8 @@ import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import { suggestedReturnRange } from '@/lib/loanPricing';
+import { checkLoanReason, getCachedReasonVerdict } from '@/lib/loanReasonCheck';
+import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
@@ -958,6 +960,15 @@ export default function LoanRequestModal({
    const [showBorrowerAvatarModal, setShowBorrowerAvatarModal] = useState(false);
    const [isSavingBorrowerProfile, setIsSavingBorrowerProfile] = useState(false);
    const [isSavingBorrowerAvatar, setIsSavingBorrowerAvatar] = useState(false);
+   // Momentary — drives the shake when an unverified borrower taps "Make Your Request".
+   const [verifyNudge, setVerifyNudge] = useState(false);
+   // Live verdict from the DeepSeek effort check on the reason field. 'idle' = nothing worth
+   // checking yet, 'checking' = call in flight, 'weak' = it came back with a hint,
+   // 'unavailable' = the check couldn't run, so we stay silent rather than praise unchecked text.
+   const [liveReasonCheck, setLiveReasonCheck] = useState<{ status: 'idle' | 'checking' | 'ok' | 'weak' | 'unavailable'; hint: string }>(
+      { status: 'idle', hint: '' }
+   );
+   const liveChecksUsedRef = useRef(0);
 
    const isVerified = !showVerify;
    const verifyUiState = getVerificationUiState(user);
@@ -1380,6 +1391,7 @@ export default function LoanRequestModal({
    // reason (the #1 confusion) is caught right here, under the field, not via a toast that
    // hides behind the next card.
    const REASON_MIN_LENGTH = 40;
+   const MAX_LIVE_REASON_CHECKS = 12;
    // Per-field "valid" flags — drive the green success border so each box confirms when it's
    // correctly filled (feedback the borrower can see), separate from the red error state.
    const parsedAmountNum = Number(loanAmount);
@@ -1390,7 +1402,59 @@ export default function LoanRequestModal({
       !Number.isNaN(parsedRepayNum) &&
       !Number.isNaN(parsedAmountNum) &&
       parsedRepayNum >= parsedAmountNum + 1;
-   const reasonValid = reason.trim().length >= REASON_MIN_LENGTH;
+   // Length is necessary but not sufficient: 46 characters of "dwadwadwad" used to earn a
+   // green "Looks good". Two checks now stand between the borrower and that tick:
+   //   1. checkReasonQuality — instant, offline, catches text that isn't words yet;
+   //   2. check-loan-input (DeepSeek) — the same judge that runs on submit, pulled forward so
+   //      the tick means what it says instead of appearing and then being contradicted.
+   // Both only withhold the tick; neither blocks. The submit gate stays the enforcement point.
+   const reasonMeetsLength = reason.trim().length >= REASON_MIN_LENGTH;
+   const reasonQuality = checkReasonQuality(reason);
+   const reasonShapeOk = reasonMeetsLength && reasonQuality.ok;
+   const reasonValid = reasonShapeOk && liveReasonCheck.status === 'ok';
+
+   // Ask the effort check while they're still in the field, once typing settles. Cheap to do:
+   // it's the flash model, it only fires on text that already passed the offline shape check,
+   // each distinct text is asked once (shared cache with the submit gate), and an unreachable
+   // check leaves the borrower exactly where they were — silent, never falsely praised.
+   useEffect(() => {
+      const trimmed = reason.trim();
+      if (!reasonShapeOk) {
+         setLiveReasonCheck({ status: 'idle', hint: '' });
+         return;
+      }
+
+      const cached = getCachedReasonVerdict(trimmed);
+      if (cached) {
+         setLiveReasonCheck({ status: cached.ok ? 'ok' : 'weak', hint: cached.hint });
+         return;
+      }
+
+      // Budget: a borrower rewriting their reason twenty times shouldn't mean twenty DeepSeek
+      // calls. Past the cap the field goes quiet and the submit gate does the judging.
+      if (liveChecksUsedRef.current >= MAX_LIVE_REASON_CHECKS) {
+         setLiveReasonCheck({ status: 'unavailable', hint: '' });
+         return;
+      }
+
+      let cancelled = false;
+      setLiveReasonCheck({ status: 'checking', hint: '' });
+      const timer = window.setTimeout(async () => {
+         liveChecksUsedRef.current += 1;
+         const verdict = await checkLoanReason(trimmed);
+         if (cancelled) return;
+         if (!verdict.checked) {
+            setLiveReasonCheck({ status: 'unavailable', hint: '' });
+            return;
+         }
+         setLiveReasonCheck({ status: verdict.ok ? 'ok' : 'weak', hint: verdict.hint });
+      }, 900);
+
+      return () => {
+         cancelled = true;
+         window.clearTimeout(timer);
+      };
+   }, [reason, reasonShapeOk]);
    const validateTerms = (): boolean => {
       const errors: typeof termErrors = {};
 
@@ -1417,6 +1481,10 @@ export default function LoanRequestModal({
          errors.reason = 'Please add a reason so lenders know what the loan is for.';
       } else if (trimmedReason.length < REASON_MIN_LENGTH) {
          errors.reason = `Please add a little more — at least ${REASON_MIN_LENGTH} characters (${trimmedReason.length}/${REASON_MIN_LENGTH}).`;
+      } else if (reasonQuality.code === 'not-english') {
+         // The one hard rule on this field. Everything else about the reason is a nudge, but a
+         // request the US/EU lenders can't read can't be funded, so it doesn't leave the form.
+         errors.reason = 'Please write your reason in English so lenders can read it.';
       }
 
       setTermErrors(errors);
@@ -1437,8 +1505,20 @@ export default function LoanRequestModal({
    };
 
    const handleLoanFormSubmit = (event: FormEvent<HTMLFormElement>) => {
-      if (!isVerified || isSubmitting) {
+      if (isSubmitting) {
          event.preventDefault();
+         return;
+      }
+
+      // The submit button stays tappable while unverified on purpose: a dead grey button
+      // teaches nothing. Answer the tap — shake the button, pulse the note right above it
+      // that says why, and bring both on screen. Deliberately no toast: it lands bottom-right,
+      // straight on top of the "Verify Yourself" button we're sending them to.
+      if (!isVerified) {
+         event.preventDefault();
+         setVerifyNudge(true);
+         window.setTimeout(() => setVerifyNudge(false), 1200);
+         document.getElementById('loan-verify-blocker')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
          return;
       }
 
@@ -1496,6 +1576,22 @@ export default function LoanRequestModal({
       const situationText = borrowerContext.incomeDescription?.trim() ?? '';
       const bioSignature = `${professionText}||${situationText}`;
       if (bioInputWarnedRef.current === bioSignature) return true;
+
+      // "Describe your situation" is prose a lender reads, so the English rule applies here
+      // too — checked offline first, before spending a DeepSeek call. The profession field is
+      // deliberately exempt: "sari-sari store owner" is what the job is called, not a sentence
+      // in another language, and its own rubric already accepts those terms.
+      if (looksNotEnglish(situationText)) {
+         bioInputWarnedRef.current = bioSignature;
+         showToast(
+            TOAST_TYPES.WARNING,
+            'Write this in English',
+            'Lenders reading your profile are in the US and Europe — please describe your situation in English.',
+            'OK',
+            'acknowledge'
+         );
+         return false;
+      }
 
       setIsCheckingBio(true);
       let hint = '';
@@ -2059,14 +2155,22 @@ export default function LoanRequestModal({
                                  onFocus={scrollFieldIntoView}
                                  className="min-h-[48px] resize-none overflow-hidden bg-transparent text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
                                  id="reason"
-                                 placeholder="Why do you need this loan?"
+                                 placeholder="Why do you need this loan? Write in English."
                                  rows={1}
                                  value={reason}
                               />
-                              <div className="mt-md-2 flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200 select-none">
+                              {/* The verdict arrives asynchronously, so announce it — a screen-reader
+                                  user would otherwise never learn the reason was flagged. */}
+                              <div
+                                 aria-live="polite"
+                                 className="mt-md-2 flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200 select-none"
+                              >
                                  {(() => {
                                     const trimmedLength = reason.trim().length;
                                     const remaining = REASON_MIN_LENGTH - trimmedLength;
+                                    // A red error below is already saying it — don't say it twice in
+                                    // two colours. The counter keeps its place on the right.
+                                    if (termErrors.reason) return <span />;
                                     // Guide live: while short, show how many more characters are needed; once the
                                     // minimum is met, confirm it — so they learn before submitting, not after.
                                     if (trimmedLength > 0 && remaining > 0) {
@@ -2077,6 +2181,31 @@ export default function LoanRequestModal({
                                        );
                                     }
                                     if (trimmedLength >= REASON_MIN_LENGTH) {
+                                       // Offline shape check first (instant), then whatever the
+                                       // effort check came back with. The tick only appears once
+                                       // both have actually passed it.
+                                       const weakHint = !reasonQuality.ok
+                                          ? reasonQuality.hint
+                                          : liveReasonCheck.status === 'weak'
+                                            ? liveReasonCheck.hint || 'Add a bit more detail so lenders understand the need.'
+                                            : '';
+                                       if (weakHint) {
+                                          return (
+                                             <span className="inline-flex items-start gap-1.5 font-medium text-[#92400e]">
+                                                <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                                {weakHint}
+                                             </span>
+                                          );
+                                       }
+                                       // Couldn't reach the check — say nothing rather than tick
+                                       // text nobody judged. Submit still works; the gate there
+                                       // fails open too.
+                                       if (liveReasonCheck.status === 'unavailable') {
+                                          return <span>Short and specific helps lenders trust it.</span>;
+                                       }
+                                       if (liveReasonCheck.status !== 'ok') {
+                                          return <span className="font-medium text-md-neutral-1200">Checking your reason…</span>;
+                                       }
                                        return (
                                           <span className="inline-flex items-center gap-1 font-medium text-md-primary-1200">
                                              <Check className="size-4 shrink-0" strokeWidth={2.6} aria-hidden="true" />
@@ -2084,7 +2213,9 @@ export default function LoanRequestModal({
                                           </span>
                                        );
                                     }
-                                    return <span>At least 40 characters — short and specific helps lenders trust it.</span>;
+                                    // Lenders are in the US and EU, so the ask is stated up front
+                                    // rather than sprung on the borrower after 40 characters.
+                                    return <span>At least 40 characters, in English — short and specific helps lenders trust it.</span>;
                                  })()}
                                  <span className="shrink-0">{reason.length}/200</span>
                               </div>
@@ -2114,18 +2245,70 @@ export default function LoanRequestModal({
                                        />
                                     </div>
                                  </div>
+                              ) : reasonQuality.code === 'not-english' ? (
+                                 // Mecha speaks both — hand them a translation rather than leaving
+                                 // "write it in English" as homework.
+                                 <div className="mt-md-1 pl-[22px]">
+                                    <AskMechaButton
+                                       variant="link"
+                                       label="Ask Mecha to write this in English"
+                                       context={{ page: 'Loan request', step: 'loan-request' }}
+                                       seedUserMessage={`Please help me write my loan reason in English. Here is what I wrote: "${reason}"`}
+                                    />
+                                 </div>
+                              ) : liveReasonCheck.status === 'weak' ? (
+                                 // Same offer as the submit-time warning, just earlier: the hint is
+                                 // already in the counter row above, so only the way out is needed.
+                                 <div className="mt-md-1 pl-[22px]">
+                                    <AskMechaButton
+                                       variant="link"
+                                       label="Ask Mecha to help me word this"
+                                       context={{ page: 'Loan request', step: 'loan-request' }}
+                                       seedUserMessage={`I'm writing a loan request and my reason ("${reason}") was flagged as too vague. How do I write a clear reason that lenders will trust?`}
+                                    />
+                                 </div>
                               ) : null}
                            </div>
                         </div>
 
+                        {/* Unverified borrowers used to meet a grey button that did nothing when
+                            tapped — the only explanation was the yellow card scrolled far above.
+                            Say it here, where the tap happens, with the way out attached. */}
+                        {!isVerified ? (
+                           <div
+                              className={`flex flex-col gap-md-1 rounded-md-lg border border-[#f0c98a] bg-[#fff6d0] px-md-3 py-md-2 ${
+                                 verifyNudge ? 'blocked-tap-attention' : ''
+                              }`}
+                              id="loan-verify-blocker"
+                           >
+                              <div className="flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-[#92400e]">
+                                 <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                 <span>
+                                    {isPending
+                                       ? 'Your verification is still being checked — you can send this request once it clears.'
+                                       : "You're not verified yet. Verification is the last step before you can send this request."}
+                                 </span>
+                              </div>
+                              <button
+                                 className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                                 onClick={isPending ? () => navigate('/verify') : openVerify}
+                                 type="button"
+                              >
+                                 {isPending ? verifyPendingCta : 'Verify Yourself'}
+                              </button>
+                           </div>
+                        ) : null}
+                        {/* Deliberately not aria-disabled: the button *does* act — it explains why it
+                            can't submit yet. Point screen readers at that explanation instead. */}
                         <button
+                           aria-describedby={isVerified ? undefined : 'loan-verify-blocker'}
                            className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
                               isVerified && !isSubmitting
                                  ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2'
-                                 : 'cursor-not-allowed bg-md-neutral-600'
-                           }`}
+                                 : 'bg-md-neutral-600'
+                           } ${verifyNudge ? 'blocked-tap-shake' : ''}`}
                            type="submit"
-                           disabled={!isVerified || isSubmitting}
+                           disabled={isSubmitting}
                         >
                            {isSubmitting ? 'Submitting...' : 'Make Your Request'}
                         </button>

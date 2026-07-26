@@ -457,8 +457,10 @@ From the **Request Board** tab, tap **Apply For A Loan** to open the application
 
 1. Eligible verified borrowers first see a **Referral Boost** step — **Have a referral code?** field with **Apply code**, or **Continue to application** if you don't have one. A valid referral code adds **+$5 to your starting credit limit**. It's optional — no code just means no boost.
 2. If you're not verified yet, you'll be prompted to **Verify Yourself** first.
-3. Then **Set Your Own Terms**: **Borrow Amount** (up to your **Current Limit**), **Set Repayment Amount**, **Set Repayment Date** (up to 120 days out), and **Reason For Borrowing** (at least 40 characters — Mecha can help you word it if it's too vague). Submit with **Make Your Request**.
-4. First-time borrowers also fill in a short bio (friendly name, optional photo, work type, payday window, income/expenses) — this is the same **Bio Info** editable later from Account Settings.
+3. Then **Set Your Own Terms**: **Borrow Amount** (up to your **Current Limit**), **Set Repayment Amount**, **Set Repayment Date** (up to 120 days out), and **Reason For Borrowing**. The reason must be **at least 40 characters and written in English** — lenders are in the US and Europe, so Tagalog or Taglish is not accepted and the form won't move on until it's rewritten. The field checks as you type and says what's missing; Mecha can translate it or help word it. Submit with **Make Your Request**.
+4. First-time borrowers also fill in a short bio (friendly name, optional photo, work type, payday window, income/expenses) — this is the same **Bio Info** editable later from Account Settings. The free-text **Describe your situation** answer also needs to be in English; the job title itself can use the local term (sari-sari store owner, jeepney driver).
+
+If **Make Your Request** looks greyed out, you aren't verified yet — tapping it shows a note above the button with a **Verify Yourself** button. Verification is the last step before a request can be sent.
 
 ## Getting verified
 
@@ -669,6 +671,22 @@ Signing up and getting verified are two separate steps. To verify:
 2. Choose **"Verify Your ID"** — a quick national ID photo + selfie check, about 3 minutes, in supported countries.
 3. Already a World App user? They can choose **"Verify with World ID"** instead.
 - Most checks finish within minutes. If it's stuck, have them retry in a real browser (not an in-app browser) and make sure the photo is clear and well-lit.
+
+## My reason says "write it in English" / it won't let me continue
+
+Lenders on Moodeng are in the US and Europe, so a loan reason has to be written in English — a request they can't read doesn't get funded. Tagalog, Taglish and Bisaya are the usual cause; the form stops there until it's rewritten.
+
+- Offer to translate it. Mecha can do this directly — there's an **"Ask Mecha to write this in English"** link right under the field, or paste what they wrote and translate it for them.
+- A borrowed word inside an English sentence is fine ("buying gamot for my mother"). It's whole sentences in another language that stop the form.
+- The same applies to **Describe your situation** in the bio step. The job title itself can stay local ("sari-sari store owner", "jeepney driver").
+
+## My reason is in English but it still says it's too vague
+
+That's a different check — the reason names nothing specific ("for personal use", "for my needs"). It's a nudge, not a block: the field says what to add, and tapping **Make Your Request** a second time posts it anyway. Better to help them say what the money is actually for and when they get paid — specific reasons get funded more.
+
+## "Make Your Request" does nothing when I tap it
+
+They aren't verified yet. Tapping the greyed button now shakes it and highlights a note above it explaining why, with a **Verify Yourself** button attached. Verification is the last step before a request can be sent — see "I signed up but I'm still not verified" above.
 
 ## Where do I put a referral code?
 
