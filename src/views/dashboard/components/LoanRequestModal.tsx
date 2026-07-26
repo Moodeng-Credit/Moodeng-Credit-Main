@@ -44,6 +44,7 @@ import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import { suggestedReturnRange } from '@/lib/loanPricing';
+import { checkReasonQuality } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
@@ -958,6 +959,8 @@ export default function LoanRequestModal({
    const [showBorrowerAvatarModal, setShowBorrowerAvatarModal] = useState(false);
    const [isSavingBorrowerProfile, setIsSavingBorrowerProfile] = useState(false);
    const [isSavingBorrowerAvatar, setIsSavingBorrowerAvatar] = useState(false);
+   // Momentary — drives the shake when an unverified borrower taps "Make Your Request".
+   const [verifyNudge, setVerifyNudge] = useState(false);
 
    const isVerified = !showVerify;
    const verifyUiState = getVerificationUiState(user);
@@ -1390,7 +1393,12 @@ export default function LoanRequestModal({
       !Number.isNaN(parsedRepayNum) &&
       !Number.isNaN(parsedAmountNum) &&
       parsedRepayNum >= parsedAmountNum + 1;
-   const reasonValid = reason.trim().length >= REASON_MIN_LENGTH;
+   // Length is necessary but not sufficient: 46 characters of "dwadwadwad" used to earn a
+   // green "Looks good". The shape check keeps the field honest — it withholds the tick (and
+   // says what's missing) without blocking, since the DeepSeek check on submit is the real gate.
+   const reasonMeetsLength = reason.trim().length >= REASON_MIN_LENGTH;
+   const reasonQuality = checkReasonQuality(reason);
+   const reasonValid = reasonMeetsLength && reasonQuality.ok;
    const validateTerms = (): boolean => {
       const errors: typeof termErrors = {};
 
@@ -1437,8 +1445,27 @@ export default function LoanRequestModal({
    };
 
    const handleLoanFormSubmit = (event: FormEvent<HTMLFormElement>) => {
-      if (!isVerified || isSubmitting) {
+      if (isSubmitting) {
          event.preventDefault();
+         return;
+      }
+
+      // The submit button stays tappable while unverified on purpose: a dead grey button
+      // teaches nothing. Answer the tap — shake it, name the blocker, and point at the fix.
+      if (!isVerified) {
+         event.preventDefault();
+         setVerifyNudge(true);
+         window.setTimeout(() => setVerifyNudge(false), 500);
+         showToast(
+            TOAST_TYPES.WARNING,
+            isPending ? 'Verification still in review' : 'Verify yourself to send this',
+            isPending
+               ? verifyPendingBody
+               : 'One quick one-time verification and your request goes live to lenders.',
+            'OK',
+            'acknowledge'
+         );
+         document.getElementById('loan-verify-blocker')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
          return;
       }
 
@@ -2077,6 +2104,14 @@ export default function LoanRequestModal({
                                        );
                                     }
                                     if (trimmedLength >= REASON_MIN_LENGTH) {
+                                       if (!reasonQuality.ok) {
+                                          return (
+                                             <span className="inline-flex items-start gap-1.5 font-medium text-[#92400e]">
+                                                <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                                {reasonQuality.hint}
+                                             </span>
+                                          );
+                                       }
                                        return (
                                           <span className="inline-flex items-center gap-1 font-medium text-md-primary-1200">
                                              <Check className="size-4 shrink-0" strokeWidth={2.6} aria-hidden="true" />
@@ -2118,14 +2153,40 @@ export default function LoanRequestModal({
                            </div>
                         </div>
 
+                        {/* Unverified borrowers used to meet a grey button that did nothing when
+                            tapped — the only explanation was the yellow card scrolled far above.
+                            Say it here, where the tap happens, with the way out attached. */}
+                        {!isVerified ? (
+                           <div
+                              className="flex flex-col gap-md-1 rounded-md-lg border border-[#f0c98a] bg-[#fff6d0] px-md-3 py-md-2"
+                              id="loan-verify-blocker"
+                           >
+                              <div className="flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-[#92400e]">
+                                 <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                 <span>
+                                    {isPending
+                                       ? 'Your verification is still being checked — you can send this request once it clears.'
+                                       : "You're not verified yet. Verification is the last step before you can send this request."}
+                                 </span>
+                              </div>
+                              <button
+                                 className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+                                 onClick={isPending ? () => navigate('/verify') : openVerify}
+                                 type="button"
+                              >
+                                 {isPending ? verifyPendingCta : 'Verify Yourself'}
+                              </button>
+                           </div>
+                        ) : null}
                         <button
+                           aria-disabled={!isVerified}
                            className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
                               isVerified && !isSubmitting
                                  ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2'
-                                 : 'cursor-not-allowed bg-md-neutral-600'
-                           }`}
+                                 : 'bg-md-neutral-600'
+                           } ${verifyNudge ? 'blocked-tap-shake' : ''}`}
                            type="submit"
-                           disabled={!isVerified || isSubmitting}
+                           disabled={isSubmitting}
                         >
                            {isSubmitting ? 'Submitting...' : 'Make Your Request'}
                         </button>

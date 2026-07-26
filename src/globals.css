@@ -590,3 +590,37 @@ html.dark .team-page .team-blue-panel {
          0 8px 20px rgba(96, 16, 210, 0.18);
    }
 }
+
+/* A tap on a button that can't act yet (e.g. "Make Your Request" before verification)
+   answers with a short shake, so the tap is never swallowed in silence. The reason it
+   can't act is always spelled out in text next to it — this is only the acknowledgement. */
+@keyframes blocked-tap-shake {
+   0%,
+   100% {
+      transform: translateX(0);
+   }
+
+   15%,
+   55% {
+      transform: translateX(-5px);
+   }
+
+   35%,
+   75% {
+      transform: translateX(5px);
+   }
+
+   90% {
+      transform: translateX(-2px);
+   }
+}
+
+.blocked-tap-shake {
+   animation: blocked-tap-shake 0.42s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+   .blocked-tap-shake {
+      animation: none;
+   }
+}
