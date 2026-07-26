@@ -44,6 +44,7 @@ import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import { suggestedReturnRange } from '@/lib/loanPricing';
+import { checkLoanReason, getCachedReasonVerdict } from '@/lib/loanReasonCheck';
 import { checkReasonQuality } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -962,14 +963,11 @@ export default function LoanRequestModal({
    // Momentary — drives the shake when an unverified borrower taps "Make Your Request".
    const [verifyNudge, setVerifyNudge] = useState(false);
    // Live verdict from the DeepSeek effort check on the reason field. 'idle' = nothing worth
-   // checking yet, 'checking' = call in flight, 'weak' = it came back with a hint.
-   const [liveReasonCheck, setLiveReasonCheck] = useState<{ status: 'idle' | 'checking' | 'ok' | 'weak'; hint: string }>({
-      status: 'idle',
-      hint: ''
-   });
-   // One verdict per distinct reason text — re-typing a character shouldn't re-bill DeepSeek,
-   // and coming back to an earlier draft should answer instantly.
-   const reasonVerdictsRef = useRef<Map<string, { ok: boolean; hint: string }>>(new Map());
+   // checking yet, 'checking' = call in flight, 'weak' = it came back with a hint,
+   // 'unavailable' = the check couldn't run, so we stay silent rather than praise unchecked text.
+   const [liveReasonCheck, setLiveReasonCheck] = useState<{ status: 'idle' | 'checking' | 'ok' | 'weak' | 'unavailable'; hint: string }>(
+      { status: 'idle', hint: '' }
+   );
 
    const isVerified = !showVerify;
    const verifyUiState = getVerificationUiState(user);
@@ -1415,8 +1413,8 @@ export default function LoanRequestModal({
 
    // Ask the effort check while they're still in the field, once typing settles. Cheap to do:
    // it's the flash model, it only fires on text that already passed the offline shape check,
-   // each distinct text is asked once, and it fails open — a slow or unhappy DeepSeek leaves
-   // the borrower exactly where they were, with the submit-time gate unchanged behind it.
+   // each distinct text is asked once (shared cache with the submit gate), and an unreachable
+   // check leaves the borrower exactly where they were — silent, never falsely praised.
    useEffect(() => {
       const trimmed = reason.trim();
       if (!reasonShapeOk) {
@@ -1424,7 +1422,7 @@ export default function LoanRequestModal({
          return;
       }
 
-      const cached = reasonVerdictsRef.current.get(trimmed);
+      const cached = getCachedReasonVerdict(trimmed);
       if (cached) {
          setLiveReasonCheck({ status: cached.ok ? 'ok' : 'weak', hint: cached.hint });
          return;
@@ -1433,17 +1431,13 @@ export default function LoanRequestModal({
       let cancelled = false;
       setLiveReasonCheck({ status: 'checking', hint: '' });
       const timer = window.setTimeout(async () => {
-         let verdict = { ok: true, hint: '' };
-         try {
-            const { data } = await getSupabaseBrowserClient().functions.invoke('check-loan-input', {
-               body: { text: trimmed, kind: 'reason' }
-            });
-            verdict = { ok: data?.ok !== false, hint: data?.hint ?? '' };
-            reasonVerdictsRef.current.set(trimmed, verdict);
-         } catch (error) {
-            console.error('check-loan-input (live reason) failed, allowing:', error);
+         const verdict = await checkLoanReason(trimmed);
+         if (cancelled) return;
+         if (!verdict.checked) {
+            setLiveReasonCheck({ status: 'unavailable', hint: '' });
+            return;
          }
-         if (!cancelled) setLiveReasonCheck({ status: verdict.ok ? 'ok' : 'weak', hint: verdict.hint });
+         setLiveReasonCheck({ status: verdict.ok ? 'ok' : 'weak', hint: verdict.hint });
       }, 900);
 
       return () => {
@@ -2131,11 +2125,16 @@ export default function LoanRequestModal({
                                  onFocus={scrollFieldIntoView}
                                  className="min-h-[48px] resize-none overflow-hidden bg-transparent text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
                                  id="reason"
-                                 placeholder="Why do you need this loan?"
+                                 placeholder="Why do you need this loan? Write in English."
                                  rows={1}
                                  value={reason}
                               />
-                              <div className="mt-md-2 flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200 select-none">
+                              {/* The verdict arrives asynchronously, so announce it — a screen-reader
+                                  user would otherwise never learn the reason was flagged. */}
+                              <div
+                                 aria-live="polite"
+                                 className="mt-md-2 flex items-start justify-between gap-md-2 text-md-b3 font-normal leading-[18px] text-md-neutral-1200 select-none"
+                              >
                                  {(() => {
                                     const trimmedLength = reason.trim().length;
                                     const remaining = REASON_MIN_LENGTH - trimmedLength;
@@ -2165,6 +2164,12 @@ export default function LoanRequestModal({
                                              </span>
                                           );
                                        }
+                                       // Couldn't reach the check — say nothing rather than tick
+                                       // text nobody judged. Submit still works; the gate there
+                                       // fails open too.
+                                       if (liveReasonCheck.status === 'unavailable') {
+                                          return <span>Short and specific helps lenders trust it.</span>;
+                                       }
                                        if (liveReasonCheck.status !== 'ok') {
                                           return <span className="font-medium text-md-neutral-1200">Checking your reason…</span>;
                                        }
@@ -2175,7 +2180,9 @@ export default function LoanRequestModal({
                                           </span>
                                        );
                                     }
-                                    return <span>At least 40 characters — short and specific helps lenders trust it.</span>;
+                                    // Lenders are in the US and EU, so the ask is stated up front
+                                    // rather than sprung on the borrower after 40 characters.
+                                    return <span>At least 40 characters, in English — short and specific helps lenders trust it.</span>;
                                  })()}
                                  <span className="shrink-0">{reason.length}/200</span>
                               </div>
