@@ -1,6 +1,6 @@
-import { type ReactNode, createElement, createRef } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { createElement, createRef, type ReactNode } from 'react';
 
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 import { evaluateCreditProgression, isRepaidOnTime } from '@/lib/creditLeveling';
@@ -194,7 +194,7 @@ describe('LoanRequestModal borrowing gate', () => {
       availableCreditLimit: 0
    };
 
-   it('shows verification-required state for unverified users', () => {
+   it('locks the form and defers the verify prompt for unverified users', () => {
       const markup = renderToStaticMarkup(
          createElement(LoanRequestModal, {
             ...sharedProps,
@@ -203,14 +203,17 @@ describe('LoanRequestModal borrowing gate', () => {
          })
       );
 
-      expect(markup).toContain('One quick step to request a loan');
-      expect(markup).toContain('Verify Yourself');
-      // The submit button is deliberately NOT disabled while unverified — a dead button
-      // swallows the tap. It stays live so it can answer with the reason, which sits in the
-      // blocker note it points at.
-      expect(markup).toContain('You&#x27;re not verified yet.');
-      expect(markup).toContain('aria-describedby="loan-verify-blocker"');
-      expect(markup).not.toContain('disabled');
+      // The term fields sit in a disabled fieldset with a transparent tap-catcher over them —
+      // locked, so there's no false affordance while unverified.
+      expect(markup).toContain('disabled');
+      expect(markup).toContain('Verify your identity first to fill in your loan request.');
+
+      // No verification card clutters the resting form: the old top lead card is gone, and the
+      // blocker card only mounts once the borrower actually tries to act (a tap we can't fire in
+      // a static render). So its copy and id must be absent here.
+      expect(markup).not.toContain('One quick step to request a loan');
+      expect(markup).not.toContain('You&#x27;re not verified yet.');
+      expect(markup).not.toContain('loan-verify-blocker');
    });
 
    it('uses the verified credit limit when showing the loan cap', () => {
