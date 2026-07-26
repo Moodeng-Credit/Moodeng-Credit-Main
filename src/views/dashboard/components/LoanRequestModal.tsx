@@ -962,6 +962,10 @@ export default function LoanRequestModal({
    const [isSavingBorrowerAvatar, setIsSavingBorrowerAvatar] = useState(false);
    // Momentary — drives the shake when an unverified borrower taps "Make Your Request".
    const [verifyNudge, setVerifyNudge] = useState(false);
+   // The "you're not verified yet" card is hidden at rest — the locked, dimmed fields are the
+   // only resting signal. It's revealed the moment the borrower tries to act (taps a locked
+   // field or the greyed submit), answering the tap right where it happened.
+   const [verifyBlockerRevealed, setVerifyBlockerRevealed] = useState(false);
    // Live verdict from the DeepSeek effort check on the reason field. 'idle' = nothing worth
    // checking yet, 'checking' = call in flight, 'weak' = it came back with a hint,
    // 'unavailable' = the check couldn't run, so we stay silent rather than praise unchecked text.
@@ -973,22 +977,6 @@ export default function LoanRequestModal({
 
    const isVerified = !showVerify;
    const verifyUiState = getVerificationUiState(user);
-   const verifyPendingTitle =
-      verifyUiState === 'review'
-         ? 'Manual review in progress'
-         : verifyUiState === 'unfinished'
-           ? 'Verification not finished'
-           : verifyUiState === 'declined'
-             ? "Verification didn't pass"
-             : 'Verification in progress';
-   const verifyPendingBody =
-      verifyUiState === 'review'
-         ? 'A human reviewer is double-checking your documents — this can take up to 1 business day.'
-         : verifyUiState === 'unfinished'
-           ? 'You left before finishing all the steps. Tap below to continue or start over.'
-           : verifyUiState === 'declined'
-             ? "We couldn't verify your identity. Tap below to try again or contact us."
-             : "Your documents are being reviewed. We'll notify you once confirmed.";
    const verifyPendingCta = `${VERIFICATION_STATE_CTA[verifyUiState]} →`;
    const limitAmount = Math.max(availableCreditLimit, 0);
    const selectedDate = days ? days.slice(0, 10) : '';
@@ -1044,6 +1032,7 @@ export default function LoanRequestModal({
       setShowBorrowerContextStep(startOnBorrowerContextStep);
       setBioPage(1);
       setTermErrors({});
+      setVerifyBlockerRevealed(false);
       setBorrowerContext(emptyBorrowerContext);
       setBorrowerContextPromptSeen(false);
       setBorrowerProfileName(user.displayName ?? user.username ?? '');
@@ -1505,21 +1494,34 @@ export default function LoanRequestModal({
       return Object.keys(errors).length === 0;
    };
 
+   // Reveal the "not verified yet" card (hidden at rest) and answer the tap: pulse the card,
+   // shake the button. A dead grey button — or a silently inert field — teaches nothing.
+   // Deliberately no toast: it lands bottom-right, on top of the Verify button we point to.
+   const revealVerifyBlocker = () => {
+      setVerifyBlockerRevealed(true);
+      setVerifyNudge(true);
+      window.setTimeout(() => setVerifyNudge(false), 1200);
+   };
+
+   // Bring the card on screen once it mounts (it isn't in the DOM until revealed, so the scroll
+   // has to wait for the next frame). Re-runs on every reveal/nudge so repeat taps re-centre it.
+   useEffect(() => {
+      if (!verifyBlockerRevealed) return;
+      const frame = window.requestAnimationFrame(() => {
+         document.getElementById('loan-verify-blocker')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      return () => window.cancelAnimationFrame(frame);
+   }, [verifyBlockerRevealed, verifyNudge]);
+
    const handleLoanFormSubmit = (event: FormEvent<HTMLFormElement>) => {
       if (isSubmitting) {
          event.preventDefault();
          return;
       }
 
-      // The submit button stays tappable while unverified on purpose: a dead grey button
-      // teaches nothing. Answer the tap — shake the button, pulse the note right above it
-      // that says why, and bring both on screen. Deliberately no toast: it lands bottom-right,
-      // straight on top of the "Verify Yourself" button we're sending them to.
       if (!isVerified) {
          event.preventDefault();
-         setVerifyNudge(true);
-         window.setTimeout(() => setVerifyNudge(false), 1200);
-         document.getElementById('loan-verify-blocker')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         revealVerifyBlocker();
          return;
       }
 
@@ -1916,41 +1918,9 @@ export default function LoanRequestModal({
                      />
                   ) : (
                      <>
-                        {showVerify ? (
-                           <div
-                              className={`flex items-center gap-md-2 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-[#fff6d0] px-md-3 py-md-2 ${
-                                 verifyNudge ? 'blocked-tap-attention' : ''
-                              }`}
-                              id="loan-verify-lead"
-                              data-tour-target="loan-verification-card"
-                           >
-                              <div className="flex min-w-0 max-w-[220px] flex-1 flex-col gap-md-1">
-                                 <div className="flex flex-col gap-md-0">
-                                    <p className="whitespace-nowrap text-md-b2 font-medium text-md-primary-2000">
-                                       {isPending ? verifyPendingTitle : 'One quick step to request a loan'}
-                                    </p>
-                                    <p className="text-md-b3 font-normal text-md-neutral-1400">
-                                       {isPending
-                                          ? verifyPendingBody
-                                          : 'Complete a one-time verification to start building trust with lenders.'}
-                                    </p>
-                                 </div>
-                                 <button
-                                    onClick={isPending ? () => navigate('/verify') : openVerify}
-                                    className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                                    type="button"
-                                 >
-                                    {isPending ? verifyPendingCta : 'Verify Yourself'}
-                                 </button>
-                              </div>
-                              <img
-                                 alt=""
-                                 aria-hidden="true"
-                                 className="h-[86px] w-[96px] shrink-0 object-contain"
-                                 src="/hippos/welcome.png"
-                              />
-                           </div>
-                        ) : null}
+                        {/* No verification card at rest — the locked, dimmed fields carry the
+                            state. The card is revealed on the first tap (see loan-verify-blocker
+                            below), right where the borrower tried to act. */}
                         {!isPending && verifyModal}
 
                         {/* Lock, don't tease. While unverified (or pending review) the whole form is
@@ -2302,20 +2272,16 @@ export default function LoanRequestModal({
                                        ? 'Verification is still being checked. You can fill this in once it clears.'
                                        : 'Verify your identity first to fill in your loan request.'
                                  }
-                                 onClick={() => {
-                                    setVerifyNudge(true);
-                                    window.setTimeout(() => setVerifyNudge(false), 1200);
-                                    document.getElementById('loan-verify-lead')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                 }}
+                                 onClick={revealVerifyBlocker}
                                  className="absolute inset-0 z-10 cursor-not-allowed rounded-md-lg"
                               />
                            ) : null}
                         </div>
 
-                        {/* Unverified borrowers used to meet a grey button that did nothing when
-                            tapped — the only explanation was the yellow card scrolled far above.
-                            Say it here, where the tap happens, with the way out attached. */}
-                        {!isVerified ? (
+                        {/* Hidden until the borrower tries to act (taps a locked field or the greyed
+                            submit) — then it appears right here, where the tap happened, with the
+                            way out attached. No always-on card cluttering the resting form. */}
+                        {!isVerified && verifyBlockerRevealed ? (
                            <div
                               className={`flex flex-col gap-md-1 rounded-md-lg border border-[#f0c98a] bg-[#fff6d0] px-md-3 py-md-2 ${
                                  verifyNudge ? 'blocked-tap-attention' : ''
@@ -2342,7 +2308,7 @@ export default function LoanRequestModal({
                         {/* Deliberately not aria-disabled: the button *does* act — it explains why it
                             can't submit yet. Point screen readers at that explanation instead. */}
                         <button
-                           aria-describedby={isVerified ? undefined : 'loan-verify-blocker'}
+                           aria-describedby={!isVerified && verifyBlockerRevealed ? 'loan-verify-blocker' : undefined}
                            className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
                               isVerified && !isSubmitting
                                  ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2'
